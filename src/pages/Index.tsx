@@ -20,6 +20,8 @@ export interface LayerConfig {
   parcelles: boolean;
   parcellesPAC: boolean;
   immediateTransactions: boolean;
+  marchesTechnoSensibles: boolean;
+  openData: boolean;
   radius: number;
   stepM: number;
 }
@@ -38,6 +40,8 @@ const Index = () => {
     parcelles: true,
     parcellesPAC: false,
     immediateTransactions: true,
+    marchesTechnoSensibles: false,
+    openData: false,
     radius: 200,
     stepM: 100
   });

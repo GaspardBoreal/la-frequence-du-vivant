@@ -90,6 +90,32 @@ const LayerSelector: React.FC<LayerSelectorProps> = ({ layers, onChange, theme }
           </label>
         </div>
 
+        <div className="flex items-center">
+          <input
+            type="checkbox"
+            id="marchesTechnoSensibles"
+            checked={layers.marchesTechnoSensibles}
+            onChange={() => handleLayerToggle('marchesTechnoSensibles')}
+            className="h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300 rounded"
+          />
+          <label htmlFor="marchesTechnoSensibles" className="ml-2 text-sm text-gray-700">
+            Marches TechnoSensibles
+          </label>
+        </div>
+
+        <div className="flex items-center">
+          <input
+            type="checkbox"
+            id="openData"
+            checked={layers.openData}
+            onChange={() => handleLayerToggle('openData')}
+            className="h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300 rounded"
+          />
+          <label htmlFor="openData" className="ml-2 text-sm text-gray-700">
+            OpenData
+          </label>
+        </div>
+
         <div className="mt-6">
           <label htmlFor="radius" className="block text-sm font-medium text-gray-700 mb-2">
             Rayon de recherche: {layers.radius}m
