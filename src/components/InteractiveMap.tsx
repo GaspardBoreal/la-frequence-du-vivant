@@ -7,6 +7,7 @@ import L from 'leaflet';
 import { RegionalTheme } from '../utils/regionalThemes';
 import { LayerConfig, SearchResult, SelectedParcel } from '../pages/Index';
 import { fetchMarchesTechnoSensibles, MarcheTechnoSensible } from '../utils/googleSheetsApi';
+import PoeticMarkerCard from './PoeticMarkerCard';
 
 // Fix for default markers
 delete (L.Icon.Default.prototype as any)._getIconUrl;
@@ -15,6 +16,42 @@ L.Icon.Default.mergeOptions({
   iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
   shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
 });
+
+// Création d'icônes personnalisées pour les marqueurs poétiques
+const createPoeticIcon = (theme: RegionalTheme) => {
+  return L.divIcon({
+    html: `
+      <div style="
+        background: linear-gradient(135deg, ${theme.colors.primary}, ${theme.colors.secondary});
+        border: 2px solid white;
+        border-radius: 50%;
+        width: 24px;
+        height: 24px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        animation: pulse 2s infinite;
+      ">
+        <div style="
+          color: white;
+          font-size: 12px;
+          font-weight: bold;
+        ">🌱</div>
+      </div>
+      <style>
+        @keyframes pulse {
+          0%, 100% { transform: scale(1); }
+          50% { transform: scale(1.1); }
+        }
+      </style>
+    `,
+    className: 'poetic-marker',
+    iconSize: [24, 24],
+    iconAnchor: [12, 12],
+    popupAnchor: [0, -12]
+  });
+};
 
 interface InteractiveMapProps {
   searchResult: SearchResult | null;
@@ -40,6 +77,8 @@ const InteractiveMap: React.FC<InteractiveMapProps> = ({
       setZoom(15);
     }
   }, [searchResult]);
+
+  const poeticIcon = createPoeticIcon(theme);
 
   return (
     <div className="relative h-96 md:h-[500px] lg:h-[600px]">
@@ -71,43 +110,19 @@ const InteractiveMap: React.FC<InteractiveMapProps> = ({
           </Marker>
         )}
 
-        {/* Marches TechnoSensibles markers - utilise les données filtrées */}
+        {/* Marches TechnoSensibles markers - interface révolutionnaire */}
         {layers.marchesTechnoSensibles && filteredMarchesData.map((marche, index) => (
           <Marker 
             key={index} 
             position={[marche.latitude, marche.longitude]}
+            icon={poeticIcon}
           >
-            <Popup>
-              <div className="p-3 min-w-[250px]">
-                <h3 className="font-semibold text-gray-800 mb-2">{marche.ville}</h3>
-                <div className="space-y-1 text-sm">
-                  <p className="text-gray-600">
-                    <strong>Région:</strong> {marche.region}
-                  </p>
-                  <p className="text-gray-600">
-                    <strong>Département:</strong> {marche.departement}
-                  </p>
-                  <p className="text-gray-600">
-                    <strong>Adresse:</strong> {marche.adresse}
-                  </p>
-                  <p className="text-gray-600">
-                    <strong>Code postal:</strong> {marche.codePostal}
-                  </p>
-                  <p className="text-gray-600">
-                    <strong>Thème:</strong> {marche.theme}
-                  </p>
-                </div>
-                {marche.lien && (
-                  <a 
-                    href={marche.lien} 
-                    target="_blank" 
-                    rel="noopener noreferrer"
-                    className="inline-block mt-2 px-3 py-1 text-xs rounded-full text-white hover:opacity-80 transition-opacity"
-                    style={{ backgroundColor: theme.colors.primary }}
-                  >
-                    Plus d'informations
-                  </a>
-                )}
+            <Popup 
+              maxWidth={400}
+              className="poetic-popup"
+            >
+              <div className="p-0 m-0">
+                <PoeticMarkerCard marche={marche} theme={theme} />
               </div>
             </Popup>
           </Marker>
@@ -115,12 +130,17 @@ const InteractiveMap: React.FC<InteractiveMapProps> = ({
 
       </MapContainer>
       
-      {/* Indicateur du nombre de résultats */}
+      {/* Indicateur du nombre de résultats avec style poétique */}
       {layers.marchesTechnoSensibles && (
-        <div className="absolute top-4 right-4 bg-white/90 backdrop-blur-sm rounded-lg px-3 py-2 shadow-lg">
-          <p className="text-sm text-gray-700">
-            <span className="font-semibold">{filteredMarchesData.length}</span> marche(s) affichée(s)
-          </p>
+        <div className="absolute top-4 right-4 bg-white/90 backdrop-blur-sm rounded-lg px-3 py-2 shadow-lg border border-purple-200">
+          <div className="flex items-center space-x-2">
+            <div className="w-2 h-2 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full animate-pulse"></div>
+            <p className="text-sm text-gray-700">
+              <span className="font-semibold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
+                {filteredMarchesData.length}
+              </span> marche{filteredMarchesData.length !== 1 ? 's' : ''} révélée{filteredMarchesData.length !== 1 ? 's' : ''}
+            </p>
+          </div>
         </div>
       )}
     </div>

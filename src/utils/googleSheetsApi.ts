@@ -11,9 +11,30 @@ export interface MarcheTechnoSensible {
   codePostal: string;
   adresse: string;
   tags: string;
+  // Nouveaux champs pour l'univers poétique
+  nomMarche?: string;
+  descriptifCourt?: string;
+  photos?: string[]; // URLs des photos (1-20)
+  sequencesSonores?: string[]; // URLs des séquences sonores (1-3)
+  videos?: string[]; // URLs des vidéos
+  poeme?: string; // Le poème associé
+  temoignages?: {
+    auteur: string;
+    contenu: string;
+    date: string;
+  }[];
+  tagsThematiques?: string[]; // Tags spécifiques au contenu
+  liensInternes?: {
+    titre: string;
+    url: string;
+  }[];
+  liensExternes?: {
+    titre: string;
+    url: string;
+  }[];
 }
 
-// Données de test en attendant de résoudre le problème d'accès
+// Données de test enrichies pour l'univers poétique
 const TEST_DATA: MarcheTechnoSensible[] = [
   {
     latitude: 48.8566,
@@ -25,7 +46,33 @@ const TEST_DATA: MarcheTechnoSensible[] = [
     departement: "Paris",
     codePostal: "75001",
     adresse: "Place de la Concorde",
-    tags: ''
+    tags: '',
+    nomMarche: "Métamorphoses Urbaines",
+    descriptifCourt: "Là où l'asphalte rencontre la terre, naissent les nouveaux jardins de l'âme numérique.",
+    photos: [
+      "https://images.unsplash.com/photo-1416879595882-3373a0480b5b?w=400",
+      "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=400"
+    ],
+    sequencesSonores: [
+      "https://example.com/audio/urban-growth.mp3",
+      "https://example.com/audio/digital-seeds.mp3"
+    ],
+    videos: ["https://example.com/video/urban-metamorphosis.mp4"],
+    poeme: "Dans les veines de béton,\nGerment les rêves électroniques,\nOù la machine apprend à fleurir\nEt l'humain redécouvre ses racines.",
+    temoignages: [
+      {
+        auteur: "Marie L.",
+        contenu: "Ce poème m'a fait réaliser que la technologie peut être un terreau fertile pour l'imagination.",
+        date: "2024-01-15"
+      }
+    ],
+    tagsThematiques: ["technologie", "nature", "urbain", "métamorphose"],
+    liensInternes: [
+      { titre: "Jardins connectés", url: "/jardins-connectes" }
+    ],
+    liensExternes: [
+      { titre: "Manifeste du jardinage numérique", url: "https://example.com/manifeste" }
+    ]
   },
   {
     latitude: 45.764,
@@ -37,7 +84,32 @@ const TEST_DATA: MarcheTechnoSensible[] = [
     departement: "Rhône",
     codePostal: "69000",
     adresse: "Place Bellecour",
-    tags: ''
+    tags: '',
+    nomMarche: "Symbioses Algorithmiques",
+    descriptifCourt: "Quand l'intelligence artificielle dialogue avec la sagesse millénaire de la terre.",
+    photos: [
+      "https://images.unsplash.com/photo-1518743387925-4040fc4df0c8?w=400",
+      "https://images.unsplash.com/photo-1587691592099-24045742c181?w=400"
+    ],
+    sequencesSonores: [
+      "https://example.com/audio/earth-whispers.mp3"
+    ],
+    videos: ["https://example.com/video/ai-permaculture.mp4"],
+    poeme: "Les algorithmes murmurent\nAux racines anciennes,\nTissant des réseaux invisibles\nOù l'émotion devient donnée.",
+    temoignages: [
+      {
+        auteur: "Jean P.",
+        contenu: "Une vision fascinante de la fusion entre tradition et innovation.",
+        date: "2024-01-20"
+      }
+    ],
+    tagsThematiques: ["ia", "permaculture", "symbiose", "tradition"],
+    liensInternes: [
+      { titre: "IA et agriculture", url: "/ia-agriculture" }
+    ],
+    liensExternes: [
+      { titre: "Recherches en permaculture digitale", url: "https://example.com/recherches" }
+    ]
   },
   {
     latitude: 43.6047,
@@ -49,7 +121,17 @@ const TEST_DATA: MarcheTechnoSensible[] = [
     departement: "Haute-Garonne",
     codePostal: "31000",
     adresse: "Place du Capitole",
-    tags: ''
+    tags: '',
+    nomMarche: "Écosystèmes Quantiques",
+    descriptifCourt: "L'agroécologie rencontre la physique quantique dans une danse poétique de probabilités.",
+    photos: [
+      "https://images.unsplash.com/photo-1574923162061-6017b4b9598e?w=400"
+    ],
+    sequencesSonores: [
+      "https://example.com/audio/quantum-soil.mp3"
+    ],
+    poeme: "Dans l'incertitude quantique,\nLes graines trouvent leur chemin,\nChaque particule porte en elle\nL'infini des possibles.",
+    tagsThematiques: ["quantique", "agroécologie", "probabilités", "infini"]
   },
   {
     latitude: 44.8378,
@@ -61,7 +143,17 @@ const TEST_DATA: MarcheTechnoSensible[] = [
     departement: "Gironde",
     codePostal: "33000",
     adresse: "Place de la Bourse",
-    tags: ''
+    tags: '',
+    nomMarche: "Rythmes Cybernétiques",
+    descriptifCourt: "La biodynamie s'enrichit des cycles numériques pour créer de nouveaux rituels terrestres.",
+    photos: [
+      "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=400"
+    ],
+    sequencesSonores: [
+      "https://example.com/audio/digital-rhythms.mp3"
+    ],
+    poeme: "Les algorithmes battent\nAu rythme des saisons,\nCodant les mystères lunaires\nEn langages organiques.",
+    tagsThematiques: ["biodynamie", "cybernétique", "rythmes", "mystères"]
   },
   {
     latitude: 43.2965,
@@ -73,7 +165,17 @@ const TEST_DATA: MarcheTechnoSensible[] = [
     departement: "Bouches-du-Rhône",
     codePostal: "13001",
     adresse: "Vieux-Port",
-    tags: ''
+    tags: '',
+    nomMarche: "Méditerranée Numérique",
+    descriptifCourt: "Entre mer et pixels, naissent les nouveaux jardins suspendus de Babylone connectée.",
+    photos: [
+      "https://images.unsplash.com/photo-1515488764276-beab7607c1e6?w=400"
+    ],
+    sequencesSonores: [
+      "https://example.com/audio/digital-sea.mp3"
+    ],
+    poeme: "Les vagues binaires caressent\nLes terrasses connectées,\nOù chaque pixel devient graine\nD'un futur méditerranéen.",
+    tagsThematiques: ["méditerranée", "numérique", "connexion", "futur"]
   }
 ];
 
