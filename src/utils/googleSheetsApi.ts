@@ -1,4 +1,3 @@
-
 export interface MarcheTechnoSensible {
   id: string;
   ville: string;
@@ -90,78 +89,49 @@ const convertSheetDataToMarches = (rawData: any[][]): MarcheTechnoSensible[] => 
   return dataRows.map((row, index) => {
     const marche: Partial<MarcheTechnoSensible> = {};
 
-    // Mapper chaque colonne selon son header
+    // Mapper chaque colonne selon son header exact du Google Sheet
     headers.forEach((header: string, colIndex: number) => {
       const cellValue = row[colIndex] || '';
       
-      switch (header.toLowerCase()) {
-        case 'id':
-          marche.id = cellValue;
-          break;
-        case 'ville':
-          marche.ville = cellValue;
-          break;
-        case 'region':
-          marche.region = cellValue;
-          break;
-        case 'departement':
-          marche.departement = cellValue;
-          break;
-        case 'theme':
-          marche.theme = cellValue;
-          break;
-        case 'descriptif_court':
-        case 'descriptifcourt':
-          marche.descriptifCourt = cellValue;
-          break;
-        case 'poeme':
-          marche.poeme = cellValue;
-          break;
-        case 'date':
+      switch (header) {
+        case 'DATE':
           marche.date = cellValue;
           break;
-        case 'lien':
-          marche.lien = cellValue;
+        case 'NUMERO':
+          marche.id = `marche-${cellValue}`;
           break;
-        case 'latitude':
-          marche.latitude = parseFloat(cellValue) || 0;
+        case 'VILLE':
+          marche.ville = cellValue;
           break;
-        case 'longitude':
-          marche.longitude = parseFloat(cellValue) || 0;
-          break;
-        case 'temperature':
-          marche.temperature = parseFloat(cellValue) || undefined;
-          break;
-        case 'meteo':
-          marche.meteo = cellValue;
-          break;
-        case 'lexique':
-          marche.lexique = cellValue;
-          break;
-        case 'audio_file':
-        case 'audiofile':
-          marche.audioFile = cellValue;
-          break;
-        case 'nom_marche':
-        case 'nommarche':
-          marche.nomMarche = cellValue;
-          break;
-        case 'adresse':
+        case 'ADRESSE':
           marche.adresse = cellValue;
           break;
-        case 'tags':
+        case 'DEPARTEMENT':
+          marche.departement = cellValue;
+          break;
+        case 'REGION':
+          marche.region = cellValue;
+          break;
+        case 'LATITUDE':
+          marche.latitude = parseFloat(cellValue.replace(',', '.')) || 0;
+          break;
+        case 'LONGITUDE':
+          marche.longitude = parseFloat(cellValue.replace(',', '.')) || 0;
+          break;
+        case 'THEME DE LA MARCHE':
+          marche.theme = cellValue;
+          marche.nomMarche = cellValue; // Utiliser le thème comme nom de marche
+          break;
+        case 'DESCRIPTF DE LA MARCHE':
+          marche.descriptifCourt = cellValue;
+          marche.poeme = cellValue; // Utiliser aussi comme poème
+          break;
+        case 'LIEN':
+          marche.lien = cellValue;
+          break;
+        case 'TAGS':
           marche.tags = cellValue;
           marche.tagsThematiques = cellValue ? cellValue.split(',').map((tag: string) => tag.trim()) : [];
-          break;
-        case 'photos':
-          marche.photos = cellValue ? cellValue.split(',').map((photo: string) => photo.trim()) : [];
-          break;
-        case 'videos':
-          marche.videos = cellValue ? cellValue.split(',').map((video: string) => video.trim()) : [];
-          break;
-        case 'sequences_sonores':
-        case 'sequencessonores':
-          marche.sequencesSonores = cellValue ? cellValue.split(',').map((seq: string) => seq.trim()) : [];
           break;
       }
     });
@@ -179,6 +149,8 @@ const convertSheetDataToMarches = (rawData: any[][]): MarcheTechnoSensible[] => 
     console.log(`✅ Marche ${index + 1} convertie:`, {
       id: marche.id,
       ville: marche.ville,
+      theme: marche.theme,
+      nomMarche: marche.nomMarche,
       latitude: marche.latitude,
       longitude: marche.longitude
     });
