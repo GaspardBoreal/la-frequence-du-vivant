@@ -109,9 +109,9 @@ const MarchesTechnoSensibles = () => {
 
           {/* Main Content - remonté avec moins d'espacement */}
           <div className="max-w-6xl mx-auto px-6 py-6">
-            <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-              {/* Layer Selector */}
-              <div className="lg:col-span-1 animate-fade-in" style={{animationDelay: '0.3s'}}>
+            <div className="space-y-6">
+              {/* Layer Selector en largeur */}
+              <div className="animate-fade-in" style={{animationDelay: '0.3s'}}>
                 <div className="gaspard-card rounded-xl p-6">
                   <LayerSelector 
                     layers={layers} 
@@ -123,8 +123,8 @@ const MarchesTechnoSensibles = () => {
                 </div>
               </div>
 
-              {/* Map */}
-              <div className="lg:col-span-3 animate-fade-in" style={{animationDelay: '0.5s'}}>
+              {/* Map en pleine largeur */}
+              <div className="animate-fade-in" style={{animationDelay: '0.5s'}}>
                 <div className="gaspard-card rounded-xl overflow-hidden shadow-2xl">
                   <InteractiveMap
                     searchResult={null}
