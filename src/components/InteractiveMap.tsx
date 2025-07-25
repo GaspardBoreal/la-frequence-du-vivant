@@ -22,6 +22,7 @@ const InteractiveMap: React.FC<InteractiveMapProps> = ({
   onParcelClick 
 }) => {
   const [mapCenter, setMapCenter] = useState<[number, number]>([46.603354, 1.888334]);
+  const [mapKey, setMapKey] = useState(0);
 
   const { data: parcelData, isLoading } = useQuery({
     queryKey: ['parcelData', searchResult?.coordinates],
@@ -39,10 +40,11 @@ const InteractiveMap: React.FC<InteractiveMapProps> = ({
     if (searchResult) {
       console.log('Setting map center to:', searchResult.coordinates);
       setMapCenter(searchResult.coordinates);
+      setMapKey(prev => prev + 1); // Force map re-render
     }
   }, [searchResult]);
 
-  // Create icons
+  // Create icons outside of render to avoid recreation
   const redIcon = new Icon({
     iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png',
     shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
@@ -52,28 +54,47 @@ const InteractiveMap: React.FC<InteractiveMapProps> = ({
     shadowSize: [41, 41]
   });
 
-  const createCustomIcon = (emoji: string, color: string) => {
-    return new DivIcon({
-      className: 'custom-marker',
-      html: `
-        <div style="
-          background: ${color};
-          border: 2px solid white;
-          border-radius: 50%;
-          width: 24px;
-          height: 24px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-        ">
-          <span style="color: white; font-size: 12px;">${emoji}</span>
-        </div>
-      `,
-      iconSize: [24, 24],
-      iconAnchor: [12, 12]
-    });
-  };
+  const weatherIcon = new DivIcon({
+    className: 'custom-marker',
+    html: `
+      <div style="
+        background: ${theme.colors.accent};
+        border: 2px solid white;
+        border-radius: 50%;
+        width: 24px;
+        height: 24px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+      ">
+        <span style="color: white; font-size: 12px;">🌡️</span>
+      </div>
+    `,
+    iconSize: [24, 24],
+    iconAnchor: [12, 12]
+  });
+
+  const transactionIcon = new DivIcon({
+    className: 'custom-marker',
+    html: `
+      <div style="
+        background: #e74c3c;
+        border: 2px solid white;
+        border-radius: 50%;
+        width: 24px;
+        height: 24px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+      ">
+        <span style="color: white; font-size: 12px;">💰</span>
+      </div>
+    `,
+    iconSize: [24, 24],
+    iconAnchor: [12, 12]
+  });
 
   const handleParcelClick = () => {
     if (searchResult && parcelData) {
@@ -85,18 +106,36 @@ const InteractiveMap: React.FC<InteractiveMapProps> = ({
     }
   };
 
-  // Render parcel polygon coordinates
-  const renderParcelPolygon = () => {
-    if (!parcelData?.geolocation?.shape || !searchResult || !layers.parcelles) {
-      return null;
-    }
+  // Pre-calculate all markers and polygons to avoid conditional rendering inside MapContainer
+  const markers = [];
+  const polygons = [];
 
+  // Add search result marker
+  if (searchResult) {
+    markers.push(
+      <Marker key="search-result" position={searchResult.coordinates} icon={redIcon}>
+        <Popup>
+          <div className="p-2">
+            <h3 className="font-bold text-sm mb-1">Point de recherche</h3>
+            <p className="text-xs text-gray-600">{searchResult.address}</p>
+            <p className="text-xs text-gray-500">
+              {searchResult.coordinates[0].toFixed(6)}, {searchResult.coordinates[1].toFixed(6)}
+            </p>
+          </div>
+        </Popup>
+      </Marker>
+    );
+  }
+
+  // Add parcel polygon
+  if (parcelData?.geolocation?.shape && searchResult && layers.parcelles) {
     const coordinates = parcelData.geolocation.shape.coordinates[0][0].map(
       (coord: [number, number]) => [coord[1], coord[0]]
     );
 
-    return (
+    polygons.push(
       <Polygon
+        key="parcel-polygon"
         positions={coordinates}
         pathOptions={{
           color: theme.colors.primary,
@@ -129,71 +168,62 @@ const InteractiveMap: React.FC<InteractiveMapProps> = ({
         </Popup>
       </Polygon>
     );
-  };
+  }
 
-  // Render custom markers
-  const renderCustomMarkers = () => {
-    if (!searchResult || !parcelData) return null;
+  // Add weather station marker
+  if (parcelData?.['last-year-weather-reports']?.station && searchResult && layers.weatherStations) {
+    markers.push(
+      <Marker
+        key="weather-station"
+        position={searchResult.coordinates}
+        icon={weatherIcon}
+      >
+        <Popup>
+          <div className="p-2">
+            <h3 className="font-bold text-sm mb-1">Station Météo</h3>
+            <p className="text-xs text-gray-600">
+              {parcelData['last-year-weather-reports'].station.value}
+            </p>
+          </div>
+        </Popup>
+      </Marker>
+    );
+  }
 
-    const markers = [];
-
-    // Weather station marker
-    if (parcelData['last-year-weather-reports']?.station && layers.weatherStations) {
+  // Add transaction markers
+  if (parcelData?.transactions?.rows && searchResult && layers.immediateTransactions) {
+    parcelData.transactions.rows.slice(0, 3).forEach((transaction: any, index: number) => {
+      const offset = (Math.random() - 0.5) * 0.001;
       markers.push(
         <Marker
-          key="weather-station"
-          position={searchResult.coordinates}
-          icon={createCustomIcon('🌡️', theme.colors.accent)}
+          key={`transaction-${index}`}
+          position={[
+            searchResult.coordinates[0] + offset,
+            searchResult.coordinates[1] + offset
+          ]}
+          icon={transactionIcon}
         >
           <Popup>
             <div className="p-2">
-              <h3 className="font-bold text-sm mb-1">Station Météo</h3>
-              <p className="text-xs text-gray-600">
-                {parcelData['last-year-weather-reports'].station.value}
+              <h3 className="font-bold text-sm mb-1">Transaction</h3>
+              <p className="text-xs text-gray-600 mb-1">
+                {transaction.address?.value || 'Adresse inconnue'}
+              </p>
+              <p className="text-xs text-gray-600 mb-1">
+                Type: {transaction['building-nature']?.value || 'N/A'}
+              </p>
+              <p className="text-xs font-bold text-green-600">
+                {transaction.price?.value?.toLocaleString() || 'N/A'} {transaction.price?.unit || ''}
+              </p>
+              <p className="text-xs text-gray-500">
+                {transaction.date?.value || 'Date inconnue'}
               </p>
             </div>
           </Popup>
         </Marker>
       );
-    }
-
-    // Transaction markers
-    if (parcelData.transactions?.rows && layers.immediateTransactions) {
-      parcelData.transactions.rows.slice(0, 3).forEach((transaction: any, index: number) => {
-        const offset = (Math.random() - 0.5) * 0.001;
-        markers.push(
-          <Marker
-            key={`transaction-${index}`}
-            position={[
-              searchResult.coordinates[0] + offset,
-              searchResult.coordinates[1] + offset
-            ]}
-            icon={createCustomIcon('💰', '#e74c3c')}
-          >
-            <Popup>
-              <div className="p-2">
-                <h3 className="font-bold text-sm mb-1">Transaction</h3>
-                <p className="text-xs text-gray-600 mb-1">
-                  {transaction.address?.value || 'Adresse inconnue'}
-                </p>
-                <p className="text-xs text-gray-600 mb-1">
-                  Type: {transaction['building-nature']?.value || 'N/A'}
-                </p>
-                <p className="text-xs font-bold text-green-600">
-                  {transaction.price?.value?.toLocaleString() || 'N/A'} {transaction.price?.unit || ''}
-                </p>
-                <p className="text-xs text-gray-500">
-                  {transaction.date?.value || 'Date inconnue'}
-                </p>
-              </div>
-            </Popup>
-          </Marker>
-        );
-      });
-    }
-
-    return markers;
-  };
+    });
+  }
 
   return (
     <div className="relative h-96 md:h-[500px] lg:h-[600px]">
@@ -207,6 +237,7 @@ const InteractiveMap: React.FC<InteractiveMapProps> = ({
       )}
       
       <MapContainer
+        key={mapKey}
         center={mapCenter}
         zoom={13}
         style={{ height: '100%', width: '100%' }}
@@ -216,23 +247,8 @@ const InteractiveMap: React.FC<InteractiveMapProps> = ({
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
         />
-        
-        {searchResult && (
-          <Marker position={searchResult.coordinates} icon={redIcon}>
-            <Popup>
-              <div className="p-2">
-                <h3 className="font-bold text-sm mb-1">Point de recherche</h3>
-                <p className="text-xs text-gray-600">{searchResult.address}</p>
-                <p className="text-xs text-gray-500">
-                  {searchResult.coordinates[0].toFixed(6)}, {searchResult.coordinates[1].toFixed(6)}
-                </p>
-              </div>
-            </Popup>
-          </Marker>
-        )}
-        
-        {renderParcelPolygon()}
-        {renderCustomMarkers()}
+        {markers}
+        {polygons}
       </MapContainer>
     </div>
   );
