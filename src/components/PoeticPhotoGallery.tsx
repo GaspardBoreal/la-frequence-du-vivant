@@ -8,7 +8,9 @@ import {
   Eye,
   Camera,
   Palette,
-  Zap
+  Zap,
+  AlertCircle,
+  CheckCircle
 } from 'lucide-react';
 import { extractPhotosFromGoogleDrive } from '../utils/googleDriveApi';
 import { MarcheTechnoSensible } from '../utils/googleSheetsApi';
@@ -19,19 +21,26 @@ interface PoeticPhotoGalleryProps {
   theme: RegionalTheme;
 }
 
+interface PhotoData {
+  id: string;
+  name: string;
+  mimeType: string;
+  urls: string[];
+}
+
 const PoeticPhotoGallery: React.FC<PoeticPhotoGalleryProps> = ({ marche, theme }) => {
-  const [photos, setPhotos] = useState<string[]>([]);
+  const [photosData, setPhotosData] = useState<PhotoData[]>([]);
+  const [workingUrls, setWorkingUrls] = useState<string[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [viewMode, setViewMode] = useState<'carousel' | 'grid' | 'poetic'>('poetic');
-  const [loadedImages, setLoadedImages] = useState<Set<string>>(new Set());
-  const [imageErrors, setImageErrors] = useState<Set<string>>(new Set());
+  const [loadingStatus, setLoadingStatus] = useState<string>('');
 
   useEffect(() => {
     const loadPhotos = async () => {
       setIsLoading(true);
-      setLoadedImages(new Set());
-      setImageErrors(new Set());
+      setWorkingUrls([]);
+      setLoadingStatus('Récupération des photos...');
       
       console.log(`\n=== Chargement des photos pour ${marche.ville} ===`);
       console.log('Lien Google Drive:', marche.lien);
@@ -40,16 +49,79 @@ const PoeticPhotoGallery: React.FC<PoeticPhotoGalleryProps> = ({ marche, theme }
         try {
           const loadedPhotos = await extractPhotosFromGoogleDrive(marche.lien);
           console.log(`Photos récupérées pour ${marche.ville}:`, loadedPhotos);
-          console.log(`Nombre de photos trouvées: ${loadedPhotos.length}`);
           
-          setPhotos(loadedPhotos);
+          if (Array.isArray(loadedPhotos) && loadedPhotos.length > 0) {
+            setPhotosData(loadedPhotos);
+            setLoadingStatus(`${loadedPhotos.length} photos détectées, test d'accessibilité...`);
+            
+            // Tester chaque URL pour trouver celle qui fonctionne
+            const workingPhotoUrls: string[] = [];
+            
+            for (const photoData of loadedPhotos) {
+              console.log(`Test des URLs pour ${photoData.name}:`);
+              
+              let foundWorkingUrl = false;
+              for (const url of photoData.urls) {
+                try {
+                  console.log(`Test URL: ${url}`);
+                  
+                  // Créer une promesse pour tester l'image
+                  const testPromise = new Promise<boolean>((resolve) => {
+                    const img = new Image();
+                    img.crossOrigin = 'anonymous';
+                    
+                    const timeout = setTimeout(() => {
+                      console.log(`Timeout pour ${url}`);
+                      resolve(false);
+                    }, 5000); // 5 secondes de timeout
+                    
+                    img.onload = () => {
+                      console.log(`✓ URL fonctionnelle: ${url}`);
+                      clearTimeout(timeout);
+                      resolve(true);
+                    };
+                    
+                    img.onerror = () => {
+                      console.log(`✗ URL non fonctionnelle: ${url}`);
+                      clearTimeout(timeout);
+                      resolve(false);
+                    };
+                    
+                    img.src = url;
+                  });
+                  
+                  const isWorking = await testPromise;
+                  if (isWorking) {
+                    workingPhotoUrls.push(url);
+                    foundWorkingUrl = true;
+                    break;
+                  }
+                } catch (error) {
+                  console.error(`Erreur lors du test de l'URL ${url}:`, error);
+                }
+              }
+              
+              if (!foundWorkingUrl) {
+                console.log(`❌ Aucune URL fonctionnelle trouvée pour ${photoData.name}`);
+              }
+            }
+            
+            console.log(`URLs fonctionnelles trouvées: ${workingPhotoUrls.length}/${loadedPhotos.length}`);
+            setWorkingUrls(workingPhotoUrls);
+            setLoadingStatus(`${workingPhotoUrls.length}/${loadedPhotos.length} photos accessibles`);
+          } else {
+            setPhotosData([]);
+            setLoadingStatus('Aucune photo trouvée');
+          }
         } catch (error) {
           console.error('Erreur lors du chargement des photos:', error);
-          setPhotos([]);
+          setPhotosData([]);
+          setLoadingStatus('Erreur lors du chargement');
         }
       } else {
         console.log(`Aucun lien Google Drive pour ${marche.ville}`);
-        setPhotos([]);
+        setPhotosData([]);
+        setLoadingStatus('Aucun lien Google Drive');
       }
       
       setIsLoading(false);
@@ -58,29 +130,14 @@ const PoeticPhotoGallery: React.FC<PoeticPhotoGalleryProps> = ({ marche, theme }
     loadPhotos();
   }, [marche]);
 
-  const handleImageLoad = (photoUrl: string) => {
-    console.log('Image chargée avec succès:', photoUrl);
-    setLoadedImages(prev => new Set([...prev, photoUrl]));
-    setImageErrors(prev => {
-      const newErrors = new Set(prev);
-      newErrors.delete(photoUrl);
-      return newErrors;
-    });
-  };
-
-  const handleImageError = (photoUrl: string) => {
-    console.error('Erreur de chargement de l\'image:', photoUrl);
-    setImageErrors(prev => new Set([...prev, photoUrl]));
-  };
-
   const PhotoImage: React.FC<{ src: string; alt: string; className?: string; onClick?: () => void }> = ({ 
     src, 
     alt, 
     className = "", 
     onClick 
   }) => {
-    const isLoaded = loadedImages.has(src);
-    const hasError = imageErrors.has(src);
+    const [imageLoaded, setImageLoaded] = useState(false);
+    const [imageError, setImageError] = useState(false);
 
     return (
       <div className={`relative ${className}`} onClick={onClick}>
@@ -88,22 +145,27 @@ const PoeticPhotoGallery: React.FC<PoeticPhotoGalleryProps> = ({ marche, theme }
           src={src}
           alt={alt}
           className="w-full h-full object-cover"
-          onLoad={() => handleImageLoad(src)}
-          onError={() => handleImageError(src)}
+          onLoad={() => setImageLoaded(true)}
+          onError={() => setImageError(true)}
           crossOrigin="anonymous"
         />
-        {!isLoaded && !hasError && (
+        {!imageLoaded && !imageError && (
           <div className="absolute inset-0 bg-gray-200 animate-pulse flex items-center justify-center">
             <div className="text-gray-500 text-sm">Chargement...</div>
           </div>
         )}
-        {hasError && (
+        {imageError && (
           <div className="absolute inset-0 bg-red-100 flex items-center justify-center">
-            <div className="text-red-500 text-sm">Erreur</div>
+            <div className="text-red-500 text-sm text-center">
+              <AlertCircle className="h-4 w-4 mx-auto mb-1" />
+              Erreur
+            </div>
           </div>
         )}
-        {isLoaded && (
-          <div className="absolute top-1 right-1 w-2 h-2 bg-green-400 rounded-full" />
+        {imageLoaded && (
+          <div className="absolute top-1 right-1">
+            <CheckCircle className="h-4 w-4 text-green-500" />
+          </div>
         )}
       </div>
     );
@@ -147,10 +209,10 @@ const PoeticPhotoGallery: React.FC<PoeticPhotoGalleryProps> = ({ marche, theme }
   const PoeticView = () => (
     <div className="relative">
       <div className="relative h-64 rounded-2xl overflow-hidden bg-gradient-to-br from-purple-100 via-pink-50 to-blue-100">
-        {photos.length > 0 && (
+        {workingUrls.length > 0 && (
           <div className="absolute inset-0">
             <PhotoImage
-              src={photos[currentIndex]}
+              src={workingUrls[currentIndex]}
               alt={`${marche.ville} - Vision poétique`}
               className="w-full h-full opacity-70"
             />
@@ -170,19 +232,16 @@ const PoeticPhotoGallery: React.FC<PoeticPhotoGalleryProps> = ({ marche, theme }
               {marche.ville}
             </h3>
             <p className="text-sm opacity-90">
-              {photos.length} photo{photos.length > 1 ? 's' : ''} trouvée{photos.length > 1 ? 's' : ''}
-            </p>
-            <p className="text-xs opacity-70 mt-1">
-              {loadedImages.size} chargée{loadedImages.size > 1 ? 's' : ''}
+              {loadingStatus}
             </p>
           </div>
         </div>
         
         {/* Navigation poétique */}
-        {photos.length > 1 && (
+        {workingUrls.length > 1 && (
           <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2">
             <div className="flex space-x-2">
-              {photos.map((_, index) => (
+              {workingUrls.map((_, index) => (
                 <button
                   key={index}
                   onClick={() => setCurrentIndex(index)}
@@ -204,9 +263,9 @@ const PoeticPhotoGallery: React.FC<PoeticPhotoGalleryProps> = ({ marche, theme }
       </div>
       
       {/* Métadonnées poétiques */}
-      {photos.length > 0 && (
+      {workingUrls.length > 0 && (
         <div className="mt-4 grid grid-cols-3 gap-2">
-          {photos.slice(0, 3).map((photo, index) => (
+          {workingUrls.slice(0, 3).map((photo, index) => (
             <PhotoImage
               key={index}
               src={photo}
@@ -226,7 +285,7 @@ const PoeticPhotoGallery: React.FC<PoeticPhotoGalleryProps> = ({ marche, theme }
     <div className="relative">
       <Carousel className="w-full">
         <CarouselContent>
-          {photos.map((photo, index) => (
+          {workingUrls.map((photo, index) => (
             <CarouselItem key={index}>
               <div className="relative group">
                 <PhotoImage
@@ -237,7 +296,7 @@ const PoeticPhotoGallery: React.FC<PoeticPhotoGalleryProps> = ({ marche, theme }
                 <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                 <div className="absolute bottom-3 left-3 right-3 text-white opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                   <div className="flex justify-between items-center">
-                    <span className="text-sm font-medium">{index + 1}/{photos.length}</span>
+                    <span className="text-sm font-medium">{index + 1}/{workingUrls.length}</span>
                     <div className="flex items-center space-x-2">
                       <Heart className="h-4 w-4 hover:text-red-400 transition-colors cursor-pointer" />
                     </div>
@@ -255,7 +314,7 @@ const PoeticPhotoGallery: React.FC<PoeticPhotoGalleryProps> = ({ marche, theme }
 
   const GridView = () => (
     <div className="grid grid-cols-2 gap-3">
-      {photos.slice(0, 8).map((photo, index) => (
+      {workingUrls.slice(0, 8).map((photo, index) => (
         <PhotoImage
           key={index}
           src={photo}
@@ -264,10 +323,10 @@ const PoeticPhotoGallery: React.FC<PoeticPhotoGalleryProps> = ({ marche, theme }
           onClick={() => setCurrentIndex(index)}
         />
       ))}
-      {photos.length > 8 && (
+      {workingUrls.length > 8 && (
         <div className="col-span-2 flex justify-center">
           <Badge variant="outline" className="text-xs">
-            +{photos.length - 8} autres photos
+            +{workingUrls.length - 8} autres photos
           </Badge>
         </div>
       )}
@@ -279,13 +338,13 @@ const PoeticPhotoGallery: React.FC<PoeticPhotoGalleryProps> = ({ marche, theme }
       <div className="flex items-center justify-center h-48 bg-gradient-to-br from-purple-50 to-pink-50 rounded-xl">
         <div className="text-center">
           <div className="animate-spin w-8 h-8 border-2 border-purple-500 border-t-transparent rounded-full mx-auto mb-2"></div>
-          <p className="text-sm text-gray-600">Récupération des photos Google Drive...</p>
+          <p className="text-sm text-gray-600">{loadingStatus}</p>
         </div>
       </div>
     );
   }
 
-  if (photos.length === 0) {
+  if (photosData.length === 0) {
     return (
       <div className="flex items-center justify-center h-48 bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl border-2 border-dashed border-gray-300">
         <div className="text-center text-gray-500">
@@ -297,12 +356,25 @@ const PoeticPhotoGallery: React.FC<PoeticPhotoGalleryProps> = ({ marche, theme }
     );
   }
 
+  if (workingUrls.length === 0) {
+    return (
+      <div className="flex items-center justify-center h-48 bg-gradient-to-br from-red-50 to-orange-50 rounded-xl border-2 border-dashed border-red-300">
+        <div className="text-center text-red-500">
+          <AlertCircle className="h-12 w-12 mx-auto mb-2 opacity-50" />
+          <p className="text-sm">Aucune photo trouvée ou accessible</p>
+          <p className="text-xs mt-1">Vérifiez le lien Google Drive ou les permissions</p>
+          <p className="text-xs mt-1 font-medium">{photosData.length} photos détectées mais non accessibles</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h4 className="font-medium text-sm flex items-center">
           <ImageIcon className="h-4 w-4 mr-2" />
-          Photos ({photos.length} trouvées, {loadedImages.size} chargées)
+          Photos ({workingUrls.length}/{photosData.length} accessibles)
         </h4>
         <ViewModeSelector />
       </div>

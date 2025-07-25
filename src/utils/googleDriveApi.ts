@@ -28,16 +28,26 @@ export const extractPhotosFromGoogleDrive = async (driveUrl: string): Promise<st
     if (data.files && data.files.length > 0) {
       console.log(`${data.files.length} photos trouvées dans le dossier ${folderId}`);
       
-      // Utiliser le format https://drive.google.com/uc?export=view&id={FILE_ID}
+      // Générer plusieurs formats d'URLs pour chaque image
       const photoUrls = data.files.map((file: any) => {
         console.log(`Fichier trouvé: ${file.name} (${file.mimeType}) - ID: ${file.id}`);
         
-        // Construire l'URL pour l'affichage direct
-        const url = `https://drive.google.com/uc?export=view&id=${file.id}`;
-        console.log(`Photo générée: ${file.name} -> ${url}`);
-        return url;
+        // Créer un objet avec plusieurs formats d'URLs à tester
+        return {
+          id: file.id,
+          name: file.name,
+          mimeType: file.mimeType,
+          urls: [
+            `https://drive.google.com/uc?export=view&id=${file.id}`,
+            `https://drive.google.com/uc?id=${file.id}&export=download`,
+            `https://drive.google.com/file/d/${file.id}/view`,
+            `https://lh3.googleusercontent.com/d/${file.id}`,
+            file.webContentLink || `https://drive.google.com/uc?id=${file.id}&export=download`
+          ]
+        };
       }).slice(0, 20); // Limiter à 20 photos max
       
+      console.log('Photos avec URLs multiples générées:', photoUrls);
       return photoUrls;
     } else {
       console.log('Aucune photo trouvée dans le dossier ou erreur d\'accès');
