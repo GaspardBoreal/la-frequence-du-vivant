@@ -179,7 +179,7 @@ const InteractiveMap: React.FC<InteractiveMapProps> = ({
             }}
           >
             <Popup>
-              <div className="p-2 max-w-xs">
+              <div className="p-2">
                 <h3 className="font-bold text-sm mb-1">
                   Parcelle {parcelData?.cadastre?.id?.value || 'inconnue'}
                 </h3>
@@ -189,35 +189,6 @@ const InteractiveMap: React.FC<InteractiveMapProps> = ({
                 <p className="text-xs text-gray-600 mb-2">
                   Surface: {parcelData?.cadastre?.area?.value || 'N/A'} {parcelData?.cadastre?.area?.unit || ''}
                 </p>
-                
-                {parcelData?.transactions?.rows && parcelData.transactions.rows.length > 0 && (
-                  <div className="mb-2">
-                    <h4 className="font-semibold text-xs mb-1">Transactions récentes:</h4>
-                    <div className="space-y-1 max-h-32 overflow-y-auto">
-                      {parcelData.transactions.rows.slice(0, 3).map((transaction: any, index: number) => (
-                        <div key={index} className="border border-gray-200 rounded p-1 bg-gray-50">
-                          <div className="flex justify-between items-start">
-                            <span className="text-xs font-medium text-gray-800 truncate">
-                              {transaction['building-nature']?.value || 'N/A'}
-                            </span>
-                            <span className="text-xs font-bold text-green-600 ml-1">
-                              {transaction.price?.value?.toLocaleString() || 'N/A'} {transaction.price?.unit || ''}
-                            </span>
-                          </div>
-                          <p className="text-xs text-gray-500 truncate">
-                            {transaction.date?.value || 'Date inconnue'}
-                          </p>
-                        </div>
-                      ))}
-                      {parcelData.transactions.rows.length > 3 && (
-                        <p className="text-xs text-gray-500 text-center">
-                          +{parcelData.transactions.rows.length - 3} autres transactions
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                )}
-                
                 <button
                   onClick={handleParcelClick}
                   className="mt-2 px-2 py-1 bg-blue-500 text-white text-xs rounded hover:bg-blue-600"
