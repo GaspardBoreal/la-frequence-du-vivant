@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Loader2 } from 'lucide-react';
@@ -56,7 +55,8 @@ const DynamicZoomController = ({
         
         // Ajouter un padding pour éviter que les marqueurs touchent les bords
         const paddingOptions = {
-          padding: [20, 20],
+          paddingTopLeft: [20, 20] as [number, number],
+          paddingBottomRight: [20, 20] as [number, number],
           maxZoom: 10 // Éviter un zoom trop élevé même pour des points proches
         };
         
