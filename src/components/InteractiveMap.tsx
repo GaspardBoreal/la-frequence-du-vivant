@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Loader2 } from 'lucide-react';
-import { MapContainer, TileLayer, Marker, Popup, useMapEvents } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup, useMapEvents, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import { RegionalTheme } from '../utils/regionalThemes';
 import { SearchResult, LayerConfig, SelectedParcel } from '../types';
@@ -16,6 +16,61 @@ L.Icon.Default.mergeOptions({
   iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
   shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
 });
+
+// Composant pour gérer le zoom dynamique
+const DynamicZoomController = ({ 
+  validMarchesData, 
+  searchResult 
+}: { 
+  validMarchesData: MarcheTechnoSensible[];
+  searchResult: SearchResult | null;
+}) => {
+  const map = useMap();
+
+  useEffect(() => {
+    if (!map) return;
+
+    // Si on a un résultat de recherche, utiliser ces coordonnées
+    if (searchResult?.coordinates) {
+      console.log('🎯 Centrage sur résultat de recherche:', searchResult.coordinates);
+      map.setView(searchResult.coordinates, 15);
+      return;
+    }
+
+    // Si on a des données de marches filtrées, calculer les bounds
+    if (validMarchesData && validMarchesData.length > 0) {
+      console.log(`📊 Calcul des bounds pour ${validMarchesData.length} marches`);
+      
+      if (validMarchesData.length === 1) {
+        // Un seul point : centrer avec zoom élevé
+        const marche = validMarchesData[0];
+        console.log('📍 Centrage sur marche unique:', marche.ville);
+        map.setView([marche.latitude, marche.longitude], 12);
+      } else {
+        // Plusieurs points : calculer les bounds
+        const bounds = L.latLngBounds(
+          validMarchesData.map(marche => [marche.latitude, marche.longitude])
+        );
+        
+        console.log('📐 Bounds calculés:', bounds);
+        
+        // Ajouter un padding pour éviter que les marqueurs touchent les bords
+        const paddingOptions = {
+          padding: [20, 20],
+          maxZoom: 10 // Éviter un zoom trop élevé même pour des points proches
+        };
+        
+        map.fitBounds(bounds, paddingOptions);
+      }
+    } else {
+      // Aucun point ou pas de filtre : vue par défaut sur la France
+      console.log('🗺️ Retour à la vue par défaut (France)');
+      map.setView([46.603354, 1.888334], 6);
+    }
+  }, [map, validMarchesData, searchResult]);
+
+  return null;
+};
 
 // Composant pour gérer les événements de la carte
 const MapEventHandler = ({ onMapReady }: { onMapReady: () => void }) => {
@@ -85,9 +140,8 @@ const InteractiveMap: React.FC<InteractiveMapProps> = ({
   onParcelClick,
   filteredMarchesData 
 }) => {
-  const [mapCenter, setMapCenter] = useState<[number, number]>([46.603354, 1.888334]);
-  const [zoom, setZoom] = useState(6);
   const [mapReady, setMapReady] = useState(false);
+  const [mapKey, setMapKey] = useState(0);
 
   // Valider les coordonnées des données filtrées
   const validMarchesData = filteredMarchesData.filter(marche => {
@@ -104,13 +158,11 @@ const InteractiveMap: React.FC<InteractiveMapProps> = ({
 
   console.log(`📍 ${validMarchesData.length} marches valides à afficher sur ${filteredMarchesData.length} total`);
 
+  // Forcer le re-render de la carte quand les données changent
   useEffect(() => {
-    if (searchResult?.coordinates) {
-      console.log('🎯 Centrage sur:', searchResult.coordinates);
-      setMapCenter(searchResult.coordinates);
-      setZoom(15);
-    }
-  }, [searchResult]);
+    console.log('🔄 Données filtrées changées, mise à jour de la carte');
+    setMapKey(prev => prev + 1);
+  }, [filteredMarchesData]);
 
   const poeticIcon = createPoeticIcon(theme);
 
@@ -119,16 +171,24 @@ const InteractiveMap: React.FC<InteractiveMapProps> = ({
     setMapReady(true);
   };
 
+  // Calculer le centre et zoom par défaut
+  const defaultCenter: [number, number] = [46.603354, 1.888334];
+  const defaultZoom = 6;
+
   return (
     <div className="relative h-96 md:h-[500px] lg:h-[600px]">
       <MapContainer
-        center={mapCenter}
-        zoom={zoom}
+        center={defaultCenter}
+        zoom={defaultZoom}
         style={{ height: '100%', width: '100%' }}
         className="rounded-lg"
-        key={`${mapCenter[0]}-${mapCenter[1]}`}
+        key={mapKey}
       >
         <MapEventHandler onMapReady={handleMapReady} />
+        <DynamicZoomController 
+          validMarchesData={validMarchesData} 
+          searchResult={searchResult}
+        />
         
         <TileLayer
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
@@ -151,7 +211,7 @@ const InteractiveMap: React.FC<InteractiveMapProps> = ({
           </Marker>
         )}
 
-        {/* Marqueurs des Marches TechnoSensibles - affichage même si la carte n'est pas encore prête */}
+        {/* Marqueurs des Marches TechnoSensibles */}
         {layers.marchesTechnoSensibles && validMarchesData.map((marche, index) => {
           console.log(`📍 Affichage marqueur ${index + 1}:`, marche.ville, marche.latitude, marche.longitude);
           
