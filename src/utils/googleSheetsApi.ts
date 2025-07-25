@@ -42,10 +42,10 @@ export interface MarcheTechnoSensible {
   };
 }
 
-// Configuration Google Sheets API
-const SHEET_ID = '1wfxGJRMl5mfJGGCYSfuF-vCYiXUcLOjvGAa8oLKoFGg';
+// Configuration Google Sheets API - MISE À JOUR avec les bonnes informations
+const SHEET_ID = '1_lcQPVHIg3JAJP';
 const API_KEY = 'AIzaSyBLIZXZWsOEvFeCAAHe1__khd0OVclv_4s';
-const SHEET_NAME = 'Marches_TechnoSensibles';
+const SHEET_NAME = 'DATA_LIEUX';
 
 // URL de base pour l'API Google Sheets
 const SHEETS_BASE_URL = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values`;
@@ -190,6 +190,11 @@ const convertSheetDataToMarches = (rawData: any[][]): MarcheTechnoSensible[] => 
 export const fetchMarchesTechnoSensibles = async (): Promise<MarcheTechnoSensible[]> => {
   try {
     console.log('🔄 Récupération des données depuis Google Sheets...');
+    console.log('📋 Configuration:', {
+      sheetId: SHEET_ID,
+      sheetName: SHEET_NAME,
+      apiKey: API_KEY.substring(0, 20) + '...'
+    });
     
     const rawData = await fetchGoogleSheetData();
     const marches = convertSheetDataToMarches(rawData);
