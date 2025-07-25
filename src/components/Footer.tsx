@@ -17,7 +17,7 @@ const Footer = () => {
                 href="https://www.gaspardboreal.com/" 
                 target="_blank" 
                 rel="noopener noreferrer"
-                className="flex items-center gap-2 text-muted-foreground hover:text-accent transition-colors"
+                className="flex items-center gap-2 text-muted-foreground hover:text-[#4ade80] transition-colors"
               >
                 <ExternalLink size={16} />
                 <span>Découvrir l'auteur</span>
@@ -26,7 +26,7 @@ const Footer = () => {
                 href="https://www.gaspardboreal.com/observatoire-2025-2037" 
                 target="_blank" 
                 rel="noopener noreferrer"
-                className="flex items-center gap-2 text-muted-foreground hover:text-accent transition-colors"
+                className="flex items-center gap-2 text-muted-foreground hover:text-[#4ade80] transition-colors"
               >
                 <BookOpen size={16} />
                 <span>Observatoire Mondes Hybrides</span>
@@ -35,7 +35,7 @@ const Footer = () => {
                 href="https://www.gaspardboreal.com/conferences" 
                 target="_blank" 
                 rel="noopener noreferrer"
-                className="flex items-center gap-2 text-muted-foreground hover:text-accent transition-colors"
+                className="flex items-center gap-2 text-muted-foreground hover:text-[#4ade80] transition-colors"
               >
                 <Mic size={16} />
                 <span>Conférences & Chaires</span>
@@ -51,21 +51,21 @@ const Footer = () => {
             <div className="space-y-2">
               <a 
                 href="#marches-sensibles" 
-                className="flex items-center gap-2 text-muted-foreground hover:text-accent transition-colors"
+                className="flex items-center gap-2 text-muted-foreground hover:text-[#4ade80] transition-colors"
               >
                 <MapPin size={16} />
                 <span>Marches Sensibles</span>
               </a>
               <a 
                 href="#bioacoustique-poetique" 
-                className="flex items-center gap-2 text-muted-foreground hover:text-accent transition-colors"
+                className="flex items-center gap-2 text-muted-foreground hover:text-[#4ade80] transition-colors"
               >
                 <Zap size={16} />
                 <span>Bioacoustique Poétique</span>
               </a>
               <a 
                 href="#territoires-hybrides" 
-                className="flex items-center gap-2 text-muted-foreground hover:text-accent transition-colors"
+                className="flex items-center gap-2 text-muted-foreground hover:text-[#4ade80] transition-colors"
               >
                 <BookOpen size={16} />
                 <span>Territoires Hybrides</span>
@@ -81,14 +81,14 @@ const Footer = () => {
             <div className="space-y-2">
               <a 
                 href="#ressources" 
-                className="flex items-center gap-2 text-muted-foreground hover:text-accent transition-colors"
+                className="flex items-center gap-2 text-muted-foreground hover:text-[#4ade80] transition-colors"
               >
                 <BookOpen size={16} />
                 <span>Matériel pédagogique</span>
               </a>
               <a 
                 href="#presse" 
-                className="flex items-center gap-2 text-muted-foreground hover:text-accent transition-colors"
+                className="flex items-center gap-2 text-muted-foreground hover:text-[#4ade80] transition-colors"
               >
                 <ExternalLink size={16} />
                 <span>Dossier presse & éditeurs</span>
@@ -97,7 +97,7 @@ const Footer = () => {
                 href="https://www.gaspardboreal.com/contact-institutions" 
                 target="_blank" 
                 rel="noopener noreferrer"
-                className="flex items-center gap-2 text-muted-foreground hover:text-accent transition-colors"
+                className="flex items-center gap-2 text-muted-foreground hover:text-[#4ade80] transition-colors"
               >
                 <Mic size={16} />
                 <span>Contact institutions</span>
@@ -113,10 +113,10 @@ const Footer = () => {
               © 2025 Gaspard Boréal - Observatoire Poétique des Mondes Hybrides
             </div>
             <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
-              <span className="hover:text-accent cursor-pointer">#BioacoustiquePoétique</span>
-              <span className="hover:text-accent cursor-pointer">#MondesHybrides</span>
-              <span className="hover:text-accent cursor-pointer">#TransitionAgroécologique</span>
-              <span className="hover:text-accent cursor-pointer">#PoésieProspective</span>
+              <span className="hover:text-[#4ade80] cursor-pointer">#BioacoustiquePoétique</span>
+              <span className="hover:text-[#4ade80] cursor-pointer">#MondesHybrides</span>
+              <span className="hover:text-[#4ade80] cursor-pointer">#TransitionAgroécologique</span>
+              <span className="hover:text-[#4ade80] cursor-pointer">#PoésieProspective</span>
             </div>
           </div>
         </div>
