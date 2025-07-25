@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
@@ -22,7 +21,7 @@ import { REGIONAL_THEMES, RegionalTheme } from '../utils/regionalThemes';
 const MarcheDetail = () => {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
-  const [activeSection, setActiveSection] = useState<'visual' | 'audio' | 'poetic' | 'social'>('visual');
+  const [activeSection, setActiveSection] = useState<'visual' | 'audio'>('visual');
   const [theme, setTheme] = useState<RegionalTheme>(REGIONAL_THEMES['nouvelle-aquitaine']);
 
   // Fetch marches data
@@ -231,15 +230,6 @@ const MarcheDetail = () => {
               <div className="text-center py-16">
                 <h2 className="text-3xl font-bold mb-4">Expérience Audio</h2>
                 <p className="text-gray-600">Section audio en cours de développement...</p>
-              </div>
-            )}
-            {activeSection === 'poetic' && (
-              <PoeticSection marche={marche} theme={theme} />
-            )}
-            {activeSection === 'social' && (
-              <div className="text-center py-16">
-                <h2 className="text-3xl font-bold mb-4">Dimension Sociale</h2>
-                <p className="text-gray-600">Section sociale en cours de développement...</p>
               </div>
             )}
           </motion.div>
