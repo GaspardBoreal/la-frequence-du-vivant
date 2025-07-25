@@ -27,6 +27,154 @@ const MapController: React.FC<{ center: [number, number] }> = ({ center }) => {
   return null;
 };
 
+const MarkerLayer: React.FC<{
+  searchResult: SearchResult | null;
+  parcelData: any;
+  layers: LayerConfig;
+  theme: RegionalTheme;
+  onParcelClick: (parcel: SelectedParcel) => void;
+}> = ({ searchResult, parcelData, layers, theme, onParcelClick }) => {
+  const createCustomIcon = (type: string, color: string) => {
+    return new DivIcon({
+      className: 'custom-marker',
+      html: `
+        <div style="
+          background: ${color};
+          border: 2px solid white;
+          border-radius: 50%;
+          width: 24px;
+          height: 24px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        ">
+          <span style="color: white; font-size: 12px;">${type === 'weather' ? '🌡️' : type === 'transaction' ? '💰' : '🌾'}</span>
+        </div>
+      `,
+      iconSize: [24, 24],
+      iconAnchor: [12, 12]
+    });
+  };
+
+  const handleParcelClick = (parcelData: any) => {
+    if (searchResult) {
+      onParcelClick({
+        id: parcelData.cadastre?.id?.value || 'unknown',
+        coordinates: searchResult.coordinates,
+        data: parcelData
+      });
+    }
+  };
+
+  return (
+    <>
+      {searchResult && (
+        <Marker
+          position={searchResult.coordinates}
+          icon={new Icon({
+            iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png',
+            shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+            iconSize: [25, 41],
+            iconAnchor: [12, 41],
+            popupAnchor: [1, -34],
+            shadowSize: [41, 41]
+          })}
+        >
+          <Popup>
+            <div className="p-2">
+              <h3 className="font-bold text-sm mb-1">Point de recherche</h3>
+              <p className="text-xs text-gray-600">{searchResult.address}</p>
+              <p className="text-xs text-gray-500">
+                {searchResult.coordinates[0].toFixed(6)}, {searchResult.coordinates[1].toFixed(6)}
+              </p>
+            </div>
+          </Popup>
+        </Marker>
+      )}
+
+      {parcelData?.geolocation?.shape && layers.parcelles && (
+        <Polygon
+          positions={parcelData.geolocation.shape.coordinates[0][0].map((coord: [number, number]) => [coord[1], coord[0]])}
+          pathOptions={{
+            color: theme.colors.primary,
+            fillColor: theme.colors.secondary,
+            fillOpacity: 0.3,
+            weight: 2
+          }}
+          eventHandlers={{
+            click: () => handleParcelClick(parcelData)
+          }}
+        >
+          <Popup>
+            <div className="p-2">
+              <h3 className="font-bold text-sm mb-1">
+                {parcelData.cadastre?.id?.value || 'Parcelle'}
+              </h3>
+              <p className="text-xs text-gray-600 mb-1">
+                Surface: {parcelData.cadastre?.area?.value || 'N/A'} {parcelData.cadastre?.area?.unit || ''}
+              </p>
+              <p className="text-xs text-gray-600">
+                Ville: {parcelData.information?.city?.value || 'N/A'}
+              </p>
+              <button
+                onClick={() => handleParcelClick(parcelData)}
+                className="mt-2 px-2 py-1 bg-blue-500 text-white text-xs rounded hover:bg-blue-600"
+              >
+                Voir détails
+              </button>
+            </div>
+          </Popup>
+        </Polygon>
+      )}
+
+      {parcelData?.['last-year-weather-reports']?.station && layers.weatherStations && searchResult && (
+        <Marker
+          position={searchResult.coordinates}
+          icon={createCustomIcon('weather', theme.colors.accent)}
+        >
+          <Popup>
+            <div className="p-2">
+              <h3 className="font-bold text-sm mb-1">Station Météo</h3>
+              <p className="text-xs text-gray-600">
+                {parcelData['last-year-weather-reports'].station.value}
+              </p>
+            </div>
+          </Popup>
+        </Marker>
+      )}
+
+      {parcelData?.transactions?.rows && layers.immediateTransactions && searchResult && 
+        parcelData.transactions.rows.slice(0, 3).map((transaction: any, index: number) => (
+          <Marker
+            key={`transaction-${index}`}
+            position={[searchResult.coordinates[0] + (Math.random() - 0.5) * 0.001, searchResult.coordinates[1] + (Math.random() - 0.5) * 0.001]}
+            icon={createCustomIcon('transaction', '#e74c3c')}
+          >
+            <Popup>
+              <div className="p-2">
+                <h3 className="font-bold text-sm mb-1">Transaction</h3>
+                <p className="text-xs text-gray-600 mb-1">
+                  {transaction.address?.value || 'Adresse inconnue'}
+                </p>
+                <p className="text-xs text-gray-600 mb-1">
+                  Type: {transaction['building-nature']?.value || 'N/A'}
+                </p>
+                <p className="text-xs font-bold text-green-600">
+                  {transaction.price?.value?.toLocaleString() || 'N/A'} {transaction.price?.unit || ''}
+                </p>
+                <p className="text-xs text-gray-500">
+                  {transaction.date?.value || 'Date inconnue'}
+                </p>
+              </div>
+            </Popup>
+          </Marker>
+        ))
+      }
+    </>
+  );
+};
+
 const InteractiveMap: React.FC<InteractiveMapProps> = ({ 
   searchResult, 
   layers, 
@@ -53,39 +201,6 @@ const InteractiveMap: React.FC<InteractiveMapProps> = ({
     }
   }, [searchResult]);
 
-  const handleParcelClick = (parcelData: any) => {
-    if (searchResult) {
-      onParcelClick({
-        id: parcelData.cadastre?.id?.value || 'unknown',
-        coordinates: searchResult.coordinates,
-        data: parcelData
-      });
-    }
-  };
-
-  const createCustomIcon = (type: string, color: string) => {
-    return new DivIcon({
-      className: 'custom-marker',
-      html: `
-        <div style="
-          background: ${color};
-          border: 2px solid white;
-          border-radius: 50%;
-          width: 24px;
-          height: 24px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-        ">
-          <span style="color: white; font-size: 12px;">${type === 'weather' ? '🌡️' : type === 'transaction' ? '💰' : '🌾'}</span>
-        </div>
-      `,
-      iconSize: [24, 24],
-      iconAnchor: [12, 12]
-    });
-  };
-
   return (
     <div className="relative h-96 md:h-[500px] lg:h-[600px]">
       {isLoading && (
@@ -110,108 +225,13 @@ const InteractiveMap: React.FC<InteractiveMapProps> = ({
         
         <MapController center={mapCenter} />
         
-        {searchResult && (
-          <Marker
-            position={searchResult.coordinates}
-            icon={new Icon({
-              iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png',
-              shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
-              iconSize: [25, 41],
-              iconAnchor: [12, 41],
-              popupAnchor: [1, -34],
-              shadowSize: [41, 41]
-            })}
-          >
-            <Popup>
-              <div className="p-2">
-                <h3 className="font-bold text-sm mb-1">Point de recherche</h3>
-                <p className="text-xs text-gray-600">{searchResult.address}</p>
-                <p className="text-xs text-gray-500">
-                  {searchResult.coordinates[0].toFixed(6)}, {searchResult.coordinates[1].toFixed(6)}
-                </p>
-              </div>
-            </Popup>
-          </Marker>
-        )}
-
-        {parcelData?.geolocation?.shape && layers.parcelles && (
-          <Polygon
-            positions={parcelData.geolocation.shape.coordinates[0][0].map((coord: [number, number]) => [coord[1], coord[0]])}
-            pathOptions={{
-              color: theme.colors.primary,
-              fillColor: theme.colors.secondary,
-              fillOpacity: 0.3,
-              weight: 2
-            }}
-            eventHandlers={{
-              click: () => handleParcelClick(parcelData)
-            }}
-          >
-            <Popup>
-              <div className="p-2">
-                <h3 className="font-bold text-sm mb-1">
-                  {parcelData.cadastre?.id?.value || 'Parcelle'}
-                </h3>
-                <p className="text-xs text-gray-600 mb-1">
-                  Surface: {parcelData.cadastre?.area?.value || 'N/A'} {parcelData.cadastre?.area?.unit || ''}
-                </p>
-                <p className="text-xs text-gray-600">
-                  Ville: {parcelData.information?.city?.value || 'N/A'}
-                </p>
-                <button
-                  onClick={() => handleParcelClick(parcelData)}
-                  className="mt-2 px-2 py-1 bg-blue-500 text-white text-xs rounded hover:bg-blue-600"
-                >
-                  Voir détails
-                </button>
-              </div>
-            </Popup>
-          </Polygon>
-        )}
-
-        {parcelData?.['last-year-weather-reports']?.station && layers.weatherStations && (
-          <Marker
-            position={mapCenter}
-            icon={createCustomIcon('weather', theme.colors.accent)}
-          >
-            <Popup>
-              <div className="p-2">
-                <h3 className="font-bold text-sm mb-1">Station Météo</h3>
-                <p className="text-xs text-gray-600">
-                  {parcelData['last-year-weather-reports'].station.value}
-                </p>
-              </div>
-            </Popup>
-          </Marker>
-        )}
-
-        {parcelData?.transactions?.rows && layers.immediateTransactions && 
-          parcelData.transactions.rows.slice(0, 3).map((transaction: any, index: number) => (
-            <Marker
-              key={`transaction-${index}`}
-              position={[mapCenter[0] + (Math.random() - 0.5) * 0.001, mapCenter[1] + (Math.random() - 0.5) * 0.001]}
-              icon={createCustomIcon('transaction', '#e74c3c')}
-            >
-              <Popup>
-                <div className="p-2">
-                  <h3 className="font-bold text-sm mb-1">Transaction</h3>
-                  <p className="text-xs text-gray-600 mb-1">
-                    {transaction.address?.value || 'Adresse inconnue'}
-                  </p>
-                  <p className="text-xs text-gray-600 mb-1">
-                    Type: {transaction['building-nature']?.value || 'N/A'}
-                  </p>
-                  <p className="text-xs font-bold text-green-600">
-                    {transaction.price?.value?.toLocaleString() || 'N/A'} {transaction.price?.unit || ''}
-                  </p>
-                  <p className="text-xs text-gray-500">
-                    {transaction.date?.value || 'Date inconnue'}
-                  </p>
-                </div>
-              </Popup>
-            </Marker>
-          ))
-        }
+        <MarkerLayer
+          searchResult={searchResult}
+          parcelData={parcelData}
+          layers={layers}
+          theme={theme}
+          onParcelClick={onParcelClick}
+        />
       </MapContainer>
     </div>
   );
