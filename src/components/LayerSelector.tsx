@@ -11,7 +11,7 @@ interface LayerSelectorProps {
 
 const LayerSelector: React.FC<LayerSelectorProps> = ({ layers, onChange, theme }) => {
   const handleLayerToggle = (layerName: keyof LayerConfig) => {
-    if (layerName === 'radius') return;
+    if (layerName === 'radius' || layerName === 'stepM') return;
     
     onChange({
       ...layers,
@@ -23,6 +23,13 @@ const LayerSelector: React.FC<LayerSelectorProps> = ({ layers, onChange, theme }
     onChange({
       ...layers,
       radius
+    });
+  };
+
+  const handleStepChange = (stepM: number) => {
+    onChange({
+      ...layers,
+      stepM
     });
   };
 
@@ -100,6 +107,27 @@ const LayerSelector: React.FC<LayerSelectorProps> = ({ layers, onChange, theme }
           <div className="flex justify-between text-xs text-gray-500 mt-1">
             <span>50m</span>
             <span>500m</span>
+          </div>
+        </div>
+
+        <div className="mt-6">
+          <label htmlFor="stepM" className="block text-sm font-medium text-gray-700 mb-2">
+            Pas de recherche: {layers.stepM}m
+          </label>
+          <input
+            type="range"
+            id="stepM"
+            min="50"
+            max="200"
+            step="10"
+            value={layers.stepM}
+            onChange={(e) => handleStepChange(parseInt(e.target.value))}
+            className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
+            style={{ accentColor: theme.colors.primary }}
+          />
+          <div className="flex justify-between text-xs text-gray-500 mt-1">
+            <span>50m</span>
+            <span>200m</span>
           </div>
         </div>
       </div>

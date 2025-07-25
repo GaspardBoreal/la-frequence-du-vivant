@@ -21,6 +21,7 @@ export interface LayerConfig {
   parcellesPAC: boolean;
   immediateTransactions: boolean;
   radius: number;
+  stepM: number;
 }
 
 export interface SelectedParcel {
@@ -37,7 +38,8 @@ const Index = () => {
     parcelles: true,
     parcellesPAC: false,
     immediateTransactions: true,
-    radius: 200
+    radius: 200,
+    stepM: 100
   });
   const [selectedParcel, setSelectedParcel] = useState<SelectedParcel | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);

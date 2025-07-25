@@ -6,7 +6,7 @@ import { MapContainer, TileLayer, Marker, Popup, Polygon } from 'react-leaflet';
 import L from 'leaflet';
 import { RegionalTheme } from '../utils/regionalThemes';
 import { LayerConfig, SearchResult, SelectedParcel } from '../pages/Index';
-import { fetchParcelData } from '../utils/lexiconApi';
+import { fetchParcelData, fetchNearbyParcels } from '../utils/lexiconApi';
 
 // Fix for default markers
 delete (L.Icon.Default.prototype as any)._getIconUrl;
@@ -32,6 +32,7 @@ const InteractiveMap: React.FC<InteractiveMapProps> = ({
   const [mapCenter, setMapCenter] = useState<[number, number]>([46.603354, 1.888334]);
   const [zoom, setZoom] = useState(6);
   const [shouldFetchData, setShouldFetchData] = useState(false);
+  const [nearbyParcels, setNearbyParcels] = useState<any[]>([]);
 
   console.log('InteractiveMap render:', { searchResult, layers });
 
@@ -47,9 +48,29 @@ const InteractiveMap: React.FC<InteractiveMapProps> = ({
     retry: 3
   });
 
+  const { data: nearbyParcelsData, isLoading: isLoadingNearby, error: nearbyError } = useQuery({
+    queryKey: ['nearbyParcels', searchResult?.coordinates, layers.radius, layers.stepM],
+    queryFn: () => {
+      if (!searchResult) return Promise.resolve(null);
+      console.log('Fetching nearby parcels for:', searchResult.coordinates, 'radius:', layers.radius, 'step:', layers.stepM);
+      return fetchNearbyParcels(
+        searchResult.coordinates[0], 
+        searchResult.coordinates[1],
+        layers.radius,
+        layers.stepM
+      );
+    },
+    enabled: !!searchResult,
+    staleTime: 5 * 60 * 1000,
+    retry: 3
+  });
+
   console.log('Parcel data:', parcelData);
   console.log('Loading state:', isLoading);
   console.log('Error:', error);
+  console.log('Nearby parcels data:', nearbyParcelsData);
+  console.log('Loading nearby state:', isLoadingNearby);
+  console.log('Nearby error:', nearbyError);
 
   useEffect(() => {
     if (searchResult?.coordinates) {
@@ -60,6 +81,12 @@ const InteractiveMap: React.FC<InteractiveMapProps> = ({
       setShouldFetchData(true);
     }
   }, [searchResult]);
+
+  useEffect(() => {
+    if (nearbyParcelsData?.parcels) {
+      setNearbyParcels(nearbyParcelsData.parcels);
+    }
+  }, [nearbyParcelsData]);
 
   const handleMarkerClick = () => {
     if (searchResult && !shouldFetchData) {
@@ -144,7 +171,16 @@ const InteractiveMap: React.FC<InteractiveMapProps> = ({
                   <div className="mt-2 flex items-center gap-2">
                     <div className="animate-pulse text-red-500">❤️</div>
                     <span className="text-xs text-gray-600">
-                      Récupération des données API OSFARM / LEXICON
+                      Récupération des données parcelle...
+                    </span>
+                  </div>
+                )}
+                
+                {isLoadingNearby && (
+                  <div className="mt-2 flex items-center gap-2">
+                    <Loader2 className="h-3 w-3 animate-spin text-blue-500" />
+                    <span className="text-xs text-gray-600">
+                      Recherche des parcelles à proximité...
                     </span>
                   </div>
                 )}
@@ -155,9 +191,21 @@ const InteractiveMap: React.FC<InteractiveMapProps> = ({
                   </div>
                 )}
                 
+                {nearbyError && (
+                  <div className="mt-2 text-xs text-red-600">
+                    Erreur lors de la recherche des parcelles proches
+                  </div>
+                )}
+                
                 {shouldFetchData && parcelData && (
                   <div className="mt-2 text-xs text-green-600">
                     Données chargées ! Cliquez sur la parcelle pour voir les détails.
+                  </div>
+                )}
+                
+                {nearbyParcelsData && (
+                  <div className="mt-2 text-xs text-green-600">
+                    {nearbyParcelsData.parcels?.length || 0} parcelles trouvées à proximité
                   </div>
                 )}
               </div>
@@ -199,6 +247,80 @@ const InteractiveMap: React.FC<InteractiveMapProps> = ({
             </Popup>
           </Polygon>
         )}
+
+        {/* Nearby Parcels */}
+        {nearbyParcels.map((parcel, index) => {
+          const getNearbyPolygonPositions = () => {
+            if (!parcel?.geolocation?.shape?.coordinates) {
+              return null;
+            }
+            
+            try {
+              const coords = parcel.geolocation.shape.coordinates[0][0];
+              return coords.map((coord: [number, number]) => [coord[1], coord[0]]);
+            } catch (error) {
+              console.error('Error processing nearby parcel coordinates:', error);
+              return null;
+            }
+          };
+
+          const nearbyPositions = getNearbyPolygonPositions();
+          
+          if (!nearbyPositions || !layers.parcelles) return null;
+
+          return (
+            <Polygon
+              key={`nearby-${index}`}
+              positions={nearbyPositions}
+              pathOptions={{
+                color: theme.colors.accent,
+                fillColor: theme.colors.accent,
+                fillOpacity: 0.2,
+                weight: 1,
+                dashArray: '5, 5'
+              }}
+              eventHandlers={{
+                click: () => {
+                  if (searchResult) {
+                    onParcelClick({
+                      id: parcel.cadastre?.id?.value || `nearby-${index}`,
+                      coordinates: searchResult.coordinates,
+                      data: parcel
+                    });
+                  }
+                }
+              }}
+            >
+              <Popup>
+                <div className="p-2">
+                  <h3 className="font-bold text-sm mb-1">
+                    Parcelle proche {parcel.cadastre?.id?.value || 'inconnue'}
+                  </h3>
+                  <p className="text-xs text-gray-600 mb-1">
+                    Section: {parcel.cadastre?.section?.value || 'N/A'}
+                  </p>
+                  <p className="text-xs text-gray-600 mb-2">
+                    Surface: {parcel.cadastre?.area?.value || 'N/A'} {parcel.cadastre?.area?.unit || ''}
+                  </p>
+                  <button
+                    onClick={() => {
+                      if (searchResult) {
+                        onParcelClick({
+                          id: parcel.cadastre?.id?.value || `nearby-${index}`,
+                          coordinates: searchResult.coordinates,
+                          data: parcel
+                        });
+                      }
+                    }}
+                    className="mt-2 px-2 py-1 bg-green-500 text-white text-xs rounded hover:bg-green-600"
+                  >
+                    Voir les détails
+                  </button>
+                </div>
+              </Popup>
+            </Polygon>
+          );
+        })}
       </MapContainer>
     </div>
   );
