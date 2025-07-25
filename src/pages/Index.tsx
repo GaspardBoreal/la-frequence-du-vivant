@@ -99,9 +99,12 @@ const Index = () => {
         <header className="bg-card/40 backdrop-blur-lg shadow-2xl border-b border-border/20">
           <div className="max-w-6xl mx-auto px-6 py-16">
             <div className="text-center space-y-6 animate-fade-in">
-              {/* Catégorie */}
-              <div className="gaspard-category">
-                Bioacoustique & Poésie
+              {/* Catégorie avec design exact */}
+              <div className="inline-flex items-center gap-2 px-4 py-2 bg-green-950/30 border border-green-500/20 rounded-full">
+                <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+                <span className="font-mono text-xs uppercase tracking-wide text-green-300">
+                  Bioacoustique & Poésie
+                </span>
               </div>
               
               {/* Titre principal - structure exacte avec couleurs spécifiques */}

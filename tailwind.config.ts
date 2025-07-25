@@ -1,4 +1,3 @@
-
 import type { Config } from "tailwindcss";
 
 export default {
@@ -63,21 +62,21 @@ export default {
 					border: 'hsl(var(--sidebar-border))',
 					ring: 'hsl(var(--sidebar-ring))'
 				},
-				// Couleurs exactes inspirées de la page Gaspard Boréal
 				'gaspard': {
-					'dark': '#0a0f0d',      // Noir profond
-					'emerald': '#1a3b2e',   // Vert émeraude foncé
-					'forest': '#234a3d',    // Vert forêt
-					'sage': '#2d5a4a',      // Vert sauge
-					'mint': '#3d6b57',      // Vert menthe
-					'light': '#4d7c64',     // Vert clair
-					'cream': '#f5f3f0',     // Crème
-					'gold': '#d4af37',      // Or
+					'dark': '#0a0f0d',
+					'emerald': '#1a3b2e',
+					'forest': '#234a3d',
+					'sage': '#2d5a4a',
+					'mint': '#3d6b57',
+					'light': '#4d7c64',
+					'cream': '#f5f3f0',
+					'gold': '#d4af37',
 				}
 			},
 			fontFamily: {
 				'crimson': ['Crimson Text', 'serif'],
 				'inter': ['Inter', 'sans-serif'],
+				'mono': ['IBM Plex Mono', 'monospace'],
 			},
 			borderRadius: {
 				lg: 'var(--radius)',
