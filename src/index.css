@@ -1,3 +1,4 @@
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -39,20 +40,18 @@ All colors MUST be HSL.
     --radius: 0.5rem;
 
     --sidebar-background: 0 0% 98%;
-
     --sidebar-foreground: 240 5.3% 26.1%;
-
     --sidebar-primary: 240 5.9% 10%;
-
     --sidebar-primary-foreground: 0 0% 98%;
-
     --sidebar-accent: 240 4.8% 95.9%;
-
     --sidebar-accent-foreground: 240 5.9% 10%;
-
     --sidebar-border: 220 13% 91%;
-
     --sidebar-ring: 217.2 91.2% 59.8%;
+
+    /* Nouvelles variables pour l'identité Gaspard Boréal */
+    --gaspard-sage: 95 25% 85%;
+    --gaspard-forest: 140 35% 25%;
+    --gaspard-accent: 120 30% 60%;
   }
 
   .dark {
@@ -101,5 +100,54 @@ All colors MUST be HSL.
 
   body {
     @apply bg-background text-foreground;
+    font-family: 'Inter', sans-serif;
   }
+
+  /* Typographie inspirée de Gaspard Boréal */
+  .gaspard-title {
+    font-family: 'Playfair Display', serif;
+    @apply text-forest-800 font-light leading-tight;
+  }
+
+  .gaspard-subtitle {
+    font-family: 'Inter', sans-serif;
+    @apply text-forest-700 font-bold uppercase tracking-wide;
+  }
+
+  .gaspard-text {
+    font-family: 'Inter', sans-serif;
+    @apply text-forest-600 font-light leading-relaxed;
+  }
+
+  /* Effets visuels inspirés de l'image */
+  .gaspard-card {
+    @apply bg-white/80 backdrop-blur-sm border border-sage-200/50 shadow-xl;
+  }
+
+  .gaspard-glass {
+    @apply bg-white/60 backdrop-blur-md border border-white/20;
+  }
+}
+
+/* Animations personnalisées pour l'ambiance poétique */
+@layer utilities {
+  .animate-gentle-float {
+    animation: gentle-float 8s ease-in-out infinite;
+  }
+
+  .animate-soft-pulse {
+    animation: soft-pulse 4s ease-in-out infinite;
+  }
+}
+
+@keyframes gentle-float {
+  0%, 100% { transform: translateY(0px) rotate(0deg); }
+  25% { transform: translateY(-5px) rotate(1deg); }
+  50% { transform: translateY(-10px) rotate(0deg); }
+  75% { transform: translateY(-5px) rotate(-1deg); }
+}
+
+@keyframes soft-pulse {
+  0%, 100% { opacity: 0.6; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.05); }
 }

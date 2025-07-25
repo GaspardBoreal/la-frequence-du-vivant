@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useCallback } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { toast } from 'sonner';
@@ -5,6 +6,7 @@ import SearchBar from '../components/SearchBar';
 import LayerSelector from '../components/LayerSelector';
 import InteractiveMap from '../components/InteractiveMap';
 import Sidebar from '../components/Sidebar';
+import DecorativeElements from '../components/DecorativeElements';
 import { RegionalTheme, REGIONAL_THEMES } from '../utils/regionalThemes';
 import { fetchParcelData } from '../utils/lexiconApi';
 import { fetchMarchesTechnoSensibles, MarcheTechnoSensible } from '../utils/googleSheetsApi';
@@ -30,7 +32,7 @@ const Index = () => {
   const [theme, setTheme] = useState<RegionalTheme>(REGIONAL_THEMES['nouvelle-aquitaine']);
   const [searchResult, setSearchResult] = useState<SearchResult | null>(null);
   const [layers, setLayers] = useState<LayerConfig>({
-    marchesTechnoSensibles: true, // Coché par défaut
+    marchesTechnoSensibles: true,
     openData: false,
   });
   const [selectedParcel, setSelectedParcel] = useState<SelectedParcel | null>(null);
@@ -86,29 +88,37 @@ const Index = () => {
   }, [theme]);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-50 to-yellow-50 relative overflow-hidden">
-      <div 
-        className="absolute inset-0 opacity-10"
-        style={{ backgroundColor: theme.colors.background }}
-      />
+    <div className="min-h-screen bg-gradient-to-br from-sage-100 via-sage-50 to-sage-100 relative overflow-hidden">
+      {/* Éléments décoratifs inspirés de l'image */}
+      <DecorativeElements className="text-forest-600" />
       
       <div className="relative z-10">
-        {/* Header */}
-        <header className="bg-white/80 backdrop-blur-sm shadow-lg border-b border-green-200">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-3">
-                <div className="w-10 h-10 bg-gradient-to-r from-green-600 to-yellow-600 rounded-lg flex items-center justify-center">
-                  <span className="text-white font-bold text-xl">🌾</span>
-                </div>
-                <h1 className="text-2xl font-bold text-gray-800">
-                  Explorateur Agricole
-                </h1>
+        {/* Header avec le nouveau design */}
+        <header className="bg-white/90 backdrop-blur-sm shadow-lg border-b border-sage-200/50">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+            <div className="text-center">
+              {/* Titre principal inspiré de l'image */}
+              <h1 className="font-playfair text-3xl md:text-4xl lg:text-5xl font-light text-sage-800 mb-2">
+                Gaspard Boréal
+              </h1>
+              
+              {/* Titre secondaire en lettres capitales */}
+              <div className="mb-3">
+                <h2 className="font-inter text-xl md:text-2xl lg:text-3xl font-bold text-forest-800 tracking-wide uppercase">
+                  La Fréquence du Vivant
+                </h2>
               </div>
-              <div className="hidden md:flex items-center space-x-2 text-sm text-gray-600">
-                <span>Région:</span>
+              
+              {/* Sous-titre poétique */}
+              <p className="font-inter text-sm md:text-base text-forest-600 font-light leading-relaxed max-w-2xl mx-auto">
+                marche techno-sensible entre vivant, humain et machine
+              </p>
+              
+              {/* Indicateur de région */}
+              <div className="mt-4 flex items-center justify-center space-x-2 text-sm">
+                <span className="text-sage-600">Région explorée:</span>
                 <span 
-                  className="px-3 py-1 rounded-full text-white font-medium"
+                  className="px-3 py-1 rounded-full text-white font-medium text-sm"
                   style={{ backgroundColor: theme.colors.primary }}
                 >
                   {theme.name}
@@ -118,28 +128,30 @@ const Index = () => {
           </div>
         </header>
 
-        {/* Search Bar */}
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        {/* Search Bar avec nouveau style */}
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <SearchBar onSearch={handleSearch} theme={theme} />
         </div>
 
-        {/* Main Content */}
+        {/* Main Content avec nouveau layout */}
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-8">
-          <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-            {/* Layer Selector */}
+          <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+            {/* Layer Selector avec nouveau design */}
             <div className="lg:col-span-1">
-              <LayerSelector 
-                layers={layers} 
-                onChange={handleLayerChange} 
-                theme={theme}
-                marchesData={marchesData}
-                onFilteredDataChange={handleFilteredDataChange}
-              />
+              <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl border border-sage-200/50 p-6">
+                <LayerSelector 
+                  layers={layers} 
+                  onChange={handleLayerChange} 
+                  theme={theme}
+                  marchesData={marchesData}
+                  onFilteredDataChange={handleFilteredDataChange}
+                />
+              </div>
             </div>
 
-            {/* Map */}
+            {/* Map avec nouveau style */}
             <div className="lg:col-span-3">
-              <div className="bg-white rounded-xl shadow-lg overflow-hidden">
+              <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl border border-sage-200/50 overflow-hidden">
                 <InteractiveMap
                   searchResult={searchResult}
                   layers={layers}
@@ -152,7 +164,7 @@ const Index = () => {
           </div>
         </div>
 
-        {/* Sidebar */}
+        {/* Sidebar avec nouveau design */}
         <Sidebar
           isOpen={sidebarOpen}
           onClose={handleCloseSidebar}

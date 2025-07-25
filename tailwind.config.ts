@@ -1,3 +1,4 @@
+
 import type { Config } from "tailwindcss";
 
 export default {
@@ -61,7 +62,36 @@ export default {
 					'accent-foreground': 'hsl(var(--sidebar-accent-foreground))',
 					border: 'hsl(var(--sidebar-border))',
 					ring: 'hsl(var(--sidebar-ring))'
+				},
+				// Couleurs inspirées de l'image Gaspard Boréal
+				'sage': {
+					50: '#f6f8f4',
+					100: '#e9f0e5',
+					200: '#d3e1cb',
+					300: '#b3c9a4',
+					400: '#8dab77',
+					500: '#6b8e54',
+					600: '#527040',
+					700: '#425834',
+					800: '#36472c',
+					900: '#2d3c26',
+				},
+				'forest': {
+					50: '#f1f8f4',
+					100: '#dcefe2',
+					200: '#bcdfc8',
+					300: '#8fc9a5',
+					400: '#5dac7c',
+					500: '#3d8f5e',
+					600: '#2c7249',
+					700: '#235b3c',
+					800: '#1e4831',
+					900: '#1a3c29',
 				}
+			},
+			fontFamily: {
+				'playfair': ['Playfair Display', 'serif'],
+				'inter': ['Inter', 'sans-serif'],
 			},
 			borderRadius: {
 				lg: 'var(--radius)',
@@ -84,11 +114,21 @@ export default {
 					to: {
 						height: '0'
 					}
+				},
+				'float': {
+					'0%, 100%': { transform: 'translateY(0px)' },
+					'50%': { transform: 'translateY(-10px)' }
+				},
+				'pulse-gentle': {
+					'0%, 100%': { opacity: '1' },
+					'50%': { opacity: '0.7' }
 				}
 			},
 			animation: {
 				'accordion-down': 'accordion-down 0.2s ease-out',
-				'accordion-up': 'accordion-up 0.2s ease-out'
+				'accordion-up': 'accordion-up 0.2s ease-out',
+				'float': 'float 6s ease-in-out infinite',
+				'pulse-gentle': 'pulse-gentle 3s ease-in-out infinite'
 			}
 		}
 	},
