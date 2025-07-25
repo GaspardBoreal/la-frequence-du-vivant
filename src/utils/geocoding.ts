@@ -1,5 +1,4 @@
-
-import { SearchResult } from '../pages/Index';
+import { SearchResult } from '../types/index';
 
 export const geocodeAddress = async (query: string): Promise<SearchResult> => {
   // Check if query looks like coordinates (lat,lon or lat lon)

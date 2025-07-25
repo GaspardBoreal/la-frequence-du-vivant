@@ -1,92 +1,73 @@
-
 import React, { useState } from 'react';
-import { Search, MapPin } from 'lucide-react';
-import { RegionalTheme } from '../utils/regionalThemes';
-import { SearchResult } from '../pages/Index';
-import { geocodeAddress } from '../utils/geocoding';
+import { Search, X } from 'lucide-react';
+import { Input } from './ui/input';
+import { Button } from './ui/button';
+import { SearchResult } from '../types/index';
 
 interface SearchBarProps {
-  onSearch: (result: SearchResult) => void;
-  theme: RegionalTheme;
+  onSearch: (query: string) => void;
+  onClear: () => void;
+  results: SearchResult[];
+  setResults: React.Dispatch<React.SetStateAction<SearchResult[]>>;
 }
 
-const SearchBar: React.FC<SearchBarProps> = ({ onSearch, theme }) => {
+const SearchBar: React.FC<SearchBarProps> = ({ onSearch, onClear, results, setResults }) => {
   const [query, setQuery] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
 
-  // Fonction pour détecter si la query contient des coordonnées GPS
-  const isCoordinates = (text: string): boolean => {
-    // Regex pour détecter format: latitude,longitude ou latitude longitude
-    const coordRegex = /^(-?\d+\.?\d*)[,\s]+(-?\d+\.?\d*)$/;
-    return coordRegex.test(text.trim());
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setQuery(value);
+    if (value.length > 2) {
+      onSearch(value);
+    } else {
+      setResults([]);
+    }
   };
 
-  // Fonction pour extraire latitude et longitude
-  const parseCoordinates = (text: string): [number, number] | null => {
-    const coordRegex = /^(-?\d+\.?\d*)[,\s]+(-?\d+\.?\d*)$/;
-    const match = text.trim().match(coordRegex);
-    if (match) {
-      const lat = parseFloat(match[1]);
-      const lon = parseFloat(match[2]);
-      return [lat, lon];
-    }
-    return null;
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!query.trim()) return;
-
-    setIsLoading(true);
-    try {
-      // Vérifier si l'input contient des coordonnées
-      if (isCoordinates(query)) {
-        const coords = parseCoordinates(query);
-        if (coords) {
-          const [latitude, longitude] = coords;
-          // Créer directement le résultat de recherche avec les coordonnées
-          const result: SearchResult = {
-            coordinates: [latitude, longitude],
-            address: `Coordonnées: ${latitude}, ${longitude}`,
-            region: 'france' // Région par défaut
-          };
-          onSearch(result);
-        }
-      } else {
-        // Utiliser l'API de géocodage pour les adresses
-        const result = await geocodeAddress(query);
-        onSearch(result);
-      }
-    } catch (error) {
-      console.error('Search error:', error);
-    } finally {
-      setIsLoading(false);
-    }
+  const handleClear = () => {
+    setQuery('');
+    onClear();
+    setResults([]);
   };
 
   return (
-    <form onSubmit={handleSubmit} className="relative">
-      <div className="relative flex items-center">
-        <div className="absolute left-3 top-1/2 transform -translate-y-1/2">
-          <Search className="h-5 w-5 text-gray-400" />
-        </div>
-        <input
+    <div className="relative">
+      <div className="flex items-center">
+        <Input
           type="text"
+          placeholder="Rechercher un lieu..."
           value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          placeholder="Rechercher par adresse ou coordonnées GPS..."
-          className="w-full pl-10 pr-4 py-3 rounded-lg border-2 border-gray-200 focus:border-green-500 focus:outline-none text-gray-700 placeholder-gray-400"
+          onChange={handleInputChange}
+          className="pr-10"
         />
-        <button
-          type="submit"
-          disabled={isLoading || !query.trim()}
-          className="absolute right-2 top-1/2 transform -translate-y-1/2 px-4 py-2 rounded-md text-white font-medium disabled:opacity-50"
-          style={{ backgroundColor: theme.colors.primary }}
-        >
-          {isLoading ? 'Recherche...' : 'Rechercher'}
-        </button>
+        {query && (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleClear}
+            className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full"
+          >
+            <X className="h-4 w-4" />
+          </Button>
+        )}
+        {!query && (
+          <div className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground">
+            <Search className="h-4 w-4" />
+          </div>
+        )}
       </div>
-    </form>
+      {results.length > 0 && (
+        <div className="absolute left-0 mt-2 w-full bg-card rounded-md shadow-md z-10">
+          <ul>
+            {results.map((result) => (
+              <li key={result.properties.place_id} className="p-2 hover:bg-accent hover:text-accent-foreground cursor-pointer">
+                {result.properties.display_name}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+    </div>
   );
 };
 

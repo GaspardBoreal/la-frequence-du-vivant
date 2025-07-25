@@ -23,13 +23,13 @@ const Footer = () => {
                 <span>Découvrir l'auteur</span>
               </a>
               <a 
-                href="https://www.gaspardboreal.com/observatoire-2025-2037" 
+                href="https://www.gaspardboreal.com/comedie-2025" 
                 target="_blank" 
                 rel="noopener noreferrer"
                 className="flex items-center gap-2 text-muted-foreground hover:text-[#4ade80] transition-colors"
               >
                 <BookOpen size={16} />
-                <span>Observatoire Mondes Hybrides</span>
+                <span>Comédie des Mondes Hybrides</span>
               </a>
               <a 
                 href="https://www.gaspardboreal.com/conferences" 
