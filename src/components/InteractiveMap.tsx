@@ -35,7 +35,7 @@ const InteractiveMap: React.FC<InteractiveMapProps> = ({
   // Fetch marches techno sensibles when layer is enabled
   const { data: marchesTechnoSensibles = [] } = useQuery({
     queryKey: ['marchesTechnoSensibles'],
-    queryFn: () => fetchMarchesTechnoSensibles('1BvHJXNFkAVhLWQZmF4x7l8PQ8JLcRgHzGNpWW5YO9Sk'), // Replace with actual spreadsheet ID
+    queryFn: () => fetchMarchesTechnoSensibles(),
     enabled: layers.marchesTechnoSensibles,
     staleTime: 5 * 60 * 1000, // 5 minutes
   });

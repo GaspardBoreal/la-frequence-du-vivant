@@ -8,10 +8,10 @@ export interface MarcheTechnoSensible {
   lien: string;
 }
 
-export const fetchMarchesTechnoSensibles = async (spreadsheetId: string): Promise<MarcheTechnoSensible[]> => {
+export const fetchMarchesTechnoSensibles = async (): Promise<MarcheTechnoSensible[]> => {
   try {
     const response = await fetch(
-      `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/Sheet1?key=${GOOGLE_SHEETS_API_KEY}`
+      `https://sheets.googleapis.com/v4/spreadsheets/1_lcQPVHIg3JAJP_FWVstnWvzzjfssNPN_h7FodZCyJY?key=${GOOGLE_SHEETS_API_KEY}`
     );
     
     if (!response.ok) {
