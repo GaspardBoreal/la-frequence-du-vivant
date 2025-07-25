@@ -1,3 +1,4 @@
+
 const GOOGLE_SHEETS_API_KEY = 'AIzaSyBLIZXZWsOEvFeCAAHe1__khd0OVclv_4s';
 
 export interface MarcheTechnoSensible {
@@ -33,6 +34,30 @@ export interface MarcheTechnoSensible {
     url: string;
   }[];
 }
+
+// Fonction pour nettoyer et convertir les coordonnées
+const parseCoordinate = (value: string): number => {
+  if (!value) return 0;
+  
+  // Nettoyer la valeur : supprimer les espaces et remplacer virgules par points
+  const cleaned = value.toString().trim().replace(',', '.');
+  const parsed = parseFloat(cleaned);
+  
+  console.log(`Conversion coordonnée: "${value}" -> "${cleaned}" -> ${parsed}`);
+  
+  return isNaN(parsed) ? 0 : parsed;
+};
+
+// Fonction pour valider les coordonnées
+const isValidCoordinate = (lat: number, lng: number): boolean => {
+  // Vérifier que les coordonnées sont dans des plages valides
+  const isLatValid = lat >= -90 && lat <= 90 && lat !== 0;
+  const isLngValid = lng >= -180 && lng <= 180 && lng !== 0;
+  
+  console.log(`Validation coordonnées: lat=${lat} (${isLatValid}), lng=${lng} (${isLngValid})`);
+  
+  return isLatValid && isLngValid;
+};
 
 // Données de test enrichies pour l'univers poétique
 const TEST_DATA: MarcheTechnoSensible[] = [
@@ -164,14 +189,14 @@ const TEST_DATA: MarcheTechnoSensible[] = [
 
 export const fetchMarchesTechnoSensibles = async (): Promise<MarcheTechnoSensible[]> => {
   try {
-    console.log('Tentative de récupération des données Google Sheets...');
+    console.log('🔄 Tentative de récupération des données Google Sheets...');
     
     const response = await fetch(
       `https://sheets.googleapis.com/v4/spreadsheets/1_lcQPVHIg3JAJP_FWVstnWvzzjfssNPN_h7FodZCyJY/values/DATA_LIEUX?key=${GOOGLE_SHEETS_API_KEY}`
     );
     
     if (!response.ok) {
-      console.warn('Erreur d\'accès au Google Sheet (403), utilisation des données de test');
+      console.warn('⚠️ Erreur d\'accès au Google Sheet (403), utilisation des données de test');
       return TEST_DATA;
     }
     
@@ -179,20 +204,23 @@ export const fetchMarchesTechnoSensibles = async (): Promise<MarcheTechnoSensibl
     const rows = data.values;
     
     if (!rows || rows.length < 2) {
-      console.warn('Aucune donnée trouvée dans le Google Sheet, utilisation des données de test');
+      console.warn('⚠️ Aucune donnée trouvée dans le Google Sheet, utilisation des données de test');
       return TEST_DATA;
     }
     
-    console.log('Données récupérées avec succès depuis Google Sheets');
-    console.log('Première ligne (headers):', rows[0]);
-    console.log('Exemple de données:', rows[1]);
+    console.log('✅ Données récupérées avec succès depuis Google Sheets');
+    console.log('📋 Headers:', rows[0]);
+    console.log('📍 Exemple de données brutes:', rows[1]);
     
-    // Nouvelle structure des colonnes selon les logs de la console :
-    // 0: DATE, 1: NUMERO, 2: VILLE, 3: CODE POSTAL, 4: ADRESSE, 5: DEPARTEMENT, 6: REGION, 
-    // 7: LATITUDE, 8: LONGITUDE, 9: THEME DE LA MARCHE, 10: DESCRIPTF DE LA MARCHE, 11: LIEN, 12: TAGS
-    return rows.slice(1).map((row: string[]) => {
-      const latitude = parseFloat(row[7]?.replace(',', '.') || '0');
-      const longitude = parseFloat(row[8]?.replace(',', '.') || '0');
+    // Traitement des données avec validation améliorée
+    const processedData = rows.slice(1).map((row: string[], index: number) => {
+      const rawLat = row[7];
+      const rawLng = row[8];
+      
+      const latitude = parseCoordinate(rawLat);
+      const longitude = parseCoordinate(rawLng);
+      
+      console.log(`🔢 Ligne ${index + 2}: "${rawLat}" -> ${latitude}, "${rawLng}" -> ${longitude}`);
       
       return {
         latitude,
@@ -206,11 +234,21 @@ export const fetchMarchesTechnoSensibles = async (): Promise<MarcheTechnoSensibl
         adresse: row[4] || '',
         tags: row[12] || ''
       };
-    }).filter(item => !isNaN(item.latitude) && !isNaN(item.longitude) && item.ville);
+    }).filter((item, index) => {
+      const isValid = isValidCoordinate(item.latitude, item.longitude) && item.ville;
+      if (!isValid) {
+        console.log(`❌ Ligne ${index + 2} rejetée: coordonnées invalides ou ville manquante`);
+      }
+      return isValid;
+    });
+    
+    console.log(`📊 ${processedData.length} marches valides sur ${rows.length - 1} lignes traitées`);
+    
+    return processedData;
     
   } catch (error) {
-    console.error('Erreur lors de la récupération des données:', error);
-    console.log('Utilisation des données de test');
+    console.error('❌ Erreur lors de la récupération des données:', error);
+    console.log('🔄 Utilisation des données de test');
     return TEST_DATA;
   }
 };
