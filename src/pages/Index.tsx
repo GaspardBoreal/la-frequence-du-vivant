@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { toast } from 'sonner';
@@ -31,7 +30,7 @@ const Index = () => {
   const [theme, setTheme] = useState<RegionalTheme>(REGIONAL_THEMES['nouvelle-aquitaine']);
   const [searchResult, setSearchResult] = useState<SearchResult | null>(null);
   const [layers, setLayers] = useState<LayerConfig>({
-    marchesTechnoSensibles: false,
+    marchesTechnoSensibles: true, // Coché par défaut
     openData: false,
   });
   const [selectedParcel, setSelectedParcel] = useState<SelectedParcel | null>(null);

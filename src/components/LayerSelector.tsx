@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { ChevronDown, ChevronUp } from 'lucide-react';
 import { LayerConfig } from '../pages/Index';
@@ -56,7 +55,7 @@ const LayerSelector: React.FC<LayerSelectorProps> = ({
                 className="h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300 rounded"
               />
               <label htmlFor="marchesTechnoSensibles" className="ml-2 text-sm text-gray-700">
-                Marches TechnoSensibles
+                Marche Techno-sensible
               </label>
             </div>
             
