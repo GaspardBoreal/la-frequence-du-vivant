@@ -26,12 +26,13 @@ const AdvancedFilters: React.FC<AdvancedFiltersProps> = ({ data, onFilterChange,
     tags: []
   });
 
-  const uniqueRegions = [...new Set(data.map(item => item.region).filter(Boolean))];
-  const uniqueDepartments = [...new Set(data.map(item => item.departement).filter(Boolean))];
-  const uniqueCities = [...new Set(data.map(item => item.ville).filter(Boolean))];
+  // Trier toutes les listes par ordre alphabétique
+  const uniqueRegions = [...new Set(data.map(item => item.region).filter(Boolean))].sort();
+  const uniqueDepartments = [...new Set(data.map(item => item.departement).filter(Boolean))].sort();
+  const uniqueCities = [...new Set(data.map(item => item.ville).filter(Boolean))].sort();
   const uniqueTags = [...new Set(data.flatMap(item => 
     item.tags ? item.tags.split(',').map(tag => tag.trim()).filter(Boolean) : []
-  ))];
+  ))].sort();
 
   // Stabiliser la fonction de filtrage avec useCallback
   const applyFilters = useCallback(() => {
