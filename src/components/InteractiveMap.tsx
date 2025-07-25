@@ -103,6 +103,7 @@ const InteractiveMap: React.FC<InteractiveMapProps> = ({
 
     return (
       <Polygon
+        key="parcel-polygon"
         positions={latLngs}
         pathOptions={{
           color: theme.colors.primary,
@@ -142,6 +143,7 @@ const InteractiveMap: React.FC<InteractiveMapProps> = ({
 
     return (
       <Marker
+        key="weather-station"
         position={mapCenter}
         icon={createCustomIcon('weather', theme.colors.accent)}
       >
@@ -162,7 +164,7 @@ const InteractiveMap: React.FC<InteractiveMapProps> = ({
 
     return mapData.transactions.rows.slice(0, 3).map((transaction: any, index: number) => (
       <Marker
-        key={index}
+        key={`transaction-${index}`}
         position={[mapCenter[0] + (Math.random() - 0.5) * 0.001, mapCenter[1] + (Math.random() - 0.5) * 0.001]}
         icon={createCustomIcon('transaction', '#e74c3c')}
       >
@@ -185,6 +187,35 @@ const InteractiveMap: React.FC<InteractiveMapProps> = ({
         </Popup>
       </Marker>
     ));
+  };
+
+  const renderSearchMarker = () => {
+    if (!searchResult) return null;
+
+    return (
+      <Marker
+        key="search-result"
+        position={searchResult.coordinates}
+        icon={new Icon({
+          iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png',
+          shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+          iconSize: [25, 41],
+          iconAnchor: [12, 41],
+          popupAnchor: [1, -34],
+          shadowSize: [41, 41]
+        })}
+      >
+        <Popup>
+          <div className="p-2">
+            <h3 className="font-bold text-sm mb-1">Point de recherche</h3>
+            <p className="text-xs text-gray-600">{searchResult.address}</p>
+            <p className="text-xs text-gray-500">
+              {searchResult.coordinates[0].toFixed(6)}, {searchResult.coordinates[1].toFixed(6)}
+            </p>
+          </div>
+        </Popup>
+      </Marker>
+    );
   };
 
   return (
@@ -211,32 +242,7 @@ const InteractiveMap: React.FC<InteractiveMapProps> = ({
         
         <MapController center={mapCenter} />
         
-        {/* Search result marker */}
-        {searchResult && (
-          <Marker
-            position={searchResult.coordinates}
-            icon={new Icon({
-              iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png',
-              shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
-              iconSize: [25, 41],
-              iconAnchor: [12, 41],
-              popupAnchor: [1, -34],
-              shadowSize: [41, 41]
-            })}
-          >
-            <Popup>
-              <div className="p-2">
-                <h3 className="font-bold text-sm mb-1">Point de recherche</h3>
-                <p className="text-xs text-gray-600">{searchResult.address}</p>
-                <p className="text-xs text-gray-500">
-                  {searchResult.coordinates[0].toFixed(6)}, {searchResult.coordinates[1].toFixed(6)}
-                </p>
-              </div>
-            </Popup>
-          </Marker>
-        )}
-
-        {/* Render map layers */}
+        {renderSearchMarker()}
         {renderParcelPolygon()}
         {renderWeatherStation()}
         {renderTransactionMarkers()}
