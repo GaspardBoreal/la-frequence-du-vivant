@@ -25,12 +25,12 @@ const PoeticPhotoGallery: React.FC<PoeticPhotoGalleryProps> = ({ marche, theme }
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [viewMode, setViewMode] = useState<'carousel' | 'grid' | 'poetic'>('poetic');
-  const [failedImages, setFailedImages] = useState<Set<string>>(new Set());
+  const [loadedImages, setLoadedImages] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     const loadPhotos = async () => {
       setIsLoading(true);
-      setFailedImages(new Set()); // Reset failed images
+      setLoadedImages(new Set());
       
       console.log(`\n=== Chargement des photos pour ${marche.ville} ===`);
       console.log('Lien Google Drive:', marche.lien);
@@ -57,37 +57,13 @@ const PoeticPhotoGallery: React.FC<PoeticPhotoGalleryProps> = ({ marche, theme }
     loadPhotos();
   }, [marche]);
 
+  const handleImageLoad = (photoUrl: string) => {
+    console.log('Image chargée avec succès:', photoUrl);
+    setLoadedImages(prev => new Set([...prev, photoUrl]));
+  };
+
   const handleImageError = (photoUrl: string) => {
     console.error('Erreur de chargement de l\'image:', photoUrl);
-    setFailedImages(prev => new Set([...prev, photoUrl]));
-  };
-
-  const getValidPhotos = () => {
-    return photos.filter(photo => !failedImages.has(photo));
-  };
-
-  // Fonction pour convertir les URLs Google Drive vers plusieurs formats de fallback
-  const convertToEmbeddableUrl = (url: string): string => {
-    // Extraire l'ID du fichier depuis l'URL /view
-    const fileId = url.match(/\/file\/d\/([a-zA-Z0-9-_]+)/)?.[1];
-    if (fileId) {
-      // Essayer le format uc?export=view&id= en priorité
-      const convertedUrl = `https://drive.google.com/uc?export=view&id=${fileId}`;
-      console.log('URL convertie:', convertedUrl);
-      return convertedUrl;
-    }
-    console.log('URL utilisée directement:', url);
-    return url;
-  };
-
-  // Fonction pour obtenir une URL de fallback en cas d'échec
-  const getFallbackUrl = (url: string): string => {
-    const fileId = url.match(/\/file\/d\/([a-zA-Z0-9-_]+)/)?.[1];
-    if (fileId) {
-      // Utiliser le format thumbnail comme fallback
-      return `https://drive.google.com/thumbnail?id=${fileId}&sz=w400`;
-    }
-    return url;
   };
 
   const ViewModeSelector = () => (
@@ -125,190 +101,173 @@ const PoeticPhotoGallery: React.FC<PoeticPhotoGalleryProps> = ({ marche, theme }
     </div>
   );
 
-  const ImageWithFallback = ({ src, alt, className, onClick }: { 
-    src: string; 
-    alt: string; 
-    className: string; 
-    onClick?: () => void;
-  }) => {
-    const [currentSrc, setCurrentSrc] = useState(convertToEmbeddableUrl(src));
-    const [hasError, setHasError] = useState(false);
-
-    const handleError = () => {
-      if (!hasError) {
-        console.log('Tentative de fallback pour:', currentSrc);
-        setCurrentSrc(getFallbackUrl(src));
-        setHasError(true);
-      } else {
-        console.error('Échec définitif pour:', src);
-        handleImageError(src);
-      }
-    };
-
-    return (
-      <img
-        src={currentSrc}
-        alt={alt}
-        className={className}
-        onClick={onClick}
-        onError={handleError}
-        crossOrigin="anonymous"
-        loading="lazy"
-      />
-    );
-  };
-
-  const PoeticView = () => {
-    const validPhotos = getValidPhotos();
-    
-    return (
-      <div className="relative">
-        <div className="relative h-64 rounded-2xl overflow-hidden bg-gradient-to-br from-purple-100 via-pink-50 to-blue-100">
-          {validPhotos.length > 0 && (
-            <div className="absolute inset-0">
-              <ImageWithFallback
-                src={validPhotos[currentIndex]}
-                alt={`${marche.ville} - Vision poétique`}
-                className="w-full h-full object-cover opacity-70"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-purple-900/60 via-transparent to-pink-900/40" />
-            </div>
-          )}
-          
-          {/* Overlay poétique */}
-          <div className="absolute inset-0 flex items-center justify-center">
-            <div className="text-center text-white p-6">
-              <div className="flex justify-center mb-4">
-                <div className="w-12 h-12 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center">
-                  <Eye className="h-6 w-6 text-white" />
-                </div>
-              </div>
-              <h3 className="text-lg font-bold mb-2 bg-gradient-to-r from-white to-purple-200 bg-clip-text text-transparent">
-                {marche.ville}
-              </h3>
-              <p className="text-sm opacity-90">{validPhotos.length} vision{validPhotos.length > 1 ? 's' : ''} révélée{validPhotos.length > 1 ? 's' : ''}</p>
-            </div>
+  const PoeticView = () => (
+    <div className="relative">
+      <div className="relative h-64 rounded-2xl overflow-hidden bg-gradient-to-br from-purple-100 via-pink-50 to-blue-100">
+        {photos.length > 0 && (
+          <div className="absolute inset-0">
+            <img
+              src={photos[currentIndex]}
+              alt={`${marche.ville} - Vision poétique`}
+              className="w-full h-full object-cover opacity-70"
+              onLoad={() => handleImageLoad(photos[currentIndex])}
+              onError={() => handleImageError(photos[currentIndex])}
+              crossOrigin="anonymous"
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-purple-900/60 via-transparent to-pink-900/40" />
           </div>
-          
-          {/* Navigation poétique */}
-          {validPhotos.length > 1 && (
-            <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2">
-              <div className="flex space-x-2">
-                {validPhotos.map((_, index) => (
-                  <button
-                    key={index}
-                    onClick={() => setCurrentIndex(index)}
-                    className={`w-2 h-2 rounded-full transition-all duration-300 ${
-                      index === currentIndex 
-                        ? 'bg-white scale-125' 
-                        : 'bg-white/50 hover:bg-white/70'
-                    }`}
-                  />
-                ))}
+        )}
+        
+        {/* Overlay poétique */}
+        <div className="absolute inset-0 flex items-center justify-center">
+          <div className="text-center text-white p-6">
+            <div className="flex justify-center mb-4">
+              <div className="w-12 h-12 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center">
+                <Eye className="h-6 w-6 text-white" />
               </div>
             </div>
-          )}
-          
-          {/* Effets visuels */}
-          <div className="absolute top-4 right-4 text-white/60">
-            <Zap className="h-5 w-5 animate-pulse" />
+            <h3 className="text-lg font-bold mb-2 bg-gradient-to-r from-white to-purple-200 bg-clip-text text-transparent">
+              {marche.ville}
+            </h3>
+            <p className="text-sm opacity-90">
+              {photos.length} photo{photos.length > 1 ? 's' : ''} trouvée{photos.length > 1 ? 's' : ''}
+            </p>
+            <p className="text-xs opacity-70 mt-1">
+              {loadedImages.size} chargée{loadedImages.size > 1 ? 's' : ''}
+            </p>
           </div>
         </div>
         
-        {/* Métadonnées poétiques */}
-        {validPhotos.length > 0 && (
-          <div className="mt-4 grid grid-cols-3 gap-2">
-            {validPhotos.slice(0, 3).map((photo, index) => (
-              <div
-                key={index}
-                className={`relative h-16 rounded-lg overflow-hidden cursor-pointer transition-all duration-300 ${
-                  index === currentIndex ? 'ring-2 ring-purple-400 scale-105' : 'hover:scale-102'
-                }`}
-                onClick={() => setCurrentIndex(index)}
-              >
-                <ImageWithFallback
-                  src={photo}
-                  alt={`Aperçu ${index + 1}`}
-                  className="w-full h-full object-cover"
+        {/* Navigation poétique */}
+        {photos.length > 1 && (
+          <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2">
+            <div className="flex space-x-2">
+              {photos.map((_, index) => (
+                <button
+                  key={index}
+                  onClick={() => setCurrentIndex(index)}
+                  className={`w-2 h-2 rounded-full transition-all duration-300 ${
+                    index === currentIndex 
+                      ? 'bg-white scale-125' 
+                      : 'bg-white/50 hover:bg-white/70'
+                  }`}
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
         )}
+        
+        {/* Effets visuels */}
+        <div className="absolute top-4 right-4 text-white/60">
+          <Zap className="h-5 w-5 animate-pulse" />
+        </div>
       </div>
-    );
-  };
+      
+      {/* Métadonnées poétiques */}
+      {photos.length > 0 && (
+        <div className="mt-4 grid grid-cols-3 gap-2">
+          {photos.slice(0, 3).map((photo, index) => (
+            <div
+              key={index}
+              className={`relative h-16 rounded-lg overflow-hidden cursor-pointer transition-all duration-300 ${
+                index === currentIndex ? 'ring-2 ring-purple-400 scale-105' : 'hover:scale-102'
+              }`}
+              onClick={() => setCurrentIndex(index)}
+            >
+              <img
+                src={photo}
+                alt={`Aperçu ${index + 1}`}
+                className="w-full h-full object-cover"
+                onLoad={() => handleImageLoad(photo)}
+                onError={() => handleImageError(photo)}
+                crossOrigin="anonymous"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
+              {loadedImages.has(photo) && (
+                <div className="absolute top-1 right-1 w-2 h-2 bg-green-400 rounded-full" />
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
 
-  const CarouselView = () => {
-    const validPhotos = getValidPhotos();
-    
-    return (
-      <div className="relative">
-        <Carousel className="w-full">
-          <CarouselContent>
-            {validPhotos.map((photo, index) => (
-              <CarouselItem key={index}>
-                <div className="relative group">
-                  <div className="relative h-48 rounded-xl overflow-hidden bg-gradient-to-br from-gray-100 to-gray-200">
-                    <ImageWithFallback
-                      src={photo}
-                      alt={`${marche.ville} - Photo ${index + 1}`}
-                      className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                    <div className="absolute bottom-3 left-3 right-3 text-white opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                      <div className="flex justify-between items-center">
-                        <span className="text-sm font-medium">{index + 1}/{validPhotos.length}</span>
+  const CarouselView = () => (
+    <div className="relative">
+      <Carousel className="w-full">
+        <CarouselContent>
+          {photos.map((photo, index) => (
+            <CarouselItem key={index}>
+              <div className="relative group">
+                <div className="relative h-48 rounded-xl overflow-hidden bg-gradient-to-br from-gray-100 to-gray-200">
+                  <img
+                    src={photo}
+                    alt={`${marche.ville} - Photo ${index + 1}`}
+                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                    onLoad={() => handleImageLoad(photo)}
+                    onError={() => handleImageError(photo)}
+                    crossOrigin="anonymous"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                  <div className="absolute bottom-3 left-3 right-3 text-white opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm font-medium">{index + 1}/{photos.length}</span>
+                      <div className="flex items-center space-x-2">
                         <Heart className="h-4 w-4 hover:text-red-400 transition-colors cursor-pointer" />
+                        {loadedImages.has(photo) && (
+                          <div className="w-2 h-2 bg-green-400 rounded-full" />
+                        )}
                       </div>
                     </div>
                   </div>
                 </div>
-              </CarouselItem>
-            ))}
-          </CarouselContent>
-          <CarouselPrevious className="left-2" />
-          <CarouselNext className="right-2" />
-        </Carousel>
-      </div>
-    );
-  };
-
-  const GridView = () => {
-    const validPhotos = getValidPhotos();
-    
-    return (
-      <div className="grid grid-cols-2 gap-3">
-        {validPhotos.slice(0, 8).map((photo, index) => (
-          <div
-            key={index}
-            className="relative group aspect-square rounded-xl overflow-hidden bg-gradient-to-br from-gray-100 to-gray-200 cursor-pointer"
-            onClick={() => setCurrentIndex(index)}
-          >
-            <ImageWithFallback
-              src={photo}
-              alt={`${marche.ville} - Photo ${index + 1}`}
-              className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-            />
-            <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors duration-300" />
-            <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-              <div className="w-6 h-6 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center">
-                <span className="text-xs text-white font-medium">{index + 1}</span>
               </div>
+            </CarouselItem>
+          ))}
+        </CarouselContent>
+        <CarouselPrevious className="left-2" />
+        <CarouselNext className="right-2" />
+      </Carousel>
+    </div>
+  );
+
+  const GridView = () => (
+    <div className="grid grid-cols-2 gap-3">
+      {photos.slice(0, 8).map((photo, index) => (
+        <div
+          key={index}
+          className="relative group aspect-square rounded-xl overflow-hidden bg-gradient-to-br from-gray-100 to-gray-200 cursor-pointer"
+          onClick={() => setCurrentIndex(index)}
+        >
+          <img
+            src={photo}
+            alt={`${marche.ville} - Photo ${index + 1}`}
+            className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+            onLoad={() => handleImageLoad(photo)}
+            onError={() => handleImageError(photo)}
+            crossOrigin="anonymous"
+          />
+          <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors duration-300" />
+          <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+            <div className="w-6 h-6 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center">
+              <span className="text-xs text-white font-medium">{index + 1}</span>
             </div>
           </div>
-        ))}
-        {validPhotos.length > 8 && (
-          <div className="col-span-2 flex justify-center">
-            <Badge variant="outline" className="text-xs">
-              +{validPhotos.length - 8} autres photos
-            </Badge>
-          </div>
-        )}
-      </div>
-    );
-  };
+          {loadedImages.has(photo) && (
+            <div className="absolute top-2 left-2 w-2 h-2 bg-green-400 rounded-full" />
+          )}
+        </div>
+      ))}
+      {photos.length > 8 && (
+        <div className="col-span-2 flex justify-center">
+          <Badge variant="outline" className="text-xs">
+            +{photos.length - 8} autres photos
+          </Badge>
+        </div>
+      )}
+    </div>
+  );
 
   if (isLoading) {
     return (
@@ -321,20 +280,13 @@ const PoeticPhotoGallery: React.FC<PoeticPhotoGalleryProps> = ({ marche, theme }
     );
   }
 
-  const validPhotos = getValidPhotos();
-
-  if (validPhotos.length === 0) {
+  if (photos.length === 0) {
     return (
       <div className="flex items-center justify-center h-48 bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl border-2 border-dashed border-gray-300">
         <div className="text-center text-gray-500">
           <ImageIcon className="h-12 w-12 mx-auto mb-2 opacity-50" />
-          <p className="text-sm">Aucune photo trouvée ou accessible</p>
-          <p className="text-xs mt-1">Vérifiez le lien Google Drive ou les permissions</p>
-          {photos.length > 0 && (
-            <p className="text-xs mt-1 text-orange-600">
-              {photos.length} photo{photos.length > 1 ? 's' : ''} détectée{photos.length > 1 ? 's' : ''} mais non accessible{photos.length > 1 ? 's' : ''}
-            </p>
-          )}
+          <p className="text-sm">Aucune photo trouvée</p>
+          <p className="text-xs mt-1">Vérifiez le lien Google Drive</p>
         </div>
       </div>
     );
@@ -345,7 +297,7 @@ const PoeticPhotoGallery: React.FC<PoeticPhotoGalleryProps> = ({ marche, theme }
       <div className="flex items-center justify-between">
         <h4 className="font-medium text-sm flex items-center">
           <ImageIcon className="h-4 w-4 mr-2" />
-          Photos réelles ({validPhotos.length})
+          Photos ({photos.length} trouvées, {loadedImages.size} chargées)
         </h4>
         <ViewModeSelector />
       </div>
