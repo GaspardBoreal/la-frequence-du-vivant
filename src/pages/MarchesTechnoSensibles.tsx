@@ -116,8 +116,8 @@ const MarchesTechnoSensibles = () => {
                   </span>
                 </div>
                 
-                {/* Titre principal - structure exacte avec couleurs spécifiques */}
-                <h1 className="font-crimson font-normal leading-tight text-7xl md:text-8xl lg:text-9xl">
+                {/* Titre principal - taille réduite */}
+                <h1 className="font-crimson font-normal leading-tight text-3xl md:text-4xl lg:text-5xl">
                   <span className="text-white">Cartographie</span><br />
                   <span style={{ color: '#4ade80' }}>Interactive</span>
                 </h1>
