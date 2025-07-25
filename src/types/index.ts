@@ -11,7 +11,6 @@ export interface SearchResult {
 
 export interface LayerConfig {
   marchesTechnoSensibles: boolean;
-  openData: boolean;
 }
 
 export interface SelectedParcel {

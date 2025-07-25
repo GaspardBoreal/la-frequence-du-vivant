@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { toast } from 'sonner';
@@ -20,7 +19,6 @@ const MarchesTechnoSensibles = () => {
   const [theme, setTheme] = useState<RegionalTheme>(REGIONAL_THEMES['nouvelle-aquitaine']);
   const [layers, setLayers] = useState<LayerConfig>({
     marchesTechnoSensibles: true,
-    openData: false,
   });
   const [selectedParcel, setSelectedParcel] = useState<SelectedParcel | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -139,20 +137,18 @@ const MarchesTechnoSensibles = () => {
             </div>
           </header>
 
-          {/* Main Content - remonté avec moins d'espacement */}
+          {/* Main Content */}
           <div className="max-w-6xl mx-auto px-6 py-6">
             <div className="space-y-6">
-              {/* Layer Selector en largeur */}
+              {/* Layer Selector et filtres en largeur */}
               <div className="animate-fade-in" style={{animationDelay: '0.3s'}}>
-                <div className="gaspard-card rounded-xl p-6">
-                  <LayerSelector 
-                    layers={layers} 
-                    onChange={handleLayerChange} 
-                    theme={theme}
-                    marchesData={marchesData}
-                    onFilteredDataChange={handleFilteredDataChange}
-                  />
-                </div>
+                <LayerSelector 
+                  layers={layers} 
+                  onChange={handleLayerChange} 
+                  theme={theme}
+                  marchesData={marchesData}
+                  onFilteredDataChange={handleFilteredDataChange}
+                />
               </div>
 
               {/* Map en pleine largeur */}

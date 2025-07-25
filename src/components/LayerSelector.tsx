@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { ChevronDown, ChevronUp } from 'lucide-react';
 import { LayerConfig } from '../types';
@@ -42,54 +43,39 @@ const LayerSelector: React.FC<LayerSelectorProps> = ({
   return (
     <div className="space-y-4">
       <div className="bg-white rounded-xl shadow-lg p-6">
-        <h3 className="text-lg font-semibold mb-4 text-gray-800">Couches de données</h3>
+        <h3 className="text-lg font-semibold mb-4 text-gray-800">Sélectionner les marches techno sensibles</h3>
         
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center">
-              <input
-                type="checkbox"
-                id="marchesTechnoSensibles"
-                checked={layers.marchesTechnoSensibles}
-                onChange={() => handleLayerToggle('marchesTechnoSensibles')}
-                className="h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300 rounded"
-              />
-              <label htmlFor="marchesTechnoSensibles" className="ml-2 text-sm text-gray-700">
-                Marche Techno-sensible
-              </label>
-            </div>
-            
-            {layers.marchesTechnoSensibles && (
-              <button
-                onClick={toggleFilters}
-                className="flex items-center space-x-1 px-3 py-1 text-xs rounded-full transition-colors hover:bg-gray-100"
-                style={{ 
-                  backgroundColor: showFilters ? theme.colors.primary : 'transparent',
-                  color: showFilters ? 'white' : theme.colors.primary
-                }}
-              >
-                <span>Filtres</span>
-                {showFilters ? (
-                  <ChevronUp className="h-3 w-3" />
-                ) : (
-                  <ChevronDown className="h-3 w-3" />
-                )}
-              </button>
-            )}
-          </div>
-
+        <div className="flex items-center justify-between">
           <div className="flex items-center">
             <input
               type="checkbox"
-              id="openData"
-              checked={layers.openData}
-              onChange={() => handleLayerToggle('openData')}
+              id="marchesTechnoSensibles"
+              checked={layers.marchesTechnoSensibles}
+              onChange={() => handleLayerToggle('marchesTechnoSensibles')}
               className="h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300 rounded"
             />
-            <label htmlFor="openData" className="ml-2 text-sm text-gray-700">
-              OpenData
+            <label htmlFor="marchesTechnoSensibles" className="ml-2 text-sm text-gray-700">
+              Marche Techno-sensible
             </label>
           </div>
+          
+          {layers.marchesTechnoSensibles && (
+            <button
+              onClick={toggleFilters}
+              className="flex items-center space-x-1 px-3 py-1 text-xs rounded-full transition-colors hover:bg-gray-100"
+              style={{ 
+                backgroundColor: showFilters ? theme.colors.primary : 'transparent',
+                color: showFilters ? 'white' : theme.colors.primary
+              }}
+            >
+              <span>Filtres</span>
+              {showFilters ? (
+                <ChevronUp className="h-3 w-3" />
+              ) : (
+                <ChevronDown className="h-3 w-3" />
+              )}
+            </button>
+          )}
         </div>
       </div>
 
