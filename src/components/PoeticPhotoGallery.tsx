@@ -30,17 +30,25 @@ const PoeticPhotoGallery: React.FC<PoeticPhotoGalleryProps> = ({ marche, theme }
     const loadPhotos = async () => {
       setIsLoading(true);
       
-      let loadedPhotos: string[] = [];
+      console.log(`\n=== Chargement des photos pour ${marche.ville} ===`);
+      console.log('Lien Google Drive:', marche.lien);
       
-      // Charger UNIQUEMENT depuis Google Drive si le lien existe
       if (marche.lien) {
-        console.log('Chargement des photos depuis Google Drive:', marche.lien);
-        loadedPhotos = await extractPhotosFromGoogleDrive(marche.lien);
-        console.log('Photos récupérées:', loadedPhotos);
+        try {
+          const loadedPhotos = await extractPhotosFromGoogleDrive(marche.lien);
+          console.log(`Photos récupérées pour ${marche.ville}:`, loadedPhotos);
+          console.log(`Nombre de photos trouvées: ${loadedPhotos.length}`);
+          
+          setPhotos(loadedPhotos);
+        } catch (error) {
+          console.error('Erreur lors du chargement des photos:', error);
+          setPhotos([]);
+        }
+      } else {
+        console.log(`Aucun lien Google Drive pour ${marche.ville}`);
+        setPhotos([]);
       }
       
-      // Ne pas utiliser de fallback - afficher seulement les vraies photos
-      setPhotos(loadedPhotos);
       setIsLoading(false);
     };
 
@@ -89,8 +97,12 @@ const PoeticPhotoGallery: React.FC<PoeticPhotoGalleryProps> = ({ marche, theme }
           <div className="absolute inset-0">
             <img
               src={photos[currentIndex]}
-              alt={`${marche.nomMarche} - Vision poétique`}
+              alt={`${marche.ville} - Vision poétique`}
               className="w-full h-full object-cover opacity-70"
+              onError={(e) => {
+                console.error('Erreur de chargement de l\'image:', photos[currentIndex]);
+                e.currentTarget.style.display = 'none';
+              }}
             />
             <div className="absolute inset-0 bg-gradient-to-t from-purple-900/60 via-transparent to-pink-900/40" />
           </div>
@@ -105,7 +117,7 @@ const PoeticPhotoGallery: React.FC<PoeticPhotoGalleryProps> = ({ marche, theme }
               </div>
             </div>
             <h3 className="text-lg font-bold mb-2 bg-gradient-to-r from-white to-purple-200 bg-clip-text text-transparent">
-              {marche.nomMarche || marche.ville}
+              {marche.ville}
             </h3>
             <p className="text-sm opacity-90">{photos.length} vision{photos.length > 1 ? 's' : ''} révélée{photos.length > 1 ? 's' : ''}</p>
           </div>
@@ -151,6 +163,9 @@ const PoeticPhotoGallery: React.FC<PoeticPhotoGalleryProps> = ({ marche, theme }
                 src={photo}
                 alt={`Aperçu ${index + 1}`}
                 className="w-full h-full object-cover"
+                onError={(e) => {
+                  console.error('Erreur de chargement de l\'aperçu:', photo);
+                }}
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
             </div>
@@ -170,8 +185,11 @@ const PoeticPhotoGallery: React.FC<PoeticPhotoGalleryProps> = ({ marche, theme }
                 <div className="relative h-48 rounded-xl overflow-hidden bg-gradient-to-br from-gray-100 to-gray-200">
                   <img
                     src={photo}
-                    alt={`${marche.nomMarche} - Photo ${index + 1}`}
+                    alt={`${marche.ville} - Photo ${index + 1}`}
                     className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                    onError={(e) => {
+                      console.error('Erreur de chargement de l\'image carousel:', photo);
+                    }}
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                   <div className="absolute bottom-3 left-3 right-3 text-white opacity-0 group-hover:opacity-100 transition-opacity duration-300">
@@ -201,8 +219,11 @@ const PoeticPhotoGallery: React.FC<PoeticPhotoGalleryProps> = ({ marche, theme }
         >
           <img
             src={photo}
-            alt={`${marche.nomMarche} - Photo ${index + 1}`}
+            alt={`${marche.ville} - Photo ${index + 1}`}
             className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+            onError={(e) => {
+              console.error('Erreur de chargement de l\'image grid:', photo);
+            }}
           />
           <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors duration-300" />
           <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
@@ -227,7 +248,7 @@ const PoeticPhotoGallery: React.FC<PoeticPhotoGalleryProps> = ({ marche, theme }
       <div className="flex items-center justify-center h-48 bg-gradient-to-br from-purple-50 to-pink-50 rounded-xl">
         <div className="text-center">
           <div className="animate-spin w-8 h-8 border-2 border-purple-500 border-t-transparent rounded-full mx-auto mb-2"></div>
-          <p className="text-sm text-gray-600">Révélation des visions...</p>
+          <p className="text-sm text-gray-600">Récupération des photos Google Drive...</p>
         </div>
       </div>
     );
@@ -238,8 +259,8 @@ const PoeticPhotoGallery: React.FC<PoeticPhotoGalleryProps> = ({ marche, theme }
       <div className="flex items-center justify-center h-48 bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl border-2 border-dashed border-gray-300">
         <div className="text-center text-gray-500">
           <ImageIcon className="h-12 w-12 mx-auto mb-2 opacity-50" />
-          <p className="text-sm">Aucune vision disponible</p>
-          <p className="text-xs mt-1">Répertoire Google Drive vide ou inaccessible</p>
+          <p className="text-sm">Aucune photo trouvée</p>
+          <p className="text-xs mt-1">Vérifiez le lien Google Drive ou les permissions</p>
         </div>
       </div>
     );
@@ -250,7 +271,7 @@ const PoeticPhotoGallery: React.FC<PoeticPhotoGalleryProps> = ({ marche, theme }
       <div className="flex items-center justify-between">
         <h4 className="font-medium text-sm flex items-center">
           <ImageIcon className="h-4 w-4 mr-2" />
-          Visions poétiques ({photos.length})
+          Photos réelles ({photos.length})
         </h4>
         <ViewModeSelector />
       </div>
