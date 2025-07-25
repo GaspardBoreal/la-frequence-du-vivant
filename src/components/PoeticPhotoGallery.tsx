@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from './ui/carousel';
 import { Badge } from './ui/badge';
@@ -65,16 +66,27 @@ const PoeticPhotoGallery: React.FC<PoeticPhotoGalleryProps> = ({ marche, theme }
     return photos.filter(photo => !failedImages.has(photo));
   };
 
-  // Fonction pour convertir les URLs Google Drive au format uc?export=view&id=
+  // Fonction pour convertir les URLs Google Drive vers plusieurs formats de fallback
   const convertToEmbeddableUrl = (url: string): string => {
     // Extraire l'ID du fichier depuis l'URL /view
     const fileId = url.match(/\/file\/d\/([a-zA-Z0-9-_]+)/)?.[1];
     if (fileId) {
+      // Essayer le format uc?export=view&id= en priorité
       const convertedUrl = `https://drive.google.com/uc?export=view&id=${fileId}`;
       console.log('URL convertie:', convertedUrl);
       return convertedUrl;
     }
     console.log('URL utilisée directement:', url);
+    return url;
+  };
+
+  // Fonction pour obtenir une URL de fallback en cas d'échec
+  const getFallbackUrl = (url: string): string => {
+    const fileId = url.match(/\/file\/d\/([a-zA-Z0-9-_]+)/)?.[1];
+    if (fileId) {
+      // Utiliser le format thumbnail comme fallback
+      return `https://drive.google.com/thumbnail?id=${fileId}&sz=w400`;
+    }
     return url;
   };
 
@@ -113,6 +125,39 @@ const PoeticPhotoGallery: React.FC<PoeticPhotoGalleryProps> = ({ marche, theme }
     </div>
   );
 
+  const ImageWithFallback = ({ src, alt, className, onClick }: { 
+    src: string; 
+    alt: string; 
+    className: string; 
+    onClick?: () => void;
+  }) => {
+    const [currentSrc, setCurrentSrc] = useState(convertToEmbeddableUrl(src));
+    const [hasError, setHasError] = useState(false);
+
+    const handleError = () => {
+      if (!hasError) {
+        console.log('Tentative de fallback pour:', currentSrc);
+        setCurrentSrc(getFallbackUrl(src));
+        setHasError(true);
+      } else {
+        console.error('Échec définitif pour:', src);
+        handleImageError(src);
+      }
+    };
+
+    return (
+      <img
+        src={currentSrc}
+        alt={alt}
+        className={className}
+        onClick={onClick}
+        onError={handleError}
+        crossOrigin="anonymous"
+        loading="lazy"
+      />
+    );
+  };
+
   const PoeticView = () => {
     const validPhotos = getValidPhotos();
     
@@ -121,12 +166,10 @@ const PoeticPhotoGallery: React.FC<PoeticPhotoGalleryProps> = ({ marche, theme }
         <div className="relative h-64 rounded-2xl overflow-hidden bg-gradient-to-br from-purple-100 via-pink-50 to-blue-100">
           {validPhotos.length > 0 && (
             <div className="absolute inset-0">
-              <img
-                src={convertToEmbeddableUrl(validPhotos[currentIndex])}
+              <ImageWithFallback
+                src={validPhotos[currentIndex]}
                 alt={`${marche.ville} - Vision poétique`}
                 className="w-full h-full object-cover opacity-70"
-                onError={() => handleImageError(validPhotos[currentIndex])}
-                crossOrigin="anonymous"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-purple-900/60 via-transparent to-pink-900/40" />
             </div>
@@ -183,12 +226,10 @@ const PoeticPhotoGallery: React.FC<PoeticPhotoGalleryProps> = ({ marche, theme }
                 }`}
                 onClick={() => setCurrentIndex(index)}
               >
-                <img
-                  src={convertToEmbeddableUrl(photo)}
+                <ImageWithFallback
+                  src={photo}
                   alt={`Aperçu ${index + 1}`}
                   className="w-full h-full object-cover"
-                  onError={() => handleImageError(photo)}
-                  crossOrigin="anonymous"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
               </div>
@@ -210,12 +251,10 @@ const PoeticPhotoGallery: React.FC<PoeticPhotoGalleryProps> = ({ marche, theme }
               <CarouselItem key={index}>
                 <div className="relative group">
                   <div className="relative h-48 rounded-xl overflow-hidden bg-gradient-to-br from-gray-100 to-gray-200">
-                    <img
-                      src={convertToEmbeddableUrl(photo)}
+                    <ImageWithFallback
+                      src={photo}
                       alt={`${marche.ville} - Photo ${index + 1}`}
                       className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
-                      onError={() => handleImageError(photo)}
-                      crossOrigin="anonymous"
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                     <div className="absolute bottom-3 left-3 right-3 text-white opacity-0 group-hover:opacity-100 transition-opacity duration-300">
@@ -247,12 +286,10 @@ const PoeticPhotoGallery: React.FC<PoeticPhotoGalleryProps> = ({ marche, theme }
             className="relative group aspect-square rounded-xl overflow-hidden bg-gradient-to-br from-gray-100 to-gray-200 cursor-pointer"
             onClick={() => setCurrentIndex(index)}
           >
-            <img
-              src={convertToEmbeddableUrl(photo)}
+            <ImageWithFallback
+              src={photo}
               alt={`${marche.ville} - Photo ${index + 1}`}
               className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-              onError={() => handleImageError(photo)}
-              crossOrigin="anonymous"
             />
             <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors duration-300" />
             <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
