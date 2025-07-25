@@ -1,6 +1,6 @@
 
 // Utilitaires pour extraire les photos depuis Google Drive
-export const extractPhotosFromGoogleDrive = async (driveUrl: string): Promise<string[]> => {
+export const extractPhotosFromGoogleDrive = async (driveUrl: string): Promise<PhotoData[]> => {
   if (!driveUrl || !driveUrl.includes('drive.google.com')) {
     return [];
   }
@@ -59,6 +59,14 @@ export const extractPhotosFromGoogleDrive = async (driveUrl: string): Promise<st
     return [];
   }
 };
+
+// Define the PhotoData interface
+export interface PhotoData {
+  id: string;
+  name: string;
+  mimeType: string;
+  urls: string[];
+}
 
 const extractFolderIdFromUrl = (url: string): string | null => {
   // Gestion des différents formats d'URL Google Drive

@@ -12,20 +12,13 @@ import {
   AlertCircle,
   CheckCircle
 } from 'lucide-react';
-import { extractPhotosFromGoogleDrive } from '../utils/googleDriveApi';
+import { extractPhotosFromGoogleDrive, PhotoData } from '../utils/googleDriveApi';
 import { MarcheTechnoSensible } from '../utils/googleSheetsApi';
 import { RegionalTheme } from '../utils/regionalThemes';
 
 interface PoeticPhotoGalleryProps {
   marche: MarcheTechnoSensible;
   theme: RegionalTheme;
-}
-
-interface PhotoData {
-  id: string;
-  name: string;
-  mimeType: string;
-  urls: string[];
 }
 
 const PoeticPhotoGallery: React.FC<PoeticPhotoGalleryProps> = ({ marche, theme }) => {
