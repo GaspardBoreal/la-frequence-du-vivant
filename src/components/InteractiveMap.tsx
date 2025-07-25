@@ -7,9 +7,6 @@ import { RegionalTheme } from '../utils/regionalThemes';
 import { LayerConfig, SearchResult, SelectedParcel } from '../pages/Index';
 import { fetchParcelData } from '../utils/lexiconApi';
 
-// Import Leaflet CSS
-import 'leaflet/dist/leaflet.css';
-
 interface InteractiveMapProps {
   searchResult: SearchResult | null;
   layers: LayerConfig;
@@ -37,13 +34,12 @@ const InteractiveMap: React.FC<InteractiveMapProps> = ({
     retry: 3
   });
 
-  // Simplifier la gestion du centre de carte
   useEffect(() => {
     if (searchResult?.coordinates) {
       setMapCenter(searchResult.coordinates);
       setZoom(15);
     }
-  }, [searchResult?.coordinates]);
+  }, [searchResult]);
 
   const handleParcelClick = () => {
     if (searchResult && parcelData) {
@@ -71,29 +67,23 @@ const InteractiveMap: React.FC<InteractiveMapProps> = ({
         zoom={zoom}
         style={{ height: '100%', width: '100%' }}
         className="rounded-lg"
-        key={`${mapCenter[0]}-${mapCenter[1]}`}
       >
         <TileLayer
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
         />
         
-        {/* Marker de recherche simplifié */}
         {searchResult && (
           <Marker position={searchResult.coordinates}>
             <Popup>
               <div className="p-2">
                 <h3 className="font-bold text-sm mb-1">Point de recherche</h3>
                 <p className="text-xs text-gray-600">{searchResult.address}</p>
-                <p className="text-xs text-gray-500">
-                  {searchResult.coordinates[0].toFixed(6)}, {searchResult.coordinates[1].toFixed(6)}
-                </p>
               </div>
             </Popup>
           </Marker>
         )}
 
-        {/* Polygon de parcelle */}
         {parcelData?.geolocation?.shape && searchResult && layers.parcelles && (
           <Polygon
             positions={parcelData.geolocation.shape.coordinates[0][0].map(
@@ -116,9 +106,6 @@ const InteractiveMap: React.FC<InteractiveMapProps> = ({
                 </h3>
                 <p className="text-xs text-gray-600 mb-1">
                   Surface: {parcelData.cadastre?.area?.value || 'N/A'} {parcelData.cadastre?.area?.unit || ''}
-                </p>
-                <p className="text-xs text-gray-600">
-                  Ville: {parcelData.information?.city?.value || 'N/A'}
                 </p>
                 <button
                   onClick={handleParcelClick}
