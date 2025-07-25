@@ -77,22 +77,22 @@
 
   .gaspard-main-title {
     font-family: 'Crimson Text', serif;
-    @apply text-foreground font-normal leading-tight text-5xl md:text-6xl lg:text-7xl;
+    @apply text-foreground font-normal leading-tight text-lg md:text-xl lg:text-2xl;
   }
 
   .gaspard-subtitle {
     font-family: 'Inter', sans-serif;
-    @apply text-muted-foreground font-light leading-relaxed text-base md:text-lg text-justify;
+    @apply text-muted-foreground font-light leading-relaxed text-sm md:text-base text-justify;
   }
 
   .gaspard-meta {
     font-family: 'Inter', sans-serif;
-    @apply text-accent font-normal text-sm;
+    @apply text-accent font-normal text-xs;
   }
 
   .gaspard-author {
     font-family: 'Inter', sans-serif;
-    @apply text-accent font-medium text-sm;
+    @apply text-accent font-medium text-xs;
   }
 
   /* Effets visuels */
