@@ -1,10 +1,11 @@
-import React, { useState, useEffect } from 'react';
+
+import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import { HelmetProvider } from 'react-helmet-async';
 import { toast } from 'sonner';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, ChevronLeft, ChevronRight } from 'lucide-react';
 
 import SEOHead from '../components/SEOHead';
 import MarcheHeroSection from '../components/MarcheHeroSection';
@@ -15,7 +16,7 @@ import { Button } from '../components/ui/button';
 import PoeticSection from '../components/PoeticSection';
 
 import { fetchMarchesTechnoSensibles, MarcheTechnoSensible } from '../utils/googleSheetsApi';
-import { findMarcheBySlug } from '../utils/slugGenerator';
+import { findMarcheBySlug, createSlug } from '../utils/slugGenerator';
 import { REGIONAL_THEMES, RegionalTheme } from '../utils/regionalThemes';
 
 const MarcheDetail = () => {
@@ -37,6 +38,39 @@ const MarcheDetail = () => {
 
   // Find the specific marche
   const marche = slug ? findMarcheBySlug(marchesData, slug) : null;
+
+  // Calculate previous and next marches based on date
+  const { previousMarche, nextMarche } = useMemo(() => {
+    if (!marche || !marchesData.length) {
+      return { previousMarche: null, nextMarche: null };
+    }
+
+    // Filter marches with valid dates and sort by date
+    const marchesWithDates = marchesData
+      .filter(m => m.date && m.date.trim())
+      .sort((a, b) => {
+        // Parse dates (assuming format DD/MM/YYYY or similar)
+        const parseDate = (dateStr: string) => {
+          const [day, month, year] = dateStr.split('/').map(Number);
+          return new Date(year, month - 1, day);
+        };
+        
+        const dateA = parseDate(a.date!);
+        const dateB = parseDate(b.date!);
+        return dateA.getTime() - dateB.getTime();
+      });
+
+    const currentIndex = marchesWithDates.findIndex(m => m.id === marche.id);
+    
+    if (currentIndex === -1) {
+      return { previousMarche: null, nextMarche: null };
+    }
+
+    const previousMarche = currentIndex > 0 ? marchesWithDates[currentIndex - 1] : null;
+    const nextMarche = currentIndex < marchesWithDates.length - 1 ? marchesWithDates[currentIndex + 1] : null;
+
+    return { previousMarche, nextMarche };
+  }, [marche, marchesData]);
 
   // Set theme based on region
   useEffect(() => {
@@ -65,6 +99,11 @@ const MarcheDetail = () => {
 
   const handleBack = () => {
     navigate('/marches-techno-sensibles');
+  };
+
+  const handleNavigateToMarche = (targetMarche: MarcheTechnoSensible) => {
+    const targetSlug = createSlug(targetMarche.nomMarche || targetMarche.ville, targetMarche.ville);
+    navigate(`/marche/${targetSlug}`);
   };
 
   if (isLoading) {
@@ -138,8 +177,47 @@ const MarcheDetail = () => {
           />
         </div>
 
-        {/* Content Sections */}
-        <div className="max-w-6xl mx-auto px-6 py-8">
+        {/* Content Sections with Navigation */}
+        <div className="max-w-6xl mx-auto px-6 py-8 relative">
+          {/* Navigation Buttons */}
+          {previousMarche && (
+            <motion.div
+              className="fixed left-4 top-1/2 transform -translate-y-1/2 z-10"
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.5 }}
+            >
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => handleNavigateToMarche(previousMarche)}
+                className="bg-white/80 backdrop-blur-sm hover:bg-white/90 shadow-lg border border-gray-200 p-3 rounded-full"
+                title={`Marche précédente: ${previousMarche.nomMarche || previousMarche.ville}`}
+              >
+                <ChevronLeft className="h-5 w-5 text-gray-600" />
+              </Button>
+            </motion.div>
+          )}
+
+          {nextMarche && (
+            <motion.div
+              className="fixed right-4 top-1/2 transform -translate-y-1/2 z-10"
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.5 }}
+            >
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => handleNavigateToMarche(nextMarche)}
+                className="bg-white/80 backdrop-blur-sm hover:bg-white/90 shadow-lg border border-gray-200 p-3 rounded-full"
+                title={`Marche suivante: ${nextMarche.nomMarche || nextMarche.ville}`}
+              >
+                <ChevronRight className="h-5 w-5 text-gray-600" />
+              </Button>
+            </motion.div>
+          )}
+
           <motion.div
             key={activeSection}
             initial={{ opacity: 0, y: 20 }}
