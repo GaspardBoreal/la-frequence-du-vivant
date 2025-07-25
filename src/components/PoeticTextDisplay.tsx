@@ -80,23 +80,25 @@ const PoeticTextDisplay: React.FC<PoeticTextDisplayProps> = ({
             className="relative group cursor-pointer"
             onClick={handleToggleExpand}
           >
-            <div className="bg-gradient-to-br from-white via-gray-50 to-gray-100 rounded-2xl p-8 shadow-lg border border-gray-200 hover:shadow-xl transition-all duration-500 transform hover:-translate-y-1">
+            <div className="bg-gradient-to-br from-white via-gray-50 to-gray-100 rounded-2xl p-4 shadow-lg border border-gray-200 hover:shadow-xl transition-all duration-500 transform hover:-translate-y-1">
               {/* Decorative Elements */}
               <div className="absolute top-4 right-4 opacity-20">
-                <Quote className="h-8 w-8 text-gray-400 transform rotate-12" />
+                <Quote className="h-6 w-6 text-gray-400 transform rotate-12" />
               </div>
               
               {/* Title */}
               {title && (
-                <h3 className="text-xs font-crimson font-bold text-gray-800 mb-3 leading-tight break-words">
-                  {title}
-                </h3>
+                <div className="mb-3 overflow-hidden">
+                  <h3 className="text-xs font-crimson font-bold text-gray-800 leading-tight break-words hyphens-auto overflow-wrap-anywhere line-clamp-2">
+                    {title}
+                  </h3>
+                </div>
               )}
               
               {/* Preview Text */}
               <div className="relative">
-                <p className="text-xs leading-relaxed text-gray-700 font-serif italic mb-4 break-words">
-                  <span className="text-lg font-bold text-gray-300 float-left mr-2 mt-1 leading-none">«</span>
+                <p className="text-xs leading-relaxed text-gray-700 font-serif italic mb-4 break-words hyphens-auto overflow-wrap-anywhere">
+                  <span className="text-sm font-bold text-gray-300 float-left mr-2 mt-1 leading-none">«</span>
                   {previewText}
                   <span className="text-gray-400 ml-2">...</span>
                 </p>
@@ -136,29 +138,33 @@ const PoeticTextDisplay: React.FC<PoeticTextDisplayProps> = ({
             className="bg-white rounded-3xl shadow-2xl border border-gray-200 overflow-hidden"
           >
             {/* Header */}
-            <div className="bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900 text-white p-6">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-3">
-                  <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center">
-                    <Sparkles className="h-6 w-6" />
+            <div className="bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900 text-white p-4">
+              <div className="flex items-center justify-between gap-4">
+                <div className="flex items-center space-x-3 flex-1 min-w-0">
+                  <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center flex-shrink-0">
+                    <Sparkles className="h-5 w-5" />
                   </div>
-                  <div className="flex-1 min-w-0">
+                  <div className="flex-1 min-w-0 overflow-hidden">
                     {title && (
-                      <h2 className="text-xs font-crimson font-bold break-words leading-tight">{title}</h2>
+                      <h2 className="text-xs font-crimson font-bold break-words leading-tight hyphens-auto overflow-wrap-anywhere line-clamp-3">
+                        {title}
+                      </h2>
                     )}
                     {author && (
-                      <p className="text-gray-300 text-xs break-words">{author}</p>
+                      <p className="text-gray-300 text-xs break-words hyphens-auto overflow-wrap-anywhere line-clamp-2">
+                        {author}
+                      </p>
                     )}
                   </div>
                 </div>
                 
                 {/* Controls */}
-                <div className="flex items-center space-x-2 flex-shrink-0">
+                <div className="flex items-center space-x-1 flex-shrink-0">
                   <Button
                     variant="ghost"
                     size="sm"
                     onClick={() => setShowReadingMode(!showReadingMode)}
-                    className="text-white hover:bg-white/20"
+                    className="text-white hover:bg-white/20 p-2"
                   >
                     {showReadingMode ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </Button>
@@ -166,7 +172,7 @@ const PoeticTextDisplay: React.FC<PoeticTextDisplayProps> = ({
                     variant="ghost"
                     size="sm"
                     onClick={handleAutoReading}
-                    className="text-white hover:bg-white/20"
+                    className="text-white hover:bg-white/20 p-2"
                   >
                     {isAutoReading ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
                   </Button>
@@ -174,7 +180,7 @@ const PoeticTextDisplay: React.FC<PoeticTextDisplayProps> = ({
                     variant="ghost"
                     size="sm"
                     onClick={handleToggleExpand}
-                    className="text-white hover:bg-white/20"
+                    className="text-white hover:bg-white/20 p-2"
                   >
                     <EyeOff className="h-4 w-4" />
                   </Button>
@@ -183,7 +189,7 @@ const PoeticTextDisplay: React.FC<PoeticTextDisplayProps> = ({
             </div>
 
             {/* Text Content */}
-            <div className="p-8">
+            <div className="p-6">
               {showReadingMode ? (
                 // Reading Mode - Paragraph by paragraph
                 <div className="space-y-6">
@@ -200,7 +206,7 @@ const PoeticTextDisplay: React.FC<PoeticTextDisplayProps> = ({
                       className={`relative ${isAutoReading && index === currentParagraph ? 'bg-yellow-50 rounded-lg p-4' : ''}`}
                     >
                       <p 
-                        className="text-xs leading-relaxed text-gray-800 font-serif break-words"
+                        className="text-xs leading-relaxed text-gray-800 font-serif break-words hyphens-auto overflow-wrap-anywhere"
                         dangerouslySetInnerHTML={{ __html: highlightText(paragraph) }}
                       />
                     </motion.div>
@@ -221,7 +227,7 @@ const PoeticTextDisplay: React.FC<PoeticTextDisplayProps> = ({
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: index * 0.1, duration: 0.6 }}
-                        className="text-xs break-words"
+                        className="text-xs break-words hyphens-auto overflow-wrap-anywhere"
                         dangerouslySetInnerHTML={{ __html: highlightText(paragraph) }}
                       />
                     ))}
@@ -231,7 +237,7 @@ const PoeticTextDisplay: React.FC<PoeticTextDisplayProps> = ({
             </div>
 
             {/* Footer */}
-            <div className="bg-gray-50 px-8 py-4 border-t border-gray-200">
+            <div className="bg-gray-50 px-6 py-4 border-t border-gray-200">
               <div className="flex items-center justify-between text-xs text-gray-500">
                 <div className="flex items-center space-x-4">
                   <span>{paragraphs.length} paragraphes</span>
