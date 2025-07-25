@@ -21,25 +21,18 @@ interface InteractiveMapProps {
   layers: LayerConfig;
   theme: RegionalTheme;
   onParcelClick: (parcel: SelectedParcel) => void;
+  filteredMarchesData: MarcheTechnoSensible[];
 }
 
 const InteractiveMap: React.FC<InteractiveMapProps> = ({ 
   searchResult, 
   layers, 
   theme, 
-  onParcelClick 
+  onParcelClick,
+  filteredMarchesData 
 }) => {
   const [mapCenter, setMapCenter] = useState<[number, number]>([46.603354, 1.888334]);
   const [zoom, setZoom] = useState(6);
-
-  // Fetch marches techno sensibles when layer is enabled
-  const { data: marchesTechnoSensibles = [] } = useQuery({
-    queryKey: ['marchesTechnoSensibles'],
-    queryFn: () => fetchMarchesTechnoSensibles(),
-    enabled: layers.marchesTechnoSensibles,
-    staleTime: 5 * 60 * 1000, // 5 minutes
-  });
-
 
   useEffect(() => {
     if (searchResult?.coordinates) {
@@ -78,24 +71,39 @@ const InteractiveMap: React.FC<InteractiveMapProps> = ({
           </Marker>
         )}
 
-        {/* Marches TechnoSensibles markers */}
-        {layers.marchesTechnoSensibles && marchesTechnoSensibles.map((marche, index) => (
+        {/* Marches TechnoSensibles markers - utilise les données filtrées */}
+        {layers.marchesTechnoSensibles && filteredMarchesData.map((marche, index) => (
           <Marker 
             key={index} 
             position={[marche.latitude, marche.longitude]}
           >
             <Popup>
-              <div className="p-3">
+              <div className="p-3 min-w-[250px]">
                 <h3 className="font-semibold text-gray-800 mb-2">{marche.ville}</h3>
-                <p className="text-sm text-gray-600 mb-2">
-                  <strong>Thème:</strong> {marche.theme}
-                </p>
+                <div className="space-y-1 text-sm">
+                  <p className="text-gray-600">
+                    <strong>Région:</strong> {marche.region}
+                  </p>
+                  <p className="text-gray-600">
+                    <strong>Département:</strong> {marche.departement}
+                  </p>
+                  <p className="text-gray-600">
+                    <strong>Adresse:</strong> {marche.adresse}
+                  </p>
+                  <p className="text-gray-600">
+                    <strong>Code postal:</strong> {marche.codePostal}
+                  </p>
+                  <p className="text-gray-600">
+                    <strong>Thème:</strong> {marche.theme}
+                  </p>
+                </div>
                 {marche.lien && (
                   <a 
                     href={marche.lien} 
                     target="_blank" 
                     rel="noopener noreferrer"
-                    className="text-blue-600 hover:text-blue-800 text-sm underline"
+                    className="inline-block mt-2 px-3 py-1 text-xs rounded-full text-white hover:opacity-80 transition-opacity"
+                    style={{ backgroundColor: theme.colors.primary }}
                   >
                     Plus d'informations
                   </a>
@@ -106,6 +114,15 @@ const InteractiveMap: React.FC<InteractiveMapProps> = ({
         ))}
 
       </MapContainer>
+      
+      {/* Indicateur du nombre de résultats */}
+      {layers.marchesTechnoSensibles && (
+        <div className="absolute top-4 right-4 bg-white/90 backdrop-blur-sm rounded-lg px-3 py-2 shadow-lg">
+          <p className="text-sm text-gray-700">
+            <span className="font-semibold">{filteredMarchesData.length}</span> marche(s) affichée(s)
+          </p>
+        </div>
+      )}
     </div>
   );
 };

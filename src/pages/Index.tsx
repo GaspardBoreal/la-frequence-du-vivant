@@ -8,6 +8,7 @@ import InteractiveMap from '../components/InteractiveMap';
 import Sidebar from '../components/Sidebar';
 import { RegionalTheme, REGIONAL_THEMES } from '../utils/regionalThemes';
 import { fetchParcelData } from '../utils/lexiconApi';
+import { fetchMarchesTechnoSensibles, MarcheTechnoSensible } from '../utils/googleSheetsApi';
 
 export interface SearchResult {
   coordinates: [number, number];
@@ -35,6 +36,19 @@ const Index = () => {
   });
   const [selectedParcel, setSelectedParcel] = useState<SelectedParcel | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [filteredMarchesData, setFilteredMarchesData] = useState<MarcheTechnoSensible[]>([]);
+
+  // Fetch marches data
+  const { data: marchesData = [] } = useQuery({
+    queryKey: ['marchesTechnoSensibles'],
+    queryFn: fetchMarchesTechnoSensibles,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  });
+
+  // Initialiser les données filtrées avec toutes les données au début
+  useEffect(() => {
+    setFilteredMarchesData(marchesData);
+  }, [marchesData]);
 
   const handleSearch = (result: SearchResult) => {
     setSearchResult(result);
@@ -58,6 +72,10 @@ const Index = () => {
   const handleCloseSidebar = () => {
     setSidebarOpen(false);
     setSelectedParcel(null);
+  };
+
+  const handleFilteredDataChange = (data: MarcheTechnoSensible[]) => {
+    setFilteredMarchesData(data);
   };
 
   useEffect(() => {
@@ -114,6 +132,8 @@ const Index = () => {
                 layers={layers} 
                 onChange={handleLayerChange} 
                 theme={theme}
+                marchesData={marchesData}
+                onFilteredDataChange={handleFilteredDataChange}
               />
             </div>
 
@@ -125,6 +145,7 @@ const Index = () => {
                   layers={layers}
                   theme={theme}
                   onParcelClick={handleParcelClick}
+                  filteredMarchesData={filteredMarchesData}
                 />
               </div>
             </div>

@@ -7,6 +7,10 @@ export interface MarcheTechnoSensible {
   ville: string;
   theme: string;
   lien: string;
+  region: string;
+  departement: string;
+  codePostal: string;
+  adresse: string;
 }
 
 // Données de test en attendant de résoudre le problème d'accès
@@ -16,21 +20,55 @@ const TEST_DATA: MarcheTechnoSensible[] = [
     longitude: 2.3522,
     ville: "Paris",
     theme: "Agriculture urbaine",
-    lien: "https://example.com/paris"
+    lien: "https://example.com/paris",
+    region: "Île-de-France",
+    departement: "Paris",
+    codePostal: "75001",
+    adresse: "Place de la Concorde"
   },
   {
     latitude: 45.764,
     longitude: 4.8357,
     ville: "Lyon",
     theme: "Permaculture",
-    lien: "https://example.com/lyon"
+    lien: "https://example.com/lyon",
+    region: "Auvergne-Rhône-Alpes",
+    departement: "Rhône",
+    codePostal: "69000",
+    adresse: "Place Bellecour"
   },
   {
     latitude: 43.6047,
     longitude: 1.4442,
     ville: "Toulouse",
     theme: "Agroécologie",
-    lien: "https://example.com/toulouse"
+    lien: "https://example.com/toulouse",
+    region: "Occitanie",
+    departement: "Haute-Garonne",
+    codePostal: "31000",
+    adresse: "Place du Capitole"
+  },
+  {
+    latitude: 44.8378,
+    longitude: -0.5792,
+    ville: "Bordeaux",
+    theme: "Biodynamie",
+    lien: "https://example.com/bordeaux",
+    region: "Nouvelle-Aquitaine",
+    departement: "Gironde",
+    codePostal: "33000",
+    adresse: "Place de la Bourse"
+  },
+  {
+    latitude: 43.2965,
+    longitude: 5.3698,
+    ville: "Marseille",
+    theme: "Agriculture urbaine",
+    lien: "https://example.com/marseille",
+    region: "Provence-Alpes-Côte d'Azur",
+    departement: "Bouches-du-Rhône",
+    codePostal: "13001",
+    adresse: "Vieux-Port"
   }
 ];
 
@@ -70,7 +108,11 @@ export const fetchMarchesTechnoSensibles = async (): Promise<MarcheTechnoSensibl
         longitude,
         ville: row[1] || '',
         theme: row[8] || '',
-        lien: row[9] || ''
+        lien: row[9] || '',
+        region: row[5] || '',
+        departement: row[4] || '',
+        codePostal: row[2] || '',
+        adresse: row[3] || ''
       };
     }).filter(item => !isNaN(item.latitude) && !isNaN(item.longitude) && item.ville);
     
