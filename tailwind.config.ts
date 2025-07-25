@@ -76,7 +76,7 @@ export default {
 				}
 			},
 			fontFamily: {
-				'playfair': ['Playfair Display', 'serif'],
+				'crimson': ['Crimson Text', 'serif'],
 				'inter': ['Inter', 'sans-serif'],
 			},
 			borderRadius: {

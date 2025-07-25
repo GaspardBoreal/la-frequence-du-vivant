@@ -89,40 +89,44 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-background relative overflow-hidden">
-      {/* Fond avec texture et gradient */}
-      <div className="absolute inset-0 bg-gradient-to-br from-gaspard-dark via-gaspard-emerald to-gaspard-forest"></div>
+      {/* Fond avec gradient vert émeraude */}
+      <div className="absolute inset-0 bg-gradient-to-br from-background via-primary to-secondary"></div>
       
-      {/* Éléments décoratifs inspirés de l'image */}
-      <DecorativeElements className="text-gaspard-mint/30" />
+      {/* Éléments décoratifs */}
+      <DecorativeElements className="text-accent/20" />
       
       <div className="relative z-10">
-        {/* Header avec le nouveau design sombre */}
-        <header className="bg-card/90 backdrop-blur-sm shadow-2xl border-b border-border/50">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-            <div className="text-center animate-fade-in">
-              {/* Titre principal inspiré de l'image */}
-              <h1 className="gaspard-title text-4xl md:text-5xl lg:text-6xl mb-3">
-                Gaspard Boréal
-              </h1>
-              
-              {/* Titre secondaire en or */}
-              <div className="mb-4">
-                <h2 className="gaspard-subtitle text-xl md:text-2xl lg:text-3xl">
-                  La Fréquence du Vivant
-                </h2>
+        {/* Header avec typographie exacte */}
+        <header className="bg-card/60 backdrop-blur-md shadow-lg border-b border-border/30">
+          <div className="max-w-6xl mx-auto px-6 py-16">
+            <div className="text-center space-y-6 animate-fade-in">
+              {/* Catégorie */}
+              <div className="gaspard-category">
+                Bioacoustique & Poésie
               </div>
               
-              {/* Sous-titre poétique */}
-              <p className="gaspard-text text-base md:text-lg max-w-3xl mx-auto">
-                marche techno-sensible entre vivant, humain et machine
+              {/* Titre principal - structure exacte */}
+              <h1 className="gaspard-main-title">
+                La Fréquence<br />
+                du Vivant
+              </h1>
+              
+              {/* Sous-titre */}
+              <p className="gaspard-subtitle max-w-2xl mx-auto">
+                Marche techno-sensible entre vivant, humain et machine
               </p>
               
+              {/* Meta informations */}
+              <div className="flex items-center justify-center space-x-4 pt-8">
+                <span className="gaspard-meta">2025</span>
+                <span className="text-accent">•</span>
+                <span className="gaspard-author">Gaspard Boréal</span>
+              </div>
+              
               {/* Indicateur de région */}
-              <div className="mt-6 flex items-center justify-center space-x-2 text-sm">
-                <span className="text-muted-foreground">Région explorée:</span>
-                <span 
-                  className="px-4 py-2 rounded-full bg-accent text-accent-foreground font-medium text-sm shadow-lg"
-                >
+              <div className="mt-8 flex items-center justify-center space-x-3">
+                <span className="text-muted-foreground text-sm">Région explorée:</span>
+                <span className="px-4 py-2 rounded-full bg-accent/20 text-accent border border-accent/30 text-sm font-medium">
                   {theme.name}
                 </span>
               </div>
@@ -130,19 +134,19 @@ const Index = () => {
           </div>
         </header>
 
-        {/* Search Bar avec nouveau style sombre */}
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="animate-fade-in" style={{animationDelay: '0.2s'}}>
+        {/* Search Bar */}
+        <div className="max-w-6xl mx-auto px-6 py-12">
+          <div className="animate-fade-in" style={{animationDelay: '0.3s'}}>
             <SearchBar onSearch={handleSearch} theme={theme} />
           </div>
         </div>
 
-        {/* Main Content avec nouveau layout sombre */}
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-8">
+        {/* Main Content */}
+        <div className="max-w-6xl mx-auto px-6 pb-12">
           <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-            {/* Layer Selector avec nouveau design sombre */}
-            <div className="lg:col-span-1 animate-fade-in" style={{animationDelay: '0.4s'}}>
-              <div className="gaspard-card rounded-2xl p-6">
+            {/* Layer Selector */}
+            <div className="lg:col-span-1 animate-fade-in" style={{animationDelay: '0.5s'}}>
+              <div className="gaspard-card rounded-xl p-6">
                 <LayerSelector 
                   layers={layers} 
                   onChange={handleLayerChange} 
@@ -153,9 +157,9 @@ const Index = () => {
               </div>
             </div>
 
-            {/* Map avec nouveau style sombre */}
-            <div className="lg:col-span-3 animate-fade-in" style={{animationDelay: '0.6s'}}>
-              <div className="gaspard-card rounded-2xl overflow-hidden">
+            {/* Map */}
+            <div className="lg:col-span-3 animate-fade-in" style={{animationDelay: '0.7s'}}>
+              <div className="gaspard-card rounded-xl overflow-hidden shadow-2xl">
                 <InteractiveMap
                   searchResult={searchResult}
                   layers={layers}
@@ -168,7 +172,7 @@ const Index = () => {
           </div>
         </div>
 
-        {/* Sidebar avec nouveau design sombre */}
+        {/* Sidebar */}
         <Sidebar
           isOpen={sidebarOpen}
           onClose={handleCloseSidebar}
@@ -177,8 +181,8 @@ const Index = () => {
         />
       </div>
       
-      {/* Overlay subtil pour l'ambiance */}
-      <div className="fixed inset-0 bg-gaspard-dark/20 pointer-events-none z-0"></div>
+      {/* Overlay d'ambiance */}
+      <div className="fixed inset-0 bg-background/10 pointer-events-none z-0"></div>
     </div>
   );
 };
