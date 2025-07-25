@@ -67,7 +67,7 @@ Je le questionne :
 J'ouvre mon app. de marcheur techno sensible. Fréquences, spectrogramme, je reconnais la signature caractéristique des lieux à forte densité de variétés d'oiseaux et, et ... détecte une fréquence inattendue ! Qu'est-ce donc ? La mémoire de son histoire me revient.`,
     date: "2024",
     lien: "https://drive.google.com/drive/folders/example",
-    coordonnees: [44.9039, -0.4167], // Coordonnées corrigées pour Saint-Denis-de-Pile
+    coordonnees: [44.9039, -0.4167],
     latitude: 44.9039,
     longitude: -0.4167,
     temperature: 18,
@@ -306,6 +306,398 @@ Ici, la technologie n'est pas intrusive. Elle révèle, elle amplifie, elle sens
       interactions: 89,
       comments: ["Magnifique bassin", "Ressourçant"],
       shares: 45
+    }
+  },
+  {
+    id: "toulouse-garonne",
+    ville: "Toulouse",
+    region: "Occitanie",
+    departement: "Haute-Garonne",
+    theme: "Ville rose et ondes numériques",
+    descriptifCourt: "Exploration des fréquences urbaines dans la ville rose, entre patrimoine et innovation.",
+    poeme: `Toulouse vibre d'une énergie particulière. Les briques roses reflètent les ondes numériques, créant une symphonie urbaine unique.
+
+Entre les laboratoires et les monuments historiques, une nouvelle forme de poésie émerge. Celle qui unit l'ancien et le futur dans un même souffle créatif.`,
+    date: "2024",
+    lien: "https://drive.google.com/drive/folders/toulouse-example",
+    coordonnees: [43.6047, 1.4442],
+    latitude: 43.6047,
+    longitude: 1.4442,
+    temperature: 21,
+    meteo: "Ensoleillé",
+    lexique: "ville rose, innovation, patrimoine, fréquences",
+    audioFile: "https://example.com/audio/toulouse.mp3",
+    nomMarche: "Marche de la Ville Rose",
+    adresse: "Toulouse, 31000 Haute-Garonne",
+    tags: "urbain, innovation, patrimoine, technologie",
+    tagsThematiques: ["urbain", "innovation", "patrimoine", "technologie"],
+    sequencesSonores: ["https://example.com/audio/toulouse.mp3"],
+    temoignages: [
+      {
+        contenu: "Une ville qui pulse au rythme de l'innovation",
+        auteur: "Pierre Durand",
+        date: "2024-03-10"
+      }
+    ],
+    liensInternes: [
+      {
+        titre: "Autres marches en Occitanie",
+        url: "/marches/occitanie"
+      }
+    ],
+    liensExternes: [
+      {
+        titre: "Innovation à Toulouse",
+        url: "https://example.com/innovation-toulouse"
+      }
+    ],
+    socialData: {
+      interactions: 63,
+      comments: ["Toulouse magnifique", "Ville innovante"],
+      shares: 28
+    }
+  },
+  {
+    id: "pau-pyrenees",
+    ville: "Pau",
+    region: "Nouvelle-Aquitaine",
+    departement: "Pyrénées-Atlantiques",
+    theme: "Échos des Pyrénées",
+    descriptifCourt: "Résonances entre la ville de Pau et les massifs pyrénéens.",
+    poeme: `Pau s'étend au pied des Pyrénées, dialogue constant entre l'urbain et le sauvage.
+
+Les montagnes renvoient les échos de la ville, créant une acoustique naturelle unique. Chaque son trouve sa résonance dans les vallées.`,
+    date: "2024",
+    lien: "https://drive.google.com/drive/folders/pau-example",
+    coordonnees: [43.2951, -0.3708],
+    latitude: 43.2951,
+    longitude: -0.3708,
+    temperature: 16,
+    meteo: "Partiellement nuageux",
+    lexique: "Pyrénées, montagne, échos, résonance",
+    audioFile: "https://example.com/audio/pau.mp3",
+    nomMarche: "Marche des Échos",
+    adresse: "Pau, 64000 Pyrénées-Atlantiques",
+    tags: "montagne, échos, nature, acoustique",
+    tagsThematiques: ["montagne", "échos", "nature", "acoustique"],
+    sequencesSonores: ["https://example.com/audio/pau.mp3"],
+    temoignages: [
+      {
+        contenu: "L'acoustique naturelle des Pyrénées est fascinante",
+        auteur: "Marie Lacroix",
+        date: "2024-02-15"
+      }
+    ],
+    liensInternes: [
+      {
+        titre: "Autres marches en Nouvelle-Aquitaine",
+        url: "/marches/nouvelle-aquitaine"
+      }
+    ],
+    liensExternes: [
+      {
+        titre: "Acoustique des Pyrénées",
+        url: "https://example.com/acoustique-pyrenees"
+      }
+    ],
+    socialData: {
+      interactions: 45,
+      comments: ["Magnifique vue", "J'adore les montagnes"],
+      shares: 22
+    }
+  },
+  {
+    id: "bayonne-adour",
+    ville: "Bayonne",
+    region: "Nouvelle-Aquitaine",
+    departement: "Pyrénées-Atlantiques",
+    theme: "Confluence de l'Adour et de la Nive",
+    descriptifCourt: "Exploration des confluences aquatiques et culturelles de Bayonne.",
+    poeme: `Bayonne, carrefour des eaux et des cultures. L'Adour et la Nive se rencontrent, mêlant leurs flots et leurs histoires.
+
+Cette confluence n'est pas que géographique. Elle est culturelle, linguistique, humaine. Ici, les traditions basques se mêlent aux influences gasconnes.`,
+    date: "2024",
+    lien: "https://drive.google.com/drive/folders/bayonne-example",
+    coordonnees: [43.4925, -1.4751],
+    latitude: 43.4925,
+    longitude: -1.4751,
+    temperature: 18,
+    meteo: "Brumeux",
+    lexique: "confluence, Adour, Nive, cultures, basque",
+    audioFile: "https://example.com/audio/bayonne.mp3",
+    nomMarche: "Marche des Confluences",
+    adresse: "Bayonne, 64100 Pyrénées-Atlantiques",
+    tags: "confluence, culture, basque, rivières",
+    tagsThematiques: ["confluence", "culture", "basque", "rivières"],
+    sequencesSonores: ["https://example.com/audio/bayonne.mp3"],
+    temoignages: [
+      {
+        contenu: "Un lieu où les cultures se rencontrent harmonieusement",
+        auteur: "Xabi Etxeberria",
+        date: "2024-01-25"
+      }
+    ],
+    liensInternes: [
+      {
+        titre: "Marche des Échos - Pau",
+        url: "/marche/pau-pyrenees"
+      }
+    ],
+    liensExternes: [
+      {
+        titre: "Culture basque à Bayonne",
+        url: "https://example.com/culture-basque-bayonne"
+      }
+    ],
+    socialData: {
+      interactions: 52,
+      comments: ["Ville authentique", "Culture riche"],
+      shares: 26
+    }
+  },
+  {
+    id: "mont-de-marsan-midouze",
+    ville: "Mont-de-Marsan",
+    region: "Nouvelle-Aquitaine",
+    departement: "Landes",
+    theme: "Rythmes de la Midouze",
+    descriptifCourt: "Exploration des rythmes naturels le long de la Midouze.",
+    poeme: `Mont-de-Marsan, bercée par les méandres de la Midouze. Cette rivière landaise dicte son rythme à la ville.
+
+Les pins des Landes murmurent leurs secrets au vent, créant une mélodie qui se mêle au bruit de l'eau. Ici, le temps semble suspendu entre terre et eau.`,
+    date: "2024",
+    lien: "https://drive.google.com/drive/folders/mont-de-marsan-example",
+    coordonnees: [43.8927, -0.4988],
+    latitude: 43.8927,
+    longitude: -0.4988,
+    temperature: 19,
+    meteo: "Ensoleillé",
+    lexique: "Midouze, Landes, pins, rythme, méandres",
+    audioFile: "https://example.com/audio/mont-de-marsan.mp3",
+    nomMarche: "Marche de la Midouze",
+    adresse: "Mont-de-Marsan, 40000 Landes",
+    tags: "rivière, Landes, pins, nature, rythme",
+    tagsThematiques: ["rivière", "Landes", "pins", "nature", "rythme"],
+    sequencesSonores: ["https://example.com/audio/mont-de-marsan.mp3"],
+    temoignages: [
+      {
+        contenu: "La Midouze a un rythme apaisant unique",
+        auteur: "Jean-Luc Dubois",
+        date: "2024-02-20"
+      }
+    ],
+    liensInternes: [
+      {
+        titre: "Autres marches en Nouvelle-Aquitaine",
+        url: "/marches/nouvelle-aquitaine"
+      }
+    ],
+    liensExternes: [
+      {
+        titre: "La Midouze et ses méandres",
+        url: "https://example.com/midouze-meandres"
+      }
+    ],
+    socialData: {
+      interactions: 38,
+      comments: ["Rivière magnifique", "J'adore les Landes"],
+      shares: 19
+    }
+  },
+  {
+    id: "biarritz-ocean",
+    ville: "Biarritz",
+    region: "Nouvelle-Aquitaine",
+    departement: "Pyrénées-Atlantiques",
+    theme: "Symphonie océanique",
+    descriptifCourt: "Immersion dans les rythmes de l'océan Atlantique à Biarritz.",
+    poeme: `Biarritz face à l'océan. Les vagues composent une symphonie éternelle, chaque déferlante apportant sa note unique.
+
+L'Atlantique dicte ses humeurs à la ville. Calme ou tempétueux, il reste le chef d'orchestre de cette symphonie naturelle qui ne s'arrête jamais.`,
+    date: "2024",
+    lien: "https://drive.google.com/drive/folders/biarritz-example",
+    coordonnees: [43.4832, -1.5586],
+    latitude: 43.4832,
+    longitude: -1.5586,
+    temperature: 17,
+    meteo: "Venteux",
+    lexique: "océan, vagues, symphonie, Atlantique, déferlante",
+    audioFile: "https://example.com/audio/biarritz.mp3",
+    nomMarche: "Marche Océanique",
+    adresse: "Biarritz, 64200 Pyrénées-Atlantiques",
+    tags: "océan, vagues, symphonie, Atlantique",
+    tagsThematiques: ["océan", "vagues", "symphonie", "Atlantique"],
+    sequencesSonores: ["https://example.com/audio/biarritz.mp3"],
+    temoignages: [
+      {
+        contenu: "L'océan à Biarritz est d'une beauté saisissante",
+        auteur: "Isabelle Martín",
+        date: "2024-03-01"
+      }
+    ],
+    liensInternes: [
+      {
+        titre: "Marche des Confluences - Bayonne",
+        url: "/marche/bayonne-adour"
+      }
+    ],
+    liensExternes: [
+      {
+        titre: "Océan Atlantique à Biarritz",
+        url: "https://example.com/ocean-biarritz"
+      }
+    ],
+    socialData: {
+      interactions: 67,
+      comments: ["Océan magnifique", "J'adore les vagues"],
+      shares: 33
+    }
+  },
+  {
+    id: "angouleme-charente",
+    ville: "Angoulême",
+    region: "Nouvelle-Aquitaine",
+    departement: "Charente",
+    theme: "Bulles et ramparts",
+    descriptifCourt: "Exploration des résonances créatives entre la ville haute et la Charente.",
+    poeme: `Angoulême, ville perchée sur ses remparts. La Charente coule en contrebas, témoin silencieux de l'effervescence créative qui anime la cité.
+
+Entre BD et patrimoine, une alchimie particulière opère. Les bulles de savon des enfants se mêlent aux bulles des planches, créant une poésie urbaine unique.`,
+    date: "2024",
+    lien: "https://drive.google.com/drive/folders/angouleme-example",
+    coordonnees: [45.6484, 0.1562],
+    latitude: 45.6484,
+    longitude: 0.1562,
+    temperature: 20,
+    meteo: "Partiellement nuageux",
+    lexique: "remparts, Charente, BD, créativité, bulles",
+    audioFile: "https://example.com/audio/angouleme.mp3",
+    nomMarche: "Marche des Bulles",
+    adresse: "Angoulême, 16000 Charente",
+    tags: "créativité, BD, patrimoine, remparts",
+    tagsThematiques: ["créativité", "BD", "patrimoine", "remparts"],
+    sequencesSonores: ["https://example.com/audio/angouleme.mp3"],
+    temoignages: [
+      {
+        contenu: "Une ville qui inspire la créativité",
+        auteur: "Marc Dubois",
+        date: "2024-01-30"
+      }
+    ],
+    liensInternes: [
+      {
+        titre: "Autres marches en Nouvelle-Aquitaine",
+        url: "/marches/nouvelle-aquitaine"
+      }
+    ],
+    liensExternes: [
+      {
+        titre: "Festival BD Angoulême",
+        url: "https://example.com/festival-bd-angouleme"
+      }
+    ],
+    socialData: {
+      interactions: 49,
+      comments: ["Ville créative", "J'adore la BD"],
+      shares: 24
+    }
+  },
+  {
+    id: "poitiers-clain",
+    ville: "Poitiers",
+    region: "Nouvelle-Aquitaine",
+    departement: "Vienne",
+    theme: "Échos du Clain",
+    descriptifCourt: "Résonances historiques et contemporaines le long du Clain.",
+    poeme: `Poitiers, ville aux multiples strates temporelles. Le Clain serpente entre les collines, portant sur ses eaux les échos de l'histoire.
+
+Des thermes romains aux laboratoires modernes, chaque époque a laissé sa trace. Le Clain continue sa course, témoin imperturbable de ces métamorphoses urbaines.`,
+    date: "2024",
+    lien: "https://drive.google.com/drive/folders/poitiers-example",
+    coordonnees: [46.5802, 0.3404],
+    latitude: 46.5802,
+    longitude: 0.3404,
+    temperature: 18,
+    meteo: "Nuageux",
+    lexique: "Clain, histoire, strates, métamorphoses, échos",
+    audioFile: "https://example.com/audio/poitiers.mp3",
+    nomMarche: "Marche des Échos Historiques",
+    adresse: "Poitiers, 86000 Vienne",
+    tags: "histoire, patrimoine, rivière, temporalité",
+    tagsThematiques: ["histoire", "patrimoine", "rivière", "temporalité"],
+    sequencesSonores: ["https://example.com/audio/poitiers.mp3"],
+    temoignages: [
+      {
+        contenu: "L'histoire de Poitiers résonne encore aujourd'hui",
+        auteur: "Catherine Moreau",
+        date: "2024-02-05"
+      }
+    ],
+    liensInternes: [
+      {
+        titre: "Marche des Bulles - Angoulême",
+        url: "/marche/angouleme-charente"
+      }
+    ],
+    liensExternes: [
+      {
+        titre: "Histoire de Poitiers",
+        url: "https://example.com/histoire-poitiers"
+      }
+    ],
+    socialData: {
+      interactions: 41,
+      comments: ["Ville historique", "J'adore me promener au bord du Clain"],
+      shares: 20
+    }
+  },
+  {
+    id: "la-rochelle-atlantique",
+    ville: "La Rochelle",
+    region: "Nouvelle-Aquitaine",
+    departement: "Charente-Maritime",
+    theme: "Port d'attache des possibles",
+    descriptifCourt: "Exploration des liens entre tradition maritime et innovation urbaine.",
+    poeme: `La Rochelle, port d'attache des rêves et des possibles. Ses tours médiévales gardent l'entrée du port, témoins silencieux des échanges séculaires.
+
+Entre tradition maritime et modernité urbaine, la ville navigue avec élégance. L'Atlantique apporte chaque jour de nouvelles inspirations, de nouvelles possibilités.`,
+    date: "2024",
+    lien: "https://drive.google.com/drive/folders/la-rochelle-example",
+    coordonnees: [46.1591, -1.1520],
+    latitude: 46.1591,
+    longitude: -1.1520,
+    temperature: 16,
+    meteo: "Brumeux",
+    lexique: "port, tours, maritime, Atlantique, échanges",
+    audioFile: "https://example.com/audio/la-rochelle.mp3",
+    nomMarche: "Marche du Port",
+    adresse: "La Rochelle, 17000 Charente-Maritime",
+    tags: "port, maritime, tours, Atlantique, échanges",
+    tagsThematiques: ["port", "maritime", "tours", "Atlantique", "échanges"],
+    sequencesSonores: ["https://example.com/audio/la-rochelle.mp3"],
+    temoignages: [
+      {
+        contenu: "Un port qui inspire le voyage et la découverte",
+        auteur: "Paul Girard",
+        date: "2024-02-12"
+      }
+    ],
+    liensInternes: [
+      {
+        titre: "Autres marches en Nouvelle-Aquitaine",
+        url: "/marches/nouvelle-aquitaine"
+      }
+    ],
+    liensExternes: [
+      {
+        titre: "Port de La Rochelle",
+        url: "https://example.com/port-la-rochelle"
+      }
+    ],
+    socialData: {
+      interactions: 58,
+      comments: ["Port magnifique", "J'adore les tours"],
+      shares: 29
     }
   }
 ];
