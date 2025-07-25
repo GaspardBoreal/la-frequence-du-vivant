@@ -13,27 +13,12 @@ import SEOHead from '../components/SEOHead';
 import { RegionalTheme, REGIONAL_THEMES } from '../utils/regionalThemes';
 import { fetchParcelData } from '../utils/lexiconApi';
 import { fetchMarchesTechnoSensibles, MarcheTechnoSensible } from '../utils/googleSheetsApi';
-
-export interface SearchResult {
-  coordinates: [number, number];
-  address: string;
-  region: string;
-}
-
-export interface LayerConfig {
-  marchesTechnoSensibles: boolean;
-  openData: boolean;
-}
-
-export interface SelectedParcel {
-  id: string;
-  coordinates: [number, number];
-  data: any;
-}
+import { SearchResult, LayerConfig, SelectedParcel } from '../types/index';
 
 const MarchesTechnoSensibles = () => {
   const [theme, setTheme] = useState<RegionalTheme>(REGIONAL_THEMES['nouvelle-aquitaine']);
   const [searchResult, setSearchResult] = useState<SearchResult | null>(null);
+  const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
   const [layers, setLayers] = useState<LayerConfig>({
     marchesTechnoSensibles: true,
     openData: false,
@@ -54,14 +39,31 @@ const MarchesTechnoSensibles = () => {
     setFilteredMarchesData(marchesData);
   }, [marchesData]);
 
-  const handleSearch = (result: SearchResult) => {
-    setSearchResult(result);
+  const handleSearch = (query: string) => {
+    // Simuler une recherche simple pour le moment
+    const mockResult: SearchResult = {
+      coordinates: [46.603354, 1.888334],
+      address: query,
+      region: 'France',
+      properties: {
+        place_id: 'mock-id',
+        display_name: query
+      }
+    };
+    setSearchResult(mockResult);
+    setSearchResults([mockResult]);
+    
     // Update theme based on region
-    const regionKey = result.region.toLowerCase().replace(/[^a-z0-9]/g, '-');
+    const regionKey = mockResult.region.toLowerCase().replace(/[^a-z0-9]/g, '-');
     if (REGIONAL_THEMES[regionKey]) {
       setTheme(REGIONAL_THEMES[regionKey]);
     }
-    toast.success(`Recherche effectuée: ${result.address}`);
+    toast.success(`Recherche effectuée: ${mockResult.address}`);
+  };
+
+  const handleClearSearch = () => {
+    setSearchResult(null);
+    setSearchResults([]);
   };
 
   const handleLayerChange = (newLayers: LayerConfig) => {
@@ -138,7 +140,12 @@ const MarchesTechnoSensibles = () => {
           {/* Search Bar */}
           <div className="max-w-6xl mx-auto px-6 py-12">
             <div className="animate-fade-in" style={{animationDelay: '0.3s'}}>
-              <SearchBar onSearch={handleSearch} theme={theme} />
+              <SearchBar 
+                onSearch={handleSearch} 
+                onClear={handleClearSearch}
+                results={searchResults}
+                setResults={setSearchResults}
+              />
             </div>
           </div>
 
@@ -180,8 +187,7 @@ const MarchesTechnoSensibles = () => {
           <Sidebar
             isOpen={sidebarOpen}
             onClose={handleCloseSidebar}
-            parcel={selectedParcel}
-            theme={theme}
+            selectedParcel={selectedParcel}
           />
         </div>
         

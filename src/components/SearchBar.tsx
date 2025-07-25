@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Search, X } from 'lucide-react';
 import { Input } from './ui/input';
@@ -59,9 +60,9 @@ const SearchBar: React.FC<SearchBarProps> = ({ onSearch, onClear, results, setRe
       {results.length > 0 && (
         <div className="absolute left-0 mt-2 w-full bg-card rounded-md shadow-md z-10">
           <ul>
-            {results.map((result) => (
-              <li key={result.properties.place_id} className="p-2 hover:bg-accent hover:text-accent-foreground cursor-pointer">
-                {result.properties.display_name}
+            {results.map((result, index) => (
+              <li key={result.properties?.place_id || index} className="p-2 hover:bg-accent hover:text-accent-foreground cursor-pointer">
+                {result.properties?.display_name || result.address}
               </li>
             ))}
           </ul>
