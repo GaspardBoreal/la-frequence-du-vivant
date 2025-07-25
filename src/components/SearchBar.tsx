@@ -14,14 +14,49 @@ const SearchBar: React.FC<SearchBarProps> = ({ onSearch, theme }) => {
   const [query, setQuery] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
+  // Fonction pour détecter si la query contient des coordonnées GPS
+  const isCoordinates = (text: string): boolean => {
+    // Regex pour détecter format: latitude,longitude ou latitude longitude
+    const coordRegex = /^(-?\d+\.?\d*)[,\s]+(-?\d+\.?\d*)$/;
+    return coordRegex.test(text.trim());
+  };
+
+  // Fonction pour extraire latitude et longitude
+  const parseCoordinates = (text: string): [number, number] | null => {
+    const coordRegex = /^(-?\d+\.?\d*)[,\s]+(-?\d+\.?\d*)$/;
+    const match = text.trim().match(coordRegex);
+    if (match) {
+      const lat = parseFloat(match[1]);
+      const lon = parseFloat(match[2]);
+      return [lat, lon];
+    }
+    return null;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!query.trim()) return;
 
     setIsLoading(true);
     try {
-      const result = await geocodeAddress(query);
-      onSearch(result);
+      // Vérifier si l'input contient des coordonnées
+      if (isCoordinates(query)) {
+        const coords = parseCoordinates(query);
+        if (coords) {
+          const [latitude, longitude] = coords;
+          // Créer directement le résultat de recherche avec les coordonnées
+          const result: SearchResult = {
+            coordinates: [latitude, longitude],
+            address: `Coordonnées: ${latitude}, ${longitude}`,
+            region: 'france' // Région par défaut
+          };
+          onSearch(result);
+        }
+      } else {
+        // Utiliser l'API de géocodage pour les adresses
+        const result = await geocodeAddress(query);
+        onSearch(result);
+      }
     } catch (error) {
       console.error('Search error:', error);
     } finally {
