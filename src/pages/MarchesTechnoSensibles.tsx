@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useCallback } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { toast } from 'sonner';
@@ -12,6 +13,7 @@ import { RegionalTheme, REGIONAL_THEMES } from '../utils/regionalThemes';
 import { fetchParcelData } from '../utils/lexiconApi';
 import { fetchMarchesTechnoSensibles, MarcheTechnoSensible } from '../utils/googleSheetsApi';
 import { LayerConfig, SelectedParcel } from '../types/index';
+
 const MarchesTechnoSensibles = () => {
   console.log('🚀 MarchesTechnoSensibles component rendering...');
   const [theme, setTheme] = useState<RegionalTheme>(REGIONAL_THEMES['nouvelle-aquitaine']);
@@ -21,6 +23,7 @@ const MarchesTechnoSensibles = () => {
   const [selectedParcel, setSelectedParcel] = useState<SelectedParcel | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [filteredMarchesData, setFilteredMarchesData] = useState<MarcheTechnoSensible[]>([]);
+  
   console.log('🔄 Current state:', {
     theme: theme.name,
     layers,
@@ -37,6 +40,7 @@ const MarchesTechnoSensibles = () => {
     queryFn: fetchMarchesTechnoSensibles,
     staleTime: 5 * 60 * 1000 // 5 minutes
   });
+  
   console.log('📊 Query status:', {
     isLoading,
     error,
@@ -48,15 +52,18 @@ const MarchesTechnoSensibles = () => {
     console.log('🔄 Updating filtered data with:', marchesData.length, 'items');
     setFilteredMarchesData(marchesData);
   }, [marchesData]);
+
   const handleLayerChange = (newLayers: LayerConfig) => {
     console.log('🗂️ Layer change:', newLayers);
     setLayers(newLayers);
   };
+
   const handleParcelClick = (parcel: SelectedParcel) => {
     console.log('🎯 Parcel clicked:', parcel);
     setSelectedParcel(parcel);
     setSidebarOpen(true);
   };
+
   const handleCloseSidebar = () => {
     console.log('❌ Closing sidebar');
     setSidebarOpen(false);
@@ -68,6 +75,7 @@ const MarchesTechnoSensibles = () => {
     console.log('🔍 Filtered data changed:', data.length, 'items');
     setFilteredMarchesData(data);
   }, []);
+
   useEffect(() => {
     console.log('🎨 Setting theme CSS variables for:', theme.name);
     document.documentElement.style.setProperty('--theme-primary', theme.colors.primary);
@@ -75,7 +83,9 @@ const MarchesTechnoSensibles = () => {
     document.documentElement.style.setProperty('--theme-accent', theme.colors.accent);
     document.documentElement.style.setProperty('--theme-background', theme.colors.background);
   }, [theme]);
+
   console.log('📱 About to render component structure');
+
   if (error) {
     console.error('❌ Error in MarchesTechnoSensibles:', error);
     return <div className="min-h-screen bg-background flex items-center justify-center">
@@ -88,6 +98,7 @@ const MarchesTechnoSensibles = () => {
         </div>
       </div>;
   }
+
   return <HelmetProvider>
       <div className="min-h-screen bg-background relative overflow-hidden">
         <SEOHead />
@@ -99,10 +110,10 @@ const MarchesTechnoSensibles = () => {
         <DecorativeElements className="text-accent/20" />
         
         <div className="relative z-10">
-          {/* Header avec typographie exacte */}
+          {/* Header avec typographie compacte */}
           <header className="bg-card/40 backdrop-blur-lg shadow-2xl border-b border-border/20">
-            <div className="max-w-6xl mx-auto px-6 py-16">
-              <div className="text-center space-y-4 animate-fade-in">
+            <div className="max-w-6xl mx-auto px-6 py-8">
+              <div className="text-center space-y-2 animate-fade-in">
                 {/* Catégorie avec design exact */}
                 <div className="inline-flex items-center gap-2 px-4 py-2 bg-green-950/30 border border-green-500/20 rounded-full">
                   <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
@@ -111,7 +122,7 @@ const MarchesTechnoSensibles = () => {
                   </span>
                 </div>
                 
-                {/* Titre principal - taille réduite */}
+                {/* Titre principal - taille réduite et interligne compact */}
                 <h1 className="font-crimson font-normal leading-tight text-3xl md:text-4xl lg:text-5xl">
                   <span className="text-white">Cartographie</span><br />
                   <span style={{
@@ -119,20 +130,17 @@ const MarchesTechnoSensibles = () => {
                 }}>Interactive</span>
                 </h1>
                 
-                {/* Sous-titre */}
-                <p className="gaspard-subtitle max-w-2xl mx-auto">
+                {/* Sous-titre avec interligne réduit */}
+                <p className="gaspard-subtitle max-w-2xl mx-auto leading-tight">
                   Explorez les territoires de l'art, de la science et de la poésie
                 </p>
-                
-                {/* Meta informations avec interligne réduit */}
-                
               </div>
             </div>
           </header>
 
           {/* Main Content */}
-          <div className="max-w-6xl mx-auto px-6 py-6">
-            <div className="space-y-6">
+          <div className="max-w-6xl mx-auto px-6 py-4">
+            <div className="space-y-4">
               {/* Layer Selector et filtres en largeur */}
               <div className="animate-fade-in" style={{
               animationDelay: '0.3s'
@@ -168,4 +176,5 @@ const MarchesTechnoSensibles = () => {
       </div>
     </HelmetProvider>;
 };
+
 export default MarchesTechnoSensibles;
