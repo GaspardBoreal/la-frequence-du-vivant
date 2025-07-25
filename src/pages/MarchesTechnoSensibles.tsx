@@ -15,6 +15,8 @@ import { fetchMarchesTechnoSensibles, MarcheTechnoSensible } from '../utils/goog
 import { LayerConfig, SelectedParcel } from '../types/index';
 
 const MarchesTechnoSensibles = () => {
+  console.log('🚀 MarchesTechnoSensibles component rendering...');
+  
   const [theme, setTheme] = useState<RegionalTheme>(REGIONAL_THEMES['nouvelle-aquitaine']);
   const [layers, setLayers] = useState<LayerConfig>({
     marchesTechnoSensibles: true,
@@ -24,43 +26,73 @@ const MarchesTechnoSensibles = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [filteredMarchesData, setFilteredMarchesData] = useState<MarcheTechnoSensible[]>([]);
 
+  console.log('🔄 Current state:', { theme: theme.name, layers, filteredMarchesData: filteredMarchesData.length });
+
   // Fetch marches data
-  const { data: marchesData = [] } = useQuery({
+  const { data: marchesData = [], isLoading, error } = useQuery({
     queryKey: ['marchesTechnoSensibles'],
     queryFn: fetchMarchesTechnoSensibles,
     staleTime: 5 * 60 * 1000, // 5 minutes
   });
 
+  console.log('📊 Query status:', { isLoading, error, dataLength: marchesData.length });
+
   // Initialiser les données filtrées avec toutes les données au début
   useEffect(() => {
+    console.log('🔄 Updating filtered data with:', marchesData.length, 'items');
     setFilteredMarchesData(marchesData);
   }, [marchesData]);
 
   const handleLayerChange = (newLayers: LayerConfig) => {
+    console.log('🗂️ Layer change:', newLayers);
     setLayers(newLayers);
   };
 
   const handleParcelClick = (parcel: SelectedParcel) => {
+    console.log('🎯 Parcel clicked:', parcel);
     setSelectedParcel(parcel);
     setSidebarOpen(true);
   };
 
   const handleCloseSidebar = () => {
+    console.log('❌ Closing sidebar');
     setSidebarOpen(false);
     setSelectedParcel(null);
   };
 
   // Stabiliser la fonction avec useCallback pour éviter les re-rendus
   const handleFilteredDataChange = useCallback((data: MarcheTechnoSensible[]) => {
+    console.log('🔍 Filtered data changed:', data.length, 'items');
     setFilteredMarchesData(data);
   }, []);
 
   useEffect(() => {
+    console.log('🎨 Setting theme CSS variables for:', theme.name);
     document.documentElement.style.setProperty('--theme-primary', theme.colors.primary);
     document.documentElement.style.setProperty('--theme-secondary', theme.colors.secondary);
     document.documentElement.style.setProperty('--theme-accent', theme.colors.accent);
     document.documentElement.style.setProperty('--theme-background', theme.colors.background);
   }, [theme]);
+
+  console.log('📱 About to render component structure');
+
+  if (error) {
+    console.error('❌ Error in MarchesTechnoSensibles:', error);
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <h2 className="text-2xl font-bold text-red-600 mb-4">Erreur de chargement</h2>
+          <p className="text-gray-600">Une erreur est survenue lors du chargement des données.</p>
+          <button 
+            onClick={() => window.location.reload()} 
+            className="mt-4 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+          >
+            Recharger la page
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <HelmetProvider>
@@ -77,7 +109,7 @@ const MarchesTechnoSensibles = () => {
           {/* Header avec typographie exacte */}
           <header className="bg-card/40 backdrop-blur-lg shadow-2xl border-b border-border/20">
             <div className="max-w-6xl mx-auto px-6 py-16">
-              <div className="text-center space-y-6 animate-fade-in">
+              <div className="text-center space-y-4 animate-fade-in">
                 {/* Catégorie avec design exact */}
                 <div className="inline-flex items-center gap-2 px-4 py-2 bg-green-950/30 border border-green-500/20 rounded-full">
                   <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
@@ -98,7 +130,7 @@ const MarchesTechnoSensibles = () => {
                 </p>
                 
                 {/* Meta informations avec interligne réduit */}
-                <div className="flex items-center justify-center space-x-4 pt-2">
+                <div className="flex items-center justify-center space-x-4 pt-1">
                   <span className="text-white text-sm">2025</span>
                   <span className="text-white">•</span>
                   <span className="text-white text-sm">Gaspard Boréal</span>
@@ -126,13 +158,22 @@ const MarchesTechnoSensibles = () => {
               {/* Map en pleine largeur */}
               <div className="animate-fade-in" style={{animationDelay: '0.5s'}}>
                 <div className="gaspard-card rounded-xl overflow-hidden shadow-2xl">
-                  <InteractiveMap
-                    searchResult={null}
-                    layers={layers}
-                    theme={theme}
-                    onParcelClick={handleParcelClick}
-                    filteredMarchesData={filteredMarchesData}
-                  />
+                  {isLoading ? (
+                    <div className="h-96 flex items-center justify-center">
+                      <div className="text-center">
+                        <div className="animate-spin w-8 h-8 border-2 border-green-500 border-t-transparent rounded-full mx-auto mb-2"></div>
+                        <p className="text-sm text-gray-600">Chargement de la carte...</p>
+                      </div>
+                    </div>
+                  ) : (
+                    <InteractiveMap
+                      searchResult={null}
+                      layers={layers}
+                      theme={theme}
+                      onParcelClick={handleParcelClick}
+                      filteredMarchesData={filteredMarchesData}
+                    />
+                  )}
                 </div>
               </div>
             </div>
