@@ -65,15 +65,10 @@ const PoeticPhotoGallery: React.FC<PoeticPhotoGalleryProps> = ({ marche, theme }
     return photos.filter(photo => !failedImages.has(photo));
   };
 
-  // Fonction pour convertir les URLs Google Drive en URLs d'images affichables
+  // Fonction pour utiliser directement les URLs Google Drive au format /view
   const convertToEmbeddableUrl = (url: string): string => {
-    if (url.includes('/view')) {
-      const fileId = url.match(/\/file\/d\/([a-zA-Z0-9-_]+)/)?.[1];
-      if (fileId) {
-        // Utiliser l'API de thumbnail Google Drive avec une taille plus grande
-        return `https://drive.google.com/thumbnail?id=${fileId}&sz=w1200`;
-      }
-    }
+    // Retourner directement l'URL sans conversion
+    console.log('URL utilisée directement:', url);
     return url;
   };
 
