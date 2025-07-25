@@ -12,46 +12,51 @@ import { RegionalTheme, REGIONAL_THEMES } from '../utils/regionalThemes';
 import { fetchParcelData } from '../utils/lexiconApi';
 import { fetchMarchesTechnoSensibles, MarcheTechnoSensible } from '../utils/googleSheetsApi';
 import { LayerConfig, SelectedParcel } from '../types/index';
-
 const MarchesTechnoSensibles = () => {
   console.log('🚀 MarchesTechnoSensibles component rendering...');
-  
   const [theme, setTheme] = useState<RegionalTheme>(REGIONAL_THEMES['nouvelle-aquitaine']);
   const [layers, setLayers] = useState<LayerConfig>({
-    marchesTechnoSensibles: true,
+    marchesTechnoSensibles: true
   });
   const [selectedParcel, setSelectedParcel] = useState<SelectedParcel | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [filteredMarchesData, setFilteredMarchesData] = useState<MarcheTechnoSensible[]>([]);
-
-  console.log('🔄 Current state:', { theme: theme.name, layers, filteredMarchesData: filteredMarchesData.length });
-
-  // Fetch marches data
-  const { data: marchesData = [], isLoading, error } = useQuery({
-    queryKey: ['marchesTechnoSensibles'],
-    queryFn: fetchMarchesTechnoSensibles,
-    staleTime: 5 * 60 * 1000, // 5 minutes
+  console.log('🔄 Current state:', {
+    theme: theme.name,
+    layers,
+    filteredMarchesData: filteredMarchesData.length
   });
 
-  console.log('📊 Query status:', { isLoading, error, dataLength: marchesData.length });
+  // Fetch marches data
+  const {
+    data: marchesData = [],
+    isLoading,
+    error
+  } = useQuery({
+    queryKey: ['marchesTechnoSensibles'],
+    queryFn: fetchMarchesTechnoSensibles,
+    staleTime: 5 * 60 * 1000 // 5 minutes
+  });
+  console.log('📊 Query status:', {
+    isLoading,
+    error,
+    dataLength: marchesData.length
+  });
 
   // Initialiser les données filtrées avec toutes les données au début
   useEffect(() => {
     console.log('🔄 Updating filtered data with:', marchesData.length, 'items');
     setFilteredMarchesData(marchesData);
   }, [marchesData]);
-
   const handleLayerChange = (newLayers: LayerConfig) => {
     console.log('🗂️ Layer change:', newLayers);
     setLayers(newLayers);
   };
-
   const handleParcelClick = (parcel: SelectedParcel) => {
     console.log('🎯 Parcel clicked:', parcel);
     setSelectedParcel(parcel);
     setSidebarOpen(true);
   };
-
   const handleCloseSidebar = () => {
     console.log('❌ Closing sidebar');
     setSidebarOpen(false);
@@ -63,7 +68,6 @@ const MarchesTechnoSensibles = () => {
     console.log('🔍 Filtered data changed:', data.length, 'items');
     setFilteredMarchesData(data);
   }, []);
-
   useEffect(() => {
     console.log('🎨 Setting theme CSS variables for:', theme.name);
     document.documentElement.style.setProperty('--theme-primary', theme.colors.primary);
@@ -71,29 +75,20 @@ const MarchesTechnoSensibles = () => {
     document.documentElement.style.setProperty('--theme-accent', theme.colors.accent);
     document.documentElement.style.setProperty('--theme-background', theme.colors.background);
   }, [theme]);
-
   console.log('📱 About to render component structure');
-
   if (error) {
     console.error('❌ Error in MarchesTechnoSensibles:', error);
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
+    return <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
           <h2 className="text-2xl font-bold text-red-600 mb-4">Erreur de chargement</h2>
           <p className="text-gray-600">Une erreur est survenue lors du chargement des données.</p>
-          <button 
-            onClick={() => window.location.reload()} 
-            className="mt-4 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-          >
+          <button onClick={() => window.location.reload()} className="mt-4 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
             Recharger la page
           </button>
         </div>
-      </div>
-    );
+      </div>;
   }
-
-  return (
-    <HelmetProvider>
+  return <HelmetProvider>
       <div className="min-h-screen bg-background relative overflow-hidden">
         <SEOHead />
         
@@ -119,7 +114,9 @@ const MarchesTechnoSensibles = () => {
                 {/* Titre principal - taille réduite */}
                 <h1 className="font-crimson font-normal leading-tight text-3xl md:text-4xl lg:text-5xl">
                   <span className="text-white">Cartographie</span><br />
-                  <span style={{ color: '#4ade80' }}>Interactive</span>
+                  <span style={{
+                  color: '#4ade80'
+                }}>Interactive</span>
                 </h1>
                 
                 {/* Sous-titre */}
@@ -128,11 +125,7 @@ const MarchesTechnoSensibles = () => {
                 </p>
                 
                 {/* Meta informations avec interligne réduit */}
-                <div className="flex items-center justify-center space-x-4 pt-1">
-                  <span className="text-white text-sm">2025</span>
-                  <span className="text-white">•</span>
-                  <span className="text-white text-sm">Gaspard Boréal</span>
-                </div>
+                
               </div>
             </div>
           </header>
@@ -141,35 +134,23 @@ const MarchesTechnoSensibles = () => {
           <div className="max-w-6xl mx-auto px-6 py-6">
             <div className="space-y-6">
               {/* Layer Selector et filtres en largeur */}
-              <div className="animate-fade-in" style={{animationDelay: '0.3s'}}>
-                <LayerSelector 
-                  layers={layers} 
-                  onChange={handleLayerChange} 
-                  theme={theme}
-                  marchesData={marchesData}
-                  onFilteredDataChange={handleFilteredDataChange}
-                />
+              <div className="animate-fade-in" style={{
+              animationDelay: '0.3s'
+            }}>
+                <LayerSelector layers={layers} onChange={handleLayerChange} theme={theme} marchesData={marchesData} onFilteredDataChange={handleFilteredDataChange} />
               </div>
 
               {/* Map en pleine largeur */}
-              <div className="animate-fade-in" style={{animationDelay: '0.5s'}}>
+              <div className="animate-fade-in" style={{
+              animationDelay: '0.5s'
+            }}>
                 <div className="gaspard-card rounded-xl overflow-hidden shadow-2xl">
-                  {isLoading ? (
-                    <div className="h-96 flex items-center justify-center">
+                  {isLoading ? <div className="h-96 flex items-center justify-center">
                       <div className="text-center">
                         <div className="animate-spin w-8 h-8 border-2 border-green-500 border-t-transparent rounded-full mx-auto mb-2"></div>
                         <p className="text-sm text-gray-600">Chargement de la carte...</p>
                       </div>
-                    </div>
-                  ) : (
-                    <InteractiveMap
-                      searchResult={null}
-                      layers={layers}
-                      theme={theme}
-                      onParcelClick={handleParcelClick}
-                      filteredMarchesData={filteredMarchesData}
-                    />
-                  )}
+                    </div> : <InteractiveMap searchResult={null} layers={layers} theme={theme} onParcelClick={handleParcelClick} filteredMarchesData={filteredMarchesData} />}
                 </div>
               </div>
             </div>
@@ -179,18 +160,12 @@ const MarchesTechnoSensibles = () => {
           <Footer />
 
           {/* Sidebar */}
-          <Sidebar
-            isOpen={sidebarOpen}
-            onClose={handleCloseSidebar}
-            selectedParcel={selectedParcel}
-          />
+          <Sidebar isOpen={sidebarOpen} onClose={handleCloseSidebar} selectedParcel={selectedParcel} />
         </div>
         
         {/* Overlay d'ambiance vert émeraude */}
         <div className="fixed inset-0 bg-primary/5 pointer-events-none z-0"></div>
       </div>
-    </HelmetProvider>
-  );
+    </HelmetProvider>;
 };
-
 export default MarchesTechnoSensibles;
