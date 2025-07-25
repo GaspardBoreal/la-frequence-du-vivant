@@ -221,7 +221,6 @@ const InteractiveMap: React.FC<InteractiveMapProps> = ({
       name: marche.nomMarche || marche.ville,
       description: marche.descriptifCourt,
       location: marche.ville,
-      date: marche.dateDebut,
       imageUrls: marche.photos || []
     };
     
