@@ -11,7 +11,7 @@ import {
   Palette,
   Zap
 } from 'lucide-react';
-import { extractPhotosFromGoogleDrive, generateFallbackPhotos } from '../utils/googleDriveApi';
+import { extractPhotosFromGoogleDrive } from '../utils/googleDriveApi';
 import { MarcheTechnoSensible } from '../utils/googleSheetsApi';
 import { RegionalTheme } from '../utils/regionalThemes';
 
@@ -32,16 +32,14 @@ const PoeticPhotoGallery: React.FC<PoeticPhotoGalleryProps> = ({ marche, theme }
       
       let loadedPhotos: string[] = [];
       
-      // Essayer de charger depuis Google Drive
+      // Charger UNIQUEMENT depuis Google Drive si le lien existe
       if (marche.lien) {
+        console.log('Chargement des photos depuis Google Drive:', marche.lien);
         loadedPhotos = await extractPhotosFromGoogleDrive(marche.lien);
+        console.log('Photos récupérées:', loadedPhotos);
       }
       
-      // Fallback vers les photos de test ou des photos générées
-      if (loadedPhotos.length === 0) {
-        loadedPhotos = marche.photos || generateFallbackPhotos(marche.theme, 5);
-      }
-      
+      // Ne pas utiliser de fallback - afficher seulement les vraies photos
       setPhotos(loadedPhotos);
       setIsLoading(false);
     };
@@ -139,24 +137,26 @@ const PoeticPhotoGallery: React.FC<PoeticPhotoGalleryProps> = ({ marche, theme }
       </div>
       
       {/* Métadonnées poétiques */}
-      <div className="mt-4 grid grid-cols-3 gap-2">
-        {photos.slice(0, 3).map((photo, index) => (
-          <div
-            key={index}
-            className={`relative h-16 rounded-lg overflow-hidden cursor-pointer transition-all duration-300 ${
-              index === currentIndex ? 'ring-2 ring-purple-400 scale-105' : 'hover:scale-102'
-            }`}
-            onClick={() => setCurrentIndex(index)}
-          >
-            <img
-              src={photo}
-              alt={`Aperçu ${index + 1}`}
-              className="w-full h-full object-cover"
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
-          </div>
-        ))}
-      </div>
+      {photos.length > 0 && (
+        <div className="mt-4 grid grid-cols-3 gap-2">
+          {photos.slice(0, 3).map((photo, index) => (
+            <div
+              key={index}
+              className={`relative h-16 rounded-lg overflow-hidden cursor-pointer transition-all duration-300 ${
+                index === currentIndex ? 'ring-2 ring-purple-400 scale-105' : 'hover:scale-102'
+              }`}
+              onClick={() => setCurrentIndex(index)}
+            >
+              <img
+                src={photo}
+                alt={`Aperçu ${index + 1}`}
+                className="w-full h-full object-cover"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 
@@ -239,6 +239,7 @@ const PoeticPhotoGallery: React.FC<PoeticPhotoGalleryProps> = ({ marche, theme }
         <div className="text-center text-gray-500">
           <ImageIcon className="h-12 w-12 mx-auto mb-2 opacity-50" />
           <p className="text-sm">Aucune vision disponible</p>
+          <p className="text-xs mt-1">Répertoire Google Drive vide ou inaccessible</p>
         </div>
       </div>
     );

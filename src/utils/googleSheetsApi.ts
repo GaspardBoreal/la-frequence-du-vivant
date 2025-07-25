@@ -1,4 +1,3 @@
-
 const GOOGLE_SHEETS_API_KEY = 'AIzaSyBLIZXZWsOEvFeCAAHe1__khd0OVclv_4s';
 
 export interface MarcheTechnoSensible {
@@ -50,10 +49,6 @@ const TEST_DATA: MarcheTechnoSensible[] = [
     tags: '',
     nomMarche: "Métamorphoses Urbaines",
     descriptifCourt: "Là où l'asphalte rencontre la terre, naissent les nouveaux jardins de l'âme numérique.",
-    photos: [
-      "https://images.unsplash.com/photo-1416879595882-3373a0480b5b?w=400",
-      "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=400"
-    ],
     sequencesSonores: [
       "https://example.com/audio/urban-growth.mp3",
       "https://example.com/audio/digital-seeds.mp3"
@@ -88,10 +83,6 @@ const TEST_DATA: MarcheTechnoSensible[] = [
     tags: '',
     nomMarche: "Symbioses Algorithmiques",
     descriptifCourt: "Quand l'intelligence artificielle dialogue avec la sagesse millénaire de la terre.",
-    photos: [
-      "https://images.unsplash.com/photo-1518743387925-4040fc4df0c8?w=400",
-      "https://images.unsplash.com/photo-1587691592099-24045742c181?w=400"
-    ],
     sequencesSonores: [
       "https://example.com/audio/earth-whispers.mp3"
     ],
@@ -125,9 +116,6 @@ const TEST_DATA: MarcheTechnoSensible[] = [
     tags: '',
     nomMarche: "Écosystèmes Quantiques",
     descriptifCourt: "L'agroécologie rencontre la physique quantique dans une danse poétique de probabilités.",
-    photos: [
-      "https://images.unsplash.com/photo-1574923162061-6017b4b9598e?w=400"
-    ],
     sequencesSonores: [
       "https://example.com/audio/quantum-soil.mp3"
     ],
@@ -147,9 +135,6 @@ const TEST_DATA: MarcheTechnoSensible[] = [
     tags: '',
     nomMarche: "Rythmes Cybernétiques",
     descriptifCourt: "La biodynamie s'enrichit des cycles numériques pour créer de nouveaux rituels terrestres.",
-    photos: [
-      "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=400"
-    ],
     sequencesSonores: [
       "https://example.com/audio/digital-rhythms.mp3"
     ],
@@ -169,9 +154,6 @@ const TEST_DATA: MarcheTechnoSensible[] = [
     tags: '',
     nomMarche: "Méditerranée Numérique",
     descriptifCourt: "Entre mer et pixels, naissent les nouveaux jardins suspendus de Babylone connectée.",
-    photos: [
-      "https://images.unsplash.com/photo-1515488764276-beab7607c1e6?w=400"
-    ],
     sequencesSonores: [
       "https://example.com/audio/digital-sea.mp3"
     ],
