@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from './ui/carousel';
 import { Badge } from './ui/badge';
@@ -65,6 +66,18 @@ const PoeticPhotoGallery: React.FC<PoeticPhotoGalleryProps> = ({ marche, theme }
     return photos.filter(photo => !failedImages.has(photo));
   };
 
+  // Fonction pour convertir les URLs Google Drive en embedables
+  const convertToEmbeddableUrl = (url: string): string => {
+    if (url.includes('/view')) {
+      const fileId = url.match(/\/file\/d\/([a-zA-Z0-9-_]+)/)?.[1];
+      if (fileId) {
+        // Utiliser l'API de thumbnail pour les fichiers .HEIC
+        return `https://drive.google.com/thumbnail?id=${fileId}&sz=w800`;
+      }
+    }
+    return url;
+  };
+
   const ViewModeSelector = () => (
     <div className="flex justify-center space-x-1 mb-4">
       <button
@@ -109,7 +122,7 @@ const PoeticPhotoGallery: React.FC<PoeticPhotoGalleryProps> = ({ marche, theme }
           {validPhotos.length > 0 && (
             <div className="absolute inset-0">
               <img
-                src={validPhotos[currentIndex]}
+                src={convertToEmbeddableUrl(validPhotos[currentIndex])}
                 alt={`${marche.ville} - Vision poétique`}
                 className="w-full h-full object-cover opacity-70"
                 onError={() => handleImageError(validPhotos[currentIndex])}
@@ -171,7 +184,7 @@ const PoeticPhotoGallery: React.FC<PoeticPhotoGalleryProps> = ({ marche, theme }
                 onClick={() => setCurrentIndex(index)}
               >
                 <img
-                  src={photo}
+                  src={convertToEmbeddableUrl(photo)}
                   alt={`Aperçu ${index + 1}`}
                   className="w-full h-full object-cover"
                   onError={() => handleImageError(photo)}
@@ -198,7 +211,7 @@ const PoeticPhotoGallery: React.FC<PoeticPhotoGalleryProps> = ({ marche, theme }
                 <div className="relative group">
                   <div className="relative h-48 rounded-xl overflow-hidden bg-gradient-to-br from-gray-100 to-gray-200">
                     <img
-                      src={photo}
+                      src={convertToEmbeddableUrl(photo)}
                       alt={`${marche.ville} - Photo ${index + 1}`}
                       className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
                       onError={() => handleImageError(photo)}
@@ -235,7 +248,7 @@ const PoeticPhotoGallery: React.FC<PoeticPhotoGalleryProps> = ({ marche, theme }
             onClick={() => setCurrentIndex(index)}
           >
             <img
-              src={photo}
+              src={convertToEmbeddableUrl(photo)}
               alt={`${marche.ville} - Photo ${index + 1}`}
               className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
               onError={() => handleImageError(photo)}
