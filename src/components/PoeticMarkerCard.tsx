@@ -1,8 +1,6 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent } from './ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from './ui/dialog';
-import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from './ui/carousel';
 import { Badge } from './ui/badge';
 import { Button } from './ui/button';
 import { 
@@ -21,6 +19,7 @@ import {
 } from 'lucide-react';
 import { MarcheTechnoSensible } from '../utils/googleSheetsApi';
 import { RegionalTheme } from '../utils/regionalThemes';
+import PoeticPhotoGallery from './PoeticPhotoGallery';
 
 interface PoeticMarkerCardProps {
   marche: MarcheTechnoSensible;
@@ -87,31 +86,7 @@ const PoeticMarkerCard: React.FC<PoeticMarkerCardProps> = ({ marche, theme }) =>
 
   const VisualExploration = () => (
     <div className="space-y-4">
-      {marche.photos && marche.photos.length > 0 && (
-        <div className="relative">
-          <Carousel className="w-full max-w-xs mx-auto">
-            <CarouselContent>
-              {marche.photos.map((photo, index) => (
-                <CarouselItem key={index}>
-                  <div className="relative group">
-                    <img
-                      src={photo}
-                      alt={`${marche.nomMarche} - Photo ${index + 1}`}
-                      className="w-full h-48 object-cover rounded-lg shadow-lg transition-transform duration-300 group-hover:scale-105"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                    <div className="absolute bottom-2 left-2 right-2 text-white opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                      <p className="text-sm font-medium truncate">{marche.nomMarche}</p>
-                    </div>
-                  </div>
-                </CarouselItem>
-              ))}
-            </CarouselContent>
-            <CarouselPrevious />
-            <CarouselNext />
-          </Carousel>
-        </div>
-      )}
+      <PoeticPhotoGallery marche={marche} theme={theme} />
       
       {marche.videos && marche.videos.length > 0 && (
         <div className="space-y-2">
