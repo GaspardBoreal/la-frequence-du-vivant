@@ -39,10 +39,14 @@ const InteractiveMap: React.FC<InteractiveMapProps> = ({
   // Fetch parcel data when search result changes
   const { data: parcelData, isLoading } = useQuery({
     queryKey: ['parcelData', searchResult?.coordinates],
-    queryFn: () => searchResult 
-      ? fetchParcelData(searchResult.coordinates[0], searchResult.coordinates[1])
-      : Promise.resolve(null),
-    enabled: !!searchResult
+    queryFn: () => {
+      if (!searchResult) return Promise.resolve(null);
+      console.log('Fetching parcel data for:', searchResult.coordinates);
+      return fetchParcelData(searchResult.coordinates[0], searchResult.coordinates[1]);
+    },
+    enabled: !!searchResult,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    retry: 3
   });
 
   useEffect(() => {
@@ -53,6 +57,7 @@ const InteractiveMap: React.FC<InteractiveMapProps> = ({
 
   useEffect(() => {
     if (parcelData) {
+      console.log('Parcel data received:', parcelData);
       setMapData(parcelData);
     }
   }, [parcelData]);

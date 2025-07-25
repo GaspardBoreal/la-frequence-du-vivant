@@ -1,47 +1,43 @@
 
-const NOMINATIM_BASE_URL = 'https://nominatim.openstreetmap.org';
+import { SearchResult } from '../pages/Index';
 
-export const geocodeAddress = async (address: string) => {
-  try {
-    const response = await fetch(
-      `${NOMINATIM_BASE_URL}/search?format=json&q=${encodeURIComponent(address)}&limit=5&addressdetails=1`
-    );
-    
-    if (!response.ok) {
-      throw new Error('Geocoding failed');
-    }
-    
-    const data = await response.json();
-    return data;
-  } catch (error) {
-    console.error('Geocoding error:', error);
-    return [];
-  }
-};
-
-export const parseCoordinates = (input: string): [number, number] | null => {
-  // Remove whitespace and split by comma
-  const cleaned = input.trim().replace(/\s+/g, '');
+export const geocodeAddress = async (query: string): Promise<SearchResult> => {
+  // Check if query looks like coordinates (lat,lon or lat lon)
+  const coordRegex = /^(-?\d+\.?\d*)[,\s]+(-?\d+\.?\d*)$/;
+  const coordMatch = query.match(coordRegex);
   
-  // Try different coordinate formats
-  const patterns = [
-    /^(-?\d+\.?\d*),\s*(-?\d+\.?\d*)$/, // 43.3, -0.29
-    /^(-?\d+\.?\d*)\s+(-?\d+\.?\d*)$/, // 43.3 -0.29
-    /^(-?\d+\.?\d*);(-?\d+\.?\d*)$/, // 43.3;-0.29
-  ];
-  
-  for (const pattern of patterns) {
-    const match = cleaned.match(pattern);
-    if (match) {
-      const lat = parseFloat(match[1]);
-      const lng = parseFloat(match[2]);
-      
-      // Validate coordinate ranges
-      if (lat >= -90 && lat <= 90 && lng >= -180 && lng <= 180) {
-        return [lat, lng];
-      }
+  if (coordMatch) {
+    const lat = parseFloat(coordMatch[1]);
+    const lon = parseFloat(coordMatch[2]);
+    
+    if (lat >= -90 && lat <= 90 && lon >= -180 && lon <= 180) {
+      return {
+        coordinates: [lat, lon],
+        address: `${lat.toFixed(6)}, ${lon.toFixed(6)}`,
+        region: 'France'
+      };
     }
   }
+
+  // Use Nominatim for geocoding
+  const response = await fetch(
+    `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&countrycodes=fr&limit=1`
+  );
   
-  return null;
+  if (!response.ok) {
+    throw new Error('Geocoding failed');
+  }
+  
+  const data = await response.json();
+  
+  if (data.length === 0) {
+    throw new Error('No results found');
+  }
+  
+  const result = data[0];
+  return {
+    coordinates: [parseFloat(result.lat), parseFloat(result.lon)],
+    address: result.display_name,
+    region: result.address?.state || 'France'
+  };
 };
