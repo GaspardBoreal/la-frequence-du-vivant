@@ -97,8 +97,8 @@ const MarchesTechnoSensibles = () => {
                   Explorez les territoires de l'art, de la science et de la poésie
                 </p>
                 
-                {/* Meta informations */}
-                <div className="flex items-center justify-center space-x-4 pt-8">
+                {/* Meta informations avec interligne réduit */}
+                <div className="flex items-center justify-center space-x-4 pt-2">
                   <span className="text-white text-sm">2025</span>
                   <span className="text-white">•</span>
                   <span className="text-white text-sm">Gaspard Boréal</span>
@@ -107,8 +107,8 @@ const MarchesTechnoSensibles = () => {
             </div>
           </header>
 
-          {/* Main Content */}
-          <div className="max-w-6xl mx-auto px-6 py-12">
+          {/* Main Content - remonté avec moins d'espacement */}
+          <div className="max-w-6xl mx-auto px-6 py-6">
             <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
               {/* Layer Selector */}
               <div className="lg:col-span-1 animate-fade-in" style={{animationDelay: '0.3s'}}>
