@@ -1,9 +1,11 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { Badge } from './ui/badge';
+import { Button } from './ui/button';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from './ui/accordion';
 import { MarcheTechnoSensible } from '../utils/googleSheetsApi';
 import { RegionalTheme } from '../utils/regionalThemes';
+import { CheckSquare, Square } from 'lucide-react';
 
 interface AdvancedFiltersProps {
   data: MarcheTechnoSensible[];
@@ -62,6 +64,20 @@ const AdvancedFilters: React.FC<AdvancedFiltersProps> = ({ data, onFilterChange,
     }));
   };
 
+  const handleSelectAll = (category: keyof FilterState, options: string[]) => {
+    setActiveFilters(prev => ({
+      ...prev,
+      [category]: options
+    }));
+  };
+
+  const handleDeselectAll = (category: keyof FilterState) => {
+    setActiveFilters(prev => ({
+      ...prev,
+      [category]: []
+    }));
+  };
+
   const clearFilters = () => {
     setActiveFilters({
       regions: [],
@@ -79,24 +95,53 @@ const AdvancedFilters: React.FC<AdvancedFiltersProps> = ({ data, onFilterChange,
     title: string; 
     category: keyof FilterState; 
     options: string[] 
-  }> = ({ title, category, options }) => (
-    <div className="space-y-3">
-      <h4 className="font-medium text-gray-700 text-sm">{title}</h4>
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2 gap-2 max-h-48 overflow-y-auto">
-        {options.map(option => (
-          <label key={option} className="flex items-center space-x-2 p-2 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer">
-            <input
-              type="checkbox"
-              checked={activeFilters[category].includes(option)}
-              onChange={() => handleFilterToggle(category, option)}
-              className="h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300 rounded"
-            />
-            <span className="text-sm text-gray-700 truncate flex-1">{option}</span>
-          </label>
-        ))}
+  }> = ({ title, category, options }) => {
+    const isAllSelected = activeFilters[category].length === options.length;
+    const isNoneSelected = activeFilters[category].length === 0;
+    
+    return (
+      <div className="space-y-3">
+        <div className="flex items-center justify-between">
+          <h4 className="font-medium text-gray-700 text-sm">{title}</h4>
+          <div className="flex items-center space-x-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => handleSelectAll(category, options)}
+              disabled={isAllSelected}
+              className="text-xs px-2 py-1 h-6 text-gray-600 hover:text-gray-800"
+            >
+              <CheckSquare className="h-3 w-3 mr-1" />
+              Tout
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => handleDeselectAll(category)}
+              disabled={isNoneSelected}
+              className="text-xs px-2 py-1 h-6 text-gray-600 hover:text-gray-800"
+            >
+              <Square className="h-3 w-3 mr-1" />
+              Rien
+            </Button>
+          </div>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2 gap-2 max-h-48 overflow-y-auto">
+          {options.map(option => (
+            <label key={option} className="flex items-center space-x-2 p-2 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer">
+              <input
+                type="checkbox"
+                checked={activeFilters[category].includes(option)}
+                onChange={() => handleFilterToggle(category, option)}
+                className="h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300 rounded"
+              />
+              <span className="text-sm text-gray-700 truncate flex-1">{option}</span>
+            </label>
+          ))}
+        </div>
       </div>
-    </div>
-  );
+    );
+  };
 
   return (
     <div className="space-y-4">
