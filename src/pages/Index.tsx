@@ -16,14 +16,8 @@ export interface SearchResult {
 }
 
 export interface LayerConfig {
-  weatherStations: boolean;
-  parcelles: boolean;
-  parcellesPAC: boolean;
-  immediateTransactions: boolean;
   marchesTechnoSensibles: boolean;
   openData: boolean;
-  radius: number;
-  stepM: number;
 }
 
 export interface SelectedParcel {
@@ -36,14 +30,8 @@ const Index = () => {
   const [theme, setTheme] = useState<RegionalTheme>(REGIONAL_THEMES['nouvelle-aquitaine']);
   const [searchResult, setSearchResult] = useState<SearchResult | null>(null);
   const [layers, setLayers] = useState<LayerConfig>({
-    weatherStations: true,
-    parcelles: true,
-    parcellesPAC: false,
-    immediateTransactions: true,
     marchesTechnoSensibles: false,
     openData: false,
-    radius: 200,
-    stepM: 100
   });
   const [selectedParcel, setSelectedParcel] = useState<SelectedParcel | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
