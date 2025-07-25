@@ -108,7 +108,7 @@ const Index = () => {
               </div>
               
               {/* Titre principal - structure exacte avec couleurs spécifiques */}
-              <h1 className="font-crimson font-normal leading-tight text-6xl md:text-7xl lg:text-8xl">
+              <h1 className="font-crimson font-normal leading-tight text-7xl md:text-8xl lg:text-9xl">
                 <span className="text-white">La Fréquence</span><br />
                 <span style={{ color: '#4ade80' }}>du Vivant</span>
               </h1>
@@ -120,9 +120,9 @@ const Index = () => {
               
               {/* Meta informations */}
               <div className="flex items-center justify-center space-x-4 pt-8">
-                <span className="gaspard-meta">2025</span>
-                <span className="text-accent">•</span>
-                <span className="gaspard-author">Gaspard Boréal</span>
+                <span className="text-white text-sm">2025</span>
+                <span className="text-white">•</span>
+                <span className="text-white text-sm">Gaspard Boréal</span>
               </div>
             </div>
           </div>
