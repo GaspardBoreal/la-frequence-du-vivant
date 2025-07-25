@@ -94,13 +94,13 @@ const Footer = () => {
                 <span>Dossier presse & éditeurs</span>
               </a>
               <a 
-                href="https://www.gaspardboreal.com/contact-institutions" 
+                href="https://www.gaspardboreal.com/contact" 
                 target="_blank" 
                 rel="noopener noreferrer"
                 className="flex items-center gap-2 text-muted-foreground hover:text-[#4ade80] transition-colors"
               >
                 <Mic size={16} />
-                <span>Contact institutions</span>
+                <span>Contacter Gaspard Boréal</span>
               </a>
             </div>
           </div>
