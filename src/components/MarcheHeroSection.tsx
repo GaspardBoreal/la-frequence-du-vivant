@@ -13,7 +13,7 @@ interface MarcheHeroSectionProps {
   onBack: () => void;
 }
 
-const MarcheHeroSectionProps: React.FC<MarcheHeroSectionProps> = ({
+const MarcheHeroSection: React.FC<MarcheHeroSectionProps> = ({
   marche,
   theme,
   onBack
@@ -21,7 +21,7 @@ const MarcheHeroSectionProps: React.FC<MarcheHeroSectionProps> = ({
   const firstPhoto = marche.photos?.[0];
 
   return (
-    <div className="relative min-h-[70vh] overflow-hidden">
+    <div className="relative min-h-screen overflow-hidden">
       {/* Background Image with Parallax Effect */}
       <motion.div
         className="absolute inset-0 z-0"
@@ -37,7 +37,7 @@ const MarcheHeroSectionProps: React.FC<MarcheHeroSectionProps> = ({
               className="w-full h-full object-cover"
               crossOrigin="anonymous"
             />
-            <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-black/20 to-black/60" />
+            <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-black/30 to-black/70" />
           </div>
         ) : (
           <div 
@@ -50,7 +50,7 @@ const MarcheHeroSectionProps: React.FC<MarcheHeroSectionProps> = ({
       </motion.div>
 
       {/* Content Overlay */}
-      <div className="relative z-10 flex flex-col justify-center items-center min-h-[70vh] px-6">
+      <div className="relative z-10 flex flex-col justify-center items-center min-h-screen px-6">
         {/* Back Button */}
         <motion.div
           className="absolute top-8 left-8"
@@ -87,29 +87,29 @@ const MarcheHeroSectionProps: React.FC<MarcheHeroSectionProps> = ({
 
         {/* Main Title */}
         <motion.div
-          className="text-center space-y-4 max-w-4xl"
+          className="text-center space-y-6 max-w-5xl"
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.5, duration: 0.8 }}
         >
-          <h1 className="text-4xl md:text-6xl lg:text-7xl font-crimson font-bold text-white leading-tight">
+          <h1 className="text-5xl md:text-7xl lg:text-8xl font-crimson font-bold text-white leading-tight">
             {marche.theme || marche.ville}
           </h1>
           
           {marche.descriptifCourt && (
-            <p className="text-lg md:text-xl text-white/90 max-w-2xl mx-auto leading-relaxed">
+            <p className="text-xl md:text-2xl text-white/90 max-w-3xl mx-auto leading-relaxed">
               {marche.descriptifCourt}
             </p>
           )}
           
-          <div className="flex flex-wrap justify-center gap-4 text-white/80 text-sm">
+          <div className="flex flex-wrap justify-center gap-6 text-white/80 text-lg">
             <div className="flex items-center space-x-2">
-              <MapPin className="h-4 w-4" />
+              <MapPin className="h-5 w-5" />
               <span>{marche.ville}, {marche.departement}</span>
             </div>
             {marche.date && (
               <div className="flex items-center space-x-2">
-                <Calendar className="h-4 w-4" />
+                <Calendar className="h-5 w-5" />
                 <span>{marche.date}</span>
               </div>
             )}
@@ -118,16 +118,16 @@ const MarcheHeroSectionProps: React.FC<MarcheHeroSectionProps> = ({
 
         {/* Progress Indicator */}
         <motion.div
-          className="absolute bottom-8 left-1/2 transform -translate-x-1/2"
+          className="absolute bottom-12 left-1/2 transform -translate-x-1/2"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 1 }}
         >
-          <div className="flex space-x-2">
+          <div className="flex space-x-3">
             {['visuel', 'audio', 'poétique', 'social'].map((section, index) => (
               <div
                 key={section}
-                className="w-8 h-1 bg-white/30 rounded-full overflow-hidden"
+                className="w-12 h-1.5 bg-white/30 rounded-full overflow-hidden"
               >
                 <motion.div
                   className="h-full bg-white"
@@ -148,4 +148,4 @@ const MarcheHeroSectionProps: React.FC<MarcheHeroSectionProps> = ({
   );
 };
 
-export default MarcheHeroSectionProps;
+export default MarcheHeroSection;
