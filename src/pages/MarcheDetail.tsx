@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
@@ -13,6 +12,7 @@ import MultiSensoryNavigation from '../components/MultiSensoryNavigation';
 import ImmersiveVisualSection from '../components/ImmersiveVisualSection';
 import PoeticMarkerCard from '../components/PoeticMarkerCard';
 import { Button } from '../components/ui/button';
+import PoeticSection from '../components/PoeticSection';
 
 import { fetchMarchesTechnoSensibles, MarcheTechnoSensible } from '../utils/googleSheetsApi';
 import { findMarcheBySlug } from '../utils/slugGenerator';
@@ -156,10 +156,7 @@ const MarcheDetail = () => {
               </div>
             )}
             {activeSection === 'poetic' && (
-              <div className="text-center py-16">
-                <h2 className="text-3xl font-bold mb-4">Univers Poétique</h2>
-                <p className="text-gray-600">Section poétique en cours de développement...</p>
-              </div>
+              <PoeticSection marche={marche} theme={theme} />
             )}
             {activeSection === 'social' && (
               <div className="text-center py-16">
