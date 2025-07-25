@@ -12,6 +12,7 @@ export interface MarcheTechnoSensible {
   codePostal: string;
   adresse: string;
   tags: string;
+  date?: string; // Nouveau champ pour la date
   // Nouveaux champs pour l'univers poétique
   nomMarche?: string;
   descriptifCourt?: string;
@@ -79,6 +80,7 @@ const TEST_DATA: MarcheTechnoSensible[] = [
     codePostal: "75001",
     adresse: "Place de la Concorde",
     tags: '',
+    date: "2024-03-15",
     nomMarche: "Métamorphoses Urbaines",
     descriptifCourt: "Là où l'asphalte rencontre la terre, naissent les nouveaux jardins de l'âme numérique.",
     sequencesSonores: [
@@ -113,6 +115,7 @@ const TEST_DATA: MarcheTechnoSensible[] = [
     codePostal: "69000",
     adresse: "Place Bellecour",
     tags: '',
+    date: "2024-04-20",
     nomMarche: "Symbioses Algorithmiques",
     descriptifCourt: "Quand l'intelligence artificielle dialogue avec la sagesse millénaire de la terre.",
     sequencesSonores: [
@@ -146,6 +149,7 @@ const TEST_DATA: MarcheTechnoSensible[] = [
     codePostal: "31000",
     adresse: "Place du Capitole",
     tags: '',
+    date: "2024-05-10",
     nomMarche: "Écosystèmes Quantiques",
     descriptifCourt: "L'agroécologie rencontre la physique quantique dans une danse poétique de probabilités.",
     sequencesSonores: [
@@ -165,6 +169,7 @@ const TEST_DATA: MarcheTechnoSensible[] = [
     codePostal: "33000",
     adresse: "Place de la Bourse",
     tags: '',
+    date: "2024-06-05",
     nomMarche: "Rythmes Cybernétiques",
     descriptifCourt: "La biodynamie s'enrichit des cycles numériques pour créer de nouveaux rituels terrestres.",
     sequencesSonores: [
@@ -184,6 +189,7 @@ const TEST_DATA: MarcheTechnoSensible[] = [
     codePostal: "13001",
     adresse: "Vieux-Port",
     tags: '',
+    date: "2024-07-12",
     nomMarche: "Méditerranée Numérique",
     descriptifCourt: "Entre mer et pixels, naissent les nouveaux jardins suspendus de Babylone connectée.",
     sequencesSonores: [
@@ -242,7 +248,8 @@ export const fetchMarchesTechnoSensibles = async (): Promise<MarcheTechnoSensibl
         departement: row[5] || '',
         codePostal: row[3] || '',
         adresse: row[4] || '',
-        tags: row[12] || ''
+        tags: row[12] || '',
+        date: row[13] || '' // Ajouter la colonne date (index 13)
       };
       
       // Validation spécifique pour BONZAC

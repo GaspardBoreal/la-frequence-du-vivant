@@ -13,7 +13,7 @@ interface MarcheHeroSectionProps {
   onBack: () => void;
 }
 
-const MarcheHeroSection: React.FC<MarcheHeroSectionProps> = ({
+const MarcheHeroSectionProps: React.FC<MarcheHeroSectionProps> = ({
   marche,
   theme,
   onBack
@@ -33,7 +33,7 @@ const MarcheHeroSection: React.FC<MarcheHeroSectionProps> = ({
           <div className="absolute inset-0">
             <img
               src={firstPhoto}
-              alt={marche.nomMarche || marche.ville}
+              alt={marche.theme || marche.ville}
               className="w-full h-full object-cover"
               crossOrigin="anonymous"
             />
@@ -93,7 +93,7 @@ const MarcheHeroSection: React.FC<MarcheHeroSectionProps> = ({
           transition={{ delay: 0.5, duration: 0.8 }}
         >
           <h1 className="text-4xl md:text-6xl lg:text-7xl font-crimson font-bold text-white leading-tight">
-            {marche.nomMarche || marche.ville}
+            {marche.theme || marche.ville}
           </h1>
           
           {marche.descriptifCourt && (
@@ -107,10 +107,10 @@ const MarcheHeroSection: React.FC<MarcheHeroSectionProps> = ({
               <MapPin className="h-4 w-4" />
               <span>{marche.ville}, {marche.departement}</span>
             </div>
-            {marche.theme && (
+            {marche.date && (
               <div className="flex items-center space-x-2">
                 <Calendar className="h-4 w-4" />
-                <span>{marche.theme}</span>
+                <span>{marche.date}</span>
               </div>
             )}
           </div>
@@ -148,4 +148,4 @@ const MarcheHeroSection: React.FC<MarcheHeroSectionProps> = ({
   );
 };
 
-export default MarcheHeroSection;
+export default MarcheHeroSectionProps;
