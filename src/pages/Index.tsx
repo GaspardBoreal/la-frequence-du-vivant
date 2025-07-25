@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { toast } from 'sonner';
@@ -105,10 +104,10 @@ const Index = () => {
                 Bioacoustique & Poésie
               </div>
               
-              {/* Titre principal - structure exacte */}
-              <h1 className="gaspard-main-title">
-                La Fréquence<br />
-                du Vivant
+              {/* Titre principal - structure exacte avec couleurs spécifiques */}
+              <h1 className="font-crimson font-normal leading-tight text-6xl md:text-7xl lg:text-8xl">
+                <span className="text-white">La Fréquence</span><br />
+                <span style={{ color: '#4ade80' }}>du Vivant</span>
               </h1>
               
               {/* Sous-titre */}
@@ -121,14 +120,6 @@ const Index = () => {
                 <span className="gaspard-meta">2025</span>
                 <span className="text-accent">•</span>
                 <span className="gaspard-author">Gaspard Boréal</span>
-              </div>
-              
-              {/* Indicateur de région */}
-              <div className="mt-8 flex items-center justify-center space-x-3">
-                <span className="text-muted-foreground text-sm">Région explorée:</span>
-                <span className="px-4 py-2 rounded-full bg-accent/20 text-accent border border-accent/30 text-sm font-medium">
-                  {theme.name}
-                </span>
               </div>
             </div>
           </div>
