@@ -67,6 +67,12 @@ const PoeticTextDisplay: React.FC<PoeticTextDisplayProps> = ({
     return highlighted;
   };
 
+  // Fonction pour tronquer le titre si nécessaire
+  const truncateTitle = (title: string, maxLength: number = 60) => {
+    if (title.length <= maxLength) return title;
+    return title.substring(0, maxLength) + '...';
+  };
+
   return (
     <div className="w-full max-w-4xl mx-auto">
       {/* Collapsed State - Preview */}
@@ -86,11 +92,12 @@ const PoeticTextDisplay: React.FC<PoeticTextDisplayProps> = ({
                 <Quote className="h-6 w-6 text-gray-400 transform rotate-12" />
               </div>
               
-              {/* Title avec contraintes strictes */}
+              {/* Title avec troncature forcée */}
               {title && (
                 <div className="mb-3 w-full max-w-full overflow-hidden">
-                  <h3 className="text-xs font-crimson font-bold text-gray-800 leading-tight break-words hyphens-auto overflow-wrap-anywhere line-clamp-2 w-full max-w-full">
-                    {title}
+                  <h3 className="text-xs font-crimson font-bold text-gray-800 leading-tight truncate w-full max-w-full"
+                      title={title}>
+                    {truncateTitle(title)}
                   </h3>
                 </div>
               )}
@@ -137,22 +144,24 @@ const PoeticTextDisplay: React.FC<PoeticTextDisplayProps> = ({
             exit={{ opacity: 0, scale: 0.95 }}
             className="bg-white rounded-3xl shadow-2xl border border-gray-200 overflow-hidden"
           >
-            {/* Header avec contraintes strictes */}
+            {/* Header avec troncature forcée */}
             <div className="bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900 text-white p-4">
-              <div className="flex items-center justify-between gap-4 w-full max-w-full">
-                <div className="flex items-center space-x-3 flex-1 min-w-0 max-w-full overflow-hidden">
+              <div className="flex items-center justify-between gap-4 w-full">
+                <div className="flex items-center space-x-3 flex-1 min-w-0 overflow-hidden">
                   <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center flex-shrink-0">
                     <Sparkles className="h-5 w-5" />
                   </div>
-                  <div className="flex-1 min-w-0 max-w-full overflow-hidden">
+                  <div className="flex-1 min-w-0 overflow-hidden max-w-xs">
                     {title && (
-                      <h2 className="text-xs font-crimson font-bold break-words leading-tight hyphens-auto overflow-wrap-anywhere line-clamp-3 w-full max-w-full">
-                        {title}
+                      <h2 className="text-xs font-crimson font-bold text-white truncate w-full"
+                          title={title}>
+                        {truncateTitle(title, 50)}
                       </h2>
                     )}
                     {author && (
-                      <p className="text-gray-300 text-xs break-words hyphens-auto overflow-wrap-anywhere line-clamp-2 w-full max-w-full">
-                        {author}
+                      <p className="text-gray-300 text-xs truncate w-full"
+                         title={author}>
+                        {truncateTitle(author, 40)}
                       </p>
                     )}
                   </div>
