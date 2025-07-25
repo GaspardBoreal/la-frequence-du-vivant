@@ -6,10 +6,7 @@ import { Loader2 } from 'lucide-react';
 import { RegionalTheme } from '../utils/regionalThemes';
 import { LayerConfig, SearchResult, SelectedParcel } from '../pages/Index';
 import { fetchParcelData } from '../utils/lexiconApi';
-import MapController from './MapController';
-import SearchMarker from './SearchMarker';
-import ParcelPolygon from './ParcelPolygon';
-import CustomMarkers from './CustomMarkers';
+import MapLayers from './MapLayers';
 
 interface InteractiveMapProps {
   searchResult: SearchResult | null;
@@ -40,6 +37,7 @@ const InteractiveMap: React.FC<InteractiveMapProps> = ({
 
   useEffect(() => {
     if (searchResult) {
+      console.log('Setting map center to:', searchResult.coordinates);
       setMapCenter(searchResult.coordinates);
     }
   }, [searchResult]);
@@ -60,33 +58,21 @@ const InteractiveMap: React.FC<InteractiveMapProps> = ({
         zoom={13}
         style={{ height: '100%', width: '100%' }}
         className="rounded-lg"
+        key={`map-${searchResult?.coordinates.join(',') || 'default'}`}
       >
         <TileLayer
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
         />
         
-        <MapController center={mapCenter} />
-        
-        {searchResult && <SearchMarker searchResult={searchResult} />}
-        
-        {parcelData && layers.parcelles && searchResult && (
-          <ParcelPolygon
-            parcelData={parcelData}
-            theme={theme}
-            onParcelClick={onParcelClick}
-            searchCoordinates={searchResult.coordinates}
-          />
-        )}
-        
-        {searchResult && (
-          <CustomMarkers
-            searchResult={searchResult}
-            parcelData={parcelData}
-            layers={layers}
-            theme={theme}
-          />
-        )}
+        <MapLayers
+          center={mapCenter}
+          searchResult={searchResult}
+          parcelData={parcelData}
+          layers={layers}
+          theme={theme}
+          onParcelClick={onParcelClick}
+        />
       </MapContainer>
     </div>
   );
