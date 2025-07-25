@@ -31,6 +31,7 @@ const InteractiveMap: React.FC<InteractiveMapProps> = ({
 }) => {
   const [mapCenter, setMapCenter] = useState<[number, number]>([46.603354, 1.888334]);
   const [zoom, setZoom] = useState(6);
+  const [shouldFetchData, setShouldFetchData] = useState(false);
 
   console.log('InteractiveMap render:', { searchResult, layers });
 
@@ -41,7 +42,7 @@ const InteractiveMap: React.FC<InteractiveMapProps> = ({
       console.log('Fetching parcel data for:', searchResult.coordinates);
       return fetchParcelData(searchResult.coordinates[0], searchResult.coordinates[1]);
     },
-    enabled: !!searchResult,
+    enabled: shouldFetchData && !!searchResult,
     staleTime: 5 * 60 * 1000,
     retry: 3
   });
@@ -55,8 +56,17 @@ const InteractiveMap: React.FC<InteractiveMapProps> = ({
       console.log('Setting map center to:', searchResult.coordinates);
       setMapCenter(searchResult.coordinates);
       setZoom(15);
+      // Reset data fetching state when new search is made
+      setShouldFetchData(false);
     }
   }, [searchResult]);
+
+  const handleMarkerClick = () => {
+    if (searchResult && !shouldFetchData) {
+      console.log('Marker clicked, starting data fetch');
+      setShouldFetchData(true);
+    }
+  };
 
   const handleParcelClick = () => {
     if (searchResult && parcelData) {
@@ -94,15 +104,6 @@ const InteractiveMap: React.FC<InteractiveMapProps> = ({
 
   return (
     <div className="relative h-96 md:h-[500px] lg:h-[600px]">
-      {isLoading && (
-        <div className="absolute inset-0 bg-white/80 flex items-center justify-center z-[1000]">
-          <div className="flex items-center gap-2">
-            <Loader2 className="h-6 w-6 animate-spin text-green-600" />
-            <span className="text-sm text-gray-600">Chargement des données...</span>
-          </div>
-        </div>
-      )}
-      
       <MapContainer
         center={mapCenter}
         zoom={zoom}
@@ -116,7 +117,12 @@ const InteractiveMap: React.FC<InteractiveMapProps> = ({
         />
         
         {searchResult && (
-          <Marker position={searchResult.coordinates}>
+          <Marker 
+            position={searchResult.coordinates}
+            eventHandlers={{
+              click: handleMarkerClick
+            }}
+          >
             <Popup>
               <div className="p-2">
                 <h3 className="font-bold text-sm mb-1">Point de recherche</h3>
@@ -124,6 +130,36 @@ const InteractiveMap: React.FC<InteractiveMapProps> = ({
                 <p className="text-xs text-gray-500 mt-1">
                   Coordonnées: {searchResult.coordinates[0].toFixed(6)}, {searchResult.coordinates[1].toFixed(6)}
                 </p>
+                
+                {!shouldFetchData && (
+                  <button
+                    onClick={handleMarkerClick}
+                    className="mt-2 px-2 py-1 bg-blue-500 text-white text-xs rounded hover:bg-blue-600"
+                  >
+                    Charger les données parcelle
+                  </button>
+                )}
+                
+                {shouldFetchData && isLoading && (
+                  <div className="mt-2 flex items-center gap-2">
+                    <div className="animate-pulse text-red-500">❤️</div>
+                    <span className="text-xs text-gray-600">
+                      Récupération des données API OSFARM / LEXICON
+                    </span>
+                  </div>
+                )}
+                
+                {shouldFetchData && error && (
+                  <div className="mt-2 text-xs text-red-600">
+                    Erreur lors du chargement des données
+                  </div>
+                )}
+                
+                {shouldFetchData && parcelData && (
+                  <div className="mt-2 text-xs text-green-600">
+                    Données chargées ! Cliquez sur la parcelle pour voir les détails.
+                  </div>
+                )}
               </div>
             </Popup>
           </Marker>
