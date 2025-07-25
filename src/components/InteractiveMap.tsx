@@ -3,9 +3,18 @@ import React, { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Loader2 } from 'lucide-react';
 import { MapContainer, TileLayer, Marker, Popup, Polygon } from 'react-leaflet';
+import L from 'leaflet';
 import { RegionalTheme } from '../utils/regionalThemes';
 import { LayerConfig, SearchResult, SelectedParcel } from '../pages/Index';
 import { fetchParcelData } from '../utils/lexiconApi';
+
+// Fix for default markers
+delete (L.Icon.Default.prototype as any)._getIconUrl;
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
+  iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
+  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
+});
 
 interface InteractiveMapProps {
   searchResult: SearchResult | null;
@@ -23,10 +32,13 @@ const InteractiveMap: React.FC<InteractiveMapProps> = ({
   const [mapCenter, setMapCenter] = useState<[number, number]>([46.603354, 1.888334]);
   const [zoom, setZoom] = useState(6);
 
-  const { data: parcelData, isLoading } = useQuery({
+  console.log('InteractiveMap render:', { searchResult, layers });
+
+  const { data: parcelData, isLoading, error } = useQuery({
     queryKey: ['parcelData', searchResult?.coordinates],
     queryFn: () => {
       if (!searchResult) return Promise.resolve(null);
+      console.log('Fetching parcel data for:', searchResult.coordinates);
       return fetchParcelData(searchResult.coordinates[0], searchResult.coordinates[1]);
     },
     enabled: !!searchResult,
@@ -34,8 +46,13 @@ const InteractiveMap: React.FC<InteractiveMapProps> = ({
     retry: 3
   });
 
+  console.log('Parcel data:', parcelData);
+  console.log('Loading state:', isLoading);
+  console.log('Error:', error);
+
   useEffect(() => {
     if (searchResult?.coordinates) {
+      console.log('Setting map center to:', searchResult.coordinates);
       setMapCenter(searchResult.coordinates);
       setZoom(15);
     }
@@ -43,6 +60,7 @@ const InteractiveMap: React.FC<InteractiveMapProps> = ({
 
   const handleParcelClick = () => {
     if (searchResult && parcelData) {
+      console.log('Parcel clicked:', { searchResult, parcelData });
       onParcelClick({
         id: parcelData.cadastre?.id?.value || 'unknown',
         coordinates: searchResult.coordinates,
@@ -50,6 +68,29 @@ const InteractiveMap: React.FC<InteractiveMapProps> = ({
       });
     }
   };
+
+  // Process polygon coordinates
+  const getPolygonPositions = () => {
+    if (!parcelData?.geolocation?.shape?.coordinates) {
+      console.log('No polygon coordinates found');
+      return null;
+    }
+    
+    try {
+      const coords = parcelData.geolocation.shape.coordinates[0][0];
+      console.log('Raw polygon coordinates:', coords);
+      
+      const positions = coords.map((coord: [number, number]) => [coord[1], coord[0]]);
+      console.log('Processed polygon positions:', positions);
+      
+      return positions;
+    } catch (error) {
+      console.error('Error processing polygon coordinates:', error);
+      return null;
+    }
+  };
+
+  const polygonPositions = getPolygonPositions();
 
   return (
     <div className="relative h-96 md:h-[500px] lg:h-[600px]">
@@ -67,6 +108,7 @@ const InteractiveMap: React.FC<InteractiveMapProps> = ({
         zoom={zoom}
         style={{ height: '100%', width: '100%' }}
         className="rounded-lg"
+        key={`${mapCenter[0]}-${mapCenter[1]}`}
       >
         <TileLayer
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
@@ -79,16 +121,17 @@ const InteractiveMap: React.FC<InteractiveMapProps> = ({
               <div className="p-2">
                 <h3 className="font-bold text-sm mb-1">Point de recherche</h3>
                 <p className="text-xs text-gray-600">{searchResult.address}</p>
+                <p className="text-xs text-gray-500 mt-1">
+                  Coordonnées: {searchResult.coordinates[0].toFixed(6)}, {searchResult.coordinates[1].toFixed(6)}
+                </p>
               </div>
             </Popup>
           </Marker>
         )}
 
-        {parcelData?.geolocation?.shape && searchResult && layers.parcelles && (
+        {polygonPositions && layers.parcelles && (
           <Polygon
-            positions={parcelData.geolocation.shape.coordinates[0][0].map(
-              (coord: [number, number]) => [coord[1], coord[0]]
-            )}
+            positions={polygonPositions}
             pathOptions={{
               color: theme.colors.primary,
               fillColor: theme.colors.secondary,
@@ -102,10 +145,13 @@ const InteractiveMap: React.FC<InteractiveMapProps> = ({
             <Popup>
               <div className="p-2">
                 <h3 className="font-bold text-sm mb-1">
-                  {parcelData.cadastre?.id?.value || 'Parcelle'}
+                  Parcelle {parcelData?.cadastre?.id?.value || 'inconnue'}
                 </h3>
                 <p className="text-xs text-gray-600 mb-1">
-                  Surface: {parcelData.cadastre?.area?.value || 'N/A'} {parcelData.cadastre?.area?.unit || ''}
+                  Section: {parcelData?.cadastre?.section?.value || 'N/A'}
+                </p>
+                <p className="text-xs text-gray-600 mb-1">
+                  Surface: {parcelData?.cadastre?.area?.value || 'N/A'} {parcelData?.cadastre?.area?.unit || ''}
                 </p>
                 <button
                   onClick={handleParcelClick}
