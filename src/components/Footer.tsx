@@ -9,7 +9,7 @@ const Footer = () => {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           {/* Écosystème Gaspard Boréal */}
           <div className="space-y-4">
-            <h3 className="font-crimson text-xl text-accent font-medium">
+            <h3 className="font-crimson text-xl text-white font-medium">
               Une Création Gaspard Boréal
             </h3>
             <div className="space-y-2">
@@ -45,7 +45,7 @@ const Footer = () => {
 
           {/* Domaines d'exploration */}
           <div className="space-y-4">
-            <h3 className="font-crimson text-xl text-accent font-medium">
+            <h3 className="font-crimson text-xl text-white font-medium">
               Domaines d'Exploration
             </h3>
             <div className="flex flex-wrap gap-2">
@@ -71,7 +71,7 @@ const Footer = () => {
 
           {/* Ressources académiques */}
           <div className="space-y-4">
-            <h3 className="font-crimson text-xl text-accent font-medium">
+            <h3 className="font-crimson text-xl text-white font-medium">
               Ressources Académiques
             </h3>
             <div className="space-y-2">
