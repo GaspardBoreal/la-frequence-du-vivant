@@ -1,4 +1,3 @@
-
 const GOOGLE_SHEETS_API_KEY = 'AIzaSyBLIZXZWsOEvFeCAAHe1__khd0OVclv_4s';
 
 export interface MarcheTechnoSensible {
@@ -11,6 +10,7 @@ export interface MarcheTechnoSensible {
   departement: string;
   codePostal: string;
   adresse: string;
+  tags: string;
 }
 
 // Données de test en attendant de résoudre le problème d'accès
@@ -24,7 +24,8 @@ const TEST_DATA: MarcheTechnoSensible[] = [
     region: "Île-de-France",
     departement: "Paris",
     codePostal: "75001",
-    adresse: "Place de la Concorde"
+    adresse: "Place de la Concorde",
+    tags: ''
   },
   {
     latitude: 45.764,
@@ -35,7 +36,8 @@ const TEST_DATA: MarcheTechnoSensible[] = [
     region: "Auvergne-Rhône-Alpes",
     departement: "Rhône",
     codePostal: "69000",
-    adresse: "Place Bellecour"
+    adresse: "Place Bellecour",
+    tags: ''
   },
   {
     latitude: 43.6047,
@@ -46,7 +48,8 @@ const TEST_DATA: MarcheTechnoSensible[] = [
     region: "Occitanie",
     departement: "Haute-Garonne",
     codePostal: "31000",
-    adresse: "Place du Capitole"
+    adresse: "Place du Capitole",
+    tags: ''
   },
   {
     latitude: 44.8378,
@@ -57,7 +60,8 @@ const TEST_DATA: MarcheTechnoSensible[] = [
     region: "Nouvelle-Aquitaine",
     departement: "Gironde",
     codePostal: "33000",
-    adresse: "Place de la Bourse"
+    adresse: "Place de la Bourse",
+    tags: ''
   },
   {
     latitude: 43.2965,
@@ -68,7 +72,8 @@ const TEST_DATA: MarcheTechnoSensible[] = [
     region: "Provence-Alpes-Côte d'Azur",
     departement: "Bouches-du-Rhône",
     codePostal: "13001",
-    adresse: "Vieux-Port"
+    adresse: "Vieux-Port",
+    tags: ''
   }
 ];
 
@@ -112,7 +117,8 @@ export const fetchMarchesTechnoSensibles = async (): Promise<MarcheTechnoSensibl
         region: row[5] || '',
         departement: row[4] || '',
         codePostal: row[2] || '',
-        adresse: row[3] || ''
+        adresse: row[3] || '',
+        tags: ''
       };
     }).filter(item => !isNaN(item.latitude) && !isNaN(item.longitude) && item.ville);
     

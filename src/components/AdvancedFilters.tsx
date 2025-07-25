@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Badge } from './ui/badge';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from './ui/accordion';
@@ -25,18 +26,21 @@ const AdvancedFilters: React.FC<AdvancedFiltersProps> = ({ data, onFilterChange,
     tags: []
   });
 
-  const uniqueRegions = [...new Set(data.map(item => item.Region))];
-  const uniqueDepartments = [...new Set(data.map(item => item.Department))];
-  const uniqueCities = [...new Set(data.map(item => item.City))];
-  const uniqueTags = [...new Set(data.flatMap(item => item.Tags.split(',').map(tag => tag.trim()))),];
+  const uniqueRegions = [...new Set(data.map(item => item.region).filter(Boolean))];
+  const uniqueDepartments = [...new Set(data.map(item => item.departement).filter(Boolean))];
+  const uniqueCities = [...new Set(data.map(item => item.ville).filter(Boolean))];
+  const uniqueTags = [...new Set(data.flatMap(item => 
+    item.tags ? item.tags.split(',').map(tag => tag.trim()).filter(Boolean) : []
+  ))];
 
   useEffect(() => {
     // Apply filters
     const filteredData = data.filter(item => {
-      const regionMatch = activeFilters.regions.length === 0 || activeFilters.regions.includes(item.Region);
-      const departmentMatch = activeFilters.departments.length === 0 || activeFilters.departments.includes(item.Department);
-      const cityMatch = activeFilters.cities.length === 0 || activeFilters.cities.includes(item.City);
-      const tagsMatch = activeFilters.tags.length === 0 || item.Tags.split(',').map(tag => tag.trim()).some(tag => activeFilters.tags.includes(tag));
+      const regionMatch = activeFilters.regions.length === 0 || activeFilters.regions.includes(item.region);
+      const departmentMatch = activeFilters.departments.length === 0 || activeFilters.departments.includes(item.departement);
+      const cityMatch = activeFilters.cities.length === 0 || activeFilters.cities.includes(item.ville);
+      const tagsMatch = activeFilters.tags.length === 0 || 
+        (item.tags && item.tags.split(',').map(tag => tag.trim()).some(tag => activeFilters.tags.includes(tag)));
 
       return regionMatch && departmentMatch && cityMatch && tagsMatch;
     });
@@ -91,7 +95,7 @@ const AdvancedFilters: React.FC<AdvancedFiltersProps> = ({ data, onFilterChange,
 
   return (
     <div className="space-y-4">
-      <Accordion type="multiple" collapsible>
+      <Accordion type="multiple">
         <AccordionItem value="regions">
           <AccordionTrigger>Régions</AccordionTrigger>
           <AccordionContent>
