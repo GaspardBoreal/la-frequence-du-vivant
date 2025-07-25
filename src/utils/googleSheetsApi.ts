@@ -1,3 +1,4 @@
+
 const GOOGLE_SHEETS_API_KEY = 'AIzaSyBLIZXZWsOEvFeCAAHe1__khd0OVclv_4s';
 
 export interface MarcheTechnoSensible {
@@ -204,23 +205,24 @@ export const fetchMarchesTechnoSensibles = async (): Promise<MarcheTechnoSensibl
     console.log('Première ligne (headers):', rows[0]);
     console.log('Exemple de données:', rows[1]);
     
-    // D'après la structure du Google Sheet DATA_LIEUX:
-    // Colonnes: DATE, VILLE, CODE POSTAL, ADRESSE, DEPARTEMENT, REGION, LATITUDE, LONGITUDE, THEME DE LA MARCHE, LIEN
+    // Nouvelle structure des colonnes selon les logs de la console :
+    // 0: DATE, 1: NUMERO, 2: VILLE, 3: CODE POSTAL, 4: ADRESSE, 5: DEPARTEMENT, 6: REGION, 
+    // 7: LATITUDE, 8: LONGITUDE, 9: THEME DE LA MARCHE, 10: DESCRIPTF DE LA MARCHE, 11: LIEN, 12: TAGS
     return rows.slice(1).map((row: string[]) => {
-      const latitude = parseFloat(row[6]?.replace(',', '.') || '0');
-      const longitude = parseFloat(row[7]?.replace(',', '.') || '0');
+      const latitude = parseFloat(row[7]?.replace(',', '.') || '0');
+      const longitude = parseFloat(row[8]?.replace(',', '.') || '0');
       
       return {
         latitude,
         longitude,
-        ville: row[1] || '',
-        theme: row[8] || '',
-        lien: row[9] || '',
-        region: row[5] || '',
-        departement: row[4] || '',
-        codePostal: row[2] || '',
-        adresse: row[3] || '',
-        tags: ''
+        ville: row[2] || '',
+        theme: row[9] || '',
+        lien: row[11] || '',
+        region: row[6] || '',
+        departement: row[5] || '',
+        codePostal: row[3] || '',
+        adresse: row[4] || '',
+        tags: row[12] || ''
       };
     }).filter(item => !isNaN(item.latitude) && !isNaN(item.longitude) && item.ville);
     
