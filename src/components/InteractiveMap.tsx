@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Loader2 } from 'lucide-react';
@@ -40,16 +41,30 @@ const DynamicZoomController = ({
     if (validMarchesData && validMarchesData.length > 0) {
       console.log(`📊 Calcul des bounds pour ${validMarchesData.length} marches`);
       
+      // Log détaillé pour BONZAC
+      const bonzacData = validMarchesData.filter(marche => marche.ville === 'BONZAC');
+      if (bonzacData.length > 0) {
+        console.log('🏘️ Données BONZAC pour zoom:', bonzacData.map(m => ({
+          ville: m.ville,
+          lat: m.latitude,
+          lng: m.longitude,
+          isValid: m.latitude !== 0 && m.longitude !== 0
+        })));
+      }
+      
       if (validMarchesData.length === 1) {
         // Un seul point : centrer avec zoom élevé
         const marche = validMarchesData[0];
-        console.log('📍 Centrage sur marche unique:', marche.ville);
+        console.log('📍 Centrage sur marche unique:', marche.ville, marche.latitude, marche.longitude);
         map.setView([marche.latitude, marche.longitude], 12);
       } else {
         // Plusieurs points : calculer les bounds
-        const bounds = L.latLngBounds(
-          validMarchesData.map(marche => [marche.latitude, marche.longitude])
-        );
+        const latLngs = validMarchesData.map(marche => {
+          console.log(`📍 Point pour bounds: ${marche.ville} [${marche.latitude}, ${marche.longitude}]`);
+          return [marche.latitude, marche.longitude] as [number, number];
+        });
+        
+        const bounds = L.latLngBounds(latLngs);
         
         console.log('📐 Bounds calculés:', bounds);
         
@@ -143,20 +158,43 @@ const InteractiveMap: React.FC<InteractiveMapProps> = ({
   const [mapReady, setMapReady] = useState(false);
   const [mapKey, setMapKey] = useState(0);
 
-  // Valider les coordonnées des données filtrées
+  // Valider les coordonnées des données filtrées avec logs détaillés
   const validMarchesData = filteredMarchesData.filter(marche => {
-    const isValid = marche.latitude && marche.longitude && 
-                    marche.latitude >= -90 && marche.latitude <= 90 &&
-                    marche.longitude >= -180 && marche.longitude <= 180;
+    const latValid = marche.latitude && marche.latitude >= -90 && marche.latitude <= 90;
+    const lngValid = marche.longitude && marche.longitude >= -180 && marche.longitude <= 180;
+    const isValid = latValid && lngValid && marche.latitude !== 0 && marche.longitude !== 0;
+    
+    // Log spécial pour BONZAC
+    if (marche.ville === 'BONZAC') {
+      console.log(`🔍 Validation marqueur BONZAC:`, {
+        ville: marche.ville,
+        latitude: marche.latitude,
+        longitude: marche.longitude,
+        latValid,
+        lngValid,
+        isValid,
+        adresse: marche.adresse
+      });
+    }
     
     if (!isValid) {
-      console.log(`❌ Marche invalide ignorée:`, marche);
+      console.log(`❌ Marche invalide ignorée:`, {
+        ville: marche.ville,
+        lat: marche.latitude,
+        lng: marche.longitude,
+        latValid,
+        lngValid
+      });
     }
     
     return isValid;
   });
 
   console.log(`📍 ${validMarchesData.length} marches valides à afficher sur ${filteredMarchesData.length} total`);
+  
+  // Log spécifique pour BONZAC
+  const bonzacMarkers = validMarchesData.filter(m => m.ville === 'BONZAC');
+  console.log(`🏘️ Marqueurs BONZAC valides à afficher:`, bonzacMarkers.length, bonzacMarkers);
 
   // Forcer le re-render de la carte quand les données changent
   useEffect(() => {
@@ -213,11 +251,27 @@ const InteractiveMap: React.FC<InteractiveMapProps> = ({
 
         {/* Marqueurs des Marches TechnoSensibles */}
         {layers.marchesTechnoSensibles && validMarchesData.map((marche, index) => {
-          console.log(`📍 Affichage marqueur ${index + 1}:`, marche.ville, marche.latitude, marche.longitude);
+          const markerKey = `marche-${index}-${marche.ville}-${marche.latitude}-${marche.longitude}`;
+          
+          console.log(`📍 Affichage marqueur ${index + 1}:`, {
+            ville: marche.ville,
+            latitude: marche.latitude,
+            longitude: marche.longitude,
+            key: markerKey
+          });
+          
+          // Log spécial pour BONZAC
+          if (marche.ville === 'BONZAC') {
+            console.log(`🏘️ Création marqueur BONZAC:`, {
+              position: [marche.latitude, marche.longitude],
+              theme: marche.theme,
+              adresse: marche.adresse
+            });
+          }
           
           return (
             <Marker 
-              key={`marche-${index}-${marche.ville}`}
+              key={markerKey}
               position={[marche.latitude, marche.longitude]}
               icon={poeticIcon}
             >

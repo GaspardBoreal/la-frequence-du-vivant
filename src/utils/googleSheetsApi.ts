@@ -248,8 +248,12 @@ export const fetchMarchesTechnoSensibles = async (): Promise<MarcheTechnoSensibl
       // Validation spécifique pour BONZAC
       if (ville === 'BONZAC') {
         console.log(`🔍 Validation spéciale pour BONZAC:`, item);
+        console.log(`🏘️ Coordonnées BONZAC finales: lat=${latitude}, lng=${longitude}`);
+        console.log(`📍 Position exacte BONZAC: [${latitude}, ${longitude}]`);
         if (!isValidCoordinate(latitude, longitude)) {
           console.error(`❌ Coordonnées invalides pour BONZAC: lat=${latitude}, lng=${longitude}`);
+        } else {
+          console.log(`✅ Coordonnées BONZAC validées avec succès!`);
         }
       }
       
@@ -271,6 +275,17 @@ export const fetchMarchesTechnoSensibles = async (): Promise<MarcheTechnoSensibl
     // Log spécifique pour BONZAC
     const bonzacEntries = processedData.filter(item => item.ville === 'BONZAC');
     console.log(`🏘️ Entrées BONZAC trouvées:`, bonzacEntries);
+    console.log(`🏘️ Nombre d'entrées BONZAC validées: ${bonzacEntries.length}`);
+    
+    // Vérifier la validité des coordonnées BONZAC
+    bonzacEntries.forEach((entry, index) => {
+      console.log(`🏘️ BONZAC ${index + 1}:`, {
+        coordonnees: [entry.latitude, entry.longitude],
+        adresse: entry.adresse,
+        theme: entry.theme,
+        codePostal: entry.codePostal
+      });
+    });
     
     return processedData;
     
