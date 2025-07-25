@@ -65,9 +65,15 @@ const PoeticPhotoGallery: React.FC<PoeticPhotoGalleryProps> = ({ marche, theme }
     return photos.filter(photo => !failedImages.has(photo));
   };
 
-  // Fonction pour utiliser directement les URLs Google Drive au format /view
+  // Fonction pour convertir les URLs Google Drive au format uc?export=view&id=
   const convertToEmbeddableUrl = (url: string): string => {
-    // Retourner directement l'URL sans conversion
+    // Extraire l'ID du fichier depuis l'URL /view
+    const fileId = url.match(/\/file\/d\/([a-zA-Z0-9-_]+)/)?.[1];
+    if (fileId) {
+      const convertedUrl = `https://drive.google.com/uc?export=view&id=${fileId}`;
+      console.log('URL convertie:', convertedUrl);
+      return convertedUrl;
+    }
     console.log('URL utilisée directement:', url);
     return url;
   };
