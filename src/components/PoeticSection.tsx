@@ -13,6 +13,15 @@ interface PoeticSectionProps {
 }
 
 const PoeticSection: React.FC<PoeticSectionProps> = ({ marche, theme }) => {
+  console.log('🎭 PoeticSection - Données marche:', marche);
+  console.log('📝 Texte poétique disponible:', marche.poeme ? 'OUI' : 'NON');
+  console.log('📝 Descriptif disponible:', marche.descriptifCourt ? 'OUI' : 'NON');
+  
+  // Utiliser soit le poème, soit le descriptif, soit le descriptif court
+  const textToDisplay = marche.poeme || marche.descriptifCourt || '';
+  
+  console.log('📝 Texte à afficher:', textToDisplay.substring(0, 100) + '...');
+
   return (
     <div className="space-y-12">
       {/* Section Header */}
@@ -32,18 +41,34 @@ const PoeticSection: React.FC<PoeticSectionProps> = ({ marche, theme }) => {
       </motion.div>
 
       {/* Main Poetic Text */}
-      {marche.poeme && (
+      {textToDisplay ? (
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2, duration: 0.8 }}
         >
           <PoeticTextDisplay
-            text={marche.poeme}
+            text={textToDisplay}
             theme={theme}
             title={marche.theme || marche.ville}
             author="Exploration techno-sensible"
           />
+        </motion.div>
+      ) : (
+        <motion.div
+          className="text-center py-16 bg-gradient-to-br from-purple-50 to-pink-50 rounded-xl"
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2, duration: 0.8 }}
+        >
+          <BookOpen className="h-16 w-16 text-gray-400 mx-auto mb-4" />
+          <h3 className="text-2xl font-semibold text-gray-600 mb-2">
+            Texte poétique en préparation
+          </h3>
+          <p className="text-gray-500 max-w-md mx-auto">
+            Le texte poétique pour {marche.ville} sera bientôt disponible. 
+            Revenez explorer cette dimension littéraire prochainement.
+          </p>
         </motion.div>
       )}
 
