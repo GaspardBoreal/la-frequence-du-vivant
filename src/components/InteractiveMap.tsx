@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Loader2 } from 'lucide-react';
@@ -213,6 +212,22 @@ const InteractiveMap: React.FC<InteractiveMapProps> = ({
   const defaultCenter: [number, number] = [46.603354, 1.888334];
   const defaultZoom = 6;
 
+  const handleMarkerClick = (marche: MarcheTechnoSensible) => {
+    const parcel: SelectedParcel = {
+      id: `marche-${marche.ville}-${marche.nomMarche}`,
+      type: 'marche',
+      coordinates: [marche.latitude, marche.longitude],
+      data: marche,
+      name: marche.nomMarche || marche.ville,
+      description: marche.descriptifCourt,
+      location: marche.ville,
+      date: marche.dateDebut,
+      imageUrls: marche.photos || []
+    };
+    
+    onParcelClick(parcel);
+  };
+
   return (
     <div className="relative h-96 md:h-[500px] lg:h-[600px]">
       <MapContainer
@@ -274,6 +289,9 @@ const InteractiveMap: React.FC<InteractiveMapProps> = ({
               key={markerKey}
               position={[marche.latitude, marche.longitude]}
               icon={poeticIcon}
+              eventHandlers={{
+                click: () => handleMarkerClick(marche)
+              }}
             >
               <Popup 
                 maxWidth={400}

@@ -15,6 +15,7 @@ export interface LayerConfig {
 
 export interface SelectedParcel {
   id: string;
+  type: 'marche' | 'parcel' | 'other';
   coordinates: [number, number];
   data: any;
   name?: string;
