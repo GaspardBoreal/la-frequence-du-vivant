@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { 
@@ -16,11 +15,7 @@ import { Button } from './ui/button';
 import { Badge } from './ui/badge';
 import { MarcheTechnoSensible } from '../utils/googleSheetsApi';
 import { RegionalTheme } from '../utils/regionalThemes';
-
-interface PhotoData {
-  urls: string[];
-  name?: string;
-}
+import { extractPhotosFromGoogleDrive, PhotoData } from '../utils/googleDriveApi';
 
 interface ImmersiveVisualSectionProps {
   marche: MarcheTechnoSensible;
@@ -47,19 +42,12 @@ const ImmersiveVisualSection: React.FC<ImmersiveVisualSectionProps> = ({
       
       if (marche.lien) {
         try {
-          // Simulation de chargement de photos depuis Google Drive
-          // En attendant l'implémentation complète de extractPhotosFromGoogleDrive
-          const mockPhotos: PhotoData[] = [
-            { urls: ['https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=800&h=600&fit=crop'] },
-            { urls: ['https://images.unsplash.com/photo-1476209446441-5ad72f223207?w=800&h=600&fit=crop'] },
-            { urls: ['https://images.unsplash.com/photo-1518837695005-2083093ee35b?w=800&h=600&fit=crop'] }
-          ];
+          const loadedPhotos = await extractPhotosFromGoogleDrive(marche.lien);
+          console.log(`Photos récupérées pour ${marche.ville}:`, loadedPhotos);
           
-          console.log(`Photos récupérées pour ${marche.ville}:`, mockPhotos);
-          
-          if (Array.isArray(mockPhotos) && mockPhotos.length > 0) {
-            setPhotosData(mockPhotos);
-            setLoadingStatus(`${mockPhotos.length} photos chargées`);
+          if (Array.isArray(loadedPhotos) && loadedPhotos.length > 0) {
+            setPhotosData(loadedPhotos);
+            setLoadingStatus(`${loadedPhotos.length} photos chargées`);
           } else {
             setPhotosData([]);
             setLoadingStatus('Aucune photo trouvée');
