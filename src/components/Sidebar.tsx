@@ -81,27 +81,62 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, parcel, theme }) => 
               <div className="flex items-center gap-2 mb-3">
                 <Euro className="h-5 w-5 text-gray-600" />
                 <h3 className="font-semibold text-gray-800">Transactions récentes</h3>
+                <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full">
+                  {data.transactions.rows.length}
+                </span>
               </div>
-              <div className="space-y-3">
-                {data.transactions.rows.slice(0, 5).map((transaction: any, index: number) => (
-                  <div key={index} className="border border-gray-200 rounded-lg p-3 bg-white">
+              <div className="space-y-3 max-h-64 overflow-y-auto">
+                {data.transactions.rows.map((transaction: any, index: number) => (
+                  <div key={index} className="border border-gray-200 rounded-lg p-3 bg-white shadow-sm">
                     <div className="flex justify-between items-start mb-2">
                       <span className="text-sm font-medium text-gray-800">
-                        {transaction['building-nature']?.value || 'N/A'}
+                        {transaction['building-nature']?.value || 'Type non spécifié'}
                       </span>
                       <span className="text-sm font-bold text-green-600">
-                        {transaction.price?.value?.toLocaleString() || 'N/A'} {transaction.price?.unit || ''}
+                        {transaction.price?.value?.toLocaleString('fr-FR') || 'N/A'} {transaction.price?.unit || '€'}
                       </span>
                     </div>
-                    <p className="text-xs text-gray-600 mb-1">
-                      {transaction.address?.value || 'Adresse inconnue'}
-                    </p>
-                    <p className="text-xs text-gray-500">
-                      {transaction.date?.value || 'Date inconnue'}
-                    </p>
+                    <div className="space-y-1">
+                      <p className="text-xs text-gray-600">
+                        <span className="font-medium">Adresse:</span> {transaction.address?.value || 'Non renseignée'}
+                      </p>
+                      <div className="flex justify-between items-center">
+                        <p className="text-xs text-gray-500">
+                          <span className="font-medium">Date:</span> {transaction.date?.value || 'Non renseignée'}
+                        </p>
+                        {transaction.surface?.value && (
+                          <p className="text-xs text-gray-500">
+                            <span className="font-medium">Surface:</span> {transaction.surface.value} {transaction.surface.unit || 'm²'}
+                          </p>
+                        )}
+                      </div>
+                      {transaction['price-per-m2']?.value && (
+                        <p className="text-xs text-blue-600 font-medium">
+                          {transaction['price-per-m2'].value.toLocaleString('fr-FR')} {transaction['price-per-m2'].unit || '€/m²'}
+                        </p>
+                      )}
+                    </div>
                   </div>
                 ))}
               </div>
+              
+              {/* Statistiques rapides */}
+              {data.transactions.rows.length > 1 && (
+                <div className="mt-4 pt-3 border-t border-gray-200">
+                  <div className="grid grid-cols-2 gap-2 text-xs">
+                    <div className="bg-blue-50 p-2 rounded">
+                      <p className="font-medium text-blue-800">Prix moyen</p>
+                      <p className="text-blue-600">
+                        {Math.round(data.transactions.rows.reduce((acc: number, t: any) => acc + (t.price?.value || 0), 0) / data.transactions.rows.length).toLocaleString('fr-FR')} €
+                      </p>
+                    </div>
+                    <div className="bg-green-50 p-2 rounded">
+                      <p className="font-medium text-green-800">Total transactions</p>
+                      <p className="text-green-600">{data.transactions.rows.length}</p>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </div>
