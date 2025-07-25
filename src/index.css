@@ -82,7 +82,7 @@
 
   .gaspard-subtitle {
     font-family: 'Inter', sans-serif;
-    @apply text-muted-foreground font-light leading-relaxed text-base md:text-lg;
+    @apply text-muted-foreground font-light leading-relaxed text-base md:text-lg text-justify;
   }
 
   .gaspard-meta {
@@ -102,6 +102,16 @@
 
   .gaspard-glass {
     @apply bg-card/30 backdrop-blur-md border border-border/20;
+  }
+
+  /* Justification du texte pour tous les paragraphes et textes longs */
+  p, .text-justify-auto {
+    @apply text-justify;
+  }
+
+  /* Classes spécifiques pour les textes longs */
+  .prose p, .prose-lg p {
+    @apply text-justify;
   }
 }
 
