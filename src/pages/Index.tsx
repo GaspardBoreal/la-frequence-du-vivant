@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { toast } from 'sonner';
@@ -8,7 +7,6 @@ import LayerSelector from '../components/LayerSelector';
 import InteractiveMap from '../components/InteractiveMap';
 import Sidebar from '../components/Sidebar';
 import DecorativeElements from '../components/DecorativeElements';
-import NavigationMenu from '../components/NavigationMenu';
 import Footer from '../components/Footer';
 import SEOHead from '../components/SEOHead';
 import { RegionalTheme, REGIONAL_THEMES } from '../utils/regionalThemes';
@@ -103,9 +101,6 @@ const Index = () => {
         <DecorativeElements className="text-accent/20" />
         
         <div className="relative z-10">
-          {/* Navigation */}
-          <NavigationMenu />
-
           {/* Header avec typographie exacte */}
           <header className="bg-card/40 backdrop-blur-lg shadow-2xl border-b border-border/20">
             <div className="max-w-6xl mx-auto px-6 py-16">
