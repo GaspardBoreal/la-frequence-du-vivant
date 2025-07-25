@@ -3,7 +3,6 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { HelmetProvider } from 'react-helmet-async';
-import SearchBar from '../components/SearchBar';
 import LayerSelector from '../components/LayerSelector';
 import InteractiveMap from '../components/InteractiveMap';
 import Sidebar from '../components/Sidebar';
@@ -13,12 +12,10 @@ import SEOHead from '../components/SEOHead';
 import { RegionalTheme, REGIONAL_THEMES } from '../utils/regionalThemes';
 import { fetchParcelData } from '../utils/lexiconApi';
 import { fetchMarchesTechnoSensibles, MarcheTechnoSensible } from '../utils/googleSheetsApi';
-import { SearchResult, LayerConfig, SelectedParcel } from '../types/index';
+import { LayerConfig, SelectedParcel } from '../types/index';
 
 const MarchesTechnoSensibles = () => {
   const [theme, setTheme] = useState<RegionalTheme>(REGIONAL_THEMES['nouvelle-aquitaine']);
-  const [searchResult, setSearchResult] = useState<SearchResult | null>(null);
-  const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
   const [layers, setLayers] = useState<LayerConfig>({
     marchesTechnoSensibles: true,
     openData: false,
@@ -38,33 +35,6 @@ const MarchesTechnoSensibles = () => {
   useEffect(() => {
     setFilteredMarchesData(marchesData);
   }, [marchesData]);
-
-  const handleSearch = (query: string) => {
-    // Simuler une recherche simple pour le moment
-    const mockResult: SearchResult = {
-      coordinates: [46.603354, 1.888334],
-      address: query,
-      region: 'France',
-      properties: {
-        place_id: 'mock-id',
-        display_name: query
-      }
-    };
-    setSearchResult(mockResult);
-    setSearchResults([mockResult]);
-    
-    // Update theme based on region
-    const regionKey = mockResult.region.toLowerCase().replace(/[^a-z0-9]/g, '-');
-    if (REGIONAL_THEMES[regionKey]) {
-      setTheme(REGIONAL_THEMES[regionKey]);
-    }
-    toast.success(`Recherche effectuée: ${mockResult.address}`);
-  };
-
-  const handleClearSearch = () => {
-    setSearchResult(null);
-    setSearchResults([]);
-  };
 
   const handleLayerChange = (newLayers: LayerConfig) => {
     setLayers(newLayers);
@@ -137,23 +107,11 @@ const MarchesTechnoSensibles = () => {
             </div>
           </header>
 
-          {/* Search Bar */}
-          <div className="max-w-6xl mx-auto px-6 py-12">
-            <div className="animate-fade-in" style={{animationDelay: '0.3s'}}>
-              <SearchBar 
-                onSearch={handleSearch} 
-                onClear={handleClearSearch}
-                results={searchResults}
-                setResults={setSearchResults}
-              />
-            </div>
-          </div>
-
           {/* Main Content */}
-          <div className="max-w-6xl mx-auto px-6 pb-12">
+          <div className="max-w-6xl mx-auto px-6 py-12">
             <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
               {/* Layer Selector */}
-              <div className="lg:col-span-1 animate-fade-in" style={{animationDelay: '0.5s'}}>
+              <div className="lg:col-span-1 animate-fade-in" style={{animationDelay: '0.3s'}}>
                 <div className="gaspard-card rounded-xl p-6">
                   <LayerSelector 
                     layers={layers} 
@@ -166,10 +124,10 @@ const MarchesTechnoSensibles = () => {
               </div>
 
               {/* Map */}
-              <div className="lg:col-span-3 animate-fade-in" style={{animationDelay: '0.7s'}}>
+              <div className="lg:col-span-3 animate-fade-in" style={{animationDelay: '0.5s'}}>
                 <div className="gaspard-card rounded-xl overflow-hidden shadow-2xl">
                   <InteractiveMap
-                    searchResult={searchResult}
+                    searchResult={null}
                     layers={layers}
                     theme={theme}
                     onParcelClick={handleParcelClick}
