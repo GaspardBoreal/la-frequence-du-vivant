@@ -35,26 +35,33 @@ export interface MarcheTechnoSensible {
   }[];
 }
 
-// Fonction pour nettoyer et convertir les coordonnées
+// Fonction améliorée pour nettoyer et convertir les coordonnées
 const parseCoordinate = (value: string): number => {
-  if (!value) return 0;
+  if (!value || value.trim() === '') return 0;
   
   // Nettoyer la valeur : supprimer les espaces et remplacer virgules par points
-  const cleaned = value.toString().trim().replace(',', '.');
+  const cleaned = value.toString().trim().replace(/,/g, '.');
+  
+  // Vérifier si c'est un nombre valide après nettoyage
+  if (!/^-?\d+(\.\d+)?$/.test(cleaned)) {
+    console.warn(`⚠️ Format de coordonnée invalide: "${value}" -> "${cleaned}"`);
+    return 0;
+  }
+  
   const parsed = parseFloat(cleaned);
   
-  console.log(`Conversion coordonnée: "${value}" -> "${cleaned}" -> ${parsed}`);
+  console.log(`✅ Conversion coordonnée: "${value}" -> "${cleaned}" -> ${parsed}`);
   
   return isNaN(parsed) ? 0 : parsed;
 };
 
-// Fonction pour valider les coordonnées
+// Fonction pour valider les coordonnées avec des critères plus stricts
 const isValidCoordinate = (lat: number, lng: number): boolean => {
-  // Vérifier que les coordonnées sont dans des plages valides
-  const isLatValid = lat >= -90 && lat <= 90 && lat !== 0;
-  const isLngValid = lng >= -180 && lng <= 180 && lng !== 0;
+  // Vérifier que les coordonnées sont dans des plages valides pour la France et l'Europe
+  const isLatValid = lat >= 41 && lat <= 51 && lat !== 0; // Latitude France métropolitaine élargie
+  const isLngValid = lng >= -5 && lng <= 9 && lng !== 0; // Longitude France métropolitaine élargie
   
-  console.log(`Validation coordonnées: lat=${lat} (${isLatValid}), lng=${lng} (${isLngValid})`);
+  console.log(`🔍 Validation coordonnées: lat=${lat} (${isLatValid ? '✅' : '❌'}), lng=${lng} (${isLngValid ? '✅' : '❌'})`);
   
   return isLatValid && isLngValid;
 };
@@ -210,22 +217,25 @@ export const fetchMarchesTechnoSensibles = async (): Promise<MarcheTechnoSensibl
     
     console.log('✅ Données récupérées avec succès depuis Google Sheets');
     console.log('📋 Headers:', rows[0]);
-    console.log('📍 Exemple de données brutes:', rows[1]);
     
     // Traitement des données avec validation améliorée
     const processedData = rows.slice(1).map((row: string[], index: number) => {
-      const rawLat = row[7];
-      const rawLng = row[8];
+      const rawLat = row[7]; // Colonne LATITUDE
+      const rawLng = row[8]; // Colonne LONGITUDE
+      const ville = row[2]; // Colonne VILLE
+      
+      console.log(`📍 Traitement ligne ${index + 2} - Ville: ${ville}`);
+      console.log(`📊 Coordonnées brutes: lat="${rawLat}", lng="${rawLng}"`);
       
       const latitude = parseCoordinate(rawLat);
       const longitude = parseCoordinate(rawLng);
       
-      console.log(`🔢 Ligne ${index + 2}: "${rawLat}" -> ${latitude}, "${rawLng}" -> ${longitude}`);
+      console.log(`🎯 Coordonnées traitées: lat=${latitude}, lng=${longitude}`);
       
-      return {
+      const item = {
         latitude,
         longitude,
-        ville: row[2] || '',
+        ville: ville || '',
         theme: row[9] || '',
         lien: row[11] || '',
         region: row[6] || '',
@@ -234,15 +244,33 @@ export const fetchMarchesTechnoSensibles = async (): Promise<MarcheTechnoSensibl
         adresse: row[4] || '',
         tags: row[12] || ''
       };
+      
+      // Validation spécifique pour BONZAC
+      if (ville === 'BONZAC') {
+        console.log(`🔍 Validation spéciale pour BONZAC:`, item);
+        if (!isValidCoordinate(latitude, longitude)) {
+          console.error(`❌ Coordonnées invalides pour BONZAC: lat=${latitude}, lng=${longitude}`);
+        }
+      }
+      
+      return item;
     }).filter((item, index) => {
       const isValid = isValidCoordinate(item.latitude, item.longitude) && item.ville;
+      
       if (!isValid) {
-        console.log(`❌ Ligne ${index + 2} rejetée: coordonnées invalides ou ville manquante`);
+        console.log(`❌ Ligne ${index + 2} rejetée: ville="${item.ville}", lat=${item.latitude}, lng=${item.longitude}`);
+      } else {
+        console.log(`✅ Ligne ${index + 2} acceptée: ville="${item.ville}", lat=${item.latitude}, lng=${item.longitude}`);
       }
+      
       return isValid;
     });
     
     console.log(`📊 ${processedData.length} marches valides sur ${rows.length - 1} lignes traitées`);
+    
+    // Log spécifique pour BONZAC
+    const bonzacEntries = processedData.filter(item => item.ville === 'BONZAC');
+    console.log(`🏘️ Entrées BONZAC trouvées:`, bonzacEntries);
     
     return processedData;
     
