@@ -1,7 +1,7 @@
 
 export const fetchParcelData = async (latitude: number, longitude: number) => {
   const response = await fetch(
-    `https://lexicon.osfarm.org/tools/parcel-identifier.json?latitude=${latitude}&longitude=${longitude}`
+    `https://comediedesmondeshybrides-data-api.hf.space/tools/parcel-identifier?latitude=${latitude}&longitude=${longitude}`
   );
   
   if (!response.ok) {
