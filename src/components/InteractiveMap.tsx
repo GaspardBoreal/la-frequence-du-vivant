@@ -56,8 +56,8 @@ const InteractiveMap: React.FC<InteractiveMapProps> = ({
       console.log('Setting map center to:', searchResult.coordinates);
       setMapCenter(searchResult.coordinates);
       setZoom(15);
-      // Reset data fetching state when new search is made
-      setShouldFetchData(false);
+      // Automatically fetch data for coordinate searches
+      setShouldFetchData(true);
     }
   }, [searchResult]);
 
