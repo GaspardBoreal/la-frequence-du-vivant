@@ -39,7 +39,7 @@ export const fetchMarchesTechnoSensibles = async (): Promise<MarcheTechnoSensibl
     console.log('Tentative de récupération des données Google Sheets...');
     
     const response = await fetch(
-      `https://sheets.googleapis.com/v4/spreadsheets/1_lcQPVHIg3JAJP_FWVstnWvzzjfssNPN_h7FodZCyJY/values/Sheet1?key=${GOOGLE_SHEETS_API_KEY}`
+      `https://sheets.googleapis.com/v4/spreadsheets/1_lcQPVHIg3JAJP_FWVstnWvzzjfssNPN_h7FodZCyJY/values/DATA_LIEUX?key=${GOOGLE_SHEETS_API_KEY}`
     );
     
     if (!response.ok) {
