@@ -214,7 +214,7 @@ const InteractiveMap: React.FC<InteractiveMapProps> = ({
 
   const handleMarkerClick = (marche: MarcheTechnoSensible) => {
     const parcel: SelectedParcel = {
-      id: `marche-${marche.ville}-${marche.nomMarche}`,
+      id: `marche-${marche.ville}-${marche.nomMarche || marche.ville}`,
       type: 'marche',
       coordinates: [marche.latitude, marche.longitude],
       data: marche,

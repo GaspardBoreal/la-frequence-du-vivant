@@ -12,10 +12,30 @@ export interface MarcheTechnoSensible {
   photos?: string[];
   videos?: string[];
   coordonnees?: [number, number];
+  latitude: number;
+  longitude: number;
   temperature?: number;
   meteo?: string;
   lexique?: string;
   audioFile?: string;
+  nomMarche?: string;
+  adresse?: string;
+  tags?: string;
+  tagsThematiques?: string[];
+  sequencesSonores?: string[];
+  temoignages?: Array<{
+    contenu: string;
+    auteur: string;
+    date: string;
+  }>;
+  liensInternes?: Array<{
+    titre: string;
+    url: string;
+  }>;
+  liensExternes?: Array<{
+    titre: string;
+    url: string;
+  }>;
   socialData?: {
     interactions: number;
     comments: string[];
@@ -48,10 +68,36 @@ J'ouvre mon app. de marcheur techno sensible. Fréquences, spectrogramme, je rec
     date: "2024",
     lien: "https://drive.google.com/drive/folders/example",
     coordonnees: [44.9167, -0.4167],
+    latitude: 44.9167,
+    longitude: -0.4167,
     temperature: 18,
     meteo: "Nuageux",
     lexique: "pont, modernité, Isle, reconstruction, exploration",
     audioFile: "https://example.com/audio/saint-denis-de-pile.mp3",
+    nomMarche: "Marche du Pont Saint-Denis",
+    adresse: "Saint-Denis-de-Pile, Gironde",
+    tags: "pont, modernité, exploration, techno-sensible",
+    tagsThematiques: ["pont", "modernité", "exploration", "techno-sensible"],
+    sequencesSonores: ["https://example.com/audio/saint-denis-de-pile.mp3"],
+    temoignages: [
+      {
+        contenu: "Une exploration fascinante des liens entre technologie et poésie",
+        auteur: "Marie Dubois",
+        date: "2024-01-15"
+      }
+    ],
+    liensInternes: [
+      {
+        titre: "Autres marches en Gironde",
+        url: "/marches/gironde"
+      }
+    ],
+    liensExternes: [
+      {
+        titre: "Histoire du pont Saint-Denis",
+        url: "https://example.com/pont-saint-denis"
+      }
+    ],
     socialData: {
       interactions: 42,
       comments: ["Très poétique", "J'adore cette approche"],
@@ -63,6 +109,15 @@ J'ouvre mon app. de marcheur techno sensible. Fréquences, spectrogramme, je rec
 
 export const getMarchesTechnoSensibles = (): MarcheTechnoSensible[] => {
   return marchesTechnoSensibles;
+};
+
+export const fetchMarchesTechnoSensibles = async (): Promise<MarcheTechnoSensible[]> => {
+  // Simuler un appel API asynchrone
+  return new Promise((resolve) => {
+    setTimeout(() => {
+      resolve(marchesTechnoSensibles);
+    }, 100);
+  });
 };
 
 export const getMarcheTechnoSensibleById = (id: string): MarcheTechnoSensible | undefined => {

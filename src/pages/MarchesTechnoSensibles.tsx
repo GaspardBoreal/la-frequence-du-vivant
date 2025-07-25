@@ -100,7 +100,8 @@ const MarchesTechnoSensibles = () => {
 
   if (error) {
     console.error('❌ Error in MarchesTechnoSensibles:', error);
-    return <div className="min-h-screen bg-background flex items-center justify-center">
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
           <h2 className="text-2xl font-bold text-red-600 mb-4">Erreur de chargement</h2>
           <p className="text-gray-600">Une erreur est survenue lors du chargement des données.</p>
@@ -108,10 +109,12 @@ const MarchesTechnoSensibles = () => {
             Recharger la page
           </button>
         </div>
-      </div>;
+      </div>
+    );
   }
 
-  return <HelmetProvider>
+  return (
+    <HelmetProvider>
       <div className="min-h-screen bg-background relative overflow-hidden">
         <SEOHead />
         
@@ -137,9 +140,7 @@ const MarchesTechnoSensibles = () => {
                 {/* Titre principal - taille réduite et interligne compact */}
                 <h1 className="font-crimson font-normal leading-tight text-3xl md:text-4xl lg:text-5xl">
                   <span className="text-white">Cartographie</span><br />
-                  <span style={{
-                  color: '#4ade80'
-                }}>Interactive</span>
+                  <span style={{ color: '#4ade80' }}>Interactive</span>
                 </h1>
                 
                 {/* Sous-titre avec interligne réduit */}
@@ -154,23 +155,35 @@ const MarchesTechnoSensibles = () => {
           <div className="max-w-6xl mx-auto px-6 py-4">
             <div className="space-y-4">
               {/* Layer Selector et filtres en largeur */}
-              <div className="animate-fade-in" style={{
-              animationDelay: '0.3s'
-            }}>
-                <LayerSelector layers={layers} onChange={handleLayerChange} theme={theme} marchesData={marchesData} onFilteredDataChange={handleFilteredDataChange} />
+              <div className="animate-fade-in" style={{ animationDelay: '0.3s' }}>
+                <LayerSelector 
+                  layers={layers} 
+                  onChange={handleLayerChange} 
+                  theme={theme} 
+                  marchesData={marchesData} 
+                  onFilteredDataChange={handleFilteredDataChange} 
+                />
               </div>
 
               {/* Map en pleine largeur */}
-              <div className="animate-fade-in" style={{
-              animationDelay: '0.5s'
-            }}>
+              <div className="animate-fade-in" style={{ animationDelay: '0.5s' }}>
                 <div className="gaspard-card rounded-xl overflow-hidden shadow-2xl">
-                  {isLoading ? <div className="h-96 flex items-center justify-center">
+                  {isLoading ? (
+                    <div className="h-96 flex items-center justify-center">
                       <div className="text-center">
                         <div className="animate-spin w-8 h-8 border-2 border-green-500 border-t-transparent rounded-full mx-auto mb-2"></div>
                         <p className="text-sm text-gray-600">Chargement de la carte...</p>
                       </div>
-                    </div> : <InteractiveMap searchResult={null} layers={layers} theme={theme} onParcelClick={handleParcelClick} filteredMarchesData={filteredMarchesData} />}
+                    </div>
+                  ) : (
+                    <InteractiveMap 
+                      searchResult={null} 
+                      layers={layers} 
+                      theme={theme} 
+                      onParcelClick={handleParcelClick} 
+                      filteredMarchesData={filteredMarchesData} 
+                    />
+                  )}
                 </div>
               </div>
             </div>
@@ -180,13 +193,18 @@ const MarchesTechnoSensibles = () => {
           <Footer />
 
           {/* Sidebar */}
-          <Sidebar isOpen={sidebarOpen} onClose={handleCloseSidebar} selectedParcel={selectedParcel} />
+          <Sidebar 
+            isOpen={sidebarOpen} 
+            onClose={handleCloseSidebar} 
+            selectedParcel={selectedParcel} 
+          />
         </div>
         
         {/* Overlay d'ambiance vert émeraude */}
         <div className="fixed inset-0 bg-primary/5 pointer-events-none z-0"></div>
       </div>
-    </HelmetProvider>;
+    </HelmetProvider>
+  );
 };
 
 export default MarchesTechnoSensibles;
