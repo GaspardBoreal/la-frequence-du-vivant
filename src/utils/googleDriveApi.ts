@@ -1,4 +1,3 @@
-
 // Utilitaires pour extraire les photos depuis Google Drive
 export const extractPhotosFromGoogleDrive = async (driveUrl: string): Promise<string[]> => {
   if (!driveUrl || !driveUrl.includes('drive.google.com')) {
@@ -28,22 +27,14 @@ export const extractPhotosFromGoogleDrive = async (driveUrl: string): Promise<st
     if (data.files && data.files.length > 0) {
       console.log(`${data.files.length} photos trouvées dans le dossier ${folderId}`);
       
-      // Convertir les IDs en URLs d'images directes - nouvelle approche pour .HEIC
+      // Générer les URLs directement avec les IDs des fichiers
       const photoUrls = data.files.map((file: any) => {
-        console.log(`Fichier trouvé: ${file.name} (${file.mimeType})`);
+        console.log(`Fichier trouvé: ${file.name} (${file.mimeType}) - ID: ${file.id}`);
         
-        // Pour les fichiers .HEIC, utiliser l'API de visualisation directe
-        if (file.mimeType === 'image/heif' || file.name.toLowerCase().includes('.heic')) {
-          // Utiliser l'API de visualisation Google Drive pour les fichiers .HEIC
-          const url = `https://drive.google.com/file/d/${file.id}/view`;
-          console.log(`Photo .HEIC trouvée: ${file.name} -> ${url}`);
-          return url;
-        } else {
-          // Pour les autres formats d'image, utiliser l'API de téléchargement
-          const url = `https://drive.google.com/uc?id=${file.id}&export=download`;
-          console.log(`Photo trouvée: ${file.name} -> ${url}`);
-          return url;
-        }
+        // Utiliser le format d'URL direct pour tous les fichiers
+        const url = `https://drive.google.com/file/d/${file.id}/view`;
+        console.log(`Photo générée: ${file.name} -> ${url}`);
+        return url;
       }).slice(0, 20); // Limiter à 20 photos max
       
       return photoUrls;
