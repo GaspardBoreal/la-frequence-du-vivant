@@ -2,26 +2,10 @@
 import React, { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Loader2 } from 'lucide-react';
+import { MapContainer, TileLayer, Marker, Popup, Polygon } from 'react-leaflet';
 import { RegionalTheme } from '../utils/regionalThemes';
 import { LayerConfig, SearchResult, SelectedParcel } from '../pages/Index';
 import { fetchParcelData } from '../utils/lexiconApi';
-
-// Import des composants Leaflet de manière dynamique pour éviter les conflits
-const MapContainer = React.lazy(() => 
-  import('react-leaflet').then(module => ({ default: module.MapContainer }))
-);
-const TileLayer = React.lazy(() => 
-  import('react-leaflet').then(module => ({ default: module.TileLayer }))
-);
-const Marker = React.lazy(() => 
-  import('react-leaflet').then(module => ({ default: module.Marker }))
-);
-const Popup = React.lazy(() => 
-  import('react-leaflet').then(module => ({ default: module.Popup }))
-);
-const Polygon = React.lazy(() => 
-  import('react-leaflet').then(module => ({ default: module.Polygon }))
-);
 
 interface InteractiveMapProps {
   searchResult: SearchResult | null;
@@ -78,71 +62,62 @@ const InteractiveMap: React.FC<InteractiveMapProps> = ({
         </div>
       )}
       
-      <React.Suspense fallback={
-        <div className="h-full w-full bg-gray-100 flex items-center justify-center">
-          <div className="flex items-center gap-2">
-            <Loader2 className="h-6 w-6 animate-spin text-green-600" />
-            <span className="text-sm text-gray-600">Chargement de la carte...</span>
-          </div>
-        </div>
-      }>
-        <MapContainer
-          center={mapCenter}
-          zoom={zoom}
-          style={{ height: '100%', width: '100%' }}
-          className="rounded-lg"
-        >
-          <TileLayer
-            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-          />
-          
-          {searchResult && (
-            <Marker position={searchResult.coordinates}>
-              <Popup>
-                <div className="p-2">
-                  <h3 className="font-bold text-sm mb-1">Point de recherche</h3>
-                  <p className="text-xs text-gray-600">{searchResult.address}</p>
-                </div>
-              </Popup>
-            </Marker>
-          )}
+      <MapContainer
+        center={mapCenter}
+        zoom={zoom}
+        style={{ height: '100%', width: '100%' }}
+        className="rounded-lg"
+      >
+        <TileLayer
+          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        />
+        
+        {searchResult && (
+          <Marker position={searchResult.coordinates}>
+            <Popup>
+              <div className="p-2">
+                <h3 className="font-bold text-sm mb-1">Point de recherche</h3>
+                <p className="text-xs text-gray-600">{searchResult.address}</p>
+              </div>
+            </Popup>
+          </Marker>
+        )}
 
-          {parcelData?.geolocation?.shape && searchResult && layers.parcelles && (
-            <Polygon
-              positions={parcelData.geolocation.shape.coordinates[0][0].map(
-                (coord: [number, number]) => [coord[1], coord[0]]
-              )}
-              pathOptions={{
-                color: theme.colors.primary,
-                fillColor: theme.colors.secondary,
-                fillOpacity: 0.3,
-                weight: 2
-              }}
-              eventHandlers={{
-                click: handleParcelClick
-              }}
-            >
-              <Popup>
-                <div className="p-2">
-                  <h3 className="font-bold text-sm mb-1">
-                    {parcelData.cadastre?.id?.value || 'Parcelle'}
-                  </h3>
-                  <p className="text-xs text-gray-600 mb-1">
-                    Surface: {parcelData.cadastre?.area?.value || 'N/A'} {parcelData.cadastre?.area?.unit || ''}
-                  </p>
-                  <button
-                    onClick={handleParcelClick}
-                    className="mt-2 px-2 py-1 bg-blue-500 text-white text-xs rounded hover:bg-blue-600"
-                  >
-                    Voir détails
-                  </button>
-                </div>
-              </Popup>
-            </Polygon>
-          )}
-        </MapContainer>
-      </React.Suspense>
+        {parcelData?.geolocation?.shape && searchResult && layers.parcelles && (
+          <Polygon
+            positions={parcelData.geolocation.shape.coordinates[0][0].map(
+              (coord: [number, number]) => [coord[1], coord[0]]
+            )}
+            pathOptions={{
+              color: theme.colors.primary,
+              fillColor: theme.colors.secondary,
+              fillOpacity: 0.3,
+              weight: 2
+            }}
+            eventHandlers={{
+              click: handleParcelClick
+            }}
+          >
+            <Popup>
+              <div className="p-2">
+                <h3 className="font-bold text-sm mb-1">
+                  {parcelData.cadastre?.id?.value || 'Parcelle'}
+                </h3>
+                <p className="text-xs text-gray-600 mb-1">
+                  Surface: {parcelData.cadastre?.area?.value || 'N/A'} {parcelData.cadastre?.area?.unit || ''}
+                </p>
+                <button
+                  onClick={handleParcelClick}
+                  className="mt-2 px-2 py-1 bg-blue-500 text-white text-xs rounded hover:bg-blue-600"
+                >
+                  Voir détails
+                </button>
+              </div>
+            </Popup>
+          </Polygon>
+        )}
+      </MapContainer>
     </div>
   );
 };
