@@ -88,15 +88,15 @@ const PoeticTextDisplay: React.FC<PoeticTextDisplayProps> = ({
               
               {/* Title */}
               {title && (
-                <h3 className="text-2xl font-crimson font-bold text-gray-800 mb-4 leading-tight">
+                <h3 className="text-xl font-crimson font-bold text-gray-800 mb-4 leading-tight">
                   {title}
                 </h3>
               )}
               
               {/* Preview Text */}
               <div className="relative">
-                <p className="text-lg leading-relaxed text-gray-700 font-serif italic mb-6">
-                  <span className="text-4xl font-bold text-gray-300 float-left mr-2 mt-1 leading-none">«</span>
+                <p className="text-base leading-relaxed text-gray-700 font-serif italic mb-6">
+                  <span className="text-3xl font-bold text-gray-300 float-left mr-2 mt-1 leading-none">«</span>
                   {previewText}
                   <span className="text-gray-400 ml-2">...</span>
                 </p>
@@ -144,7 +144,7 @@ const PoeticTextDisplay: React.FC<PoeticTextDisplayProps> = ({
                   </div>
                   <div>
                     {title && (
-                      <h2 className="text-xl font-crimson font-bold">{title}</h2>
+                      <h2 className="text-lg font-crimson font-bold">{title}</h2>
                     )}
                     {author && (
                       <p className="text-gray-300 text-sm">{author}</p>
@@ -200,7 +200,7 @@ const PoeticTextDisplay: React.FC<PoeticTextDisplayProps> = ({
                       className={`relative ${isAutoReading && index === currentParagraph ? 'bg-yellow-50 rounded-lg p-4' : ''}`}
                     >
                       <p 
-                        className="text-lg leading-relaxed text-gray-800 font-serif"
+                        className="text-base leading-relaxed text-gray-800 font-serif"
                         dangerouslySetInnerHTML={{ __html: highlightText(paragraph) }}
                       />
                     </motion.div>
@@ -212,7 +212,7 @@ const PoeticTextDisplay: React.FC<PoeticTextDisplayProps> = ({
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.8 }}
-                  className="prose prose-lg max-w-none"
+                  className="prose prose-base max-w-none"
                 >
                   <div className="text-gray-800 font-serif leading-relaxed space-y-6">
                     {paragraphs.map((paragraph, index) => (
@@ -221,7 +221,7 @@ const PoeticTextDisplay: React.FC<PoeticTextDisplayProps> = ({
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: index * 0.1, duration: 0.6 }}
-                        className="text-lg"
+                        className="text-base"
                         dangerouslySetInnerHTML={{ __html: highlightText(paragraph) }}
                       />
                     ))}
