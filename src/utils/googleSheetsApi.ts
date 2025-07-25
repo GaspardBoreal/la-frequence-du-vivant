@@ -44,7 +44,6 @@ export const fetchMarchesTechnoSensibles = async (): Promise<MarcheTechnoSensibl
     
     if (!response.ok) {
       console.warn('Erreur d\'accès au Google Sheet (403), utilisation des données de test');
-      // Retourner les données de test en cas d'erreur 403
       return TEST_DATA;
     }
     
@@ -57,15 +56,23 @@ export const fetchMarchesTechnoSensibles = async (): Promise<MarcheTechnoSensibl
     }
     
     console.log('Données récupérées avec succès depuis Google Sheets');
+    console.log('Première ligne (headers):', rows[0]);
+    console.log('Exemple de données:', rows[1]);
     
-    // Skip header row and map data
-    return rows.slice(1).map((row: string[]) => ({
-      latitude: parseFloat(row[0]),
-      longitude: parseFloat(row[1]),
-      ville: row[2] || '',
-      theme: row[3] || '',
-      lien: row[4] || ''
-    })).filter(item => !isNaN(item.latitude) && !isNaN(item.longitude));
+    // D'après la structure du Google Sheet DATA_LIEUX:
+    // Colonnes: DATE, VILLE, CODE POSTAL, ADRESSE, DEPARTEMENT, REGION, LATITUDE, LONGITUDE, THEME DE LA MARCHE, LIEN
+    return rows.slice(1).map((row: string[]) => {
+      const latitude = parseFloat(row[6]?.replace(',', '.') || '0');
+      const longitude = parseFloat(row[7]?.replace(',', '.') || '0');
+      
+      return {
+        latitude,
+        longitude,
+        ville: row[1] || '',
+        theme: row[8] || '',
+        lien: row[9] || ''
+      };
+    }).filter(item => !isNaN(item.latitude) && !isNaN(item.longitude) && item.ville);
     
   } catch (error) {
     console.error('Erreur lors de la récupération des données:', error);
