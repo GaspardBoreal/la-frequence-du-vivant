@@ -18,7 +18,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, parcel, theme }) => 
   const { data } = parcel;
 
   return (
-    <div className="fixed inset-y-0 right-0 z-50 w-full max-w-md bg-white shadow-xl transform transition-transform duration-300 ease-in-out">
+    <div className="fixed inset-y-0 right-0 z-[9999] w-full max-w-md bg-white shadow-xl transform transition-transform duration-300 ease-in-out">
       <div className="flex flex-col h-full">
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-gray-200">
