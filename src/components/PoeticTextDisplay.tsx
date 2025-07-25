@@ -88,15 +88,15 @@ const PoeticTextDisplay: React.FC<PoeticTextDisplayProps> = ({
               
               {/* Title */}
               {title && (
-                <h3 className="text-lg font-crimson font-bold text-gray-800 mb-4 leading-tight">
+                <h3 className="text-sm font-crimson font-bold text-gray-800 mb-3 leading-tight !text-sm">
                   {title}
                 </h3>
               )}
               
               {/* Preview Text */}
               <div className="relative">
-                <p className="text-sm leading-relaxed text-gray-700 font-serif italic mb-6">
-                  <span className="text-2xl font-bold text-gray-300 float-left mr-2 mt-1 leading-none">«</span>
+                <p className="text-xs leading-relaxed text-gray-700 font-serif italic mb-4 !text-xs">
+                  <span className="text-lg font-bold text-gray-300 float-left mr-2 mt-1 leading-none">«</span>
                   {previewText}
                   <span className="text-gray-400 ml-2">...</span>
                 </p>
@@ -107,7 +107,7 @@ const PoeticTextDisplay: React.FC<PoeticTextDisplayProps> = ({
               
               {/* Expand Button */}
               <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-2 text-sm text-gray-500">
+                <div className="flex items-center space-x-2 text-xs text-gray-500">
                   <Book className="h-4 w-4" />
                   <span>Texte intégral</span>
                 </div>
@@ -144,10 +144,10 @@ const PoeticTextDisplay: React.FC<PoeticTextDisplayProps> = ({
                   </div>
                   <div>
                     {title && (
-                      <h2 className="text-base font-crimson font-bold">{title}</h2>
+                      <h2 className="text-sm font-crimson font-bold !text-sm">{title}</h2>
                     )}
                     {author && (
-                      <p className="text-gray-300 text-sm">{author}</p>
+                      <p className="text-gray-300 text-xs !text-xs">{author}</p>
                     )}
                   </div>
                 </div>
@@ -200,7 +200,7 @@ const PoeticTextDisplay: React.FC<PoeticTextDisplayProps> = ({
                       className={`relative ${isAutoReading && index === currentParagraph ? 'bg-yellow-50 rounded-lg p-4' : ''}`}
                     >
                       <p 
-                        className="text-sm leading-relaxed text-gray-800 font-serif"
+                        className="text-xs leading-relaxed text-gray-800 font-serif !text-xs"
                         dangerouslySetInnerHTML={{ __html: highlightText(paragraph) }}
                       />
                     </motion.div>
@@ -221,7 +221,7 @@ const PoeticTextDisplay: React.FC<PoeticTextDisplayProps> = ({
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: index * 0.1, duration: 0.6 }}
-                        className="text-sm"
+                        className="text-xs !text-xs"
                         dangerouslySetInnerHTML={{ __html: highlightText(paragraph) }}
                       />
                     ))}
@@ -232,7 +232,7 @@ const PoeticTextDisplay: React.FC<PoeticTextDisplayProps> = ({
 
             {/* Footer */}
             <div className="bg-gray-50 px-8 py-4 border-t border-gray-200">
-              <div className="flex items-center justify-between text-sm text-gray-500">
+              <div className="flex items-center justify-between text-xs text-gray-500">
                 <div className="flex items-center space-x-4">
                   <span>{paragraphs.length} paragraphes</span>
                   <span>•</span>
