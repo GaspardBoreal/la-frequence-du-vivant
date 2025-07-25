@@ -12,8 +12,8 @@ interface SEOHeadProps {
 }
 
 const SEOHead: React.FC<SEOHeadProps> = ({
-  title = "La Fréquence du Vivant - Œuvre bioacoustique interactive par Gaspard Boréal",
-  description = "Explorez les territoires hybrides entre humain, machine et nature. Marches techno-sensibles, géopoétique augmentée et bioacoustique poétique. Une création de Gaspard Boréal.",
+  title = "La Fréquence du Vivant – Observatoire Poésie, Art & IA | Gaspard Boréal",
+  description = "Observatoire des Mondes Hybrides (2025–2037) : poésie contemporaine, art & IA, transition agroécologique par Gaspard Boréal.",
   keywords = "bioacoustique poétique, géopoétique augmentée, marches techno-sensibles, poésie prospective, art-IA-vivant, transition agroécologique littéraire, Gaspard Boréal, observatoire poétique hybride, fréquences du vivant",
   author = "Gaspard Boréal",
   ogImage = "https://la-frequence-du-vivant.lovable.app/og-image.jpg",
