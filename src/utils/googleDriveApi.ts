@@ -28,11 +28,22 @@ export const extractPhotosFromGoogleDrive = async (driveUrl: string): Promise<st
     if (data.files && data.files.length > 0) {
       console.log(`${data.files.length} photos trouvées dans le dossier ${folderId}`);
       
-      // Convertir les IDs en URLs d'images directes
+      // Convertir les IDs en URLs d'images directes avec une approche différente pour les fichiers .HEIC
       const photoUrls = data.files.map((file: any) => {
-        const url = `https://drive.google.com/uc?id=${file.id}&export=view`;
-        console.log(`Photo trouvée: ${file.name} -> ${url}`);
-        return url;
+        console.log(`Fichier trouvé: ${file.name} (${file.mimeType})`);
+        
+        // Pour les fichiers .HEIC et autres formats, utiliser une URL de prévisualisation
+        if (file.mimeType === 'image/heif' || file.name.toLowerCase().includes('.heic')) {
+          // URL de prévisualisation Google Drive pour les fichiers .HEIC
+          const url = `https://drive.google.com/thumbnail?id=${file.id}&sz=w1000`;
+          console.log(`Photo .HEIC trouvée: ${file.name} -> ${url}`);
+          return url;
+        } else {
+          // Pour les autres formats d'image
+          const url = `https://drive.google.com/uc?id=${file.id}&export=view`;
+          console.log(`Photo trouvée: ${file.name} -> ${url}`);
+          return url;
+        }
       }).slice(0, 20); // Limiter à 20 photos max
       
       return photoUrls;
