@@ -89,15 +89,15 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-background relative overflow-hidden">
-      {/* Fond avec gradient vert émeraude */}
-      <div className="absolute inset-0 bg-gradient-to-br from-background via-primary to-secondary"></div>
+      {/* Fond avec gradient vert émeraude profond */}
+      <div className="absolute inset-0 bg-gradient-to-br from-background via-primary/50 to-secondary/30"></div>
       
       {/* Éléments décoratifs */}
       <DecorativeElements className="text-accent/20" />
       
       <div className="relative z-10">
         {/* Header avec typographie exacte */}
-        <header className="bg-card/60 backdrop-blur-md shadow-lg border-b border-border/30">
+        <header className="bg-card/40 backdrop-blur-lg shadow-2xl border-b border-border/20">
           <div className="max-w-6xl mx-auto px-6 py-16">
             <div className="text-center space-y-6 animate-fade-in">
               {/* Catégorie */}
@@ -181,8 +181,8 @@ const Index = () => {
         />
       </div>
       
-      {/* Overlay d'ambiance */}
-      <div className="fixed inset-0 bg-background/10 pointer-events-none z-0"></div>
+      {/* Overlay d'ambiance vert émeraude */}
+      <div className="fixed inset-0 bg-primary/5 pointer-events-none z-0"></div>
     </div>
   );
 };
