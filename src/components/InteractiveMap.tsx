@@ -20,14 +20,16 @@ L.Icon.Default.mergeOptions({
 // Composant pour gérer les événements de la carte
 const MapEventHandler = ({ onMapReady }: { onMapReady: () => void }) => {
   const map = useMapEvents({
-    whenReady: () => {
-      console.log('🗺️ Carte prête');
-      onMapReady();
-    },
     moveend: () => {
       console.log('🗺️ Mouvement terminé');
+      onMapReady();
     }
   });
+  
+  useEffect(() => {
+    console.log('🗺️ Carte prête via useEffect');
+    onMapReady();
+  }, [onMapReady]);
   
   return null;
 };
@@ -125,7 +127,6 @@ const InteractiveMap: React.FC<InteractiveMapProps> = ({
         style={{ height: '100%', width: '100%' }}
         className="rounded-lg"
         key={`${mapCenter[0]}-${mapCenter[1]}`}
-        whenReady={() => console.log('🗺️ MapContainer prêt')}
       >
         <MapEventHandler onMapReady={handleMapReady} />
         
@@ -150,8 +151,8 @@ const InteractiveMap: React.FC<InteractiveMapProps> = ({
           </Marker>
         )}
 
-        {/* Marqueurs des Marches TechnoSensibles - affichage seulement si la carte est prête */}
-        {layers.marchesTechnoSensibles && mapReady && validMarchesData.map((marche, index) => {
+        {/* Marqueurs des Marches TechnoSensibles - affichage même si la carte n'est pas encore prête */}
+        {layers.marchesTechnoSensibles && validMarchesData.map((marche, index) => {
           console.log(`📍 Affichage marqueur ${index + 1}:`, marche.ville, marche.latitude, marche.longitude);
           
           return (
