@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Badge } from './ui/badge';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from './ui/accordion';
 import { MarcheTechnoSensible } from '../utils/googleSheetsApi';
@@ -33,8 +33,8 @@ const AdvancedFilters: React.FC<AdvancedFiltersProps> = ({ data, onFilterChange,
     item.tags ? item.tags.split(',').map(tag => tag.trim()).filter(Boolean) : []
   ))];
 
-  useEffect(() => {
-    // Apply filters
+  // Stabiliser la fonction de filtrage avec useCallback
+  const applyFilters = useCallback(() => {
     const filteredData = data.filter(item => {
       const regionMatch = activeFilters.regions.length === 0 || activeFilters.regions.includes(item.region);
       const departmentMatch = activeFilters.departments.length === 0 || activeFilters.departments.includes(item.departement);
@@ -46,7 +46,11 @@ const AdvancedFilters: React.FC<AdvancedFiltersProps> = ({ data, onFilterChange,
     });
 
     onFilterChange(filteredData);
-  }, [activeFilters, data, onFilterChange]);
+  }, [data, activeFilters, onFilterChange]);
+
+  useEffect(() => {
+    applyFilters();
+  }, [applyFilters]);
 
   const handleFilterToggle = (category: keyof FilterState, value: string) => {
     setActiveFilters(prev => ({

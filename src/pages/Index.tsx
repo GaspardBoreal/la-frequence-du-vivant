@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import SearchBar from '../components/SearchBar';
@@ -73,9 +73,10 @@ const Index = () => {
     setSelectedParcel(null);
   };
 
-  const handleFilteredDataChange = (data: MarcheTechnoSensible[]) => {
+  // Stabiliser la fonction avec useCallback pour éviter les re-rendus
+  const handleFilteredDataChange = useCallback((data: MarcheTechnoSensible[]) => {
     setFilteredMarchesData(data);
-  };
+  }, []);
 
   useEffect(() => {
     document.documentElement.style.setProperty('--theme-primary', theme.colors.primary);
