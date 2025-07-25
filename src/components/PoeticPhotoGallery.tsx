@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from './ui/carousel';
 import { Badge } from './ui/badge';
@@ -26,11 +25,13 @@ const PoeticPhotoGallery: React.FC<PoeticPhotoGalleryProps> = ({ marche, theme }
   const [isLoading, setIsLoading] = useState(true);
   const [viewMode, setViewMode] = useState<'carousel' | 'grid' | 'poetic'>('poetic');
   const [loadedImages, setLoadedImages] = useState<Set<string>>(new Set());
+  const [imageErrors, setImageErrors] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     const loadPhotos = async () => {
       setIsLoading(true);
       setLoadedImages(new Set());
+      setImageErrors(new Set());
       
       console.log(`\n=== Chargement des photos pour ${marche.ville} ===`);
       console.log('Lien Google Drive:', marche.lien);
@@ -60,10 +61,52 @@ const PoeticPhotoGallery: React.FC<PoeticPhotoGalleryProps> = ({ marche, theme }
   const handleImageLoad = (photoUrl: string) => {
     console.log('Image chargée avec succès:', photoUrl);
     setLoadedImages(prev => new Set([...prev, photoUrl]));
+    setImageErrors(prev => {
+      const newErrors = new Set(prev);
+      newErrors.delete(photoUrl);
+      return newErrors;
+    });
   };
 
   const handleImageError = (photoUrl: string) => {
     console.error('Erreur de chargement de l\'image:', photoUrl);
+    setImageErrors(prev => new Set([...prev, photoUrl]));
+  };
+
+  const PhotoImage: React.FC<{ src: string; alt: string; className?: string; onClick?: () => void }> = ({ 
+    src, 
+    alt, 
+    className = "", 
+    onClick 
+  }) => {
+    const isLoaded = loadedImages.has(src);
+    const hasError = imageErrors.has(src);
+
+    return (
+      <div className={`relative ${className}`} onClick={onClick}>
+        <img
+          src={src}
+          alt={alt}
+          className="w-full h-full object-cover"
+          onLoad={() => handleImageLoad(src)}
+          onError={() => handleImageError(src)}
+          crossOrigin="anonymous"
+        />
+        {!isLoaded && !hasError && (
+          <div className="absolute inset-0 bg-gray-200 animate-pulse flex items-center justify-center">
+            <div className="text-gray-500 text-sm">Chargement...</div>
+          </div>
+        )}
+        {hasError && (
+          <div className="absolute inset-0 bg-red-100 flex items-center justify-center">
+            <div className="text-red-500 text-sm">Erreur</div>
+          </div>
+        )}
+        {isLoaded && (
+          <div className="absolute top-1 right-1 w-2 h-2 bg-green-400 rounded-full" />
+        )}
+      </div>
+    );
   };
 
   const ViewModeSelector = () => (
@@ -106,13 +149,10 @@ const PoeticPhotoGallery: React.FC<PoeticPhotoGalleryProps> = ({ marche, theme }
       <div className="relative h-64 rounded-2xl overflow-hidden bg-gradient-to-br from-purple-100 via-pink-50 to-blue-100">
         {photos.length > 0 && (
           <div className="absolute inset-0">
-            <img
+            <PhotoImage
               src={photos[currentIndex]}
               alt={`${marche.ville} - Vision poétique`}
-              className="w-full h-full object-cover opacity-70"
-              onLoad={() => handleImageLoad(photos[currentIndex])}
-              onError={() => handleImageError(photos[currentIndex])}
-              crossOrigin="anonymous"
+              className="w-full h-full opacity-70"
             />
             <div className="absolute inset-0 bg-gradient-to-t from-purple-900/60 via-transparent to-pink-900/40" />
           </div>
@@ -167,26 +207,15 @@ const PoeticPhotoGallery: React.FC<PoeticPhotoGalleryProps> = ({ marche, theme }
       {photos.length > 0 && (
         <div className="mt-4 grid grid-cols-3 gap-2">
           {photos.slice(0, 3).map((photo, index) => (
-            <div
+            <PhotoImage
               key={index}
-              className={`relative h-16 rounded-lg overflow-hidden cursor-pointer transition-all duration-300 ${
+              src={photo}
+              alt={`Aperçu ${index + 1}`}
+              className={`h-16 rounded-lg overflow-hidden cursor-pointer transition-all duration-300 ${
                 index === currentIndex ? 'ring-2 ring-purple-400 scale-105' : 'hover:scale-102'
               }`}
               onClick={() => setCurrentIndex(index)}
-            >
-              <img
-                src={photo}
-                alt={`Aperçu ${index + 1}`}
-                className="w-full h-full object-cover"
-                onLoad={() => handleImageLoad(photo)}
-                onError={() => handleImageError(photo)}
-                crossOrigin="anonymous"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
-              {loadedImages.has(photo) && (
-                <div className="absolute top-1 right-1 w-2 h-2 bg-green-400 rounded-full" />
-              )}
-            </div>
+            />
           ))}
         </div>
       )}
@@ -200,25 +229,17 @@ const PoeticPhotoGallery: React.FC<PoeticPhotoGalleryProps> = ({ marche, theme }
           {photos.map((photo, index) => (
             <CarouselItem key={index}>
               <div className="relative group">
-                <div className="relative h-48 rounded-xl overflow-hidden bg-gradient-to-br from-gray-100 to-gray-200">
-                  <img
-                    src={photo}
-                    alt={`${marche.ville} - Photo ${index + 1}`}
-                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
-                    onLoad={() => handleImageLoad(photo)}
-                    onError={() => handleImageError(photo)}
-                    crossOrigin="anonymous"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                  <div className="absolute bottom-3 left-3 right-3 text-white opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm font-medium">{index + 1}/{photos.length}</span>
-                      <div className="flex items-center space-x-2">
-                        <Heart className="h-4 w-4 hover:text-red-400 transition-colors cursor-pointer" />
-                        {loadedImages.has(photo) && (
-                          <div className="w-2 h-2 bg-green-400 rounded-full" />
-                        )}
-                      </div>
+                <PhotoImage
+                  src={photo}
+                  alt={`${marche.ville} - Photo ${index + 1}`}
+                  className="h-48 rounded-xl overflow-hidden transition-transform duration-500 group-hover:scale-110"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                <div className="absolute bottom-3 left-3 right-3 text-white opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm font-medium">{index + 1}/{photos.length}</span>
+                    <div className="flex items-center space-x-2">
+                      <Heart className="h-4 w-4 hover:text-red-400 transition-colors cursor-pointer" />
                     </div>
                   </div>
                 </div>
@@ -235,29 +256,13 @@ const PoeticPhotoGallery: React.FC<PoeticPhotoGalleryProps> = ({ marche, theme }
   const GridView = () => (
     <div className="grid grid-cols-2 gap-3">
       {photos.slice(0, 8).map((photo, index) => (
-        <div
+        <PhotoImage
           key={index}
-          className="relative group aspect-square rounded-xl overflow-hidden bg-gradient-to-br from-gray-100 to-gray-200 cursor-pointer"
+          src={photo}
+          alt={`${marche.ville} - Photo ${index + 1}`}
+          className="aspect-square rounded-xl overflow-hidden cursor-pointer group transition-transform duration-300 hover:scale-105"
           onClick={() => setCurrentIndex(index)}
-        >
-          <img
-            src={photo}
-            alt={`${marche.ville} - Photo ${index + 1}`}
-            className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-            onLoad={() => handleImageLoad(photo)}
-            onError={() => handleImageError(photo)}
-            crossOrigin="anonymous"
-          />
-          <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors duration-300" />
-          <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-            <div className="w-6 h-6 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center">
-              <span className="text-xs text-white font-medium">{index + 1}</span>
-            </div>
-          </div>
-          {loadedImages.has(photo) && (
-            <div className="absolute top-2 left-2 w-2 h-2 bg-green-400 rounded-full" />
-          )}
-        </div>
+        />
       ))}
       {photos.length > 8 && (
         <div className="col-span-2 flex justify-center">

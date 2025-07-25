@@ -28,12 +28,12 @@ export const extractPhotosFromGoogleDrive = async (driveUrl: string): Promise<st
     if (data.files && data.files.length > 0) {
       console.log(`${data.files.length} photos trouvées dans le dossier ${folderId}`);
       
-      // Utiliser directement les webContentLink qui sont conçus pour le téléchargement/affichage
+      // Utiliser le format https://drive.google.com/uc?export=view&id={FILE_ID}
       const photoUrls = data.files.map((file: any) => {
         console.log(`Fichier trouvé: ${file.name} (${file.mimeType}) - ID: ${file.id}`);
         
-        // Utiliser webContentLink qui est l'URL de téléchargement direct
-        const url = file.webContentLink;
+        // Construire l'URL pour l'affichage direct
+        const url = `https://drive.google.com/uc?export=view&id=${file.id}`;
         console.log(`Photo générée: ${file.name} -> ${url}`);
         return url;
       }).slice(0, 20); // Limiter à 20 photos max
