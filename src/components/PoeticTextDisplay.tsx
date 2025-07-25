@@ -88,14 +88,14 @@ const PoeticTextDisplay: React.FC<PoeticTextDisplayProps> = ({
               
               {/* Title */}
               {title && (
-                <h3 className="text-sm font-crimson font-bold text-gray-800 mb-3 leading-tight !text-sm">
+                <h3 className="text-xs font-crimson font-bold text-gray-800 mb-3 leading-tight break-words">
                   {title}
                 </h3>
               )}
               
               {/* Preview Text */}
               <div className="relative">
-                <p className="text-xs leading-relaxed text-gray-700 font-serif italic mb-4 !text-xs">
+                <p className="text-xs leading-relaxed text-gray-700 font-serif italic mb-4 break-words">
                   <span className="text-lg font-bold text-gray-300 float-left mr-2 mt-1 leading-none">«</span>
                   {previewText}
                   <span className="text-gray-400 ml-2">...</span>
@@ -142,18 +142,18 @@ const PoeticTextDisplay: React.FC<PoeticTextDisplayProps> = ({
                   <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center">
                     <Sparkles className="h-6 w-6" />
                   </div>
-                  <div>
+                  <div className="flex-1 min-w-0">
                     {title && (
-                      <h2 className="text-sm font-crimson font-bold !text-sm">{title}</h2>
+                      <h2 className="text-xs font-crimson font-bold break-words leading-tight">{title}</h2>
                     )}
                     {author && (
-                      <p className="text-gray-300 text-xs !text-xs">{author}</p>
+                      <p className="text-gray-300 text-xs break-words">{author}</p>
                     )}
                   </div>
                 </div>
                 
                 {/* Controls */}
-                <div className="flex items-center space-x-2">
+                <div className="flex items-center space-x-2 flex-shrink-0">
                   <Button
                     variant="ghost"
                     size="sm"
@@ -200,7 +200,7 @@ const PoeticTextDisplay: React.FC<PoeticTextDisplayProps> = ({
                       className={`relative ${isAutoReading && index === currentParagraph ? 'bg-yellow-50 rounded-lg p-4' : ''}`}
                     >
                       <p 
-                        className="text-xs leading-relaxed text-gray-800 font-serif !text-xs"
+                        className="text-xs leading-relaxed text-gray-800 font-serif break-words"
                         dangerouslySetInnerHTML={{ __html: highlightText(paragraph) }}
                       />
                     </motion.div>
@@ -221,7 +221,7 @@ const PoeticTextDisplay: React.FC<PoeticTextDisplayProps> = ({
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: index * 0.1, duration: 0.6 }}
-                        className="text-xs !text-xs"
+                        className="text-xs break-words"
                         dangerouslySetInnerHTML={{ __html: highlightText(paragraph) }}
                       />
                     ))}
