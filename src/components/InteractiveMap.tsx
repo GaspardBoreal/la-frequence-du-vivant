@@ -5,7 +5,7 @@ import { Loader2 } from 'lucide-react';
 import { MapContainer, TileLayer, Marker, Popup, Polygon } from 'react-leaflet';
 import L from 'leaflet';
 import { RegionalTheme } from '../utils/regionalThemes';
-import { LayerConfig, SearchResult, SelectedParcel } from '../pages/Index';
+import { SearchResult, LayerConfig, SelectedParcel } from '../types';
 import { fetchMarchesTechnoSensibles, MarcheTechnoSensible } from '../utils/googleSheetsApi';
 import PoeticMarkerCard from './PoeticMarkerCard';
 

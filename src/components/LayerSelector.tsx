@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { ChevronDown, ChevronUp } from 'lucide-react';
-import { LayerConfig } from '../pages/Index';
+import { LayerConfig } from '../types';
 import { RegionalTheme } from '../utils/regionalThemes';
 import { MarcheTechnoSensible } from '../utils/googleSheetsApi';
 import AdvancedFilters from './AdvancedFilters';

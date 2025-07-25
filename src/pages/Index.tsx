@@ -1,86 +1,16 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { useQuery } from '@tanstack/react-query';
-import { toast } from 'sonner';
+
+import React, { useState, useEffect } from 'react';
 import { HelmetProvider } from 'react-helmet-async';
-import SearchBar from '../components/SearchBar';
-import LayerSelector from '../components/LayerSelector';
-import InteractiveMap from '../components/InteractiveMap';
-import Sidebar from '../components/Sidebar';
 import DecorativeElements from '../components/DecorativeElements';
 import Footer from '../components/Footer';
 import SEOHead from '../components/SEOHead';
 import { RegionalTheme, REGIONAL_THEMES } from '../utils/regionalThemes';
-import { fetchParcelData } from '../utils/lexiconApi';
-import { fetchMarchesTechnoSensibles, MarcheTechnoSensible } from '../utils/googleSheetsApi';
-
-export interface SearchResult {
-  coordinates: [number, number];
-  address: string;
-  region: string;
-}
-
-export interface LayerConfig {
-  marchesTechnoSensibles: boolean;
-  openData: boolean;
-}
-
-export interface SelectedParcel {
-  id: string;
-  coordinates: [number, number];
-  data: any;
-}
+import { Button } from '../components/ui/button';
+import { useNavigate } from 'react-router-dom';
 
 const Index = () => {
   const [theme, setTheme] = useState<RegionalTheme>(REGIONAL_THEMES['nouvelle-aquitaine']);
-  const [searchResult, setSearchResult] = useState<SearchResult | null>(null);
-  const [layers, setLayers] = useState<LayerConfig>({
-    marchesTechnoSensibles: true,
-    openData: false,
-  });
-  const [selectedParcel, setSelectedParcel] = useState<SelectedParcel | null>(null);
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [filteredMarchesData, setFilteredMarchesData] = useState<MarcheTechnoSensible[]>([]);
-
-  // Fetch marches data
-  const { data: marchesData = [] } = useQuery({
-    queryKey: ['marchesTechnoSensibles'],
-    queryFn: fetchMarchesTechnoSensibles,
-    staleTime: 5 * 60 * 1000, // 5 minutes
-  });
-
-  // Initialiser les données filtrées avec toutes les données au début
-  useEffect(() => {
-    setFilteredMarchesData(marchesData);
-  }, [marchesData]);
-
-  const handleSearch = (result: SearchResult) => {
-    setSearchResult(result);
-    // Update theme based on region
-    const regionKey = result.region.toLowerCase().replace(/[^a-z0-9]/g, '-');
-    if (REGIONAL_THEMES[regionKey]) {
-      setTheme(REGIONAL_THEMES[regionKey]);
-    }
-    toast.success(`Recherche effectuée: ${result.address}`);
-  };
-
-  const handleLayerChange = (newLayers: LayerConfig) => {
-    setLayers(newLayers);
-  };
-
-  const handleParcelClick = (parcel: SelectedParcel) => {
-    setSelectedParcel(parcel);
-    setSidebarOpen(true);
-  };
-
-  const handleCloseSidebar = () => {
-    setSidebarOpen(false);
-    setSelectedParcel(null);
-  };
-
-  // Stabiliser la fonction avec useCallback pour éviter les re-rendus
-  const handleFilteredDataChange = useCallback((data: MarcheTechnoSensible[]) => {
-    setFilteredMarchesData(data);
-  }, []);
+  const navigate = useNavigate();
 
   useEffect(() => {
     document.documentElement.style.setProperty('--theme-primary', theme.colors.primary);
@@ -88,6 +18,10 @@ const Index = () => {
     document.documentElement.style.setProperty('--theme-accent', theme.colors.accent);
     document.documentElement.style.setProperty('--theme-background', theme.colors.background);
   }, [theme]);
+
+  const handleExploreClick = () => {
+    navigate('/marches-techno-sensibles');
+  };
 
   return (
     <HelmetProvider>
@@ -130,43 +64,52 @@ const Index = () => {
                   <span className="text-white">•</span>
                   <span className="text-white text-sm">Gaspard Boréal</span>
                 </div>
+
+                {/* Button pour accéder à la carte */}
+                <div className="pt-8">
+                  <Button
+                    onClick={handleExploreClick}
+                    className="bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white px-8 py-4 text-lg font-medium rounded-full transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl"
+                  >
+                    Explorer la Cartographie
+                  </Button>
+                </div>
               </div>
             </div>
           </header>
 
-          {/* Search Bar */}
-          <div className="max-w-6xl mx-auto px-6 py-12">
-            <div className="animate-fade-in" style={{animationDelay: '0.3s'}}>
-              <SearchBar onSearch={handleSearch} theme={theme} />
-            </div>
-          </div>
-
-          {/* Main Content */}
-          <div className="max-w-6xl mx-auto px-6 pb-12">
-            <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-              {/* Layer Selector */}
-              <div className="lg:col-span-1 animate-fade-in" style={{animationDelay: '0.5s'}}>
-                <div className="gaspard-card rounded-xl p-6">
-                  <LayerSelector 
-                    layers={layers} 
-                    onChange={handleLayerChange} 
-                    theme={theme}
-                    marchesData={marchesData}
-                    onFilteredDataChange={handleFilteredDataChange}
-                  />
+          {/* Content Section */}
+          <div className="max-w-6xl mx-auto px-6 py-24">
+            <div className="text-center space-y-12">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <div className="gaspard-card rounded-xl p-8 space-y-4">
+                  <div className="w-12 h-12 bg-gradient-to-r from-green-500 to-emerald-500 rounded-full flex items-center justify-center mx-auto">
+                    <span className="text-white text-xl">🎵</span>
+                  </div>
+                  <h3 className="text-xl font-semibold text-white">Bioacoustique</h3>
+                  <p className="text-gray-300">
+                    Exploration des paysages sonores et des fréquences du vivant
+                  </p>
                 </div>
-              </div>
 
-              {/* Map */}
-              <div className="lg:col-span-3 animate-fade-in" style={{animationDelay: '0.7s'}}>
-                <div className="gaspard-card rounded-xl overflow-hidden shadow-2xl">
-                  <InteractiveMap
-                    searchResult={searchResult}
-                    layers={layers}
-                    theme={theme}
-                    onParcelClick={handleParcelClick}
-                    filteredMarchesData={filteredMarchesData}
-                  />
+                <div className="gaspard-card rounded-xl p-8 space-y-4">
+                  <div className="w-12 h-12 bg-gradient-to-r from-green-500 to-emerald-500 rounded-full flex items-center justify-center mx-auto">
+                    <span className="text-white text-xl">🌱</span>
+                  </div>
+                  <h3 className="text-xl font-semibold text-white">Territoires</h3>
+                  <p className="text-gray-300">
+                    Cartographie interactive des marches techno-sensibles
+                  </p>
+                </div>
+
+                <div className="gaspard-card rounded-xl p-8 space-y-4">
+                  <div className="w-12 h-12 bg-gradient-to-r from-green-500 to-emerald-500 rounded-full flex items-center justify-center mx-auto">
+                    <span className="text-white text-xl">📖</span>
+                  </div>
+                  <h3 className="text-xl font-semibold text-white">Poésie</h3>
+                  <p className="text-gray-300">
+                    Création poétique à l'intersection de l'art et de la science
+                  </p>
                 </div>
               </div>
             </div>
@@ -174,14 +117,6 @@ const Index = () => {
 
           {/* Footer */}
           <Footer />
-
-          {/* Sidebar */}
-          <Sidebar
-            isOpen={sidebarOpen}
-            onClose={handleCloseSidebar}
-            parcel={selectedParcel}
-            theme={theme}
-          />
         </div>
         
         {/* Overlay d'ambiance vert émeraude */}
