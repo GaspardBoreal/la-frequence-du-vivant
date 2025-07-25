@@ -1,6 +1,5 @@
 
 import React, { useState, useEffect } from 'react';
-import { MapContainer } from 'react-leaflet';
 import { useQuery } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import SearchBar from '../components/SearchBar';
@@ -9,7 +8,6 @@ import InteractiveMap from '../components/InteractiveMap';
 import Sidebar from '../components/Sidebar';
 import { RegionalTheme, REGIONAL_THEMES } from '../utils/regionalThemes';
 import { fetchParcelData } from '../utils/lexiconApi';
-import 'leaflet/dist/leaflet.css';
 
 export interface SearchResult {
   coordinates: [number, number];
