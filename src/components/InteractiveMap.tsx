@@ -6,7 +6,7 @@ import { MapContainer, TileLayer, Marker, Popup, Polygon } from 'react-leaflet';
 import L from 'leaflet';
 import { RegionalTheme } from '../utils/regionalThemes';
 import { LayerConfig, SearchResult, SelectedParcel } from '../pages/Index';
-import { fetchParcelData, fetchNearbyParcels } from '../utils/lexiconApi';
+import { fetchMarchesTechnoSensibles, MarcheTechnoSensible } from '../utils/googleSheetsApi';
 
 // Fix for default markers
 delete (L.Icon.Default.prototype as any)._getIconUrl;
@@ -31,6 +31,14 @@ const InteractiveMap: React.FC<InteractiveMapProps> = ({
 }) => {
   const [mapCenter, setMapCenter] = useState<[number, number]>([46.603354, 1.888334]);
   const [zoom, setZoom] = useState(6);
+
+  // Fetch marches techno sensibles when layer is enabled
+  const { data: marchesTechnoSensibles = [] } = useQuery({
+    queryKey: ['marchesTechnoSensibles'],
+    queryFn: () => fetchMarchesTechnoSensibles('1BvHJXNFkAVhLWQZmF4x7l8PQ8JLcRgHzGNpWW5YO9Sk'), // Replace with actual spreadsheet ID
+    enabled: layers.marchesTechnoSensibles,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  });
 
 
   useEffect(() => {
@@ -69,6 +77,33 @@ const InteractiveMap: React.FC<InteractiveMapProps> = ({
             </Popup>
           </Marker>
         )}
+
+        {/* Marches TechnoSensibles markers */}
+        {layers.marchesTechnoSensibles && marchesTechnoSensibles.map((marche, index) => (
+          <Marker 
+            key={index} 
+            position={[marche.latitude, marche.longitude]}
+          >
+            <Popup>
+              <div className="p-3">
+                <h3 className="font-semibold text-gray-800 mb-2">{marche.ville}</h3>
+                <p className="text-sm text-gray-600 mb-2">
+                  <strong>Thème:</strong> {marche.theme}
+                </p>
+                {marche.lien && (
+                  <a 
+                    href={marche.lien} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="text-blue-600 hover:text-blue-800 text-sm underline"
+                  >
+                    Plus d'informations
+                  </a>
+                )}
+              </div>
+            </Popup>
+          </Marker>
+        ))}
 
       </MapContainer>
     </div>
