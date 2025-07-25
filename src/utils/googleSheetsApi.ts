@@ -1,3 +1,4 @@
+
 const GOOGLE_SHEETS_API_KEY = 'AIzaSyBLIZXZWsOEvFeCAAHe1__khd0OVclv_4s';
 
 export interface MarcheTechnoSensible {
@@ -11,7 +12,7 @@ export interface MarcheTechnoSensible {
 export const fetchMarchesTechnoSensibles = async (): Promise<MarcheTechnoSensible[]> => {
   try {
     const response = await fetch(
-      `https://sheets.googleapis.com/v4/spreadsheets/1_lcQPVHIg3JAJP_FWVstnWvzzjfssNPN_h7FodZCyJY?key=${GOOGLE_SHEETS_API_KEY}`
+      `https://sheets.googleapis.com/v4/spreadsheets/1_lcQPVHIg3JAJP_FWVstnWvzzjfssNPN_h7FodZCyJY/values/Sheet1?key=${GOOGLE_SHEETS_API_KEY}`
     );
     
     if (!response.ok) {
