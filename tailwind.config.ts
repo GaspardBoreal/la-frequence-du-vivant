@@ -63,30 +63,16 @@ export default {
 					border: 'hsl(var(--sidebar-border))',
 					ring: 'hsl(var(--sidebar-ring))'
 				},
-				// Couleurs inspirées de l'image Gaspard Boréal
-				'sage': {
-					50: '#f6f8f4',
-					100: '#e9f0e5',
-					200: '#d3e1cb',
-					300: '#b3c9a4',
-					400: '#8dab77',
-					500: '#6b8e54',
-					600: '#527040',
-					700: '#425834',
-					800: '#36472c',
-					900: '#2d3c26',
-				},
-				'forest': {
-					50: '#f1f8f4',
-					100: '#dcefe2',
-					200: '#bcdfc8',
-					300: '#8fc9a5',
-					400: '#5dac7c',
-					500: '#3d8f5e',
-					600: '#2c7249',
-					700: '#235b3c',
-					800: '#1e4831',
-					900: '#1a3c29',
+				// Couleurs exactes inspirées de la page Gaspard Boréal
+				'gaspard': {
+					'dark': '#0a0f0d',      // Noir profond
+					'emerald': '#1a3b2e',   // Vert émeraude foncé
+					'forest': '#234a3d',    // Vert forêt
+					'sage': '#2d5a4a',      // Vert sauge
+					'mint': '#3d6b57',      // Vert menthe
+					'light': '#4d7c64',     // Vert clair
+					'cream': '#f5f3f0',     // Crème
+					'gold': '#d4af37',      // Or
 				}
 			},
 			fontFamily: {
@@ -122,13 +108,18 @@ export default {
 				'pulse-gentle': {
 					'0%, 100%': { opacity: '1' },
 					'50%': { opacity: '0.7' }
+				},
+				'fade-in': {
+					'0%': { opacity: '0', transform: 'translateY(20px)' },
+					'100%': { opacity: '1', transform: 'translateY(0)' }
 				}
 			},
 			animation: {
 				'accordion-down': 'accordion-down 0.2s ease-out',
 				'accordion-up': 'accordion-up 0.2s ease-out',
 				'float': 'float 6s ease-in-out infinite',
-				'pulse-gentle': 'pulse-gentle 3s ease-in-out infinite'
+				'pulse-gentle': 'pulse-gentle 3s ease-in-out infinite',
+				'fade-in': 'fade-in 0.6s ease-out'
 			}
 		}
 	},

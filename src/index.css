@@ -3,93 +3,88 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
+/* Definition of the design system inspired by Gaspard Boréal. All colors, gradients, fonts, etc should be defined here. 
 All colors MUST be HSL.
 */
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
+    --background: 120 15% 7%;  /* Fond vert très foncé */
+    --foreground: 60 9% 98%;   /* Texte crème */
 
-    --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    --card: 120 20% 10%;       /* Cartes vert foncé */
+    --card-foreground: 60 9% 98%;
 
-    --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
+    --popover: 120 20% 10%;
+    --popover-foreground: 60 9% 98%;
 
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
+    --primary: 120 30% 25%;    /* Vert émeraude */
+    --primary-foreground: 60 9% 98%;
 
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
+    --secondary: 120 20% 15%;  /* Vert plus foncé */
+    --secondary-foreground: 60 9% 98%;
 
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
+    --muted: 120 15% 12%;      /* Vert muted */
+    --muted-foreground: 60 5% 70%;
 
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
+    --accent: 51 100% 52%;     /* Or */
+    --accent-foreground: 120 15% 7%;
 
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
 
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
+    --border: 120 20% 20%;     /* Bordures vert foncé */
+    --input: 120 20% 15%;      /* Inputs vert foncé */
+    --ring: 51 100% 52%;       /* Ring or */
 
     --radius: 0.5rem;
 
-    --sidebar-background: 0 0% 98%;
-    --sidebar-foreground: 240 5.3% 26.1%;
-    --sidebar-primary: 240 5.9% 10%;
-    --sidebar-primary-foreground: 0 0% 98%;
-    --sidebar-accent: 240 4.8% 95.9%;
-    --sidebar-accent-foreground: 240 5.9% 10%;
-    --sidebar-border: 220 13% 91%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
-
-    /* Nouvelles variables pour l'identité Gaspard Boréal */
-    --gaspard-sage: 95 25% 85%;
-    --gaspard-forest: 140 35% 25%;
-    --gaspard-accent: 120 30% 60%;
+    --sidebar-background: 120 20% 8%;
+    --sidebar-foreground: 60 9% 98%;
+    --sidebar-primary: 120 30% 25%;
+    --sidebar-primary-foreground: 60 9% 98%;
+    --sidebar-accent: 120 20% 12%;
+    --sidebar-accent-foreground: 60 9% 98%;
+    --sidebar-border: 120 20% 20%;
+    --sidebar-ring: 51 100% 52%;
   }
 
   .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
+    --background: 120 15% 7%;
+    --foreground: 60 9% 98%;
 
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
+    --card: 120 20% 10%;
+    --card-foreground: 60 9% 98%;
 
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
+    --popover: 120 20% 10%;
+    --popover-foreground: 60 9% 98%;
 
-    --primary: 210 40% 98%;
-    --primary-foreground: 222.2 47.4% 11.2%;
+    --primary: 120 30% 25%;
+    --primary-foreground: 60 9% 98%;
 
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
+    --secondary: 120 20% 15%;
+    --secondary-foreground: 60 9% 98%;
 
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
+    --muted: 120 15% 12%;
+    --muted-foreground: 60 5% 70%;
 
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
+    --accent: 51 100% 52%;
+    --accent-foreground: 120 15% 7%;
 
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 210 40% 98%;
 
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 212.7 26.8% 83.9%;
-    --sidebar-background: 240 5.9% 10%;
-    --sidebar-foreground: 240 4.8% 95.9%;
-    --sidebar-primary: 224.3 76.3% 48%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 3.7% 15.9%;
-    --sidebar-accent-foreground: 240 4.8% 95.9%;
-    --sidebar-border: 240 3.7% 15.9%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    --border: 120 20% 20%;
+    --input: 120 20% 15%;
+    --ring: 51 100% 52%;
+    --sidebar-background: 120 20% 8%;
+    --sidebar-foreground: 60 9% 98%;
+    --sidebar-primary: 120 30% 25%;
+    --sidebar-primary-foreground: 60 9% 98%;
+    --sidebar-accent: 120 20% 12%;
+    --sidebar-accent-foreground: 60 9% 98%;
+    --sidebar-border: 120 20% 20%;
+    --sidebar-ring: 51 100% 52%;
   }
 }
 
@@ -106,26 +101,30 @@ All colors MUST be HSL.
   /* Typographie inspirée de Gaspard Boréal */
   .gaspard-title {
     font-family: 'Playfair Display', serif;
-    @apply text-forest-800 font-light leading-tight;
+    @apply text-foreground font-light leading-tight;
   }
 
   .gaspard-subtitle {
     font-family: 'Inter', sans-serif;
-    @apply text-forest-700 font-bold uppercase tracking-wide;
+    @apply text-accent font-bold uppercase tracking-wide;
   }
 
   .gaspard-text {
     font-family: 'Inter', sans-serif;
-    @apply text-forest-600 font-light leading-relaxed;
+    @apply text-muted-foreground font-light leading-relaxed;
   }
 
-  /* Effets visuels inspirés de l'image */
+  /* Effets visuels inspirés de la page web */
   .gaspard-card {
-    @apply bg-white/80 backdrop-blur-sm border border-sage-200/50 shadow-xl;
+    @apply bg-card/80 backdrop-blur-sm border border-border/50 shadow-2xl;
   }
 
   .gaspard-glass {
-    @apply bg-white/60 backdrop-blur-md border border-white/20;
+    @apply bg-card/40 backdrop-blur-md border border-border/30;
+  }
+
+  .gaspard-gradient {
+    background: linear-gradient(135deg, hsl(var(--background)) 0%, hsl(var(--primary)) 100%);
   }
 }
 
@@ -137,6 +136,10 @@ All colors MUST be HSL.
 
   .animate-soft-pulse {
     animation: soft-pulse 4s ease-in-out infinite;
+  }
+
+  .animate-fade-in {
+    animation: fade-in 0.8s ease-out;
   }
 }
 
@@ -150,4 +153,9 @@ All colors MUST be HSL.
 @keyframes soft-pulse {
   0%, 100% { opacity: 0.6; transform: scale(1); }
   50% { opacity: 1; transform: scale(1.05); }
+}
+
+@keyframes fade-in {
+  0% { opacity: 0; transform: translateY(20px); }
+  100% { opacity: 1; transform: translateY(0); }
 }

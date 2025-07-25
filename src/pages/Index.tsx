@@ -88,38 +88,40 @@ const Index = () => {
   }, [theme]);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-sage-100 via-sage-50 to-sage-100 relative overflow-hidden">
+    <div className="min-h-screen bg-background relative overflow-hidden">
+      {/* Fond avec texture et gradient */}
+      <div className="absolute inset-0 bg-gradient-to-br from-gaspard-dark via-gaspard-emerald to-gaspard-forest"></div>
+      
       {/* Éléments décoratifs inspirés de l'image */}
-      <DecorativeElements className="text-forest-600" />
+      <DecorativeElements className="text-gaspard-mint/30" />
       
       <div className="relative z-10">
-        {/* Header avec le nouveau design */}
-        <header className="bg-white/90 backdrop-blur-sm shadow-lg border-b border-sage-200/50">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-            <div className="text-center">
+        {/* Header avec le nouveau design sombre */}
+        <header className="bg-card/90 backdrop-blur-sm shadow-2xl border-b border-border/50">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <div className="text-center animate-fade-in">
               {/* Titre principal inspiré de l'image */}
-              <h1 className="font-playfair text-3xl md:text-4xl lg:text-5xl font-light text-sage-800 mb-2">
+              <h1 className="gaspard-title text-4xl md:text-5xl lg:text-6xl mb-3">
                 Gaspard Boréal
               </h1>
               
-              {/* Titre secondaire en lettres capitales */}
-              <div className="mb-3">
-                <h2 className="font-inter text-xl md:text-2xl lg:text-3xl font-bold text-forest-800 tracking-wide uppercase">
+              {/* Titre secondaire en or */}
+              <div className="mb-4">
+                <h2 className="gaspard-subtitle text-xl md:text-2xl lg:text-3xl">
                   La Fréquence du Vivant
                 </h2>
               </div>
               
               {/* Sous-titre poétique */}
-              <p className="font-inter text-sm md:text-base text-forest-600 font-light leading-relaxed max-w-2xl mx-auto">
+              <p className="gaspard-text text-base md:text-lg max-w-3xl mx-auto">
                 marche techno-sensible entre vivant, humain et machine
               </p>
               
               {/* Indicateur de région */}
-              <div className="mt-4 flex items-center justify-center space-x-2 text-sm">
-                <span className="text-sage-600">Région explorée:</span>
+              <div className="mt-6 flex items-center justify-center space-x-2 text-sm">
+                <span className="text-muted-foreground">Région explorée:</span>
                 <span 
-                  className="px-3 py-1 rounded-full text-white font-medium text-sm"
-                  style={{ backgroundColor: theme.colors.primary }}
+                  className="px-4 py-2 rounded-full bg-accent text-accent-foreground font-medium text-sm shadow-lg"
                 >
                   {theme.name}
                 </span>
@@ -128,17 +130,19 @@ const Index = () => {
           </div>
         </header>
 
-        {/* Search Bar avec nouveau style */}
+        {/* Search Bar avec nouveau style sombre */}
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <SearchBar onSearch={handleSearch} theme={theme} />
+          <div className="animate-fade-in" style={{animationDelay: '0.2s'}}>
+            <SearchBar onSearch={handleSearch} theme={theme} />
+          </div>
         </div>
 
-        {/* Main Content avec nouveau layout */}
+        {/* Main Content avec nouveau layout sombre */}
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-8">
           <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-            {/* Layer Selector avec nouveau design */}
-            <div className="lg:col-span-1">
-              <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl border border-sage-200/50 p-6">
+            {/* Layer Selector avec nouveau design sombre */}
+            <div className="lg:col-span-1 animate-fade-in" style={{animationDelay: '0.4s'}}>
+              <div className="gaspard-card rounded-2xl p-6">
                 <LayerSelector 
                   layers={layers} 
                   onChange={handleLayerChange} 
@@ -149,9 +153,9 @@ const Index = () => {
               </div>
             </div>
 
-            {/* Map avec nouveau style */}
-            <div className="lg:col-span-3">
-              <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl border border-sage-200/50 overflow-hidden">
+            {/* Map avec nouveau style sombre */}
+            <div className="lg:col-span-3 animate-fade-in" style={{animationDelay: '0.6s'}}>
+              <div className="gaspard-card rounded-2xl overflow-hidden">
                 <InteractiveMap
                   searchResult={searchResult}
                   layers={layers}
@@ -164,7 +168,7 @@ const Index = () => {
           </div>
         </div>
 
-        {/* Sidebar avec nouveau design */}
+        {/* Sidebar avec nouveau design sombre */}
         <Sidebar
           isOpen={sidebarOpen}
           onClose={handleCloseSidebar}
@@ -172,6 +176,9 @@ const Index = () => {
           theme={theme}
         />
       </div>
+      
+      {/* Overlay subtil pour l'ambiance */}
+      <div className="fixed inset-0 bg-gaspard-dark/20 pointer-events-none z-0"></div>
     </div>
   );
 };
