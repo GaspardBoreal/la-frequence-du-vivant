@@ -1,3 +1,4 @@
+
 export interface MarcheTechnoSensible {
   id: string;
   ville: string;
@@ -42,8 +43,8 @@ export interface MarcheTechnoSensible {
   };
 }
 
-// Configuration Google Sheets API - MISE À JOUR avec les bonnes informations
-const SHEET_ID = '1_lcQPVHIg3JAJP';
+// Configuration Google Sheets API - CORRIGÉ avec l'ID complet
+const SHEET_ID = '1_lcQPVHIg3JAJP_FWVstnWvzzjfssNPN_h7FodZCyJY';
 const API_KEY = 'AIzaSyBLIZXZWsOEvFeCAAHe1__khd0OVclv_4s';
 const SHEET_NAME = 'DATA_LIEUX';
 
