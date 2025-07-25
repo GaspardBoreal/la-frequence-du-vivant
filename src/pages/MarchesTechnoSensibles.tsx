@@ -1,6 +1,6 @@
-
 import React, { useState, useEffect, useCallback } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { HelmetProvider } from 'react-helmet-async';
 import LayerSelector from '../components/LayerSelector';
@@ -12,10 +12,12 @@ import SEOHead from '../components/SEOHead';
 import { RegionalTheme, REGIONAL_THEMES } from '../utils/regionalThemes';
 import { fetchParcelData } from '../utils/lexiconApi';
 import { fetchMarchesTechnoSensibles, MarcheTechnoSensible } from '../utils/googleSheetsApi';
+import { createSlug } from '../utils/slugGenerator';
 import { LayerConfig, SelectedParcel } from '../types/index';
 
 const MarchesTechnoSensibles = () => {
   console.log('🚀 MarchesTechnoSensibles component rendering...');
+  const navigate = useNavigate();
   const [theme, setTheme] = useState<RegionalTheme>(REGIONAL_THEMES['nouvelle-aquitaine']);
   const [layers, setLayers] = useState<LayerConfig>({
     marchesTechnoSensibles: true
@@ -60,8 +62,18 @@ const MarchesTechnoSensibles = () => {
 
   const handleParcelClick = (parcel: SelectedParcel) => {
     console.log('🎯 Parcel clicked:', parcel);
-    setSelectedParcel(parcel);
-    setSidebarOpen(true);
+    
+    // Si c'est une marche techno-sensible, naviguer vers la page individuelle
+    if (parcel.type === 'marche') {
+      const marche = parcel.data as MarcheTechnoSensible;
+      const slug = createSlug(marche.nomMarche || marche.ville, marche.ville);
+      console.log('🚀 Navigating to marche:', slug);
+      navigate(`/marche/${slug}`);
+    } else {
+      // Pour les autres types, utiliser la sidebar
+      setSelectedParcel(parcel);
+      setSidebarOpen(true);
+    }
   };
 
   const handleCloseSidebar = () => {
