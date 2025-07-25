@@ -1,11 +1,16 @@
+
 import React, { useState, useEffect, useCallback } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { toast } from 'sonner';
+import { HelmetProvider } from 'react-helmet-async';
 import SearchBar from '../components/SearchBar';
 import LayerSelector from '../components/LayerSelector';
 import InteractiveMap from '../components/InteractiveMap';
 import Sidebar from '../components/Sidebar';
 import DecorativeElements from '../components/DecorativeElements';
+import NavigationMenu from '../components/NavigationMenu';
+import Footer from '../components/Footer';
+import SEOHead from '../components/SEOHead';
 import { RegionalTheme, REGIONAL_THEMES } from '../utils/regionalThemes';
 import { fetchParcelData } from '../utils/lexiconApi';
 import { fetchMarchesTechnoSensibles, MarcheTechnoSensible } from '../utils/googleSheetsApi';
@@ -87,97 +92,107 @@ const Index = () => {
   }, [theme]);
 
   return (
-    <div className="min-h-screen bg-background relative overflow-hidden">
-      {/* Fond avec gradient vert émeraude profond */}
-      <div className="absolute inset-0 bg-gradient-to-br from-background via-primary/50 to-secondary/30"></div>
-      
-      {/* Éléments décoratifs */}
-      <DecorativeElements className="text-accent/20" />
-      
-      <div className="relative z-10">
-        {/* Header avec typographie exacte */}
-        <header className="bg-card/40 backdrop-blur-lg shadow-2xl border-b border-border/20">
-          <div className="max-w-6xl mx-auto px-6 py-16">
-            <div className="text-center space-y-6 animate-fade-in">
-              {/* Catégorie avec design exact */}
-              <div className="inline-flex items-center gap-2 px-4 py-2 bg-green-950/30 border border-green-500/20 rounded-full">
-                <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
-                <span className="font-mono text-xs uppercase tracking-wide text-green-300">
-                  Bioacoustique & Poésie
-                </span>
+    <HelmetProvider>
+      <div className="min-h-screen bg-background relative overflow-hidden">
+        <SEOHead />
+        
+        {/* Fond avec gradient vert émeraude profond */}
+        <div className="absolute inset-0 bg-gradient-to-br from-background via-primary/50 to-secondary/30"></div>
+        
+        {/* Éléments décoratifs */}
+        <DecorativeElements className="text-accent/20" />
+        
+        <div className="relative z-10">
+          {/* Navigation */}
+          <NavigationMenu />
+
+          {/* Header avec typographie exacte */}
+          <header className="bg-card/40 backdrop-blur-lg shadow-2xl border-b border-border/20">
+            <div className="max-w-6xl mx-auto px-6 py-16">
+              <div className="text-center space-y-6 animate-fade-in">
+                {/* Catégorie avec design exact */}
+                <div className="inline-flex items-center gap-2 px-4 py-2 bg-green-950/30 border border-green-500/20 rounded-full">
+                  <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+                  <span className="font-mono text-xs uppercase tracking-wide text-green-300">
+                    Bioacoustique & Poésie
+                  </span>
+                </div>
+                
+                {/* Titre principal - structure exacte avec couleurs spécifiques */}
+                <h1 className="font-crimson font-normal leading-tight text-7xl md:text-8xl lg:text-9xl">
+                  <span className="text-white">La Fréquence</span><br />
+                  <span style={{ color: '#4ade80' }}>du Vivant</span>
+                </h1>
+                
+                {/* Sous-titre */}
+                <p className="gaspard-subtitle max-w-2xl mx-auto">
+                  Marche techno-sensible entre vivant, humain et machine
+                </p>
+                
+                {/* Meta informations */}
+                <div className="flex items-center justify-center space-x-4 pt-8">
+                  <span className="text-white text-sm">2025</span>
+                  <span className="text-white">•</span>
+                  <span className="text-white text-sm">Gaspard Boréal</span>
+                </div>
               </div>
-              
-              {/* Titre principal - structure exacte avec couleurs spécifiques */}
-              <h1 className="font-crimson font-normal leading-tight text-7xl md:text-8xl lg:text-9xl">
-                <span className="text-white">La Fréquence</span><br />
-                <span style={{ color: '#4ade80' }}>du Vivant</span>
-              </h1>
-              
-              {/* Sous-titre */}
-              <p className="gaspard-subtitle max-w-2xl mx-auto">
-                Marche techno-sensible entre vivant, humain et machine
-              </p>
-              
-              {/* Meta informations */}
-              <div className="flex items-center justify-center space-x-4 pt-8">
-                <span className="text-white text-sm">2025</span>
-                <span className="text-white">•</span>
-                <span className="text-white text-sm">Gaspard Boréal</span>
+            </div>
+          </header>
+
+          {/* Search Bar */}
+          <div className="max-w-6xl mx-auto px-6 py-12">
+            <div className="animate-fade-in" style={{animationDelay: '0.3s'}}>
+              <SearchBar onSearch={handleSearch} theme={theme} />
+            </div>
+          </div>
+
+          {/* Main Content */}
+          <div className="max-w-6xl mx-auto px-6 pb-12">
+            <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+              {/* Layer Selector */}
+              <div className="lg:col-span-1 animate-fade-in" style={{animationDelay: '0.5s'}}>
+                <div className="gaspard-card rounded-xl p-6">
+                  <LayerSelector 
+                    layers={layers} 
+                    onChange={handleLayerChange} 
+                    theme={theme}
+                    marchesData={marchesData}
+                    onFilteredDataChange={handleFilteredDataChange}
+                  />
+                </div>
+              </div>
+
+              {/* Map */}
+              <div className="lg:col-span-3 animate-fade-in" style={{animationDelay: '0.7s'}}>
+                <div className="gaspard-card rounded-xl overflow-hidden shadow-2xl">
+                  <InteractiveMap
+                    searchResult={searchResult}
+                    layers={layers}
+                    theme={theme}
+                    onParcelClick={handleParcelClick}
+                    filteredMarchesData={filteredMarchesData}
+                  />
+                </div>
               </div>
             </div>
           </div>
-        </header>
 
-        {/* Search Bar */}
-        <div className="max-w-6xl mx-auto px-6 py-12">
-          <div className="animate-fade-in" style={{animationDelay: '0.3s'}}>
-            <SearchBar onSearch={handleSearch} theme={theme} />
-          </div>
+          {/* Footer */}
+          <Footer />
+
+          {/* Sidebar */}
+          <Sidebar
+            isOpen={sidebarOpen}
+            onClose={handleCloseSidebar}
+            parcel={selectedParcel}
+            theme={theme}
+          />
         </div>
-
-        {/* Main Content */}
-        <div className="max-w-6xl mx-auto px-6 pb-12">
-          <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-            {/* Layer Selector */}
-            <div className="lg:col-span-1 animate-fade-in" style={{animationDelay: '0.5s'}}>
-              <div className="gaspard-card rounded-xl p-6">
-                <LayerSelector 
-                  layers={layers} 
-                  onChange={handleLayerChange} 
-                  theme={theme}
-                  marchesData={marchesData}
-                  onFilteredDataChange={handleFilteredDataChange}
-                />
-              </div>
-            </div>
-
-            {/* Map */}
-            <div className="lg:col-span-3 animate-fade-in" style={{animationDelay: '0.7s'}}>
-              <div className="gaspard-card rounded-xl overflow-hidden shadow-2xl">
-                <InteractiveMap
-                  searchResult={searchResult}
-                  layers={layers}
-                  theme={theme}
-                  onParcelClick={handleParcelClick}
-                  filteredMarchesData={filteredMarchesData}
-                />
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Sidebar */}
-        <Sidebar
-          isOpen={sidebarOpen}
-          onClose={handleCloseSidebar}
-          parcel={selectedParcel}
-          theme={theme}
-        />
+        
+        {/* Overlay d'ambiance vert émeraude */}
+        <div className="fixed inset-0 bg-primary/5 pointer-events-none z-0"></div>
       </div>
-      
-      {/* Overlay d'ambiance vert émeraude */}
-      <div className="fixed inset-0 bg-primary/5 pointer-events-none z-0"></div>
-    </div>
+    </HelmetProvider>
   );
 };
 
