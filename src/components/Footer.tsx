@@ -43,29 +43,33 @@ const Footer = () => {
             </div>
           </div>
 
-          {/* Domaines d'exploration */}
+          {/* Explorer les fréquences */}
           <div className="space-y-4">
             <h3 className="font-crimson text-xl text-white font-medium">
-              Domaines d'Exploration
+              Explorer les fréquences
             </h3>
-            <div className="flex flex-wrap gap-2">
-              <span className="inline-flex items-center gap-1 px-3 py-1 bg-green-950/30 border border-green-500/20 rounded-full text-xs text-green-300">
-                <Zap size={12} />
-                Art-IA-Vivant
-              </span>
-              <span className="inline-flex items-center gap-1 px-3 py-1 bg-green-950/30 border border-green-500/20 rounded-full text-xs text-green-300">
-                <MapPin size={12} />
-                Géopoétique
-              </span>
-              <span className="inline-flex items-center gap-1 px-3 py-1 bg-green-950/30 border border-green-500/20 rounded-full text-xs text-green-300">
-                Marches Sensibles
-              </span>
-              <span className="inline-flex items-center gap-1 px-3 py-1 bg-green-950/30 border border-green-500/20 rounded-full text-xs text-green-300">
-                Bioacoustique
-              </span>
-              <span className="inline-flex items-center gap-1 px-3 py-1 bg-green-950/30 border border-green-500/20 rounded-full text-xs text-green-300">
-                Transition Agroécologique
-              </span>
+            <div className="space-y-2">
+              <a 
+                href="#marches-sensibles" 
+                className="flex items-center gap-2 text-muted-foreground hover:text-accent transition-colors"
+              >
+                <MapPin size={16} />
+                <span>Marches Sensibles</span>
+              </a>
+              <a 
+                href="#bioacoustique-poetique" 
+                className="flex items-center gap-2 text-muted-foreground hover:text-accent transition-colors"
+              >
+                <Zap size={16} />
+                <span>Bioacoustique Poétique</span>
+              </a>
+              <a 
+                href="#territoires-hybrides" 
+                className="flex items-center gap-2 text-muted-foreground hover:text-accent transition-colors"
+              >
+                <BookOpen size={16} />
+                <span>Territoires Hybrides</span>
+              </a>
             </div>
           </div>
 
