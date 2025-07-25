@@ -1,4 +1,3 @@
-
 export interface MarcheTechnoSensible {
   id: string;
   ville: string;
@@ -45,7 +44,7 @@ export interface MarcheTechnoSensible {
 
 // Configuration Google Sheets API
 const SHEET_ID = '1wfxGJRMl5mfJGGCYSfuF-vCYiXUcLOjvGAa8oLKoFGg';
-const API_KEY = 'AIzaSyAMJAKHdLMI6WbhTgJqxzHpxDJBxGQGaUU';
+const API_KEY = 'AIzaSyBLIZXZWsOEvFeCAAHe1__khd0OVclv_4s';
 const SHEET_NAME = 'Marches_TechnoSensibles';
 
 // URL de base pour l'API Google Sheets
