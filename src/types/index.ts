@@ -25,3 +25,35 @@ export interface SelectedParcel {
   temperature?: number;
   imageUrls?: string[];
 }
+
+// Extensions pour Supabase
+export interface EtudeData {
+  id: string;
+  titre: string;
+  contenu: string;
+  resume?: string;
+  chapitres?: any;
+  ordre: number;
+  type: 'principale' | 'complementaire' | 'annexe';
+}
+
+export interface DocumentData {
+  id: string;
+  nom: string;
+  url: string;
+  titre?: string;
+  description?: string;
+  type?: string;
+}
+
+// Extension du type MarcheTechnoSensible pour Supabase
+declare module '../utils/googleSheetsApi' {
+  interface MarcheTechnoSensible {
+    supabaseId?: string;
+    etudes?: EtudeData[];
+    documents?: DocumentData[];
+    tags?: string[];
+    sousThemes?: string[];
+    audioFiles?: string[];
+  }
+}

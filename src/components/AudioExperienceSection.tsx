@@ -7,7 +7,6 @@ import {
   Radio,
   Share2,
   Waves,
-  Loader2,
   Music,
   Download,
   ExternalLink,
@@ -17,49 +16,68 @@ import { Button } from './ui/button';
 import { Badge } from './ui/badge';
 import { MarcheTechnoSensible } from '../utils/googleSheetsApi';
 import { RegionalTheme } from '../utils/regionalThemes';
-import { extractAudioFromGoogleDrive, AudioData } from '../utils/googleDriveApi';
-import { useQuery } from '@tanstack/react-query';
 
 interface AudioExperienceSectionProps {
   marche: MarcheTechnoSensible;
   theme: RegionalTheme;
 }
 
+interface AudioFile {
+  url: string;
+  name: string;
+  title?: string;
+  description?: string;
+}
+
 const AudioExperienceSection: React.FC<AudioExperienceSectionProps> = ({ marche, theme }) => {
   const [currentTrackIndex, setCurrentTrackIndex] = useState(0);
   const [activeOption, setActiveOption] = useState<'spectogram' | 'frequencies' | 'share' | null>(null);
   
-  // Récupération des fichiers audio depuis Google Drive
-  const { data: audioFiles = [], isLoading: isLoadingAudio, error: audioQueryError } = useQuery({
-    queryKey: ['audioFiles', marche.lien],
-    queryFn: () => marche.lien ? extractAudioFromGoogleDrive(marche.lien) : Promise.resolve([]),
-    enabled: !!marche.lien,
-    staleTime: 5 * 60 * 1000
+  // Récupérer les fichiers audio depuis les props (maintenant depuis Supabase)
+  const audioUrls = marche.audioFiles || [];
+  
+  // Transformer en format AudioFile pour compatibilité
+  const audioFiles: AudioFile[] = audioUrls.map((url, index) => ({
+    url,
+    name: `Audio-${index + 1}-${marche.ville}.mp3`,
+    title: `Paysage sonore ${index + 1}`,
+    description: `Enregistrement audio de la marche à ${marche.ville}`
+  }));
+
+  const currentTrack = audioFiles[currentTrackIndex] || null;
+  const hasAudioFiles = audioFiles.length > 0;
+
+  console.log(`🎵 Audio ${marche.ville}:`, {
+    audioUrls: audioUrls.length,
+    audioFiles: audioFiles.length,
+    currentTrack: currentTrack?.name
   });
 
-  const currentAudioFiles = audioFiles;
-  const currentTrack = currentAudioFiles[currentTrackIndex] || null;
-  const hasAudioFiles = currentAudioFiles.length > 0;
-
   const handleNext = () => {
-    if (currentAudioFiles.length <= 1) return;
-    const nextIndex = (currentTrackIndex + 1) % currentAudioFiles.length;
+    if (audioFiles.length <= 1) return;
+    const nextIndex = (currentTrackIndex + 1) % audioFiles.length;
     setCurrentTrackIndex(nextIndex);
   };
 
   const handlePrevious = () => {
-    if (currentAudioFiles.length <= 1) return;
-    const prevIndex = currentTrackIndex === 0 ? currentAudioFiles.length - 1 : currentTrackIndex - 1;
+    if (audioFiles.length <= 1) return;
+    const prevIndex = currentTrackIndex === 0 ? audioFiles.length - 1 : currentTrackIndex - 1;
     setCurrentTrackIndex(prevIndex);
   };
 
-  const handleDirectAccess = (track: AudioData) => {
-    window.open(track.directUrl, '_blank', 'noopener,noreferrer');
+  const handleDirectAccess = (track: AudioFile) => {
+    // Ouvrir directement l'URL Supabase
+    if (track.url.startsWith('http')) {
+      window.open(track.url, '_blank', 'noopener,noreferrer');
+    } else {
+      console.error('URL audio invalide:', track.url);
+    }
   };
 
-  const handleDownload = (track: AudioData) => {
+  const handleDownload = (track: AudioFile) => {
+    // Créer un lien de téléchargement
     const link = document.createElement('a');
-    link.href = track.downloadUrl;
+    link.href = track.url;
     link.download = track.name;
     link.target = '_blank';
     document.body.appendChild(link);
@@ -90,23 +108,6 @@ const AudioExperienceSection: React.FC<AudioExperienceSectionProps> = ({ marche,
       description: 'Diffusez votre exploration sonore'
     }
   ];
-
-  if (isLoadingAudio) {
-    return (
-      <div className="space-y-12">
-        <div className="text-center space-y-4">
-          <h2 className="text-5xl font-crimson font-bold flex items-center justify-center gap-4">
-            <Waves className="h-10 w-10 text-purple-600" />
-            Expérience Audio
-          </h2>
-          <div className="flex items-center justify-center gap-2 text-gray-600">
-            <Loader2 className="h-5 w-5 animate-spin" />
-            <p>Exploration des paysages sonores...</p>
-          </div>
-        </div>
-      </div>
-    );
-  }
 
   // Affichage quand il n'y a pas de fichiers audio
   if (!hasAudioFiles) {
@@ -209,14 +210,12 @@ const AudioExperienceSection: React.FC<AudioExperienceSectionProps> = ({ marche,
         <p className="text-gray-600 max-w-3xl mx-auto text-xl">
           Découvrez les paysages sonores de <span className="font-semibold text-purple-600">{marche.ville}</span>
         </p>
-        {audioFiles.length > 0 && (
-          <p className="text-sm text-gray-500">
-            {audioFiles.length} fichier{audioFiles.length > 1 ? 's' : ''} audio disponible{audioFiles.length > 1 ? 's' : ''} au téléchargement
-          </p>
-        )}
+        <p className="text-sm text-gray-500">
+          {audioFiles.length} fichier{audioFiles.length > 1 ? 's' : ''} audio disponible{audioFiles.length > 1 ? 's' : ''}
+        </p>
       </motion.div>
 
-      {/* Audio File Browser */}
+      {/* Audio Player Interface */}
       <motion.div
         className="max-w-4xl mx-auto"
         initial={{ opacity: 0, scale: 0.9 }}
@@ -247,93 +246,98 @@ const AudioExperienceSection: React.FC<AudioExperienceSectionProps> = ({ marche,
             ))}
           </div>
 
-          {/* Info Notice */}
-          <div className="bg-amber-50 border border-amber-200 rounded-lg p-6 text-center relative z-10">
-            <div className="flex items-center justify-center gap-2 mb-3">
-              <Volume2 className="h-5 w-5 text-amber-600" />
-              <span className="font-medium text-amber-800">Fichiers Audio Disponibles</span>
-            </div>
-            <p className="text-amber-700 text-sm mb-4 leading-relaxed">
-              Les fichiers audio sont hébergés sur Google Drive et ne peuvent pas être lus directement dans le navigateur pour des raisons de sécurité. 
-              Vous pouvez les télécharger ou y accéder directement.
-            </p>
-          </div>
-
-          {/* Track Info */}
-          <div className="text-center space-y-2 relative z-10">
-            {currentAudioFiles.length > 1 && (
+          {/* Audio Player */}
+          <div className="text-center space-y-6 relative z-10">
+            {audioFiles.length > 1 && (
               <Badge variant="secondary" className="text-sm px-4 py-1 bg-purple-100 text-purple-800">
-                {currentTrackIndex + 1} / {currentAudioFiles.length}
+                {currentTrackIndex + 1} / {audioFiles.length}
               </Badge>
             )}
+            
             <h3 className="text-2xl font-crimson font-bold text-gray-800">
               {currentTrack?.title || 'Piste Audio'}
             </h3>
+            
             <p className="text-gray-600 text-sm">
               {currentTrack?.name}
             </p>
-            {currentTrack?.size && (
-              <p className="text-gray-500 text-xs">
-                Taille: {(currentTrack.size / 1024 / 1024).toFixed(1)} MB
-              </p>
-            )}
-          </div>
 
-          {/* Navigation Controls */}
-          <div className="flex items-center justify-center gap-6 relative z-10">
-            {currentAudioFiles.length > 1 && (
-              <Button
-                variant="ghost"
-                size="lg"
-                onClick={handlePrevious}
-                className="rounded-full p-3 hover:bg-purple-100 transition-all duration-300"
+            {/* Audio HTML5 Player */}
+            <div className="bg-white/50 rounded-2xl p-6 backdrop-blur-sm">
+              <audio
+                key={currentTrack?.url} // Force re-render when track changes
+                src={currentTrack?.url}
+                controls
+                className="w-full"
+                preload="metadata"
               >
-                <SkipBack className="h-6 w-6" />
-              </Button>
-            )}
-
-            <motion.div className="text-center">
-              <div className="w-20 h-20 mx-auto bg-gradient-to-br from-purple-100 to-blue-100 rounded-full flex items-center justify-center mb-2">
-                <Music className="h-10 w-10 text-purple-600" />
-              </div>
-              <p className="text-sm text-gray-600">Fichier audio</p>
-            </motion.div>
-
-            {currentAudioFiles.length > 1 && (
-              <Button
-                variant="ghost"
-                size="lg"
-                onClick={handleNext}
-                className="rounded-full p-3 hover:bg-purple-100 transition-all duration-300"
-              >
-                <SkipForward className="h-6 w-6" />
-              </Button>
-            )}
-          </div>
-
-          {/* Action Buttons */}
-          {currentTrack && (
-            <div className="flex flex-col sm:flex-row gap-4 justify-center relative z-10">
-              <Button
-                onClick={() => handleDirectAccess(currentTrack)}
-                size="lg"
-                className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white px-8 py-3 rounded-full shadow-lg"
-              >
-                <ExternalLink className="h-5 w-5 mr-2" />
-                Accéder sur Google Drive
-              </Button>
+                Votre navigateur ne supporte pas l'élément audio.
+              </audio>
               
-              <Button
-                onClick={() => handleDownload(currentTrack)}
-                variant="outline"
-                size="lg"
-                className="border-purple-300 text-purple-700 hover:bg-purple-50 px-8 py-3 rounded-full"
-              >
-                <Download className="h-5 w-5 mr-2" />
-                Télécharger le fichier
-              </Button>
+              {/* Track Description */}
+              {currentTrack?.description && (
+                <p className="text-gray-600 text-sm mt-4 italic">
+                  {currentTrack.description}
+                </p>
+              )}
             </div>
-          )}
+
+            {/* Navigation Controls */}
+            <div className="flex items-center justify-center gap-6">
+              {audioFiles.length > 1 && (
+                <Button
+                  variant="ghost"
+                  size="lg"
+                  onClick={handlePrevious}
+                  className="rounded-full p-3 hover:bg-purple-100 transition-all duration-300"
+                >
+                  <SkipBack className="h-6 w-6" />
+                </Button>
+              )}
+
+              <motion.div className="text-center">
+                <div className="w-20 h-20 mx-auto bg-gradient-to-br from-purple-100 to-blue-100 rounded-full flex items-center justify-center mb-2">
+                  <Music className="h-10 w-10 text-purple-600" />
+                </div>
+                <p className="text-sm text-gray-600">Lecteur audio</p>
+              </motion.div>
+
+              {audioFiles.length > 1 && (
+                <Button
+                  variant="ghost"
+                  size="lg"
+                  onClick={handleNext}
+                  className="rounded-full p-3 hover:bg-purple-100 transition-all duration-300"
+                >
+                  <SkipForward className="h-6 w-6" />
+                </Button>
+              )}
+            </div>
+
+            {/* Action Buttons */}
+            {currentTrack && (
+              <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                <Button
+                  onClick={() => handleDirectAccess(currentTrack)}
+                  size="lg"
+                  className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white px-8 py-3 rounded-full shadow-lg"
+                >
+                  <ExternalLink className="h-5 w-5 mr-2" />
+                  Ouvrir le fichier
+                </Button>
+                
+                <Button
+                  onClick={() => handleDownload(currentTrack)}
+                  variant="outline"
+                  size="lg"
+                  className="border-purple-300 text-purple-700 hover:bg-purple-50 px-8 py-3 rounded-full"
+                >
+                  <Download className="h-5 w-5 mr-2" />
+                  Télécharger
+                </Button>
+              </div>
+            )}
+          </div>
         </div>
       </motion.div>
 

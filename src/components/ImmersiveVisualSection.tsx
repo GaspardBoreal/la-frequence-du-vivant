@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { 
@@ -9,13 +10,13 @@ import {
   Download,
   Share2,
   AlertCircle,
-  CheckCircle
+  CheckCircle,
+  Video as VideoIcon
 } from 'lucide-react';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
 import { MarcheTechnoSensible } from '../utils/googleSheetsApi';
 import { RegionalTheme } from '../utils/regionalThemes';
-import { extractPhotosFromGoogleDrive, PhotoData } from '../utils/googleDriveApi';
 
 interface ImmersiveVisualSectionProps {
   marche: MarcheTechnoSensible;
@@ -26,67 +27,79 @@ const ImmersiveVisualSection: React.FC<ImmersiveVisualSectionProps> = ({
   marche,
   theme
 }) => {
-  const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const [selectedMedia, setSelectedMedia] = useState<{url: string, type: 'photo' | 'video'} | null>(null);
   const [favorites, setFavorites] = useState<Set<string>>(new Set());
-  const [photosData, setPhotosData] = useState<PhotoData[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [loadingStatus, setLoadingStatus] = useState<string>('');
+  const [isLoading, setIsLoading] = useState(false);
 
-  useEffect(() => {
-    const loadPhotos = async () => {
-      setIsLoading(true);
-      setLoadingStatus('Chargement des photos...');
-      
-      console.log(`\n=== Chargement des photos pour ${marche.ville} ===`);
-      console.log('Lien Google Drive:', marche.lien);
-      
-      if (marche.lien) {
-        try {
-          const loadedPhotos = await extractPhotosFromGoogleDrive(marche.lien);
-          console.log(`Photos récupérées pour ${marche.ville}:`, loadedPhotos);
-          
-          if (Array.isArray(loadedPhotos) && loadedPhotos.length > 0) {
-            setPhotosData(loadedPhotos);
-            setLoadingStatus(`${loadedPhotos.length} photos chargées`);
-          } else {
-            setPhotosData([]);
-            setLoadingStatus('Aucune photo trouvée');
-          }
-        } catch (error) {
-          console.error('Erreur lors du chargement des photos:', error);
-          setPhotosData([]);
-          setLoadingStatus('Erreur lors du chargement');
-        }
-      } else {
-        console.log(`Aucun lien Google Drive pour ${marche.ville}`);
-        setPhotosData([]);
-        setLoadingStatus('Aucun lien Google Drive');
-      }
-      
-      setIsLoading(false);
-    };
+  // Récupérer les photos et vidéos depuis les props (maintenant depuis Supabase)
+  const photos = marche.photos || [];
+  const videos = marche.videos || [];
+  
+  // Combiner photos et vidéos pour la galerie
+  const mediaItems = [
+    ...photos.map(url => ({ url, type: 'photo' as const })),
+    ...videos.map(url => ({ url, type: 'video' as const }))
+  ];
 
-    loadPhotos();
-  }, [marche]);
+  console.log(`🎥 Galerie ${marche.ville}:`, {
+    photos: photos.length,
+    videos: videos.length,
+    total: mediaItems.length
+  });
 
-  const toggleFavorite = (imageUrl: string) => {
+  const toggleFavorite = (mediaUrl: string) => {
     const newFavorites = new Set(favorites);
-    if (newFavorites.has(imageUrl)) {
-      newFavorites.delete(imageUrl);
+    if (newFavorites.has(mediaUrl)) {
+      newFavorites.delete(mediaUrl);
     } else {
-      newFavorites.add(imageUrl);
+      newFavorites.add(mediaUrl);
     }
     setFavorites(newFavorites);
   };
 
-  const PhotoImage: React.FC<{ src: string; alt: string; className?: string; onClick?: () => void }> = ({ 
-    src, 
-    alt, 
-    className = "", 
-    onClick 
-  }) => {
-    const [imageLoaded, setImageLoaded] = useState(false);
-    const [imageError, setImageError] = useState(false);
+  const MediaItem: React.FC<{ 
+    src: string; 
+    type: 'photo' | 'video';
+    alt: string; 
+    className?: string; 
+    onClick?: () => void 
+  }> = ({ src, type, alt, className = "", onClick }) => {
+    const [mediaLoaded, setMediaLoaded] = useState(false);
+    const [mediaError, setMediaError] = useState(false);
+
+    if (type === 'video') {
+      return (
+        <div className={`relative ${className}`} onClick={onClick}>
+          <video
+            src={src}
+            className="w-full h-full object-cover"
+            onLoadedData={() => setMediaLoaded(true)}
+            onError={() => setMediaError(true)}
+            preload="metadata"
+            muted
+          />
+          {/* Overlay vidéo */}
+          <div className="absolute inset-0 bg-black/20 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+            <div className="bg-white/90 rounded-full p-2">
+              <VideoIcon className="h-6 w-6 text-gray-800" />
+            </div>
+          </div>
+          {!mediaLoaded && !mediaError && (
+            <div className="absolute inset-0 bg-gray-200 animate-pulse flex items-center justify-center">
+              <div className="text-gray-500 text-sm">Chargement vidéo...</div>
+            </div>
+          )}
+          {mediaError && (
+            <div className="absolute inset-0 bg-red-100 flex items-center justify-center">
+              <div className="text-red-500 text-sm text-center">
+                <AlertCircle className="h-4 w-4 mx-auto mb-1" />
+                Erreur vidéo
+              </div>
+            </div>
+          )}
+        </div>
+      );
+    }
 
     return (
       <div className={`relative ${className}`} onClick={onClick}>
@@ -94,16 +107,16 @@ const ImmersiveVisualSection: React.FC<ImmersiveVisualSectionProps> = ({
           src={src}
           alt={alt}
           className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
-          onLoad={() => setImageLoaded(true)}
-          onError={() => setImageError(true)}
+          onLoad={() => setMediaLoaded(true)}
+          onError={() => setMediaError(true)}
           crossOrigin="anonymous"
         />
-        {!imageLoaded && !imageError && (
+        {!mediaLoaded && !mediaError && (
           <div className="absolute inset-0 bg-gray-200 animate-pulse flex items-center justify-center">
             <div className="text-gray-500 text-sm">Chargement...</div>
           </div>
         )}
-        {imageError && (
+        {mediaError && (
           <div className="absolute inset-0 bg-red-100 flex items-center justify-center">
             <div className="text-red-500 text-sm text-center">
               <AlertCircle className="h-4 w-4 mx-auto mb-1" />
@@ -115,26 +128,13 @@ const ImmersiveVisualSection: React.FC<ImmersiveVisualSectionProps> = ({
     );
   };
 
-  const videos = marche.videos || [];
-
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center h-64 bg-gradient-to-br from-purple-50 to-pink-50 rounded-xl">
-        <div className="text-center">
-          <div className="animate-spin w-8 h-8 border-2 border-green-500 border-t-transparent rounded-full mx-auto mb-4"></div>
-          <p className="text-gray-600">{loadingStatus}</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (photosData.length === 0) {
+  if (mediaItems.length === 0) {
     return (
       <div className="flex items-center justify-center h-64 bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl border-2 border-dashed border-gray-300">
         <div className="text-center text-gray-500">
           <ImageIcon className="h-12 w-12 mx-auto mb-4 opacity-50" />
-          <p className="text-lg mb-2">Aucune photo disponible</p>
-          <p className="text-sm">Vérifiez le lien Google Drive pour {marche.ville}</p>
+          <p className="text-lg mb-2">Aucune image ou vidéo disponible</p>
+          <p className="text-sm">Les médias de {marche.ville} seront bientôt disponibles</p>
         </div>
       </div>
     );
@@ -154,27 +154,41 @@ const ImmersiveVisualSection: React.FC<ImmersiveVisualSectionProps> = ({
           Exploration Visuelle
         </h2>
         <p className="text-gray-600 max-w-2xl mx-auto">
-          Découvrez {marche.ville} à travers {photosData.length} images captivantes
+          Découvrez {marche.ville} à travers {mediaItems.length} médias captivants
+          {photos.length > 0 && videos.length > 0 && (
+            <span className="block text-sm mt-1">
+              {photos.length} photos • {videos.length} vidéos
+            </span>
+          )}
         </p>
       </motion.div>
 
-      {/* Main Photo Gallery */}
+      {/* Main Media Gallery */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {photosData.slice(0, 6).map((photo, index) => (
+        {mediaItems.slice(0, 6).map((media, index) => (
           <motion.div
-            key={index}
+            key={`${media.type}-${index}-${media.url}`}
             className="group relative aspect-square overflow-hidden rounded-2xl cursor-pointer"
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ delay: index * 0.1, duration: 0.5 }}
             whileHover={{ scale: 1.05 }}
-            onClick={() => setSelectedImage(photo.urls[0])}
+            onClick={() => setSelectedMedia(media)}
           >
-            <PhotoImage
-              src={photo.urls[0]}
-              alt={`${marche.ville} - Photo ${index + 1}`}
+            <MediaItem
+              src={media.url}
+              type={media.type}
+              alt={`${marche.ville} - ${media.type === 'video' ? 'Vidéo' : 'Photo'} ${index + 1}`}
               className="w-full h-full"
             />
+            
+            {/* Type Badge */}
+            {media.type === 'video' && (
+              <Badge className="absolute top-2 left-2 bg-red-500 text-white">
+                <VideoIcon className="h-3 w-3 mr-1" />
+                Vidéo
+              </Badge>
+            )}
             
             {/* Overlay */}
             <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
@@ -186,12 +200,12 @@ const ImmersiveVisualSection: React.FC<ImmersiveVisualSectionProps> = ({
                 variant="ghost"
                 onClick={(e) => {
                   e.stopPropagation();
-                  toggleFavorite(photo.urls[0]);
+                  toggleFavorite(media.url);
                 }}
                 className="bg-white/20 backdrop-blur-sm hover:bg-white/30 text-white"
               >
                 <Heart 
-                  className={`h-4 w-4 ${favorites.has(photo.urls[0]) ? 'fill-red-500 text-red-500' : ''}`} 
+                  className={`h-4 w-4 ${favorites.has(media.url) ? 'fill-red-500 text-red-500' : ''}`} 
                 />
               </Button>
               <Button
@@ -203,15 +217,15 @@ const ImmersiveVisualSection: React.FC<ImmersiveVisualSectionProps> = ({
               </Button>
             </div>
             
-            {/* Image Counter */}
+            {/* Media Counter */}
             <div className="absolute bottom-3 left-3 text-white text-sm font-medium opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-              {index + 1} / {photosData.length}
+              {index + 1} / {mediaItems.length}
             </div>
           </motion.div>
         ))}
       </div>
 
-      {/* Video Section */}
+      {/* Additional Videos Section */}
       {videos.length > 0 && (
         <motion.div
           className="space-y-4"
@@ -220,13 +234,13 @@ const ImmersiveVisualSection: React.FC<ImmersiveVisualSectionProps> = ({
           transition={{ delay: 0.6 }}
         >
           <h3 className="text-2xl font-semibold flex items-center gap-2">
-            <Play className="h-6 w-6" />
-            Séquences Vidéo
+            <VideoIcon className="h-6 w-6" />
+            Séquences Vidéo ({videos.length})
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {videos.map((video, index) => (
+            {videos.slice(0, 4).map((video, index) => (
               <motion.div
-                key={index}
+                key={`video-${index}-${video}`}
                 className="relative group rounded-2xl overflow-hidden"
                 initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
@@ -237,7 +251,7 @@ const ImmersiveVisualSection: React.FC<ImmersiveVisualSectionProps> = ({
                   className="w-full h-64 object-cover"
                   controls
                   preload="metadata"
-                  poster={photosData[0]?.urls[0] || undefined}
+                  poster={photos[0] || undefined}
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent pointer-events-none" />
               </motion.div>
@@ -247,12 +261,12 @@ const ImmersiveVisualSection: React.FC<ImmersiveVisualSectionProps> = ({
       )}
 
       {/* Lightbox Modal */}
-      {selectedImage && (
+      {selectedMedia && (
         <motion.div
           className="fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          onClick={() => setSelectedImage(null)}
+          onClick={() => setSelectedMedia(null)}
         >
           <motion.div
             className="relative max-w-4xl max-h-full"
@@ -260,16 +274,25 @@ const ImmersiveVisualSection: React.FC<ImmersiveVisualSectionProps> = ({
             animate={{ scale: 1, opacity: 1 }}
             transition={{ duration: 0.3 }}
           >
-            <img
-              src={selectedImage}
-              alt="Image agrandie"
-              className="max-w-full max-h-full object-contain rounded-lg"
-              crossOrigin="anonymous"
-            />
+            {selectedMedia.type === 'video' ? (
+              <video
+                src={selectedMedia.url}
+                className="max-w-full max-h-full object-contain rounded-lg"
+                controls
+                autoPlay
+              />
+            ) : (
+              <img
+                src={selectedMedia.url}
+                alt="Média agrandi"
+                className="max-w-full max-h-full object-contain rounded-lg"
+                crossOrigin="anonymous"
+              />
+            )}
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => setSelectedImage(null)}
+              onClick={() => setSelectedMedia(null)}
               className="absolute top-4 right-4 bg-white/20 backdrop-blur-sm text-white hover:bg-white/30"
             >
               ×
@@ -291,7 +314,7 @@ const ImmersiveVisualSection: React.FC<ImmersiveVisualSectionProps> = ({
         </Button>
         <Button variant="outline" className="flex items-center gap-2">
           <Share2 className="h-4 w-4" />
-          Partager les images
+          Partager les médias
         </Button>
       </motion.div>
     </div>

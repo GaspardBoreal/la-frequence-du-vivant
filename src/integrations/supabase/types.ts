@@ -14,7 +14,357 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      marche_audio: {
+        Row: {
+          created_at: string
+          description: string | null
+          duree_secondes: number | null
+          format_audio: string | null
+          id: string
+          marche_id: string
+          metadata: Json | null
+          nom_fichier: string
+          ordre: number | null
+          taille_octets: number | null
+          titre: string | null
+          url_originale: string | null
+          url_supabase: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          duree_secondes?: number | null
+          format_audio?: string | null
+          id?: string
+          marche_id: string
+          metadata?: Json | null
+          nom_fichier: string
+          ordre?: number | null
+          taille_octets?: number | null
+          titre?: string | null
+          url_originale?: string | null
+          url_supabase: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          duree_secondes?: number | null
+          format_audio?: string | null
+          id?: string
+          marche_id?: string
+          metadata?: Json | null
+          nom_fichier?: string
+          ordre?: number | null
+          taille_octets?: number | null
+          titre?: string | null
+          url_originale?: string | null
+          url_supabase?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "marche_audio_marche_id_fkey"
+            columns: ["marche_id"]
+            isOneToOne: false
+            referencedRelation: "marches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      marche_documents: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          marche_id: string
+          metadata: Json | null
+          nom_fichier: string
+          ordre: number | null
+          taille_octets: number | null
+          titre: string | null
+          type_document: string | null
+          url_originale: string | null
+          url_supabase: string
+          version: number | null
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          marche_id: string
+          metadata?: Json | null
+          nom_fichier: string
+          ordre?: number | null
+          taille_octets?: number | null
+          titre?: string | null
+          type_document?: string | null
+          url_originale?: string | null
+          url_supabase: string
+          version?: number | null
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          marche_id?: string
+          metadata?: Json | null
+          nom_fichier?: string
+          ordre?: number | null
+          taille_octets?: number | null
+          titre?: string | null
+          type_document?: string | null
+          url_originale?: string | null
+          url_supabase?: string
+          version?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "marche_documents_marche_id_fkey"
+            columns: ["marche_id"]
+            isOneToOne: false
+            referencedRelation: "marches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      marche_etudes: {
+        Row: {
+          chapitres: Json | null
+          contenu: string
+          created_at: string
+          id: string
+          marche_id: string
+          ordre: number | null
+          resume: string | null
+          titre: string
+          type_etude: Database["public"]["Enums"]["etude_type"] | null
+          updated_at: string
+        }
+        Insert: {
+          chapitres?: Json | null
+          contenu: string
+          created_at?: string
+          id?: string
+          marche_id: string
+          ordre?: number | null
+          resume?: string | null
+          titre: string
+          type_etude?: Database["public"]["Enums"]["etude_type"] | null
+          updated_at?: string
+        }
+        Update: {
+          chapitres?: Json | null
+          contenu?: string
+          created_at?: string
+          id?: string
+          marche_id?: string
+          ordre?: number | null
+          resume?: string | null
+          titre?: string
+          type_etude?: Database["public"]["Enums"]["etude_type"] | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "marche_etudes_marche_id_fkey"
+            columns: ["marche_id"]
+            isOneToOne: false
+            referencedRelation: "marches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      marche_photos: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          marche_id: string
+          metadata: Json | null
+          nom_fichier: string
+          ordre: number | null
+          titre: string | null
+          url_originale: string | null
+          url_supabase: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          marche_id: string
+          metadata?: Json | null
+          nom_fichier: string
+          ordre?: number | null
+          titre?: string | null
+          url_originale?: string | null
+          url_supabase: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          marche_id?: string
+          metadata?: Json | null
+          nom_fichier?: string
+          ordre?: number | null
+          titre?: string | null
+          url_originale?: string | null
+          url_supabase?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "marche_photos_marche_id_fkey"
+            columns: ["marche_id"]
+            isOneToOne: false
+            referencedRelation: "marches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      marche_tags: {
+        Row: {
+          categorie: string | null
+          created_at: string
+          id: string
+          marche_id: string
+          tag: string
+        }
+        Insert: {
+          categorie?: string | null
+          created_at?: string
+          id?: string
+          marche_id: string
+          tag: string
+        }
+        Update: {
+          categorie?: string | null
+          created_at?: string
+          id?: string
+          marche_id?: string
+          tag?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "marche_tags_marche_id_fkey"
+            columns: ["marche_id"]
+            isOneToOne: false
+            referencedRelation: "marches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      marche_videos: {
+        Row: {
+          created_at: string
+          description: string | null
+          duree_secondes: number | null
+          format_video: string | null
+          id: string
+          marche_id: string
+          metadata: Json | null
+          nom_fichier: string
+          ordre: number | null
+          resolution: string | null
+          taille_octets: number | null
+          thumbnail_url: string | null
+          titre: string | null
+          url_originale: string | null
+          url_supabase: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          duree_secondes?: number | null
+          format_video?: string | null
+          id?: string
+          marche_id: string
+          metadata?: Json | null
+          nom_fichier: string
+          ordre?: number | null
+          resolution?: string | null
+          taille_octets?: number | null
+          thumbnail_url?: string | null
+          titre?: string | null
+          url_originale?: string | null
+          url_supabase: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          duree_secondes?: number | null
+          format_video?: string | null
+          id?: string
+          marche_id?: string
+          metadata?: Json | null
+          nom_fichier?: string
+          ordre?: number | null
+          resolution?: string | null
+          taille_octets?: number | null
+          thumbnail_url?: string | null
+          titre?: string | null
+          url_originale?: string | null
+          url_supabase?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "marche_videos_marche_id_fkey"
+            columns: ["marche_id"]
+            isOneToOne: false
+            referencedRelation: "marches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      marches: {
+        Row: {
+          coordonnees: unknown | null
+          created_at: string
+          date: string | null
+          descriptif_court: string | null
+          descriptif_long: string | null
+          id: string
+          lien_google_drive: string | null
+          nom_marche: string | null
+          region: string | null
+          sous_themes: string[] | null
+          temperature: number | null
+          theme_principal: string | null
+          updated_at: string
+          ville: string
+        }
+        Insert: {
+          coordonnees?: unknown | null
+          created_at?: string
+          date?: string | null
+          descriptif_court?: string | null
+          descriptif_long?: string | null
+          id?: string
+          lien_google_drive?: string | null
+          nom_marche?: string | null
+          region?: string | null
+          sous_themes?: string[] | null
+          temperature?: number | null
+          theme_principal?: string | null
+          updated_at?: string
+          ville: string
+        }
+        Update: {
+          coordonnees?: unknown | null
+          created_at?: string
+          date?: string | null
+          descriptif_court?: string | null
+          descriptif_long?: string | null
+          id?: string
+          lien_google_drive?: string | null
+          nom_marche?: string | null
+          region?: string | null
+          sous_themes?: string[] | null
+          temperature?: number | null
+          theme_principal?: string | null
+          updated_at?: string
+          ville?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -23,7 +373,8 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      etude_type: "principale" | "complementaire" | "annexe"
+      media_type: "photo" | "audio" | "video" | "document"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +501,9 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      etude_type: ["principale", "complementaire", "annexe"],
+      media_type: ["photo", "audio", "video", "document"],
+    },
   },
 } as const
