@@ -57,18 +57,18 @@ const Footer = () => {
                 <span>Marches Sensibles</span>
               </a>
               <a 
-                href="#bioacoustique-poetique" 
+                href="/marches-techno-sensibles" 
                 className="flex items-center gap-2 text-muted-foreground hover:text-[#4ade80] transition-colors"
               >
                 <Zap size={16} />
-                <span>Bioacoustique Poétique</span>
+                <span>Explorer la cartographie</span>
               </a>
               <a 
-                href="#territoires-hybrides" 
+                href="#bioacoustique-poetique" 
                 className="flex items-center gap-2 text-muted-foreground hover:text-[#4ade80] transition-colors"
               >
                 <BookOpen size={16} />
-                <span>Territoires Hybrides</span>
+                <span>Bioacoustique Poétique</span>
               </a>
             </div>
           </div>
