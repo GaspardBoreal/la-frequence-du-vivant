@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { Button } from '../ui/button';
@@ -5,6 +6,7 @@ import { Input } from '../ui/input';
 import { Textarea } from '../ui/textarea';
 import { Label } from '../ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
+import { RichTextEditor } from '../ui/rich-text-editor';
 import { Save, ArrowLeft } from 'lucide-react';
 import { useSupabaseMarche } from '../../hooks/useSupabaseMarches';
 import { createMarche, updateMarche, MarcheFormData } from '../../utils/supabaseMarcheOperations';
@@ -23,17 +25,19 @@ const MarcheForm: React.FC<MarcheFormProps> = ({ mode, marcheId, onCancel, onSuc
   const { data: marche, isLoading } = useSupabaseMarche(marcheId || undefined);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [activeTab, setActiveTab] = useState('general');
+  const [themeRichText, setThemeRichText] = useState('');
 
   const {
     register,
     handleSubmit,
     reset,
+    setValue,
     formState: { errors }
   } = useForm<MarcheFormData>();
 
   useEffect(() => {
     if (mode === 'edit' && marche) {
-      reset({
+      const formData = {
         ville: marche.ville || '',
         region: marche.region || '',
         nomMarche: marche.nomMarche || '',
@@ -48,9 +52,17 @@ const MarcheForm: React.FC<MarcheFormProps> = ({ mode, marcheId, onCancel, onSuc
         sousThemes: marche.sousThemes?.join(', ') || '',
         tags: marche.supabaseTags?.join(', ') || '',
         adresse: marche.adresse || ''
-      });
+      };
+      
+      reset(formData);
+      setThemeRichText(marche.theme || '');
     }
   }, [mode, marche, reset]);
+
+  // Synchroniser le contenu riche avec le formulaire
+  useEffect(() => {
+    setValue('theme', themeRichText);
+  }, [themeRichText, setValue]);
 
   const onSubmit = async (data: MarcheFormData) => {
     setIsSubmitting(true);
@@ -137,12 +149,18 @@ const MarcheForm: React.FC<MarcheFormProps> = ({ mode, marcheId, onCancel, onSuc
                 />
               </div>
 
-              <div>
+              <div className="col-span-2">
                 <Label htmlFor="theme">Thème *</Label>
-                <Input
-                  id="theme"
-                  {...register('theme', { required: 'Le thème est requis' })}
+                <RichTextEditor
+                  value={themeRichText}
+                  onChange={setThemeRichText}
+                  placeholder="Décrivez le thème de la marche avec mise en forme..."
                   className={errors.theme ? 'border-red-500' : ''}
+                />
+                <input
+                  type="hidden"
+                  {...register('theme', { required: 'Le thème est requis' })}
+                  value={themeRichText}
                 />
                 {errors.theme && (
                   <p className="text-red-500 text-sm mt-1">{errors.theme.message}</p>
