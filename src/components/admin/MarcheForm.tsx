@@ -51,7 +51,7 @@ const MarcheForm: React.FC<MarcheFormProps> = ({ mode, marcheId, onCancel, onSuc
       const formData = {
         ville: marche.ville || '',
         region: marche.region || '',
-        sousRegion: marche.sousRegion || '',
+        sousRegion: marche.departement || '', // Utiliser departement au lieu de sousRegion
         nomMarche: marche.nomMarche || '',
         poeme: marche.poeme || '',
         date: marche.date || '',
