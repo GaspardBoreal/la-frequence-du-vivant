@@ -11,13 +11,16 @@ import {
   Radio,
   Share2,
   Clock,
-  Waves
+  Waves,
+  Loader2
 } from 'lucide-react';
 import { Button } from './ui/button';
 import { Slider } from './ui/slider';
 import { Badge } from './ui/badge';
 import { MarcheTechnoSensible } from '../utils/googleSheetsApi';
 import { RegionalTheme } from '../utils/regionalThemes';
+import { extractAudioFromGoogleDrive, AudioData } from '../utils/googleDriveApi';
+import { useQuery } from '@tanstack/react-query';
 
 interface AudioExperienceSectionProps {
   marche: MarcheTechnoSensible;
@@ -31,78 +34,115 @@ const AudioExperienceSection: React.FC<AudioExperienceSectionProps> = ({ marche,
   const [duration, setDuration] = useState(0);
   const [volume, setVolume] = useState(0.7);
   const [activeOption, setActiveOption] = useState<'spectogram' | 'frequencies' | 'share' | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
   
   const audioRef = useRef<HTMLAudioElement>(null);
   
-  // Mock audio files - in real implementation, these would come from marche data
-  const audioFiles = [
+  // Récupération des fichiers audio depuis Google Drive
+  const { data: audioFiles = [], isLoading: isLoadingAudio } = useQuery({
+    queryKey: ['audioFiles', marche.lien],
+    queryFn: () => marche.lien ? extractAudioFromGoogleDrive(marche.lien) : Promise.resolve([]),
+    enabled: !!marche.lien,
+    staleTime: 5 * 60 * 1000
+  });
+
+  // Fichiers audio de fallback si pas de données Google Drive
+  const fallbackAudioFiles: AudioData[] = [
     {
-      name: "Exploration Sonore 1",
-      url: "/audio/sample1.m4a",
-      duration: 245,
-      description: "Ambiance urbaine et nature"
-    },
-    {
-      name: "Fréquences Cachées",
-      url: "/audio/sample2.mp3", 
-      duration: 312,
-      description: "Sons imperceptibles révélés"
-    },
-    {
-      name: "Résonance du Lieu", 
-      url: "/audio/sample3.wav",
-      duration: 189,
-      description: "Écho architectural unique"
+      id: 'fallback-1',
+      name: 'Exploration Sonore.mp3',
+      title: `Exploration Sonore - ${marche.ville}`,
+      url: '/audio/sample1.m4a',
+      mimeType: 'audio/mp4',
+      size: 0,
+      duration: 245
     }
   ];
 
-  const currentTrack = audioFiles[currentTrackIndex];
+  const currentAudioFiles = audioFiles.length > 0 ? audioFiles : fallbackAudioFiles;
+  const currentTrack = currentAudioFiles[currentTrackIndex] || currentAudioFiles[0];
 
   useEffect(() => {
     const audio = audioRef.current;
-    if (!audio) return;
+    if (!audio || !currentTrack) return;
 
     const updateTime = () => setCurrentTime(audio.currentTime);
-    const updateDuration = () => setDuration(audio.duration);
+    const updateDuration = () => {
+      const audioDuration = audio.duration;
+      if (!isNaN(audioDuration) && audioDuration > 0) {
+        setDuration(audioDuration);
+      }
+    };
+    
+    const handleLoadStart = () => setIsLoading(true);
+    const handleCanPlay = () => setIsLoading(false);
+    const handleError = (e: any) => {
+      console.error('Erreur audio:', e);
+      setIsLoading(false);
+    };
     
     audio.addEventListener('timeupdate', updateTime);
     audio.addEventListener('loadedmetadata', updateDuration);
     audio.addEventListener('ended', handleNext);
+    audio.addEventListener('loadstart', handleLoadStart);
+    audio.addEventListener('canplay', handleCanPlay);
+    audio.addEventListener('error', handleError);
+
+    // Charger le nouvel audio
+    audio.src = currentTrack.url;
+    audio.load();
 
     return () => {
       audio.removeEventListener('timeupdate', updateTime);
       audio.removeEventListener('loadedmetadata', updateDuration);
       audio.removeEventListener('ended', handleNext);
+      audio.removeEventListener('loadstart', handleLoadStart);
+      audio.removeEventListener('canplay', handleCanPlay);
+      audio.removeEventListener('error', handleError);
     };
-  }, [currentTrackIndex]);
+  }, [currentTrackIndex, currentTrack]);
 
-  const handlePlayPause = () => {
+  const handlePlayPause = async () => {
     const audio = audioRef.current;
-    if (!audio) return;
+    if (!audio || !currentTrack) return;
 
-    if (isPlaying) {
-      audio.pause();
-    } else {
-      audio.play().catch(console.error);
+    try {
+      if (isPlaying) {
+        audio.pause();
+        setIsPlaying(false);
+      } else {
+        setIsLoading(true);
+        await audio.play();
+        setIsPlaying(true);
+        setIsLoading(false);
+      }
+    } catch (error) {
+      console.error('Erreur lors de la lecture audio:', error);
+      setIsLoading(false);
     }
-    setIsPlaying(!isPlaying);
   };
 
   const handleNext = () => {
-    const nextIndex = (currentTrackIndex + 1) % audioFiles.length;
+    if (currentAudioFiles.length <= 1) return;
+    const nextIndex = (currentTrackIndex + 1) % currentAudioFiles.length;
     setCurrentTrackIndex(nextIndex);
     setIsPlaying(false);
+    setCurrentTime(0);
+    setDuration(0);
   };
 
   const handlePrevious = () => {
-    const prevIndex = currentTrackIndex === 0 ? audioFiles.length - 1 : currentTrackIndex - 1;
+    if (currentAudioFiles.length <= 1) return;
+    const prevIndex = currentTrackIndex === 0 ? currentAudioFiles.length - 1 : currentTrackIndex - 1;
     setCurrentTrackIndex(prevIndex);
     setIsPlaying(false);
+    setCurrentTime(0);
+    setDuration(0);
   };
 
   const handleSeek = (value: number[]) => {
     const audio = audioRef.current;
-    if (!audio) return;
+    if (!audio || !duration) return;
     
     const newTime = (value[0] / 100) * duration;
     audio.currentTime = newTime;
@@ -119,7 +159,7 @@ const AudioExperienceSection: React.FC<AudioExperienceSectionProps> = ({ marche,
   };
 
   const formatTime = (time: number) => {
-    if (isNaN(time)) return "0:00";
+    if (isNaN(time) || time < 0) return "0:00";
     const minutes = Math.floor(time / 60);
     const seconds = Math.floor(time % 60);
     return `${minutes}:${seconds.toString().padStart(2, '0')}`;
@@ -149,6 +189,23 @@ const AudioExperienceSection: React.FC<AudioExperienceSectionProps> = ({ marche,
     }
   ];
 
+  if (isLoadingAudio) {
+    return (
+      <div className="space-y-12">
+        <div className="text-center space-y-4">
+          <h2 className="text-5xl font-crimson font-bold flex items-center justify-center gap-4">
+            <Waves className="h-10 w-10 text-purple-600" />
+            Expérience Audio
+          </h2>
+          <div className="flex items-center justify-center gap-2 text-gray-600">
+            <Loader2 className="h-5 w-5 animate-spin" />
+            <p>Chargement des fichiers audio...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-12">
       {/* Header Section */}
@@ -165,6 +222,11 @@ const AudioExperienceSection: React.FC<AudioExperienceSectionProps> = ({ marche,
         <p className="text-gray-600 max-w-3xl mx-auto text-xl">
           Plongez dans l'univers sonore de <span className="font-semibold text-purple-600">{marche.ville}</span>
         </p>
+        {audioFiles.length > 0 && (
+          <p className="text-sm text-gray-500">
+            {audioFiles.length} fichier{audioFiles.length > 1 ? 's' : ''} audio trouvé{audioFiles.length > 1 ? 's' : ''}
+          </p>
+        )}
       </motion.div>
 
       {/* Audio Player */}
@@ -200,14 +262,16 @@ const AudioExperienceSection: React.FC<AudioExperienceSectionProps> = ({ marche,
 
           {/* Track Info */}
           <div className="text-center space-y-2 relative z-10">
-            <Badge variant="secondary" className="text-sm px-4 py-1 bg-purple-100 text-purple-800">
-              {currentTrackIndex + 1} / {audioFiles.length}
-            </Badge>
+            {currentAudioFiles.length > 1 && (
+              <Badge variant="secondary" className="text-sm px-4 py-1 bg-purple-100 text-purple-800">
+                {currentTrackIndex + 1} / {currentAudioFiles.length}
+              </Badge>
+            )}
             <h3 className="text-2xl font-crimson font-bold text-gray-800">
-              {currentTrack.name}
+              {currentTrack?.title || 'Piste Audio'}
             </h3>
-            <p className="text-gray-600">
-              {currentTrack.description}
+            <p className="text-gray-600 text-sm">
+              {currentTrack?.name}
             </p>
           </div>
 
@@ -219,6 +283,7 @@ const AudioExperienceSection: React.FC<AudioExperienceSectionProps> = ({ marche,
               className="w-full"
               max={100}
               step={0.1}
+              disabled={!duration || isLoading}
             />
             <div className="flex justify-between text-sm text-gray-600">
               <span className="flex items-center gap-1">
@@ -232,14 +297,17 @@ const AudioExperienceSection: React.FC<AudioExperienceSectionProps> = ({ marche,
 
           {/* Player Controls */}
           <div className="flex items-center justify-center gap-6 relative z-10">
-            <Button
-              variant="ghost"
-              size="lg"
-              onClick={handlePrevious}
-              className="rounded-full p-3 hover:bg-purple-100 transition-all duration-300"
-            >
-              <SkipBack className="h-6 w-6" />
-            </Button>
+            {currentAudioFiles.length > 1 && (
+              <Button
+                variant="ghost"
+                size="lg"
+                onClick={handlePrevious}
+                className="rounded-full p-3 hover:bg-purple-100 transition-all duration-300"
+                disabled={isLoading}
+              >
+                <SkipBack className="h-6 w-6" />
+              </Button>
+            )}
 
             <motion.div
               whileHover={{ scale: 1.1 }}
@@ -248,9 +316,12 @@ const AudioExperienceSection: React.FC<AudioExperienceSectionProps> = ({ marche,
               <Button
                 onClick={handlePlayPause}
                 size="lg"
+                disabled={!currentTrack || isLoading}
                 className="rounded-full p-6 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 shadow-2xl"
               >
-                {isPlaying ? (
+                {isLoading ? (
+                  <Loader2 className="h-8 w-8 animate-spin" />
+                ) : isPlaying ? (
                   <Pause className="h-8 w-8" />
                 ) : (
                   <Play className="h-8 w-8 ml-1" />
@@ -258,14 +329,17 @@ const AudioExperienceSection: React.FC<AudioExperienceSectionProps> = ({ marche,
               </Button>
             </motion.div>
 
-            <Button
-              variant="ghost"
-              size="lg"
-              onClick={handleNext}
-              className="rounded-full p-3 hover:bg-purple-100 transition-all duration-300"
-            >
-              <SkipForward className="h-6 w-6" />
-            </Button>
+            {currentAudioFiles.length > 1 && (
+              <Button
+                variant="ghost"
+                size="lg"
+                onClick={handleNext}
+                className="rounded-full p-3 hover:bg-purple-100 transition-all duration-300"
+                disabled={isLoading}
+              >
+                <SkipForward className="h-6 w-6" />
+              </Button>
+            )}
           </div>
 
           {/* Volume Control */}
@@ -282,11 +356,14 @@ const AudioExperienceSection: React.FC<AudioExperienceSectionProps> = ({ marche,
           </div>
 
           {/* Audio Element */}
-          <audio
-            ref={audioRef}
-            src={currentTrack.url}
-            preload="metadata"
-          />
+          {currentTrack && (
+            <audio
+              ref={audioRef}
+              preload="metadata"
+              onPause={() => setIsPlaying(false)}
+              onPlay={() => setIsPlaying(true)}
+            />
+          )}
         </div>
       </motion.div>
 
