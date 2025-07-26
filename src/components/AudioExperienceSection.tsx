@@ -82,37 +82,14 @@ const AudioExperienceSection: React.FC<AudioExperienceSectionProps> = ({ marche,
     };
     
     const handleError = (e: any) => {
-      console.error('🎵 Erreur audio détaillée pour', currentTrack.name, ':', {
-        error: e,
-        audioSrc: audio.src,
-        audioError: audio.error,
-        networkState: audio.networkState,
-        readyState: audio.readyState,
-        currentSrc: audio.currentSrc
-      });
+      console.error('🎵 Erreur audio pour', currentTrack.name, ':', e);
       setIsLoading(false);
-      
-      // Essayer l'URL directe en fallback
-      if (currentTrack.directUrl && !audio.src.includes('export=download')) {
-        console.log('🎵 Essai avec URL de téléchargement direct...');
-        audio.src = currentTrack.directUrl;
-        audio.load();
-        return;
-      }
-      
-      // Message d'erreur informatif
-      setAudioError(`Le fichier "${currentTrack.name}" ne peut pas être lu directement depuis Google Drive. Les navigateurs bloquent souvent ces lectures pour des raisons de sécurité.`);
+      setAudioError(`Impossible de lire "${currentTrack.name}". Veuillez télécharger le fichier directement.`);
     };
 
     const handleLoadedMetadata = () => {
       console.log('🎵 Métadonnées chargées pour:', currentTrack.name);
       updateDuration();
-    };
-
-    const handleLoadedData = () => {
-      console.log('🎵 Données audio chargées pour:', currentTrack.name);
-      setAudioError(null);
-      setIsLoading(false);
     };
 
     const handleEnded = () => {
@@ -122,26 +99,19 @@ const AudioExperienceSection: React.FC<AudioExperienceSectionProps> = ({ marche,
     
     audio.addEventListener('timeupdate', updateTime);
     audio.addEventListener('loadedmetadata', handleLoadedMetadata);
-    audio.addEventListener('loadeddata', handleLoadedData);
     audio.addEventListener('ended', handleEnded);
     audio.addEventListener('loadstart', handleLoadStart);
     audio.addEventListener('canplay', handleCanPlay);
     audio.addEventListener('error', handleError);
 
-    // Charger le nouvel audio avec une approche différente
-    audio.crossOrigin = 'anonymous';
-    audio.preload = 'metadata';
-    
-    // Utiliser d'abord l'URL directe qui a plus de chances de fonctionner
-    const urlToTry = currentTrack.directUrl || currentTrack.url;
-    audio.src = urlToTry;
-    console.log('🎵 Configuration audio pour:', currentTrack.name, 'avec URL:', urlToTry);
+    // Configuration audio simplifiée
+    audio.src = currentTrack.url;
+    console.log('🎵 Configuration audio pour:', currentTrack.name, 'avec URL:', currentTrack.url);
     audio.load();
 
     return () => {
       audio.removeEventListener('timeupdate', updateTime);
       audio.removeEventListener('loadedmetadata', handleLoadedMetadata);
-      audio.removeEventListener('loadeddata', handleLoadedData);
       audio.removeEventListener('ended', handleEnded);
       audio.removeEventListener('loadstart', handleLoadStart);
       audio.removeEventListener('canplay', handleCanPlay);
