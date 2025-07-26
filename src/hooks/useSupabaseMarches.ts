@@ -86,15 +86,10 @@ export const useSupabaseStatus = () => {
     queryFn: async () => {
       try {
         console.log('🔍 Test de connexion Supabase...');
-        const { data, error } = await fetchMarchesFromSupabase();
-        
-        if (error) {
-          console.error('❌ Erreur de connexion Supabase:', error);
-          return { connected: false, error: error.message };
-        }
+        const marches = await fetchMarchesFromSupabase();
         
         console.log('✅ Supabase connecté avec succès');
-        return { connected: true, marchesCount: data?.length || 0 };
+        return { connected: true, marchesCount: marches.length };
       } catch (error) {
         console.error('💥 Erreur lors du test Supabase:', error);
         return { connected: false, error: 'Erreur de connexion' };

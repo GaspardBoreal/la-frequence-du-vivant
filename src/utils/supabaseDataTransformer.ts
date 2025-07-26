@@ -48,7 +48,7 @@ export const transformSupabaseToLegacyFormat = (marche: MarcheComplete): MarcheT
       description: doc.description,
       type: doc.type_document
     })),
-    tags: marche.tags.map(tag => tag.tag),
+    supabaseTags: marche.tags.map(tag => tag.tag), // Utiliser supabaseTags pour éviter le conflit
     sousThemes: marche.sous_themes || undefined
   };
 

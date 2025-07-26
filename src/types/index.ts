@@ -52,7 +52,7 @@ declare module '../utils/googleSheetsApi' {
     supabaseId?: string;
     etudes?: EtudeData[];
     documents?: DocumentData[];
-    tags?: string[];
+    supabaseTags?: string[]; // Renommé pour éviter le conflit avec le champ tags existant
     sousThemes?: string[];
     audioFiles?: string[];
   }
