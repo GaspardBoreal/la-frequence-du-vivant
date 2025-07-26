@@ -6,18 +6,22 @@ import SEOHead from '../components/SEOHead';
 import { RegionalTheme, REGIONAL_THEMES } from '../utils/regionalThemes';
 import { Button } from '../components/ui/button';
 import { useNavigate } from 'react-router-dom';
+
 const Index = () => {
   const [theme, setTheme] = useState<RegionalTheme>(REGIONAL_THEMES['nouvelle-aquitaine']);
   const navigate = useNavigate();
+
   useEffect(() => {
     document.documentElement.style.setProperty('--theme-primary', theme.colors.primary);
     document.documentElement.style.setProperty('--theme-secondary', theme.colors.secondary);
     document.documentElement.style.setProperty('--theme-accent', theme.colors.accent);
     document.documentElement.style.setProperty('--theme-background', theme.colors.background);
   }, [theme]);
+
   const handleExploreClick = () => {
-    navigate('/marches-techno-sensibles');
+    navigate('/marche/entre-deux-frequences-bonzac-bonzac');
   };
+
   return <HelmetProvider>
       <div className="min-h-screen bg-background relative overflow-hidden">
         <SEOHead />
@@ -115,4 +119,5 @@ const Index = () => {
       </div>
     </HelmetProvider>;
 };
+
 export default Index;
