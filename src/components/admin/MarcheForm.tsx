@@ -5,6 +5,7 @@ import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Textarea } from '../ui/textarea';
 import { Label } from '../ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
 import { RichTextEditor } from '../ui/rich-text-editor';
 import { Save, ArrowLeft } from 'lucide-react';
@@ -13,12 +14,19 @@ import { createMarche, updateMarche, MarcheFormData } from '../../utils/supabase
 import MediaUploadSection from './MediaUploadSection';
 import AudioUploadSection from './AudioUploadSection';
 import { queryClient } from '../../lib/queryClient';
+import { FRENCH_REGIONS } from '../../utils/frenchRegions';
+import { FRENCH_DEPARTMENTS } from '../../utils/frenchDepartments';
 
 interface MarcheFormProps {
   mode: 'create' | 'edit';
   marcheId: string | null;
   onCancel: () => void;
   onSuccess: () => void;
+}
+
+// Mise à jour de l'interface pour supprimer theme et ajouter sousRegion
+interface UpdatedMarcheFormData extends Omit<MarcheFormData, 'theme'> {
+  sousRegion: string;
 }
 
 const MarcheForm: React.FC<MarcheFormProps> = ({ mode, marcheId, onCancel, onSuccess }) => {
@@ -32,16 +40,20 @@ const MarcheForm: React.FC<MarcheFormProps> = ({ mode, marcheId, onCancel, onSuc
     handleSubmit,
     reset,
     setValue,
+    watch,
     formState: { errors }
-  } = useForm<MarcheFormData>();
+  } = useForm<UpdatedMarcheFormData>();
+
+  const selectedRegion = watch('region');
+  const selectedSousRegion = watch('sousRegion');
 
   useEffect(() => {
     if (mode === 'edit' && marche) {
       const formData = {
         ville: marche.ville || '',
         region: marche.region || '',
+        sousRegion: marche.sousRegion || '',
         nomMarche: marche.nomMarche || '',
-        theme: marche.theme || '',
         descriptifCourt: marche.descriptifCourt || '',
         poeme: marche.poeme || '',
         date: marche.date || '',
@@ -64,16 +76,22 @@ const MarcheForm: React.FC<MarcheFormProps> = ({ mode, marcheId, onCancel, onSuc
     setValue('theme', themeRichText);
   }, [themeRichText, setValue]);
 
-  const onSubmit = async (data: MarcheFormData) => {
+  const onSubmit = async (data: UpdatedMarcheFormData) => {
     setIsSubmitting(true);
     try {
       console.log('Données à sauvegarder:', data);
 
+      // Convertir les données pour l'API existante
+      const apiData: MarcheFormData = {
+        ...data,
+        theme: themeRichText
+      };
+
       if (mode === 'create') {
-        const newMarcheId = await createMarche(data);
+        const newMarcheId = await createMarche(apiData);
         console.log('✅ Nouvelle marche créée avec l\'ID:', newMarcheId);
       } else if (mode === 'edit' && marcheId) {
-        await updateMarche(marcheId, data);
+        await updateMarche(marcheId, apiData);
         console.log('✅ Marche mise à jour avec succès');
         
         // Forcer une invalidation complète du cache pour s'assurer que la liste se met à jour
@@ -135,10 +153,40 @@ const MarcheForm: React.FC<MarcheFormProps> = ({ mode, marcheId, onCancel, onSuc
 
               <div>
                 <Label htmlFor="region">Région</Label>
-                <Input
-                  id="region"
-                  {...register('region')}
-                />
+                <Select
+                  value={selectedRegion || ''}
+                  onValueChange={(value) => setValue('region', value)}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Sélectionnez une région" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {FRENCH_REGIONS.map((region) => (
+                      <SelectItem key={region} value={region}>
+                        {region}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div>
+                <Label htmlFor="sousRegion">Sous-région (Département)</Label>
+                <Select
+                  value={selectedSousRegion || ''}
+                  onValueChange={(value) => setValue('sousRegion', value)}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Sélectionnez un département" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {FRENCH_DEPARTMENTS.map((department) => (
+                      <SelectItem key={department} value={department}>
+                        {department}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
 
               <div>
@@ -147,24 +195,6 @@ const MarcheForm: React.FC<MarcheFormProps> = ({ mode, marcheId, onCancel, onSuc
                   id="nomMarche"
                   {...register('nomMarche')}
                 />
-              </div>
-
-              <div className="col-span-2">
-                <Label htmlFor="theme">Thème *</Label>
-                <RichTextEditor
-                  value={themeRichText}
-                  onChange={setThemeRichText}
-                  placeholder="Décrivez le thème de la marche avec mise en forme..."
-                  className={errors.theme ? 'border-red-500' : ''}
-                />
-                <input
-                  type="hidden"
-                  {...register('theme', { required: 'Le thème est requis' })}
-                  value={themeRichText}
-                />
-                {errors.theme && (
-                  <p className="text-red-500 text-sm mt-1">{errors.theme.message}</p>
-                )}
               </div>
 
               <div>
@@ -251,6 +281,24 @@ const MarcheForm: React.FC<MarcheFormProps> = ({ mode, marcheId, onCancel, onSuc
                 rows={3}
                 {...register('descriptifCourt')}
               />
+            </div>
+
+            <div className="col-span-2">
+              <Label htmlFor="theme">Thème *</Label>
+              <RichTextEditor
+                value={themeRichText}
+                onChange={setThemeRichText}
+                placeholder="Décrivez le thème de la marche avec mise en forme..."
+                className={errors.theme ? 'border-red-500' : ''}
+              />
+              <input
+                type="hidden"
+                {...register('theme', { required: 'Le thème est requis' })}
+                value={themeRichText}
+              />
+              {errors.theme && (
+                <p className="text-red-500 text-sm mt-1">{errors.theme.message}</p>
+              )}
             </div>
 
             <div>
