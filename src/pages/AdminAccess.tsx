@@ -1,13 +1,10 @@
-
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { Card } from '../components/ui/card';
 import { Button } from '../components/ui/button';
 import { Settings, Map, Database, ArrowLeft } from 'lucide-react';
-
 const AdminAccess: React.FC = () => {
-  return (
-    <div className="min-h-screen bg-gray-50 p-4">
+  return <div className="min-h-screen bg-gray-50 p-4">
       <div className="max-w-4xl mx-auto">
         <div className="flex items-center mb-6">
           <Link to="/">
@@ -33,7 +30,7 @@ const AdminAccess: React.FC = () => {
               <Map className="h-8 w-8 text-blue-600 mr-3" />
               <h2 className="text-xl font-semibold">Gestion des Marches</h2>
             </div>
-            <p className="text-gray-600 mb-4">
+            <p className="mb-4 text-slate-50 font-thin text-base">
               Créer, modifier et supprimer les marches techno-sensibles. 
               Gérer les médias, photos et fichiers audio.
             </p>
@@ -67,8 +64,6 @@ const AdminAccess: React.FC = () => {
           <p>Page d'accès restreint - Gaspard Boréal © 2025</p>
         </div>
       </div>
-    </div>
-  );
+    </div>;
 };
-
 export default AdminAccess;
