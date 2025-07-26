@@ -102,11 +102,11 @@ export const extractAudioFromGoogleDrive = async (driveUrl: string): Promise<Aud
       const audioData = data.files.map((file: any, index: number) => {
         console.log(`Fichier audio trouvé: ${file.name} (${file.mimeType}) - ID: ${file.id}`);
         
-        // Utiliser l'URL webContentLink de Google Drive qui est plus fiable pour l'audio
-        // Cette URL permet le téléchargement direct du fichier
-        const directUrl = file.webContentLink || `https://drive.google.com/uc?id=${file.id}&export=download`;
+        // Utiliser une URL proxy ou embed qui fonctionne mieux avec CORS
+        // Cette approche utilise l'URL d'embed de Google Drive
+        const embedUrl = `https://drive.google.com/file/d/${file.id}/preview`;
         
-        console.log(`URL de téléchargement direct générée pour ${file.name}: ${directUrl}`);
+        console.log(`URL d'embed générée pour ${file.name}: ${embedUrl}`);
         
         // Extraire le nom sans extension pour le titre
         const nameWithoutExt = file.name.replace(/\.[^/.]+$/, "");
@@ -115,14 +115,15 @@ export const extractAudioFromGoogleDrive = async (driveUrl: string): Promise<Aud
           id: file.id,
           name: file.name,
           title: nameWithoutExt || `Piste Audio ${index + 1}`,
-          url: directUrl,
+          url: embedUrl,
+          directUrl: file.webContentLink || `https://drive.google.com/uc?id=${file.id}&export=download`,
           mimeType: file.mimeType,
           size: file.size ? parseInt(file.size) : 0,
           duration: 0 // Sera calculé lors du chargement
         };
       }).slice(0, 10); // Limiter à 10 fichiers audio max
       
-      console.log('Fichiers audio avec URLs de téléchargement direct générées:', audioData);
+      console.log('Fichiers audio avec URLs d\'embed générées:', audioData);
       return audioData;
     } else {
       console.log('Aucun fichier audio trouvé dans le dossier ou erreur d\'accès');
@@ -149,6 +150,7 @@ export interface AudioData {
   name: string;
   title: string;
   url: string;
+  directUrl: string;
   mimeType: string;
   size: number;
   duration: number;

@@ -1,5 +1,3 @@
-
-
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
@@ -15,7 +13,8 @@ import {
   Waves,
   Loader2,
   Music,
-  AlertCircle
+  AlertCircle,
+  Download
 } from 'lucide-react';
 import { Button } from './ui/button';
 import { Slider } from './ui/slider';
@@ -93,8 +92,16 @@ const AudioExperienceSection: React.FC<AudioExperienceSectionProps> = ({ marche,
       });
       setIsLoading(false);
       
-      // Message d'erreur plus informatif
-      setAudioError(`Fichier audio temporairement indisponible. Les restrictions de Google Drive peuvent empêcher la lecture directe. Essayez de télécharger le fichier directement depuis le Drive.`);
+      // Essayer l'URL directe en fallback
+      if (currentTrack.directUrl && !audio.src.includes('export=download')) {
+        console.log('🎵 Essai avec URL de téléchargement direct...');
+        audio.src = currentTrack.directUrl;
+        audio.load();
+        return;
+      }
+      
+      // Message d'erreur informatif
+      setAudioError(`Le fichier "${currentTrack.name}" ne peut pas être lu directement depuis Google Drive. Les navigateurs bloquent souvent ces lectures pour des raisons de sécurité.`);
     };
 
     const handleLoadedMetadata = () => {
@@ -121,11 +128,14 @@ const AudioExperienceSection: React.FC<AudioExperienceSectionProps> = ({ marche,
     audio.addEventListener('canplay', handleCanPlay);
     audio.addEventListener('error', handleError);
 
-    // Charger le nouvel audio
+    // Charger le nouvel audio avec une approche différente
     audio.crossOrigin = 'anonymous';
     audio.preload = 'metadata';
-    audio.src = currentTrack.url;
-    console.log('🎵 Configuration audio pour:', currentTrack.name, 'avec URL:', currentTrack.url);
+    
+    // Utiliser d'abord l'URL directe qui a plus de chances de fonctionner
+    const urlToTry = currentTrack.directUrl || currentTrack.url;
+    audio.src = urlToTry;
+    console.log('🎵 Configuration audio pour:', currentTrack.name, 'avec URL:', urlToTry);
     audio.load();
 
     return () => {
@@ -394,20 +404,23 @@ const AudioExperienceSection: React.FC<AudioExperienceSectionProps> = ({ marche,
             <div className="bg-orange-50 border border-orange-200 rounded-lg p-4 text-center relative z-10">
               <div className="flex items-center justify-center gap-2 mb-2">
                 <AlertCircle className="h-5 w-5 text-orange-600" />
-                <span className="font-medium text-orange-700">Problème de lecture audio</span>
+                <span className="font-medium text-orange-700">Lecture audio impossible</span>
               </div>
-              <p className="text-orange-600 text-sm mb-2">{audioError}</p>
-              <p className="text-orange-500 text-xs">
-                💡 Essayez d'accéder directement au fichier via 
+              <p className="text-orange-600 text-sm mb-3">{audioError}</p>
+              <div className="space-y-2">
+                <p className="text-orange-500 text-xs">
+                  💡 Vous pouvez télécharger le fichier directement :
+                </p>
                 <a 
-                  href={currentTrack?.url} 
+                  href={currentTrack?.directUrl || currentTrack?.url} 
                   target="_blank" 
                   rel="noopener noreferrer" 
-                  className="underline ml-1 hover:text-orange-700"
+                  className="inline-flex items-center gap-2 px-4 py-2 bg-orange-100 hover:bg-orange-200 text-orange-700 rounded-lg text-sm font-medium transition-colors"
                 >
-                  ce lien
+                  <Download className="h-4 w-4" />
+                  Télécharger "{currentTrack?.name}"
                 </a>
-              </p>
+              </div>
             </div>
           )}
 
