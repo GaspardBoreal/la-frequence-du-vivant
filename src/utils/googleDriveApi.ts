@@ -1,4 +1,3 @@
-
 // Utilitaires pour extraire les photos et fichiers audio depuis Google Drive
 export const extractPhotosFromGoogleDrive = async (driveUrl: string): Promise<PhotoData[]> => {
   if (!driveUrl || !driveUrl.includes('drive.google.com')) {
@@ -102,14 +101,11 @@ export const extractAudioFromGoogleDrive = async (driveUrl: string): Promise<Aud
       const audioData = data.files.map((file: any, index: number) => {
         console.log(`Fichier audio trouvé: ${file.name} (${file.mimeType}) - ID: ${file.id}`);
         
-        // Pour les fichiers audio, utiliser une URL directe qui fonctionne mieux
-        // Utiliser l'API directe de Google Drive avec un format qui marche pour l'audio
-        const audioUrl = `https://drive.google.com/file/d/${file.id}/preview`;
+        // Essayer différentes URLs pour maximiser les chances de succès
+        const directUrl = `https://drive.google.com/uc?export=download&id=${file.id}`;
+        const streamUrl = `https://docs.google.com/uc?export=download&id=${file.id}`;
         
-        // Essayer aussi une URL alternative
-        const audioUrlAlt = `https://docs.google.com/uc?export=download&id=${file.id}`;
-        
-        console.log(`URLs générées pour ${file.name}:`, { audioUrl, audioUrlAlt });
+        console.log(`URLs générées pour ${file.name}:`, { directUrl, streamUrl });
         
         // Extraire le nom sans extension pour le titre
         const nameWithoutExt = file.name.replace(/\.[^/.]+$/, "");
@@ -118,7 +114,7 @@ export const extractAudioFromGoogleDrive = async (driveUrl: string): Promise<Aud
           id: file.id,
           name: file.name,
           title: nameWithoutExt || `Piste Audio ${index + 1}`,
-          url: audioUrlAlt, // Utiliser l'URL alternative qui devrait mieux fonctionner
+          url: streamUrl, // Utiliser l'URL de streaming
           mimeType: file.mimeType,
           size: file.size ? parseInt(file.size) : 0,
           duration: 0 // Sera calculé lors du chargement

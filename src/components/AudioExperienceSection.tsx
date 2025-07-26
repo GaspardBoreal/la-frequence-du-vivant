@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
@@ -11,7 +12,8 @@ import {
   Share2,
   Clock,
   Waves,
-  Loader2
+  Loader2,
+  Music
 } from 'lucide-react';
 import { Button } from './ui/button';
 import { Slider } from './ui/slider';
@@ -39,39 +41,30 @@ const AudioExperienceSection: React.FC<AudioExperienceSectionProps> = ({ marche,
   const audioRef = useRef<HTMLAudioElement>(null);
   
   // Récupération des fichiers audio depuis Google Drive
-  const { data: audioFiles = [], isLoading: isLoadingAudio } = useQuery({
+  const { data: audioFiles = [], isLoading: isLoadingAudio, error: audioQueryError } = useQuery({
     queryKey: ['audioFiles', marche.lien],
     queryFn: () => marche.lien ? extractAudioFromGoogleDrive(marche.lien) : Promise.resolve([]),
     enabled: !!marche.lien,
     staleTime: 5 * 60 * 1000
   });
 
-  // Fichiers audio de fallback si pas de données Google Drive
-  const fallbackAudioFiles: AudioData[] = [
-    {
-      id: 'fallback-1',
-      name: 'Exploration Sonore.mp3',
-      title: `Exploration Sonore - ${marche.ville}`,
-      url: '/audio/sample1.m4a',
-      mimeType: 'audio/mp4',
-      size: 0,
-      duration: 245
-    }
-  ];
-
-  const currentAudioFiles = audioFiles.length > 0 ? audioFiles : fallbackAudioFiles;
-  const currentTrack = currentAudioFiles[currentTrackIndex] || currentAudioFiles[0];
+  const currentAudioFiles = audioFiles;
+  const currentTrack = currentAudioFiles[currentTrackIndex] || null;
+  const hasAudioFiles = currentAudioFiles.length > 0;
 
   useEffect(() => {
+    if (!hasAudioFiles || !currentTrack) return;
+
     const audio = audioRef.current;
-    if (!audio || !currentTrack) return;
+    if (!audio) return;
 
     const updateTime = () => setCurrentTime(audio.currentTime);
     const updateDuration = () => {
       const audioDuration = audio.duration;
       if (!isNaN(audioDuration) && audioDuration > 0) {
         setDuration(audioDuration);
-        setAudioError(null); // Clear error if duration loads successfully
+        setAudioError(null);
+        console.log('🎵 Durée audio chargée:', audioDuration, 'secondes');
       }
     };
     
@@ -93,19 +86,34 @@ const AudioExperienceSection: React.FC<AudioExperienceSectionProps> = ({ marche,
         audioSrc: audio.src,
         audioError: audio.error,
         networkState: audio.networkState,
-        readyState: audio.readyState
+        readyState: audio.readyState,
+        currentSrc: audio.currentSrc
       });
       setIsLoading(false);
-      setAudioError(`Impossible de charger le fichier audio: ${currentTrack.name}`);
+      setAudioError(`Fichier audio temporairement indisponible`);
+      
+      // Essayer une URL alternative si disponible
+      if (!audio.src.includes('docs.google.com')) {
+        console.log('🎵 Tentative avec URL alternative...');
+        const alternativeUrl = `https://docs.google.com/uc?export=download&id=${currentTrack.id}`;
+        audio.src = alternativeUrl;
+        audio.load();
+      }
+    };
+
+    const handleLoadedMetadata = () => {
+      console.log('🎵 Métadonnées chargées pour:', currentTrack.name);
+      updateDuration();
     };
 
     const handleLoadedData = () => {
       console.log('🎵 Données audio chargées pour:', currentTrack.name);
       setAudioError(null);
+      setIsLoading(false);
     };
     
     audio.addEventListener('timeupdate', updateTime);
-    audio.addEventListener('loadedmetadata', updateDuration);
+    audio.addEventListener('loadedmetadata', handleLoadedMetadata);
     audio.addEventListener('loadeddata', handleLoadedData);
     audio.addEventListener('ended', handleNext);
     audio.addEventListener('loadstart', handleLoadStart);
@@ -113,21 +121,22 @@ const AudioExperienceSection: React.FC<AudioExperienceSectionProps> = ({ marche,
     audio.addEventListener('error', handleError);
 
     // Charger le nouvel audio
-    audio.crossOrigin = 'anonymous'; // Essayer de résoudre les problèmes CORS
+    audio.crossOrigin = 'anonymous';
+    audio.preload = 'metadata';
     audio.src = currentTrack.url;
     console.log('🎵 Chargement du fichier:', currentTrack.url);
     audio.load();
 
     return () => {
       audio.removeEventListener('timeupdate', updateTime);
-      audio.removeEventListener('loadedmetadata', updateDuration);
+      audio.removeEventListener('loadedmetadata', handleLoadedMetadata);
       audio.removeEventListener('loadeddata', handleLoadedData);
       audio.removeEventListener('ended', handleNext);
       audio.removeEventListener('loadstart', handleLoadStart);
       audio.removeEventListener('canplay', handleCanPlay);
       audio.removeEventListener('error', handleError);
     };
-  }, [currentTrackIndex, currentTrack]);
+  }, [currentTrackIndex, currentTrack, hasAudioFiles]);
 
   const handlePlayPause = async () => {
     const audio = audioRef.current;
@@ -150,7 +159,7 @@ const AudioExperienceSection: React.FC<AudioExperienceSectionProps> = ({ marche,
     } catch (error) {
       console.error('🎵 Erreur lors de la lecture audio:', error);
       setIsLoading(false);
-      setAudioError('Impossible de lire ce fichier audio. Vérifiez les permissions ou essayez un autre fichier.');
+      setAudioError('Impossible de lire ce fichier audio pour le moment.');
     }
   };
 
@@ -233,9 +242,94 @@ const AudioExperienceSection: React.FC<AudioExperienceSectionProps> = ({ marche,
           </h2>
           <div className="flex items-center justify-center gap-2 text-gray-600">
             <Loader2 className="h-5 w-5 animate-spin" />
-            <p>Chargement des fichiers audio...</p>
+            <p>Exploration des paysages sonores...</p>
           </div>
         </div>
+      </div>
+    );
+  }
+
+  // Affichage quand il n'y a pas de fichiers audio
+  if (!hasAudioFiles) {
+    return (
+      <div className="space-y-12">
+        <motion.div
+          className="text-center space-y-4"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6 }}
+        >
+          <h2 className="text-5xl font-crimson font-bold flex items-center justify-center gap-4">
+            <Waves className="h-10 w-10 text-purple-600" />
+            Expérience Audio
+          </h2>
+        </motion.div>
+
+        <motion.div
+          className="max-w-4xl mx-auto"
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ delay: 0.2, duration: 0.8 }}
+        >
+          <div className="gaspard-glass rounded-3xl p-12 text-center space-y-8 relative overflow-hidden">
+            {/* Decorative Background Elements */}
+            <div className="absolute inset-0 pointer-events-none">
+              {[...Array(15)].map((_, i) => (
+                <motion.div
+                  key={i}
+                  className="absolute w-2 h-2 bg-gradient-to-r from-purple-300 to-blue-300 rounded-full opacity-20"
+                  style={{
+                    left: `${Math.random() * 100}%`,
+                    top: `${Math.random() * 100}%`
+                  }}
+                  animate={{
+                    scale: [1, 1.5, 1],
+                    opacity: [0.2, 0.4, 0.2]
+                  }}
+                  transition={{
+                    duration: 4 + Math.random() * 2,
+                    repeat: Infinity,
+                    delay: Math.random() * 3
+                  }}
+                />
+              ))}
+            </div>
+
+            <motion.div
+              className="relative z-10"
+              initial={{ scale: 0 }}
+              animate={{ scale: 1 }}
+              transition={{ delay: 0.3, duration: 0.5 }}
+            >
+              <div className="w-24 h-24 mx-auto bg-gradient-to-br from-purple-100 to-blue-100 rounded-full flex items-center justify-center mb-6">
+                <Music className="h-12 w-12 text-purple-600" />
+              </div>
+            </motion.div>
+
+            <div className="relative z-10 space-y-4">
+              <h3 className="text-3xl font-crimson font-bold text-gray-800">
+                Pas encore de paysages sonores à écouter
+              </h3>
+              <p className="text-gray-600 text-lg max-w-2xl mx-auto leading-relaxed">
+                Les explorations audio de <span className="font-semibold text-purple-600">{marche.ville}</span> 
+                {' '}seront bientôt disponibles. Cette expérience immersive vous permettra de découvrir 
+                les sons uniques capturés lors de cette marche techno-sensible.
+              </p>
+            </div>
+
+            <motion.div
+              className="relative z-10 pt-4"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.6 }}
+            >
+              <div className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-purple-50 to-blue-50 rounded-full border border-purple-200">
+                <Waves className="h-4 w-4 text-purple-600" />
+                <span className="text-purple-700 font-medium">Expérience en préparation</span>
+              </div>
+            </motion.div>
+          </div>
+        </motion.div>
       </div>
     );
   }
@@ -296,8 +390,8 @@ const AudioExperienceSection: React.FC<AudioExperienceSectionProps> = ({ marche,
 
           {/* Error Display */}
           {audioError && (
-            <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-center relative z-10">
-              <p className="text-red-600 text-sm">{audioError}</p>
+            <div className="bg-orange-50 border border-orange-200 rounded-lg p-4 text-center relative z-10">
+              <p className="text-orange-600 text-sm">{audioError}</p>
             </div>
           )}
 
@@ -332,7 +426,7 @@ const AudioExperienceSection: React.FC<AudioExperienceSectionProps> = ({ marche,
                 {formatTime(currentTime)}
               </span>
               <span>{formatTime(duration - currentTime)} restant</span>
-              <span>{formatTime(duration)}</span>
+              <span className="font-medium">{formatTime(duration)}</span>
             </div>
           </div>
 
@@ -408,81 +502,83 @@ const AudioExperienceSection: React.FC<AudioExperienceSectionProps> = ({ marche,
         </div>
       </motion.div>
 
-      {/* Experience Options */}
-      <motion.div
-        className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-6xl mx-auto"
-        initial={{ opacity: 0, y: 30 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.4, duration: 0.8 }}
-      >
-        {options.map((option, index) => {
-          const Icon = option.icon;
-          const isActive = activeOption === option.id;
-          
-          return (
-            <motion.div
-              key={option.id}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.4 + index * 0.1, duration: 0.6 }}
-            >
-              <Button
-                variant={isActive ? "default" : "outline"}
-                onClick={() => setActiveOption(isActive ? null : option.id)}
-                className={`
-                  w-full h-auto p-6 rounded-2xl transition-all duration-500 group
-                  ${isActive 
-                    ? 'bg-gradient-to-br from-purple-600 to-blue-600 text-white shadow-2xl scale-105' 
-                    : 'gaspard-glass hover:shadow-xl hover:scale-102'
-                  }
-                `}
+      {/* Experience Options - only show if we have audio files */}
+      {hasAudioFiles && (
+        <motion.div
+          className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-6xl mx-auto"
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.4, duration: 0.8 }}
+        >
+          {options.map((option, index) => {
+            const Icon = option.icon;
+            const isActive = activeOption === option.id;
+            
+            return (
+              <motion.div
+                key={option.id}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.4 + index * 0.1, duration: 0.6 }}
               >
-                <div className="flex flex-col items-center space-y-4 text-center">
-                  <motion.div
-                    animate={{ 
-                      rotate: isActive ? 360 : 0,
-                      scale: isActive ? 1.2 : 1 
-                    }}
-                    transition={{ duration: 0.6 }}
-                    className={`
-                      p-4 rounded-full 
-                      ${isActive 
-                        ? 'bg-white/20' 
-                        : 'bg-gradient-to-br from-purple-100 to-blue-100'
-                      }
-                    `}
-                  >
-                    <Icon className={`h-8 w-8 ${isActive ? 'text-white' : 'text-purple-600'}`} />
-                  </motion.div>
-                  
-                  <div className="space-y-2">
-                    <h3 className={`font-semibold text-lg ${isActive ? 'text-white' : 'text-gray-800'}`}>
-                      {option.label}
-                    </h3>
-                    <p className={`text-sm ${isActive ? 'text-white/80' : 'text-gray-600'}`}>
-                      {option.description}
-                    </p>
-                  </div>
-                  
-                  {isActive && (
+                <Button
+                  variant={isActive ? "default" : "outline"}
+                  onClick={() => setActiveOption(isActive ? null : option.id)}
+                  className={`
+                    w-full h-auto p-6 rounded-2xl transition-all duration-500 group
+                    ${isActive 
+                      ? 'bg-gradient-to-br from-purple-600 to-blue-600 text-white shadow-2xl scale-105' 
+                      : 'gaspard-glass hover:shadow-xl hover:scale-102'
+                    }
+                  `}
+                >
+                  <div className="flex flex-col items-center space-y-4 text-center">
                     <motion.div
-                      initial={{ scale: 0, opacity: 0 }}
-                      animate={{ scale: 1, opacity: 1 }}
-                      className="text-xs bg-white/20 px-3 py-1 rounded-full text-white"
+                      animate={{ 
+                        rotate: isActive ? 360 : 0,
+                        scale: isActive ? 1.2 : 1 
+                      }}
+                      transition={{ duration: 0.6 }}
+                      className={`
+                        p-4 rounded-full 
+                        ${isActive 
+                          ? 'bg-white/20' 
+                          : 'bg-gradient-to-br from-purple-100 to-blue-100'
+                        }
+                      `}
                     >
-                      Bientôt disponible
+                      <Icon className={`h-8 w-8 ${isActive ? 'text-white' : 'text-purple-600'}`} />
                     </motion.div>
-                  )}
-                </div>
-              </Button>
-            </motion.div>
-          );
-        })}
-      </motion.div>
+                    
+                    <div className="space-y-2">
+                      <h3 className={`font-semibold text-lg ${isActive ? 'text-white' : 'text-gray-800'}`}>
+                        {option.label}
+                      </h3>
+                      <p className={`text-sm ${isActive ? 'text-white/80' : 'text-gray-600'}`}>
+                        {option.description}
+                      </p>
+                    </div>
+                    
+                    {isActive && (
+                      <motion.div
+                        initial={{ scale: 0, opacity: 0 }}
+                        animate={{ scale: 1, opacity: 1 }}
+                        className="text-xs bg-white/20 px-3 py-1 rounded-full text-white"
+                      >
+                        Bientôt disponible
+                      </motion.div>
+                    )}
+                  </div>
+                </Button>
+              </motion.div>
+            );
+          })}
+        </motion.div>
+      )}
 
       {/* Active Option Display */}
       <AnimatePresence>
-        {activeOption && (
+        {activeOption && hasAudioFiles && (
           <motion.div
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: 'auto' }}
