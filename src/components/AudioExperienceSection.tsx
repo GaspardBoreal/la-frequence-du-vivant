@@ -64,14 +64,14 @@ const AudioExperienceSection: React.FC<AudioExperienceSectionProps> = ({ marche,
       if (!isNaN(audioDuration) && audioDuration > 0) {
         setDuration(audioDuration);
         setAudioError(null);
-        console.log('🎵 Durée audio chargée:', audioDuration, 'secondes');
+        console.log('🎵 Durée audio chargée:', audioDuration, 'secondes pour', currentTrack.name);
       }
     };
     
     const handleLoadStart = () => {
       setIsLoading(true);
       setAudioError(null);
-      console.log('🎵 Début du chargement audio:', currentTrack.url);
+      console.log('🎵 Début du chargement audio:', currentTrack.name, 'depuis URL:', currentTrack.url);
     };
     
     const handleCanPlay = () => {
@@ -81,7 +81,7 @@ const AudioExperienceSection: React.FC<AudioExperienceSectionProps> = ({ marche,
     };
     
     const handleError = (e: any) => {
-      console.error('🎵 Erreur audio détaillée:', {
+      console.error('🎵 Erreur audio détaillée pour', currentTrack.name, ':', {
         error: e,
         audioSrc: audio.src,
         audioError: audio.error,
@@ -90,15 +90,17 @@ const AudioExperienceSection: React.FC<AudioExperienceSectionProps> = ({ marche,
         currentSrc: audio.currentSrc
       });
       setIsLoading(false);
-      setAudioError(`Fichier audio temporairement indisponible`);
       
-      // Essayer une URL alternative si disponible
-      if (!audio.src.includes('docs.google.com')) {
-        console.log('🎵 Tentative avec URL alternative...');
-        const alternativeUrl = `https://docs.google.com/uc?export=download&id=${currentTrack.id}`;
-        audio.src = alternativeUrl;
+      // Essayer des URLs alternatives
+      if (!audio.src.includes('export=download')) {
+        console.log('🎵 Essai avec URL de téléchargement direct...');
+        const downloadUrl = `https://drive.google.com/uc?export=download&id=${currentTrack.id}`;
+        audio.src = downloadUrl;
         audio.load();
+        return;
       }
+      
+      setAudioError(`Le fichier "${currentTrack.name}" ne peut pas être lu pour le moment`);
     };
 
     const handleLoadedMetadata = () => {
@@ -111,11 +113,16 @@ const AudioExperienceSection: React.FC<AudioExperienceSectionProps> = ({ marche,
       setAudioError(null);
       setIsLoading(false);
     };
+
+    const handleEnded = () => {
+      console.log('🎵 Lecture terminée pour:', currentTrack.name);
+      handleNext();
+    };
     
     audio.addEventListener('timeupdate', updateTime);
     audio.addEventListener('loadedmetadata', handleLoadedMetadata);
     audio.addEventListener('loadeddata', handleLoadedData);
-    audio.addEventListener('ended', handleNext);
+    audio.addEventListener('ended', handleEnded);
     audio.addEventListener('loadstart', handleLoadStart);
     audio.addEventListener('canplay', handleCanPlay);
     audio.addEventListener('error', handleError);
@@ -124,14 +131,14 @@ const AudioExperienceSection: React.FC<AudioExperienceSectionProps> = ({ marche,
     audio.crossOrigin = 'anonymous';
     audio.preload = 'metadata';
     audio.src = currentTrack.url;
-    console.log('🎵 Chargement du fichier:', currentTrack.url);
+    console.log('🎵 Configuration audio pour:', currentTrack.name, 'avec URL:', currentTrack.url);
     audio.load();
 
     return () => {
       audio.removeEventListener('timeupdate', updateTime);
       audio.removeEventListener('loadedmetadata', handleLoadedMetadata);
       audio.removeEventListener('loadeddata', handleLoadedData);
-      audio.removeEventListener('ended', handleNext);
+      audio.removeEventListener('ended', handleEnded);
       audio.removeEventListener('loadstart', handleLoadStart);
       audio.removeEventListener('canplay', handleCanPlay);
       audio.removeEventListener('error', handleError);
@@ -150,7 +157,7 @@ const AudioExperienceSection: React.FC<AudioExperienceSectionProps> = ({ marche,
       } else {
         setIsLoading(true);
         setAudioError(null);
-        console.log('🎵 Tentative de lecture audio...');
+        console.log('🎵 Tentative de lecture audio pour:', currentTrack.name);
         await audio.play();
         setIsPlaying(true);
         setIsLoading(false);
@@ -159,7 +166,7 @@ const AudioExperienceSection: React.FC<AudioExperienceSectionProps> = ({ marche,
     } catch (error) {
       console.error('🎵 Erreur lors de la lecture audio:', error);
       setIsLoading(false);
-      setAudioError('Impossible de lire ce fichier audio pour le moment.');
+      setAudioError(`Impossible de lire "${currentTrack.name}"`);
     }
   };
 
@@ -392,6 +399,7 @@ const AudioExperienceSection: React.FC<AudioExperienceSectionProps> = ({ marche,
           {audioError && (
             <div className="bg-orange-50 border border-orange-200 rounded-lg p-4 text-center relative z-10">
               <p className="text-orange-600 text-sm">{audioError}</p>
+              <p className="text-orange-500 text-xs mt-1">Vérifiez que le fichier est accessible publiquement</p>
             </div>
           )}
 

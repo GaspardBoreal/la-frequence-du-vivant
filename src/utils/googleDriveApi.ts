@@ -101,11 +101,10 @@ export const extractAudioFromGoogleDrive = async (driveUrl: string): Promise<Aud
       const audioData = data.files.map((file: any, index: number) => {
         console.log(`Fichier audio trouvé: ${file.name} (${file.mimeType}) - ID: ${file.id}`);
         
-        // Essayer différentes URLs pour maximiser les chances de succès
-        const directUrl = `https://drive.google.com/uc?export=download&id=${file.id}`;
-        const streamUrl = `https://docs.google.com/uc?export=download&id=${file.id}`;
+        // Utiliser l'URL de streaming Google Drive qui fonctionne mieux pour l'audio
+        const streamUrl = `https://drive.google.com/uc?export=view&id=${file.id}`;
         
-        console.log(`URLs générées pour ${file.name}:`, { directUrl, streamUrl });
+        console.log(`URL de streaming générée pour ${file.name}: ${streamUrl}`);
         
         // Extraire le nom sans extension pour le titre
         const nameWithoutExt = file.name.replace(/\.[^/.]+$/, "");
@@ -114,14 +113,14 @@ export const extractAudioFromGoogleDrive = async (driveUrl: string): Promise<Aud
           id: file.id,
           name: file.name,
           title: nameWithoutExt || `Piste Audio ${index + 1}`,
-          url: streamUrl, // Utiliser l'URL de streaming
+          url: streamUrl,
           mimeType: file.mimeType,
           size: file.size ? parseInt(file.size) : 0,
           duration: 0 // Sera calculé lors du chargement
         };
       }).slice(0, 10); // Limiter à 10 fichiers audio max
       
-      console.log('Fichiers audio avec URLs générées:', audioData);
+      console.log('Fichiers audio avec URLs de streaming générées:', audioData);
       return audioData;
     } else {
       console.log('Aucun fichier audio trouvé dans le dossier ou erreur d\'accès');
