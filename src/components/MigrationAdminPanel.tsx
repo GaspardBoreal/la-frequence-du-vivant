@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from './ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
@@ -15,7 +14,8 @@ import {
   AlertTriangle, 
   CheckCircle, 
   Loader2,
-  RefreshCw
+  RefreshCw,
+  PlayCircle
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -138,9 +138,34 @@ const MigrationAdminPanel: React.FC = () => {
           Migration Supabase V1
         </h1>
         <p className="text-gray-600 max-w-2xl mx-auto">
-          Migrez vos données depuis Google Sheets et vos médias depuis Google Drive vers Supabase
+          Configuration et préparation de la migration vers Supabase
         </p>
       </div>
+
+      {/* Nouveau bouton pour l'exécution complète */}
+      <Card className="border-green-200 bg-green-50">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-green-700">
+            <PlayCircle className="h-5 w-5" />
+            Migration Complète Automatisée
+          </CardTitle>
+          <CardDescription>
+            Exécuter la migration complète des données et médias avec suivi en temps réel
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Button 
+            onClick={() => window.location.href = '/admin/migration/execute'}
+            className="w-full bg-green-600 hover:bg-green-700"
+            size="lg"
+          >
+            <PlayCircle className="h-4 w-4 mr-2" />
+            Lancer la Migration Complète
+          </Button>
+        </CardContent>
+      </Card>
+
+      <Separator />
 
       {/* Actions principales */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
