@@ -15,27 +15,26 @@ const MigrationExecution = () => {
           canonicalUrl="https://la-frequence-du-vivant.lovable.app/admin/migration/execute"
         />
         
-        {/* Fond avec gradient */}
-        <div className="absolute inset-0 bg-gradient-to-br from-background via-green-500/20 to-blue-500/30"></div>
+        {/* Fond avec gradient simplifié */}
+        <div className="absolute inset-0 bg-gradient-to-br from-background via-green-500/10 to-blue-500/10"></div>
         
         <div className="relative z-10">
-          {/* Header simplifié */}
-          <header className="bg-card/40 backdrop-blur-lg shadow-2xl border-b border-border/20">
-            <div className="max-w-6xl mx-auto px-6 py-8">
-              <div className="text-center space-y-4">
-                <div className="inline-flex items-center gap-2 px-4 py-2 bg-green-950/30 border border-green-500/20 rounded-full">
-                  <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
-                  <span className="font-mono text-xs uppercase tracking-wide text-green-300">
+          {/* Header ultra-simplifié */}
+          <header className="bg-card/80 backdrop-blur-sm border-b">
+            <div className="max-w-6xl mx-auto px-6 py-6">
+              <div className="text-center space-y-3">
+                <div className="inline-flex items-center gap-2 px-3 py-1 bg-green-100 rounded-full">
+                  <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                  <span className="text-xs font-medium text-green-700">
                     Phase 2 - Exécution
                   </span>
                 </div>
                 
-                <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold leading-tight">
-                  <span className="text-white">Migration</span><br />
-                  <span className="text-green-500">Automatisée</span>
+                <h1 className="text-3xl md:text-4xl font-bold text-foreground">
+                  Migration Automatisée
                 </h1>
                 
-                <p className="text-lg text-muted-foreground max-w-2xl mx-auto leading-relaxed">
+                <p className="text-muted-foreground max-w-xl mx-auto">
                   Exécution complète de la migration depuis Google Sheets et Google Drive
                 </p>
               </div>

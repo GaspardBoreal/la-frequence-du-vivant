@@ -15,27 +15,26 @@ const MigrationAdmin = () => {
           canonicalUrl="https://la-frequence-du-vivant.lovable.app/admin/migration"
         />
         
-        {/* Fond avec gradient */}
-        <div className="absolute inset-0 bg-gradient-to-br from-background via-primary/50 to-secondary/30"></div>
+        {/* Fond avec gradient simplifié */}
+        <div className="absolute inset-0 bg-gradient-to-br from-background via-blue-500/10 to-purple-500/10"></div>
         
         <div className="relative z-10">
-          {/* Header simplifié */}
-          <header className="bg-card/40 backdrop-blur-lg shadow-2xl border-b border-border/20">
-            <div className="max-w-6xl mx-auto px-6 py-8">
-              <div className="text-center space-y-4">
-                <div className="inline-flex items-center gap-2 px-4 py-2 bg-blue-950/30 border border-blue-500/20 rounded-full">
-                  <div className="w-2 h-2 bg-blue-400 rounded-full animate-pulse"></div>
-                  <span className="font-mono text-xs uppercase tracking-wide text-blue-300">
+          {/* Header ultra-simplifié */}
+          <header className="bg-card/80 backdrop-blur-sm border-b">
+            <div className="max-w-6xl mx-auto px-6 py-6">
+              <div className="text-center space-y-3">
+                <div className="inline-flex items-center gap-2 px-3 py-1 bg-blue-100 rounded-full">
+                  <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                  <span className="text-xs font-medium text-blue-700">
                     Administration
                   </span>
                 </div>
                 
-                <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold leading-tight">
-                  <span className="text-white">Migration</span><br />
-                  <span className="text-blue-500">Supabase V1</span>
+                <h1 className="text-3xl md:text-4xl font-bold text-foreground">
+                  Migration Supabase V1
                 </h1>
                 
-                <p className="text-lg text-muted-foreground max-w-2xl mx-auto leading-relaxed">
+                <p className="text-muted-foreground max-w-xl mx-auto">
                   Interface d'administration pour migrer vos données vers Supabase
                 </p>
               </div>
