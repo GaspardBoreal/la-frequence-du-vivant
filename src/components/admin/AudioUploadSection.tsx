@@ -3,9 +3,11 @@ import React, { useState, useRef } from 'react';
 import { Button } from '../ui/button';
 import { Card } from '../ui/card';
 import { Upload, X, Play, Pause, Trash2, Plus, Volume2 } from 'lucide-react';
+import { saveAudioFiles } from '../../utils/supabaseMarcheOperations';
 
 interface AudioItem {
   id: string;
+  file: File;
   url: string;
   name: string;
   size: number;
@@ -44,6 +46,7 @@ const AudioUploadSection: React.FC<AudioUploadSectionProps> = ({ marcheId }) => 
 
       newItems.push({
         id: Math.random().toString(36).substr(2, 9),
+        file: file,
         url,
         name: file.name,
         size: file.size,
@@ -79,21 +82,53 @@ const AudioUploadSection: React.FC<AudioUploadSectionProps> = ({ marcheId }) => 
   };
 
   const handleUpload = async (item: AudioItem) => {
+    if (!marcheId) {
+      console.error('❌ Aucun ID de marche fourni pour l\'upload');
+      return;
+    }
+
     setIsUploading(true);
     try {
-      // TODO: Implémenter l'upload vers Supabase Storage
       console.log('Upload audio:', item.name);
       
-      // Simuler l'upload
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      await saveAudioFiles(marcheId, [{ ...item, uploaded: false }]);
       
       setAudioItems(prev => 
         prev.map(audio => 
           audio.id === item.id ? { ...audio, uploaded: true } : audio
         )
       );
+      
+      console.log('✅ Upload audio terminé avec succès');
     } catch (error) {
-      console.error('Erreur upload audio:', error);
+      console.error('❌ Erreur upload audio:', error);
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  const handleUploadAll = async () => {
+    if (!marcheId) {
+      console.error('❌ Aucun ID de marche fourni pour l\'upload');
+      return;
+    }
+
+    const itemsToUpload = audioItems.filter(item => !item.uploaded);
+    if (itemsToUpload.length === 0) return;
+
+    setIsUploading(true);
+    try {
+      console.log(`🔄 Upload de ${itemsToUpload.length} fichiers audio...`);
+      
+      await saveAudioFiles(marcheId, itemsToUpload);
+      
+      setAudioItems(prev => 
+        prev.map(audio => ({ ...audio, uploaded: true }))
+      );
+      
+      console.log('✅ Tous les fichiers audio ont été uploadés');
+    } catch (error) {
+      console.error('❌ Erreur lors de l\'upload audio en masse:', error);
     } finally {
       setIsUploading(false);
     }
@@ -132,13 +167,26 @@ const AudioUploadSection: React.FC<AudioUploadSectionProps> = ({ marcheId }) => 
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h3 className="text-lg font-medium">Gestion des fichiers audio</h3>
-        <Button 
-          onClick={() => fileInputRef.current?.click()}
-          className="flex items-center"
-        >
-          <Plus className="h-4 w-4 mr-2" />
-          Ajouter audio
-        </Button>
+        <div className="flex space-x-2">
+          <Button 
+            onClick={() => fileInputRef.current?.click()}
+            variant="outline"
+            className="flex items-center"
+          >
+            <Plus className="h-4 w-4 mr-2" />
+            Ajouter audio
+          </Button>
+          {audioItems.some(item => !item.uploaded) && (
+            <Button
+              onClick={handleUploadAll}
+              disabled={isUploading || !marcheId}
+              className="flex items-center"
+            >
+              <Upload className="h-4 w-4 mr-2" />
+              Tout uploader
+            </Button>
+          )}
+        </div>
       </div>
 
       <input
@@ -149,6 +197,14 @@ const AudioUploadSection: React.FC<AudioUploadSectionProps> = ({ marcheId }) => 
         onChange={handleFileSelect}
         className="hidden"
       />
+
+      {!marcheId && (
+        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+          <p className="text-yellow-800">
+            Sauvegardez d'abord les informations de base de la marche pour pouvoir ajouter des fichiers audio.
+          </p>
+        </div>
+      )}
 
       {audioItems.length === 0 ? (
         <Card className="p-8 text-center border-dashed">
@@ -202,7 +258,7 @@ const AudioUploadSection: React.FC<AudioUploadSectionProps> = ({ marcheId }) => 
                     <Button
                       size="sm"
                       onClick={() => handleUpload(item)}
-                      disabled={isUploading}
+                      disabled={isUploading || !marcheId}
                     >
                       {isUploading ? 'Upload...' : 'Uploader'}
                     </Button>

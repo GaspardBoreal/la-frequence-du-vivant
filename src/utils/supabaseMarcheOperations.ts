@@ -1,0 +1,248 @@
+
+import { supabase } from '@/integrations/supabase/client';
+import { uploadPhoto, uploadVideo, uploadAudio, getAudioDuration, getVideoDuration } from './supabaseUpload';
+
+export interface MarcheFormData {
+  ville: string;
+  region: string;
+  nomMarche: string;
+  theme: string;
+  descriptifCourt: string;
+  poeme: string;
+  date: string;
+  temperature: number | null;
+  latitude: number;
+  longitude: number;
+  lienGoogleDrive: string;
+  sousThemes: string;
+  tags: string;
+  adresse: string;
+}
+
+export interface MediaFile {
+  id: string;
+  file: File;
+  name: string;
+  uploaded: boolean;
+}
+
+// Créer une nouvelle marche
+export const createMarche = async (formData: MarcheFormData): Promise<string> => {
+  console.log('🔄 Création de la marche:', formData);
+
+  // Convertir les coordonnées en point PostGIS
+  const coordonnees = formData.latitude && formData.longitude 
+    ? `POINT(${formData.longitude} ${formData.latitude})`
+    : null;
+
+  // Préparer les sous-thèmes
+  const sousThemes = formData.sousThemes 
+    ? formData.sousThemes.split(',').map(t => t.trim()).filter(t => t.length > 0)
+    : [];
+
+  const { data: marche, error: marcheError } = await supabase
+    .from('marches')
+    .insert({
+      ville: formData.ville,
+      region: formData.region || null,
+      nom_marche: formData.nomMarche || null,
+      theme_principal: formData.theme || null,
+      descriptif_court: formData.descriptifCourt || null,
+      descriptif_long: formData.poeme || null,
+      date: formData.date || null,
+      temperature: formData.temperature || null,
+      coordonnees: coordonnees,
+      lien_google_drive: formData.lienGoogleDrive || null,
+      sous_themes: sousThemes.length > 0 ? sousThemes : null
+    })
+    .select()
+    .single();
+
+  if (marcheError) {
+    console.error('❌ Erreur lors de la création de la marche:', marcheError);
+    throw marcheError;
+  }
+
+  console.log('✅ Marche créée avec succès:', marche.id);
+
+  // Ajouter les tags si fournis
+  if (formData.tags) {
+    const tags = formData.tags.split(',').map(t => t.trim()).filter(t => t.length > 0);
+    if (tags.length > 0) {
+      const tagsData = tags.map(tag => ({
+        marche_id: marche.id,
+        tag: tag
+      }));
+
+      const { error: tagsError } = await supabase
+        .from('marche_tags')
+        .insert(tagsData);
+
+      if (tagsError) {
+        console.error('❌ Erreur lors de l\'ajout des tags:', tagsError);
+      } else {
+        console.log('✅ Tags ajoutés avec succès');
+      }
+    }
+  }
+
+  return marche.id;
+};
+
+// Mettre à jour une marche existante
+export const updateMarche = async (marcheId: string, formData: MarcheFormData): Promise<void> => {
+  console.log('🔄 Mise à jour de la marche:', marcheId);
+
+  const coordonnees = formData.latitude && formData.longitude 
+    ? `POINT(${formData.longitude} ${formData.latitude})`
+    : null;
+
+  const sousThemes = formData.sousThemes 
+    ? formData.sousThemes.split(',').map(t => t.trim()).filter(t => t.length > 0)
+    : [];
+
+  const { error: marcheError } = await supabase
+    .from('marches')
+    .update({
+      ville: formData.ville,
+      region: formData.region || null,
+      nom_marche: formData.nomMarche || null,
+      theme_principal: formData.theme || null,
+      descriptif_court: formData.descriptifCourt || null,
+      descriptif_long: formData.poeme || null,
+      date: formData.date || null,
+      temperature: formData.temperature || null,
+      coordonnees: coordonnees,
+      lien_google_drive: formData.lienGoogleDrive || null,
+      sous_themes: sousThemes.length > 0 ? sousThemes : null,
+      updated_at: new Date().toISOString()
+    })
+    .eq('id', marcheId);
+
+  if (marcheError) {
+    console.error('❌ Erreur lors de la mise à jour de la marche:', marcheError);
+    throw marcheError;
+  }
+
+  // Mettre à jour les tags (supprimer les anciens et ajouter les nouveaux)
+  await supabase.from('marche_tags').delete().eq('marche_id', marcheId);
+
+  if (formData.tags) {
+    const tags = formData.tags.split(',').map(t => t.trim()).filter(t => t.length > 0);
+    if (tags.length > 0) {
+      const tagsData = tags.map(tag => ({
+        marche_id: marcheId,
+        tag: tag
+      }));
+
+      const { error: tagsError } = await supabase
+        .from('marche_tags')
+        .insert(tagsData);
+
+      if (tagsError) {
+        console.error('❌ Erreur lors de la mise à jour des tags:', tagsError);
+      }
+    }
+  }
+
+  console.log('✅ Marche mise à jour avec succès');
+};
+
+// Upload et sauvegarde des photos
+export const savePhotos = async (marcheId: string, photos: MediaFile[]): Promise<void> => {
+  console.log(`🔄 Sauvegarde de ${photos.length} photos pour la marche ${marcheId}`);
+
+  for (let i = 0; i < photos.length; i++) {
+    const photo = photos[i];
+    if (photo.uploaded) continue;
+
+    try {
+      const uploadResult = await uploadPhoto(photo.file, marcheId);
+      
+      const { error } = await supabase
+        .from('marche_photos')
+        .insert({
+          marche_id: marcheId,
+          nom_fichier: photo.name,
+          url_supabase: uploadResult.url,
+          ordre: i + 1
+        });
+
+      if (error) {
+        console.error('❌ Erreur sauvegarde photo:', error);
+      } else {
+        console.log(`✅ Photo ${photo.name} sauvegardée`);
+      }
+    } catch (error) {
+      console.error(`❌ Erreur upload photo ${photo.name}:`, error);
+    }
+  }
+};
+
+// Upload et sauvegarde des vidéos
+export const saveVideos = async (marcheId: string, videos: MediaFile[]): Promise<void> => {
+  console.log(`🔄 Sauvegarde de ${videos.length} vidéos pour la marche ${marcheId}`);
+
+  for (let i = 0; i < videos.length; i++) {
+    const video = videos[i];
+    if (video.uploaded) continue;
+
+    try {
+      const uploadResult = await uploadVideo(video.file, marcheId);
+      const duration = await getVideoDuration(video.file);
+      
+      const { error } = await supabase
+        .from('marche_videos')
+        .insert({
+          marche_id: marcheId,
+          nom_fichier: video.name,
+          url_supabase: uploadResult.url,
+          duree_secondes: Math.round(duration),
+          taille_octets: video.file.size,
+          ordre: i + 1
+        });
+
+      if (error) {
+        console.error('❌ Erreur sauvegarde vidéo:', error);
+      } else {
+        console.log(`✅ Vidéo ${video.name} sauvegardée`);
+      }
+    } catch (error) {
+      console.error(`❌ Erreur upload vidéo ${video.name}:`, error);
+    }
+  }
+};
+
+// Upload et sauvegarde des fichiers audio
+export const saveAudioFiles = async (marcheId: string, audioFiles: MediaFile[]): Promise<void> => {
+  console.log(`🔄 Sauvegarde de ${audioFiles.length} fichiers audio pour la marche ${marcheId}`);
+
+  for (let i = 0; i < audioFiles.length; i++) {
+    const audio = audioFiles[i];
+    if (audio.uploaded) continue;
+
+    try {
+      const uploadResult = await uploadAudio(audio.file, marcheId);
+      const duration = await getAudioDuration(audio.file);
+      
+      const { error } = await supabase
+        .from('marche_audio')
+        .insert({
+          marche_id: marcheId,
+          nom_fichier: audio.name,
+          url_supabase: uploadResult.url,
+          duree_secondes: Math.round(duration),
+          taille_octets: audio.file.size,
+          ordre: i + 1
+        });
+
+      if (error) {
+        console.error('❌ Erreur sauvegarde audio:', error);
+      } else {
+        console.log(`✅ Audio ${audio.name} sauvegardé`);
+      }
+    } catch (error) {
+      console.error(`❌ Erreur upload audio ${audio.name}:`, error);
+    }
+  }
+};

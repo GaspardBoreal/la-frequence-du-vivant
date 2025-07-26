@@ -8,25 +8,9 @@ import { Label } from '../ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
 import { Save, ArrowLeft } from 'lucide-react';
 import { useSupabaseMarche } from '../../hooks/useSupabaseMarches';
+import { createMarche, updateMarche, MarcheFormData } from '../../utils/supabaseMarcheOperations';
 import MediaUploadSection from './MediaUploadSection';
 import AudioUploadSection from './AudioUploadSection';
-
-interface MarcheFormData {
-  ville: string;
-  region: string;
-  nomMarche: string;
-  theme: string;
-  descriptifCourt: string;
-  poeme: string;
-  date: string;
-  temperature: number | null;
-  latitude: number;
-  longitude: number;
-  lienGoogleDrive: string;
-  sousThemes: string;
-  tags: string;
-  adresse: string;
-}
 
 interface MarcheFormProps {
   mode: 'create' | 'edit';
@@ -62,7 +46,7 @@ const MarcheForm: React.FC<MarcheFormProps> = ({ mode, marcheId, onCancel, onSuc
         longitude: marche.longitude || 0,
         lienGoogleDrive: marche.lien || '',
         sousThemes: marche.sousThemes?.join(', ') || '',
-        tags: marche.tags || '',
+        tags: marche.supabaseTags?.join(', ') || '',
         adresse: marche.adresse || ''
       });
     }
@@ -71,11 +55,20 @@ const MarcheForm: React.FC<MarcheFormProps> = ({ mode, marcheId, onCancel, onSuc
   const onSubmit = async (data: MarcheFormData) => {
     setIsSubmitting(true);
     try {
-      // TODO: Implémenter la sauvegarde via Supabase
       console.log('Données à sauvegarder:', data);
+
+      if (mode === 'create') {
+        const newMarcheId = await createMarche(data);
+        console.log('✅ Nouvelle marche créée avec l\'ID:', newMarcheId);
+      } else if (mode === 'edit' && marcheId) {
+        await updateMarche(marcheId, data);
+        console.log('✅ Marche mise à jour avec succès');
+      }
+
       onSuccess();
     } catch (error) {
       console.error('Erreur lors de la sauvegarde:', error);
+      // TODO: Afficher un message d'erreur à l'utilisateur
     } finally {
       setIsSubmitting(false);
     }
