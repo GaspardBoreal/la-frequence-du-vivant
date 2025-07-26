@@ -12,6 +12,7 @@ import NavigationMenu from './components/NavigationMenu';
 import MigrationAdmin from './pages/MigrationAdmin';
 import MigrationExecution from './pages/MigrationExecution';
 import TestRoute from './pages/TestRoute';
+import DebugTest from './pages/DebugTest';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -31,6 +32,7 @@ function App() {
           <NavigationMenu />
           <Routes>
             <Route path="/" element={<Index />} />
+            <Route path="/debug-test" element={<DebugTest />} />
             <Route path="/test" element={<TestRoute />} />
             <Route path="/marches-techno-sensibles" element={<MarchesTechnoSensibles />} />
             <Route path="/marche/:slug" element={<MarcheDetail />} />
