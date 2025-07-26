@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
@@ -35,6 +34,7 @@ const AudioExperienceSection: React.FC<AudioExperienceSectionProps> = ({ marche,
   const [volume, setVolume] = useState(0.7);
   const [activeOption, setActiveOption] = useState<'spectogram' | 'frequencies' | 'share' | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [audioError, setAudioError] = useState<string | null>(null);
   
   const audioRef = useRef<HTMLAudioElement>(null);
   
@@ -71,30 +71,57 @@ const AudioExperienceSection: React.FC<AudioExperienceSectionProps> = ({ marche,
       const audioDuration = audio.duration;
       if (!isNaN(audioDuration) && audioDuration > 0) {
         setDuration(audioDuration);
+        setAudioError(null); // Clear error if duration loads successfully
       }
     };
     
-    const handleLoadStart = () => setIsLoading(true);
-    const handleCanPlay = () => setIsLoading(false);
-    const handleError = (e: any) => {
-      console.error('Erreur audio:', e);
+    const handleLoadStart = () => {
+      setIsLoading(true);
+      setAudioError(null);
+      console.log('🎵 Début du chargement audio:', currentTrack.url);
+    };
+    
+    const handleCanPlay = () => {
       setIsLoading(false);
+      setAudioError(null);
+      console.log('🎵 Audio prêt à être lu:', currentTrack.name);
+    };
+    
+    const handleError = (e: any) => {
+      console.error('🎵 Erreur audio détaillée:', {
+        error: e,
+        audioSrc: audio.src,
+        audioError: audio.error,
+        networkState: audio.networkState,
+        readyState: audio.readyState
+      });
+      setIsLoading(false);
+      setAudioError(`Impossible de charger le fichier audio: ${currentTrack.name}`);
+    };
+
+    const handleLoadedData = () => {
+      console.log('🎵 Données audio chargées pour:', currentTrack.name);
+      setAudioError(null);
     };
     
     audio.addEventListener('timeupdate', updateTime);
     audio.addEventListener('loadedmetadata', updateDuration);
+    audio.addEventListener('loadeddata', handleLoadedData);
     audio.addEventListener('ended', handleNext);
     audio.addEventListener('loadstart', handleLoadStart);
     audio.addEventListener('canplay', handleCanPlay);
     audio.addEventListener('error', handleError);
 
     // Charger le nouvel audio
+    audio.crossOrigin = 'anonymous'; // Essayer de résoudre les problèmes CORS
     audio.src = currentTrack.url;
+    console.log('🎵 Chargement du fichier:', currentTrack.url);
     audio.load();
 
     return () => {
       audio.removeEventListener('timeupdate', updateTime);
       audio.removeEventListener('loadedmetadata', updateDuration);
+      audio.removeEventListener('loadeddata', handleLoadedData);
       audio.removeEventListener('ended', handleNext);
       audio.removeEventListener('loadstart', handleLoadStart);
       audio.removeEventListener('canplay', handleCanPlay);
@@ -110,15 +137,20 @@ const AudioExperienceSection: React.FC<AudioExperienceSectionProps> = ({ marche,
       if (isPlaying) {
         audio.pause();
         setIsPlaying(false);
+        console.log('🎵 Audio mis en pause');
       } else {
         setIsLoading(true);
+        setAudioError(null);
+        console.log('🎵 Tentative de lecture audio...');
         await audio.play();
         setIsPlaying(true);
         setIsLoading(false);
+        console.log('🎵 Audio en cours de lecture');
       }
     } catch (error) {
-      console.error('Erreur lors de la lecture audio:', error);
+      console.error('🎵 Erreur lors de la lecture audio:', error);
       setIsLoading(false);
+      setAudioError('Impossible de lire ce fichier audio. Vérifiez les permissions ou essayez un autre fichier.');
     }
   };
 
@@ -129,6 +161,7 @@ const AudioExperienceSection: React.FC<AudioExperienceSectionProps> = ({ marche,
     setIsPlaying(false);
     setCurrentTime(0);
     setDuration(0);
+    setAudioError(null);
   };
 
   const handlePrevious = () => {
@@ -138,6 +171,7 @@ const AudioExperienceSection: React.FC<AudioExperienceSectionProps> = ({ marche,
     setIsPlaying(false);
     setCurrentTime(0);
     setDuration(0);
+    setAudioError(null);
   };
 
   const handleSeek = (value: number[]) => {
@@ -260,6 +294,13 @@ const AudioExperienceSection: React.FC<AudioExperienceSectionProps> = ({ marche,
             ))}
           </div>
 
+          {/* Error Display */}
+          {audioError && (
+            <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-center relative z-10">
+              <p className="text-red-600 text-sm">{audioError}</p>
+            </div>
+          )}
+
           {/* Track Info */}
           <div className="text-center space-y-2 relative z-10">
             {currentAudioFiles.length > 1 && (
@@ -283,7 +324,7 @@ const AudioExperienceSection: React.FC<AudioExperienceSectionProps> = ({ marche,
               className="w-full"
               max={100}
               step={0.1}
-              disabled={!duration || isLoading}
+              disabled={!duration || isLoading || !!audioError}
             />
             <div className="flex justify-between text-sm text-gray-600">
               <span className="flex items-center gap-1">
@@ -316,7 +357,7 @@ const AudioExperienceSection: React.FC<AudioExperienceSectionProps> = ({ marche,
               <Button
                 onClick={handlePlayPause}
                 size="lg"
-                disabled={!currentTrack || isLoading}
+                disabled={!currentTrack || isLoading || !!audioError}
                 className="rounded-full p-6 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 shadow-2xl"
               >
                 {isLoading ? (
