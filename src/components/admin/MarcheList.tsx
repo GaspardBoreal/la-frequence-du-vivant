@@ -7,6 +7,7 @@ import { Edit, Trash2, Calendar, MapPin } from 'lucide-react';
 import { MarcheTechnoSensible } from '../../utils/googleSheetsApi';
 import { deleteMarche } from '../../utils/supabaseMarcheOperations';
 import { toast } from 'sonner';
+import { queryClient } from '../../lib/queryClient';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -23,12 +24,14 @@ interface MarcheListProps {
   marches: MarcheTechnoSensible[];
   isLoading: boolean;
   onEdit: (marcheId: string) => void;
+  onDelete?: () => void; // Callback pour notifier le parent de la suppression
 }
 
 const MarcheList: React.FC<MarcheListProps> = ({
   marches,
   isLoading,
-  onEdit
+  onEdit,
+  onDelete
 }) => {
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
@@ -37,6 +40,14 @@ const MarcheList: React.FC<MarcheListProps> = ({
     try {
       await deleteMarche(marcheId);
       toast.success(`Marche "${ville}" supprimée avec succès`);
+      
+      // Forcer un refetch immédiat des données
+      await queryClient.refetchQueries({ queryKey: ['marches-supabase'] });
+      
+      // Notifier le composant parent pour qu'il mette à jour la liste filtrée
+      if (onDelete) {
+        onDelete();
+      }
     } catch (error) {
       console.error('Erreur lors de la suppression:', error);
       toast.error('Erreur lors de la suppression de la marche');

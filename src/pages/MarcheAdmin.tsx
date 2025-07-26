@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '../components/ui/button';
 import { ArrowLeft, Plus } from 'lucide-react';
@@ -18,7 +17,7 @@ const MarcheAdmin = () => {
   const [editingMarcheId, setEditingMarcheId] = useState<string | null>(null);
   const [filteredMarches, setFilteredMarches] = useState<MarcheTechnoSensible[]>([]);
 
-  const { data: marches = [], isLoading, error } = useSupabaseMarches();
+  const { data: marches = [], isLoading, error, refetch } = useSupabaseMarches();
 
   // Initialiser les marches filtrées quand les données sont chargées
   useEffect(() => {
@@ -50,10 +49,17 @@ const MarcheAdmin = () => {
     toast.success('Marche sauvegardée avec succès !');
     setViewMode('list');
     setEditingMarcheId(null);
+    // Refetch automatiquement les données après succès
+    refetch();
   };
 
   const handleFilterChange = (filtered: MarcheTechnoSensible[]) => {
     setFilteredMarches(filtered);
+  };
+
+  const handleDelete = () => {
+    // Refetch les données après suppression
+    refetch();
   };
 
   if (error) {
@@ -134,6 +140,7 @@ const MarcheAdmin = () => {
                   marches={filteredMarches}
                   isLoading={false}
                   onEdit={handleEdit}
+                  onDelete={handleDelete}
                 />
               )}
             </>
