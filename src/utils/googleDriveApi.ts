@@ -1,4 +1,3 @@
-
 // Utilitaires pour extraire les photos et fichiers audio depuis Google Drive
 export const extractPhotosFromGoogleDrive = async (driveUrl: string): Promise<PhotoData[]> => {
   if (!driveUrl || !driveUrl.includes('drive.google.com')) {
@@ -102,12 +101,6 @@ export const extractAudioFromGoogleDrive = async (driveUrl: string): Promise<Aud
       const audioData = data.files.map((file: any, index: number) => {
         console.log(`Fichier audio trouvé: ${file.name} (${file.mimeType}) - ID: ${file.id}`);
         
-        // Utiliser l'URL qui fonctionne pour le streaming audio
-        // Cette URL contourne les restrictions CORS de Google Drive
-        const streamingUrl = `https://docs.google.com/uc?export=download&id=${file.id}`;
-        
-        console.log(`URL de streaming optimisée générée pour ${file.name}: ${streamingUrl}`);
-        
         // Extraire le nom sans extension pour le titre
         const nameWithoutExt = file.name.replace(/\.[^/.]+$/, "");
         
@@ -115,15 +108,17 @@ export const extractAudioFromGoogleDrive = async (driveUrl: string): Promise<Aud
           id: file.id,
           name: file.name,
           title: nameWithoutExt || `Piste Audio ${index + 1}`,
-          url: streamingUrl,
-          directUrl: file.webContentLink || `https://drive.google.com/file/d/${file.id}/view`,
+          // Utiliser directement l'URL de téléchargement Google Drive
+          directUrl: `https://drive.google.com/file/d/${file.id}/view`,
+          downloadUrl: `https://drive.google.com/uc?export=download&id=${file.id}`,
           mimeType: file.mimeType,
           size: file.size ? parseInt(file.size) : 0,
-          duration: 0 // Sera calculé lors du chargement
+          duration: 0,
+          canPlay: false // Par défaut, on considère que les fichiers Google Drive ne peuvent pas être lus directement
         };
       }).slice(0, 10); // Limiter à 10 fichiers audio max
       
-      console.log('Fichiers audio avec URLs de streaming optimisées générées:', audioData);
+      console.log('Fichiers audio configurés pour téléchargement depuis Google Drive:', audioData);
       return audioData;
     } else {
       console.log('Aucun fichier audio trouvé dans le dossier ou erreur d\'accès');
@@ -144,16 +139,17 @@ export interface PhotoData {
   urls: string[];
 }
 
-// Define the AudioData interface
+// Define the AudioData interface - mise à jour
 export interface AudioData {
   id: string;
   name: string;
   title: string;
-  url: string;
   directUrl: string;
+  downloadUrl: string;
   mimeType: string;
   size: number;
   duration: number;
+  canPlay: boolean;
 }
 
 const extractFolderIdFromUrl = (url: string): string | null => {

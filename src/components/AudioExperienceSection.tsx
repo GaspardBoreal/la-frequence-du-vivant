@@ -1,23 +1,19 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
-  Play, 
-  Pause, 
   SkipBack, 
   SkipForward, 
-  Volume2, 
   BarChart3,
   Radio,
   Share2,
-  Clock,
   Waves,
   Loader2,
   Music,
-  AlertCircle,
-  Download
+  Download,
+  ExternalLink,
+  Volume2
 } from 'lucide-react';
 import { Button } from './ui/button';
-import { Slider } from './ui/slider';
 import { Badge } from './ui/badge';
 import { MarcheTechnoSensible } from '../utils/googleSheetsApi';
 import { RegionalTheme } from '../utils/regionalThemes';
@@ -30,16 +26,8 @@ interface AudioExperienceSectionProps {
 }
 
 const AudioExperienceSection: React.FC<AudioExperienceSectionProps> = ({ marche, theme }) => {
-  const [isPlaying, setIsPlaying] = useState(false);
   const [currentTrackIndex, setCurrentTrackIndex] = useState(0);
-  const [currentTime, setCurrentTime] = useState(0);
-  const [duration, setDuration] = useState(0);
-  const [volume, setVolume] = useState(0.7);
   const [activeOption, setActiveOption] = useState<'spectogram' | 'frequencies' | 'share' | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
-  const [audioError, setAudioError] = useState<string | null>(null);
-  
-  const audioRef = useRef<HTMLAudioElement>(null);
   
   // Récupération des fichiers audio depuis Google Drive
   const { data: audioFiles = [], isLoading: isLoadingAudio, error: audioQueryError } = useQuery({
@@ -53,148 +41,30 @@ const AudioExperienceSection: React.FC<AudioExperienceSectionProps> = ({ marche,
   const currentTrack = currentAudioFiles[currentTrackIndex] || null;
   const hasAudioFiles = currentAudioFiles.length > 0;
 
-  useEffect(() => {
-    if (!hasAudioFiles || !currentTrack) return;
-
-    const audio = audioRef.current;
-    if (!audio) return;
-
-    const updateTime = () => setCurrentTime(audio.currentTime);
-    const updateDuration = () => {
-      const audioDuration = audio.duration;
-      if (!isNaN(audioDuration) && audioDuration > 0) {
-        setDuration(audioDuration);
-        setAudioError(null);
-        console.log('🎵 Durée audio chargée:', audioDuration, 'secondes pour', currentTrack.name);
-      }
-    };
-    
-    const handleLoadStart = () => {
-      setIsLoading(true);
-      setAudioError(null);
-      console.log('🎵 Début du chargement audio:', currentTrack.name, 'depuis URL:', currentTrack.url);
-    };
-    
-    const handleCanPlay = () => {
-      setIsLoading(false);
-      setAudioError(null);
-      console.log('🎵 Audio prêt à être lu:', currentTrack.name);
-    };
-    
-    const handleError = (e: any) => {
-      console.error('🎵 Erreur audio détaillée pour', currentTrack.name, ':', {
-        error: e,
-        audioSrc: audio.src,
-        audioError: audio.error,
-        networkState: audio.networkState,
-        readyState: audio.readyState
-      });
-      setIsLoading(false);
-      setAudioError(`La lecture de "${currentTrack.name}" a échoué. Essayez de télécharger le fichier directement.`);
-    };
-
-    const handleLoadedMetadata = () => {
-      console.log('🎵 Métadonnées chargées pour:', currentTrack.name);
-      updateDuration();
-      setAudioError(null);
-    };
-
-    const handleEnded = () => {
-      console.log('🎵 Lecture terminée pour:', currentTrack.name);
-      handleNext();
-    };
-    
-    audio.addEventListener('timeupdate', updateTime);
-    audio.addEventListener('loadedmetadata', handleLoadedMetadata);
-    audio.addEventListener('ended', handleEnded);
-    audio.addEventListener('loadstart', handleLoadStart);
-    audio.addEventListener('canplay', handleCanPlay);
-    audio.addEventListener('error', handleError);
-
-    // Configuration audio optimisée pour Google Drive
-    audio.preload = 'metadata';
-    audio.src = currentTrack.url;
-    console.log('🎵 Configuration audio pour:', currentTrack.name, 'avec URL optimisée:', currentTrack.url);
-    audio.load();
-
-    return () => {
-      audio.removeEventListener('timeupdate', updateTime);
-      audio.removeEventListener('loadedmetadata', handleLoadedMetadata);
-      audio.removeEventListener('ended', handleEnded);
-      audio.removeEventListener('loadstart', handleLoadStart);
-      audio.removeEventListener('canplay', handleCanPlay);
-      audio.removeEventListener('error', handleError);
-    };
-  }, [currentTrackIndex, currentTrack, hasAudioFiles]);
-
-  const handlePlayPause = async () => {
-    const audio = audioRef.current;
-    if (!audio || !currentTrack) return;
-
-    try {
-      if (isPlaying) {
-        audio.pause();
-        setIsPlaying(false);
-        console.log('🎵 Audio mis en pause');
-      } else {
-        setIsLoading(true);
-        setAudioError(null);
-        console.log('🎵 Tentative de lecture audio pour:', currentTrack.name);
-        await audio.play();
-        setIsPlaying(true);
-        setIsLoading(false);
-        console.log('🎵 Audio en cours de lecture');
-      }
-    } catch (error) {
-      console.error('🎵 Erreur lors de la lecture audio:', error);
-      setIsLoading(false);
-      setAudioError(`Impossible de lancer la lecture de "${currentTrack.name}".`);
-    }
-  };
-
   const handleNext = () => {
     if (currentAudioFiles.length <= 1) return;
     const nextIndex = (currentTrackIndex + 1) % currentAudioFiles.length;
     setCurrentTrackIndex(nextIndex);
-    setIsPlaying(false);
-    setCurrentTime(0);
-    setDuration(0);
-    setAudioError(null);
   };
 
   const handlePrevious = () => {
     if (currentAudioFiles.length <= 1) return;
     const prevIndex = currentTrackIndex === 0 ? currentAudioFiles.length - 1 : currentTrackIndex - 1;
     setCurrentTrackIndex(prevIndex);
-    setIsPlaying(false);
-    setCurrentTime(0);
-    setDuration(0);
-    setAudioError(null);
   };
 
-  const handleSeek = (value: number[]) => {
-    const audio = audioRef.current;
-    if (!audio || !duration) return;
-    
-    const newTime = (value[0] / 100) * duration;
-    audio.currentTime = newTime;
-    setCurrentTime(newTime);
+  const handleDirectAccess = (track: AudioData) => {
+    window.open(track.directUrl, '_blank', 'noopener,noreferrer');
   };
 
-  const handleVolumeChange = (value: number[]) => {
-    const audio = audioRef.current;
-    if (!audio) return;
-    
-    const newVolume = value[0] / 100;
-    audio.volume = newVolume;
-    setVolume(newVolume);
-  };
-
-  const formatTime = (time: number) => {
-    if (isNaN(time) || time < 0) return "0:00";
-    const minutes = Math.floor(time / 60);
-    const seconds = Math.floor(time % 60);
-    return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+  const handleDownload = (track: AudioData) => {
+    const link = document.createElement('a');
+    link.href = track.downloadUrl;
+    link.download = track.name;
+    link.target = '_blank';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
   const options = [
@@ -337,16 +207,16 @@ const AudioExperienceSection: React.FC<AudioExperienceSectionProps> = ({ marche,
           Expérience Audio
         </h2>
         <p className="text-gray-600 max-w-3xl mx-auto text-xl">
-          Plongez dans l'univers sonore de <span className="font-semibold text-purple-600">{marche.ville}</span>
+          Découvrez les paysages sonores de <span className="font-semibold text-purple-600">{marche.ville}</span>
         </p>
         {audioFiles.length > 0 && (
           <p className="text-sm text-gray-500">
-            {audioFiles.length} fichier{audioFiles.length > 1 ? 's' : ''} audio trouvé{audioFiles.length > 1 ? 's' : ''}
+            {audioFiles.length} fichier{audioFiles.length > 1 ? 's' : ''} audio disponible{audioFiles.length > 1 ? 's' : ''} au téléchargement
           </p>
         )}
       </motion.div>
 
-      {/* Audio Player */}
+      {/* Audio File Browser */}
       <motion.div
         className="max-w-4xl mx-auto"
         initial={{ opacity: 0, scale: 0.9 }}
@@ -377,30 +247,17 @@ const AudioExperienceSection: React.FC<AudioExperienceSectionProps> = ({ marche,
             ))}
           </div>
 
-          {/* Error Display */}
-          {audioError && (
-            <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-center relative z-10">
-              <div className="flex items-center justify-center gap-2 mb-2">
-                <AlertCircle className="h-5 w-5 text-red-600" />
-                <span className="font-medium text-red-700">Problème de lecture audio</span>
-              </div>
-              <p className="text-red-600 text-sm mb-3">{audioError}</p>
-              <div className="space-y-2">
-                <p className="text-red-500 text-xs">
-                  💡 Vous pouvez télécharger le fichier directement :
-                </p>
-                <a 
-                  href={currentTrack?.directUrl} 
-                  target="_blank" 
-                  rel="noopener noreferrer" 
-                  className="inline-flex items-center gap-2 px-4 py-2 bg-red-100 hover:bg-red-200 text-red-700 rounded-lg text-sm font-medium transition-colors"
-                >
-                  <Download className="h-4 w-4" />
-                  Télécharger "{currentTrack?.name}"
-                </a>
-              </div>
+          {/* Info Notice */}
+          <div className="bg-amber-50 border border-amber-200 rounded-lg p-6 text-center relative z-10">
+            <div className="flex items-center justify-center gap-2 mb-3">
+              <Volume2 className="h-5 w-5 text-amber-600" />
+              <span className="font-medium text-amber-800">Fichiers Audio Disponibles</span>
             </div>
-          )}
+            <p className="text-amber-700 text-sm mb-4 leading-relaxed">
+              Les fichiers audio sont hébergés sur Google Drive et ne peuvent pas être lus directement dans le navigateur pour des raisons de sécurité. 
+              Vous pouvez les télécharger ou y accéder directement.
+            </p>
+          </div>
 
           {/* Track Info */}
           <div className="text-center space-y-2 relative z-10">
@@ -415,29 +272,14 @@ const AudioExperienceSection: React.FC<AudioExperienceSectionProps> = ({ marche,
             <p className="text-gray-600 text-sm">
               {currentTrack?.name}
             </p>
+            {currentTrack?.size && (
+              <p className="text-gray-500 text-xs">
+                Taille: {(currentTrack.size / 1024 / 1024).toFixed(1)} MB
+              </p>
+            )}
           </div>
 
-          {/* Progress Bar */}
-          <div className="space-y-2 relative z-10">
-            <Slider
-              value={[duration ? (currentTime / duration) * 100 : 0]}
-              onValueChange={handleSeek}
-              className="w-full"
-              max={100}
-              step={0.1}
-              disabled={!duration || isLoading || !!audioError}
-            />
-            <div className="flex justify-between text-sm text-gray-600">
-              <span className="flex items-center gap-1">
-                <Clock className="h-3 w-3" />
-                {formatTime(currentTime)}
-              </span>
-              <span>{formatTime(duration - currentTime)} restant</span>
-              <span className="font-medium">{formatTime(duration)}</span>
-            </div>
-          </div>
-
-          {/* Player Controls */}
+          {/* Navigation Controls */}
           <div className="flex items-center justify-center gap-6 relative z-10">
             {currentAudioFiles.length > 1 && (
               <Button
@@ -445,30 +287,16 @@ const AudioExperienceSection: React.FC<AudioExperienceSectionProps> = ({ marche,
                 size="lg"
                 onClick={handlePrevious}
                 className="rounded-full p-3 hover:bg-purple-100 transition-all duration-300"
-                disabled={isLoading}
               >
                 <SkipBack className="h-6 w-6" />
               </Button>
             )}
 
-            <motion.div
-              whileHover={{ scale: 1.1 }}
-              whileTap={{ scale: 0.95 }}
-            >
-              <Button
-                onClick={handlePlayPause}
-                size="lg"
-                disabled={!currentTrack || isLoading || !!audioError}
-                className="rounded-full p-6 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 shadow-2xl"
-              >
-                {isLoading ? (
-                  <Loader2 className="h-8 w-8 animate-spin" />
-                ) : isPlaying ? (
-                  <Pause className="h-8 w-8" />
-                ) : (
-                  <Play className="h-8 w-8 ml-1" />
-                )}
-              </Button>
+            <motion.div className="text-center">
+              <div className="w-20 h-20 mx-auto bg-gradient-to-br from-purple-100 to-blue-100 rounded-full flex items-center justify-center mb-2">
+                <Music className="h-10 w-10 text-purple-600" />
+              </div>
+              <p className="text-sm text-gray-600">Fichier audio</p>
             </motion.div>
 
             {currentAudioFiles.length > 1 && (
@@ -477,39 +305,39 @@ const AudioExperienceSection: React.FC<AudioExperienceSectionProps> = ({ marche,
                 size="lg"
                 onClick={handleNext}
                 className="rounded-full p-3 hover:bg-purple-100 transition-all duration-300"
-                disabled={isLoading}
               >
                 <SkipForward className="h-6 w-6" />
               </Button>
             )}
           </div>
 
-          {/* Volume Control */}
-          <div className="flex items-center justify-center gap-4 relative z-10">
-            <Volume2 className="h-5 w-5 text-gray-600" />
-            <div className="w-32">
-              <Slider
-                value={[volume * 100]}
-                onValueChange={handleVolumeChange}
-                max={100}
-                step={1}
-              />
-            </div>
-          </div>
-
-          {/* Audio Element */}
+          {/* Action Buttons */}
           {currentTrack && (
-            <audio
-              ref={audioRef}
-              preload="metadata"
-              onPause={() => setIsPlaying(false)}
-              onPlay={() => setIsPlaying(true)}
-            />
+            <div className="flex flex-col sm:flex-row gap-4 justify-center relative z-10">
+              <Button
+                onClick={() => handleDirectAccess(currentTrack)}
+                size="lg"
+                className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white px-8 py-3 rounded-full shadow-lg"
+              >
+                <ExternalLink className="h-5 w-5 mr-2" />
+                Accéder sur Google Drive
+              </Button>
+              
+              <Button
+                onClick={() => handleDownload(currentTrack)}
+                variant="outline"
+                size="lg"
+                className="border-purple-300 text-purple-700 hover:bg-purple-50 px-8 py-3 rounded-full"
+              >
+                <Download className="h-5 w-5 mr-2" />
+                Télécharger le fichier
+              </Button>
+            </div>
           )}
         </div>
       </motion.div>
 
-      {/* Experience Options - only show if we have audio files */}
+      {/* Experience Options */}
       {hasAudioFiles && (
         <motion.div
           className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-6xl mx-auto"
