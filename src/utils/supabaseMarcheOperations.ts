@@ -30,23 +30,11 @@ export interface MediaFile {
 export const createMarche = async (formData: MarcheFormData): Promise<string> => {
   console.log('🔄 Création de la marche:', formData);
 
-  // Convertir les coordonnées en point PostGIS avec le bon format
+  // Créer le point PostGIS directement avec ST_Point
   let coordonnees = null;
   if (formData.latitude && formData.longitude && !isNaN(formData.latitude) && !isNaN(formData.longitude)) {
-    // Utiliser une requête SQL raw pour créer le point PostGIS
-    const { data: pointData, error: pointError } = await supabase
-      .rpc('st_point', { 
-        longitude: formData.longitude, 
-        latitude: formData.latitude 
-      });
-    
-    if (pointError) {
-      console.error('❌ Erreur lors de la création du point PostGIS:', pointError);
-      // Fallback: utiliser le format string avec ST_Point
-      coordonnees = `ST_Point(${formData.longitude}, ${formData.latitude})`;
-    } else {
-      coordonnees = pointData;
-    }
+    // Utiliser la fonction ST_Point directement dans la requête
+    coordonnees = `POINT(${formData.longitude} ${formData.latitude})`;
   }
 
   // Préparer les sous-thèmes
@@ -114,23 +102,11 @@ export const createMarche = async (formData: MarcheFormData): Promise<string> =>
 export const updateMarche = async (marcheId: string, formData: MarcheFormData): Promise<void> => {
   console.log('🔄 Mise à jour de la marche:', marcheId);
 
-  // Convertir les coordonnées en point PostGIS avec le bon format
+  // Créer le point PostGIS directement avec ST_Point
   let coordonnees = null;
   if (formData.latitude && formData.longitude && !isNaN(formData.latitude) && !isNaN(formData.longitude)) {
-    // Utiliser une requête SQL raw pour créer le point PostGIS
-    const { data: pointData, error: pointError } = await supabase
-      .rpc('st_point', { 
-        longitude: formData.longitude, 
-        latitude: formData.latitude 
-      });
-    
-    if (pointError) {
-      console.error('❌ Erreur lors de la création du point PostGIS:', pointError);
-      // Fallback: utiliser le format string avec ST_Point
-      coordonnees = `ST_Point(${formData.longitude}, ${formData.latitude})`;
-    } else {
-      coordonnees = pointData;
-    }
+    // Utiliser la fonction ST_Point directement dans la requête
+    coordonnees = `POINT(${formData.longitude} ${formData.latitude})`;
   }
 
   const sousThemes = formData.sousThemes 
