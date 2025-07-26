@@ -17,13 +17,15 @@ interface MarcheFormData {
   nomMarche: string;
   theme: string;
   descriptifCourt: string;
-  descriptifLong: string;
+  poeme: string;
   date: string;
   temperature: number | null;
   latitude: number;
   longitude: number;
   lienGoogleDrive: string;
   sousThemes: string;
+  tags: string;
+  adresse: string;
 }
 
 interface MarcheFormProps {
@@ -53,13 +55,15 @@ const MarcheForm: React.FC<MarcheFormProps> = ({ mode, marcheId, onCancel, onSuc
         nomMarche: marche.nomMarche || '',
         theme: marche.theme || '',
         descriptifCourt: marche.descriptifCourt || '',
-        descriptifLong: marche.descriptifLong || '',
+        poeme: marche.poeme || '',
         date: marche.date || '',
         temperature: marche.temperature || null,
         latitude: marche.latitude || 0,
         longitude: marche.longitude || 0,
         lienGoogleDrive: marche.lien || '',
-        sousThemes: marche.sousThemes?.join(', ') || ''
+        sousThemes: marche.sousThemes?.join(', ') || '',
+        tags: marche.tags || '',
+        adresse: marche.adresse || ''
       });
     }
   }, [mode, marche, reset]);
@@ -189,6 +193,14 @@ const MarcheForm: React.FC<MarcheFormProps> = ({ mode, marcheId, onCancel, onSuc
             </div>
 
             <div>
+              <Label htmlFor="adresse">Adresse</Label>
+              <Input
+                id="adresse"
+                {...register('adresse')}
+              />
+            </div>
+
+            <div>
               <Label htmlFor="lienGoogleDrive">Lien Google Drive</Label>
               <Input
                 id="lienGoogleDrive"
@@ -205,6 +217,15 @@ const MarcheForm: React.FC<MarcheFormProps> = ({ mode, marcheId, onCancel, onSuc
                 placeholder="thème1, thème2, thème3"
               />
             </div>
+
+            <div>
+              <Label htmlFor="tags">Tags (séparés par des virgules)</Label>
+              <Input
+                id="tags"
+                {...register('tags')}
+                placeholder="tag1, tag2, tag3"
+              />
+            </div>
           </TabsContent>
 
           <TabsContent value="description" className="space-y-4">
@@ -218,11 +239,12 @@ const MarcheForm: React.FC<MarcheFormProps> = ({ mode, marcheId, onCancel, onSuc
             </div>
 
             <div>
-              <Label htmlFor="descriptifLong">Descriptif long</Label>
+              <Label htmlFor="poeme">Poème / Texte littéraire</Label>
               <Textarea
-                id="descriptifLong"
+                id="poeme"
                 rows={8}
-                {...register('descriptifLong')}
+                {...register('poeme')}
+                placeholder="Texte poétique ou littéraire associé à la marche..."
               />
             </div>
           </TabsContent>
