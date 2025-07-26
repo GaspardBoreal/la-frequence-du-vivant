@@ -10,6 +10,7 @@ import SEOHead from '../components/SEOHead';
 import MarcheHeroSection from '../components/MarcheHeroSection';
 import MultiSensoryNavigation from '../components/MultiSensoryNavigation';
 import ImmersiveVisualSection from '../components/ImmersiveVisualSection';
+import AudioExperienceSection from '../components/AudioExperienceSection';
 import PoeticMarkerCard from '../components/PoeticMarkerCard';
 import { Button } from '../components/ui/button';
 import PoeticSection from '../components/PoeticSection';
@@ -25,7 +26,6 @@ const MarcheDetail = () => {
   const [activeSection, setActiveSection] = useState<'visual' | 'audio'>('visual');
   const [theme, setTheme] = useState<RegionalTheme>(REGIONAL_THEMES['nouvelle-aquitaine']);
 
-  // Fetch marches data
   const {
     data: marchesData = [],
     isLoading,
@@ -36,20 +36,16 @@ const MarcheDetail = () => {
     staleTime: 5 * 60 * 1000
   });
 
-  // Find the specific marche
   const marche = slug ? findMarcheBySlug(marchesData, slug) : null;
 
-  // Calculate previous and next marches based on date
   const { previousMarche, nextMarche } = useMemo(() => {
     if (!marche || !marchesData.length) {
       return { previousMarche: null, nextMarche: null };
     }
 
-    // Filter marches with valid dates and sort by date
     const marchesWithDates = marchesData
       .filter(m => m.date && m.date.trim())
       .sort((a, b) => {
-        // Parse dates (assuming format DD/MM/YYYY or similar)
         const parseDate = (dateStr: string) => {
           const [day, month, year] = dateStr.split('/').map(Number);
           return new Date(year, month - 1, day);
@@ -72,7 +68,6 @@ const MarcheDetail = () => {
     return { previousMarche, nextMarche };
   }, [marche, marchesData]);
 
-  // Set theme based on region
   useEffect(() => {
     if (marche?.region) {
       const regionKey = marche.region.toLowerCase()
@@ -87,7 +82,6 @@ const MarcheDetail = () => {
     }
   }, [marche]);
 
-  // Set CSS variables for theme
   useEffect(() => {
     if (theme) {
       document.documentElement.style.setProperty('--theme-primary', theme.colors.primary);
@@ -147,7 +141,6 @@ const MarcheDetail = () => {
     );
   }
 
-  // SEO data
   const seoTitle = `${marche.nomMarche || marche.ville} - La Fréquence du Vivant`;
   const seoDescription = marche.descriptifCourt || `Découvrez la marche techno-sensible de ${marche.ville}, une exploration poétique et artistique unique.`;
 
@@ -161,14 +154,12 @@ const MarcheDetail = () => {
           ogImage={marche.photos?.[0] || undefined}
         />
 
-        {/* Hero Section */}
         <MarcheHeroSection
           marche={marche}
           theme={theme}
           onBack={handleBack}
         />
 
-        {/* Multi-Sensory Navigation */}
         <div className="max-w-6xl mx-auto px-6">
           <MultiSensoryNavigation
             activeSection={activeSection}
@@ -177,9 +168,7 @@ const MarcheDetail = () => {
           />
         </div>
 
-        {/* Content Sections with Navigation */}
         <div className="max-w-6xl mx-auto px-6 py-8 relative">
-          {/* Navigation Buttons */}
           {previousMarche && (
             <motion.div
               className="fixed left-4 top-1/2 transform -translate-y-1/2 z-10"
@@ -228,15 +217,11 @@ const MarcheDetail = () => {
               <ImmersiveVisualSection marche={marche} theme={theme} />
             )}
             {activeSection === 'audio' && (
-              <div className="text-center py-16">
-                <h2 className="text-3xl font-bold mb-4">Expérience Audio</h2>
-                <p className="text-gray-600">Section audio en cours de développement...</p>
-              </div>
+              <AudioExperienceSection marche={marche} theme={theme} />
             )}
           </motion.div>
         </div>
 
-        {/* Footer */}
         <Footer />
       </div>
     </HelmetProvider>
