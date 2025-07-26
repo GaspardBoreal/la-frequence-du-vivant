@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from 'sonner';
 
@@ -18,27 +18,15 @@ const queryClient = new QueryClient({
     queries: {
       refetchOnWindowFocus: false,
       retry: 1,
-      staleTime: 5 * 60 * 1000, // 5 minutes
+      staleTime: 5 * 60 * 1000,
     },
   },
 });
 
-// Composant pour logger la route actuelle
-function RouteLogger() {
-  const location = useLocation();
-  console.log('🔍 ROUTE ACTUELLE:', location.pathname);
-  console.log('🔍 SEARCH:', location.search);
-  console.log('🔍 HASH:', location.hash);
-  return null;
-}
-
 function App() {
-  console.log('🚀 APP COMPONENT LOADED');
-  
   return (
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
-        <RouteLogger />
         <div className="min-h-screen bg-background">
           <NavigationMenu />
           <Routes>
