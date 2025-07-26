@@ -63,7 +63,7 @@ const Index = () => {
 
                 {/* Button pour accéder à la carte */}
                 <div className="pt-8">
-                  <Button onClick={handleExploreClick} className="bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white px-8 py-4 text-lg font-medium rounded-full transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl">Explorons les fréquences du Vivant ...</Button>
+                  <Button onClick={handleExploreClick} className="bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white px-8 py-4 text-lg font-medium rounded-full transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl">Explorons les Fréquences du Vivant ...</Button>
                 </div>
               </div>
             </div>
