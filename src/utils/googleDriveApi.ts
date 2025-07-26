@@ -1,3 +1,4 @@
+
 // Utilitaires pour extraire les photos et fichiers audio depuis Google Drive
 export const extractPhotosFromGoogleDrive = async (driveUrl: string): Promise<PhotoData[]> => {
   if (!driveUrl || !driveUrl.includes('drive.google.com')) {
@@ -101,10 +102,11 @@ export const extractAudioFromGoogleDrive = async (driveUrl: string): Promise<Aud
       const audioData = data.files.map((file: any, index: number) => {
         console.log(`Fichier audio trouvé: ${file.name} (${file.mimeType}) - ID: ${file.id}`);
         
-        // Utiliser l'URL de streaming Google Drive qui fonctionne mieux pour l'audio
-        const streamUrl = `https://drive.google.com/uc?export=view&id=${file.id}`;
+        // Utiliser l'URL webContentLink de Google Drive qui est plus fiable pour l'audio
+        // Cette URL permet le téléchargement direct du fichier
+        const directUrl = file.webContentLink || `https://drive.google.com/uc?id=${file.id}&export=download`;
         
-        console.log(`URL de streaming générée pour ${file.name}: ${streamUrl}`);
+        console.log(`URL de téléchargement direct générée pour ${file.name}: ${directUrl}`);
         
         // Extraire le nom sans extension pour le titre
         const nameWithoutExt = file.name.replace(/\.[^/.]+$/, "");
@@ -113,14 +115,14 @@ export const extractAudioFromGoogleDrive = async (driveUrl: string): Promise<Aud
           id: file.id,
           name: file.name,
           title: nameWithoutExt || `Piste Audio ${index + 1}`,
-          url: streamUrl,
+          url: directUrl,
           mimeType: file.mimeType,
           size: file.size ? parseInt(file.size) : 0,
           duration: 0 // Sera calculé lors du chargement
         };
       }).slice(0, 10); // Limiter à 10 fichiers audio max
       
-      console.log('Fichiers audio avec URLs de streaming générées:', audioData);
+      console.log('Fichiers audio avec URLs de téléchargement direct générées:', audioData);
       return audioData;
     } else {
       console.log('Aucun fichier audio trouvé dans le dossier ou erreur d\'accès');

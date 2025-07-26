@@ -1,4 +1,5 @@
 
+
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
@@ -13,7 +14,8 @@ import {
   Clock,
   Waves,
   Loader2,
-  Music
+  Music,
+  AlertCircle
 } from 'lucide-react';
 import { Button } from './ui/button';
 import { Slider } from './ui/slider';
@@ -91,16 +93,8 @@ const AudioExperienceSection: React.FC<AudioExperienceSectionProps> = ({ marche,
       });
       setIsLoading(false);
       
-      // Essayer des URLs alternatives
-      if (!audio.src.includes('export=download')) {
-        console.log('🎵 Essai avec URL de téléchargement direct...');
-        const downloadUrl = `https://drive.google.com/uc?export=download&id=${currentTrack.id}`;
-        audio.src = downloadUrl;
-        audio.load();
-        return;
-      }
-      
-      setAudioError(`Le fichier "${currentTrack.name}" ne peut pas être lu pour le moment`);
+      // Message d'erreur plus informatif
+      setAudioError(`Fichier audio temporairement indisponible. Les restrictions de Google Drive peuvent empêcher la lecture directe. Essayez de télécharger le fichier directement depuis le Drive.`);
     };
 
     const handleLoadedMetadata = () => {
@@ -166,7 +160,7 @@ const AudioExperienceSection: React.FC<AudioExperienceSectionProps> = ({ marche,
     } catch (error) {
       console.error('🎵 Erreur lors de la lecture audio:', error);
       setIsLoading(false);
-      setAudioError(`Impossible de lire "${currentTrack.name}"`);
+      setAudioError(`La lecture de "${currentTrack.name}" a échoué. Cela peut être dû aux restrictions CORS de Google Drive.`);
     }
   };
 
@@ -398,8 +392,22 @@ const AudioExperienceSection: React.FC<AudioExperienceSectionProps> = ({ marche,
           {/* Error Display */}
           {audioError && (
             <div className="bg-orange-50 border border-orange-200 rounded-lg p-4 text-center relative z-10">
-              <p className="text-orange-600 text-sm">{audioError}</p>
-              <p className="text-orange-500 text-xs mt-1">Vérifiez que le fichier est accessible publiquement</p>
+              <div className="flex items-center justify-center gap-2 mb-2">
+                <AlertCircle className="h-5 w-5 text-orange-600" />
+                <span className="font-medium text-orange-700">Problème de lecture audio</span>
+              </div>
+              <p className="text-orange-600 text-sm mb-2">{audioError}</p>
+              <p className="text-orange-500 text-xs">
+                💡 Essayez d'accéder directement au fichier via 
+                <a 
+                  href={currentTrack?.url} 
+                  target="_blank" 
+                  rel="noopener noreferrer" 
+                  className="underline ml-1 hover:text-orange-700"
+                >
+                  ce lien
+                </a>
+              </p>
             </div>
           )}
 
