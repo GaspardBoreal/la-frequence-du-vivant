@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { HelmetProvider } from 'react-helmet-async';
 import DecorativeElements from '../components/DecorativeElements';
@@ -7,24 +6,19 @@ import SEOHead from '../components/SEOHead';
 import { RegionalTheme, REGIONAL_THEMES } from '../utils/regionalThemes';
 import { Button } from '../components/ui/button';
 import { useNavigate } from 'react-router-dom';
-
 const Index = () => {
   const [theme, setTheme] = useState<RegionalTheme>(REGIONAL_THEMES['nouvelle-aquitaine']);
   const navigate = useNavigate();
-
   useEffect(() => {
     document.documentElement.style.setProperty('--theme-primary', theme.colors.primary);
     document.documentElement.style.setProperty('--theme-secondary', theme.colors.secondary);
     document.documentElement.style.setProperty('--theme-accent', theme.colors.accent);
     document.documentElement.style.setProperty('--theme-background', theme.colors.background);
   }, [theme]);
-
   const handleExploreClick = () => {
     navigate('/marches-techno-sensibles');
   };
-
-  return (
-    <HelmetProvider>
+  return <HelmetProvider>
       <div className="min-h-screen bg-background relative overflow-hidden">
         <SEOHead />
         
@@ -50,29 +44,26 @@ const Index = () => {
                 {/* Titre principal - structure exacte avec couleurs spécifiques */}
                 <h1 className="font-crimson font-normal leading-tight text-7xl md:text-8xl lg:text-9xl">
                   <span className="text-white">La Fréquence</span><br />
-                  <span style={{ color: '#4ade80' }}>du Vivant</span>
+                  <span style={{
+                  color: '#4ade80'
+                }}>du Vivant</span>
                 </h1>
                 
                 {/* Sous-titre */}
-                <p className="gaspard-subtitle max-w-2xl mx-auto">
+                <p className="gaspard-subtitle max-w-2xl mx-auto text-center text-2xl">
                   Marche techno-sensible entre vivant, humain et machine
                 </p>
                 
                 {/* Meta informations */}
                 <div className="flex items-center justify-center space-x-4 pt-8">
-                  <span className="text-white text-sm">2025</span>
+                  <span className="text-white text-base">2025</span>
                   <span className="text-white">•</span>
-                  <span className="text-white text-sm">Gaspard Boréal</span>
+                  <span className="text-white text-base">Gaspard Boréal</span>
                 </div>
 
                 {/* Button pour accéder à la carte */}
                 <div className="pt-8">
-                  <Button
-                    onClick={handleExploreClick}
-                    className="bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white px-8 py-4 text-lg font-medium rounded-full transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl"
-                  >
-                    Explorer la Cartographie
-                  </Button>
+                  <Button onClick={handleExploreClick} className="bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white px-8 py-4 text-lg font-medium rounded-full transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl">Explorons les fréquences du Vivant ...</Button>
                 </div>
               </div>
             </div>
@@ -122,8 +113,6 @@ const Index = () => {
         {/* Overlay d'ambiance vert émeraude */}
         <div className="fixed inset-0 bg-primary/5 pointer-events-none z-0"></div>
       </div>
-    </HelmetProvider>
-  );
+    </HelmetProvider>;
 };
-
 export default Index;
