@@ -82,14 +82,21 @@ const AudioExperienceSection: React.FC<AudioExperienceSectionProps> = ({ marche,
     };
     
     const handleError = (e: any) => {
-      console.error('🎵 Erreur audio pour', currentTrack.name, ':', e);
+      console.error('🎵 Erreur audio détaillée pour', currentTrack.name, ':', {
+        error: e,
+        audioSrc: audio.src,
+        audioError: audio.error,
+        networkState: audio.networkState,
+        readyState: audio.readyState
+      });
       setIsLoading(false);
-      setAudioError(`Impossible de lire "${currentTrack.name}". Veuillez télécharger le fichier directement.`);
+      setAudioError(`La lecture de "${currentTrack.name}" a échoué. Essayez de télécharger le fichier directement.`);
     };
 
     const handleLoadedMetadata = () => {
       console.log('🎵 Métadonnées chargées pour:', currentTrack.name);
       updateDuration();
+      setAudioError(null);
     };
 
     const handleEnded = () => {
@@ -104,9 +111,10 @@ const AudioExperienceSection: React.FC<AudioExperienceSectionProps> = ({ marche,
     audio.addEventListener('canplay', handleCanPlay);
     audio.addEventListener('error', handleError);
 
-    // Configuration audio simplifiée
+    // Configuration audio optimisée pour Google Drive
+    audio.preload = 'metadata';
     audio.src = currentTrack.url;
-    console.log('🎵 Configuration audio pour:', currentTrack.name, 'avec URL:', currentTrack.url);
+    console.log('🎵 Configuration audio pour:', currentTrack.name, 'avec URL optimisée:', currentTrack.url);
     audio.load();
 
     return () => {
@@ -140,7 +148,7 @@ const AudioExperienceSection: React.FC<AudioExperienceSectionProps> = ({ marche,
     } catch (error) {
       console.error('🎵 Erreur lors de la lecture audio:', error);
       setIsLoading(false);
-      setAudioError(`La lecture de "${currentTrack.name}" a échoué. Cela peut être dû aux restrictions CORS de Google Drive.`);
+      setAudioError(`Impossible de lancer la lecture de "${currentTrack.name}".`);
     }
   };
 
@@ -371,21 +379,21 @@ const AudioExperienceSection: React.FC<AudioExperienceSectionProps> = ({ marche,
 
           {/* Error Display */}
           {audioError && (
-            <div className="bg-orange-50 border border-orange-200 rounded-lg p-4 text-center relative z-10">
+            <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-center relative z-10">
               <div className="flex items-center justify-center gap-2 mb-2">
-                <AlertCircle className="h-5 w-5 text-orange-600" />
-                <span className="font-medium text-orange-700">Lecture audio impossible</span>
+                <AlertCircle className="h-5 w-5 text-red-600" />
+                <span className="font-medium text-red-700">Problème de lecture audio</span>
               </div>
-              <p className="text-orange-600 text-sm mb-3">{audioError}</p>
+              <p className="text-red-600 text-sm mb-3">{audioError}</p>
               <div className="space-y-2">
-                <p className="text-orange-500 text-xs">
+                <p className="text-red-500 text-xs">
                   💡 Vous pouvez télécharger le fichier directement :
                 </p>
                 <a 
-                  href={currentTrack?.directUrl || currentTrack?.url} 
+                  href={currentTrack?.directUrl} 
                   target="_blank" 
                   rel="noopener noreferrer" 
-                  className="inline-flex items-center gap-2 px-4 py-2 bg-orange-100 hover:bg-orange-200 text-orange-700 rounded-lg text-sm font-medium transition-colors"
+                  className="inline-flex items-center gap-2 px-4 py-2 bg-red-100 hover:bg-red-200 text-red-700 rounded-lg text-sm font-medium transition-colors"
                 >
                   <Download className="h-4 w-4" />
                   Télécharger "{currentTrack?.name}"
