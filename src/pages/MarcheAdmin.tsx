@@ -1,51 +1,70 @@
 
 import React, { useState } from 'react';
+import { Button } from '../components/ui/button';
+import { ArrowLeft, Plus } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useSupabaseMarches } from '../hooks/useSupabaseMarches';
-import { Button } from '../components/ui/button';
-import { Card } from '../components/ui/card';
-import { Plus, Edit, Trash2, ArrowLeft } from 'lucide-react';
-import MarcheForm from '../components/admin/MarcheForm';
 import MarcheList from '../components/admin/MarcheList';
+import MarcheForm from '../components/admin/MarcheForm';
+import { toast } from 'sonner';
 
 type ViewMode = 'list' | 'create' | 'edit';
 
-const MarcheAdmin: React.FC = () => {
+const MarcheAdmin = () => {
   const navigate = useNavigate();
-  const { data: marches, isLoading } = useSupabaseMarches();
   const [viewMode, setViewMode] = useState<ViewMode>('list');
-  const [selectedMarcheId, setSelectedMarcheId] = useState<string | null>(null);
+  const [editingMarcheId, setEditingMarcheId] = useState<string | null>(null);
+
+  const { data: marches = [], isLoading, error } = useSupabaseMarches();
+
+  const handleBack = () => {
+    navigate('/admin-access');
+  };
 
   const handleCreate = () => {
-    setSelectedMarcheId(null);
     setViewMode('create');
+    setEditingMarcheId(null);
   };
 
   const handleEdit = (marcheId: string) => {
-    setSelectedMarcheId(marcheId);
+    setEditingMarcheId(marcheId);
     setViewMode('edit');
   };
 
-  const handleBackToList = () => {
+  const handleCancel = () => {
     setViewMode('list');
-    setSelectedMarcheId(null);
+    setEditingMarcheId(null);
   };
 
   const handleSuccess = () => {
+    toast.success('Marche sauvegardée avec succès !');
     setViewMode('list');
-    setSelectedMarcheId(null);
+    setEditingMarcheId(null);
   };
 
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center">
+        <div className="text-center text-white">
+          <h2 className="text-2xl font-bold mb-4">Erreur de chargement</h2>
+          <p className="mb-4">Impossible de charger les marches depuis Supabase.</p>
+          <Button onClick={handleBack} variant="outline">
+            Retour
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="min-h-screen bg-gray-50 p-4">
-      <div className="max-w-7xl mx-auto">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center space-x-4">
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
+      <div className="container mx-auto px-6 py-8">
+        <div className="flex items-center justify-between mb-8">
+          <div>
             <Button 
               variant="outline" 
-              onClick={() => navigate('/')}
-              className="flex items-center"
+              onClick={handleBack}
+              className="mb-4 text-white border-white hover:bg-white hover:text-slate-900"
             >
               <ArrowLeft className="h-4 w-4 mr-2" />
               Retour à l'accueil
@@ -67,19 +86,21 @@ const MarcheAdmin: React.FC = () => {
         </div>
 
         {/* Navigation breadcrumb */}
-        <div className="mb-6 text-sm text-gray-600">
-          <span>Administration</span>
-          <span className="mx-2">→</span>
-          {viewMode === 'list' && <span>Liste des marches</span>}
-          {viewMode === 'create' && <span>Créer une marche</span>}
-          {viewMode === 'edit' && <span>Modifier une marche</span>}
+        <div className="mb-6">
+          <div className="flex items-center space-x-2 text-sm text-gray-300">
+            <span>Administration</span>
+            <span>→</span>
+            {viewMode === 'list' && <span>Liste des marches</span>}
+            {viewMode === 'create' && <span>Nouvelle marche</span>}
+            {viewMode === 'edit' && <span>Modification de marche</span>}
+          </div>
         </div>
 
-        <Card className="p-6">
-          {/* Content based on view mode */}
+        {/* Content */}
+        <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6">
           {viewMode === 'list' && (
-            <MarcheList 
-              marches={marches || []}
+            <MarcheList
+              marches={marches}
               isLoading={isLoading}
               onEdit={handleEdit}
             />
@@ -88,12 +109,12 @@ const MarcheAdmin: React.FC = () => {
           {(viewMode === 'create' || viewMode === 'edit') && (
             <MarcheForm
               mode={viewMode}
-              marcheId={selectedMarcheId}
-              onCancel={handleBackToList}
+              marcheId={editingMarcheId}
+              onCancel={handleCancel}
               onSuccess={handleSuccess}
             />
           )}
-        </Card>
+        </div>
       </div>
     </div>
   );
