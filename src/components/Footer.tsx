@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { ExternalLink, BookOpen, Mic, MapPin, Zap } from 'lucide-react';
+import { ExternalLink, BookOpen, Mic, MapPin, Zap, Settings } from 'lucide-react';
 
 const Footer = () => {
   return (
@@ -106,6 +106,13 @@ const Footer = () => {
                 <Mic size={16} />
                 <span>Contacter Gaspard Boréal</span>
               </a>
+              <Link 
+                to="/access-admin-gb2025" 
+                className="flex items-center gap-2 text-[#4ade80] hover:text-[#22c55e] transition-colors font-medium"
+              >
+                <Settings size={16} />
+                <span>Administration</span>
+              </Link>
             </div>
           </div>
         </div>
@@ -120,12 +127,7 @@ const Footer = () => {
               <span className="hover:text-[#4ade80] cursor-pointer">#BioacoustiquePoétique</span>
               <span className="hover:text-[#4ade80] cursor-pointer">#MondesHybrides</span>
               <span className="hover:text-[#4ade80] cursor-pointer">#TransitionAgroécologique</span>
-              <Link 
-                to="/access-admin-gb2025" 
-                className="hover:text-[#4ade80] cursor-pointer"
-              >
-                #PoésieProspective
-              </Link>
+              <span className="hover:text-[#4ade80] cursor-pointer">#PoésieProspective</span>
             </div>
           </div>
         </div>
