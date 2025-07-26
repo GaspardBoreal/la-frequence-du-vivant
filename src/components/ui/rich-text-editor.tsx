@@ -126,7 +126,7 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
         contentEditable
         onInput={handleInput}
         onKeyDown={handleKeyDown}
-        className="min-h-[120px] p-3 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 text-sm"
+        className="min-h-[120px] p-3 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 text-sm placeholder-empty"
         style={{ 
           wordBreak: 'break-word',
           overflowWrap: 'break-word'
@@ -135,13 +135,16 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
         suppressContentEditableWarning
       />
       
-      <style jsx>{`
-        [contenteditable]:empty:before {
-          content: attr(data-placeholder);
-          color: hsl(var(--muted-foreground));
-          pointer-events: none;
-        }
-      `}</style>
+      {/* Style pour le placeholder */}
+      <style dangerouslySetInnerHTML={{
+        __html: `
+          .placeholder-empty:empty:before {
+            content: attr(data-placeholder);
+            color: hsl(var(--muted-foreground));
+            pointer-events: none;
+          }
+        `
+      }} />
     </div>
   );
 };
