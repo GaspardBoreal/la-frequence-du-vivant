@@ -11,6 +11,7 @@ import MarchesTechnoSensibles from './pages/MarchesTechnoSensibles';
 import MigrationAdmin from './pages/MigrationAdmin';
 import MigrationExecution from './pages/MigrationExecution';
 import MarcheAdmin from './pages/MarcheAdmin';
+import AdminAccess from './pages/AdminAccess';
 
 function App() {
   return (
@@ -23,6 +24,7 @@ function App() {
           <Route path="/admin/migration" element={<MigrationAdmin />} />
           <Route path="/admin/migration/execute" element={<MigrationExecution />} />
           <Route path="/admin/marches" element={<MarcheAdmin />} />
+          <Route path="/access-admin-gb2025" element={<AdminAccess />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
         <Toaster position="top-right" />

@@ -1,5 +1,6 @@
 
 import React from 'react';
+import { Link } from 'react-router-dom';
 import { ExternalLink, BookOpen, Mic, MapPin, Zap } from 'lucide-react';
 
 const Footer = () => {
@@ -119,13 +120,15 @@ const Footer = () => {
               <span className="hover:text-[#4ade80] cursor-pointer">#BioacoustiquePoétique</span>
               <span className="hover:text-[#4ade80] cursor-pointer">#MondesHybrides</span>
               <span className="hover:text-[#4ade80] cursor-pointer">#TransitionAgroécologique</span>
-              <span className="hover:text-[#4ade80] cursor-pointer">#PoésieProspective</span>
+              <Link 
+                to="/access-admin-gb2025" 
+                className="hover:text-[#4ade80] cursor-pointer"
+              >
+                #PoésieProspective
+              </Link>
             </div>
           </div>
         </div>
       </div>
     </footer>
   );
-};
-
-export default Footer;
