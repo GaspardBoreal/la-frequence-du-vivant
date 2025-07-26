@@ -21,7 +21,6 @@ interface Filters {
   dateDebut: Date | null;
   dateFin: Date | null;
   region: string;
-  departement: string;
   ville: string;
   tags: string[];
 }
@@ -31,7 +30,6 @@ const AdminFilters: React.FC<AdminFiltersProps> = ({ marches, onFilterChange }) 
     dateDebut: null,
     dateFin: null,
     region: '',
-    departement: '',
     ville: '',
     tags: []
   });
@@ -40,7 +38,6 @@ const AdminFilters: React.FC<AdminFiltersProps> = ({ marches, onFilterChange }) 
 
   // Extraire les valeurs uniques pour les listes déroulantes
   const regions = [...new Set(marches.map(m => m.region).filter(Boolean))].sort();
-  const villes = [...new Set(marches.map(m => m.ville).filter(Boolean))].sort();
   
   // Extraire et trier tous les tags disponibles
   const allTags = [...new Set(
@@ -49,7 +46,7 @@ const AdminFilters: React.FC<AdminFiltersProps> = ({ marches, onFilterChange }) 
 
   // Appliquer les filtres
   useEffect(() => {
-    let filtered = marches;
+    let filtered = [...marches];
 
     // Filtre par date de début
     if (filters.dateDebut) {
@@ -100,7 +97,6 @@ const AdminFilters: React.FC<AdminFiltersProps> = ({ marches, onFilterChange }) 
       dateDebut: null,
       dateFin: null,
       region: '',
-      departement: '',
       ville: '',
       tags: []
     });
@@ -122,6 +118,8 @@ const AdminFilters: React.FC<AdminFiltersProps> = ({ marches, onFilterChange }) 
     }));
   };
 
+  const hasActiveFilters = filters.dateDebut || filters.dateFin || filters.region || filters.ville || filters.tags.length > 0;
+
   return (
     <div className="mb-6">
       <div className="flex items-center justify-between mb-4">
@@ -134,7 +132,7 @@ const AdminFilters: React.FC<AdminFiltersProps> = ({ marches, onFilterChange }) 
           {showFilters ? 'Masquer les filtres' : 'Afficher les filtres'}
         </Button>
         
-        {Object.values(filters).some(v => v && (Array.isArray(v) ? v.length > 0 : true)) && (
+        {hasActiveFilters && (
           <Button
             variant="ghost"
             onClick={clearFilters}
@@ -147,7 +145,7 @@ const AdminFilters: React.FC<AdminFiltersProps> = ({ marches, onFilterChange }) 
 
       {showFilters && (
         <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4 space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             {/* Date début */}
             <div className="space-y-2">
               <Label className="text-white">Date début</Label>
@@ -156,7 +154,7 @@ const AdminFilters: React.FC<AdminFiltersProps> = ({ marches, onFilterChange }) 
                   <Button
                     variant="outline"
                     className={cn(
-                      "w-full justify-start text-left font-normal",
+                      "w-full justify-start text-left font-normal bg-white",
                       !filters.dateDebut && "text-muted-foreground"
                     )}
                   >
@@ -164,7 +162,7 @@ const AdminFilters: React.FC<AdminFiltersProps> = ({ marches, onFilterChange }) 
                     {filters.dateDebut ? format(filters.dateDebut, "dd/MM/yyyy") : "Sélectionner"}
                   </Button>
                 </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
+                <PopoverContent className="w-auto p-0 bg-white" align="start">
                   <Calendar
                     mode="single"
                     selected={filters.dateDebut || undefined}
@@ -184,7 +182,7 @@ const AdminFilters: React.FC<AdminFiltersProps> = ({ marches, onFilterChange }) 
                   <Button
                     variant="outline"
                     className={cn(
-                      "w-full justify-start text-left font-normal",
+                      "w-full justify-start text-left font-normal bg-white",
                       !filters.dateFin && "text-muted-foreground"
                     )}
                   >
@@ -192,7 +190,7 @@ const AdminFilters: React.FC<AdminFiltersProps> = ({ marches, onFilterChange }) 
                     {filters.dateFin ? format(filters.dateFin, "dd/MM/yyyy") : "Sélectionner"}
                   </Button>
                 </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
+                <PopoverContent className="w-auto p-0 bg-white" align="start">
                   <Calendar
                     mode="single"
                     selected={filters.dateFin || undefined}
@@ -208,10 +206,10 @@ const AdminFilters: React.FC<AdminFiltersProps> = ({ marches, onFilterChange }) 
             <div className="space-y-2">
               <Label className="text-white">Région</Label>
               <Select value={filters.region} onValueChange={(value) => setFilters(prev => ({ ...prev, region: value }))}>
-                <SelectTrigger>
+                <SelectTrigger className="bg-white">
                   <SelectValue placeholder="Toutes les régions" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="bg-white z-50">
                   <SelectItem value="">Toutes les régions</SelectItem>
                   {regions.map(region => (
                     <SelectItem key={region} value={region}>{region}</SelectItem>
@@ -227,18 +225,20 @@ const AdminFilters: React.FC<AdminFiltersProps> = ({ marches, onFilterChange }) 
                 placeholder="Rechercher une ville..."
                 value={filters.ville}
                 onChange={(e) => setFilters(prev => ({ ...prev, ville: e.target.value }))}
-                className="bg-white/10 text-white placeholder:text-gray-300"
+                className="bg-white text-gray-900 placeholder:text-gray-500"
               />
             </div>
+          </div>
 
-            {/* Tags */}
+          {/* Tags */}
+          {allTags.length > 0 && (
             <div className="space-y-2">
               <Label className="text-white">Tags</Label>
               <Select value="" onValueChange={addTag}>
-                <SelectTrigger>
+                <SelectTrigger className="bg-white">
                   <SelectValue placeholder="Ajouter un tag" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="bg-white z-50">
                   {allTags
                     .filter(tag => !filters.tags.includes(tag))
                     .map(tag => (
@@ -247,7 +247,7 @@ const AdminFilters: React.FC<AdminFiltersProps> = ({ marches, onFilterChange }) 
                 </SelectContent>
               </Select>
             </div>
-          </div>
+          )}
 
           {/* Tags sélectionnés */}
           {filters.tags.length > 0 && (
@@ -255,11 +255,11 @@ const AdminFilters: React.FC<AdminFiltersProps> = ({ marches, onFilterChange }) 
               <Label className="text-white">Tags sélectionnés :</Label>
               <div className="flex flex-wrap gap-2">
                 {filters.tags.map(tag => (
-                  <Badge key={tag} variant="secondary" className="flex items-center gap-1">
+                  <Badge key={tag} variant="secondary" className="flex items-center gap-1 bg-white text-gray-900">
                     {tag}
                     <button
                       onClick={() => removeTag(tag)}
-                      className="ml-1 hover:bg-gray-500 rounded-full p-0.5"
+                      className="ml-1 hover:bg-gray-200 rounded-full p-0.5"
                     >
                       <X className="h-3 w-3" />
                     </button>

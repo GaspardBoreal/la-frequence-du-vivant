@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '../components/ui/button';
 import { ArrowLeft, Plus } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
@@ -21,7 +21,7 @@ const MarcheAdmin = () => {
   const { data: marches = [], isLoading, error } = useSupabaseMarches();
 
   // Initialiser les marches filtrées quand les données sont chargées
-  React.useEffect(() => {
+  useEffect(() => {
     if (marches.length > 0) {
       setFilteredMarches(marches);
     }
