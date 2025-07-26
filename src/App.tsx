@@ -10,6 +10,7 @@ import MarcheDetail from './pages/MarcheDetail';
 import MarchesTechnoSensibles from './pages/MarchesTechnoSensibles';
 import MigrationAdmin from './pages/MigrationAdmin';
 import MigrationExecution from './pages/MigrationExecution';
+import MarcheAdmin from './pages/MarcheAdmin';
 
 function App() {
   return (
@@ -21,6 +22,7 @@ function App() {
           <Route path="/marche/:slug" element={<MarcheDetail />} />
           <Route path="/admin/migration" element={<MigrationAdmin />} />
           <Route path="/admin/migration/execute" element={<MigrationExecution />} />
+          <Route path="/admin/marches" element={<MarcheAdmin />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
         <Toaster position="top-right" />
