@@ -168,6 +168,89 @@ export const updateMarche = async (marcheId: string, formData: MarcheFormData): 
   console.log('✅ Marche mise à jour avec succès');
 };
 
+// Supprimer une marche et tous ses médias associés
+export const deleteMarche = async (marcheId: string): Promise<void> => {
+  console.log(`🔄 Suppression de la marche ${marcheId}`);
+
+  try {
+    // Supprimer d'abord tous les médias associés
+    const { error: photosError } = await supabase
+      .from('marche_photos')
+      .delete()
+      .eq('marche_id', marcheId);
+
+    if (photosError) {
+      console.error('❌ Erreur lors de la suppression des photos:', photosError);
+    }
+
+    const { error: audiosError } = await supabase
+      .from('marche_audio')
+      .delete()
+      .eq('marche_id', marcheId);
+
+    if (audiosError) {
+      console.error('❌ Erreur lors de la suppression des audios:', audiosError);
+    }
+
+    const { error: videosError } = await supabase
+      .from('marche_videos')
+      .delete()
+      .eq('marche_id', marcheId);
+
+    if (videosError) {
+      console.error('❌ Erreur lors de la suppression des vidéos:', videosError);
+    }
+
+    const { error: documentsError } = await supabase
+      .from('marche_documents')
+      .delete()
+      .eq('marche_id', marcheId);
+
+    if (documentsError) {
+      console.error('❌ Erreur lors de la suppression des documents:', documentsError);
+    }
+
+    const { error: etudesError } = await supabase
+      .from('marche_etudes')
+      .delete()
+      .eq('marche_id', marcheId);
+
+    if (etudesError) {
+      console.error('❌ Erreur lors de la suppression des études:', etudesError);
+    }
+
+    const { error: tagsError } = await supabase
+      .from('marche_tags')
+      .delete()
+      .eq('marche_id', marcheId);
+
+    if (tagsError) {
+      console.error('❌ Erreur lors de la suppression des tags:', tagsError);
+    }
+
+    // Supprimer enfin la marche elle-même
+    const { error: marcheError } = await supabase
+      .from('marches')
+      .delete()
+      .eq('id', marcheId);
+
+    if (marcheError) {
+      console.error('❌ Erreur lors de la suppression de la marche:', marcheError);
+      throw marcheError;
+    }
+
+    console.log('✅ Marche supprimée avec succès');
+
+    // Invalider le cache React Query pour actualiser la liste
+    queryClient.invalidateQueries({ queryKey: ['marches-supabase'] });
+    queryClient.invalidateQueries({ queryKey: ['supabase-status'] });
+
+  } catch (error) {
+    console.error('❌ Erreur générale lors de la suppression:', error);
+    throw error;
+  }
+};
+
 // Upload et sauvegarde des photos
 export const savePhotos = async (marcheId: string, photos: MediaFile[]): Promise<void> => {
   console.log(`🔄 Sauvegarde de ${photos.length} photos pour la marche ${marcheId}`);
