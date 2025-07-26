@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { Button } from '../ui/button';
@@ -24,8 +23,8 @@ interface MarcheFormProps {
   onSuccess: () => void;
 }
 
-// Mise à jour de l'interface pour supprimer theme et ajouter sousRegion
-interface UpdatedMarcheFormData extends Omit<MarcheFormData, 'theme'> {
+// Interface mise à jour pour inclure sousRegion et supprimer theme du formulaire
+interface UpdatedMarcheFormData extends Omit<MarcheFormData, 'theme' | 'descriptifCourt'> {
   sousRegion: string;
 }
 
@@ -54,7 +53,6 @@ const MarcheForm: React.FC<MarcheFormProps> = ({ mode, marcheId, onCancel, onSuc
         region: marche.region || '',
         sousRegion: marche.sousRegion || '',
         nomMarche: marche.nomMarche || '',
-        descriptifCourt: marche.descriptifCourt || '',
         poeme: marche.poeme || '',
         date: marche.date || '',
         temperature: marche.temperature || null,
@@ -71,11 +69,6 @@ const MarcheForm: React.FC<MarcheFormProps> = ({ mode, marcheId, onCancel, onSuc
     }
   }, [mode, marche, reset]);
 
-  // Synchroniser le contenu riche avec le formulaire
-  useEffect(() => {
-    setValue('theme', themeRichText);
-  }, [themeRichText, setValue]);
-
   const onSubmit = async (data: UpdatedMarcheFormData) => {
     setIsSubmitting(true);
     try {
@@ -84,7 +77,8 @@ const MarcheForm: React.FC<MarcheFormProps> = ({ mode, marcheId, onCancel, onSuc
       // Convertir les données pour l'API existante
       const apiData: MarcheFormData = {
         ...data,
-        theme: themeRichText
+        theme: themeRichText,
+        descriptifCourt: '' // Valeur par défaut puisqu'on supprime le champ
       };
 
       if (mode === 'create') {
@@ -274,31 +268,13 @@ const MarcheForm: React.FC<MarcheFormProps> = ({ mode, marcheId, onCancel, onSuc
           </TabsContent>
 
           <TabsContent value="description" className="space-y-4">
-            <div>
-              <Label htmlFor="descriptifCourt">Descriptif court</Label>
-              <Textarea
-                id="descriptifCourt"
-                rows={3}
-                {...register('descriptifCourt')}
-              />
-            </div>
-
             <div className="col-span-2">
-              <Label htmlFor="theme">Thème *</Label>
+              <Label htmlFor="theme">Thème</Label>
               <RichTextEditor
                 value={themeRichText}
                 onChange={setThemeRichText}
                 placeholder="Décrivez le thème de la marche avec mise en forme..."
-                className={errors.theme ? 'border-red-500' : ''}
               />
-              <input
-                type="hidden"
-                {...register('theme', { required: 'Le thème est requis' })}
-                value={themeRichText}
-              />
-              {errors.theme && (
-                <p className="text-red-500 text-sm mt-1">{errors.theme.message}</p>
-              )}
             </div>
 
             <div>
