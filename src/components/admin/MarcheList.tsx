@@ -7,6 +7,17 @@ import { Edit, Trash2, Calendar, MapPin } from 'lucide-react';
 import { MarcheTechnoSensible } from '../../utils/googleSheetsApi';
 import { deleteMarche } from '../../utils/supabaseMarcheOperations';
 import { toast } from 'sonner';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '../ui/alert-dialog';
 
 interface MarcheListProps {
   marches: MarcheTechnoSensible[];
@@ -145,20 +156,42 @@ const MarcheList: React.FC<MarcheListProps> = ({
                   <Edit className="h-4 w-4 mr-1" />
                   Modifier
                 </Button>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => handleDelete(marche.id, marche.ville)}
-                  disabled={deletingId === marche.id}
-                  className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                >
-                  {deletingId === marche.id ? (
-                    <div className="animate-spin w-4 h-4 border-2 border-red-500 border-t-transparent rounded-full" />
-                  ) : (
-                    <Trash2 className="h-4 w-4 mr-1" />
-                  )}
-                  {deletingId === marche.id ? 'Suppression...' : 'Supprimer'}
-                </Button>
+                
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      disabled={deletingId === marche.id}
+                      className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                    >
+                      {deletingId === marche.id ? (
+                        <div className="animate-spin w-4 h-4 border-2 border-red-500 border-t-transparent rounded-full" />
+                      ) : (
+                        <Trash2 className="h-4 w-4 mr-1" />
+                      )}
+                      {deletingId === marche.id ? 'Suppression...' : 'Supprimer'}
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Confirmer la suppression</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        Êtes-vous sûr de vouloir supprimer la marche "{marche.ville}" ?
+                        Cette action est irréversible et supprimera également tous les médias associés (photos, vidéos, audios, documents).
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Annuler</AlertDialogCancel>
+                      <AlertDialogAction
+                        onClick={() => handleDelete(marche.id, marche.ville)}
+                        className="bg-red-600 hover:bg-red-700"
+                      >
+                        Supprimer définitivement
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
               </div>
             </div>
           </div>
