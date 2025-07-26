@@ -13,6 +13,7 @@ import ImmersiveVisualSection from '../components/ImmersiveVisualSection';
 import PoeticMarkerCard from '../components/PoeticMarkerCard';
 import { Button } from '../components/ui/button';
 import PoeticSection from '../components/PoeticSection';
+import Footer from '../components/Footer';
 
 import { fetchMarchesTechnoSensibles, MarcheTechnoSensible } from '../utils/googleSheetsApi';
 import { findMarcheBySlug, createSlug } from '../utils/slugGenerator';
@@ -235,8 +236,8 @@ const MarcheDetail = () => {
           </motion.div>
         </div>
 
-        {/* Footer spacer */}
-        <div className="h-16"></div>
+        {/* Footer */}
+        <Footer />
       </div>
     </HelmetProvider>
   );
