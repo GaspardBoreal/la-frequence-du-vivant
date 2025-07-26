@@ -13,6 +13,7 @@ export const transformSupabaseToLegacyFormat = (marche: MarcheComplete): MarcheT
   const audioFiles = marche.audio.map(audio => audio.url_supabase);
 
   const transformed: MarcheTechnoSensible = {
+    id: marche.id,
     ville: marche.ville,
     departement: extractDepartmentFromRegion(marche.region || ''),
     region: marche.region || '',
