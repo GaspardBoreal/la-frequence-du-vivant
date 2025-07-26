@@ -42,48 +42,13 @@ function App() {
         <div className="min-h-screen bg-background">
           <NavigationMenu />
           <Routes>
-            <Route path="/" element={
-              <>
-                {console.log('📍 Route / matched')}
-                <Index />
-              </>
-            } />
-            <Route path="/test" element={
-              <>
-                {console.log('📍 Route /test matched')}
-                <TestRoute />
-              </>
-            } />
-            <Route path="/marches-techno-sensibles" element={
-              <>
-                {console.log('📍 Route /marches-techno-sensibles matched')}
-                <MarchesTechnoSensibles />
-              </>
-            } />
-            <Route path="/marche/:slug" element={
-              <>
-                {console.log('📍 Route /marche/:slug matched')}
-                <MarcheDetail />
-              </>
-            } />
-            <Route path="/admin/migration" element={
-              <>
-                {console.log('📍 Route /admin/migration matched')}
-                <MigrationAdmin />
-              </>
-            } />
-            <Route path="/admin/migration/execute" element={
-              <>
-                {console.log('📍 Route /admin/migration/execute matched')}
-                <MigrationExecution />
-              </>
-            } />
-            <Route path="*" element={
-              <>
-                {console.log('📍 Route * (404) matched')}
-                <NotFound />
-              </>
-            } />
+            <Route path="/" element={<Index />} />
+            <Route path="/test" element={<TestRoute />} />
+            <Route path="/marches-techno-sensibles" element={<MarchesTechnoSensibles />} />
+            <Route path="/marche/:slug" element={<MarcheDetail />} />
+            <Route path="/admin/migration" element={<MigrationAdmin />} />
+            <Route path="/admin/migration/execute" element={<MigrationExecution />} />
+            <Route path="*" element={<NotFound />} />
           </Routes>
           <Toaster position="top-right" />
         </div>
