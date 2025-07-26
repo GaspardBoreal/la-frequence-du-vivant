@@ -36,21 +36,25 @@ const MarcheList: React.FC<MarcheListProps> = ({
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const handleDelete = async (marcheId: string, ville: string) => {
+    if (deletingId) return; // Éviter les doubles clics
+    
     setDeletingId(marcheId);
+    console.log(`🗑️ Tentative de suppression de la marche ${marcheId} (${ville})`);
+    
     try {
       await deleteMarche(marcheId);
       toast.success(`Marche "${ville}" supprimée avec succès`);
       
-      // Forcer un refetch immédiat des données
-      await queryClient.refetchQueries({ queryKey: ['marches-supabase'] });
-      
-      // Notifier le composant parent pour qu'il mette à jour la liste filtrée
+      // Notifier le composant parent pour qu'il mette à jour la liste
       if (onDelete) {
         onDelete();
       }
+      
+      console.log(`✅ Suppression réussie pour ${ville}`);
     } catch (error) {
-      console.error('Erreur lors de la suppression:', error);
-      toast.error('Erreur lors de la suppression de la marche');
+      console.error('❌ Erreur lors de la suppression:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Erreur inconnue';
+      toast.error(`Erreur lors de la suppression: ${errorMessage}`);
     } finally {
       setDeletingId(null);
     }
@@ -163,6 +167,7 @@ const MarcheList: React.FC<MarcheListProps> = ({
                   size="sm"
                   variant="outline"
                   onClick={() => onEdit(marche.id)}
+                  disabled={deletingId === marche.id}
                 >
                   <Edit className="h-4 w-4 mr-1" />
                   Modifier
@@ -177,11 +182,16 @@ const MarcheList: React.FC<MarcheListProps> = ({
                       className="text-red-600 hover:text-red-700 hover:bg-red-50"
                     >
                       {deletingId === marche.id ? (
-                        <div className="animate-spin w-4 h-4 border-2 border-red-500 border-t-transparent rounded-full" />
+                        <>
+                          <div className="animate-spin w-4 h-4 border-2 border-red-500 border-t-transparent rounded-full mr-1" />
+                          Suppression...
+                        </>
                       ) : (
-                        <Trash2 className="h-4 w-4 mr-1" />
+                        <>
+                          <Trash2 className="h-4 w-4 mr-1" />
+                          Supprimer
+                        </>
                       )}
-                      {deletingId === marche.id ? 'Suppression...' : 'Supprimer'}
                     </Button>
                   </AlertDialogTrigger>
                   <AlertDialogContent>
@@ -193,12 +203,15 @@ const MarcheList: React.FC<MarcheListProps> = ({
                       </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
-                      <AlertDialogCancel>Annuler</AlertDialogCancel>
+                      <AlertDialogCancel disabled={deletingId === marche.id}>
+                        Annuler
+                      </AlertDialogCancel>
                       <AlertDialogAction
                         onClick={() => handleDelete(marche.id, marche.ville)}
+                        disabled={deletingId === marche.id}
                         className="bg-red-600 hover:bg-red-700"
                       >
-                        Supprimer définitivement
+                        {deletingId === marche.id ? 'Suppression...' : 'Supprimer définitivement'}
                       </AlertDialogAction>
                     </AlertDialogFooter>
                   </AlertDialogContent>

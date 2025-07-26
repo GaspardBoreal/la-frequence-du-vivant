@@ -177,60 +177,43 @@ export const deleteMarche = async (marcheId: string): Promise<void> => {
   console.log(`🔄 Suppression de la marche ${marcheId}`);
 
   try {
-    // Supprimer d'abord tous les médias associés
-    const { error: photosError } = await supabase
-      .from('marche_photos')
-      .delete()
-      .eq('marche_id', marcheId);
+    // D'abord vérifier que la marche existe
+    const { data: existingMarche, error: checkError } = await supabase
+      .from('marches')
+      .select('id, ville')
+      .eq('id', marcheId)
+      .single();
 
-    if (photosError) {
-      console.error('❌ Erreur lors de la suppression des photos:', photosError);
+    if (checkError || !existingMarche) {
+      console.error('❌ Marche introuvable:', checkError);
+      throw new Error('Marche introuvable');
     }
 
-    const { error: audiosError } = await supabase
-      .from('marche_audio')
-      .delete()
-      .eq('marche_id', marcheId);
+    console.log(`📍 Suppression de la marche "${existingMarche.ville}"`);
 
-    if (audiosError) {
-      console.error('❌ Erreur lors de la suppression des audios:', audiosError);
-    }
+    // Supprimer d'abord tous les médias associés en parallèle
+    const deletePromises = [
+      supabase.from('marche_photos').delete().eq('marche_id', marcheId),
+      supabase.from('marche_audio').delete().eq('marche_id', marcheId),
+      supabase.from('marche_videos').delete().eq('marche_id', marcheId),
+      supabase.from('marche_documents').delete().eq('marche_id', marcheId),
+      supabase.from('marche_etudes').delete().eq('marche_id', marcheId),
+      supabase.from('marche_tags').delete().eq('marche_id', marcheId)
+    ];
 
-    const { error: videosError } = await supabase
-      .from('marche_videos')
-      .delete()
-      .eq('marche_id', marcheId);
-
-    if (videosError) {
-      console.error('❌ Erreur lors de la suppression des vidéos:', videosError);
-    }
-
-    const { error: documentsError } = await supabase
-      .from('marche_documents')
-      .delete()
-      .eq('marche_id', marcheId);
-
-    if (documentsError) {
-      console.error('❌ Erreur lors de la suppression des documents:', documentsError);
-    }
-
-    const { error: etudesError } = await supabase
-      .from('marche_etudes')
-      .delete()
-      .eq('marche_id', marcheId);
-
-    if (etudesError) {
-      console.error('❌ Erreur lors de la suppression des études:', etudesError);
-    }
-
-    const { error: tagsError } = await supabase
-      .from('marche_tags')
-      .delete()
-      .eq('marche_id', marcheId);
-
-    if (tagsError) {
-      console.error('❌ Erreur lors de la suppression des tags:', tagsError);
-    }
+    const results = await Promise.allSettled(deletePromises);
+    
+    // Log les erreurs mais ne pas arrêter le processus
+    results.forEach((result, index) => {
+      const tables = ['marche_photos', 'marche_audio', 'marche_videos', 'marche_documents', 'marche_etudes', 'marche_tags'];
+      if (result.status === 'rejected') {
+        console.error(`❌ Erreur suppression ${tables[index]}:`, result.reason);
+      } else if (result.value.error) {
+        console.error(`❌ Erreur suppression ${tables[index]}:`, result.value.error);
+      } else {
+        console.log(`✅ ${tables[index]} supprimés`);
+      }
+    });
 
     // Supprimer enfin la marche elle-même
     const { error: marcheError } = await supabase
@@ -240,14 +223,17 @@ export const deleteMarche = async (marcheId: string): Promise<void> => {
 
     if (marcheError) {
       console.error('❌ Erreur lors de la suppression de la marche:', marcheError);
-      throw marcheError;
+      throw new Error(`Erreur lors de la suppression: ${marcheError.message}`);
     }
 
     console.log('✅ Marche supprimée avec succès');
 
     // Invalider le cache React Query pour actualiser la liste
-    queryClient.invalidateQueries({ queryKey: ['marches-supabase'] });
-    queryClient.invalidateQueries({ queryKey: ['supabase-status'] });
+    await Promise.all([
+      queryClient.invalidateQueries({ queryKey: ['marches-supabase'] }),
+      queryClient.invalidateQueries({ queryKey: ['supabase-status'] }),
+      queryClient.refetchQueries({ queryKey: ['marches-supabase'] })
+    ]);
 
   } catch (error) {
     console.error('❌ Erreur générale lors de la suppression:', error);
