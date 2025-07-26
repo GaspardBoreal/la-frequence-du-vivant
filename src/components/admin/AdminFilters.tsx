@@ -21,6 +21,7 @@ interface Filters {
   dateDebut: Date | null;
   dateFin: Date | null;
   region: string;
+  departement: string;
   ville: string;
   tags: string[];
 }
@@ -30,30 +31,77 @@ const AdminFilters: React.FC<AdminFiltersProps> = ({ marches, onFilterChange }) 
     dateDebut: null,
     dateFin: null,
     region: '',
+    departement: '',
     ville: '',
     tags: []
   });
 
   const [showFilters, setShowFilters] = useState(false);
 
-  // Extraire les valeurs uniques pour les listes déroulantes
-  const regions = [...new Set(marches.map(m => m.region).filter(Boolean))].sort();
-  
-  // Extraire et trier tous les tags disponibles
-  const allTags = [...new Set(
-    marches.flatMap(m => m.supabaseTags || []).filter(Boolean)
-  )].sort();
+  // Extraire les valeurs uniques pour les listes déroulantes de manière sécurisée
+  const regions = React.useMemo(() => {
+    const uniqueRegions = new Set<string>();
+    marches.forEach(marche => {
+      if (marche.region && typeof marche.region === 'string') {
+        uniqueRegions.add(marche.region);
+      }
+    });
+    return Array.from(uniqueRegions).sort();
+  }, [marches]);
 
-  // Appliquer les filtres
+  const departements = React.useMemo(() => {
+    const uniqueDepartements = new Set<string>();
+    marches.forEach(marche => {
+      if (marche.departement && typeof marche.departement === 'string') {
+        uniqueDepartements.add(marche.departement);
+      }
+    });
+    return Array.from(uniqueDepartements).sort();
+  }, [marches]);
+
+  const allTags = React.useMemo(() => {
+    const uniqueTags = new Set<string>();
+    marches.forEach(marche => {
+      // Gérer les tags Supabase
+      if (marche.supabaseTags && Array.isArray(marche.supabaseTags)) {
+        marche.supabaseTags.forEach(tag => {
+          if (tag && typeof tag === 'string') {
+            uniqueTags.add(tag);
+          }
+        });
+      }
+      // Gérer les tags legacy (format string avec virgules)
+      if (marche.tags && typeof marche.tags === 'string') {
+        marche.tags.split(',').forEach(tag => {
+          const cleanTag = tag.trim();
+          if (cleanTag) {
+            uniqueTags.add(cleanTag);
+          }
+        });
+      }
+    });
+    return Array.from(uniqueTags).sort();
+  }, [marches]);
+
+  // Appliquer les filtres de manière sécurisée
   useEffect(() => {
+    if (!marches || marches.length === 0) {
+      onFilterChange([]);
+      return;
+    }
+
     let filtered = [...marches];
 
     // Filtre par date de début
     if (filters.dateDebut) {
       filtered = filtered.filter(marche => {
         if (!marche.date) return false;
-        const marcheDate = new Date(marche.date);
-        return marcheDate >= filters.dateDebut!;
+        try {
+          const marcheDate = new Date(marche.date);
+          return marcheDate >= filters.dateDebut!;
+        } catch {
+          return false;
+        }
       });
     }
 
@@ -61,32 +109,50 @@ const AdminFilters: React.FC<AdminFiltersProps> = ({ marches, onFilterChange }) 
     if (filters.dateFin) {
       filtered = filtered.filter(marche => {
         if (!marche.date) return false;
-        const marcheDate = new Date(marche.date);
-        return marcheDate <= filters.dateFin!;
+        try {
+          const marcheDate = new Date(marche.date);
+          return marcheDate <= filters.dateFin!;
+        } catch {
+          return false;
+        }
       });
     }
 
     // Filtre par région
     if (filters.region) {
       filtered = filtered.filter(marche => 
-        marche.region?.toLowerCase().includes(filters.region.toLowerCase())
+        marche.region && marche.region.toLowerCase().includes(filters.region.toLowerCase())
+      );
+    }
+
+    // Filtre par département
+    if (filters.departement) {
+      filtered = filtered.filter(marche =>
+        marche.departement && marche.departement.toLowerCase().includes(filters.departement.toLowerCase())
       );
     }
 
     // Filtre par ville
     if (filters.ville) {
       filtered = filtered.filter(marche =>
-        marche.ville?.toLowerCase().includes(filters.ville.toLowerCase())
+        marche.ville && marche.ville.toLowerCase().includes(filters.ville.toLowerCase())
       );
     }
 
     // Filtre par tags
     if (filters.tags.length > 0) {
-      filtered = filtered.filter(marche =>
-        filters.tags.some(tag =>
-          marche.supabaseTags?.includes(tag)
-        )
-      );
+      filtered = filtered.filter(marche => {
+        // Vérifier les tags Supabase
+        if (marche.supabaseTags && Array.isArray(marche.supabaseTags)) {
+          return filters.tags.some(tag => marche.supabaseTags!.includes(tag));
+        }
+        // Vérifier les tags legacy
+        if (marche.tags && typeof marche.tags === 'string') {
+          const marcheTags = marche.tags.split(',').map(tag => tag.trim());
+          return filters.tags.some(tag => marcheTags.includes(tag));
+        }
+        return false;
+      });
     }
 
     onFilterChange(filtered);
@@ -97,13 +163,14 @@ const AdminFilters: React.FC<AdminFiltersProps> = ({ marches, onFilterChange }) 
       dateDebut: null,
       dateFin: null,
       region: '',
+      departement: '',
       ville: '',
       tags: []
     });
   };
 
   const addTag = (tag: string) => {
-    if (!filters.tags.includes(tag)) {
+    if (tag && !filters.tags.includes(tag)) {
       setFilters(prev => ({
         ...prev,
         tags: [...prev.tags, tag]
@@ -118,7 +185,7 @@ const AdminFilters: React.FC<AdminFiltersProps> = ({ marches, onFilterChange }) 
     }));
   };
 
-  const hasActiveFilters = filters.dateDebut || filters.dateFin || filters.region || filters.ville || filters.tags.length > 0;
+  const hasActiveFilters = filters.dateDebut || filters.dateFin || filters.region || filters.departement || filters.ville || filters.tags.length > 0;
 
   return (
     <div className="mb-6">
@@ -145,7 +212,7 @@ const AdminFilters: React.FC<AdminFiltersProps> = ({ marches, onFilterChange }) 
 
       {showFilters && (
         <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4 space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
             {/* Date début */}
             <div className="space-y-2">
               <Label className="text-white">Date début</Label>
@@ -162,13 +229,12 @@ const AdminFilters: React.FC<AdminFiltersProps> = ({ marches, onFilterChange }) 
                     {filters.dateDebut ? format(filters.dateDebut, "dd/MM/yyyy") : "Sélectionner"}
                   </Button>
                 </PopoverTrigger>
-                <PopoverContent className="w-auto p-0 bg-white" align="start">
+                <PopoverContent className="w-auto p-0" align="start">
                   <Calendar
                     mode="single"
                     selected={filters.dateDebut || undefined}
                     onSelect={(date) => setFilters(prev => ({ ...prev, dateDebut: date || null }))}
                     initialFocus
-                    className="p-3 pointer-events-auto"
                   />
                 </PopoverContent>
               </Popover>
@@ -190,13 +256,12 @@ const AdminFilters: React.FC<AdminFiltersProps> = ({ marches, onFilterChange }) 
                     {filters.dateFin ? format(filters.dateFin, "dd/MM/yyyy") : "Sélectionner"}
                   </Button>
                 </PopoverTrigger>
-                <PopoverContent className="w-auto p-0 bg-white" align="start">
+                <PopoverContent className="w-auto p-0" align="start">
                   <Calendar
                     mode="single"
                     selected={filters.dateFin || undefined}
                     onSelect={(date) => setFilters(prev => ({ ...prev, dateFin: date || null }))}
                     initialFocus
-                    className="p-3 pointer-events-auto"
                   />
                 </PopoverContent>
               </Popover>
@@ -209,10 +274,26 @@ const AdminFilters: React.FC<AdminFiltersProps> = ({ marches, onFilterChange }) 
                 <SelectTrigger className="bg-white">
                   <SelectValue placeholder="Toutes les régions" />
                 </SelectTrigger>
-                <SelectContent className="bg-white z-50">
+                <SelectContent>
                   <SelectItem value="">Toutes les régions</SelectItem>
                   {regions.map(region => (
                     <SelectItem key={region} value={region}>{region}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Département */}
+            <div className="space-y-2">
+              <Label className="text-white">Département</Label>
+              <Select value={filters.departement} onValueChange={(value) => setFilters(prev => ({ ...prev, departement: value }))}>
+                <SelectTrigger className="bg-white">
+                  <SelectValue placeholder="Tous les départements" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">Tous les départements</SelectItem>
+                  {departements.map(dept => (
+                    <SelectItem key={dept} value={dept}>{dept}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -225,7 +306,7 @@ const AdminFilters: React.FC<AdminFiltersProps> = ({ marches, onFilterChange }) 
                 placeholder="Rechercher une ville..."
                 value={filters.ville}
                 onChange={(e) => setFilters(prev => ({ ...prev, ville: e.target.value }))}
-                className="bg-white text-gray-900 placeholder:text-gray-500"
+                className="bg-white"
               />
             </div>
           </div>
@@ -238,7 +319,7 @@ const AdminFilters: React.FC<AdminFiltersProps> = ({ marches, onFilterChange }) 
                 <SelectTrigger className="bg-white">
                   <SelectValue placeholder="Ajouter un tag" />
                 </SelectTrigger>
-                <SelectContent className="bg-white z-50">
+                <SelectContent>
                   {allTags
                     .filter(tag => !filters.tags.includes(tag))
                     .map(tag => (
@@ -255,7 +336,7 @@ const AdminFilters: React.FC<AdminFiltersProps> = ({ marches, onFilterChange }) 
               <Label className="text-white">Tags sélectionnés :</Label>
               <div className="flex flex-wrap gap-2">
                 {filters.tags.map(tag => (
-                  <Badge key={tag} variant="secondary" className="flex items-center gap-1 bg-white text-gray-900">
+                  <Badge key={tag} variant="secondary" className="flex items-center gap-1">
                     {tag}
                     <button
                       onClick={() => removeTag(tag)}

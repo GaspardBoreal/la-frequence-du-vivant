@@ -22,9 +22,7 @@ const MarcheAdmin = () => {
 
   // Initialiser les marches filtrées quand les données sont chargées
   useEffect(() => {
-    if (marches.length > 0) {
-      setFilteredMarches(marches);
-    }
+    setFilteredMarches(marches);
   }, [marches]);
 
   const handleBack = () => {
@@ -53,6 +51,7 @@ const MarcheAdmin = () => {
   };
 
   const handleFilterChange = (filtered: MarcheTechnoSensible[]) => {
+    console.log('Filtres appliqués, nombre de résultats:', filtered.length);
     setFilteredMarches(filtered);
   };
 
@@ -62,6 +61,7 @@ const MarcheAdmin = () => {
         <div className="text-center text-white">
           <h2 className="text-2xl font-bold mb-4">Erreur de chargement</h2>
           <p className="mb-4">Impossible de charger les marches depuis Supabase.</p>
+          <p className="text-sm text-gray-300 mb-4">{error.message}</p>
           <Button onClick={handleBack} variant="outline">
             Retour
           </Button>
@@ -104,13 +104,13 @@ const MarcheAdmin = () => {
           <div className="flex items-center space-x-2 text-sm text-gray-300">
             <span>Administration</span>
             <span>→</span>
-            {viewMode === 'list' && <span>Liste des marches</span>}
+            {viewMode === 'list' && <span>Liste des marches ({filteredMarches.length} résultat{filteredMarches.length > 1 ? 's' : ''})</span>}
             {viewMode === 'create' && <span>Nouvelle marche</span>}
             {viewMode === 'edit' && <span>Modification de marche</span>}
           </div>
         </div>
 
-        {/* Filtres - uniquement en mode liste */}
+        {/* Filtres - uniquement en mode liste et quand les données sont chargées */}
         {viewMode === 'list' && !isLoading && marches.length > 0 && (
           <AdminFilters
             marches={marches}
@@ -121,11 +121,19 @@ const MarcheAdmin = () => {
         {/* Content */}
         <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6">
           {viewMode === 'list' && (
-            <MarcheList
-              marches={filteredMarches}
-              isLoading={isLoading}
-              onEdit={handleEdit}
-            />
+            <>
+              {isLoading ? (
+                <div className="text-center text-white">
+                  <p>Chargement des marches...</p>
+                </div>
+              ) : (
+                <MarcheList
+                  marches={filteredMarches}
+                  isLoading={false}
+                  onEdit={handleEdit}
+                />
+              )}
+            </>
           )}
 
           {(viewMode === 'create' || viewMode === 'edit') && (
