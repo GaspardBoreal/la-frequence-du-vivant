@@ -1,14 +1,9 @@
 
 import React from 'react';
+import MigrationControlPanel from '../components/MigrationControlPanel';
 
 function MigrationExecution() {
-  return (
-    <div>
-      <h1>PAGE MIGRATION EXECUTION</h1>
-      <p>Si vous voyez ceci, ça marche !</p>
-      <p>Vous êtes sur /admin/migration/execute</p>
-    </div>
-  );
+  return <MigrationControlPanel />;
 }
 
 export default MigrationExecution;
