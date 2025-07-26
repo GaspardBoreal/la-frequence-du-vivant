@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { Button } from '../ui/button';
@@ -11,6 +10,7 @@ import { useSupabaseMarche } from '../../hooks/useSupabaseMarches';
 import { createMarche, updateMarche, MarcheFormData } from '../../utils/supabaseMarcheOperations';
 import MediaUploadSection from './MediaUploadSection';
 import AudioUploadSection from './AudioUploadSection';
+import { queryClient } from '../../lib/queryClient';
 
 interface MarcheFormProps {
   mode: 'create' | 'edit';
@@ -63,6 +63,10 @@ const MarcheForm: React.FC<MarcheFormProps> = ({ mode, marcheId, onCancel, onSuc
       } else if (mode === 'edit' && marcheId) {
         await updateMarche(marcheId, data);
         console.log('✅ Marche mise à jour avec succès');
+        
+        // Forcer une invalidation complète du cache pour s'assurer que la liste se met à jour
+        await queryClient.invalidateQueries({ queryKey: ['marches-supabase'] });
+        await queryClient.refetchQueries({ queryKey: ['marches-supabase'] });
       }
 
       onSuccess();
