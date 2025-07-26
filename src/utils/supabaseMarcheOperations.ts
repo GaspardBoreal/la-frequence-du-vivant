@@ -160,12 +160,16 @@ export const updateMarche = async (marcheId: string, formData: MarcheFormData): 
     }
   }
 
-  // Invalider le cache React Query pour actualiser la liste et les détails
-  queryClient.invalidateQueries({ queryKey: ['marches-supabase'] });
-  queryClient.invalidateQueries({ queryKey: ['marche-supabase', marcheId] });
-  queryClient.invalidateQueries({ queryKey: ['supabase-status'] });
+  // Invalider TOUS les caches React Query pour actualiser la liste et les détails
+  await queryClient.invalidateQueries({ queryKey: ['marches-supabase'] });
+  await queryClient.invalidateQueries({ queryKey: ['marche-supabase', marcheId] });
+  await queryClient.invalidateQueries({ queryKey: ['marches-search-supabase'] });
+  await queryClient.invalidateQueries({ queryKey: ['supabase-status'] });
 
-  console.log('✅ Marche mise à jour avec succès');
+  // Forcer un refetch immédiat de la liste des marches
+  await queryClient.refetchQueries({ queryKey: ['marches-supabase'] });
+
+  console.log('✅ Marche mise à jour avec succès et cache invalidé');
 };
 
 // Supprimer une marche et tous ses médias associés
