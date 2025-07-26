@@ -1,5 +1,6 @@
 
 import React from 'react';
+import { Link } from 'react-router-dom';
 
 const MigrationExecution = () => {
   return (
@@ -12,12 +13,12 @@ const MigrationExecution = () => {
             <h2 className="text-xl font-semibold mb-2">Test de base</h2>
             <p>Si vous voyez cette page, l'exécution est accessible.</p>
           </div>
-          <a 
-            href="/admin/migration"
+          <Link 
+            to="/admin/migration"
             className="inline-block bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600"
           >
             Retour à l'admin
-          </a>
+          </Link>
         </div>
       </div>
     </div>

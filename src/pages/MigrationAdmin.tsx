@@ -1,5 +1,6 @@
 
 import React from 'react';
+import { Link } from 'react-router-dom';
 
 const MigrationAdmin = () => {
   return (
@@ -12,12 +13,12 @@ const MigrationAdmin = () => {
             <h2 className="text-xl font-semibold mb-2">Test de base</h2>
             <p>Si vous voyez cette page, les routes d'administration fonctionnent.</p>
           </div>
-          <a 
-            href="/admin/migration/execute"
+          <Link 
+            to="/admin/migration/execute"
             className="inline-block bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
           >
             Aller à la page d'exécution
-          </a>
+          </Link>
         </div>
       </div>
     </div>
