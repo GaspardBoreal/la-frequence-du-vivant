@@ -22,10 +22,10 @@ const MarcheAdmin = () => {
 
   // Initialiser les marches filtrées quand les données sont chargées
   React.useEffect(() => {
-    if (marches.length > 0 && filteredMarches.length === 0) {
+    if (marches.length > 0) {
       setFilteredMarches(marches);
     }
-  }, [marches, filteredMarches.length]);
+  }, [marches]);
 
   const handleBack = () => {
     navigate('/admin-access');
@@ -85,7 +85,7 @@ const MarcheAdmin = () => {
             </Button>
           </div>
           
-          <h1 className="text-3xl font-bold text-white flex-1 text-center">
+          <h1 className="text-3xl font-bold text-white text-center flex-1">
             Administration des Marches
           </h1>
           
