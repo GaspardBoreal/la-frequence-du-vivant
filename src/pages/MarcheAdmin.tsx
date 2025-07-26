@@ -50,17 +50,20 @@ const MarcheAdmin: React.FC = () => {
               <ArrowLeft className="h-4 w-4 mr-2" />
               Retour à l'accueil
             </Button>
-            <h1 className="text-3xl font-bold text-gray-900">
-              Administration des Marches
-            </h1>
           </div>
           
-          {viewMode === 'list' && (
-            <Button onClick={handleCreate} className="flex items-center">
-              <Plus className="h-4 w-4 mr-2" />
-              Nouvelle Marche
-            </Button>
-          )}
+          <h1 className="text-3xl font-bold text-gray-900 flex-1 text-center">
+            Administration des Marches
+          </h1>
+          
+          <div className="flex justify-end">
+            {viewMode === 'list' && (
+              <Button onClick={handleCreate} className="flex items-center">
+                <Plus className="h-4 w-4 mr-2" />
+                Nouvelle Marche
+              </Button>
+            )}
+          </div>
         </div>
 
         {/* Navigation breadcrumb */}

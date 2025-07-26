@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
@@ -6,17 +7,20 @@ import { Edit, Trash2, MapPin, Calendar, Thermometer, Image, Volume2 } from 'luc
 import { MarcheTechnoSensible } from '../../utils/googleSheetsApi';
 import { deleteMarche } from '../../utils/supabaseMarcheOperations';
 import { toast } from 'sonner';
+
 interface MarcheListProps {
   marches: MarcheTechnoSensible[];
   isLoading: boolean;
   onEdit: (marcheId: string) => void;
 }
+
 const MarcheList: React.FC<MarcheListProps> = ({
   marches,
   isLoading,
   onEdit
 }) => {
   const [deletingId, setDeletingId] = useState<string | null>(null);
+
   const handleDelete = async (marcheId: string, ville: string) => {
     setDeletingId(marcheId);
     try {
@@ -29,17 +33,20 @@ const MarcheList: React.FC<MarcheListProps> = ({
       setDeletingId(null);
     }
   };
+
   if (isLoading) {
     return <div className="flex items-center justify-center h-64">
         <div className="animate-spin w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full"></div>
       </div>;
   }
+
   if (marches.length === 0) {
     return <div className="text-center py-12">
         <h3 className="mb-2 text-slate-50 font-bold text-3xl">Aucune marche trouvée</h3>
         <p className="text-center text-gray-50">Commencez par créer votre première marche (bouton en haut à gauche)</p>
       </div>;
   }
+
   return <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h2 className="text-xl font-semibold">Marches existantes ({marches.length})</h2>
@@ -49,14 +56,25 @@ const MarcheList: React.FC<MarcheListProps> = ({
         {marches.map(marche => <div key={marche.id} className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
             <div className="flex items-start justify-between">
               <div className="flex-1">
-                <div className="flex items-center space-x-3 mb-2 bg-slate-600">
-                  <h3 className="text-lg font-medium text-gray-900">{marche.ville}</h3>
-                  {marche.region && <Badge variant="outline" className="text-xs">
-                      {marche.region}
-                    </Badge>}
-                </div>
+                <div className="space-y-2 mb-3">
+                  <div className="flex items-center space-x-3">
+                    <span className="text-white font-medium">Ville :</span>
+                    <h3 className="text-lg font-medium text-gray-900">{marche.ville}</h3>
+                    {marche.region && <Badge variant="outline" className="text-xs">
+                        {marche.region}
+                      </Badge>}
+                  </div>
 
-                {marche.theme && <p className="text-sm mb-2 font-medium text-slate-50">{marche.theme}</p>}
+                  {marche.nomMarche && <div className="flex items-center space-x-3">
+                      <span className="text-white font-medium">Nom de la marche :</span>
+                      <span className="text-lg font-medium text-gray-900">{marche.nomMarche}</span>
+                    </div>}
+
+                  {marche.theme && <div className="flex items-center space-x-3">
+                      <span className="text-white font-medium">Thème :</span>
+                      <span className="text-sm font-medium text-slate-50">{marche.theme}</span>
+                    </div>}
+                </div>
 
                 {marche.descriptifCourt && <p className="text-sm text-gray-600 mb-3 line-clamp-2">{marche.descriptifCourt}</p>}
 
@@ -123,4 +141,5 @@ const MarcheList: React.FC<MarcheListProps> = ({
       </div>
     </div>;
 };
+
 export default MarcheList;
