@@ -45,9 +45,12 @@ const Footer = () => {
 
           {/* Explorer les fréquences */}
           <div className="space-y-4">
-            <h3 className="font-crimson text-xl text-white font-medium">
+            <a 
+              href="/"
+              className="font-crimson text-xl text-white font-medium hover:text-[#4ade80] transition-colors block"
+            >
               Explorer les fréquences
-            </h3>
+            </a>
             <div className="space-y-2">
               <a 
                 href="/marche/entre-deux-frequences-bonzac-bonzac" 
