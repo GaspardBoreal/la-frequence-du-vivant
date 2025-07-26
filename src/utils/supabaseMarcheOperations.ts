@@ -30,15 +30,32 @@ export interface MediaFile {
 export const createMarche = async (formData: MarcheFormData): Promise<string> => {
   console.log('🔄 Création de la marche:', formData);
 
-  // Convertir les coordonnées en point PostGIS
-  const coordonnees = formData.latitude && formData.longitude 
-    ? `POINT(${formData.longitude} ${formData.latitude})`
-    : null;
+  // Convertir les coordonnées en point PostGIS avec le bon format
+  let coordonnees = null;
+  if (formData.latitude && formData.longitude && !isNaN(formData.latitude) && !isNaN(formData.longitude)) {
+    // Utiliser une requête SQL raw pour créer le point PostGIS
+    const { data: pointData, error: pointError } = await supabase
+      .rpc('st_point', { 
+        longitude: formData.longitude, 
+        latitude: formData.latitude 
+      });
+    
+    if (pointError) {
+      console.error('❌ Erreur lors de la création du point PostGIS:', pointError);
+      // Fallback: utiliser le format string avec ST_Point
+      coordonnees = `ST_Point(${formData.longitude}, ${formData.latitude})`;
+    } else {
+      coordonnees = pointData;
+    }
+  }
 
   // Préparer les sous-thèmes
   const sousThemes = formData.sousThemes 
     ? formData.sousThemes.split(',').map(t => t.trim()).filter(t => t.length > 0)
     : [];
+
+  // Nettoyer la température pour éviter NaN
+  const temperature = formData.temperature && !isNaN(formData.temperature) ? formData.temperature : null;
 
   const { data: marche, error: marcheError } = await supabase
     .from('marches')
@@ -50,7 +67,7 @@ export const createMarche = async (formData: MarcheFormData): Promise<string> =>
       descriptif_court: formData.descriptifCourt || null,
       descriptif_long: formData.poeme || null,
       date: formData.date || null,
-      temperature: formData.temperature || null,
+      temperature: temperature,
       coordonnees: coordonnees,
       lien_google_drive: formData.lienGoogleDrive || null,
       sous_themes: sousThemes.length > 0 ? sousThemes : null
@@ -93,13 +110,31 @@ export const createMarche = async (formData: MarcheFormData): Promise<string> =>
 export const updateMarche = async (marcheId: string, formData: MarcheFormData): Promise<void> => {
   console.log('🔄 Mise à jour de la marche:', marcheId);
 
-  const coordonnees = formData.latitude && formData.longitude 
-    ? `POINT(${formData.longitude} ${formData.latitude})`
-    : null;
+  // Convertir les coordonnées en point PostGIS avec le bon format
+  let coordonnees = null;
+  if (formData.latitude && formData.longitude && !isNaN(formData.latitude) && !isNaN(formData.longitude)) {
+    // Utiliser une requête SQL raw pour créer le point PostGIS
+    const { data: pointData, error: pointError } = await supabase
+      .rpc('st_point', { 
+        longitude: formData.longitude, 
+        latitude: formData.latitude 
+      });
+    
+    if (pointError) {
+      console.error('❌ Erreur lors de la création du point PostGIS:', pointError);
+      // Fallback: utiliser le format string avec ST_Point
+      coordonnees = `ST_Point(${formData.longitude}, ${formData.latitude})`;
+    } else {
+      coordonnees = pointData;
+    }
+  }
 
   const sousThemes = formData.sousThemes 
     ? formData.sousThemes.split(',').map(t => t.trim()).filter(t => t.length > 0)
     : [];
+
+  // Nettoyer la température pour éviter NaN
+  const temperature = formData.temperature && !isNaN(formData.temperature) ? formData.temperature : null;
 
   const { error: marcheError } = await supabase
     .from('marches')
@@ -111,7 +146,7 @@ export const updateMarche = async (marcheId: string, formData: MarcheFormData): 
       descriptif_court: formData.descriptifCourt || null,
       descriptif_long: formData.poeme || null,
       date: formData.date || null,
-      temperature: formData.temperature || null,
+      temperature: temperature,
       coordonnees: coordonnees,
       lien_google_drive: formData.lienGoogleDrive || null,
       sous_themes: sousThemes.length > 0 ? sousThemes : null,
@@ -179,7 +214,6 @@ export const savePhotos = async (marcheId: string, photos: MediaFile[]): Promise
   }
 };
 
-// Upload et sauvegarde des vidéos
 export const saveVideos = async (marcheId: string, videos: MediaFile[]): Promise<void> => {
   console.log(`🔄 Sauvegarde de ${videos.length} vidéos pour la marche ${marcheId}`);
 
@@ -213,7 +247,6 @@ export const saveVideos = async (marcheId: string, videos: MediaFile[]): Promise
   }
 };
 
-// Upload et sauvegarde des fichiers audio
 export const saveAudioFiles = async (marcheId: string, audioFiles: MediaFile[]): Promise<void> => {
   console.log(`🔄 Sauvegarde de ${audioFiles.length} fichiers audio pour la marche ${marcheId}`);
 
