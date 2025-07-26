@@ -22,7 +22,9 @@ const MarcheAdmin = () => {
 
   // Initialiser les marches filtrées quand les données sont chargées
   useEffect(() => {
-    setFilteredMarches(marches);
+    if (marches && marches.length > 0) {
+      setFilteredMarches(marches);
+    }
   }, [marches]);
 
   const handleBack = () => {
@@ -51,7 +53,6 @@ const MarcheAdmin = () => {
   };
 
   const handleFilterChange = (filtered: MarcheTechnoSensible[]) => {
-    console.log('Filtres appliqués, nombre de résultats:', filtered.length);
     setFilteredMarches(filtered);
   };
 
@@ -73,6 +74,7 @@ const MarcheAdmin = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
       <div className="container mx-auto px-6 py-8">
+        {/* Header */}
         <div className="flex items-center justify-between mb-8">
           <div>
             <Button 
@@ -99,7 +101,7 @@ const MarcheAdmin = () => {
           </div>
         </div>
 
-        {/* Navigation breadcrumb */}
+        {/* Breadcrumb */}
         <div className="mb-6">
           <div className="flex items-center space-x-2 text-sm text-gray-300">
             <span>Administration</span>
@@ -110,7 +112,7 @@ const MarcheAdmin = () => {
           </div>
         </div>
 
-        {/* Filtres - uniquement en mode liste et quand les données sont chargées */}
+        {/* Filtres - uniquement en mode liste */}
         {viewMode === 'list' && !isLoading && marches.length > 0 && (
           <AdminFilters
             marches={marches}
@@ -123,8 +125,9 @@ const MarcheAdmin = () => {
           {viewMode === 'list' && (
             <>
               {isLoading ? (
-                <div className="text-center text-white">
-                  <p>Chargement des marches...</p>
+                <div className="text-center text-white py-8">
+                  <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-white"></div>
+                  <p className="mt-2">Chargement des marches...</p>
                 </div>
               ) : (
                 <MarcheList
