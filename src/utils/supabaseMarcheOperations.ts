@@ -1,6 +1,6 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { uploadPhoto, uploadVideo, uploadAudio, getAudioDuration, getVideoDuration } from './supabaseUpload';
+import { queryClient } from '../lib/queryClient';
 
 export interface MarcheFormData {
   ville: string;
@@ -103,6 +103,10 @@ export const createMarche = async (formData: MarcheFormData): Promise<string> =>
     }
   }
 
+  // Invalider le cache React Query pour actualiser la liste
+  queryClient.invalidateQueries({ queryKey: ['marches-supabase'] });
+  queryClient.invalidateQueries({ queryKey: ['supabase-status'] });
+
   return marche.id;
 };
 
@@ -179,6 +183,11 @@ export const updateMarche = async (marcheId: string, formData: MarcheFormData): 
       }
     }
   }
+
+  // Invalider le cache React Query pour actualiser la liste et les détails
+  queryClient.invalidateQueries({ queryKey: ['marches-supabase'] });
+  queryClient.invalidateQueries({ queryKey: ['marche-supabase', marcheId] });
+  queryClient.invalidateQueries({ queryKey: ['supabase-status'] });
 
   console.log('✅ Marche mise à jour avec succès');
 };
