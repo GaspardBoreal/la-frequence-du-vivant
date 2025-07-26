@@ -1,4 +1,3 @@
-
 import { MarcheComplete, MarchePhoto, MarcheAudio, MarcheVideo } from './supabaseApi';
 import { MarcheTechnoSensible } from './googleSheetsApi';
 
@@ -20,7 +19,6 @@ export const transformSupabaseToLegacyFormat = (marche: MarcheComplete): MarcheT
     theme: marche.theme_principal || marche.nom_marche || marche.ville,
     nomMarche: marche.nom_marche || undefined,
     descriptifCourt: marche.descriptif_court || undefined,
-    descriptifLong: marche.descriptif_long || undefined,
     date: marche.date || undefined,
     temperature: marche.temperature ? Number(marche.temperature) : undefined,
     latitude: marche.latitude || 0,
