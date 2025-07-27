@@ -14,6 +14,7 @@ import {
   UploadProgress
 } from '../../utils/supabasePhotoOperations';
 import { uploadVideo } from '../../utils/supabaseUpload';
+import { runSupabaseDiagnostic } from '../../utils/supabaseDiagnostic';
 import PhotoCard from './PhotoCard';
 import PhotoUploadProgress from './PhotoUploadProgress';
 
@@ -173,6 +174,7 @@ const MediaUploadSection: React.FC<MediaUploadSectionProps> = ({
 
   // Fonction pour mettre à jour la progression d'un item
   const updateItemProgress = (itemId: string, progress: UploadProgress) => {
+    console.log(`📊 [MediaUploadSection] Progression ${itemId}: ${progress.progress}% - ${progress.status}`);
     setMediaItems(prev => prev.map(item => 
       item.id === itemId ? {
         ...item,
@@ -191,10 +193,28 @@ const MediaUploadSection: React.FC<MediaUploadSectionProps> = ({
       return;
     }
 
-    console.log('📤 [MediaUploadSection] Début upload:', item.name);
+    console.log('🚀 [MediaUploadSection] ========== DÉBUT UPLOAD INDIVIDUEL ==========');
+    console.log('📋 [MediaUploadSection] Item à uploader:', {
+      id: itemId,
+      name: item.name,
+      size: item.size,
+      type: item.file.type,
+      marcheId
+    });
+
     setUploadingItems(prev => new Set(prev).add(itemId));
     
     try {
+      // Diagnostic préalable
+      console.log('🔍 [MediaUploadSection] Diagnostic préalable...');
+      const diagnosticResult = await runSupabaseDiagnostic(marcheId);
+      if (!diagnosticResult.success) {
+        console.error('❌ [MediaUploadSection] Diagnostic échoué:', diagnosticResult);
+        toast.error(`Diagnostic échoué: ${diagnosticResult.error}`);
+        return;
+      }
+      console.log('✅ [MediaUploadSection] Diagnostic réussi');
+
       if (mediaType === 'photos') {
         const photoData: PhotoToUpload = {
           id: item.id,
@@ -207,7 +227,7 @@ const MediaUploadSection: React.FC<MediaUploadSectionProps> = ({
           description: item.description
         };
 
-        console.log('📋 [MediaUploadSection] Données photo préparées:', photoData);
+        console.log('📋 [MediaUploadSection] Données photo préparées pour savePhoto');
         
         const photoId = await savePhoto(marcheId, photoData, (progress) => {
           updateItemProgress(itemId, progress);
@@ -244,20 +264,23 @@ const MediaUploadSection: React.FC<MediaUploadSectionProps> = ({
     } catch (error) {
       console.error('❌ [MediaUploadSection] Erreur upload:', error);
       
+      const errorMessage = error instanceof Error ? error.message : 'Erreur inconnue';
+      
       updateItemProgress(itemId, {
         fileName: item.name,
         progress: 0,
         status: 'error',
-        error: error instanceof Error ? error.message : 'Erreur inconnue'
+        error: errorMessage
       });
       
-      toast.error('Erreur lors de l\'upload: ' + (error instanceof Error ? error.message : 'Erreur inconnue'));
+      toast.error(`Erreur lors de l'upload: ${errorMessage}`);
     } finally {
       setUploadingItems(prev => {
         const newSet = new Set(prev);
         newSet.delete(itemId);
         return newSet;
       });
+      console.log('🏁 [MediaUploadSection] ========== FIN UPLOAD INDIVIDUEL ==========');
     }
   };
 
