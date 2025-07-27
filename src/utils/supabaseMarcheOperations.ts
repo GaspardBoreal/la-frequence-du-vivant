@@ -1,6 +1,7 @@
+
 import { supabase } from '../integrations/supabase/client';
 import { MarcheTechnoSensible } from './googleSheetsApi';
-import { uploadFile } from './supabaseUpload';
+import { uploadPhoto, uploadVideo, uploadAudio } from './supabaseUpload';
 
 export interface MarcheFormData {
   ville: string;
@@ -27,6 +28,10 @@ export interface MarcheFormData {
     ordre: number;
   }>;
   poeme?: string | null;
+  theme?: string;
+  adresse?: string;
+  lienGoogleDrive?: string;
+  sousRegion?: string;
 }
 
 // Fonction pour nettoyer les données du formulaire
@@ -43,7 +48,7 @@ const cleanFormData = (formData: MarcheFormData) => {
     longitude: formData.longitude || null,
     theme_principal: formData.themesPrincipaux?.[0] || null,
     sous_themes: formData.sousThemes && formData.sousThemes.length > 0 ? formData.sousThemes : null,
-    lien_google_drive: null,
+    lien_google_drive: formData.lienGoogleDrive || null,
     coordonnees: formData.latitude && formData.longitude 
       ? `(${formData.longitude},${formData.latitude})` 
       : null
@@ -62,7 +67,7 @@ export const createMarche = async (formData: MarcheFormData): Promise<string | n
     const cleanedData = cleanFormData(formData);
 
     const { data, error } = await supabase
-      .from('marches_technosensibles')
+      .from('marches')
       .insert([cleanedData])
       .select()
 
@@ -89,7 +94,7 @@ export const updateMarche = async (marcheId: string, formData: MarcheFormData): 
     const cleanedData = cleanFormData(formData);
 
     const { error } = await supabase
-      .from('marches_technosensibles')
+      .from('marches')
       .update(cleanedData)
       .eq('id', marcheId);
 
@@ -111,16 +116,16 @@ export const updateMarche = async (marcheId: string, formData: MarcheFormData): 
 export const deleteMarche = async (marcheId: string): Promise<boolean> => {
   try {
     // Supprimer les enregistrements liés dans les tables photos, videos, audio, etudes, documents
-    await supabase.from('marches_photos').delete().eq('marche_id', marcheId);
-    await supabase.from('marches_videos').delete().eq('marche_id', marcheId);
-    await supabase.from('marches_audio').delete().eq('marche_id', marcheId);
-    await supabase.from('marches_etudes').delete().eq('marche_id', marcheId);
-    await supabase.from('marches_documents').delete().eq('marche_id', marcheId);
-    await supabase.from('marches_tags').delete().eq('marche_id', marcheId);
+    await supabase.from('marche_photos').delete().eq('marche_id', marcheId);
+    await supabase.from('marche_videos').delete().eq('marche_id', marcheId);
+    await supabase.from('marche_audio').delete().eq('marche_id', marcheId);
+    await supabase.from('marche_etudes').delete().eq('marche_id', marcheId);
+    await supabase.from('marche_documents').delete().eq('marche_id', marcheId);
+    await supabase.from('marche_tags').delete().eq('marche_id', marcheId);
 
     // Supprimer la marche elle-même
     const { error } = await supabase
-      .from('marches_technosensibles')
+      .from('marches')
       .delete()
       .eq('id', marcheId);
 
@@ -138,14 +143,123 @@ export const deleteMarche = async (marcheId: string): Promise<boolean> => {
   }
 };
 
+// Interface pour les éléments média
+interface MediaItem {
+  id: string;
+  file: File;
+  url: string;
+  name: string;
+  size: number;
+  uploaded: boolean;
+  duration?: number;
+}
+
+// Fonction pour sauvegarder des photos
+export const savePhotos = async (marcheId: string, photos: MediaItem[]): Promise<void> => {
+  for (const photo of photos) {
+    try {
+      const uploadResult = await uploadPhoto(photo.file, marcheId);
+      
+      await supabase
+        .from('marche_photos')
+        .insert({
+          marche_id: marcheId,
+          nom_fichier: photo.name,
+          url_supabase: uploadResult.url,
+          titre: photo.name,
+          description: null,
+          ordre: null,
+          metadata: null
+        });
+        
+      console.log(`✅ Photo ${photo.name} sauvegardée`);
+    } catch (error) {
+      console.error(`❌ Erreur sauvegarde photo ${photo.name}:`, error);
+      throw error;
+    }
+  }
+};
+
+// Fonction pour sauvegarder des vidéos
+export const saveVideos = async (marcheId: string, videos: MediaItem[]): Promise<void> => {
+  for (const video of videos) {
+    try {
+      const uploadResult = await uploadVideo(video.file, marcheId);
+      
+      await supabase
+        .from('marche_videos')
+        .insert({
+          marche_id: marcheId,
+          nom_fichier: video.name,
+          url_supabase: uploadResult.url,
+          titre: video.name,
+          description: null,
+          duree_secondes: video.duration || null,
+          format_video: video.file.type,
+          resolution: null,
+          thumbnail_url: null,
+          ordre: null,
+          taille_octets: video.size,
+          metadata: null
+        });
+        
+      console.log(`✅ Vidéo ${video.name} sauvegardée`);
+    } catch (error) {
+      console.error(`❌ Erreur sauvegarde vidéo ${video.name}:`, error);
+      throw error;
+    }
+  }
+};
+
+// Fonction pour sauvegarder des fichiers audio
+export const saveAudioFiles = async (marcheId: string, audioFiles: MediaItem[]): Promise<void> => {
+  for (const audio of audioFiles) {
+    try {
+      const uploadResult = await uploadAudio(audio.file, marcheId);
+      
+      await supabase
+        .from('marche_audio')
+        .insert({
+          marche_id: marcheId,
+          nom_fichier: audio.name,
+          url_supabase: uploadResult.url,
+          titre: audio.name,
+          description: null,
+          duree_secondes: audio.duration || null,
+          format_audio: audio.file.type,
+          ordre: null,
+          taille_octets: audio.size,
+          metadata: null
+        });
+        
+      console.log(`✅ Audio ${audio.name} sauvegardé`);
+    } catch (error) {
+      console.error(`❌ Erreur sauvegarde audio ${audio.name}:`, error);
+      throw error;
+    }
+  }
+};
+
 // Fonction pour uploader plusieurs fichiers et retourner leurs URLs
 export const uploadFiles = async (files: File[], folder: string): Promise<string[]> => {
   const urls: string[] = [];
   for (const file of files) {
     try {
-      const url = await uploadFile(file, folder);
-      if (url) {
-        urls.push(url);
+      let uploadResult;
+      
+      if (file.type.startsWith('image/')) {
+        uploadResult = await uploadPhoto(file, folder);
+      } else if (file.type.startsWith('video/')) {
+        uploadResult = await uploadVideo(file, folder);
+      } else if (file.type.startsWith('audio/')) {
+        uploadResult = await uploadAudio(file, folder);
+      } else {
+        console.warn(`Type de fichier non supporté: ${file.type}`);
+        continue;
+      }
+      
+      if (uploadResult?.url) {
+        urls.push(uploadResult.url);
       }
     } catch (error) {
       console.error(`Erreur lors de l'upload du fichier ${file.name}:`, error);

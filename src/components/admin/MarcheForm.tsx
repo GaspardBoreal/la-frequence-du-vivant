@@ -25,9 +25,21 @@ interface MarcheFormProps {
   onSuccess: () => void;
 }
 
-// Interface mise à jour pour inclure sousRegion et supprimer theme du formulaire
-interface UpdatedMarcheFormData extends Omit<MarcheFormData, 'theme' | 'descriptifCourt'> {
+// Interface pour le formulaire avec des types corrects
+interface FormData {
+  ville: string;
+  region: string;
   sousRegion: string;
+  nomMarche: string;
+  poeme: string;
+  date: string;
+  temperature: number | null;
+  latitude: number;
+  longitude: number;
+  lienGoogleDrive: string;
+  sousThemes: string;
+  tags: string;
+  adresse: string;
 }
 
 const MarcheForm: React.FC<MarcheFormProps> = ({ mode, marcheId, onCancel, onSuccess }) => {
@@ -43,17 +55,17 @@ const MarcheForm: React.FC<MarcheFormProps> = ({ mode, marcheId, onCancel, onSuc
     setValue,
     watch,
     formState: { errors }
-  } = useForm<UpdatedMarcheFormData>();
+  } = useForm<FormData>();
 
   const selectedRegion = watch('region');
   const selectedSousRegion = watch('sousRegion');
 
   useEffect(() => {
     if (mode === 'edit' && marche) {
-      const formData = {
+      const formData: FormData = {
         ville: marche.ville || '',
         region: marche.region || '',
-        sousRegion: marche.departement || '', // Utiliser departement au lieu de sousRegion
+        sousRegion: marche.departement || '',
         nomMarche: marche.nomMarche || '',
         poeme: marche.poeme || '',
         date: marche.date || '',
@@ -71,16 +83,28 @@ const MarcheForm: React.FC<MarcheFormProps> = ({ mode, marcheId, onCancel, onSuc
     }
   }, [mode, marche, reset]);
 
-  const onSubmit = async (data: UpdatedMarcheFormData) => {
+  const onSubmit = async (data: FormData) => {
     setIsSubmitting(true);
     try {
       console.log('Données à sauvegarder:', data);
 
-      // Convertir les données pour l'API existante
+      // Convertir les données pour l'API
       const apiData: MarcheFormData = {
-        ...data,
+        ville: data.ville,
+        region: data.region,
+        nomMarche: data.nomMarche,
+        poeme: data.poeme,
+        date: data.date,
+        temperature: data.temperature,
+        latitude: data.latitude,
+        longitude: data.longitude,
+        lienGoogleDrive: data.lienGoogleDrive,
+        sousThemes: data.sousThemes ? data.sousThemes.split(',').map(t => t.trim()) : [],
+        tags: data.tags ? data.tags.split(',').map(t => t.trim()) : [],
+        adresse: data.adresse,
+        sousRegion: data.sousRegion,
         theme: themeRichText,
-        descriptifCourt: '' // Valeur par défaut puisqu'on supprime le champ
+        descriptifCourt: ''
       };
 
       if (mode === 'create') {
