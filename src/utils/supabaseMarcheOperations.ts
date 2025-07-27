@@ -1,3 +1,4 @@
+
 import { supabase } from '../integrations/supabase/client';
 import { MarcheTechnoSensible } from './googleSheetsApi';
 import { uploadPhoto, uploadVideo, uploadAudio } from './supabaseUpload';
@@ -5,6 +6,7 @@ import { uploadPhoto, uploadVideo, uploadAudio } from './supabaseUpload';
 export interface MarcheFormData {
   ville: string;
   region: string;
+  departement?: string;
   nomMarche?: string;
   descriptifCourt?: string;
   descriptifLong?: string;
@@ -30,7 +32,6 @@ export interface MarcheFormData {
   theme?: string;
   adresse?: string;
   lienGoogleDrive?: string;
-  sousRegion?: string;
 }
 
 // Fonction pour nettoyer les données du formulaire
@@ -38,6 +39,7 @@ const cleanFormData = (formData: MarcheFormData) => {
   const cleanedData = {
     ville: formData.ville || '',
     region: formData.region || '',
+    departement: formData.departement || null,
     nom_marche: formData.nomMarche || null,
     descriptif_court: formData.descriptifCourt || null,
     descriptif_long: formData.descriptifLong || null,
@@ -45,7 +47,6 @@ const cleanFormData = (formData: MarcheFormData) => {
     temperature: formData.temperature !== null && formData.temperature !== undefined ? Number(formData.temperature) : null,
     latitude: formData.latitude !== null && formData.latitude !== undefined ? Number(formData.latitude) : null,
     longitude: formData.longitude !== null && formData.longitude !== undefined ? Number(formData.longitude) : null,
-    departement: formData.sousRegion || null,
     adresse: formData.adresse || null,
     theme_principal: formData.themesPrincipaux?.[0] || null,
     sous_themes: formData.sousThemes && formData.sousThemes.length > 0 ? formData.sousThemes : null,

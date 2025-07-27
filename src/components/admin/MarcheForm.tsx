@@ -29,7 +29,7 @@ interface MarcheFormProps {
 interface FormData {
   ville: string;
   region: string;
-  sousRegion: string;
+  departement: string;
   nomMarche: string;
   poeme: string;
   date: string;
@@ -58,14 +58,16 @@ const MarcheForm: React.FC<MarcheFormProps> = ({ mode, marcheId, onCancel, onSuc
   } = useForm<FormData>();
 
   const selectedRegion = watch('region');
-  const selectedSousRegion = watch('sousRegion');
+  const selectedDepartement = watch('departement');
 
   useEffect(() => {
     if (mode === 'edit' && marche) {
+      console.log('📋 Données de la marche à éditer:', marche);
+      
       const formData: FormData = {
         ville: marche.ville || '',
         region: marche.region || '',
-        sousRegion: marche.departement || '',
+        departement: marche.departement || '',
         nomMarche: marche.nomMarche || '',
         poeme: marche.poeme || '',
         date: marche.date || '',
@@ -78,6 +80,7 @@ const MarcheForm: React.FC<MarcheFormProps> = ({ mode, marcheId, onCancel, onSuc
         adresse: marche.adresse || ''
       };
       
+      console.log('🔄 Données du formulaire après mapping:', formData);
       reset(formData);
       setThemeRichText(marche.theme || '');
     }
@@ -92,7 +95,7 @@ const MarcheForm: React.FC<MarcheFormProps> = ({ mode, marcheId, onCancel, onSuc
       const apiData: MarcheFormData = {
         ville: data.ville,
         region: data.region,
-        sousRegion: data.sousRegion,
+        departement: data.departement,
         nomMarche: data.nomMarche,
         poeme: data.poeme,
         date: data.date,
@@ -195,10 +198,10 @@ const MarcheForm: React.FC<MarcheFormProps> = ({ mode, marcheId, onCancel, onSuc
               </div>
 
               <div>
-                <Label htmlFor="sousRegion">Sous-région (Département)</Label>
+                <Label htmlFor="departement">Département</Label>
                 <Select
-                  value={selectedSousRegion || ''}
-                  onValueChange={(value) => setValue('sousRegion', value)}
+                  value={selectedDepartement || ''}
+                  onValueChange={(value) => setValue('departement', value)}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Sélectionnez un département" />
