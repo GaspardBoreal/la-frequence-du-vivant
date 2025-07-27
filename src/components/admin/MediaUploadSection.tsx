@@ -1,10 +1,9 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { Button } from '../ui/button';
 import { Card } from '../ui/card';
-import { Upload, X, Plus, Trash2 } from 'lucide-react';
+import { Upload, X, Plus, Trash2, Eye } from 'lucide-react';
 import { toast } from 'sonner';
-import { processPhoto, isSupportedPhotoFormat } from '../../utils/photoUtils';
+import { processPhoto, isSupportedPhotoFormat, formatFileSize } from '../../utils/photoUtils';
 import { 
   fetchExistingPhotos, 
   savePhoto, 
@@ -139,8 +138,9 @@ const MediaUploadSection: React.FC<MediaUploadSectionProps> = ({
     }
   };
 
-  const handleUpload = async (item: MediaItem) => {
-    if (!marcheId || !item.file) {
+  const handleUpload = async (itemId: string) => {
+    const item = mediaItems.find(m => m.id === itemId);
+    if (!marcheId || !item || !item.file) {
       toast.error('Impossible d\'uploader: données manquantes');
       return;
     }
@@ -165,7 +165,7 @@ const MediaUploadSection: React.FC<MediaUploadSectionProps> = ({
       }
 
       setMediaItems(prev => prev.map(media => 
-        media.id === item.id ? { ...media, uploaded: true } : media
+        media.id === itemId ? { ...media, uploaded: true } : media
       ));
 
       toast.success('Fichier uploadé avec succès !');
@@ -371,7 +371,7 @@ const MediaUploadSection: React.FC<MediaUploadSectionProps> = ({
                   {!item.uploaded ? (
                     <Button
                       size="sm"
-                      onClick={() => handleUpload(item)}
+                      onClick={() => handleUpload(item.id)}
                       disabled={isUploading || !marcheId}
                       className="w-full"
                     >

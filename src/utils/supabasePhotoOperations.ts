@@ -53,6 +53,9 @@ export const savePhoto = async (marcheId: string, photoData: PhotoToUpload): Pro
     // Upload vers Supabase Storage
     const uploadResult = await uploadPhoto(photoData.file, marcheId);
     
+    // Convertir metadata en JSON pour Supabase
+    const metadataJson = photoData.metadata ? JSON.parse(JSON.stringify(photoData.metadata)) : null;
+    
     // Sauvegarder en base de données
     const { error } = await supabase
       .from('marche_photos')
@@ -63,7 +66,7 @@ export const savePhoto = async (marcheId: string, photoData: PhotoToUpload): Pro
         titre: photoData.titre || photoData.file.name,
         description: photoData.description,
         ordre: 0,
-        metadata: photoData.metadata
+        metadata: metadataJson
       });
 
     if (error) {

@@ -1,7 +1,6 @@
-
 import heic2any from 'heic2any';
 import imageCompression from 'browser-image-compression';
-import { exifr } from 'exifr';
+import exifr from 'exifr';
 
 export interface PhotoMetadata {
   width?: number;
@@ -10,7 +9,7 @@ export interface PhotoMetadata {
   size: number;
   isConverted: boolean;
   originalFormat?: string;
-  exif?: any;
+  exif?: Record<string, any>;
 }
 
 export interface ProcessedPhoto {
@@ -84,7 +83,7 @@ export const extractPhotoMetadata = async (file: File): Promise<PhotoMetadata> =
       size: file.size,
       isConverted: isHeic,
       originalFormat: isHeic ? 'image/heic' : originalFormat,
-      exif: exifData
+      exif: exifData || {}
     };
   } catch (error) {
     console.warn('⚠️ Impossible d\'extraire les métadonnées EXIF:', error);
@@ -92,7 +91,8 @@ export const extractPhotoMetadata = async (file: File): Promise<PhotoMetadata> =
       format: file.type,
       size: file.size,
       isConverted: isHeic,
-      originalFormat: isHeic ? 'image/heic' : originalFormat
+      originalFormat: isHeic ? 'image/heic' : originalFormat,
+      exif: {}
     };
   }
 };
