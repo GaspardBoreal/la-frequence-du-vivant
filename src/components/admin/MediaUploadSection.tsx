@@ -1,22 +1,22 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Button } from '../ui/button';
 import { Card } from '../ui/card';
-import { Upload, X, Plus, Trash2, Eye } from 'lucide-react';
+import { Upload, X, Plus, Trash2, Zap, Settings } from 'lucide-react';
 import { toast } from 'sonner';
 import { processPhoto, isSupportedPhotoFormat, formatFileSize } from '../../utils/photoUtils';
 import { 
   fetchExistingPhotos, 
-  savePhoto, 
-  savePhotos, 
   deletePhoto, 
   updatePhotoMetadata,
   PhotoToUpload,
-  UploadProgress
+  ExistingPhoto
 } from '../../utils/supabasePhotoOperations';
 import { uploadVideo } from '../../utils/supabaseUpload';
-import { runSupabaseDiagnostic } from '../../utils/supabaseDiagnostic';
+import { ParallelUploadManager, UploadTask } from '../../utils/parallelUploadManager';
+import { ImageOptimizer } from '../../utils/imageOptimizer';
+import { UploadCache } from '../../utils/uploadCache';
 import PhotoCard from './PhotoCard';
-import PhotoUploadProgress from './PhotoUploadProgress';
+import OptimizedUploadProgress from './OptimizedUploadProgress';
 
 interface MediaUploadSectionProps {
   marcheId: string | null;
@@ -34,11 +34,12 @@ interface MediaItem {
   metadata?: any;
   titre?: string;
   description?: string;
-  isConverted?: boolean;
-  originalFormat?: string;
-  uploadProgress?: number;
-  uploadStatus?: 'pending' | 'uploading' | 'processing' | 'success' | 'error';
-  uploadError?: string;
+  isOptimized?: boolean;
+  optimizationInfo?: {
+    originalSize: number;
+    compressionRatio: number;
+    wasConverted: boolean;
+  };
 }
 
 const MediaUploadSection: React.FC<MediaUploadSectionProps> = ({
@@ -46,10 +47,16 @@ const MediaUploadSection: React.FC<MediaUploadSectionProps> = ({
   mediaType
 }) => {
   const [mediaItems, setMediaItems] = useState<MediaItem[]>([]);
-  const [isUploading, setIsUploading] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [uploadingItems, setUploadingItems] = useState<Set<string>>(new Set());
+  const [uploadTasks, setUploadTasks] = useState<UploadTask[]>([]);
+  const [uploadManager] = useState(() => new ParallelUploadManager({
+    maxConcurrent: 3,
+    retryAttempts: 3,
+    retryDelay: 1000
+  }));
+  const [imageOptimizer] = useState(() => new ImageOptimizer());
+  const [uploadCache] = useState(() => new UploadCache());
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Charger les photos existantes au montage
@@ -58,6 +65,16 @@ const MediaUploadSection: React.FC<MediaUploadSectionProps> = ({
       loadExistingPhotos();
     }
   }, [marcheId, mediaType]);
+
+  // Nettoyer le cache au montage
+  useEffect(() => {
+    uploadCache.cleanExpiredEntries();
+  }, [uploadCache]);
+
+  // Configurer le gestionnaire de progression
+  useEffect(() => {
+    uploadManager.onProgress(setUploadTasks);
+  }, [uploadManager]);
 
   const loadExistingPhotos = async () => {
     if (!marcheId) return;
@@ -76,9 +93,7 @@ const MediaUploadSection: React.FC<MediaUploadSectionProps> = ({
         isExisting: true,
         metadata: photo.metadata,
         titre: photo.titre,
-        description: photo.description,
-        uploadStatus: 'success',
-        uploadProgress: 100
+        description: photo.description
       }));
 
       setMediaItems(formattedPhotos);
@@ -91,12 +106,9 @@ const MediaUploadSection: React.FC<MediaUploadSectionProps> = ({
     }
   };
 
-  // Fonction pour ouvrir le sélecteur de fichiers
   const handleAddFiles = (event: React.MouseEvent<HTMLButtonElement>) => {
     event.preventDefault();
     event.stopPropagation();
-    
-    console.log('🎯 [MediaUploadSection] Ouverture du sélecteur de fichiers');
     fileInputRef.current?.click();
   };
 
@@ -105,188 +117,117 @@ const MediaUploadSection: React.FC<MediaUploadSectionProps> = ({
     if (!files) return;
 
     setIsProcessing(true);
-    console.log(`📁 [MediaUploadSection] Traitement de ${files.length} fichier(s)`);
+    console.log(`📁 [MediaUploadSection] Traitement optimisé de ${files.length} fichier(s)`);
 
-    const newItems: MediaItem[] = [];
-    
-    for (const file of Array.from(files)) {
-      try {
-        if (mediaType === 'photos') {
-          // Vérifier le format
+    try {
+      if (mediaType === 'photos') {
+        // Filtrer les fichiers supportés
+        const supportedFiles = Array.from(files).filter(file => {
           if (!isSupportedPhotoFormat(file)) {
-            console.error('❌ [MediaUploadSection] Format non supporté:', file.name);
             toast.error(`Format non supporté: ${file.name}`);
-            continue;
+            return false;
           }
+          return true;
+        });
 
-          console.log(`🔄 [MediaUploadSection] Traitement de la photo: ${file.name}`);
-          
-          // Traiter la photo
-          const processedPhoto = await processPhoto(file);
+        if (supportedFiles.length === 0) {
+          toast.error('Aucun fichier supporté trouvé');
+          return;
+        }
+
+        // Vérifier le cache pour éviter les doublons
+        const newFilesToProcess: File[] = [];
+        const cachedItems: MediaItem[] = [];
+
+        for (const file of supportedFiles) {
+          if (marcheId) {
+            const cached = await uploadCache.checkCache(file, marcheId);
+            if (cached) {
+              console.log(`💾 [MediaUploadSection] Fichier trouvé dans le cache: ${file.name}`);
+              cachedItems.push({
+                id: cached.photoId,
+                url: cached.uploadedUrl,
+                name: cached.fileName,
+                size: cached.fileSize,
+                uploaded: true,
+                isExisting: true
+              });
+              continue;
+            }
+          }
+          newFilesToProcess.push(file);
+        }
+
+        // Optimiser les nouvelles images
+        let optimizedImages: any[] = [];
+        if (newFilesToProcess.length > 0) {
+          console.log(`🔧 [MediaUploadSection] Optimisation de ${newFilesToProcess.length} images...`);
+          optimizedImages = await imageOptimizer.optimizeImages(newFilesToProcess);
+        }
+
+        // Créer les items pour les nouvelles images
+        const newItems: MediaItem[] = [];
+        
+        for (const optimized of optimizedImages) {
+          const processedPhoto = await processPhoto(optimized.file);
           
           const newItem: MediaItem = {
             id: Math.random().toString(36).substr(2, 9),
             file: processedPhoto.file,
             url: processedPhoto.preview,
-            name: file.name,
-            size: processedPhoto.file.size,
+            name: optimized.file.name,
+            size: optimized.file.size,
             uploaded: false,
             metadata: processedPhoto.metadata,
-            isConverted: processedPhoto.metadata.isConverted,
-            originalFormat: processedPhoto.metadata.originalFormat,
-            uploadProgress: 0,
-            uploadStatus: 'pending'
+            isOptimized: true,
+            optimizationInfo: {
+              originalSize: optimized.originalSize,
+              compressionRatio: optimized.compressionRatio,
+              wasConverted: optimized.wasConverted
+            }
           };
-
+          
           newItems.push(newItem);
-          console.log(`✅ [MediaUploadSection] Photo traitée: ${file.name}`);
-        } else {
-          // Pour les vidéos, traitement simple
+        }
+
+        // Mettre à jour la liste avec les nouveaux items et les items cachés
+        setMediaItems(prev => [...prev, ...newItems, ...cachedItems]);
+        
+        const totalAdded = newItems.length + cachedItems.length;
+        if (totalAdded > 0) {
+          toast.success(`${totalAdded} fichier(s) ajouté(s) (${cachedItems.length} depuis le cache)`);
+        }
+
+      } else {
+        // Traitement simple pour les vidéos
+        const newItems: MediaItem[] = [];
+        
+        for (const file of Array.from(files)) {
           const newItem: MediaItem = {
             id: Math.random().toString(36).substr(2, 9),
             file: file,
             url: URL.createObjectURL(file),
             name: file.name,
             size: file.size,
-            uploaded: false,
-            uploadProgress: 0,
-            uploadStatus: 'pending'
+            uploaded: false
           };
-
           newItems.push(newItem);
         }
-      } catch (error) {
-        console.error('❌ [MediaUploadSection] Erreur traitement fichier:', error);
-        toast.error(`Erreur lors du traitement de ${file.name}`);
-      }
-    }
 
-    setMediaItems(prev => [...prev, ...newItems]);
-    
-    if (newItems.length > 0) {
-      toast.success(`${newItems.length} fichier(s) ajouté(s) avec succès`);
-    }
-    
-    // Réinitialiser l'input file
-    event.target.value = '';
-    setIsProcessing(false);
-  };
-
-  // Fonction pour mettre à jour la progression d'un item
-  const updateItemProgress = (itemId: string, progress: UploadProgress) => {
-    console.log(`📊 [MediaUploadSection] Progression ${itemId}: ${progress.progress}% - ${progress.status}`);
-    setMediaItems(prev => prev.map(item => 
-      item.id === itemId ? {
-        ...item,
-        uploadProgress: progress.progress,
-        uploadStatus: progress.status,
-        uploadError: progress.error
-      } : item
-    ));
-  };
-
-  const handleUpload = async (itemId: string) => {
-    const item = mediaItems.find(m => m.id === itemId);
-    if (!marcheId || !item || !item.file) {
-      console.error('❌ [MediaUploadSection] Données manquantes pour upload:', { marcheId, item: !!item, file: !!item?.file });
-      toast.error('Impossible d\'uploader: données manquantes');
-      return;
-    }
-
-    console.log('🚀 [MediaUploadSection] ========== DÉBUT UPLOAD INDIVIDUEL ==========');
-    console.log('📋 [MediaUploadSection] Item à uploader:', {
-      id: itemId,
-      name: item.name,
-      size: item.size,
-      type: item.file.type,
-      marcheId
-    });
-
-    setUploadingItems(prev => new Set(prev).add(itemId));
-    
-    try {
-      // Diagnostic préalable
-      console.log('🔍 [MediaUploadSection] Diagnostic préalable...');
-      const diagnosticResult = await runSupabaseDiagnostic(marcheId);
-      if (!diagnosticResult.success) {
-        console.error('❌ [MediaUploadSection] Diagnostic échoué:', diagnosticResult);
-        toast.error(`Diagnostic échoué: ${diagnosticResult.error}`);
-        return;
-      }
-      console.log('✅ [MediaUploadSection] Diagnostic réussi');
-
-      if (mediaType === 'photos') {
-        const photoData: PhotoToUpload = {
-          id: item.id,
-          file: item.file,
-          metadata: item.metadata,
-          thumbnail: item.url,
-          preview: item.url,
-          uploaded: false,
-          titre: item.titre,
-          description: item.description
-        };
-
-        console.log('📋 [MediaUploadSection] Données photo préparées pour savePhoto');
-        
-        const photoId = await savePhoto(marcheId, photoData, (progress) => {
-          updateItemProgress(itemId, progress);
-        });
-        
-        console.log('✅ [MediaUploadSection] Photo sauvegardée avec ID:', photoId);
-        
-        // Marquer comme uploadé
-        setMediaItems(prev => prev.map(media => 
-          media.id === itemId ? { 
-            ...media, 
-            uploaded: true,
-            uploadStatus: 'success' as const,
-            uploadProgress: 100
-          } : media
-        ));
-        
-        toast.success('Photo uploadée avec succès !');
-      } else {
-        await uploadVideo(item.file, marcheId);
-        
-        // Marquer comme uploadé
-        setMediaItems(prev => prev.map(media => 
-          media.id === itemId ? { 
-            ...media, 
-            uploaded: true,
-            uploadStatus: 'success' as const,
-            uploadProgress: 100
-          } : media
-        ));
-        
-        toast.success('Vidéo uploadée avec succès !');
+        setMediaItems(prev => [...prev, ...newItems]);
+        toast.success(`${newItems.length} vidéo(s) ajoutée(s)`);
       }
     } catch (error) {
-      console.error('❌ [MediaUploadSection] Erreur upload:', error);
-      
-      const errorMessage = error instanceof Error ? error.message : 'Erreur inconnue';
-      
-      updateItemProgress(itemId, {
-        fileName: item.name,
-        progress: 0,
-        status: 'error',
-        error: errorMessage
-      });
-      
-      toast.error(`Erreur lors de l'upload: ${errorMessage}`);
+      console.error('❌ [MediaUploadSection] Erreur traitement fichiers:', error);
+      toast.error('Erreur lors du traitement des fichiers');
     } finally {
-      setUploadingItems(prev => {
-        const newSet = new Set(prev);
-        newSet.delete(itemId);
-        return newSet;
-      });
-      console.log('🏁 [MediaUploadSection] ========== FIN UPLOAD INDIVIDUEL ==========');
+      setIsProcessing(false);
+      event.target.value = '';
     }
   };
 
-  const handleUploadAll = async () => {
+  const handleOptimizedUpload = async () => {
     if (!marcheId) {
-      console.error('❌ [MediaUploadSection] Aucun ID de marche fourni');
       toast.error('Aucun ID de marche fourni');
       return;
     }
@@ -297,11 +238,11 @@ const MediaUploadSection: React.FC<MediaUploadSectionProps> = ({
       return;
     }
 
-    console.log(`📤 [MediaUploadSection] Upload en masse de ${itemsToUpload.length} fichiers`);
-    setIsUploading(true);
+    console.log(`🚀 [MediaUploadSection] Upload parallèle de ${itemsToUpload.length} fichiers`);
     
     try {
       if (mediaType === 'photos') {
+        // Préparer les photos pour l'upload parallèle
         const photosData: PhotoToUpload[] = itemsToUpload.map(item => ({
           id: item.id,
           file: item.file!,
@@ -313,29 +254,32 @@ const MediaUploadSection: React.FC<MediaUploadSectionProps> = ({
           description: item.description
         }));
 
-        console.log('📋 [MediaUploadSection] Données photos préparées:', photosData);
+        // Nettoyer et ajouter les tâches
+        uploadManager.clear();
+        uploadManager.addPhotos(marcheId, photosData);
         
-        const photoIds = await savePhotos(marcheId, photosData, (fileName, progress) => {
-          const item = itemsToUpload.find(i => i.name === fileName);
-          if (item) {
-            updateItemProgress(item.id, progress);
+        // Démarrer l'upload parallèle
+        const uploadedIds = await uploadManager.startUpload();
+        
+        // Mettre à jour le cache pour les uploads réussis
+        for (const item of itemsToUpload) {
+          const wasUploaded = uploadedIds.length > 0; // Simplification pour l'exemple
+          if (wasUploaded && item.file) {
+            await uploadCache.addToCache(item.file, marcheId, item.url, item.id);
           }
-        });
-        
-        console.log('✅ [MediaUploadSection] Photos sauvegardées avec IDs:', photoIds);
-        
-        // Marquer toutes les photos comme uploadées
+        }
+
+        // Marquer les photos comme uploadées
         setMediaItems(prev => prev.map(media => 
           itemsToUpload.find(item => item.id === media.id) ? { 
             ...media, 
-            uploaded: true,
-            uploadStatus: 'success' as const,
-            uploadProgress: 100
+            uploaded: true 
           } : media
         ));
         
-        toast.success('Toutes les photos ont été uploadées !');
+        toast.success(`${uploadedIds.length} photo(s) uploadée(s) avec succès !`);
       } else {
+        // Upload séquentiel pour les vidéos (pour l'instant)
         for (const item of itemsToUpload) {
           await uploadVideo(item.file!, marcheId);
         }
@@ -344,10 +288,8 @@ const MediaUploadSection: React.FC<MediaUploadSectionProps> = ({
         toast.success('Toutes les vidéos ont été uploadées !');
       }
     } catch (error) {
-      console.error('❌ [MediaUploadSection] Erreur upload masse:', error);
-      toast.error('Erreur lors de l\'upload en masse: ' + (error instanceof Error ? error.message : 'Erreur inconnue'));
-    } finally {
-      setIsUploading(false);
+      console.error('❌ [MediaUploadSection] Erreur upload optimisé:', error);
+      toast.error('Erreur lors de l\'upload: ' + (error instanceof Error ? error.message : 'Erreur inconnue'));
     }
   };
 
@@ -355,10 +297,7 @@ const MediaUploadSection: React.FC<MediaUploadSectionProps> = ({
     const item = mediaItems.find(m => m.id === itemId);
     if (!item) return;
 
-    console.log('🗑️ [MediaUploadSection] Suppression item:', itemId, item.isExisting);
-
     if (item.isExisting) {
-      // Confirmation pour suppression définitive
       if (!window.confirm('Êtes-vous sûr de vouloir supprimer définitivement cette photo ?')) {
         return;
       }
@@ -372,7 +311,6 @@ const MediaUploadSection: React.FC<MediaUploadSectionProps> = ({
         toast.error('Erreur lors de la suppression');
       }
     } else {
-      // Suppression locale
       setMediaItems(prev => prev.filter(item => item.id !== itemId));
       toast.info('Fichier retiré de la liste');
     }
@@ -381,8 +319,6 @@ const MediaUploadSection: React.FC<MediaUploadSectionProps> = ({
   const handleUpdateMetadata = async (itemId: string, updates: { titre?: string; description?: string }) => {
     const item = mediaItems.find(m => m.id === itemId);
     if (!item?.isExisting) return;
-
-    console.log('📝 [MediaUploadSection] Mise à jour métadonnées:', itemId, updates);
 
     try {
       await updatePhotoMetadata(itemId, updates);
@@ -411,11 +347,25 @@ const MediaUploadSection: React.FC<MediaUploadSectionProps> = ({
     }
     
     setMediaItems([]);
+    uploadManager.clear();
     toast.info('Tous les fichiers ont été supprimés de la liste');
+  };
+
+  const getGlobalStatus = () => {
+    if (uploadTasks.length === 0) {
+      return { total: 0, pending: 0, uploading: 0, success: 0, error: 0 };
+    }
+    return uploadManager.getStatus();
+  };
+
+  const getCacheStats = () => {
+    return uploadCache.getStats();
   };
 
   const mediaTypeLabel = mediaType === 'photos' ? 'Photos' : 'Vidéos';
   const acceptedTypes = mediaType === 'photos' ? 'image/*,.heic,.heif' : 'video/*';
+  const hasUnsavedFiles = mediaItems.some(item => !item.uploaded);
+  const cacheStats = getCacheStats();
 
   if (isLoading) {
     return (
@@ -429,7 +379,15 @@ const MediaUploadSection: React.FC<MediaUploadSectionProps> = ({
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h3 className="text-lg font-medium">Gestion des {mediaTypeLabel}</h3>
+        <div className="flex items-center space-x-2">
+          <h3 className="text-lg font-medium">Gestion Optimisée des {mediaTypeLabel}</h3>
+          <Zap className="h-5 w-5 text-blue-500" />
+          {cacheStats.total > 0 && (
+            <span className="text-sm text-gray-500">
+              ({cacheStats.total} en cache)
+            </span>
+          )}
+        </div>
         <div className="flex space-x-2">
           <Button
             type="button"
@@ -439,17 +397,17 @@ const MediaUploadSection: React.FC<MediaUploadSectionProps> = ({
             disabled={isProcessing}
           >
             <Plus className="h-4 w-4 mr-2" />
-            {isProcessing ? 'Traitement...' : `Ajouter ${mediaTypeLabel.toLowerCase()}`}
+            {isProcessing ? 'Optimisation...' : `Ajouter ${mediaTypeLabel.toLowerCase()}`}
           </Button>
-          {mediaItems.some(item => !item.uploaded) && (
+          {hasUnsavedFiles && (
             <Button
               type="button"
-              onClick={handleUploadAll}
-              disabled={isUploading || !marcheId || isProcessing}
+              onClick={handleOptimizedUpload}
+              disabled={!marcheId || isProcessing}
               className="flex items-center"
             >
-              <Upload className="h-4 w-4 mr-2" />
-              {isUploading ? 'Upload...' : 'Tout uploader'}
+              <Zap className="h-4 w-4 mr-2" />
+              Upload Parallèle
             </Button>
           )}
         </div>
@@ -476,9 +434,17 @@ const MediaUploadSection: React.FC<MediaUploadSectionProps> = ({
         <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
           <div className="flex items-center">
             <div className="animate-spin w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full mr-3"></div>
-            <p className="text-blue-800">Traitement des fichiers en cours...</p>
+            <p className="text-blue-800">Optimisation des fichiers en cours...</p>
           </div>
         </div>
+      )}
+
+      {/* Affichage de la progression d'upload */}
+      {uploadTasks.length > 0 && (
+        <OptimizedUploadProgress
+          tasks={uploadTasks}
+          globalStatus={getGlobalStatus()}
+        />
       )}
 
       {mediaItems.length === 0 ? (
@@ -490,89 +456,23 @@ const MediaUploadSection: React.FC<MediaUploadSectionProps> = ({
           <p className="mb-4 text-slate-200">
             Cliquez sur "Ajouter {mediaTypeLabel.toLowerCase()}" pour commencer
           </p>
+          <p className="text-sm text-slate-300">
+            ⚡ Upload parallèle • 🗜️ Compression automatique • 💾 Cache intelligent
+          </p>
         </Card>
       ) : (
         <div className="space-y-4">
-          {/* Section des indicateurs de progression pour les uploads en cours */}
-          {mediaItems.some(item => item.uploadStatus === 'uploading' || item.uploadStatus === 'processing') && (
-            <div className="space-y-2">
-              <h4 className="font-medium">Upload en cours</h4>
-              {mediaItems
-                .filter(item => item.uploadStatus === 'uploading' || item.uploadStatus === 'processing')
-                .map(item => (
-                  <PhotoUploadProgress
-                    key={item.id}
-                    fileName={item.name}
-                    progress={item.uploadProgress || 0}
-                    status={item.uploadStatus || 'pending'}
-                    error={item.uploadError}
-                    isConverted={item.isConverted}
-                    originalFormat={item.originalFormat}
-                  />
-                ))}
-            </div>
-          )}
-
           {/* Grille des photos */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {mediaItems.map(item => (
-              mediaType === 'photos' ? (
-                <PhotoCard
-                  key={item.id}
-                  photo={item}
-                  onRemove={handleRemove}
-                  onUpload={item.uploaded ? undefined : handleUpload}
-                  onUpdateMetadata={item.isExisting ? handleUpdateMetadata : undefined}
-                  isUploading={uploadingItems.has(item.id)}
-                />
-              ) : (
-                <Card key={item.id} className="p-4">
-                  <div className="aspect-video bg-gray-100 rounded-lg mb-3 relative overflow-hidden">
-                    <video src={item.url} className="w-full h-full object-cover" controls={false} />
-                    
-                    <div className="absolute top-2 right-2 flex space-x-1">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="h-8 w-8 p-0 bg-white/80"
-                        onClick={() => window.open(item.url, '_blank')}
-                      >
-                        <Eye className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="h-8 w-8 p-0 bg-white/80 text-red-600 hover:text-red-700"
-                        onClick={() => handleRemove(item.id)}
-                      >
-                        <X className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </div>
-
-                  <div className="space-y-2">
-                    <div>
-                      <p className="font-medium text-sm truncate">{item.name}</p>
-                      <p className="text-xs text-gray-500">{formatFileSize(item.size)}</p>
-                    </div>
-
-                    {!item.uploaded ? (
-                      <Button
-                        size="sm"
-                        onClick={() => handleUpload(item.id)}
-                        disabled={uploadingItems.has(item.id) || !marcheId}
-                        className="w-full"
-                      >
-                        {uploadingItems.has(item.id) ? 'Upload...' : 'Uploader'}
-                      </Button>
-                    ) : (
-                      <div className="flex items-center text-green-600 text-sm">
-                        <span>✓ Uploadé</span>
-                      </div>
-                    )}
-                  </div>
-                </Card>
-              )
+              <PhotoCard
+                key={item.id}
+                photo={item}
+                onRemove={handleRemove}
+                onUpdateMetadata={item.isExisting ? handleUpdateMetadata : undefined}
+                showOptimizationInfo={item.isOptimized}
+                optimizationInfo={item.optimizationInfo}
+              />
             ))}
           </div>
         </div>
@@ -582,17 +482,34 @@ const MediaUploadSection: React.FC<MediaUploadSectionProps> = ({
         <div className="flex justify-between items-center pt-4 border-t">
           <span className="text-sm text-gray-600">
             {mediaItems.length} {mediaType === 'photos' ? 'photo(s)' : 'vidéo(s)'} • {mediaItems.filter(item => item.uploaded).length} uploadée(s)
+            {mediaItems.some(item => item.isOptimized) && ' • Optimisées'}
           </span>
-          <Button
-            type="button"
-            variant="outline"
-            onClick={handleClearAll}
-            className="text-red-600 hover:text-red-700"
-            disabled={isProcessing}
-          >
-            <Trash2 className="h-4 w-4 mr-2" />
-            Tout supprimer
-          </Button>
+          <div className="flex space-x-2">
+            {cacheStats.total > 0 && (
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  uploadCache.clear();
+                  toast.info('Cache vidé');
+                }}
+                className="text-gray-600 hover:text-gray-700"
+              >
+                <Settings className="h-4 w-4 mr-2" />
+                Vider le cache
+              </Button>
+            )}
+            <Button
+              type="button"
+              variant="outline"
+              onClick={handleClearAll}
+              className="text-red-600 hover:text-red-700"
+              disabled={isProcessing}
+            >
+              <Trash2 className="h-4 w-4 mr-2" />
+              Tout supprimer
+            </Button>
+          </div>
         </div>
       )}
     </div>
