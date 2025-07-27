@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Book, Quote, Eye, EyeOff, Sparkles, Pause, Play } from 'lucide-react';
@@ -18,10 +17,10 @@ const PoeticTextDisplay: React.FC<PoeticTextDisplayProps> = ({
   title,
   author
 }) => {
-  const [isExpanded, setIsExpanded] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(true);
   const [currentParagraph, setCurrentParagraph] = useState(0);
   const [isAutoReading, setIsAutoReading] = useState(false);
-  const [showReadingMode, setShowReadingMode] = useState(false);
+  const [showReadingMode, setShowReadingMode] = useState(true);
 
   // Split text into paragraphs and sentences
   const paragraphs = text.split('\n').filter(p => p.trim());
