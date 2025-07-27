@@ -38,6 +38,9 @@ const cleanFormData = (formData: MarcheFormData) => {
       temperature = !isNaN(tempValue) ? tempValue : null;
     } else if (typeof formData.temperature === 'number' && !isNaN(formData.temperature)) {
       temperature = formData.temperature;
+    } else if (typeof formData.temperature === 'string') {
+      const tempValue = parseFloat(formData.temperature);
+      temperature = !isNaN(tempValue) ? tempValue : null;
     }
   }
 
@@ -49,6 +52,8 @@ const cleanFormData = (formData: MarcheFormData) => {
       poeme = poemeValue === 'undefined' ? '' : (poemeValue || '');
     } else if (typeof formData.poeme === 'string') {
       poeme = formData.poeme;
+    } else {
+      poeme = String(formData.poeme);
     }
   }
 
