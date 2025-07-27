@@ -42,6 +42,7 @@ const MediaUploadSection: React.FC<MediaUploadSectionProps> = ({
   const [mediaItems, setMediaItems] = useState<MediaItem[]>([]);
   const [isUploading, setIsUploading] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Charger les photos existantes au montage
@@ -63,7 +64,7 @@ const MediaUploadSection: React.FC<MediaUploadSectionProps> = ({
         id: photo.id,
         url: photo.url_supabase,
         name: photo.nom_fichier,
-        size: 0, // Taille non disponible pour les photos existantes
+        size: 0,
         uploaded: true,
         isExisting: true,
         metadata: photo.metadata,
@@ -81,9 +82,21 @@ const MediaUploadSection: React.FC<MediaUploadSectionProps> = ({
     }
   };
 
+  // Fonction pour ouvrir le sélecteur de fichiers
+  const handleAddFiles = (event: React.MouseEvent<HTMLButtonElement>) => {
+    event.preventDefault();
+    event.stopPropagation();
+    
+    console.log('🎯 Ouverture du sélecteur de fichiers');
+    fileInputRef.current?.click();
+  };
+
   const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
     if (!files) return;
+
+    setIsProcessing(true);
+    console.log(`📁 Traitement de ${files.length} fichier(s)`);
 
     const newItems: MediaItem[] = [];
     
@@ -96,6 +109,8 @@ const MediaUploadSection: React.FC<MediaUploadSectionProps> = ({
             continue;
           }
 
+          console.log(`🔄 Traitement de la photo: ${file.name}`);
+          
           // Traiter la photo
           const processedPhoto = await processPhoto(file);
           
@@ -112,6 +127,7 @@ const MediaUploadSection: React.FC<MediaUploadSectionProps> = ({
           };
 
           newItems.push(newItem);
+          console.log(`✅ Photo traitée: ${file.name}`);
         } else {
           // Pour les vidéos, traitement simple
           const newItem: MediaItem = {
@@ -136,6 +152,11 @@ const MediaUploadSection: React.FC<MediaUploadSectionProps> = ({
     if (newItems.length > 0) {
       toast.success(`${newItems.length} fichier(s) ajouté(s) avec succès`);
     }
+    
+    // Réinitialiser l'input file pour permettre la sélection du même fichier
+    event.target.value = '';
+    
+    setIsProcessing(false);
   };
 
   const handleUpload = async (itemId: string) => {
@@ -261,6 +282,24 @@ const MediaUploadSection: React.FC<MediaUploadSectionProps> = ({
     }
   };
 
+  const handleClearAll = (event: React.MouseEvent<HTMLButtonElement>) => {
+    event.preventDefault();
+    event.stopPropagation();
+    
+    if (mediaItems.length === 0) return;
+    
+    const hasUnsavedFiles = mediaItems.some(item => !item.uploaded && !item.isExisting);
+    
+    if (hasUnsavedFiles) {
+      if (!window.confirm('Vous avez des fichiers non sauvegardés. Êtes-vous sûr de vouloir tout supprimer ?')) {
+        return;
+      }
+    }
+    
+    setMediaItems([]);
+    toast.info('Tous les fichiers ont été supprimés de la liste');
+  };
+
   const mediaTypeLabel = mediaType === 'photos' ? 'Photos' : 'Vidéos';
   const acceptedTypes = mediaType === 'photos' ? 'image/*,.heic,.heif' : 'video/*';
 
@@ -278,21 +317,24 @@ const MediaUploadSection: React.FC<MediaUploadSectionProps> = ({
         <h3 className="text-lg font-medium">Gestion des {mediaTypeLabel}</h3>
         <div className="flex space-x-2">
           <Button
-            onClick={() => fileInputRef.current?.click()}
+            type="button"
+            onClick={handleAddFiles}
             variant="outline"
             className="flex items-center"
+            disabled={isProcessing}
           >
             <Plus className="h-4 w-4 mr-2" />
-            Ajouter {mediaTypeLabel.toLowerCase()}
+            {isProcessing ? 'Traitement...' : `Ajouter ${mediaTypeLabel.toLowerCase()}`}
           </Button>
           {mediaItems.some(item => !item.uploaded) && (
             <Button
+              type="button"
               onClick={handleUploadAll}
-              disabled={isUploading || !marcheId}
+              disabled={isUploading || !marcheId || isProcessing}
               className="flex items-center"
             >
               <Upload className="h-4 w-4 mr-2" />
-              Tout uploader
+              {isUploading ? 'Upload...' : 'Tout uploader'}
             </Button>
           )}
         </div>
@@ -312,6 +354,15 @@ const MediaUploadSection: React.FC<MediaUploadSectionProps> = ({
           <p className="text-yellow-800">
             Sauvegardez d'abord les informations de base de la marche pour pouvoir ajouter des {mediaTypeLabel.toLowerCase()}.
           </p>
+        </div>
+      )}
+
+      {isProcessing && (
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+          <div className="flex items-center">
+            <div className="animate-spin w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full mr-3"></div>
+            <p className="text-blue-800">Traitement des fichiers en cours...</p>
+          </div>
         </div>
       )}
 
@@ -395,9 +446,11 @@ const MediaUploadSection: React.FC<MediaUploadSectionProps> = ({
             {mediaItems.length} {mediaType === 'photos' ? 'photo(s)' : 'vidéo(s)'} • {mediaItems.filter(item => item.uploaded).length} uploadée(s)
           </span>
           <Button
+            type="button"
             variant="outline"
-            onClick={() => setMediaItems([])}
+            onClick={handleClearAll}
             className="text-red-600 hover:text-red-700"
+            disabled={isProcessing}
           >
             <Trash2 className="h-4 w-4 mr-2" />
             Tout supprimer
