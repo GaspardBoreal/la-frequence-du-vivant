@@ -258,38 +258,98 @@ export const deleteMarche = async (marcheId: string): Promise<void> => {
       .eq('id', marcheId)
       .single();
 
-    if (checkError || !existingMarche) {
-      console.error('❌ Marche introuvable:', checkError);
+    if (checkError) {
+      console.error('❌ Erreur lors de la vérification de la marche:', checkError);
+      if (checkError.code === 'PGRST116') {
+        throw new Error('Marche introuvable');
+      }
+      throw checkError;
+    }
+
+    if (!existingMarche) {
+      console.error('❌ Marche introuvable');
       throw new Error('Marche introuvable');
     }
 
     console.log(`📍 Suppression de la marche "${existingMarche.ville}"`);
 
-    // Supprimer d'abord tous les médias associés en parallèle
-    const deletePromises = [
-      supabase.from('marche_photos').delete().eq('marche_id', marcheId),
-      supabase.from('marche_audio').delete().eq('marche_id', marcheId),
-      supabase.from('marche_videos').delete().eq('marche_id', marcheId),
-      supabase.from('marche_documents').delete().eq('marche_id', marcheId),
-      supabase.from('marche_etudes').delete().eq('marche_id', marcheId),
-      supabase.from('marche_tags').delete().eq('marche_id', marcheId)
-    ];
-
-    const results = await Promise.allSettled(deletePromises);
+    // Supprimer tous les médias associés de manière séquentielle pour éviter les conflits
+    console.log('🗑️ Suppression des médias associés...');
     
-    // Log les erreurs mais ne pas arrêter le processus
-    results.forEach((result, index) => {
-      const tables = ['marche_photos', 'marche_audio', 'marche_videos', 'marche_documents', 'marche_etudes', 'marche_tags'];
-      if (result.status === 'rejected') {
-        console.error(`❌ Erreur suppression ${tables[index]}:`, result.reason);
-      } else if (result.value.error) {
-        console.error(`❌ Erreur suppression ${tables[index]}:`, result.value.error);
-      } else {
-        console.log(`✅ ${tables[index]} supprimés`);
-      }
-    });
+    // Supprimer les photos
+    const { error: photosError } = await supabase
+      .from('marche_photos')
+      .delete()
+      .eq('marche_id', marcheId);
+    
+    if (photosError) {
+      console.error('❌ Erreur suppression photos:', photosError);
+    } else {
+      console.log('✅ Photos supprimées');
+    }
+
+    // Supprimer les audios
+    const { error: audioError } = await supabase
+      .from('marche_audio')
+      .delete()
+      .eq('marche_id', marcheId);
+    
+    if (audioError) {
+      console.error('❌ Erreur suppression audio:', audioError);
+    } else {
+      console.log('✅ Audio supprimés');
+    }
+
+    // Supprimer les vidéos
+    const { error: videosError } = await supabase
+      .from('marche_videos')
+      .delete()
+      .eq('marche_id', marcheId);
+    
+    if (videosError) {
+      console.error('❌ Erreur suppression vidéos:', videosError);
+    } else {
+      console.log('✅ Vidéos supprimées');
+    }
+
+    // Supprimer les documents
+    const { error: documentsError } = await supabase
+      .from('marche_documents')
+      .delete()
+      .eq('marche_id', marcheId);
+    
+    if (documentsError) {
+      console.error('❌ Erreur suppression documents:', documentsError);
+    } else {
+      console.log('✅ Documents supprimés');
+    }
+
+    // Supprimer les études
+    const { error: etudesError } = await supabase
+      .from('marche_etudes')
+      .delete()
+      .eq('marche_id', marcheId);
+    
+    if (etudesError) {
+      console.error('❌ Erreur suppression études:', etudesError);
+    } else {
+      console.log('✅ Études supprimées');
+    }
+
+    // Supprimer les tags
+    const { error: tagsError } = await supabase
+      .from('marche_tags')
+      .delete()
+      .eq('marche_id', marcheId);
+    
+    if (tagsError) {
+      console.error('❌ Erreur suppression tags:', tagsError);
+    } else {
+      console.log('✅ Tags supprimés');
+    }
 
     // Supprimer enfin la marche elle-même
+    console.log('🗑️ Suppression de la marche principale...');
     const { error: marcheError } = await supabase
       .from('marches')
       .delete()
@@ -300,7 +360,21 @@ export const deleteMarche = async (marcheId: string): Promise<void> => {
       throw new Error(`Erreur lors de la suppression: ${marcheError.message}`);
     }
 
-    console.log('✅ Marche supprimée avec succès');
+    console.log('✅ Marche supprimée avec succès de Supabase');
+
+    // Vérifier que la suppression a bien eu lieu
+    const { data: verifyData, error: verifyError } = await supabase
+      .from('marches')
+      .select('id')
+      .eq('id', marcheId)
+      .single();
+
+    if (verifyError && verifyError.code === 'PGRST116') {
+      console.log('✅ Vérification: la marche a bien été supprimée');
+    } else if (verifyData) {
+      console.error('❌ Erreur: la marche existe encore après suppression');
+      throw new Error('La marche n\'a pas été supprimée correctement');
+    }
 
     // Invalider le cache React Query pour actualiser la liste
     await Promise.all([
@@ -308,6 +382,8 @@ export const deleteMarche = async (marcheId: string): Promise<void> => {
       queryClient.invalidateQueries({ queryKey: ['supabase-status'] }),
       queryClient.refetchQueries({ queryKey: ['marches-supabase'] })
     ]);
+
+    console.log('🔄 Cache invalidé et données rafraîchies');
 
   } catch (error) {
     console.error('❌ Erreur générale lors de la suppression:', error);
