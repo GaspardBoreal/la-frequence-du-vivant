@@ -234,7 +234,7 @@ export const saveAudio = async (
     }
     console.log('✅ [saveAudio] ID marche présent');
 
-    // ÉTAPE 3: Upload vers Supabase Storage avec progression (suppression du test de bucket)
+    // ÉTAPE 3: Upload vers Supabase Storage avec progression
     console.log('🔍 [saveAudio] ÉTAPE 3 - Upload Storage');
     updateProgress(20, 'uploading');
     
@@ -302,7 +302,7 @@ export const saveAudio = async (
       hasMetadata: !!insertData.metadata
     });
     
-    // ÉTAPE 6: Insertion en base de données
+    // ÉTAPE 6: Insertion en base de données avec retry si nécessaire
     console.log('🔍 [saveAudio] ÉTAPE 6 - Insertion base de données');
     updateProgress(95, 'processing');
     
@@ -326,7 +326,7 @@ export const saveAudio = async (
         }
       });
       
-      const errorMsg = `Erreur insertion: ${insertError.message} (Code: ${insertError.code})`;
+      const errorMsg = `Erreur insertion: ${insertError.message}${insertError.code ? ` (Code: ${insertError.code})` : ''}`;
       updateProgress(95, 'error', errorMsg);
       throw new Error(errorMsg);
     }
