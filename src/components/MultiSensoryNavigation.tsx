@@ -50,6 +50,16 @@ const MultiSensoryNavigation: React.FC<MultiSensoryNavigationProps> = ({
     }
   ];
 
+  const handleSectionClick = (sectionId: 'visual' | 'audio' | 'poeme') => {
+    console.log(`🔧 DEBUG: Clic sur section ${sectionId} détecté`);
+    console.log(`🔧 DEBUG: Section active actuelle: ${activeSection}`);
+    console.log(`🔧 DEBUG: Fonction onSectionChange disponible:`, typeof onSectionChange);
+    
+    onSectionChange(sectionId);
+    
+    console.log(`🔧 DEBUG: onSectionChange(${sectionId}) appelée`);
+  };
+
   return (
     <div className="relative flex justify-center items-center py-16">
       {/* Central Hub */}
@@ -93,11 +103,11 @@ const MultiSensoryNavigation: React.FC<MultiSensoryNavigationProps> = ({
               <Button
                 variant={isActive ? "default" : "outline"}
                 size="lg"
-                onClick={() => onSectionChange(section.id)}
+                onClick={() => handleSectionClick(section.id)}
                 onMouseEnter={() => setHoveredSection(section.id)}
                 onMouseLeave={() => setHoveredSection(null)}
                 className={`
-                  relative w-20 h-20 rounded-full p-0 transition-all duration-300
+                  relative w-20 h-20 rounded-full p-0 transition-all duration-300 cursor-pointer
                   ${isActive 
                     ? 'bg-gradient-to-r from-purple-500 to-blue-500 text-white shadow-lg scale-110' 
                     : 'bg-white/80 backdrop-blur-sm hover:bg-white/90 text-gray-700 hover:scale-105'

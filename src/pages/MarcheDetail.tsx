@@ -97,6 +97,29 @@ const MarcheDetail = () => {
     navigate(`/marche/${targetSlug}`);
   };
 
+  const handleSectionChange = (section: 'visual' | 'audio' | 'poeme') => {
+    console.log(`🔧 DEBUG: handleSectionChange appelée avec section: ${section}`);
+    console.log(`🔧 DEBUG: Section actuelle avant changement: ${activeSection}`);
+    console.log(`🔧 DEBUG: Marche actuelle:`, marche?.ville);
+    console.log(`🔧 DEBUG: Fichiers audio disponibles:`, marche?.audioFiles?.length || 0);
+    
+    setActiveSection(section);
+    
+    console.log(`🔧 DEBUG: Section changée vers: ${section}`);
+  };
+
+  useEffect(() => {
+    console.log(`🔧 DEBUG: activeSection état mis à jour: ${activeSection}`);
+  }, [activeSection]);
+
+  useEffect(() => {
+    if (marche) {
+      console.log(`🔧 DEBUG: Marche chargée: ${marche.ville}`);
+      console.log(`🔧 DEBUG: Fichiers audio:`, marche.audioFiles);
+      console.log(`🔧 DEBUG: Nombre de fichiers audio:`, marche.audioFiles?.length || 0);
+    }
+  }, [marche]);
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -160,7 +183,7 @@ const MarcheDetail = () => {
         <div className="max-w-6xl mx-auto px-6">
           <MultiSensoryNavigation
             activeSection={activeSection}
-            onSectionChange={setActiveSection}
+            onSectionChange={handleSectionChange}
             theme={theme}
           />
         </div>

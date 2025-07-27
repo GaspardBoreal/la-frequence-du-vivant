@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
@@ -48,11 +47,13 @@ const AudioExperienceSection: React.FC<AudioExperienceSectionProps> = ({ marche,
   const currentTrack = audioFiles[currentTrackIndex] || null;
   const hasAudioFiles = audioFiles.length > 0;
 
-  console.log(`🎵 Audio ${marche.ville}:`, {
-    audioUrls: audioUrls.length,
-    audioFiles: audioFiles.length,
-    currentTrack: currentTrack?.name
-  });
+  // Logs de débogage détaillés
+  console.log(`🔧 DEBUG AudioExperienceSection: Marche ${marche.ville}`);
+  console.log(`🔧 DEBUG AudioExperienceSection: audioUrls length:`, audioUrls.length);
+  console.log(`🔧 DEBUG AudioExperienceSection: audioFiles length:`, audioFiles.length);
+  console.log(`🔧 DEBUG AudioExperienceSection: hasAudioFiles:`, hasAudioFiles);
+  console.log(`🔧 DEBUG AudioExperienceSection: currentTrack:`, currentTrack?.name);
+  console.log(`🔧 DEBUG AudioExperienceSection: Component rendered successfully`);
 
   const handleNext = () => {
     if (audioFiles.length <= 1) return;
@@ -112,6 +113,7 @@ const AudioExperienceSection: React.FC<AudioExperienceSectionProps> = ({ marche,
 
   // Affichage quand il n'y a pas de fichiers audio
   if (!hasAudioFiles) {
+    console.log(`🔧 DEBUG AudioExperienceSection: Affichage du message "Pas de fichiers audio"`);
     return (
       <div className="space-y-12 pt-16">
         <motion.div
@@ -194,6 +196,8 @@ const AudioExperienceSection: React.FC<AudioExperienceSectionProps> = ({ marche,
       </div>
     );
   }
+
+  console.log(`🔧 DEBUG AudioExperienceSection: Affichage du lecteur audio avec ${audioFiles.length} fichier(s)`);
 
   return (
     <div className="space-y-12 pt-16">
