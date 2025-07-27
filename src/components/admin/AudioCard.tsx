@@ -1,10 +1,11 @@
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Card } from '../ui/card';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Textarea } from '../ui/textarea';
 import { Badge } from '../ui/badge';
+import { Slider } from '../ui/slider';
 import { 
   Play, 
   Pause, 
@@ -52,7 +53,26 @@ const AudioCard: React.FC<AudioCardProps> = ({
   const [editTitre, setEditTitre] = useState(audio.titre || '');
   const [editDescription, setEditDescription] = useState(audio.description || '');
   const [isPlaying, setIsPlaying] = useState(false);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [duration, setDuration] = useState(0);
   const audioRef = useRef<HTMLAudioElement>(null);
+
+  // Update progress when audio plays
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (!audio) return;
+
+    const updateTime = () => setCurrentTime(audio.currentTime);
+    const updateDuration = () => setDuration(audio.duration);
+
+    audio.addEventListener('timeupdate', updateTime);
+    audio.addEventListener('loadedmetadata', updateDuration);
+
+    return () => {
+      audio.removeEventListener('timeupdate', updateTime);
+      audio.removeEventListener('loadedmetadata', updateDuration);
+    };
+  }, []);
 
   const handleSave = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -92,6 +112,15 @@ const AudioCard: React.FC<AudioCardProps> = ({
 
   const handleAudioEnded = () => {
     setIsPlaying(false);
+    setCurrentTime(0);
+  };
+
+  const handleSeek = (value: number[]) => {
+    const newTime = value[0];
+    if (audioRef.current) {
+      audioRef.current.currentTime = newTime;
+      setCurrentTime(newTime);
+    }
   };
 
   const handleRemove = (e: React.MouseEvent) => {
@@ -116,6 +145,13 @@ const AudioCard: React.FC<AudioCardProps> = ({
 
   const formatDuration = (seconds: number | null): string => {
     if (!seconds) return 'Durée inconnue';
+    const mins = Math.floor(seconds / 60);
+    const secs = Math.floor(seconds % 60);
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
+
+  const formatTime = (seconds: number): string => {
+    if (!seconds || isNaN(seconds)) return '0:00';
     const mins = Math.floor(seconds / 60);
     const secs = Math.floor(seconds % 60);
     return `${mins}:${secs.toString().padStart(2, '0')}`;
@@ -163,6 +199,21 @@ const AudioCard: React.FC<AudioCardProps> = ({
           >
             <X className="h-4 w-4" />
           </Button>
+        </div>
+
+        {/* Progress Bar */}
+        <div className="space-y-2">
+          <Slider
+            value={[currentTime]}
+            max={duration || 100}
+            step={1}
+            onValueChange={handleSeek}
+            className="w-full"
+          />
+          <div className="flex justify-between text-xs text-gray-500">
+            <span>{formatTime(currentTime)}</span>
+            <span>{formatTime(duration)}</span>
+          </div>
         </div>
 
         {/* Audio Element */}
