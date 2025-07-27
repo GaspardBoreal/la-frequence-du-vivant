@@ -7,7 +7,7 @@ import { Label } from '../ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
 import { RichTextEditor } from '../ui/rich-text-editor';
-import { Save, ArrowLeft, FileText, Sparkles } from 'lucide-react';
+import { Save, ArrowLeft, FileText, Sparkles, Edit3, PenTool } from 'lucide-react';
 import { useSupabaseMarche } from '../../hooks/useSupabaseMarches';
 import { createMarche, updateMarche, MarcheFormData } from '../../utils/supabaseMarcheOperations';
 import MediaUploadSection from './MediaUploadSection';
@@ -283,42 +283,52 @@ const MarcheForm: React.FC<MarcheFormProps> = ({
               </div>
 
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                <div className="space-y-4">
-                  <div className="flex items-center space-x-2">
-                    <div className="w-3 h-3 bg-accent rounded-full animate-pulse"></div>
-                    <Label className="text-lg font-semibold text-foreground">
-                      Résumé Captivant
-                    </Label>
+                <div className="space-y-6">
+                  <div className="flex items-center space-x-3">
+                    <div className="p-2 bg-accent/10 rounded-lg">
+                      <Edit3 className="h-5 w-5 text-accent" />
+                    </div>
+                    <div>
+                      <Label className="text-lg font-semibold text-foreground">
+                        Résumé Captivant
+                      </Label>
+                      <p className="text-sm text-muted-foreground">
+                        Un aperçu concis mais évocateur qui donne envie d'en savoir plus
+                      </p>
+                    </div>
                   </div>
-                  <p className="text-sm text-muted-foreground mb-4">
-                    Un aperçu concis mais évocateur qui donne envie d'en savoir plus
-                  </p>
-                  <div className="gaspard-card p-1">
+                  
+                  <div className="bg-card rounded-lg p-4 border border-border/50 shadow-sm">
                     <RichTextEditor
                       value={descriptifCourtRichText}
                       onChange={setDescriptifCourtRichText}
                       placeholder="Décrivez brièvement l'essence de cette marche... Quelle émotion voulez-vous transmettre ?"
-                      className="min-h-[200px] border-0 shadow-none"
+                      className="min-h-[200px] bg-background/50"
                     />
                   </div>
                 </div>
 
-                <div className="space-y-4">
-                  <div className="flex items-center space-x-2">
-                    <div className="w-3 h-3 bg-accent rounded-full animate-pulse"></div>
-                    <Label className="text-lg font-semibold text-foreground">
-                      Récit Détaillé
-                    </Label>
+                <div className="space-y-6">
+                  <div className="flex items-center space-x-3">
+                    <div className="p-2 bg-accent/10 rounded-lg">
+                      <PenTool className="h-5 w-5 text-accent" />
+                    </div>
+                    <div>
+                      <Label className="text-lg font-semibold text-foreground">
+                        Récit Détaillé
+                      </Label>
+                      <p className="text-sm text-muted-foreground">
+                        L'histoire complète, riche en détails sensoriels et émotionnels
+                      </p>
+                    </div>
                   </div>
-                  <p className="text-sm text-muted-foreground mb-4">
-                    L'histoire complète, riche en détails sensoriels et émotionnels
-                  </p>
-                  <div className="gaspard-card p-1">
+                  
+                  <div className="bg-card rounded-lg p-4 border border-border/50 shadow-sm">
                     <RichTextEditor
                       value={descriptifLongRichText}
                       onChange={setDescriptifLongRichText}
                       placeholder="Racontez l'histoire complète de cette marche... Plongez dans les détails, les sensations, les rencontres..."
-                      className="min-h-[300px] border-0 shadow-none"
+                      className="min-h-[300px] bg-background/50"
                     />
                   </div>
                 </div>
