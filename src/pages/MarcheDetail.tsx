@@ -165,7 +165,7 @@ const MarcheDetail = () => {
           />
         </div>
 
-        <div className="max-w-6xl mx-auto px-6 py-8 relative">
+        <div className="max-w-6xl mx-auto px-6 py-16 relative">
           {previousMarche && (
             <motion.div
               className="fixed left-4 top-1/2 transform -translate-y-1/2 z-10"
