@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
@@ -122,27 +121,6 @@ const MarcheList: React.FC<MarcheListProps> = ({
     });
   };
 
-  const getDepartmentFromRegion = (region: string): string => {
-    // Mapping basique région -> département principal
-    const regionToDepartment: { [key: string]: string } = {
-      'Nouvelle-Aquitaine': 'Gironde',
-      'Bretagne': 'Finistère',
-      'Occitanie': 'Haute-Garonne',
-      'Auvergne-Rhône-Alpes': 'Rhône',
-      'Provence-Alpes-Côte d\'Azur': 'Bouches-du-Rhône',
-      'Île-de-France': 'Paris',
-      'Grand Est': 'Bas-Rhin',
-      'Hauts-de-France': 'Nord',
-      'Normandie': 'Calvados',
-      'Centre-Val de Loire': 'Loiret',
-      'Bourgogne-Franche-Comté': 'Côte-d\'Or',
-      'Pays de la Loire': 'Loire-Atlantique',
-      'Corse': 'Corse-du-Sud'
-    };
-
-    return regionToDepartment[region] || region;
-  };
-
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -224,8 +202,10 @@ const MarcheList: React.FC<MarcheListProps> = ({
                   )}
                   {marche.latitude && marche.longitude && (
                     <div className="flex items-center space-x-2">
-                      <MapPin className="h-4 w-4" />
-                      <span>{Number(marche.latitude).toFixed(3)}, {Number(marche.longitude).toFixed(3)}</span>
+                      <span className="text-accent font-medium">Latitude :</span>
+                      <span>{Number(marche.latitude).toFixed(3)}</span>
+                      <span className="text-accent font-medium">Longitude :</span>
+                      <span>{Number(marche.longitude).toFixed(3)}</span>
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                           <Button
@@ -290,7 +270,7 @@ const MarcheList: React.FC<MarcheListProps> = ({
                     </div>
                     <div className="flex flex-wrap gap-1">
                       {marche.supabaseTags.map((tag, index) => (
-                        <Badge key={index} variant="outline" className="text-xs bg-purple-50 text-purple-700 border-purple-200">
+                        <Badge key={index} variant="outline" className="text-xs bg-white text-green-600 border-green-200">
                           {tag}
                         </Badge>
                       ))}
