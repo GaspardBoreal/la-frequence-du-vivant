@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
-import { Filter, X } from 'lucide-react';
+import { Filter, X, Search } from 'lucide-react';
 import { MarcheTechnoSensible } from '../../utils/googleSheetsApi';
 
 interface AdminFiltersProps {
@@ -15,9 +15,12 @@ const AdminFilters: React.FC<AdminFiltersProps> = ({ marches, onFilterChange }) 
   const [showFilters, setShowFilters] = useState(false);
   const [villeFilter, setVilleFilter] = useState('');
   const [regionFilter, setRegionFilter] = useState('');
+  const [departementFilter, setDepartementFilter] = useState('');
+  const [tagsFilter, setTagsFilter] = useState('');
+  const [searchText, setSearchText] = useState('');
 
   // Fonction sécurisée pour filtrer les marches
-  const applyFilters = (ville: string, region: string) => {
+  const applyFilters = (ville: string, region: string, departement: string, tags: string, search: string) => {
     if (!marches || marches.length === 0) {
       onFilterChange([]);
       return;
@@ -41,41 +44,121 @@ const AdminFilters: React.FC<AdminFiltersProps> = ({ marches, onFilterChange }) 
       });
     }
 
+    // Filtre par département
+    if (departement && departement !== 'all') {
+      filtered = filtered.filter(marche => {
+        const marcheDepartement = marche?.departement || '';
+        return marcheDepartement === departement;
+      });
+    }
+
+    // Filtre par tags
+    if (tags.trim()) {
+      filtered = filtered.filter(marche => {
+        const marcheTags = marche?.supabaseTags || [];
+        return marcheTags.some(tag => 
+          tag.toLowerCase().includes(tags.toLowerCase())
+        );
+      });
+    }
+
+    // Recherche textuelle dans les contenus
+    if (search.trim()) {
+      const searchLower = search.toLowerCase();
+      filtered = filtered.filter(marche => {
+        const theme = marche?.theme || '';
+        const descriptifCourt = marche?.descriptifCourt || '';
+        const descriptifLong = marche?.poeme || '';
+        const nomMarche = marche?.nomMarche || '';
+        
+        return theme.toLowerCase().includes(searchLower) ||
+               descriptifCourt.toLowerCase().includes(searchLower) ||
+               descriptifLong.toLowerCase().includes(searchLower) ||
+               nomMarche.toLowerCase().includes(searchLower);
+      });
+    }
+
     onFilterChange(filtered);
   };
 
   // Gestionnaires d'événements
   const handleVilleChange = (value: string) => {
     setVilleFilter(value);
-    applyFilters(value, regionFilter);
+    applyFilters(value, regionFilter, departementFilter, tagsFilter, searchText);
   };
 
   const handleRegionChange = (value: string) => {
     setRegionFilter(value);
-    applyFilters(villeFilter, value);
+    applyFilters(villeFilter, value, departementFilter, tagsFilter, searchText);
+  };
+
+  const handleDepartementChange = (value: string) => {
+    setDepartementFilter(value);
+    applyFilters(villeFilter, regionFilter, value, tagsFilter, searchText);
+  };
+
+  const handleTagsChange = (value: string) => {
+    setTagsFilter(value);
+    applyFilters(villeFilter, regionFilter, departementFilter, value, searchText);
+  };
+
+  const handleSearchChange = (value: string) => {
+    setSearchText(value);
+    applyFilters(villeFilter, regionFilter, departementFilter, tagsFilter, value);
   };
 
   const clearFilters = () => {
     setVilleFilter('');
     setRegionFilter('');
+    setDepartementFilter('');
+    setTagsFilter('');
+    setSearchText('');
     onFilterChange(marches);
   };
 
-  // Obtenir les régions uniques (en s'assurant qu'elles ne sont pas vides)
+  // Obtenir les régions uniques
   const getUniqueRegions = () => {
     if (!marches || marches.length === 0) return [];
     
     const regions = marches
       .map(marche => marche?.region)
-      .filter(region => region && region.trim() !== '') // Filtrer les valeurs vides
-      .filter((region, index, arr) => arr.indexOf(region) === index) // Unique values
+      .filter(region => region && region.trim() !== '')
+      .filter((region, index, arr) => arr.indexOf(region) === index)
       .sort();
     
     return regions;
   };
 
+  // Obtenir les départements uniques
+  const getUniqueDepartements = () => {
+    if (!marches || marches.length === 0) return [];
+    
+    const departements = marches
+      .map(marche => marche?.departement)
+      .filter(dept => dept && dept.trim() !== '')
+      .filter((dept, index, arr) => arr.indexOf(dept) === index)
+      .sort();
+    
+    return departements;
+  };
+
+  // Obtenir tous les tags uniques
+  const getUniqueTags = () => {
+    if (!marches || marches.length === 0) return [];
+    
+    const allTags = marches
+      .flatMap(marche => marche?.supabaseTags || [])
+      .filter(tag => tag && tag.trim() !== '')
+      .filter((tag, index, arr) => arr.indexOf(tag) === index)
+      .sort();
+    
+    return allTags;
+  };
+
   const uniqueRegions = getUniqueRegions();
-  const hasActiveFilters = villeFilter || regionFilter;
+  const uniqueDepartements = getUniqueDepartements();
+  const uniqueTags = getUniqueTags();
+  const hasActiveFilters = villeFilter || regionFilter || departementFilter || tagsFilter || searchText;
 
   return (
     <div className="mb-6">
@@ -103,34 +186,97 @@ const AdminFilters: React.FC<AdminFiltersProps> = ({ marches, onFilterChange }) 
 
       {showFilters && (
         <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4 space-y-4">
-          {/* Filtre par ville */}
+          {/* Recherche textuelle globale */}
           <div className="space-y-2">
-            <label className="text-white text-sm font-medium">Filtrer par ville</label>
-            <Input
-              placeholder="Rechercher une ville..."
-              value={villeFilter}
-              onChange={(e) => handleVilleChange(e.target.value)}
-              className="bg-white/10 border-white/20 text-white placeholder:text-white/60"
-            />
+            <label className="text-white text-sm font-medium">Recherche dans les contenus</label>
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-white/60 h-4 w-4" />
+              <Input
+                placeholder="Rechercher dans thème, description, nom de marche..."
+                value={searchText}
+                onChange={(e) => handleSearchChange(e.target.value)}
+                className="bg-white/10 border-white/20 text-white placeholder:text-white/60 pl-10"
+              />
+            </div>
           </div>
 
-          {/* Filtre par région - seulement si nous avons des régions */}
-          {uniqueRegions.length > 0 && (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {/* Filtre par ville */}
             <div className="space-y-2">
-              <label className="text-white text-sm font-medium">Filtrer par région</label>
-              <Select value={regionFilter} onValueChange={handleRegionChange}>
-                <SelectTrigger className="bg-white/10 border-white/20 text-white">
-                  <SelectValue placeholder="Toutes les régions" />
-                </SelectTrigger>
-                <SelectContent className="bg-white border border-gray-200 shadow-lg z-50">
-                  <SelectItem value="all">Toutes les régions</SelectItem>
-                  {uniqueRegions.map((region) => (
-                    <SelectItem key={region} value={region}>
-                      {region}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <label className="text-white text-sm font-medium">Ville</label>
+              <Input
+                placeholder="Rechercher une ville..."
+                value={villeFilter}
+                onChange={(e) => handleVilleChange(e.target.value)}
+                className="bg-white/10 border-white/20 text-white placeholder:text-white/60"
+              />
+            </div>
+
+            {/* Filtre par région */}
+            {uniqueRegions.length > 0 && (
+              <div className="space-y-2">
+                <label className="text-white text-sm font-medium">Région</label>
+                <Select value={regionFilter} onValueChange={handleRegionChange}>
+                  <SelectTrigger className="bg-white/10 border-white/20 text-white">
+                    <SelectValue placeholder="Toutes les régions" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-white border border-gray-200 shadow-lg z-50">
+                    <SelectItem value="all">Toutes les régions</SelectItem>
+                    {uniqueRegions.map((region) => (
+                      <SelectItem key={region} value={region}>
+                        {region}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+
+            {/* Filtre par département */}
+            {uniqueDepartements.length > 0 && (
+              <div className="space-y-2">
+                <label className="text-white text-sm font-medium">Département</label>
+                <Select value={departementFilter} onValueChange={handleDepartementChange}>
+                  <SelectTrigger className="bg-white/10 border-white/20 text-white">
+                    <SelectValue placeholder="Tous les départements" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-white border border-gray-200 shadow-lg z-50">
+                    <SelectItem value="all">Tous les départements</SelectItem>
+                    {uniqueDepartements.map((dept) => (
+                      <SelectItem key={dept} value={dept}>
+                        {dept}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+          </div>
+
+          {/* Filtre par tags */}
+          {uniqueTags.length > 0 && (
+            <div className="space-y-2">
+              <label className="text-white text-sm font-medium">Tags</label>
+              <Input
+                placeholder="Rechercher dans les tags..."
+                value={tagsFilter}
+                onChange={(e) => handleTagsChange(e.target.value)}
+                className="bg-white/10 border-white/20 text-white placeholder:text-white/60"
+              />
+              <div className="flex flex-wrap gap-2 mt-2">
+                {uniqueTags.slice(0, 10).map((tag) => (
+                  <button
+                    key={tag}
+                    onClick={() => handleTagsChange(tag)}
+                    className="px-2 py-1 bg-white/20 hover:bg-white/30 rounded text-white text-xs transition-colors"
+                  >
+                    {tag}
+                  </button>
+                ))}
+                {uniqueTags.length > 10 && (
+                  <span className="text-white/60 text-xs">+{uniqueTags.length - 10} autres tags</span>
+                )}
+              </div>
             </div>
           )}
         </div>
