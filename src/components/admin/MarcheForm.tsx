@@ -34,8 +34,8 @@ interface FormData {
   poeme: string;
   date: string;
   temperature: number | null;
-  latitude: number;
-  longitude: number;
+  latitude: number | null;
+  longitude: number | null;
   lienGoogleDrive: string;
   sousThemes: string;
   tags: string;
@@ -70,8 +70,8 @@ const MarcheForm: React.FC<MarcheFormProps> = ({ mode, marcheId, onCancel, onSuc
         poeme: marche.poeme || '',
         date: marche.date || '',
         temperature: marche.temperature || null,
-        latitude: marche.latitude || 0,
-        longitude: marche.longitude || 0,
+        latitude: marche.latitude || null,
+        longitude: marche.longitude || null,
         lienGoogleDrive: marche.lien || '',
         sousThemes: marche.sousThemes?.join(', ') || '',
         tags: marche.supabaseTags?.join(', ') || '',
@@ -106,6 +106,8 @@ const MarcheForm: React.FC<MarcheFormProps> = ({ mode, marcheId, onCancel, onSuc
         theme: themeRichText,
         descriptifCourt: ''
       };
+
+      console.log('Données converties pour API:', apiData);
 
       if (mode === 'create') {
         const newMarcheId = await createMarche(apiData);
@@ -234,7 +236,9 @@ const MarcheForm: React.FC<MarcheFormProps> = ({ mode, marcheId, onCancel, onSuc
                   id="temperature"
                   type="number"
                   step="0.1"
-                  {...register('temperature', { valueAsNumber: true })}
+                  {...register('temperature', { 
+                    setValueAs: (value) => value === '' ? null : Number(value)
+                  })}
                 />
               </div>
 
@@ -244,7 +248,9 @@ const MarcheForm: React.FC<MarcheFormProps> = ({ mode, marcheId, onCancel, onSuc
                   id="latitude"
                   type="number"
                   step="any"
-                  {...register('latitude', { valueAsNumber: true })}
+                  {...register('latitude', { 
+                    setValueAs: (value) => value === '' ? null : Number(value)
+                  })}
                 />
               </div>
 
@@ -254,7 +260,9 @@ const MarcheForm: React.FC<MarcheFormProps> = ({ mode, marcheId, onCancel, onSuc
                   id="longitude"
                   type="number"
                   step="any"
-                  {...register('longitude', { valueAsNumber: true })}
+                  {...register('longitude', { 
+                    setValueAs: (value) => value === '' ? null : Number(value)
+                  })}
                 />
               </div>
             </div>
