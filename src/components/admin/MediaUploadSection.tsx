@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import { Button } from '../ui/button';
 import { Card } from '../ui/card';
@@ -55,9 +56,9 @@ const MediaUploadSection: React.FC<MediaUploadSectionProps> = ({
   const loadExistingPhotos = async () => {
     if (!marcheId) return;
     
+    console.log('🔄 [MediaUploadSection] Chargement des photos existantes...');
     setIsLoading(true);
     try {
-      console.log('🔄 Chargement des photos existantes...');
       const existingPhotos = await fetchExistingPhotos(marcheId);
       
       const formattedPhotos: MediaItem[] = existingPhotos.map(photo => ({
@@ -73,9 +74,9 @@ const MediaUploadSection: React.FC<MediaUploadSectionProps> = ({
       }));
 
       setMediaItems(formattedPhotos);
-      console.log(`✅ ${formattedPhotos.length} photos existantes chargées`);
+      console.log(`✅ [MediaUploadSection] ${formattedPhotos.length} photos existantes chargées`);
     } catch (error) {
-      console.error('❌ Erreur chargement photos:', error);
+      console.error('❌ [MediaUploadSection] Erreur chargement photos:', error);
       toast.error('Erreur lors du chargement des photos existantes');
     } finally {
       setIsLoading(false);
@@ -87,7 +88,7 @@ const MediaUploadSection: React.FC<MediaUploadSectionProps> = ({
     event.preventDefault();
     event.stopPropagation();
     
-    console.log('🎯 Ouverture du sélecteur de fichiers');
+    console.log('🎯 [MediaUploadSection] Ouverture du sélecteur de fichiers');
     fileInputRef.current?.click();
   };
 
@@ -96,7 +97,7 @@ const MediaUploadSection: React.FC<MediaUploadSectionProps> = ({
     if (!files) return;
 
     setIsProcessing(true);
-    console.log(`📁 Traitement de ${files.length} fichier(s)`);
+    console.log(`📁 [MediaUploadSection] Traitement de ${files.length} fichier(s)`);
 
     const newItems: MediaItem[] = [];
     
@@ -105,11 +106,12 @@ const MediaUploadSection: React.FC<MediaUploadSectionProps> = ({
         if (mediaType === 'photos') {
           // Vérifier le format
           if (!isSupportedPhotoFormat(file)) {
+            console.error('❌ [MediaUploadSection] Format non supporté:', file.name);
             toast.error(`Format non supporté: ${file.name}`);
             continue;
           }
 
-          console.log(`🔄 Traitement de la photo: ${file.name}`);
+          console.log(`🔄 [MediaUploadSection] Traitement de la photo: ${file.name}`);
           
           // Traiter la photo
           const processedPhoto = await processPhoto(file);
@@ -127,7 +129,7 @@ const MediaUploadSection: React.FC<MediaUploadSectionProps> = ({
           };
 
           newItems.push(newItem);
-          console.log(`✅ Photo traitée: ${file.name}`);
+          console.log(`✅ [MediaUploadSection] Photo traitée: ${file.name}`);
         } else {
           // Pour les vidéos, traitement simple
           const newItem: MediaItem = {
@@ -142,7 +144,7 @@ const MediaUploadSection: React.FC<MediaUploadSectionProps> = ({
           newItems.push(newItem);
         }
       } catch (error) {
-        console.error('❌ Erreur traitement fichier:', error);
+        console.error('❌ [MediaUploadSection] Erreur traitement fichier:', error);
         toast.error(`Erreur lors du traitement de ${file.name}`);
       }
     }
@@ -153,20 +155,22 @@ const MediaUploadSection: React.FC<MediaUploadSectionProps> = ({
       toast.success(`${newItems.length} fichier(s) ajouté(s) avec succès`);
     }
     
-    // Réinitialiser l'input file pour permettre la sélection du même fichier
+    // Réinitialiser l'input file
     event.target.value = '';
-    
     setIsProcessing(false);
   };
 
   const handleUpload = async (itemId: string) => {
     const item = mediaItems.find(m => m.id === itemId);
     if (!marcheId || !item || !item.file) {
+      console.error('❌ [MediaUploadSection] Données manquantes pour upload:', { marcheId, item: !!item, file: !!item?.file });
       toast.error('Impossible d\'uploader: données manquantes');
       return;
     }
 
+    console.log('📤 [MediaUploadSection] Début upload:', item.name);
     setIsUploading(true);
+    
     try {
       if (mediaType === 'photos') {
         const photoData: PhotoToUpload = {
@@ -180,19 +184,22 @@ const MediaUploadSection: React.FC<MediaUploadSectionProps> = ({
           description: item.description
         };
 
-        await savePhoto(marcheId, photoData);
+        console.log('📋 [MediaUploadSection] Données photo préparées:', photoData);
+        const photoId = await savePhoto(marcheId, photoData);
+        console.log('✅ [MediaUploadSection] Photo sauvegardée avec ID:', photoId);
       } else {
         await uploadVideo(item.file, marcheId);
       }
 
+      // Marquer comme uploadé
       setMediaItems(prev => prev.map(media => 
         media.id === itemId ? { ...media, uploaded: true } : media
       ));
 
       toast.success('Fichier uploadé avec succès !');
     } catch (error) {
-      console.error('❌ Erreur upload:', error);
-      toast.error('Erreur lors de l\'upload');
+      console.error('❌ [MediaUploadSection] Erreur upload:', error);
+      toast.error('Erreur lors de l\'upload: ' + (error instanceof Error ? error.message : 'Erreur inconnue'));
     } finally {
       setIsUploading(false);
     }
@@ -200,6 +207,7 @@ const MediaUploadSection: React.FC<MediaUploadSectionProps> = ({
 
   const handleUploadAll = async () => {
     if (!marcheId) {
+      console.error('❌ [MediaUploadSection] Aucun ID de marche fourni');
       toast.error('Aucun ID de marche fourni');
       return;
     }
@@ -210,7 +218,9 @@ const MediaUploadSection: React.FC<MediaUploadSectionProps> = ({
       return;
     }
 
+    console.log(`📤 [MediaUploadSection] Upload en masse de ${itemsToUpload.length} fichiers`);
     setIsUploading(true);
+    
     try {
       if (mediaType === 'photos') {
         const photosData: PhotoToUpload[] = itemsToUpload.map(item => ({
@@ -224,7 +234,9 @@ const MediaUploadSection: React.FC<MediaUploadSectionProps> = ({
           description: item.description
         }));
 
-        await savePhotos(marcheId, photosData);
+        console.log('📋 [MediaUploadSection] Données photos préparées:', photosData);
+        const photoIds = await savePhotos(marcheId, photosData);
+        console.log('✅ [MediaUploadSection] Photos sauvegardées avec IDs:', photoIds);
       } else {
         for (const item of itemsToUpload) {
           await uploadVideo(item.file!, marcheId);
@@ -234,8 +246,8 @@ const MediaUploadSection: React.FC<MediaUploadSectionProps> = ({
       setMediaItems(prev => prev.map(media => ({ ...media, uploaded: true })));
       toast.success('Tous les fichiers ont été uploadés !');
     } catch (error) {
-      console.error('❌ Erreur upload masse:', error);
-      toast.error('Erreur lors de l\'upload en masse');
+      console.error('❌ [MediaUploadSection] Erreur upload masse:', error);
+      toast.error('Erreur lors de l\'upload en masse: ' + (error instanceof Error ? error.message : 'Erreur inconnue'));
     } finally {
       setIsUploading(false);
     }
@@ -244,6 +256,8 @@ const MediaUploadSection: React.FC<MediaUploadSectionProps> = ({
   const handleRemove = async (itemId: string) => {
     const item = mediaItems.find(m => m.id === itemId);
     if (!item) return;
+
+    console.log('🗑️ [MediaUploadSection] Suppression item:', itemId, item.isExisting);
 
     if (item.isExisting) {
       // Confirmation pour suppression définitive
@@ -256,7 +270,7 @@ const MediaUploadSection: React.FC<MediaUploadSectionProps> = ({
         setMediaItems(prev => prev.filter(item => item.id !== itemId));
         toast.success('Photo supprimée avec succès');
       } catch (error) {
-        console.error('❌ Erreur suppression:', error);
+        console.error('❌ [MediaUploadSection] Erreur suppression:', error);
         toast.error('Erreur lors de la suppression');
       }
     } else {
@@ -270,6 +284,8 @@ const MediaUploadSection: React.FC<MediaUploadSectionProps> = ({
     const item = mediaItems.find(m => m.id === itemId);
     if (!item?.isExisting) return;
 
+    console.log('📝 [MediaUploadSection] Mise à jour métadonnées:', itemId, updates);
+
     try {
       await updatePhotoMetadata(itemId, updates);
       setMediaItems(prev => prev.map(item => 
@@ -277,7 +293,7 @@ const MediaUploadSection: React.FC<MediaUploadSectionProps> = ({
       ));
       toast.success('Métadonnées mises à jour');
     } catch (error) {
-      console.error('❌ Erreur mise à jour:', error);
+      console.error('❌ [MediaUploadSection] Erreur mise à jour:', error);
       toast.error('Erreur lors de la mise à jour');
     }
   };
@@ -307,6 +323,7 @@ const MediaUploadSection: React.FC<MediaUploadSectionProps> = ({
     return (
       <div className="flex items-center justify-center h-64">
         <div className="animate-spin w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full"></div>
+        <span className="ml-2">Chargement des {mediaTypeLabel.toLowerCase()}...</span>
       </div>
     );
   }

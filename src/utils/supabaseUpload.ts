@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 
 export interface UploadResult {
@@ -8,74 +7,182 @@ export interface UploadResult {
 
 // Upload d'une photo vers Supabase Storage
 export const uploadPhoto = async (file: File, marcheId: string): Promise<UploadResult> => {
-  const fileExt = file.name.split('.').pop();
-  const fileName = `${marcheId}/${Date.now()}-${Math.random().toString(36).substr(2, 9)}.${fileExt}`;
-  
-  const { data, error } = await supabase.storage
-    .from('marche-photos')
-    .upload(fileName, file);
+  console.log('📤 [uploadPhoto] Début upload:', {
+    fileName: file.name,
+    fileSize: file.size,
+    fileType: file.type,
+    marcheId
+  });
 
-  if (error) {
-    console.error('Erreur upload photo:', error);
+  if (!file) {
+    const error = new Error('Fichier manquant');
+    console.error('❌ [uploadPhoto] Erreur:', error.message);
     throw error;
   }
 
-  const { data: { publicUrl } } = supabase.storage
-    .from('marche-photos')
-    .getPublicUrl(fileName);
+  if (!marcheId) {
+    const error = new Error('ID de marche manquant');
+    console.error('❌ [uploadPhoto] Erreur:', error.message);
+    throw error;
+  }
 
-  return {
-    url: publicUrl,
-    path: fileName
-  };
+  try {
+    const fileExt = file.name.split('.').pop() || 'jpg';
+    const fileName = `${marcheId}/${Date.now()}-${Math.random().toString(36).substr(2, 9)}.${fileExt}`;
+    
+    console.log('📁 [uploadPhoto] Nom fichier généré:', fileName);
+    
+    const { data, error } = await supabase.storage
+      .from('marche-photos')
+      .upload(fileName, file, {
+        cacheControl: '3600',
+        upsert: false
+      });
+
+    if (error) {
+      console.error('❌ [uploadPhoto] Erreur Storage:', error);
+      throw error;
+    }
+
+    console.log('✅ [uploadPhoto] Upload Storage réussi:', data);
+
+    const { data: { publicUrl } } = supabase.storage
+      .from('marche-photos')
+      .getPublicUrl(fileName);
+
+    console.log('🔗 [uploadPhoto] URL publique générée:', publicUrl);
+
+    const result = {
+      url: publicUrl,
+      path: fileName
+    };
+
+    console.log('✅ [uploadPhoto] Upload terminé avec succès:', result);
+    return result;
+  } catch (error) {
+    console.error('💥 [uploadPhoto] Erreur complète:', error);
+    throw error;
+  }
 };
 
 // Upload d'une vidéo vers Supabase Storage
 export const uploadVideo = async (file: File, marcheId: string): Promise<UploadResult> => {
-  const fileExt = file.name.split('.').pop();
-  const fileName = `${marcheId}/${Date.now()}-${Math.random().toString(36).substr(2, 9)}.${fileExt}`;
-  
-  const { data, error } = await supabase.storage
-    .from('marche-videos')
-    .upload(fileName, file);
+  console.log('📤 [uploadVideo] Début upload:', {
+    fileName: file.name,
+    fileSize: file.size,
+    fileType: file.type,
+    marcheId
+  });
 
-  if (error) {
-    console.error('Erreur upload vidéo:', error);
+  if (!file) {
+    const error = new Error('Fichier manquant');
+    console.error('❌ [uploadVideo] Erreur:', error.message);
     throw error;
   }
 
-  const { data: { publicUrl } } = supabase.storage
-    .from('marche-videos')
-    .getPublicUrl(fileName);
+  if (!marcheId) {
+    const error = new Error('ID de marche manquant');
+    console.error('❌ [uploadVideo] Erreur:', error.message);
+    throw error;
+  }
 
-  return {
-    url: publicUrl,
-    path: fileName
-  };
+  try {
+    const fileExt = file.name.split('.').pop() || 'mp4';
+    const fileName = `${marcheId}/${Date.now()}-${Math.random().toString(36).substr(2, 9)}.${fileExt}`;
+    
+    console.log('📁 [uploadVideo] Nom fichier généré:', fileName);
+    
+    const { data, error } = await supabase.storage
+      .from('marche-videos')
+      .upload(fileName, file, {
+        cacheControl: '3600',
+        upsert: false
+      });
+
+    if (error) {
+      console.error('❌ [uploadVideo] Erreur Storage:', error);
+      throw error;
+    }
+
+    console.log('✅ [uploadVideo] Upload Storage réussi:', data);
+
+    const { data: { publicUrl } } = supabase.storage
+      .from('marche-videos')
+      .getPublicUrl(fileName);
+
+    console.log('🔗 [uploadVideo] URL publique générée:', publicUrl);
+
+    const result = {
+      url: publicUrl,
+      path: fileName
+    };
+
+    console.log('✅ [uploadVideo] Upload terminé avec succès:', result);
+    return result;
+  } catch (error) {
+    console.error('💥 [uploadVideo] Erreur complète:', error);
+    throw error;
+  }
 };
 
 // Upload d'un fichier audio vers Supabase Storage
 export const uploadAudio = async (file: File, marcheId: string): Promise<UploadResult> => {
-  const fileExt = file.name.split('.').pop();
-  const fileName = `${marcheId}/${Date.now()}-${Math.random().toString(36).substr(2, 9)}.${fileExt}`;
-  
-  const { data, error } = await supabase.storage
-    .from('marche-audio')
-    .upload(fileName, file);
+  console.log('📤 [uploadAudio] Début upload:', {
+    fileName: file.name,
+    fileSize: file.size,
+    fileType: file.type,
+    marcheId
+  });
 
-  if (error) {
-    console.error('Erreur upload audio:', error);
+  if (!file) {
+    const error = new Error('Fichier manquant');
+    console.error('❌ [uploadAudio] Erreur:', error.message);
     throw error;
   }
 
-  const { data: { publicUrl } } = supabase.storage
-    .from('marche-audio')
-    .getPublicUrl(fileName);
+  if (!marcheId) {
+    const error = new Error('ID de marche manquant');
+    console.error('❌ [uploadAudio] Erreur:', error.message);
+    throw error;
+  }
 
-  return {
-    url: publicUrl,
-    path: fileName
-  };
+  try {
+    const fileExt = file.name.split('.').pop() || 'mp3';
+    const fileName = `${marcheId}/${Date.now()}-${Math.random().toString(36).substr(2, 9)}.${fileExt}`;
+    
+    console.log('📁 [uploadAudio] Nom fichier généré:', fileName);
+    
+    const { data, error } = await supabase.storage
+      .from('marche-audio')
+      .upload(fileName, file, {
+        cacheControl: '3600',
+        upsert: false
+      });
+
+    if (error) {
+      console.error('❌ [uploadAudio] Erreur Storage:', error);
+      throw error;
+    }
+
+    console.log('✅ [uploadAudio] Upload Storage réussi:', data);
+
+    const { data: { publicUrl } } = supabase.storage
+      .from('marche-audio')
+      .getPublicUrl(fileName);
+
+    console.log('🔗 [uploadAudio] URL publique générée:', publicUrl);
+
+    const result = {
+      url: publicUrl,
+      path: fileName
+    };
+
+    console.log('✅ [uploadAudio] Upload terminé avec succès:', result);
+    return result;
+  } catch (error) {
+    console.error('💥 [uploadAudio] Erreur complète:', error);
+    throw error;
+  }
 };
 
 // Obtenir la durée d'un fichier audio
