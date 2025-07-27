@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 
 export interface UploadResult {
@@ -150,6 +151,8 @@ export const uploadAudio = async (file: File, marcheId: string, onProgress?: Upl
     throw error;
   }
 
+  let progressInterval: NodeJS.Timeout | null = null;
+
   try {
     const fileExt = file.name.split('.').pop() || 'mp3';
     const fileName = `${marcheId}/${Date.now()}-${Math.random().toString(36).substr(2, 9)}.${fileExt}`;
@@ -158,7 +161,7 @@ export const uploadAudio = async (file: File, marcheId: string, onProgress?: Upl
     
     // Démarrer la progression simulée
     let currentProgress = 20;
-    const progressInterval = setInterval(() => {
+    progressInterval = setInterval(() => {
       if (currentProgress < 60) {
         currentProgress += Math.random() * 8 + 2; // Progression de 2 à 10% par intervalle
         currentProgress = Math.min(currentProgress, 60);
@@ -175,10 +178,19 @@ export const uploadAudio = async (file: File, marcheId: string, onProgress?: Upl
       });
 
     // Arrêter la progression simulée
-    clearInterval(progressInterval);
+    if (progressInterval) {
+      clearInterval(progressInterval);
+      progressInterval = null;
+    }
 
     if (error) {
-      console.error('❌ [uploadAudio] Erreur Storage:', error);
+      console.error('❌ [uploadAudio] Erreur Storage détaillée:', {
+        error,
+        fileName,
+        fileSize: file.size,
+        fileType: file.type,
+        marcheId
+      });
       onProgress?.(0);
       throw error;
     }
@@ -202,6 +214,11 @@ export const uploadAudio = async (file: File, marcheId: string, onProgress?: Upl
     console.log('✅ [uploadAudio] Upload terminé avec succès:', result);
     return result;
   } catch (error) {
+    // Nettoyer l'intervalle en cas d'erreur
+    if (progressInterval) {
+      clearInterval(progressInterval);
+    }
+    onProgress?.(0);
     console.error('💥 [uploadAudio] Erreur complète:', error);
     throw error;
   }

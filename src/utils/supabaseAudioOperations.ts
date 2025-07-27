@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { uploadAudio } from './supabaseUpload';
 import { runSupabaseDiagnostic } from './supabaseDiagnostic';
@@ -396,7 +397,7 @@ export const saveAudioFiles = async (
   console.log(`💾 [saveAudioFiles] Sauvegarde de ${audioFiles.length} fichiers audio pour marche ${marcheId}`);
   
   const savedIds: string[] = [];
-  const errors: Error[] = [];
+  const errors: Array<{ fileName: string; error: Error }> = [];
 
   for (let i = 0; i < audioFiles.length; i++) {
     const audio = audioFiles[i];
@@ -410,8 +411,8 @@ export const saveAudioFiles = async (
       savedIds.push(audioId);
       console.log(`✅ [saveAudioFiles] Audio ${i + 1} sauvegardé avec ID: ${audioId}`);
     } catch (error) {
-      console.error(`❌ [saveAudioFiles] Erreur audio ${i + 1}:`, error);
-      errors.push(error as Error);
+      console.error(`❌ [saveAudioFiles] Erreur audio ${i + 1} (${audio.file.name}):`, error);
+      errors.push({ fileName: audio.file.name, error: error as Error });
       
       onProgress?.(audio.file.name, {
         fileName: audio.file.name,
@@ -425,8 +426,10 @@ export const saveAudioFiles = async (
   console.log(`📊 [saveAudioFiles] Résultat: ${savedIds.length} réussies, ${errors.length} erreurs`);
   
   if (errors.length > 0) {
-    console.error('💥 [saveAudioFiles] Erreurs rencontrées:', errors);
-    throw new Error(`${errors.length} fichier(s) audio ont échoué lors de la sauvegarde`);
+    console.error('💥 [saveAudioFiles] Erreurs détaillées:', errors);
+    const errorMessage = `${errors.length} fichier(s) audio ont échoué lors de la sauvegarde:\n` + 
+                        errors.map(e => `- ${e.fileName}: ${e.error.message}`).join('\n');
+    throw new Error(errorMessage);
   }
 
   return savedIds;
