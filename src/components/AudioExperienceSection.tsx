@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
@@ -170,7 +171,7 @@ const AudioExperienceSection: React.FC<AudioExperienceSectionProps> = ({ marche,
             </motion.div>
 
             <div className="relative z-10 space-y-4">
-              <h3 className="text-3xl font-crimson font-bold text-gray-800">
+              <h3 className="text-3xl font-crimson font-bold text-white">
                 Pas encore de paysages sonores à écouter
               </h3>
               <p className="text-gray-600 text-lg max-w-2xl mx-auto leading-relaxed">
