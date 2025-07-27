@@ -3,11 +3,12 @@ import React, { useState } from 'react';
 import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
 import { Card } from '../ui/card';
-import { Edit, Trash2, Calendar, MapPin } from 'lucide-react';
+import { Edit, Trash2, Calendar, MapPin, Navigation, Heart } from 'lucide-react';
 import { MarcheTechnoSensible } from '../../utils/googleSheetsApi';
 import { deleteMarche } from '../../utils/supabaseMarcheOperations';
 import { toast } from 'sonner';
 import { queryClient } from '../../lib/queryClient';
+import { createSlug } from '../../utils/slugGenerator';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -58,6 +59,36 @@ const MarcheList: React.FC<MarcheListProps> = ({
     } finally {
       setDeletingId(null);
     }
+  };
+
+  const handleGoogleMapsClick = (latitude: number, longitude: number, ville: string) => {
+    const googleMapsUrl = `https://www.google.com/maps?q=${latitude},${longitude}&z=15`;
+    window.open(googleMapsUrl, '_blank');
+  };
+
+  const handleFrequenceVivantClick = (marche: MarcheTechnoSensible) => {
+    const slug = createSlug(marche.nomMarche || marche.ville, marche.ville);
+    const frequenceVivantUrl = `${window.location.origin}/marche/${slug}`;
+    window.open(frequenceVivantUrl, '_blank');
+  };
+
+  const formatDate = (dateString: string) => {
+    if (!dateString) return '';
+    
+    // Nettoyer la date pour éviter les caractères parasites
+    const cleanDate = dateString.replace(/[^\d-]/g, '');
+    
+    // Vérifier si c'est une date valide
+    const date = new Date(cleanDate);
+    if (isNaN(date.getTime())) {
+      return dateString; // Retourner la date originale si elle n'est pas valide
+    }
+    
+    return date.toLocaleDateString('fr-FR', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
   };
 
   if (isLoading) {
@@ -118,20 +149,54 @@ const MarcheList: React.FC<MarcheListProps> = ({
                   <p className="text-sm text-gray-600 mb-3 line-clamp-2">{marche.descriptifCourt}</p>
                 )}
 
-                <div className="flex items-center space-x-4 text-sm text-gray-500">
+                <div className="flex items-center space-x-4 text-sm text-gray-500 mb-3">
                   {marche.date && (
                     <div className="flex items-center space-x-1">
                       <Calendar className="h-4 w-4" />
-                      <span>{marche.date}</span>
+                      <span>{formatDate(marche.date)}</span>
                     </div>
                   )}
                   {marche.latitude && marche.longitude && (
                     <div className="flex items-center space-x-1">
                       <MapPin className="h-4 w-4" />
                       <span>{marche.latitude.toFixed(3)}, {marche.longitude.toFixed(3)}</span>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleGoogleMapsClick(marche.latitude!, marche.longitude!, marche.ville)}
+                        className="ml-1 h-6 w-6 p-0 text-blue-600 hover:text-blue-800"
+                        title="Voir sur Google Maps"
+                      >
+                        <Navigation className="h-3 w-3" />
+                      </Button>
                     </div>
                   )}
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handleFrequenceVivantClick(marche)}
+                    className="h-6 w-6 p-0 text-purple-600 hover:text-purple-800"
+                    title="Voir dans La Fréquence du Vivant"
+                  >
+                    <Heart className="h-3 w-3" />
+                  </Button>
                 </div>
+
+                {/* Tags */}
+                {marche.supabaseTags && marche.supabaseTags.length > 0 && (
+                  <div className="mb-3">
+                    <div className="flex items-center space-x-2 mb-2">
+                      <span className="text-white font-medium text-sm">Tags :</span>
+                    </div>
+                    <div className="flex flex-wrap gap-1">
+                      {marche.supabaseTags.map((tag, index) => (
+                        <Badge key={index} variant="outline" className="text-xs bg-purple-50 text-purple-700 border-purple-200">
+                          {tag}
+                        </Badge>
+                      ))}
+                    </div>
+                  </div>
+                )}
 
                 <div className="flex flex-wrap gap-2 mt-3">
                   {marche.photos && marche.photos.length > 0 && (
