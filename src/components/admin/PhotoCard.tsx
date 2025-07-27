@@ -227,7 +227,7 @@ const PhotoCard: React.FC<PhotoCardProps> = ({
               className="w-full"
             >
               <Edit className="h-4 w-4 mr-1" />
-              {photo.isExisting ? 'Modifier' : 'Ajouter métadonnées'}
+              Modifier
             </Button>
           </div>
         )}

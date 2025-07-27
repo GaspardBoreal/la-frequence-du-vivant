@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { uploadPhoto } from './supabaseUpload';
 import { ProcessedPhoto } from './photoUtils';
@@ -124,7 +125,9 @@ export const savePhoto = async (
     fileType: photoData.file.type,
     marcheId: marcheId,
     hasMetadata: !!photoData.metadata,
-    metadataKeys: photoData.metadata ? Object.keys(photoData.metadata) : []
+    metadataKeys: photoData.metadata ? Object.keys(photoData.metadata) : [],
+    titre: photoData.titre || 'Sans titre',
+    description: photoData.description || 'Sans description'
   });
 
   // Callback de progression avec logs détaillés
@@ -210,7 +213,7 @@ export const savePhoto = async (
       nom_fichier: fileName,
       url_supabase: uploadResult.url,
       titre: photoData.titre || fileName,
-      description: photoData.description || null,
+      description: photoData.description || '',
       ordre: 0,
       metadata: validatedMetadata
     };
