@@ -102,6 +102,27 @@ const MarcheList: React.FC<MarcheListProps> = ({
     window.open(frequenceVivantUrl, '_blank');
   };
 
+  const getDepartmentFromRegion = (region: string): string => {
+    // Mapping basique région -> département principal
+    const regionToDepartment: { [key: string]: string } = {
+      'Nouvelle-Aquitaine': 'Gironde',
+      'Bretagne': 'Finistère',
+      'Occitanie': 'Haute-Garonne',
+      'Auvergne-Rhône-Alpes': 'Rhône',
+      'Provence-Alpes-Côte d\'Azur': 'Bouches-du-Rhône',
+      'Île-de-France': 'Paris',
+      'Grand Est': 'Bas-Rhin',
+      'Hauts-de-France': 'Nord',
+      'Normandie': 'Calvados',
+      'Centre-Val de Loire': 'Loiret',
+      'Bourgogne-Franche-Comté': 'Côte-d\'Or',
+      'Pays de la Loire': 'Loire-Atlantique',
+      'Corse': 'Corse-du-Sud'
+    };
+
+    return regionToDepartment[region] || region;
+  };
+
   const formatDate = (dateString: string) => {
     if (!dateString) return '';
     
@@ -156,11 +177,11 @@ const MarcheList: React.FC<MarcheListProps> = ({
                   </div>
 
                   <div className="flex items-center space-x-6">
-                    {marche.departement && (
+                    {marche.region && (
                       <div className="flex items-center space-x-2">
                         <span className="text-accent font-medium text-sm">Département :</span>
                         <Badge variant="outline" className="text-xs bg-accent/10 text-accent border-accent/30">
-                          {marche.departement}
+                          {getDepartmentFromRegion(marche.region)}
                         </Badge>
                       </div>
                     )}
@@ -200,12 +221,9 @@ const MarcheList: React.FC<MarcheListProps> = ({
                       <span>{formatDate(marche.date)}</span>
                     </div>
                   )}
-                  {marche.latitude && marche.longitude && (
+                  {marche.latitude != null && marche.longitude != null && (
                     <div className="flex items-center space-x-2">
-                      <span className="text-accent font-medium">Latitude :</span>
-                      <span>{Number(marche.latitude).toFixed(3)}</span>
-                      <span className="text-accent font-medium">Longitude :</span>
-                      <span>{Number(marche.longitude).toFixed(3)}</span>
+                      <span>Latitude : {marche.latitude.toFixed(3)}, Longitude : {marche.longitude.toFixed(3)}</span>
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                           <Button
