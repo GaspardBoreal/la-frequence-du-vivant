@@ -52,7 +52,7 @@ const MediaUploadSection: React.FC<MediaUploadSectionProps> = ({
   const [isProcessing, setIsProcessing] = useState(false);
   const [uploadTasks, setUploadTasks] = useState<UploadTask[]>([]);
   const [uploadManager] = useState(() => new ParallelUploadManager({
-    maxConcurrent: 3,
+    maxConcurrent: 2, // Réduire à 2 pour plus de stabilité
     retryAttempts: 3,
     retryDelay: 1000
   }));
@@ -245,6 +245,9 @@ const MediaUploadSection: React.FC<MediaUploadSectionProps> = ({
 
     console.log(`🚀 [MediaUploadSection] Upload parallèle de ${itemsToUpload.length} fichiers`);
     
+    // Toast de progression
+    const uploadToast = toast.loading(`Upload de ${itemsToUpload.length} fichier(s) en cours...`);
+    
     try {
       if (mediaType === 'photos') {
         // Préparer les photos pour l'upload parallèle avec métadonnées
@@ -255,7 +258,7 @@ const MediaUploadSection: React.FC<MediaUploadSectionProps> = ({
           thumbnail: item.url,
           preview: item.url,
           uploaded: false,
-          titre: item.titre || '',
+          titre: item.titre || item.name || 'Sans titre',
           description: item.description || ''
         }));
 
@@ -266,34 +269,62 @@ const MediaUploadSection: React.FC<MediaUploadSectionProps> = ({
         // Démarrer l'upload parallèle
         const uploadedIds = await uploadManager.startUpload();
         
-        // Mettre à jour le cache pour les uploads réussis
-        for (const item of itemsToUpload) {
-          const wasUploaded = uploadedIds.length > 0;
-          if (wasUploaded && item.file) {
-            await uploadCache.addToCache(item.file, marcheId, item.url, item.id);
-          }
-        }
-
-        // Marquer les photos comme uploadées
-        setMediaItems(prev => prev.map(media => 
-          itemsToUpload.find(item => item.id === media.id) ? { 
-            ...media, 
-            uploaded: true 
-          } : media
-        ));
+        // Vérifier les résultats
+        const successCount = uploadedIds.length;
+        const errorCount = itemsToUpload.length - successCount;
         
-        toast.success(`${uploadedIds.length} photo(s) uploadée(s) avec succès !`);
+        if (successCount > 0) {
+          // Mettre à jour le cache pour les uploads réussis
+          const successfulItems = itemsToUpload.slice(0, successCount);
+          for (const item of successfulItems) {
+            if (item.file) {
+              await uploadCache.addToCache(item.file, marcheId, item.url, item.id);
+            }
+          }
+
+          // Marquer les photos comme uploadées
+          setMediaItems(prev => prev.map(media => {
+            const wasUploaded = successfulItems.find(item => item.id === media.id);
+            return wasUploaded ? { ...media, uploaded: true } : media;
+          }));
+        }
+        
+        // Messages de résultat
+        toast.dismiss(uploadToast);
+        
+        if (errorCount === 0) {
+          toast.success(`${successCount} photo(s) uploadée(s) avec succès !`);
+        } else if (successCount > 0) {
+          toast.warning(`${successCount} photo(s) uploadée(s), ${errorCount} échec(s)`);
+        } else {
+          toast.error(`Échec de l'upload de toutes les photos`);
+        }
+        
       } else {
-        // Upload séquentiel pour les vidéos
+        // Upload séquentiel pour les vidéos (plus stable)
+        let successCount = 0;
+        
         for (const item of itemsToUpload) {
-          await uploadVideo(item.file!, marcheId);
+          try {
+            await uploadVideo(item.file!, marcheId);
+            successCount++;
+          } catch (error) {
+            console.error(`❌ [MediaUploadSection] Erreur upload vidéo ${item.name}:`, error);
+          }
         }
         
         setMediaItems(prev => prev.map(media => ({ ...media, uploaded: true })));
-        toast.success('Toutes les vidéos ont été uploadées !');
+        
+        toast.dismiss(uploadToast);
+        if (successCount === itemsToUpload.length) {
+          toast.success(`${successCount} vidéo(s) uploadée(s) avec succès !`);
+        } else {
+          toast.warning(`${successCount}/${itemsToUpload.length} vidéo(s) uploadée(s)`);
+        }
       }
     } catch (error) {
       console.error('❌ [MediaUploadSection] Erreur upload optimisé:', error);
+      toast.dismiss(uploadToast);
       toast.error('Erreur lors de l\'upload: ' + (error instanceof Error ? error.message : 'Erreur inconnue'));
     }
   };

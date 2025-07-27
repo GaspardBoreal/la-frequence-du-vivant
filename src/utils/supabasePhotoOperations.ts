@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { uploadPhoto } from './supabaseUpload';
 import { ProcessedPhoto } from './photoUtils';
@@ -110,7 +109,7 @@ export const fetchExistingPhotos = async (marcheId: string): Promise<ExistingPho
   }
 };
 
-// Sauvegarder une photo en base avec diagnostic détaillé
+// Sauvegarder une photo en base avec diagnostic détaillé - VERSION ROBUSTE
 export const savePhoto = async (
   marcheId: string, 
   photoData: PhotoToUpload,
@@ -130,15 +129,20 @@ export const savePhoto = async (
     description: photoData.description || 'Sans description'
   });
 
-  // Callback de progression avec logs détaillés
+  // Callback de progression avec logs détaillés et protection contre les erreurs
   const updateProgress = (progress: number, status: UploadProgress['status'], error?: string) => {
     console.log(`📊 [savePhoto] Progression: ${progress}% - Status: ${status}${error ? ` - Erreur: ${error}` : ''}`);
-    onProgress?.({
-      fileName,
-      progress,
-      status,
-      error
-    });
+    
+    try {
+      onProgress?.({
+        fileName,
+        progress: Math.min(Math.max(progress, 0), 100), // Assurer que le progress est entre 0 et 100
+        status,
+        error
+      });
+    } catch (progressError) {
+      console.warn('⚠️ [savePhoto] Erreur lors du callback de progression:', progressError);
+    }
   };
 
   updateProgress(0, 'pending');
@@ -170,8 +174,8 @@ export const savePhoto = async (
     }
     console.log('✅ [savePhoto] Données validées');
 
-    // ÉTAPE 3: Validation marche (redondante mais avec logs)
-    console.log('🔍 [savePhoto] ÉTAPE 3 - Double vérification marche');
+    // ÉTAPE 3: Validation marche
+    console.log('🔍 [savePhoto] ÉTAPE 3 - Vérification marche');
     updateProgress(15, 'uploading');
     
     const marcheExists = await validateMarcheExists(marcheId);
@@ -189,6 +193,14 @@ export const savePhoto = async (
     
     console.log('📤 [savePhoto] Début upload Storage...');
     const uploadResult = await uploadPhoto(photoData.file, marcheId);
+    
+    if (!uploadResult || !uploadResult.url) {
+      const errorMsg = 'Upload Storage échoué - pas d\'URL retournée';
+      console.error('❌ [savePhoto] Upload Storage échoué');
+      updateProgress(20, 'error', errorMsg);
+      throw new Error(errorMsg);
+    }
+    
     console.log('✅ [savePhoto] Upload Storage terminé:', {
       url: uploadResult.url,
       path: uploadResult.path,
@@ -253,6 +265,13 @@ export const savePhoto = async (
       });
       
       const errorMsg = `Erreur insertion: ${insertError.message} (Code: ${insertError.code})`;
+      updateProgress(90, 'error', errorMsg);
+      throw new Error(errorMsg);
+    }
+
+    if (!insertedData) {
+      const errorMsg = 'Insertion réussie mais aucune donnée retournée';
+      console.error('❌ [savePhoto] Pas de données retournées');
       updateProgress(90, 'error', errorMsg);
       throw new Error(errorMsg);
     }

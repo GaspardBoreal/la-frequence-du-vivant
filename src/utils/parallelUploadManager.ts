@@ -57,7 +57,7 @@ export class ParallelUploadManager {
     this.progressCallback = callback;
   }
 
-  // Démarrer l'upload parallèle
+  // Démarrer l'upload parallèle - VERSION CORRIGÉE
   async startUpload(): Promise<string[]> {
     console.log(`🚀 [ParallelUploadManager] Démarrage upload parallèle (max: ${this.options.maxConcurrent})`);
     
@@ -68,55 +68,80 @@ export class ParallelUploadManager {
       return [];
     }
 
-    // Lancer les uploads par batch
-    const promises: Promise<string | null>[] = [];
+    // Créer les promesses d'upload
+    const uploadPromises: Promise<string | null>[] = [];
     
-    while (pendingTasks.length > 0 || this.activeUploads.size > 0) {
-      // Remplir les slots disponibles
-      while (this.activeUploads.size < this.options.maxConcurrent && pendingTasks.length > 0) {
-        const task = pendingTasks.shift()!;
-        promises.push(this.processTask(task));
-      }
-
-      // Attendre qu'au moins un upload se termine
-      if (promises.length > 0) {
-        await Promise.race(promises.filter(p => p));
+    // Traiter les tâches par lot
+    for (const task of pendingTasks) {
+      if (this.activeUploads.size < this.options.maxConcurrent) {
+        uploadPromises.push(this.processTask(task));
+      } else {
+        // Attendre qu'une tâche se termine avant d'en démarrer une nouvelle
+        await Promise.race(uploadPromises.filter(p => p));
+        uploadPromises.push(this.processTask(task));
       }
     }
 
     // Attendre que tous les uploads se terminent
-    const results = await Promise.all(promises);
-    
-    // Filtrer les résultats réussis
-    const successfulIds = results.filter(id => id !== null) as string[];
-    
-    const failedCount = results.length - successfulIds.length;
-    console.log(`✅ [ParallelUploadManager] Upload terminé: ${successfulIds.length} réussis, ${failedCount} échecs`);
-    
-    return successfulIds;
+    try {
+      const results = await Promise.allSettled(uploadPromises);
+      
+      // Extraire les résultats réussis
+      const successfulIds: string[] = [];
+      let failedCount = 0;
+      
+      results.forEach((result, index) => {
+        if (result.status === 'fulfilled' && result.value) {
+          successfulIds.push(result.value);
+        } else {
+          failedCount++;
+          console.error(`❌ [ParallelUploadManager] Échec upload tâche ${index}:`, result.status === 'rejected' ? result.reason : 'Résultat null');
+        }
+      });
+      
+      console.log(`✅ [ParallelUploadManager] Upload terminé: ${successfulIds.length} réussis, ${failedCount} échecs`);
+      return successfulIds;
+    } catch (error) {
+      console.error('💥 [ParallelUploadManager] Erreur critique lors de l\'upload:', error);
+      throw error;
+    }
   }
 
-  // Traiter une tâche d'upload
+  // Traiter une tâche d'upload - VERSION AMÉLIORÉE
   private async processTask(task: UploadTask): Promise<string | null> {
-    this.activeUploads.add(task.id);
-    task.status = 'uploading';
-    this.notifyProgress();
-
+    console.log(`🔄 [ParallelUploadManager] Début traitement: ${task.photo.file.name}`);
+    
     try {
+      this.activeUploads.add(task.id);
+      task.status = 'uploading';
+      task.progress = 0;
+      this.notifyProgress();
+
       console.log(`📤 [ParallelUploadManager] Upload de ${task.photo.file.name}`);
       
+      // Appel à savePhoto avec gestion d'erreur robuste
       const photoId = await savePhoto(task.marcheId, task.photo, (progress) => {
-        task.progress = progress.progress;
-        task.status = progress.status === 'success' ? 'success' : 'uploading';
-        if (progress.error) {
-          task.error = progress.error;
-          task.status = 'error';
+        try {
+          task.progress = Math.min(progress.progress, 100);
+          
+          if (progress.status === 'success') {
+            task.status = 'success';
+            task.progress = 100;
+          } else if (progress.status === 'error') {
+            task.status = 'error';
+            task.error = progress.error || 'Erreur inconnue';
+          }
+          
+          this.notifyProgress();
+        } catch (progressError) {
+          console.error(`❌ [ParallelUploadManager] Erreur callback progression:`, progressError);
         }
-        this.notifyProgress();
       });
 
+      // Succès final
       task.status = 'success';
       task.progress = 100;
+      task.error = undefined;
       this.notifyProgress();
       
       console.log(`✅ [ParallelUploadManager] Upload réussi: ${task.photo.file.name} -> ${photoId}`);
@@ -125,25 +150,31 @@ export class ParallelUploadManager {
     } catch (error) {
       console.error(`❌ [ParallelUploadManager] Erreur upload ${task.photo.file.name}:`, error);
       
+      // Gestion des erreurs et retry
       task.error = error instanceof Error ? error.message : 'Erreur inconnue';
       task.retryCount++;
       
-      // Tentative de retry
+      // Tentative de retry si possible
       if (task.retryCount < this.options.retryAttempts) {
         console.log(`🔄 [ParallelUploadManager] Retry ${task.retryCount}/${this.options.retryAttempts} pour ${task.photo.file.name}`);
         
-        // Attendre avant le retry
-        await new Promise(resolve => setTimeout(resolve, this.options.retryDelay * task.retryCount));
-        
+        // Réinitialiser l'état pour le retry
         task.status = 'pending';
         task.progress = 0;
         this.notifyProgress();
         
-        // Relancer la tâche
+        // Attendre avant le retry
+        await this.delay(this.options.retryDelay * task.retryCount);
+        
+        // Relancer la tâche récursivement
         return this.processTask(task);
       } else {
+        // Échec définitif
         task.status = 'error';
+        task.progress = 0;
         this.notifyProgress();
+        
+        console.error(`💥 [ParallelUploadManager] Échec définitif pour ${task.photo.file.name} après ${task.retryCount} tentatives`);
         return null;
       }
     } finally {
@@ -151,11 +182,20 @@ export class ParallelUploadManager {
     }
   }
 
-  // Notifier la progression
+  // Fonction utilitaire pour les délais
+  private delay(ms: number): Promise<void> {
+    return new Promise(resolve => setTimeout(resolve, ms));
+  }
+
+  // Notifier la progression - VERSION SÉCURISÉE
   private notifyProgress(): void {
-    if (this.progressCallback) {
-      const tasks = Array.from(this.tasks.values());
-      this.progressCallback(tasks);
+    try {
+      if (this.progressCallback) {
+        const tasks = Array.from(this.tasks.values());
+        this.progressCallback(tasks);
+      }
+    } catch (error) {
+      console.error('❌ [ParallelUploadManager] Erreur lors de la notification de progression:', error);
     }
   }
 
