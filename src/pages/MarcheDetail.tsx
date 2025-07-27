@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
@@ -24,7 +25,7 @@ import { REGIONAL_THEMES, RegionalTheme } from '../utils/regionalThemes';
 const MarcheDetail = () => {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
-  const [activeSection, setActiveSection] = useState<'visual' | 'audio' | 'poeme'>('visual');
+  const [activeSection, setActiveSection] = useState<'visual' | 'audio' | 'poeme'>('poeme');
   const [theme, setTheme] = useState<RegionalTheme>(REGIONAL_THEMES['nouvelle-aquitaine']);
 
   const {
