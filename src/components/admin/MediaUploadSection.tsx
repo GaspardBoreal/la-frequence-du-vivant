@@ -302,15 +302,30 @@ const MediaUploadSection: React.FC<MediaUploadSectionProps> = ({
         return;
       }
 
+      console.log('🗑️ [MediaUploadSection] Suppression photo existante:', itemId);
+      
       try {
+        // Ajouter un toast de chargement
+        const loadingToast = toast.loading('Suppression en cours...');
+        
         await deletePhoto(itemId);
+        
+        // Supprimer le toast de chargement
+        toast.dismiss(loadingToast);
+        
+        // Retirer la photo de la liste
         setMediaItems(prev => prev.filter(item => item.id !== itemId));
+        
         toast.success('Photo supprimée avec succès');
+        console.log('✅ [MediaUploadSection] Photo supprimée de la liste');
       } catch (error) {
         console.error('❌ [MediaUploadSection] Erreur suppression:', error);
-        toast.error('Erreur lors de la suppression');
+        
+        const errorMessage = error instanceof Error ? error.message : 'Erreur inconnue';
+        toast.error(`Erreur lors de la suppression: ${errorMessage}`);
       }
     } else {
+      // Suppression simple pour les fichiers non uploadés
       setMediaItems(prev => prev.filter(item => item.id !== itemId));
       toast.info('Fichier retiré de la liste');
     }

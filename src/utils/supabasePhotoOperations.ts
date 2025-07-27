@@ -325,12 +325,40 @@ export const savePhotos = async (
   return savedIds;
 };
 
-// Supprimer une photo
+// Fonction utilitaire pour extraire le chemin du fichier depuis l'URL Supabase
+const extractFilePathFromUrl = (url: string): string | null => {
+  try {
+    console.log('🔍 [extractFilePathFromUrl] Analyse de l\'URL:', url);
+    
+    // Format typique: https://xzbunrtgbfbhinkzkzhf.supabase.co/storage/v1/object/public/marche-photos/MARCHE_ID/filename.jpg
+    const urlParts = url.split('/');
+    const publicIndex = urlParts.indexOf('public');
+    
+    if (publicIndex === -1 || publicIndex >= urlParts.length - 2) {
+      console.error('❌ [extractFilePathFromUrl] Format d\'URL invalide');
+      return null;
+    }
+    
+    // Récupérer tout ce qui suit "public/" comme chemin
+    const pathParts = urlParts.slice(publicIndex + 2); // Skip "public" et "marche-photos"
+    const filePath = pathParts.join('/');
+    
+    console.log('✅ [extractFilePathFromUrl] Chemin extrait:', filePath);
+    return filePath;
+  } catch (error) {
+    console.error('💥 [extractFilePathFromUrl] Erreur extraction:', error);
+    return null;
+  }
+};
+
+// Supprimer une photo (améliorée)
 export const deletePhoto = async (photoId: string): Promise<void> => {
-  console.log('🗑️ [deletePhoto] Suppression photo:', photoId);
+  console.log('🗑️ [deletePhoto] ========== DÉBUT SUPPRESSION ==========');
+  console.log('📋 [deletePhoto] ID photo à supprimer:', photoId);
   
   try {
-    // Récupérer d'abord les infos de la photo
+    // ÉTAPE 1: Récupérer les infos de la photo
+    console.log('🔍 [deletePhoto] ÉTAPE 1 - Récupération des infos photo');
     const { data: photo, error: fetchError } = await supabase
       .from('marche_photos')
       .select('*')
@@ -339,37 +367,49 @@ export const deletePhoto = async (photoId: string): Promise<void> => {
 
     if (fetchError) {
       console.error('❌ [deletePhoto] Erreur récupération photo:', fetchError);
-      throw fetchError;
+      throw new Error(`Impossible de récupérer les infos de la photo: ${fetchError.message}`);
     }
 
-    console.log('📋 [deletePhoto] Photo trouvée:', photo);
+    if (!photo) {
+      console.error('❌ [deletePhoto] Photo introuvable avec ID:', photoId);
+      throw new Error('Photo introuvable');
+    }
 
-    // Supprimer le fichier du storage si possible
+    console.log('✅ [deletePhoto] Photo trouvée:', {
+      id: photo.id,
+      nom_fichier: photo.nom_fichier,
+      url_supabase: photo.url_supabase.substring(0, 50) + '...',
+      marche_id: photo.marche_id
+    });
+
+    // ÉTAPE 2: Supprimer le fichier du Storage
+    console.log('🔍 [deletePhoto] ÉTAPE 2 - Suppression Storage');
     if (photo.url_supabase) {
       try {
-        // Extraire le chemin du fichier depuis l'URL
-        const urlParts = photo.url_supabase.split('/');
-        const fileName = urlParts[urlParts.length - 1];
-        const folderName = urlParts[urlParts.length - 2];
-        const filePath = `${folderName}/${fileName}`;
-
-        console.log('🗑️ [deletePhoto] Suppression fichier Storage:', filePath);
+        const filePath = extractFilePathFromUrl(photo.url_supabase);
         
-        const { error: storageError } = await supabase.storage
-          .from('marche-photos')
-          .remove([filePath]);
+        if (filePath) {
+          console.log('🗑️ [deletePhoto] Suppression fichier Storage:', filePath);
+          
+          const { error: storageError } = await supabase.storage
+            .from('marche-photos')
+            .remove([filePath]);
 
-        if (storageError) {
-          console.warn('⚠️ [deletePhoto] Erreur suppression Storage:', storageError);
+          if (storageError) {
+            console.warn('⚠️ [deletePhoto] Erreur suppression Storage (non bloquante):', storageError);
+          } else {
+            console.log('✅ [deletePhoto] Fichier Storage supprimé avec succès');
+          }
         } else {
-          console.log('✅ [deletePhoto] Fichier Storage supprimé');
+          console.warn('⚠️ [deletePhoto] Impossible d\'extraire le chemin du fichier, skip Storage');
         }
       } catch (storageError) {
-        console.warn('⚠️ [deletePhoto] Erreur lors de la suppression Storage:', storageError);
+        console.warn('⚠️ [deletePhoto] Erreur lors de la suppression Storage (non bloquante):', storageError);
       }
     }
 
-    // Supprimer l'enregistrement en base
+    // ÉTAPE 3: Supprimer l'enregistrement en base
+    console.log('🔍 [deletePhoto] ÉTAPE 3 - Suppression base de données');
     const { error: deleteError } = await supabase
       .from('marche_photos')
       .delete()
@@ -377,12 +417,20 @@ export const deletePhoto = async (photoId: string): Promise<void> => {
 
     if (deleteError) {
       console.error('❌ [deletePhoto] Erreur suppression base:', deleteError);
-      throw deleteError;
+      throw new Error(`Erreur lors de la suppression en base: ${deleteError.message}`);
     }
 
+    console.log('🎉 [deletePhoto] ========== SUPPRESSION TERMINÉE ==========');
     console.log('✅ [deletePhoto] Photo supprimée avec succès');
+    
   } catch (error) {
-    console.error('💥 [deletePhoto] Erreur complète:', error);
+    console.error('💥 [deletePhoto] ========== ERREUR CRITIQUE ==========');
+    console.error('💥 [deletePhoto] Détails erreur:', {
+      photoId,
+      error,
+      message: error instanceof Error ? error.message : 'Erreur inconnue',
+      stack: error instanceof Error ? error.stack : undefined
+    });
     throw error;
   }
 };
