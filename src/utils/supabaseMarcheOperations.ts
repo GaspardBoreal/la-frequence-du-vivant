@@ -31,8 +31,8 @@ const cleanFormData = (formData: MarcheFormData) => {
   // Nettoyer la température
   let temperature = null;
   if (formData.temperature !== null && formData.temperature !== undefined) {
-    if (typeof formData.temperature === 'object' && formData.temperature.value) {
-      const tempValue = parseFloat(formData.temperature.value);
+    if (typeof formData.temperature === 'object' && formData.temperature !== null && 'value' in formData.temperature) {
+      const tempValue = parseFloat((formData.temperature as any).value);
       temperature = !isNaN(tempValue) ? tempValue : null;
     } else if (typeof formData.temperature === 'number' && !isNaN(formData.temperature)) {
       temperature = formData.temperature;
@@ -42,8 +42,9 @@ const cleanFormData = (formData: MarcheFormData) => {
   // Nettoyer le poème
   let poeme = '';
   if (formData.poeme !== null && formData.poeme !== undefined) {
-    if (typeof formData.poeme === 'object' && formData.poeme.value) {
-      poeme = formData.poeme.value === 'undefined' ? '' : formData.poeme.value;
+    if (typeof formData.poeme === 'object' && formData.poeme !== null && 'value' in formData.poeme) {
+      const poemeValue = (formData.poeme as any).value;
+      poeme = poemeValue === 'undefined' ? '' : poemeValue;
     } else if (typeof formData.poeme === 'string') {
       poeme = formData.poeme;
     }
