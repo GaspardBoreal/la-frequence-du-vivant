@@ -222,7 +222,7 @@ const MarcheList: React.FC<MarcheListProps> = ({
                     </div>
                   )}
                   {marche.latitude && marche.longitude && (
-                    <div className="flex items-center space-x-1">
+                    <div className="flex items-center space-x-2">
                       <MapPin className="h-4 w-4" />
                       <span>{marche.latitude.toFixed(3)}, {marche.longitude.toFixed(3)}</span>
                       <DropdownMenu>
@@ -230,7 +230,7 @@ const MarcheList: React.FC<MarcheListProps> = ({
                           <Button
                             variant="ghost"
                             size="sm"
-                            className="ml-1 h-6 w-6 p-0 text-blue-600 hover:text-blue-800 hover:bg-blue-50"
+                            className="h-8 w-8 p-0 text-blue-600 hover:text-blue-800 hover:bg-blue-50 border border-blue-200"
                             title="Voir sur les cartes"
                           >
                             <Navigation className="h-4 w-4" />
@@ -239,21 +239,21 @@ const MarcheList: React.FC<MarcheListProps> = ({
                         <DropdownMenuContent className="bg-white border border-gray-200 shadow-lg z-50">
                           <DropdownMenuItem 
                             onClick={() => handleMapClick(marche.latitude!, marche.longitude!, marche.ville, 'google-maps')}
-                            className="cursor-pointer hover:bg-gray-50"
+                            className="cursor-pointer hover:bg-gray-50 text-gray-900"
                           >
                             <Map className="h-4 w-4 mr-2" />
                             Google Maps
                           </DropdownMenuItem>
                           <DropdownMenuItem 
                             onClick={() => handleMapClick(marche.latitude!, marche.longitude!, marche.ville, 'google-earth')}
-                            className="cursor-pointer hover:bg-gray-50"
+                            className="cursor-pointer hover:bg-gray-50 text-gray-900"
                           >
                             <Globe className="h-4 w-4 mr-2" />
                             Google Earth
                           </DropdownMenuItem>
                           <DropdownMenuItem 
                             onClick={() => handleMapClick(marche.latitude!, marche.longitude!, marche.ville, 'openstreetmap')}
-                            className="cursor-pointer hover:bg-gray-50"
+                            className="cursor-pointer hover:bg-gray-50 text-gray-900"
                           >
                             <Map className="h-4 w-4 mr-2" />
                             OpenStreetMap
@@ -261,7 +261,7 @@ const MarcheList: React.FC<MarcheListProps> = ({
                           <DropdownMenuSeparator />
                           <DropdownMenuItem 
                             onClick={() => handleMapClick(marche.latitude!, marche.longitude!, marche.ville, 'all')}
-                            className="cursor-pointer hover:bg-gray-50 font-medium"
+                            className="cursor-pointer hover:bg-gray-50 font-medium text-gray-900"
                           >
                             <Navigation className="h-4 w-4 mr-2" />
                             Ouvrir tous les onglets
@@ -274,7 +274,7 @@ const MarcheList: React.FC<MarcheListProps> = ({
                     variant="ghost"
                     size="sm"
                     onClick={() => handleFrequenceVivantClick(marche)}
-                    className="h-6 w-6 p-0 text-purple-600 hover:text-purple-800 hover:bg-purple-50"
+                    className="h-8 w-8 p-0 text-purple-600 hover:text-purple-800 hover:bg-purple-50 border border-purple-200"
                     title="Voir dans La Fréquence du Vivant"
                   >
                     <Heart className="h-4 w-4" />

@@ -1,61 +1,60 @@
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer base {
   :root {
-    --background: 140 25% 4%;      /* Vert émeraude très profond */
-    --foreground: 45 20% 90%;      /* Beige très clair */
+    --background: 140 25% 8%;      /* Vert émeraude moins foncé */
+    --foreground: 45 20% 95%;      /* Beige plus clair */
 
-    --card: 140 30% 6%;            /* Cartes vert émeraude profond */
-    --card-foreground: 45 20% 90%;
+    --card: 140 30% 12%;           /* Cartes vert émeraude moins foncé */
+    --card-foreground: 45 20% 95%;
 
-    --popover: 140 30% 6%;
-    --popover-foreground: 45 20% 90%;
+    --popover: 140 30% 12%;
+    --popover-foreground: 45 20% 95%;
 
-    --primary: 140 35% 8%;         /* Vert émeraude principal */
-    --primary-foreground: 45 20% 90%;
+    --primary: 140 35% 15%;        /* Vert émeraude principal moins foncé */
+    --primary-foreground: 45 20% 95%;
 
-    --secondary: 140 28% 10%;      /* Vert émeraude secondaire */
-    --secondary-foreground: 45 20% 90%;
+    --secondary: 140 28% 18%;      /* Vert émeraude secondaire moins foncé */
+    --secondary-foreground: 45 20% 95%;
 
-    --muted: 140 25% 12%;          /* Vert émeraude muted */
-    --muted-foreground: 45 15% 70%;
+    --muted: 140 25% 20%;          /* Vert émeraude muted moins foncé */
+    --muted-foreground: 45 15% 75%;
 
-    --accent: 45 85% 70%;          /* Beige doré lumineux */
-    --accent-foreground: 140 25% 4%;
+    --accent: 45 85% 75%;          /* Beige doré plus lumineux */
+    --accent-foreground: 140 25% 8%;
 
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
 
-    --border: 140 30% 12%;         /* Bordures vert émeraude */
-    --input: 140 30% 8%;           /* Inputs vert émeraude */
-    --ring: 45 85% 70%;            /* Ring beige doré */
+    --border: 140 30% 18%;         /* Bordures moins foncées */
+    --input: 140 30% 15%;          /* Inputs moins foncés */
+    --ring: 45 85% 75%;            /* Ring beige doré */
 
     --radius: 0.5rem;
   }
 
   .dark {
-    --background: 140 25% 4%;
-    --foreground: 45 20% 90%;
-    --card: 140 30% 6%;
-    --card-foreground: 45 20% 90%;
-    --popover: 140 30% 6%;
-    --popover-foreground: 45 20% 90%;
-    --primary: 140 35% 8%;
-    --primary-foreground: 45 20% 90%;
-    --secondary: 140 28% 10%;
-    --secondary-foreground: 45 20% 90%;
-    --muted: 140 25% 12%;
-    --muted-foreground: 45 15% 70%;
-    --accent: 45 85% 70%;
-    --accent-foreground: 140 25% 4%;
+    --background: 140 25% 8%;
+    --foreground: 45 20% 95%;
+    --card: 140 30% 12%;
+    --card-foreground: 45 20% 95%;
+    --popover: 140 30% 12%;
+    --popover-foreground: 45 20% 95%;
+    --primary: 140 35% 15%;
+    --primary-foreground: 45 20% 95%;
+    --secondary: 140 28% 18%;
+    --secondary-foreground: 45 20% 95%;
+    --muted: 140 25% 20%;
+    --muted-foreground: 45 15% 75%;
+    --accent: 45 85% 75%;
+    --accent-foreground: 140 25% 8%;
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 210 40% 98%;
-    --border: 140 30% 12%;
-    --input: 140 30% 8%;
-    --ring: 45 85% 70%;
+    --border: 140 30% 18%;
+    --input: 140 30% 15%;
+    --ring: 45 85% 75%;
   }
 }
 
