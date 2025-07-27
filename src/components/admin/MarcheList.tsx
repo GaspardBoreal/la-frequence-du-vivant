@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
@@ -111,6 +112,16 @@ const MarcheList: React.FC<MarcheListProps> = ({
     });
   };
 
+  // Fonction pour tronquer le texte à 30 mots
+  const truncateToWords = (text: string, wordCount: number = 30) => {
+    if (!text) return '';
+    
+    const words = text.split(' ');
+    if (words.length <= wordCount) return text;
+    
+    return words.slice(0, wordCount).join(' ') + '...';
+  };
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -172,9 +183,11 @@ const MarcheList: React.FC<MarcheListProps> = ({
                   </div>
                 )}
 
-                {/* Description */}
+                {/* Description - affichage des 30 premiers mots du descriptifCourt uniquement */}
                 {marche.descriptifCourt && (
-                  <p className="text-muted-foreground mb-4 leading-relaxed line-clamp-2">{marche.descriptifCourt}</p>
+                  <p className="text-muted-foreground mb-4 leading-relaxed">
+                    {truncateToWords(marche.descriptifCourt, 30)}
+                  </p>
                 )}
 
                 {/* Informations pratiques */}
