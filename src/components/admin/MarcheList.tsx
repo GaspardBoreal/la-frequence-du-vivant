@@ -9,6 +9,7 @@ import { deleteMarche } from '../../utils/supabaseMarcheOperations';
 import { toast } from 'sonner';
 import { queryClient } from '../../lib/queryClient';
 import { createSlug } from '../../utils/slugGenerator';
+import { FRENCH_DEPARTMENTS } from '../../utils/frenchDepartments';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -25,7 +26,7 @@ interface MarcheListProps {
   marches: MarcheTechnoSensible[];
   isLoading: boolean;
   onEdit: (marcheId: string) => void;
-  onDelete?: () => void; // Callback pour notifier le parent de la suppression
+  onDelete?: () => void;
 }
 
 const MarcheList: React.FC<MarcheListProps> = ({
@@ -37,7 +38,7 @@ const MarcheList: React.FC<MarcheListProps> = ({
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const handleDelete = async (marcheId: string, ville: string) => {
-    if (deletingId) return; // Éviter les doubles clics
+    if (deletingId) return;
     
     setDeletingId(marcheId);
     console.log(`🗑️ Tentative de suppression de la marche ${marcheId} (${ville})`);
@@ -46,7 +47,6 @@ const MarcheList: React.FC<MarcheListProps> = ({
       await deleteMarche(marcheId);
       toast.success(`Marche "${ville}" supprimée avec succès`);
       
-      // Notifier le composant parent pour qu'il mette à jour la liste
       if (onDelete) {
         onDelete();
       }
@@ -75,8 +75,8 @@ const MarcheList: React.FC<MarcheListProps> = ({
   const formatDate = (dateString: string) => {
     if (!dateString) return '';
     
-    // Nettoyer la date pour éviter les caractères parasites
-    const cleanDate = dateString.replace(/[^\d-]/g, '');
+    // Nettoyer la date pour éviter les caractères parasites et le 0 à la fin
+    const cleanDate = dateString.replace(/[^\d-]/g, '').replace(/0$/, '');
     
     // Vérifier si c'est une date valide
     const date = new Date(cleanDate);
@@ -91,10 +91,31 @@ const MarcheList: React.FC<MarcheListProps> = ({
     });
   };
 
+  const getDepartmentFromRegion = (region: string): string => {
+    // Mapping basique région -> département principal
+    const regionToDepartment: { [key: string]: string } = {
+      'Nouvelle-Aquitaine': 'Gironde',
+      'Bretagne': 'Finistère',
+      'Occitanie': 'Haute-Garonne',
+      'Auvergne-Rhône-Alpes': 'Rhône',
+      'Provence-Alpes-Côte d\'Azur': 'Bouches-du-Rhône',
+      'Île-de-France': 'Paris',
+      'Grand Est': 'Bas-Rhin',
+      'Hauts-de-France': 'Nord',
+      'Normandie': 'Calvados',
+      'Centre-Val de Loire': 'Loiret',
+      'Bourgogne-Franche-Comté': 'Côte-d\'Or',
+      'Pays de la Loire': 'Loire-Atlantique',
+      'Corse': 'Corse-du-Sud'
+    };
+
+    return regionToDepartment[region] || region;
+  };
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="animate-spin w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full"></div>
+        <div className="animate-spin w-8 h-8 border-2 border-accent border-t-transparent rounded-full"></div>
       </div>
     );
   }
@@ -102,8 +123,8 @@ const MarcheList: React.FC<MarcheListProps> = ({
   if (marches.length === 0) {
     return (
       <div className="text-center py-12">
-        <h3 className="mb-2 text-slate-50 font-bold text-3xl">Aucune marche trouvée</h3>
-        <p className="text-center text-gray-50">Commencez par créer votre première marche (bouton en haut à gauche)</p>
+        <h3 className="mb-2 text-foreground font-bold text-3xl">Aucune marche trouvée</h3>
+        <p className="text-center text-muted-foreground">Commencez par créer votre première marche (bouton en haut à gauche)</p>
       </div>
     );
   }
@@ -111,45 +132,59 @@ const MarcheList: React.FC<MarcheListProps> = ({
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h2 className="text-xl font-semibold">Marches existantes ({marches.length})</h2>
+        <h2 className="text-xl font-semibold text-foreground">Marches existantes ({marches.length})</h2>
       </div>
 
       <div className="space-y-3">
         {marches.map(marche => (
-          <div key={marche.id} className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
+          <div key={marche.id} className="gaspard-card rounded-lg p-4 hover:shadow-md transition-shadow">
             <div className="flex items-start justify-between">
               <div className="flex-1">
                 <div className="space-y-2 mb-3">
                   <div className="flex items-center space-x-3">
-                    <span className="text-white font-medium">Ville :</span>
-                    <h3 className="text-lg font-medium text-gray-900">{marche.ville}</h3>
+                    <span className="text-accent font-medium">Ville :</span>
+                    <h3 className="text-lg font-medium text-foreground">{marche.ville}</h3>
+                  </div>
+
+                  <div className="flex items-center space-x-6">
                     {marche.region && (
-                      <Badge variant="outline" className="text-xs">
-                        {marche.region}
-                      </Badge>
+                      <div className="flex items-center space-x-2">
+                        <span className="text-accent font-medium text-sm">Département :</span>
+                        <Badge variant="outline" className="text-xs bg-accent/10 text-accent border-accent/30">
+                          {getDepartmentFromRegion(marche.region)}
+                        </Badge>
+                      </div>
+                    )}
+                    {marche.region && (
+                      <div className="flex items-center space-x-2">
+                        <span className="text-accent font-medium text-sm">Région :</span>
+                        <Badge variant="outline" className="text-xs bg-accent/10 text-accent border-accent/30">
+                          {marche.region}
+                        </Badge>
+                      </div>
                     )}
                   </div>
 
                   {marche.nomMarche && (
                     <div className="flex items-center space-x-3">
-                      <span className="text-white font-medium">Nom de la marche :</span>
-                      <span className="text-lg font-medium text-gray-900">{marche.nomMarche}</span>
+                      <span className="text-accent font-medium">Nom de la marche :</span>
+                      <span className="text-lg font-medium text-foreground">{marche.nomMarche}</span>
                     </div>
                   )}
 
                   {marche.theme && (
                     <div className="flex items-center space-x-3">
-                      <span className="text-white font-medium">Thème :</span>
-                      <span className="text-sm font-medium text-slate-50">{marche.theme}</span>
+                      <span className="text-accent font-medium">Thème :</span>
+                      <span className="text-sm font-medium text-muted-foreground">{marche.theme}</span>
                     </div>
                   )}
                 </div>
 
                 {marche.descriptifCourt && (
-                  <p className="text-sm text-gray-600 mb-3 line-clamp-2">{marche.descriptifCourt}</p>
+                  <p className="text-sm text-muted-foreground mb-3 line-clamp-2">{marche.descriptifCourt}</p>
                 )}
 
-                <div className="flex items-center space-x-4 text-sm text-gray-500 mb-3">
+                <div className="flex items-center space-x-4 text-sm text-muted-foreground mb-3">
                   {marche.date && (
                     <div className="flex items-center space-x-1">
                       <Calendar className="h-4 w-4" />
@@ -186,7 +221,7 @@ const MarcheList: React.FC<MarcheListProps> = ({
                 {marche.supabaseTags && marche.supabaseTags.length > 0 && (
                   <div className="mb-3">
                     <div className="flex items-center space-x-2 mb-2">
-                      <span className="text-white font-medium text-sm">Tags :</span>
+                      <span className="text-accent font-medium text-sm">Tags :</span>
                     </div>
                     <div className="flex flex-wrap gap-1">
                       {marche.supabaseTags.map((tag, index) => (

@@ -1,10 +1,13 @@
+
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { Card } from '../components/ui/card';
 import { Button } from '../components/ui/button';
 import { Settings, Map, Database, ArrowLeft } from 'lucide-react';
+
 const AdminAccess: React.FC = () => {
-  return <div className="min-h-screen bg-gray-50 p-4">
+  return (
+    <div className="min-h-screen bg-background p-4">
       <div className="max-w-4xl mx-auto">
         <div className="flex items-center mb-6">
           <Link to="/">
@@ -16,21 +19,21 @@ const AdminAccess: React.FC = () => {
         </div>
 
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">
+          <h1 className="text-3xl font-bold text-foreground mb-2">
             Accès Administration
           </h1>
-          <p className="text-gray-600">
+          <p className="text-muted-foreground">
             Panel d'administration pour la gestion du site
           </p>
         </div>
 
         <div className="grid gap-6 md:grid-cols-2">
-          <Card className="p-6 hover:shadow-lg transition-shadow">
+          <Card className="gaspard-card p-6 hover:shadow-lg transition-shadow">
             <div className="flex items-center mb-4">
-              <Map className="h-8 w-8 text-blue-600 mr-3" />
-              <h2 className="text-xl font-semibold">Gestion des Marches</h2>
+              <Map className="h-8 w-8 text-accent mr-3" />
+              <h2 className="text-xl font-semibold text-foreground">Gestion des Marches</h2>
             </div>
-            <p className="mb-4 text-slate-50 font-thin text-base">
+            <p className="mb-4 text-muted-foreground font-light text-base">
               Créer, modifier et supprimer les marches techno-sensibles. 
               Gérer les médias, photos et fichiers audio.
             </p>
@@ -42,12 +45,12 @@ const AdminAccess: React.FC = () => {
             </Link>
           </Card>
 
-          <Card className="p-6 hover:shadow-lg transition-shadow">
+          <Card className="gaspard-card p-6 hover:shadow-lg transition-shadow">
             <div className="flex items-center mb-4">
-              <Database className="h-8 w-8 text-green-600 mr-3" />
-              <h2 className="text-xl font-semibold">Migration des Données</h2>
+              <Database className="h-8 w-8 text-accent mr-3" />
+              <h2 className="text-xl font-semibold text-foreground">Migration des Données</h2>
             </div>
-            <p className="text-gray-600 mb-4">
+            <p className="text-muted-foreground mb-4">
               Importer et synchroniser les données depuis Google Sheets
               et Google Drive.
             </p>
@@ -60,10 +63,12 @@ const AdminAccess: React.FC = () => {
           </Card>
         </div>
 
-        <div className="mt-12 text-center text-sm text-gray-500">
+        <div className="mt-12 text-center text-sm text-muted-foreground">
           <p>Page d'accès restreint - Gaspard Boréal © 2025</p>
         </div>
       </div>
-    </div>;
+    </div>
+  );
 };
+
 export default AdminAccess;

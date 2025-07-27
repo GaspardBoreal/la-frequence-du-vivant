@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Button } from '../components/ui/button';
 import { ArrowLeft, Plus } from 'lucide-react';
@@ -19,7 +20,6 @@ const MarcheAdmin = () => {
 
   const { data: marches = [], isLoading, error, refetch } = useSupabaseMarches();
 
-  // Initialiser les marches filtrées quand les données sont chargées
   useEffect(() => {
     if (marches && marches.length > 0) {
       setFilteredMarches(marches);
@@ -27,7 +27,7 @@ const MarcheAdmin = () => {
   }, [marches]);
 
   const handleBack = () => {
-    navigate('/admin-access');
+    navigate('/');
   };
 
   const handleCreate = () => {
@@ -49,7 +49,6 @@ const MarcheAdmin = () => {
     toast.success('Marche sauvegardée avec succès !');
     setViewMode('list');
     setEditingMarcheId(null);
-    // Refetch automatiquement les données après succès
     refetch();
   };
 
@@ -58,17 +57,16 @@ const MarcheAdmin = () => {
   };
 
   const handleDelete = () => {
-    // Refetch les données après suppression
     refetch();
   };
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center">
-        <div className="text-center text-white">
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center text-foreground">
           <h2 className="text-2xl font-bold mb-4">Erreur de chargement</h2>
           <p className="mb-4">Impossible de charger les marches depuis Supabase.</p>
-          <p className="text-sm text-gray-300 mb-4">{error.message}</p>
+          <p className="text-sm text-muted-foreground mb-4">{error.message}</p>
           <Button onClick={handleBack} variant="outline">
             Retour
           </Button>
@@ -78,7 +76,7 @@ const MarcheAdmin = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
+    <div className="min-h-screen bg-background">
       <div className="container mx-auto px-6 py-8">
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
@@ -86,14 +84,14 @@ const MarcheAdmin = () => {
             <Button 
               variant="outline" 
               onClick={handleBack}
-              className="mb-4 text-white border-white hover:bg-white hover:text-slate-900"
+              className="mb-4"
             >
               <ArrowLeft className="h-4 w-4 mr-2" />
               Retour à l'accueil
             </Button>
           </div>
           
-          <h1 className="text-3xl font-bold text-white text-center flex-1">
+          <h1 className="text-3xl font-bold text-foreground text-center flex-1">
             Administration des Marches
           </h1>
           
@@ -109,7 +107,7 @@ const MarcheAdmin = () => {
 
         {/* Breadcrumb */}
         <div className="mb-6">
-          <div className="flex items-center space-x-2 text-sm text-gray-300">
+          <div className="flex items-center space-x-2 text-sm text-muted-foreground">
             <span>Administration</span>
             <span>→</span>
             {viewMode === 'list' && <span>Liste des marches ({filteredMarches.length} résultat{filteredMarches.length > 1 ? 's' : ''})</span>}
@@ -127,12 +125,12 @@ const MarcheAdmin = () => {
         )}
 
         {/* Content */}
-        <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6">
+        <div className="gaspard-card rounded-xl p-6">
           {viewMode === 'list' && (
             <>
               {isLoading ? (
-                <div className="text-center text-white py-8">
-                  <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-white"></div>
+                <div className="text-center text-foreground py-8">
+                  <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-accent"></div>
                   <p className="mt-2">Chargement des marches...</p>
                 </div>
               ) : (

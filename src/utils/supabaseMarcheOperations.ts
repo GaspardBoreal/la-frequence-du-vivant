@@ -1,494 +1,155 @@
-import { supabase } from '@/integrations/supabase/client';
-import { uploadPhoto, uploadVideo, uploadAudio, getAudioDuration, getVideoDuration } from './supabaseUpload';
-import { queryClient } from '../lib/queryClient';
+import { supabase } from '../integrations/supabase/client';
+import { MarcheTechnoSensible } from './googleSheetsApi';
+import { uploadFile } from './supabaseUpload';
 
 export interface MarcheFormData {
   ville: string;
   region: string;
-  nomMarche: string;
-  theme: string;
-  descriptifCourt: string;
-  poeme: string;
-  date: string;
-  temperature: number | null;
-  latitude: number;
-  longitude: number;
-  lienGoogleDrive: string;
-  sousThemes: string;
-  tags: string;
-  adresse: string;
+  nomMarche?: string;
+  descriptifCourt?: string;
+  descriptifLong?: string;
+  date?: string;
+  temperature?: number | null;
+  latitude?: number;
+  longitude?: number;
+  themesPrincipaux?: string[];
+  sousThemes?: string[];
+  tags?: string[];
+  photos?: File[];
+  videos?: File[];
+  audioFiles?: File[];
+  documents?: File[];
+  etudes?: Array<{
+    titre: string;
+    contenu: string;
+    resume?: string;
+    type: 'principale' | 'complementaire' | 'annexe';
+    ordre: number;
+  }>;
+  poeme?: string | null;
 }
 
-export interface MediaFile {
-  id: string;
-  file: File;
-  name: string;
-  uploaded: boolean;
-}
-
-// Fonction utilitaire pour nettoyer les données du formulaire
+// Fonction pour nettoyer les données du formulaire
 const cleanFormData = (formData: MarcheFormData) => {
-  console.log('🔄 Nettoyage des données du formulaire:', formData);
-  
-  // Nettoyer la température avec une vérification plus robuste
-  let temperature: number | null = null;
-  if (formData.temperature !== null && formData.temperature !== undefined) {
-    if (typeof formData.temperature === 'object' && formData.temperature !== null && 'value' in formData.temperature) {
-      const tempValue = parseFloat(String((formData.temperature as any).value));
-      temperature = !isNaN(tempValue) ? tempValue : null;
-    } else if (typeof formData.temperature === 'number' && !isNaN(formData.temperature)) {
-      temperature = formData.temperature;
-    } else if (typeof formData.temperature === 'string') {
-      const tempValue = parseFloat(formData.temperature);
-      temperature = !isNaN(tempValue) ? tempValue : null;
-    }
-  }
-
-  // Nettoyer le poème avec une vérification plus robuste
-  let poeme: string = '';
-  if (formData.poeme !== null && formData.poeme !== undefined) {
-    if (typeof formData.poeme === 'object' && formData.poeme !== null && 'value' in formData.poeme) {
-      const poemeValue = String((formData.poeme as any).value);
-      poeme = poemeValue === 'undefined' ? '' : (poemeValue || '');
-    } else if (typeof formData.poeme === 'string') {
-      poeme = formData.poeme;
-    } else {
-      poeme = String(formData.poeme);
-    }
-  }
-
-  const cleaned = {
-    ...formData,
-    temperature,
-    poeme
+  return {
+    ville: formData.ville || '',
+    region: formData.region || '',
+    nom_marche: formData.nomMarche || null,
+    descriptif_court: formData.descriptifCourt || null,
+    descriptif_long: formData.descriptifLong || null,
+    date: formData.date || null,
+    temperature: formData.temperature !== null && formData.temperature !== undefined ? Number(formData.temperature) : null,
+    latitude: formData.latitude || null,
+    longitude: formData.longitude || null,
+    theme_principal: formData.themesPrincipaux?.[0] || null,
+    sous_themes: formData.sousThemes && formData.sousThemes.length > 0 ? formData.sousThemes : null,
+    lien_google_drive: null,
+    coordonnees: formData.latitude && formData.longitude 
+      ? `(${formData.longitude},${formData.latitude})` 
+      : null
   };
-
-  console.log('✅ Données nettoyées:', cleaned);
-  return cleaned;
 };
 
-// Créer une nouvelle marche
-export const createMarche = async (formData: MarcheFormData): Promise<string> => {
-  console.log('🔄 Création de la marche:', formData);
-
-  const cleanedData = cleanFormData(formData);
-
-  // Préparer les sous-thèmes
-  const sousThemes = cleanedData.sousThemes 
-    ? cleanedData.sousThemes.split(',').map(t => t.trim()).filter(t => t.length > 0)
-    : [];
-
-  const insertData: any = {
-    ville: cleanedData.ville,
-    region: cleanedData.region || null,
-    nom_marche: cleanedData.nomMarche || null,
-    theme_principal: cleanedData.theme || null,
-    descriptif_court: cleanedData.descriptifCourt || null,
-    descriptif_long: cleanedData.poeme || null,
-    date: cleanedData.date || null,
-    temperature: cleanedData.temperature,
-    lien_google_drive: cleanedData.lienGoogleDrive || null,
-    sous_themes: sousThemes.length > 0 ? sousThemes : null
-  };
-
-  console.log('📦 Données à insérer:', insertData);
-
-  let marcheId: string;
-  
-  if (cleanedData.latitude && cleanedData.longitude && 
-      !isNaN(cleanedData.latitude) && !isNaN(cleanedData.longitude)) {
-    
-    console.log(`📍 Insertion avec coordonnées: latitude=${cleanedData.latitude}, longitude=${cleanedData.longitude}`);
-    
-    // Préparer les coordonnées PostGIS au format correct
-    const coordonnees = `POINT(${cleanedData.longitude} ${cleanedData.latitude})`;
-    
-    // Insérer avec coordonnées PostGIS
-    const { data: marche, error: marcheError } = await supabase
-      .from('marches')
-      .insert({
-        ...insertData,
-        coordonnees: coordonnees
-      })
-      .select('id')
-      .single();
-
-    if (marcheError) {
-      console.error('❌ Erreur lors de la création de la marche avec coordonnées:', marcheError);
-      
-      // Fallback: insertion sans coordonnées
-      const { data: fallbackMarche, error: fallbackError } = await supabase
-        .from('marches')
-        .insert(insertData)
-        .select('id')
-        .single();
-      
-      if (fallbackError) {
-        console.error('❌ Erreur lors du fallback:', fallbackError);
-        throw fallbackError;
-      }
-      
-      marcheId = fallbackMarche.id;
-    } else {
-      marcheId = marche.id;
-    }
-  } else {
-    // Insertion sans coordonnées
-    const { data: marche, error: marcheError } = await supabase
-      .from('marches')
-      .insert(insertData)
-      .select('id')
-      .single();
-
-    if (marcheError) {
-      console.error('❌ Erreur lors de la création de la marche:', marcheError);
-      throw marcheError;
-    }
-    
-    marcheId = marche.id;
-  }
-
-  console.log('✅ Marche créée avec succès:', marcheId);
-
-  // Ajouter les tags si fournis
-  if (cleanedData.tags) {
-    const tags = cleanedData.tags.split(',').map(t => t.trim()).filter(t => t.length > 0);
-    if (tags.length > 0) {
-      const tagsData = tags.map(tag => ({
-        marche_id: marcheId,
-        tag: tag
-      }));
-
-      const { error: tagsError } = await supabase
-        .from('marche_tags')
-        .insert(tagsData);
-
-      if (tagsError) {
-        console.error('❌ Erreur lors de l\'ajout des tags:', tagsError);
-      } else {
-        console.log('✅ Tags ajoutés avec succès');
-      }
-    }
-  }
-
-  // Invalider le cache React Query pour actualiser la liste
-  queryClient.invalidateQueries({ queryKey: ['marches-supabase'] });
-  queryClient.invalidateQueries({ queryKey: ['supabase-status'] });
-
-  return marcheId;
+// Fonction pour nettoyer le poème
+const cleanPoeme = (poeme: string | null | undefined): string | null => {
+  if (!poeme || typeof poeme !== 'string') return null;
+  return poeme.trim() || null;
 };
 
-// Mettre à jour une marche existante
-export const updateMarche = async (marcheId: string, formData: MarcheFormData): Promise<void> => {
-  console.log('🔄 Mise à jour de la marche:', marcheId);
-
-  const cleanedData = cleanFormData(formData);
-
-  // Préparer les coordonnées PostGIS correctement
-  let coordonnees = null;
-  if (cleanedData.latitude && cleanedData.longitude && 
-      !isNaN(cleanedData.latitude) && !isNaN(cleanedData.longitude)) {
-    coordonnees = `POINT(${cleanedData.longitude} ${cleanedData.latitude})`;
-  }
-
-  const sousThemes = cleanedData.sousThemes 
-    ? cleanedData.sousThemes.split(',').map(t => t.trim()).filter(t => t.length > 0)
-    : [];
-
-  const { error: marcheError } = await supabase
-    .from('marches')
-    .update({
-      ville: cleanedData.ville,
-      region: cleanedData.region || null,
-      nom_marche: cleanedData.nomMarche || null,
-      theme_principal: cleanedData.theme || null,
-      descriptif_court: cleanedData.descriptifCourt || null,
-      descriptif_long: cleanedData.poeme || null,
-      date: cleanedData.date || null,
-      temperature: cleanedData.temperature,
-      coordonnees: coordonnees,
-      lien_google_drive: cleanedData.lienGoogleDrive || null,
-      sous_themes: sousThemes.length > 0 ? sousThemes : null,
-      updated_at: new Date().toISOString()
-    })
-    .eq('id', marcheId);
-
-  if (marcheError) {
-    console.error('❌ Erreur lors de la mise à jour de la marche:', marcheError);
-    throw marcheError;
-  }
-
-  // Mettre à jour les tags (supprimer les anciens et ajouter les nouveaux)
-  await supabase.from('marche_tags').delete().eq('marche_id', marcheId);
-
-  if (cleanedData.tags) {
-    const tags = cleanedData.tags.split(',').map(t => t.trim()).filter(t => t.length > 0);
-    if (tags.length > 0) {
-      const tagsData = tags.map(tag => ({
-        marche_id: marcheId,
-        tag: tag
-      }));
-
-      const { error: tagsError } = await supabase
-        .from('marche_tags')
-        .insert(tagsData);
-
-      if (tagsError) {
-        console.error('❌ Erreur lors de la mise à jour des tags:', tagsError);
-      }
-    }
-  }
-
-  // Invalider TOUS les caches React Query pour actualiser la liste et les détails
-  await queryClient.invalidateQueries({ queryKey: ['marches-supabase'] });
-  await queryClient.invalidateQueries({ queryKey: ['marche-supabase', marcheId] });
-  await queryClient.invalidateQueries({ queryKey: ['marches-search-supabase'] });
-  await queryClient.invalidateQueries({ queryKey: ['supabase-status'] });
-
-  // Forcer un refetch immédiat de la liste des marches
-  await queryClient.refetchQueries({ queryKey: ['marches-supabase'] });
-
-  console.log('✅ Marche mise à jour avec succès et cache invalidé');
-};
-
-// Supprimer une marche et tous ses médias associés
-export const deleteMarche = async (marcheId: string): Promise<void> => {
-  console.log(`🔄 Suppression de la marche ${marcheId}`);
-
+// Fonction pour créer une nouvelle marche dans Supabase
+export const createMarche = async (formData: MarcheFormData): Promise<string | null> => {
   try {
-    // D'abord vérifier que la marche existe
-    const { data: existingMarche, error: checkError } = await supabase
-      .from('marches')
-      .select('id, ville')
-      .eq('id', marcheId)
-      .single();
+    const cleanedData = cleanFormData(formData);
 
-    if (checkError) {
-      console.error('❌ Erreur lors de la vérification de la marche:', checkError);
-      if (checkError.code === 'PGRST116') {
-        throw new Error('Marche introuvable');
-      }
-      throw checkError;
+    const { data, error } = await supabase
+      .from('marches_technosensibles')
+      .insert([cleanedData])
+      .select()
+
+    if (error) {
+      console.error("Erreur lors de la création de la marche:", error);
+      throw error;
     }
 
-    if (!existingMarche) {
-      console.error('❌ Marche introuvable');
-      throw new Error('Marche introuvable');
+    const newMarche = data[0];
+    const marcheId = newMarche.id;
+
+    console.log(`✨ Nouvelle marche créée avec l'ID: ${marcheId}`);
+    return marcheId;
+
+  } catch (error) {
+    console.error("Erreur lors de la création de la marche:", error);
+    return null;
+  }
+};
+
+// Fonction pour mettre à jour une marche existante dans Supabase
+export const updateMarche = async (marcheId: string, formData: MarcheFormData): Promise<boolean> => {
+  try {
+    const cleanedData = cleanFormData(formData);
+
+    const { error } = await supabase
+      .from('marches_technosensibles')
+      .update(cleanedData)
+      .eq('id', marcheId);
+
+    if (error) {
+      console.error(`Erreur lors de la mise à jour de la marche ${marcheId}:`, error);
+      return false;
     }
 
-    console.log(`📍 Suppression de la marche "${existingMarche.ville}"`);
+    console.log(`✅ Marche ${marcheId} mise à jour avec succès.`);
+    return true;
 
-    // Supprimer tous les médias associés de manière séquentielle pour éviter les conflits
-    console.log('🗑️ Suppression des médias associés...');
-    
-    // Supprimer les photos
-    const { error: photosError } = await supabase
-      .from('marche_photos')
-      .delete()
-      .eq('marche_id', marcheId);
-    
-    if (photosError) {
-      console.error('❌ Erreur suppression photos:', photosError);
-    } else {
-      console.log('✅ Photos supprimées');
-    }
+  } catch (error) {
+    console.error(`Erreur lors de la mise à jour de la marche ${marcheId}:`, error);
+    return false;
+  }
+};
 
-    // Supprimer les audios
-    const { error: audioError } = await supabase
-      .from('marche_audio')
-      .delete()
-      .eq('marche_id', marcheId);
-    
-    if (audioError) {
-      console.error('❌ Erreur suppression audio:', audioError);
-    } else {
-      console.log('✅ Audio supprimés');
-    }
+// Fonction pour supprimer une marche de Supabase
+export const deleteMarche = async (marcheId: string): Promise<boolean> => {
+  try {
+    // Supprimer les enregistrements liés dans les tables photos, videos, audio, etudes, documents
+    await supabase.from('marches_photos').delete().eq('marche_id', marcheId);
+    await supabase.from('marches_videos').delete().eq('marche_id', marcheId);
+    await supabase.from('marches_audio').delete().eq('marche_id', marcheId);
+    await supabase.from('marches_etudes').delete().eq('marche_id', marcheId);
+    await supabase.from('marches_documents').delete().eq('marche_id', marcheId);
+    await supabase.from('marches_tags').delete().eq('marche_id', marcheId);
 
-    // Supprimer les vidéos
-    const { error: videosError } = await supabase
-      .from('marche_videos')
-      .delete()
-      .eq('marche_id', marcheId);
-    
-    if (videosError) {
-      console.error('❌ Erreur suppression vidéos:', videosError);
-    } else {
-      console.log('✅ Vidéos supprimées');
-    }
-
-    // Supprimer les documents
-    const { error: documentsError } = await supabase
-      .from('marche_documents')
-      .delete()
-      .eq('marche_id', marcheId);
-    
-    if (documentsError) {
-      console.error('❌ Erreur suppression documents:', documentsError);
-    } else {
-      console.log('✅ Documents supprimés');
-    }
-
-    // Supprimer les études
-    const { error: etudesError } = await supabase
-      .from('marche_etudes')
-      .delete()
-      .eq('marche_id', marcheId);
-    
-    if (etudesError) {
-      console.error('❌ Erreur suppression études:', etudesError);
-    } else {
-      console.log('✅ Études supprimées');
-    }
-
-    // Supprimer les tags
-    const { error: tagsError } = await supabase
-      .from('marche_tags')
-      .delete()
-      .eq('marche_id', marcheId);
-    
-    if (tagsError) {
-      console.error('❌ Erreur suppression tags:', tagsError);
-    } else {
-      console.log('✅ Tags supprimés');
-    }
-
-    // Supprimer enfin la marche elle-même
-    console.log('🗑️ Suppression de la marche principale...');
-    const { error: marcheError } = await supabase
-      .from('marches')
+    // Supprimer la marche elle-même
+    const { error } = await supabase
+      .from('marches_technosensibles')
       .delete()
       .eq('id', marcheId);
 
-    if (marcheError) {
-      console.error('❌ Erreur lors de la suppression de la marche:', marcheError);
-      throw new Error(`Erreur lors de la suppression: ${marcheError.message}`);
+    if (error) {
+      console.error(`Erreur lors de la suppression de la marche ${marcheId}:`, error);
+      throw error;
     }
 
-    console.log('✅ Marche supprimée avec succès de Supabase');
-
-    // Vérifier que la suppression a bien eu lieu
-    const { data: verifyData, error: verifyError } = await supabase
-      .from('marches')
-      .select('id')
-      .eq('id', marcheId)
-      .single();
-
-    if (verifyError && verifyError.code === 'PGRST116') {
-      console.log('✅ Vérification: la marche a bien été supprimée');
-    } else if (verifyData) {
-      console.error('❌ Erreur: la marche existe encore après suppression');
-      throw new Error('La marche n\'a pas été supprimée correctement');
-    }
-
-    // Invalider le cache React Query pour actualiser la liste
-    await Promise.all([
-      queryClient.invalidateQueries({ queryKey: ['marches-supabase'] }),
-      queryClient.invalidateQueries({ queryKey: ['supabase-status'] }),
-      queryClient.refetchQueries({ queryKey: ['marches-supabase'] })
-    ]);
-
-    console.log('🔄 Cache invalidé et données rafraîchies');
+    console.log(`🔥 Marche ${marcheId} supprimée avec succès.`);
+    return true;
 
   } catch (error) {
-    console.error('❌ Erreur générale lors de la suppression:', error);
-    throw error;
+    console.error(`Erreur lors de la suppression de la marche ${marcheId}:`, error);
+    return false;
   }
 };
 
-// Upload et sauvegarde des photos
-export const savePhotos = async (marcheId: string, photos: MediaFile[]): Promise<void> => {
-  console.log(`🔄 Sauvegarde de ${photos.length} photos pour la marche ${marcheId}`);
-
-  for (let i = 0; i < photos.length; i++) {
-    const photo = photos[i];
-    if (photo.uploaded) continue;
-
+// Fonction pour uploader plusieurs fichiers et retourner leurs URLs
+export const uploadFiles = async (files: File[], folder: string): Promise<string[]> => {
+  const urls: string[] = [];
+  for (const file of files) {
     try {
-      const uploadResult = await uploadPhoto(photo.file, marcheId);
-      
-      const { error } = await supabase
-        .from('marche_photos')
-        .insert({
-          marche_id: marcheId,
-          nom_fichier: photo.name,
-          url_supabase: uploadResult.url,
-          ordre: i + 1
-        });
-
-      if (error) {
-        console.error('❌ Erreur sauvegarde photo:', error);
-      } else {
-        console.log(`✅ Photo ${photo.name} sauvegardée`);
+      const url = await uploadFile(file, folder);
+      if (url) {
+        urls.push(url);
       }
     } catch (error) {
-      console.error(`❌ Erreur upload photo ${photo.name}:`, error);
+      console.error(`Erreur lors de l'upload du fichier ${file.name}:`, error);
     }
   }
-};
-
-export const saveVideos = async (marcheId: string, videos: MediaFile[]): Promise<void> => {
-  console.log(`🔄 Sauvegarde de ${videos.length} vidéos pour la marche ${marcheId}`);
-
-  for (let i = 0; i < videos.length; i++) {
-    const video = videos[i];
-    if (video.uploaded) continue;
-
-    try {
-      const uploadResult = await uploadVideo(video.file, marcheId);
-      const duration = await getVideoDuration(video.file);
-      
-      const { error } = await supabase
-        .from('marche_videos')
-        .insert({
-          marche_id: marcheId,
-          nom_fichier: video.name,
-          url_supabase: uploadResult.url,
-          duree_secondes: Math.round(duration),
-          taille_octets: video.file.size,
-          ordre: i + 1
-        });
-
-      if (error) {
-        console.error('❌ Erreur sauvegarde vidéo:', error);
-      } else {
-        console.log(`✅ Vidéo ${video.name} sauvegardée`);
-      }
-    } catch (error) {
-      console.error(`❌ Erreur upload vidéo ${video.name}:`, error);
-    }
-  }
-};
-
-export const saveAudioFiles = async (marcheId: string, audioFiles: MediaFile[]): Promise<void> => {
-  console.log(`🔄 Sauvegarde de ${audioFiles.length} fichiers audio pour la marche ${marcheId}`);
-
-  for (let i = 0; i < audioFiles.length; i++) {
-    const audio = audioFiles[i];
-    if (audio.uploaded) continue;
-
-    try {
-      const uploadResult = await uploadAudio(audio.file, marcheId);
-      const duration = await getAudioDuration(audio.file);
-      
-      const { error } = await supabase
-        .from('marche_audio')
-        .insert({
-          marche_id: marcheId,
-          nom_fichier: audio.name,
-          url_supabase: uploadResult.url,
-          duree_secondes: Math.round(duration),
-          taille_octets: audio.file.size,
-          ordre: i + 1
-        });
-
-      if (error) {
-        console.error('❌ Erreur sauvegarde audio:', error);
-      } else {
-        console.log(`✅ Audio ${audio.name} sauvegardé`);
-      }
-    } catch (error) {
-      console.error(`❌ Erreur upload audio ${audio.name}:`, error);
-    }
-  }
+  return urls;
 };
