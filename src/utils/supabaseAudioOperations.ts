@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { uploadAudio } from './supabaseUpload';
 import { runSupabaseDiagnostic } from './supabaseDiagnostic';
@@ -182,7 +181,7 @@ export const fetchExistingAudio = async (marcheId: string): Promise<ExistingAudi
   }
 };
 
-// Sauvegarder un fichier audio en base avec diagnostic détaillé
+// Sauvegarder un fichier audio en base avec progression améliorée
 export const saveAudio = async (
   marcheId: string, 
   audioData: AudioToUpload,
@@ -259,12 +258,15 @@ export const saveAudio = async (
     }
     console.log('✅ [saveAudio] Marche confirmée');
 
-    // ÉTAPE 4: Upload vers Supabase Storage
+    // ÉTAPE 4: Upload vers Supabase Storage avec progression
     console.log('🔍 [saveAudio] ÉTAPE 4 - Upload Storage');
     updateProgress(20, 'uploading');
     
     console.log('📤 [saveAudio] Début upload Storage...');
-    const uploadResult = await uploadAudio(audioData.file, marcheId);
+    const uploadResult = await uploadAudio(audioData.file, marcheId, (progress) => {
+      // Transmettre la progression de l'upload (20% à 60%)
+      updateProgress(progress, 'uploading');
+    });
     
     if (!uploadResult || !uploadResult.url) {
       const errorMsg = 'Upload Storage échoué - pas d\'URL retournée';
@@ -279,11 +281,11 @@ export const saveAudio = async (
       urlLength: uploadResult.url.length
     });
     
-    updateProgress(60, 'processing');
+    updateProgress(70, 'processing');
 
     // ÉTAPE 5: Préparation métadonnées
     console.log('🔍 [saveAudio] ÉTAPE 5 - Préparation métadonnées');
-    updateProgress(70, 'processing');
+    updateProgress(80, 'processing');
     
     const validatedMetadata = validateAudioMetadata({
       duration: audioData.duration,
@@ -294,7 +296,7 @@ export const saveAudio = async (
     
     // ÉTAPE 6: Préparation données insertion
     console.log('🔍 [saveAudio] ÉTAPE 6 - Préparation insertion');
-    updateProgress(80, 'processing');
+    updateProgress(90, 'processing');
     
     const insertData = {
       marche_id: marcheId,
@@ -324,7 +326,7 @@ export const saveAudio = async (
     
     // ÉTAPE 7: Insertion en base de données
     console.log('🔍 [saveAudio] ÉTAPE 7 - Insertion base de données');
-    updateProgress(90, 'processing');
+    updateProgress(95, 'processing');
     
     console.log('💾 [saveAudio] Exécution requête INSERT...');
     const { data: insertedData, error: insertError } = await supabase
@@ -347,14 +349,14 @@ export const saveAudio = async (
       });
       
       const errorMsg = `Erreur insertion: ${insertError.message} (Code: ${insertError.code})`;
-      updateProgress(90, 'error', errorMsg);
+      updateProgress(95, 'error', errorMsg);
       throw new Error(errorMsg);
     }
 
     if (!insertedData) {
       const errorMsg = 'Insertion réussie mais aucune donnée retournée';
       console.error('❌ [saveAudio] Pas de données retournées');
-      updateProgress(90, 'error', errorMsg);
+      updateProgress(95, 'error', errorMsg);
       throw new Error(errorMsg);
     }
 

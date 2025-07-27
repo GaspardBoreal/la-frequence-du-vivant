@@ -5,6 +5,10 @@ export interface UploadResult {
   path: string;
 }
 
+export interface UploadProgressCallback {
+  (progress: number): void;
+}
+
 // Upload d'une photo vers Supabase Storage
 export const uploadPhoto = async (file: File, marcheId: string): Promise<UploadResult> => {
   console.log('📤 [uploadPhoto] Début upload:', {
@@ -125,8 +129,8 @@ export const uploadVideo = async (file: File, marcheId: string): Promise<UploadR
   }
 };
 
-// Upload d'un fichier audio vers Supabase Storage
-export const uploadAudio = async (file: File, marcheId: string): Promise<UploadResult> => {
+// Upload d'un fichier audio vers Supabase Storage avec progression simulée
+export const uploadAudio = async (file: File, marcheId: string, onProgress?: UploadProgressCallback): Promise<UploadResult> => {
   console.log('📤 [uploadAudio] Début upload:', {
     fileName: file.name,
     fileSize: file.size,
@@ -152,6 +156,17 @@ export const uploadAudio = async (file: File, marcheId: string): Promise<UploadR
     
     console.log('📁 [uploadAudio] Nom fichier généré:', fileName);
     
+    // Démarrer la progression simulée
+    let currentProgress = 20;
+    const progressInterval = setInterval(() => {
+      if (currentProgress < 60) {
+        currentProgress += Math.random() * 8 + 2; // Progression de 2 à 10% par intervalle
+        currentProgress = Math.min(currentProgress, 60);
+        onProgress?.(currentProgress);
+        console.log(`📊 [uploadAudio] Progression simulée: ${currentProgress.toFixed(1)}%`);
+      }
+    }, 200);
+
     const { data, error } = await supabase.storage
       .from('marche-audio')
       .upload(fileName, file, {
@@ -159,12 +174,19 @@ export const uploadAudio = async (file: File, marcheId: string): Promise<UploadR
         upsert: false
       });
 
+    // Arrêter la progression simulée
+    clearInterval(progressInterval);
+
     if (error) {
       console.error('❌ [uploadAudio] Erreur Storage:', error);
+      onProgress?.(0);
       throw error;
     }
 
     console.log('✅ [uploadAudio] Upload Storage réussi:', data);
+    
+    // Progression finale pour l'upload Storage
+    onProgress?.(60);
 
     const { data: { publicUrl } } = supabase.storage
       .from('marche-audio')
