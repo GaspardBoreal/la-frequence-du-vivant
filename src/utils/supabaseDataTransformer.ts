@@ -24,8 +24,8 @@ export const transformSupabaseToLegacyFormat = (marche: MarcheComplete): MarcheT
     descriptifLong: marche.descriptif_long || undefined,
     date: marche.date || undefined,
     temperature: marche.temperature ? Number(marche.temperature) : undefined,
-    latitude: marche.latitude ? Number(marche.latitude) : 0, // Convertir en nombre
-    longitude: marche.longitude ? Number(marche.longitude) : 0, // Convertir en nombre
+    latitude: marche.latitude != null ? Number(marche.latitude) : 0, // Correction: utiliser != null
+    longitude: marche.longitude != null ? Number(marche.longitude) : 0, // Correction: utiliser != null
     lien: marche.lien_google_drive || undefined, // Garder pour compatibilité migration
     photos: photos.length > 0 ? photos : undefined,
     videos: videos.length > 0 ? videos : undefined,
@@ -72,7 +72,9 @@ export const transformSupabaseToLegacyFormat = (marche: MarcheComplete): MarcheT
     latitude: transformed.latitude,
     longitude: transformed.longitude,
     theme: transformed.theme,
-    descriptifCourt: transformed.descriptifCourt
+    descriptifCourt: transformed.descriptifCourt,
+    rawLatitude: marche.latitude,
+    rawLongitude: marche.longitude
   });
 
   return transformed;

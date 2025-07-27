@@ -72,9 +72,9 @@ const MarcheForm: React.FC<MarcheFormProps> = ({ mode, marcheId, onCancel, onSuc
         descriptifCourt: marche.descriptifCourt || '',
         descriptifLong: marche.descriptifLong || '',
         date: marche.date || '',
-        temperature: marche.temperature || null,
-        latitude: marche.latitude || null,
-        longitude: marche.longitude || null,
+        temperature: marche.temperature ?? null,
+        latitude: marche.latitude ?? null,
+        longitude: marche.longitude ?? null,
         adresse: marche.adresse || '',
         lienGoogleDrive: marche.lien || '',
         sousThemes: marche.sousThemes?.join(', ') || '',
@@ -82,6 +82,13 @@ const MarcheForm: React.FC<MarcheFormProps> = ({ mode, marcheId, onCancel, onSuc
       };
       
       console.log('🔄 Données du formulaire après mapping:', formData);
+      console.log('🔍 Coordonnées reçues:', { 
+        originalLatitude: marche.latitude, 
+        originalLongitude: marche.longitude,
+        formLatitude: formData.latitude,
+        formLongitude: formData.longitude
+      });
+      
       reset(formData);
       setThemePrincipalRichText(marche.theme || '');
     }
