@@ -82,13 +82,34 @@ const MarcheList: React.FC<MarcheListProps> = ({
         url = `https://www.openstreetmap.org/?mlat=${latitude}&mlon=${longitude}&zoom=15`;
         break;
       case 'all':
-        // Ouvrir tous les onglets
+        // Nouvelle implémentation pour ouvrir tous les onglets
         const urls = [
           `https://www.google.com/maps?q=${latitude},${longitude}&z=15`,
           `https://earth.google.com/web/search/${latitude},${longitude}`,
           `https://www.openstreetmap.org/?mlat=${latitude}&mlon=${longitude}&zoom=15`
         ];
-        urls.forEach(url => window.open(url, '_blank'));
+        
+        // Utiliser des éléments <a> dynamiques pour contourner les restrictions de popup
+        urls.forEach((url, index) => {
+          setTimeout(() => {
+            const link = document.createElement('a');
+            link.href = url;
+            link.target = '_blank';
+            link.rel = 'noopener noreferrer';
+            
+            // Ajouter temporairement au DOM
+            document.body.appendChild(link);
+            
+            // Cliquer programmatiquement
+            link.click();
+            
+            // Nettoyer le DOM
+            document.body.removeChild(link);
+          }, index * 100); // Délai de 100ms entre chaque ouverture
+        });
+        
+        // Notification à l'utilisateur
+        toast.success(`Ouverture de ${urls.length} onglets de cartes pour ${ville}`);
         return;
     }
     
