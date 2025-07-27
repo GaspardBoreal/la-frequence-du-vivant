@@ -11,12 +11,14 @@ import { createSlug } from '../../utils/slugGenerator';
 import { FRENCH_DEPARTMENTS } from '../../utils/frenchDepartments';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '../ui/alert-dialog';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '../ui/dropdown-menu';
+
 interface MarcheListProps {
   marches: MarcheTechnoSensible[];
   isLoading: boolean;
   onEdit: (marcheId: string) => void;
   onDelete?: () => void;
 }
+
 const MarcheList: React.FC<MarcheListProps> = ({
   marches,
   isLoading,
@@ -24,6 +26,14 @@ const MarcheList: React.FC<MarcheListProps> = ({
   onDelete
 }) => {
   const [deletingId, setDeletingId] = useState<string | null>(null);
+
+  const truncateWords = (text: string, wordLimit: number = 30): string => {
+    if (!text) return '';
+    const words = text.trim().split(/\s+/);
+    if (words.length <= wordLimit) return text;
+    return words.slice(0, wordLimit).join(' ') + '...';
+  };
+
   const handleDelete = async (marcheId: string, ville: string) => {
     if (deletingId) return;
     setDeletingId(marcheId);
@@ -43,6 +53,7 @@ const MarcheList: React.FC<MarcheListProps> = ({
       setDeletingId(null);
     }
   };
+
   const handleMapClick = (latitude: number, longitude: number, ville: string, option: string) => {
     let url = '';
     switch (option) {
@@ -65,11 +76,13 @@ const MarcheList: React.FC<MarcheListProps> = ({
       window.open(url, '_blank');
     }
   };
+
   const handleFrequenceVivantClick = (marche: MarcheTechnoSensible) => {
     const slug = createSlug(marche.nomMarche || marche.ville, marche.ville);
     const frequenceVivantUrl = `${window.location.origin}/marche/${slug}`;
     window.open(frequenceVivantUrl, '_blank');
   };
+
   const formatDate = (dateString: string) => {
     if (!dateString) return '';
 
@@ -87,6 +100,7 @@ const MarcheList: React.FC<MarcheListProps> = ({
       day: 'numeric'
     });
   };
+
   const getDepartmentFromRegion = (region: string): string => {
     // Mapping basique région -> département principal
     const regionToDepartment: {
@@ -108,17 +122,20 @@ const MarcheList: React.FC<MarcheListProps> = ({
     };
     return regionToDepartment[region] || region;
   };
+
   if (isLoading) {
     return <div className="flex items-center justify-center h-64">
         <div className="animate-spin w-8 h-8 border-2 border-accent border-t-transparent rounded-full"></div>
       </div>;
   }
+
   if (marches.length === 0) {
     return <div className="text-center py-12">
         <h3 className="mb-2 text-foreground font-bold text-3xl">Aucune marche trouvée</h3>
         <p className="text-center text-muted-foreground">Commencez par créer votre première marche (bouton en haut à gauche)</p>
       </div>;
   }
+
   return <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h2 className="text-xl font-semibold text-foreground">Marches existantes ({marches.length})</h2>
@@ -150,12 +167,13 @@ const MarcheList: React.FC<MarcheListProps> = ({
                     </div>}
 
                   {marche.theme && <div className="flex items-center space-x-3">
-                      
                       <span className="text-sm font-medium text-muted-foreground">{marche.theme}</span>
                     </div>}
                 </div>
 
-                {marche.descriptifCourt}
+                {marche.descriptifCourt && <div className="mb-3">
+                    <p className="text-sm text-muted-foreground">{truncateWords(marche.descriptifCourt, 30)}</p>
+                  </div>}
 
                 <div className="flex items-center space-x-4 text-sm text-muted-foreground mb-3">
                   {marche.date && <div className="flex items-center space-x-1">
@@ -270,4 +288,5 @@ const MarcheList: React.FC<MarcheListProps> = ({
       </div>
     </div>;
 };
+
 export default MarcheList;
