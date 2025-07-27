@@ -7,7 +7,7 @@ import { Label } from '../ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
 import { RichTextEditor } from '../ui/rich-text-editor';
-import { Save, ArrowLeft } from 'lucide-react';
+import { Save, ArrowLeft, FileText, Sparkles } from 'lucide-react';
 import { useSupabaseMarche } from '../../hooks/useSupabaseMarches';
 import { createMarche, updateMarche, MarcheFormData } from '../../utils/supabaseMarcheOperations';
 import MediaUploadSection from './MediaUploadSection';
@@ -16,6 +16,7 @@ import { queryClient } from '../../lib/queryClient';
 import { FRENCH_REGIONS } from '../../utils/frenchRegions';
 import { FRENCH_DEPARTMENTS } from '../../utils/frenchDepartments';
 import { toast } from 'sonner';
+
 interface MarcheFormProps {
   mode: 'create' | 'edit';
   marcheId: string | null;
@@ -40,6 +41,7 @@ interface FormData {
   sousThemes: string;
   tags: string;
 }
+
 const MarcheForm: React.FC<MarcheFormProps> = ({
   mode,
   marcheId,
@@ -53,6 +55,9 @@ const MarcheForm: React.FC<MarcheFormProps> = ({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [activeTab, setActiveTab] = useState('general');
   const [themePrincipalRichText, setThemePrincipalRichText] = useState('');
+  const [descriptifCourtRichText, setDescriptifCourtRichText] = useState('');
+  const [descriptifLongRichText, setDescriptifLongRichText] = useState('');
+  
   const {
     register,
     handleSubmit,
@@ -63,8 +68,10 @@ const MarcheForm: React.FC<MarcheFormProps> = ({
       errors
     }
   } = useForm<FormData>();
+  
   const selectedRegion = watch('region');
   const selectedDepartement = watch('departement');
+  
   useEffect(() => {
     if (mode === 'edit' && marche) {
       console.log('📋 Données de la marche à éditer:', marche);
@@ -84,30 +91,25 @@ const MarcheForm: React.FC<MarcheFormProps> = ({
         sousThemes: marche.sousThemes?.join(', ') || '',
         tags: marche.supabaseTags?.join(', ') || ''
       };
-      console.log('🔄 Données du formulaire après mapping:', formData);
-      console.log('🔍 Coordonnées reçues:', {
-        originalLatitude: marche.latitude,
-        originalLongitude: marche.longitude,
-        formLatitude: formData.latitude,
-        formLongitude: formData.longitude
-      });
+      
       reset(formData);
       setThemePrincipalRichText(marche.theme || '');
+      setDescriptifCourtRichText(marche.descriptifCourt || '');
+      setDescriptifLongRichText(marche.descriptifLong || '');
     }
   }, [mode, marche, reset]);
+  
   const onSubmit = async (data: FormData) => {
     setIsSubmitting(true);
     try {
-      console.log('📝 Données du formulaire à sauvegarder:', data);
-
-      // Convertir les données pour l'API en respectant les champs de la base de données
+      // Utiliser les valeurs des éditeurs riches au lieu des champs du formulaire
       const apiData: MarcheFormData = {
         ville: data.ville,
         region: data.region,
         departement: data.departement,
         nomMarche: data.nomMarche,
-        descriptifCourt: data.descriptifCourt,
-        descriptifLong: data.descriptifLong,
+        descriptifCourt: descriptifCourtRichText,
+        descriptifLong: descriptifLongRichText,
         date: data.date,
         temperature: data.temperature,
         latitude: data.latitude,
@@ -116,9 +118,9 @@ const MarcheForm: React.FC<MarcheFormProps> = ({
         lienGoogleDrive: data.lienGoogleDrive,
         sousThemes: data.sousThemes ? data.sousThemes.split(',').map(t => t.trim()) : [],
         tags: data.tags ? data.tags.split(',').map(t => t.trim()) : [],
-        themesPrincipaux: [themePrincipalRichText].filter(Boolean) // Sauvegarde dans theme_principal
+        themesPrincipaux: [themePrincipalRichText].filter(Boolean)
       };
-      console.log('🔄 Données converties pour API:', apiData);
+      
       if (mode === 'create') {
         const newMarcheId = await createMarche(apiData);
         console.log('✅ Nouvelle marche créée avec l\'ID:', newMarcheId);
@@ -128,7 +130,6 @@ const MarcheForm: React.FC<MarcheFormProps> = ({
         console.log('✅ Marche mise à jour avec succès');
         toast.success('Marche mise à jour avec succès !');
 
-        // Forcer une invalidation complète du cache pour s'assurer que la liste se met à jour
         await queryClient.invalidateQueries({
           queryKey: ['marches-supabase']
         });
@@ -144,11 +145,13 @@ const MarcheForm: React.FC<MarcheFormProps> = ({
       setIsSubmitting(false);
     }
   };
+  
   if (mode === 'edit' && isLoading) {
     return <div className="flex items-center justify-center h-64">
         <div className="animate-spin w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full"></div>
       </div>;
   }
+  
   return <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h2 className="text-2xl font-bold">
@@ -164,7 +167,10 @@ const MarcheForm: React.FC<MarcheFormProps> = ({
         <Tabs value={activeTab} onValueChange={setActiveTab}>
           <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="general">Informations</TabsTrigger>
-            <TabsTrigger value="description">Description</TabsTrigger>
+            <TabsTrigger value="description" className="flex items-center gap-2">
+              <FileText className="h-4 w-4" />
+              Description
+            </TabsTrigger>
             <TabsTrigger value="photos">Photos</TabsTrigger>
             <TabsTrigger value="audio">Audio</TabsTrigger>
           </TabsList>
@@ -260,18 +266,77 @@ const MarcheForm: React.FC<MarcheFormProps> = ({
             </div>
           </TabsContent>
 
-          <TabsContent value="description" className="space-y-4">
-            <div>
-              <Label htmlFor="descriptifCourt">Descriptif court</Label>
-              <Textarea id="descriptifCourt" rows={3} {...register('descriptifCourt')} placeholder="Résumé en quelques phrases..." />
-            </div>
+          <TabsContent value="description" className="space-y-8">
+            <div className="gaspard-glass rounded-xl p-8 space-y-8">
+              <div className="text-center space-y-4">
+                <div className="flex items-center justify-center space-x-2">
+                  <Sparkles className="h-6 w-6 text-accent animate-pulse" />
+                  <h3 className="text-2xl font-bold bg-gradient-to-r from-accent to-accent-foreground bg-clip-text text-transparent">
+                    Descriptions Immersives
+                  </h3>
+                  <Sparkles className="h-6 w-6 text-accent animate-pulse" />
+                </div>
+                <p className="text-muted-foreground max-w-2xl mx-auto">
+                  Créez des descriptions captivantes qui transporteront vos lecteurs dans l'univers de votre marche.
+                  Utilisez la mise en forme enrichie pour donner vie à vos récits.
+                </p>
+              </div>
 
-            <div>
-              <Label htmlFor="descriptifLong">Descriptif long</Label>
-              <Textarea id="descriptifLong" rows={6} {...register('descriptifLong')} placeholder="Description détaillée de la marche..." />
-            </div>
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <div className="space-y-4">
+                  <div className="flex items-center space-x-2">
+                    <div className="w-3 h-3 bg-accent rounded-full animate-pulse"></div>
+                    <Label className="text-lg font-semibold text-foreground">
+                      Résumé Captivant
+                    </Label>
+                  </div>
+                  <p className="text-sm text-muted-foreground mb-4">
+                    Un aperçu concis mais évocateur qui donne envie d'en savoir plus
+                  </p>
+                  <div className="gaspard-card p-1">
+                    <RichTextEditor
+                      value={descriptifCourtRichText}
+                      onChange={setDescriptifCourtRichText}
+                      placeholder="Décrivez brièvement l'essence de cette marche... Quelle émotion voulez-vous transmettre ?"
+                      className="min-h-[200px] border-0 shadow-none"
+                    />
+                  </div>
+                </div>
 
-            
+                <div className="space-y-4">
+                  <div className="flex items-center space-x-2">
+                    <div className="w-3 h-3 bg-accent rounded-full animate-pulse"></div>
+                    <Label className="text-lg font-semibold text-foreground">
+                      Récit Détaillé
+                    </Label>
+                  </div>
+                  <p className="text-sm text-muted-foreground mb-4">
+                    L'histoire complète, riche en détails sensoriels et émotionnels
+                  </p>
+                  <div className="gaspard-card p-1">
+                    <RichTextEditor
+                      value={descriptifLongRichText}
+                      onChange={setDescriptifLongRichText}
+                      placeholder="Racontez l'histoire complète de cette marche... Plongez dans les détails, les sensations, les rencontres..."
+                      className="min-h-[300px] border-0 shadow-none"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="mt-8 p-6 bg-accent/10 rounded-xl border border-accent/20">
+                <h4 className="font-semibold text-accent mb-2 flex items-center">
+                  <FileText className="h-4 w-4 mr-2" />
+                  Conseils de rédaction
+                </h4>
+                <ul className="text-sm text-muted-foreground space-y-1">
+                  <li>• Utilisez des mots évocateurs qui engagent les sens</li>
+                  <li>• Décrivez les atmosphères, les lumières, les sons</li>
+                  <li>• Partagez les émotions et les réflexions du moment</li>
+                  <li>• Mentionnez les rencontres et les découvertes marquantes</li>
+                </ul>
+              </div>
+            </div>
           </TabsContent>
 
           <TabsContent value="photos">
@@ -295,4 +360,5 @@ const MarcheForm: React.FC<MarcheFormProps> = ({
       </form>
     </div>;
 };
+
 export default MarcheForm;
