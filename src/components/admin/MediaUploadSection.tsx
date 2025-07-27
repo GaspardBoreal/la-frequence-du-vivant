@@ -128,7 +128,7 @@ const MediaUploadSection: React.FC<MediaUploadSectionProps> = ({
 
       {mediaItems.length === 0 ? <Card className="p-8 text-center border-dashed">
           <Upload className="h-12 w-12 mx-auto mb-4 text-gray-400" />
-          <h4 className="text-lg font-medium text-gray-900 mb-2">
+          <h4 className="text-lg font-medium text-white mb-2">
             Aucune {mediaType === 'photos' ? 'photo' : 'vidéo'} ajoutée
           </h4>
           <p className="mb-4 text-slate-200">
