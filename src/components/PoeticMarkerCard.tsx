@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent } from './ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from './ui/dialog';
@@ -219,7 +218,7 @@ const PoeticMarkerCard: React.FC<PoeticMarkerCardProps> = ({ marche, theme }) =>
                     {marche.nomMarche || marche.ville}
                   </h3>
                   <p className="text-sm text-gray-600 mb-2">
-                    {marche.descriptifCourt || marche.theme}
+                    {marche.descriptifCourt || marche.nomMarche || marche.ville}
                   </p>
                 </div>
                 <div className="flex items-center space-x-1 text-xs text-gray-500">
@@ -247,9 +246,6 @@ const PoeticMarkerCard: React.FC<PoeticMarkerCardProps> = ({ marche, theme }) =>
                   <span>•</span>
                   <span>{marche.region}</span>
                 </div>
-                <Badge variant="outline" className="text-xs">
-                  {marche.theme}
-                </Badge>
               </div>
             </div>
           </CardContent>
@@ -262,7 +258,7 @@ const PoeticMarkerCard: React.FC<PoeticMarkerCardProps> = ({ marche, theme }) =>
             {marche.nomMarche || marche.ville}
           </DialogTitle>
           <p className="text-sm text-gray-600 mt-2">
-            {marche.descriptifCourt || marche.theme}
+            {marche.descriptifCourt || marche.nomMarche || marche.ville}
           </p>
         </DialogHeader>
         

@@ -18,7 +18,7 @@ export const transformSupabaseToLegacyFormat = (marche: MarcheComplete): MarcheT
     ville: marche.ville,
     departement: marche.departement || marche.region || '', // Utiliser departement d'abord, puis region en fallback
     region: marche.region || '',
-    theme: marche.theme_principal || marche.nom_marche || marche.ville, // Utiliser theme_principal en priorité
+    theme: marche.theme_principal || marche.nom_marche || marche.ville, // Utiliser theme_principal en priorité, puis nom_marche, puis ville
     nomMarche: marche.nom_marche || undefined,
     descriptifCourt: marche.descriptif_court || undefined, // Mapping direct et simple
     descriptifLong: marche.descriptif_long || undefined,

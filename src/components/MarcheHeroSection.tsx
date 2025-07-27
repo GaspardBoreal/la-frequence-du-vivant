@@ -33,7 +33,7 @@ const MarcheHeroSection: React.FC<MarcheHeroSectionProps> = ({
           <div className="absolute inset-0">
             <img 
               src={firstPhoto} 
-              alt={marche.theme || marche.ville} 
+              alt={marche.nomMarche || marche.ville} 
               className="w-full h-full object-cover" 
               crossOrigin="anonymous" 
             />
@@ -97,7 +97,7 @@ const MarcheHeroSection: React.FC<MarcheHeroSectionProps> = ({
             transition={{ delay: 0.5, duration: 0.8 }}
           >
             <h1 className="text-5xl md:text-7xl font-crimson font-bold text-white leading-tight lg:text-6xl">
-              {marche.theme || marche.ville}
+              {marche.nomMarche || marche.ville}
             </h1>
             
             {marche.descriptifCourt && (
