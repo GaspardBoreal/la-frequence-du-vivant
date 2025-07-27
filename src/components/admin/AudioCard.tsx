@@ -157,6 +157,15 @@ const AudioCard: React.FC<AudioCardProps> = ({
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
+  const formatFileDate = (file?: File): string => {
+    if (!file) return 'Date inconnue';
+    return new Date(file.lastModified).toLocaleDateString('fr-FR', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric'
+    });
+  };
+
   const getUploadStatusIcon = () => {
     if (isUploading || audio.uploadStatus === 'uploading' || audio.uploadStatus === 'processing') {
       return <Loader2 className="h-4 w-4 animate-spin" />;
@@ -254,6 +263,10 @@ const AudioCard: React.FC<AudioCardProps> = ({
           <div className="flex justify-between">
             <span>Taille:</span>
             <span>{formatFileSize(audio.size)}</span>
+          </div>
+          <div className="flex justify-between">
+            <span>Date:</span>
+            <span>{formatFileDate(audio.file)}</span>
           </div>
         </div>
 
