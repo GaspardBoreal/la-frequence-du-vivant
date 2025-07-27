@@ -1,7 +1,6 @@
 
 import { supabase } from '@/integrations/supabase/client';
 import { uploadAudio } from './supabaseUpload';
-import { runSupabaseDiagnostic } from './supabaseDiagnostic';
 
 export interface ExistingAudio {
   id: string;
@@ -35,31 +34,6 @@ export interface AudioUploadProgress {
   status: 'pending' | 'uploading' | 'processing' | 'success' | 'error';
   error?: string;
 }
-
-// Fonction utilitaire pour valider l'existence d'une marche
-const validateMarcheExists = async (marcheId: string): Promise<boolean> => {
-  console.log(`🔍 [validateMarcheExists] Vérification de l'existence de la marche ${marcheId}`);
-  
-  try {
-    const { data, error } = await supabase
-      .from('marches')
-      .select('id')
-      .eq('id', marcheId)
-      .single();
-
-    if (error) {
-      console.error('❌ [validateMarcheExists] Erreur lors de la vérification:', error);
-      return false;
-    }
-
-    const exists = !!data;
-    console.log(`${exists ? '✅' : '❌'} [validateMarcheExists] Marche ${marcheId} ${exists ? 'trouvée' : 'non trouvée'}`);
-    return exists;
-  } catch (error) {
-    console.error('💥 [validateMarcheExists] Erreur complète:', error);
-    return false;
-  }
-};
 
 // Fonction utilitaire pour valider un fichier audio
 export const validateAudioFile = (file: File): { valid: boolean; errors: string[] } => {
@@ -220,23 +194,8 @@ export const saveAudio = async (
   updateProgress(0, 'pending');
 
   try {
-    // ÉTAPE 1: Diagnostic Supabase (non bloquant)
-    console.log('🔍 [saveAudio] ÉTAPE 1 - Diagnostic Supabase (optionnel)');
-    updateProgress(5, 'uploading');
-    
-    try {
-      const diagnosticResult = await runSupabaseDiagnostic(marcheId);
-      if (diagnosticResult.success) {
-        console.log('✅ [saveAudio] Diagnostic réussi');
-      } else {
-        console.warn('⚠️ [saveAudio] Diagnostic échoué (non bloquant):', diagnosticResult.error);
-      }
-    } catch (diagnosticError) {
-      console.warn('⚠️ [saveAudio] Erreur diagnostic (non bloquant):', diagnosticError);
-    }
-
-    // ÉTAPE 2: Validation du fichier audio
-    console.log('🔍 [saveAudio] ÉTAPE 2 - Validation du fichier audio');
+    // ÉTAPE 1: Validation du fichier audio
+    console.log('🔍 [saveAudio] ÉTAPE 1 - Validation du fichier audio');
     updateProgress(10, 'uploading');
     
     const validationResult = validateAudioFile(audioData.file);
@@ -248,8 +207,8 @@ export const saveAudio = async (
     }
     console.log('✅ [saveAudio] Fichier audio validé');
 
-    // ÉTAPE 3: Validation marche (simplifiée)
-    console.log('🔍 [saveAudio] ÉTAPE 3 - Vérification marche');
+    // ÉTAPE 2: Validation marche
+    console.log('🔍 [saveAudio] ÉTAPE 2 - Vérification marche');
     updateProgress(15, 'uploading');
     
     if (!marcheId) {
@@ -260,14 +219,15 @@ export const saveAudio = async (
     }
     console.log('✅ [saveAudio] ID marche présent');
 
-    // ÉTAPE 4: Upload vers Supabase Storage avec progression
-    console.log('🔍 [saveAudio] ÉTAPE 4 - Upload Storage');
+    // ÉTAPE 3: Upload vers Supabase Storage avec progression
+    console.log('🔍 [saveAudio] ÉTAPE 3 - Upload Storage');
     updateProgress(20, 'uploading');
     
     console.log('📤 [saveAudio] Début upload Storage...');
     const uploadResult = await uploadAudio(audioData.file, marcheId, (progress) => {
-      // Transmettre la progression de l'upload (20% à 60%)
-      updateProgress(progress, 'uploading');
+      // Transmettre la progression de l'upload (20% à 70%)
+      const mappedProgress = 20 + (progress * 0.5); // Map 0-100 to 20-70
+      updateProgress(mappedProgress, 'uploading');
     });
     
     if (!uploadResult || !uploadResult.url) {
@@ -283,11 +243,11 @@ export const saveAudio = async (
       urlLength: uploadResult.url.length
     });
     
-    updateProgress(70, 'processing');
-
-    // ÉTAPE 5: Préparation métadonnées
-    console.log('🔍 [saveAudio] ÉTAPE 5 - Préparation métadonnées');
     updateProgress(80, 'processing');
+
+    // ÉTAPE 4: Préparation métadonnées
+    console.log('🔍 [saveAudio] ÉTAPE 4 - Préparation métadonnées');
+    updateProgress(85, 'processing');
     
     const validatedMetadata = validateAudioMetadata({
       duration: audioData.duration,
@@ -296,8 +256,8 @@ export const saveAudio = async (
     });
     console.log('📋 [saveAudio] Métadonnées préparées:', validatedMetadata ? 'OK' : 'NULL');
     
-    // ÉTAPE 6: Préparation données insertion
-    console.log('🔍 [saveAudio] ÉTAPE 6 - Préparation insertion');
+    // ÉTAPE 5: Préparation données insertion
+    console.log('🔍 [saveAudio] ÉTAPE 5 - Préparation insertion');
     updateProgress(90, 'processing');
     
     const insertData = {
@@ -326,8 +286,8 @@ export const saveAudio = async (
       hasMetadata: !!insertData.metadata
     });
     
-    // ÉTAPE 7: Insertion en base de données
-    console.log('🔍 [saveAudio] ÉTAPE 7 - Insertion base de données');
+    // ÉTAPE 6: Insertion en base de données
+    console.log('🔍 [saveAudio] ÉTAPE 6 - Insertion base de données');
     updateProgress(95, 'processing');
     
     console.log('💾 [saveAudio] Exécution requête INSERT...');
