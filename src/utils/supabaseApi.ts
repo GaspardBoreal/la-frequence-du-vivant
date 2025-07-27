@@ -116,7 +116,7 @@ export interface MarcheComplete extends MarcheSupabase {
   longitude?: number;
 }
 
-// Fonction utilitaire pour convertir les coordonnées PostGIS
+// Fonction utilitaire pour convertir les coordonnées PostGIS (gardée comme fallback)
 const parseCoordinates = (coordonnees: any): { latitude: number; longitude: number } | null => {
   if (!coordonnees) return null;
   
@@ -169,6 +169,14 @@ export const fetchMarchesFromSupabase = async (): Promise<MarcheComplete[]> => {
       marchesData.map(async (marche): Promise<MarcheComplete> => {
         const marcheId = marche.id;
         
+        console.log(`🔍 Traitement de la marche ${marche.ville}:`, {
+          rawLatitude: marche.latitude,
+          rawLongitude: marche.longitude,
+          coordonnees: marche.coordonnees,
+          typeLatitude: typeof marche.latitude,
+          typeLongitude: typeof marche.longitude
+        });
+        
         // Récupérer en parallèle tous les médias
         const [photosResult, audioResult, videosResult, documentsResult, etudesResult, tagsResult] = await Promise.all([
           supabase.from('marche_photos').select('*').eq('marche_id', marcheId).order('ordre'),
@@ -179,8 +187,32 @@ export const fetchMarchesFromSupabase = async (): Promise<MarcheComplete[]> => {
           supabase.from('marche_tags').select('*').eq('marche_id', marcheId)
         ]);
 
-        // Parser les coordonnées
-        const coordinates = parseCoordinates(marche.coordonnees);
+        // Nouvelle logique pour les coordonnées : utiliser directement latitude/longitude
+        let finalLatitude: number = 0;
+        let finalLongitude: number = 0;
+
+        // Priorité 1 : utiliser directement latitude/longitude si disponibles
+        if (marche.latitude != null && marche.longitude != null) {
+          finalLatitude = Number(marche.latitude);
+          finalLongitude = Number(marche.longitude);
+          console.log(`✅ Coordonnées directes utilisées pour ${marche.ville}:`, {
+            latitude: finalLatitude,
+            longitude: finalLongitude
+          });
+        } else {
+          // Priorité 2 : fallback sur parseCoordinates si latitude/longitude sont nulles
+          const coordinates = parseCoordinates(marche.coordonnees);
+          if (coordinates) {
+            finalLatitude = coordinates.latitude;
+            finalLongitude = coordinates.longitude;
+            console.log(`🔄 Coordonnées parsées depuis coordonnees pour ${marche.ville}:`, {
+              latitude: finalLatitude,
+              longitude: finalLongitude
+            });
+          } else {
+            console.log(`⚠️ Aucune coordonnée disponible pour ${marche.ville}`);
+          }
+        }
 
         const marcheComplete: MarcheComplete = {
           ...marche,
@@ -190,8 +222,8 @@ export const fetchMarchesFromSupabase = async (): Promise<MarcheComplete[]> => {
           documents: documentsResult.data || [],
           etudes: etudesResult.data || [],
           tags: tagsResult.data || [],
-          latitude: coordinates?.latitude || 0,
-          longitude: coordinates?.longitude || 0
+          latitude: finalLatitude,
+          longitude: finalLongitude
         };
 
         console.log(`✅ Marche ${marche.ville} chargée avec:`, {
@@ -200,7 +232,9 @@ export const fetchMarchesFromSupabase = async (): Promise<MarcheComplete[]> => {
           videos: marcheComplete.videos.length,
           documents: marcheComplete.documents.length,
           etudes: marcheComplete.etudes.length,
-          tags: marcheComplete.tags.length
+          tags: marcheComplete.tags.length,
+          finalLatitude: marcheComplete.latitude,
+          finalLongitude: marcheComplete.longitude
         });
 
         return marcheComplete;
@@ -237,6 +271,14 @@ export const fetchMarcheById = async (id: string): Promise<MarcheComplete | null
       return null;
     }
 
+    console.log(`🔍 Traitement de la marche ${marcheData.ville} (ID: ${id}):`, {
+      rawLatitude: marcheData.latitude,
+      rawLongitude: marcheData.longitude,
+      coordonnees: marcheData.coordonnees,
+      typeLatitude: typeof marcheData.latitude,
+      typeLongitude: typeof marcheData.longitude
+    });
+
     // Récupérer tous les médias associés
     const [photosResult, audioResult, videosResult, documentsResult, etudesResult, tagsResult] = await Promise.all([
       supabase.from('marche_photos').select('*').eq('marche_id', id).order('ordre'),
@@ -247,7 +289,32 @@ export const fetchMarcheById = async (id: string): Promise<MarcheComplete | null
       supabase.from('marche_tags').select('*').eq('marche_id', id)
     ]);
 
-    const coordinates = parseCoordinates(marcheData.coordonnees);
+    // Nouvelle logique pour les coordonnées : utiliser directement latitude/longitude
+    let finalLatitude: number = 0;
+    let finalLongitude: number = 0;
+
+    // Priorité 1 : utiliser directement latitude/longitude si disponibles
+    if (marcheData.latitude != null && marcheData.longitude != null) {
+      finalLatitude = Number(marcheData.latitude);
+      finalLongitude = Number(marcheData.longitude);
+      console.log(`✅ Coordonnées directes utilisées pour ${marcheData.ville}:`, {
+        latitude: finalLatitude,
+        longitude: finalLongitude
+      });
+    } else {
+      // Priorité 2 : fallback sur parseCoordinates si latitude/longitude sont nulles
+      const coordinates = parseCoordinates(marcheData.coordonnees);
+      if (coordinates) {
+        finalLatitude = coordinates.latitude;
+        finalLongitude = coordinates.longitude;
+        console.log(`🔄 Coordonnées parsées depuis coordonnees pour ${marcheData.ville}:`, {
+          latitude: finalLatitude,
+          longitude: finalLongitude
+        });
+      } else {
+        console.log(`⚠️ Aucune coordonnée disponible pour ${marcheData.ville}`);
+      }
+    }
 
     const marcheComplete: MarcheComplete = {
       ...marcheData,
@@ -257,8 +324,8 @@ export const fetchMarcheById = async (id: string): Promise<MarcheComplete | null
       documents: documentsResult.data || [],
       etudes: etudesResult.data || [],
       tags: tagsResult.data || [],
-      latitude: coordinates?.latitude || 0,
-      longitude: coordinates?.longitude || 0
+      latitude: finalLatitude,
+      longitude: finalLongitude
     };
 
     console.log(`✅ Marche ${marcheData.ville} chargée depuis Supabase`);
@@ -294,6 +361,12 @@ export const searchMarchesByVille = async (ville: string): Promise<MarcheComplet
     // Charger les médias pour chaque marche trouvée
     const marchesCompletes = await Promise.all(
       marchesData.map(async (marche): Promise<MarcheComplete> => {
+        console.log(`🔍 Traitement de la marche ${marche.ville} (recherche):`, {
+          rawLatitude: marche.latitude,
+          rawLongitude: marche.longitude,
+          coordonnees: marche.coordonnees
+        });
+
         const [photosResult, audioResult, videosResult, documentsResult, etudesResult, tagsResult] = await Promise.all([
           supabase.from('marche_photos').select('*').eq('marche_id', marche.id).order('ordre'),
           supabase.from('marche_audio').select('*').eq('marche_id', marche.id).order('ordre'),
@@ -303,7 +376,32 @@ export const searchMarchesByVille = async (ville: string): Promise<MarcheComplet
           supabase.from('marche_tags').select('*').eq('marche_id', marche.id)
         ]);
 
-        const coordinates = parseCoordinates(marche.coordonnees);
+        // Nouvelle logique pour les coordonnées : utiliser directement latitude/longitude
+        let finalLatitude: number = 0;
+        let finalLongitude: number = 0;
+
+        // Priorité 1 : utiliser directement latitude/longitude si disponibles
+        if (marche.latitude != null && marche.longitude != null) {
+          finalLatitude = Number(marche.latitude);
+          finalLongitude = Number(marche.longitude);
+          console.log(`✅ Coordonnées directes utilisées pour ${marche.ville}:`, {
+            latitude: finalLatitude,
+            longitude: finalLongitude
+          });
+        } else {
+          // Priorité 2 : fallback sur parseCoordinates si latitude/longitude sont nulles
+          const coordinates = parseCoordinates(marche.coordonnees);
+          if (coordinates) {
+            finalLatitude = coordinates.latitude;
+            finalLongitude = coordinates.longitude;
+            console.log(`🔄 Coordonnées parsées depuis coordonnees pour ${marche.ville}:`, {
+              latitude: finalLatitude,
+              longitude: finalLongitude
+            });
+          } else {
+            console.log(`⚠️ Aucune coordonnée disponible pour ${marche.ville}`);
+          }
+        }
 
         return {
           ...marche,
@@ -313,8 +411,8 @@ export const searchMarchesByVille = async (ville: string): Promise<MarcheComplet
           documents: documentsResult.data || [],
           etudes: etudesResult.data || [],
           tags: tagsResult.data || [],
-          latitude: coordinates?.latitude || 0,
-          longitude: coordinates?.longitude || 0
+          latitude: finalLatitude,
+          longitude: finalLongitude
         };
       })
     );
