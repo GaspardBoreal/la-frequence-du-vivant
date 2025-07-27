@@ -4,14 +4,15 @@ import { motion } from 'framer-motion';
 import { 
   Eye, 
   Volume2, 
-  Sparkles 
+  Sparkles,
+  BookOpen 
 } from 'lucide-react';
 import { Button } from './ui/button';
 import { RegionalTheme } from '../utils/regionalThemes';
 
 interface MultiSensoryNavigationProps {
-  activeSection: 'visual' | 'audio';
-  onSectionChange: (section: 'visual' | 'audio') => void;
+  activeSection: 'visual' | 'audio' | 'poetic';
+  onSectionChange: (section: 'visual' | 'audio' | 'poetic') => void;
   theme: RegionalTheme;
 }
 
@@ -29,7 +30,7 @@ const MultiSensoryNavigation: React.FC<MultiSensoryNavigationProps> = ({
       icon: Eye,
       color: theme.colors.primary,
       description: 'Explorez en images',
-      angle: 0
+      angle: -60
     },
     {
       id: 'audio' as const,
@@ -37,6 +38,14 @@ const MultiSensoryNavigation: React.FC<MultiSensoryNavigationProps> = ({
       icon: Volume2,
       color: theme.colors.secondary,
       description: 'Écoutez les sons',
+      angle: 60
+    },
+    {
+      id: 'poetic' as const,
+      label: 'Poétique',
+      icon: BookOpen,
+      color: '#8B5CF6',
+      description: 'Carnet manuscrit',
       angle: 180
     }
   ];
@@ -49,7 +58,7 @@ const MultiSensoryNavigation: React.FC<MultiSensoryNavigationProps> = ({
         <motion.div
           className="w-32 h-32 rounded-full bg-gradient-to-br from-white to-gray-100 shadow-2xl flex items-center justify-center relative z-10"
           animate={{
-            rotate: activeSection === 'visual' ? 0 : 180
+            rotate: activeSection === 'visual' ? -60 : activeSection === 'audio' ? 60 : 180
           }}
           transition={{ duration: 0.8, ease: "easeInOut" }}
         >
@@ -79,7 +88,7 @@ const MultiSensoryNavigation: React.FC<MultiSensoryNavigationProps> = ({
               }}
               initial={{ scale: 0, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
-              transition={{ delay: section.angle / 360, duration: 0.5 }}
+              transition={{ delay: Math.abs(section.angle) / 360, duration: 0.5 }}
             >
               <Button
                 variant={isActive ? "default" : "outline"}
@@ -94,6 +103,7 @@ const MultiSensoryNavigation: React.FC<MultiSensoryNavigationProps> = ({
                     : 'bg-white/80 backdrop-blur-sm hover:bg-white/90 text-gray-700 hover:scale-105'
                   }
                   ${isHovered ? 'shadow-xl' : ''}
+                  ${section.id === 'poetic' ? 'border-purple-300' : ''}
                 `}
               >
                 <Icon className="h-6 w-6" />
