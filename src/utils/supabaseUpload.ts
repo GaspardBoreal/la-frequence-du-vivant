@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 
 export interface UploadResult {
@@ -92,7 +93,7 @@ export const uploadPhoto = async (file: File, marcheId: string): Promise<UploadR
       .from('marche-photos')
       .upload(fileName, file, {
         cacheControl: '3600',
-        upsert: false
+        upsert: true
       });
 
     if (error) {
@@ -153,7 +154,7 @@ export const uploadVideo = async (file: File, marcheId: string): Promise<UploadR
       .from('marche-videos')
       .upload(fileName, file, {
         cacheControl: '3600',
-        upsert: false
+        upsert: true
       });
 
     if (error) {
@@ -253,7 +254,7 @@ export const uploadAudio = async (file: File, marcheId: string, onProgress?: Upl
       .from('marche-audio')
       .upload(fileName, file, {
         cacheControl: '3600',
-        upsert: true // Changé à true pour éviter les conflits
+        upsert: true
       });
 
     // Arrêter la progression simulée

@@ -234,33 +234,8 @@ export const saveAudio = async (
     }
     console.log('✅ [saveAudio] ID marche présent');
 
-    // ÉTAPE 3: Test de connexion Storage
-    console.log('🔍 [saveAudio] ÉTAPE 3 - Test connexion Storage');
-    updateProgress(18, 'uploading');
-    
-    try {
-      const { data: buckets, error: bucketsError } = await supabase.storage.listBuckets();
-      if (bucketsError) {
-        console.error('❌ [saveAudio] Erreur liste buckets:', bucketsError);
-        throw new Error(`Erreur connexion Storage: ${bucketsError.message}`);
-      }
-      
-      const audioBucket = buckets?.find(b => b.name === 'marche-audio');
-      if (!audioBucket) {
-        console.error('❌ [saveAudio] Bucket marche-audio introuvable');
-        throw new Error('Bucket marche-audio introuvable');
-      }
-      
-      console.log('✅ [saveAudio] Bucket marche-audio trouvé:', audioBucket);
-    } catch (storageError) {
-      const errorMsg = `Erreur connexion Storage: ${storageError instanceof Error ? storageError.message : 'Erreur inconnue'}`;
-      console.error('❌ [saveAudio] Erreur connexion Storage:', storageError);
-      updateProgress(18, 'error', errorMsg);
-      throw new Error(errorMsg);
-    }
-
-    // ÉTAPE 4: Upload vers Supabase Storage avec progression
-    console.log('🔍 [saveAudio] ÉTAPE 4 - Upload Storage');
+    // ÉTAPE 3: Upload vers Supabase Storage avec progression (suppression du test de bucket)
+    console.log('🔍 [saveAudio] ÉTAPE 3 - Upload Storage');
     updateProgress(20, 'uploading');
     
     console.log('📤 [saveAudio] Début upload Storage...');
@@ -285,8 +260,8 @@ export const saveAudio = async (
     
     updateProgress(80, 'processing');
 
-    // ÉTAPE 5: Préparation métadonnées
-    console.log('🔍 [saveAudio] ÉTAPE 5 - Préparation métadonnées');
+    // ÉTAPE 4: Préparation métadonnées
+    console.log('🔍 [saveAudio] ÉTAPE 4 - Préparation métadonnées');
     updateProgress(85, 'processing');
     
     const validatedMetadata = validateAudioMetadata({
@@ -297,8 +272,8 @@ export const saveAudio = async (
     });
     console.log('📋 [saveAudio] Métadonnées préparées:', validatedMetadata ? 'OK' : 'NULL');
     
-    // ÉTAPE 6: Préparation données insertion
-    console.log('🔍 [saveAudio] ÉTAPE 6 - Préparation insertion');
+    // ÉTAPE 5: Préparation données insertion
+    console.log('🔍 [saveAudio] ÉTAPE 5 - Préparation insertion');
     updateProgress(90, 'processing');
     
     const insertData = {
@@ -327,8 +302,8 @@ export const saveAudio = async (
       hasMetadata: !!insertData.metadata
     });
     
-    // ÉTAPE 7: Insertion en base de données
-    console.log('🔍 [saveAudio] ÉTAPE 7 - Insertion base de données');
+    // ÉTAPE 6: Insertion en base de données
+    console.log('🔍 [saveAudio] ÉTAPE 6 - Insertion base de données');
     updateProgress(95, 'processing');
     
     console.log('💾 [saveAudio] Exécution requête INSERT...');
