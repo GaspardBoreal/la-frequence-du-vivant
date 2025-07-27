@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Book, Quote, Eye, EyeOff, Sparkles, Pause, Play } from 'lucide-react';
+import { Book, Quote, EyeOff, Sparkles, Pause, Play } from 'lucide-react';
 import { Button } from './ui/button';
 import { RegionalTheme } from '../utils/regionalThemes';
 
@@ -20,7 +20,6 @@ const PoeticTextDisplay: React.FC<PoeticTextDisplayProps> = ({
   const [isExpanded, setIsExpanded] = useState(true);
   const [currentParagraph, setCurrentParagraph] = useState(0);
   const [isAutoReading, setIsAutoReading] = useState(false);
-  const [showReadingMode, setShowReadingMode] = useState(true);
 
   // Split text into paragraphs and sentences
   const paragraphs = text.split('\n').filter(p => p.trim());
@@ -124,7 +123,7 @@ const PoeticTextDisplay: React.FC<PoeticTextDisplayProps> = ({
                   size="sm"
                   className="text-gray-600 hover:text-gray-800 flex items-center space-x-2"
                 >
-                  <Eye className="h-4 w-4" />
+                  <EyeOff className="h-4 w-4" />
                   <span>Lire</span>
                 </Button>
               </div>
@@ -166,16 +165,8 @@ const PoeticTextDisplay: React.FC<PoeticTextDisplayProps> = ({
                   </div>
                 </div>
                 
-                {/* Controls */}
+                {/* Controls - Suppression du bouton de bascule mode lecture */}
                 <div className="flex items-center space-x-1 flex-shrink-0">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setShowReadingMode(!showReadingMode)}
-                    className="text-white hover:bg-white/20 p-2"
-                  >
-                    {showReadingMode ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                  </Button>
                   <Button
                     variant="ghost"
                     size="sm"
@@ -196,52 +187,28 @@ const PoeticTextDisplay: React.FC<PoeticTextDisplayProps> = ({
               </div>
             </div>
 
-            {/* Text Content */}
+            {/* Text Content - Toujours en mode lecture */}
             <div className="p-6">
-              {showReadingMode ? (
-                // Reading Mode - Paragraph by paragraph
-                <div className="space-y-6">
-                  {paragraphs.map((paragraph, index) => (
-                    <motion.div
-                      key={index}
-                      initial={{ opacity: 0, x: -20 }}
-                      animate={{ 
-                        opacity: isAutoReading ? (index <= currentParagraph ? 1 : 0.3) : 1,
-                        x: 0,
-                        scale: isAutoReading && index === currentParagraph ? 1.02 : 1
-                      }}
-                      transition={{ duration: 0.6, delay: index * 0.1 }}
-                      className={`relative ${isAutoReading && index === currentParagraph ? 'bg-yellow-50 rounded-lg p-4' : ''}`}
-                    >
-                      <p 
-                        className="text-xs leading-relaxed text-gray-800 font-serif break-words hyphens-auto overflow-wrap-anywhere"
-                        dangerouslySetInnerHTML={{ __html: highlightText(paragraph) }}
-                      />
-                    </motion.div>
-                  ))}
-                </div>
-              ) : (
-                // Full Text Mode
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.8 }}
-                  className="prose prose-sm max-w-none"
-                >
-                  <div className="text-gray-800 font-serif leading-relaxed space-y-6">
-                    {paragraphs.map((paragraph, index) => (
-                      <motion.p
-                        key={index}
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: index * 0.1, duration: 0.6 }}
-                        className="text-xs break-words hyphens-auto overflow-wrap-anywhere"
-                        dangerouslySetInnerHTML={{ __html: highlightText(paragraph) }}
-                      />
-                    ))}
-                  </div>
-                </motion.div>
-              )}
+              <div className="space-y-6">
+                {paragraphs.map((paragraph, index) => (
+                  <motion.div
+                    key={index}
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ 
+                      opacity: isAutoReading ? (index <= currentParagraph ? 1 : 0.3) : 1,
+                      x: 0,
+                      scale: isAutoReading && index === currentParagraph ? 1.02 : 1
+                    }}
+                    transition={{ duration: 0.6, delay: index * 0.1 }}
+                    className={`relative ${isAutoReading && index === currentParagraph ? 'bg-yellow-50 rounded-lg p-4' : ''}`}
+                  >
+                    <p 
+                      className="text-xs leading-relaxed text-gray-800 font-serif break-words hyphens-auto overflow-wrap-anywhere"
+                      dangerouslySetInnerHTML={{ __html: highlightText(paragraph) }}
+                    />
+                  </motion.div>
+                ))}
+              </div>
             </div>
 
             {/* Footer */}
