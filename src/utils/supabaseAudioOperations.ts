@@ -272,9 +272,12 @@ export const saveAudio = async (
     });
     console.log('📋 [saveAudio] Métadonnées préparées:', validatedMetadata ? 'OK' : 'NULL');
     
-    // ÉTAPE 5: Préparation données insertion
+    // ÉTAPE 5: Préparation données insertion avec conversion correcte de la durée
     console.log('🔍 [saveAudio] ÉTAPE 5 - Préparation insertion');
     updateProgress(90, 'processing');
+    
+    // Convertir la durée en entier (arrondi à l'entier le plus proche)
+    const dureeSecondes = audioData.duration ? Math.round(audioData.duration) : null;
     
     const insertData = {
       marche_id: marcheId,
@@ -282,7 +285,7 @@ export const saveAudio = async (
       url_supabase: uploadResult.url,
       titre: audioData.titre || fileName,
       description: audioData.description || '',
-      duree_secondes: audioData.duration,
+      duree_secondes: dureeSecondes,
       format_audio: audioData.file.type,
       taille_octets: audioData.file.size,
       ordre: 0,
