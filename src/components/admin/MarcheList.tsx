@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
@@ -224,7 +225,7 @@ const MarcheList: React.FC<MarcheListProps> = ({
                   {marche.latitude && marche.longitude && (
                     <div className="flex items-center space-x-2">
                       <MapPin className="h-4 w-4" />
-                      <span>{marche.latitude.toFixed(3)}, {marche.longitude.toFixed(3)}</span>
+                      <span>{Number(marche.latitude).toFixed(3)}, {Number(marche.longitude).toFixed(3)}</span>
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                           <Button
@@ -238,21 +239,21 @@ const MarcheList: React.FC<MarcheListProps> = ({
                         </DropdownMenuTrigger>
                         <DropdownMenuContent className="bg-white border border-gray-200 shadow-lg z-50">
                           <DropdownMenuItem 
-                            onClick={() => handleMapClick(marche.latitude!, marche.longitude!, marche.ville, 'google-maps')}
+                            onClick={() => handleMapClick(Number(marche.latitude), Number(marche.longitude), marche.ville, 'google-maps')}
                             className="cursor-pointer hover:bg-gray-50 text-gray-900"
                           >
                             <Map className="h-4 w-4 mr-2" />
                             Google Maps
                           </DropdownMenuItem>
                           <DropdownMenuItem 
-                            onClick={() => handleMapClick(marche.latitude!, marche.longitude!, marche.ville, 'google-earth')}
+                            onClick={() => handleMapClick(Number(marche.latitude), Number(marche.longitude), marche.ville, 'google-earth')}
                             className="cursor-pointer hover:bg-gray-50 text-gray-900"
                           >
                             <Globe className="h-4 w-4 mr-2" />
                             Google Earth
                           </DropdownMenuItem>
                           <DropdownMenuItem 
-                            onClick={() => handleMapClick(marche.latitude!, marche.longitude!, marche.ville, 'openstreetmap')}
+                            onClick={() => handleMapClick(Number(marche.latitude), Number(marche.longitude), marche.ville, 'openstreetmap')}
                             className="cursor-pointer hover:bg-gray-50 text-gray-900"
                           >
                             <Map className="h-4 w-4 mr-2" />
@@ -260,7 +261,7 @@ const MarcheList: React.FC<MarcheListProps> = ({
                           </DropdownMenuItem>
                           <DropdownMenuSeparator />
                           <DropdownMenuItem 
-                            onClick={() => handleMapClick(marche.latitude!, marche.longitude!, marche.ville, 'all')}
+                            onClick={() => handleMapClick(Number(marche.latitude), Number(marche.longitude), marche.ville, 'all')}
                             className="cursor-pointer hover:bg-gray-50 font-medium text-gray-900"
                           >
                             <Navigation className="h-4 w-4 mr-2" />
