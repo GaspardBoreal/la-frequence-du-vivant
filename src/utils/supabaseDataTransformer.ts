@@ -16,11 +16,12 @@ export const transformSupabaseToLegacyFormat = (marche: MarcheComplete): MarcheT
   const transformed: MarcheTechnoSensible = {
     id: marche.id,
     ville: marche.ville,
-    departement: marche.departement || '', // Utiliser directement le champ departement de la DB
+    departement: marche.departement || marche.region || '', // Utiliser departement d'abord, puis region en fallback
     region: marche.region || '',
     theme: marche.theme_principal || marche.nom_marche || marche.ville, // Utiliser theme_principal
     nomMarche: marche.nom_marche || undefined,
     descriptifCourt: marche.descriptif_court || undefined,
+    descriptifLong: marche.descriptif_long || undefined, // Ajouter descriptifLong
     date: marche.date || undefined,
     temperature: marche.temperature ? Number(marche.temperature) : undefined,
     latitude: marche.latitude || 0,
@@ -49,7 +50,8 @@ export const transformSupabaseToLegacyFormat = (marche: MarcheComplete): MarcheT
       type: doc.type_document
     })),
     supabaseTags: marche.tags.map(tag => tag.tag), // Utiliser supabaseTags pour éviter le conflit
-    sousThemes: marche.sous_themes || undefined
+    sousThemes: marche.sous_themes || undefined,
+    adresse: marche.adresse || undefined // Ajouter adresse
   };
 
   console.log(`🔄 Transformation de la marche ${marche.ville}:`, {

@@ -71,7 +71,7 @@ const MarcheForm: React.FC<MarcheFormProps> = ({ mode, marcheId, onCancel, onSuc
         departement: marche.departement || '',
         nomMarche: marche.nomMarche || '',
         descriptifCourt: marche.descriptifCourt || '',
-        descriptifLong: marche.descriptifLong || '',
+        descriptifLong: marche.descriptifLong || '', // Utiliser descriptifLong
         date: marche.date || '',
         temperature: marche.temperature || null,
         latitude: marche.latitude || null,

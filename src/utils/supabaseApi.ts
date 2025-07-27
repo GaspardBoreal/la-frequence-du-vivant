@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 
 export interface MarcheSupabase {
@@ -6,6 +5,7 @@ export interface MarcheSupabase {
   nom_marche?: string;
   ville: string;
   region?: string;
+  departement?: string; // Ajouter departement
   coordonnees?: any; // PostGIS Point type
   date?: string;
   temperature?: number;
@@ -14,6 +14,9 @@ export interface MarcheSupabase {
   theme_principal?: string;
   sous_themes?: string[];
   lien_google_drive?: string;
+  latitude?: number; // Ajouter latitude
+  longitude?: number; // Ajouter longitude
+  adresse?: string; // Ajouter adresse
   created_at: string;
   updated_at: string;
 }
