@@ -220,18 +220,20 @@ export const saveAudio = async (
   updateProgress(0, 'pending');
 
   try {
-    // ÉTAPE 1: Diagnostic Supabase
-    console.log('🔍 [saveAudio] ÉTAPE 1 - Diagnostic Supabase');
+    // ÉTAPE 1: Diagnostic Supabase (non bloquant)
+    console.log('🔍 [saveAudio] ÉTAPE 1 - Diagnostic Supabase (optionnel)');
     updateProgress(5, 'uploading');
     
-    const diagnosticResult = await runSupabaseDiagnostic(marcheId);
-    if (!diagnosticResult.success) {
-      const errorMsg = `Diagnostic échoué: ${diagnosticResult.error}`;
-      console.error('❌ [saveAudio] Diagnostic échoué:', diagnosticResult);
-      updateProgress(5, 'error', errorMsg);
-      throw new Error(errorMsg);
+    try {
+      const diagnosticResult = await runSupabaseDiagnostic(marcheId);
+      if (diagnosticResult.success) {
+        console.log('✅ [saveAudio] Diagnostic réussi');
+      } else {
+        console.warn('⚠️ [saveAudio] Diagnostic échoué (non bloquant):', diagnosticResult.error);
+      }
+    } catch (diagnosticError) {
+      console.warn('⚠️ [saveAudio] Erreur diagnostic (non bloquant):', diagnosticError);
     }
-    console.log('✅ [saveAudio] Diagnostic réussi');
 
     // ÉTAPE 2: Validation du fichier audio
     console.log('🔍 [saveAudio] ÉTAPE 2 - Validation du fichier audio');
@@ -246,18 +248,17 @@ export const saveAudio = async (
     }
     console.log('✅ [saveAudio] Fichier audio validé');
 
-    // ÉTAPE 3: Validation marche
+    // ÉTAPE 3: Validation marche (simplifiée)
     console.log('🔍 [saveAudio] ÉTAPE 3 - Vérification marche');
     updateProgress(15, 'uploading');
     
-    const marcheExists = await validateMarcheExists(marcheId);
-    if (!marcheExists) {
-      const errorMsg = `Marche ${marcheId} introuvable`;
-      console.error('❌ [saveAudio] Marche introuvable');
+    if (!marcheId) {
+      const errorMsg = 'ID de marche manquant';
+      console.error('❌ [saveAudio] ID marche manquant');
       updateProgress(15, 'error', errorMsg);
       throw new Error(errorMsg);
     }
-    console.log('✅ [saveAudio] Marche confirmée');
+    console.log('✅ [saveAudio] ID marche présent');
 
     // ÉTAPE 4: Upload vers Supabase Storage avec progression
     console.log('🔍 [saveAudio] ÉTAPE 4 - Upload Storage');
