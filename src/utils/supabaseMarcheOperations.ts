@@ -31,10 +31,10 @@ const cleanFormData = (formData: MarcheFormData) => {
   console.log('🔄 Nettoyage des données du formulaire:', formData);
   
   // Nettoyer la température avec une vérification plus robuste
-  let temperature = null;
+  let temperature: number | null = null;
   if (formData.temperature !== null && formData.temperature !== undefined) {
     if (typeof formData.temperature === 'object' && formData.temperature !== null && 'value' in formData.temperature) {
-      const tempValue = parseFloat((formData.temperature as any).value);
+      const tempValue = parseFloat(String((formData.temperature as any).value));
       temperature = !isNaN(tempValue) ? tempValue : null;
     } else if (typeof formData.temperature === 'number' && !isNaN(formData.temperature)) {
       temperature = formData.temperature;
@@ -42,10 +42,10 @@ const cleanFormData = (formData: MarcheFormData) => {
   }
 
   // Nettoyer le poème avec une vérification plus robuste
-  let poeme = '';
+  let poeme: string = '';
   if (formData.poeme !== null && formData.poeme !== undefined) {
     if (typeof formData.poeme === 'object' && formData.poeme !== null && 'value' in formData.poeme) {
-      const poemeValue = (formData.poeme as any).value;
+      const poemeValue = String((formData.poeme as any).value);
       poeme = poemeValue === 'undefined' ? '' : (poemeValue || '');
     } else if (typeof formData.poeme === 'string') {
       poeme = formData.poeme;
@@ -88,7 +88,6 @@ export const createMarche = async (formData: MarcheFormData): Promise<string> =>
 
   console.log('📦 Données à insérer:', insertData);
 
-  // Utiliser une requête RPC pour insérer avec les coordonnées PostGIS
   let marcheId: string;
   
   if (cleanedData.latitude && cleanedData.longitude && 
@@ -96,22 +95,18 @@ export const createMarche = async (formData: MarcheFormData): Promise<string> =>
     
     console.log(`📍 Insertion avec coordonnées: latitude=${cleanedData.latitude}, longitude=${cleanedData.longitude}`);
     
-    // Utiliser une requête SQL brute pour insérer avec ST_GeomFromText
+    // Préparer les coordonnées PostGIS au format correct
+    const coordonnees = `POINT(${cleanedData.longitude} ${cleanedData.latitude})`;
+    
+    // Insérer avec coordonnées PostGIS
     const { data: marche, error: marcheError } = await supabase
-      .rpc('create_marche_with_coordinates', {
-        p_ville: cleanedData.ville,
-        p_region: cleanedData.region || null,
-        p_nom_marche: cleanedData.nomMarche || null,
-        p_theme_principal: cleanedData.theme || null,
-        p_descriptif_court: cleanedData.descriptifCourt || null,
-        p_descriptif_long: cleanedData.poeme || null,
-        p_date: cleanedData.date || null,
-        p_temperature: cleanedData.temperature,
-        p_longitude: cleanedData.longitude,
-        p_latitude: cleanedData.latitude,
-        p_lien_google_drive: cleanedData.lienGoogleDrive || null,
-        p_sous_themes: sousThemes.length > 0 ? sousThemes : null
-      });
+      .from('marches')
+      .insert({
+        ...insertData,
+        coordonnees: coordonnees
+      })
+      .select('id')
+      .single();
 
     if (marcheError) {
       console.error('❌ Erreur lors de la création de la marche avec coordonnées:', marcheError);
@@ -130,7 +125,7 @@ export const createMarche = async (formData: MarcheFormData): Promise<string> =>
       
       marcheId = fallbackMarche.id;
     } else {
-      marcheId = marche;
+      marcheId = marche.id;
     }
   } else {
     // Insertion sans coordonnées
