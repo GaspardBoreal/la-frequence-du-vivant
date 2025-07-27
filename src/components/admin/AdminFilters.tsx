@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
@@ -220,10 +219,12 @@ const AdminFilters: React.FC<AdminFiltersProps> = ({ marches, onFilterChange }) 
                   <SelectTrigger className="bg-white/10 border-white/20 text-white">
                     <SelectValue placeholder="Toutes les régions" />
                   </SelectTrigger>
-                  <SelectContent className="bg-white border border-gray-200 shadow-lg z-50">
-                    <SelectItem value="all">Toutes les régions</SelectItem>
+                  <SelectContent className="bg-white border border-gray-200 shadow-lg z-50 max-h-60 overflow-y-auto">
+                    <SelectItem value="all" className="text-gray-900 hover:bg-gray-100">
+                      Toutes les régions
+                    </SelectItem>
                     {uniqueRegions.map((region) => (
-                      <SelectItem key={region} value={region}>
+                      <SelectItem key={region} value={region} className="text-gray-900 hover:bg-gray-100">
                         {region}
                       </SelectItem>
                     ))}
@@ -240,10 +241,12 @@ const AdminFilters: React.FC<AdminFiltersProps> = ({ marches, onFilterChange }) 
                   <SelectTrigger className="bg-white/10 border-white/20 text-white">
                     <SelectValue placeholder="Tous les départements" />
                   </SelectTrigger>
-                  <SelectContent className="bg-white border border-gray-200 shadow-lg z-50">
-                    <SelectItem value="all">Tous les départements</SelectItem>
+                  <SelectContent className="bg-white border border-gray-200 shadow-lg z-50 max-h-60 overflow-y-auto">
+                    <SelectItem value="all" className="text-gray-900 hover:bg-gray-100">
+                      Tous les départements
+                    </SelectItem>
                     {uniqueDepartements.map((dept) => (
-                      <SelectItem key={dept} value={dept}>
+                      <SelectItem key={dept} value={dept} className="text-gray-900 hover:bg-gray-100">
                         {dept}
                       </SelectItem>
                     ))}

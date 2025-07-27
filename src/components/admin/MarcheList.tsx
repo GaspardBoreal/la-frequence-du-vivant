@@ -1,9 +1,8 @@
-
 import React, { useState } from 'react';
 import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
 import { Card } from '../ui/card';
-import { Edit, Trash2, Calendar, MapPin, Navigation, Heart } from 'lucide-react';
+import { Edit, Trash2, Calendar, MapPin, Navigation, Heart, Map, Globe } from 'lucide-react';
 import { MarcheTechnoSensible } from '../../utils/googleSheetsApi';
 import { deleteMarche } from '../../utils/supabaseMarcheOperations';
 import { toast } from 'sonner';
@@ -21,6 +20,13 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '../ui/alert-dialog';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '../ui/dropdown-menu';
 
 interface MarcheListProps {
   marches: MarcheTechnoSensible[];
@@ -61,9 +67,33 @@ const MarcheList: React.FC<MarcheListProps> = ({
     }
   };
 
-  const handleGoogleMapsClick = (latitude: number, longitude: number, ville: string) => {
-    const googleMapsUrl = `https://www.google.com/maps?q=${latitude},${longitude}&z=15`;
-    window.open(googleMapsUrl, '_blank');
+  const handleMapClick = (latitude: number, longitude: number, ville: string, option: string) => {
+    let url = '';
+    
+    switch (option) {
+      case 'google-maps':
+        url = `https://www.google.com/maps?q=${latitude},${longitude}&z=15`;
+        break;
+      case 'google-earth':
+        url = `https://earth.google.com/web/search/${latitude},${longitude}`;
+        break;
+      case 'openstreetmap':
+        url = `https://www.openstreetmap.org/?mlat=${latitude}&mlon=${longitude}&zoom=15`;
+        break;
+      case 'all':
+        // Ouvrir tous les onglets
+        const urls = [
+          `https://www.google.com/maps?q=${latitude},${longitude}&z=15`,
+          `https://earth.google.com/web/search/${latitude},${longitude}`,
+          `https://www.openstreetmap.org/?mlat=${latitude}&mlon=${longitude}&zoom=15`
+        ];
+        urls.forEach(url => window.open(url, '_blank'));
+        return;
+    }
+    
+    if (url) {
+      window.open(url, '_blank');
+    }
   };
 
   const handleFrequenceVivantClick = (marche: MarcheTechnoSensible) => {
@@ -147,11 +177,11 @@ const MarcheList: React.FC<MarcheListProps> = ({
                   </div>
 
                   <div className="flex items-center space-x-6">
-                    {marche.region && (
+                    {marche.departement && (
                       <div className="flex items-center space-x-2">
                         <span className="text-accent font-medium text-sm">Département :</span>
                         <Badge variant="outline" className="text-xs bg-accent/10 text-accent border-accent/30">
-                          {getDepartmentFromRegion(marche.region)}
+                          {marche.departement}
                         </Badge>
                       </div>
                     )}
@@ -195,25 +225,59 @@ const MarcheList: React.FC<MarcheListProps> = ({
                     <div className="flex items-center space-x-1">
                       <MapPin className="h-4 w-4" />
                       <span>{marche.latitude.toFixed(3)}, {marche.longitude.toFixed(3)}</span>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleGoogleMapsClick(marche.latitude!, marche.longitude!, marche.ville)}
-                        className="ml-1 h-6 w-6 p-0 text-blue-600 hover:text-blue-800"
-                        title="Voir sur Google Maps"
-                      >
-                        <Navigation className="h-3 w-3" />
-                      </Button>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="ml-1 h-6 w-6 p-0 text-blue-600 hover:text-blue-800 hover:bg-blue-50"
+                            title="Voir sur les cartes"
+                          >
+                            <Navigation className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent className="bg-white border border-gray-200 shadow-lg z-50">
+                          <DropdownMenuItem 
+                            onClick={() => handleMapClick(marche.latitude!, marche.longitude!, marche.ville, 'google-maps')}
+                            className="cursor-pointer hover:bg-gray-50"
+                          >
+                            <Map className="h-4 w-4 mr-2" />
+                            Google Maps
+                          </DropdownMenuItem>
+                          <DropdownMenuItem 
+                            onClick={() => handleMapClick(marche.latitude!, marche.longitude!, marche.ville, 'google-earth')}
+                            className="cursor-pointer hover:bg-gray-50"
+                          >
+                            <Globe className="h-4 w-4 mr-2" />
+                            Google Earth
+                          </DropdownMenuItem>
+                          <DropdownMenuItem 
+                            onClick={() => handleMapClick(marche.latitude!, marche.longitude!, marche.ville, 'openstreetmap')}
+                            className="cursor-pointer hover:bg-gray-50"
+                          >
+                            <Map className="h-4 w-4 mr-2" />
+                            OpenStreetMap
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem 
+                            onClick={() => handleMapClick(marche.latitude!, marche.longitude!, marche.ville, 'all')}
+                            className="cursor-pointer hover:bg-gray-50 font-medium"
+                          >
+                            <Navigation className="h-4 w-4 mr-2" />
+                            Ouvrir tous les onglets
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </div>
                   )}
                   <Button
                     variant="ghost"
                     size="sm"
                     onClick={() => handleFrequenceVivantClick(marche)}
-                    className="h-6 w-6 p-0 text-purple-600 hover:text-purple-800"
+                    className="h-6 w-6 p-0 text-purple-600 hover:text-purple-800 hover:bg-purple-50"
                     title="Voir dans La Fréquence du Vivant"
                   >
-                    <Heart className="h-3 w-3" />
+                    <Heart className="h-4 w-4" />
                   </Button>
                 </div>
 
