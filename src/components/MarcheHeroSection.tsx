@@ -96,27 +96,33 @@ const MarcheHeroSection: React.FC<MarcheHeroSectionProps> = ({
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.5, duration: 0.8 }}
           >
-            <h1 className="text-5xl md:text-7xl font-crimson font-bold text-white leading-tight lg:text-6xl">
-              {marche.nomMarche || marche.ville}
-            </h1>
+            <div className="bg-black/20 backdrop-blur-md rounded-2xl px-8 py-6">
+              <h1 className="text-5xl md:text-7xl font-crimson font-bold text-white leading-tight lg:text-6xl">
+                {marche.nomMarche || marche.ville}
+              </h1>
+            </div>
             
             {marche.descriptifCourt && (
-              <p className="text-xl text-white/90 max-w-3xl mx-auto leading-relaxed md:text-xl">
-                {marche.descriptifCourt}
-              </p>
+              <div className="bg-black/15 backdrop-blur-sm rounded-xl px-6 py-4 max-w-3xl mx-auto">
+                <p className="text-xl text-white/95 leading-relaxed md:text-xl">
+                  {marche.descriptifCourt}
+                </p>
+              </div>
             )}
             
-            <div className="flex flex-wrap justify-center gap-6 text-white/80 text-lg">
-              <div className="flex items-center space-x-2">
-                <MapPin className="h-5 w-5" />
-                <span>{marche.ville}, {marche.departement}</span>
-              </div>
-              {marche.date && (
+            <div className="bg-black/10 backdrop-blur-sm rounded-lg px-6 py-3 inline-block">
+              <div className="flex flex-wrap justify-center gap-6 text-white/90 text-lg">
                 <div className="flex items-center space-x-2">
-                  <Calendar className="h-5 w-5" />
-                  <span>{marche.date}</span>
+                  <MapPin className="h-5 w-5" />
+                  <span>{marche.ville}, {marche.departement}</span>
                 </div>
-              )}
+                {marche.date && (
+                  <div className="flex items-center space-x-2">
+                    <Calendar className="h-5 w-5" />
+                    <span>{marche.date}</span>
+                  </div>
+                )}
+              </div>
             </div>
           </motion.div>
         </div>
