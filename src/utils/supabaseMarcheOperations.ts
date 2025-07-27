@@ -28,6 +28,8 @@ export interface MediaFile {
 
 // Fonction utilitaire pour nettoyer les données du formulaire
 const cleanFormData = (formData: MarcheFormData) => {
+  console.log('🔄 Nettoyage des données du formulaire:', formData);
+  
   // Nettoyer la température
   let temperature = null;
   if (formData.temperature !== null && formData.temperature !== undefined) {
@@ -50,11 +52,14 @@ const cleanFormData = (formData: MarcheFormData) => {
     }
   }
 
-  return {
+  const cleaned = {
     ...formData,
     temperature,
     poeme
   };
+
+  console.log('✅ Données nettoyées:', cleaned);
+  return cleaned;
 };
 
 // Créer une nouvelle marche
