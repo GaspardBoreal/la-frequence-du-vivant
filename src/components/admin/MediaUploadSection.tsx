@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { Button } from '../ui/button';
 import { Card } from '../ui/card';
@@ -11,10 +10,12 @@ import {
   savePhotos, 
   deletePhoto, 
   updatePhotoMetadata,
-  PhotoToUpload 
+  PhotoToUpload,
+  UploadProgress
 } from '../../utils/supabasePhotoOperations';
 import { uploadVideo } from '../../utils/supabaseUpload';
 import PhotoCard from './PhotoCard';
+import PhotoUploadProgress from './PhotoUploadProgress';
 
 interface MediaUploadSectionProps {
   marcheId: string | null;
@@ -34,6 +35,9 @@ interface MediaItem {
   description?: string;
   isConverted?: boolean;
   originalFormat?: string;
+  uploadProgress?: number;
+  uploadStatus?: 'pending' | 'uploading' | 'processing' | 'success' | 'error';
+  uploadError?: string;
 }
 
 const MediaUploadSection: React.FC<MediaUploadSectionProps> = ({
@@ -44,6 +48,7 @@ const MediaUploadSection: React.FC<MediaUploadSectionProps> = ({
   const [isUploading, setIsUploading] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [uploadingItems, setUploadingItems] = useState<Set<string>>(new Set());
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Charger les photos existantes au montage
@@ -70,7 +75,9 @@ const MediaUploadSection: React.FC<MediaUploadSectionProps> = ({
         isExisting: true,
         metadata: photo.metadata,
         titre: photo.titre,
-        description: photo.description
+        description: photo.description,
+        uploadStatus: 'success',
+        uploadProgress: 100
       }));
 
       setMediaItems(formattedPhotos);
@@ -125,7 +132,9 @@ const MediaUploadSection: React.FC<MediaUploadSectionProps> = ({
             uploaded: false,
             metadata: processedPhoto.metadata,
             isConverted: processedPhoto.metadata.isConverted,
-            originalFormat: processedPhoto.metadata.originalFormat
+            originalFormat: processedPhoto.metadata.originalFormat,
+            uploadProgress: 0,
+            uploadStatus: 'pending'
           };
 
           newItems.push(newItem);
@@ -138,7 +147,9 @@ const MediaUploadSection: React.FC<MediaUploadSectionProps> = ({
             url: URL.createObjectURL(file),
             name: file.name,
             size: file.size,
-            uploaded: false
+            uploaded: false,
+            uploadProgress: 0,
+            uploadStatus: 'pending'
           };
 
           newItems.push(newItem);
@@ -160,6 +171,18 @@ const MediaUploadSection: React.FC<MediaUploadSectionProps> = ({
     setIsProcessing(false);
   };
 
+  // Fonction pour mettre à jour la progression d'un item
+  const updateItemProgress = (itemId: string, progress: UploadProgress) => {
+    setMediaItems(prev => prev.map(item => 
+      item.id === itemId ? {
+        ...item,
+        uploadProgress: progress.progress,
+        uploadStatus: progress.status,
+        uploadError: progress.error
+      } : item
+    ));
+  };
+
   const handleUpload = async (itemId: string) => {
     const item = mediaItems.find(m => m.id === itemId);
     if (!marcheId || !item || !item.file) {
@@ -169,7 +192,7 @@ const MediaUploadSection: React.FC<MediaUploadSectionProps> = ({
     }
 
     console.log('📤 [MediaUploadSection] Début upload:', item.name);
-    setIsUploading(true);
+    setUploadingItems(prev => new Set(prev).add(itemId));
     
     try {
       if (mediaType === 'photos') {
@@ -185,23 +208,56 @@ const MediaUploadSection: React.FC<MediaUploadSectionProps> = ({
         };
 
         console.log('📋 [MediaUploadSection] Données photo préparées:', photoData);
-        const photoId = await savePhoto(marcheId, photoData);
+        
+        const photoId = await savePhoto(marcheId, photoData, (progress) => {
+          updateItemProgress(itemId, progress);
+        });
+        
         console.log('✅ [MediaUploadSection] Photo sauvegardée avec ID:', photoId);
+        
+        // Marquer comme uploadé
+        setMediaItems(prev => prev.map(media => 
+          media.id === itemId ? { 
+            ...media, 
+            uploaded: true,
+            uploadStatus: 'success' as const,
+            uploadProgress: 100
+          } : media
+        ));
+        
+        toast.success('Photo uploadée avec succès !');
       } else {
         await uploadVideo(item.file, marcheId);
+        
+        // Marquer comme uploadé
+        setMediaItems(prev => prev.map(media => 
+          media.id === itemId ? { 
+            ...media, 
+            uploaded: true,
+            uploadStatus: 'success' as const,
+            uploadProgress: 100
+          } : media
+        ));
+        
+        toast.success('Vidéo uploadée avec succès !');
       }
-
-      // Marquer comme uploadé
-      setMediaItems(prev => prev.map(media => 
-        media.id === itemId ? { ...media, uploaded: true } : media
-      ));
-
-      toast.success('Fichier uploadé avec succès !');
     } catch (error) {
       console.error('❌ [MediaUploadSection] Erreur upload:', error);
+      
+      updateItemProgress(itemId, {
+        fileName: item.name,
+        progress: 0,
+        status: 'error',
+        error: error instanceof Error ? error.message : 'Erreur inconnue'
+      });
+      
       toast.error('Erreur lors de l\'upload: ' + (error instanceof Error ? error.message : 'Erreur inconnue'));
     } finally {
-      setIsUploading(false);
+      setUploadingItems(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(itemId);
+        return newSet;
+      });
     }
   };
 
@@ -235,16 +291,35 @@ const MediaUploadSection: React.FC<MediaUploadSectionProps> = ({
         }));
 
         console.log('📋 [MediaUploadSection] Données photos préparées:', photosData);
-        const photoIds = await savePhotos(marcheId, photosData);
+        
+        const photoIds = await savePhotos(marcheId, photosData, (fileName, progress) => {
+          const item = itemsToUpload.find(i => i.name === fileName);
+          if (item) {
+            updateItemProgress(item.id, progress);
+          }
+        });
+        
         console.log('✅ [MediaUploadSection] Photos sauvegardées avec IDs:', photoIds);
+        
+        // Marquer toutes les photos comme uploadées
+        setMediaItems(prev => prev.map(media => 
+          itemsToUpload.find(item => item.id === media.id) ? { 
+            ...media, 
+            uploaded: true,
+            uploadStatus: 'success' as const,
+            uploadProgress: 100
+          } : media
+        ));
+        
+        toast.success('Toutes les photos ont été uploadées !');
       } else {
         for (const item of itemsToUpload) {
           await uploadVideo(item.file!, marcheId);
         }
+        
+        setMediaItems(prev => prev.map(media => ({ ...media, uploaded: true })));
+        toast.success('Toutes les vidéos ont été uploadées !');
       }
-
-      setMediaItems(prev => prev.map(media => ({ ...media, uploaded: true })));
-      toast.success('Tous les fichiers ont été uploadés !');
     } catch (error) {
       console.error('❌ [MediaUploadSection] Erreur upload masse:', error);
       toast.error('Erreur lors de l\'upload en masse: ' + (error instanceof Error ? error.message : 'Erreur inconnue'));
@@ -394,66 +469,89 @@ const MediaUploadSection: React.FC<MediaUploadSectionProps> = ({
           </p>
         </Card>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {mediaItems.map(item => (
-            mediaType === 'photos' ? (
-              <PhotoCard
-                key={item.id}
-                photo={item}
-                onRemove={handleRemove}
-                onUpload={item.uploaded ? undefined : handleUpload}
-                onUpdateMetadata={item.isExisting ? handleUpdateMetadata : undefined}
-                isUploading={isUploading}
-              />
-            ) : (
-              <Card key={item.id} className="p-4">
-                <div className="aspect-video bg-gray-100 rounded-lg mb-3 relative overflow-hidden">
-                  <video src={item.url} className="w-full h-full object-cover" controls={false} />
-                  
-                  <div className="absolute top-2 right-2 flex space-x-1">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="h-8 w-8 p-0 bg-white/80"
-                      onClick={() => window.open(item.url, '_blank')}
-                    >
-                      <Eye className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="h-8 w-8 p-0 bg-white/80 text-red-600 hover:text-red-700"
-                      onClick={() => handleRemove(item.id)}
-                    >
-                      <X className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </div>
+        <div className="space-y-4">
+          {/* Section des indicateurs de progression pour les uploads en cours */}
+          {mediaItems.some(item => item.uploadStatus === 'uploading' || item.uploadStatus === 'processing') && (
+            <div className="space-y-2">
+              <h4 className="font-medium">Upload en cours</h4>
+              {mediaItems
+                .filter(item => item.uploadStatus === 'uploading' || item.uploadStatus === 'processing')
+                .map(item => (
+                  <PhotoUploadProgress
+                    key={item.id}
+                    fileName={item.name}
+                    progress={item.uploadProgress || 0}
+                    status={item.uploadStatus || 'pending'}
+                    error={item.uploadError}
+                    isConverted={item.isConverted}
+                    originalFormat={item.originalFormat}
+                  />
+                ))}
+            </div>
+          )}
 
-                <div className="space-y-2">
-                  <div>
-                    <p className="font-medium text-sm truncate">{item.name}</p>
-                    <p className="text-xs text-gray-500">{formatFileSize(item.size)}</p>
-                  </div>
-
-                  {!item.uploaded ? (
-                    <Button
-                      size="sm"
-                      onClick={() => handleUpload(item.id)}
-                      disabled={isUploading || !marcheId}
-                      className="w-full"
-                    >
-                      {isUploading ? 'Upload...' : 'Uploader'}
-                    </Button>
-                  ) : (
-                    <div className="flex items-center text-green-600 text-sm">
-                      <span>✓ Uploadé</span>
+          {/* Grille des photos */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {mediaItems.map(item => (
+              mediaType === 'photos' ? (
+                <PhotoCard
+                  key={item.id}
+                  photo={item}
+                  onRemove={handleRemove}
+                  onUpload={item.uploaded ? undefined : handleUpload}
+                  onUpdateMetadata={item.isExisting ? handleUpdateMetadata : undefined}
+                  isUploading={uploadingItems.has(item.id)}
+                />
+              ) : (
+                <Card key={item.id} className="p-4">
+                  <div className="aspect-video bg-gray-100 rounded-lg mb-3 relative overflow-hidden">
+                    <video src={item.url} className="w-full h-full object-cover" controls={false} />
+                    
+                    <div className="absolute top-2 right-2 flex space-x-1">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="h-8 w-8 p-0 bg-white/80"
+                        onClick={() => window.open(item.url, '_blank')}
+                      >
+                        <Eye className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="h-8 w-8 p-0 bg-white/80 text-red-600 hover:text-red-700"
+                        onClick={() => handleRemove(item.id)}
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
                     </div>
-                  )}
-                </div>
-              </Card>
-            )
-          ))}
+                  </div>
+
+                  <div className="space-y-2">
+                    <div>
+                      <p className="font-medium text-sm truncate">{item.name}</p>
+                      <p className="text-xs text-gray-500">{formatFileSize(item.size)}</p>
+                    </div>
+
+                    {!item.uploaded ? (
+                      <Button
+                        size="sm"
+                        onClick={() => handleUpload(item.id)}
+                        disabled={uploadingItems.has(item.id) || !marcheId}
+                        className="w-full"
+                      >
+                        {uploadingItems.has(item.id) ? 'Upload...' : 'Uploader'}
+                      </Button>
+                    ) : (
+                      <div className="flex items-center text-green-600 text-sm">
+                        <span>✓ Uploadé</span>
+                      </div>
+                    )}
+                  </div>
+                </Card>
+              )
+            ))}
+          </div>
         </div>
       )}
 

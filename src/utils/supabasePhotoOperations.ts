@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { uploadPhoto } from './supabaseUpload';
 import { ProcessedPhoto } from './photoUtils';
@@ -21,6 +20,70 @@ export interface PhotoToUpload extends ProcessedPhoto {
   description?: string;
 }
 
+export interface UploadProgress {
+  fileName: string;
+  progress: number;
+  status: 'pending' | 'uploading' | 'processing' | 'success' | 'error';
+  error?: string;
+}
+
+// Fonction utilitaire pour valider l'existence d'une marche
+const validateMarcheExists = async (marcheId: string): Promise<boolean> => {
+  console.log(`🔍 [validateMarcheExists] Vérification de l'existence de la marche ${marcheId}`);
+  
+  try {
+    const { data, error } = await supabase
+      .from('marches')
+      .select('id')
+      .eq('id', marcheId)
+      .single();
+
+    if (error) {
+      console.error('❌ [validateMarcheExists] Erreur lors de la vérification:', error);
+      return false;
+    }
+
+    const exists = !!data;
+    console.log(`${exists ? '✅' : '❌'} [validateMarcheExists] Marche ${marcheId} ${exists ? 'trouvée' : 'non trouvée'}`);
+    return exists;
+  } catch (error) {
+    console.error('💥 [validateMarcheExists] Erreur complète:', error);
+    return false;
+  }
+};
+
+// Fonction utilitaire pour valider et nettoyer les métadonnées
+const validateMetadata = (metadata: any): any => {
+  if (!metadata) return null;
+  
+  try {
+    // Créer une copie propre des métadonnées
+    const cleanMetadata = {
+      width: metadata.width || null,
+      height: metadata.height || null,
+      format: metadata.format || null,
+      size: metadata.size || null,
+      isConverted: metadata.isConverted || false,
+      originalFormat: metadata.originalFormat || null,
+      exif: metadata.exif || null,
+      timestamp: new Date().toISOString()
+    };
+
+    // Tester la sérialisation JSON
+    const serialized = JSON.stringify(cleanMetadata);
+    JSON.parse(serialized); // Vérifier que c'est valide
+    
+    console.log('✅ [validateMetadata] Métadonnées validées:', cleanMetadata);
+    return cleanMetadata;
+  } catch (error) {
+    console.warn('⚠️ [validateMetadata] Erreur validation métadonnées:', error);
+    return {
+      error: 'Métadonnées invalides',
+      timestamp: new Date().toISOString()
+    };
+  }
+};
+
 // Récupérer les photos existantes pour une marche
 export const fetchExistingPhotos = async (marcheId: string): Promise<ExistingPhoto[]> => {
   console.log(`🔍 [fetchExistingPhotos] Récupération des photos pour la marche ${marcheId}`);
@@ -38,7 +101,6 @@ export const fetchExistingPhotos = async (marcheId: string): Promise<ExistingPho
     }
 
     console.log(`✅ [fetchExistingPhotos] ${photos?.length || 0} photos récupérées`);
-    console.log('📋 [fetchExistingPhotos] Photos détail:', photos);
     return photos || [];
   } catch (error) {
     console.error('💥 [fetchExistingPhotos] Erreur lors de la récupération:', error);
@@ -46,65 +108,95 @@ export const fetchExistingPhotos = async (marcheId: string): Promise<ExistingPho
   }
 };
 
-// Sauvegarder une photo en base
-export const savePhoto = async (marcheId: string, photoData: PhotoToUpload): Promise<string> => {
-  console.log('💾 [savePhoto] Début sauvegarde photo:', {
-    fileName: photoData.file.name,
+// Sauvegarder une photo en base avec diagnostic détaillé
+export const savePhoto = async (
+  marcheId: string, 
+  photoData: PhotoToUpload,
+  onProgress?: (progress: UploadProgress) => void
+): Promise<string> => {
+  const fileName = photoData.file.name;
+  
+  console.log('🚀 [savePhoto] DÉBUT - Sauvegarde photo:', {
+    fileName,
     fileSize: photoData.file.size,
     fileType: photoData.file.type,
     marcheId: marcheId,
     hasMetadata: !!photoData.metadata
   });
-  
+
+  // Callback de progression
+  const updateProgress = (progress: number, status: UploadProgress['status'], error?: string) => {
+    onProgress?.({
+      fileName,
+      progress,
+      status,
+      error
+    });
+  };
+
+  updateProgress(0, 'pending');
+
+  // 1. Validations préliminaires
   if (!marcheId) {
-    const error = new Error('ID de marche manquant');
-    console.error('❌ [savePhoto] Erreur:', error.message);
-    throw error;
+    const error = 'ID de marche manquant';
+    console.error('❌ [savePhoto] Erreur:', error);
+    updateProgress(0, 'error', error);
+    throw new Error(error);
   }
 
   if (!photoData.file) {
-    const error = new Error('Fichier manquant');
-    console.error('❌ [savePhoto] Erreur:', error.message);
-    throw error;
+    const error = 'Fichier manquant';
+    console.error('❌ [savePhoto] Erreur:', error);
+    updateProgress(0, 'error', error);
+    throw new Error(error);
   }
 
   try {
-    // 1. Upload vers Supabase Storage
+    updateProgress(10, 'uploading');
+
+    // 2. Vérifier l'existence de la marche
+    console.log('🔍 [savePhoto] Vérification de l\'existence de la marche...');
+    const marcheExists = await validateMarcheExists(marcheId);
+    if (!marcheExists) {
+      const error = `Marche ${marcheId} introuvable`;
+      console.error('❌ [savePhoto] Erreur:', error);
+      updateProgress(10, 'error', error);
+      throw new Error(error);
+    }
+
+    updateProgress(20, 'uploading');
+
+    // 3. Upload vers Supabase Storage
     console.log('📤 [savePhoto] Upload vers Storage...');
     const uploadResult = await uploadPhoto(photoData.file, marcheId);
     console.log('✅ [savePhoto] Upload Storage réussi:', uploadResult);
     
-    // 2. Préparer les métadonnées pour la base
-    let metadataForDb = null;
-    if (photoData.metadata) {
-      try {
-        // S'assurer que les métadonnées sont sérialisables
-        metadataForDb = JSON.parse(JSON.stringify(photoData.metadata));
-        console.log('📋 [savePhoto] Métadonnées préparées:', metadataForDb);
-      } catch (metadataError) {
-        console.warn('⚠️ [savePhoto] Erreur sérialisation métadonnées:', metadataError);
-        metadataForDb = {
-          format: photoData.file.type,
-          size: photoData.file.size,
-          error: 'Erreur sérialisation métadonnées'
-        };
-      }
-    }
+    updateProgress(60, 'processing');
 
-    // 3. Préparer les données pour l'insertion
+    // 4. Préparer les métadonnées
+    console.log('📋 [savePhoto] Préparation des métadonnées...');
+    const validatedMetadata = validateMetadata(photoData.metadata);
+    
+    // 5. Préparer les données pour l'insertion
     const insertData = {
       marche_id: marcheId,
-      nom_fichier: photoData.file.name,
+      nom_fichier: fileName,
       url_supabase: uploadResult.url,
-      titre: photoData.titre || photoData.file.name,
+      titre: photoData.titre || fileName,
       description: photoData.description || null,
       ordre: 0,
-      metadata: metadataForDb
+      metadata: validatedMetadata
     };
 
-    console.log('📝 [savePhoto] Données à insérer:', insertData);
+    console.log('📝 [savePhoto] Données préparées pour insertion:', {
+      ...insertData,
+      metadata: validatedMetadata ? 'présent' : 'absent'
+    });
     
-    // 4. Sauvegarder en base de données
+    updateProgress(80, 'processing');
+
+    // 6. Insertion en base de données avec diagnostic détaillé
+    console.log('💾 [savePhoto] Insertion en base de données...');
     const { data: insertedData, error: insertError } = await supabase
       .from('marche_photos')
       .insert(insertData)
@@ -112,20 +204,42 @@ export const savePhoto = async (marcheId: string, photoData: PhotoToUpload): Pro
       .single();
 
     if (insertError) {
-      console.error('❌ [savePhoto] Erreur insertion base:', insertError);
-      throw insertError;
+      console.error('❌ [savePhoto] ERREUR INSERTION DÉTAILLÉE:', {
+        error: insertError,
+        code: insertError.code,
+        message: insertError.message,
+        details: insertError.details,
+        hint: insertError.hint,
+        insertData: insertData
+      });
+      
+      updateProgress(80, 'error', `Erreur base de données: ${insertError.message}`);
+      throw new Error(`Erreur insertion base de données: ${insertError.message}`);
     }
 
-    console.log('✅ [savePhoto] Photo sauvegardée avec succès:', insertedData);
+    updateProgress(100, 'success');
+    console.log('🎉 [savePhoto] Photo sauvegardée avec succès:', insertedData);
     return insertedData.id;
+    
   } catch (error) {
-    console.error('💥 [savePhoto] Erreur complète:', error);
+    console.error('💥 [savePhoto] ERREUR COMPLÈTE:', {
+      error,
+      fileName,
+      marcheId,
+      message: error instanceof Error ? error.message : 'Erreur inconnue'
+    });
+    
+    updateProgress(0, 'error', error instanceof Error ? error.message : 'Erreur inconnue');
     throw error;
   }
 };
 
-// Sauvegarder plusieurs photos
-export const savePhotos = async (marcheId: string, photos: PhotoToUpload[]): Promise<string[]> => {
+// Sauvegarder plusieurs photos avec progression
+export const savePhotos = async (
+  marcheId: string, 
+  photos: PhotoToUpload[],
+  onProgress?: (fileName: string, progress: UploadProgress) => void
+): Promise<string[]> => {
   console.log(`💾 [savePhotos] Sauvegarde de ${photos.length} photos pour marche ${marcheId}`);
   
   const savedIds: string[] = [];
@@ -135,12 +249,23 @@ export const savePhotos = async (marcheId: string, photos: PhotoToUpload[]): Pro
     const photo = photos[i];
     try {
       console.log(`📤 [savePhotos] Sauvegarde photo ${i + 1}/${photos.length}: ${photo.file.name}`);
-      const photoId = await savePhoto(marcheId, photo);
+      
+      const photoId = await savePhoto(marcheId, photo, (progress) => {
+        onProgress?.(photo.file.name, progress);
+      });
+      
       savedIds.push(photoId);
       console.log(`✅ [savePhotos] Photo ${i + 1} sauvegardée avec ID: ${photoId}`);
     } catch (error) {
       console.error(`❌ [savePhotos] Erreur photo ${i + 1}:`, error);
       errors.push(error as Error);
+      
+      onProgress?.(photo.file.name, {
+        fileName: photo.file.name,
+        progress: 0,
+        status: 'error',
+        error: error instanceof Error ? error.message : 'Erreur inconnue'
+      });
     }
   }
 
