@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Card, CardContent } from './ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from './ui/dialog';
@@ -113,13 +114,13 @@ const PoeticMarkerCard: React.FC<PoeticMarkerCardProps> = ({ marche, theme }) =>
 
   const AudioExploration = () => (
     <div className="space-y-4">
-      {marche.sequencesSonores && marche.sequencesSonores.length > 0 && (
+      {marche.audioFiles && marche.audioFiles.length > 0 && (
         <div className="space-y-3">
           <h4 className="font-medium text-sm flex items-center">
             <Volume2 className="h-4 w-4 mr-2" />
             Paysages sonores
           </h4>
-          {marche.sequencesSonores.map((audio, index) => (
+          {marche.audioFiles.map((audio, index) => (
             <div key={index} className="bg-gradient-to-r from-purple-50 to-blue-50 rounded-lg p-3">
               <div className="flex items-center justify-between">
                 <span className="text-sm font-medium">Séquence {index + 1}</span>
@@ -168,11 +169,11 @@ const PoeticMarkerCard: React.FC<PoeticMarkerCardProps> = ({ marche, theme }) =>
         </div>
       )}
       
-      {marche.tagsThematiques && marche.tagsThematiques.length > 0 && (
+      {marche.supabaseTags && marche.supabaseTags.length > 0 && (
         <div className="space-y-2">
           <h4 className="font-medium text-sm">Thématiques</h4>
           <div className="flex flex-wrap gap-1">
-            {marche.tagsThematiques.map((tag, index) => (
+            {marche.supabaseTags.map((tag, index) => (
               <Badge key={index} variant="secondary" className="text-xs">
                 {tag}
               </Badge>
@@ -185,68 +186,9 @@ const PoeticMarkerCard: React.FC<PoeticMarkerCardProps> = ({ marche, theme }) =>
 
   const SocialExploration = () => (
     <div className="space-y-4">
-      {marche.temoignages && marche.temoignages.length > 0 && (
-        <div className="space-y-3">
-          <h4 className="font-medium text-sm flex items-center">
-            <Heart className="h-4 w-4 mr-2" />
-            Résonances
-          </h4>
-          {marche.temoignages.map((temoignage, index) => (
-            <div key={index} className="bg-gradient-to-r from-pink-50 to-rose-50 rounded-lg p-3 border-l-3 border-pink-300">
-              <div className="text-sm italic text-gray-700 mb-2">
-                "{temoignage.contenu}"
-              </div>
-              <div className="flex justify-between items-center text-xs text-gray-500">
-                <span className="font-medium">{temoignage.auteur}</span>
-                <span>{new Date(temoignage.date).toLocaleDateString('fr-FR')}</span>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-      
-      <div className="space-y-3">
-        {marche.liensInternes && marche.liensInternes.length > 0 && (
-          <div>
-            <h4 className="font-medium text-sm flex items-center mb-2">
-              <Link className="h-4 w-4 mr-2" />
-              Explorations connexes
-            </h4>
-            <div className="space-y-1">
-              {marche.liensInternes.map((lien, index) => (
-                <a
-                  key={index}
-                  href={lien.url}
-                  className="block text-sm text-blue-600 hover:text-blue-800 transition-colors"
-                >
-                  {lien.titre}
-                </a>
-              ))}
-            </div>
-          </div>
-        )}
-        
-        {marche.liensExternes && marche.liensExternes.length > 0 && (
-          <div>
-            <h4 className="font-medium text-sm flex items-center mb-2">
-              <ExternalLink className="h-4 w-4 mr-2" />
-              Horizons externes
-            </h4>
-            <div className="space-y-1">
-              {marche.liensExternes.map((lien, index) => (
-                <a
-                  key={index}
-                  href={lien.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="block text-sm text-purple-600 hover:text-purple-800 transition-colors"
-                >
-                  {lien.titre}
-                </a>
-              ))}
-            </div>
-          </div>
-        )}
+      <div className="text-center text-gray-500 text-sm py-8">
+        <MessageSquare className="h-8 w-8 mx-auto mb-2 opacity-50" />
+        <p>Les fonctionnalités sociales seront bientôt disponibles</p>
       </div>
     </div>
   );
@@ -273,10 +215,10 @@ const PoeticMarkerCard: React.FC<PoeticMarkerCardProps> = ({ marche, theme }) =>
                       <span>{marche.photos.length}</span>
                     </div>
                   )}
-                  {marche.sequencesSonores && marche.sequencesSonores.length > 0 && (
+                  {marche.audioFiles && marche.audioFiles.length > 0 && (
                     <div className="flex items-center">
                       <Volume2 className="h-3 w-3 mr-1" />
-                      <span>{marche.sequencesSonores.length}</span>
+                      <span>{marche.audioFiles.length}</span>
                     </div>
                   )}
                   {marche.poeme && (

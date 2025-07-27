@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback } from 'react';
 import { Badge } from './ui/badge';
 import { Button } from './ui/button';
@@ -33,7 +32,7 @@ const AdvancedFilters: React.FC<AdvancedFiltersProps> = ({ data, onFilterChange,
   const uniqueDepartments = [...new Set(data.map(item => item.departement).filter(Boolean))].sort();
   const uniqueCities = [...new Set(data.map(item => item.ville).filter(Boolean))].sort();
   const uniqueTags = [...new Set(data.flatMap(item => 
-    item.tags ? item.tags.split(',').map(tag => tag.trim()).filter(Boolean) : []
+    item.supabaseTags ? item.supabaseTags.filter(Boolean) : []
   ))].sort();
 
   // Stabiliser la fonction de filtrage avec useCallback
@@ -43,7 +42,7 @@ const AdvancedFilters: React.FC<AdvancedFiltersProps> = ({ data, onFilterChange,
       const departmentMatch = activeFilters.departments.length === 0 || activeFilters.departments.includes(item.departement);
       const cityMatch = activeFilters.cities.length === 0 || activeFilters.cities.includes(item.ville);
       const tagsMatch = activeFilters.tags.length === 0 || 
-        (item.tags && item.tags.split(',').map(tag => tag.trim()).some(tag => activeFilters.tags.includes(tag)));
+        (item.supabaseTags && item.supabaseTags.some(tag => activeFilters.tags.includes(tag)));
 
       return regionMatch && departmentMatch && cityMatch && tagsMatch;
     });

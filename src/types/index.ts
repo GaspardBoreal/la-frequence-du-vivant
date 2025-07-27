@@ -45,15 +45,3 @@ export interface DocumentData {
   description?: string;
   type?: string;
 }
-
-// Extension du type MarcheTechnoSensible pour Supabase
-declare module '../utils/googleSheetsApi' {
-  interface MarcheTechnoSensible {
-    supabaseId?: string;
-    etudes?: EtudeData[];
-    documents?: DocumentData[];
-    supabaseTags?: string[]; // Renommé pour éviter le conflit avec le champ tags existant
-    sousThemes?: string[];
-    audioFiles?: string[];
-  }
-}

@@ -11,7 +11,8 @@ import Footer from '../components/Footer';
 import SEOHead from '../components/SEOHead';
 import { RegionalTheme, REGIONAL_THEMES } from '../utils/regionalThemes';
 import { fetchParcelData } from '../utils/lexiconApi';
-import { fetchMarchesTechnoSensibles, MarcheTechnoSensible } from '../utils/googleSheetsApi';
+import { MarcheTechnoSensible } from '../utils/googleSheetsApi';
+import { useSupabaseMarches } from '../hooks/useSupabaseMarches';
 import { createSlug } from '../utils/slugGenerator';
 import { LayerConfig, SelectedParcel } from '../types/index';
 
@@ -32,16 +33,12 @@ const MarchesTechnoSensibles = () => {
     filteredMarchesData: filteredMarchesData.length
   });
 
-  // Fetch marches data
+  // Fetch marches data using the new hook
   const {
     data: marchesData = [],
     isLoading,
     error
-  } = useQuery({
-    queryKey: ['marchesTechnoSensibles'],
-    queryFn: fetchMarchesTechnoSensibles,
-    staleTime: 5 * 60 * 1000 // 5 minutes
-  });
+  } = useSupabaseMarches();
   
   console.log('📊 Query status:', {
     isLoading,

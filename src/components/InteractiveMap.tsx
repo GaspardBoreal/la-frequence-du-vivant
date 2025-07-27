@@ -5,7 +5,7 @@ import { MapContainer, TileLayer, Marker, Popup, useMapEvents, useMap } from 're
 import L from 'leaflet';
 import { RegionalTheme } from '../utils/regionalThemes';
 import { SearchResult, LayerConfig, SelectedParcel } from '../types';
-import { fetchMarchesTechnoSensibles, MarcheTechnoSensible } from '../utils/googleSheetsApi';
+import { MarcheTechnoSensible } from '../utils/googleSheetsApi';
 import PoeticMarkerCard from './PoeticMarkerCard';
 
 // Fix pour les marqueurs par défaut

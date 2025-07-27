@@ -73,14 +73,14 @@ const PoeticSection: React.FC<PoeticSectionProps> = ({ marche, theme }) => {
       )}
 
       {/* Thematic Tags */}
-      {marche.tagsThematiques && marche.tagsThematiques.length > 0 && (
+      {marche.supabaseTags && marche.supabaseTags.length > 0 && (
         <motion.div
           className="flex flex-wrap justify-center gap-3 mt-8"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.4, duration: 0.6 }}
         >
-          {marche.tagsThematiques.map((tag, index) => (
+          {marche.supabaseTags.map((tag, index) => (
             <motion.div
               key={index}
               initial={{ opacity: 0, scale: 0.8 }}

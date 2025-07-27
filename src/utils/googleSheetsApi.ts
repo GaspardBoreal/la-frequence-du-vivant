@@ -1,3 +1,4 @@
+
 export interface GoogleSheetsRow {
   [key: string]: string;
 }
@@ -36,7 +37,7 @@ export interface MarcheTechnoSensible {
   theme: string;
   nomMarche?: string;
   descriptifCourt?: string;
-  descriptifLong?: string; // Ajouter descriptifLong pour correspondre au champ descriptif_long de la DB
+  descriptifLong?: string;
   date?: string;
   temperature?: number;
   latitude: number;
@@ -45,6 +46,24 @@ export interface MarcheTechnoSensible {
   photos?: string[];
   videos?: string[];
   audioFiles?: string[];
+  // Legacy properties that might be used by some components
+  tags?: string;
+  sequencesSonores?: string[];
+  poeme?: string;
+  tagsThematiques?: string[];
+  temoignages?: Array<{
+    auteur: string;
+    contenu: string;
+    date: string;
+  }>;
+  liensInternes?: Array<{
+    titre: string;
+    url: string;
+  }>;
+  liensExternes?: Array<{
+    titre: string;
+    url: string;
+  }>;
   // Nouveaux champs pour Supabase
   supabaseId?: string;
   etudes?: Array<{
@@ -68,3 +87,10 @@ export interface MarcheTechnoSensible {
   sousThemes?: string[];
   adresse?: string;
 }
+
+// Placeholder function for backward compatibility
+export const fetchMarchesTechnoSensibles = async (): Promise<MarcheTechnoSensible[]> => {
+  // This function is deprecated, use useSupabaseMarches hook instead
+  console.warn('fetchMarchesTechnoSensibles is deprecated. Use useSupabaseMarches hook instead.');
+  return [];
+};

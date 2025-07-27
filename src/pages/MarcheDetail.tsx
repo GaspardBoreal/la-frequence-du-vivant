@@ -16,7 +16,8 @@ import { Button } from '../components/ui/button';
 import PoeticSection from '../components/PoeticSection';
 import Footer from '../components/Footer';
 
-import { fetchMarchesTechnoSensibles, MarcheTechnoSensible } from '../utils/googleSheetsApi';
+import { MarcheTechnoSensible } from '../utils/googleSheetsApi';
+import { useSupabaseMarches } from '../hooks/useSupabaseMarches';
 import { findMarcheBySlug, createSlug } from '../utils/slugGenerator';
 import { REGIONAL_THEMES, RegionalTheme } from '../utils/regionalThemes';
 
@@ -30,11 +31,7 @@ const MarcheDetail = () => {
     data: marchesData = [],
     isLoading,
     error
-  } = useQuery({
-    queryKey: ['marchesTechnoSensibles'],
-    queryFn: fetchMarchesTechnoSensibles,
-    staleTime: 5 * 60 * 1000
-  });
+  } = useSupabaseMarches();
 
   const marche = slug ? findMarcheBySlug(marchesData, slug) : null;
 
