@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
@@ -137,7 +136,7 @@ const MarcheList: React.FC<MarcheListProps> = ({
 
       <div className="space-y-4">
         {marches.map(marche => (
-          <div key={marche.id} className="bg-gaspard-mint/20 border border-gaspard-mint/30 rounded-xl p-6 shadow-sm hover:shadow-md transition-shadow">
+          <div key={marche.id} className="gaspard-card rounded-xl p-6">
             <div className="flex items-start justify-between">
               <div className="flex-1">
                 {/* En-tête principal */}
