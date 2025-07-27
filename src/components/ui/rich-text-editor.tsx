@@ -76,46 +76,46 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
           variant="outline"
           size="sm"
           onClick={() => executeCommand('bold')}
-          className="h-9 w-9 p-0 border-gray-300 hover:bg-gray-100 hover:border-gray-400"
+          className="h-9 w-9 p-0 border-accent/30 hover:bg-accent/10 hover:border-accent/50"
         >
-          <Bold className="h-4 w-4 text-gray-700" />
+          <Bold className="h-4 w-4 text-accent" />
         </Button>
         <Button
           type="button"
           variant="outline"
           size="sm"
           onClick={() => executeCommand('italic')}
-          className="h-9 w-9 p-0 border-gray-300 hover:bg-gray-100 hover:border-gray-400"
+          className="h-9 w-9 p-0 border-accent/30 hover:bg-accent/10 hover:border-accent/50"
         >
-          <Italic className="h-4 w-4 text-gray-700" />
+          <Italic className="h-4 w-4 text-accent" />
         </Button>
         <Button
           type="button"
           variant="outline"
           size="sm"
           onClick={() => executeCommand('underline')}
-          className="h-9 w-9 p-0 border-gray-300 hover:bg-gray-100 hover:border-gray-400"
+          className="h-9 w-9 p-0 border-accent/30 hover:bg-accent/10 hover:border-accent/50"
         >
-          <Underline className="h-4 w-4 text-gray-700" />
+          <Underline className="h-4 w-4 text-accent" />
         </Button>
-        <div className="w-px h-6 bg-gray-300 mx-1"></div>
+        <div className="w-px h-6 bg-accent/30 mx-1"></div>
         <Button
           type="button"
           variant="outline"
           size="sm"
           onClick={() => executeCommand('insertUnorderedList')}
-          className="h-9 w-9 p-0 border-gray-300 hover:bg-gray-100 hover:border-gray-400"
+          className="h-9 w-9 p-0 border-accent/30 hover:bg-accent/10 hover:border-accent/50"
         >
-          <List className="h-4 w-4 text-gray-700" />
+          <List className="h-4 w-4 text-accent" />
         </Button>
         <Button
           type="button"
           variant="outline"
           size="sm"
           onClick={() => executeCommand('insertOrderedList')}
-          className="h-9 w-9 p-0 border-gray-300 hover:bg-gray-100 hover:border-gray-400"
+          className="h-9 w-9 p-0 border-accent/30 hover:bg-accent/10 hover:border-accent/50"
         >
-          <ListOrdered className="h-4 w-4 text-gray-700" />
+          <ListOrdered className="h-4 w-4 text-accent" />
         </Button>
       </div>
       
