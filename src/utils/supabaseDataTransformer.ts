@@ -18,14 +18,14 @@ export const transformSupabaseToLegacyFormat = (marche: MarcheComplete): MarcheT
     ville: marche.ville,
     departement: marche.departement || marche.region || '', // Utiliser departement d'abord, puis region en fallback
     region: marche.region || '',
-    theme: marche.theme_principal || marche.nom_marche || marche.ville, // Utiliser theme_principal
+    theme: marche.descriptif_court || marche.theme_principal || marche.nom_marche || marche.ville, // Utiliser descriptif_court en priorité
     nomMarche: marche.nom_marche || undefined,
     descriptifCourt: marche.descriptif_court || undefined,
-    descriptifLong: marche.descriptif_long || undefined, // Ajouter descriptifLong
+    descriptifLong: marche.descriptif_long || undefined,
     date: marche.date || undefined,
     temperature: marche.temperature ? Number(marche.temperature) : undefined,
-    latitude: marche.latitude || 0,
-    longitude: marche.longitude || 0,
+    latitude: marche.latitude ? Number(marche.latitude) : 0, // Convertir en nombre
+    longitude: marche.longitude ? Number(marche.longitude) : 0, // Convertir en nombre
     lien: marche.lien_google_drive || undefined, // Garder pour compatibilité migration
     photos: photos.length > 0 ? photos : undefined,
     videos: videos.length > 0 ? videos : undefined,
@@ -51,7 +51,15 @@ export const transformSupabaseToLegacyFormat = (marche: MarcheComplete): MarcheT
     })),
     supabaseTags: marche.tags.map(tag => tag.tag), // Utiliser supabaseTags pour éviter le conflit
     sousThemes: marche.sous_themes || undefined,
-    adresse: marche.adresse || undefined // Ajouter adresse
+    adresse: marche.adresse || undefined,
+    // Propriétés legacy pour compatibilité
+    tags: marche.tags.map(tag => tag.tag).join(', '),
+    sequencesSonores: audioFiles.length > 0 ? audioFiles : undefined,
+    poeme: marche.theme_principal || undefined,
+    tagsThematiques: marche.tags.map(tag => tag.tag),
+    temoignages: [],
+    liensInternes: [],
+    liensExternes: []
   };
 
   console.log(`🔄 Transformation de la marche ${marche.ville}:`, {
@@ -60,7 +68,11 @@ export const transformSupabaseToLegacyFormat = (marche: MarcheComplete): MarcheT
     audio: audioFiles.length,
     etudes: marche.etudes.length,
     documents: marche.documents.length,
-    tags: marche.tags.length
+    tags: marche.tags.length,
+    latitude: transformed.latitude,
+    longitude: transformed.longitude,
+    theme: transformed.theme,
+    descriptifCourt: transformed.descriptifCourt
   });
 
   return transformed;

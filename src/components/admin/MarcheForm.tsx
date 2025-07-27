@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { Button } from '../ui/button';
@@ -71,7 +70,7 @@ const MarcheForm: React.FC<MarcheFormProps> = ({ mode, marcheId, onCancel, onSuc
         departement: marche.departement || '',
         nomMarche: marche.nomMarche || '',
         descriptifCourt: marche.descriptifCourt || '',
-        descriptifLong: marche.descriptifLong || '', // Utiliser descriptifLong
+        descriptifLong: marche.descriptifLong || '',
         date: marche.date || '',
         temperature: marche.temperature || null,
         latitude: marche.latitude || null,
