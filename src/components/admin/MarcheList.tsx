@@ -181,19 +181,12 @@ const MarcheList: React.FC<MarcheListProps> = ({
                       <span className="text-lg font-medium text-foreground">{marche.nomMarche}</span>
                     </div>
                   )}
-
-                  {marche.theme && (
-                    <div className="flex items-center space-x-3">
-                      <span className="text-accent font-medium">Thème :</span>
-                      <span className="text-sm font-medium text-muted-foreground">{marche.theme}</span>
-                    </div>
-                  )}
                 </div>
 
                 {marche.descriptifCourt && (
                   <div className="mb-3">
-                    <div className="flex items-start space-x-3">
-                      <span className="text-accent font-medium">Descriptif :</span>
+                    <div className="flex items-start space-x-4">
+                      <span className="text-accent font-medium whitespace-nowrap">Descriptif :</span>
                       <p className="text-sm text-foreground leading-relaxed">{truncateWords(marche.descriptifCourt, 40)}</p>
                     </div>
                   </div>
