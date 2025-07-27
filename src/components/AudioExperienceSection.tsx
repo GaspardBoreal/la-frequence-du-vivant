@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
@@ -112,7 +113,7 @@ const AudioExperienceSection: React.FC<AudioExperienceSectionProps> = ({ marche,
   // Affichage quand il n'y a pas de fichiers audio
   if (!hasAudioFiles) {
     return (
-      <div className="space-y-12">
+      <div className="space-y-12 pt-16">
         <motion.div
           className="text-center space-y-4"
           initial={{ opacity: 0, y: 20 }}
@@ -195,7 +196,7 @@ const AudioExperienceSection: React.FC<AudioExperienceSectionProps> = ({ marche,
   }
 
   return (
-    <div className="space-y-12">
+    <div className="space-y-12 pt-16">
       {/* Header Section */}
       <motion.div
         className="text-center space-y-4"
