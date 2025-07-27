@@ -30,7 +30,7 @@ export interface MediaFile {
 const cleanFormData = (formData: MarcheFormData) => {
   console.log('🔄 Nettoyage des données du formulaire:', formData);
   
-  // Nettoyer la température
+  // Nettoyer la température avec une vérification plus robuste
   let temperature = null;
   if (formData.temperature !== null && formData.temperature !== undefined) {
     if (typeof formData.temperature === 'object' && formData.temperature !== null && 'value' in formData.temperature) {
@@ -41,12 +41,12 @@ const cleanFormData = (formData: MarcheFormData) => {
     }
   }
 
-  // Nettoyer le poème
+  // Nettoyer le poème avec une vérification plus robuste
   let poeme = '';
   if (formData.poeme !== null && formData.poeme !== undefined) {
     if (typeof formData.poeme === 'object' && formData.poeme !== null && 'value' in formData.poeme) {
       const poemeValue = (formData.poeme as any).value;
-      poeme = poemeValue === 'undefined' ? '' : poemeValue;
+      poeme = poemeValue === 'undefined' ? '' : (poemeValue || '');
     } else if (typeof formData.poeme === 'string') {
       poeme = formData.poeme;
     }
@@ -68,14 +68,6 @@ export const createMarche = async (formData: MarcheFormData): Promise<string> =>
 
   const cleanedData = cleanFormData(formData);
 
-  // Préparer les coordonnées PostGIS correctement
-  let coordonnees = null;
-  if (cleanedData.latitude && cleanedData.longitude && 
-      !isNaN(cleanedData.latitude) && !isNaN(cleanedData.longitude)) {
-    // Utiliser la fonction ST_GeomFromText pour créer le point correctement
-    console.log(`📍 Coordonnées: latitude=${cleanedData.latitude}, longitude=${cleanedData.longitude}`);
-  }
-
   // Préparer les sous-thèmes
   const sousThemes = cleanedData.sousThemes 
     ? cleanedData.sousThemes.split(',').map(t => t.trim()).filter(t => t.length > 0)
@@ -94,34 +86,76 @@ export const createMarche = async (formData: MarcheFormData): Promise<string> =>
     sous_themes: sousThemes.length > 0 ? sousThemes : null
   };
 
-  // Ajouter les coordonnées seulement si elles sont valides
-  if (cleanedData.latitude && cleanedData.longitude && 
-      !isNaN(cleanedData.latitude) && !isNaN(cleanedData.longitude)) {
-    // Utiliser la fonction ST_GeomFromText de PostGIS
-    insertData.coordonnees = `POINT(${cleanedData.longitude} ${cleanedData.latitude})`;
-  }
-
   console.log('📦 Données à insérer:', insertData);
 
-  const { data: marche, error: marcheError } = await supabase
-    .from('marches')
-    .insert(insertData)
-    .select()
-    .single();
+  // Utiliser une requête RPC pour insérer avec les coordonnées PostGIS
+  let marcheId: string;
+  
+  if (cleanedData.latitude && cleanedData.longitude && 
+      !isNaN(cleanedData.latitude) && !isNaN(cleanedData.longitude)) {
+    
+    console.log(`📍 Insertion avec coordonnées: latitude=${cleanedData.latitude}, longitude=${cleanedData.longitude}`);
+    
+    // Utiliser une requête SQL brute pour insérer avec ST_GeomFromText
+    const { data: marche, error: marcheError } = await supabase
+      .rpc('create_marche_with_coordinates', {
+        p_ville: cleanedData.ville,
+        p_region: cleanedData.region || null,
+        p_nom_marche: cleanedData.nomMarche || null,
+        p_theme_principal: cleanedData.theme || null,
+        p_descriptif_court: cleanedData.descriptifCourt || null,
+        p_descriptif_long: cleanedData.poeme || null,
+        p_date: cleanedData.date || null,
+        p_temperature: cleanedData.temperature,
+        p_longitude: cleanedData.longitude,
+        p_latitude: cleanedData.latitude,
+        p_lien_google_drive: cleanedData.lienGoogleDrive || null,
+        p_sous_themes: sousThemes.length > 0 ? sousThemes : null
+      });
 
-  if (marcheError) {
-    console.error('❌ Erreur lors de la création de la marche:', marcheError);
-    throw marcheError;
+    if (marcheError) {
+      console.error('❌ Erreur lors de la création de la marche avec coordonnées:', marcheError);
+      
+      // Fallback: insertion sans coordonnées
+      const { data: fallbackMarche, error: fallbackError } = await supabase
+        .from('marches')
+        .insert(insertData)
+        .select('id')
+        .single();
+      
+      if (fallbackError) {
+        console.error('❌ Erreur lors du fallback:', fallbackError);
+        throw fallbackError;
+      }
+      
+      marcheId = fallbackMarche.id;
+    } else {
+      marcheId = marche;
+    }
+  } else {
+    // Insertion sans coordonnées
+    const { data: marche, error: marcheError } = await supabase
+      .from('marches')
+      .insert(insertData)
+      .select('id')
+      .single();
+
+    if (marcheError) {
+      console.error('❌ Erreur lors de la création de la marche:', marcheError);
+      throw marcheError;
+    }
+    
+    marcheId = marche.id;
   }
 
-  console.log('✅ Marche créée avec succès:', marche.id);
+  console.log('✅ Marche créée avec succès:', marcheId);
 
   // Ajouter les tags si fournis
   if (cleanedData.tags) {
     const tags = cleanedData.tags.split(',').map(t => t.trim()).filter(t => t.length > 0);
     if (tags.length > 0) {
       const tagsData = tags.map(tag => ({
-        marche_id: marche.id,
+        marche_id: marcheId,
         tag: tag
       }));
 
@@ -141,7 +175,7 @@ export const createMarche = async (formData: MarcheFormData): Promise<string> =>
   queryClient.invalidateQueries({ queryKey: ['marches-supabase'] });
   queryClient.invalidateQueries({ queryKey: ['supabase-status'] });
 
-  return marche.id;
+  return marcheId;
 };
 
 // Mettre à jour une marche existante
