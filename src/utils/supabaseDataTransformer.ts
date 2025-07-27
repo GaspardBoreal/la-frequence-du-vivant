@@ -18,15 +18,15 @@ export const transformSupabaseToLegacyFormat = (marche: MarcheComplete): MarcheT
     ville: marche.ville,
     departement: marche.departement || marche.region || '', // Utiliser departement d'abord, puis region en fallback
     region: marche.region || '',
-    theme: marche.descriptif_court || marche.theme_principal || marche.nom_marche || marche.ville, // Utiliser descriptif_court en priorité
+    theme: marche.theme_principal || marche.nom_marche || marche.ville, // Utiliser theme_principal en priorité
     nomMarche: marche.nom_marche || undefined,
-    descriptifCourt: marche.descriptif_court || undefined,
+    descriptifCourt: marche.descriptif_court || undefined, // Mapping direct et simple
     descriptifLong: marche.descriptif_long || undefined,
     date: marche.date || undefined,
     temperature: marche.temperature ? Number(marche.temperature) : undefined,
-    latitude: marche.latitude != null ? Number(marche.latitude) : 0, // Correction: utiliser != null
-    longitude: marche.longitude != null ? Number(marche.longitude) : 0, // Correction: utiliser != null
-    lien: marche.lien_google_drive || undefined, // Garder pour compatibilité migration
+    latitude: marche.latitude != null ? Number(marche.latitude) : 0,
+    longitude: marche.longitude != null ? Number(marche.longitude) : 0,
+    lien: marche.lien_google_drive || undefined,
     photos: photos.length > 0 ? photos : undefined,
     videos: videos.length > 0 ? videos : undefined,
     audioFiles: audioFiles.length > 0 ? audioFiles : undefined,
@@ -49,13 +49,13 @@ export const transformSupabaseToLegacyFormat = (marche: MarcheComplete): MarcheT
       description: doc.description,
       type: doc.type_document
     })),
-    supabaseTags: marche.tags.map(tag => tag.tag), // Utiliser supabaseTags pour éviter le conflit
+    supabaseTags: marche.tags.map(tag => tag.tag),
     sousThemes: marche.sous_themes || undefined,
     adresse: marche.adresse || undefined,
     // Propriétés legacy pour compatibilité
     tags: marche.tags.map(tag => tag.tag).join(', '),
     sequencesSonores: audioFiles.length > 0 ? audioFiles : undefined,
-    poeme: marche.theme_principal || undefined,
+    poeme: marche.descriptif_long || marche.descriptif_court || undefined, // Utiliser descriptif_long en priorité pour le poème
     tagsThematiques: marche.tags.map(tag => tag.tag),
     temoignages: [],
     liensInternes: [],
@@ -73,6 +73,8 @@ export const transformSupabaseToLegacyFormat = (marche: MarcheComplete): MarcheT
     longitude: transformed.longitude,
     theme: transformed.theme,
     descriptifCourt: transformed.descriptifCourt,
+    descriptifLong: transformed.descriptifLong,
+    poeme: transformed.poeme,
     rawLatitude: marche.latitude,
     rawLongitude: marche.longitude
   });

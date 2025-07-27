@@ -15,10 +15,11 @@ interface PoeticSectionProps {
 const PoeticSection: React.FC<PoeticSectionProps> = ({ marche, theme }) => {
   console.log('🎭 PoeticSection - Données marche:', marche);
   console.log('📝 Texte poétique disponible:', marche.poeme ? 'OUI' : 'NON');
-  console.log('📝 Descriptif disponible:', marche.descriptifCourt ? 'OUI' : 'NON');
+  console.log('📝 Descriptif court disponible:', marche.descriptifCourt ? 'OUI' : 'NON');
+  console.log('📝 Descriptif long disponible:', marche.descriptifLong ? 'OUI' : 'NON');
   
-  // Utiliser soit le poème, soit le descriptif, soit le descriptif court
-  const textToDisplay = marche.poeme || marche.descriptifCourt || '';
+  // Utiliser le poème en priorité, sinon le descriptif long, sinon le descriptif court
+  const textToDisplay = marche.poeme || marche.descriptifLong || marche.descriptifCourt || '';
   
   console.log('📝 Texte à afficher:', textToDisplay.substring(0, 100) + '...');
 
@@ -50,7 +51,7 @@ const PoeticSection: React.FC<PoeticSectionProps> = ({ marche, theme }) => {
           <PoeticTextDisplay
             text={textToDisplay}
             theme={theme}
-            title={marche.theme || marche.ville}
+            title={marche.nomMarche || marche.ville}
             author="Exploration techno-sensible"
           />
         </motion.div>

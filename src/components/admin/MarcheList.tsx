@@ -11,12 +11,14 @@ import { createSlug } from '../../utils/slugGenerator';
 import { FRENCH_DEPARTMENTS } from '../../utils/frenchDepartments';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '../ui/alert-dialog';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '../ui/dropdown-menu';
+
 interface MarcheListProps {
   marches: MarcheTechnoSensible[];
   isLoading: boolean;
   onEdit: (marcheId: string) => void;
   onDelete?: () => void;
 }
+
 const MarcheList: React.FC<MarcheListProps> = ({
   marches,
   isLoading,
@@ -24,22 +26,27 @@ const MarcheList: React.FC<MarcheListProps> = ({
   onDelete
 }) => {
   const [deletingId, setDeletingId] = useState<string | null>(null);
+
   const truncateWords = (text: string, wordLimit: number = 30): string => {
     if (!text) return '';
     const words = text.trim().split(/\s+/);
     if (words.length <= wordLimit) return text;
     return words.slice(0, wordLimit).join(' ') + '...';
   };
+
   const handleDelete = async (marcheId: string, ville: string) => {
     if (deletingId) return;
     setDeletingId(marcheId);
     console.log(`🗑️ Tentative de suppression de la marche ${marcheId} (${ville})`);
+    
     try {
       await deleteMarche(marcheId);
       toast.success(`Marche "${ville}" supprimée avec succès`);
+      
       if (onDelete) {
         onDelete();
       }
+      
       console.log(`✅ Suppression réussie pour ${ville}`);
     } catch (error) {
       console.error('❌ Erreur lors de la suppression:', error);
@@ -49,6 +56,7 @@ const MarcheList: React.FC<MarcheListProps> = ({
       setDeletingId(null);
     }
   };
+
   const handleMapClick = (latitude: number, longitude: number, ville: string, option: string) => {
     let url = '';
     switch (option) {
@@ -71,11 +79,13 @@ const MarcheList: React.FC<MarcheListProps> = ({
       window.open(url, '_blank');
     }
   };
+
   const handleFrequenceVivantClick = (marche: MarcheTechnoSensible) => {
     const slug = createSlug(marche.nomMarche || marche.ville, marche.ville);
     const frequenceVivantUrl = `${window.location.origin}/marche/${slug}`;
     window.open(frequenceVivantUrl, '_blank');
   };
+
   const formatDate = (dateString: string) => {
     if (!dateString) return '';
 
@@ -93,6 +103,7 @@ const MarcheList: React.FC<MarcheListProps> = ({
       day: 'numeric'
     });
   };
+
   const getDepartmentFromRegion = (region: string): string => {
     // Mapping basique région -> département principal
     const regionToDepartment: {
@@ -114,24 +125,33 @@ const MarcheList: React.FC<MarcheListProps> = ({
     };
     return regionToDepartment[region] || region;
   };
+
   if (isLoading) {
-    return <div className="flex items-center justify-center h-64">
+    return (
+      <div className="flex items-center justify-center h-64">
         <div className="animate-spin w-8 h-8 border-2 border-accent border-t-transparent rounded-full"></div>
-      </div>;
+      </div>
+    );
   }
+
   if (marches.length === 0) {
-    return <div className="text-center py-12">
+    return (
+      <div className="text-center py-12">
         <h3 className="mb-2 text-foreground font-bold text-3xl">Aucune marche trouvée</h3>
         <p className="text-center text-muted-foreground">Commencez par créer votre première marche (bouton en haut à gauche)</p>
-      </div>;
+      </div>
+    );
   }
-  return <div className="space-y-4">
+
+  return (
+    <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h2 className="text-xl font-semibold text-foreground">Marches existantes ({marches.length})</h2>
       </div>
 
       <div className="space-y-3">
-        {marches.map(marche => <div key={marche.id} className="gaspard-card rounded-lg p-4 hover:shadow-md transition-shadow">
+        {marches.map((marche) => (
+          <div key={marche.id} className="gaspard-card rounded-lg p-4 hover:shadow-md transition-shadow">
             <div className="flex items-start justify-between">
               <div className="flex-1">
                 <div className="space-y-2 mb-3">
@@ -145,34 +165,49 @@ const MarcheList: React.FC<MarcheListProps> = ({
                       <span className="text-accent font-medium">Département :</span>
                       <span className="text-foreground">{marche.departement}</span>
                     </div>
-                    {marche.region && <div className="flex items-center space-x-2">
+                    {marche.region && (
+                      <div className="flex items-center space-x-2">
                         <span className="text-accent font-medium text-sm">Région :</span>
                         <Badge variant="outline" className="text-xs bg-accent/10 text-accent border-accent/30">
                           {marche.region}
                         </Badge>
-                      </div>}
+                      </div>
+                    )}
                   </div>
 
-                  {marche.nomMarche && <div className="flex items-center space-x-3">
+                  {marche.nomMarche && (
+                    <div className="flex items-center space-x-3">
                       <span className="text-accent font-medium">Nom de la marche :</span>
                       <span className="text-lg font-medium text-foreground">{marche.nomMarche}</span>
-                    </div>}
+                    </div>
+                  )}
 
-                  {marche.theme && <div className="flex items-center space-x-3">
+                  {marche.theme && (
+                    <div className="flex items-center space-x-3">
+                      <span className="text-accent font-medium">Thème :</span>
                       <span className="text-sm font-medium text-muted-foreground">{marche.theme}</span>
-                    </div>}
+                    </div>
+                  )}
                 </div>
 
-                {marche.descriptifCourt && <div className="mb-3">
-                    
-                  </div>}
+                {marche.descriptifCourt && (
+                  <div className="mb-3">
+                    <div className="flex items-start space-x-3">
+                      <span className="text-accent font-medium">Descriptif :</span>
+                      <p className="text-sm text-foreground leading-relaxed">{truncateWords(marche.descriptifCourt, 40)}</p>
+                    </div>
+                  </div>
+                )}
 
                 <div className="flex items-center space-x-4 text-sm text-muted-foreground mb-3">
-                  {marche.date && <div className="flex items-center space-x-1">
+                  {marche.date && (
+                    <div className="flex items-center space-x-1">
                       <Calendar className="h-4 w-4" />
                       <span>{formatDate(marche.date)}</span>
-                    </div>}
-                  {marche.latitude && marche.longitude && <div className="flex items-center space-x-2">
+                    </div>
+                  )}
+                  {marche.latitude && marche.longitude && (
+                    <div className="flex items-center space-x-2">
                       <MapPin className="h-4 w-4" />
                       <span>{marche.latitude.toFixed(3)}, {marche.longitude.toFixed(3)}</span>
                       <DropdownMenu>
@@ -201,40 +236,55 @@ const MarcheList: React.FC<MarcheListProps> = ({
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
-                    </div>}
+                    </div>
+                  )}
                   <Button variant="ghost" size="sm" onClick={() => handleFrequenceVivantClick(marche)} className="h-8 w-8 p-0 text-purple-600 hover:text-purple-800 hover:bg-purple-50 border border-purple-200" title="Voir dans La Fréquence du Vivant">
                     <Heart className="h-4 w-4" />
                   </Button>
                 </div>
 
                 {/* Tags */}
-                {marche.supabaseTags && marche.supabaseTags.length > 0 && <div className="mb-3">
+                {marche.supabaseTags && marche.supabaseTags.length > 0 && (
+                  <div className="mb-3">
                     <div className="flex items-center space-x-2 mb-2">
                       <span className="text-accent font-medium text-sm">Tags :</span>
                     </div>
                     <div className="flex flex-wrap gap-1">
-                      {marche.supabaseTags.map((tag, index) => <Badge key={index} variant="outline" className="text-xs bg-purple-50 text-purple-700 border-purple-200">
+                      {marche.supabaseTags.map((tag, index) => (
+                        <Badge key={index} variant="outline" className="text-xs bg-purple-50 text-purple-700 border-purple-200">
                           {tag}
-                        </Badge>)}
+                        </Badge>
+                      ))}
                     </div>
-                  </div>}
+                  </div>
+                )}
 
                 <div className="flex flex-wrap gap-2 mt-3">
-                  {marche.photos && marche.photos.length > 0 && <Badge variant="secondary" className="text-xs">
+                  {marche.photos && marche.photos.length > 0 && (
+                    <Badge variant="secondary" className="text-xs">
                       {marche.photos.length} photo{marche.photos.length > 1 ? 's' : ''}
-                    </Badge>}
-                  {marche.audioFiles && marche.audioFiles.length > 0 && <Badge variant="secondary" className="text-xs">
+                    </Badge>
+                  )}
+                  {marche.audioFiles && marche.audioFiles.length > 0 && (
+                    <Badge variant="secondary" className="text-xs">
                       {marche.audioFiles.length} audio{marche.audioFiles.length > 1 ? 's' : ''}
-                    </Badge>}
-                  {marche.videos && marche.videos.length > 0 && <Badge variant="secondary" className="text-xs">
+                    </Badge>
+                  )}
+                  {marche.videos && marche.videos.length > 0 && (
+                    <Badge variant="secondary" className="text-xs">
                       {marche.videos.length} vidéo{marche.videos.length > 1 ? 's' : ''}
-                    </Badge>}
-                  {marche.etudes && marche.etudes.length > 0 && <Badge variant="secondary" className="text-xs">
+                    </Badge>
+                  )}
+                  {marche.etudes && marche.etudes.length > 0 && (
+                    <Badge variant="secondary" className="text-xs">
                       {marche.etudes.length} étude{marche.etudes.length > 1 ? 's' : ''}
-                    </Badge>}
-                  {marche.documents && marche.documents.length > 0 && <Badge variant="secondary" className="text-xs">
+                    </Badge>
+                  )}
+                  {marche.documents && marche.documents.length > 0 && (
+                    <Badge variant="secondary" className="text-xs">
                       {marche.documents.length} document{marche.documents.length > 1 ? 's' : ''}
-                    </Badge>}
+                    </Badge>
+                  )}
                 </div>
               </div>
 
@@ -247,13 +297,17 @@ const MarcheList: React.FC<MarcheListProps> = ({
                 <AlertDialog>
                   <AlertDialogTrigger asChild>
                     <Button size="sm" variant="outline" disabled={deletingId === marche.id} className="text-red-600 hover:text-red-700 hover:bg-red-50">
-                      {deletingId === marche.id ? <>
+                      {deletingId === marche.id ? (
+                        <>
                           <div className="animate-spin w-4 h-4 border-2 border-red-500 border-t-transparent rounded-full mr-1" />
                           Suppression...
-                        </> : <>
+                        </>
+                      ) : (
+                        <>
                           <Trash2 className="h-4 w-4 mr-1" />
                           Supprimer
-                        </>}
+                        </>
+                      )}
                     </Button>
                   </AlertDialogTrigger>
                   <AlertDialogContent>
@@ -276,8 +330,11 @@ const MarcheList: React.FC<MarcheListProps> = ({
                 </AlertDialog>
               </div>
             </div>
-          </div>)}
+          </div>
+        ))}
       </div>
-    </div>;
+    </div>
+  );
 };
+
 export default MarcheList;

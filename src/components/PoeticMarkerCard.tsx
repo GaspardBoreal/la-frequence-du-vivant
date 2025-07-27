@@ -152,19 +152,33 @@ const PoeticMarkerCard: React.FC<PoeticMarkerCardProps> = ({ marche, theme }) =>
 
   const PoeticExploration = () => (
     <div className="space-y-4">
-      {marche.poeme && (
+      {/* Afficher le poème en priorité, sinon le descriptif long */}
+      {(marche.poeme || marche.descriptifLong) && (
         <div className="relative">
           <div className="bg-gradient-to-br from-amber-50 to-orange-50 rounded-lg p-4 border-l-4 border-amber-400">
             <h4 className="font-medium text-sm flex items-center mb-3">
               <BookOpen className="h-4 w-4 mr-2" />
-              Poème
+              {marche.poeme ? 'Poème' : 'Texte poétique'}
             </h4>
             <div className="text-sm leading-relaxed text-gray-700 whitespace-pre-line font-serif italic">
-              {marche.poeme}
+              {marche.poeme || marche.descriptifLong}
             </div>
           </div>
           <div className="absolute -top-2 -right-2">
             <Sparkles className="h-5 w-5 text-amber-500" />
+          </div>
+        </div>
+      )}
+      
+      {/* Afficher le descriptif court si disponible et différent du poème */}
+      {marche.descriptifCourt && marche.descriptifCourt !== marche.poeme && (
+        <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg p-4 border-l-4 border-blue-400">
+          <h4 className="font-medium text-sm flex items-center mb-3">
+            <Heart className="h-4 w-4 mr-2" />
+            Description
+          </h4>
+          <div className="text-sm leading-relaxed text-gray-700">
+            {marche.descriptifCourt}
           </div>
         </div>
       )}
