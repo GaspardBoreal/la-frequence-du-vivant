@@ -130,7 +130,7 @@ const ImmersiveVisualSection: React.FC<ImmersiveVisualSectionProps> = ({
 
   if (mediaItems.length === 0) {
     return (
-      <div className="flex items-center justify-center h-64 bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl border-2 border-dashed border-gray-300">
+      <div className="pt-16 flex items-center justify-center h-64 bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl border-2 border-dashed border-gray-300">
         <div className="text-center text-gray-500">
           <ImageIcon className="h-12 w-12 mx-auto mb-4 opacity-50" />
           <p className="text-lg mb-2">Aucune image ou vidéo disponible</p>
@@ -141,7 +141,7 @@ const ImmersiveVisualSection: React.FC<ImmersiveVisualSectionProps> = ({
   }
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-8 pt-16">
       {/* Section Header */}
       <motion.div
         className="text-center space-y-4"
