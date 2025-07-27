@@ -54,7 +54,10 @@ const AudioCard: React.FC<AudioCardProps> = ({
   const [isPlaying, setIsPlaying] = useState(false);
   const audioRef = useRef<HTMLAudioElement>(null);
 
-  const handleSave = () => {
+  const handleSave = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
     if (onUpdateMetadata) {
       onUpdateMetadata(audio.id, {
         titre: editTitre,
@@ -64,13 +67,19 @@ const AudioCard: React.FC<AudioCardProps> = ({
     setIsEditing(false);
   };
 
-  const handleCancel = () => {
+  const handleCancel = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
     setEditTitre(audio.titre || '');
     setEditDescription(audio.description || '');
     setIsEditing(false);
   };
 
-  const handlePlayPause = () => {
+  const handlePlayPause = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
     if (audioRef.current) {
       if (isPlaying) {
         audioRef.current.pause();
@@ -83,6 +92,26 @@ const AudioCard: React.FC<AudioCardProps> = ({
 
   const handleAudioEnded = () => {
     setIsPlaying(false);
+  };
+
+  const handleRemove = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    onRemove(audio.id);
+  };
+
+  const handleEdit = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsEditing(true);
+  };
+
+  const handleUpload = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (onUpload) {
+      onUpload(audio.id);
+    }
   };
 
   const formatDuration = (seconds: number | null): string => {
@@ -106,6 +135,7 @@ const AudioCard: React.FC<AudioCardProps> = ({
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center space-x-3">
             <Button
+              type="button"
               size="sm"
               variant="outline"
               onClick={handlePlayPause}
@@ -125,10 +155,11 @@ const AudioCard: React.FC<AudioCardProps> = ({
           </div>
           
           <Button
+            type="button"
             size="sm"
             variant="outline"
             className="h-8 w-8 p-0 text-red-600 hover:text-red-700"
-            onClick={() => onRemove(audio.id)}
+            onClick={handleRemove}
           >
             <X className="h-4 w-4" />
           </Button>
@@ -213,11 +244,11 @@ const AudioCard: React.FC<AudioCardProps> = ({
               rows={2}
             />
             <div className="flex space-x-2">
-              <Button size="sm" onClick={handleSave} className="flex-1">
+              <Button type="button" size="sm" onClick={handleSave} className="flex-1">
                 <Save className="h-4 w-4 mr-1" />
                 Sauver
               </Button>
-              <Button size="sm" variant="outline" onClick={handleCancel} className="flex-1">
+              <Button type="button" size="sm" variant="outline" onClick={handleCancel} className="flex-1">
                 <X className="h-4 w-4 mr-1" />
                 Annuler
               </Button>
@@ -232,9 +263,10 @@ const AudioCard: React.FC<AudioCardProps> = ({
               )}
             </div>
             <Button
+              type="button"
               size="sm"
               variant="outline"
-              onClick={() => setIsEditing(true)}
+              onClick={handleEdit}
               className="w-full"
             >
               <Edit className="h-4 w-4 mr-1" />
@@ -247,8 +279,9 @@ const AudioCard: React.FC<AudioCardProps> = ({
       {/* Upload Button for new files */}
       {!audio.uploaded && onUpload && (
         <Button
+          type="button"
           size="sm"
-          onClick={() => onUpload(audio.id)}
+          onClick={handleUpload}
           disabled={isUploading}
           className="w-full"
         >
