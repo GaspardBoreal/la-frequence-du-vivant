@@ -150,12 +150,12 @@ const MarcheList: React.FC<MarcheListProps> = ({
                     </div>}
 
                   {marche.theme && <div className="flex items-center space-x-3">
-                      <span className="text-accent font-medium">Thème :</span>
+                      
                       <span className="text-sm font-medium text-muted-foreground">{marche.theme}</span>
                     </div>}
                 </div>
 
-                {marche.descriptifCourt && <p className="text-sm text-muted-foreground mb-3 line-clamp-2">{marche.descriptifCourt}</p>}
+                {marche.descriptifCourt}
 
                 <div className="flex items-center space-x-4 text-sm text-muted-foreground mb-3">
                   {marche.date && <div className="flex items-center space-x-1">
