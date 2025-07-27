@@ -1,13 +1,16 @@
+
 import React, { useRef, useCallback } from 'react';
 import { Bold, Italic, Underline, List, ListOrdered } from 'lucide-react';
 import { Button } from './button';
 import { cn } from '@/lib/utils';
+
 interface RichTextEditorProps {
   value: string;
   onChange: (value: string) => void;
   placeholder?: string;
   className?: string;
 }
+
 export const RichTextEditor: React.FC<RichTextEditorProps> = ({
   value,
   onChange,
@@ -15,17 +18,20 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
   className
 }) => {
   const editorRef = useRef<HTMLDivElement>(null);
+
   const executeCommand = useCallback((command: string, value?: string) => {
     document.execCommand(command, false, value);
     if (editorRef.current) {
       onChange(editorRef.current.innerHTML);
     }
   }, [onChange]);
+
   const handleInput = useCallback(() => {
     if (editorRef.current) {
       onChange(editorRef.current.innerHTML);
     }
   }, [onChange]);
+
   const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
     if (e.ctrlKey || e.metaKey) {
       switch (e.key) {
@@ -51,5 +57,74 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
       editorRef.current.innerHTML = value || '';
     }
   }, [value]);
-  return;
+
+  return (
+    <div className={cn("border rounded-md", className)}>
+      <div className="flex items-center gap-1 p-2 border-b bg-gray-50">
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          onClick={() => executeCommand('bold')}
+          className="h-8 w-8 p-0"
+        >
+          <Bold className="h-4 w-4" />
+        </Button>
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          onClick={() => executeCommand('italic')}
+          className="h-8 w-8 p-0"
+        >
+          <Italic className="h-4 w-4" />
+        </Button>
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          onClick={() => executeCommand('underline')}
+          className="h-8 w-8 p-0"
+        >
+          <Underline className="h-4 w-4" />
+        </Button>
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          onClick={() => executeCommand('insertUnorderedList')}
+          className="h-8 w-8 p-0"
+        >
+          <List className="h-4 w-4" />
+        </Button>
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          onClick={() => executeCommand('insertOrderedList')}
+          className="h-8 w-8 p-0"
+        >
+          <ListOrdered className="h-4 w-4" />
+        </Button>
+      </div>
+      <div
+        ref={editorRef}
+        contentEditable
+        onInput={handleInput}
+        onKeyDown={handleKeyDown}
+        className="min-h-[150px] p-3 focus:outline-none prose prose-sm max-w-none"
+        data-placeholder={placeholder}
+        style={{
+          whiteSpace: 'pre-wrap',
+        }}
+      />
+      <style jsx>{`
+        [contenteditable]:empty:before {
+          content: attr(data-placeholder);
+          color: #9ca3af;
+          pointer-events: none;
+        }
+      `}</style>
+    </div>
+  );
 };
