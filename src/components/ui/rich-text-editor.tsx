@@ -59,7 +59,7 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
   }, [value]);
 
   return (
-    <div className={cn("border rounded-md", className)}>
+    <div className={cn("border border-gray-300 rounded-lg bg-white shadow-sm", className)}>
       <style>
         {`
           [contenteditable]:empty:before {
@@ -69,59 +69,63 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
           }
         `}
       </style>
-      <div className="flex items-center gap-1 p-2 border-b bg-gray-50">
+      {/* Barre d'outils bien visible */}
+      <div className="flex items-center gap-1 p-3 border-b border-gray-200 bg-gray-50/80 rounded-t-lg">
         <Button
           type="button"
-          variant="ghost"
+          variant="outline"
           size="sm"
           onClick={() => executeCommand('bold')}
-          className="h-8 w-8 p-0"
+          className="h-9 w-9 p-0 border-gray-300 hover:bg-gray-100 hover:border-gray-400"
         >
-          <Bold className="h-4 w-4" />
+          <Bold className="h-4 w-4 text-gray-700" />
         </Button>
         <Button
           type="button"
-          variant="ghost"
+          variant="outline"
           size="sm"
           onClick={() => executeCommand('italic')}
-          className="h-8 w-8 p-0"
+          className="h-9 w-9 p-0 border-gray-300 hover:bg-gray-100 hover:border-gray-400"
         >
-          <Italic className="h-4 w-4" />
+          <Italic className="h-4 w-4 text-gray-700" />
         </Button>
         <Button
           type="button"
-          variant="ghost"
+          variant="outline"
           size="sm"
           onClick={() => executeCommand('underline')}
-          className="h-8 w-8 p-0"
+          className="h-9 w-9 p-0 border-gray-300 hover:bg-gray-100 hover:border-gray-400"
         >
-          <Underline className="h-4 w-4" />
+          <Underline className="h-4 w-4 text-gray-700" />
         </Button>
+        <div className="w-px h-6 bg-gray-300 mx-1"></div>
         <Button
           type="button"
-          variant="ghost"
+          variant="outline"
           size="sm"
           onClick={() => executeCommand('insertUnorderedList')}
-          className="h-8 w-8 p-0"
+          className="h-9 w-9 p-0 border-gray-300 hover:bg-gray-100 hover:border-gray-400"
         >
-          <List className="h-4 w-4" />
+          <List className="h-4 w-4 text-gray-700" />
         </Button>
         <Button
           type="button"
-          variant="ghost"
+          variant="outline"
           size="sm"
           onClick={() => executeCommand('insertOrderedList')}
-          className="h-8 w-8 p-0"
+          className="h-9 w-9 p-0 border-gray-300 hover:bg-gray-100 hover:border-gray-400"
         >
-          <ListOrdered className="h-4 w-4" />
+          <ListOrdered className="h-4 w-4 text-gray-700" />
         </Button>
       </div>
+      
+      {/* Zone d'édition */}
       <div
         ref={editorRef}
         contentEditable
         onInput={handleInput}
         onKeyDown={handleKeyDown}
-        className="min-h-[150px] p-3 focus:outline-none prose prose-sm max-w-none"
+        className="min-h-[150px] p-4 focus:outline-none prose prose-sm max-w-none text-gray-900 bg-white rounded-b-lg"
         data-placeholder={placeholder}
         style={{
           whiteSpace: 'pre-wrap',
