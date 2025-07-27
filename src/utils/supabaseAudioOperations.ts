@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { uploadAudio } from './supabaseUpload';
 
@@ -35,7 +34,7 @@ export interface AudioUploadProgress {
   error?: string;
 }
 
-// Fonction utilitaire pour valider un fichier audio
+// Fonction utilitaire pour valider un fichier audio (améliorée)
 export const validateAudioFile = (file: File): { valid: boolean; errors: string[] } => {
   const errors: string[] = [];
   
@@ -45,22 +44,38 @@ export const validateAudioFile = (file: File): { valid: boolean; errors: string[
     type: file.type
   });
 
-  // Vérifier le type MIME
-  if (!file.type.startsWith('audio/')) {
-    errors.push('Le fichier doit être un fichier audio');
+  // Vérifier le type MIME avec plus de formats supportés
+  const supportedMimeTypes = [
+    'audio/mpeg',
+    'audio/wav', 
+    'audio/wave',
+    'audio/ogg',
+    'audio/mp4',
+    'audio/x-m4a',
+    'audio/aac',
+    'audio/flac'
+  ];
+
+  if (!file.type.startsWith('audio/') && !supportedMimeTypes.includes(file.type)) {
+    errors.push(`Type MIME non supporté: ${file.type}. Types acceptés: ${supportedMimeTypes.join(', ')}`);
   }
 
   // Vérifier la taille (limite à 100MB)
   const maxSize = 100 * 1024 * 1024; // 100MB
   if (file.size > maxSize) {
-    errors.push(`Le fichier est trop volumineux (max: ${maxSize / (1024 * 1024)}MB)`);
+    errors.push(`Le fichier est trop volumineux (${(file.size / (1024 * 1024)).toFixed(2)}MB, max: ${maxSize / (1024 * 1024)}MB)`);
   }
 
-  // Vérifier l'extension
+  // Vérifier l'extension avec plus de formats
   const allowedExtensions = ['.mp3', '.wav', '.ogg', '.m4a', '.aac', '.flac'];
   const fileExtension = file.name.toLowerCase().substring(file.name.lastIndexOf('.'));
   if (!allowedExtensions.includes(fileExtension)) {
-    errors.push(`Extension non supportée. Extensions autorisées: ${allowedExtensions.join(', ')}`);
+    errors.push(`Extension non supportée: ${fileExtension}. Extensions autorisées: ${allowedExtensions.join(', ')}`);
+  }
+
+  // Vérifier que le fichier n'est pas vide
+  if (file.size === 0) {
+    errors.push('Le fichier est vide');
   }
 
   const valid = errors.length === 0;
@@ -156,7 +171,7 @@ export const fetchExistingAudio = async (marcheId: string): Promise<ExistingAudi
   }
 };
 
-// Sauvegarder un fichier audio en base avec progression améliorée
+// Sauvegarder un fichier audio en base avec gestion d'erreurs améliorée
 export const saveAudio = async (
   marcheId: string, 
   audioData: AudioToUpload,
@@ -194,7 +209,7 @@ export const saveAudio = async (
   updateProgress(0, 'pending');
 
   try {
-    // ÉTAPE 1: Validation du fichier audio
+    // ÉTAPE 1: Validation du fichier audio renforcée
     console.log('🔍 [saveAudio] ÉTAPE 1 - Validation du fichier audio');
     updateProgress(10, 'uploading');
     
@@ -219,8 +234,33 @@ export const saveAudio = async (
     }
     console.log('✅ [saveAudio] ID marche présent');
 
-    // ÉTAPE 3: Upload vers Supabase Storage avec progression
-    console.log('🔍 [saveAudio] ÉTAPE 3 - Upload Storage');
+    // ÉTAPE 3: Test de connexion Storage
+    console.log('🔍 [saveAudio] ÉTAPE 3 - Test connexion Storage');
+    updateProgress(18, 'uploading');
+    
+    try {
+      const { data: buckets, error: bucketsError } = await supabase.storage.listBuckets();
+      if (bucketsError) {
+        console.error('❌ [saveAudio] Erreur liste buckets:', bucketsError);
+        throw new Error(`Erreur connexion Storage: ${bucketsError.message}`);
+      }
+      
+      const audioBucket = buckets?.find(b => b.name === 'marche-audio');
+      if (!audioBucket) {
+        console.error('❌ [saveAudio] Bucket marche-audio introuvable');
+        throw new Error('Bucket marche-audio introuvable');
+      }
+      
+      console.log('✅ [saveAudio] Bucket marche-audio trouvé:', audioBucket);
+    } catch (storageError) {
+      const errorMsg = `Erreur connexion Storage: ${storageError instanceof Error ? storageError.message : 'Erreur inconnue'}`;
+      console.error('❌ [saveAudio] Erreur connexion Storage:', storageError);
+      updateProgress(18, 'error', errorMsg);
+      throw new Error(errorMsg);
+    }
+
+    // ÉTAPE 4: Upload vers Supabase Storage avec progression
+    console.log('🔍 [saveAudio] ÉTAPE 4 - Upload Storage');
     updateProgress(20, 'uploading');
     
     console.log('📤 [saveAudio] Début upload Storage...');
@@ -245,19 +285,20 @@ export const saveAudio = async (
     
     updateProgress(80, 'processing');
 
-    // ÉTAPE 4: Préparation métadonnées
-    console.log('🔍 [saveAudio] ÉTAPE 4 - Préparation métadonnées');
+    // ÉTAPE 5: Préparation métadonnées
+    console.log('🔍 [saveAudio] ÉTAPE 5 - Préparation métadonnées');
     updateProgress(85, 'processing');
     
     const validatedMetadata = validateAudioMetadata({
       duration: audioData.duration,
       format: audioData.file.type,
-      size: audioData.file.size
+      size: audioData.file.size,
+      originalName: audioData.file.name
     });
     console.log('📋 [saveAudio] Métadonnées préparées:', validatedMetadata ? 'OK' : 'NULL');
     
-    // ÉTAPE 5: Préparation données insertion
-    console.log('🔍 [saveAudio] ÉTAPE 5 - Préparation insertion');
+    // ÉTAPE 6: Préparation données insertion
+    console.log('🔍 [saveAudio] ÉTAPE 6 - Préparation insertion');
     updateProgress(90, 'processing');
     
     const insertData = {
@@ -286,8 +327,8 @@ export const saveAudio = async (
       hasMetadata: !!insertData.metadata
     });
     
-    // ÉTAPE 6: Insertion en base de données
-    console.log('🔍 [saveAudio] ÉTAPE 6 - Insertion base de données');
+    // ÉTAPE 7: Insertion en base de données
+    console.log('🔍 [saveAudio] ÉTAPE 7 - Insertion base de données');
     updateProgress(95, 'processing');
     
     console.log('💾 [saveAudio] Exécution requête INSERT...');
