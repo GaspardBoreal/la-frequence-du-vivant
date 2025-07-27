@@ -137,15 +137,15 @@ const MarcheList: React.FC<MarcheListProps> = ({
 
       <div className="space-y-4">
         {marches.map(marche => (
-          <div key={marche.id} className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm hover:shadow-md transition-shadow">
+          <div key={marche.id} className="bg-gaspard-mint/20 border border-gaspard-mint/30 rounded-xl p-6 shadow-sm hover:shadow-md transition-shadow">
             <div className="flex items-start justify-between">
               <div className="flex-1">
                 {/* En-tête principal */}
                 <div className="mb-4">
                   <div className="flex items-center space-x-4 mb-2">
-                    <h3 className="text-xl font-semibold text-gray-900">{marche.ville}</h3>
+                    <h3 className="text-xl font-semibold text-foreground">{marche.ville}</h3>
                     {marche.nomMarche && (
-                      <span className="text-lg text-gray-600 font-medium">• {marche.nomMarche}</span>
+                      <span className="text-lg text-muted-foreground font-medium">• {marche.nomMarche}</span>
                     )}
                   </div>
                   
@@ -175,20 +175,20 @@ const MarcheList: React.FC<MarcheListProps> = ({
 
                 {/* Description */}
                 {marche.descriptifCourt && (
-                  <p className="text-gray-700 mb-4 leading-relaxed line-clamp-2">{marche.descriptifCourt}</p>
+                  <p className="text-muted-foreground mb-4 leading-relaxed line-clamp-2">{marche.descriptifCourt}</p>
                 )}
 
                 {/* Informations pratiques */}
-                <div className="flex items-center space-x-6 text-sm text-gray-600 mb-4">
+                <div className="flex items-center space-x-6 text-sm text-muted-foreground mb-4">
                   {marche.date && (
                     <div className="flex items-center space-x-2">
-                      <Calendar className="h-4 w-4 text-gray-400" />
+                      <Calendar className="h-4 w-4 text-accent" />
                       <span>{formatDate(marche.date)}</span>
                     </div>
                   )}
                   {marche.latitude != null && marche.longitude != null && (
                     <div className="flex items-center space-x-2">
-                      <MapPin className="h-4 w-4 text-gray-400" />
+                      <MapPin className="h-4 w-4 text-accent" />
                       <span>{marche.latitude.toFixed(3)}, {marche.longitude.toFixed(3)}</span>
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
@@ -201,24 +201,24 @@ const MarcheList: React.FC<MarcheListProps> = ({
                             <Navigation className="h-3 w-3" />
                           </Button>
                         </DropdownMenuTrigger>
-                        <DropdownMenuContent className="bg-white border border-gray-200 shadow-lg z-50">
+                        <DropdownMenuContent className="bg-card border border-border shadow-lg z-50">
                           <DropdownMenuItem 
                             onClick={() => handleMapClick(Number(marche.latitude), Number(marche.longitude), marche.ville, 'google-maps')}
-                            className="cursor-pointer hover:bg-gray-50 text-gray-900"
+                            className="cursor-pointer hover:bg-muted text-foreground"
                           >
                             <Map className="h-4 w-4 mr-2" />
                             Google Maps
                           </DropdownMenuItem>
                           <DropdownMenuItem 
                             onClick={() => handleMapClick(Number(marche.latitude), Number(marche.longitude), marche.ville, 'google-earth')}
-                            className="cursor-pointer hover:bg-gray-50 text-gray-900"
+                            className="cursor-pointer hover:bg-muted text-foreground"
                           >
                             <Globe className="h-4 w-4 mr-2" />
                             Google Earth
                           </DropdownMenuItem>
                           <DropdownMenuItem 
                             onClick={() => handleMapClick(Number(marche.latitude), Number(marche.longitude), marche.ville, 'openstreetmap')}
-                            className="cursor-pointer hover:bg-gray-50 text-gray-900"
+                            className="cursor-pointer hover:bg-muted text-foreground"
                           >
                             <Map className="h-4 w-4 mr-2" />
                             OpenStreetMap
@@ -243,7 +243,7 @@ const MarcheList: React.FC<MarcheListProps> = ({
                   <div className="mb-4">
                     <div className="flex flex-wrap gap-2">
                       {marche.supabaseTags.map((tag, index) => (
-                        <Badge key={index} variant="outline" className="bg-gray-50 text-gray-700 border-gray-200 hover:bg-gray-100">
+                        <Badge key={index} variant="outline" className="bg-muted/30 text-muted-foreground border-muted hover:bg-muted/50">
                           {tag}
                         </Badge>
                       ))}
