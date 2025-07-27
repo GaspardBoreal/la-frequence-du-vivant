@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { Button } from '../ui/button';
@@ -15,6 +16,7 @@ import AudioUploadSection from './AudioUploadSection';
 import { queryClient } from '../../lib/queryClient';
 import { FRENCH_REGIONS } from '../../utils/frenchRegions';
 import { FRENCH_DEPARTMENTS } from '../../utils/frenchDepartments';
+import { toast } from 'sonner';
 
 interface MarcheFormProps {
   mode: 'create' | 'edit';
@@ -84,9 +86,11 @@ const MarcheForm: React.FC<MarcheFormProps> = ({ mode, marcheId, onCancel, onSuc
       if (mode === 'create') {
         const newMarcheId = await createMarche(apiData);
         console.log('✅ Nouvelle marche créée avec l\'ID:', newMarcheId);
+        toast.success('Marche créée avec succès !');
       } else if (mode === 'edit' && marcheId) {
         await updateMarche(marcheId, apiData);
         console.log('✅ Marche mise à jour avec succès');
+        toast.success('Marche mise à jour avec succès !');
         
         // Forcer une invalidation complète du cache pour s'assurer que la liste se met à jour
         await queryClient.invalidateQueries({ queryKey: ['marches-supabase'] });
@@ -96,7 +100,7 @@ const MarcheForm: React.FC<MarcheFormProps> = ({ mode, marcheId, onCancel, onSuc
       onSuccess();
     } catch (error) {
       console.error('Erreur lors de la sauvegarde:', error);
-      // TODO: Afficher un message d'erreur à l'utilisateur
+      toast.error('Erreur lors de la sauvegarde. Veuillez réessayer.');
     } finally {
       setIsSubmitting(false);
     }

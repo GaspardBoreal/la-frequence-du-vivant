@@ -26,38 +26,68 @@ export interface MediaFile {
   uploaded: boolean;
 }
 
+// Fonction utilitaire pour nettoyer les données du formulaire
+const cleanFormData = (formData: MarcheFormData) => {
+  // Nettoyer la température
+  let temperature = null;
+  if (formData.temperature !== null && formData.temperature !== undefined) {
+    if (typeof formData.temperature === 'object' && formData.temperature.value) {
+      const tempValue = parseFloat(formData.temperature.value);
+      temperature = !isNaN(tempValue) ? tempValue : null;
+    } else if (typeof formData.temperature === 'number' && !isNaN(formData.temperature)) {
+      temperature = formData.temperature;
+    }
+  }
+
+  // Nettoyer le poème
+  let poeme = '';
+  if (formData.poeme !== null && formData.poeme !== undefined) {
+    if (typeof formData.poeme === 'object' && formData.poeme.value) {
+      poeme = formData.poeme.value === 'undefined' ? '' : formData.poeme.value;
+    } else if (typeof formData.poeme === 'string') {
+      poeme = formData.poeme;
+    }
+  }
+
+  return {
+    ...formData,
+    temperature,
+    poeme
+  };
+};
+
 // Créer une nouvelle marche
 export const createMarche = async (formData: MarcheFormData): Promise<string> => {
   console.log('🔄 Création de la marche:', formData);
 
-  // Créer le point PostGIS directement avec ST_Point
+  const cleanedData = cleanFormData(formData);
+
+  // Préparer les coordonnées PostGIS correctement
   let coordonnees = null;
-  if (formData.latitude && formData.longitude && !isNaN(formData.latitude) && !isNaN(formData.longitude)) {
-    // Utiliser la fonction ST_Point directement dans la requête
-    coordonnees = `POINT(${formData.longitude} ${formData.latitude})`;
+  if (cleanedData.latitude && cleanedData.longitude && 
+      !isNaN(cleanedData.latitude) && !isNaN(cleanedData.longitude)) {
+    // Utiliser la fonction ST_Point de PostGIS avec les paramètres corrects
+    coordonnees = `POINT(${cleanedData.longitude} ${cleanedData.latitude})`;
   }
 
   // Préparer les sous-thèmes
-  const sousThemes = formData.sousThemes 
-    ? formData.sousThemes.split(',').map(t => t.trim()).filter(t => t.length > 0)
+  const sousThemes = cleanedData.sousThemes 
+    ? cleanedData.sousThemes.split(',').map(t => t.trim()).filter(t => t.length > 0)
     : [];
-
-  // Nettoyer la température pour éviter NaN
-  const temperature = formData.temperature && !isNaN(formData.temperature) ? formData.temperature : null;
 
   const { data: marche, error: marcheError } = await supabase
     .from('marches')
     .insert({
-      ville: formData.ville,
-      region: formData.region || null,
-      nom_marche: formData.nomMarche || null,
-      theme_principal: formData.theme || null,
-      descriptif_court: formData.descriptifCourt || null,
-      descriptif_long: formData.poeme || null,
-      date: formData.date || null,
-      temperature: temperature,
-      coordonnees: coordonnees,
-      lien_google_drive: formData.lienGoogleDrive || null,
+      ville: cleanedData.ville,
+      region: cleanedData.region || null,
+      nom_marche: cleanedData.nomMarche || null,
+      theme_principal: cleanedData.theme || null,
+      descriptif_court: cleanedData.descriptifCourt || null,
+      descriptif_long: cleanedData.poeme || null,
+      date: cleanedData.date || null,
+      temperature: cleanedData.temperature,
+      coordonnees: coordonnees ? `POINT(${cleanedData.longitude} ${cleanedData.latitude})` : null,
+      lien_google_drive: cleanedData.lienGoogleDrive || null,
       sous_themes: sousThemes.length > 0 ? sousThemes : null
     })
     .select()
@@ -71,8 +101,8 @@ export const createMarche = async (formData: MarcheFormData): Promise<string> =>
   console.log('✅ Marche créée avec succès:', marche.id);
 
   // Ajouter les tags si fournis
-  if (formData.tags) {
-    const tags = formData.tags.split(',').map(t => t.trim()).filter(t => t.length > 0);
+  if (cleanedData.tags) {
+    const tags = cleanedData.tags.split(',').map(t => t.trim()).filter(t => t.length > 0);
     if (tags.length > 0) {
       const tagsData = tags.map(tag => ({
         marche_id: marche.id,
@@ -102,33 +132,32 @@ export const createMarche = async (formData: MarcheFormData): Promise<string> =>
 export const updateMarche = async (marcheId: string, formData: MarcheFormData): Promise<void> => {
   console.log('🔄 Mise à jour de la marche:', marcheId);
 
-  // Créer le point PostGIS directement avec ST_Point
+  const cleanedData = cleanFormData(formData);
+
+  // Préparer les coordonnées PostGIS correctement
   let coordonnees = null;
-  if (formData.latitude && formData.longitude && !isNaN(formData.latitude) && !isNaN(formData.longitude)) {
-    // Utiliser la fonction ST_Point directement dans la requête
-    coordonnees = `POINT(${formData.longitude} ${formData.latitude})`;
+  if (cleanedData.latitude && cleanedData.longitude && 
+      !isNaN(cleanedData.latitude) && !isNaN(cleanedData.longitude)) {
+    coordonnees = `POINT(${cleanedData.longitude} ${cleanedData.latitude})`;
   }
 
-  const sousThemes = formData.sousThemes 
-    ? formData.sousThemes.split(',').map(t => t.trim()).filter(t => t.length > 0)
+  const sousThemes = cleanedData.sousThemes 
+    ? cleanedData.sousThemes.split(',').map(t => t.trim()).filter(t => t.length > 0)
     : [];
-
-  // Nettoyer la température pour éviter NaN
-  const temperature = formData.temperature && !isNaN(formData.temperature) ? formData.temperature : null;
 
   const { error: marcheError } = await supabase
     .from('marches')
     .update({
-      ville: formData.ville,
-      region: formData.region || null,
-      nom_marche: formData.nomMarche || null,
-      theme_principal: formData.theme || null,
-      descriptif_court: formData.descriptifCourt || null,
-      descriptif_long: formData.poeme || null,
-      date: formData.date || null,
-      temperature: temperature,
+      ville: cleanedData.ville,
+      region: cleanedData.region || null,
+      nom_marche: cleanedData.nomMarche || null,
+      theme_principal: cleanedData.theme || null,
+      descriptif_court: cleanedData.descriptifCourt || null,
+      descriptif_long: cleanedData.poeme || null,
+      date: cleanedData.date || null,
+      temperature: cleanedData.temperature,
       coordonnees: coordonnees,
-      lien_google_drive: formData.lienGoogleDrive || null,
+      lien_google_drive: cleanedData.lienGoogleDrive || null,
       sous_themes: sousThemes.length > 0 ? sousThemes : null,
       updated_at: new Date().toISOString()
     })
@@ -142,8 +171,8 @@ export const updateMarche = async (marcheId: string, formData: MarcheFormData): 
   // Mettre à jour les tags (supprimer les anciens et ajouter les nouveaux)
   await supabase.from('marche_tags').delete().eq('marche_id', marcheId);
 
-  if (formData.tags) {
-    const tags = formData.tags.split(',').map(t => t.trim()).filter(t => t.length > 0);
+  if (cleanedData.tags) {
+    const tags = cleanedData.tags.split(',').map(t => t.trim()).filter(t => t.length > 0);
     if (tags.length > 0) {
       const tagsData = tags.map(tag => ({
         marche_id: marcheId,

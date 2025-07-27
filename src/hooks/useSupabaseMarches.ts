@@ -4,7 +4,7 @@ import { fetchMarchesFromSupabase, fetchMarcheById, searchMarchesByVille, Marche
 import { transformSupabaseToLegacyFormat } from '../utils/supabaseDataTransformer';
 import { MarcheTechnoSensible } from '../utils/googleSheetsApi';
 
-// Hook pour récupérer toutes les marches
+// Hook pour récupérer toutes les marches avec tri par date décroissante
 export const useSupabaseMarches = () => {
   return useQuery({
     queryKey: ['marches-supabase'],
@@ -15,8 +15,16 @@ export const useSupabaseMarches = () => {
       // Transformer au format legacy pour compatibilité
       const marchesTransformed = marchesSupabase.map(transformSupabaseToLegacyFormat);
       
-      console.log(`🎉 Hook: ${marchesTransformed.length} marches transformées`);
-      return marchesTransformed;
+      // Trier par date décroissante (plus récentes en premier)
+      const marchesSorted = marchesTransformed.sort((a, b) => {
+        // Convertir les dates string en objets Date pour comparaison
+        const dateA = a.date ? new Date(a.date) : new Date(0);
+        const dateB = b.date ? new Date(b.date) : new Date(0);
+        return dateB.getTime() - dateA.getTime(); // Tri décroissant
+      });
+      
+      console.log(`🎉 Hook: ${marchesSorted.length} marches transformées et triées par date décroissante`);
+      return marchesSorted;
     },
     staleTime: 5 * 60 * 1000, // 5 minutes
     gcTime: 10 * 60 * 1000, // 10 minutes
