@@ -1,4 +1,3 @@
-
 import { supabase } from '../integrations/supabase/client';
 import { MarcheTechnoSensible } from './googleSheetsApi';
 import { uploadPhoto, uploadVideo, uploadAudio } from './supabaseUpload';
@@ -11,8 +10,8 @@ export interface MarcheFormData {
   descriptifLong?: string;
   date?: string;
   temperature?: number | null;
-  latitude?: number;
-  longitude?: number;
+  latitude?: number | null;
+  longitude?: number | null;
   themesPrincipaux?: string[];
   sousThemes?: string[];
   tags?: string[];
@@ -36,7 +35,7 @@ export interface MarcheFormData {
 
 // Fonction pour nettoyer les données du formulaire
 const cleanFormData = (formData: MarcheFormData) => {
-  return {
+  const cleanedData = {
     ville: formData.ville || '',
     region: formData.region || '',
     nom_marche: formData.nomMarche || null,
@@ -46,6 +45,8 @@ const cleanFormData = (formData: MarcheFormData) => {
     temperature: formData.temperature !== null && formData.temperature !== undefined ? Number(formData.temperature) : null,
     latitude: formData.latitude !== null && formData.latitude !== undefined ? Number(formData.latitude) : null,
     longitude: formData.longitude !== null && formData.longitude !== undefined ? Number(formData.longitude) : null,
+    departement: formData.sousRegion || null,
+    adresse: formData.adresse || null,
     theme_principal: formData.themesPrincipaux?.[0] || null,
     sous_themes: formData.sousThemes && formData.sousThemes.length > 0 ? formData.sousThemes : null,
     lien_google_drive: formData.lienGoogleDrive || null,
@@ -53,6 +54,9 @@ const cleanFormData = (formData: MarcheFormData) => {
       ? `(${formData.longitude},${formData.latitude})` 
       : null
   };
+
+  console.log('🔧 Données nettoyées pour Supabase:', cleanedData);
+  return cleanedData;
 };
 
 // Fonction pour nettoyer le poème
@@ -65,6 +69,8 @@ const cleanPoeme = (poeme: string | null | undefined): string | null => {
 export const createMarche = async (formData: MarcheFormData): Promise<string | null> => {
   try {
     const cleanedData = cleanFormData(formData);
+    
+    console.log('🚀 Création d\'une nouvelle marche avec les données:', cleanedData);
 
     const { data, error } = await supabase
       .from('marches')
@@ -72,7 +78,7 @@ export const createMarche = async (formData: MarcheFormData): Promise<string | n
       .select()
 
     if (error) {
-      console.error("Erreur lors de la création de la marche:", error);
+      console.error("❌ Erreur lors de la création de la marche:", error);
       throw error;
     }
 
@@ -83,7 +89,7 @@ export const createMarche = async (formData: MarcheFormData): Promise<string | n
     return marcheId;
 
   } catch (error) {
-    console.error("Erreur lors de la création de la marche:", error);
+    console.error("💥 Erreur lors de la création de la marche:", error);
     return null;
   }
 };
@@ -92,6 +98,8 @@ export const createMarche = async (formData: MarcheFormData): Promise<string | n
 export const updateMarche = async (marcheId: string, formData: MarcheFormData): Promise<boolean> => {
   try {
     const cleanedData = cleanFormData(formData);
+    
+    console.log(`🔄 Mise à jour de la marche ${marcheId} avec les données:`, cleanedData);
 
     const { error } = await supabase
       .from('marches')
@@ -99,7 +107,7 @@ export const updateMarche = async (marcheId: string, formData: MarcheFormData): 
       .eq('id', marcheId);
 
     if (error) {
-      console.error(`Erreur lors de la mise à jour de la marche ${marcheId}:`, error);
+      console.error(`❌ Erreur lors de la mise à jour de la marche ${marcheId}:`, error);
       return false;
     }
 
@@ -107,7 +115,7 @@ export const updateMarche = async (marcheId: string, formData: MarcheFormData): 
     return true;
 
   } catch (error) {
-    console.error(`Erreur lors de la mise à jour de la marche ${marcheId}:`, error);
+    console.error(`💥 Erreur lors de la mise à jour de la marche ${marcheId}:`, error);
     return false;
   }
 };

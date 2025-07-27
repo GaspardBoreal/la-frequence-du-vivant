@@ -316,13 +316,17 @@ export type Database = {
       }
       marches: {
         Row: {
+          adresse: string | null
           coordonnees: unknown | null
           created_at: string
           date: string | null
+          departement: string | null
           descriptif_court: string | null
           descriptif_long: string | null
           id: string
+          latitude: number | null
           lien_google_drive: string | null
+          longitude: number | null
           nom_marche: string | null
           region: string | null
           sous_themes: string[] | null
@@ -332,13 +336,17 @@ export type Database = {
           ville: string
         }
         Insert: {
+          adresse?: string | null
           coordonnees?: unknown | null
           created_at?: string
           date?: string | null
+          departement?: string | null
           descriptif_court?: string | null
           descriptif_long?: string | null
           id?: string
+          latitude?: number | null
           lien_google_drive?: string | null
+          longitude?: number | null
           nom_marche?: string | null
           region?: string | null
           sous_themes?: string[] | null
@@ -348,13 +356,17 @@ export type Database = {
           ville: string
         }
         Update: {
+          adresse?: string | null
           coordonnees?: unknown | null
           created_at?: string
           date?: string | null
+          departement?: string | null
           descriptif_court?: string | null
           descriptif_long?: string | null
           id?: string
+          latitude?: number | null
           lien_google_drive?: string | null
+          longitude?: number | null
           nom_marche?: string | null
           region?: string | null
           sous_themes?: string[] | null

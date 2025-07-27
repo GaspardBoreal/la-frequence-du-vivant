@@ -86,28 +86,28 @@ const MarcheForm: React.FC<MarcheFormProps> = ({ mode, marcheId, onCancel, onSuc
   const onSubmit = async (data: FormData) => {
     setIsSubmitting(true);
     try {
-      console.log('Données à sauvegarder:', data);
+      console.log('📝 Données du formulaire à sauvegarder:', data);
 
       // Convertir les données pour l'API
       const apiData: MarcheFormData = {
         ville: data.ville,
         region: data.region,
+        sousRegion: data.sousRegion,
         nomMarche: data.nomMarche,
         poeme: data.poeme,
         date: data.date,
         temperature: data.temperature,
         latitude: data.latitude,
         longitude: data.longitude,
+        adresse: data.adresse,
         lienGoogleDrive: data.lienGoogleDrive,
         sousThemes: data.sousThemes ? data.sousThemes.split(',').map(t => t.trim()) : [],
         tags: data.tags ? data.tags.split(',').map(t => t.trim()) : [],
-        adresse: data.adresse,
-        sousRegion: data.sousRegion,
         theme: themeRichText,
         descriptifCourt: ''
       };
 
-      console.log('Données converties pour API:', apiData);
+      console.log('🔄 Données converties pour API:', apiData);
 
       if (mode === 'create') {
         const newMarcheId = await createMarche(apiData);
@@ -125,7 +125,7 @@ const MarcheForm: React.FC<MarcheFormProps> = ({ mode, marcheId, onCancel, onSuc
 
       onSuccess();
     } catch (error) {
-      console.error('Erreur lors de la sauvegarde:', error);
+      console.error('💥 Erreur lors de la sauvegarde:', error);
       toast.error('Erreur lors de la sauvegarde. Veuillez réessayer.');
     } finally {
       setIsSubmitting(false);
