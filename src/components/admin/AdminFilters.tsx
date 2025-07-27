@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
@@ -141,22 +142,71 @@ const AdminFilters: React.FC<AdminFiltersProps> = ({ marches, onFilterChange }) 
     return departements;
   };
 
-  // Obtenir tous les tags uniques
-  const getUniqueTags = () => {
+  // Obtenir tous les tags uniques avec leur comptage basé sur les marches filtrées
+  const getUniqueTagsWithCount = () => {
     if (!marches || marches.length === 0) return [];
     
-    const allTags = marches
-      .flatMap(marche => marche?.supabaseTags || [])
-      .filter(tag => tag && tag.trim() !== '')
-      .filter((tag, index, arr) => arr.indexOf(tag) === index)
-      .sort();
+    // Calculer d'abord les marches filtrées (sans le filtre de tags)
+    let filteredForCounting = marches;
     
-    return allTags;
+    // Appliquer tous les filtres sauf celui des tags
+    if (villeFilter.trim()) {
+      filteredForCounting = filteredForCounting.filter(marche => {
+        const marcheVille = marche?.ville || '';
+        return marcheVille.toLowerCase().includes(villeFilter.toLowerCase());
+      });
+    }
+    
+    if (regionFilter && regionFilter !== 'all') {
+      filteredForCounting = filteredForCounting.filter(marche => {
+        const marcheRegion = marche?.region || '';
+        return marcheRegion === regionFilter;
+      });
+    }
+    
+    if (departementFilter && departementFilter !== 'all') {
+      filteredForCounting = filteredForCounting.filter(marche => {
+        const marcheDepartement = marche?.departement || '';
+        return marcheDepartement === departementFilter;
+      });
+    }
+    
+    if (searchText.trim()) {
+      const searchLower = searchText.toLowerCase();
+      filteredForCounting = filteredForCounting.filter(marche => {
+        const theme = marche?.theme || '';
+        const descriptifCourt = marche?.descriptifCourt || '';
+        const descriptifLong = marche?.poeme || '';
+        const nomMarche = marche?.nomMarche || '';
+        
+        return theme.toLowerCase().includes(searchLower) ||
+               descriptifCourt.toLowerCase().includes(searchLower) ||
+               descriptifLong.toLowerCase().includes(searchLower) ||
+               nomMarche.toLowerCase().includes(searchLower);
+      });
+    }
+    
+    // Compter les tags dans les marches filtrées
+    const tagCounts: { [key: string]: number } = {};
+    
+    filteredForCounting.forEach(marche => {
+      const marcheTags = marche?.supabaseTags || [];
+      marcheTags.forEach(tag => {
+        if (tag && tag.trim() !== '') {
+          tagCounts[tag] = (tagCounts[tag] || 0) + 1;
+        }
+      });
+    });
+    
+    // Convertir en tableau et trier
+    return Object.entries(tagCounts)
+      .map(([tag, count]) => ({ tag, count }))
+      .sort((a, b) => a.tag.localeCompare(b.tag));
   };
 
   const uniqueRegions = getUniqueRegions();
   const uniqueDepartements = getUniqueDepartements();
-  const uniqueTags = getUniqueTags();
+  const uniqueTagsWithCount = getUniqueTagsWithCount();
   const hasActiveFilters = villeFilter || regionFilter || departementFilter || tagsFilter || searchText;
 
   return (
@@ -256,8 +306,8 @@ const AdminFilters: React.FC<AdminFiltersProps> = ({ marches, onFilterChange }) 
             )}
           </div>
 
-          {/* Filtre par tags */}
-          {uniqueTags.length > 0 && (
+          {/* Filtre par tags avec comptage */}
+          {uniqueTagsWithCount.length > 0 && (
             <div className="space-y-2">
               <label className="text-white text-sm font-medium">Tags</label>
               <Input
@@ -267,17 +317,20 @@ const AdminFilters: React.FC<AdminFiltersProps> = ({ marches, onFilterChange }) 
                 className="bg-white/10 border-white/20 text-white placeholder:text-white/60"
               />
               <div className="flex flex-wrap gap-2 mt-2">
-                {uniqueTags.slice(0, 10).map((tag) => (
+                {uniqueTagsWithCount.slice(0, 10).map(({ tag, count }) => (
                   <button
                     key={tag}
                     onClick={() => handleTagsChange(tag)}
-                    className="px-2 py-1 bg-white/20 hover:bg-white/30 rounded text-white text-xs transition-colors"
+                    className="px-3 py-1 bg-white/20 hover:bg-white/30 rounded-full text-white text-xs transition-colors flex items-center space-x-1"
                   >
-                    {tag}
+                    <span>{tag}</span>
+                    <span className="bg-white/30 px-1.5 py-0.5 rounded-full text-xs font-medium">
+                      {count}
+                    </span>
                   </button>
                 ))}
-                {uniqueTags.length > 10 && (
-                  <span className="text-white/60 text-xs">+{uniqueTags.length - 10} autres tags</span>
+                {uniqueTagsWithCount.length > 10 && (
+                  <span className="text-white/60 text-xs">+{uniqueTagsWithCount.length - 10} autres tags</span>
                 )}
               </div>
             </div>

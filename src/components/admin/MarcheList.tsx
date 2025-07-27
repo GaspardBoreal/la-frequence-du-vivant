@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
@@ -129,79 +130,75 @@ const MarcheList: React.FC<MarcheListProps> = ({
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h2 className="text-xl font-semibold text-foreground">Marches existantes ({marches.length})</h2>
       </div>
 
-      <div className="space-y-3">
+      <div className="space-y-4">
         {marches.map(marche => (
-          <div key={marche.id} className="gaspard-card rounded-lg p-4 hover:shadow-md transition-shadow">
+          <div key={marche.id} className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm hover:shadow-md transition-shadow">
             <div className="flex items-start justify-between">
               <div className="flex-1">
-                <div className="space-y-2 mb-3">
-                  <div className="flex items-center space-x-3">
-                    <span className="text-accent font-medium">Ville :</span>
-                    <h3 className="text-lg font-medium text-foreground">{marche.ville}</h3>
+                {/* En-tête principal */}
+                <div className="mb-4">
+                  <div className="flex items-center space-x-4 mb-2">
+                    <h3 className="text-xl font-semibold text-gray-900">{marche.ville}</h3>
+                    {marche.nomMarche && (
+                      <span className="text-lg text-gray-600 font-medium">• {marche.nomMarche}</span>
+                    )}
                   </div>
-
-                  <div className="flex items-center space-x-6">
+                  
+                  {/* Localisation */}
+                  <div className="flex items-center space-x-4 text-sm">
                     {marche.departement && (
-                      <div className="flex items-center space-x-2">
-                        <span className="text-accent font-medium text-sm">Département :</span>
-                        <Badge variant="outline" className="text-xs bg-accent/10 text-accent border-accent/30">
-                          {marche.departement}
-                        </Badge>
-                      </div>
+                      <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
+                        {marche.departement}
+                      </Badge>
                     )}
                     {marche.region && (
-                      <div className="flex items-center space-x-2">
-                        <span className="text-accent font-medium text-sm">Région :</span>
-                        <Badge variant="outline" className="text-xs bg-accent/10 text-accent border-accent/30">
-                          {marche.region}
-                        </Badge>
-                      </div>
+                      <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+                        {marche.region}
+                      </Badge>
                     )}
                   </div>
-
-                  {marche.nomMarche && (
-                    <div className="flex items-center space-x-3">
-                      <span className="text-accent font-medium">Nom de la marche :</span>
-                      <span className="text-lg font-medium text-foreground">{marche.nomMarche}</span>
-                    </div>
-                  )}
-
-                  {marche.theme && (
-                    <div className="flex items-center space-x-3">
-                      <span className="text-accent font-medium">Thème :</span>
-                      <span className="text-sm font-medium text-muted-foreground">{marche.theme}</span>
-                    </div>
-                  )}
                 </div>
 
-                {marche.descriptifCourt && (
-                  <p className="text-sm text-muted-foreground mb-3 line-clamp-2">{marche.descriptifCourt}</p>
+                {/* Thème */}
+                {marche.theme && (
+                  <div className="mb-3">
+                    <span className="inline-block px-3 py-1 bg-purple-50 text-purple-700 text-sm font-medium rounded-full">
+                      {marche.theme}
+                    </span>
+                  </div>
                 )}
 
-                <div className="flex items-center space-x-4 text-sm text-muted-foreground mb-3">
+                {/* Description */}
+                {marche.descriptifCourt && (
+                  <p className="text-gray-700 mb-4 leading-relaxed line-clamp-2">{marche.descriptifCourt}</p>
+                )}
+
+                {/* Informations pratiques */}
+                <div className="flex items-center space-x-6 text-sm text-gray-600 mb-4">
                   {marche.date && (
-                    <div className="flex items-center space-x-1">
-                      <Calendar className="h-4 w-4" />
+                    <div className="flex items-center space-x-2">
+                      <Calendar className="h-4 w-4 text-gray-400" />
                       <span>{formatDate(marche.date)}</span>
                     </div>
                   )}
                   {marche.latitude != null && marche.longitude != null && (
                     <div className="flex items-center space-x-2">
-                      <span>Latitude : {marche.latitude.toFixed(3)}, Longitude : {marche.longitude.toFixed(3)}</span>
+                      <MapPin className="h-4 w-4 text-gray-400" />
+                      <span>{marche.latitude.toFixed(3)}, {marche.longitude.toFixed(3)}</span>
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                           <Button
                             variant="ghost"
                             size="sm"
-                            className="h-8 w-8 p-0 text-blue-600 hover:text-blue-800 hover:bg-blue-50 border border-blue-200"
+                            className="h-7 w-7 p-0 text-blue-600 hover:text-blue-800 hover:bg-blue-50 border border-blue-200 rounded-md"
                             title="Voir sur les cartes"
                           >
-                            <Navigation className="h-4 w-4" />
+                            <Navigation className="h-3 w-3" />
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent className="bg-white border border-gray-200 shadow-lg z-50">
@@ -234,22 +231,19 @@ const MarcheList: React.FC<MarcheListProps> = ({
                     variant="ghost"
                     size="sm"
                     onClick={() => handleFrequenceVivantClick(marche)}
-                    className="h-8 w-8 p-0 text-purple-600 hover:text-purple-800 hover:bg-purple-50 border border-purple-200"
+                    className="h-7 w-7 p-0 text-purple-600 hover:text-purple-800 hover:bg-purple-50 border border-purple-200 rounded-md"
                     title="Voir dans La Fréquence du Vivant"
                   >
-                    <Heart className="h-4 w-4" />
+                    <Heart className="h-3 w-3" />
                   </Button>
                 </div>
 
-                {/* Tags avec style blanc/vert */}
+                {/* Tags */}
                 {marche.supabaseTags && marche.supabaseTags.length > 0 && (
-                  <div className="mb-3">
-                    <div className="flex items-center space-x-2 mb-2">
-                      <span className="text-accent font-medium text-sm">Tags :</span>
-                    </div>
-                    <div className="flex flex-wrap gap-1">
+                  <div className="mb-4">
+                    <div className="flex flex-wrap gap-2">
                       {marche.supabaseTags.map((tag, index) => (
-                        <Badge key={index} variant="outline" className="text-xs bg-white text-green-600 border-green-200">
+                        <Badge key={index} variant="outline" className="bg-gray-50 text-gray-700 border-gray-200 hover:bg-gray-100">
                           {tag}
                         </Badge>
                       ))}
@@ -257,41 +251,44 @@ const MarcheList: React.FC<MarcheListProps> = ({
                   </div>
                 )}
 
-                <div className="flex flex-wrap gap-2 mt-3">
+                {/* Compteurs de médias */}
+                <div className="flex flex-wrap gap-2">
                   {marche.photos && marche.photos.length > 0 && (
-                    <Badge variant="secondary" className="text-xs">
+                    <Badge variant="secondary" className="bg-orange-50 text-orange-700 border-orange-200">
                       {marche.photos.length} photo{marche.photos.length > 1 ? 's' : ''}
                     </Badge>
                   )}
                   {marche.audioFiles && marche.audioFiles.length > 0 && (
-                    <Badge variant="secondary" className="text-xs">
+                    <Badge variant="secondary" className="bg-red-50 text-red-700 border-red-200">
                       {marche.audioFiles.length} audio{marche.audioFiles.length > 1 ? 's' : ''}
                     </Badge>
                   )}
                   {marche.videos && marche.videos.length > 0 && (
-                    <Badge variant="secondary" className="text-xs">
+                    <Badge variant="secondary" className="bg-indigo-50 text-indigo-700 border-indigo-200">
                       {marche.videos.length} vidéo{marche.videos.length > 1 ? 's' : ''}
                     </Badge>
                   )}
                   {marche.etudes && marche.etudes.length > 0 && (
-                    <Badge variant="secondary" className="text-xs">
+                    <Badge variant="secondary" className="bg-teal-50 text-teal-700 border-teal-200">
                       {marche.etudes.length} étude{marche.etudes.length > 1 ? 's' : ''}
                     </Badge>
                   )}
                   {marche.documents && marche.documents.length > 0 && (
-                    <Badge variant="secondary" className="text-xs">
+                    <Badge variant="secondary" className="bg-yellow-50 text-yellow-700 border-yellow-200">
                       {marche.documents.length} document{marche.documents.length > 1 ? 's' : ''}
                     </Badge>
                   )}
                 </div>
               </div>
 
-              <div className="flex items-center space-x-2 ml-4">
+              {/* Actions */}
+              <div className="flex items-center space-x-2 ml-6">
                 <Button
                   size="sm"
                   variant="outline"
                   onClick={() => onEdit(marche.id)}
                   disabled={deletingId === marche.id}
+                  className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 border-blue-200"
                 >
                   <Edit className="h-4 w-4 mr-1" />
                   Modifier
@@ -303,7 +300,7 @@ const MarcheList: React.FC<MarcheListProps> = ({
                       size="sm"
                       variant="outline"
                       disabled={deletingId === marche.id}
-                      className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                      className="text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200"
                     >
                       {deletingId === marche.id ? (
                         <>
