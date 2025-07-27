@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
@@ -102,27 +103,6 @@ const MarcheList: React.FC<MarcheListProps> = ({
     window.open(frequenceVivantUrl, '_blank');
   };
 
-  const getDepartmentFromRegion = (region: string): string => {
-    // Mapping basique région -> département principal
-    const regionToDepartment: { [key: string]: string } = {
-      'Nouvelle-Aquitaine': 'Gironde',
-      'Bretagne': 'Finistère',
-      'Occitanie': 'Haute-Garonne',
-      'Auvergne-Rhône-Alpes': 'Rhône',
-      'Provence-Alpes-Côte d\'Azur': 'Bouches-du-Rhône',
-      'Île-de-France': 'Paris',
-      'Grand Est': 'Bas-Rhin',
-      'Hauts-de-France': 'Nord',
-      'Normandie': 'Calvados',
-      'Centre-Val de Loire': 'Loiret',
-      'Bourgogne-Franche-Comté': 'Côte-d\'Or',
-      'Pays de la Loire': 'Loire-Atlantique',
-      'Corse': 'Corse-du-Sud'
-    };
-
-    return regionToDepartment[region] || region;
-  };
-
   const formatDate = (dateString: string) => {
     if (!dateString) return '';
     
@@ -177,11 +157,11 @@ const MarcheList: React.FC<MarcheListProps> = ({
                   </div>
 
                   <div className="flex items-center space-x-6">
-                    {marche.region && (
+                    {marche.departement && (
                       <div className="flex items-center space-x-2">
                         <span className="text-accent font-medium text-sm">Département :</span>
                         <Badge variant="outline" className="text-xs bg-accent/10 text-accent border-accent/30">
-                          {getDepartmentFromRegion(marche.region)}
+                          {marche.departement}
                         </Badge>
                       </div>
                     )}
@@ -280,7 +260,7 @@ const MarcheList: React.FC<MarcheListProps> = ({
                   </Button>
                 </div>
 
-                {/* Tags */}
+                {/* Tags avec style blanc/vert */}
                 {marche.supabaseTags && marche.supabaseTags.length > 0 && (
                   <div className="mb-3">
                     <div className="flex items-center space-x-2 mb-2">

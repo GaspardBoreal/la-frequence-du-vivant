@@ -25,28 +25,29 @@ interface MarcheFormProps {
   onSuccess: () => void;
 }
 
-// Interface pour le formulaire avec des types corrects
+// Interface pour le formulaire alignée avec les champs de la base de données
 interface FormData {
   ville: string;
   region: string;
   departement: string;
   nomMarche: string;
-  poeme: string;
+  descriptifCourt: string;
+  descriptifLong: string;
   date: string;
   temperature: number | null;
   latitude: number | null;
   longitude: number | null;
+  adresse: string;
   lienGoogleDrive: string;
   sousThemes: string;
   tags: string;
-  adresse: string;
 }
 
 const MarcheForm: React.FC<MarcheFormProps> = ({ mode, marcheId, onCancel, onSuccess }) => {
   const { data: marche, isLoading } = useSupabaseMarche(marcheId || undefined);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [activeTab, setActiveTab] = useState('general');
-  const [themeRichText, setThemeRichText] = useState('');
+  const [themePrincipalRichText, setThemePrincipalRichText] = useState('');
 
   const {
     register,
@@ -69,20 +70,21 @@ const MarcheForm: React.FC<MarcheFormProps> = ({ mode, marcheId, onCancel, onSuc
         region: marche.region || '',
         departement: marche.departement || '',
         nomMarche: marche.nomMarche || '',
-        poeme: marche.poeme || '',
+        descriptifCourt: marche.descriptifCourt || '',
+        descriptifLong: marche.descriptifLong || '',
         date: marche.date || '',
         temperature: marche.temperature || null,
         latitude: marche.latitude || null,
         longitude: marche.longitude || null,
+        adresse: marche.adresse || '',
         lienGoogleDrive: marche.lien || '',
         sousThemes: marche.sousThemes?.join(', ') || '',
         tags: marche.supabaseTags?.join(', ') || '',
-        adresse: marche.adresse || ''
       };
       
       console.log('🔄 Données du formulaire après mapping:', formData);
       reset(formData);
-      setThemeRichText(marche.theme || '');
+      setThemePrincipalRichText(marche.theme || '');
     }
   }, [mode, marche, reset]);
 
@@ -91,13 +93,14 @@ const MarcheForm: React.FC<MarcheFormProps> = ({ mode, marcheId, onCancel, onSuc
     try {
       console.log('📝 Données du formulaire à sauvegarder:', data);
 
-      // Convertir les données pour l'API
+      // Convertir les données pour l'API en respectant les champs de la base de données
       const apiData: MarcheFormData = {
         ville: data.ville,
         region: data.region,
         departement: data.departement,
         nomMarche: data.nomMarche,
-        poeme: data.poeme,
+        descriptifCourt: data.descriptifCourt,
+        descriptifLong: data.descriptifLong,
         date: data.date,
         temperature: data.temperature,
         latitude: data.latitude,
@@ -106,8 +109,7 @@ const MarcheForm: React.FC<MarcheFormProps> = ({ mode, marcheId, onCancel, onSuc
         lienGoogleDrive: data.lienGoogleDrive,
         sousThemes: data.sousThemes ? data.sousThemes.split(',').map(t => t.trim()) : [],
         tags: data.tags ? data.tags.split(',').map(t => t.trim()) : [],
-        theme: themeRichText,
-        descriptifCourt: ''
+        themesPrincipaux: [themePrincipalRichText].filter(Boolean), // Sauvegarde dans theme_principal
       };
 
       console.log('🔄 Données converties pour API:', apiData);
@@ -307,22 +309,32 @@ const MarcheForm: React.FC<MarcheFormProps> = ({ mode, marcheId, onCancel, onSuc
           </TabsContent>
 
           <TabsContent value="description" className="space-y-4">
-            <div className="col-span-2">
-              <Label htmlFor="theme">Thème</Label>
-              <RichTextEditor
-                value={themeRichText}
-                onChange={setThemeRichText}
-                placeholder="Décrivez le thème de la marche avec mise en forme..."
+            <div>
+              <Label htmlFor="descriptifCourt">Descriptif court</Label>
+              <Textarea
+                id="descriptifCourt"
+                rows={3}
+                {...register('descriptifCourt')}
+                placeholder="Résumé en quelques phrases..."
               />
             </div>
 
             <div>
-              <Label htmlFor="poeme">Poème / Texte littéraire</Label>
+              <Label htmlFor="descriptifLong">Descriptif long</Label>
               <Textarea
-                id="poeme"
-                rows={8}
-                {...register('poeme')}
-                placeholder="Texte poétique ou littéraire associé à la marche..."
+                id="descriptifLong"
+                rows={6}
+                {...register('descriptifLong')}
+                placeholder="Description détaillée de la marche..."
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="themePrincipal">Thème principal</Label>
+              <RichTextEditor
+                value={themePrincipalRichText}
+                onChange={setThemePrincipalRichText}
+                placeholder="Décrivez le thème principal de la marche avec mise en forme..."
               />
             </div>
           </TabsContent>

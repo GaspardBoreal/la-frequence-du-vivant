@@ -1,4 +1,3 @@
-
 import { supabase } from '../integrations/supabase/client';
 import { MarcheTechnoSensible } from './googleSheetsApi';
 import { uploadPhoto, uploadVideo, uploadAudio } from './supabaseUpload';
@@ -28,17 +27,16 @@ export interface MarcheFormData {
     type: 'principale' | 'complementaire' | 'annexe';
     ordre: number;
   }>;
-  poeme?: string | null;
   theme?: string;
   adresse?: string;
   lienGoogleDrive?: string;
 }
 
-// Fonction pour nettoyer les données du formulaire
+// Fonction pour nettoyer les données du formulaire et les mapper aux champs de la base de données
 const cleanFormData = (formData: MarcheFormData) => {
   const cleanedData = {
     ville: formData.ville || '',
-    region: formData.region || '',
+    region: formData.region || null,
     departement: formData.departement || null,
     nom_marche: formData.nomMarche || null,
     descriptif_court: formData.descriptifCourt || null,
@@ -48,7 +46,7 @@ const cleanFormData = (formData: MarcheFormData) => {
     latitude: formData.latitude !== null && formData.latitude !== undefined ? Number(formData.latitude) : null,
     longitude: formData.longitude !== null && formData.longitude !== undefined ? Number(formData.longitude) : null,
     adresse: formData.adresse || null,
-    theme_principal: formData.themesPrincipaux?.[0] || null,
+    theme_principal: formData.themesPrincipaux?.[0] || formData.theme || null,
     sous_themes: formData.sousThemes && formData.sousThemes.length > 0 ? formData.sousThemes : null,
     lien_google_drive: formData.lienGoogleDrive || null,
     coordonnees: formData.latitude && formData.longitude 
@@ -58,12 +56,6 @@ const cleanFormData = (formData: MarcheFormData) => {
 
   console.log('🔧 Données nettoyées pour Supabase:', cleanedData);
   return cleanedData;
-};
-
-// Fonction pour nettoyer le poème
-const cleanPoeme = (poeme: string | null | undefined): string | null => {
-  if (!poeme || typeof poeme !== 'string') return null;
-  return poeme.trim() || null;
 };
 
 // Fonction pour créer une nouvelle marche dans Supabase
@@ -87,6 +79,12 @@ export const createMarche = async (formData: MarcheFormData): Promise<string | n
     const marcheId = newMarche.id;
 
     console.log(`✨ Nouvelle marche créée avec l'ID: ${marcheId}`);
+    
+    // Sauvegarder les tags si présents
+    if (formData.tags && formData.tags.length > 0) {
+      await saveTags(marcheId, formData.tags);
+    }
+
     return marcheId;
 
   } catch (error) {
@@ -112,12 +110,47 @@ export const updateMarche = async (marcheId: string, formData: MarcheFormData): 
       return false;
     }
 
+    // Mettre à jour les tags
+    if (formData.tags) {
+      // Supprimer les anciens tags
+      await supabase.from('marche_tags').delete().eq('marche_id', marcheId);
+      // Ajouter les nouveaux tags
+      if (formData.tags.length > 0) {
+        await saveTags(marcheId, formData.tags);
+      }
+    }
+
     console.log(`✅ Marche ${marcheId} mise à jour avec succès.`);
     return true;
 
   } catch (error) {
     console.error(`💥 Erreur lors de la mise à jour de la marche ${marcheId}:`, error);
     return false;
+  }
+};
+
+// Fonction pour sauvegarder les tags
+const saveTags = async (marcheId: string, tags: string[]): Promise<void> => {
+  try {
+    const tagData = tags.map(tag => ({
+      marche_id: marcheId,
+      tag: tag.trim(),
+      categorie: null
+    }));
+
+    const { error } = await supabase
+      .from('marche_tags')
+      .insert(tagData);
+
+    if (error) {
+      console.error('❌ Erreur lors de la sauvegarde des tags:', error);
+      throw error;
+    }
+
+    console.log(`✅ ${tags.length} tags sauvegardés pour la marche ${marcheId}`);
+  } catch (error) {
+    console.error('💥 Erreur lors de la sauvegarde des tags:', error);
+    throw error;
   }
 };
 

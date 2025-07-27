@@ -1,3 +1,4 @@
+
 import { MarcheComplete, MarchePhoto, MarcheAudio, MarcheVideo } from './supabaseApi';
 import { MarcheTechnoSensible } from './googleSheetsApi';
 
@@ -15,9 +16,9 @@ export const transformSupabaseToLegacyFormat = (marche: MarcheComplete): MarcheT
   const transformed: MarcheTechnoSensible = {
     id: marche.id,
     ville: marche.ville,
-    departement: extractDepartmentFromRegion(marche.region || ''),
+    departement: marche.departement || '', // Utiliser directement le champ departement de la DB
     region: marche.region || '',
-    theme: marche.theme_principal || marche.nom_marche || marche.ville,
+    theme: marche.theme_principal || marche.nom_marche || marche.ville, // Utiliser theme_principal
     nomMarche: marche.nom_marche || undefined,
     descriptifCourt: marche.descriptif_court || undefined,
     date: marche.date || undefined,
@@ -61,28 +62,6 @@ export const transformSupabaseToLegacyFormat = (marche: MarcheComplete): MarcheT
   });
 
   return transformed;
-};
-
-// Extraire le département de la région (fonction utilitaire)
-const extractDepartmentFromRegion = (region: string): string => {
-  // Mapping basique région -> département
-  const regionToDepartment: { [key: string]: string } = {
-    'Nouvelle-Aquitaine': 'Gironde',
-    'Bretagne': 'Finistère',
-    'Occitanie': 'Haute-Garonne',
-    'Auvergne-Rhône-Alpes': 'Rhône',
-    'Provence-Alpes-Côte d\'Azur': 'Bouches-du-Rhône',
-    'Île-de-France': 'Paris',
-    'Grand Est': 'Bas-Rhin',
-    'Hauts-de-France': 'Nord',
-    'Normandie': 'Calvados',
-    'Centre-Val de Loire': 'Loiret',
-    'Bourgogne-Franche-Comté': 'Côte-d\'Or',
-    'Pays de la Loire': 'Loire-Atlantique',
-    'Corse': 'Corse-du-Sud'
-  };
-
-  return regionToDepartment[region] || region;
 };
 
 // Fonction utilitaire pour créer les URLs Supabase Storage
