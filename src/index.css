@@ -1,60 +1,63 @@
+
+@import url('https://fonts.googleapis.com/css2?family=Crimson+Text:ital,wght@0,400;0,600;1,400&family=Kalam:wght@300;400;700&display=swap');
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer base {
   :root {
-    --background: 140 25% 8%;      /* Vert émeraude moins foncé */
-    --foreground: 45 20% 95%;      /* Beige plus clair */
-
-    --card: 140 30% 12%;           /* Cartes vert émeraude moins foncé */
-    --card-foreground: 45 20% 95%;
-
-    --popover: 140 30% 12%;
-    --popover-foreground: 45 20% 95%;
-
-    --primary: 140 35% 15%;        /* Vert émeraude principal moins foncé */
-    --primary-foreground: 45 20% 95%;
-
-    --secondary: 140 28% 18%;      /* Vert émeraude secondaire moins foncé */
-    --secondary-foreground: 45 20% 95%;
-
-    --muted: 140 25% 20%;          /* Vert émeraude muted moins foncé */
-    --muted-foreground: 45 15% 75%;
-
-    --accent: 45 85% 75%;          /* Beige doré plus lumineux */
-    --accent-foreground: 140 25% 8%;
-
+    --background: 0 0% 100%;
+    --foreground: 222.2 84% 4.9%;
+    --card: 0 0% 100%;
+    --card-foreground: 222.2 84% 4.9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222.2 84% 4.9%;
+    --primary: 222.2 47.4% 11.2%;
+    --primary-foreground: 210 40% 98%;
+    --secondary: 210 40% 96%;
+    --secondary-foreground: 222.2 84% 4.9%;
+    --muted: 210 40% 96%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+    --accent: 210 40% 96%;
+    --accent-foreground: 222.2 84% 4.9%;
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
-
-    --border: 140 30% 18%;         /* Bordures moins foncées */
-    --input: 140 30% 15%;          /* Inputs moins foncés */
-    --ring: 45 85% 75%;            /* Ring beige doré */
-
-    --radius: 0.5rem;
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 222.2 84% 4.9%;
+    --radius: 0.75rem;
+    --chart-1: 12 76% 61%;
+    --chart-2: 173 58% 39%;
+    --chart-3: 197 37% 24%;
+    --chart-4: 43 74% 66%;
+    --chart-5: 27 87% 67%;
   }
 
   .dark {
-    --background: 140 25% 8%;
-    --foreground: 45 20% 95%;
-    --card: 140 30% 12%;
-    --card-foreground: 45 20% 95%;
-    --popover: 140 30% 12%;
-    --popover-foreground: 45 20% 95%;
-    --primary: 140 35% 15%;
-    --primary-foreground: 45 20% 95%;
-    --secondary: 140 28% 18%;
-    --secondary-foreground: 45 20% 95%;
-    --muted: 140 25% 20%;
-    --muted-foreground: 45 15% 75%;
-    --accent: 45 85% 75%;
-    --accent-foreground: 140 25% 8%;
+    --background: 222.2 84% 4.9%;
+    --foreground: 210 40% 98%;
+    --card: 222.2 84% 4.9%;
+    --card-foreground: 210 40% 98%;
+    --popover: 222.2 84% 4.9%;
+    --popover-foreground: 210 40% 98%;
+    --primary: 210 40% 98%;
+    --primary-foreground: 222.2 47.4% 11.2%;
+    --secondary: 217.2 32.6% 17.5%;
+    --secondary-foreground: 210 40% 98%;
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%;
+    --accent: 217.2 32.6% 17.5%;
+    --accent-foreground: 210 40% 98%;
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 210 40% 98%;
-    --border: 140 30% 18%;
-    --input: 140 30% 15%;
-    --ring: 45 85% 75%;
+    --border: 217.2 32.6% 17.5%;
+    --input: 217.2 32.6% 17.5%;
+    --ring: 212.7 26.8% 83.9%;
+    --chart-1: 220 70% 50%;
+    --chart-2: 160 60% 45%;
+    --chart-3: 30 80% 55%;
+    --chart-4: 280 65% 60%;
+    --chart-5: 340 75% 55%;
   }
 }
 
@@ -62,112 +65,58 @@
   * {
     @apply border-border;
   }
-
   body {
     @apply bg-background text-foreground;
-    font-family: 'Inter', sans-serif;
-  }
-
-  /* Typographie exacte de la page Gaspard Boréal */
-  .gaspard-category {
-    font-family: 'Inter', sans-serif;
-    @apply text-muted-foreground font-normal uppercase tracking-wider text-sm;
-  }
-
-  .gaspard-main-title {
-    font-family: 'Crimson Text', serif;
-    @apply text-foreground font-normal leading-tight text-xs;
-  }
-
-  .gaspard-subtitle {
-    font-family: 'Inter', sans-serif;
-    @apply text-muted-foreground font-light leading-relaxed text-xs text-justify;
-  }
-
-  .gaspard-meta {
-    font-family: 'Inter', sans-serif;
-    @apply text-accent font-normal text-xs;
-  }
-
-  .gaspard-author {
-    font-family: 'Inter', sans-serif;
-    @apply text-accent font-medium text-xs;
-  }
-
-  /* Effets visuels */
-  .gaspard-card {
-    @apply bg-card/70 backdrop-blur-sm border border-border/30 shadow-xl;
-  }
-
-  .gaspard-glass {
-    @apply bg-card/30 backdrop-blur-md border border-border/20;
-  }
-
-  /* Justification du texte pour tous les paragraphes et textes longs */
-  p, .text-justify-auto {
-    @apply text-justify;
-  }
-
-  /* Classes spécifiques pour les textes longs */
-  .prose p, .prose-lg p {
-    @apply text-justify;
   }
 }
 
-/* Animations subtiles */
 @layer utilities {
-  .animate-gentle-float {
-    animation: gentle-float 12s ease-in-out infinite;
+  .font-crimson {
+    font-family: 'Crimson Text', serif;
   }
-
-  .animate-soft-pulse {
-    animation: soft-pulse 6s ease-in-out infinite;
-  }
-
-  .animate-fade-in {
-    animation: fade-in 1s ease-out;
-  }
-
-  /* Classes pour la gestion du texte long */
-  .line-clamp-2 {
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-  }
-
-  .line-clamp-3 {
-    display: -webkit-box;
-    -webkit-line-clamp: 3;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-  }
-
-  .hyphens-auto {
-    hyphens: auto;
-    -webkit-hyphens: auto;
-    -moz-hyphens: auto;
-  }
-
-  .overflow-wrap-anywhere {
-    overflow-wrap: anywhere;
-    word-wrap: anywhere;
+  
+  .font-handwriting {
+    font-family: 'Kalam', cursive;
   }
 }
 
-@keyframes gentle-float {
-  0%, 100% { transform: translateY(0px) rotate(0deg); }
-  25% { transform: translateY(-3px) rotate(0.5deg); }
-  50% { transform: translateY(-6px) rotate(0deg); }
-  75% { transform: translateY(-3px) rotate(-0.5deg); }
+@keyframes accordion-down {
+  from {
+    height: 0;
+  }
+  to {
+    height: var(--radix-accordion-content-height);
+  }
 }
 
-@keyframes soft-pulse {
-  0%, 100% { opacity: 0.4; }
-  50% { opacity: 0.7; }
+@keyframes accordion-up {
+  from {
+    height: var(--radix-accordion-content-height);
+  }
+  to {
+    height: 0;
+  }
 }
 
 @keyframes fade-in {
-  0% { opacity: 0; transform: translateY(15px); }
-  100% { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-accordion-down {
+  animation: accordion-down 0.2s ease-out;
+}
+
+.animate-accordion-up {
+  animation: accordion-up 0.2s ease-out;
+}
+
+.animate-fade-in {
+  animation: fade-in 0.5s ease-out;
 }

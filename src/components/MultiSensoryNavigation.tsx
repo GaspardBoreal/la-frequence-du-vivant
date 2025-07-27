@@ -4,14 +4,15 @@ import { motion } from 'framer-motion';
 import { 
   Eye, 
   Volume2, 
-  Sparkles 
+  Sparkles,
+  BookOpen
 } from 'lucide-react';
 import { Button } from './ui/button';
 import { RegionalTheme } from '../utils/regionalThemes';
 
 interface MultiSensoryNavigationProps {
-  activeSection: 'visual' | 'audio';
-  onSectionChange: (section: 'visual' | 'audio') => void;
+  activeSection: 'visual' | 'audio' | 'poetic';
+  onSectionChange: (section: 'visual' | 'audio' | 'poetic') => void;
   theme: RegionalTheme;
 }
 
@@ -29,7 +30,7 @@ const MultiSensoryNavigation: React.FC<MultiSensoryNavigationProps> = ({
       icon: Eye,
       color: theme.colors.primary,
       description: 'Explorez en images',
-      angle: 0
+      angle: -60
     },
     {
       id: 'audio' as const,
@@ -37,6 +38,14 @@ const MultiSensoryNavigation: React.FC<MultiSensoryNavigationProps> = ({
       icon: Volume2,
       color: theme.colors.secondary,
       description: 'Écoutez les sons',
+      angle: 60
+    },
+    {
+      id: 'poetic' as const,
+      label: 'Poétique',
+      icon: BookOpen,
+      color: theme.colors.accent,
+      description: 'Carnet de voyage',
       angle: 180
     }
   ];
@@ -49,7 +58,7 @@ const MultiSensoryNavigation: React.FC<MultiSensoryNavigationProps> = ({
         <motion.div
           className="w-32 h-32 rounded-full bg-gradient-to-br from-white to-gray-100 shadow-2xl flex items-center justify-center relative z-10"
           animate={{
-            rotate: activeSection === 'visual' ? 0 : 180
+            rotate: activeSection === 'visual' ? 0 : activeSection === 'audio' ? 180 : activeSection === 'poetic' ? 90 : 0
           }}
           transition={{ duration: 0.8, ease: "easeInOut" }}
         >

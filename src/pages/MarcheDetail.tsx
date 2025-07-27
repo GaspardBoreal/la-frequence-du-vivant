@@ -11,9 +11,8 @@ import MarcheHeroSection from '../components/MarcheHeroSection';
 import MultiSensoryNavigation from '../components/MultiSensoryNavigation';
 import ImmersiveVisualSection from '../components/ImmersiveVisualSection';
 import AudioExperienceSection from '../components/AudioExperienceSection';
-import PoeticMarkerCard from '../components/PoeticMarkerCard';
-import { Button } from '../components/ui/button';
 import PoeticSection from '../components/PoeticSection';
+import { Button } from '../components/ui/button';
 import Footer from '../components/Footer';
 
 import { MarcheTechnoSensible } from '../utils/googleSheetsApi';
@@ -24,7 +23,7 @@ import { REGIONAL_THEMES, RegionalTheme } from '../utils/regionalThemes';
 const MarcheDetail = () => {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
-  const [activeSection, setActiveSection] = useState<'visual' | 'audio'>('visual');
+  const [activeSection, setActiveSection] = useState<'visual' | 'audio' | 'poetic'>('visual');
   const [theme, setTheme] = useState<RegionalTheme>(REGIONAL_THEMES['nouvelle-aquitaine']);
 
   const {
@@ -215,6 +214,9 @@ const MarcheDetail = () => {
             )}
             {activeSection === 'audio' && (
               <AudioExperienceSection marche={marche} theme={theme} />
+            )}
+            {activeSection === 'poetic' && (
+              <PoeticSection marche={marche} theme={theme} />
             )}
           </motion.div>
         </div>

@@ -1,11 +1,12 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { BookOpen, Heart, Sparkles } from 'lucide-react';
 import { Badge } from './ui/badge';
+import { Button } from './ui/button';
 import { MarcheTechnoSensible } from '../utils/googleSheetsApi';
 import { RegionalTheme } from '../utils/regionalThemes';
-import PoeticTextDisplay from './PoeticTextDisplay';
+import PoeticNotebook from './PoeticNotebook';
 
 interface PoeticSectionProps {
   marche: MarcheTechnoSensible;
@@ -13,15 +14,10 @@ interface PoeticSectionProps {
 }
 
 const PoeticSection: React.FC<PoeticSectionProps> = ({ marche, theme }) => {
-  console.log('🎭 PoeticSection - Données marche:', marche);
-  console.log('📝 Texte poétique disponible:', marche.poeme ? 'OUI' : 'NON');
-  console.log('📝 Descriptif court disponible:', marche.descriptifCourt ? 'OUI' : 'NON');
-  console.log('📝 Descriptif long disponible:', marche.descriptifLong ? 'OUI' : 'NON');
-  
+  const [isNotebookOpen, setIsNotebookOpen] = useState(false);
+
   // Utiliser le poème en priorité, sinon le descriptif long, sinon le descriptif court
   const textToDisplay = marche.poeme || marche.descriptifLong || marche.descriptifCourt || '';
-  
-  console.log('📝 Texte à afficher:', textToDisplay.substring(0, 100) + '...');
 
   return (
     <div className="space-y-12">
@@ -34,42 +30,50 @@ const PoeticSection: React.FC<PoeticSectionProps> = ({ marche, theme }) => {
       >
         <h2 className="text-4xl font-crimson font-bold flex items-center justify-center gap-3">
           <BookOpen className="h-8 w-8 text-purple-600" />
-          Univers Poétique
+          Carnet de Voyage
         </h2>
         <p className="text-gray-600 max-w-2xl mx-auto text-lg">
-          Explorez la dimension littéraire et contemplative de {marche.ville}
+          Découvrez les notes manuscrites de {marche.ville}
         </p>
       </motion.div>
 
-      {/* Main Poetic Text */}
-      {textToDisplay ? (
+      {/* Bouton d'ouverture du carnet */}
+      <motion.div
+        className="text-center"
+        initial={{ opacity: 0, y: 30 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.2, duration: 0.8 }}
+      >
+        <Button
+          onClick={() => setIsNotebookOpen(true)}
+          className="bg-gradient-to-r from-amber-500 to-yellow-500 text-white px-8 py-4 text-lg font-semibold rounded-xl hover:from-amber-600 hover:to-yellow-600 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105"
+        >
+          <BookOpen className="h-5 w-5 mr-2" />
+          Ouvrir le carnet
+        </Button>
+      </motion.div>
+
+      {/* Aperçu du contenu */}
+      {textToDisplay && (
         <motion.div
+          className="bg-gradient-to-br from-amber-50 to-yellow-50 rounded-xl p-6 border border-amber-200 shadow-sm"
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2, duration: 0.8 }}
+          transition={{ delay: 0.4, duration: 0.8 }}
         >
-          <PoeticTextDisplay
-            text={textToDisplay}
-            theme={theme}
-            title={marche.nomMarche || marche.ville}
-            author="Exploration techno-sensible"
-          />
-        </motion.div>
-      ) : (
-        <motion.div
-          className="text-center py-16 bg-gradient-to-br from-purple-50 to-pink-50 rounded-xl"
-          initial={{ opacity: 0, y: 30 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2, duration: 0.8 }}
-        >
-          <BookOpen className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-          <h3 className="text-2xl font-semibold text-gray-600 mb-2">
-            Texte poétique en préparation
-          </h3>
-          <p className="text-gray-500 max-w-md mx-auto">
-            Le texte poétique pour {marche.ville} sera bientôt disponible. 
-            Revenez explorer cette dimension littéraire prochainement.
-          </p>
+          <div className="text-center mb-4">
+            <h3 className="text-xl font-semibold text-amber-900 mb-2">
+              Aperçu du contenu
+            </h3>
+            <div className="text-amber-700 font-handwriting text-sm italic">
+              {textToDisplay.substring(0, 200)}...
+            </div>
+          </div>
+          <div className="text-center">
+            <span className="text-amber-600 text-sm">
+              Cliquez sur "Ouvrir le carnet" pour lire la suite
+            </span>
+          </div>
         </motion.div>
       )}
 
@@ -79,18 +83,18 @@ const PoeticSection: React.FC<PoeticSectionProps> = ({ marche, theme }) => {
           className="flex flex-wrap justify-center gap-3 mt-8"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.4, duration: 0.6 }}
+          transition={{ delay: 0.6, duration: 0.6 }}
         >
           {marche.supabaseTags.map((tag, index) => (
             <motion.div
               key={index}
               initial={{ opacity: 0, scale: 0.8 }}
               animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: 0.4 + index * 0.1, duration: 0.4 }}
+              transition={{ delay: 0.6 + index * 0.1, duration: 0.4 }}
             >
               <Badge
                 variant="secondary"
-                className="text-sm px-4 py-2 bg-gradient-to-r from-purple-100 to-pink-100 text-purple-800 border-purple-200 hover:from-purple-200 hover:to-pink-200 transition-all duration-300"
+                className="text-sm px-4 py-2 bg-gradient-to-r from-amber-100 to-yellow-100 text-amber-800 border-amber-200 hover:from-amber-200 hover:to-yellow-200 transition-all duration-300"
               >
                 <Sparkles className="h-3 w-3 mr-1" />
                 {tag}
@@ -99,6 +103,13 @@ const PoeticSection: React.FC<PoeticSectionProps> = ({ marche, theme }) => {
           ))}
         </motion.div>
       )}
+
+      {/* Composant du carnet en popup */}
+      <PoeticNotebook
+        marche={marche}
+        isOpen={isNotebookOpen}
+        onClose={() => setIsNotebookOpen(false)}
+      />
     </div>
   );
 };
