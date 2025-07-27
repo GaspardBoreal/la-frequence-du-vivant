@@ -72,8 +72,8 @@ export const createMarche = async (formData: MarcheFormData): Promise<string> =>
   let coordonnees = null;
   if (cleanedData.latitude && cleanedData.longitude && 
       !isNaN(cleanedData.latitude) && !isNaN(cleanedData.longitude)) {
-    // Utiliser la fonction ST_Point de PostGIS avec les paramètres corrects
-    coordonnees = `POINT(${cleanedData.longitude} ${cleanedData.latitude})`;
+    // Utiliser la fonction ST_GeomFromText pour créer le point correctement
+    console.log(`📍 Coordonnées: latitude=${cleanedData.latitude}, longitude=${cleanedData.longitude}`);
   }
 
   // Préparer les sous-thèmes
@@ -81,21 +81,31 @@ export const createMarche = async (formData: MarcheFormData): Promise<string> =>
     ? cleanedData.sousThemes.split(',').map(t => t.trim()).filter(t => t.length > 0)
     : [];
 
+  const insertData: any = {
+    ville: cleanedData.ville,
+    region: cleanedData.region || null,
+    nom_marche: cleanedData.nomMarche || null,
+    theme_principal: cleanedData.theme || null,
+    descriptif_court: cleanedData.descriptifCourt || null,
+    descriptif_long: cleanedData.poeme || null,
+    date: cleanedData.date || null,
+    temperature: cleanedData.temperature,
+    lien_google_drive: cleanedData.lienGoogleDrive || null,
+    sous_themes: sousThemes.length > 0 ? sousThemes : null
+  };
+
+  // Ajouter les coordonnées seulement si elles sont valides
+  if (cleanedData.latitude && cleanedData.longitude && 
+      !isNaN(cleanedData.latitude) && !isNaN(cleanedData.longitude)) {
+    // Utiliser la fonction ST_GeomFromText de PostGIS
+    insertData.coordonnees = `POINT(${cleanedData.longitude} ${cleanedData.latitude})`;
+  }
+
+  console.log('📦 Données à insérer:', insertData);
+
   const { data: marche, error: marcheError } = await supabase
     .from('marches')
-    .insert({
-      ville: cleanedData.ville,
-      region: cleanedData.region || null,
-      nom_marche: cleanedData.nomMarche || null,
-      theme_principal: cleanedData.theme || null,
-      descriptif_court: cleanedData.descriptifCourt || null,
-      descriptif_long: cleanedData.poeme || null,
-      date: cleanedData.date || null,
-      temperature: cleanedData.temperature,
-      coordonnees: coordonnees ? `POINT(${cleanedData.longitude} ${cleanedData.latitude})` : null,
-      lien_google_drive: cleanedData.lienGoogleDrive || null,
-      sous_themes: sousThemes.length > 0 ? sousThemes : null
-    })
+    .insert(insertData)
     .select()
     .single();
 
