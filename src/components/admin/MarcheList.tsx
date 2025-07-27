@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
@@ -25,7 +24,6 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '../ui/dropdown-menu';
 
@@ -76,41 +74,11 @@ const MarcheList: React.FC<MarcheListProps> = ({
         url = `https://www.google.com/maps?q=${latitude},${longitude}&z=15`;
         break;
       case 'google-earth':
-        url = `https://earth.google.com/web/search/${latitude},${longitude}`;
+        url = `https://earth.google.com/web/@${latitude},${longitude},500a,500d,35y,0h,0t,0r`;
         break;
       case 'openstreetmap':
         url = `https://www.openstreetmap.org/?mlat=${latitude}&mlon=${longitude}&zoom=15`;
         break;
-      case 'all':
-        // Nouvelle implémentation pour ouvrir tous les onglets
-        const urls = [
-          `https://www.google.com/maps?q=${latitude},${longitude}&z=15`,
-          `https://earth.google.com/web/search/${latitude},${longitude}`,
-          `https://www.openstreetmap.org/?mlat=${latitude}&mlon=${longitude}&zoom=15`
-        ];
-        
-        // Utiliser des éléments <a> dynamiques pour contourner les restrictions de popup
-        urls.forEach((url, index) => {
-          setTimeout(() => {
-            const link = document.createElement('a');
-            link.href = url;
-            link.target = '_blank';
-            link.rel = 'noopener noreferrer';
-            
-            // Ajouter temporairement au DOM
-            document.body.appendChild(link);
-            
-            // Cliquer programmatiquement
-            link.click();
-            
-            // Nettoyer le DOM
-            document.body.removeChild(link);
-          }, index * 100); // Délai de 100ms entre chaque ouverture
-        });
-        
-        // Notification à l'utilisateur
-        toast.success(`Ouverture de ${urls.length} onglets de cartes pour ${ville}`);
-        return;
     }
     
     if (url) {
@@ -257,14 +225,6 @@ const MarcheList: React.FC<MarcheListProps> = ({
                           >
                             <Map className="h-4 w-4 mr-2" />
                             OpenStreetMap
-                          </DropdownMenuItem>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem 
-                            onClick={() => handleMapClick(Number(marche.latitude), Number(marche.longitude), marche.ville, 'all')}
-                            className="cursor-pointer hover:bg-gray-50 font-medium text-gray-900"
-                          >
-                            <Navigation className="h-4 w-4 mr-2" />
-                            Ouvrir tous les onglets
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
