@@ -10,7 +10,6 @@ import {
   Upload, 
   Edit, 
   Save, 
-  Cancel, 
   Zap,
   FileImage,
   Repeat,
@@ -208,7 +207,7 @@ const PhotoCard: React.FC<PhotoCardProps> = ({
                   Sauver
                 </Button>
                 <Button size="sm" variant="outline" onClick={handleCancel} className="flex-1">
-                  <Cancel className="h-4 w-4 mr-1" />
+                  <X className="h-4 w-4 mr-1" />
                   Annuler
                 </Button>
               </div>
