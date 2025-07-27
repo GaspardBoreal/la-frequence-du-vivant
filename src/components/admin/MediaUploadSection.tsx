@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import { Button } from '../ui/button';
 import { Card } from '../ui/card';
@@ -180,6 +181,8 @@ const MediaUploadSection: React.FC<MediaUploadSectionProps> = ({
             uploaded: false,
             metadata: processedPhoto.metadata,
             isOptimized: true,
+            titre: '',
+            description: '',
             optimizationInfo: {
               originalSize: optimized.originalSize,
               compressionRatio: optimized.compressionRatio,
@@ -209,7 +212,9 @@ const MediaUploadSection: React.FC<MediaUploadSectionProps> = ({
             url: URL.createObjectURL(file),
             name: file.name,
             size: file.size,
-            uploaded: false
+            uploaded: false,
+            titre: '',
+            description: ''
           };
           newItems.push(newItem);
         }
@@ -242,7 +247,7 @@ const MediaUploadSection: React.FC<MediaUploadSectionProps> = ({
     
     try {
       if (mediaType === 'photos') {
-        // Préparer les photos pour l'upload parallèle
+        // Préparer les photos pour l'upload parallèle avec métadonnées
         const photosData: PhotoToUpload[] = itemsToUpload.map(item => ({
           id: item.id,
           file: item.file!,
@@ -250,8 +255,8 @@ const MediaUploadSection: React.FC<MediaUploadSectionProps> = ({
           thumbnail: item.url,
           preview: item.url,
           uploaded: false,
-          titre: item.titre,
-          description: item.description
+          titre: item.titre || '',
+          description: item.description || ''
         }));
 
         // Nettoyer et ajouter les tâches
@@ -263,7 +268,7 @@ const MediaUploadSection: React.FC<MediaUploadSectionProps> = ({
         
         // Mettre à jour le cache pour les uploads réussis
         for (const item of itemsToUpload) {
-          const wasUploaded = uploadedIds.length > 0; // Simplification pour l'exemple
+          const wasUploaded = uploadedIds.length > 0;
           if (wasUploaded && item.file) {
             await uploadCache.addToCache(item.file, marcheId, item.url, item.id);
           }
@@ -279,7 +284,7 @@ const MediaUploadSection: React.FC<MediaUploadSectionProps> = ({
         
         toast.success(`${uploadedIds.length} photo(s) uploadée(s) avec succès !`);
       } else {
-        // Upload séquentiel pour les vidéos (pour l'instant)
+        // Upload séquentiel pour les vidéos
         for (const item of itemsToUpload) {
           await uploadVideo(item.file!, marcheId);
         }
@@ -305,17 +310,12 @@ const MediaUploadSection: React.FC<MediaUploadSectionProps> = ({
       console.log('🗑️ [MediaUploadSection] Suppression photo existante:', itemId);
       
       try {
-        // Ajouter un toast de chargement
         const loadingToast = toast.loading('Suppression en cours...');
         
         await deletePhoto(itemId);
         
-        // Supprimer le toast de chargement
         toast.dismiss(loadingToast);
-        
-        // Retirer la photo de la liste
         setMediaItems(prev => prev.filter(item => item.id !== itemId));
-        
         toast.success('Photo supprimée avec succès');
         console.log('✅ [MediaUploadSection] Photo supprimée de la liste');
       } catch (error) {
@@ -333,14 +333,28 @@ const MediaUploadSection: React.FC<MediaUploadSectionProps> = ({
 
   const handleUpdateMetadata = async (itemId: string, updates: { titre?: string; description?: string }) => {
     const item = mediaItems.find(m => m.id === itemId);
-    if (!item?.isExisting) return;
+    if (!item) return;
+
+    console.log(`📝 [MediaUploadSection] Mise à jour métadonnées pour ${itemId}:`, updates);
 
     try {
-      await updatePhotoMetadata(itemId, updates);
-      setMediaItems(prev => prev.map(item => 
-        item.id === itemId ? { ...item, ...updates } : item
+      // Si c'est une photo existante, la mettre à jour dans Supabase
+      if (item.isExisting) {
+        await updatePhotoMetadata(itemId, updates);
+        toast.success('Métadonnées mises à jour');
+      } else {
+        // Si c'est une nouvelle photo, juste mettre à jour localement
+        console.log('📝 [MediaUploadSection] Mise à jour locale pour nouvelle photo');
+      }
+      
+      // Mettre à jour localement dans tous les cas
+      setMediaItems(prev => prev.map(media => 
+        media.id === itemId ? { ...media, ...updates } : media
       ));
-      toast.success('Métadonnées mises à jour');
+      
+      if (!item.isExisting) {
+        toast.success('Métadonnées ajoutées (seront sauvegardées lors de l\'upload)');
+      }
     } catch (error) {
       console.error('❌ [MediaUploadSection] Erreur mise à jour:', error);
       toast.error('Erreur lors de la mise à jour');
@@ -484,7 +498,7 @@ const MediaUploadSection: React.FC<MediaUploadSectionProps> = ({
                 key={item.id}
                 photo={item}
                 onRemove={handleRemove}
-                onUpdateMetadata={item.isExisting ? handleUpdateMetadata : undefined}
+                onUpdateMetadata={handleUpdateMetadata}
                 showOptimizationInfo={item.isOptimized}
                 optimizationInfo={item.optimizationInfo}
               />

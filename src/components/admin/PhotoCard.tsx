@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Card } from '../ui/card';
 import { Button } from '../ui/button';
@@ -183,56 +184,54 @@ const PhotoCard: React.FC<PhotoCardProps> = ({
         )}
       </div>
 
-      {/* Métadonnées éditables */}
-      {photo.isExisting && (
-        <div className="space-y-2 pt-2 border-t">
-          {isEditing ? (
-            <div className="space-y-2">
-              <Input
-                value={editTitre}
-                onChange={(e) => setEditTitre(e.target.value)}
-                placeholder="Titre de la photo"
-                className="text-sm"
-              />
-              <Textarea
-                value={editDescription}
-                onChange={(e) => setEditDescription(e.target.value)}
-                placeholder="Description de la photo"
-                className="text-sm"
-                rows={2}
-              />
-              <div className="flex space-x-2">
-                <Button size="sm" onClick={handleSave} className="flex-1">
-                  <Save className="h-4 w-4 mr-1" />
-                  Sauver
-                </Button>
-                <Button size="sm" variant="outline" onClick={handleCancel} className="flex-1">
-                  <X className="h-4 w-4 mr-1" />
-                  Annuler
-                </Button>
-              </div>
-            </div>
-          ) : (
-            <div className="space-y-2">
-              <div>
-                <p className="text-sm font-medium">{photo.titre || 'Sans titre'}</p>
-                {photo.description && (
-                  <p className="text-xs text-gray-600">{photo.description}</p>
-                )}
-              </div>
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => setIsEditing(true)}
-                className="w-full"
-              >
-                <Edit className="h-4 w-4 mr-1" />
-                Modifier
+      {/* Métadonnées éditables - disponibles pour toutes les photos */}
+      <div className="space-y-2 pt-2 border-t">
+        {isEditing ? (
+          <div className="space-y-2">
+            <Input
+              value={editTitre}
+              onChange={(e) => setEditTitre(e.target.value)}
+              placeholder="Titre de la photo"
+              className="text-sm"
+            />
+            <Textarea
+              value={editDescription}
+              onChange={(e) => setEditDescription(e.target.value)}
+              placeholder="Description de la photo"
+              className="text-sm"
+              rows={2}
+            />
+            <div className="flex space-x-2">
+              <Button size="sm" onClick={handleSave} className="flex-1">
+                <Save className="h-4 w-4 mr-1" />
+                Sauver
+              </Button>
+              <Button size="sm" variant="outline" onClick={handleCancel} className="flex-1">
+                <X className="h-4 w-4 mr-1" />
+                Annuler
               </Button>
             </div>
-          )}
-        </div>
-      )}
+          </div>
+        ) : (
+          <div className="space-y-2">
+            <div>
+              <p className="text-sm font-medium">{photo.titre || 'Sans titre'}</p>
+              {photo.description && (
+                <p className="text-xs text-gray-600">{photo.description}</p>
+              )}
+            </div>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setIsEditing(true)}
+              className="w-full"
+            >
+              <Edit className="h-4 w-4 mr-1" />
+              {photo.isExisting ? 'Modifier' : 'Ajouter métadonnées'}
+            </Button>
+          </div>
+        )}
+      </div>
 
       {/* Bouton d'upload pour les nouveaux fichiers */}
       {!photo.uploaded && onUpload && (
