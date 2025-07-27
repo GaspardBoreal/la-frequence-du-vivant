@@ -63,10 +63,10 @@ const MultiSensoryNavigation: React.FC<MultiSensoryNavigationProps> = ({
   return (
     <div className="relative flex justify-center items-center py-16">
       {/* Central Hub */}
-      <div className="relative">
+      <div className="relative z-10">
         {/* Central Circle */}
         <motion.div
-          className="w-32 h-32 rounded-full bg-gradient-to-br from-white to-gray-100 shadow-2xl flex items-center justify-center relative z-10"
+          className="w-32 h-32 rounded-full bg-gradient-to-br from-white to-gray-100 shadow-2xl flex items-center justify-center relative z-20"
           animate={{
             rotate: activeSection === 'visual' ? 0 : activeSection === 'audio' ? 120 : 240
           }}
@@ -90,7 +90,7 @@ const MultiSensoryNavigation: React.FC<MultiSensoryNavigationProps> = ({
           return (
             <motion.div
               key={section.id}
-              className="absolute"
+              className="absolute z-30"
               style={{
                 left: `calc(50% + ${x}px)`,
                 top: `calc(50% + ${y}px)`,
@@ -107,19 +107,23 @@ const MultiSensoryNavigation: React.FC<MultiSensoryNavigationProps> = ({
                 onMouseEnter={() => setHoveredSection(section.id)}
                 onMouseLeave={() => setHoveredSection(null)}
                 className={`
-                  relative w-20 h-20 rounded-full p-0 transition-all duration-300 cursor-pointer
+                  relative w-24 h-24 rounded-full p-0 transition-all duration-300 cursor-pointer z-50
                   ${isActive 
                     ? 'bg-gradient-to-r from-purple-500 to-blue-500 text-white shadow-lg scale-110' 
-                    : 'bg-white/80 backdrop-blur-sm hover:bg-white/90 text-gray-700 hover:scale-105'
+                    : 'bg-white/90 backdrop-blur-sm hover:bg-white/95 text-gray-700 hover:scale-105'
                   }
                   ${isHovered ? 'shadow-xl' : ''}
                 `}
+                style={{ 
+                  position: 'relative',
+                  zIndex: 60
+                }}
               >
-                <Icon className="h-6 w-6" />
+                <Icon className="h-7 w-7" />
                 
-                {/* Tooltip */}
+                {/* Tooltip - repositionné pour éviter les conflits */}
                 <motion.div
-                  className="absolute -top-16 left-1/2 transform -translate-x-1/2 bg-black/80 text-white px-3 py-1 rounded-lg text-sm whitespace-nowrap"
+                  className="absolute -top-20 left-1/2 transform -translate-x-1/2 bg-black/90 text-white px-4 py-2 rounded-lg text-sm whitespace-nowrap pointer-events-none z-70"
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ 
                     opacity: isHovered ? 1 : 0,
@@ -128,15 +132,15 @@ const MultiSensoryNavigation: React.FC<MultiSensoryNavigationProps> = ({
                   transition={{ duration: 0.2 }}
                 >
                   {section.label}
-                  <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-l-transparent border-r-transparent border-t-black/80" />
+                  <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-l-transparent border-r-transparent border-t-black/90" />
                 </motion.div>
               </Button>
 
-              {/* Connection Lines */}
+              {/* Connection Lines - optimisées pour ne pas interférer */}
               <motion.div
-                className="absolute top-1/2 left-1/2 origin-left h-0.5 bg-gradient-to-r from-purple-300 to-transparent"
+                className="absolute top-1/2 left-1/2 origin-left h-0.5 bg-gradient-to-r from-purple-300 to-transparent pointer-events-none z-10"
                 style={{
-                  width: `${radius - 40}px`,
+                  width: `${radius - 50}px`,
                   transform: `translate(-50%, -50%) rotate(${section.angle + 180}deg)`
                 }}
                 initial={{ scaleX: 0 }}
@@ -147,12 +151,12 @@ const MultiSensoryNavigation: React.FC<MultiSensoryNavigationProps> = ({
           );
         })}
 
-        {/* Particle Effects */}
-        <div className="absolute inset-0 pointer-events-none">
+        {/* Particle Effects - bien isolés */}
+        <div className="absolute inset-0 pointer-events-none z-0">
           {[...Array(12)].map((_, i) => (
             <motion.div
               key={i}
-              className="absolute w-1 h-1 bg-purple-400 rounded-full"
+              className="absolute w-1 h-1 bg-purple-400 rounded-full pointer-events-none"
               style={{
                 left: `${50 + Math.cos((i * 30 * Math.PI) / 180) * 80}%`,
                 top: `${50 + Math.sin((i * 30 * Math.PI) / 180) * 80}%`
