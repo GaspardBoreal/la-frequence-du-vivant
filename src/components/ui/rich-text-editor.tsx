@@ -60,6 +60,15 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
 
   return (
     <div className={cn("border rounded-md", className)}>
+      <style>
+        {`
+          [contenteditable]:empty:before {
+            content: attr(data-placeholder);
+            color: #9ca3af;
+            pointer-events: none;
+          }
+        `}
+      </style>
       <div className="flex items-center gap-1 p-2 border-b bg-gray-50">
         <Button
           type="button"
@@ -118,13 +127,6 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
           whiteSpace: 'pre-wrap',
         }}
       />
-      <style jsx>{`
-        [contenteditable]:empty:before {
-          content: attr(data-placeholder);
-          color: #9ca3af;
-          pointer-events: none;
-        }
-      `}</style>
     </div>
   );
 };
