@@ -271,6 +271,10 @@ const AudioExperienceSection: React.FC<AudioExperienceSectionProps> = ({ marche,
                 controls
                 className="w-full"
                 preload="metadata"
+                style={{
+                  height: '54px',
+                  background: 'transparent'
+                }}
               >
                 Votre navigateur ne supporte pas l'élément audio.
               </audio>
