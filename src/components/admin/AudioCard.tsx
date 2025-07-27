@@ -35,6 +35,7 @@ interface AudioCardProps {
     uploadProgress?: number;
     uploadStatus?: 'pending' | 'uploading' | 'processing' | 'success' | 'error';
     uploadError?: string;
+    created_at?: string;
   };
   onRemove: (id: string) => void;
   onUpload?: (id: string) => void;
@@ -157,9 +158,13 @@ const AudioCard: React.FC<AudioCardProps> = ({
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
-  const formatFileDate = (file?: File): string => {
-    if (!file) return 'Date inconnue';
-    return new Date(file.lastModified).toLocaleDateString('fr-FR', {
+  const formatCreatedDate = (created_at?: string): string => {
+    if (!created_at) return new Date().toLocaleDateString('fr-FR', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric'
+    });
+    return new Date(created_at).toLocaleDateString('fr-FR', {
       day: '2-digit',
       month: '2-digit',
       year: 'numeric'
@@ -266,7 +271,7 @@ const AudioCard: React.FC<AudioCardProps> = ({
           </div>
           <div className="flex justify-between">
             <span>Date:</span>
-            <span>{formatFileDate(audio.file)}</span>
+            <span>{formatCreatedDate(audio.created_at)}</span>
           </div>
         </div>
 
