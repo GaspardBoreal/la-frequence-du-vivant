@@ -4,6 +4,7 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from 'sonner';
 import { queryClient } from './lib/queryClient';
+import AdminAuth from './components/AdminAuth';
 import Index from './pages/Index';
 import NotFound from './pages/NotFound';
 import MarcheDetail from './pages/MarcheDetail';
@@ -21,10 +22,29 @@ function App() {
           <Route path="/" element={<Index />} />
           <Route path="/marches-techno-sensibles" element={<MarchesTechnoSensibles />} />
           <Route path="/marche/:slug" element={<MarcheDetail />} />
-          <Route path="/admin/migration" element={<MigrationAdmin />} />
-          <Route path="/admin/migration/execute" element={<MigrationExecution />} />
-          <Route path="/admin/marches" element={<MarcheAdmin />} />
-          <Route path="/access-admin-gb2025" element={<AdminAccess />} />
+          
+          {/* Routes d'administration protégées */}
+          <Route path="/admin/migration" element={
+            <AdminAuth>
+              <MigrationAdmin />
+            </AdminAuth>
+          } />
+          <Route path="/admin/migration/execute" element={
+            <AdminAuth>
+              <MigrationExecution />
+            </AdminAuth>
+          } />
+          <Route path="/admin/marches" element={
+            <AdminAuth>
+              <MarcheAdmin />
+            </AdminAuth>
+          } />
+          <Route path="/access-admin-gb2025" element={
+            <AdminAuth>
+              <AdminAccess />
+            </AdminAuth>
+          } />
+          
           <Route path="*" element={<NotFound />} />
         </Routes>
         <Toaster position="top-right" />
