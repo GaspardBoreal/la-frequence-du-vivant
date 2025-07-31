@@ -108,7 +108,7 @@ const Footer = () => {
               </a>
               <Link 
                 to="/access-admin-gb2025" 
-                className="flex items-center gap-2 text-[#4ade80] hover:text-[#22c55e] transition-colors font-medium"
+                className="flex items-center gap-2 text-muted-foreground hover:text-[#4ade80] transition-colors font-medium"
               >
                 <Settings size={16} />
                 <span>Administration</span>
@@ -124,7 +124,7 @@ const Footer = () => {
               © 2025 Gaspard Boréal - Observatoire Poétique des Mondes Hybrides
             </div>
             <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
-              <span className="hover:text-[#4ade80] cursor-pointer">#BioacoustiquePoétique</span>
+              <span className="hover:text-[#4ade80] cursor-pointer">#BioacustiquePoétique</span>
               <span className="hover:text-[#4ade80] cursor-pointer">#MondesHybrides</span>
               <span className="hover:text-[#4ade80] cursor-pointer">#TransitionAgroécologique</span>
               <span className="hover:text-[#4ade80] cursor-pointer">#PoésieProspective</span>
