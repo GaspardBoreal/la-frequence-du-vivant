@@ -7,7 +7,7 @@ import { Label } from './ui/label';
 import { Lock, Eye, EyeOff, LogOut } from 'lucide-react';
 import { toast } from 'sonner';
 
-const ADMIN_PASSWORD = 'gaspard2025';
+const ADMIN_PASSWORD = 'Successto2026!!';
 const AUTH_KEY = 'gaspard-admin-auth';
 
 interface AdminAuthProps {
