@@ -26,7 +26,7 @@ const MarcheDetailBio = () => {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
   const [activeSection, setActiveSection] = useState<'opendata' | 'datacollect' | 'creative'>('opendata');
-  const [activeSubSection, setActiveSubSection] = useState<string>('etalab');
+  const [activeSubSection, setActiveSubSection] = useState<string>('biodiv');
   const [theme, setTheme] = useState<RegionalTheme>(REGIONAL_THEMES['nouvelle-aquitaine']);
 
   const {
@@ -109,7 +109,7 @@ const MarcheDetailBio = () => {
       // Définir le sous-menu par défaut selon la section
       switch (section) {
         case 'opendata':
-          setActiveSubSection('etalab');
+          setActiveSubSection('biodiv');
           break;
         case 'datacollect':
           setActiveSubSection('visual');
