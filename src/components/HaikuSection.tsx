@@ -46,7 +46,7 @@ const HaikuSection: React.FC<HaikuSectionProps> = ({ marche, theme }) => {
     <div className="space-y-8 pt-16">
       {/* Header Section */}
       <motion.div
-        className="text-center space-y-4"
+        className="text-center"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6 }}
@@ -55,9 +55,6 @@ const HaikuSection: React.FC<HaikuSectionProps> = ({ marche, theme }) => {
           <Feather className="h-8 w-8 text-amber-600" />
           Carnet de Haïkus
         </h2>
-        <p className="text-gray-600 max-w-2xl mx-auto text-lg">
-          Poésie minimaliste inspirée de <span className="font-semibold text-amber-600">{marche.ville}</span>
-        </p>
       </motion.div>
 
       {/* Carnet de croquis style */}
