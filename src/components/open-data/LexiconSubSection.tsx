@@ -46,27 +46,14 @@ const LexiconSubSection: React.FC<LexiconSubSectionProps> = ({ marche, theme }) 
   return (
     <div className="max-w-4xl mx-auto">
       <div className="gaspard-glass rounded-3xl p-12 space-y-8">
-        <motion.div
-          className="relative z-10"
-          initial={{ scale: 0 }}
-          animate={{ scale: 1 }}
-          transition={{ delay: 0.2, duration: 0.5 }}
-        >
-          <div className="w-24 h-24 mx-auto bg-gradient-to-br from-green-100 to-emerald-100 rounded-full flex items-center justify-center mb-6">
-            <BookOpen className="h-12 w-12 text-green-600" />
-          </div>
-        </motion.div>
-
         <div className="relative z-10 space-y-6">
-          <div className="text-center space-y-4">
-            <h3 className="text-5xl font-crimson font-bold text-transparent bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text">
+          <div className="flex items-center justify-center gap-4 mb-6">
+            <div className="w-16 h-16 bg-gradient-to-br from-green-100 to-emerald-100 rounded-full flex items-center justify-center">
+              <BookOpen className="h-8 w-8 text-green-600" />
+            </div>
+            <h3 className="text-4xl font-crimson font-bold text-transparent bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text">
               Lexicon
             </h3>
-            
-            <p className="text-gray-600 text-xl max-w-2xl mx-auto leading-relaxed">
-              Données parcellaires et agricoles de{' '}
-              <span className="font-semibold text-green-600">{marche.ville}</span>
-            </p>
           </div>
 
           {/* Informations de débogage */}
