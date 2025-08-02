@@ -23,8 +23,8 @@ const BioDivSubSection: React.FC<BioDivSubSectionProps> = ({ marche, theme }) =>
   const [dateFilter, setDateFilter] = useState<'recent' | 'medium'>('recent');
   
   const { data: biodiversityData, isLoading, error } = useBiodiversityData({
-    latitude: parseFloat(marche.latitude),
-    longitude: parseFloat(marche.longitude),
+    latitude: marche.latitude,
+    longitude: marche.longitude,
     radius: 0.5,
     dateFilter
   });
@@ -138,10 +138,15 @@ const BioDivSubSection: React.FC<BioDivSubSectionProps> = ({ marche, theme }) =>
           <Leaf className="h-12 w-12 text-emerald-600" />
         </div>
         
-        <div className="flex items-center justify-center gap-3">
-          <h3 className="text-5xl font-crimson font-bold text-transparent bg-gradient-to-r from-emerald-600 to-green-600 bg-clip-text">
-            BioDiv
-          </h3>
+        <div className="flex items-center justify-center gap-4">
+          <div className="flex items-center gap-3">
+            <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-br from-emerald-100 to-green-200">
+              <Leaf className="h-8 w-8 text-emerald-600" />
+            </div>
+            <h3 className="text-5xl font-crimson font-bold text-transparent bg-gradient-to-r from-emerald-600 to-green-600 bg-clip-text">
+              BioDiv
+            </h3>
+          </div>
           
           <div className="flex items-center gap-2">
             <span className="text-sm text-muted-foreground font-medium">
@@ -158,7 +163,7 @@ const BioDivSubSection: React.FC<BioDivSubSectionProps> = ({ marche, theme }) =>
                   <Globe className="h-4 w-4 text-muted-foreground hover:text-foreground" />
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="start" className="gaspard-glass backdrop-blur-md bg-background/90 border border-white/20">
+              <DropdownMenuContent align="start" className="gaspard-glass backdrop-blur-md bg-background/90 border border-white/20 z-50">
                 <DropdownMenuItem asChild>
                   <a
                     href={`https://www.openstreetmap.org/?mlat=${marche.latitude}&mlon=${marche.longitude}&zoom=15`}
