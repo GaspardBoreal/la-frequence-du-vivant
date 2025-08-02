@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Leaf, ExternalLink, TreePine, Flower, Bird, Loader2, AlertCircle, Camera, Calendar, Globe, MapPin, Info, CheckCircle, Clock } from 'lucide-react';
+import { Leaf, ExternalLink, TreePine, Flower, Bird, Loader2, AlertCircle, Camera, Calendar, Globe, MapPin, Info, CheckCircle, Clock, User, Building, Eye } from 'lucide-react';
 import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
@@ -8,6 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '../ui/dropdown-menu';
 import { RadioGroup, RadioGroupItem } from '../ui/radio-group';
 import { Label } from '../ui/label';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '../ui/dialog';
 import { MarcheTechnoSensible } from '../../utils/googleSheetsApi';
 import { RegionalTheme } from '../../utils/regionalThemes';
 import { useBiodiversityData } from '../../hooks/useBiodiversityData';
@@ -29,8 +30,8 @@ const BioDivSubSection: React.FC<BioDivSubSectionProps> = ({ marche, theme }) =>
     dateFilter
   });
 
-  // Composant pour afficher une espèce avec confiance
-  const SpeciesCard = ({ species }: { species: any }) => {
+  // Composant pour afficher une espèce avec attribution complète
+  const SpeciesCard = ({ species }: { species: BiodiversitySpecies }) => {
     const getKingdomIcon = (kingdom: string) => {
       switch (kingdom) {
         case 'Plantae': return <TreePine className="h-5 w-5 text-green-600" />;
@@ -67,6 +68,15 @@ const BioDivSubSection: React.FC<BioDivSubSectionProps> = ({ marche, theme }) =>
       }
     };
 
+    const getSourceName = (source: string) => {
+      switch (source) {
+        case 'gbif': return 'GBIF';
+        case 'inaturalist': return 'iNaturalist';
+        case 'ebird': return 'eBird';
+        default: return source;
+      }
+    };
+
     return (
       <Card className="hover:shadow-lg transition-all duration-300 border border-white/20 bg-white/5 backdrop-blur-sm">
         <CardContent className="p-4">
@@ -90,7 +100,7 @@ const BioDivSubSection: React.FC<BioDivSubSectionProps> = ({ marche, theme }) =>
             </div>
           </div>
           
-          <div className="space-y-2 text-sm">
+          <div className="space-y-2 text-sm mb-4">
             <div className="flex items-center gap-2">
               <span className="text-muted-foreground">Règne:</span>
               <span className="font-medium">{species.kingdom}</span>
@@ -108,6 +118,7 @@ const BioDivSubSection: React.FC<BioDivSubSectionProps> = ({ marche, theme }) =>
               <span className="font-medium">{new Date(species.lastSeen).toLocaleDateString('fr-FR')}</span>
             </div>
             <div className="flex items-center gap-2">
+              <Eye className="h-4 w-4 text-muted-foreground" />
               <span className="text-muted-foreground">Observations:</span>
               <span className="font-medium">{species.observations}</span>
             </div>
@@ -119,6 +130,111 @@ const BioDivSubSection: React.FC<BioDivSubSectionProps> = ({ marche, theme }) =>
                 </Badge>
               </div>
             )}
+          </div>
+
+          {/* Bouton pour voir l'attribution */}
+          <div className="flex justify-end">
+            <Dialog>
+              <DialogTrigger asChild>
+                <Button variant="ghost" size="sm" className="text-blue-400 hover:text-blue-300">
+                  <Info className="h-4 w-4 mr-1" />
+                  Attribution
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
+                <DialogHeader>
+                  <DialogTitle className="flex items-center gap-2">
+                    {getKingdomIcon(species.kingdom)}
+                    Attribution des observations - {species.commonName}
+                  </DialogTitle>
+                </DialogHeader>
+                
+                <div className="space-y-4">
+                  <div className="bg-gray-50 p-3 rounded-lg">
+                    <h4 className="font-medium text-gray-900 mb-1">{species.commonName}</h4>
+                    <p className="text-sm text-gray-600 italic">{species.scientificName}</p>
+                    <p className="text-xs text-gray-500 mt-1">Famille: {species.family}</p>
+                  </div>
+
+                  <div>
+                    <h5 className="font-medium text-gray-900 mb-3">
+                      Observations détaillées ({species.attributions?.length || 0})
+                    </h5>
+                    
+                    {species.attributions && species.attributions.length > 0 ? (
+                      <div className="space-y-3">
+                        {species.attributions.map((attribution, index) => (
+                          <Card key={index} className="border border-gray-200">
+                            <CardContent className="p-4">
+                              <div className="flex items-start justify-between mb-2">
+                                <Badge variant="outline" className={getSourceColor(attribution.source)}>
+                                  {getSourceName(attribution.source)}
+                                </Badge>
+                                {attribution.originalUrl && (
+                                  <a 
+                                    href={attribution.originalUrl} 
+                                    target="_blank" 
+                                    rel="noopener noreferrer"
+                                    className="text-blue-600 hover:text-blue-800 transition-colors"
+                                  >
+                                    <ExternalLink className="h-4 w-4" />
+                                  </a>
+                                )}
+                              </div>
+                              
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
+                                <div className="flex items-center gap-1">
+                                  <User className="h-3 w-3 text-gray-500" />
+                                  <span className="text-gray-700">{attribution.observerName || 'Anonyme'}</span>
+                                </div>
+                                
+                                <div className="flex items-center gap-1">
+                                  <Building className="h-3 w-3 text-gray-500" />
+                                  <span className="text-gray-700">{attribution.observerInstitution || 'Non spécifié'}</span>
+                                </div>
+                                
+                                <div className="flex items-center gap-1">
+                                  <Calendar className="h-3 w-3 text-gray-500" />
+                                  <span className="text-gray-700">{new Date(attribution.date).toLocaleDateString('fr-FR')}</span>
+                                </div>
+                                
+                                <div className="flex items-center gap-1">
+                                  <MapPin className="h-3 w-3 text-gray-500" />
+                                  <span className="text-gray-700">{attribution.locationName || 'Localisation inconnue'}</span>
+                                </div>
+                              </div>
+                              
+                              {attribution.observationMethod && (
+                                <div className="mt-2 text-sm text-gray-600">
+                                  <span className="font-medium">Méthode:</span> {attribution.observationMethod}
+                                </div>
+                              )}
+                              
+                              {attribution.exactLatitude && attribution.exactLongitude && (
+                                <div className="mt-2 text-xs text-gray-500">
+                                  Coordonnées: {attribution.exactLatitude.toFixed(6)}, {attribution.exactLongitude.toFixed(6)}
+                                </div>
+                              )}
+                            </CardContent>
+                          </Card>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-gray-500 text-sm">Aucune information d'attribution disponible.</p>
+                    )}
+                  </div>
+                  
+                  {species.confirmedSources && species.confirmedSources > 1 && (
+                    <div className="bg-green-50 p-3 rounded-lg">
+                      <p className="text-sm text-green-800">
+                        <strong>Validation croisée:</strong> Cette espèce est confirmée par {species.confirmedSources} sources indépendantes, 
+                        ce qui augmente la fiabilité de l'observation.
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </DialogContent>
+            </Dialog>
           </div>
         </CardContent>
       </Card>

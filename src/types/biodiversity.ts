@@ -1,3 +1,15 @@
+export interface BiodiversityObservation {
+  observerName?: string;
+  observerInstitution?: string;
+  observationMethod?: string;
+  originalUrl?: string;
+  exactLatitude?: number;
+  exactLongitude?: number;
+  locationName?: string;
+  date: string;
+  source: 'gbif' | 'inaturalist' | 'ebird';
+}
+
 export interface BiodiversitySpecies {
   id: string;
   scientificName: string;
@@ -11,6 +23,7 @@ export interface BiodiversitySpecies {
   conservationStatus?: string;
   confidence?: 'high' | 'medium' | 'low';
   confirmedSources?: number;
+  attributions: BiodiversityObservation[];
 }
 
 export interface BiodiversityHotspot {

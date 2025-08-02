@@ -13,6 +13,18 @@ interface BiodiversityQuery {
   dateFilter?: 'recent' | 'medium';
 }
 
+interface BiodiversityObservation {
+  observerName?: string;
+  observerInstitution?: string;
+  observationMethod?: string;
+  originalUrl?: string;
+  exactLatitude?: number;
+  exactLongitude?: number;
+  locationName?: string;
+  date: string;
+  source: 'gbif' | 'inaturalist' | 'ebird';
+}
+
 interface BiodiversitySpecies {
   id: string;
   scientificName: string;
@@ -26,6 +38,7 @@ interface BiodiversitySpecies {
   conservationStatus?: string;
   confidence?: 'high' | 'medium' | 'low';
   confirmedSources?: number;
+  attributions: BiodiversityObservation[];
 }
 
 interface BiodiversityData {
@@ -99,7 +112,18 @@ async function fetchGBIFData(lat: number, lon: number, radius: number, dateFilte
       lastSeen: item.eventDate || item.dateIdentified || new Date().toISOString().split('T')[0],
       photos: item.media?.filter((m: any) => m.type === 'StillImage')?.map((m: any) => m.identifier) || [],
       source: 'gbif' as const,
-      conservationStatus: item.iucnRedListCategory
+      conservationStatus: item.iucnRedListCategory,
+      attributions: [{
+        observerName: item.recordedBy || 'Anonyme',
+        observerInstitution: item.institutionCode || item.collectionCode || 'GBIF',
+        observationMethod: item.basisOfRecord || 'Observation',
+        originalUrl: `https://www.gbif.org/occurrence/${item.key}`,
+        exactLatitude: item.decimalLatitude,
+        exactLongitude: item.decimalLongitude,
+        locationName: item.locality || item.stateProvince || item.country,
+        date: item.eventDate || item.dateIdentified || new Date().toISOString().split('T')[0],
+        source: 'gbif' as const
+      }]
     }));
   } catch (error) {
     console.error('Error fetching GBIF data:', error);
@@ -146,7 +170,18 @@ async function fetchINaturalistData(lat: number, lon: number, radius: number, da
       lastSeen: item.observed_on || item.created_at?.split('T')[0] || new Date().toISOString().split('T')[0],
       photos: item.photos?.map((p: any) => p.url) || [],
       source: 'inaturalist' as const,
-      conservationStatus: item.taxon?.conservation_status?.status
+      conservationStatus: item.taxon?.conservation_status?.status,
+      attributions: [{
+        observerName: item.user?.name || item.user?.login || 'Anonyme',
+        observerInstitution: 'iNaturalist Community',
+        observationMethod: item.quality_grade === 'research' ? 'Observation validée' : 'Observation',
+        originalUrl: `https://www.inaturalist.org/observations/${item.id}`,
+        exactLatitude: item.geojson?.coordinates?.[1] || item.location?.[0],
+        exactLongitude: item.geojson?.coordinates?.[0] || item.location?.[1],
+        locationName: item.place_guess || 'Localisation inconnue',
+        date: item.observed_on || item.created_at?.split('T')[0] || new Date().toISOString().split('T')[0],
+        source: 'inaturalist' as const
+      }]
     }));
   } catch (error) {
     console.error('Error fetching iNaturalist data:', error);
@@ -187,7 +222,18 @@ async function fetchEBirdData(lat: number, lon: number, radius: number, dateFilt
       observations: item.howMany || 1,
       lastSeen: item.obsDt || new Date().toISOString().split('T')[0],
       photos: [],
-      source: 'ebird' as const
+      source: 'ebird' as const,
+      attributions: [{
+        observerName: item.userDisplayName || 'Observateur eBird',
+        observerInstitution: 'eBird/Cornell Lab',
+        observationMethod: 'Observation ornithologique',
+        originalUrl: item.hasRichMedia ? `https://ebird.org/checklist/${item.subId}` : undefined,
+        exactLatitude: item.lat,
+        exactLongitude: item.lng,
+        locationName: item.locName || 'Localisation inconnue',
+        date: item.obsDt || new Date().toISOString().split('T')[0],
+        source: 'ebird' as const
+      }]
     }));
   } catch (error) {
     console.error('Error fetching eBird data:', error);
@@ -225,6 +271,9 @@ function aggregateSpeciesData(allSpecies: BiodiversitySpecies[]): BiodiversitySp
       if (species.photos) {
         existing.photos = [...(existing.photos || []), ...species.photos];
       }
+      
+      // Merge attributions
+      existing.attributions = [...existing.attributions, ...species.attributions];
     } else {
       const extendedSpecies = { 
         ...species, 
