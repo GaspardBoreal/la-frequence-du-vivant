@@ -207,18 +207,25 @@ const BioDivSubSection: React.FC<BioDivSubSectionProps> = ({ marche, theme }) =>
       }
     };
 
-    const hasPhotos = species.photos && species.photos.length > 0;
-    const primaryPhoto = hasPhotos ? species.photos[0] : null;
+    // Fonction pour vérifier si c'est une vraie photo ou juste un SVG généré
+    const isRealPhoto = (url: string) => {
+      return url && !url.startsWith('data:image/svg+xml');
+    };
+    
+    const realPhotos = species.photos?.filter(isRealPhoto) || [];
+    const hasRealPhotos = realPhotos.length > 0;
+    const primaryPhoto = hasRealPhotos ? realPhotos[0] : null;
     
     // 🔍 DEBUG pour comprendre pourquoi les images ne s'affichent pas
     console.log(`🔍 LISTE Species data:`, {
       name: species.commonName,
       scientificName: species.scientificName,
       source: species.source,
-      photosArray: species.photos,
-      hasPhotos,
+      totalPhotos: species.photos?.length || 0,
+      realPhotosCount: realPhotos.length,
+      hasRealPhotos,
       firstPhoto: primaryPhoto,
-      photosLength: species.photos?.length || 0
+      isSvgIcon: species.photos?.[0]?.startsWith('data:image/svg+xml') || false
     });
     
     // Fonction pour optimiser la qualité d'image basée sur le domaine
@@ -264,7 +271,7 @@ const BioDivSubSection: React.FC<BioDivSubSectionProps> = ({ marche, theme }) =>
       >
         <div className="flex flex-row p-3 gap-3">
           {/* Image compacte à gauche */}
-          {primaryPhoto && (
+          {hasRealPhotos && primaryPhoto && (
             <div className="relative w-16 h-16 flex-shrink-0">
               <img
                 src={getOptimizedImageUrl(primaryPhoto, 'small')}
@@ -292,8 +299,8 @@ const BioDivSubSection: React.FC<BioDivSubSectionProps> = ({ marche, theme }) =>
             </div>
           )}
           
-          {/* Placeholder si pas de photo */}
-          {!primaryPhoto && (
+          {/* Placeholder si pas de vraie photo */}
+          {!hasRealPhotos && (
             <div className="w-16 h-16 flex-shrink-0 bg-muted/30 rounded-lg flex items-center justify-center">
               {getKingdomIcon(species.kingdom)}
             </div>
@@ -349,7 +356,7 @@ const BioDivSubSection: React.FC<BioDivSubSectionProps> = ({ marche, theme }) =>
                        {/* Layout en deux colonnes avec proportions 60/40 */}
                        <div className="grid grid-cols-5 gap-6">
                          {/* Colonne gauche - Image principale (60%) */}
-                         {hasPhotos && (
+                         {hasRealPhotos && (
                            <div className="col-span-3 space-y-4">
                              <div className="relative w-full h-[400px] rounded-lg overflow-hidden bg-white border">
                                <img 
