@@ -54,7 +54,14 @@ const BioDivSubSection: React.FC<BioDivSubSectionProps> = ({ marche, theme }) =>
     totalSpeciesInData: biodiversityData?.species?.length || 0,
     totalInSummary: biodiversityData?.summary?.totalSpecies || 0,
     methodologyRadius: biodiversityData?.methodology?.radius,
-    sources: biodiversityData?.methodology?.sources
+    sources: biodiversityData?.methodology?.sources,
+    sampleKingdoms: biodiversityData?.species?.slice(0, 5).map(s => ({ name: s.scientificName, kingdom: s.kingdom })),
+    categoryStats: {
+      all: biodiversityData?.species?.length || 0,
+      flora: biodiversityData?.species?.filter(s => s.kingdom === 'Plantae')?.length || 0,
+      fauna: biodiversityData?.species?.filter(s => s.kingdom === 'Animalia')?.length || 0,
+      other: biodiversityData?.species?.filter(s => s.kingdom && s.kingdom !== 'Plantae' && s.kingdom !== 'Animalia')?.length || 0
+    }
   });
 
   // Extraction et agrégation des contributeurs
