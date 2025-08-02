@@ -269,36 +269,33 @@ export const BiodiversityMap: React.FC<BiodiversityMapProps> = ({
               <Popup>
                 <div className="space-y-2 min-w-[200px]">
                   <h4 className="font-semibold">{cluster.count} espèce{cluster.count > 1 ? 's' : ''}</h4>
-                     <div className="space-y-2">
-                      {cluster.species.slice(0, 3).map(species => {
-                        console.log('Vue liste - Espèce:', species.commonName, 'Photos:', species.photos);
-                        return (
-                          <div key={species.id} className="text-sm flex gap-2 items-center">
-                            {species.photos?.[0] ? (
-                              <img
-                                src={species.photos[0]}
-                                alt={species.commonName}
-                                className="w-6 h-6 object-cover rounded border"
-                                loading="lazy"
-                                onLoad={() => console.log('Photo chargée avec succès:', species.photos[0])}
-                                onError={(e) => {
-                                  const target = e.target as HTMLImageElement;
-                                  console.log('Erreur chargement photo:', target.src);
-                                  target.style.display = 'none';
-                                }}
-                              />
-                            ) : (
-                              <div className="w-6 h-6 bg-muted rounded border flex items-center justify-center">
-                                <span className="text-[8px] text-muted-foreground">?</span>
-                              </div>
-                            )}
-                            <div className="flex-1">
-                              <div className="font-medium">{species.commonName}</div>
-                              <div className="text-muted-foreground italic text-xs">{species.scientificName}</div>
-                            </div>
+                  <div className="space-y-2">
+                    {cluster.species.slice(0, 3).map(species => (
+                      <div key={species.id} className="text-sm flex gap-2 items-center">
+                        {species.photos?.[0] ? (
+                          <img
+                            src={species.photos[0]}
+                            alt={species.commonName}
+                            className="w-6 h-6 object-cover rounded border"
+                            loading="lazy"
+                            onError={(e) => {
+                              const target = e.target as HTMLImageElement;
+                              target.style.display = 'none';
+                            }}
+                          />
+                        ) : (
+                          <div className="w-6 h-6 bg-muted rounded border flex items-center justify-center">
+                            <span className="text-[8px] text-muted-foreground">
+                              {species.source === 'ebird' ? '🐦' : '?'}
+                            </span>
                           </div>
-                        );
-                      })}
+                        )}
+                        <div className="flex-1">
+                          <div className="font-medium">{species.commonName}</div>
+                          <div className="text-muted-foreground italic text-xs">{species.scientificName}</div>
+                        </div>
+                      </div>
+                    ))}
                     {cluster.species.length > 3 && (
                       <div className="text-xs text-muted-foreground">
                         +{cluster.species.length - 3} autres espèces
@@ -351,28 +348,36 @@ export const BiodiversityMap: React.FC<BiodiversityMapProps> = ({
                       animate={{ opacity: 1, y: 0 }}
                       className="border rounded-lg p-4 hover:bg-muted/50 transition-colors"
                     >
-                        <div className="flex gap-4">
-                          {species.photos?.[0] ? (
-                            <div className="w-20 h-20 flex-shrink-0">
-                              <img
-                                src={species.photos[0]}
-                                alt={species.commonName}
-                                className="w-full h-full object-cover rounded-lg border"
-                                loading="lazy"
-                                onLoad={() => console.log('Photo fiche chargée:', species.photos[0])}
-                                onError={(e) => {
-                                  const target = e.target as HTMLImageElement;
-                                  console.log('Erreur photo fiche:', target.src);
-                                  target.style.display = 'none';
-                                }}
-                              />
+                      <div className="flex gap-4">
+                        {species.photos?.[0] ? (
+                          <div className="w-20 h-20 flex-shrink-0">
+                            <img
+                              src={species.photos[0]}
+                              alt={species.commonName}
+                              className="w-full h-full object-cover rounded-lg border"
+                              loading="lazy"
+                              onError={(e) => {
+                                const target = e.target as HTMLImageElement;
+                                target.style.display = 'none';
+                                // Afficher le fallback
+                                const fallback = target.nextElementSibling as HTMLElement;
+                                if (fallback) fallback.style.display = 'flex';
+                              }}
+                            />
+                            <div className="w-full h-full bg-muted rounded-lg border items-center justify-center" style={{ display: 'none' }}>
+                              <span className="text-xs text-muted-foreground">
+                                {species.source === 'ebird' ? '🐦' : 'Pas d\'image'}
+                              </span>
                             </div>
-                          ) : (
-                            <div className="w-20 h-20 flex-shrink-0 bg-muted rounded-lg border flex items-center justify-center">
-                              <span className="text-xs text-muted-foreground">Pas d'image</span>
-                            </div>
-                          )}
-                        
+                          </div>
+                        ) : (
+                          <div className="w-20 h-20 flex-shrink-0 bg-muted rounded-lg border flex items-center justify-center">
+                            <span className="text-xs text-muted-foreground">
+                              {species.source === 'ebird' ? '🐦' : 'Pas d\'image'}
+                            </span>
+                          </div>
+                        )}
+                      
                         <div className="flex-1 space-y-2">
                           <div>
                             <h4 className="font-semibold">{species.commonName}</h4>
@@ -391,43 +396,38 @@ export const BiodiversityMap: React.FC<BiodiversityMapProps> = ({
                             </Badge>
                           </div>
                           
-                            {species.attributions && species.attributions.length > 0 ? (
-                              <div className="space-y-1">
-                                {species.attributions.slice(0, 2).map((attribution, idx) => {
-                                  console.log('Attribution:', attribution);
-                                  return (
-                                    <div key={idx} className="text-xs text-muted-foreground flex items-center gap-2">
-                                      <User className="h-3 w-3" />
-                                      <span className="font-medium">
-                                        {attribution.observerName && attribution.observerName !== 'Observateur eBird' 
-                                          ? attribution.observerName 
-                                          : attribution.observerInstitution || 'Anonyme'}
-                                      </span>
-                                      {attribution.date && (
-                                        <>
-                                          <Calendar className="h-3 w-3 ml-2" />
-                                          {new Date(attribution.date).toLocaleDateString('fr-FR')}
-                                        </>
-                                      )}
-                                      {attribution.originalUrl && (
-                                        <Button
-                                          variant="ghost"
-                                          size="sm"
-                                          className="h-auto p-0 text-xs hover:text-primary"
-                                          onClick={() => window.open(attribution.originalUrl, '_blank')}
-                                        >
-                                          <ExternalLink className="h-3 w-3" />
-                                        </Button>
-                                      )}
-                                    </div>
-                                  );
-                                })}
-                              </div>
-                            ) : (
-                              <div className="text-xs text-muted-foreground">
-                                Aucun contributeur identifié
-                              </div>
-                            )}
+                          {species.attributions && species.attributions.length > 0 ? (
+                            <div className="space-y-1">
+                              {species.attributions.slice(0, 2).map((attribution, idx) => (
+                                <div key={idx} className="text-xs text-muted-foreground flex items-center gap-2">
+                                  <User className="h-3 w-3" />
+                                  <span className="font-medium">
+                                    {attribution.observerName || 'Observateur anonyme'}
+                                  </span>
+                                  {attribution.date && (
+                                    <>
+                                      <Calendar className="h-3 w-3 ml-2" />
+                                      {new Date(attribution.date).toLocaleDateString('fr-FR')}
+                                    </>
+                                  )}
+                                  {attribution.originalUrl && (
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      className="h-auto p-0 text-xs hover:text-primary"
+                                      onClick={() => window.open(attribution.originalUrl, '_blank')}
+                                    >
+                                      <ExternalLink className="h-3 w-3" />
+                                    </Button>
+                                  )}
+                                </div>
+                              ))}
+                            </div>
+                          ) : (
+                            <div className="text-xs text-muted-foreground">
+                              Aucun contributeur identifié
+                            </div>
+                          )}
                         </div>
                       </div>
                     </motion.div>
