@@ -171,8 +171,8 @@ async function fetchINaturalistData(lat: number, lon: number, radius: number, da
       startDate = new Date(now.getFullYear() - 5, now.getMonth(), now.getDate()).toISOString().split('T')[0];
     }
     
-    // Augmenter le rayon de recherche pour iNaturalist (minimum 5km pour avoir des résultats)
-    const searchRadius = Math.max(radius * 10, 5); // Multiplier par 10, minimum 5km
+    // Utiliser le rayon fourni directement, avec minimum de 1km pour iNaturalist
+    const searchRadius = Math.max(radius, 1); // Minimum 1km pour avoir des résultats
     
     const params = new URLSearchParams({
       'lat': lat.toString(),

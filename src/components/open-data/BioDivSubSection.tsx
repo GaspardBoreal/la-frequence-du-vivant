@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Leaf, ExternalLink, TreePine, Flower, Bird, Loader2, AlertCircle, Camera, Calendar, Globe, MapPin, Info, CheckCircle, Clock, User, Building, Eye, Users, Filter, Database, ZoomIn } from 'lucide-react';
 import { Button } from '../ui/button';
@@ -10,6 +10,7 @@ import { RadioGroup, RadioGroupItem } from '../ui/radio-group';
 import { Label } from '../ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '../ui/dialog';
+import { Slider } from '../ui/slider';
 import { MarcheTechnoSensible } from '../../utils/googleSheetsApi';
 import { RegionalTheme } from '../../utils/regionalThemes';
 import { useBiodiversityData } from '../../hooks/useBiodiversityData';
@@ -24,11 +25,22 @@ interface BioDivSubSectionProps {
 const BioDivSubSection: React.FC<BioDivSubSectionProps> = ({ marche, theme }) => {
   const [dateFilter, setDateFilter] = useState<'recent' | 'medium'>('recent');
   const [selectedContributor, setSelectedContributor] = useState<string>('all');
+  const [searchRadius, setSearchRadius] = useState<number>(0.5); // Valeur par défaut: 500m
+  const [debouncedRadius, setDebouncedRadius] = useState<number>(0.5);
+  
+  // Debounce du rayon de recherche pour éviter trop d'appels API
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedRadius(searchRadius);
+    }, 800); // Attendre 800ms après le dernier changement
+    
+    return () => clearTimeout(timer);
+  }, [searchRadius]);
   
   const { data: biodiversityData, isLoading, error } = useBiodiversityData({
     latitude: marche.latitude,
     longitude: marche.longitude,
-    radius: 0.5,
+    radius: debouncedRadius,
     dateFilter
   });
 
@@ -616,9 +628,9 @@ const BioDivSubSection: React.FC<BioDivSubSectionProps> = ({ marche, theme }) =>
                     <p className="text-sm text-muted-foreground">
                       {marche.ville}, {marche.region}
                     </p>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      Rayon: 500m • Coordonnées: {marche.latitude}, {marche.longitude}
-                    </p>
+                     <p className="text-xs text-muted-foreground mt-1">
+                       Rayon: {debouncedRadius === 0.5 ? '500m' : `${debouncedRadius}km`} • Coordonnées: {marche.latitude}, {marche.longitude}
+                     </p>
                   </div>
                   <div>
                     <h4 className="font-semibold mb-2">Sources de données</h4>
@@ -736,6 +748,60 @@ const BioDivSubSection: React.FC<BioDivSubSectionProps> = ({ marche, theme }) =>
               </motion.div>
             )}
 
+            {/* Filtre par rayon de recherche */}
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3, delay: 0.1 }}
+            >
+              <Card className="border border-white/20 bg-white/5 backdrop-blur-sm">
+                <CardContent className="p-4">
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <ZoomIn className="h-4 w-4 text-primary" />
+                        <span className="text-sm font-medium text-foreground">Rayon de recherche:</span>
+                        <Badge variant="secondary" className="bg-primary/10 text-primary text-xs px-2 py-1">
+                          {searchRadius === 0.5 ? '500m' : `${searchRadius}km`}
+                        </Badge>
+                      </div>
+                      {debouncedRadius !== searchRadius && (
+                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                          <Loader2 className="h-3 w-3 animate-spin" />
+                          Mise à jour...
+                        </div>
+                      )}
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <Slider
+                        value={[searchRadius]}
+                        onValueChange={(value) => setSearchRadius(value[0])}
+                        min={0.5}
+                        max={5}
+                        step={0.5}
+                        className="w-full"
+                      />
+                      <div className="flex justify-between text-xs text-muted-foreground">
+                        <span>500m</span>
+                        <span>1km</span>
+                        <span>2km</span>
+                        <span>3km</span>
+                        <span>4km</span>
+                        <span>5km</span>
+                      </div>
+                    </div>
+                    
+                    {filteredSpecies && (
+                      <div className="text-sm text-muted-foreground">
+                        <span className="font-medium text-foreground">{filteredSpecies.length}</span> espèce{filteredSpecies.length > 1 ? 's' : ''} trouvée{filteredSpecies.length > 1 ? 's' : ''} dans un rayon de {searchRadius === 0.5 ? '500m' : `${searchRadius}km`}
+                      </div>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            </motion.div>
+
             {isLoading ? (
               <div className="flex items-center justify-center py-12">
                 <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -843,7 +909,7 @@ const BioDivSubSection: React.FC<BioDivSubSectionProps> = ({ marche, theme }) =>
                       <li>• Les données peuvent être incomplètes en zone urbaine dense</li>
                       <li>• Certaines espèces communes peuvent être sous-représentées</li>
                       <li>• Les observations dépendent de l'activité des contributeurs</li>
-                      <li>• Rayon réduit à 500m pour limiter les faux positifs urbains</li>
+                      <li>• Rayon modifiable de 500m à 5km selon la zone géographique</li>
                     </ul>
                   </div>
                 </CardContent>
