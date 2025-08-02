@@ -210,6 +210,17 @@ const BioDivSubSection: React.FC<BioDivSubSectionProps> = ({ marche, theme }) =>
     const hasPhotos = species.photos && species.photos.length > 0;
     const primaryPhoto = hasPhotos ? species.photos[0] : null;
     
+    // 🔍 DEBUG pour comprendre pourquoi les images ne s'affichent pas
+    console.log(`🔍 LISTE Species data:`, {
+      name: species.commonName,
+      scientificName: species.scientificName,
+      source: species.source,
+      photosArray: species.photos,
+      hasPhotos,
+      firstPhoto: primaryPhoto,
+      photosLength: species.photos?.length || 0
+    });
+    
     // Fonction pour optimiser la qualité d'image basée sur le domaine
     const getOptimizedImageUrl = (url: string, size: 'small' | 'medium' | 'large' = 'medium') => {
       if (!url) return url;
