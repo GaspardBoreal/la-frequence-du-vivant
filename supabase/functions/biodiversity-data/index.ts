@@ -493,14 +493,13 @@ async function fetchEBirdData(lat: number, lon: number, radius: number, dateFilt
     // Traitement des données avec récupération des photos
     const processedData = await Promise.all(
       data.map(async (item: any, index: number) => {
-        // Tentative de récupération des photos eBird si hasRichMedia est true
+        // Récupération des photos eBird pour toutes les espèces (pas seulement hasRichMedia)
         let photos: string[] = [];
-        if (item.hasRichMedia && apiKey) {
-          try {
-            photos = await fetchEBirdPhotos(item.speciesCode, item.subId, apiKey);
-          } catch (error) {
-            console.log(`⚠️ Could not fetch photos for ${item.comName}:`, error);
-          }
+        try {
+          photos = await fetchEBirdPhotos(item.speciesCode, item.subId, apiKey || '');
+          console.log(`📸 Photos fetched for ${item.comName}: ${photos.length} photos`);
+        } catch (error) {
+          console.log(`⚠️ Could not fetch photos for ${item.comName}:`, error);
         }
 
         // Debug: afficher les détails de l'observateur
