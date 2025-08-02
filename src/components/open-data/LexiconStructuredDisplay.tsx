@@ -545,7 +545,7 @@ const LexiconStructuredDisplay: React.FC<LexiconStructuredDisplayProps> = ({ dat
                               ease: "easeInOut"
                             }}
                           >
-                            Découvrir l'équipe ✨
+                            Découvrir ✨
                           </motion.span>
                         </Button>
                       </motion.div>
