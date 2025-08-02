@@ -1,8 +1,9 @@
 
 import React from 'react';
 import { motion } from 'framer-motion';
-import { BookOpen, ExternalLink, Loader2, AlertCircle } from 'lucide-react';
+import { BookOpen, ExternalLink, Loader2, AlertCircle, MapPin } from 'lucide-react';
 import { Button } from '../ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { MarcheTechnoSensible } from '../../utils/googleSheetsApi';
 import { RegionalTheme } from '../../utils/regionalThemes';
 import { useLexiconData } from '../../hooks/useLexiconData';
@@ -14,10 +15,28 @@ interface LexiconSubSectionProps {
 }
 
 const LexiconSubSection: React.FC<LexiconSubSectionProps> = ({ marche, theme }) => {
+  console.log(`🔍 [LEXICON DEBUG] Marché reçu:`, marche);
+  console.log(`🔍 [LEXICON DEBUG] Coordonnées: lat=${marche.latitude}, lng=${marche.longitude}`);
+  
   const { data: lexiconResponse, isLoading, error, isError } = useLexiconData(
     marche.latitude, 
     marche.longitude
   );
+
+  console.log(`🔍 [LEXICON DEBUG] État de la requête:`, { 
+    isLoading, 
+    isError, 
+    hasData: !!lexiconResponse,
+    success: lexiconResponse?.success 
+  });
+  
+  if (lexiconResponse) {
+    console.log(`🔍 [LEXICON DEBUG] Réponse complète:`, lexiconResponse);
+  }
+  
+  if (error) {
+    console.log(`🔍 [LEXICON DEBUG] Erreur complète:`, error);
+  }
 
   const openLexiconPage = () => {
     const url = `https://lexicon.osfarm.org/tools/parcel-identifier?latitude=${marche.latitude}&longitude=${marche.longitude}`;
@@ -50,6 +69,24 @@ const LexiconSubSection: React.FC<LexiconSubSectionProps> = ({ marche, theme }) 
             </p>
           </div>
 
+          {/* Informations de débogage */}
+          <Card className="bg-blue-50 border-blue-200">
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center gap-2 text-blue-700 text-lg">
+                <MapPin className="h-5 w-5" />
+                Informations de débogage
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="text-sm space-y-2">
+              <p><strong>Coordonnées utilisées:</strong> {marche.latitude}, {marche.longitude}</p>
+              <p><strong>État de la requête:</strong> {isLoading ? 'Chargement...' : isError ? 'Erreur' : 'Terminée'}</p>
+              <p><strong>Données reçues:</strong> {lexiconResponse?.success ? 'Oui' : 'Non'}</p>
+              {lexiconResponse && (
+                <p><strong>Type de données:</strong> {typeof lexiconResponse.data}</p>
+              )}
+            </CardContent>
+          </Card>
+
           {/* État de chargement */}
           {isLoading && (
             <motion.div
@@ -76,20 +113,36 @@ const LexiconSubSection: React.FC<LexiconSubSectionProps> = ({ marche, theme }) 
               <p className="text-red-600 text-sm mb-4">
                 {error?.message || 'Impossible de charger les données LEXICON pour cette localisation.'}
               </p>
+              <div className="text-xs text-red-500 bg-red-100 p-3 rounded font-mono">
+                Détails techniques: {JSON.stringify(error, null, 2)}
+              </div>
             </motion.div>
           )}
 
-          {/* Affichage structuré des données */}
-          {lexiconResponse?.success && lexiconResponse.data && (
+          {/* Affichage structuré des données - Condition moins restrictive */}
+          {lexiconResponse && (
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.3 }}
             >
-              <LexiconStructuredDisplay 
-                data={lexiconResponse.data} 
-                coordinates={lexiconResponse.coordinates!}
-              />
+              {lexiconResponse.success && lexiconResponse.data ? (
+                <LexiconStructuredDisplay 
+                  data={lexiconResponse.data} 
+                  coordinates={lexiconResponse.coordinates!}
+                />
+              ) : (
+                <Card className="bg-yellow-50 border-yellow-200">
+                  <CardContent className="p-6 text-center">
+                    <p className="text-yellow-800 font-medium mb-2">
+                      Réponse reçue mais données non structurées
+                    </p>
+                    <div className="text-xs text-yellow-700 bg-yellow-100 p-3 rounded font-mono max-h-40 overflow-auto">
+                      {JSON.stringify(lexiconResponse, null, 2)}
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
             </motion.div>
           )}
 

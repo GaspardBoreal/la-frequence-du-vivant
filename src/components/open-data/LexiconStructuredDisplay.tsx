@@ -16,9 +16,12 @@ const LexiconStructuredDisplay: React.FC<LexiconStructuredDisplayProps> = ({ dat
   const [weatherOpen, setWeatherOpen] = useState(false);
   const [transactionsOpen, setTransactionsOpen] = useState(false);
 
+  console.log(`🎯 [LEXICON DISPLAY] Données reçues pour affichage:`, data);
+
   // Extraction des données cadastrales depuis les propriétés existantes
   const extractCadastralData = (data: LexiconParcelData) => {
-    const parcelId = data.parcel_id || '';
+    const parcelId = data.parcel_id || data.id || data.cadastral_id || data.identifiant_cadastral || '';
+    console.log(`🎯 [CADASTRAL] Extraction des données cadastrales depuis:`, parcelId);
     
     // Tentative d'extraction des informations cadastrales depuis parcel_id
     const extractFromParcelId = (id: string) => {
@@ -40,17 +43,26 @@ const LexiconStructuredDisplay: React.FC<LexiconStructuredDisplayProps> = ({ dat
 
     const extracted = extractFromParcelId(parcelId);
     
-    return {
-      pays: data.pays || 'France',
-      ville: data.ville || data.commune || 'Non renseigné',
-      code_commune: data.code_commune || extracted.code_commune,
-      code_postal: data.code_postal || 'Non renseigné',
-      identifiant_cadastral: data.identifiant_cadastral || parcelId || 'Non renseigné',
-      prefixe: data.prefixe || extracted.prefixe,
+    // Calcul de la superficie en m²
+    const superficie_m2 = data.superficie_m2 || 
+                         (data.surface_ha ? Math.round(data.surface_ha * 10000) : null) ||
+                         (data.area_ha ? Math.round(data.area_ha * 10000) : null) ||
+                         data.superficie;
+    
+    const result = {
+      pays: data.pays || data.country || 'France',
+      ville: data.ville || data.city || data.commune || 'Non renseigné',
+      code_commune: data.code_commune || data.commune_code || extracted.code_commune,
+      code_postal: data.code_postal || data.postal_code || 'Non renseigné',
+      identifiant_cadastral: data.identifiant_cadastral || data.cadastral_id || parcelId || 'Non renseigné',
+      prefixe: data.prefixe || data.prefix || extracted.prefixe,
       section: data.section || extracted.section,
-      numero: data.numero || extracted.numero,
-      superficie_m2: data.superficie_m2 || (data.surface_ha ? Math.round(data.surface_ha * 10000) : null)
+      numero: data.numero || data.number || extracted.numero,
+      superficie_m2: superficie_m2
     };
+    
+    console.log(`🎯 [CADASTRAL] Données extraites:`, result);
+    return result;
   };
 
   const cadastralData = extractCadastralData(data);
@@ -218,6 +230,26 @@ const LexiconStructuredDisplay: React.FC<LexiconStructuredDisplayProps> = ({ dat
               </CardContent>
             </CollapsibleContent>
           </Collapsible>
+        </Card>
+      </motion.div>
+
+      {/* Section de débogage des données brutes */}
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.5 }}
+      >
+        <Card className="border-gray-200 bg-gray-50">
+          <CardHeader className="pb-4">
+            <CardTitle className="text-sm font-medium text-gray-600">
+              Données brutes (debug)
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-xs text-gray-700 bg-gray-100 p-3 rounded font-mono max-h-40 overflow-auto">
+              {JSON.stringify(data, null, 2)}
+            </div>
+          </CardContent>
         </Card>
       </motion.div>
     </div>
