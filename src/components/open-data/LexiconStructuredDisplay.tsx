@@ -7,6 +7,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '../ui/colla
 import { Button } from '../ui/button';
 import { LexiconParcelData } from '../../types/lexicon';
 import WeatherVisualization from './WeatherVisualization';
+import TransactionVisualization from './TransactionVisualization';
 
 interface LexiconStructuredDisplayProps {
   data: LexiconParcelData;
@@ -355,47 +356,55 @@ const LexiconStructuredDisplay: React.FC<LexiconStructuredDisplayProps> = ({ dat
             </CollapsibleTrigger>
             <CollapsibleContent>
               <CardContent className="pt-0">
-                <motion.div 
-                  className="bg-white/70 backdrop-blur-sm rounded-xl p-6 text-center border border-emerald-100 shadow-sm"
-                  initial={{ scale: 0.95, opacity: 0 }}
-                  animate={{ scale: 1, opacity: 1 }}
-                  transition={{ duration: 0.3 }}
-                >
-                  <motion.div
-                    initial={{ y: 10, opacity: 0 }}
-                    animate={{ y: 0, opacity: 1 }}
-                    transition={{ delay: 0.1 }}
+                {/* Intégration de la visualisation des transactions avancée */}
+                {data._raw?.transactions || true ? (
+                  <TransactionVisualization 
+                    transactionData={data._raw?.transactions || {}}
+                    coordinates={coordinates}
+                  />
+                ) : (
+                  <motion.div 
+                    className="bg-white/70 backdrop-blur-sm rounded-xl p-6 text-center border border-emerald-100 shadow-sm"
+                    initial={{ scale: 0.95, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    transition={{ duration: 0.3 }}
                   >
-                    <div className="flex justify-center mb-4">
-                      <div className="flex gap-2 items-end">
-                        {[...Array(5)].map((_, i) => (
-                          <motion.div
-                            key={i}
-                            className="bg-emerald-300 rounded-t"
-                            style={{ 
-                              width: '12px', 
-                              height: `${(i + 1) * 8 + 16}px` 
-                            }}
-                            animate={{ 
-                              scaleY: [1, 1.2, 1],
-                            }}
-                            transition={{ 
-                              duration: 2,
-                              repeat: Infinity,
-                              delay: i * 0.1
-                            }}
-                          />
-                        ))}
+                    <motion.div
+                      initial={{ y: 10, opacity: 0 }}
+                      animate={{ y: 0, opacity: 1 }}
+                      transition={{ delay: 0.1 }}
+                    >
+                      <div className="flex justify-center mb-4">
+                        <div className="flex gap-2 items-end">
+                          {[...Array(5)].map((_, i) => (
+                            <motion.div
+                              key={i}
+                              className="bg-emerald-300 rounded-t"
+                              style={{ 
+                                width: '12px', 
+                                height: `${(i + 1) * 8 + 16}px` 
+                              }}
+                              animate={{ 
+                                scaleY: [1, 1.2, 1],
+                              }}
+                              transition={{ 
+                                duration: 2,
+                                repeat: Infinity,
+                                delay: i * 0.1
+                              }}
+                            />
+                          ))}
+                        </div>
                       </div>
-                    </div>
-                    <p className="text-emerald-800 font-medium mb-2">
-                      📊 Données transactionnelles en cours d'intégration
-                    </p>
-                    <p className="text-sm text-emerald-700">
-                      L'historique des ventes et prix au m² sera bientôt disponible pour une analyse complète du marché local.
-                    </p>
+                      <p className="text-emerald-800 font-medium mb-2">
+                        📊 Données transactionnelles en cours d'intégration
+                      </p>
+                      <p className="text-sm text-emerald-700">
+                        L'historique des ventes et prix au m² sera bientôt disponible pour une analyse complète du marché local.
+                      </p>
+                    </motion.div>
                   </motion.div>
-                </motion.div>
+                )}
               </CardContent>
             </CollapsibleContent>
           </Collapsible>
