@@ -28,26 +28,26 @@ const BioDivSubSection: React.FC<BioDivSubSectionProps> = ({ marche, theme }) =>
   });
 
   const SpeciesCard: React.FC<{ species: BiodiversitySpecies }> = ({ species }) => (
-    <Card className="hover:shadow-lg transition-shadow">
+    <Card className="gaspard-glass border border-white/20 backdrop-blur-md bg-white/5 hover:bg-white/10 hover:border-white/30 transition-all duration-300">
       <CardHeader className="pb-3">
         <div className="flex items-start justify-between">
           <div className="flex-1">
-            <CardTitle className="text-lg font-semibold text-gray-800 mb-1">
+            <CardTitle className="text-lg font-semibold text-foreground mb-1">
               {species.commonName}
             </CardTitle>
-            <p className="text-sm italic text-gray-600">{species.scientificName}</p>
+            <p className="text-sm italic text-muted-foreground">{species.scientificName}</p>
             <div className="flex items-center gap-2 mt-2">
-              <Badge variant="outline" className="text-xs">
+              <Badge variant="outline" className="text-xs border-white/20 bg-white/10 text-foreground">
                 {species.kingdom}
               </Badge>
-              <Badge variant="secondary" className="text-xs">
+              <Badge variant="secondary" className="text-xs bg-primary/20 text-primary border border-primary/30">
                 {species.source}
               </Badge>
             </div>
           </div>
           {species.photos && species.photos.length > 0 && (
             <div className="ml-3 flex-shrink-0">
-              <div className="w-16 h-16 rounded-lg overflow-hidden bg-gray-100">
+              <div className="w-16 h-16 rounded-lg overflow-hidden bg-white/10 border border-white/20">
                 <img 
                   src={species.photos[0]} 
                   alt={species.commonName}
@@ -59,16 +59,16 @@ const BioDivSubSection: React.FC<BioDivSubSectionProps> = ({ marche, theme }) =>
         </div>
       </CardHeader>
       <CardContent className="pt-0">
-        <div className="flex items-center justify-between text-sm text-gray-600">
+        <div className="flex items-center justify-between text-sm text-muted-foreground">
           <div className="flex items-center gap-1">
             <Calendar className="h-4 w-4" />
             <span>Vu le {new Date(species.lastSeen).toLocaleDateString('fr-FR')}</span>
           </div>
-          <span className="font-medium">{species.observations} obs.</span>
+          <span className="font-medium text-foreground">{species.observations} obs.</span>
         </div>
         {species.conservationStatus && (
           <div className="mt-2">
-            <Badge variant="destructive" className="text-xs">
+            <Badge variant="destructive" className="text-xs bg-destructive/20 text-destructive border border-destructive/30">
               {species.conservationStatus}
             </Badge>
           </div>
@@ -205,10 +205,10 @@ const BioDivSubSection: React.FC<BioDivSubSectionProps> = ({ marche, theme }) =>
 
               <TabsContent value="species" className="space-y-4">
                 <div className="flex items-center justify-between">
-                  <h4 className="text-lg font-semibold text-gray-800">
+                  <h4 className="text-lg font-semibold text-foreground">
                     Espèces observées ({biodiversityData.species.length})
                   </h4>
-                  <Badge variant="outline">
+                  <Badge variant="outline" className="border-white/20 bg-white/10 text-foreground">
                     Données GBIF, iNaturalist, eBird
                   </Badge>
                 </div>
