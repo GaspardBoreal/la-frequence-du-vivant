@@ -227,47 +227,77 @@ const BioDivSubSection: React.FC<BioDivSubSectionProps> = ({ marche, theme }) =>
                     </DialogHeader>
                     
                     <div className="space-y-6">
-                      {/* Galerie de photos */}
+                      {/* Galerie de photos améliorée */}
                       {hasPhotos && (
                         <div>
                           <h5 className="font-medium text-foreground mb-3 flex items-center gap-2">
                             <Camera className="h-4 w-4" />
                             Photos ({species.photos.length})
                           </h5>
-                          <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                            {species.photos.slice(0, 6).map((photo, index) => (
-                              <div key={index} className="aspect-square rounded-lg overflow-hidden cursor-pointer group">
-                                <img 
-                                  src={getOptimizedImageUrl(photo, 'medium')} 
-                                  alt={`${species.commonName} - Photo ${index + 1}`}
-                                  className="w-full h-full object-cover hover:scale-110 transition-transform duration-300"
-                                  style={{
-                                    imageRendering: '-webkit-optimize-contrast',
-                                    filter: 'contrast(1.05) brightness(1.02)',
-                                    willChange: 'transform',
-                                    objectFit: 'cover',
-                                    objectPosition: 'center'
-                                  }}
-                                  loading="lazy"
-                                  onError={(e) => {
-                                    const current = e.currentTarget;
-                                    if (current.src !== photo) {
-                                      current.src = photo;
-                                    } else {
-                                      current.style.display = 'none';
-                                    }
-                                  }}
-                                />
+                          
+                          {/* Première photo principale en grand format */}
+                          <div className="mb-4">
+                            <div className="relative rounded-lg overflow-hidden bg-muted/20 group cursor-pointer">
+                              <img 
+                                src={getOptimizedImageUrl(species.photos[0], 'large')} 
+                                alt={`${species.commonName} - Photo principale`}
+                                className="w-full h-auto max-h-96 object-contain hover:scale-105 transition-transform duration-300"
+                                style={{
+                                  imageRendering: '-webkit-optimize-contrast',
+                                  filter: 'contrast(1.05) brightness(1.02)',
+                                  willChange: 'transform'
+                                }}
+                                loading="eager"
+                                onError={(e) => {
+                                  const current = e.currentTarget;
+                                  if (current.src !== species.photos[0]) {
+                                    current.src = species.photos[0];
+                                  }
+                                }}
+                              />
+                              <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
+                                <ZoomIn className="h-8 w-8 text-white" />
                               </div>
-                            ))}
-                            {species.photos.length > 6 && (
-                              <div className="aspect-square rounded-lg bg-muted/50 flex items-center justify-center">
-                                <span className="text-sm text-muted-foreground">
-                                  +{species.photos.length - 6} photos
-                                </span>
-                              </div>
-                            )}
+                            </div>
                           </div>
+
+                          {/* Galerie de miniatures pour les autres photos */}
+                          {species.photos.length > 1 && (
+                            <div className="space-y-2">
+                              <h6 className="text-sm font-medium text-muted-foreground">Autres photos</h6>
+                              <div className="flex flex-wrap gap-2">
+                                {species.photos.slice(1, 8).map((photo, index) => (
+                                  <div key={index + 1} className="relative w-20 h-20 rounded-md overflow-hidden cursor-pointer group">
+                                    <img 
+                                      src={getOptimizedImageUrl(photo, 'medium')} 
+                                      alt={`${species.commonName} - Photo ${index + 2}`}
+                                      className="w-full h-full object-cover hover:scale-110 transition-transform duration-300"
+                                      style={{
+                                        imageRendering: '-webkit-optimize-contrast',
+                                        filter: 'contrast(1.05) brightness(1.02)',
+                                        willChange: 'transform'
+                                      }}
+                                      loading="lazy"
+                                      onError={(e) => {
+                                        const current = e.currentTarget;
+                                        if (current.src !== photo) {
+                                          current.src = photo;
+                                        }
+                                      }}
+                                    />
+                                    <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity duration-200" />
+                                  </div>
+                                ))}
+                                {species.photos.length > 8 && (
+                                  <div className="w-20 h-20 rounded-md bg-muted/50 flex items-center justify-center">
+                                    <span className="text-xs text-muted-foreground font-medium">
+                                      +{species.photos.length - 8}
+                                    </span>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          )}
                         </div>
                       )}
 
