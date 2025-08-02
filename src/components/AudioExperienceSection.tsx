@@ -204,7 +204,7 @@ const AudioExperienceSection: React.FC<AudioExperienceSectionProps> = ({ marche,
     <div className="space-y-12 pt-16">
       {/* Header Section */}
       <motion.div
-        className="text-center space-y-4"
+        className="text-center"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6 }}
@@ -213,12 +213,6 @@ const AudioExperienceSection: React.FC<AudioExperienceSectionProps> = ({ marche,
           <Waves className="h-10 w-10 text-purple-600" />
           Expérience Audio
         </h2>
-        <p className="text-gray-600 max-w-3xl mx-auto text-xl">
-          Découvrez les paysages sonores de <span className="font-semibold text-purple-600">{marche.ville}</span>
-        </p>
-        <p className="text-sm text-gray-500">
-          {audioFiles.length} fichier{audioFiles.length > 1 ? 's' : ''} audio disponible{audioFiles.length > 1 ? 's' : ''}
-        </p>
       </motion.div>
 
       {/* Audio Player Interface */}
