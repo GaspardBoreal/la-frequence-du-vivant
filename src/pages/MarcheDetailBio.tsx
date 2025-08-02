@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
@@ -8,7 +7,7 @@ import { toast } from 'sonner';
 import { ArrowLeft, ChevronLeft, ChevronRight } from 'lucide-react';
 
 import SEOHead from '../components/SEOHead';
-import MarcheHeroSection from '../components/MarcheHeroSection';
+import BioacousticHeroSection from '../components/BioacousticHeroSection';
 import SimplifiedMultiSensoryNavigation from '../components/SimplifiedMultiSensoryNavigation';
 import ImmersiveVisualSection from '../components/ImmersiveVisualSection';
 import AudioExperienceSection from '../components/AudioExperienceSection';
@@ -202,7 +201,7 @@ const MarcheDetailBio = () => {
           ogImage={marche.photos?.[0] || undefined}
         />
 
-        <MarcheHeroSection
+        <BioacousticHeroSection
           marche={marche}
           theme={theme}
           onBack={handleBack}
