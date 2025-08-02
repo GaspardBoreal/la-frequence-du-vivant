@@ -4,7 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import { HelmetProvider } from 'react-helmet-async';
 import { toast } from 'sonner';
-import { ArrowLeft, ChevronLeft, ChevronRight } from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
 
 import SEOHead from '../components/SEOHead';
 import BioacousticHeroSection from '../components/BioacousticHeroSection';
@@ -205,6 +205,9 @@ const MarcheDetailBio = () => {
           marche={marche}
           theme={theme}
           onBack={handleBack}
+          previousMarche={previousMarche}
+          nextMarche={nextMarche}
+          onNavigateToMarche={handleNavigateToMarche}
         />
 
         <div className="max-w-6xl mx-auto px-6">
@@ -217,44 +220,6 @@ const MarcheDetailBio = () => {
         </div>
 
         <div className="max-w-6xl mx-auto px-6 py-16 relative">
-          {previousMarche && (
-            <motion.div
-              className="fixed left-4 top-1/2 transform -translate-y-1/2 z-10"
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.5 }}
-            >
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => handleNavigateToMarche(previousMarche)}
-                className="bg-white/80 backdrop-blur-sm hover:bg-white/90 shadow-lg border border-gray-200 p-3 rounded-full"
-                title={`Expérience précédente: ${previousMarche.nomMarche || previousMarche.ville}`}
-              >
-                <ChevronLeft className="h-5 w-5 text-gray-600" />
-              </Button>
-            </motion.div>
-          )}
-
-          {nextMarche && (
-            <motion.div
-              className="fixed right-4 top-1/2 transform -translate-y-1/2 z-10"
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.5 }}
-            >
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => handleNavigateToMarche(nextMarche)}
-                className="bg-white/80 backdrop-blur-sm hover:bg-white/90 shadow-lg border border-gray-200 p-3 rounded-full"
-                title={`Expérience suivante: ${nextMarche.nomMarche || nextMarche.ville}`}
-              >
-                <ChevronRight className="h-5 w-5 text-gray-600" />
-              </Button>
-            </motion.div>
-          )}
-
           <motion.div
             key={`${activeSection}-${activeSubSection}`}
             initial={{ opacity: 0, y: 20 }}

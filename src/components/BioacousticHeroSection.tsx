@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { motion } from 'framer-motion';
-import { MapPin, Calendar, ArrowLeft, Satellite, Compass } from 'lucide-react';
+import { MapPin, Calendar, ArrowLeft, Satellite, Compass, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
 import { MarcheTechnoSensible } from '../utils/googleSheetsApi';
@@ -11,14 +11,29 @@ interface BioacousticHeroSectionProps {
   marche: MarcheTechnoSensible;
   theme: RegionalTheme;
   onBack: () => void;
+  previousMarche?: MarcheTechnoSensible | null;
+  nextMarche?: MarcheTechnoSensible | null;
+  onNavigateToMarche?: (marche: MarcheTechnoSensible) => void;
 }
 
 const BioacousticHeroSection: React.FC<BioacousticHeroSectionProps> = ({
   marche,
   theme,
-  onBack
+  onBack,
+  previousMarche,
+  nextMarche,
+  onNavigateToMarche
 }) => {
   const firstPhoto = marche.photos?.[0];
+
+  const handleCopyCoordinate = async (coordinate: string, type: 'latitude' | 'longitude') => {
+    try {
+      await navigator.clipboard.writeText(coordinate);
+      console.log(`${type} copiée: ${coordinate}`);
+    } catch (err) {
+      console.error('Erreur lors de la copie:', err);
+    }
+  };
 
   return (
     <div className="relative h-[45vh] overflow-hidden">
@@ -89,36 +104,80 @@ const BioacousticHeroSection: React.FC<BioacousticHeroSectionProps> = ({
       <div className="relative z-10 flex flex-col h-full px-6">
         {/* Top Section */}
         <div className="flex justify-between items-start pt-6">
-          {/* Back Button */}
-          <motion.div 
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: 0.3 }}
-          >
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              onClick={onBack}
-              className="bg-white/10 backdrop-blur-md hover:bg-white/20 text-white border-white/20"
+          {/* Left Section: Back Button + Previous Arrow */}
+          <div className="flex items-center space-x-3">
+            {/* Back Button */}
+            <motion.div 
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.3 }}
             >
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Carte
-            </Button>
-          </motion.div>
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={onBack}
+                className="bg-white/10 backdrop-blur-md hover:bg-white/20 text-white border-white/20"
+              >
+                <ArrowLeft className="h-4 w-4 mr-2" />
+                Carte
+              </Button>
+            </motion.div>
 
-          {/* Vue Badge */}
-          <motion.div 
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: 0.3 }}
-          >
-            <Badge 
-              variant="outline" 
-              className="bg-amber-500/20 backdrop-blur-md text-amber-100 border-amber-400/30 px-3 py-1 font-medium"
+            {/* Previous Arrow */}
+            {previousMarche && onNavigateToMarche && (
+              <motion.div
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.4 }}
+              >
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => onNavigateToMarche(previousMarche)}
+                  className="bg-white/10 backdrop-blur-md hover:bg-white/20 text-white border-white/20 p-2"
+                  title={`Expérience précédente: ${previousMarche.nomMarche || previousMarche.ville}`}
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+              </motion.div>
+            )}
+          </div>
+
+          {/* Right Section: Next Arrow + Vue Badge */}
+          <div className="flex items-center space-x-3">
+            {/* Next Arrow */}
+            {nextMarche && onNavigateToMarche && (
+              <motion.div
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.4 }}
+              >
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => onNavigateToMarche(nextMarche)}
+                  className="bg-white/10 backdrop-blur-md hover:bg-white/20 text-white border-white/20 p-2"
+                  title={`Expérience suivante: ${nextMarche.nomMarche || nextMarche.ville}`}
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              </motion.div>
+            )}
+
+            {/* Vue Badge */}
+            <motion.div 
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.3 }}
             >
-              Vue 2025-2037
-            </Badge>
-          </motion.div>
+              <Badge 
+                variant="outline" 
+                className="bg-amber-500/20 backdrop-blur-md text-amber-100 border-amber-400/30 px-3 py-1 font-medium"
+              >
+                Vue 2025-2037
+              </Badge>
+            </motion.div>
+          </div>
         </div>
 
         {/* Main Content - Centered */}
@@ -146,14 +205,36 @@ const BioacousticHeroSection: React.FC<BioacousticHeroSectionProps> = ({
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.7 }}
           >
-            {/* GPS Coordinates - Left */}
-            <div className="bg-white/10 backdrop-blur-md rounded-lg px-4 py-2 border border-white/20">
-              <div className="flex items-center space-x-3">
-                <Satellite className="h-4 w-4 text-green-300" />
-                <div className="text-sm">
-                  <div className="text-white/70 text-xs uppercase tracking-wider">Géolocalisation Poétique</div>
-                  <div className="font-mono text-green-200">
-                    {marche.latitude.toFixed(6)}°N, {marche.longitude.toFixed(6)}°E
+            {/* GPS Coordinates - Separate clickable blocks */}
+            <div className="flex items-center gap-4">
+              <div 
+                className="bg-white/10 backdrop-blur-md rounded-lg px-3 py-2 border border-white/20 cursor-pointer hover:bg-white/15 transition-colors group"
+                onClick={() => handleCopyCoordinate(marche.latitude.toFixed(6), 'latitude')}
+                title="Cliquer pour copier la latitude"
+              >
+                <div className="flex items-center space-x-2">
+                  <Satellite className="h-3 w-3 text-green-300" />
+                  <div className="text-xs">
+                    <div className="text-white/70 text-xs uppercase tracking-wider">Lat</div>
+                    <div className="font-mono text-green-200 group-hover:text-green-100">
+                      {marche.latitude.toFixed(6)}°N
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div 
+                className="bg-white/10 backdrop-blur-md rounded-lg px-3 py-2 border border-white/20 cursor-pointer hover:bg-white/15 transition-colors group"
+                onClick={() => handleCopyCoordinate(marche.longitude.toFixed(6), 'longitude')}
+                title="Cliquer pour copier la longitude"
+              >
+                <div className="flex items-center space-x-2">
+                  <Compass className="h-3 w-3 text-blue-300" />
+                  <div className="text-xs">
+                    <div className="text-white/70 text-xs uppercase tracking-wider">Lng</div>
+                    <div className="font-mono text-blue-200 group-hover:text-blue-100">
+                      {marche.longitude.toFixed(6)}°E
+                    </div>
                   </div>
                 </div>
               </div>
