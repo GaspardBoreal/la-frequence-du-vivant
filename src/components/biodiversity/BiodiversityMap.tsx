@@ -270,32 +270,43 @@ export const BiodiversityMap: React.FC<BiodiversityMapProps> = ({
                 <div className="space-y-2 min-w-[200px]">
                   <h4 className="font-semibold">{cluster.count} espèce{cluster.count > 1 ? 's' : ''}</h4>
                   <div className="space-y-2">
-                    {cluster.species.slice(0, 3).map(species => (
-                      <div key={species.id} className="text-sm flex gap-2 items-center">
-                        {species.photos?.[0] ? (
-                          <img
-                            src={species.photos[0]}
-                            alt={species.commonName}
-                            className="w-6 h-6 object-cover rounded border"
-                            loading="lazy"
-                            onError={(e) => {
-                              const target = e.target as HTMLImageElement;
-                              target.style.display = 'none';
-                            }}
-                          />
-                        ) : (
-                          <div className="w-6 h-6 bg-muted rounded border flex items-center justify-center">
-                            <span className="text-[8px] text-muted-foreground">
-                              {species.source === 'ebird' ? '🐦' : '?'}
-                            </span>
-                          </div>
-                        )}
-                        <div className="flex-1">
-                          <div className="font-medium">{species.commonName}</div>
-                          <div className="text-muted-foreground italic text-xs">{species.scientificName}</div>
-                        </div>
-                      </div>
-                    ))}
+                     {cluster.species.slice(0, 3).map(species => {
+                       console.log(`🔍 Species data:`, {
+                         name: species.commonName,
+                         source: species.source,
+                         photos: species.photos,
+                         photosLength: species.photos?.length
+                       });
+                       
+                       return (
+                         <div key={species.id} className="text-sm flex gap-2 items-center">
+                           {species.photos?.[0] ? (
+                             <img
+                               src={species.photos[0]}
+                               alt={species.commonName}
+                               className="w-6 h-6 object-cover rounded border"
+                               loading="lazy"
+                               onLoad={() => console.log(`📸 Photo loaded for ${species.commonName}:`, species.photos[0])}
+                               onError={(e) => {
+                                 console.log(`❌ Photo failed for ${species.commonName}:`, species.photos[0]);
+                                 const target = e.target as HTMLImageElement;
+                                 target.style.display = 'none';
+                               }}
+                             />
+                           ) : (
+                             <div className="w-6 h-6 bg-muted rounded border flex items-center justify-center">
+                               <span className="text-[8px] text-muted-foreground">
+                                 {species.source === 'ebird' ? '🐦' : '?'}
+                               </span>
+                             </div>
+                           )}
+                           <div className="flex-1">
+                             <div className="font-medium">{species.commonName}</div>
+                             <div className="text-muted-foreground italic text-xs">{species.scientificName}</div>
+                           </div>
+                         </div>
+                       );
+                     })}
                     {cluster.species.length > 3 && (
                       <div className="text-xs text-muted-foreground">
                         +{cluster.species.length - 3} autres espèces
