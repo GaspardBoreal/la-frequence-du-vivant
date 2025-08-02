@@ -126,18 +126,14 @@ const BioDivSubSection: React.FC<BioDivSubSectionProps> = ({ marche, theme }) =>
   };
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-4">
       {/* En-tête de section */}
       <motion.div
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.8 }}
-        className="text-center space-y-4"
+        className="text-center space-y-2"
       >
-        <div className="inline-flex items-center justify-center w-24 h-24 rounded-full bg-gradient-to-br from-emerald-100 to-green-200 mb-6">
-          <Leaf className="h-12 w-12 text-emerald-600" />
-        </div>
-        
         <div className="flex items-center justify-center gap-4">
           <div className="flex items-center gap-3">
             <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-br from-emerald-100 to-green-200">
@@ -199,7 +195,7 @@ const BioDivSubSection: React.FC<BioDivSubSectionProps> = ({ marche, theme }) =>
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.1, duration: 0.8 }}
-        className="max-w-7xl mx-auto mb-6"
+        className="max-w-7xl mx-auto mb-4"
       >
         <Card className="border border-white/20 bg-white/5 backdrop-blur-sm">
           <CardContent className="p-4">
