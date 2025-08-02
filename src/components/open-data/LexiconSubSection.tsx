@@ -1,12 +1,12 @@
 
 import React from 'react';
 import { motion } from 'framer-motion';
-import { BookOpen, ExternalLink, Search, Tag, Loader2, AlertCircle } from 'lucide-react';
+import { BookOpen, ExternalLink, Loader2, AlertCircle } from 'lucide-react';
 import { Button } from '../ui/button';
 import { MarcheTechnoSensible } from '../../utils/googleSheetsApi';
 import { RegionalTheme } from '../../utils/regionalThemes';
 import { useLexiconData } from '../../hooks/useLexiconData';
-import LexiconDataDisplay from './LexiconDataDisplay';
+import LexiconStructuredDisplay from './LexiconStructuredDisplay';
 
 interface LexiconSubSectionProps {
   marche: MarcheTechnoSensible;
@@ -26,7 +26,7 @@ const LexiconSubSection: React.FC<LexiconSubSectionProps> = ({ marche, theme }) 
 
   return (
     <div className="max-w-4xl mx-auto">
-      <div className="gaspard-glass rounded-3xl p-12 text-center space-y-8">
+      <div className="gaspard-glass rounded-3xl p-12 space-y-8">
         <motion.div
           className="relative z-10"
           initial={{ scale: 0 }}
@@ -39,14 +39,16 @@ const LexiconSubSection: React.FC<LexiconSubSectionProps> = ({ marche, theme }) 
         </motion.div>
 
         <div className="relative z-10 space-y-6">
-          <h3 className="text-5xl font-crimson font-bold text-transparent bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text">
-            Lexicon
-          </h3>
-          
-          <p className="text-gray-600 text-xl max-w-2xl mx-auto leading-relaxed">
-            Explorez les données parcellaires et agricoles de{' '}
-            <span className="font-semibold text-green-600">{marche.ville}</span>
-          </p>
+          <div className="text-center space-y-4">
+            <h3 className="text-5xl font-crimson font-bold text-transparent bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text">
+              Lexicon
+            </h3>
+            
+            <p className="text-gray-600 text-xl max-w-2xl mx-auto leading-relaxed">
+              Données parcellaires et agricoles de{' '}
+              <span className="font-semibold text-green-600">{marche.ville}</span>
+            </p>
+          </div>
 
           {/* État de chargement */}
           {isLoading && (
@@ -63,55 +65,37 @@ const LexiconSubSection: React.FC<LexiconSubSectionProps> = ({ marche, theme }) 
           {/* État d'erreur */}
           {isError && (
             <motion.div
-              className="bg-red-50 border border-red-200 rounded-xl p-6 text-left"
+              className="bg-red-50 border border-red-200 rounded-xl p-6 text-center"
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
             >
-              <div className="flex items-center gap-3 mb-3">
+              <div className="flex items-center justify-center gap-3 mb-3">
                 <AlertCircle className="h-6 w-6 text-red-500" />
                 <h4 className="font-semibold text-red-800">Erreur de chargement</h4>
               </div>
               <p className="text-red-600 text-sm mb-4">
                 {error?.message || 'Impossible de charger les données LEXICON pour cette localisation.'}
               </p>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="bg-white/50 rounded-xl p-4">
-                  <Search className="h-6 w-6 text-green-600 mb-2" />
-                  <h5 className="font-semibold text-gray-800 mb-1 text-sm">Recherche parcellaire</h5>
-                  <p className="text-gray-600 text-xs">
-                    Analyse des données cadastrales et agricoles
-                  </p>
-                </div>
-                
-                <div className="bg-white/50 rounded-xl p-4">
-                  <Tag className="h-6 w-6 text-green-600 mb-2" />
-                  <h5 className="font-semibold text-gray-800 mb-1 text-sm">Données disponibles</h5>
-                  <p className="text-gray-600 text-xs">
-                    Cultures, certifications, propriétaires
-                  </p>
-                </div>
-              </div>
             </motion.div>
           )}
 
-          {/* Affichage des données */}
+          {/* Affichage structuré des données */}
           {lexiconResponse?.success && lexiconResponse.data && (
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.3 }}
-              className="text-left"
             >
-              <LexiconDataDisplay 
+              <LexiconStructuredDisplay 
                 data={lexiconResponse.data} 
                 coordinates={lexiconResponse.coordinates!}
               />
             </motion.div>
           )}
 
-          {/* Bouton d'accès au LEXICON */}
+          {/* Bouton d'accès au LEXICON complet */}
           <motion.div
-            className="pt-6"
+            className="pt-6 text-center"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.6 }}

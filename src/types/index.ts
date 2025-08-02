@@ -1,3 +1,4 @@
+
 export interface SearchResult {
   coordinates: [number, number];
   address: string;
@@ -45,31 +46,10 @@ export interface DocumentData {
   type?: string;
 }
 
-// Extensions pour LEXICON
-export interface LexiconParcelData {
-  parcel_id?: string;
-  commune?: string;
-  surface_ha?: number;
-  culture_type?: string;
-  proprietaire?: string;
-  exploitant?: string;
-  certification_bio?: boolean;
-  derniere_declaration?: string;
-  geometry?: {
-    type: string;
-    coordinates: number[][];
-  };
-  properties?: {
-    [key: string]: any;
-  };
-}
-
-export interface LexiconApiResponse {
-  success: boolean;
-  data?: LexiconParcelData;
-  message?: string;
-  coordinates?: {
-    latitude: number;
-    longitude: number;
-  };
-}
+// Réexporter les types LEXICON enrichis depuis leur module dédié
+export type { 
+  LexiconParcelData, 
+  LexiconApiResponse, 
+  WeatherData, 
+  TransactionData 
+} from './lexicon';
