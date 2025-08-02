@@ -25,6 +25,7 @@ interface BioDivSubSectionProps {
 const BioDivSubSection: React.FC<BioDivSubSectionProps> = ({ marche, theme }) => {
   const [dateFilter, setDateFilter] = useState<'recent' | 'medium'>('recent');
   const [selectedContributor, setSelectedContributor] = useState<string>('all');
+  const [selectedCategory, setSelectedCategory] = useState<'all' | 'flora' | 'fauna' | 'fungi' | 'other'>('all');
   const [searchRadius, setSearchRadius] = useState<number>(0.5); // Valeur par défaut: 500m
   const [debouncedRadius, setDebouncedRadius] = useState<number>(0.5);
   
@@ -62,18 +63,73 @@ const BioDivSubSection: React.FC<BioDivSubSectionProps> = ({ marche, theme }) =>
       .sort((a, b) => a.name.localeCompare(b.name, 'fr'));
   }, [biodiversityData?.species]);
 
-  // Filtrage des espèces par contributeur
+  // Calcul des catégories d'espèces
+  const categoryStats = useMemo(() => {
+    if (!biodiversityData?.species) return { all: 0, flora: 0, fauna: 0, fungi: 0, other: 0 };
+    
+    const stats = {
+      all: biodiversityData.species.length,
+      flora: 0,
+      fauna: 0,
+      fungi: 0,
+      other: 0
+    };
+    
+    biodiversityData.species.forEach(species => {
+      switch (species.kingdom) {
+        case 'Plantae':
+          stats.flora++;
+          break;
+        case 'Animalia':
+          stats.fauna++;
+          break;
+        case 'Fungi':
+          stats.fungi++;
+          break;
+        default:
+          stats.other++;
+          break;
+      }
+    });
+    
+    return stats;
+  }, [biodiversityData?.species]);
+
+  // Filtrage des espèces par catégorie et contributeur
   const filteredSpecies = useMemo(() => {
-    if (!biodiversityData?.species || selectedContributor === 'all') {
-      return biodiversityData?.species || [];
+    if (!biodiversityData?.species) return [];
+
+    let filtered = biodiversityData.species;
+
+    // Filtrage par catégorie
+    if (selectedCategory !== 'all') {
+      filtered = filtered.filter(species => {
+        switch (selectedCategory) {
+          case 'flora':
+            return species.kingdom === 'Plantae';
+          case 'fauna':
+            return species.kingdom === 'Animalia';
+          case 'fungi':
+            return species.kingdom === 'Fungi';
+          case 'other':
+            return species.kingdom !== 'Plantae' && species.kingdom !== 'Animalia' && species.kingdom !== 'Fungi';
+          default:
+            return true;
+        }
+      });
     }
 
-    return biodiversityData.species.filter(species => {
-      return species.attributions?.some(attribution => 
-        (attribution.observerName || 'Anonyme') === selectedContributor
-      );
-    });
-  }, [biodiversityData?.species, selectedContributor]);
+    // Filtrage par contributeur
+    if (selectedContributor !== 'all') {
+      filtered = filtered.filter(species => {
+        return species.attributions?.some(attribution => 
+          (attribution.observerName || 'Anonyme') === selectedContributor
+        );
+      });
+    }
+
+    return filtered;
+  }, [biodiversityData?.species, selectedCategory, selectedContributor]);
 
   // Composant pour afficher une espèce avec attribution complète
   const [selectedSpecies, setSelectedSpecies] = useState<string | null>(null);
@@ -676,8 +732,49 @@ const BioDivSubSection: React.FC<BioDivSubSectionProps> = ({ marche, theme }) =>
 
           {/* Onglet Espèces */}
           <TabsContent value="species" className="space-y-6">
-            {/* Filtre par contributeurs */}
-            {contributors.length > 0 && (
+            {/* Onglets de catégories */}
+            <Tabs value={selectedCategory} onValueChange={(value) => setSelectedCategory(value as typeof selectedCategory)} className="w-full">
+              <TabsList className="grid w-full grid-cols-5 mb-6">
+                <TabsTrigger value="all" className="flex items-center gap-2">
+                  <Leaf className="h-4 w-4" />
+                  Toutes
+                  <Badge variant="secondary" className="ml-1 text-xs">
+                    {categoryStats.all}
+                  </Badge>
+                </TabsTrigger>
+                <TabsTrigger value="flora" className="flex items-center gap-2">
+                  <TreePine className="h-4 w-4 text-green-600" />
+                  Flore
+                  <Badge variant="secondary" className="ml-1 text-xs">
+                    {categoryStats.flora}
+                  </Badge>
+                </TabsTrigger>
+                <TabsTrigger value="fauna" className="flex items-center gap-2">
+                  <Bird className="h-4 w-4 text-blue-600" />
+                  Faune
+                  <Badge variant="secondary" className="ml-1 text-xs">
+                    {categoryStats.fauna}
+                  </Badge>
+                </TabsTrigger>
+                <TabsTrigger value="fungi" className="flex items-center gap-2">
+                  <Flower className="h-4 w-4 text-purple-600" />
+                  Champignons
+                  <Badge variant="secondary" className="ml-1 text-xs">
+                    {categoryStats.fungi}
+                  </Badge>
+                </TabsTrigger>
+                <TabsTrigger value="other" className="flex items-center gap-2">
+                  <Leaf className="h-4 w-4 text-gray-600" />
+                  Autres
+                  <Badge variant="secondary" className="ml-1 text-xs">
+                    {categoryStats.other}
+                  </Badge>
+                </TabsTrigger>
+              </TabsList>
+
+              <TabsContent value={selectedCategory} className="space-y-6">
+                {/* Filtre par contributeurs */}
+                {contributors.length > 0 && (
               <motion.div
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -849,8 +946,10 @@ const BioDivSubSection: React.FC<BioDivSubSectionProps> = ({ marche, theme }) =>
                     Aucune donnée de biodiversité disponible pour cette zone.
                   </p>
                 </CardContent>
-              </Card>
-            )}
+                </Card>
+              )}
+              </TabsContent>
+            </Tabs>
           </TabsContent>
 
           {/* Onglet Méthodologie */}
