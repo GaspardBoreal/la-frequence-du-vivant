@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { motion } from 'framer-motion';
-import { Leaf, ExternalLink, TreePine, Flower, Bird, Loader2, AlertCircle, Camera, Calendar, Globe, MapPin, Info, CheckCircle, Clock, User, Building, Eye, Users, Filter, Database } from 'lucide-react';
+import { Leaf, ExternalLink, TreePine, Flower, Bird, Loader2, AlertCircle, Camera, Calendar, Globe, MapPin, Info, CheckCircle, Clock, User, Building, Eye, Users, Filter, Database, ZoomIn } from 'lucide-react';
 import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
@@ -120,7 +120,7 @@ const BioDivSubSection: React.FC<BioDivSubSectionProps> = ({ marche, theme }) =>
     return (
       <Card 
         className={`
-          group cursor-pointer transition-all duration-500 ease-out
+          group cursor-pointer transition-all duration-500 ease-out species-card
           ${isSelected 
             ? 'ring-2 ring-primary shadow-2xl bg-primary/5 border-primary/30 scale-[1.02]' 
             : 'hover:shadow-xl hover:scale-[1.01] border-white/20 bg-white/5'
@@ -168,30 +168,54 @@ const BioDivSubSection: React.FC<BioDivSubSectionProps> = ({ marche, theme }) =>
             </div>
           </div>
 
-          {/* Image de l'espèce */}
+          {/* Image de l'espèce avec amélioration de qualité */}
           {primaryPhoto && (
-            <div className="relative w-full h-48 overflow-hidden">
+            <div className="relative w-full h-48 overflow-hidden group/image">
               <img 
-                src={primaryPhoto} 
+                src={primaryPhoto.replace(/\/w\d+/, '/w800').replace(/\/s\d+/, '/s800')} 
                 alt={`${species.commonName} - ${species.scientificName}`}
                 className={`
-                  w-full h-full object-cover transition-all duration-700 ease-out
+                  w-full h-full object-cover transition-all duration-700 ease-out cursor-pointer
                   ${isSelected ? 'scale-110 brightness-110' : 'group-hover:scale-105'}
                 `}
+                style={{
+                  imageRendering: 'auto'
+                }}
+                loading="lazy"
                 onError={(e) => {
-                  e.currentTarget.style.display = 'none';
+                  // Fallback vers l'image originale si l'amélioration échoue
+                  if (e.currentTarget.src.includes('/w800') || e.currentTarget.src.includes('/s800')) {
+                    e.currentTarget.src = primaryPhoto;
+                  } else {
+                    e.currentTarget.style.display = 'none';
+                  }
+                }}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  // Ouvrir le dialog avec la galerie de photos
+                  const dialogTrigger = e.currentTarget.closest('.species-card')?.querySelector('[data-dialog-trigger]') as HTMLButtonElement;
+                  if (dialogTrigger) {
+                    dialogTrigger.click();
+                  }
                 }}
               />
               <div className={`
                 absolute inset-0 bg-gradient-to-t from-black/30 to-transparent
-                transition-opacity duration-300
+                transition-opacity duration-300 pointer-events-none
                 ${isSelected ? 'opacity-60' : 'opacity-40'}
               `} />
+              
+              {/* Indicateur de clic sur l'image */}
+              <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover/image:opacity-100 transition-opacity duration-300 pointer-events-none">
+                <div className="bg-white/20 backdrop-blur-sm rounded-full p-3">
+                  <ZoomIn className="h-6 w-6 text-white" />
+                </div>
+              </div>
               
               {/* Badge de photos multiples */}
               {species.photos.length > 1 && (
                 <div className="absolute top-3 left-3">
-                  <Badge className="bg-black/50 text-white text-xs backdrop-blur-sm">
+                  <Badge className="bg-black/60 text-white text-xs backdrop-blur-sm border-white/20">
                     <Camera className="h-3 w-3 mr-1" />
                     {species.photos.length} photos
                   </Badge>
@@ -273,6 +297,7 @@ const BioDivSubSection: React.FC<BioDivSubSectionProps> = ({ marche, theme }) =>
               <Dialog>
                 <DialogTrigger asChild>
                   <Button 
+                    data-dialog-trigger
                     variant={isSelected ? "default" : "ghost"} 
                     size="sm" 
                     className={`
@@ -308,16 +333,25 @@ const BioDivSubSection: React.FC<BioDivSubSectionProps> = ({ marche, theme }) =>
                           <Camera className="h-4 w-4" />
                           Photos ({species.photos.length})
                         </h5>
-                        <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                          {species.photos.slice(0, 6).map((photo, index) => (
-                            <div key={index} className="aspect-square rounded-lg overflow-hidden">
-                              <img 
-                                src={photo} 
-                                alt={`${species.commonName} - Photo ${index + 1}`}
-                                className="w-full h-full object-cover hover:scale-110 transition-transform duration-300"
-                                onError={(e) => {
-                                  e.currentTarget.style.display = 'none';
-                                }}
+                         <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                           {species.photos.slice(0, 6).map((photo, index) => (
+                             <div key={index} className="aspect-square rounded-lg overflow-hidden cursor-pointer group">
+                               <img 
+                                 src={photo.replace(/\/w\d+/, '/w600').replace(/\/s\d+/, '/s600')} 
+                                 alt={`${species.commonName} - Photo ${index + 1}`}
+                                 className="w-full h-full object-cover hover:scale-110 transition-transform duration-300"
+                                 style={{
+                                   imageRendering: 'auto'
+                                 }}
+                                 loading="lazy"
+                                 onError={(e) => {
+                                   // Fallback vers l'image originale si l'amélioration échoue
+                                   if (e.currentTarget.src.includes('/w600') || e.currentTarget.src.includes('/s600')) {
+                                     e.currentTarget.src = photo;
+                                   } else {
+                                     e.currentTarget.style.display = 'none';
+                                   }
+                                 }}
                               />
                             </div>
                           ))}
