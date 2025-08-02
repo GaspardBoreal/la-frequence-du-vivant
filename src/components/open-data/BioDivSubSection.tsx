@@ -10,6 +10,7 @@ import { MarcheTechnoSensible } from '../../utils/googleSheetsApi';
 import { RegionalTheme } from '../../utils/regionalThemes';
 import { useBiodiversityData } from '../../hooks/useBiodiversityData';
 import { BiodiversitySpecies } from '../../types/biodiversity';
+import { BiodiversityMetricGrid } from '../biodiversity/BiodiversityMetricGrid';
 
 interface BioDivSubSectionProps {
   marche: MarcheTechnoSensible;
@@ -131,82 +132,75 @@ const BioDivSubSection: React.FC<BioDivSubSectionProps> = ({ marche, theme }) =>
                 <TabsTrigger value="map">Carte</TabsTrigger>
               </TabsList>
 
-              <TabsContent value="summary" className="space-y-6">
-                {/* Statistiques générales */}
-                <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-                  <Card>
-                    <CardContent className="p-4 text-center">
-                      <div className="text-2xl font-bold text-emerald-600">
-                        {biodiversityData.summary.totalSpecies}
-                      </div>
-                      <div className="text-sm text-gray-600">Espèces</div>
-                    </CardContent>
-                  </Card>
-                  
-                  <Card>
-                    <CardContent className="p-4 text-center">
-                      <Bird className="h-6 w-6 mx-auto mb-1 text-blue-600" />
-                      <div className="text-xl font-bold text-blue-600">
-                        {biodiversityData.summary.birds}
-                      </div>
-                      <div className="text-xs text-gray-600">Oiseaux</div>
-                    </CardContent>
-                  </Card>
-                  
-                  <Card>
-                    <CardContent className="p-4 text-center">
-                      <Flower className="h-6 w-6 mx-auto mb-1 text-green-600" />
-                      <div className="text-xl font-bold text-green-600">
-                        {biodiversityData.summary.plants}
-                      </div>
-                      <div className="text-xs text-gray-600">Plantes</div>
-                    </CardContent>
-                  </Card>
-                  
-                  <Card>
-                    <CardContent className="p-4 text-center">
-                      <TreePine className="h-6 w-6 mx-auto mb-1 text-amber-600" />
-                      <div className="text-xl font-bold text-amber-600">
-                        {biodiversityData.summary.fungi}
-                      </div>
-                      <div className="text-xs text-gray-600">Champignons</div>
-                    </CardContent>
-                  </Card>
-                  
-                  <Card>
-                    <CardContent className="p-4 text-center">
-                      <Calendar className="h-6 w-6 mx-auto mb-1 text-purple-600" />
-                      <div className="text-xl font-bold text-purple-600">
-                        {biodiversityData.summary.recentObservations}
-                      </div>
-                      <div className="text-xs text-gray-600">Récentes</div>
-                    </CardContent>
-                  </Card>
-                </div>
+              <TabsContent value="summary" className="space-y-8">
+                {/* New Biodiversity Metrics Grid */}
+                <BiodiversityMetricGrid 
+                  summary={biodiversityData.summary}
+                  isLoading={isLoading}
+                />
 
                 {/* Informations sur la zone */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <Leaf className="h-5 w-5 text-emerald-600" />
-                      Zone d'étude
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div>
-                        <p className="text-sm text-gray-600 mb-1">Coordonnées</p>
-                        <p className="font-mono text-sm">
-                          {biodiversityData.location.latitude.toFixed(5)}, {biodiversityData.location.longitude.toFixed(5)}
-                        </p>
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.5, delay: 0.6 }}
+                >
+                  <Card className="gaspard-glass border border-white/20 backdrop-blur-md bg-white/5">
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2 text-foreground">
+                        <Leaf className="h-5 w-5 text-emerald-500" />
+                        Zone d'étude
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <p className="text-sm text-muted-foreground mb-1">Coordonnées</p>
+                          <p className="font-mono text-sm text-foreground">
+                            {biodiversityData.location.latitude.toFixed(5)}, {biodiversityData.location.longitude.toFixed(5)}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-sm text-muted-foreground mb-1">Rayon d'analyse</p>
+                          <p className="font-semibold text-foreground">{biodiversityData.location.radius} km</p>
+                        </div>
                       </div>
-                      <div>
-                        <p className="text-sm text-gray-600 mb-1">Rayon d'analyse</p>
-                        <p className="font-semibold">{biodiversityData.location.radius} km</p>
+                      
+                      <div className="flex flex-wrap gap-3 pt-4 border-t border-white/10 mt-4">
+                        <a
+                          href="https://www.gbif.org"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg
+                                   bg-emerald-500/10 text-emerald-400 border border-emerald-500/20
+                                   hover:bg-emerald-500/20 hover:border-emerald-500/30 transition-all duration-200"
+                        >
+                          GBIF <ExternalLink className="w-3 h-3" />
+                        </a>
+                        <a
+                          href="https://www.inaturalist.org"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg
+                                   bg-green-500/10 text-green-400 border border-green-500/20
+                                   hover:bg-green-500/20 hover:border-green-500/30 transition-all duration-200"
+                        >
+                          iNaturalist <ExternalLink className="w-3 h-3" />
+                        </a>
+                        <a
+                          href="https://ebird.org"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg
+                                   bg-sky-500/10 text-sky-400 border border-sky-500/20
+                                   hover:bg-sky-500/20 hover:border-sky-500/30 transition-all duration-200"
+                        >
+                          eBird <ExternalLink className="w-3 h-3" />
+                        </a>
                       </div>
-                    </div>
-                  </CardContent>
-                </Card>
+                    </CardContent>
+                  </Card>
+                </motion.div>
               </TabsContent>
 
               <TabsContent value="species" className="space-y-4">
