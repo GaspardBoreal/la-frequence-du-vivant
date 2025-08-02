@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
 import { Card } from '../ui/card';
-import { Edit, Trash2, Calendar, MapPin, Navigation, Heart, Map, Globe } from 'lucide-react';
+import { Edit, Trash2, Calendar, MapPin, Navigation, Heart, Map, Globe, Music } from 'lucide-react';
 import { MarcheTechnoSensible } from '../../utils/googleSheetsApi';
 import { deleteMarche } from '../../utils/supabaseMarcheOperations';
 import { toast } from 'sonner';
@@ -84,6 +84,12 @@ const MarcheList: React.FC<MarcheListProps> = ({
     const slug = createSlug(marche.nomMarche || marche.ville, marche.ville);
     const frequenceVivantUrl = `${window.location.origin}/marche/${slug}`;
     window.open(frequenceVivantUrl, '_blank');
+  };
+
+  const handleBioacoustiqueClick = (marche: MarcheTechnoSensible) => {
+    const slug = createSlug(marche.nomMarche || marche.ville, marche.ville);
+    const bioacoustiqueUrl = `${window.location.origin}/bioacoustique/${slug}`;
+    window.open(bioacoustiqueUrl, '_blank');
   };
 
   const formatDate = (dateString: string) => {
@@ -233,6 +239,9 @@ const MarcheList: React.FC<MarcheListProps> = ({
                   )}
                   <Button variant="ghost" size="sm" onClick={() => handleFrequenceVivantClick(marche)} className="h-8 w-8 p-0 text-purple-600 hover:text-purple-800 hover:bg-purple-50 border border-purple-200" title="Voir dans La Fréquence du Vivant">
                     <Heart className="h-4 w-4" />
+                  </Button>
+                  <Button variant="ghost" size="sm" onClick={() => handleBioacoustiqueClick(marche)} className="h-8 w-8 p-0 text-teal-600 hover:text-teal-800 hover:bg-teal-50 border border-teal-200" title="Voir en mode Bioacoustique Poétique">
+                    <Music className="h-4 w-4" />
                   </Button>
                 </div>
 
