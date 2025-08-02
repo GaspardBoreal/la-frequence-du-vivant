@@ -1,11 +1,12 @@
 
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Leaf, ExternalLink, TreePine, Flower, Bird, Loader2, AlertCircle, Camera, Calendar } from 'lucide-react';
+import { Leaf, ExternalLink, TreePine, Flower, Bird, Loader2, AlertCircle, Camera, Calendar, Globe, MapPin } from 'lucide-react';
 import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '../ui/dropdown-menu';
 import { MarcheTechnoSensible } from '../../utils/googleSheetsApi';
 import { RegionalTheme } from '../../utils/regionalThemes';
 import { useBiodiversityData } from '../../hooks/useBiodiversityData';
@@ -91,14 +92,55 @@ const BioDivSubSection: React.FC<BioDivSubSectionProps> = ({ marche, theme }) =>
             <Leaf className="h-12 w-12 text-emerald-600" />
           </div>
           
-          <h3 className="text-5xl font-crimson font-bold text-transparent bg-gradient-to-r from-emerald-600 to-green-600 bg-clip-text">
-            BioDiv
-          </h3>
-          
-          <p className="text-gray-600 text-xl max-w-2xl mx-auto leading-relaxed">
-            Découvrez la biodiversité scientifique de{' '}
-            <span className="font-semibold text-emerald-600">{marche.ville}</span>
-          </p>
+          <div className="flex items-center justify-center gap-3">
+            <h3 className="text-5xl font-crimson font-bold text-transparent bg-gradient-to-r from-emerald-600 to-green-600 bg-clip-text">
+              BioDiv
+            </h3>
+            
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-muted-foreground font-medium">
+                {marche.ville}
+              </span>
+              
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-8 w-8 p-0 hover:bg-white/10 rounded-full"
+                  >
+                    <Globe className="h-4 w-4 text-muted-foreground hover:text-foreground" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start" className="gaspard-glass backdrop-blur-md bg-background/90 border border-white/20">
+                  <DropdownMenuItem asChild>
+                    <a
+                      href={`https://www.openstreetmap.org/?mlat=${marche.latitude}&mlon=${marche.longitude}&zoom=15`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-2 cursor-pointer"
+                    >
+                      <MapPin className="h-4 w-4" />
+                      Voir dans OpenStreetMap
+                      <ExternalLink className="h-3 w-3 ml-auto" />
+                    </a>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <a
+                      href={`https://earth.google.com/web/@${marche.latitude},${marche.longitude},100a,35y,0h,0t,0r`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-2 cursor-pointer"
+                    >
+                      <Globe className="h-4 w-4" />
+                      Voir dans Google Earth
+                      <ExternalLink className="h-3 w-3 ml-auto" />
+                    </a>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+          </div>
         </motion.div>
 
         {/* Contenu principal */}
