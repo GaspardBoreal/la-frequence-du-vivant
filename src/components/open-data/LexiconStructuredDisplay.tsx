@@ -339,7 +339,7 @@ const LexiconStructuredDisplay: React.FC<LexiconStructuredDisplayProps> = ({ dat
                       ))}
                     </motion.div>
                     {!transactionsOpen && (
-                      <Button variant="outline" size="sm" className="text-xs border-emerald-200 text-emerald-700 hover:bg-emerald-50">
+                      <Button size="sm" className="text-xs bg-gradient-to-r from-emerald-600 to-green-600 text-white hover:from-emerald-700 hover:to-green-700 border-0">
                         Analyser le marché
                       </Button>
                     )}
