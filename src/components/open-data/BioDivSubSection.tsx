@@ -65,6 +65,7 @@ const BioDivSubSection: React.FC<BioDivSubSectionProps> = ({ marche, theme }) =>
 
   // Composant pour afficher une espèce avec attribution complète
   const [selectedSpecies, setSelectedSpecies] = useState<string | null>(null);
+  const [dialogOpenSpecies, setDialogOpenSpecies] = useState<string | null>(null);
 
   const SpeciesCard = ({ species }: { species: BiodiversitySpecies }) => {
     const isSelected = selectedSpecies === species.id;
@@ -116,6 +117,20 @@ const BioDivSubSection: React.FC<BioDivSubSectionProps> = ({ marche, theme }) =>
 
     const hasPhotos = species.photos && species.photos.length > 0;
     const primaryPhoto = hasPhotos ? species.photos[0] : null;
+    
+    // Fonction pour optimiser la qualité d'image basée sur le domaine
+    const getOptimizedImageUrl = (url: string, size: 'small' | 'medium' | 'large' = 'medium') => {
+      if (!url) return url;
+      
+      // Pour Google Drive et services compatibles
+      if (url.includes('drive.google.com') || url.includes('lh3.googleusercontent.com')) {
+        const sizeMap = { small: 'w400', medium: 'w800', large: 'w1200' };
+        return url.replace(/\/w\d+/, `/${sizeMap[size]}`).replace(/\/s\d+/, `/${sizeMap[size]}`);
+      }
+      
+      // Pour les autres sources, retourner l'URL originale
+      return url;
+    };
 
     return (
       <Card 
@@ -172,31 +187,32 @@ const BioDivSubSection: React.FC<BioDivSubSectionProps> = ({ marche, theme }) =>
           {primaryPhoto && (
             <div className="relative w-full h-48 overflow-hidden group/image">
               <img 
-                src={primaryPhoto.replace(/\/w\d+/, '/w800').replace(/\/s\d+/, '/s800')} 
+                src={getOptimizedImageUrl(primaryPhoto, 'medium')} 
                 alt={`${species.commonName} - ${species.scientificName}`}
                 className={`
                   w-full h-full object-cover transition-all duration-700 ease-out cursor-pointer
                   ${isSelected ? 'scale-110 brightness-110' : 'group-hover:scale-105'}
                 `}
                 style={{
-                  imageRendering: 'auto'
+                  imageRendering: '-webkit-optimize-contrast',
+                  filter: 'contrast(1.05) brightness(1.02)',
+                  willChange: 'transform',
+                  objectFit: 'cover',
+                  objectPosition: 'center'
                 }}
                 loading="lazy"
                 onError={(e) => {
                   // Fallback vers l'image originale si l'amélioration échoue
-                  if (e.currentTarget.src.includes('/w800') || e.currentTarget.src.includes('/s800')) {
-                    e.currentTarget.src = primaryPhoto;
+                  const current = e.currentTarget;
+                  if (current.src !== primaryPhoto) {
+                    current.src = primaryPhoto;
                   } else {
-                    e.currentTarget.style.display = 'none';
+                    current.style.display = 'none';
                   }
                 }}
                 onClick={(e) => {
                   e.stopPropagation();
-                  // Ouvrir le dialog avec la galerie de photos
-                  const dialogTrigger = e.currentTarget.closest('.species-card')?.querySelector('[data-dialog-trigger]') as HTMLButtonElement;
-                  if (dialogTrigger) {
-                    dialogTrigger.click();
-                  }
+                  setDialogOpenSpecies(species.id);
                 }}
               />
               <div className={`
@@ -294,10 +310,9 @@ const BioDivSubSection: React.FC<BioDivSubSectionProps> = ({ marche, theme }) =>
 
             {/* Bouton pour voir l'attribution - maintenant plus proéminent si sélectionné */}
             <div className="flex justify-end pt-2">
-              <Dialog>
+              <Dialog open={dialogOpenSpecies === species.id} onOpenChange={(open) => setDialogOpenSpecies(open ? species.id : null)}>
                 <DialogTrigger asChild>
                   <Button 
-                    data-dialog-trigger
                     variant={isSelected ? "default" : "ghost"} 
                     size="sm" 
                     className={`
@@ -337,19 +352,23 @@ const BioDivSubSection: React.FC<BioDivSubSectionProps> = ({ marche, theme }) =>
                            {species.photos.slice(0, 6).map((photo, index) => (
                              <div key={index} className="aspect-square rounded-lg overflow-hidden cursor-pointer group">
                                <img 
-                                 src={photo.replace(/\/w\d+/, '/w600').replace(/\/s\d+/, '/s600')} 
+                                 src={getOptimizedImageUrl(photo, 'medium')} 
                                  alt={`${species.commonName} - Photo ${index + 1}`}
                                  className="w-full h-full object-cover hover:scale-110 transition-transform duration-300"
                                  style={{
-                                   imageRendering: 'auto'
+                                   imageRendering: '-webkit-optimize-contrast',
+                                   filter: 'contrast(1.05) brightness(1.02)',
+                                   willChange: 'transform',
+                                   objectFit: 'cover',
+                                   objectPosition: 'center'
                                  }}
                                  loading="lazy"
                                  onError={(e) => {
-                                   // Fallback vers l'image originale si l'amélioration échoue
-                                   if (e.currentTarget.src.includes('/w600') || e.currentTarget.src.includes('/s600')) {
-                                     e.currentTarget.src = photo;
+                                   const current = e.currentTarget;
+                                   if (current.src !== photo) {
+                                     current.src = photo;
                                    } else {
-                                     e.currentTarget.style.display = 'none';
+                                     current.style.display = 'none';
                                    }
                                  }}
                               />
