@@ -546,10 +546,10 @@ async function fetchEBirdData(lat: number, lon: number, radius: number, dateFilt
 // Fonction pour récupérer les photos eBird via Macaulay Library
 async function fetchEBirdPhotos(speciesCode: string, subId: string, apiKey: string): Promise<string[]> {
   try {
-    // API Macaulay Library publique - pas besoin de clé API pour photos de base
-    const mediaUrl = `https://search.macaulaylibrary.org/api/v1/search?taxonCode=${speciesCode}&mediaType=p&count=3&sort=rating_rank_desc`;
+    // API Macaulay Library publique - format correct pour les photos
+    const mediaUrl = `https://search.macaulaylibrary.org/api/v1/search?taxonCode=${speciesCode}&mediaType=photo&count=3&sort=rating_rank_desc`;
     
-    console.log(`📸 Fetching photos for ${speciesCode} from Macaulay Library`);
+    console.log(`📸 Fetching photos for ${speciesCode} from: ${mediaUrl}`);
     
     const response = await fetch(mediaUrl, {
       headers: {
