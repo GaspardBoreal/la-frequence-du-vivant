@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '../ui/collapsible';
 import { Button } from '../ui/button';
 import { LexiconParcelData } from '../../types/lexicon';
+import WeatherVisualization from './WeatherVisualization';
 
 interface LexiconStructuredDisplayProps {
   data: LexiconParcelData;
@@ -229,32 +230,40 @@ const LexiconStructuredDisplay: React.FC<LexiconStructuredDisplayProps> = ({ dat
             </CollapsibleTrigger>
             <CollapsibleContent>
               <CardContent className="pt-0">
-                <motion.div 
-                  className="bg-white/70 backdrop-blur-sm rounded-xl p-6 text-center border border-sky-100 shadow-sm"
-                  initial={{ scale: 0.95, opacity: 0 }}
-                  animate={{ scale: 1, opacity: 1 }}
-                  transition={{ duration: 0.3 }}
-                >
-                  <motion.div
-                    initial={{ y: 10, opacity: 0 }}
-                    animate={{ y: 0, opacity: 1 }}
-                    transition={{ delay: 0.1 }}
+                {/* Intégration de la visualisation météo avancée */}
+                {data._raw?.['last-year-weather-reports'] ? (
+                  <WeatherVisualization 
+                    weatherData={data._raw['last-year-weather-reports']}
+                    stationName={data._raw['last-year-weather-reports']?.station?.value || 'Station météorologique'}
+                  />
+                ) : (
+                  <motion.div 
+                    className="bg-white/70 backdrop-blur-sm rounded-xl p-6 text-center border border-sky-100 shadow-sm"
+                    initial={{ scale: 0.95, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    transition={{ duration: 0.3 }}
                   >
-                    <div className="flex justify-center mb-4">
-                      <div className="flex gap-2">
-                        <motion.div className="w-3 h-3 bg-sky-300 rounded-full" animate={{ y: [0, -4, 0] }} transition={{ duration: 1.5, repeat: Infinity, delay: 0 }} />
-                        <motion.div className="w-3 h-3 bg-blue-400 rounded-full" animate={{ y: [0, -4, 0] }} transition={{ duration: 1.5, repeat: Infinity, delay: 0.2 }} />
-                        <motion.div className="w-3 h-3 bg-indigo-500 rounded-full" animate={{ y: [0, -4, 0] }} transition={{ duration: 1.5, repeat: Infinity, delay: 0.4 }} />
+                    <motion.div
+                      initial={{ y: 10, opacity: 0 }}
+                      animate={{ y: 0, opacity: 1 }}
+                      transition={{ delay: 0.1 }}
+                    >
+                      <div className="flex justify-center mb-4">
+                        <div className="flex gap-2">
+                          <motion.div className="w-3 h-3 bg-sky-300 rounded-full" animate={{ y: [0, -4, 0] }} transition={{ duration: 1.5, repeat: Infinity, delay: 0 }} />
+                          <motion.div className="w-3 h-3 bg-blue-400 rounded-full" animate={{ y: [0, -4, 0] }} transition={{ duration: 1.5, repeat: Infinity, delay: 0.2 }} />
+                          <motion.div className="w-3 h-3 bg-indigo-500 rounded-full" animate={{ y: [0, -4, 0] }} transition={{ duration: 1.5, repeat: Infinity, delay: 0.4 }} />
+                        </div>
                       </div>
-                    </div>
-                    <p className="text-sky-800 font-medium mb-2">
-                      🌦️ Données climatiques en cours d'intégration
-                    </p>
-                    <p className="text-sm text-sky-700">
-                      Les relevés horaires de température et d'humidité seront bientôt disponibles pour enrichir l'analyse environnementale.
-                    </p>
+                      <p className="text-sky-800 font-medium mb-2">
+                        🌦️ Données climatiques en cours d'intégration
+                      </p>
+                      <p className="text-sm text-sky-700">
+                        Les relevés horaires de température et d'humidité seront bientôt disponibles pour enrichir l'analyse environnementale.
+                      </p>
+                    </motion.div>
                   </motion.div>
-                </motion.div>
+                )}
               </CardContent>
             </CollapsibleContent>
           </Collapsible>
