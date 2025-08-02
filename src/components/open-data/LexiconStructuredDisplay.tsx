@@ -214,7 +214,7 @@ const LexiconStructuredDisplay: React.FC<LexiconStructuredDisplayProps> = ({ dat
                       ))}
                     </motion.div>
                     {!weatherOpen && (
-                      <Button variant="outline" size="sm" className="text-xs border-sky-200 text-sky-700 hover:bg-sky-50">
+                      <Button size="sm" className="text-xs bg-gradient-to-r from-sky-600 to-blue-600 text-white hover:from-sky-700 hover:to-blue-700 border-0">
                         Explorer les données
                       </Button>
                     )}
