@@ -8,7 +8,9 @@ import AdminAuth from './components/AdminAuth';
 import Index from './pages/Index';
 import NotFound from './pages/NotFound';
 import MarcheDetail from './pages/MarcheDetail';
+import MarcheDetailBio from './pages/MarcheDetailBio';
 import MarchesTechnoSensibles from './pages/MarchesTechnoSensibles';
+import BioacoustiquePoetique from './pages/BioacoustiquePoetique';
 import MigrationAdmin from './pages/MigrationAdmin';
 import MigrationExecution from './pages/MigrationExecution';
 import MarcheAdmin from './pages/MarcheAdmin';
@@ -22,6 +24,10 @@ function App() {
           <Route path="/" element={<Index />} />
           <Route path="/marches-techno-sensibles" element={<MarchesTechnoSensibles />} />
           <Route path="/marche/:slug" element={<MarcheDetail />} />
+          
+          {/* Nouvelles routes bioacoustiques */}
+          <Route path="/bioacoustique-poetique" element={<BioacoustiquePoetique />} />
+          <Route path="/bioacoustique/:slug" element={<MarcheDetailBio />} />
           
           {/* Routes d'administration protégées */}
           <Route path="/admin/migration" element={
