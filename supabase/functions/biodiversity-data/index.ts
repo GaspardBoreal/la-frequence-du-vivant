@@ -171,14 +171,14 @@ async function fetchINaturalistData(lat: number, lon: number, radius: number, da
       startDate = new Date(now.getFullYear() - 5, now.getMonth(), now.getDate()).toISOString().split('T')[0];
     }
     
-    // Utiliser le rayon fourni directement, avec minimum de 1km pour iNaturalist
-    const searchRadius = Math.max(radius, 1); // Minimum 1km pour avoir des résultats
+    // Utiliser exactement le rayon demandé, même moins d'1km pour éviter les faux positifs urbains
+    const searchRadius = radius; // Pas de minimum artificiel
     
     const params = new URLSearchParams({
       'lat': lat.toString(),
       'lng': lon.toString(),
-      'radius': searchRadius.toString(), // Utiliser le rayon élargi
-      'quality_grade': 'research,needs_id,casual',
+      'radius': searchRadius.toString(), // Utiliser le rayon exact demandé
+      'quality_grade': 'research', // Seulement les observations validées pour éviter les faux positifs
       'per_page': '200', // Augmenter le nombre de résultats
       'order': 'desc',
       'order_by': 'observed_on',
