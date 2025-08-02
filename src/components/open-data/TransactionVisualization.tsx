@@ -55,7 +55,64 @@ const TransactionVisualization: React.FC<TransactionVisualizationProps> = ({
   const [animationPhase, setAnimationPhase] = useState(0);
   const [hoveredData, setHoveredData] = useState<any>(null);
 
-  // Données d'exemple pour la démo (à remplacer par les vraies données LEXICON)
+  // Vérifier s'il y a des vraies données de transaction
+  const hasRealData = transactionData && 
+    transactionData.values && 
+    Object.keys(transactionData.values).length > 0;
+
+  // Si pas de données réelles, afficher un message approprié
+  if (!hasRealData) {
+    return (
+      <motion.div 
+        className="bg-white/70 backdrop-blur-sm rounded-xl p-8 text-center border border-emerald-100 shadow-sm"
+        initial={{ scale: 0.95, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        transition={{ duration: 0.3 }}
+      >
+        <motion.div
+          initial={{ y: 10, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ delay: 0.1 }}
+          className="space-y-4"
+        >
+          <div className="flex justify-center mb-4">
+            <motion.div
+              className="p-4 bg-emerald-100 rounded-full"
+              animate={{ 
+                scale: [1, 1.05, 1],
+                rotate: [0, 2, -2, 0]
+              }}
+              transition={{ 
+                duration: 3,
+                repeat: Infinity
+              }}
+            >
+              <TrendingUp className="h-8 w-8 text-emerald-600" />
+            </motion.div>
+          </div>
+          <h3 className="text-lg font-semibold text-emerald-800 mb-2">
+            Aucune transaction enregistrée
+          </h3>
+          <p className="text-emerald-700 text-sm max-w-md mx-auto">
+            Cette parcelle ne présente pas d'historique de transactions immobilières 
+            dans la base de données LEXICON pour la période consultée.
+          </p>
+          <div className="pt-4">
+            <Button 
+              className="bg-gradient-to-r from-emerald-600 to-green-600 text-white hover:from-emerald-700 hover:to-green-700 px-6 py-2 rounded-full"
+              onClick={() => {
+                window.open(`https://lexicon.osfarm.org/tools/parcel-identifier?latitude=${coordinates.latitude}&longitude=${coordinates.longitude}`, '_blank');
+              }}
+            >
+              Consulter LEXICON directement
+            </Button>
+          </div>
+        </motion.div>
+      </motion.div>
+    );
+  }
+
+  // Données d'exemple uniquement si on a des vraies données LEXICON
   const mockData = useMemo(() => {
     const basePrice = 250000 + Math.random() * 100000;
     const basePriceM2 = 3000 + Math.random() * 1500;
