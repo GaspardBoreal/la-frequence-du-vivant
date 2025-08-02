@@ -75,7 +75,7 @@ const LexiconStructuredDisplay: React.FC<LexiconStructuredDisplayProps> = ({ dat
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.1 }}
       >
-        <Card className="border-green-200 bg-green-50/50">
+        <Card className="border-green-200 bg-white">
           <CardHeader className="pb-4">
             <CardTitle className="flex items-center gap-3 text-xl font-bold text-gray-800">
               <MapPin className="h-6 w-6 text-green-600" />
@@ -111,7 +111,7 @@ const LexiconStructuredDisplay: React.FC<LexiconStructuredDisplayProps> = ({ dat
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.2 }}
       >
-        <Card className="border-blue-200 bg-blue-50/50">
+        <Card className="border-blue-200 bg-white">
           <CardHeader className="pb-4">
             <CardTitle className="flex items-center gap-3 text-xl font-bold text-gray-800">
               <FileText className="h-6 w-6 text-blue-600" />
