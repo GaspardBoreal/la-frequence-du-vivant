@@ -406,12 +406,13 @@ const WeatherVisualization: React.FC<WeatherVisualizationProps> = ({
               )}
               
               {/* Ligne de progression d'animation */}
-              {isPlaying && (
+              {isPlaying && currentIndex < filteredData.length && (
                 <ReferenceLine
                   x={filteredData[currentIndex]?.formattedTime}
                   stroke="#10b981"
                   strokeWidth={3}
                   strokeDasharray="none"
+                  yAxisId={activeMetric === 'humidity' ? 'humidity' : 'temperature'}
                 />
               )}
             </ComposedChart>
