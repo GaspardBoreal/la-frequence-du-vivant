@@ -213,93 +213,94 @@ const BioDivSubSection: React.FC<BioDivSubSectionProps> = ({ marche, theme }) =>
                       <Info className="h-3 w-3" />
                     </Button>
                   </DialogTrigger>
-                  <DialogContent className="max-w-4xl max-h-[85vh] overflow-y-auto">
-                    <DialogHeader>
-                      <DialogTitle className="flex items-center gap-3">
-                        {getKingdomIcon(species.kingdom)}
-                        <div>
-                          <div className="font-bold text-lg">{species.commonName}</div>
-                          <div className="text-sm font-normal italic text-muted-foreground">
-                            {species.scientificName}
-                          </div>
-                        </div>
-                      </DialogTitle>
-                    </DialogHeader>
-                    
-                    <div className="space-y-6">
-                      {/* Galerie de photos améliorée */}
-                      {hasPhotos && (
-                        <div>
-                          <h5 className="font-medium text-foreground mb-3 flex items-center gap-2">
-                            <Camera className="h-4 w-4" />
-                            Photos ({species.photos.length})
-                          </h5>
-                          
-                          {/* Première photo principale en grand format */}
-                          <div className="mb-4">
-                            <div className="relative rounded-lg overflow-hidden bg-muted/20 group cursor-pointer">
-                              <img 
-                                src={getOptimizedImageUrl(species.photos[0], 'large')} 
-                                alt={`${species.commonName} - Photo principale`}
-                                className="w-full h-auto max-h-96 object-contain hover:scale-105 transition-transform duration-300"
-                                style={{
-                                  imageRendering: '-webkit-optimize-contrast',
-                                  filter: 'contrast(1.05) brightness(1.02)',
-                                  willChange: 'transform'
-                                }}
-                                loading="eager"
-                                onError={(e) => {
-                                  const current = e.currentTarget;
-                                  if (current.src !== species.photos[0]) {
-                                    current.src = species.photos[0];
-                                  }
-                                }}
-                              />
-                              <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
-                                <ZoomIn className="h-8 w-8 text-white" />
-                              </div>
-                            </div>
-                          </div>
-
-                          {/* Galerie de miniatures pour les autres photos */}
-                          {species.photos.length > 1 && (
-                            <div className="space-y-2">
-                              <h6 className="text-sm font-medium text-muted-foreground">Autres photos</h6>
-                              <div className="flex flex-wrap gap-2">
-                                {species.photos.slice(1, 8).map((photo, index) => (
-                                  <div key={index + 1} className="relative w-20 h-20 rounded-md overflow-hidden cursor-pointer group">
-                                    <img 
-                                      src={getOptimizedImageUrl(photo, 'medium')} 
-                                      alt={`${species.commonName} - Photo ${index + 2}`}
-                                      className="w-full h-full object-cover hover:scale-110 transition-transform duration-300"
-                                      style={{
-                                        imageRendering: '-webkit-optimize-contrast',
-                                        filter: 'contrast(1.05) brightness(1.02)',
-                                        willChange: 'transform'
-                                      }}
-                                      loading="lazy"
-                                      onError={(e) => {
-                                        const current = e.currentTarget;
-                                        if (current.src !== photo) {
-                                          current.src = photo;
-                                        }
-                                      }}
-                                    />
-                                    <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity duration-200" />
-                                  </div>
-                                ))}
-                                {species.photos.length > 8 && (
-                                  <div className="w-20 h-20 rounded-md bg-muted/50 flex items-center justify-center">
-                                    <span className="text-xs text-muted-foreground font-medium">
-                                      +{species.photos.length - 8}
-                                    </span>
-                                  </div>
-                                )}
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                      )}
+                   <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
+                     <DialogHeader>
+                       <DialogTitle className="flex items-center gap-3">
+                         {getKingdomIcon(species.kingdom)}
+                         <div>
+                           <div className="font-bold text-xl">{species.commonName}</div>
+                           <div className="text-sm font-normal italic text-muted-foreground">
+                             {species.scientificName}
+                           </div>
+                         </div>
+                       </DialogTitle>
+                     </DialogHeader>
+                     
+                     <div className="space-y-6">
+                       {/* Layout en deux colonnes */}
+                       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                         {/* Colonne gauche - Image principale */}
+                         {hasPhotos && (
+                           <div className="space-y-4">
+                             <div className="relative w-full h-80 rounded-lg overflow-hidden bg-muted/10">
+                               <img 
+                                 src={species.photos[0]} 
+                                 alt={`${species.commonName} - Photo principale`}
+                                 className="w-full h-full object-cover"
+                                 loading="eager"
+                                 onError={(e) => {
+                                   console.warn('Erreur de chargement image:', species.photos[0]);
+                                   e.currentTarget.src = species.photos[0];
+                                 }}
+                               />
+                             </div>
+                             
+                             {/* Photos supplémentaires */}
+                             {species.photos.length > 1 && (
+                               <div className="grid grid-cols-4 gap-2">
+                                 {species.photos.slice(1, 5).map((photo, index) => (
+                                   <div key={index + 1} className="relative aspect-square rounded-md overflow-hidden cursor-pointer group">
+                                     <img 
+                                       src={photo} 
+                                       alt={`${species.commonName} - Photo ${index + 2}`}
+                                       className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
+                                       loading="lazy"
+                                       onError={(e) => {
+                                         e.currentTarget.src = photo;
+                                       }}
+                                     />
+                                   </div>
+                                 ))}
+                               </div>
+                             )}
+                           </div>
+                         )}
+                         
+                         {/* Colonne droite - Informations taxonomiques */}
+                         <div className="space-y-6">
+                           {/* Badges principaux */}
+                           <div className="flex flex-wrap gap-2">
+                             <Badge variant="secondary" className="text-sm px-3 py-1">
+                               {species.observations} observation{species.observations > 1 ? 's' : ''}
+                             </Badge>
+                             <Badge variant="outline" className="text-sm px-3 py-1">
+                               Vu le {new Date(species.lastSeen).toLocaleDateString('fr-FR')}
+                             </Badge>
+                             <Badge className={`text-sm px-3 py-1 ${getSourceColor(species.source)}`}>
+                               {getSourceName(species.source)}
+                             </Badge>
+                           </div>
+                           
+                           {/* Informations taxonomiques */}
+                           <div className="space-y-4">
+                             <div>
+                               <h4 className="font-semibold text-lg mb-3">Classification</h4>
+                               <div className="space-y-2 text-sm">
+                                 <div className="flex justify-between">
+                                   <span className="text-muted-foreground">Règne :</span>
+                                   <span className="font-medium">{species.kingdom}</span>
+                                 </div>
+                                 {species.family && (
+                                   <div className="flex justify-between">
+                                     <span className="text-muted-foreground">Famille :</span>
+                                     <span className="font-medium">{species.family}</span>
+                                   </div>
+                                 )}
+                               </div>
+                             </div>
+                           </div>
+                         </div>
+                       </div>
 
                       {/* Informations de base */}
                       <div className="bg-muted/30 p-4 rounded-lg">
