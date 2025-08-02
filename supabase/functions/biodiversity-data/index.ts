@@ -540,6 +540,43 @@ async function fetchEBirdData(lat: number, lon: number, radius: number, dateFilt
   }
 }
 
+// Fonction pour récupérer les photos eBird via Macaulay Library
+async function fetchEBirdPhotos(speciesCode: string, subId: string, apiKey: string): Promise<string[]> {
+  try {
+    // Utiliser l'API Macaulay Library pour obtenir des photos d'oiseaux
+    const mediaUrl = `https://search.macaulaylibrary.org/api/v1/search?taxonCode=${speciesCode}&mediaType=Photo&count=1&sort=rating_rank_desc`;
+    
+    const response = await fetch(mediaUrl, {
+      headers: {
+        'User-Agent': 'BiodiversityApp/1.0',
+        'Accept': 'application/json'
+      }
+    });
+    
+    if (!response.ok) {
+      console.log(`Macaulay Library API error for ${speciesCode}:`, response.status);
+      // Fallback vers une image générique d'oiseau
+      return [`https://www.allaboutbirds.org/guide/assets/photo/${speciesCode}-photo-1.jpg`];
+    }
+    
+    const mediaData = await response.json();
+    
+    if (mediaData && mediaData.results && mediaData.results.length > 0) {
+      const photos = mediaData.results.slice(0, 2).map((result: any) => {
+        return `https://cdn.download.ams.birds.cornell.edu/api/v1/asset/${result.assetId}/320`;
+      });
+      return photos;
+    }
+    
+    // Fallback vers une image générique si pas de résultats
+    return [`https://www.allaboutbirds.org/guide/assets/photo/${speciesCode}-photo-1.jpg`];
+  } catch (error) {
+    console.log(`Error fetching eBird photos for ${speciesCode}:`, error);
+    // Fallback vers une image générique
+    return [`https://www.allaboutbirds.org/guide/assets/photo/${speciesCode}-photo-1.jpg`];
+  }
+}
+
 // Helper function to calculate distance between two points
 function calculateDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
   const R = 6371; // Rayon de la Terre en km

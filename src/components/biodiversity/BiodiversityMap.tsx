@@ -277,9 +277,15 @@ export const BiodiversityMap: React.FC<BiodiversityMapProps> = ({
                              src={species.photos[0]}
                              alt={species.commonName}
                              className="w-6 h-6 object-cover rounded border"
+                             loading="lazy"
                              onError={(e) => {
                                const target = e.target as HTMLImageElement;
-                               target.style.display = 'none';
+                               // Essayer avec une URL de fallback spécifique aux oiseaux
+                               if (!target.src.includes('placeholder')) {
+                                 target.src = `https://www.allaboutbirds.org/guide/assets/photo/${species.id.replace('ebird-', '')}-photo-1.jpg`;
+                               } else {
+                                 target.style.display = 'none';
+                               }
                              }}
                            />
                          )}
@@ -348,9 +354,15 @@ export const BiodiversityMap: React.FC<BiodiversityMapProps> = ({
                                src={species.photos[0]}
                                alt={species.commonName}
                                className="w-full h-full object-cover rounded-lg border"
+                               loading="lazy"
                                onError={(e) => {
                                  const target = e.target as HTMLImageElement;
-                                 target.style.display = 'none';
+                                 // Essayer avec une URL de fallback spécifique aux oiseaux
+                                 if (!target.src.includes('placeholder')) {
+                                   target.src = `https://www.allaboutbirds.org/guide/assets/photo/${species.id.replace('ebird-', '')}-photo-1.jpg`;
+                                 } else {
+                                   target.style.display = 'none';
+                                 }
                                }}
                              />
                            </div>
@@ -374,32 +386,36 @@ export const BiodiversityMap: React.FC<BiodiversityMapProps> = ({
                             </Badge>
                           </div>
                           
-                          {species.attributions && species.attributions.length > 0 && (
-                            <div className="space-y-1">
-                              {species.attributions.slice(0, 2).map((attribution, idx) => (
-                                <div key={idx} className="text-xs text-muted-foreground flex items-center gap-2">
-                                  <User className="h-3 w-3" />
-                                  {attribution.observerName || 'Anonyme'}
-                                  {attribution.date && (
-                                    <>
-                                      <Calendar className="h-3 w-3 ml-2" />
-                                      {new Date(attribution.date).toLocaleDateString('fr-FR')}
-                                    </>
-                                  )}
-                                  {attribution.originalUrl && (
-                                    <Button
-                                      variant="ghost"
-                                      size="sm"
-                                      className="h-auto p-0 text-xs"
-                                      onClick={() => window.open(attribution.originalUrl, '_blank')}
-                                    >
-                                      <ExternalLink className="h-3 w-3" />
-                                    </Button>
-                                  )}
-                                </div>
-                              ))}
-                            </div>
-                          )}
+                           {species.attributions && species.attributions.length > 0 && (
+                             <div className="space-y-1">
+                               {species.attributions.slice(0, 2).map((attribution, idx) => (
+                                 <div key={idx} className="text-xs text-muted-foreground flex items-center gap-2">
+                                   <User className="h-3 w-3" />
+                                   <span className="font-medium">
+                                     {attribution.observerName && attribution.observerName !== 'Observateur eBird' 
+                                       ? attribution.observerName 
+                                       : attribution.observerInstitution || 'Anonyme'}
+                                   </span>
+                                   {attribution.date && (
+                                     <>
+                                       <Calendar className="h-3 w-3 ml-2" />
+                                       {new Date(attribution.date).toLocaleDateString('fr-FR')}
+                                     </>
+                                   )}
+                                   {attribution.originalUrl && (
+                                     <Button
+                                       variant="ghost"
+                                       size="sm"
+                                       className="h-auto p-0 text-xs hover:text-primary"
+                                       onClick={() => window.open(attribution.originalUrl, '_blank')}
+                                     >
+                                       <ExternalLink className="h-3 w-3" />
+                                     </Button>
+                                   )}
+                                 </div>
+                               ))}
+                             </div>
+                           )}
                         </div>
                       </div>
                     </motion.div>
