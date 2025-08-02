@@ -34,23 +34,7 @@ const OpenDataSection: React.FC<OpenDataSectionProps> = ({
   };
 
   return (
-    <div className="space-y-8 pt-16">
-      {/* Header Section */}
-      <motion.div
-        className="text-center space-y-4"
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6 }}
-      >
-        <h2 className="text-4xl font-crimson font-bold flex items-center justify-center gap-3">
-          <Database className="h-8 w-8 text-blue-600" />
-          Open Data
-        </h2>
-        <p className="text-gray-600 max-w-2xl mx-auto text-lg">
-          Explorez les données ouvertes de <span className="font-semibold text-blue-600">{marche.ville}</span>
-        </p>
-      </motion.div>
-
+    <div className="space-y-8">
       {/* Sub-section Content */}
       <motion.div
         key={activeSubSection}
