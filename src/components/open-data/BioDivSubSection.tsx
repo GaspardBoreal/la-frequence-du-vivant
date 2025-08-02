@@ -182,37 +182,41 @@ const BioDivSubSection: React.FC<BioDivSubSectionProps> = ({ marche, theme }) =>
                                 )}
                               </div>
                               
-                              <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
-                                <div className="flex items-center gap-1">
-                                  <User className="h-3 w-3 text-gray-500" />
-                                  <span className="text-gray-700">{attribution.observerName || 'Anonyme'}</span>
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+                                <div className="flex items-center gap-2">
+                                  <User className="h-4 w-4 text-primary" />
+                                  <span className="font-medium text-foreground">{attribution.observerName || 'Anonyme'}</span>
                                 </div>
                                 
-                                <div className="flex items-center gap-1">
-                                  <Building className="h-3 w-3 text-gray-500" />
-                                  <span className="text-gray-700">{attribution.observerInstitution || 'Non spécifié'}</span>
+                                <div className="flex items-center gap-2">
+                                  <Building className="h-4 w-4 text-primary" />
+                                  <span className="font-medium text-foreground">{attribution.observerInstitution || 'Non spécifié'}</span>
                                 </div>
                                 
-                                <div className="flex items-center gap-1">
-                                  <Calendar className="h-3 w-3 text-gray-500" />
-                                  <span className="text-gray-700">{new Date(attribution.date).toLocaleDateString('fr-FR')}</span>
+                                <div className="flex items-center gap-2">
+                                  <Calendar className="h-4 w-4 text-primary" />
+                                  <span className="font-medium text-foreground">{new Date(attribution.date).toLocaleDateString('fr-FR')}</span>
                                 </div>
                                 
-                                <div className="flex items-center gap-1">
-                                  <MapPin className="h-3 w-3 text-gray-500" />
-                                  <span className="text-gray-700">{attribution.locationName || 'Localisation inconnue'}</span>
+                                <div className="flex items-center gap-2">
+                                  <MapPin className="h-4 w-4 text-primary" />
+                                  <span className="font-medium text-foreground">{attribution.locationName || 'Localisation inconnue'}</span>
                                 </div>
                               </div>
                               
                               {attribution.observationMethod && (
-                                <div className="mt-2 text-sm text-gray-600">
-                                  <span className="font-medium">Méthode:</span> {attribution.observationMethod}
+                                <div className="mt-3 p-2 bg-muted/50 rounded-md">
+                                  <span className="font-semibold text-foreground">Méthode:</span> 
+                                  <span className="ml-2 text-foreground">{attribution.observationMethod}</span>
                                 </div>
                               )}
                               
                               {attribution.exactLatitude && attribution.exactLongitude && (
-                                <div className="mt-2 text-xs text-gray-500">
-                                  Coordonnées: {attribution.exactLatitude.toFixed(6)}, {attribution.exactLongitude.toFixed(6)}
+                                <div className="mt-3 p-2 bg-muted/30 rounded-md text-sm">
+                                  <span className="font-semibold text-foreground">Coordonnées:</span> 
+                                  <span className="ml-2 font-mono text-foreground">
+                                    {attribution.exactLatitude.toFixed(6)}, {attribution.exactLongitude.toFixed(6)}
+                                  </span>
                                 </div>
                               )}
                             </CardContent>
