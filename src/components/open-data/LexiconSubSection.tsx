@@ -1,10 +1,12 @@
 
 import React from 'react';
 import { motion } from 'framer-motion';
-import { BookOpen, ExternalLink, Search, Tag } from 'lucide-react';
+import { BookOpen, ExternalLink, Search, Tag, Loader2, AlertCircle } from 'lucide-react';
 import { Button } from '../ui/button';
 import { MarcheTechnoSensible } from '../../utils/googleSheetsApi';
 import { RegionalTheme } from '../../utils/regionalThemes';
+import { useLexiconData } from '../../hooks/useLexiconData';
+import LexiconDataDisplay from './LexiconDataDisplay';
 
 interface LexiconSubSectionProps {
   marche: MarcheTechnoSensible;
@@ -12,6 +14,16 @@ interface LexiconSubSectionProps {
 }
 
 const LexiconSubSection: React.FC<LexiconSubSectionProps> = ({ marche, theme }) => {
+  const { data: lexiconResponse, isLoading, error, isError } = useLexiconData(
+    marche.latitude, 
+    marche.longitude
+  );
+
+  const openLexiconPage = () => {
+    const url = `https://lexicon.osfarm.org/tools/parcel-identifier?latitude=${marche.latitude}&longitude=${marche.longitude}`;
+    window.open(url, '_blank');
+  };
+
   return (
     <div className="max-w-4xl mx-auto">
       <div className="gaspard-glass rounded-3xl p-12 text-center space-y-8">
@@ -32,28 +44,72 @@ const LexiconSubSection: React.FC<LexiconSubSectionProps> = ({ marche, theme }) 
           </h3>
           
           <p className="text-gray-600 text-xl max-w-2xl mx-auto leading-relaxed">
-            Explorez le lexique sémantique et les données terminologiques de{' '}
+            Explorez les données parcellaires et agricoles de{' '}
             <span className="font-semibold text-green-600">{marche.ville}</span>
           </p>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-8">
-            <div className="bg-white/50 rounded-xl p-6 text-left">
-              <Search className="h-8 w-8 text-green-600 mb-3" />
-              <h4 className="font-semibold text-gray-800 mb-2">Recherche sémantique</h4>
-              <p className="text-gray-600 text-sm">
-                Analyse des concepts et termes associés
-              </p>
-            </div>
-            
-            <div className="bg-white/50 rounded-xl p-6 text-left">
-              <Tag className="h-8 w-8 text-green-600 mb-3" />
-              <h4 className="font-semibold text-gray-800 mb-2">Tags thématiques</h4>
-              <p className="text-gray-600 text-sm">
-                {marche.tagsThematiques?.slice(0, 3).join(', ') || 'Données en cours d\'indexation'}
-              </p>
-            </div>
-          </div>
+          {/* État de chargement */}
+          {isLoading && (
+            <motion.div
+              className="flex items-center justify-center py-8"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+            >
+              <Loader2 className="h-8 w-8 text-green-600 animate-spin mr-3" />
+              <p className="text-gray-600">Chargement des données LEXICON...</p>
+            </motion.div>
+          )}
 
+          {/* État d'erreur */}
+          {isError && (
+            <motion.div
+              className="bg-red-50 border border-red-200 rounded-xl p-6 text-left"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+            >
+              <div className="flex items-center gap-3 mb-3">
+                <AlertCircle className="h-6 w-6 text-red-500" />
+                <h4 className="font-semibold text-red-800">Erreur de chargement</h4>
+              </div>
+              <p className="text-red-600 text-sm mb-4">
+                {error?.message || 'Impossible de charger les données LEXICON pour cette localisation.'}
+              </p>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="bg-white/50 rounded-xl p-4">
+                  <Search className="h-6 w-6 text-green-600 mb-2" />
+                  <h5 className="font-semibold text-gray-800 mb-1 text-sm">Recherche parcellaire</h5>
+                  <p className="text-gray-600 text-xs">
+                    Analyse des données cadastrales et agricoles
+                  </p>
+                </div>
+                
+                <div className="bg-white/50 rounded-xl p-4">
+                  <Tag className="h-6 w-6 text-green-600 mb-2" />
+                  <h5 className="font-semibold text-gray-800 mb-1 text-sm">Données disponibles</h5>
+                  <p className="text-gray-600 text-xs">
+                    Cultures, certifications, propriétaires
+                  </p>
+                </div>
+              </div>
+            </motion.div>
+          )}
+
+          {/* Affichage des données */}
+          {lexiconResponse?.success && lexiconResponse.data && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.3 }}
+              className="text-left"
+            >
+              <LexiconDataDisplay 
+                data={lexiconResponse.data} 
+                coordinates={lexiconResponse.coordinates!}
+              />
+            </motion.div>
+          )}
+
+          {/* Bouton d'accès au LEXICON */}
           <motion.div
             className="pt-6"
             initial={{ opacity: 0 }}
@@ -61,11 +117,12 @@ const LexiconSubSection: React.FC<LexiconSubSectionProps> = ({ marche, theme }) 
             transition={{ delay: 0.6 }}
           >
             <Button
+              onClick={openLexiconPage}
               size="lg"
               className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white px-8 py-3 rounded-full shadow-lg"
             >
               <ExternalLink className="h-5 w-5 mr-2" />
-              Accéder au Lexicon
+              Accéder au LEXICON complet
             </Button>
           </motion.div>
         </div>
