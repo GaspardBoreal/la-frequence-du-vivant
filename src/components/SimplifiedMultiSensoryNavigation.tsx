@@ -33,9 +33,9 @@ const SimplifiedMultiSensoryNavigation: React.FC<SimplifiedMultiSensoryNavigatio
       icon: Database,
       color: theme.colors.primary,
       subMenus: [
-        { id: 'etalab', label: 'Etalab' },
+        { id: 'biodiv', label: 'BioDiv' },
         { id: 'lexicon', label: 'Lexicon' },
-        { id: 'biodiv', label: 'BioDiv' }
+        { id: 'etalab', label: 'Etalab' }
       ]
     },
     {
