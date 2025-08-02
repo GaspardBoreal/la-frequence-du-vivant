@@ -55,7 +55,12 @@ const BioDivSubSection: React.FC<BioDivSubSectionProps> = ({ marche, theme }) =>
     totalInSummary: biodiversityData?.summary?.totalSpecies || 0,
     methodologyRadius: biodiversityData?.methodology?.radius,
     sources: biodiversityData?.methodology?.sources,
-    sampleKingdoms: biodiversityData?.species?.slice(0, 5).map(s => ({ name: s.scientificName, kingdom: s.kingdom })),
+    uniqueKingdoms: biodiversityData?.species ? [...new Set(biodiversityData.species.map(s => s.kingdom).filter(k => k))] : [],
+    birdSample: biodiversityData?.species?.filter(s => s.source === 'ebird').slice(0, 3).map(s => ({ 
+      name: s.scientificName, 
+      kingdom: s.kingdom,
+      source: s.source 
+    })) || [],
     categoryStats: {
       all: biodiversityData?.species?.length || 0,
       flora: biodiversityData?.species?.filter(s => s.kingdom === 'Plantae')?.length || 0,
