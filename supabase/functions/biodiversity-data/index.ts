@@ -503,6 +503,9 @@ async function fetchEBirdData(lat: number, lon: number, radius: number, dateFilt
           }
         }
 
+        // Debug: afficher les détails de l'observateur
+        console.log(`🔍 Observer debug for ${item.comName}: userDisplayName="${item.userDisplayName}", subId="${item.subId}"`);
+        
         return {
           id: `ebird-${item.speciesCode || index}`,
           scientificName: item.sciName || 'Unknown',
@@ -514,10 +517,10 @@ async function fetchEBirdData(lat: number, lon: number, radius: number, dateFilt
           photos,
           source: 'ebird' as const,
           attributions: [{
-            observerName: item.userDisplayName || 'Observateur eBird',
-            observerInstitution: 'eBird/Cornell Lab',
+            observerName: item.userDisplayName || item.obsPerson || 'Contributeur eBird anonyme',
+            observerInstitution: 'eBird/Cornell Lab of Ornithology',
             observationMethod: 'Observation ornithologique',
-            originalUrl: item.hasRichMedia ? `https://ebird.org/checklist/${item.subId}` : `https://ebird.org/species/${item.speciesCode}`,
+            originalUrl: item.subId ? `https://ebird.org/checklist/${item.subId}` : `https://ebird.org/species/${item.speciesCode}`,
             exactLatitude: item.lat,
             exactLongitude: item.lng,
             locationName: item.locName || 'Localisation inconnue',
@@ -543,37 +546,45 @@ async function fetchEBirdData(lat: number, lon: number, radius: number, dateFilt
 // Fonction pour récupérer les photos eBird via Macaulay Library
 async function fetchEBirdPhotos(speciesCode: string, subId: string, apiKey: string): Promise<string[]> {
   try {
-    // Utiliser l'API Macaulay Library pour obtenir des photos d'oiseaux
-    const mediaUrl = `https://search.macaulaylibrary.org/api/v1/search?taxonCode=${speciesCode}&mediaType=Photo&count=1&sort=rating_rank_desc`;
+    // API Macaulay Library publique - pas besoin de clé API pour photos de base
+    const mediaUrl = `https://search.macaulaylibrary.org/api/v1/search?taxonCode=${speciesCode}&mediaType=p&count=3&sort=rating_rank_desc`;
+    
+    console.log(`📸 Fetching photos for ${speciesCode} from Macaulay Library`);
     
     const response = await fetch(mediaUrl, {
       headers: {
-        'User-Agent': 'BiodiversityApp/1.0',
-        'Accept': 'application/json'
+        'User-Agent': 'Mozilla/5.0 (compatible; BiodiversityApp/1.0)',
+        'Accept': 'application/json',
+        'Referer': 'https://ebird.org'
       }
     });
     
     if (!response.ok) {
-      console.log(`Macaulay Library API error for ${speciesCode}:`, response.status);
-      // Fallback vers une image générique d'oiseau
-      return [`https://www.allaboutbirds.org/guide/assets/photo/${speciesCode}-photo-1.jpg`];
+      console.log(`📸 Macaulay Library API error for ${speciesCode}:`, response.status, response.statusText);
+      return [];
     }
     
     const mediaData = await response.json();
+    console.log(`📸 Macaulay response for ${speciesCode}:`, JSON.stringify(mediaData).substring(0, 200));
     
-    if (mediaData && mediaData.results && mediaData.results.length > 0) {
+    if (mediaData && mediaData.results && Array.isArray(mediaData.results) && mediaData.results.length > 0) {
       const photos = mediaData.results.slice(0, 2).map((result: any) => {
-        return `https://cdn.download.ams.birds.cornell.edu/api/v1/asset/${result.assetId}/320`;
-      });
+        // Format d'URL pour Macaulay Library
+        if (result.assetId) {
+          return `https://cdn.download.ams.birds.cornell.edu/api/v1/asset/${result.assetId}/320`;
+        }
+        return null;
+      }).filter(Boolean);
+      
+      console.log(`📸 Found ${photos.length} photos for ${speciesCode}`);
       return photos;
     }
     
-    // Fallback vers une image générique si pas de résultats
-    return [`https://www.allaboutbirds.org/guide/assets/photo/${speciesCode}-photo-1.jpg`];
+    console.log(`📸 No photos found for ${speciesCode}`);
+    return [];
   } catch (error) {
-    console.log(`Error fetching eBird photos for ${speciesCode}:`, error);
-    // Fallback vers une image générique
-    return [`https://www.allaboutbirds.org/guide/assets/photo/${speciesCode}-photo-1.jpg`];
+    console.log(`📸 Error fetching eBird photos for ${speciesCode}:`, error);
+    return [];
   }
 }
 
