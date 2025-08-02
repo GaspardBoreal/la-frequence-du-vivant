@@ -18,6 +18,7 @@ const LexiconStructuredDisplay: React.FC<LexiconStructuredDisplayProps> = ({ dat
   const [weatherOpen, setWeatherOpen] = useState(false);
   const [transactionsOpen, setTransactionsOpen] = useState(false);
   const [debugOpen, setDebugOpen] = useState(false);
+  const [contributorsOpen, setContributorsOpen] = useState(false);
   const [copied, setCopied] = useState(false);
 
   console.log(`🎯 [LEXICON DISPLAY] Données reçues pour affichage:`, data);
@@ -88,30 +89,30 @@ const LexiconStructuredDisplay: React.FC<LexiconStructuredDisplayProps> = ({ dat
     {
       name: 'David Joulin',
       linkedin: 'https://www.linkedin.com/in/david-joulin-9b629790/',
-      role: 'Architecte de données'
+      role: 'Co-founder & CEO chez @ekylibre | Co-founder La Ferme Digitale | OSFarm | Seconde Nature'
     },
     {
       name: 'Olivier Lépine',
       linkedin: 'https://www.linkedin.com/in/crapougnax/',
-      role: 'Développeur full-stack'
+      role: 'Accélérer et sécuriser la transition écologique des agriculteurs avec l\'IoT, données, analyses et collaboration @ Brad Technology'
     },
     {
       name: 'Laurent Tripied',
       linkedin: 'https://www.linkedin.com/in/laurenttripied/',
-      role: 'Expert géospatial'
+      role: 'CEO bziiit / Expert IA Agriculture & Processus créatifs pilotés par IA'
     }
   ];
 
   const organizations = [
     {
-      name: 'OSFARM',
+      name: 'OSFARM (concepteur LEXICON)',
       url: 'https://www.osfarm.org/fr/',
-      description: 'Agriculture durable et innovation territoriale'
+      description: 'Solutions ouvertes et interopérables pour l\'agriculture de demain'
     },
     {
-      name: 'bziiit',
+      name: 'bziiit (IA Agriculture)',
       url: 'https://www.bziiit.com/',
-      description: 'Solutions tech pour l\'environnement'
+      description: 'Formations IA et briques IA Frugale Open Source pour l\'agriculture'
     }
   ];
 
@@ -457,14 +458,14 @@ const LexiconStructuredDisplay: React.FC<LexiconStructuredDisplayProps> = ({ dat
         </Card>
       </motion.div>
 
-      {/* Section Contributeurs - Optimisée SEO/GEO */}
+      {/* Section Contributeurs & Partenaires - Fermée par défaut avec mécanisme wahouhhh */}
       <motion.div
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.5 }}
       >
         <Card className="border-purple-200 bg-gradient-to-br from-purple-50 via-violet-50 to-fuchsia-50 overflow-hidden relative">
-          {/* Éléments décoratifs */}
+          {/* Éléments décoratifs animés */}
           <div className="absolute top-0 right-0 w-32 h-32 opacity-10">
             <motion.div
               animate={{ 
@@ -480,118 +481,305 @@ const LexiconStructuredDisplay: React.FC<LexiconStructuredDisplayProps> = ({ dat
               <Users className="w-full h-full text-purple-500" />
             </motion.div>
           </div>
-
-          <CardHeader className="relative z-10">
-            <CardTitle className="flex items-center gap-3 text-xl font-bold text-gray-800">
-              <motion.div 
-                className="p-2 bg-purple-100 rounded-full"
-                whileHover={{ scale: 1.1, rotate: 5 }}
-                transition={{ type: "spring", stiffness: 300 }}
-              >
-                <Users className="h-5 w-5 text-purple-600" />
-              </motion.div>
-              <span className="bg-gradient-to-r from-purple-600 to-violet-600 bg-clip-text text-transparent">
-                Contributeurs & Partenaires
-              </span>
-            </CardTitle>
-          </CardHeader>
           
-          <CardContent className="space-y-6">
-            {/* Organismes contributeurs */}
-            <div className="space-y-4">
-              <h4 className="text-lg font-semibold text-purple-800 mb-3">Organisations partenaires</h4>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {organizations.map((org, index) => (
-                  <motion.div
-                    key={org.name}
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: 0.1 + index * 0.1 }}
-                    className="bg-white/70 backdrop-blur-sm rounded-lg p-4 border border-purple-100 hover:border-purple-200 transition-all duration-300 group"
-                  >
-                    <div className="flex items-center justify-between mb-2">
-                      <h5 className="font-bold text-purple-800 group-hover:text-purple-900 transition-colors">
-                        {org.name}
-                      </h5>
-                      <motion.div
-                        whileHover={{ scale: 1.1 }}
-                        whileTap={{ scale: 0.95 }}
-                      >
-                        <a
-                          href={org.url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-purple-600 hover:text-purple-800 transition-colors"
-                          aria-label={`Visiter le site de ${org.name}`}
-                        >
-                          <ExternalLink className="h-4 w-4" />
-                        </a>
-                      </motion.div>
-                    </div>
-                    <p className="text-sm text-purple-700">{org.description}</p>
-                  </motion.div>
-                ))}
-              </div>
-            </div>
-
-            {/* Équipe technique */}
-            <div className="space-y-4">
-              <h4 className="text-lg font-semibold text-purple-800 mb-3">Équipe technique</h4>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                {contributors.map((contributor, index) => (
-                  <motion.div
-                    key={contributor.name}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.2 + index * 0.1 }}
-                    className="bg-white/70 backdrop-blur-sm rounded-lg p-4 border border-purple-100 hover:border-purple-200 transition-all duration-300 group hover:shadow-lg"
-                  >
-                    <div className="text-center space-y-3">
-                      <motion.div
-                        className="w-12 h-12 bg-gradient-to-br from-purple-400 to-violet-500 rounded-full mx-auto flex items-center justify-center text-white font-bold text-lg"
-                        whileHover={{ scale: 1.1 }}
-                        transition={{ type: "spring", stiffness: 300 }}
-                      >
-                        {contributor.name.split(' ').map(n => n[0]).join('')}
-                      </motion.div>
-                      <div>
-                        <h5 className="font-bold text-purple-800 group-hover:text-purple-900 transition-colors">
-                          {contributor.name}
-                        </h5>
-                        <p className="text-xs text-purple-600 mb-2">{contributor.role}</p>
+          <Collapsible open={contributorsOpen} onOpenChange={setContributorsOpen}>
+            <CollapsibleTrigger asChild>
+              <CardHeader className="cursor-pointer hover:bg-purple-100/50 transition-all duration-300 relative z-10">
+                <CardTitle className="flex items-center justify-between text-xl font-bold text-gray-800">
+                  <div className="flex items-center gap-3">
+                    <motion.div 
+                      className="p-2 bg-purple-100 rounded-full"
+                      whileHover={{ scale: 1.1, rotate: 5 }}
+                      transition={{ type: "spring", stiffness: 300 }}
+                    >
+                      <Users className="h-5 w-5 text-purple-600" />
+                    </motion.div>
+                    <span className="bg-gradient-to-r from-purple-600 to-violet-600 bg-clip-text text-transparent">
+                      Contributeurs & Partenaires
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    {/* Animations "wahouhhh" */}
+                    <motion.div 
+                      className="flex gap-1"
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      transition={{ delay: 0.5 }}
+                    >
+                      {[...Array(3)].map((_, i) => (
                         <motion.div
-                          whileHover={{ scale: 1.05 }}
-                          whileTap={{ scale: 0.95 }}
-                        >
-                          <a
-                            href={contributor.linkedin}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="inline-flex items-center gap-1 text-xs bg-purple-100 hover:bg-purple-200 text-purple-800 px-2 py-1 rounded-full transition-all duration-200"
-                            aria-label={`Profil LinkedIn de ${contributor.name}`}
+                          key={i}
+                          className="w-2 h-2 bg-purple-400 rounded-full"
+                          animate={{ 
+                            scale: [1, 1.3, 1],
+                            opacity: [0.5, 1, 0.5]
+                          }}
+                          transition={{ 
+                            duration: 2,
+                            repeat: Infinity,
+                            delay: i * 0.3
+                          }}
+                        />
+                      ))}
+                    </motion.div>
+                    {!contributorsOpen && (
+                      <motion.div
+                        whileHover={{ 
+                          scale: 1.05,
+                          boxShadow: "0 6px 20px rgba(147, 51, 234, 0.4)"
+                        }}
+                        whileTap={{ scale: 0.98 }}
+                      >
+                        <Button size="sm" className="text-xs bg-gradient-to-r from-purple-600 via-violet-600 to-fuchsia-600 text-white hover:from-purple-700 hover:via-violet-700 hover:to-fuchsia-700 border-0 shadow-lg hover:shadow-purple-300/50 transition-all duration-300">
+                          <motion.span
+                            animate={{ 
+                              background: [
+                                "linear-gradient(45deg, #9333EA, #8B5CF6)",
+                                "linear-gradient(45deg, #8B5CF6, #D946EF)",
+                                "linear-gradient(45deg, #D946EF, #9333EA)"
+                              ]
+                            }}
+                            transition={{ 
+                              duration: 3,
+                              repeat: Infinity,
+                              ease: "easeInOut"
+                            }}
                           >
-                            <svg className="w-3 h-3" viewBox="0 0 24 24" fill="currentColor">
-                              <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/>
-                            </svg>
-                            LinkedIn
-                          </a>
+                            Découvrir l'équipe ✨
+                          </motion.span>
+                        </Button>
+                      </motion.div>
+                    )}
+                    <motion.div
+                      animate={{ rotate: contributorsOpen ? 180 : 0 }}
+                      transition={{ duration: 0.4, type: "spring", stiffness: 200 }}
+                    >
+                      <ChevronDown className="h-4 w-4 text-purple-600" />
+                    </motion.div>
+                  </div>
+                </CardTitle>
+              </CardHeader>
+            </CollapsibleTrigger>
+            <CollapsibleContent>
+              <CardContent className="pt-0">
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ 
+                    duration: 0.6, 
+                    ease: "easeOut",
+                    type: "spring",
+                    stiffness: 100
+                  }}
+                  className="space-y-6"
+                >
+                  {/* Organismes contributeurs avec animations "wahouhhh" */}
+                  <div className="space-y-4">
+                    <motion.h4 
+                      className="text-lg font-semibold text-purple-800 mb-3"
+                      initial={{ opacity: 0, x: -30 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: 0.1, type: "spring", stiffness: 200 }}
+                    >
+                      🏢 Organisations partenaires
+                    </motion.h4>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {organizations.map((org, index) => (
+                        <motion.div
+                          key={org.name}
+                          initial={{ opacity: 0, scale: 0.8, rotate: -5 }}
+                          animate={{ opacity: 1, scale: 1, rotate: 0 }}
+                          transition={{ 
+                            delay: 0.2 + index * 0.15,
+                            type: "spring",
+                            stiffness: 200,
+                            damping: 15
+                          }}
+                          whileHover={{ 
+                            scale: 1.02,
+                            y: -2,
+                            boxShadow: "0 10px 25px rgba(147, 51, 234, 0.15)"
+                          }}
+                          className="bg-white/80 backdrop-blur-sm rounded-xl p-4 border border-purple-100 hover:border-purple-300 transition-all duration-300 group overflow-hidden relative"
+                        >
+                          {/* Gradient animé de fond */}
+                          <motion.div
+                            className="absolute inset-0 bg-gradient-to-br from-purple-50/50 to-violet-100/50 opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+                            animate={{ 
+                              background: [
+                                "linear-gradient(135deg, rgba(147, 51, 234, 0.05), rgba(139, 92, 246, 0.05))",
+                                "linear-gradient(135deg, rgba(139, 92, 246, 0.05), rgba(217, 70, 239, 0.05))",
+                                "linear-gradient(135deg, rgba(217, 70, 239, 0.05), rgba(147, 51, 234, 0.05))"
+                              ]
+                            }}
+                            transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+                          />
+                          <div className="relative z-10">
+                            <div className="flex items-center justify-between mb-3">
+                              <motion.h5 
+                                className="font-bold text-purple-800 group-hover:text-purple-900 transition-colors text-sm"
+                                whileHover={{ scale: 1.05 }}
+                              >
+                                {org.name}
+                              </motion.h5>
+                              <motion.div
+                                whileHover={{ scale: 1.2, rotate: 15 }}
+                                whileTap={{ scale: 0.9 }}
+                              >
+                                <a
+                                  href={org.url}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="text-purple-600 hover:text-purple-800 transition-colors"
+                                  aria-label={`Visiter le site de ${org.name}`}
+                                >
+                                  <ExternalLink className="h-4 w-4" />
+                                </a>
+                              </motion.div>
+                            </div>
+                            <p className="text-xs text-purple-700 leading-relaxed">{org.description}</p>
+                          </div>
                         </motion.div>
-                      </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Équipe technique avec super animations */}
+                  <div className="space-y-4">
+                    <motion.h4 
+                      className="text-lg font-semibold text-purple-800 mb-3"
+                      initial={{ opacity: 0, x: -30 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: 0.4, type: "spring", stiffness: 200 }}
+                    >
+                      👥 Équipe technique
+                    </motion.h4>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      {contributors.map((contributor, index) => (
+                        <motion.div
+                          key={contributor.name}
+                          initial={{ opacity: 0, y: 50, rotateY: -15 }}
+                          animate={{ opacity: 1, y: 0, rotateY: 0 }}
+                          transition={{ 
+                            delay: 0.5 + index * 0.2,
+                            type: "spring",
+                            stiffness: 150,
+                            damping: 12
+                          }}
+                          whileHover={{ 
+                            scale: 1.05,
+                            y: -5,
+                            rotateY: 2,
+                            boxShadow: "0 15px 35px rgba(147, 51, 234, 0.2)"
+                          }}
+                          className="bg-white/80 backdrop-blur-sm rounded-xl p-4 border border-purple-100 hover:border-purple-300 transition-all duration-300 group overflow-hidden relative"
+                        >
+                          {/* Particules flottantes */}
+                          <div className="absolute inset-0 overflow-hidden">
+                            {[...Array(3)].map((_, i) => (
+                              <motion.div
+                                key={i}
+                                className="absolute w-1 h-1 bg-purple-300 rounded-full opacity-0 group-hover:opacity-100"
+                                style={{
+                                  left: `${20 + i * 30}%`,
+                                  top: `${30 + i * 20}%`
+                                }}
+                                animate={{
+                                  y: [0, -10, 0],
+                                  opacity: [0, 0.6, 0]
+                                }}
+                                transition={{
+                                  duration: 2 + i * 0.5,
+                                  repeat: Infinity,
+                                  delay: i * 0.3
+                                }}
+                              />
+                            ))}
+                          </div>
+                          
+                          <div className="text-center space-y-3 relative z-10">
+                            <motion.div
+                              className="w-14 h-14 bg-gradient-to-br from-purple-400 via-violet-500 to-fuchsia-500 rounded-full mx-auto flex items-center justify-center text-white font-bold text-lg shadow-lg"
+                              whileHover={{ 
+                                scale: 1.15, 
+                                rotate: 360,
+                                background: "linear-gradient(135deg, #8B5CF6, #D946EF, #9333EA)"
+                              }}
+                              transition={{ 
+                                type: "spring", 
+                                stiffness: 300,
+                                duration: 0.6
+                              }}
+                            >
+                              {contributor.name.split(' ').map(n => n[0]).join('')}
+                            </motion.div>
+                            <div>
+                              <motion.h5 
+                                className="font-bold text-purple-800 group-hover:text-purple-900 transition-colors text-sm"
+                                whileHover={{ scale: 1.05 }}
+                              >
+                                {contributor.name}
+                              </motion.h5>
+                              <p className="text-xs text-purple-600 mb-3 leading-relaxed px-1">{contributor.role}</p>
+                              <motion.div
+                                whileHover={{ scale: 1.1 }}
+                                whileTap={{ scale: 0.95 }}
+                              >
+                                <a
+                                  href={contributor.linkedin}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="inline-flex items-center gap-1 text-xs bg-gradient-to-r from-purple-100 to-violet-100 hover:from-purple-200 hover:to-violet-200 text-purple-800 px-3 py-1.5 rounded-full transition-all duration-200 shadow-sm hover:shadow-md"
+                                  aria-label={`Profil LinkedIn de ${contributor.name}`}
+                                >
+                                  <svg className="w-3 h-3" viewBox="0 0 24 24" fill="currentColor">
+                                    <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/>
+                                  </svg>
+                                  LinkedIn
+                                </a>
+                              </motion.div>
+                            </div>
+                          </div>
+                        </motion.div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Métadonnées SEO structurées avec animation */}
+                  <motion.div 
+                    className="pt-6 border-t border-purple-200"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ delay: 1.2 }}
+                  >
+                    <div className="text-xs text-purple-600 space-y-2 bg-white/50 backdrop-blur-sm rounded-lg p-3 border border-purple-100">
+                      <motion.p
+                        initial={{ x: -10, opacity: 0 }}
+                        animate={{ x: 0, opacity: 1 }}
+                        transition={{ delay: 1.3 }}
+                      >
+                        📍 Coordonnées géographiques: {coordinates.latitude.toFixed(6)}, {coordinates.longitude.toFixed(6)}
+                      </motion.p>
+                      <motion.p
+                        initial={{ x: -10, opacity: 0 }}
+                        animate={{ x: 0, opacity: 1 }}
+                        transition={{ delay: 1.4 }}
+                      >
+                        🗺️ Données géospatiales enrichies par l'expertise territoriale française
+                      </motion.p>
+                      <motion.p
+                        initial={{ x: -10, opacity: 0 }}
+                        animate={{ x: 0, opacity: 1 }}
+                        transition={{ delay: 1.5 }}
+                      >
+                        🔗 API LEXICON - Service de données foncières et environnementales open source
+                      </motion.p>
                     </div>
                   </motion.div>
-                ))}
-              </div>
-            </div>
-
-            {/* Métadonnées SEO structurées */}
-            <div className="pt-4 border-t border-purple-200">
-              <div className="text-xs text-purple-600 space-y-1">
-                <p>📍 Coordonnées géographiques: {coordinates.latitude.toFixed(6)}, {coordinates.longitude.toFixed(6)}</p>
-                <p>🗺️ Données géospatiales enrichies par l'expertise territoriale française</p>
-                <p>🔗 API LEXICON - Service de données foncières et environnementales</p>
-              </div>
-            </div>
-          </CardContent>
+                </motion.div>
+              </CardContent>
+            </CollapsibleContent>
+          </Collapsible>
         </Card>
       </motion.div>
 
