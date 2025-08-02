@@ -102,11 +102,11 @@ const BioacousticHeroSection: React.FC<BioacousticHeroSectionProps> = ({
               className="bg-white/10 backdrop-blur-md hover:bg-white/20 text-white border-white/20"
             >
               <ArrowLeft className="h-4 w-4 mr-2" />
-              Carte bioacoustique
+              Carte
             </Button>
           </motion.div>
 
-          {/* Observatoire Badge */}
+          {/* Vue Badge */}
           <motion.div 
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
@@ -116,7 +116,7 @@ const BioacousticHeroSection: React.FC<BioacousticHeroSectionProps> = ({
               variant="outline" 
               className="bg-amber-500/20 backdrop-blur-md text-amber-100 border-amber-400/30 px-3 py-1 font-medium"
             >
-              Observatoire 2024→2037
+              Vue 2025-2037
             </Badge>
           </motion.div>
         </div>
@@ -135,16 +135,6 @@ const BioacousticHeroSection: React.FC<BioacousticHeroSectionProps> = ({
                 {marche.nomMarche || marche.ville}
               </h1>
             </div>
-            
-            {/* Description */}
-            {marche.descriptifCourt && (
-              <div className="bg-white/10 backdrop-blur-sm rounded-xl px-5 py-3 max-w-2xl mx-auto border border-white/10">
-                <div 
-                  className="text-lg text-white/95 leading-relaxed prose prose-invert max-w-none"
-                  dangerouslySetInnerHTML={{ __html: marche.descriptifCourt }}
-                />
-              </div>
-            )}
           </motion.div>
         </div>
 
