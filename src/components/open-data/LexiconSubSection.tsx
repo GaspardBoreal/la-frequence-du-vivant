@@ -47,14 +47,6 @@ const LexiconSubSection: React.FC<LexiconSubSectionProps> = ({ marche, theme }) 
     <div className="max-w-4xl mx-auto">
       <div className="gaspard-glass rounded-3xl p-12 space-y-8">
         <div className="relative z-10 space-y-6">
-          <div className="flex items-center justify-center gap-4 mb-6">
-            <div className="w-16 h-16 bg-gradient-to-br from-green-100 to-emerald-100 rounded-full flex items-center justify-center">
-              <BookOpen className="h-8 w-8 text-green-600" />
-            </div>
-            <h3 className="text-4xl font-crimson font-bold text-transparent bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text">
-              Lexicon
-            </h3>
-          </div>
 
           {/* Informations de débogage */}
 
