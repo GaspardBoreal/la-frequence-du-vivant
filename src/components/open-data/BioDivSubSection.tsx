@@ -761,7 +761,7 @@ const BioDivSubSection: React.FC<BioDivSubSectionProps> = ({ marche, theme }) =>
                       <div className="flex items-center gap-2">
                         <ZoomIn className="h-4 w-4 text-primary" />
                         <span className="text-sm font-medium text-foreground">Rayon de recherche:</span>
-                        <Badge variant="secondary" className="bg-primary/10 text-primary text-xs px-2 py-1">
+                        <Badge variant="secondary" className="bg-green-600 text-white text-xs px-2 py-1 font-medium">
                           {searchRadius === 0.5 ? '500m' : `${searchRadius}km`}
                         </Badge>
                       </div>
