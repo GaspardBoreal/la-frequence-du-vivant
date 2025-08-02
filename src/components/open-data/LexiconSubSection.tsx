@@ -57,22 +57,6 @@ const LexiconSubSection: React.FC<LexiconSubSectionProps> = ({ marche, theme }) 
           </div>
 
           {/* Informations de débogage */}
-          <Card className="bg-blue-50 border-blue-200">
-            <CardHeader className="pb-3">
-              <CardTitle className="flex items-center gap-2 text-blue-700 text-lg">
-                <MapPin className="h-5 w-5" />
-                Informations de débogage
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="text-sm space-y-2">
-              <p><strong>Coordonnées utilisées:</strong> {marche.latitude}, {marche.longitude}</p>
-              <p><strong>État de la requête:</strong> {isLoading ? 'Chargement...' : isError ? 'Erreur' : 'Terminée'}</p>
-              <p><strong>Données reçues:</strong> {lexiconResponse?.success ? 'Oui' : 'Non'}</p>
-              {lexiconResponse && (
-                <p><strong>Type de données:</strong> {typeof lexiconResponse.data}</p>
-              )}
-            </CardContent>
-          </Card>
 
           {/* État de chargement */}
           {isLoading && (
