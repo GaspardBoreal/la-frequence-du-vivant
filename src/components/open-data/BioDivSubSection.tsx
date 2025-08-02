@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { motion } from 'framer-motion';
-import { Leaf, ExternalLink, TreePine, Flower, Bird, Loader2, AlertCircle, Camera, Calendar, Globe, MapPin, Info, CheckCircle, Clock, User, Building, Eye } from 'lucide-react';
+import { Leaf, ExternalLink, TreePine, Flower, Bird, Loader2, AlertCircle, Camera, Calendar, Globe, MapPin, Info, CheckCircle, Clock, User, Building, Eye, Users, Filter } from 'lucide-react';
 import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
@@ -8,6 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '../ui/dropdown-menu';
 import { RadioGroup, RadioGroupItem } from '../ui/radio-group';
 import { Label } from '../ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '../ui/dialog';
 import { MarcheTechnoSensible } from '../../utils/googleSheetsApi';
 import { RegionalTheme } from '../../utils/regionalThemes';
@@ -22,6 +23,7 @@ interface BioDivSubSectionProps {
 
 const BioDivSubSection: React.FC<BioDivSubSectionProps> = ({ marche, theme }) => {
   const [dateFilter, setDateFilter] = useState<'recent' | 'medium'>('recent');
+  const [selectedContributor, setSelectedContributor] = useState<string>('all');
   
   const { data: biodiversityData, isLoading, error } = useBiodiversityData({
     latitude: marche.latitude,
@@ -29,6 +31,37 @@ const BioDivSubSection: React.FC<BioDivSubSectionProps> = ({ marche, theme }) =>
     radius: 0.5,
     dateFilter
   });
+
+  // Extraction et agrégation des contributeurs
+  const contributors = useMemo(() => {
+    if (!biodiversityData?.species) return [];
+
+    const contributorMap = new Map<string, number>();
+
+    biodiversityData.species.forEach(species => {
+      species.attributions?.forEach(attribution => {
+        const contributorName = attribution.observerName || 'Anonyme';
+        contributorMap.set(contributorName, (contributorMap.get(contributorName) || 0) + 1);
+      });
+    });
+
+    return Array.from(contributorMap.entries())
+      .map(([name, count]) => ({ name, count }))
+      .sort((a, b) => a.name.localeCompare(b.name, 'fr'));
+  }, [biodiversityData?.species]);
+
+  // Filtrage des espèces par contributeur
+  const filteredSpecies = useMemo(() => {
+    if (!biodiversityData?.species || selectedContributor === 'all') {
+      return biodiversityData?.species || [];
+    }
+
+    return biodiversityData.species.filter(species => {
+      return species.attributions?.some(attribution => 
+        (attribution.observerName || 'Anonyme') === selectedContributor
+      );
+    });
+  }, [biodiversityData?.species, selectedContributor]);
 
   // Composant pour afficher une espèce avec attribution complète
   const SpeciesCard = ({ species }: { species: BiodiversitySpecies }) => {
@@ -459,6 +492,78 @@ const BioDivSubSection: React.FC<BioDivSubSectionProps> = ({ marche, theme }) =>
 
           {/* Onglet Espèces */}
           <TabsContent value="species" className="space-y-6">
+            {/* Filtre par contributeurs */}
+            {contributors.length > 0 && (
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.3 }}
+              >
+                <Card className="border border-white/20 bg-white/5 backdrop-blur-sm">
+                  <CardContent className="p-4">
+                    <div className="flex items-center gap-4 flex-wrap">
+                      <div className="flex items-center gap-2">
+                        <Users className="h-4 w-4 text-primary" />
+                        <span className="text-sm font-medium text-foreground">Filtrer par contributeur:</span>
+                      </div>
+                      <Select
+                        value={selectedContributor}
+                        onValueChange={setSelectedContributor}
+                      >
+                        <SelectTrigger className="w-64 bg-background/50 border-white/20">
+                          <div className="flex items-center gap-2">
+                            <Filter className="h-4 w-4 text-muted-foreground" />
+                            <SelectValue placeholder="Tous les contributeurs" />
+                          </div>
+                        </SelectTrigger>
+                        <SelectContent className="bg-background/95 backdrop-blur-sm border-white/20 z-50">
+                          <SelectItem value="all" className="cursor-pointer">
+                            <div className="flex items-center gap-2">
+                              <Users className="h-4 w-4" />
+                              <span>Tous les contributeurs</span>
+                              <Badge variant="outline" className="ml-2 text-xs">
+                                {biodiversityData?.species?.length || 0} espèces
+                              </Badge>
+                            </div>
+                          </SelectItem>
+                          {contributors.map((contributor) => (
+                            <SelectItem key={contributor.name} value={contributor.name} className="cursor-pointer">
+                              <div className="flex items-center gap-2">
+                                <User className="h-4 w-4" />
+                                <span>{contributor.name}</span>
+                                <Badge variant="outline" className="ml-2 text-xs">
+                                  {contributor.count}
+                                </Badge>
+                              </div>
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      {selectedContributor !== 'all' && (
+                        <motion.div
+                          initial={{ opacity: 0, scale: 0.8 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                          className="flex items-center gap-2"
+                        >
+                          <Badge variant="secondary" className="bg-primary/10 text-primary">
+                            {filteredSpecies.length} espèce{filteredSpecies.length > 1 ? 's' : ''} trouvée{filteredSpecies.length > 1 ? 's' : ''}
+                          </Badge>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setSelectedContributor('all')}
+                            className="h-6 px-2 text-xs hover:bg-destructive/10 hover:text-destructive"
+                          >
+                            ✕ Effacer
+                          </Button>
+                        </motion.div>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              </motion.div>
+            )}
+
             {isLoading ? (
               <div className="flex items-center justify-center py-12">
                 <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -472,12 +577,31 @@ const BioDivSubSection: React.FC<BioDivSubSectionProps> = ({ marche, theme }) =>
                   <p className="text-red-600">Impossible de charger les données de biodiversité.</p>
                 </CardContent>
               </Card>
-            ) : biodiversityData?.species && biodiversityData.species.length > 0 ? (
+            ) : filteredSpecies && filteredSpecies.length > 0 ? (
               <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                {biodiversityData.species.map((species) => (
+                {filteredSpecies.map((species) => (
                   <SpeciesCard key={species.id} species={species} />
                 ))}
               </div>
+            ) : selectedContributor !== 'all' ? (
+              <Card className="border border-white/20 bg-white/5 backdrop-blur-sm">
+                <CardContent className="p-6 text-center">
+                  <User className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                  <h3 className="text-lg font-semibold mb-2">Aucune espèce pour ce contributeur</h3>
+                  <p className="text-muted-foreground">
+                    Aucune observation de <strong>{selectedContributor}</strong> dans cette zone.
+                  </p>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setSelectedContributor('all')}
+                    className="mt-4"
+                  >
+                    <Users className="h-4 w-4 mr-2" />
+                    Voir toutes les espèces
+                  </Button>
+                </CardContent>
+              </Card>
             ) : (
               <Card className="border border-white/20 bg-white/5 backdrop-blur-sm">
                 <CardContent className="p-6 text-center">
