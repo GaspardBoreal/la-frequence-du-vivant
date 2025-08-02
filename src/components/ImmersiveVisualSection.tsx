@@ -144,7 +144,7 @@ const ImmersiveVisualSection: React.FC<ImmersiveVisualSectionProps> = ({
     <div className="space-y-8 pt-16">
       {/* Section Header */}
       <motion.div
-        className="text-center space-y-4"
+        className="text-center"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6 }}
@@ -153,14 +153,6 @@ const ImmersiveVisualSection: React.FC<ImmersiveVisualSectionProps> = ({
           <ImageIcon className="h-8 w-8" />
           Exploration Visuelle
         </h2>
-        <p className="text-gray-600 max-w-2xl mx-auto">
-          Découvrez {marche.ville} à travers {mediaItems.length} médias captivants
-          {photos.length > 0 && videos.length > 0 && (
-            <span className="block text-sm mt-1">
-              {photos.length} photos • {videos.length} vidéos
-            </span>
-          )}
-        </p>
       </motion.div>
 
       {/* Main Media Gallery */}
