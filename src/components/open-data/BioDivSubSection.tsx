@@ -358,23 +358,23 @@ const BioDivSubSection: React.FC<BioDivSubSectionProps> = ({ marche, theme }) =>
                          {/* Colonne gauche - Image principale (60%) */}
                          {hasRealPhotos && (
                            <div className="col-span-3 space-y-4">
-                             <div className="relative w-full h-[400px] rounded-lg overflow-hidden bg-white border">
-                               <img 
-                                 src={getOptimizedImageUrl(species.photos[0], 'large')} 
-                                 alt={`${species.commonName} - Photo principale`}
-                                 className="w-full h-full object-contain"
-                                 loading="eager"
-                                 onError={(e) => {
-                                   console.warn('Erreur de chargement image:', species.photos[0]);
-                                   e.currentTarget.src = species.photos[0];
-                                 }}
+                              <div className="relative w-full h-[400px] rounded-lg overflow-hidden bg-white border">
+                                <img 
+                                  src={getOptimizedImageUrl(realPhotos[0], 'large')} 
+                                  alt={`${species.commonName} - Photo principale`}
+                                  className="w-full h-full object-contain"
+                                  loading="eager"
+                                  onError={(e) => {
+                                    console.warn('Erreur de chargement image:', realPhotos[0]);
+                                    e.currentTarget.src = realPhotos[0];
+                                  }}
                                />
                              </div>
                              
-                             {/* Photos supplémentaires */}
-                             {species.photos.length > 1 && (
-                               <div className="grid grid-cols-4 gap-2">
-                                 {species.photos.slice(1, 5).map((photo, index) => (
+                              {/* Photos supplémentaires */}
+                              {realPhotos.length > 1 && (
+                                <div className="grid grid-cols-4 gap-2">
+                                  {realPhotos.slice(1, 5).map((photo, index) => (
                                    <div key={index + 1} className="relative aspect-square rounded-md overflow-hidden cursor-pointer group border">
                                      <img 
                                        src={getOptimizedImageUrl(photo, 'medium')} 
