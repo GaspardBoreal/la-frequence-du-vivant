@@ -82,18 +82,46 @@ async function fetchGBIFData(lat: number, lon: number, radius: number, dateFilte
       startDate = new Date(now.getFullYear() - 5, now.getMonth(), now.getDate()).toISOString().split('T')[0];
     }
     
-    // Exclude museum/herbarium specimens
-    const basisOfRecord = 'HUMAN_OBSERVATION,MACHINE_OBSERVATION,OBSERVATION';
+    // Use geometry search instead of lat/lon + radius for better accuracy
+    // Create a bounding box around the point
+    const radiusInDegrees = radius / 111; // Approximate conversion km to degrees
+    const north = lat + radiusInDegrees;
+    const south = lat - radiusInDegrees;
+    const east = lon + radiusInDegrees;
+    const west = lon - radiusInDegrees;
     
-    let url = `https://api.gbif.org/v1/occurrence/search?decimalLatitude=${lat}&decimalLongitude=${lon}&radius=${radius * 1000}&limit=100&hasCoordinate=true&hasGeospatialIssue=false&basisOfRecord=${basisOfRecord}`;
+    // Build URL with proper GBIF parameters
+    let url = `https://api.gbif.org/v1/occurrence/search`;
+    const params = new URLSearchParams({
+      'decimalLatitude': lat.toString(),
+      'decimalLongitude': lon.toString(),
+      'limit': '100',
+      'hasCoordinate': 'true',
+      'hasGeospatialIssue': 'false',
+      'basisOfRecord': 'HUMAN_OBSERVATION,MACHINE_OBSERVATION,OBSERVATION'
+    });
+    
+    // Add geometry filter for better precision
+    params.append('geometry', `POLYGON((${west} ${south},${east} ${south},${east} ${north},${west} ${north},${west} ${south}))`);
     
     if (startDate) {
-      url += `&eventDate=${startDate},${now.toISOString().split('T')[0]}`;
+      params.append('eventDate', `${startDate},${now.toISOString().split('T')[0]}`);
     }
     
-    const response = await fetch(url);
+    url += '?' + params.toString();
+    console.log('GBIF URL:', url);
+    
+    const response = await fetch(url, {
+      headers: {
+        'User-Agent': 'BiodiversityApp/1.0 (contact@example.com)',
+        'Accept': 'application/json'
+      }
+    });
+    
     if (!response.ok) {
       console.error('GBIF API error:', response.status, response.statusText);
+      const errorText = await response.text();
+      console.error('GBIF error details:', errorText);
       return [];
     }
     
@@ -143,15 +171,41 @@ async function fetchINaturalistData(lat: number, lon: number, radius: number, da
       startDate = new Date(now.getFullYear() - 5, now.getMonth(), now.getDate()).toISOString().split('T')[0];
     }
     
-    let url = `https://api.inaturalist.org/v1/observations?lat=${lat}&lng=${lon}&radius=${radius}&quality_grade=research&per_page=50&order=desc&order_by=observed_on&captive=false`;
+    // Augmenter légèrement le rayon et ajouter des paramètres plus flexibles
+    const searchRadius = Math.max(radius, 1); // Minimum 1km
+    
+    const params = new URLSearchParams({
+      'lat': lat.toString(),
+      'lng': lon.toString(),
+      'radius': searchRadius.toString(),
+      'quality_grade': 'research,needs_id,casual', // Élargir aux observations non validées aussi
+      'per_page': '100',
+      'order': 'desc',
+      'order_by': 'observed_on',
+      'captive': 'false',
+      'geo': 'true',
+      'identified': 'true'
+    });
     
     if (startDate) {
-      url += `&d1=${startDate}&d2=${now.toISOString().split('T')[0]}`;
+      params.append('d1', startDate);
+      params.append('d2', now.toISOString().split('T')[0]);
     }
     
-    const response = await fetch(url);
+    const url = `https://api.inaturalist.org/v1/observations?${params.toString()}`;
+    console.log('iNaturalist URL:', url);
+    
+    const response = await fetch(url, {
+      headers: {
+        'User-Agent': 'BiodiversityApp/1.0',
+        'Accept': 'application/json'
+      }
+    });
+    
     if (!response.ok) {
       console.error('iNaturalist API error:', response.status, response.statusText);
+      const errorText = await response.text();
+      console.error('iNaturalist error details:', errorText);
       return [];
     }
     
@@ -200,11 +254,77 @@ async function fetchEBirdData(lat: number, lon: number, radius: number, dateFilt
       daysBack = 1825; // 5 years
     }
     
-    const url = `https://api.ebird.org/v2/data/obs/geo/recent?lat=${lat}&lng=${lon}&dist=${radius}&back=${daysBack}&includeProvisional=false&maxResults=50`;
+    const params = new URLSearchParams({
+      'lat': lat.toString(),
+      'lng': lon.toString(),
+      'dist': Math.min(radius, 50).toString(), // eBird limite le rayon à 50km
+      'back': daysBack.toString(),
+      'includeProvisional': 'false',
+      'maxResults': '100',
+      'fmt': 'json'
+    });
     
-    const response = await fetch(url);
+    const url = `https://api.ebird.org/v2/data/obs/geo/recent?${params.toString()}`;
+    console.log('eBird URL:', url);
+    
+    const response = await fetch(url, {
+      headers: {
+        'User-Agent': 'BiodiversityApp/1.0',
+        'Accept': 'application/json'
+      }
+    });
+    
     if (!response.ok) {
       console.error('eBird API error:', response.status, response.statusText);
+      
+      // Gestion spéciale pour le rate limiting (418 I'm a teapot)
+      if (response.status === 418) {
+        console.log('eBird rate limit reached, waiting and retrying...');
+        await new Promise(resolve => setTimeout(resolve, 2000));
+        
+        const retryResponse = await fetch(url, {
+          headers: {
+            'User-Agent': 'BiodiversityApp/1.0',
+            'Accept': 'application/json'
+          }
+        });
+        
+        if (!retryResponse.ok) {
+          console.error('eBird retry failed:', retryResponse.status, retryResponse.statusText);
+          return [];
+        }
+        
+        const retryData = await retryResponse.json();
+        console.log(`eBird (retry): Found ${retryData?.length || 0} observations`);
+        
+        if (!retryData || !Array.isArray(retryData)) return [];
+        
+        return retryData.map((item: any, index: number) => ({
+          id: `ebird-${item.speciesCode || index}`,
+          scientificName: item.sciName || 'Unknown',
+          commonName: item.comName || item.sciName || 'Unknown',
+          family: 'Aves',
+          kingdom: 'Animalia' as const,
+          observations: item.howMany || 1,
+          lastSeen: item.obsDt || new Date().toISOString().split('T')[0],
+          photos: [],
+          source: 'ebird' as const,
+          attributions: [{
+            observerName: item.userDisplayName || 'Observateur eBird',
+            observerInstitution: 'eBird/Cornell Lab',
+            observationMethod: 'Observation ornithologique',
+            originalUrl: item.hasRichMedia ? `https://ebird.org/checklist/${item.subId}` : undefined,
+            exactLatitude: item.lat,
+            exactLongitude: item.lng,
+            locationName: item.locName || 'Localisation inconnue',
+            date: item.obsDt || new Date().toISOString().split('T')[0],
+            source: 'ebird' as const
+          }]
+        }));
+      }
+      
+      const errorText = await response.text();
+      console.error('eBird error details:', errorText);
       return [];
     }
     
