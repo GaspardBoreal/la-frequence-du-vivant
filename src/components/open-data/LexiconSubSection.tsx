@@ -109,22 +109,6 @@ const LexiconSubSection: React.FC<LexiconSubSectionProps> = ({ marche, theme }) 
             </motion.div>
           )}
 
-          {/* Bouton d'accès au LEXICON complet */}
-          <motion.div
-            className="pt-6 text-center"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.6 }}
-          >
-            <Button
-              onClick={openLexiconPage}
-              size="lg"
-              className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white px-8 py-3 rounded-full shadow-lg"
-            >
-              <ExternalLink className="h-5 w-5 mr-2" />
-              Accéder au LEXICON complet
-            </Button>
-          </motion.div>
         </div>
       </div>
     </div>
