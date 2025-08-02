@@ -16,11 +16,13 @@ import OpenDataSection from '../components/OpenDataSection';
 import HaikuSection from '../components/HaikuSection';
 import { Button } from '../components/ui/button';
 import Footer from '../components/Footer';
+import DebugMarcheData from '../components/DebugMarcheData';
 
 import { MarcheTechnoSensible } from '../utils/googleSheetsApi';
 import { useSupabaseMarches } from '../hooks/useSupabaseMarches';
 import { findMarcheBySlug, createSlug } from '../utils/slugGenerator';
 import { REGIONAL_THEMES, RegionalTheme } from '../utils/regionalThemes';
+import { queryClient } from '../lib/queryClient';
 
 const MarcheDetailBio = () => {
   const { slug } = useParams<{ slug: string }>();
@@ -121,6 +123,14 @@ const MarcheDetailBio = () => {
     }
   };
 
+  const handleForceRefresh = () => {
+    // Force refresh React Query cache for this specific marche
+    queryClient.invalidateQueries({ 
+      queryKey: ['supabase-marches'] 
+    });
+    toast.success('Cache vidé - Actualisation en cours...');
+  };
+
   const renderActiveSection = () => {
     if (!marche) return null;
 
@@ -210,6 +220,18 @@ const MarcheDetailBio = () => {
           onNavigateToMarche={handleNavigateToMarche}
         />
 
+        {/* Debug Button - Remove after issue is resolved */}
+        <div className="max-w-6xl mx-auto px-6 pt-4">
+          <Button 
+            onClick={handleForceRefresh}
+            variant="outline"
+            size="sm"
+            className="bg-red-50 border-red-200 text-red-700 hover:bg-red-100"
+          >
+            🔄 Forcer le rafraîchissement des données
+          </Button>
+        </div>
+
         <div className="max-w-6xl mx-auto px-6">
           <SimplifiedMultiSensoryNavigation
             activeSection={activeSection}
@@ -219,7 +241,12 @@ const MarcheDetailBio = () => {
           />
         </div>
 
-        <div className="max-w-6xl mx-auto px-6 py-16 relative">
+        <div className="max-w-6xl mx-auto px-6 py-8">
+          {/* Debug Component - Remove after issue is resolved */}
+          <DebugMarcheData marche={marche} />
+        </div>
+
+        <div className="max-w-6xl mx-auto px-6 py-8 relative">
           <motion.div
             key={`${activeSection}-${activeSubSection}`}
             initial={{ opacity: 0, y: 20 }}

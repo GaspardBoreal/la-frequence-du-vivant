@@ -63,6 +63,7 @@ export const transformSupabaseToLegacyFormat = (marche: MarcheComplete): MarcheT
   };
 
   console.log(`🔄 Transformation de la marche ${marche.ville}:`, {
+    marcheId: marche.id,
     photos: photos.length,
     videos: videos.length,
     audio: audioFiles.length,
@@ -76,7 +77,13 @@ export const transformSupabaseToLegacyFormat = (marche: MarcheComplete): MarcheT
     descriptifLong: transformed.descriptifLong,
     poeme: transformed.poeme,
     rawLatitude: marche.latitude,
-    rawLongitude: marche.longitude
+    rawLongitude: marche.longitude,
+    photosUrls: photos,
+    audioUrls: audioFiles,
+    videosUrls: videos,
+    rawPhotosData: marche.photos,
+    rawAudioData: marche.audio,
+    rawVideosData: marche.videos
   });
 
   return transformed;
