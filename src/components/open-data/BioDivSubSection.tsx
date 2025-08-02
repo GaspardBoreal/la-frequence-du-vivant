@@ -45,6 +45,17 @@ const BioDivSubSection: React.FC<BioDivSubSectionProps> = ({ marche, theme }) =>
     dateFilter
   });
 
+  // DEBUG: Log des données reçues pour comprendre le problème
+  console.log('🔍 DEBUG BioDivSubSection:', {
+    location: `${marche.ville} (${marche.latitude}, ${marche.longitude})`,
+    searchRadius: debouncedRadius,
+    dateFilter,
+    totalSpeciesInData: biodiversityData?.species?.length || 0,
+    totalInSummary: biodiversityData?.summary?.totalSpecies || 0,
+    methodologyRadius: biodiversityData?.methodology?.radius,
+    sources: biodiversityData?.methodology?.sources
+  });
+
   // Extraction et agrégation des contributeurs
   const contributors = useMemo(() => {
     if (!biodiversityData?.species) return [];

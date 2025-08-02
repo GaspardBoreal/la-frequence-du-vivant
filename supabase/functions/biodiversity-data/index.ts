@@ -194,7 +194,7 @@ async function fetchINaturalistData(lat: number, lon: number, radius: number, da
     
     const url = `https://api.inaturalist.org/v1/observations?${params.toString()}`;
     console.log('📍 iNaturalist API URL:', url);
-    console.log('📍 Coordonnées utilisées:', { lat, lon, radius });
+    console.log('📍 Coordonnées utilisées:', { lat, lon, radius: searchRadius });
     
     const response = await fetch(url, {
       headers: {
@@ -504,6 +504,25 @@ serve(async (req) => {
     const allSpecies = [...gbifSpecies, ...inaturalistSpecies, ...ebirdSpecies];
     const aggregatedSpecies = aggregateSpeciesData(allSpecies);
     console.log(`📊 Après agrégation: ${aggregatedSpecies.length} espèces uniques`);
+    
+    // DEBUG DÉTAILLÉ pour comprendre le problème urbain
+    if (inaturalistSpecies.length > 0) {
+      console.log(`🔍 DEBUG iNaturalist - Échantillon de 5 espèces avec coordonnées:`);
+      inaturalistSpecies.slice(0, 5).forEach((species, index) => {
+        console.log(`  ${index + 1}. ${species.scientificName} (${species.commonName})`);
+        if (species.attributions && species.attributions.length > 0) {
+          const attrib = species.attributions[0];
+          const distance = Math.sqrt(
+            Math.pow((attrib.exactLatitude! - latitude) * 111, 2) + 
+            Math.pow((attrib.exactLongitude! - longitude) * 111 * Math.cos(latitude * Math.PI / 180), 2)
+          );
+          console.log(`     Coordonnées: (${attrib.exactLatitude}, ${attrib.exactLongitude})`);
+          console.log(`     Distance calculée: ${distance.toFixed(3)}km (rayon demandé: ${radius}km)`);
+          console.log(`     Lieu: ${attrib.locationName || 'Non spécifié'}`);
+        }
+      });
+    }
+    
     const summary = calculateSummary(aggregatedSpecies);
 
     const response: BiodiversityData = {
