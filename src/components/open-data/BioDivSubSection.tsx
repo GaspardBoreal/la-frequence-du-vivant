@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { motion } from 'framer-motion';
-import { Leaf, ExternalLink, TreePine, Flower, Bird, Loader2, AlertCircle, Camera, Calendar, Globe, MapPin, Info, CheckCircle, Clock, User, Building, Eye, Users, Filter } from 'lucide-react';
+import { Leaf, ExternalLink, TreePine, Flower, Bird, Loader2, AlertCircle, Camera, Calendar, Globe, MapPin, Info, CheckCircle, Clock, User, Building, Eye, Users, Filter, Database } from 'lucide-react';
 import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
@@ -417,6 +417,42 @@ const BioDivSubSection: React.FC<BioDivSubSectionProps> = ({ marche, theme }) =>
 
           {/* Onglet Résumé */}
           <TabsContent value="summary" className="space-y-6">
+            {/* Affichage des données brutes */}
+            {(biodiversityData?.methodology as any)?.rawDataCounts && (
+              <Card className="border border-white/20 bg-white/5 backdrop-blur-sm">
+                <CardContent className="p-4">
+                  <div className="font-medium text-foreground mb-2 flex items-center gap-2">
+                    <Database className="h-4 w-4 text-primary" />
+                    Données collectées
+                  </div>
+                  <div className="grid grid-cols-3 gap-4 text-sm">
+                    <div>
+                      <div className="text-muted-foreground">GBIF</div>
+                      <div className="font-mono text-primary">{(biodiversityData.methodology as any).rawDataCounts.gbif}</div>
+                    </div>
+                    <div>
+                      <div className="text-muted-foreground">iNaturalist</div>
+                      <div className="font-mono text-primary">{(biodiversityData.methodology as any).rawDataCounts.inaturalist}</div>
+                    </div>
+                    <div>
+                      <div className="text-muted-foreground">eBird</div>
+                      <div className="font-mono text-primary">{(biodiversityData.methodology as any).rawDataCounts.ebird}</div>
+                    </div>
+                  </div>
+                  <div className="border-t border-white/10 mt-3 pt-3 grid grid-cols-2 gap-4 text-sm">
+                    <div>
+                      <div className="text-muted-foreground">Total observations</div>
+                      <div className="font-mono text-lg text-foreground">{(biodiversityData.methodology as any).rawDataCounts.totalBeforeAggregation}</div>
+                    </div>
+                    <div>
+                      <div className="text-muted-foreground">Espèces uniques</div>
+                      <div className="font-mono text-lg text-primary">{(biodiversityData.methodology as any).rawDataCounts.totalAfterAggregation}</div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+            
             <BiodiversityMetricGrid 
               summary={biodiversityData?.summary || {
                 totalSpecies: 0,

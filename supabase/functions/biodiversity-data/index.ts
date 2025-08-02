@@ -177,8 +177,8 @@ async function fetchINaturalistData(lat: number, lon: number, radius: number, da
     const params = new URLSearchParams({
       'lat': lat.toString(),
       'lng': lon.toString(),
-      'radius': searchRadius.toString(),
-      'quality_grade': 'research,needs_id,casual', // Élargir aux observations non validées aussi
+      'radius': radius.toString(), // Garder le rayon original (500m)
+      'quality_grade': 'research,needs_id,casual',
       'per_page': '100',
       'order': 'desc',
       'order_by': 'observed_on',
@@ -193,7 +193,8 @@ async function fetchINaturalistData(lat: number, lon: number, radius: number, da
     }
     
     const url = `https://api.inaturalist.org/v1/observations?${params.toString()}`;
-    console.log('iNaturalist URL:', url);
+    console.log('📍 iNaturalist API URL:', url);
+    console.log('📍 Coordonnées utilisées:', { lat, lon, radius });
     
     const response = await fetch(url, {
       headers: {
@@ -203,14 +204,23 @@ async function fetchINaturalistData(lat: number, lon: number, radius: number, da
     });
     
     if (!response.ok) {
-      console.error('iNaturalist API error:', response.status, response.statusText);
+      console.error('❌ iNaturalist API error:', response.status, response.statusText);
       const errorText = await response.text();
-      console.error('iNaturalist error details:', errorText);
+      console.error('❌ iNaturalist error details:', errorText);
       return [];
     }
     
     const data = await response.json();
-    console.log(`iNaturalist: Found ${data.results?.length || 0} observations`);
+    console.log(`✅ iNaturalist: Found ${data.results?.length || 0} raw observations`);
+    console.log('📊 Total results available:', data.total_results);
+    
+    // Log détaillé des premières observations pour debug
+    if (data.results && data.results.length > 0) {
+      console.log('🔍 First 3 observations details:');
+      data.results.slice(0, 3).forEach((obs: any, idx: number) => {
+        console.log(`  ${idx + 1}. ${obs.taxon?.name || 'Unknown'} by ${obs.user?.login || 'Anonymous'} on ${obs.observed_on}`);
+      });
+    }
     
     if (!data.results) return [];
     
@@ -483,9 +493,17 @@ serve(async (req) => {
       fetchEBirdData(latitude, longitude, radius, dateFilter)
     ]);
 
+    // Log des données brutes avant agrégation
+    console.log('📊 Données brutes collectées:');
+    console.log(`  - GBIF: ${gbifSpecies.length} observations`);
+    console.log(`  - iNaturalist: ${inaturalistSpecies.length} observations`);
+    console.log(`  - eBird: ${ebirdSpecies.length} observations`);
+    console.log(`  - Total avant agrégation: ${gbifSpecies.length + inaturalistSpecies.length + ebirdSpecies.length} observations`);
+
     // Combine and aggregate all species data with cross-validation
     const allSpecies = [...gbifSpecies, ...inaturalistSpecies, ...ebirdSpecies];
     const aggregatedSpecies = aggregateSpeciesData(allSpecies);
+    console.log(`📊 Après agrégation: ${aggregatedSpecies.length} espèces uniques`);
     const summary = calculateSummary(aggregatedSpecies);
 
     const response: BiodiversityData = {
@@ -513,7 +531,14 @@ serve(async (req) => {
           'Données provisoires'
         ],
         sources: ['GBIF', 'iNaturalist', 'eBird'],
-        confidence: 'Basée sur le nombre de sources confirmant chaque espèce'
+        confidence: 'Basée sur le nombre de sources confirmant chaque espèce',
+        rawDataCounts: {
+          gbif: gbifSpecies.length,
+          inaturalist: inaturalistSpecies.length,
+          ebird: ebirdSpecies.length,
+          totalBeforeAggregation: gbifSpecies.length + inaturalistSpecies.length + ebirdSpecies.length,
+          totalAfterAggregation: aggregatedSpecies.length
+        }
       }
     };
 
