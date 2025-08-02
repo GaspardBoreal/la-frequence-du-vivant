@@ -564,8 +564,23 @@ async function fetchEBirdPhotos(speciesCode: string, subId: string, apiKey: stri
       return [];
     }
     
-    const mediaData = await response.json();
-    console.log(`📸 Macaulay response for ${speciesCode}:`, JSON.stringify(mediaData).substring(0, 200));
+    // Vérifier le Content-Type avant de parser en JSON
+    const contentType = response.headers.get('content-type');
+    if (!contentType || !contentType.includes('application/json')) {
+      console.log(`📸 Macaulay Library returned non-JSON for ${speciesCode}, content-type:`, contentType);
+      return [];
+    }
+    
+    const responseText = await response.text();
+    console.log(`📸 Raw response for ${speciesCode}:`, responseText.substring(0, 200));
+    
+    let mediaData;
+    try {
+      mediaData = JSON.parse(responseText);
+    } catch (jsonError) {
+      console.log(`📸 JSON parse error for ${speciesCode}:`, jsonError);
+      return [];
+    }
     
     if (mediaData && mediaData.results && Array.isArray(mediaData.results) && mediaData.results.length > 0) {
       const photos = mediaData.results.slice(0, 2).map((result: any) => {
