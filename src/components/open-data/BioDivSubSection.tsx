@@ -715,10 +715,10 @@ const BioDivSubSection: React.FC<BioDivSubSectionProps> = ({ marche, theme }) =>
                         value={selectedContributor}
                         onValueChange={setSelectedContributor}
                       >
-                        <SelectTrigger className="w-80 bg-background/50 border-white/20">
-                          <div className="flex items-center gap-2">
-                            <Filter className="h-4 w-4 text-muted-foreground" />
-                            <SelectValue placeholder="Tous les contributeurs" />
+                        <SelectTrigger className="min-w-96 bg-background/50 border-white/20">
+                          <div className="flex items-center gap-2 whitespace-nowrap">
+                            <Filter className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                            <SelectValue placeholder="Tous les contributeurs" className="whitespace-nowrap" />
                           </div>
                         </SelectTrigger>
                         <SelectContent className="bg-background/95 backdrop-blur-sm border-white/20 z-50">
@@ -750,8 +750,8 @@ const BioDivSubSection: React.FC<BioDivSubSectionProps> = ({ marche, theme }) =>
                           animate={{ opacity: 1, scale: 1 }}
                           className="flex items-center gap-2"
                         >
-                          <Badge variant="secondary" className="bg-primary/10 text-primary">
-                            {filteredSpecies.length} espèce{filteredSpecies.length > 1 ? 's' : ''} trouvée{filteredSpecies.length > 1 ? 's' : ''}
+                          <Badge variant="secondary" className="bg-primary/10 text-primary text-xs px-2 py-1 whitespace-nowrap">
+                            {filteredSpecies.length} espèce{filteredSpecies.length > 1 ? 's' : ''}
                           </Badge>
                           <Button
                             variant="ghost"
