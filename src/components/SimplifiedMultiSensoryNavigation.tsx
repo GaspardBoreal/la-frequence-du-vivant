@@ -1,12 +1,11 @@
 
-import React from 'react';
-import { motion } from 'framer-motion';
+import React, { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Database, 
   Eye, 
   Volume2, 
   BookOpen,
-  Sparkles,
   ChevronDown
 } from 'lucide-react';
 import { Button } from './ui/button';
@@ -25,6 +24,8 @@ const SimplifiedMultiSensoryNavigation: React.FC<SimplifiedMultiSensoryNavigatio
   onSectionChange,
   theme
 }) => {
+  const [openDropdowns, setOpenDropdowns] = useState<Set<string>>(new Set());
+
   const menuSections = [
     {
       id: 'opendata' as const,
@@ -59,21 +60,22 @@ const SimplifiedMultiSensoryNavigation: React.FC<SimplifiedMultiSensoryNavigatio
     }
   ];
 
-  const handleSectionClick = (sectionId: 'opendata' | 'datacollect' | 'creative') => {
-    const section = menuSections.find(s => s.id === sectionId);
-    if (section) {
-      const currentSubMenus = section.subMenus;
-      const currentSubIndex = currentSubMenus.findIndex(sub => sub.id === activeSubSection);
-      
-      if (activeSection === sectionId) {
-        // Si on est déjà sur cette section, passer au sous-menu suivant
-        const nextSubIndex = (currentSubIndex + 1) % currentSubMenus.length;
-        onSectionChange(sectionId, currentSubMenus[nextSubIndex].id);
-      } else {
-        // Sinon, activer cette section avec son premier sous-menu
-        onSectionChange(sectionId, currentSubMenus[0].id);
-      }
+  const toggleDropdown = (sectionId: string) => {
+    const newOpenDropdowns = new Set(openDropdowns);
+    if (newOpenDropdowns.has(sectionId)) {
+      newOpenDropdowns.delete(sectionId);
+    } else {
+      newOpenDropdowns.add(sectionId);
     }
+    setOpenDropdowns(newOpenDropdowns);
+  };
+
+  const handleSubMenuClick = (sectionId: 'opendata' | 'datacollect' | 'creative', subSectionId: string) => {
+    onSectionChange(sectionId, subSectionId);
+    // Fermer le dropdown après sélection
+    const newOpenDropdowns = new Set(openDropdowns);
+    newOpenDropdowns.delete(sectionId);
+    setOpenDropdowns(newOpenDropdowns);
   };
 
   const getCurrentSectionLabel = (sectionId: 'opendata' | 'datacollect' | 'creative') => {
@@ -88,52 +90,77 @@ const SimplifiedMultiSensoryNavigation: React.FC<SimplifiedMultiSensoryNavigatio
   return (
     <div className="w-full py-8">
       {/* Navigation horizontale principale */}
-      <div className="flex justify-center items-center gap-8 mb-6">
+      <div className="flex justify-center items-center gap-8">
         {menuSections.map((section) => {
           const Icon = section.icon;
           const isActive = activeSection === section.id;
+          const isDropdownOpen = openDropdowns.has(section.id);
           const sectionLabel = getCurrentSectionLabel(section.id);
           
           return (
-            <motion.div 
-              key={section.id}
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-            >
-              <Button
-                variant={isActive ? "default" : "outline"}
-                size="lg"
-                onClick={() => handleSectionClick(section.id)}
-                className={`
-                  flex items-center gap-3 px-6 py-3 rounded-full transition-all duration-300
-                  ${isActive 
-                    ? 'bg-gradient-to-r from-purple-500 to-blue-500 text-white shadow-lg' 
-                    : 'bg-white/90 hover:bg-white text-gray-700 hover:shadow-md border border-gray-200'
-                  }
-                `}
+            <div key={section.id} className="relative">
+              <motion.div 
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
               >
-                <Icon className="h-5 w-5" />
-                <span className="font-medium">{sectionLabel}</span>
-                {section.subMenus.length > 1 && isActive && (
-                  <ChevronDown className="h-4 w-4 opacity-60" />
+                <Button
+                  variant={isActive ? "default" : "outline"}
+                  size="lg"
+                  onClick={() => toggleDropdown(section.id)}
+                  className={`
+                    flex items-center gap-3 px-6 py-3 rounded-full transition-all duration-300
+                    ${isActive 
+                      ? 'bg-gradient-to-r from-purple-500 to-blue-500 text-white shadow-lg' 
+                      : 'bg-white/90 hover:bg-white text-gray-700 hover:shadow-md border border-gray-200'
+                    }
+                  `}
+                >
+                  <Icon className="h-5 w-5" />
+                  <span className="font-medium">{sectionLabel}</span>
+                  <ChevronDown 
+                    className={`h-4 w-4 opacity-60 transition-transform duration-200 ${
+                      isDropdownOpen ? 'rotate-180' : ''
+                    }`} 
+                  />
+                </Button>
+              </motion.div>
+
+              {/* Dropdown Menu */}
+              <AnimatePresence>
+                {isDropdownOpen && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -10, scale: 0.95 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: -10, scale: 0.95 }}
+                    transition={{ duration: 0.2 }}
+                    className="absolute top-full mt-2 left-1/2 transform -translate-x-1/2 z-50 
+                               bg-white rounded-lg shadow-lg border border-gray-200 min-w-[200px]"
+                  >
+                    <div className="py-2">
+                      {section.subMenus.map((subMenu) => (
+                        <button
+                          key={subMenu.id}
+                          onClick={() => handleSubMenuClick(section.id, subMenu.id)}
+                          className={`
+                            w-full text-left px-4 py-2 hover:bg-gray-50 transition-colors
+                            flex items-center gap-3 text-sm
+                            ${activeSection === section.id && activeSubSection === subMenu.id 
+                              ? 'bg-purple-50 text-purple-700 font-medium' 
+                              : 'text-gray-700'
+                            }
+                          `}
+                        >
+                          <Icon className="h-4 w-4" />
+                          {subMenu.label}
+                        </button>
+                      ))}
+                    </div>
+                  </motion.div>
                 )}
-              </Button>
-            </motion.div>
+              </AnimatePresence>
+            </div>
           );
         })}
-      </div>
-
-      {/* Indicateur subtil du sous-menu actuel */}
-      <div className="text-center">
-        <div className="inline-flex items-center gap-2 px-4 py-1 bg-purple-50/50 rounded-full border border-purple-200/50">
-          <Sparkles className="h-3 w-3 text-purple-500" />
-          <span className="text-purple-600 font-medium text-xs">
-            {menuSections.find(s => s.id === activeSection)?.subMenus.length || 0 > 1 
-              ? 'Cliquer pour alterner les sous-sections' 
-              : 'Section active'
-            }
-          </span>
-        </div>
       </div>
     </div>
   );
