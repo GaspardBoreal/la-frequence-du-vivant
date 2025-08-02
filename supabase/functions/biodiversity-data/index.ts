@@ -55,6 +55,8 @@ async function fetchGBIFData(lat: number, lon: number, radius: number): Promise<
     const response = await fetch(url);
     const data = await response.json();
     
+    console.log(`GBIF: ${data.results?.length || 0} résultats trouvés`);
+    
     return (data.results || []).map((item: any) => ({
       id: `gbif-${item.key}`,
       scientificName: item.scientificName || 'Inconnu',
@@ -78,6 +80,8 @@ async function fetchINaturalistData(lat: number, lon: number, radius: number): P
     
     const response = await fetch(url);
     const data = await response.json();
+    
+    console.log(`iNaturalist: ${data.results?.length || 0} observations trouvées`);
     
     return (data.results || []).map((item: any) => ({
       id: `inaturalist-${item.id}`,
@@ -157,14 +161,32 @@ function calculateSummary(species: BiodiversitySpecies[]): BiodiversityData['sum
   const thirtyDaysAgo = new Date();
   thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
   
-  return {
+  // Amélioration de la détection des oiseaux
+  const birds = species.filter(s => {
+    const isFromEbird = s.source === 'ebird';
+    const isAvesFamily = s.family === 'Aves' || s.family?.toLowerCase().includes('aves');
+    const isBirdFamily = s.family?.toLowerCase().includes('bird') || 
+                        s.family?.toLowerCase().includes('idae'); // Familles d'oiseaux finissent souvent par -idae
+    const isBirdInName = s.commonName?.toLowerCase().includes('oiseau') ||
+                        s.commonName?.toLowerCase().includes('bird') ||
+                        s.scientificName?.toLowerCase().includes('aves');
+    
+    return isFromEbird || isAvesFamily || isBirdFamily || isBirdInName;
+  });
+  
+  const summary = {
     totalSpecies: species.length,
-    birds: species.filter(s => s.kingdom === 'Animalia' && s.family === 'Aves').length,
+    birds: birds.length,
     plants: species.filter(s => s.kingdom === 'Plantae').length,
     fungi: species.filter(s => s.kingdom === 'Fungi').length,
     others: species.filter(s => !['Plantae', 'Animalia', 'Fungi'].includes(s.kingdom)).length,
     recentObservations: species.filter(s => new Date(s.lastSeen) > thirtyDaysAgo).length
   };
+  
+  console.log(`Résumé calculé:`, summary);
+  console.log(`Oiseaux détectés:`, birds.map(b => `${b.commonName} (${b.source}, famille: ${b.family})`));
+  
+  return summary;
 }
 
 serve(async (req) => {
@@ -203,6 +225,7 @@ serve(async (req) => {
     };
 
     console.log(`Données récupérées: ${biodiversityData.species.length} espèces, ${biodiversityData.summary.totalSpecies} total`);
+    console.log(`Détail par source: GBIF=${gbifSpecies.length}, iNaturalist=${inaturalistSpecies.length}, eBird=${ebirdSpecies.length}`);
 
     return new Response(
       JSON.stringify(biodiversityData),
