@@ -262,9 +262,125 @@ async function fetchINaturalistData(lat: number, lon: number, radius: number, da
   }
 }
 
-// Fetch eBird data with date filtering
+// Fetch eBird hotspots near the location
+async function fetchEBirdHotspots(lat: number, lon: number, radius: number): Promise<any[]> {
+  try {
+    const apiKey = Deno.env.get('EBIRD_API_KEY');
+    const params = new URLSearchParams({
+      'lat': lat.toString(),
+      'lng': lon.toString(),
+      'dist': Math.min(radius * 2, 50).toString(), // Larger radius for hotspots
+      'back': '30',
+      'fmt': 'json'
+    });
+    
+    const url = `https://api.ebird.org/v2/ref/hotspot/geo?${params.toString()}`;
+    console.log('🔥 eBird Hotspots URL:', url);
+    
+    const headers: any = {
+      'User-Agent': 'BiodiversityApp/1.0',
+      'Accept': 'application/json'
+    };
+    
+    if (apiKey) {
+      headers['x-ebirdapitoken'] = apiKey;
+    }
+    
+    const response = await fetch(url, { headers });
+    
+    if (!response.ok) {
+      console.error('eBird Hotspots API error:', response.status, response.statusText);
+      return [];
+    }
+    
+    const hotspots = await response.json();
+    console.log(`🔥 Found ${hotspots?.length || 0} eBird hotspots`);
+    return hotspots || [];
+  } catch (error) {
+    console.error('Error fetching eBird hotspots:', error);
+    return [];
+  }
+}
+
+// Fetch notable eBird observations (rare species)
+async function fetchEBirdNotable(lat: number, lon: number, radius: number, dateFilter: string): Promise<BiodiversitySpecies[]> {
+  try {
+    const apiKey = Deno.env.get('EBIRD_API_KEY');
+    let daysBack = 30;
+    if (dateFilter === 'recent') {
+      daysBack = 730;
+    } else if (dateFilter === 'medium') {
+      daysBack = 1825;
+    }
+    
+    const params = new URLSearchParams({
+      'lat': lat.toString(),
+      'lng': lon.toString(),
+      'dist': Math.min(radius, 50).toString(),
+      'back': daysBack.toString(),
+      'maxResults': '50',
+      'fmt': 'json'
+    });
+    
+    const url = `https://api.ebird.org/v2/data/obs/geo/recent/notable?${params.toString()}`;
+    console.log('⭐ eBird Notable URL:', url);
+    
+    const headers: any = {
+      'User-Agent': 'BiodiversityApp/1.0',
+      'Accept': 'application/json'
+    };
+    
+    if (apiKey) {
+      headers['x-ebirdapitoken'] = apiKey;
+    }
+    
+    const response = await fetch(url, { headers });
+    
+    if (!response.ok) {
+      console.error('eBird Notable API error:', response.status, response.statusText);
+      return [];
+    }
+    
+    const data = await response.json();
+    console.log(`⭐ Found ${data?.length || 0} notable eBird observations`);
+    
+    if (!data || !Array.isArray(data)) return [];
+    
+    return data.map((item: any, index: number) => ({
+      id: `ebird-notable-${item.speciesCode || index}`,
+      scientificName: item.sciName || 'Unknown',
+      commonName: item.comName || item.sciName || 'Unknown',
+      family: 'Aves',
+      kingdom: 'Animalia' as const,
+      observations: item.howMany || 1,
+      lastSeen: item.obsDt || new Date().toISOString().split('T')[0],
+      photos: [],
+      source: 'ebird' as const,
+      conservationStatus: 'Notable',
+      confidence: 'high' as const,
+      attributions: [{
+        observerName: item.userDisplayName || 'Observateur eBird',
+        observerInstitution: 'eBird/Cornell Lab (Notable)',
+        observationMethod: 'Observation remarquable',
+        originalUrl: item.hasRichMedia ? `https://ebird.org/checklist/${item.subId}` : `https://ebird.org/species/${item.speciesCode}`,
+        exactLatitude: item.lat,
+        exactLongitude: item.lng,
+        locationName: item.locName || 'Localisation inconnue',
+        date: item.obsDt || new Date().toISOString().split('T')[0],
+        source: 'ebird' as const
+      }]
+    }));
+  } catch (error) {
+    console.error('Error fetching eBird notable data:', error);
+    return [];
+  }
+}
+
+// Fetch eBird data with enhanced API integration
 async function fetchEBirdData(lat: number, lon: number, radius: number, dateFilter: string): Promise<BiodiversitySpecies[]> {
   try {
+    const apiKey = Deno.env.get('EBIRD_API_KEY');
+    
     // Calculate days back based on filter
     let daysBack = 30;
     if (dateFilter === 'recent') {
@@ -284,14 +400,22 @@ async function fetchEBirdData(lat: number, lon: number, radius: number, dateFilt
     });
     
     const url = `https://api.ebird.org/v2/data/obs/geo/recent?${params.toString()}`;
-    console.log('eBird URL:', url);
+    console.log('🐦 eBird Recent URL:', url);
     
-    const response = await fetch(url, {
-      headers: {
-        'User-Agent': 'BiodiversityApp/1.0',
-        'Accept': 'application/json'
-      }
-    });
+    const headers: any = {
+      'User-Agent': 'BiodiversityApp/1.0',
+      'Accept': 'application/json'
+    };
+    
+    // Add API key if available for better rate limits and access
+    if (apiKey) {
+      headers['x-ebirdapitoken'] = apiKey;
+      console.log('🔑 Using eBird API key for enhanced access');
+    } else {
+      console.warn('⚠️ No eBird API key found - limited rate limits apply');
+    }
+    
+    const response = await fetch(url, { headers });
     
     if (!response.ok) {
       console.error('eBird API error:', response.status, response.statusText);
@@ -508,10 +632,12 @@ serve(async (req) => {
     console.log(`Fetching biodiversity data for lat: ${latitude}, lon: ${longitude}, radius: ${radius}km, filter: ${dateFilter}`);
 
     // Fetch data from all sources in parallel with enhanced filtering
-    const [gbifSpecies, inaturalistSpecies, ebirdSpecies] = await Promise.all([
+    const [gbifSpecies, inaturalistSpecies, ebirdSpecies, ebirdNotable, ebirdHotspots] = await Promise.all([
       fetchGBIFData(latitude, longitude, radius, dateFilter),
       fetchINaturalistData(latitude, longitude, radius, dateFilter),
-      fetchEBirdData(latitude, longitude, radius, dateFilter)
+      fetchEBirdData(latitude, longitude, radius, dateFilter),
+      fetchEBirdNotable(latitude, longitude, radius, dateFilter),
+      fetchEBirdHotspots(latitude, longitude, radius)
     ]);
 
     // Log des données brutes avant agrégation
@@ -522,8 +648,15 @@ serve(async (req) => {
     console.log(`  - Total avant agrégation: ${gbifSpecies.length + inaturalistSpecies.length + ebirdSpecies.length} observations`);
 
     // Combine and aggregate all species data with cross-validation
-    const allSpecies = [...gbifSpecies, ...inaturalistSpecies, ...ebirdSpecies];
+    const allSpecies = [...gbifSpecies, ...inaturalistSpecies, ...ebirdSpecies, ...ebirdNotable];
     const aggregatedSpecies = aggregateSpeciesData(allSpecies);
+    
+    // Process eBird hotspots for context
+    const hotspots = ebirdHotspots.map((hotspot: any) => ({
+      name: hotspot.locName || 'Hotspot eBird',
+      type: 'ebird_hotspot',
+      distance: calculateDistance(latitude, longitude, hotspot.lat, hotspot.lng)
+    })).sort((a, b) => a.distance - b.distance).slice(0, 5);
     console.log(`📊 Après agrégation: ${aggregatedSpecies.length} espèces uniques`);
     
     // DEBUG SPÉCIAL BONZAC - Analyse complète des observations iNaturalist
@@ -573,7 +706,8 @@ serve(async (req) => {
           name: "Zone d'étude locale",
           type: "research_area",
           distance: 0
-        }
+        },
+        ...hotspots
       ],
       methodology: {
         radius,

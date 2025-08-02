@@ -33,6 +33,18 @@ export const SourceTooltip: React.FC<SourceTooltipProps> = ({ source, url }) => 
           description: 'Base de données ornithologique collaborative',
           url: url || 'https://ebird.org'
         };
+      case 'ebird notable':
+        return {
+          name: 'eBird Notable',
+          description: 'Observations d\'espèces remarquables via eBird',
+          url: url || 'https://ebird.org/science/status-and-trends'
+        };
+      case 'ebird hotspots':
+        return {
+          name: 'eBird Hotspots',
+          description: 'Zones d\'observation populaires eBird',
+          url: url || 'https://ebird.org/hotspots'
+        };
       default:
         return {
           name: source,
