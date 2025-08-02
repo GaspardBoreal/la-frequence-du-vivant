@@ -16,6 +16,7 @@ import { RegionalTheme } from '../../utils/regionalThemes';
 import { useBiodiversityData } from '../../hooks/useBiodiversityData';
 import { BiodiversitySpecies } from '../../types/biodiversity';
 import { BiodiversityMetricGrid } from '../biodiversity/BiodiversityMetricGrid';
+import { BiodiversityMap } from '../biodiversity/BiodiversityMap';
 
 interface BioDivSubSectionProps {
   marche: MarcheTechnoSensible;
@@ -1029,19 +1030,29 @@ const BioDivSubSection: React.FC<BioDivSubSectionProps> = ({ marche, theme }) =>
 
           {/* Onglet Carte */}
           <TabsContent value="map" className="space-y-6">
-            <Card className="border border-white/20 bg-white/5 backdrop-blur-sm">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <MapPin className="h-5 w-5" />
-                  Carte Interactive
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="h-64 bg-gradient-to-br from-emerald-50 to-green-100 rounded-lg flex items-center justify-center">
-                  <p className="text-muted-foreground">Carte interactive à venir</p>
-                </div>
-              </CardContent>
-            </Card>
+            {biodiversityData && (
+              <BiodiversityMap
+                data={biodiversityData}
+                centerLat={marche.latitude}
+                centerLon={marche.longitude}
+                isLoading={isLoading}
+              />
+            )}
+            {!biodiversityData && !isLoading && (
+              <Card className="border border-white/20 bg-white/5 backdrop-blur-sm">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <MapPin className="h-5 w-5" />
+                    Carte Interactive
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="h-64 bg-gradient-to-br from-emerald-50 to-green-100 rounded-lg flex items-center justify-center">
+                    <p className="text-muted-foreground">Aucune donnée de biodiversité disponible</p>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
           </TabsContent>
         </Tabs>
       </motion.div>
