@@ -122,6 +122,22 @@ const BioDivSubSection: React.FC<BioDivSubSectionProps> = ({ marche, theme }) =>
     const getOptimizedImageUrl = (url: string, size: 'small' | 'medium' | 'large' = 'medium') => {
       if (!url) return url;
       
+      // Pour iNaturalist
+      if (url.includes('inaturalist-open-data.s3.amazonaws.com') || url.includes('static.inaturalist.org')) {
+        const sizeMap = { small: 'medium', medium: 'large', large: 'original' };
+        return url.replace(/\/(square|thumb|small|medium|large|original)\./, `/${sizeMap[size]}.`);
+      }
+      
+      // Pour GBIF
+      if (url.includes('gbif.org')) {
+        const sizeMap = { small: '400', medium: '800', large: '1200' };
+        if (url.includes('?')) {
+          return `${url}&size=${sizeMap[size]}`;
+        } else {
+          return `${url}?size=${sizeMap[size]}`;
+        }
+      }
+      
       // Pour Google Drive et services compatibles
       if (url.includes('drive.google.com') || url.includes('lh3.googleusercontent.com')) {
         const sizeMap = { small: 'w400', medium: 'w800', large: 'w1200' };
@@ -213,7 +229,7 @@ const BioDivSubSection: React.FC<BioDivSubSectionProps> = ({ marche, theme }) =>
                       <Info className="h-3 w-3" />
                     </Button>
                   </DialogTrigger>
-                   <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
+                   <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
                      <DialogHeader>
                        <DialogTitle className="flex items-center gap-3">
                          {getKingdomIcon(species.kingdom)}
@@ -226,17 +242,17 @@ const BioDivSubSection: React.FC<BioDivSubSectionProps> = ({ marche, theme }) =>
                        </DialogTitle>
                      </DialogHeader>
                      
-                     <div className="space-y-6">
-                       {/* Layout en deux colonnes */}
-                       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                         {/* Colonne gauche - Image principale */}
+                     <div className="space-y-4">
+                       {/* Layout en deux colonnes avec proportions 60/40 */}
+                       <div className="grid grid-cols-5 gap-6">
+                         {/* Colonne gauche - Image principale (60%) */}
                          {hasPhotos && (
-                           <div className="space-y-4">
-                             <div className="relative w-full h-80 rounded-lg overflow-hidden bg-muted/10">
+                           <div className="col-span-3 space-y-4">
+                             <div className="relative w-full h-[400px] rounded-lg overflow-hidden bg-white border">
                                <img 
-                                 src={species.photos[0]} 
+                                 src={getOptimizedImageUrl(species.photos[0], 'large')} 
                                  alt={`${species.commonName} - Photo principale`}
-                                 className="w-full h-full object-cover"
+                                 className="w-full h-full object-contain"
                                  loading="eager"
                                  onError={(e) => {
                                    console.warn('Erreur de chargement image:', species.photos[0]);
@@ -249,9 +265,9 @@ const BioDivSubSection: React.FC<BioDivSubSectionProps> = ({ marche, theme }) =>
                              {species.photos.length > 1 && (
                                <div className="grid grid-cols-4 gap-2">
                                  {species.photos.slice(1, 5).map((photo, index) => (
-                                   <div key={index + 1} className="relative aspect-square rounded-md overflow-hidden cursor-pointer group">
+                                   <div key={index + 1} className="relative aspect-square rounded-md overflow-hidden cursor-pointer group border">
                                      <img 
-                                       src={photo} 
+                                       src={getOptimizedImageUrl(photo, 'medium')} 
                                        alt={`${species.commonName} - Photo ${index + 2}`}
                                        className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
                                        loading="lazy"
@@ -266,64 +282,44 @@ const BioDivSubSection: React.FC<BioDivSubSectionProps> = ({ marche, theme }) =>
                            </div>
                          )}
                          
-                         {/* Colonne droite - Informations taxonomiques */}
-                         <div className="space-y-6">
-                           {/* Badges principaux */}
+                         {/* Colonne droite - Informations (40%) */}
+                         <div className="col-span-2 space-y-4">
+                           {/* Badges principaux organisés comme iNaturalist */}
                            <div className="flex flex-wrap gap-2">
-                             <Badge variant="secondary" className="text-sm px-3 py-1">
+                             <Badge variant="secondary" className="text-sm px-3 py-1.5 font-medium">
                                {species.observations} observation{species.observations > 1 ? 's' : ''}
                              </Badge>
-                             <Badge variant="outline" className="text-sm px-3 py-1">
-                               Vu le {new Date(species.lastSeen).toLocaleDateString('fr-FR')}
+                             <Badge variant="outline" className="text-sm px-3 py-1.5">
+                               {new Date(species.lastSeen).toLocaleDateString('fr-FR')}
                              </Badge>
-                             <Badge className={`text-sm px-3 py-1 ${getSourceColor(species.source)}`}>
+                             <Badge className={`text-sm px-3 py-1.5 ${getSourceColor(species.source)}`}>
                                {getSourceName(species.source)}
                              </Badge>
                            </div>
                            
-                           {/* Informations taxonomiques */}
-                           <div className="space-y-4">
-                             <div>
-                               <h4 className="font-semibold text-lg mb-3">Classification</h4>
-                               <div className="space-y-2 text-sm">
-                                 <div className="flex justify-between">
-                                   <span className="text-muted-foreground">Règne :</span>
-                                   <span className="font-medium">{species.kingdom}</span>
+                           {/* Classification simplifiée */}
+                           <div className="space-y-3">
+                             <h4 className="font-semibold text-lg border-b pb-2">Classification</h4>
+                             <div className="space-y-3 text-sm">
+                               <div className="flex justify-between py-1">
+                                 <span className="text-muted-foreground font-medium">Règne</span>
+                                 <span className="font-semibold">{species.kingdom}</span>
+                               </div>
+                               {species.family && (
+                                 <div className="flex justify-between py-1">
+                                   <span className="text-muted-foreground font-medium">Famille</span>
+                                   <span className="font-semibold">{species.family}</span>
                                  </div>
-                                 {species.family && (
-                                   <div className="flex justify-between">
-                                     <span className="text-muted-foreground">Famille :</span>
-                                     <span className="font-medium">{species.family}</span>
-                                   </div>
-                                 )}
+                               )}
+                               <div className="flex justify-between py-1">
+                                 <span className="text-muted-foreground font-medium">Nom scientifique</span>
+                                 <span className="font-semibold italic">{species.scientificName}</span>
                                </div>
                              </div>
                            </div>
                          </div>
                        </div>
 
-                      {/* Informations de base */}
-                      <div className="bg-muted/30 p-4 rounded-lg">
-                        <h4 className="font-medium text-foreground mb-3">Informations taxonomiques</h4>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
-                          <div>
-                            <span className="text-muted-foreground">Nom commun:</span>
-                            <span className="ml-2 font-medium text-foreground">{species.commonName}</span>
-                          </div>
-                          <div>
-                            <span className="text-muted-foreground">Nom scientifique:</span>
-                            <span className="ml-2 font-medium italic text-foreground">{species.scientificName}</span>
-                          </div>
-                          <div>
-                            <span className="text-muted-foreground">Famille:</span>
-                            <span className="ml-2 font-medium text-foreground">{species.family}</span>
-                          </div>
-                          <div>
-                            <span className="text-muted-foreground">Règne:</span>
-                            <span className="ml-2 font-medium text-foreground">{species.kingdom}</span>
-                          </div>
-                        </div>
-                      </div>
 
                       {/* Observations détaillées */}
                       <div>
