@@ -1,12 +1,13 @@
-
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Leaf, ExternalLink, TreePine, Flower, Bird, Loader2, AlertCircle, Camera, Calendar, Globe, MapPin } from 'lucide-react';
+import { Leaf, ExternalLink, TreePine, Flower, Bird, Loader2, AlertCircle, Camera, Calendar, Globe, MapPin, Info, CheckCircle, Clock } from 'lucide-react';
 import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '../ui/dropdown-menu';
+import { RadioGroup, RadioGroupItem } from '../ui/radio-group';
+import { Label } from '../ui/label';
 import { MarcheTechnoSensible } from '../../utils/googleSheetsApi';
 import { RegionalTheme } from '../../utils/regionalThemes';
 import { useBiodiversityData } from '../../hooks/useBiodiversityData';
@@ -19,294 +20,412 @@ interface BioDivSubSectionProps {
 }
 
 const BioDivSubSection: React.FC<BioDivSubSectionProps> = ({ marche, theme }) => {
-  const [activeTab, setActiveTab] = useState('summary');
+  const [dateFilter, setDateFilter] = useState<'recent' | 'medium'>('recent');
   
-  // Récupération des données de biodiversité
   const { data: biodiversityData, isLoading, error } = useBiodiversityData({
-    latitude: marche.latitude,
-    longitude: marche.longitude,
-    radius: 5 // 5km de rayon
+    latitude: parseFloat(marche.latitude),
+    longitude: parseFloat(marche.longitude),
+    radius: 0.5,
+    dateFilter
   });
 
-  const SpeciesCard: React.FC<{ species: BiodiversitySpecies }> = ({ species }) => (
-    <Card className="gaspard-glass border border-white/20 backdrop-blur-md bg-white/5 hover:bg-white/10 hover:border-white/30 transition-all duration-300">
-      <CardHeader className="pb-3">
-        <div className="flex items-start justify-between">
-          <div className="flex-1">
-            <CardTitle className="text-lg font-semibold text-foreground mb-1">
-              {species.commonName}
-            </CardTitle>
-            <p className="text-sm italic text-muted-foreground">{species.scientificName}</p>
-            <div className="flex items-center gap-2 mt-2">
-              <Badge variant="outline" className="text-xs border-white/20 bg-white/10 text-foreground">
-                {species.kingdom}
-              </Badge>
-              <Badge variant="secondary" className="text-xs bg-primary/20 text-primary border border-primary/30">
-                {species.source}
-              </Badge>
-            </div>
-          </div>
-          {species.photos && species.photos.length > 0 && (
-            <div className="ml-3 flex-shrink-0">
-              <div className="w-16 h-16 rounded-lg overflow-hidden bg-white/10 border border-white/20">
-                <img 
-                  src={species.photos[0]} 
-                  alt={species.commonName}
-                  className="w-full h-full object-cover"
-                />
+  // Composant pour afficher une espèce avec confiance
+  const SpeciesCard = ({ species }: { species: any }) => {
+    const getKingdomIcon = (kingdom: string) => {
+      switch (kingdom) {
+        case 'Plantae': return <TreePine className="h-5 w-5 text-green-600" />;
+        case 'Animalia': return <Bird className="h-5 w-5 text-blue-600" />;
+        case 'Fungi': return <Flower className="h-5 w-5 text-purple-600" />;
+        default: return <Leaf className="h-5 w-5 text-gray-600" />;
+      }
+    };
+
+    const getSourceColor = (source: string) => {
+      switch (source) {
+        case 'gbif': return 'bg-blue-100 text-blue-800 border-blue-200';
+        case 'inaturalist': return 'bg-green-100 text-green-800 border-green-200';
+        case 'ebird': return 'bg-orange-100 text-orange-800 border-orange-200';
+        default: return 'bg-gray-100 text-gray-800 border-gray-200';
+      }
+    };
+
+    const getConfidenceColor = (confidence: string) => {
+      switch (confidence) {
+        case 'high': return 'bg-emerald-100 text-emerald-800 border-emerald-200';
+        case 'medium': return 'bg-yellow-100 text-yellow-800 border-yellow-200';
+        case 'low': return 'bg-red-100 text-red-800 border-red-200';
+        default: return 'bg-gray-100 text-gray-800 border-gray-200';
+      }
+    };
+
+    const getConfidenceLabel = (confidence: string) => {
+      switch (confidence) {
+        case 'high': return 'Haute confiance';
+        case 'medium': return 'Confiance moyenne';
+        case 'low': return 'Faible confiance';
+        default: return 'Non évaluée';
+      }
+    };
+
+    return (
+      <Card className="hover:shadow-lg transition-all duration-300 border border-white/20 bg-white/5 backdrop-blur-sm">
+        <CardContent className="p-4">
+          <div className="flex items-start justify-between mb-3">
+            <div className="flex items-center gap-2">
+              {getKingdomIcon(species.kingdom)}
+              <div>
+                <h4 className="font-semibold text-lg">{species.commonName}</h4>
+                <p className="text-sm text-muted-foreground italic">{species.scientificName}</p>
               </div>
             </div>
-          )}
-        </div>
-      </CardHeader>
-      <CardContent className="pt-0">
-        <div className="flex items-center justify-between text-sm text-muted-foreground">
-          <div className="flex items-center gap-1">
-            <Calendar className="h-4 w-4" />
-            <span>Vu le {new Date(species.lastSeen).toLocaleDateString('fr-FR')}</span>
-          </div>
-          <span className="font-medium text-foreground">{species.observations} obs.</span>
-        </div>
-        {species.conservationStatus && (
-          <div className="mt-2">
-            <Badge variant="destructive" className="text-xs bg-destructive/20 text-destructive border border-destructive/30">
-              {species.conservationStatus}
-            </Badge>
-          </div>
-        )}
-      </CardContent>
-    </Card>
-  );
-
-  return (
-    <div className="max-w-6xl mx-auto">
-      <div className="gaspard-glass rounded-3xl p-8 space-y-8">
-        {/* Header */}
-        <motion.div
-          className="text-center space-y-4"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
-        >
-          <div className="w-24 h-24 mx-auto bg-gradient-to-br from-emerald-100 to-green-100 rounded-full flex items-center justify-center mb-6">
-            <Leaf className="h-12 w-12 text-emerald-600" />
+            <div className="flex flex-col gap-2 items-end">
+              <Badge className={`text-xs ${getSourceColor(species.source)}`}>
+                {species.source.toUpperCase()}
+              </Badge>
+              {species.confidence && (
+                <Badge className={`text-xs ${getConfidenceColor(species.confidence)}`}>
+                  {getConfidenceLabel(species.confidence)}
+                </Badge>
+              )}
+            </div>
           </div>
           
-          <div className="flex items-center justify-center gap-3">
-            <h3 className="text-5xl font-crimson font-bold text-transparent bg-gradient-to-r from-emerald-600 to-green-600 bg-clip-text">
-              BioDiv
-            </h3>
-            
+          <div className="space-y-2 text-sm">
             <div className="flex items-center gap-2">
-              <span className="text-sm text-muted-foreground font-medium">
-                {marche.ville}
-              </span>
-              
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-8 w-8 p-0 hover:bg-white/10 rounded-full"
-                  >
-                    <Globe className="h-4 w-4 text-muted-foreground hover:text-foreground" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="start" className="gaspard-glass backdrop-blur-md bg-background/90 border border-white/20">
-                  <DropdownMenuItem asChild>
-                    <a
-                      href={`https://www.openstreetmap.org/?mlat=${marche.latitude}&mlon=${marche.longitude}&zoom=15`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center gap-2 cursor-pointer"
-                    >
-                      <MapPin className="h-4 w-4" />
-                      Voir dans OpenStreetMap
-                      <ExternalLink className="h-3 w-3 ml-auto" />
-                    </a>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem asChild>
-                    <a
-                      href={`https://earth.google.com/web/@${marche.latitude},${marche.longitude},100a,35y,0h,0t,0r`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center gap-2 cursor-pointer"
-                    >
-                      <Globe className="h-4 w-4" />
-                      Voir dans Google Earth
-                      <ExternalLink className="h-3 w-3 ml-auto" />
-                    </a>
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+              <span className="text-muted-foreground">Règne:</span>
+              <span className="font-medium">{species.kingdom}</span>
             </div>
-          </div>
-        </motion.div>
-
-        {/* Contenu principal */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.3, duration: 0.6 }}
-        >
-          {isLoading && (
-            <div className="flex items-center justify-center py-12">
-              <Loader2 className="h-8 w-8 animate-spin text-emerald-600" />
-              <span className="ml-3 text-gray-600">Chargement des données de biodiversité...</span>
-            </div>
-          )}
-
-          {error && (
-            <div className="flex items-center justify-center py-12 text-center">
-              <div className="space-y-3">
-                <AlertCircle className="h-12 w-12 text-amber-500 mx-auto" />
-                <p className="text-gray-600">Données de biodiversité temporairement indisponibles</p>
-                <p className="text-sm text-gray-500">Les APIs externes ne répondent pas</p>
+            {species.confirmedSources && species.confirmedSources > 1 && (
+              <div className="flex items-center gap-2">
+                <CheckCircle className="h-4 w-4 text-emerald-600" />
+                <span className="text-muted-foreground">Confirmé par:</span>
+                <span className="font-medium text-emerald-600">{species.confirmedSources} sources</span>
               </div>
+            )}
+            <div className="flex items-center gap-2">
+              <Calendar className="h-4 w-4 text-muted-foreground" />
+              <span className="text-muted-foreground">Dernière observation:</span>
+              <span className="font-medium">{new Date(species.lastSeen).toLocaleDateString('fr-FR')}</span>
             </div>
-          )}
+            <div className="flex items-center gap-2">
+              <span className="text-muted-foreground">Observations:</span>
+              <span className="font-medium">{species.observations}</span>
+            </div>
+            {species.conservationStatus && (
+              <div className="flex items-center gap-2">
+                <span className="text-muted-foreground">Statut de conservation:</span>
+                <Badge variant="outline" className="text-xs">
+                  {species.conservationStatus}
+                </Badge>
+              </div>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+    );
+  };
 
-          {biodiversityData && (
-            <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-              <TabsList className="grid w-full grid-cols-3">
-                <TabsTrigger value="summary">Résumé</TabsTrigger>
-                <TabsTrigger value="species">Espèces</TabsTrigger>
-                <TabsTrigger value="map">Carte</TabsTrigger>
-              </TabsList>
-
-              <TabsContent value="summary" className="space-y-8">
-                {/* New Biodiversity Metrics Grid */}
-                <BiodiversityMetricGrid 
-                  summary={biodiversityData.summary}
-                  isLoading={isLoading}
-                />
-
-                {/* Informations sur la zone */}
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.5, delay: 0.6 }}
+  return (
+    <div className="space-y-8">
+      {/* En-tête de section */}
+      <motion.div
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.8 }}
+        className="text-center space-y-4"
+      >
+        <div className="inline-flex items-center justify-center w-24 h-24 rounded-full bg-gradient-to-br from-emerald-100 to-green-200 mb-6">
+          <Leaf className="h-12 w-12 text-emerald-600" />
+        </div>
+        
+        <div className="flex items-center justify-center gap-3">
+          <h3 className="text-5xl font-crimson font-bold text-transparent bg-gradient-to-r from-emerald-600 to-green-600 bg-clip-text">
+            BioDiv
+          </h3>
+          
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-muted-foreground font-medium">
+              {marche.ville}
+            </span>
+            
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-8 w-8 p-0 hover:bg-white/10 rounded-full"
                 >
-                  <Card className="gaspard-glass border border-white/20 backdrop-blur-md bg-white/5">
-                    <CardHeader>
-                      <CardTitle className="flex items-center gap-2 text-foreground">
-                        <Leaf className="h-5 w-5 text-emerald-500" />
-                        Zone d'étude
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                          <p className="text-sm text-muted-foreground mb-1">Coordonnées</p>
-                          <p className="font-mono text-sm text-foreground">
-                            {biodiversityData.location.latitude.toFixed(5)}, {biodiversityData.location.longitude.toFixed(5)}
-                          </p>
-                        </div>
-                        <div>
-                          <p className="text-sm text-muted-foreground mb-1">Rayon d'analyse</p>
-                          <p className="font-semibold text-foreground">{biodiversityData.location.radius} km</p>
-                        </div>
-                      </div>
-                      
-                      <div className="flex flex-wrap gap-3 pt-4 border-t border-white/10 mt-4">
-                        <a
-                          href="https://www.gbif.org"
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg
-                                   bg-emerald-500/10 text-emerald-400 border border-emerald-500/20
-                                   hover:bg-emerald-500/20 hover:border-emerald-500/30 transition-all duration-200"
-                        >
-                          GBIF <ExternalLink className="w-3 h-3" />
-                        </a>
-                        <a
-                          href="https://www.inaturalist.org"
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg
-                                   bg-green-500/10 text-green-400 border border-green-500/20
-                                   hover:bg-green-500/20 hover:border-green-500/30 transition-all duration-200"
-                        >
-                          iNaturalist <ExternalLink className="w-3 h-3" />
-                        </a>
-                        <a
-                          href="https://ebird.org"
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg
-                                   bg-sky-500/10 text-sky-400 border border-sky-500/20
-                                   hover:bg-sky-500/20 hover:border-sky-500/30 transition-all duration-200"
-                        >
-                          eBird <ExternalLink className="w-3 h-3" />
-                        </a>
-                      </div>
-                    </CardContent>
-                  </Card>
-                </motion.div>
-              </TabsContent>
+                  <Globe className="h-4 w-4 text-muted-foreground hover:text-foreground" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start" className="gaspard-glass backdrop-blur-md bg-background/90 border border-white/20">
+                <DropdownMenuItem asChild>
+                  <a
+                    href={`https://www.openstreetmap.org/?mlat=${marche.latitude}&mlon=${marche.longitude}&zoom=15`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-2 cursor-pointer"
+                  >
+                    <MapPin className="h-4 w-4" />
+                    Voir dans OpenStreetMap
+                    <ExternalLink className="h-3 w-3 ml-auto" />
+                  </a>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <a
+                    href={`https://earth.google.com/web/@${marche.latitude},${marche.longitude},100a,35y,0h,0t,0r`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-2 cursor-pointer"
+                  >
+                    <Globe className="h-4 w-4" />
+                    Voir dans Google Earth
+                    <ExternalLink className="h-3 w-3 ml-auto" />
+                  </a>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        </div>
+      </motion.div>
 
-              <TabsContent value="species" className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <h4 className="text-lg font-semibold text-foreground">
-                    Espèces observées ({biodiversityData.species.length})
-                  </h4>
-                  <Badge variant="outline" className="border-white/20 bg-white/10 text-foreground">
-                    Données GBIF, iNaturalist, eBird
-                  </Badge>
+      {/* Filtre temporel */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.1, duration: 0.8 }}
+        className="max-w-7xl mx-auto mb-6"
+      >
+        <Card className="border border-white/20 bg-white/5 backdrop-blur-sm">
+          <CardContent className="p-4">
+            <div className="flex items-center gap-4">
+              <Clock className="h-5 w-5 text-muted-foreground" />
+              <span className="text-sm font-medium">Période d'observation:</span>
+              <RadioGroup 
+                value={dateFilter} 
+                onValueChange={(value: 'recent' | 'medium') => setDateFilter(value)}
+                className="flex gap-6"
+              >
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="recent" id="recent" />
+                  <Label htmlFor="recent" className="text-sm cursor-pointer">Récentes (&lt; 2 ans)</Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="medium" id="medium" />
+                  <Label htmlFor="medium" className="text-sm cursor-pointer">Moyennes (2-5 ans)</Label>
+                </div>
+              </RadioGroup>
+            </div>
+          </CardContent>
+        </Card>
+      </motion.div>
+
+      {/* Contenu principal */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.2, duration: 0.8 }}
+        className="max-w-7xl mx-auto"
+      >
+        <Tabs defaultValue="summary" className="w-full">
+          <TabsList className="grid w-full grid-cols-4 mb-8">
+            <TabsTrigger value="summary">Résumé</TabsTrigger>
+            <TabsTrigger value="species">Espèces</TabsTrigger>
+            <TabsTrigger value="methodology">Méthodologie</TabsTrigger>
+            <TabsTrigger value="map">Carte</TabsTrigger>
+          </TabsList>
+
+          {/* Onglet Résumé */}
+          <TabsContent value="summary" className="space-y-6">
+            <BiodiversityMetricGrid 
+              summary={biodiversityData?.summary || {
+                totalSpecies: 0,
+                birds: 0,
+                plants: 0,
+                fungi: 0,
+                others: 0,
+                recentObservations: 0
+              }}
+              isLoading={isLoading}
+            />
+
+            {/* Zone d'étude et sources */}
+            <Card className="border border-white/20 bg-white/5 backdrop-blur-sm">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <MapPin className="h-5 w-5" />
+                  Zone d'étude
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid md:grid-cols-2 gap-4">
+                  <div>
+                    <h4 className="font-semibold mb-2">Localisation</h4>
+                    <p className="text-sm text-muted-foreground">
+                      {marche.ville}, {marche.region}
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Rayon: 500m • Coordonnées: {marche.latitude}, {marche.longitude}
+                    </p>
+                  </div>
+                  <div>
+                    <h4 className="font-semibold mb-2">Sources de données</h4>
+                    <div className="flex flex-wrap gap-2">
+                      <Badge variant="outline" className="text-xs">
+                        <ExternalLink className="h-3 w-3 mr-1" />
+                        GBIF
+                      </Badge>
+                      <Badge variant="outline" className="text-xs">
+                        <ExternalLink className="h-3 w-3 mr-1" />
+                        iNaturalist
+                      </Badge>
+                      <Badge variant="outline" className="text-xs">
+                        <ExternalLink className="h-3 w-3 mr-1" />
+                        eBird
+                      </Badge>
+                    </div>
+                  </div>
                 </div>
                 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-96 overflow-y-auto">
-                  {biodiversityData.species.map((species) => (
-                    <SpeciesCard key={species.id} species={species} />
-                  ))}
+                <div className="pt-4 border-t border-white/10">
+                  <div className="flex flex-wrap gap-2">
+                    <Button variant="outline" size="sm" asChild>
+                      <a href="https://www.gbif.org" target="_blank" rel="noopener noreferrer">
+                        Voir GBIF <ExternalLink className="h-3 w-3 ml-1" />
+                      </a>
+                    </Button>
+                    <Button variant="outline" size="sm" asChild>
+                      <a href="https://www.inaturalist.org" target="_blank" rel="noopener noreferrer">
+                        Voir iNaturalist <ExternalLink className="h-3 w-3 ml-1" />
+                      </a>
+                    </Button>
+                    <Button variant="outline" size="sm" asChild>
+                      <a href="https://ebird.org" target="_blank" rel="noopener noreferrer">
+                        Voir eBird <ExternalLink className="h-3 w-3 ml-1" />
+                      </a>
+                    </Button>
+                  </div>
                 </div>
-              </TabsContent>
+              </CardContent>
+            </Card>
+          </TabsContent>
 
-              <TabsContent value="map" className="space-y-4">
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Répartition géographique</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="h-64 bg-gray-100 rounded-lg flex items-center justify-center">
-                      <p className="text-gray-600">Carte interactive à venir</p>
+          {/* Onglet Espèces */}
+          <TabsContent value="species" className="space-y-6">
+            {isLoading ? (
+              <div className="flex items-center justify-center py-12">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                <span className="ml-2 text-muted-foreground">Chargement des espèces...</span>
+              </div>
+            ) : error ? (
+              <Card className="border border-red-200 bg-red-50">
+                <CardContent className="p-6 text-center">
+                  <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
+                  <h3 className="text-lg font-semibold text-red-700 mb-2">Erreur de chargement</h3>
+                  <p className="text-red-600">Impossible de charger les données de biodiversité.</p>
+                </CardContent>
+              </Card>
+            ) : biodiversityData?.species && biodiversityData.species.length > 0 ? (
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                {biodiversityData.species.map((species) => (
+                  <SpeciesCard key={species.id} species={species} />
+                ))}
+              </div>
+            ) : (
+              <Card className="border border-white/20 bg-white/5 backdrop-blur-sm">
+                <CardContent className="p-6 text-center">
+                  <Leaf className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                  <h3 className="text-lg font-semibold mb-2">Aucune espèce trouvée</h3>
+                  <p className="text-muted-foreground">
+                    Aucune donnée de biodiversité disponible pour cette zone.
+                  </p>
+                </CardContent>
+              </Card>
+            )}
+          </TabsContent>
+
+          {/* Onglet Méthodologie */}
+          <TabsContent value="methodology" className="space-y-6">
+            {biodiversityData?.methodology && (
+              <Card className="border border-white/20 bg-white/5 backdrop-blur-sm">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Info className="h-5 w-5" />
+                    Méthodologie et Limitations
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div>
+                    <h4 className="font-semibold mb-2">Paramètres de recherche</h4>
+                    <ul className="space-y-1 text-sm text-muted-foreground">
+                      <li>• Rayon de recherche: {biodiversityData.methodology.radius} km</li>
+                      <li>• Période: {biodiversityData.methodology.dateFilter}</li>
+                      <li>• Sources de données: {biodiversityData.methodology.sources.join(', ')}</li>
+                    </ul>
+                  </div>
+                  
+                  <div>
+                    <h4 className="font-semibold mb-2">Données exclues</h4>
+                    <ul className="space-y-1 text-sm text-muted-foreground">
+                      {biodiversityData.methodology.excludedData.map((item, index) => (
+                        <li key={index}>• {item}</li>
+                      ))}
+                    </ul>
+                  </div>
+                  
+                  <div>
+                    <h4 className="font-semibold mb-2">Système de confiance</h4>
+                    <p className="text-sm text-muted-foreground mb-2">
+                      {biodiversityData.methodology.confidence}
+                    </p>
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2">
+                        <Badge className="bg-emerald-100 text-emerald-800 border-emerald-200">Haute confiance</Badge>
+                        <span className="text-sm text-muted-foreground">Confirmé par 3+ sources</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Badge className="bg-yellow-100 text-yellow-800 border-yellow-200">Confiance moyenne</Badge>
+                        <span className="text-sm text-muted-foreground">Confirmé par 2 sources</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Badge className="bg-red-100 text-red-800 border-red-200">Faible confiance</Badge>
+                        <span className="text-sm text-muted-foreground">Confirmé par 1 source uniquement</span>
+                      </div>
                     </div>
-                  </CardContent>
-                </Card>
-              </TabsContent>
-            </Tabs>
-          )}
-        </motion.div>
+                  </div>
+                  
+                  <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                    <h4 className="font-semibold text-yellow-800 mb-2">⚠️ Limitations importantes</h4>
+                    <ul className="space-y-1 text-sm text-yellow-700">
+                      <li>• Les données peuvent être incomplètes en zone urbaine dense</li>
+                      <li>• Certaines espèces communes peuvent être sous-représentées</li>
+                      <li>• Les observations dépendent de l'activité des contributeurs</li>
+                      <li>• Rayon réduit à 500m pour limiter les faux positifs urbains</li>
+                    </ul>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+          </TabsContent>
 
-        {/* Liens externes */}
-        <motion.div
-          className="text-center pt-6 border-t border-emerald-200"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.6 }}
-        >
-          <div className="flex flex-wrap justify-center gap-3">
-            <Button variant="outline" size="sm" asChild>
-              <a href="https://www.gbif.org" target="_blank" rel="noopener noreferrer">
-                <ExternalLink className="h-4 w-4 mr-2" />
-                GBIF
-              </a>
-            </Button>
-            <Button variant="outline" size="sm" asChild>
-              <a href="https://www.inaturalist.org" target="_blank" rel="noopener noreferrer">
-                <ExternalLink className="h-4 w-4 mr-2" />
-                iNaturalist
-              </a>
-            </Button>
-            <Button variant="outline" size="sm" asChild>
-              <a href="https://ebird.org" target="_blank" rel="noopener noreferrer">
-                <ExternalLink className="h-4 w-4 mr-2" />
-                eBird
-              </a>
-            </Button>
-          </div>
-        </motion.div>
-      </div>
+          {/* Onglet Carte */}
+          <TabsContent value="map" className="space-y-6">
+            <Card className="border border-white/20 bg-white/5 backdrop-blur-sm">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <MapPin className="h-5 w-5" />
+                  Carte Interactive
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="h-64 bg-gradient-to-br from-emerald-50 to-green-100 rounded-lg flex items-center justify-center">
+                  <p className="text-muted-foreground">Carte interactive à venir</p>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
+      </motion.div>
     </div>
   );
 };

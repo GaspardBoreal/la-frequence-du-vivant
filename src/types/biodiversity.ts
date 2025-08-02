@@ -9,6 +9,8 @@ export interface BiodiversitySpecies {
   photos?: string[];
   source: 'gbif' | 'inaturalist' | 'ebird';
   conservationStatus?: string;
+  confidence?: 'high' | 'medium' | 'low';
+  confirmedSources?: number;
 }
 
 export interface BiodiversityHotspot {
@@ -35,10 +37,18 @@ export interface BiodiversityData {
   summary: BiodiversitySummary;
   species: BiodiversitySpecies[];
   hotspots: BiodiversityHotspot[];
+  methodology: {
+    radius: number;
+    dateFilter: string;
+    excludedData: string[];
+    sources: string[];
+    confidence: string;
+  };
 }
 
 export interface BiodiversityQuery {
   latitude: number;
   longitude: number;
   radius?: number;
+  dateFilter?: 'recent' | 'medium';
 }

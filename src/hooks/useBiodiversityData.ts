@@ -4,7 +4,7 @@ import { BiodiversityData, BiodiversityQuery } from '@/types/biodiversity';
 
 export const useBiodiversityData = (query: BiodiversityQuery) => {
   return useQuery({
-    queryKey: ['biodiversity', query.latitude, query.longitude, query.radius],
+    queryKey: ['biodiversity', query.latitude, query.longitude, query.radius, query.dateFilter],
     queryFn: async (): Promise<BiodiversityData> => {
       const { data, error } = await supabase.functions.invoke('biodiversity-data', {
         body: query
