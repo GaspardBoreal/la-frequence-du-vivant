@@ -1,6 +1,48 @@
 
 import { LexiconApiResponse } from '../types/lexicon';
 
+// Fonction pour transformer les données LEXICON vers notre format attendu
+const transformLexiconData = (rawData: any) => {
+  console.log(`🔄 [LEXICON TRANSFORM] Transformation des données:`, rawData);
+  
+  const extractValue = (field: any) => {
+    if (typeof field === 'object' && field?.value !== undefined) {
+      return field.value;
+    }
+    return field || null;
+  };
+
+  const transformed = {
+    // Informations générales depuis information
+    pays: extractValue(rawData.information?.country) || 'France',
+    ville: extractValue(rawData.information?.city),
+    city: extractValue(rawData.information?.city),
+    commune: extractValue(rawData.information?.city),
+    code_commune: extractValue(rawData.information?.['city-code']),
+    commune_code: extractValue(rawData.information?.['city-code']),
+    code_postal: extractValue(rawData.information?.['postal-code']),
+    postal_code: extractValue(rawData.information?.['postal-code']),
+    
+    // Données cadastrales depuis cadastre
+    identifiant_cadastral: extractValue(rawData.cadastre?.id),
+    cadastral_id: extractValue(rawData.cadastre?.id),
+    parcel_id: extractValue(rawData.cadastre?.id),
+    prefixe: extractValue(rawData.cadastre?.prefix),
+    prefix: extractValue(rawData.cadastre?.prefix),
+    section: extractValue(rawData.cadastre?.section),
+    numero: extractValue(rawData.cadastre?.number),
+    number: extractValue(rawData.cadastre?.number),
+    superficie_m2: extractValue(rawData.cadastre?.area),
+    surface_ha: extractValue(rawData.cadastre?.area) ? extractValue(rawData.cadastre?.area) / 10000 : null,
+    
+    // Conserver les données brutes pour référence
+    _raw: rawData
+  };
+  
+  console.log(`✅ [LEXICON TRANSFORM] Données transformées:`, transformed);
+  return transformed;
+};
+
 export const fetchLexiconParcelData = async (latitude: number, longitude: number): Promise<LexiconApiResponse> => {
   try {
     console.log(`🌱 [LEXICON DEBUG] Appel via Edge Function pour lat: ${latitude}, lng: ${longitude}`);
@@ -28,7 +70,12 @@ export const fetchLexiconParcelData = async (latitude: number, longitude: number
     const result = await response.json();
     console.log(`✅ [LEXICON SUCCESS] Réponse Edge Function:`, result);
     
-    // La réponse de l'edge function est déjà structurée
+    // Transformer les données si elles existent
+    if (result.success && result.data) {
+      result.data = transformLexiconData(result.data);
+      console.log(`🔄 [LEXICON SUCCESS] Données après transformation:`, result.data);
+    }
+    
     return result;
   } catch (error) {
     console.error('❌ [LEXICON ERROR] Erreur complète:', error);
