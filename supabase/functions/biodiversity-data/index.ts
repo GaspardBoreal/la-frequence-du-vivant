@@ -171,20 +171,21 @@ async function fetchINaturalistData(lat: number, lon: number, radius: number, da
       startDate = new Date(now.getFullYear() - 5, now.getMonth(), now.getDate()).toISOString().split('T')[0];
     }
     
-    // Utiliser exactement le rayon demandé, même moins d'1km pour éviter les faux positifs urbains
-    const searchRadius = radius; // Pas de minimum artificiel
+    // Élargir le rayon de recherche pour Bonzac et supprimer les filtres restrictifs
+    const searchRadius = Math.max(radius, 1); // Minimum 1km pour capturer plus d'observations
     
     const params = new URLSearchParams({
       'lat': lat.toString(),
       'lng': lon.toString(),
-      'radius': searchRadius.toString(), // Utiliser le rayon exact demandé
-      'quality_grade': 'research', // Seulement les observations validées pour éviter les faux positifs
-      'per_page': '200', // Augmenter le nombre de résultats
+      'radius': searchRadius.toString(),
+      // Supprimer quality_grade pour inclure toutes les observations, même récentes
+      'per_page': '200',
       'order': 'desc',
       'order_by': 'observed_on',
       'captive': 'false',
       'geo': 'true',
-      'identified': 'true'
+      'identified': 'true',
+      'include_new_projects': 'true' // Inclure les nouveaux projets
     });
     
     if (startDate) {
@@ -195,6 +196,7 @@ async function fetchINaturalistData(lat: number, lon: number, radius: number, da
     const url = `https://api.inaturalist.org/v1/observations?${params.toString()}`;
     console.log('📍 iNaturalist API URL:', url);
     console.log('📍 Coordonnées utilisées:', { lat, lon, radius: searchRadius });
+    console.log('🔧 Paramètres de recherche modifiés pour capturer les observations récentes de Gaspard');
     
     const response = await fetch(url, {
       headers: {
@@ -214,11 +216,18 @@ async function fetchINaturalistData(lat: number, lon: number, radius: number, da
     console.log(`✅ iNaturalist: Found ${data.results?.length || 0} raw observations`);
     console.log('📊 Total results available:', data.total_results);
     
-    // Log détaillé des premières observations pour debug
+    // Log détaillé de TOUTES les observations avec coordonnées pour debug Bonzac
     if (data.results && data.results.length > 0) {
-      console.log('🔍 First 3 observations details:');
-      data.results.slice(0, 3).forEach((obs: any, idx: number) => {
-        console.log(`  ${idx + 1}. ${obs.taxon?.name || 'Unknown'} by ${obs.user?.login || 'Anonymous'} on ${obs.observed_on}`);
+      console.log('🔍 DEBUG iNaturalist - Échantillon de 5 espèces avec coordonnées:');
+      data.results.slice(0, 5).forEach((obs: any, idx: number) => {
+        const lat_obs = obs.geojson?.coordinates?.[1] || obs.location?.[0];
+        const lon_obs = obs.geojson?.coordinates?.[0] || obs.location?.[1];
+        // Calculer la distance réelle
+        const distance = calculateDistance(lat, lon, lat_obs, lon_obs);
+        console.log(`  ${idx + 1}. ${obs.taxon?.name || 'Unknown'} (${obs.taxon?.preferred_common_name || 'Unknown'})`);
+        console.log(`     Coordonnées: (${lat_obs}, ${lon_obs})`);
+        console.log(`     Lieu: ${obs.place_guess || 'Inconnu'}`);
+        console.log(`     Distance calculée: ${distance.toFixed(3)}km (rayon demandé: ${searchRadius}km)`);
       });
     }
     
@@ -371,6 +380,18 @@ async function fetchEBirdData(lat: number, lon: number, radius: number, dateFilt
   }
 }
 
+// Helper function to calculate distance between two points
+function calculateDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
+  const R = 6371; // Rayon de la Terre en km
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLon = (lon2 - lon1) * Math.PI / 180;
+  const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+    Math.sin(dLon/2) * Math.sin(dLon/2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+  return R * c;
+}
+
 // Helper function to map kingdom names
 function mapKingdom(kingdom: string): 'Plantae' | 'Animalia' | 'Fungi' | 'Other' {
   if (!kingdom) return 'Other';
@@ -505,21 +526,35 @@ serve(async (req) => {
     const aggregatedSpecies = aggregateSpeciesData(allSpecies);
     console.log(`📊 Après agrégation: ${aggregatedSpecies.length} espèces uniques`);
     
-    // DEBUG DÉTAILLÉ pour comprendre le problème urbain
+    // DEBUG SPÉCIAL BONZAC - Analyse complète des observations iNaturalist
     if (inaturalistSpecies.length > 0) {
       console.log(`🔍 DEBUG iNaturalist - Échantillon de 5 espèces avec coordonnées:`);
       inaturalistSpecies.slice(0, 5).forEach((species, index) => {
         console.log(`  ${index + 1}. ${species.scientificName} (${species.commonName})`);
         if (species.attributions && species.attributions.length > 0) {
           const attrib = species.attributions[0];
-          const distance = Math.sqrt(
-            Math.pow((attrib.exactLatitude! - latitude) * 111, 2) + 
-            Math.pow((attrib.exactLongitude! - longitude) * 111 * Math.cos(latitude * Math.PI / 180), 2)
-          );
+          const distance = calculateDistance(latitude, longitude, attrib.exactLatitude!, attrib.exactLongitude!);
           console.log(`     Coordonnées: (${attrib.exactLatitude}, ${attrib.exactLongitude})`);
-          console.log(`     Distance calculée: ${distance.toFixed(3)}km (rayon demandé: ${radius}km)`);
           console.log(`     Lieu: ${attrib.locationName || 'Non spécifié'}`);
+          console.log(`     Distance calculée: ${distance.toFixed(3)}km (rayon demandé: ${radius}km)`);
         }
+      });
+    }
+    
+    // Log spécial pour Bonzac avec les coordonnées exactes
+    if (Math.abs(latitude - 45.00651802965869) < 0.001 && Math.abs(longitude - (-0.2210985)) < 0.001) {
+      console.log('🎯 DEBUG SPÉCIAL BONZAC - Toutes observations iNaturalist:');
+      inaturalistSpecies.forEach((species, idx) => {
+        species.attributions.forEach(attr => {
+          if (attr.exactLatitude && attr.exactLongitude) {
+            const dist = calculateDistance(latitude, longitude, attr.exactLatitude, attr.exactLongitude);
+            console.log(`  ${idx + 1}. ${species.scientificName} (${species.commonName})`);
+            console.log(`     Observer: ${attr.observerName} le ${attr.date}`);
+            console.log(`     Coordonnées: (${attr.exactLatitude}, ${attr.exactLongitude})`);
+            console.log(`     Distance: ${dist.toFixed(3)}km de Bonzac`);
+            console.log(`     URL: ${attr.originalUrl}`);
+          }
+        });
       });
     }
     
