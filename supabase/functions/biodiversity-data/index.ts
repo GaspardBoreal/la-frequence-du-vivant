@@ -396,7 +396,7 @@ async function fetchEBirdData(lat: number, lon: number, radius: number, dateFilt
       'dist': Math.min(radius, 50).toString(), // eBird limite le rayon à 50km
       'back': daysBack.toString(),
       'includeProvisional': 'false',
-      'maxResults': '100',
+      'maxResults': '200', // Augmenté pour récupérer plus d'espèces
       'fmt': 'json'
     });
     
@@ -490,35 +490,50 @@ async function fetchEBirdData(lat: number, lon: number, radius: number, dateFilt
     
     if (!data || !Array.isArray(data)) return [];
     
-    const mappedData = data.map((item: any, index: number) => ({
-      id: `ebird-${item.speciesCode || index}`,
-      scientificName: item.sciName || 'Unknown',
-      commonName: item.comName || item.sciName || 'Unknown',
-      family: 'Aves',
-      kingdom: 'Animalia' as const,
-      observations: item.howMany || 1,
-      lastSeen: item.obsDt || new Date().toISOString().split('T')[0],
-      photos: [],
-      source: 'ebird' as const,
-      attributions: [{
-        observerName: item.userDisplayName || 'Observateur eBird',
-        observerInstitution: 'eBird/Cornell Lab',
-        observationMethod: 'Observation ornithologique',
-        originalUrl: item.hasRichMedia ? `https://ebird.org/checklist/${item.subId}` : `https://ebird.org/species/${item.speciesCode}`,
-        exactLatitude: item.lat,
-        exactLongitude: item.lng,
-        locationName: item.locName || 'Localisation inconnue',
-        date: item.obsDt || new Date().toISOString().split('T')[0],
-        source: 'ebird' as const
-      }]
-    }));
+    // Traitement des données avec récupération des photos
+    const processedData = await Promise.all(
+      data.map(async (item: any, index: number) => {
+        // Tentative de récupération des photos eBird si hasRichMedia est true
+        let photos: string[] = [];
+        if (item.hasRichMedia && apiKey) {
+          try {
+            photos = await fetchEBirdPhotos(item.speciesCode, item.subId, apiKey);
+          } catch (error) {
+            console.log(`⚠️ Could not fetch photos for ${item.comName}:`, error);
+          }
+        }
+
+        return {
+          id: `ebird-${item.speciesCode || index}`,
+          scientificName: item.sciName || 'Unknown',
+          commonName: item.comName || item.sciName || 'Unknown',
+          family: 'Aves',
+          kingdom: 'Animalia' as const,
+          observations: item.howMany || 1,
+          lastSeen: item.obsDt || new Date().toISOString().split('T')[0],
+          photos,
+          source: 'ebird' as const,
+          attributions: [{
+            observerName: item.userDisplayName || 'Observateur eBird',
+            observerInstitution: 'eBird/Cornell Lab',
+            observationMethod: 'Observation ornithologique',
+            originalUrl: item.hasRichMedia ? `https://ebird.org/checklist/${item.subId}` : `https://ebird.org/species/${item.speciesCode}`,
+            exactLatitude: item.lat,
+            exactLongitude: item.lng,
+            locationName: item.locName || 'Localisation inconnue',
+            date: item.obsDt || new Date().toISOString().split('T')[0],
+            source: 'ebird' as const
+          }]
+        };
+      })
+    );
     
-    console.log(`🐦 eBird mapping completed: ${mappedData.length} species mapped`);
-    if (mappedData.length > 0) {
-      console.log(`🐦 Premier oiseau mappé: ${mappedData[0].commonName} (kingdom: ${mappedData[0].kingdom})`);
+    console.log(`🐦 eBird mapping completed: ${processedData.length} species mapped`);
+    if (processedData.length > 0) {
+      console.log(`🐦 Premier oiseau mappé: ${processedData[0].commonName} (kingdom: ${processedData[0].kingdom})`);
     }
     
-    return mappedData;
+    return processedData;
   } catch (error) {
     console.error('Error fetching eBird data:', error);
     return [];

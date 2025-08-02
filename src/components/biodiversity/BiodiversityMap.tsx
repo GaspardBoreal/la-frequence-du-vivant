@@ -269,13 +269,26 @@ export const BiodiversityMap: React.FC<BiodiversityMapProps> = ({
               <Popup>
                 <div className="space-y-2 min-w-[200px]">
                   <h4 className="font-semibold">{cluster.count} espèce{cluster.count > 1 ? 's' : ''}</h4>
-                  <div className="space-y-1">
-                    {cluster.species.slice(0, 3).map(species => (
-                      <div key={species.id} className="text-sm">
-                        <div className="font-medium">{species.commonName}</div>
-                        <div className="text-muted-foreground italic text-xs">{species.scientificName}</div>
-                      </div>
-                    ))}
+                   <div className="space-y-2">
+                     {cluster.species.slice(0, 3).map(species => (
+                       <div key={species.id} className="text-sm flex gap-2 items-center">
+                         {species.photos?.[0] && (
+                           <img
+                             src={species.photos[0]}
+                             alt={species.commonName}
+                             className="w-6 h-6 object-cover rounded border"
+                             onError={(e) => {
+                               const target = e.target as HTMLImageElement;
+                               target.style.display = 'none';
+                             }}
+                           />
+                         )}
+                         <div className="flex-1">
+                           <div className="font-medium">{species.commonName}</div>
+                           <div className="text-muted-foreground italic text-xs">{species.scientificName}</div>
+                         </div>
+                       </div>
+                     ))}
                     {cluster.species.length > 3 && (
                       <div className="text-xs text-muted-foreground">
                         +{cluster.species.length - 3} autres espèces
@@ -328,16 +341,20 @@ export const BiodiversityMap: React.FC<BiodiversityMapProps> = ({
                       animate={{ opacity: 1, y: 0 }}
                       className="border rounded-lg p-4 hover:bg-muted/50 transition-colors"
                     >
-                      <div className="flex gap-4">
-                        {species.photos?.[0] && (
-                          <div className="w-20 h-20 flex-shrink-0">
-                            <img
-                              src={species.photos[0]}
-                              alt={species.commonName}
-                              className="w-full h-full object-cover rounded-lg"
-                            />
-                          </div>
-                        )}
+                       <div className="flex gap-4">
+                         {species.photos?.[0] && (
+                           <div className="w-20 h-20 flex-shrink-0">
+                             <img
+                               src={species.photos[0]}
+                               alt={species.commonName}
+                               className="w-full h-full object-cover rounded-lg border"
+                               onError={(e) => {
+                                 const target = e.target as HTMLImageElement;
+                                 target.style.display = 'none';
+                               }}
+                             />
+                           </div>
+                         )}
                         
                         <div className="flex-1 space-y-2">
                           <div>
