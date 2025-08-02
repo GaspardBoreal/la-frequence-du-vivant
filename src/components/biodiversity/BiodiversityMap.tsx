@@ -271,11 +271,13 @@ export const BiodiversityMap: React.FC<BiodiversityMapProps> = ({
                   <h4 className="font-semibold">{cluster.count} espèce{cluster.count > 1 ? 's' : ''}</h4>
                   <div className="space-y-2">
                      {cluster.species.slice(0, 3).map(species => {
-                       console.log(`🔍 Species data:`, {
+                       console.log(`🔍 POPUP Species data:`, {
                          name: species.commonName,
                          source: species.source,
-                         photos: species.photos,
-                         photosLength: species.photos?.length
+                         photosArray: species.photos,
+                         photosLength: species.photos?.length,
+                         firstPhoto: species.photos?.[0],
+                         hasPhotos: !!(species.photos?.[0])
                        });
                        
                        return (
@@ -286,9 +288,9 @@ export const BiodiversityMap: React.FC<BiodiversityMapProps> = ({
                                alt={species.commonName}
                                className="w-6 h-6 object-cover rounded border"
                                loading="lazy"
-                               onLoad={() => console.log(`📸 Photo loaded for ${species.commonName}:`, species.photos[0])}
+                               onLoad={() => console.log(`✅ POPUP Photo loaded for ${species.commonName}:`, species.photos[0])}
                                onError={(e) => {
-                                 console.log(`❌ Photo failed for ${species.commonName}:`, species.photos[0]);
+                                 console.log(`❌ POPUP Photo failed for ${species.commonName}:`, species.photos[0]);
                                  const target = e.target as HTMLImageElement;
                                  target.style.display = 'none';
                                }}
