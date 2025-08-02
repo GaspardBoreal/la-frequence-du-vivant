@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { MapPin, FileText, CloudSun, TrendingUp, ChevronDown, ChevronRight } from 'lucide-react';
+import { MapPin, FileText, CloudSun, TrendingUp, ChevronDown, ChevronRight, Copy, Check, ExternalLink, Users } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '../ui/collapsible';
 import { Button } from '../ui/button';
@@ -17,6 +17,8 @@ interface LexiconStructuredDisplayProps {
 const LexiconStructuredDisplay: React.FC<LexiconStructuredDisplayProps> = ({ data, coordinates }) => {
   const [weatherOpen, setWeatherOpen] = useState(false);
   const [transactionsOpen, setTransactionsOpen] = useState(false);
+  const [debugOpen, setDebugOpen] = useState(false);
+  const [copied, setCopied] = useState(false);
 
   console.log(`🎯 [LEXICON DISPLAY] Données reçues pour affichage:`, data);
 
@@ -68,6 +70,50 @@ const LexiconStructuredDisplay: React.FC<LexiconStructuredDisplayProps> = ({ dat
   };
 
   const cadastralData = extractCadastralData(data);
+
+  // Fonction pour copier les données en mémoire
+  const copyDataToClipboard = async () => {
+    try {
+      const formattedData = JSON.stringify(data, null, 2);
+      await navigator.clipboard.writeText(formattedData);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch (err) {
+      console.error('Erreur lors de la copie:', err);
+    }
+  };
+
+  // Liste des contributeurs avec leurs profils LinkedIn
+  const contributors = [
+    {
+      name: 'David Joulin',
+      linkedin: 'https://www.linkedin.com/in/david-joulin-9b629790/',
+      role: 'Architecte de données'
+    },
+    {
+      name: 'Olivier Lépine',
+      linkedin: 'https://www.linkedin.com/in/crapougnax/',
+      role: 'Développeur full-stack'
+    },
+    {
+      name: 'Laurent Tripied',
+      linkedin: 'https://www.linkedin.com/in/laurenttripied/',
+      role: 'Expert géospatial'
+    }
+  ];
+
+  const organizations = [
+    {
+      name: 'OSFARM',
+      url: 'https://www.osfarm.org/fr/',
+      description: 'Agriculture durable et innovation territoriale'
+    },
+    {
+      name: 'bziiit',
+      url: 'https://www.bziiit.com/',
+      description: 'Solutions tech pour l\'environnement'
+    }
+  ];
 
   return (
     <div className="space-y-6">
@@ -411,23 +457,226 @@ const LexiconStructuredDisplay: React.FC<LexiconStructuredDisplayProps> = ({ dat
         </Card>
       </motion.div>
 
-      {/* Section de débogage des données brutes */}
+      {/* Section Contributeurs - Optimisée SEO/GEO */}
       <motion.div
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.5 }}
       >
-        <Card className="border-gray-200 bg-gray-50">
-          <CardHeader className="pb-4">
-            <CardTitle className="text-sm font-medium text-gray-600">
-              Données brutes (debug)
+        <Card className="border-purple-200 bg-gradient-to-br from-purple-50 via-violet-50 to-fuchsia-50 overflow-hidden relative">
+          {/* Éléments décoratifs */}
+          <div className="absolute top-0 right-0 w-32 h-32 opacity-10">
+            <motion.div
+              animate={{ 
+                rotate: [0, 180, 360],
+                scale: [1, 1.1, 1]
+              }}
+              transition={{ 
+                duration: 12,
+                repeat: Infinity,
+                ease: "linear"
+              }}
+            >
+              <Users className="w-full h-full text-purple-500" />
+            </motion.div>
+          </div>
+
+          <CardHeader className="relative z-10">
+            <CardTitle className="flex items-center gap-3 text-xl font-bold text-gray-800">
+              <motion.div 
+                className="p-2 bg-purple-100 rounded-full"
+                whileHover={{ scale: 1.1, rotate: 5 }}
+                transition={{ type: "spring", stiffness: 300 }}
+              >
+                <Users className="h-5 w-5 text-purple-600" />
+              </motion.div>
+              <span className="bg-gradient-to-r from-purple-600 to-violet-600 bg-clip-text text-transparent">
+                Contributeurs & Partenaires
+              </span>
             </CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="text-xs text-gray-700 bg-gray-100 p-3 rounded font-mono max-h-40 overflow-auto">
-              {JSON.stringify(data, null, 2)}
+          
+          <CardContent className="space-y-6">
+            {/* Organismes contributeurs */}
+            <div className="space-y-4">
+              <h4 className="text-lg font-semibold text-purple-800 mb-3">Organisations partenaires</h4>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {organizations.map((org, index) => (
+                  <motion.div
+                    key={org.name}
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: 0.1 + index * 0.1 }}
+                    className="bg-white/70 backdrop-blur-sm rounded-lg p-4 border border-purple-100 hover:border-purple-200 transition-all duration-300 group"
+                  >
+                    <div className="flex items-center justify-between mb-2">
+                      <h5 className="font-bold text-purple-800 group-hover:text-purple-900 transition-colors">
+                        {org.name}
+                      </h5>
+                      <motion.div
+                        whileHover={{ scale: 1.1 }}
+                        whileTap={{ scale: 0.95 }}
+                      >
+                        <a
+                          href={org.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-purple-600 hover:text-purple-800 transition-colors"
+                          aria-label={`Visiter le site de ${org.name}`}
+                        >
+                          <ExternalLink className="h-4 w-4" />
+                        </a>
+                      </motion.div>
+                    </div>
+                    <p className="text-sm text-purple-700">{org.description}</p>
+                  </motion.div>
+                ))}
+              </div>
+            </div>
+
+            {/* Équipe technique */}
+            <div className="space-y-4">
+              <h4 className="text-lg font-semibold text-purple-800 mb-3">Équipe technique</h4>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {contributors.map((contributor, index) => (
+                  <motion.div
+                    key={contributor.name}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.2 + index * 0.1 }}
+                    className="bg-white/70 backdrop-blur-sm rounded-lg p-4 border border-purple-100 hover:border-purple-200 transition-all duration-300 group hover:shadow-lg"
+                  >
+                    <div className="text-center space-y-3">
+                      <motion.div
+                        className="w-12 h-12 bg-gradient-to-br from-purple-400 to-violet-500 rounded-full mx-auto flex items-center justify-center text-white font-bold text-lg"
+                        whileHover={{ scale: 1.1 }}
+                        transition={{ type: "spring", stiffness: 300 }}
+                      >
+                        {contributor.name.split(' ').map(n => n[0]).join('')}
+                      </motion.div>
+                      <div>
+                        <h5 className="font-bold text-purple-800 group-hover:text-purple-900 transition-colors">
+                          {contributor.name}
+                        </h5>
+                        <p className="text-xs text-purple-600 mb-2">{contributor.role}</p>
+                        <motion.div
+                          whileHover={{ scale: 1.05 }}
+                          whileTap={{ scale: 0.95 }}
+                        >
+                          <a
+                            href={contributor.linkedin}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1 text-xs bg-purple-100 hover:bg-purple-200 text-purple-800 px-2 py-1 rounded-full transition-all duration-200"
+                            aria-label={`Profil LinkedIn de ${contributor.name}`}
+                          >
+                            <svg className="w-3 h-3" viewBox="0 0 24 24" fill="currentColor">
+                              <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/>
+                            </svg>
+                            LinkedIn
+                          </a>
+                        </motion.div>
+                      </div>
+                    </div>
+                  </motion.div>
+                ))}
+              </div>
+            </div>
+
+            {/* Métadonnées SEO structurées */}
+            <div className="pt-4 border-t border-purple-200">
+              <div className="text-xs text-purple-600 space-y-1">
+                <p>📍 Coordonnées géographiques: {coordinates.latitude.toFixed(6)}, {coordinates.longitude.toFixed(6)}</p>
+                <p>🗺️ Données géospatiales enrichies par l'expertise territoriale française</p>
+                <p>🔗 API LEXICON - Service de données foncières et environnementales</p>
+              </div>
             </div>
           </CardContent>
+        </Card>
+      </motion.div>
+
+      {/* Section de débogage des données brutes - Fermée par défaut */}
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.6 }}
+      >
+        <Card className="border-gray-200 bg-gradient-to-br from-gray-50 via-slate-50 to-zinc-50 overflow-hidden relative">
+          <Collapsible open={debugOpen} onOpenChange={setDebugOpen}>
+            <CollapsibleTrigger asChild>
+              <CardHeader className="cursor-pointer hover:bg-gray-100/50 transition-all duration-300 relative z-10">
+                <CardTitle className="flex items-center justify-between text-lg font-bold text-gray-800">
+                  <div className="flex items-center gap-3">
+                    <motion.div 
+                      className="p-2 bg-gray-100 rounded-lg"
+                      whileHover={{ scale: 1.1 }}
+                      transition={{ type: "spring", stiffness: 300 }}
+                    >
+                      <FileText className="h-4 w-4 text-gray-600" />
+                    </motion.div>
+                    <span className="text-gray-700">
+                      Données brutes (debug)
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    {debugOpen && (
+                      <motion.div
+                        initial={{ opacity: 0, scale: 0.9 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        transition={{ duration: 0.2 }}
+                      >
+                        <Button
+                          size="sm"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            copyDataToClipboard();
+                          }}
+                          className={`text-xs transition-all duration-200 ${
+                            copied 
+                              ? 'bg-green-100 text-green-800 hover:bg-green-200' 
+                              : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                          }`}
+                          disabled={copied}
+                        >
+                          {copied ? (
+                            <>
+                              <Check className="h-3 w-3 mr-1" />
+                              Copié !
+                            </>
+                          ) : (
+                            <>
+                              <Copy className="h-3 w-3 mr-1" />
+                              Copier JSON
+                            </>
+                          )}
+                        </Button>
+                      </motion.div>
+                    )}
+                    <motion.div
+                      animate={{ rotate: debugOpen ? 180 : 0 }}
+                      transition={{ duration: 0.3 }}
+                    >
+                      <ChevronDown className="h-4 w-4 text-gray-600" />
+                    </motion.div>
+                  </div>
+                </CardTitle>
+              </CardHeader>
+            </CollapsibleTrigger>
+            <CollapsibleContent>
+              <CardContent className="pt-0">
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.3 }}
+                  className="bg-white/70 backdrop-blur-sm rounded-xl border border-gray-200"
+                >
+                  <div className="text-xs text-gray-700 bg-gray-900 text-green-400 p-4 rounded-xl font-mono max-h-80 overflow-auto">
+                    <pre>{JSON.stringify(data, null, 2)}</pre>
+                  </div>
+                </motion.div>
+              </CardContent>
+            </CollapsibleContent>
+          </Collapsible>
         </Card>
       </motion.div>
     </div>
