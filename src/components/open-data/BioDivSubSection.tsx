@@ -319,23 +319,49 @@ const BioDivSubSection: React.FC<BioDivSubSectionProps> = ({ marche, theme }) =>
       >
         <Card className="border border-white/20 bg-white/5 backdrop-blur-sm">
           <CardContent className="p-4">
-            <div className="flex items-center gap-4">
-              <Clock className="h-5 w-5 text-muted-foreground" />
-              <span className="text-sm font-medium">Période d'observation:</span>
-              <RadioGroup 
-                value={dateFilter} 
-                onValueChange={(value: 'recent' | 'medium') => setDateFilter(value)}
-                className="flex gap-6"
-              >
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="recent" id="recent" />
-                  <Label htmlFor="recent" className="text-sm cursor-pointer">Récentes (&lt; 2 ans)</Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="medium" id="medium" />
-                  <Label htmlFor="medium" className="text-sm cursor-pointer">Moyennes (2-5 ans)</Label>
-                </div>
-              </RadioGroup>
+            <div className="flex items-center gap-4 flex-wrap">
+              <div className="flex items-center gap-2">
+                <Clock className="h-5 w-5 text-primary" />
+                <span className="text-sm font-semibold text-foreground">Période d'observation:</span>
+              </div>
+              <div className="flex gap-2">
+                <Button
+                  variant={dateFilter === 'recent' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setDateFilter('recent')}
+                  className={`
+                    transition-all duration-300 ease-in-out
+                    ${dateFilter === 'recent' 
+                      ? 'bg-primary text-primary-foreground shadow-lg scale-105' 
+                      : 'hover:bg-primary/10 hover:border-primary/30 hover:scale-102'
+                    }
+                  `}
+                >
+                  <Clock className="h-4 w-4 mr-2" />
+                  Récentes (&lt; 2 ans)
+                  {dateFilter === 'recent' && (
+                    <CheckCircle className="h-4 w-4 ml-2" />
+                  )}
+                </Button>
+                <Button
+                  variant={dateFilter === 'medium' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setDateFilter('medium')}
+                  className={`
+                    transition-all duration-300 ease-in-out
+                    ${dateFilter === 'medium' 
+                      ? 'bg-primary text-primary-foreground shadow-lg scale-105' 
+                      : 'hover:bg-primary/10 hover:border-primary/30 hover:scale-102'
+                    }
+                  `}
+                >
+                  <Calendar className="h-4 w-4 mr-2" />
+                  Moyennes (2-5 ans)
+                  {dateFilter === 'medium' && (
+                    <CheckCircle className="h-4 w-4 ml-2" />
+                  )}
+                </Button>
+              </div>
             </div>
           </CardContent>
         </Card>
