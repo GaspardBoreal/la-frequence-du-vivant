@@ -135,74 +135,29 @@ const BioDivSubSection: React.FC<BioDivSubSectionProps> = ({ marche, theme }) =>
     return (
       <Card 
         className={`
-          group cursor-pointer transition-all duration-500 ease-out species-card
+          group cursor-pointer transition-all duration-300 hover:shadow-lg
           ${isSelected 
-            ? 'ring-2 ring-primary shadow-2xl bg-primary/5 border-primary/30 scale-[1.02]' 
-            : 'hover:shadow-xl hover:scale-[1.01] border-white/20 bg-white/5'
+            ? 'ring-2 ring-primary shadow-lg bg-primary/5 border-primary/30' 
+            : 'border-border hover:border-primary/50'
           }
-          backdrop-blur-sm hover-scale animate-fade-in
         `}
         onClick={() => setSelectedSpecies(isSelected ? null : species.id)}
       >
-        <CardContent className="p-0 overflow-hidden">
-          {/* En-tête avec noms de l'espèce */}
-          <div className="p-4 pb-2">
-            <div className="flex items-start justify-between mb-2">
-              <div className="flex items-center gap-3">
-                {getKingdomIcon(species.kingdom)}
-                <div className="flex-1">
-                  <h4 className={`text-lg leading-tight transition-all duration-300 ${
-                    isSelected ? 'font-bold text-primary text-xl' : 'font-semibold text-foreground'
-                  }`}>
-                    {species.commonName}
-                  </h4>
-                  <p className={`text-sm italic transition-all duration-300 ${
-                    isSelected ? 'text-primary/80 font-medium' : 'text-muted-foreground'
-                  }`}>
-                    {species.scientificName}
-                  </p>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Famille: {species.family}
-                  </p>
-                </div>
-              </div>
-              <div className="flex flex-col gap-2 items-end">
-                <Badge className={`text-xs transition-all duration-300 ${
-                  isSelected ? 'shadow-md scale-105' : ''
-                } ${getSourceColor(species.source)}`}>
-                  {getSourceName(species.source)}
-                </Badge>
-                {species.confidence && (
-                  <Badge className={`text-xs transition-all duration-300 ${
-                    isSelected ? 'shadow-md scale-105' : ''
-                  } ${getConfidenceColor(species.confidence)}`}>
-                    {getConfidenceLabel(species.confidence)}
-                  </Badge>
-                )}
-              </div>
-            </div>
-          </div>
-
-          {/* Image de l'espèce avec amélioration de qualité */}
+        <div className="flex flex-row p-3 gap-3">
+          {/* Image compacte à gauche */}
           {primaryPhoto && (
-            <div className="relative w-full h-48 overflow-hidden group/image">
-              <img 
-                src={getOptimizedImageUrl(primaryPhoto, 'medium')} 
+            <div className="relative w-16 h-16 flex-shrink-0">
+              <img
+                src={getOptimizedImageUrl(primaryPhoto, 'small')}
                 alt={`${species.commonName} - ${species.scientificName}`}
-                className={`
-                  w-full h-full object-cover transition-all duration-700 ease-out cursor-pointer
-                  ${isSelected ? 'scale-110 brightness-110' : 'group-hover:scale-105'}
-                `}
+                className="w-full h-full object-cover rounded-lg transition-transform duration-300 group-hover:scale-105 aspect-square cursor-pointer"
                 style={{
                   imageRendering: '-webkit-optimize-contrast',
-                  filter: 'contrast(1.05) brightness(1.02)',
+                  filter: 'contrast(1.1) brightness(1.05)',
                   willChange: 'transform',
-                  objectFit: 'cover',
                   objectPosition: 'center'
                 }}
-                loading="lazy"
                 onError={(e) => {
-                  // Fallback vers l'image originale si l'amélioration échoue
                   const current = e.currentTarget;
                   if (current.src !== primaryPhoto) {
                     current.src = primaryPhoto;
@@ -215,118 +170,288 @@ const BioDivSubSection: React.FC<BioDivSubSectionProps> = ({ marche, theme }) =>
                   setDialogOpenSpecies(species.id);
                 }}
               />
-              <div className={`
-                absolute inset-0 bg-gradient-to-t from-black/30 to-transparent
-                transition-opacity duration-300 pointer-events-none
-                ${isSelected ? 'opacity-60' : 'opacity-40'}
-              `} />
-              
-              {/* Indicateur de clic sur l'image */}
-              <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover/image:opacity-100 transition-opacity duration-300 pointer-events-none">
-                <div className="bg-white/20 backdrop-blur-sm rounded-full p-3">
-                  <ZoomIn className="h-6 w-6 text-white" />
-                </div>
-              </div>
-              
-              {/* Badge de photos multiples */}
-              {species.photos.length > 1 && (
-                <div className="absolute top-3 left-3">
-                  <Badge className="bg-black/60 text-white text-xs backdrop-blur-sm border-white/20">
-                    <Camera className="h-3 w-3 mr-1" />
-                    {species.photos.length} photos
-                  </Badge>
-                </div>
-              )}
             </div>
           )}
-
+          
           {/* Placeholder si pas de photo */}
           {!primaryPhoto && (
-            <div className={`
-              w-full h-32 bg-gradient-to-br from-muted/30 to-muted/60 
-              flex items-center justify-center transition-all duration-500
-              ${isSelected ? 'from-primary/20 to-primary/40' : ''}
-            `}>
-              <div className="text-center">
-                {getKingdomIcon(species.kingdom)}
-                <p className="text-xs text-muted-foreground mt-2">Aucune photo disponible</p>
-              </div>
+            <div className="w-16 h-16 flex-shrink-0 bg-muted/30 rounded-lg flex items-center justify-center">
+              {getKingdomIcon(species.kingdom)}
             </div>
           )}
-
-          {/* Informations détaillées */}
-          <div className="p-4 pt-3 space-y-3">
-            <div className="grid grid-cols-2 gap-3 text-sm">
-              <div className="flex items-center gap-2">
-                <span className="text-muted-foreground">Règne:</span>
-                <span className={`font-medium transition-all duration-300 ${
-                  isSelected ? 'text-primary font-semibold' : 'text-foreground'
-                }`}>
-                  {species.kingdom}
-                </span>
+          
+          {/* Contenu principal à droite */}
+          <div className="flex-1 min-w-0 space-y-1">
+            <div>
+              <h4 className="font-semibold text-sm leading-tight truncate">
+                {species.commonName}
+              </h4>
+              <p className="text-xs text-muted-foreground italic truncate">
+                {species.scientificName}
+              </p>
+            </div>
+            
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                <span>{species.observations} obs.</span>
+                <span>{new Date(species.lastSeen).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' })}</span>
               </div>
               
-              <div className="flex items-center gap-2">
-                <Eye className="h-4 w-4 text-muted-foreground" />
-                <span className="text-muted-foreground">Obs:</span>
-                <span className={`font-medium transition-all duration-300 ${
-                  isSelected ? 'text-primary font-semibold' : 'text-foreground'
-                }`}>
-                  {species.observations}
-                </span>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-2 text-sm">
-              <Calendar className="h-4 w-4 text-muted-foreground" />
-              <span className="text-muted-foreground">Dernière observation:</span>
-              <span className={`font-medium transition-all duration-300 ${
-                isSelected ? 'text-primary font-semibold' : 'text-foreground'
-              }`}>
-                {new Date(species.lastSeen).toLocaleDateString('fr-FR')}
-              </span>
-            </div>
-
-            {species.confirmedSources && species.confirmedSources > 1 && (
-              <div className={`
-                flex items-center gap-2 p-2 rounded-md transition-all duration-300
-                ${isSelected ? 'bg-emerald-500/20 border border-emerald-500/30' : 'bg-emerald-500/10'}
-              `}>
-                <CheckCircle className="h-4 w-4 text-emerald-600" />
-                <span className="text-sm text-emerald-700 font-medium">
-                  Confirmé par {species.confirmedSources} sources
-                </span>
-              </div>
-            )}
-
-            {species.conservationStatus && (
-              <div className="flex items-center gap-2">
-                <span className="text-xs text-muted-foreground">Conservation:</span>
-                <Badge variant="outline" className="text-xs">
-                  {species.conservationStatus}
+              <div className="flex items-center gap-1">
+                <Badge className={`text-xs px-1.5 py-0.5 h-5 ${getSourceColor(species.source)}`}>
+                  {getSourceName(species.source)}
                 </Badge>
-              </div>
-            )}
+                
+                <Dialog open={dialogOpenSpecies === species.id} onOpenChange={(open) => setDialogOpenSpecies(open ? species.id : null)}>
+                  <DialogTrigger asChild>
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      className="h-5 w-5 p-0 text-muted-foreground hover:text-primary"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <Info className="h-3 w-3" />
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="max-w-4xl max-h-[85vh] overflow-y-auto">
+                    <DialogHeader>
+                      <DialogTitle className="flex items-center gap-3">
+                        {getKingdomIcon(species.kingdom)}
+                        <div>
+                          <div className="font-bold text-lg">{species.commonName}</div>
+                          <div className="text-sm font-normal italic text-muted-foreground">
+                            {species.scientificName}
+                          </div>
+                        </div>
+                      </DialogTitle>
+                    </DialogHeader>
+                    
+                    <div className="space-y-6">
+                      {/* Galerie de photos */}
+                      {hasPhotos && (
+                        <div>
+                          <h5 className="font-medium text-foreground mb-3 flex items-center gap-2">
+                            <Camera className="h-4 w-4" />
+                            Photos ({species.photos.length})
+                          </h5>
+                          <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                            {species.photos.slice(0, 6).map((photo, index) => (
+                              <div key={index} className="aspect-square rounded-lg overflow-hidden cursor-pointer group">
+                                <img 
+                                  src={getOptimizedImageUrl(photo, 'medium')} 
+                                  alt={`${species.commonName} - Photo ${index + 1}`}
+                                  className="w-full h-full object-cover hover:scale-110 transition-transform duration-300"
+                                  style={{
+                                    imageRendering: '-webkit-optimize-contrast',
+                                    filter: 'contrast(1.05) brightness(1.02)',
+                                    willChange: 'transform',
+                                    objectFit: 'cover',
+                                    objectPosition: 'center'
+                                  }}
+                                  loading="lazy"
+                                  onError={(e) => {
+                                    const current = e.currentTarget;
+                                    if (current.src !== photo) {
+                                      current.src = photo;
+                                    } else {
+                                      current.style.display = 'none';
+                                    }
+                                  }}
+                                />
+                              </div>
+                            ))}
+                            {species.photos.length > 6 && (
+                              <div className="aspect-square rounded-lg bg-muted/50 flex items-center justify-center">
+                                <span className="text-sm text-muted-foreground">
+                                  +{species.photos.length - 6} photos
+                                </span>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      )}
 
-            {/* Bouton pour voir l'attribution - maintenant plus proéminent si sélectionné */}
-            <div className="flex justify-end pt-2">
-              <Dialog open={dialogOpenSpecies === species.id} onOpenChange={(open) => setDialogOpenSpecies(open ? species.id : null)}>
-                <DialogTrigger asChild>
-                  <Button 
-                    variant={isSelected ? "default" : "ghost"} 
-                    size="sm" 
-                    className={`
-                      transition-all duration-300
-                      ${isSelected 
-                        ? 'bg-primary text-primary-foreground shadow-md hover:shadow-lg' 
-                        : 'text-blue-400 hover:text-blue-300'
-                      }
-                    `}
-                  >
-                    <Info className="h-4 w-4 mr-1" />
-                    Détails
-                  </Button>
-                </DialogTrigger>
+                      {/* Informations de base */}
+                      <div className="bg-muted/30 p-4 rounded-lg">
+                        <h4 className="font-medium text-foreground mb-3">Informations taxonomiques</h4>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+                          <div>
+                            <span className="text-muted-foreground">Nom commun:</span>
+                            <span className="ml-2 font-medium text-foreground">{species.commonName}</span>
+                          </div>
+                          <div>
+                            <span className="text-muted-foreground">Nom scientifique:</span>
+                            <span className="ml-2 font-medium italic text-foreground">{species.scientificName}</span>
+                          </div>
+                          <div>
+                            <span className="text-muted-foreground">Famille:</span>
+                            <span className="ml-2 font-medium text-foreground">{species.family}</span>
+                          </div>
+                          <div>
+                            <span className="text-muted-foreground">Règne:</span>
+                            <span className="ml-2 font-medium text-foreground">{species.kingdom}</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Observations détaillées */}
+                      <div>
+                        <h5 className="font-medium text-foreground mb-3 flex items-center gap-2">
+                          <Users className="h-4 w-4" />
+                          Observations détaillées ({species.attributions?.length || 0})
+                        </h5>
+                        
+                        {species.attributions && species.attributions.length > 0 ? (
+                          <div className="space-y-3">
+                            {species.attributions.map((attribution, index) => (
+                              <Card key={index} className="border border-muted/30">
+                                <CardContent className="p-4">
+                                  <div className="flex items-start justify-between mb-3">
+                                    <Badge variant="outline" className={getSourceColor(attribution.source)}>
+                                      {getSourceName(attribution.source)}
+                                    </Badge>
+                                    {attribution.originalUrl && (
+                                      <a 
+                                        href={attribution.originalUrl} 
+                                        target="_blank" 
+                                        rel="noopener noreferrer"
+                                        className="text-blue-600 hover:text-blue-800 transition-colors"
+                                      >
+                                        <ExternalLink className="h-4 w-4" />
+                                      </a>
+                                    )}
+                                  </div>
+                                  
+                                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+                                    <div className="flex items-center gap-2">
+                                      <User className="h-4 w-4 text-primary" />
+                                      <span className="font-medium text-foreground">{attribution.observerName || 'Anonyme'}</span>
+                                    </div>
+                                    
+                                    <div className="flex items-center gap-2">
+                                      <Building className="h-4 w-4 text-primary" />
+                                      <span className="font-medium text-foreground">{attribution.observerInstitution || 'Non spécifié'}</span>
+                                    </div>
+                                    
+                                    <div className="flex items-center gap-2">
+                                      <Calendar className="h-4 w-4 text-primary" />
+                                      <span className="font-medium text-foreground">{new Date(attribution.date).toLocaleDateString('fr-FR')}</span>
+                                    </div>
+                                    
+                                    <div className="flex items-center gap-2">
+                                      <MapPin className="h-4 w-4 text-primary" />
+                                      <span className="font-medium text-foreground">{attribution.locationName || 'Localisation inconnue'}</span>
+                                    </div>
+                                  </div>
+                                  
+                                  {attribution.observationMethod && (
+                                    <div className="mt-3 p-2 bg-muted/50 rounded-md">
+                                      <span className="font-semibold text-foreground">Méthode:</span> 
+                                      <span className="ml-2 text-foreground">{attribution.observationMethod}</span>
+                                    </div>
+                                  )}
+                                  
+                                  {attribution.exactLatitude && attribution.exactLongitude && (
+                                    <div className="mt-3 p-2 bg-muted/30 rounded-md text-sm">
+                                      <span className="font-semibold text-foreground">Coordonnées:</span> 
+                                      <span className="ml-2 font-mono text-foreground">
+                                        {attribution.exactLatitude.toFixed(6)}, {attribution.exactLongitude.toFixed(6)}
+                                      </span>
+                                    </div>
+                                  )}
+                                </CardContent>
+                              </Card>
+                            ))}
+                          </div>
+                        ) : (
+                          <p className="text-muted-foreground text-sm">Aucune information d'attribution disponible.</p>
+                        )}
+                      </div>
+                      
+                      {species.confirmedSources && species.confirmedSources > 1 && (
+                        <div className="bg-emerald-50 border border-emerald-200 p-4 rounded-lg">
+                          <p className="text-sm text-emerald-800">
+                            <strong>Validation croisée:</strong> Cette espèce est confirmée par {species.confirmedSources} sources indépendantes, 
+                            ce qui augmente la fiabilité de l'observation.
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  </DialogContent>
+                </Dialog>
+              </div>
+            </div>
+          </div>
+        </div>
+          {/* Image compacte à gauche */}
+          {primaryPhoto && (
+            <div className="relative w-16 h-16 flex-shrink-0">
+              <img
+                src={getOptimizedImageUrl(primaryPhoto, 'small')}
+                alt={`${species.commonName} - ${species.scientificName}`}
+                className="w-full h-full object-cover rounded-lg transition-transform duration-300 group-hover:scale-105 aspect-square cursor-pointer"
+                style={{
+                  imageRendering: '-webkit-optimize-contrast',
+                  filter: 'contrast(1.1) brightness(1.05)',
+                  willChange: 'transform',
+                  objectPosition: 'center'
+                }}
+                onError={(e) => {
+                  const current = e.currentTarget;
+                  if (current.src !== primaryPhoto) {
+                    current.src = primaryPhoto;
+                  } else {
+                    current.style.display = 'none';
+                  }
+                }}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setDialogOpenSpecies(species.id);
+                }}
+              />
+            </div>
+          )}
+          
+          {/* Placeholder si pas de photo */}
+          {!primaryPhoto && (
+            <div className="w-16 h-16 flex-shrink-0 bg-muted/30 rounded-lg flex items-center justify-center">
+              {getKingdomIcon(species.kingdom)}
+            </div>
+          )}
+          
+          {/* Contenu principal à droite */}
+          <div className="flex-1 min-w-0 space-y-1">
+            <div>
+              <h4 className="font-semibold text-sm leading-tight truncate">
+                {species.commonName}
+              </h4>
+              <p className="text-xs text-muted-foreground italic truncate">
+                {species.scientificName}
+              </p>
+            </div>
+            
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                <span>{species.observations} obs.</span>
+                <span>{new Date(species.lastSeen).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' })}</span>
+              </div>
+              
+              <div className="flex items-center gap-1">
+                <Badge className={`text-xs px-1.5 py-0.5 h-5 ${getSourceColor(species.source)}`}>
+                  {getSourceName(species.source)}
+                </Badge>
+                
+                <Dialog open={dialogOpenSpecies === species.id} onOpenChange={(open) => setDialogOpenSpecies(open ? species.id : null)}>
+                  <DialogTrigger asChild>
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      className="h-5 w-5 p-0 text-muted-foreground hover:text-primary"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <Info className="h-3 w-3" />
+                    </Button>
+                  </DialogTrigger>
                 <DialogContent className="max-w-4xl max-h-[85vh] overflow-y-auto">
                   <DialogHeader>
                     <DialogTitle className="flex items-center gap-3">
@@ -492,11 +617,11 @@ const BioDivSubSection: React.FC<BioDivSubSectionProps> = ({ marche, theme }) =>
                     )}
                   </div>
                 </DialogContent>
-              </Dialog>
+                </Dialog>
+              </div>
             </div>
           </div>
-        </CardContent>
-      </Card>
+        </Card>
     );
   };
 
