@@ -67,13 +67,13 @@ const Footer = () => {
                 <Zap size={16} />
                 <span>Explorer la cartographie</span>
               </a>
-              <a 
-                href="#bioacoustique-poetique" 
+              <Link 
+                to="/bioacoustique-poetique" 
                 className="flex items-center gap-2 text-muted-foreground hover:text-[#4ade80] transition-colors"
               >
                 <BookOpen size={16} />
                 <span>Bioacoustique Poétique</span>
-              </a>
+              </Link>
             </div>
           </div>
 
