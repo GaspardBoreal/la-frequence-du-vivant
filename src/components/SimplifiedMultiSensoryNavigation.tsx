@@ -89,7 +89,7 @@ const SimplifiedMultiSensoryNavigation: React.FC<SimplifiedMultiSensoryNavigatio
   };
 
   return (
-    <div className="w-full py-8">
+    <div className="w-full py-4">
       {/* Navigation horizontale principale */}
       <div className="flex justify-center items-center gap-8">
         {menuSections.map((section) => {
