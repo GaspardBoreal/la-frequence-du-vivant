@@ -306,11 +306,12 @@ async function fetchEBirdHotspots(lat: number, lon: number, radius: number): Pro
 async function fetchEBirdNotable(lat: number, lon: number, radius: number, dateFilter: string): Promise<BiodiversitySpecies[]> {
   try {
     const apiKey = Deno.env.get('EBIRD_API_KEY');
+    // eBird API limite le paramètre 'back' à 30 jours maximum
     let daysBack = 30;
     if (dateFilter === 'recent') {
-      daysBack = 730;
+      daysBack = 30; // Corrigé: max 30 jours pour eBird
     } else if (dateFilter === 'medium') {
-      daysBack = 1825;
+      daysBack = 30; // Corrigé: max 30 jours pour eBird
     }
     
     const params = new URLSearchParams({
@@ -381,12 +382,12 @@ async function fetchEBirdData(lat: number, lon: number, radius: number, dateFilt
   try {
     const apiKey = Deno.env.get('EBIRD_API_KEY');
     
-    // Calculate days back based on filter
+    // eBird API limite le paramètre 'back' à 30 jours maximum
     let daysBack = 30;
     if (dateFilter === 'recent') {
-      daysBack = 730; // 2 years
+      daysBack = 30; // Corrigé: max 30 jours pour eBird
     } else if (dateFilter === 'medium') {
-      daysBack = 1825; // 5 years
+      daysBack = 30; // Corrigé: max 30 jours pour eBird
     }
     
     const params = new URLSearchParams({
@@ -401,6 +402,7 @@ async function fetchEBirdData(lat: number, lon: number, radius: number, dateFilt
     
     const url = `https://api.ebird.org/v2/data/obs/geo/recent?${params.toString()}`;
     console.log('🐦 eBird Recent URL:', url);
+    console.log('🐦 eBird paramètres:', { lat, lon, radius, daysBack, dateFilter });
     
     const headers: any = {
       'User-Agent': 'BiodiversityApp/1.0',
@@ -418,7 +420,9 @@ async function fetchEBirdData(lat: number, lon: number, radius: number, dateFilt
     const response = await fetch(url, { headers });
     
     if (!response.ok) {
-      console.error('eBird API error:', response.status, response.statusText);
+      console.error('🐦 eBird API error:', response.status, response.statusText);
+      const errorText = await response.text();
+      console.error('🐦 eBird error details:', errorText);
       
       // Gestion spéciale pour le rate limiting (418 I'm a teapot)
       if (response.status === 418) {
@@ -466,17 +470,27 @@ async function fetchEBirdData(lat: number, lon: number, radius: number, dateFilt
         }));
       }
       
-      const errorText = await response.text();
-      console.error('eBird error details:', errorText);
       return [];
     }
     
     const data = await response.json();
-    console.log(`eBird: Found ${data?.length || 0} observations`);
+    console.log(`🐦 eBird: Found ${data?.length || 0} observations`);
+    
+    // Log spécial pour debug eBird
+    if (data && data.length > 0) {
+      console.log('🐦 Échantillon eBird (première observation):');
+      const first = data[0];
+      console.log(`  - Espèce: ${first.comName} (${first.sciName})`);
+      console.log(`  - Observateur: ${first.userDisplayName || 'Anonyme'}`);
+      console.log(`  - Date: ${first.obsDt}`);
+      console.log(`  - Lieu: ${first.locName}`);
+      console.log(`  - Coordonnées: (${first.lat}, ${first.lng})`);
+      console.log(`  - Nombre: ${first.howMany || 'Non spécifié'}`);
+    }
     
     if (!data || !Array.isArray(data)) return [];
     
-    return data.map((item: any, index: number) => ({
+    const mappedData = data.map((item: any, index: number) => ({
       id: `ebird-${item.speciesCode || index}`,
       scientificName: item.sciName || 'Unknown',
       commonName: item.comName || item.sciName || 'Unknown',
@@ -490,7 +504,7 @@ async function fetchEBirdData(lat: number, lon: number, radius: number, dateFilt
         observerName: item.userDisplayName || 'Observateur eBird',
         observerInstitution: 'eBird/Cornell Lab',
         observationMethod: 'Observation ornithologique',
-        originalUrl: item.hasRichMedia ? `https://ebird.org/checklist/${item.subId}` : undefined,
+        originalUrl: item.hasRichMedia ? `https://ebird.org/checklist/${item.subId}` : `https://ebird.org/species/${item.speciesCode}`,
         exactLatitude: item.lat,
         exactLongitude: item.lng,
         locationName: item.locName || 'Localisation inconnue',
@@ -498,6 +512,13 @@ async function fetchEBirdData(lat: number, lon: number, radius: number, dateFilt
         source: 'ebird' as const
       }]
     }));
+    
+    console.log(`🐦 eBird mapping completed: ${mappedData.length} species mapped`);
+    if (mappedData.length > 0) {
+      console.log(`🐦 Premier oiseau mappé: ${mappedData[0].commonName} (kingdom: ${mappedData[0].kingdom})`);
+    }
+    
+    return mappedData;
   } catch (error) {
     console.error('Error fetching eBird data:', error);
     return [];
@@ -645,7 +666,16 @@ serve(async (req) => {
     console.log(`  - GBIF: ${gbifSpecies.length} observations`);
     console.log(`  - iNaturalist: ${inaturalistSpecies.length} observations`);
     console.log(`  - eBird: ${ebirdSpecies.length} observations`);
-    console.log(`  - Total avant agrégation: ${gbifSpecies.length + inaturalistSpecies.length + ebirdSpecies.length} observations`);
+    console.log(`  - eBird Notable: ${ebirdNotable.length} observations`);
+    console.log(`  - Total avant agrégation: ${gbifSpecies.length + inaturalistSpecies.length + ebirdSpecies.length + ebirdNotable.length} observations`);
+    
+    // Debug spécial pour les données eBird
+    if (ebirdSpecies.length > 0) {
+      console.log('🐦 eBird species kingdoms:');
+      ebirdSpecies.slice(0, 3).forEach(bird => {
+        console.log(`  - ${bird.commonName}: kingdom=${bird.kingdom}, family=${bird.family}`);
+      });
+    }
 
     // Combine and aggregate all species data with cross-validation
     const allSpecies = [...gbifSpecies, ...inaturalistSpecies, ...ebirdSpecies, ...ebirdNotable];
