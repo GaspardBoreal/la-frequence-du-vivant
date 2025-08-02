@@ -715,7 +715,7 @@ const BioDivSubSection: React.FC<BioDivSubSectionProps> = ({ marche, theme }) =>
                         value={selectedContributor}
                         onValueChange={setSelectedContributor}
                       >
-                        <SelectTrigger className="w-64 bg-background/50 border-white/20">
+                        <SelectTrigger className="w-80 bg-background/50 border-white/20">
                           <div className="flex items-center gap-2">
                             <Filter className="h-4 w-4 text-muted-foreground" />
                             <SelectValue placeholder="Tous les contributeurs" />
