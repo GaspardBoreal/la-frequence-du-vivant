@@ -61,21 +61,22 @@ const SimplifiedMultiSensoryNavigation: React.FC<SimplifiedMultiSensoryNavigatio
   ];
 
   const toggleDropdown = (sectionId: string) => {
-    const newOpenDropdowns = new Set(openDropdowns);
-    if (newOpenDropdowns.has(sectionId)) {
-      newOpenDropdowns.delete(sectionId);
-    } else {
+    // Créer un nouveau Set à chaque fois
+    const newOpenDropdowns = new Set<string>();
+    
+    // Si le dropdown cliqué n'était pas ouvert, l'ouvrir (et fermer tous les autres)
+    if (!openDropdowns.has(sectionId)) {
       newOpenDropdowns.add(sectionId);
     }
+    // Si le dropdown cliqué était déjà ouvert, il restera fermé (Set vide)
+    
     setOpenDropdowns(newOpenDropdowns);
   };
 
   const handleSubMenuClick = (sectionId: 'opendata' | 'datacollect' | 'creative', subSectionId: string) => {
     onSectionChange(sectionId, subSectionId);
-    // Fermer le dropdown après sélection
-    const newOpenDropdowns = new Set(openDropdowns);
-    newOpenDropdowns.delete(sectionId);
-    setOpenDropdowns(newOpenDropdowns);
+    // Fermer tous les dropdowns après sélection
+    setOpenDropdowns(new Set());
   };
 
   const getCurrentSectionLabel = (sectionId: 'opendata' | 'datacollect' | 'creative') => {
