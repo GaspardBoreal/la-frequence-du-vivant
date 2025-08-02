@@ -542,44 +542,28 @@ async function fetchEBirdData(lat: number, lon: number, radius: number, dateFilt
   }
 }
 
-// Fonction pour récupérer les photos eBird via plusieurs sources
+// Fonction pour récupérer les photos eBird - utilise des icônes et images génériques
 async function fetchEBirdPhotos(speciesCode: string, subId: string, apiKey: string): Promise<string[]> {
   try {
-    console.log(`📸 Trying to fetch photos for ${speciesCode}`);
+    console.log(`📸 eBird: Creating generic bird icons for ${speciesCode}`);
     
-    // Test direct de l'API eBird Media (si l'API key est disponible)
-    if (apiKey) {
-      try {
-        const ebirdMediaUrl = `https://api.ebird.org/v2/ref/taxonomy/ebird?species=${speciesCode}&fmt=json`;
-        console.log(`📸 Trying eBird taxonomy API: ${ebirdMediaUrl}`);
-        
-        const ebirdResponse = await fetch(ebirdMediaUrl, {
-          headers: {
-            'x-ebirdapitoken': apiKey,
-            'User-Agent': 'Mozilla/5.0 (compatible; BiodiversityApp/1.0)',
-          }
-        });
-        
-        if (ebirdResponse.ok) {
-          const ebirdData = await ebirdResponse.json();
-          console.log(`📸 eBird taxonomy response for ${speciesCode}:`, JSON.stringify(ebirdData).substring(0, 200));
-        }
-      } catch (e) {
-        console.log(`📸 eBird taxonomy failed for ${speciesCode}:`, e);
-      }
-    }
-    
-    // Fallback vers des photos génériques d'oiseaux basées sur le code espèce
-    const fallbackPhotos = [
-      `https://www.allaboutbirds.org/guide/assets/photo/${speciesCode}-photo-1.jpg`,
-      `https://cdn.download.ams.birds.cornell.edu/api/v1/asset/photo/${speciesCode}/320`
+    // Pour eBird, on utilise des données SVG inline ou des URLs d'images génériques qui fonctionnent
+    const birdIcons = [
+      // Image générique d'oiseau via une API qui fonctionne
+      `data:image/svg+xml,${encodeURIComponent(`
+        <svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100">
+          <rect width="100" height="100" fill="#e3f2fd"/>
+          <text x="50" y="55" font-family="Arial" font-size="30" text-anchor="middle" fill="#1976d2">🐦</text>
+          <text x="50" y="80" font-family="Arial" font-size="8" text-anchor="middle" fill="#666">eBird</text>
+        </svg>
+      `)}`
     ];
     
-    console.log(`📸 Using fallback photos for ${speciesCode}:`, fallbackPhotos);
-    return fallbackPhotos;
+    console.log(`📸 eBird: Generated ${birdIcons.length} bird icon(s) for ${speciesCode}`);
+    return birdIcons;
     
   } catch (error) {
-    console.log(`📸 Error fetching photos for ${speciesCode}:`, error);
+    console.log(`📸 Error creating bird icons for ${speciesCode}:`, error);
     return [];
   }
 }
