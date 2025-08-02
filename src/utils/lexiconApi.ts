@@ -3,46 +3,39 @@ import { LexiconApiResponse } from '../types/lexicon';
 
 export const fetchLexiconParcelData = async (latitude: number, longitude: number): Promise<LexiconApiResponse> => {
   try {
-    console.log(`🌱 [LEXICON DEBUG] Appel API pour lat: ${latitude}, lng: ${longitude}`);
-    console.log(`🌱 [LEXICON DEBUG] URL complète: https://lexicon.osfarm.org/tools/parcel-identifier.json?latitude=${latitude}&longitude=${longitude}`);
+    console.log(`🌱 [LEXICON DEBUG] Appel via Edge Function pour lat: ${latitude}, lng: ${longitude}`);
     
-    const response = await fetch(
-      `https://lexicon.osfarm.org/tools/parcel-identifier.json?latitude=${latitude}&longitude=${longitude}`,
-      {
-        method: 'GET',
-        headers: {
-          'Accept': 'application/json',
-          'Content-Type': 'application/json',
-        },
-      }
-    );
+    const edgeFunctionUrl = `https://xzbunrtgbfbhinkzkzhf.supabase.co/functions/v1/lexicon-proxy?latitude=${latitude}&longitude=${longitude}`;
+    console.log(`🌱 [LEXICON DEBUG] URL Edge Function: ${edgeFunctionUrl}`);
+    
+    const response = await fetch(edgeFunctionUrl, {
+      method: 'GET',
+      headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+      },
+    });
     
     console.log(`🌱 [LEXICON DEBUG] Statut de la réponse: ${response.status}`);
-    console.log(`🌱 [LEXICON DEBUG] Headers de la réponse:`, response.headers);
     
     if (!response.ok) {
-      console.error(`❌ [LEXICON ERROR] Erreur API: ${response.status} ${response.statusText}`);
+      console.error(`❌ [LEXICON ERROR] Erreur Edge Function: ${response.status} ${response.statusText}`);
       const errorText = await response.text();
       console.error(`❌ [LEXICON ERROR] Corps de l'erreur:`, errorText);
-      throw new Error(`Erreur API LEXICON: ${response.status} - ${response.statusText}`);
+      throw new Error(`Erreur Edge Function LEXICON: ${response.status} - ${response.statusText}`);
     }
     
-    const data = await response.json();
-    console.log(`✅ [LEXICON SUCCESS] Données reçues:`, data);
-    console.log(`✅ [LEXICON SUCCESS] Type des données:`, typeof data);
-    console.log(`✅ [LEXICON SUCCESS] Clés disponibles:`, Object.keys(data || {}));
+    const result = await response.json();
+    console.log(`✅ [LEXICON SUCCESS] Réponse Edge Function:`, result);
     
-    return {
-      success: true,
-      data: data,
-      coordinates: { latitude, longitude }
-    };
+    // La réponse de l'edge function est déjà structurée
+    return result;
   } catch (error) {
     console.error('❌ [LEXICON ERROR] Erreur complète:', error);
     console.error('❌ [LEXICON ERROR] Stack trace:', error instanceof Error ? error.stack : 'N/A');
     return {
       success: false,
-      message: error instanceof Error ? error.message : 'Erreur inconnue lors de la récupération des données LEXICON',
+      message: error instanceof Error ? error.message : 'Erreur inconnue lors de l\'appel Edge Function LEXICON',
       coordinates: { latitude, longitude }
     };
   }

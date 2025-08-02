@@ -13,3 +13,6 @@ verify_jwt = false
 
 [functions.migrate-google-drive-media]
 verify_jwt = false
+
+[functions.lexicon-proxy]
+verify_jwt = false
