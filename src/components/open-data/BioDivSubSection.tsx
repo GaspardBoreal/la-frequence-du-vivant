@@ -25,6 +25,15 @@ interface BioDivSubSectionProps {
   theme: RegionalTheme;
 }
 
+// Fonction utilitaire pour identifier les oiseaux
+const isBirdSpecies = (species: BiodiversitySpecies): boolean => {
+  const isFromEbird = species.source === 'ebird';
+  const isAvesFamily = species.family === 'Aves' || species.family?.toLowerCase().includes('aves');
+  const isBirdFamily = species.family?.toLowerCase().includes('bird') || species.family?.toLowerCase().includes('idae');
+  const isBirdInName = species.commonName?.toLowerCase().includes('oiseau') || species.commonName?.toLowerCase().includes('bird') || species.scientificName?.toLowerCase().includes('aves');
+  return isFromEbird || isAvesFamily || isBirdFamily || isBirdInName;
+};
+
 const BioDivSubSection: React.FC<BioDivSubSectionProps> = ({ marche, theme }) => {
   const [dateFilter, setDateFilter] = useState<'recent' | 'medium'>('recent');
   const [selectedContributor, setSelectedContributor] = useState<string>('all');
@@ -80,15 +89,13 @@ const BioDivSubSection: React.FC<BioDivSubSectionProps> = ({ marche, theme }) =>
     
     const stats = {
       all: biodiversityData.species.length,
-      birds: biodiversityData.species.filter(s => s.kingdom === 'Animalia' && s.family.toLowerCase().includes('bird')).length,
+      birds: biodiversityData.species.filter(isBirdSpecies).length,
       plants: biodiversityData.species.filter(s => s.kingdom === 'Plantae').length,
       fungi: biodiversityData.species.filter(s => s.kingdom === 'Fungi').length,
-      others: biodiversityData.species.filter(s => 
-        s.kingdom !== 'Plantae' && 
-        s.kingdom !== 'Fungi' && 
-        !(s.kingdom === 'Animalia' && s.family.toLowerCase().includes('bird'))
-      ).length
+      others: 0
     };
+    
+    stats.others = stats.all - stats.birds - stats.plants - stats.fungi;
     
     return stats;
   }, [biodiversityData?.species]);
@@ -106,13 +113,11 @@ const BioDivSubSection: React.FC<BioDivSubSectionProps> = ({ marche, theme }) =>
           case 'plants':
             return species.kingdom === 'Plantae';
           case 'birds':
-            return species.kingdom === 'Animalia' && species.family.toLowerCase().includes('bird');
+            return isBirdSpecies(species);
           case 'fungi':
             return species.kingdom === 'Fungi';
           case 'others':
-            return species.kingdom !== 'Plantae' && 
-                   species.kingdom !== 'Fungi' && 
-                   !(species.kingdom === 'Animalia' && species.family.toLowerCase().includes('bird'));
+            return species.kingdom !== 'Plantae' && species.kingdom !== 'Fungi' && !isBirdSpecies(species);
           default:
             return true;
         }
@@ -207,7 +212,7 @@ const BioDivSubSection: React.FC<BioDivSubSectionProps> = ({ marche, theme }) =>
     if (!biodiversityData?.species) return null;
     
     const total = filteredSpecies.length;
-    const birds = filteredSpecies.filter(s => s.kingdom === 'Animalia' && s.family.toLowerCase().includes('bird')).length;
+    const birds = filteredSpecies.filter(isBirdSpecies).length;
     const plants = filteredSpecies.filter(s => s.kingdom === 'Plantae').length;
     const fungi = filteredSpecies.filter(s => s.kingdom === 'Fungi').length;
     const others = total - birds - plants - fungi;
@@ -426,7 +431,7 @@ const BioDivSubSection: React.FC<BioDivSubSectionProps> = ({ marche, theme }) =>
         <TabsContent value="birds" className="space-y-4">
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
             {filteredSpecies
-              .filter(species => species.kingdom === 'Animalia' && species.family.toLowerCase().includes('bird'))
+              .filter(isBirdSpecies)
               .map((species, index) => (
                 <EnhancedSpeciesCard 
                   key={`${species.id}-${index}`} 
@@ -471,7 +476,7 @@ const BioDivSubSection: React.FC<BioDivSubSectionProps> = ({ marche, theme }) =>
               .filter(species => 
                 species.kingdom !== 'Plantae' && 
                 species.kingdom !== 'Fungi' && 
-                !(species.kingdom === 'Animalia' && species.family.toLowerCase().includes('bird'))
+                !isBirdSpecies(species)
               )
               .map((species, index) => (
                 <EnhancedSpeciesCard 
