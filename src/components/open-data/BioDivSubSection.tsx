@@ -165,6 +165,16 @@ const BioDivSubSection: React.FC<BioDivSubSectionProps> = ({ marche, theme }) =>
 
     // Filtrage par disponibilité audio
     if (hasAudioFilter !== 'all') {
+      console.log('🎵 DEBUG - Filtrage audio:', {
+        hasAudioFilter,
+        totalSpecies: filtered.length,
+        speciesWithXeno: filtered.filter(s => s.xenoCantoRecordings && s.xenoCantoRecordings.length > 0).length,
+        exampleSpeciesWithAudio: filtered.filter(s => s.xenoCantoRecordings && s.xenoCantoRecordings.length > 0).slice(0, 3).map(s => ({
+          name: s.commonName,
+          audioCount: s.xenoCantoRecordings?.length || 0
+        }))
+      });
+      
       filtered = filtered.filter(species => {
         const hasAudio = species.xenoCantoRecordings && species.xenoCantoRecordings.length > 0;
         return hasAudioFilter === 'with-audio' ? hasAudio : !hasAudio;
