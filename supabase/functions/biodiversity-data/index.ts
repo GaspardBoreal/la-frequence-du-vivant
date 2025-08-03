@@ -935,7 +935,9 @@ serve(async (req) => {
         const isBirdInName = species.commonName?.toLowerCase().includes('oiseau') || species.commonName?.toLowerCase().includes('bird') || species.scientificName?.toLowerCase().includes('aves');
         const isBird = isFromEbird || isAvesFamily || isBirdFamily || isBirdInName;
         
-        if (isBird && !species.xenoCantoRecordings) {
+        console.log(`🔍 Checking ${species.commonName}: isBird=${isBird}, source=${species.source}, family=${species.family}`);
+        
+        if (isBird) {
           try {
             const xenoCantoRecordings = await fetchXenoCantoRecordings(species.scientificName);
             if (xenoCantoRecordings.length > 0) {
@@ -944,6 +946,8 @@ serve(async (req) => {
                 ...species,
                 xenoCantoRecordings
               };
+            } else {
+              console.log(`⚠️ No Xeno-Canto recordings found for ${species.commonName}`);
             }
           } catch (error) {
             console.log(`⚠️ Could not fetch Xeno-Canto data for ${species.commonName}:`, error);
