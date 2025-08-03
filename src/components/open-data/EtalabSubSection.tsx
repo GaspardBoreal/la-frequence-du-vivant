@@ -43,9 +43,27 @@ const EtalabSubSection: React.FC<EtalabSubSectionProps> = ({ marche, theme }) =>
     visualizationType
   });
 
-  const currentNDVI = ndviTimeSeries?.ndviValues[
-    ndviTimeSeries.dates.indexOf(selectedDate)
-  ];
+  const currentNDVI = (() => {
+    if (!ndviTimeSeries || !ndviTimeSeries.dates || !selectedDate) {
+      console.log('❌ NDVI calc failed:', { 
+        hasTimeSeries: !!ndviTimeSeries, 
+        selectedDate, 
+        timeSeriesData: ndviTimeSeries 
+      });
+      return undefined;
+    }
+    
+    const dateIndex = ndviTimeSeries.dates.indexOf(selectedDate);
+    console.log('🔍 NDVI calculation:', { 
+      selectedDate, 
+      dateIndex, 
+      totalDates: ndviTimeSeries.dates.length,
+      dates: ndviTimeSeries.dates.slice(0, 3),
+      values: ndviTimeSeries.ndviValues.slice(0, 3)
+    });
+    
+    return dateIndex >= 0 ? ndviTimeSeries.ndviValues[dateIndex] : undefined;
+  })();
 
   const currentSeason = (() => {
     const month = new Date(selectedDate).getMonth();
