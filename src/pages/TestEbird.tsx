@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { ArrowLeft, MapPin, Calendar, Database, Eye, Search, Settings, Bird, Leaf, Camera, Volume2, User, MoreVertical, ExternalLink, Clock, Archive } from 'lucide-react';
+import { ArrowLeft, MapPin, Calendar, Database, Eye, Search, Settings, Bird, Leaf, Camera, Volume2, User, MoreVertical, ExternalLink, Clock, Archive, Navigation } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -198,6 +198,22 @@ const TestEbird: React.FC = () => {
       const url = `https://earth.google.com/web/@${currentMarche.latitude},${currentMarche.longitude},200a,1000d,35y,0h,0t,0r`;
       window.open(url, '_blank');
     }
+  };
+
+  // Fonctions utilitaires pour ouvrir les cartes avec des coordonnées spécifiques
+  const openCoordinatesInOpenStreetMap = (lat: number, lon: number) => {
+    const url = `https://www.openstreetmap.org/?mlat=${lat}&mlon=${lon}&zoom=15`;
+    window.open(url, '_blank');
+  };
+
+  const openCoordinatesInGoogleMaps = (lat: number, lon: number) => {
+    const url = `https://www.google.com/maps?q=${lat},${lon}&z=15`;
+    window.open(url, '_blank');
+  };
+
+  const openCoordinatesInGoogleEarth = (lat: number, lon: number) => {
+    const url = `https://earth.google.com/web/@${lat},${lon},200a,1000d,35y,0h,0t,0r`;
+    window.open(url, '_blank');
   };
 
   const getSpeciesIcon = (species: BiodiversitySpecies) => {
@@ -574,7 +590,58 @@ const TestEbird: React.FC = () => {
                             
                             {/* Informations */}
                             <div className="flex-1 min-w-0">
-                              <h4 className="font-medium text-sm truncate">{species.commonName}</h4>
+                              <div className="flex items-center justify-between">
+                                <h4 className="font-medium text-sm truncate">{species.commonName}</h4>
+                                {/* Menu de navigation géographique */}
+                                <DropdownMenu>
+                                  <DropdownMenuTrigger asChild>
+                                    <Button variant="ghost" size="sm" className="h-6 w-6 p-0 hover:bg-gray-100" onClick={(e) => e.stopPropagation()}>
+                                      <Navigation className="h-3 w-3 text-gray-500" />
+                                    </Button>
+                                  </DropdownMenuTrigger>
+                                  <DropdownMenuContent className="bg-white border border-gray-200 shadow-lg z-50">
+                                    <DropdownMenuItem 
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        const firstObservation = species.attributions[0];
+                                        const lat = firstObservation?.exactLatitude || currentMarche?.latitude;
+                                        const lon = firstObservation?.exactLongitude || currentMarche?.longitude;
+                                        if (lat && lon) openCoordinatesInOpenStreetMap(lat, lon);
+                                      }}
+                                      className="text-black hover:bg-gray-100 cursor-pointer"
+                                    >
+                                      <ExternalLink className="h-4 w-4 mr-2" />
+                                      Voir dans OpenStreetMap
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem 
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        const firstObservation = species.attributions[0];
+                                        const lat = firstObservation?.exactLatitude || currentMarche?.latitude;
+                                        const lon = firstObservation?.exactLongitude || currentMarche?.longitude;
+                                        if (lat && lon) openCoordinatesInGoogleMaps(lat, lon);
+                                      }}
+                                      className="text-black hover:bg-gray-100 cursor-pointer"
+                                    >
+                                      <ExternalLink className="h-4 w-4 mr-2" />
+                                      Voir dans Google Maps
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem 
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        const firstObservation = species.attributions[0];
+                                        const lat = firstObservation?.exactLatitude || currentMarche?.latitude;
+                                        const lon = firstObservation?.exactLongitude || currentMarche?.longitude;
+                                        if (lat && lon) openCoordinatesInGoogleEarth(lat, lon);
+                                      }}
+                                      className="text-black hover:bg-gray-100 cursor-pointer"
+                                    >
+                                      <ExternalLink className="h-4 w-4 mr-2" />
+                                      Voir dans Google Earth
+                                    </DropdownMenuItem>
+                                  </DropdownMenuContent>
+                                </DropdownMenu>
+                              </div>
                               <p className="text-xs text-gray-500 italic truncate">{species.scientificName}</p>
                               <div className="flex items-center space-x-2 mt-2">
                                 <Badge 
@@ -677,14 +744,51 @@ const TestEbird: React.FC = () => {
                       <div className="space-y-2 max-h-48 overflow-y-auto">
                         {selectedSpecies.attributions.slice(0, 10).map((attr, index) => (
                           <div key={index} className="text-sm p-2 bg-gray-50 rounded">
-                            <div className="font-medium">{attr.observerName || 'Anonyme'}</div>
-                            {attr.observerInstitution && (
-                              <div className="text-gray-600">{attr.observerInstitution}</div>
-                            )}
-                            <div className="text-gray-500">{attr.date}</div>
-                            {attr.locationName && (
-                              <div className="text-gray-500">{attr.locationName}</div>
-                            )}
+                            <div className="flex items-center justify-between">
+                              <div className="flex-1">
+                                <div className="font-medium">{attr.observerName || 'Anonyme'}</div>
+                                {attr.observerInstitution && (
+                                  <div className="text-gray-600">{attr.observerInstitution}</div>
+                                )}
+                                <div className="text-gray-500">{attr.date}</div>
+                                {attr.locationName && (
+                                  <div className="text-gray-500">{attr.locationName}</div>
+                                )}
+                              </div>
+                              {/* Menu de navigation pour cette observation */}
+                              {attr.exactLatitude && attr.exactLongitude && (
+                                <DropdownMenu>
+                                  <DropdownMenuTrigger asChild>
+                                    <Button variant="ghost" size="sm" className="h-6 w-6 p-0 hover:bg-gray-200">
+                                      <Navigation className="h-3 w-3 text-gray-500" />
+                                    </Button>
+                                  </DropdownMenuTrigger>
+                                  <DropdownMenuContent className="bg-white border border-gray-200 shadow-lg z-50">
+                                    <DropdownMenuItem 
+                                      onClick={() => openCoordinatesInOpenStreetMap(attr.exactLatitude!, attr.exactLongitude!)}
+                                      className="text-black hover:bg-gray-100 cursor-pointer"
+                                    >
+                                      <ExternalLink className="h-4 w-4 mr-2" />
+                                      Voir dans OpenStreetMap
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem 
+                                      onClick={() => openCoordinatesInGoogleMaps(attr.exactLatitude!, attr.exactLongitude!)}
+                                      className="text-black hover:bg-gray-100 cursor-pointer"
+                                    >
+                                      <ExternalLink className="h-4 w-4 mr-2" />
+                                      Voir dans Google Maps
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem 
+                                      onClick={() => openCoordinatesInGoogleEarth(attr.exactLatitude!, attr.exactLongitude!)}
+                                      className="text-black hover:bg-gray-100 cursor-pointer"
+                                    >
+                                      <ExternalLink className="h-4 w-4 mr-2" />
+                                      Voir dans Google Earth
+                                    </DropdownMenuItem>
+                                  </DropdownMenuContent>
+                                </DropdownMenu>
+                              )}
+                            </div>
                           </div>
                         ))}
                         {selectedSpecies.attributions.length > 10 && (
