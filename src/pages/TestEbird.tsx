@@ -1,14 +1,15 @@
 import React, { useState, useMemo } from 'react';
-import { ArrowLeft, MapPin, Calendar, Database, Eye, Search, Settings, Bird, Leaf } from 'lucide-react';
+import { ArrowLeft, MapPin, Calendar, Database, Eye, Search, Settings, Bird, Leaf, Camera, Volume2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Toggle } from '@/components/ui/toggle';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Slider } from '@/components/ui/slider';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { ContributorDetailModal } from '@/components/ContributorDetailModal';
 import { useSupabaseMarches } from '@/hooks/useSupabaseMarches';
 import { useBiodiversityData } from '@/hooks/useBiodiversityData';
 import { BiodiversitySpecies } from '@/types/biodiversity';
@@ -21,6 +22,8 @@ const TestEbird: React.FC = () => {
   const [selectedMarche, setSelectedMarche] = useState<string>('');
   const [searchRadius, setSearchRadius] = useState([500]);
   const [selectedSpecies, setSelectedSpecies] = useState<BiodiversitySpecies | null>(null);
+  const [contributorModalOpen, setContributorModalOpen] = useState<{ isOpen: boolean; source: 'ebird' | 'inaturalist' | null }>({ isOpen: false, source: null });
+  const [contributorSearchTerm, setContributorSearchTerm] = useState('');
 
   // Récupération des marches
   const { data: marches = [], isLoading: isLoadingMarches } = useSupabaseMarches();
@@ -72,13 +75,46 @@ const TestEbird: React.FC = () => {
 
   // Statistiques des contributeurs par API
   const contributorStats = useMemo(() => {
-    if (!biodiversityData?.species) return { ebird: new Set(), inaturalist: new Set() };
+    if (!biodiversityData?.species) return { ebird: new Set(), inaturalist: new Set(), contributorsData: { ebird: [], inaturalist: [] } };
     
-    const stats = { ebird: new Set<string>(), inaturalist: new Set<string>() };
+    const stats = { 
+      ebird: new Set<string>(), 
+      inaturalist: new Set<string>(),
+      contributorsData: { ebird: [] as any[], inaturalist: [] as any[] }
+    };
     
+    const contributorsMap = new Map<string, any>();
+
     biodiversityData.species.forEach(species => {
       species.attributions.forEach(attr => {
         if (attr.observerName) {
+          const key = `${species.source}-${attr.observerName}`;
+          
+          if (!contributorsMap.has(key)) {
+            contributorsMap.set(key, {
+              name: attr.observerName,
+              institution: attr.observerInstitution || '',
+              location: attr.locationName || '',
+              source: species.source,
+              speciesCount: 0,
+              observationsCount: 0,
+              photosCount: 0,
+              audioCount: 0,
+              listsCount: 1
+            });
+          }
+          
+          const contributor = contributorsMap.get(key);
+          contributor.speciesCount++;
+          contributor.observationsCount++;
+          
+          if (species.photos && species.photos.length > 0) {
+            contributor.photosCount++;
+          }
+          
+          // Note: audio property doesn't exist in BiodiversitySpecies type yet
+          // contributor.audioCount will remain 0 for now
+
           if (species.source === 'ebird') {
             stats.ebird.add(attr.observerName);
           } else if (species.source === 'inaturalist') {
@@ -87,9 +123,23 @@ const TestEbird: React.FC = () => {
         }
       });
     });
+
+    // Organiser les contributeurs par source
+    contributorsMap.forEach((contributor) => {
+      if (contributor.source === 'ebird') {
+        stats.contributorsData.ebird.push(contributor);
+      } else if (contributor.source === 'inaturalist') {
+        stats.contributorsData.inaturalist.push(contributor);
+      }
+    });
     
     return stats;
   }, [biodiversityData?.species]);
+
+  const handleContributorClick = (source: 'ebird' | 'inaturalist') => {
+    setContributorModalOpen({ isOpen: true, source });
+    setContributorSearchTerm('');
+  };
 
   const getSpeciesIcon = (species: BiodiversitySpecies) => {
     if (species.kingdom === 'Animalia') return <Bird className="h-4 w-4" />;
@@ -152,20 +202,35 @@ const TestEbird: React.FC = () => {
             {/* Sélection API */}
             <div>
               <Label className="text-base font-medium mb-3 block">API Source</Label>
-              <RadioGroup value={selectedApi} onValueChange={(value: ApiSource) => setSelectedApi(value)} className="flex space-x-6">
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="all" id="api-all" />
-                  <Label htmlFor="api-all">Toutes</Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="ebird" id="api-ebird" />
-                  <Label htmlFor="api-ebird">Uniquement eBird</Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="inaturalist" id="api-inaturalist" />
-                  <Label htmlFor="api-inaturalist">Uniquement iNaturalist</Label>
-                </div>
-              </RadioGroup>
+              <div className="flex flex-wrap gap-3">
+                <Toggle
+                  pressed={selectedApi === 'all'}
+                  onPressedChange={() => setSelectedApi('all')}
+                  variant="outline"
+                  className="data-[state=on]:bg-gray-100 data-[state=on]:text-gray-900 data-[state=on]:border-gray-300"
+                >
+                  <Database className="h-4 w-4 mr-2" />
+                  Toutes les APIs
+                </Toggle>
+                <Toggle
+                  pressed={selectedApi === 'ebird'}
+                  onPressedChange={() => setSelectedApi('ebird')}
+                  variant="outline"
+                  className="data-[state=on]:bg-blue-100 data-[state=on]:text-blue-900 data-[state=on]:border-blue-300"
+                >
+                  <Eye className="h-4 w-4 mr-2" />
+                  eBird
+                </Toggle>
+                <Toggle
+                  pressed={selectedApi === 'inaturalist'}
+                  onPressedChange={() => setSelectedApi('inaturalist')}
+                  variant="outline"
+                  className="data-[state=on]:bg-green-100 data-[state=on]:text-green-900 data-[state=on]:border-green-300"
+                >
+                  <Camera className="h-4 w-4 mr-2" />
+                  iNaturalist
+                </Toggle>
+              </div>
             </div>
 
             {/* Sélection Marche */}
@@ -217,7 +282,7 @@ const TestEbird: React.FC = () => {
                 step={250}
                 className="w-full max-w-md"
               />
-              <div className="flex justify-between text-xs text-gray-500 mt-1 max-w-md">
+              <div className="flex justify-between text-xs text-white mt-1 max-w-md">
                 <span>500m</span>
                 <span>2.75km</span>
                 <span>5km</span>
@@ -241,16 +306,32 @@ const TestEbird: React.FC = () => {
                 <div className="text-sm text-gray-600">Avec photos réelles</div>
               </CardContent>
             </Card>
-            <Card>
+            <Card 
+              className="cursor-pointer hover:shadow-lg transition-all duration-200 hover:border-blue-300"
+              onClick={() => handleContributorClick('ebird')}
+            >
               <CardContent className="p-4">
-                <div className="text-2xl font-bold text-orange-600">{contributorStats.ebird.size}</div>
-                <div className="text-sm text-gray-600">Contributeurs eBird</div>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <div className="text-2xl font-bold text-blue-600">{contributorStats.ebird.size}</div>
+                    <div className="text-sm text-gray-600">Contributeurs eBird</div>
+                  </div>
+                  <Eye className="h-6 w-6 text-blue-500" />
+                </div>
               </CardContent>
             </Card>
-            <Card>
+            <Card 
+              className="cursor-pointer hover:shadow-lg transition-all duration-200 hover:border-green-300"
+              onClick={() => handleContributorClick('inaturalist')}
+            >
               <CardContent className="p-4">
-                <div className="text-2xl font-bold text-purple-600">{contributorStats.inaturalist.size}</div>
-                <div className="text-sm text-gray-600">Contributeurs iNaturalist</div>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <div className="text-2xl font-bold text-green-600">{contributorStats.inaturalist.size}</div>
+                    <div className="text-sm text-gray-600">Contributeurs iNaturalist</div>
+                  </div>
+                  <Camera className="h-6 w-6 text-green-500" />
+                </div>
               </CardContent>
             </Card>
           </div>
@@ -455,6 +536,16 @@ const TestEbird: React.FC = () => {
             )}
           </DialogContent>
         </Dialog>
+
+        {/* Modal détail contributeurs */}
+        <ContributorDetailModal
+          isOpen={contributorModalOpen.isOpen}
+          onClose={() => setContributorModalOpen({ isOpen: false, source: null })}
+          contributors={contributorModalOpen.source ? contributorStats.contributorsData[contributorModalOpen.source] : []}
+          apiSource={contributorModalOpen.source || 'ebird'}
+          searchTerm={contributorSearchTerm}
+          onSearchChange={setContributorSearchTerm}
+        />
       </div>
     </div>
   );
