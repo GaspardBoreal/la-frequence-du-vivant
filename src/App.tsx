@@ -15,6 +15,7 @@ import MigrationAdmin from './pages/MigrationAdmin';
 import MigrationExecution from './pages/MigrationExecution';
 import MarcheAdmin from './pages/MarcheAdmin';
 import AdminAccess from './pages/AdminAccess';
+import TestEbird from './pages/TestEbird';
 
 function App() {
   return (
@@ -48,6 +49,11 @@ function App() {
           <Route path="/access-admin-gb2025" element={
             <AdminAuth>
               <AdminAccess />
+            </AdminAuth>
+          } />
+          <Route path="/test-ebird" element={
+            <AdminAuth>
+              <TestEbird />
             </AdminAuth>
           } />
           
