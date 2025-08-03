@@ -19,6 +19,7 @@ import { MarcheTechnoSensible } from '@/utils/googleSheetsApi';
 
 type ApiSource = 'all' | 'ebird' | 'inaturalist';
 type PeriodFilter = 'recent' | 'medium';
+type CategoryFilter = 'all' | 'flora' | 'fauna' | 'fungi';
 
 const TestEbird: React.FC = () => {
   const [selectedApi, setSelectedApi] = useState<ApiSource>('ebird');
@@ -29,6 +30,7 @@ const TestEbird: React.FC = () => {
   const [showSpeciesModal, setShowSpeciesModal] = useState(false);
   const [speciesModalApi, setSpeciesModalApi] = useState<'ebird' | 'inaturalist'>('ebird');
   const [searchTerm, setSearchTerm] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState<CategoryFilter>('all');
 
   // Récupération des marches
   const { data: marches = [], isLoading: isLoadingMarches } = useSupabaseMarches();
@@ -46,20 +48,45 @@ const TestEbird: React.FC = () => {
     dateFilter: selectedPeriod === 'recent' ? 'recent' : 'medium'
   });
 
-  // Filtrage des espèces selon l'API sélectionnée
+  // Filtrage des espèces selon l'API sélectionnée ET la catégorie
   const filteredSpecies = useMemo(() => {
     if (!biodiversityData?.species) return [];
     
     let filtered = biodiversityData.species;
     
+    // Filtre par source API
     if (selectedApi === 'ebird') {
       filtered = filtered.filter(s => s.source === 'ebird');
     } else if (selectedApi === 'inaturalist') {
       filtered = filtered.filter(s => s.source === 'inaturalist');
     }
     
+    // Filtre par catégorie (comme dans BioDivSubSection)
+    if (selectedCategory === 'flora') {
+      filtered = filtered.filter(s => s.kingdom === 'Plantae');
+    } else if (selectedCategory === 'fauna') {
+      filtered = filtered.filter(s => s.kingdom === 'Animalia');
+    } else if (selectedCategory === 'fungi') {
+      filtered = filtered.filter(s => s.kingdom === 'Fungi');
+    }
+    
+    // DEBUG: Synchronisation avec BioDivSubSection
+    console.log('🔍 DEBUG TestEbird - SYNCHRONISATION FILTRAGE:', {
+      originalCount: biodiversityData?.species?.length || 0,
+      afterApiFilter: filtered.length,
+      selectedApi,
+      selectedCategory,
+      kingdomBreakdown: {
+        all: biodiversityData?.species?.length || 0,
+        flora: biodiversityData?.species?.filter(s => s.kingdom === 'Plantae')?.length || 0,
+        fauna: biodiversityData?.species?.filter(s => s.kingdom === 'Animalia')?.length || 0,
+        fungi: biodiversityData?.species?.filter(s => s.kingdom === 'Fungi')?.length || 0,
+      },
+      finalFiltered: filtered.length
+    });
+    
     return filtered.sort((a, b) => a.commonName.localeCompare(b.commonName));
-  }, [biodiversityData?.species, selectedApi]);
+  }, [biodiversityData?.species, selectedApi, selectedCategory]);
 
   // Organisation des marches par département et ville
   const organizedMarches = useMemo(() => {
@@ -299,6 +326,49 @@ const TestEbird: React.FC = () => {
                 onSelectMarche={setSelectedMarche}
                 isLoading={isLoadingMarches}
               />
+            </div>
+
+            {/* Catégorie */}
+            <div>
+              <Label className="text-base font-medium mb-3 block">Catégorie d'espèces</Label>
+              <div className="flex flex-wrap gap-3">
+                <Toggle
+                  pressed={selectedCategory === 'all'}
+                  onPressedChange={() => setSelectedCategory('all')}
+                  variant="outline"
+                  className="data-[state=on]:bg-purple-100 data-[state=on]:text-purple-900 data-[state=on]:border-purple-300"
+                >
+                  <Database className="h-4 w-4 mr-2" />
+                  Toutes
+                </Toggle>
+                <Toggle
+                  pressed={selectedCategory === 'flora'}
+                  onPressedChange={() => setSelectedCategory('flora')}
+                  variant="outline"
+                  className="data-[state=on]:bg-green-100 data-[state=on]:text-green-900 data-[state=on]:border-green-300"
+                >
+                  <Leaf className="h-4 w-4 mr-2" />
+                  Flore
+                </Toggle>
+                <Toggle
+                  pressed={selectedCategory === 'fauna'}
+                  onPressedChange={() => setSelectedCategory('fauna')}
+                  variant="outline"
+                  className="data-[state=on]:bg-orange-100 data-[state=on]:text-orange-900 data-[state=on]:border-orange-300"
+                >
+                  <Bird className="h-4 w-4 mr-2" />
+                  Faune
+                </Toggle>
+                <Toggle
+                  pressed={selectedCategory === 'fungi'}
+                  onPressedChange={() => setSelectedCategory('fungi')}
+                  variant="outline"
+                  className="data-[state=on]:bg-yellow-100 data-[state=on]:text-yellow-900 data-[state=on]:border-yellow-300"
+                >
+                  <Database className="h-4 w-4 mr-2" />
+                  Champignons
+                </Toggle>
+              </div>
             </div>
 
             {/* Rayon de recherche */}
