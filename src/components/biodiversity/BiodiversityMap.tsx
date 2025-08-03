@@ -240,29 +240,62 @@ export const BiodiversityMap: React.FC<BiodiversityMapProps> = ({
 
       {/* Carte interactive */}
       <div className="relative w-full h-[600px] rounded-lg overflow-hidden border">
-        {/* Légende des couleurs */}
+        {/* Légende interactive */}
         <div className="absolute top-4 left-4 z-10 bg-card/95 backdrop-blur-sm border rounded-lg p-3 shadow-lg">
           <h4 className="text-sm font-semibold mb-2 flex items-center gap-2">
             <Filter className="h-4 w-4" />
             Légende
+            <span className="text-xs text-muted-foreground ml-auto">
+              ({activeFilters.size}/4)
+            </span>
           </h4>
-          <div className="space-y-2">
+          <div className="space-y-1">
             {[
-              { kingdom: 'Plantae', label: 'Flore', color: '#10b981', icon: '🌿' },
-              { kingdom: 'Animalia', label: 'Faune', color: '#3b82f6', icon: '🐦' },
-              { kingdom: 'Fungi', label: 'Champignons', color: '#8b5cf6', icon: '🍄' },
-              { kingdom: 'Other', label: 'Autres', color: '#6b7280', icon: '🔬' },
-            ].map(({ kingdom, label, color, icon }) => (
-              <div key={kingdom} className="flex items-center gap-2 text-xs">
-                <div 
-                  className="w-4 h-4 rounded-full border-2 flex items-center justify-center"
-                  style={{ backgroundColor: color, borderColor: color }}
+              { kingdom: 'all', filterKey: 'all', label: 'Toutes', color: '#64748b', icon: '🗺️' },
+              { kingdom: 'Plantae', filterKey: 'flora', label: 'Flore', color: '#10b981', icon: '🌿' },
+              { kingdom: 'Animalia', filterKey: 'fauna', label: 'Faune', color: '#3b82f6', icon: '🐦' },
+              { kingdom: 'Fungi', filterKey: 'fungi', label: 'Champignons', color: '#8b5cf6', icon: '🍄' },
+              { kingdom: 'Other', filterKey: 'other', label: 'Autres', color: '#6b7280', icon: '🔬' },
+            ].map(({ kingdom, filterKey, label, color, icon }) => {
+              const isActive = filterKey === 'all' 
+                ? activeFilters.size === 4 
+                : activeFilters.has(filterKey);
+              
+              return (
+                <button
+                  key={kingdom}
+                  onClick={() => toggleFilter(filterKey)}
+                  className={`flex items-center gap-2 text-xs w-full p-1.5 rounded transition-all duration-200 hover:bg-muted/50 ${
+                    isActive ? 'opacity-100' : 'opacity-40 hover:opacity-70'
+                  }`}
                 >
-                  <span style={{ fontSize: '8px' }}>{icon}</span>
-                </div>
-                <span className="text-muted-foreground">{label}</span>
-              </div>
-            ))}
+                  <div 
+                    className={`w-4 h-4 rounded-full border-2 flex items-center justify-center transition-all duration-200 ${
+                      isActive ? 'scale-100 shadow-sm' : 'scale-90'
+                    }`}
+                    style={{ 
+                      backgroundColor: isActive ? color : 'transparent', 
+                      borderColor: color 
+                    }}
+                  >
+                    <span style={{ fontSize: '8px' }}>{icon}</span>
+                  </div>
+                  <span className={`transition-colors duration-200 ${
+                    isActive ? 'text-foreground font-medium' : 'text-muted-foreground'
+                  }`}>
+                    {label}
+                  </span>
+                  {filterKey !== 'all' && (
+                    <span className="text-xs text-muted-foreground ml-auto">
+                      {filterKey === 'flora' ? filteredStats.flora : 
+                       filterKey === 'fauna' ? filteredStats.fauna :
+                       filterKey === 'fungi' ? filteredStats.fungi : 
+                       filteredStats.other}
+                    </span>
+                  )}
+                </button>
+              );
+            })}
           </div>
         </div>
         
