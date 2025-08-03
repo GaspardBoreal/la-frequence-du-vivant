@@ -13,6 +13,14 @@ interface BiodiversityQuery {
   dateFilter?: 'recent' | 'medium';
 }
 
+interface BirdPhoto {
+  url: string;
+  source: 'inaturalist' | 'flickr' | 'placeholder';
+  attribution?: string;
+  license?: string;
+  photographer?: string;
+}
+
 interface BiodiversityObservation {
   observerName?: string;
   observerInstitution?: string;
@@ -25,6 +33,14 @@ interface BiodiversityObservation {
   source: 'gbif' | 'inaturalist' | 'ebird';
 }
 
+interface BirdPhoto {
+  url: string;
+  source: 'inaturalist' | 'flickr' | 'placeholder';
+  attribution?: string;
+  license?: string;
+  photographer?: string;
+}
+
 interface BiodiversitySpecies {
   id: string;
   scientificName: string;
@@ -34,6 +50,7 @@ interface BiodiversitySpecies {
   observations: number;
   lastSeen: string;
   photos?: string[];
+  photoData?: BirdPhoto;
   audioUrl?: string;
   sonogramUrl?: string;
   source: 'gbif' | 'inaturalist' | 'ebird';
@@ -575,6 +592,60 @@ async function fetchEBirdData(lat: number, lon: number, radius: number, dateFilt
   }
 }
 
+// Fonction pour récupérer les photos d'oiseaux
+async function fetchBirdPhoto(scientificName: string, commonName?: string): Promise<BirdPhoto | null> {
+  try {
+    // 1. Essayer iNaturalist d'abord
+    const inatUrl = `https://api.inaturalist.org/v1/observations?taxon_name=${encodeURIComponent(scientificName)}&has[]=photos&quality_grade=research&per_page=3&order=desc&order_by=votes`;
+    
+    const inatResponse = await fetch(inatUrl);
+    if (inatResponse.ok) {
+      const inatData = await inatResponse.json();
+      
+      if (inatData.results && inatData.results.length > 0) {
+        const observation = inatData.results[0];
+        const photo = observation.photos?.[0];
+        
+        if (photo) {
+          return {
+            url: photo.url.replace('square', 'medium'),
+            source: 'inaturalist',
+            attribution: `Photo by ${observation.user?.name || 'iNaturalist user'}`,
+            license: observation.license_code || 'Unknown',
+            photographer: observation.user?.name
+          };
+        }
+      }
+    }
+
+    // 2. Fallback vers Flickr
+    const searchTerm = commonName || scientificName;
+    const flickrUrl = `https://api.flickr.com/services/feeds/photos_public.gne?format=json&nojsoncallback=1&tags=${encodeURIComponent(searchTerm + ' bird')}&per_page=3`;
+    
+    const flickrResponse = await fetch(flickrUrl);
+    if (flickrResponse.ok) {
+      const flickrData = await flickrResponse.json();
+      
+      if (flickrData.items && flickrData.items.length > 0) {
+        const item = flickrData.items[0];
+        
+        return {
+          url: item.media.m.replace('_m.jpg', '_c.jpg'),
+          source: 'flickr',
+          attribution: `Photo by ${item.author?.replace(/.*\(([^)]+)\).*/, '$1') || 'Flickr user'}`,
+          license: 'Flickr',
+          photographer: item.author?.replace(/.*\(([^)]+)\).*/, '$1')
+        };
+      }
+    }
+
+    return null;
+  } catch (error) {
+    console.warn('Erreur récupération photo:', error);
+    return null;
+  }
+}
+
 // Fonction pour récupérer les données audio de Xeno-Canto v3
 async function fetchXenoCantoData(scientificName: string): Promise<{audioUrl?: string, sonogramUrl?: string, xenoCantoRecordings?: any[]}> {
   try {
@@ -802,6 +873,19 @@ serve(async (req) => {
       fetchEBirdHotspots(latitude, longitude, radius)
     ]);
 
+    console.log('📡 Enrichissement avec audio Xeno-Canto et photos...');
+    
+    // Enrichir les espèces eBird avec audio ET photos
+    const enrichedEBirdSpecies = await Promise.all(
+      [...ebirdNotable, ...ebirdSpecies].map(async (species) => {
+        const photoData = await fetchBirdPhoto(species.scientificName, species.commonName);
+        return {
+          ...species,
+          photoData
+        };
+      })
+    );
+
     // Log des données brutes avant agrégation
     console.log('📊 Données brutes collectées:');
     console.log(`  - GBIF: ${gbifSpecies.length} observations`);
@@ -819,7 +903,7 @@ serve(async (req) => {
     }
 
     // Combine and aggregate all species data with cross-validation
-    const allSpecies = [...gbifSpecies, ...inaturalistSpecies, ...ebirdSpecies, ...ebirdNotable];
+    const allSpecies = [...gbifSpecies, ...inaturalistSpecies, ...enrichedEBirdSpecies];
     const aggregatedSpecies = aggregateSpeciesData(allSpecies);
     
     // Process eBird hotspots for context

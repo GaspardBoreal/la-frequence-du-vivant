@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { BiodiversitySpecies } from '@/types/biodiversity';
 import { AudioIndicator } from './AudioIndicator';
 import { MiniSpectrogramPreview } from './MiniSpectrogramPreview';
-import { Play, Pause, Loader2 } from 'lucide-react';
+import { Play, Pause, Loader2, Camera } from 'lucide-react';
 import { useGlobalAudioPlayer } from '@/contexts/AudioContext';
 
 interface AudioSpeciesCardProps {
@@ -61,11 +61,21 @@ export const AudioSpeciesCard = ({
                 className="w-full h-full"
               />
             ) : (
-              <img
-                src={photoUrl}
-                alt={species.commonName}
-                className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-              />
+              <div className="relative w-full h-full">
+                <img
+                  src={species.photoData?.url || photoUrl}
+                  alt={species.commonName}
+                  className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                  onError={(e) => {
+                    e.currentTarget.src = '/placeholder.svg';
+                  }}
+                />
+                {species.photoData?.attribution && (
+                  <div className="absolute bottom-0 left-0 right-0 bg-black/60 text-white text-xs p-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    {species.photoData.attribution}
+                  </div>
+                )}
+              </div>
             )}
             
             {/* Overlay audio pour eBird */}
@@ -122,9 +132,10 @@ export const AudioSpeciesCard = ({
                 {species.source}
               </Badge>
               
-              {hasPhoto && (
-                <Badge variant="outline" className="text-xs">
-                  Photo
+              {(hasPhoto || species.photoData) && (
+                <Badge variant="outline" className="text-xs flex items-center gap-1">
+                  <Camera className="w-3 h-3" />
+                  {species.photoData?.source || 'Photo'}
                 </Badge>
               )}
               

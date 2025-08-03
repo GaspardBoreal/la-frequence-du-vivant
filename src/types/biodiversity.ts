@@ -50,6 +50,14 @@ export interface XenoCantoRecording {
   url: string;
 }
 
+export interface BirdPhoto {
+  url: string;
+  source: 'inaturalist' | 'flickr' | 'placeholder';
+  attribution?: string;
+  license?: string;
+  photographer?: string;
+}
+
 export interface BiodiversitySpecies {
   id: string;
   scientificName: string;
@@ -59,6 +67,7 @@ export interface BiodiversitySpecies {
   observations: number;
   lastSeen: string;
   photos?: string[];
+  photoData?: BirdPhoto; // Nouvelle propriété pour les métadonnées photo
   audioUrl?: string;
   sonogramUrl?: string;
   source: 'gbif' | 'inaturalist' | 'ebird';
