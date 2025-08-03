@@ -87,7 +87,15 @@ const PoeticSatelliteHero: React.FC<PoeticSatelliteHeroProps> = ({
                   src={satelliteImage.imageUrl}
                   alt="Vue satellite"
                   className="w-full h-full object-cover"
-                  onLoad={() => setImageLoaded(true)}
+                  onLoad={() => {
+                    console.log('🖼️ Image satellite loaded successfully');
+                    setImageLoaded(true);
+                  }}
+                  onError={(e) => {
+                    console.error('❌ Error loading satellite image:', e);
+                    console.log('🔍 Image URL length:', satelliteImage.imageUrl.length);
+                    console.log('🔍 Image URL prefix:', satelliteImage.imageUrl.substring(0, 50));
+                  }}
                 />
                 
                 {/* Image Overlay Info */}
