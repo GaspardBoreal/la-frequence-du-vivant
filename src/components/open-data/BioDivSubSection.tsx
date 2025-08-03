@@ -404,11 +404,13 @@ const BioDivSubSection: React.FC<BioDivSubSectionProps> = ({ marche, theme }) =>
             <div>
               <Select value={selectedContributor} onValueChange={(value: any) => setSelectedContributor(value)}>
                 <SelectTrigger className="w-full">
-                  <div className="flex items-center gap-2">
-                    <User className="h-4 w-4 text-muted-foreground" />
-                    <SelectValue placeholder="Tous les contributeurs" />
+                  <div className="flex items-center gap-2 min-w-0">
+                    <User className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                    <div className="truncate flex-1">
+                      <SelectValue placeholder="Contributeurs" />
+                    </div>
                     {totalContributors > 0 && (
-                      <Badge variant="secondary" className="ml-auto text-xs">
+                      <Badge variant="secondary" className="text-xs flex-shrink-0">
                         {totalContributors}
                       </Badge>
                     )}
