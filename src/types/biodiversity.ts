@@ -10,6 +10,46 @@ export interface BiodiversityObservation {
   source: 'gbif' | 'inaturalist' | 'ebird';
 }
 
+export interface XenoCantoRecording {
+  id: string;
+  file: string;
+  fileName: string;
+  sono: {
+    small: string;
+    med: string;
+    large: string;
+    full: string;
+  };
+  osci: {
+    small: string;
+    med: string;
+    large: string;
+  };
+  quality: string;
+  length: string;
+  type: string;
+  sex: string;
+  stage: string;
+  method: string;
+  recordist: string;
+  date: string;
+  time: string;
+  location: string;
+  latitude: string;
+  longitude: string;
+  altitude: string;
+  temperature?: string;
+  device?: string;
+  microphone?: string;
+  sampleRate?: string;
+  license: string;
+  remarks?: string;
+  animalSeen?: string;
+  playbackUsed?: string;
+  backgroundSpecies?: string[];
+  url: string;
+}
+
 export interface BiodiversitySpecies {
   id: string;
   scientificName: string;
@@ -26,6 +66,21 @@ export interface BiodiversitySpecies {
   confidence?: 'high' | 'medium' | 'low';
   confirmedSources?: number;
   attributions: BiodiversityObservation[];
+  // Nouvelles données Xeno-Canto
+  xenoCantoRecordings?: XenoCantoRecording[];
+  recordingQuality?: string;
+  soundType?: string;
+  recordingContext?: {
+    method: string;
+    equipment?: string;
+    conditions?: string;
+  };
+  behavioralInfo?: {
+    sex?: string;
+    stage?: string;
+    animalSeen?: boolean;
+    playbackUsed?: boolean;
+  };
 }
 
 export interface BiodiversityHotspot {

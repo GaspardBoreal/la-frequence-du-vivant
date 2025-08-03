@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Search, Play, Pause, Volume2, User, MapPin, ExternalLink, Bird } from 'lucide-react';
 import { BiodiversitySpecies } from '@/types/biodiversity';
+import { SpeciesXenoCantoModal } from '@/components/biodiversity/SpeciesXenoCantoModal';
 
 interface SpeciesAudioModalProps {
   isOpen: boolean;
@@ -82,6 +83,21 @@ export const SpeciesAudioModal: React.FC<SpeciesAudioModalProps> = ({
 
   const totalWithAudio = species.filter(s => s.source === apiSource && s.audioUrl).length;
   const totalWithSonogram = species.filter(s => s.source === apiSource && s.sonogramUrl).length;
+
+  // Si on a des données Xeno-Canto, utiliser le nouveau modal
+  const hasXenoCantoData = species.some(s => s.xenoCantoRecordings && s.xenoCantoRecordings.length > 0);
+  
+  if (hasXenoCantoData && apiSource === 'ebird') {
+    return (
+      <SpeciesXenoCantoModal
+        isOpen={isOpen}
+        onClose={onClose}
+        species={species}
+        searchTerm={searchTerm}
+        onSearchTermChange={onSearchTermChange}
+      />
+    );
+  }
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
