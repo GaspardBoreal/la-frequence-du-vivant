@@ -99,58 +99,11 @@ const EtalabSubSection: React.FC<EtalabSubSectionProps> = ({ marche, theme }) =>
         </Button>
       </motion.div>
 
-      {/* Expanded Observatory Interface */}
+      {/* Simplified Observatory Interface */}
       {isExpanded && (
-        <motion.div
-          initial={{ opacity: 0, height: 0 }}
-          animate={{ opacity: 1, height: 'auto' }}
-          exit={{ opacity: 0, height: 0 }}
-          transition={{ duration: 0.6 }}
-          className="space-y-8 overflow-hidden"
-        >
-          {/* Control Panel */}
-          {(() => {
-            try {
-              console.log('🔍 Rendering SatelliteVisualizationPanel...');
-              return (
-                <SatelliteVisualizationPanel
-                  visualizationType={visualizationType}
-                  onVisualizationChange={setVisualizationType}
-                  selectedDate={selectedDate}
-                  onDateChange={setSelectedDate}
-                  ndviTimeSeries={ndviTimeSeries}
-                />
-              );
-            } catch (error) {
-              console.error('❌ Error in SatelliteVisualizationPanel:', error);
-              return <div className="p-4 bg-yellow-100 rounded">Erreur Panel: {error?.message}</div>;
-            }
-          })()}
-
-          {/* NDVI Time Series */}
-          {ndviTimeSeries && (() => {
-            try {
-              console.log('🔍 Rendering NDVITimeSeriesChart...');
-              return (
-                <NDVITimeSeriesChart
-                  timeSeries={ndviTimeSeries}
-                  selectedDate={selectedDate}
-                  onDateSelect={setSelectedDate}
-                />
-              );
-            } catch (error) {
-              console.error('❌ Error in NDVITimeSeriesChart:', error);
-              return <div className="p-4 bg-orange-100 rounded">Erreur Chart: {error?.message}</div>;
-            }
-          })()}
-
-          {/* 4D Dashboard Preview */}
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ delay: 0.4 }}
-            className="bg-gradient-to-br from-indigo-50 to-purple-50 rounded-3xl p-8 border-2 border-indigo-200/50"
-          >
+        <div className="space-y-8">
+          {/* Temporary simplified interface to avoid render loops */}
+          <div className="bg-gradient-to-br from-indigo-50 to-purple-50 rounded-3xl p-8 border-2 border-indigo-200/50">
             <div className="text-center space-y-4">
               <h3 className="text-2xl font-crimson font-bold text-transparent bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text">
                 Dashboard 4D - Espace × Temps × Biodiversité
@@ -187,15 +140,10 @@ const EtalabSubSection: React.FC<EtalabSubSectionProps> = ({ marche, theme }) =>
                 </div>
               </div>
             </div>
-          </motion.div>
+          </div>
 
           {/* Access Sentinel Hub */}
-          <motion.div
-            className="text-center pt-6"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.8 }}
-          >
+          <div className="text-center pt-6">
             <Button
               size="lg"
               className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white px-8 py-3 rounded-full shadow-lg"
@@ -204,8 +152,8 @@ const EtalabSubSection: React.FC<EtalabSubSectionProps> = ({ marche, theme }) =>
               <ExternalLink className="h-5 w-5 mr-2" />
               Explorer Sentinel Hub
             </Button>
-          </motion.div>
-        </motion.div>
+          </div>
+        </div>
       )}
     </div>
   );
