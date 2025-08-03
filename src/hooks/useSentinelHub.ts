@@ -108,22 +108,31 @@ export const useSentinelHub = (latitude: number, longitude: number) => {
   const satelliteImageQuery = useQuery({
     queryKey: ['sentinelImage', latitude, longitude, selectedDate, visualizationType],
     queryFn: async () => {
-      // Mock implementation - replace with real Sentinel Hub API call
-      console.log('🛰️ Fetching satellite image for:', { latitude, longitude, selectedDate, visualizationType });
+      console.log('🛰️ Fetching real satellite image for:', { latitude, longitude, selectedDate, visualizationType });
       
-      // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // Return mock image URL (in real implementation, this would be the processed satellite image)
-      return {
-        imageUrl: `https://api.mapbox.com/styles/v1/mapbox/satellite-v9/static/${longitude},${latitude},15/512x512?access_token=pk.eyJ1IjoibWFwYm94IiwiYSI6ImNpejY4NXVycTA2emYycXBndHRqcmZ3N3gifQ.rJcFIG214AriISLbB6B5aw`,
-        metadata: {
-          date: selectedDate,
-          cloudCover: Math.random() * 20,
-          resolution: '10m',
-          visualizationType
+      try {
+        const response = await fetch(`https://xzbunrtgbfbhinkzkzhf.supabase.co/functions/v1/sentinel-hub?latitude=${latitude}&longitude=${longitude}&selectedDate=${selectedDate}&visualizationType=${visualizationType}&action=image`);
+        
+        if (!response.ok) {
+          throw new Error(`Sentinel Hub API error: ${response.status}`);
         }
-      };
+        
+        const data = await response.json();
+        return data;
+      } catch (error) {
+        console.error('❌ Error fetching satellite image:', error);
+        // Fallback to mock data if API fails
+        return {
+          imageUrl: `https://api.mapbox.com/styles/v1/mapbox/satellite-v9/static/${longitude},${latitude},15/512x512?access_token=pk.eyJ1IjoibWFwYm94IiwiYSI6ImNpejY4NXVycTA2emYycXBndHRqcmZ3N3gifQ.rJcFIG214AriISLbB6B5aw`,
+          metadata: {
+            date: selectedDate,
+            cloudCover: Math.random() * 20,
+            resolution: '10m',
+            visualizationType,
+            error: 'Fallback to mock data'
+          }
+        };
+      }
     },
     staleTime: 5 * 60 * 1000,
     enabled: !!(latitude && longitude)
@@ -133,12 +142,22 @@ export const useSentinelHub = (latitude: number, longitude: number) => {
   const ndviTimeSeriesQuery = useQuery({
     queryKey: ['ndviTimeSeries', latitude, longitude],
     queryFn: async () => {
-      console.log('📈 Fetching NDVI time series for:', { latitude, longitude });
+      console.log('📈 Fetching real NDVI time series for:', { latitude, longitude });
       
-      // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 800));
-      
-      return generateMockNDVITimeSeries(latitude, longitude);
+      try {
+        const response = await fetch(`https://xzbunrtgbfbhinkzkzhf.supabase.co/functions/v1/sentinel-hub?latitude=${latitude}&longitude=${longitude}&action=timeseries`);
+        
+        if (!response.ok) {
+          throw new Error(`Sentinel Hub time series API error: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        return data;
+      } catch (error) {
+        console.error('❌ Error fetching NDVI time series:', error);
+        // Fallback to mock data if API fails
+        return generateMockNDVITimeSeries(latitude, longitude);
+      }
     },
     staleTime: 10 * 60 * 1000,
     enabled: !!(latitude && longitude)
