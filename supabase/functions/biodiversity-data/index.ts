@@ -886,13 +886,32 @@ serve(async (req) => {
       })
     );
 
+    // Enrichir les espèces iNaturalist avec photoData formaté
+    const enrichedINaturalistSpecies = inaturalistSpecies.map(species => {
+      if (species.photos && species.photos.length > 0) {
+        const photoData = {
+          url: species.photos[0],
+          source: 'inaturalist' as const,
+          attribution: species.attributions?.[0]?.observerName ? `Photo by ${species.attributions[0].observerName}` : 'Photo by iNaturalist user',
+          license: 'iNaturalist',
+          photographer: species.attributions?.[0]?.observerName
+        };
+        console.log(`✅ iNaturalist photo data created for ${species.commonName}:`, photoData);
+        return {
+          ...species,
+          photoData
+        };
+      }
+      return species;
+    });
+
     // Log des données brutes avant agrégation
     console.log('📊 Données brutes collectées:');
     console.log(`  - GBIF: ${gbifSpecies.length} observations`);
-    console.log(`  - iNaturalist: ${inaturalistSpecies.length} observations`);
+    console.log(`  - iNaturalist: ${enrichedINaturalistSpecies.length} observations`);
     console.log(`  - eBird: ${ebirdSpecies.length} observations`);
     console.log(`  - eBird Notable: ${ebirdNotable.length} observations`);
-    console.log(`  - Total avant agrégation: ${gbifSpecies.length + inaturalistSpecies.length + ebirdSpecies.length + ebirdNotable.length} observations`);
+    console.log(`  - Total avant agrégation: ${gbifSpecies.length + enrichedINaturalistSpecies.length + ebirdSpecies.length + ebirdNotable.length} observations`);
     
     // Debug spécial pour les données eBird
     if (ebirdSpecies.length > 0) {
@@ -903,7 +922,7 @@ serve(async (req) => {
     }
 
     // Combine and aggregate all species data with cross-validation
-    const allSpecies = [...gbifSpecies, ...inaturalistSpecies, ...enrichedEBirdSpecies];
+    const allSpecies = [...gbifSpecies, ...enrichedINaturalistSpecies, ...enrichedEBirdSpecies];
     const aggregatedSpecies = aggregateSpeciesData(allSpecies);
     
     // Process eBird hotspots for context
