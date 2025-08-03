@@ -512,17 +512,13 @@ async function fetchEBirdData(lat: number, lon: number, radius: number, dateFilt
     // Traitement des données avec récupération des données audio xeno-canto
     const processedData = await Promise.all(
       data.map(async (item: any, index: number) => {
-        // Récupérer les données audio xeno-canto v3
-        let audioData: { audioUrl?: string; sonogramUrl?: string; xenoCantoRecordings?: any[]; } = {};
+        // Récupérer les enregistrements Xeno-Canto
+        let xenoCantoRecordings: any[] = [];
         try {
-          audioData = await fetchXenoCantoData(item.sciName || '');
-          console.log(`🎵 Audio data fetched for ${item.comName}:`, {
-            hasAudio: !!audioData.audioUrl,
-            hasSonogram: !!audioData.sonogramUrl,
-            recordingsCount: audioData.xenoCantoRecordings?.length || 0
-          });
+          xenoCantoRecordings = await fetchXenoCantoRecordings(item.sciName || '');
+          console.log(`🎵 Xeno-Canto data fetched for ${item.comName}: ${xenoCantoRecordings.length} recordings`);
         } catch (error) {
-          console.log(`⚠️ Could not fetch audio data for ${item.comName}:`, error);
+          console.log(`⚠️ Could not fetch Xeno-Canto data for ${item.comName}:`, error);
         }
 
         // Debug: afficher les détails de l'observateur
@@ -537,9 +533,11 @@ async function fetchEBirdData(lat: number, lon: number, radius: number, dateFilt
           observations: item.howMany || 1,
           lastSeen: item.obsDt || new Date().toISOString().split('T')[0],
           photos: [],
-          audioUrl: audioData.audioUrl,
-          sonogramUrl: audioData.sonogramUrl,
+          audioUrl: xenoCantoRecordings[0]?.file,
+          sonogramUrl: xenoCantoRecordings[0]?.sono?.med,
           source: 'ebird' as const,
+          xenoCantoRecordings,
+          recordingQuality: xenoCantoRecordings[0]?.quality,
           attributions: [{
             observerName: item.userDisplayName || item.obsPerson || 'Contributeur eBird anonyme',
             observerInstitution: 'eBird/Cornell Lab of Ornithology',
@@ -553,27 +551,21 @@ async function fetchEBirdData(lat: number, lon: number, radius: number, dateFilt
           }]
         };
 
-        // Enrichir avec les données Xeno-Canto v3
-        if (audioData.xenoCantoRecordings) {
-          species.xenoCantoRecordings = audioData.xenoCantoRecordings;
-          
-          // Enrichir avec les métadonnées du meilleur enregistrement
-          const bestRecording = audioData.xenoCantoRecordings[0];
-          if (bestRecording) {
-            species.recordingQuality = bestRecording.quality;
-            species.soundType = bestRecording.type;
-            species.recordingContext = {
-              method: bestRecording.method,
-              equipment: [bestRecording.device, bestRecording.microphone].filter(Boolean).join(', ') || undefined,
-              conditions: [bestRecording.temperature && `${bestRecording.temperature}°C`, bestRecording.time].filter(Boolean).join(', ') || undefined
-            };
-            species.behavioralInfo = {
-              sex: bestRecording.sex || undefined,
-              stage: bestRecording.stage || undefined,
-              animalSeen: bestRecording.animalSeen === 'yes',
-              playbackUsed: bestRecording.playbackUsed === 'yes'
-            };
-          }
+        // Enrichir avec les métadonnées Xeno-Canto
+        if (xenoCantoRecordings.length > 0) {
+          const bestRecording = xenoCantoRecordings[0];
+          species.soundType = bestRecording.type;
+          species.recordingContext = {
+            method: bestRecording.method,
+            equipment: [bestRecording.device, bestRecording.microphone].filter(Boolean).join(', ') || undefined,
+            conditions: [bestRecording.temperature && `${bestRecording.temperature}°C`, bestRecording.time].filter(Boolean).join(', ') || undefined
+          };
+          species.behavioralInfo = {
+            sex: bestRecording.sex || undefined,
+            stage: bestRecording.stage || undefined,
+            animalSeen: bestRecording.animalSeen === 'yes',
+            playbackUsed: bestRecording.playbackUsed === 'yes'
+          };
         }
 
         return species;
@@ -646,94 +638,78 @@ async function fetchBirdPhoto(scientificName: string, commonName?: string): Prom
   }
 }
 
-// Fonction pour récupérer les données audio de Xeno-Canto v3
-async function fetchXenoCantoData(scientificName: string): Promise<{audioUrl?: string, sonogramUrl?: string, xenoCantoRecordings?: any[]}> {
+// Fonction pour récupérer les données audio de Xeno-Canto (API publique)
+async function fetchXenoCantoRecordings(scientificName: string): Promise<any[]> {
   try {
-    console.log(`🎵 Recherche Xeno-Canto v3 pour: ${scientificName}`);
+    console.log(`🎵 Recherche Xeno-Canto pour: ${scientificName}`);
     
-    // Note: La clé API doit être ajoutée dans les secrets Supabase
-    const apiKey = Deno.env.get('XENO_CANTO_API_KEY');
-    if (!apiKey) {
-      console.warn('⚠️ Clé API Xeno-Canto manquante');
-      return {};
-    }
-    
-    // Construction de l'URL de recherche Xeno-Canto v3 avec tags précis
-    const searchQuery = `sp:"${scientificName}"`;
-    const searchUrl = `https://xeno-canto.org/api/3/recordings?query=${encodeURIComponent(searchQuery)}&key=${apiKey}&per_page=10`;
+    // Utiliser l'API publique Xeno-Canto v2 (pas besoin de clé API)
+    const searchUrl = `https://xeno-canto.org/api/2/recordings?query=${encodeURIComponent(scientificName)}&page=1`;
     
     const response = await fetch(searchUrl);
     if (!response.ok) {
       console.warn(`⚠️ Erreur Xeno-Canto pour ${scientificName}: ${response.status}`);
-      return {};
+      return [];
     }
     
     const data = await response.json();
     
     if (data.recordings && data.recordings.length > 0) {
-      // Trier par qualité (A > B > C > D > E)
+      // Trier par qualité (A > B > C > D > E) et limiter aux 5 meilleurs
       const qualityOrder = { 'A': 5, 'B': 4, 'C': 3, 'D': 2, 'E': 1 };
-      const sortedRecordings = data.recordings.sort((a: any, b: any) => {
-        return (qualityOrder[b.q as keyof typeof qualityOrder] || 0) - (qualityOrder[a.q as keyof typeof qualityOrder] || 0);
-      });
+      const sortedRecordings = data.recordings
+        .filter((r: any) => r.file && r.sono?.small)
+        .sort((a: any, b: any) => {
+          const aScore = qualityOrder[a.q as keyof typeof qualityOrder] || 0;
+          const bScore = qualityOrder[b.q as keyof typeof qualityOrder] || 0;
+          return bScore - aScore;
+        })
+        .slice(0, 5);
+
+      console.log(`✅ Xeno-Canto trouvé pour ${scientificName}: ${sortedRecordings.length} enregistrements`);
       
-      const bestRecording = sortedRecordings[0];
-      
-      console.log(`✅ Xeno-Canto v3 trouvé pour ${scientificName}: ${data.recordings.length} enregistrements, meilleure qualité ${bestRecording.q}`);
-      
-      // Transformer les données pour notre format
-      const xenoCantoRecordings = sortedRecordings.slice(0, 5).map((recording: any) => ({
+      return sortedRecordings.map((recording: any) => ({
         id: recording.id,
-        file: recording.file.startsWith('//') ? `https:${recording.file}` : recording.file,
-        fileName: recording['file-name'],
+        file: `https://xeno-canto.org/${recording.file}`,
+        fileName: recording.file,
         sono: {
-          small: recording.sono?.small ? (recording.sono.small.startsWith('//') ? `https:${recording.sono.small}` : recording.sono.small) : '',
-          med: recording.sono?.med ? (recording.sono.med.startsWith('//') ? `https:${recording.sono.med}` : recording.sono.med) : '',
-          large: recording.sono?.large ? (recording.sono.large.startsWith('//') ? `https:${recording.sono.large}` : recording.sono.large) : '',
-          full: recording.sono?.full ? (recording.sono.full.startsWith('//') ? `https:${recording.sono.full}` : recording.sono.full) : ''
+          small: recording.sono.small,
+          med: recording.sono.med,
+          large: recording.sono.large,
+          full: recording.sono.full
         },
-        osci: {
-          small: recording.osci?.small ? (recording.osci.small.startsWith('//') ? `https:${recording.osci.small}` : recording.osci.small) : '',
-          med: recording.osci?.med ? (recording.osci.med.startsWith('//') ? `https:${recording.osci.med}` : recording.osci.med) : '',
-          large: recording.osci?.large ? (recording.osci.large.startsWith('//') ? `https:${recording.osci.large}` : recording.osci.large) : ''
-        },
+        osci: recording.osci,
         quality: recording.q,
         length: recording.length,
         type: recording.type,
-        sex: recording.sex,
-        stage: recording.stage,
-        method: recording.method,
-        recordist: recording.rec,
-        date: recording.date,
-        time: recording.time,
-        location: recording.loc,
-        latitude: recording.lat,
-        longitude: recording.lon,
-        altitude: recording.alt,
-        temperature: recording.temp,
-        device: recording.dvc,
-        microphone: recording.mic,
-        sampleRate: recording.smp,
-        license: recording.lic,
-        remarks: recording.rmk,
-        animalSeen: recording['animal-seen'],
-        playbackUsed: recording['playback-used'],
-        backgroundSpecies: recording.also || [],
-        url: recording.url.startsWith('//') ? `https:${recording.url}` : recording.url
+        sex: recording.sex || '',
+        stage: recording.stage || '',
+        method: recording.method || '',
+        recordist: recording.rec || '',
+        date: recording.date || '',
+        time: recording.time || '',
+        location: recording.loc || '',
+        latitude: recording.lat || '',
+        longitude: recording.lng || '',
+        altitude: recording.alt || '',
+        temperature: recording.rems?.includes('temp:') ? recording.rems.split('temp:')[1]?.split(',')[0]?.trim() : undefined,
+        device: recording.rems?.includes('device:') ? recording.rems.split('device:')[1]?.split(',')[0]?.trim() : undefined,
+        microphone: recording.rems?.includes('mic:') ? recording.rems.split('mic:')[1]?.split(',')[0]?.trim() : undefined,
+        sampleRate: recording.rems?.includes('smp:') ? recording.rems.split('smp:')[1]?.split(',')[0]?.trim() : undefined,
+        license: recording.lic || '',
+        remarks: recording.rems,
+        animalSeen: recording.rems?.includes('animal seen') ? 'yes' : recording.rems?.includes('animal not seen') ? 'no' : undefined,
+        playbackUsed: recording.rems?.includes('playback used') ? 'yes' : recording.rems?.includes('playback not used') ? 'no' : undefined,
+        backgroundSpecies: recording.also ? recording.also.split(',').map((s: string) => s.trim()) : [],
+        url: `https://xeno-canto.org/${recording.id}`
       }));
-      
-      return {
-        audioUrl: bestRecording.file.startsWith('//') ? `https:${bestRecording.file}` : bestRecording.file,
-        sonogramUrl: bestRecording.sono ? (bestRecording.sono.med.startsWith('//') ? `https:${bestRecording.sono.med}` : bestRecording.sono.med) : undefined,
-        xenoCantoRecordings
-      };
     }
     
     console.log(`📭 Aucun enregistrement Xeno-Canto pour ${scientificName}`);
-    return {};
+    return [];
   } catch (error) {
     console.error(`❌ Erreur lors de la récupération Xeno-Canto pour ${scientificName}:`, error);
-    return {};
+    return [];
   }
 }
 
@@ -875,14 +851,19 @@ serve(async (req) => {
 
     console.log('📡 Enrichissement avec audio Xeno-Canto et photos...');
     
-    // Enrichir les espèces eBird avec audio ET photos
+    // Enrichir les espèces eBird avec photos
     const enrichedEBirdSpecies = await Promise.all(
       [...ebirdNotable, ...ebirdSpecies].map(async (species) => {
-        const photoData = await fetchBirdPhoto(species.scientificName, species.commonName);
-        return {
-          ...species,
-          photoData
-        };
+        try {
+          const photoData = await fetchBirdPhoto(species.scientificName, species.commonName);
+          return {
+            ...species,
+            photoData
+          };
+        } catch (error) {
+          console.error(`Error fetching photo for ${species.commonName}:`, error);
+          return species;
+        }
       })
     );
 

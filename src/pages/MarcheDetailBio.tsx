@@ -5,6 +5,8 @@ import { motion } from 'framer-motion';
 import { HelmetProvider } from 'react-helmet-async';
 import { toast } from 'sonner';
 import { ArrowLeft } from 'lucide-react';
+import { AudioProvider } from '../contexts/AudioContext';
+import { FloatingAudioPlayer } from '../components/audio/FloatingAudioPlayer';
 
 import SEOHead from '../components/SEOHead';
 import BioacousticHeroSection from '../components/BioacousticHeroSection';
@@ -203,7 +205,8 @@ const MarcheDetailBio = () => {
 
   return (
     <HelmetProvider>
-      <div className="min-h-screen bg-background">
+      <AudioProvider>
+        <div className="min-h-screen bg-background">
         <SEOHead
           title={seoTitle}
           description={seoDescription}
@@ -257,8 +260,10 @@ const MarcheDetailBio = () => {
           </motion.div>
         </div>
 
+        <FloatingAudioPlayer />
         <Footer />
-      </div>
+        </div>
+      </AudioProvider>
     </HelmetProvider>
   );
 };
