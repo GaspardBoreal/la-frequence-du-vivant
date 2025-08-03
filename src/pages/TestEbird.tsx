@@ -277,43 +277,73 @@ const TestEbird: React.FC = () => {
         {/* Statistiques */}
         {currentMarche && (
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+            {/* Vignette 1 : Espèces trouvées (conservée) */}
             <Card>
               <CardContent className="p-4">
                 <div className="text-2xl font-bold text-blue-600">{filteredSpecies.length}</div>
                 <div className="text-sm text-gray-600">Espèces trouvées</div>
               </CardContent>
             </Card>
+            
+            {/* Nouvelle Vignette 2 : Espèces par API */}
+            <Card>
+              <CardContent className="p-4">
+                {selectedApi === 'ebird' ? (
+                  <>
+                    <div className="text-2xl font-bold text-blue-600">{filteredSpecies.filter(s => s.source === 'ebird').length}</div>
+                    <div className="text-sm text-gray-600">eBird</div>
+                  </>
+                ) : selectedApi === 'inaturalist' ? (
+                  <>
+                    <div className="text-2xl font-bold text-green-600">{filteredSpecies.filter(s => s.source === 'inaturalist').length}</div>
+                    <div className="text-sm text-gray-600">iNaturalist</div>
+                  </>
+                ) : (
+                  <>
+                    <div className="text-lg font-bold">
+                      <span className="text-blue-600">{filteredSpecies.filter(s => s.source === 'ebird').length}</span>
+                      <span className="text-gray-400 mx-1">/</span>
+                      <span className="text-green-600">{filteredSpecies.filter(s => s.source === 'inaturalist').length}</span>
+                    </div>
+                    <div className="text-sm text-gray-600">eBird / iNaturalist</div>
+                  </>
+                )}
+              </CardContent>
+            </Card>
+            
+            {/* Vignette 3 : Avec photos réelles (ancienne vignette 2) */}
             <Card>
               <CardContent className="p-4">
                 <div className="text-2xl font-bold text-green-600">{filteredSpecies.filter(hasRealPhoto).length}</div>
                 <div className="text-sm text-gray-600">Avec photos réelles</div>
               </CardContent>
             </Card>
+            
+            {/* Vignette 4 : Chants (anciennes vignettes 3 et 4 combinées) */}
             <Card 
-              className="cursor-pointer hover:shadow-lg transition-all duration-200 hover:border-blue-300"
-              onClick={() => handleSpeciesClick('ebird')}
+              className="cursor-pointer hover:shadow-lg transition-all duration-200 hover:border-purple-300"
+              onClick={() => handleSpeciesClick(selectedApi === 'ebird' ? 'ebird' : selectedApi === 'inaturalist' ? 'inaturalist' : 'ebird')}
             >
               <CardContent className="p-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <div className="text-2xl font-bold text-blue-600">{filteredSpecies.filter(s => s.source === 'ebird' && s.audioUrl).length}</div>
-                    <div className="text-sm text-gray-600">Chants eBird</div>
+                    {selectedApi === 'all' ? (
+                      <>
+                        <div className="text-lg font-bold">
+                          <span className="text-blue-600">{filteredSpecies.filter(s => s.source === 'ebird' && s.audioUrl).length}</span>
+                          <span className="text-gray-400 mx-1">/</span>
+                          <span className="text-green-600">{filteredSpecies.filter(s => s.source === 'inaturalist' && s.audioUrl).length}</span>
+                        </div>
+                        <div className="text-sm text-gray-600">Chants disponibles</div>
+                      </>
+                    ) : (
+                      <>
+                        <div className="text-2xl font-bold text-purple-600">{filteredSpecies.filter(s => s.audioUrl).length}</div>
+                        <div className="text-sm text-gray-600">Chants disponibles</div>
+                      </>
+                    )}
                   </div>
-                  <Volume2 className="h-6 w-6 text-blue-500" />
-                </div>
-              </CardContent>
-            </Card>
-            <Card 
-              className="cursor-pointer hover:shadow-lg transition-all duration-200 hover:border-green-300"
-              onClick={() => handleSpeciesClick('inaturalist')}
-            >
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <div className="text-2xl font-bold text-green-600">{filteredSpecies.filter(s => s.source === 'inaturalist' && s.audioUrl).length}</div>
-                    <div className="text-sm text-gray-600">Chants iNaturalist</div>
-                  </div>
-                  <Volume2 className="h-6 w-6 text-green-500" />
+                  <Volume2 className="h-6 w-6 text-purple-500" />
                 </div>
               </CardContent>
             </Card>
