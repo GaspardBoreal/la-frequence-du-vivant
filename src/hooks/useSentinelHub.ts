@@ -103,13 +103,31 @@ const generateMockNDVITimeSeries = (lat: number, lng: number): SatelliteTimeSeri
 export const useSentinelHub = (latitude: number, longitude: number) => {
   // Initialize with a date from 2024 to match NDVI data
   const [selectedDate, setSelectedDate] = useState<string>('2024-08-03');
-  const [visualizationType, setVisualizationType] = useState<'trueColor' | 'ndvi' | 'ndviColorized'>('trueColor');
+  const [visualizationType, setVisualizationType] = useState<'trueColor' | 'ndvi' | 'ndviColorized' | 'mapbox'>('trueColor');
 
   // Fetch satellite image
   const satelliteImageQuery = useQuery({
     queryKey: ['sentinelImage', latitude, longitude, selectedDate, visualizationType],
     queryFn: async () => {
       console.log('🛰️ Fetching real satellite image for:', { latitude, longitude, selectedDate, visualizationType });
+      
+      // Force Mapbox fallback if requested
+      if (visualizationType === 'mapbox') {
+        const mapboxUrl = `https://api.mapbox.com/styles/v1/mapbox/satellite-v9/static/${longitude},${latitude},15/512x512?access_token=pk.eyJ1IjoibWFwYm94IiwiYSI6ImNpejY4NXVycTA2emYycXBudHRqcmZ3N3gifQ.rJcFIG214AriISLbB6B5aw`;
+        
+        console.log('🗺️ Using Mapbox satellite (forced):', mapboxUrl);
+        return {
+          imageUrl: mapboxUrl,
+          metadata: {
+            date: selectedDate,
+            cloudCover: 0,
+            resolution: 'High Resolution',
+            visualizationType: 'Mapbox Satellite',
+            source: 'Mapbox',
+            fallback: false
+          }
+        };
+      }
       
       try {
         const { supabase } = await import('@/integrations/supabase/client');
@@ -131,15 +149,19 @@ export const useSentinelHub = (latitude: number, longitude: number) => {
         return data;
       } catch (error) {
         console.error('❌ Error fetching satellite image:', error);
-        // Fallback to mock data if API fails
+        // Fallback to Mapbox satellite imagery
+        const mapboxUrl = `https://api.mapbox.com/styles/v1/mapbox/satellite-v9/static/${longitude},${latitude},15/512x512?access_token=pk.eyJ1IjoibWFwYm94IiwiYSI6ImNpejY4NXVycTA2emYycXBndHRqcmZ3N3gifQ.rJcFIG214AriISLbB6B5aw`;
+        
+        console.log('🗺️ Fallback to Mapbox satellite:', mapboxUrl);
         return {
-          imageUrl: `https://api.mapbox.com/styles/v1/mapbox/satellite-v9/static/${longitude},${latitude},15/512x512?access_token=pk.eyJ1IjoibWFwYm94IiwiYSI6ImNpejY4NXVycTA2emYycXBndHRqcmZ3N3gifQ.rJcFIG214AriISLbB6B5aw`,
+          imageUrl: mapboxUrl,
           metadata: {
             date: selectedDate,
             cloudCover: Math.random() * 20,
             resolution: '10m',
             visualizationType,
-            error: 'Fallback to mock data'
+            source: 'Mapbox Satellite',
+            fallback: true
           }
         };
       }

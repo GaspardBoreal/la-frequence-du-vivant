@@ -70,34 +70,47 @@ const SimpleSatelliteDisplay: React.FC<SimpleSatelliteDisplayProps> = ({
         <div className="space-y-4">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-xl font-bold text-slate-800">Image Satellite</h2>
-              <div className="flex gap-2">
-                <Button
-                  size="sm"
-                  variant={visualizationType === 'ndvi' ? 'default' : 'outline'}
-                  onClick={() => onChangeVisualization?.('ndvi')}
-                  className="text-xs"
-                >
-                  NDVI
-                </Button>
-                <Button
-                  size="sm"
-                  variant={visualizationType === 'trueColor' ? 'default' : 'outline'}
-                  onClick={() => onChangeVisualization?.('trueColor')}
-                  className="text-xs"
-                >
-                  Couleur
-                </Button>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={onRefresh}
-                  disabled={isLoading}
-                  className="flex items-center gap-1"
-                >
-                  <RefreshCw className={`h-3 w-3 ${isLoading ? 'animate-spin' : ''}`} />
-                  Actualiser
-                </Button>
-              </div>
+               <div className="flex gap-2">
+                 <Button
+                   size="sm"
+                   variant={visualizationType === 'ndvi' ? 'default' : 'outline'}
+                   onClick={() => onChangeVisualization?.('ndvi')}
+                   className="text-xs"
+                 >
+                   NDVI
+                 </Button>
+                 <Button
+                   size="sm"
+                   variant={visualizationType === 'trueColor' ? 'default' : 'outline'}
+                   onClick={() => onChangeVisualization?.('trueColor')}
+                   className="text-xs"
+                 >
+                   Couleur
+                 </Button>
+                 <Button
+                   size="sm"
+                   variant="outline"
+                   onClick={() => {
+                     // Force fallback to Mapbox
+                     if (onChangeVisualization) {
+                       onChangeVisualization('mapbox' as any);
+                     }
+                   }}
+                   className="text-xs"
+                 >
+                   Mapbox
+                 </Button>
+                 <Button
+                   size="sm"
+                   variant="outline"
+                   onClick={onRefresh}
+                   disabled={isLoading}
+                   className="flex items-center gap-1"
+                 >
+                   <RefreshCw className={`h-3 w-3 ${isLoading ? 'animate-spin' : ''}`} />
+                   Actualiser
+                 </Button>
+               </div>
             </div>
           
           {isLoading ? (
@@ -115,7 +128,11 @@ const SimpleSatelliteDisplay: React.FC<SimpleSatelliteDisplayProps> = ({
                   console.log('🖼️ Image satellite loaded successfully');
                   console.log('📏 Image dimensions:', img.naturalWidth, 'x', img.naturalHeight);
                   console.log('🔗 URL length:', satelliteImage.imageUrl.length);
-                  console.log('🎨 URL preview:', satelliteImage.imageUrl.substring(0, 100) + '...');
+                  
+                  // Check if image is likely black/empty and suggest fallback
+                  if (satelliteImage.imageUrl.startsWith('data:image') && satelliteImage.imageUrl.length < 10000) {
+                    console.warn('⚠️ Image seems very small/empty, might be black');
+                  }
                 }}
                 onError={(e) => {
                   console.error('❌ Image satellite failed to load');
