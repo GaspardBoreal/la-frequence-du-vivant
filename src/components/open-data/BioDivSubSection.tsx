@@ -358,14 +358,14 @@ const BioDivSubSection: React.FC<BioDivSubSectionProps> = ({ marche, theme }) =>
           </div>
 
           {/* Filtres élargis avec contributeurs */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4" style={{gridTemplateColumns: 'lg:1fr 1fr 0.8fr 1.4fr'}}>
             <div>
               <Select value={selectedCategory} onValueChange={(value: any) => setSelectedCategory(value)}>
                 <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Catégorie d'espèces" />
+                  <SelectValue placeholder="Catégories" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">Toutes les catégories ({categoryStats.all})</SelectItem>
+                  <SelectItem value="all">Toutes ({categoryStats.all})</SelectItem>
                   <SelectItem value="birds">Oiseaux ({categoryStats.birds})</SelectItem>
                   <SelectItem value="plants">Plantes ({categoryStats.plants})</SelectItem>
                   <SelectItem value="fungi">Champignons ({categoryStats.fungi})</SelectItem>
@@ -377,10 +377,10 @@ const BioDivSubSection: React.FC<BioDivSubSectionProps> = ({ marche, theme }) =>
             <div>
               <Select value={selectedSource} onValueChange={(value: any) => setSelectedSource(value)}>
                 <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Source des données" />
+                  <SelectValue placeholder="Sources" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">Toutes les sources</SelectItem>
+                  <SelectItem value="all">Toutes</SelectItem>
                   <SelectItem value="gbif">GBIF</SelectItem>
                   <SelectItem value="inaturalist">iNaturalist</SelectItem>
                   <SelectItem value="ebird">eBird</SelectItem>
@@ -391,10 +391,10 @@ const BioDivSubSection: React.FC<BioDivSubSectionProps> = ({ marche, theme }) =>
             <div>
               <Select value={hasAudioFilter} onValueChange={(value: any) => setHasAudioFilter(value)}>
                 <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Disponibilité audio" />
+                  <SelectValue placeholder="Audio" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">Tous</SelectItem>
+                  <SelectItem value="all">Avec et sans audio</SelectItem>
                   <SelectItem value="with-audio">Avec audio</SelectItem>
                   <SelectItem value="without-audio">Sans audio</SelectItem>
                 </SelectContent>
