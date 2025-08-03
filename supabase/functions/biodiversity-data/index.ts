@@ -662,8 +662,14 @@ async function fetchXenoCantoRecordings(scientificName: string): Promise<any[]> 
   try {
     console.log(`🎵 Recherche Xeno-Canto pour: ${scientificName}`);
     
-    // Utiliser l'API publique Xeno-Canto v2 (pas besoin de clé API)
-    const searchUrl = `https://xeno-canto.org/api/2/recordings?query=${encodeURIComponent(scientificName)}&page=1`;
+    const apiKey = Deno.env.get('XENO_CANTO_API_KEY');
+    if (!apiKey) {
+      console.warn('⚠️ Clé API Xeno-Canto manquante');
+      return [];
+    }
+    
+    // Utiliser l'API v3 avec la clé requise
+    const searchUrl = `https://xeno-canto.org/api/3/recordings?query=sp:"${encodeURIComponent(scientificName)}"&key=${apiKey}&page=1`;
     
     const response = await fetch(searchUrl);
     if (!response.ok) {
@@ -719,7 +725,7 @@ async function fetchXenoCantoRecordings(scientificName: string): Promise<any[]> 
         remarks: recording.rems,
         animalSeen: recording.rems?.includes('animal seen') ? 'yes' : recording.rems?.includes('animal not seen') ? 'no' : undefined,
         playbackUsed: recording.rems?.includes('playback used') ? 'yes' : recording.rems?.includes('playback not used') ? 'no' : undefined,
-        backgroundSpecies: (recording.also && typeof recording.also === 'string') ? recording.also.split(',').map((s: string) => s.trim()) : [],
+        backgroundSpecies: Array.isArray(recording.also) ? recording.also : [],
         url: `https://xeno-canto.org/${recording.id}`
       }));
     }
