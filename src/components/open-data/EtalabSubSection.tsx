@@ -91,13 +91,23 @@ const EtalabSubSection: React.FC<EtalabSubSectionProps> = ({ marche, theme }) =>
   return (
     <div className="space-y-8">
       {/* Hero Section */}
-      <PoeticSatelliteHero
-        satelliteImage={satelliteImage}
-        isLoading={isLoading}
-        currentNDVI={currentNDVI}
-        haiku={haiku}
-        onRefresh={refetch}
-      />
+      {(() => {
+        try {
+          console.log('🔍 Rendering PoeticSatelliteHero...');
+          return (
+            <PoeticSatelliteHero
+              satelliteImage={satelliteImage}
+              isLoading={isLoading}
+              currentNDVI={currentNDVI}
+              haiku={haiku}
+              onRefresh={refetch}
+            />
+          );
+        } catch (error) {
+          console.error('❌ Error in PoeticSatelliteHero:', error);
+          return <div className="p-4 bg-red-100 rounded">Erreur PoeticSatelliteHero: {error?.message}</div>;
+        }
+      })()}
 
       {/* Expandable Observatory Section */}
       <motion.div
@@ -126,22 +136,40 @@ const EtalabSubSection: React.FC<EtalabSubSectionProps> = ({ marche, theme }) =>
           className="space-y-8 overflow-hidden"
         >
           {/* Control Panel */}
-          <SatelliteVisualizationPanel
-            visualizationType={visualizationType}
-            onVisualizationChange={setVisualizationType}
-            selectedDate={selectedDate}
-            onDateChange={setSelectedDate}
-            ndviTimeSeries={ndviTimeSeries}
-          />
+          {(() => {
+            try {
+              console.log('🔍 Rendering SatelliteVisualizationPanel...');
+              return (
+                <SatelliteVisualizationPanel
+                  visualizationType={visualizationType}
+                  onVisualizationChange={setVisualizationType}
+                  selectedDate={selectedDate}
+                  onDateChange={setSelectedDate}
+                  ndviTimeSeries={ndviTimeSeries}
+                />
+              );
+            } catch (error) {
+              console.error('❌ Error in SatelliteVisualizationPanel:', error);
+              return <div className="p-4 bg-yellow-100 rounded">Erreur Panel: {error?.message}</div>;
+            }
+          })()}
 
           {/* NDVI Time Series */}
-          {ndviTimeSeries && (
-            <NDVITimeSeriesChart
-              timeSeries={ndviTimeSeries}
-              selectedDate={selectedDate}
-              onDateSelect={setSelectedDate}
-            />
-          )}
+          {ndviTimeSeries && (() => {
+            try {
+              console.log('🔍 Rendering NDVITimeSeriesChart...');
+              return (
+                <NDVITimeSeriesChart
+                  timeSeries={ndviTimeSeries}
+                  selectedDate={selectedDate}
+                  onDateSelect={setSelectedDate}
+                />
+              );
+            } catch (error) {
+              console.error('❌ Error in NDVITimeSeriesChart:', error);
+              return <div className="p-4 bg-orange-100 rounded">Erreur Chart: {error?.message}</div>;
+            }
+          })()}
 
           {/* 4D Dashboard Preview */}
           <motion.div
