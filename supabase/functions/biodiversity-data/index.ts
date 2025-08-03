@@ -587,53 +587,72 @@ async function fetchEBirdData(lat: number, lon: number, radius: number, dateFilt
 // Fonction pour récupérer les photos d'oiseaux
 async function fetchBirdPhoto(scientificName: string, commonName?: string): Promise<BirdPhoto | null> {
   try {
+    console.log(`🔍 Recherche photo pour: ${scientificName} (${commonName})`);
+    
     // 1. Essayer iNaturalist d'abord
     const inatUrl = `https://api.inaturalist.org/v1/observations?taxon_name=${encodeURIComponent(scientificName)}&has[]=photos&quality_grade=research&per_page=3&order=desc&order_by=votes`;
+    console.log(`📍 iNaturalist URL: ${inatUrl}`);
     
     const inatResponse = await fetch(inatUrl);
+    console.log(`📍 iNaturalist Response Status: ${inatResponse.status}`);
+    
     if (inatResponse.ok) {
       const inatData = await inatResponse.json();
+      console.log(`📍 iNaturalist Results: ${inatData.results?.length || 0}`);
       
       if (inatData.results && inatData.results.length > 0) {
         const observation = inatData.results[0];
         const photo = observation.photos?.[0];
+        console.log(`📍 Photo found: ${photo?.url || 'none'}`);
         
         if (photo) {
-          return {
+          const photoData = {
             url: photo.url.replace('square', 'medium'),
-            source: 'inaturalist',
+            source: 'inaturalist' as const,
             attribution: `Photo by ${observation.user?.name || 'iNaturalist user'}`,
             license: observation.license_code || 'Unknown',
             photographer: observation.user?.name
           };
+          console.log(`✅ iNaturalist photo found for ${scientificName}:`, photoData);
+          return photoData;
         }
       }
     }
 
+    console.log(`⚠️ No iNaturalist photo found for ${scientificName}, trying Flickr...`);
+
     // 2. Fallback vers Flickr
     const searchTerm = commonName || scientificName;
     const flickrUrl = `https://api.flickr.com/services/feeds/photos_public.gne?format=json&nojsoncallback=1&tags=${encodeURIComponent(searchTerm + ' bird')}&per_page=3`;
+    console.log(`📍 Flickr URL: ${flickrUrl}`);
     
     const flickrResponse = await fetch(flickrUrl);
+    console.log(`📍 Flickr Response Status: ${flickrResponse.status}`);
+    
     if (flickrResponse.ok) {
       const flickrData = await flickrResponse.json();
+      console.log(`📍 Flickr Results: ${flickrData.items?.length || 0}`);
       
       if (flickrData.items && flickrData.items.length > 0) {
         const item = flickrData.items[0];
+        console.log(`📍 Flickr photo found: ${item.media?.m || 'none'}`);
         
-        return {
+        const photoData = {
           url: item.media.m.replace('_m.jpg', '_c.jpg'),
-          source: 'flickr',
+          source: 'flickr' as const,
           attribution: `Photo by ${item.author?.replace(/.*\(([^)]+)\).*/, '$1') || 'Flickr user'}`,
           license: 'Flickr',
           photographer: item.author?.replace(/.*\(([^)]+)\).*/, '$1')
         };
+        console.log(`✅ Flickr photo found for ${scientificName}:`, photoData);
+        return photoData;
       }
     }
 
+    console.log(`❌ No photo found for ${scientificName} from any source`);
     return null;
   } catch (error) {
-    console.warn('Erreur récupération photo:', error);
+    console.error(`❌ Error fetching photo for ${scientificName}:`, error);
     return null;
   }
 }

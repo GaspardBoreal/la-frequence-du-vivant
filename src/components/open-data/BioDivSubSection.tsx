@@ -291,59 +291,96 @@ const BioDivSubSection: React.FC<BioDivSubSectionProps> = ({ marche, theme }) =>
         </div>
       )}
 
-      {/* Filtres */}
+      {/* Contrôles de recherche et rayon */}
       <Card className="p-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          <div>
-            <Select value={selectedCategory} onValueChange={(value: any) => setSelectedCategory(value)}>
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="Catégorie d'espèces" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Toutes les catégories ({categoryStats.all})</SelectItem>
-                <SelectItem value="birds">Oiseaux ({categoryStats.birds})</SelectItem>
-                <SelectItem value="plants">Plantes ({categoryStats.plants})</SelectItem>
-                <SelectItem value="fungi">Champignons ({categoryStats.fungi})</SelectItem>
-                <SelectItem value="others">Autres ({categoryStats.others})</SelectItem>
-              </SelectContent>
-            </Select>
+        <div className="space-y-6">
+          {/* Rayon de recherche */}
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <Label className="text-sm font-medium">Rayon de recherche:</Label>
+              <Badge variant="outline" className="bg-primary/10 text-primary font-medium">
+                {searchRadius < 1 ? `${Math.round(searchRadius * 1000)}m` : `${searchRadius}km`}
+              </Badge>
+            </div>
+            
+            <div className="space-y-2">
+              <Slider
+                value={[searchRadius]}
+                onValueChange={(value) => setSearchRadius(value[0])}
+                max={5}
+                min={0.5}
+                step={0.5}
+                className="w-full"
+              />
+              <div className="flex justify-between text-xs text-muted-foreground">
+                <span>0.5km</span>
+                <span>2.75km</span>
+                <span>5km</span>
+              </div>
+            </div>
+            
+            <p className="text-sm text-muted-foreground">
+              {filteredSpecies.length} espèces trouvées dans un rayon de {searchRadius < 1 ? `${Math.round(searchRadius * 1000)}m` : `${searchRadius}km`}
+            </p>
           </div>
 
-          <div>
-            <Select value={selectedSource} onValueChange={(value: any) => setSelectedSource(value)}>
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="Source des données" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Toutes les sources</SelectItem>
-                <SelectItem value="gbif">GBIF</SelectItem>
-                <SelectItem value="inaturalist">iNaturalist</SelectItem>
-                <SelectItem value="ebird">eBird</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+          {/* Filtres existants */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div>
+              <Select value={selectedCategory} onValueChange={(value: any) => setSelectedCategory(value)}>
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Catégorie d'espèces" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Toutes les catégories ({categoryStats.all})</SelectItem>
+                  <SelectItem value="birds">Oiseaux ({categoryStats.birds})</SelectItem>
+                  <SelectItem value="plants">Plantes ({categoryStats.plants})</SelectItem>
+                  <SelectItem value="fungi">Champignons ({categoryStats.fungi})</SelectItem>
+                  <SelectItem value="others">Autres ({categoryStats.others})</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
 
-          <div>
-            <Select value={hasAudioFilter} onValueChange={(value: any) => setHasAudioFilter(value)}>
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="Disponibilité audio" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Tous</SelectItem>
-                <SelectItem value="with-audio">Avec audio</SelectItem>
-                <SelectItem value="without-audio">Sans audio</SelectItem>
-              </SelectContent>
-            </Select>
+            <div>
+              <Select value={selectedSource} onValueChange={(value: any) => setSelectedSource(value)}>
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Source des données" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Toutes les sources</SelectItem>
+                  <SelectItem value="gbif">GBIF</SelectItem>
+                  <SelectItem value="inaturalist">iNaturalist</SelectItem>
+                  <SelectItem value="ebird">eBird</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div>
+              <Select value={hasAudioFilter} onValueChange={(value: any) => setHasAudioFilter(value)}>
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Disponibilité audio" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Tous</SelectItem>
+                  <SelectItem value="with-audio">Avec audio</SelectItem>
+                  <SelectItem value="without-audio">Sans audio</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
         </div>
       </Card>
 
-      {/* Onglets par catégorie */}
+      {/* Onglets avec Vue Carte ajoutée */}
       <Tabs value={selectedCategory} onValueChange={(value: any) => setSelectedCategory(value)} className="w-full">
-        <TabsList className="grid w-full grid-cols-5">
+        <TabsList className="grid w-full grid-cols-6">
           <TabsTrigger value="all" className="flex items-center gap-2">
             <Database className="h-4 w-4" />
             Toutes ({categoryStats.all})
+          </TabsTrigger>
+          <TabsTrigger value="map" className="flex items-center gap-2">
+            <MapPin className="h-4 w-4" />
+            Carte
           </TabsTrigger>
           <TabsTrigger value="birds" className="flex items-center gap-2">
             <Bird className="h-4 w-4" />
@@ -362,6 +399,17 @@ const BioDivSubSection: React.FC<BioDivSubSectionProps> = ({ marche, theme }) =>
             Autres ({categoryStats.others})
           </TabsTrigger>
         </TabsList>
+
+        {/* Vue Carte */}
+        <TabsContent value="map" className="space-y-4">
+          <div className="h-[600px]">
+            <BiodiversityMap 
+              data={biodiversityData}
+              centerLat={marche.latitude}
+              centerLon={marche.longitude}
+            />
+          </div>
+        </TabsContent>
 
         <TabsContent value="all" className="space-y-4">
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
