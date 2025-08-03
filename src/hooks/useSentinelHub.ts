@@ -101,7 +101,8 @@ const generateMockNDVITimeSeries = (lat: number, lng: number): SatelliteTimeSeri
 };
 
 export const useSentinelHub = (latitude: number, longitude: number) => {
-  const [selectedDate, setSelectedDate] = useState<string>(new Date().toISOString().split('T')[0]);
+  // Initialize with a date from 2024 to match NDVI data
+  const [selectedDate, setSelectedDate] = useState<string>('2024-08-03');
   const [visualizationType, setVisualizationType] = useState<'trueColor' | 'ndvi' | 'ndviColorized'>('trueColor');
 
   // Fetch satellite image

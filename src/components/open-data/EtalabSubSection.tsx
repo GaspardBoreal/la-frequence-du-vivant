@@ -35,6 +35,17 @@ const EtalabSubSection: React.FC<EtalabSubSectionProps> = ({ marche, theme }) =>
     refetch
   } = useSentinelHub(marche.latitude || 0, marche.longitude || 0);
 
+  // Auto-adjust selectedDate to first available date when data loads
+  React.useEffect(() => {
+    if (ndviTimeSeries && ndviTimeSeries.dates.length > 0) {
+      const isValidDate = ndviTimeSeries.dates.includes(selectedDate);
+      if (!isValidDate) {
+        console.log('🔧 Auto-adjusting selectedDate to first available:', ndviTimeSeries.dates[0]);
+        setSelectedDate(ndviTimeSeries.dates[0]);
+      }
+    }
+  }, [ndviTimeSeries, selectedDate, setSelectedDate]);
+
   console.log('🔍 Hook data:', {
     hasImage: !!satelliteImage,
     hasTimeSeries: !!ndviTimeSeries,
