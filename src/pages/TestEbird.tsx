@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Slider } from '@/components/ui/slider';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { ContributorDetailModal } from '@/components/ContributorDetailModal';
+import { ModernMarcheSelector } from '@/components/ModernMarcheSelector';
 import { useSupabaseMarches } from '@/hooks/useSupabaseMarches';
 import { useBiodiversityData } from '@/hooks/useBiodiversityData';
 import { BiodiversitySpecies } from '@/types/biodiversity';
@@ -236,37 +237,12 @@ const TestEbird: React.FC = () => {
             {/* Sélection Marche */}
             <div>
               <Label className="text-base font-medium mb-3 block">Marche à analyser</Label>
-              <Select value={selectedMarche} onValueChange={setSelectedMarche}>
-                <SelectTrigger className="w-full max-w-md">
-                  <SelectValue placeholder="Sélectionner une marche..." />
-                </SelectTrigger>
-                <SelectContent>
-                  {Object.keys(organizedMarches).sort().map(departement => (
-                    <div key={departement}>
-                      <div className="px-2 py-1 text-sm font-medium text-gray-500 bg-gray-100">
-                        {departement}
-                      </div>
-                      {Object.keys(organizedMarches[departement]).sort().map(ville => (
-                        <div key={ville}>
-                          <div className="px-4 py-1 text-xs text-gray-400 bg-gray-50">
-                            {ville}
-                          </div>
-                          {organizedMarches[departement][ville]
-                            .sort((a, b) => (a.nomMarche || '').localeCompare(b.nomMarche || ''))
-                            .map(marche => (
-                              <SelectItem key={marche.supabaseId} value={marche.supabaseId || ''}>
-                                <div className="flex items-center space-x-2">
-                                  <MapPin className="h-3 w-3" />
-                                  <span>{marche.nomMarche || `Marche ${marche.ville}`}</span>
-                                </div>
-                              </SelectItem>
-                            ))}
-                        </div>
-                      ))}
-                    </div>
-                  ))}
-                </SelectContent>
-              </Select>
+              <ModernMarcheSelector
+                marches={marches}
+                selectedMarche={selectedMarche}
+                onSelectMarche={setSelectedMarche}
+                isLoading={isLoadingMarches}
+              />
             </div>
 
             {/* Rayon de recherche */}
