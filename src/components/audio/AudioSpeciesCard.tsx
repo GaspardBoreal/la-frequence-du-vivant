@@ -6,7 +6,7 @@ import { BiodiversitySpecies } from '@/types/biodiversity';
 import { AudioIndicator } from './AudioIndicator';
 import { MiniSpectrogramPreview } from './MiniSpectrogramPreview';
 import { Play, Pause, Loader2 } from 'lucide-react';
-import { useAudioPlayer } from '@/hooks/useAudioPlayer';
+import { useGlobalAudioPlayer } from '@/contexts/AudioContext';
 
 interface AudioSpeciesCardProps {
   species: BiodiversitySpecies;
@@ -23,7 +23,7 @@ export const AudioSpeciesCard = ({
   hasPhoto, 
   children 
 }: AudioSpeciesCardProps) => {
-  const { playRecording, pause, currentRecording, isPlaying, isLoading } = useAudioPlayer();
+  const { playRecording, pause, currentRecording, isPlaying, isLoading } = useGlobalAudioPlayer();
   const [showSpectrogram, setShowSpectrogram] = useState(false);
   
   const hasAudio = species.source === 'ebird' && species.xenoCantoRecordings && species.xenoCantoRecordings.length > 0;

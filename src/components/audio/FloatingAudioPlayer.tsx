@@ -3,7 +3,7 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
 import { Badge } from '@/components/ui/badge';
-import { useAudioPlayer } from '@/hooks/useAudioPlayer';
+import { useGlobalAudioPlayer } from '@/contexts/AudioContext';
 import { 
   Play, 
   Pause, 
@@ -29,7 +29,7 @@ export const FloatingAudioPlayer = () => {
     setPlaybackRate,
     seekTo,
     playRecording
-  } = useAudioPlayer();
+  } = useGlobalAudioPlayer();
 
   const [isExpanded, setIsExpanded] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
