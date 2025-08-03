@@ -46,26 +46,34 @@ const BioDivSubSection: React.FC<BioDivSubSectionProps> = ({ marche, theme }) =>
     dateFilter
   });
 
-  // DEBUG: Log des données reçues pour comprendre le problème
-  console.log('🔍 DEBUG BioDivSubSection:', {
+  // DEBUG: Log des données reçues pour comprendre le problème de comptage
+  console.log('🔍 DEBUG BioDivSubSection - BONZAC ANALYSIS:', {
     location: `${marche.ville} (${marche.latitude}, ${marche.longitude})`,
     searchRadius: debouncedRadius,
     dateFilter,
-    totalSpeciesInData: biodiversityData?.species?.length || 0,
-    totalInSummary: biodiversityData?.summary?.totalSpecies || 0,
+    selectedCategory,
+    selectedContributor,
+    rawDataSpeciesCount: biodiversityData?.species?.length || 0,
+    summaryTotal: biodiversityData?.summary?.totalSpecies || 0,
     methodologyRadius: biodiversityData?.methodology?.radius,
     sources: biodiversityData?.methodology?.sources,
     uniqueKingdoms: biodiversityData?.species ? [...new Set(biodiversityData.species.map(s => s.kingdom).filter(k => k))] : [],
-    birdSample: biodiversityData?.species?.filter(s => s.source === 'ebird').slice(0, 3).map(s => ({ 
-      name: s.scientificName, 
-      kingdom: s.kingdom,
-      source: s.source 
-    })) || [],
-    categoryStats: {
+    sourceBreakdown: {
+      gbif: biodiversityData?.species?.filter(s => s.source === 'gbif')?.length || 0,
+      inaturalist: biodiversityData?.species?.filter(s => s.source === 'inaturalist')?.length || 0,
+      ebird: biodiversityData?.species?.filter(s => s.source === 'ebird')?.length || 0,
+    },
+    kingdomBreakdown: {
       all: biodiversityData?.species?.length || 0,
       flora: biodiversityData?.species?.filter(s => s.kingdom === 'Plantae')?.length || 0,
       fauna: biodiversityData?.species?.filter(s => s.kingdom === 'Animalia')?.length || 0,
-      other: biodiversityData?.species?.filter(s => s.kingdom && s.kingdom !== 'Plantae' && s.kingdom !== 'Animalia')?.length || 0
+      fungi: biodiversityData?.species?.filter(s => s.kingdom === 'Fungi')?.length || 0,
+      other: biodiversityData?.species?.filter(s => s.kingdom && s.kingdom !== 'Plantae' && s.kingdom !== 'Animalia' && s.kingdom !== 'Fungi')?.length || 0
+    },
+    isFiltering: selectedCategory !== 'all' || selectedContributor !== 'all',
+    appliedFilters: {
+      category: selectedCategory,
+      contributor: selectedContributor
     }
   });
 
@@ -152,8 +160,34 @@ const BioDivSubSection: React.FC<BioDivSubSectionProps> = ({ marche, theme }) =>
       });
     }
 
+    // DEBUG: Log pour comprendre le filtrage
+    console.log('🔍 DEBUG Filtrage:', {
+      originalCount: biodiversityData?.species?.length || 0,
+      afterCategoryFilter: filtered.length,
+      selectedCategory,
+      selectedContributor,
+      sampleSpecies: filtered.slice(0, 3).map(s => ({
+        name: s.commonName,
+        kingdom: s.kingdom,
+        source: s.source
+      }))
+    });
+
     return filtered;
   }, [biodiversityData?.species, selectedCategory, selectedContributor]);
+
+  // DEBUG: Log après calcul du filtrage
+  console.log('🔍 DEBUG Filtrage final:', {
+    originalCount: biodiversityData?.species?.length || 0,
+    filteredCount: filteredSpecies?.length || 0,
+    selectedCategory,
+    selectedContributor,
+    sampleSpecies: filteredSpecies?.slice(0, 3).map(s => ({
+      name: s.commonName,
+      kingdom: s.kingdom,
+      source: s.source
+    })) || []
+  });
 
   // Composant pour afficher une espèce avec attribution complète
   const [selectedSpecies, setSelectedSpecies] = useState<string | null>(null);
