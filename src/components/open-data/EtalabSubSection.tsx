@@ -18,6 +18,11 @@ interface EtalabSubSectionProps {
 const EtalabSubSection: React.FC<EtalabSubSectionProps> = ({ marche, theme }) => {
   const [isExpanded, setIsExpanded] = useState(false);
   
+  console.log('🔍 EtalabSubSection INIT:', { 
+    marcheVille: marche.ville,
+    coordinates: { lat: marche.latitude, lng: marche.longitude }
+  });
+  
   const {
     satelliteImage,
     ndviTimeSeries,
@@ -29,6 +34,14 @@ const EtalabSubSection: React.FC<EtalabSubSectionProps> = ({ marche, theme }) =>
     generateHaiku,
     refetch
   } = useSentinelHub(marche.latitude || 0, marche.longitude || 0);
+
+  console.log('🔍 Hook data:', {
+    hasImage: !!satelliteImage,
+    hasTimeSeries: !!ndviTimeSeries,
+    isLoading,
+    selectedDate,
+    visualizationType
+  });
 
   const currentNDVI = ndviTimeSeries?.ndviValues[
     ndviTimeSeries.dates.indexOf(selectedDate)
@@ -43,6 +56,8 @@ const EtalabSubSection: React.FC<EtalabSubSectionProps> = ({ marche, theme }) =>
   })();
 
   const haiku = currentNDVI ? generateHaiku(currentNDVI, currentSeason) : undefined;
+
+  console.log('🔍 Computed values:', { currentNDVI, currentSeason, hasHaiku: !!haiku });
 
   return (
     <div className="space-y-8">
