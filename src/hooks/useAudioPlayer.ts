@@ -48,8 +48,32 @@ export const useAudioPlayer = () => {
       }
 
       // Nouveau recording
+      console.log('🎵 DEBUG Audio - tentative de lecture:', {
+        recordingId: recording.id,
+        audioUrl: recording.file,
+        urlType: typeof recording.file,
+        urlLength: recording.file?.length,
+        urlStartsWith: recording.file?.substring(0, 50)
+      });
+      
       updateState({ currentRecording: recording });
-      audioRef.current.src = recording.file;
+      
+      // Essai avec l'URL principale
+      let audioUrl = recording.file;
+      
+      // Si l'URL ne semble pas valide, essayer avec l'URL Xeno-Canto directe
+      if (!audioUrl || audioUrl === 'undefined' || audioUrl.includes('undefined')) {
+        console.warn('🎵 URL audio invalide, tentative avec URL de secours');
+        audioUrl = recording.url ? recording.url.replace('//xeno-canto.org/', 'https://xeno-canto.org/') : '';
+      }
+      
+      console.log('🎵 URL finale utilisée:', audioUrl);
+      
+      if (!audioUrl) {
+        throw new Error('Aucune URL audio valide trouvée');
+      }
+      
+      audioRef.current.src = audioUrl;
       audioRef.current.currentTime = 0;
       
       await audioRef.current.play();

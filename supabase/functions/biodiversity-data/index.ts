@@ -613,18 +613,18 @@ async function fetchXenoCantoData(scientificName: string): Promise<{audioUrl?: s
       // Transformer les données pour notre format
       const xenoCantoRecordings = sortedRecordings.slice(0, 5).map((recording: any) => ({
         id: recording.id,
-        file: `https:${recording.file}`,
+        file: recording.file.startsWith('//') ? `https:${recording.file}` : recording.file,
         fileName: recording['file-name'],
         sono: {
-          small: `https:${recording.sono?.small}`,
-          med: `https:${recording.sono?.med}`,
-          large: `https:${recording.sono?.large}`,
-          full: `https:${recording.sono?.full}`
+          small: recording.sono?.small ? (recording.sono.small.startsWith('//') ? `https:${recording.sono.small}` : recording.sono.small) : '',
+          med: recording.sono?.med ? (recording.sono.med.startsWith('//') ? `https:${recording.sono.med}` : recording.sono.med) : '',
+          large: recording.sono?.large ? (recording.sono.large.startsWith('//') ? `https:${recording.sono.large}` : recording.sono.large) : '',
+          full: recording.sono?.full ? (recording.sono.full.startsWith('//') ? `https:${recording.sono.full}` : recording.sono.full) : ''
         },
         osci: {
-          small: `https:${recording.osci?.small}`,
-          med: `https:${recording.osci?.med}`,
-          large: `https:${recording.osci?.large}`
+          small: recording.osci?.small ? (recording.osci.small.startsWith('//') ? `https:${recording.osci.small}` : recording.osci.small) : '',
+          med: recording.osci?.med ? (recording.osci.med.startsWith('//') ? `https:${recording.osci.med}` : recording.osci.med) : '',
+          large: recording.osci?.large ? (recording.osci.large.startsWith('//') ? `https:${recording.osci.large}` : recording.osci.large) : ''
         },
         quality: recording.q,
         length: recording.length,
@@ -648,12 +648,12 @@ async function fetchXenoCantoData(scientificName: string): Promise<{audioUrl?: s
         animalSeen: recording['animal-seen'],
         playbackUsed: recording['playback-used'],
         backgroundSpecies: recording.also || [],
-        url: `https:${recording.url}`
+        url: recording.url.startsWith('//') ? `https:${recording.url}` : recording.url
       }));
       
       return {
-        audioUrl: `https:${bestRecording.file}`,
-        sonogramUrl: bestRecording.sono ? `https:${bestRecording.sono.med}` : undefined,
+        audioUrl: bestRecording.file.startsWith('//') ? `https:${bestRecording.file}` : bestRecording.file,
+        sonogramUrl: bestRecording.sono ? (bestRecording.sono.med.startsWith('//') ? `https:${bestRecording.sono.med}` : bestRecording.sono.med) : undefined,
         xenoCantoRecordings
       };
     }
