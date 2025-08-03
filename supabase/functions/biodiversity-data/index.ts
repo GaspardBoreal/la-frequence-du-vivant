@@ -173,8 +173,8 @@ async function fetchINaturalistData(lat: number, lon: number, radius: number, da
       startDate = new Date(now.getFullYear() - 5, now.getMonth(), now.getDate()).toISOString().split('T')[0];
     }
     
-    // Élargir le rayon de recherche pour Bonzac et supprimer les filtres restrictifs
-    const searchRadius = Math.max(radius, 1); // Minimum 1km pour capturer plus d'observations
+    // Utiliser le rayon exactement comme demandé sans modification
+    const searchRadius = radius;
     
     const params = new URLSearchParams({
       'lat': lat.toString(),
