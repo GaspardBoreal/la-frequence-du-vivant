@@ -1,5 +1,8 @@
 import React, { useState, useMemo } from 'react';
 import { ArrowLeft, MapPin, Calendar, Database, Eye, Search, Settings, Bird, Leaf, Camera, Volume2, User, MoreVertical, ExternalLink, Clock, Archive, Navigation } from 'lucide-react';
+import { AudioSpeciesCard } from '@/components/audio/AudioSpeciesCard';
+import { FloatingAudioPlayer } from '@/components/audio/FloatingAudioPlayer';
+import { useAudioPlayer } from '@/hooks/useAudioPlayer';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -31,6 +34,8 @@ const TestEbird: React.FC = () => {
   const [speciesModalApi, setSpeciesModalApi] = useState<'ebird' | 'inaturalist'>('ebird');
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<CategoryFilter>('all');
+  
+  const { audioRef } = useAudioPlayer();
 
   // Récupération des marches
   const { data: marches = [], isLoading: isLoadingMarches } = useSupabaseMarches();
@@ -561,108 +566,67 @@ const TestEbird: React.FC = () => {
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {filteredSpecies.map((species) => {
+                  {filteredSpecies.map((species, index) => {
                     const photoUrl = getPhotoUrl(species);
                     const hasPhoto = hasRealPhoto(species);
                     
                     return (
-                      <Card 
-                        key={species.id} 
-                        className="cursor-pointer hover:shadow-lg transition-shadow"
-                        onClick={() => setSelectedSpecies(species)}
+                      <AudioSpeciesCard
+                        key={`${species.id}-${index}`}
+                        species={species}
+                        onSpeciesClick={setSelectedSpecies}
+                        photoUrl={photoUrl}
+                        hasPhoto={hasPhoto}
                       >
-                        <CardContent className="p-4">
-                          <div className="flex items-start space-x-3">
-                            {/* Photo */}
-                            <div className="w-16 h-16 bg-gray-100 rounded-md overflow-hidden flex-shrink-0">
-                              {hasPhoto ? (
-                                <img 
-                                  src={photoUrl} 
-                                  alt={species.commonName}
-                                  className="w-full h-full object-cover"
-                                />
-                              ) : (
-                                <div className="w-full h-full flex items-center justify-center bg-gray-200">
-                                  {getSpeciesIcon(species)}
-                                </div>
-                              )}
-                            </div>
-                            
-                            {/* Informations */}
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center justify-between">
-                                <h4 className="font-medium text-sm truncate">{species.commonName}</h4>
-                                {/* Menu de navigation géographique */}
-                                <DropdownMenu>
-                                  <DropdownMenuTrigger asChild>
-                                    <Button variant="ghost" size="sm" className="h-6 w-6 p-0 hover:bg-gray-100" onClick={(e) => e.stopPropagation()}>
-                                      <Navigation className="h-3 w-3 text-gray-500" />
-                                    </Button>
-                                  </DropdownMenuTrigger>
-                                  <DropdownMenuContent className="bg-white border border-gray-200 shadow-lg z-50">
-                                    <DropdownMenuItem 
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        const firstObservation = species.attributions[0];
-                                        const lat = firstObservation?.exactLatitude || currentMarche?.latitude;
-                                        const lon = firstObservation?.exactLongitude || currentMarche?.longitude;
-                                        if (lat && lon) openCoordinatesInOpenStreetMap(lat, lon);
-                                      }}
-                                      className="text-black hover:bg-gray-100 cursor-pointer"
-                                    >
-                                      <ExternalLink className="h-4 w-4 mr-2" />
-                                      Voir dans OpenStreetMap
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem 
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        const firstObservation = species.attributions[0];
-                                        const lat = firstObservation?.exactLatitude || currentMarche?.latitude;
-                                        const lon = firstObservation?.exactLongitude || currentMarche?.longitude;
-                                        if (lat && lon) openCoordinatesInGoogleMaps(lat, lon);
-                                      }}
-                                      className="text-black hover:bg-gray-100 cursor-pointer"
-                                    >
-                                      <ExternalLink className="h-4 w-4 mr-2" />
-                                      Voir dans Google Maps
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem 
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        const firstObservation = species.attributions[0];
-                                        const lat = firstObservation?.exactLatitude || currentMarche?.latitude;
-                                        const lon = firstObservation?.exactLongitude || currentMarche?.longitude;
-                                        if (lat && lon) openCoordinatesInGoogleEarth(lat, lon);
-                                      }}
-                                      className="text-black hover:bg-gray-100 cursor-pointer"
-                                    >
-                                      <ExternalLink className="h-4 w-4 mr-2" />
-                                      Voir dans Google Earth
-                                    </DropdownMenuItem>
-                                  </DropdownMenuContent>
-                                </DropdownMenu>
-                              </div>
-                              <p className="text-xs text-gray-500 italic truncate">{species.scientificName}</p>
-                              <div className="flex items-center space-x-2 mt-2">
-                                <Badge 
-                                  variant={species.source === 'ebird' ? 'default' : 'secondary'}
-                                  className="text-xs"
-                                >
-                                  {species.source}
-                                </Badge>
-                                {hasPhoto && (
-                                  <Badge variant="outline" className="text-xs">
-                                    Photo
-                                  </Badge>
-                                )}
-                              </div>
-                              <p className="text-xs text-gray-400 mt-1">
-                                {species.observations} obs. • {species.lastSeen}
-                              </p>
-                            </div>
-                          </div>
-                        </CardContent>
-                      </Card>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="sm" className="h-6 w-6 p-0 hover:bg-gray-100" onClick={(e) => e.stopPropagation()}>
+                              <Navigation className="h-3 w-3 text-gray-500" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent className="bg-white border border-gray-200 shadow-lg z-50">
+                            <DropdownMenuItem 
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                const firstObservation = species.attributions[0];
+                                const lat = firstObservation?.exactLatitude || currentMarche?.latitude;
+                                const lon = firstObservation?.exactLongitude || currentMarche?.longitude;
+                                if (lat && lon) openCoordinatesInOpenStreetMap(lat, lon);
+                              }}
+                              className="text-black hover:bg-gray-100 cursor-pointer"
+                            >
+                              <ExternalLink className="h-4 w-4 mr-2" />
+                              Voir dans OpenStreetMap
+                            </DropdownMenuItem>
+                            <DropdownMenuItem 
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                const firstObservation = species.attributions[0];
+                                const lat = firstObservation?.exactLatitude || currentMarche?.latitude;
+                                const lon = firstObservation?.exactLongitude || currentMarche?.longitude;
+                                if (lat && lon) openCoordinatesInGoogleMaps(lat, lon);
+                              }}
+                              className="text-black hover:bg-gray-100 cursor-pointer"
+                            >
+                              <ExternalLink className="h-4 w-4 mr-2" />
+                              Voir dans Google Maps
+                            </DropdownMenuItem>
+                            <DropdownMenuItem 
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                const firstObservation = species.attributions[0];
+                                const lat = firstObservation?.exactLatitude || currentMarche?.latitude;
+                                const lon = firstObservation?.exactLongitude || currentMarche?.longitude;
+                                if (lat && lon) openCoordinatesInGoogleEarth(lat, lon);
+                              }}
+                              className="text-black hover:bg-gray-100 cursor-pointer"
+                            >
+                              <ExternalLink className="h-4 w-4 mr-2" />
+                              Voir dans Google Earth
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </AudioSpeciesCard>
                     );
                   })}
                 </div>
@@ -815,6 +779,10 @@ const TestEbird: React.FC = () => {
           onSearchTermChange={setSearchTerm}
         />
       </div>
+      
+      {/* Audio Player Global */}
+      <audio ref={audioRef} preload="metadata" />
+      <FloatingAudioPlayer />
     </div>
   );
 };
