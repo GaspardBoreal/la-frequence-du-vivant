@@ -280,7 +280,7 @@ const TestEbird: React.FC = () => {
             {/* Vignette 1 : Espèces trouvées (conservée) */}
             <Card>
               <CardContent className="p-4">
-                <div className="text-2xl font-bold text-white">{filteredSpecies.length}</div>
+                <div className="text-2xl font-bold text-blue-600">{filteredSpecies.length}</div>
                 <div className="text-sm text-white">Espèces trouvées</div>
               </CardContent>
             </Card>
@@ -290,20 +290,20 @@ const TestEbird: React.FC = () => {
               <CardContent className="p-4">
                 {selectedApi === 'ebird' ? (
                   <>
-                    <div className="text-2xl font-bold text-white">{filteredSpecies.filter(s => s.source === 'ebird').length}</div>
+                    <div className="text-2xl font-bold text-blue-600">{filteredSpecies.filter(s => s.source === 'ebird').length}</div>
                     <div className="text-sm text-white">eBird</div>
                   </>
                 ) : selectedApi === 'inaturalist' ? (
                   <>
-                    <div className="text-2xl font-bold text-white">{filteredSpecies.filter(s => s.source === 'inaturalist').length}</div>
+                    <div className="text-2xl font-bold text-green-600">{filteredSpecies.filter(s => s.source === 'inaturalist').length}</div>
                     <div className="text-sm text-white">iNaturalist</div>
                   </>
                 ) : (
                   <>
                     <div className="text-lg font-bold">
-                      <span className="text-white">{filteredSpecies.filter(s => s.source === 'ebird').length}</span>
+                      <span className="text-blue-600">{filteredSpecies.filter(s => s.source === 'ebird').length}</span>
                       <span className="text-gray-400 mx-1">/</span>
-                      <span className="text-white">{filteredSpecies.filter(s => s.source === 'inaturalist').length}</span>
+                      <span className="text-green-600">{filteredSpecies.filter(s => s.source === 'inaturalist').length}</span>
                     </div>
                     <div className="text-sm text-white">eBird / iNaturalist</div>
                   </>
@@ -314,7 +314,7 @@ const TestEbird: React.FC = () => {
             {/* Vignette 3 : Avec photos réelles (ancienne vignette 2) */}
             <Card>
               <CardContent className="p-4">
-                <div className="text-2xl font-bold text-white">{filteredSpecies.filter(hasRealPhoto).length}</div>
+                <div className="text-2xl font-bold text-green-600">{filteredSpecies.filter(hasRealPhoto).length}</div>
                 <div className="text-sm text-white">Avec photos réelles</div>
               </CardContent>
             </Card>
@@ -330,15 +330,15 @@ const TestEbird: React.FC = () => {
                     {selectedApi === 'all' ? (
                       <>
                         <div className="text-lg font-bold">
-                          <span className="text-white">{filteredSpecies.filter(s => s.source === 'ebird' && s.audioUrl).length}</span>
+                          <span className="text-blue-600">{filteredSpecies.filter(s => s.source === 'ebird' && s.audioUrl).length}</span>
                           <span className="text-gray-400 mx-1">/</span>
-                          <span className="text-white">{filteredSpecies.filter(s => s.source === 'inaturalist' && s.audioUrl).length}</span>
+                          <span className="text-green-600">{filteredSpecies.filter(s => s.source === 'inaturalist' && s.audioUrl).length}</span>
                         </div>
                         <div className="text-sm text-white">Chants disponibles</div>
                       </>
                     ) : (
                       <>
-                        <div className="text-2xl font-bold text-white">{filteredSpecies.filter(s => s.audioUrl).length}</div>
+                        <div className="text-2xl font-bold text-purple-600">{filteredSpecies.filter(s => s.audioUrl).length}</div>
                         <div className="text-sm text-white">Chants disponibles</div>
                       </>
                     )}
