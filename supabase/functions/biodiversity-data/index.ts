@@ -923,7 +923,38 @@ serve(async (req) => {
 
     // Combine and aggregate all species data with cross-validation
     const allSpecies = [...gbifSpecies, ...enrichedINaturalistSpecies, ...enrichedEBirdSpecies];
-    const aggregatedSpecies = aggregateSpeciesData(allSpecies);
+    console.log('🎵 Enrichissement audio Xeno-Canto pour toutes les espèces...');
+    
+    // Enrichir TOUTES les espèces avec des données audio si ce sont des oiseaux
+    const audioEnrichedSpecies = await Promise.all(
+      allSpecies.map(async (species) => {
+        // Vérifier si c'est probablement un oiseau
+        const isFromEbird = species.source === 'ebird';
+        const isAvesFamily = species.family === 'Aves' || species.family?.toLowerCase().includes('aves');
+        const isBirdFamily = species.family?.toLowerCase().includes('bird') || species.family?.toLowerCase().includes('idae');
+        const isBirdInName = species.commonName?.toLowerCase().includes('oiseau') || species.commonName?.toLowerCase().includes('bird') || species.scientificName?.toLowerCase().includes('aves');
+        const isBird = isFromEbird || isAvesFamily || isBirdFamily || isBirdInName;
+        
+        if (isBird && !species.xenoCantoRecordings) {
+          try {
+            const xenoCantoRecordings = await fetchXenoCantoRecordings(species.scientificName);
+            if (xenoCantoRecordings.length > 0) {
+              console.log(`🎵 Audio enriched for ${species.commonName}: ${xenoCantoRecordings.length} recordings`);
+              return {
+                ...species,
+                xenoCantoRecordings
+              };
+            }
+          } catch (error) {
+            console.log(`⚠️ Could not fetch Xeno-Canto data for ${species.commonName}:`, error);
+          }
+        }
+        
+        return species;
+      })
+    );
+    
+    const aggregatedSpecies = aggregateSpeciesData(audioEnrichedSpecies);
     
     // Process eBird hotspots for context
     const hotspots = ebirdHotspots.map((hotspot: any) => ({
