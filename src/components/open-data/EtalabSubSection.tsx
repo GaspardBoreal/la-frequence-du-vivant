@@ -35,17 +35,6 @@ const EtalabSubSection: React.FC<EtalabSubSectionProps> = ({ marche, theme }) =>
     refetch
   } = useSentinelHub(marche.latitude || 0, marche.longitude || 0);
 
-  // Auto-adjust selectedDate to first available date when data loads
-  React.useEffect(() => {
-    if (ndviTimeSeries && ndviTimeSeries.dates.length > 0) {
-      const isValidDate = ndviTimeSeries.dates.includes(selectedDate);
-      if (!isValidDate) {
-        console.log('🔧 Auto-adjusting selectedDate to first available:', ndviTimeSeries.dates[0]);
-        setSelectedDate(ndviTimeSeries.dates[0]);
-      }
-    }
-  }, [ndviTimeSeries, selectedDate, setSelectedDate]);
-
   console.log('🔍 Hook data:', {
     hasImage: !!satelliteImage,
     hasTimeSeries: !!ndviTimeSeries,
@@ -56,23 +45,9 @@ const EtalabSubSection: React.FC<EtalabSubSectionProps> = ({ marche, theme }) =>
 
   const currentNDVI = (() => {
     if (!ndviTimeSeries || !ndviTimeSeries.dates || !selectedDate) {
-      console.log('❌ NDVI calc failed:', { 
-        hasTimeSeries: !!ndviTimeSeries, 
-        selectedDate, 
-        timeSeriesData: ndviTimeSeries 
-      });
       return undefined;
     }
-    
     const dateIndex = ndviTimeSeries.dates.indexOf(selectedDate);
-    console.log('🔍 NDVI calculation:', { 
-      selectedDate, 
-      dateIndex, 
-      totalDates: ndviTimeSeries.dates.length,
-      dates: ndviTimeSeries.dates.slice(0, 3),
-      values: ndviTimeSeries.ndviValues.slice(0, 3)
-    });
-    
     return dateIndex >= 0 ? ndviTimeSeries.ndviValues[dateIndex] : undefined;
   })();
 
@@ -85,8 +60,6 @@ const EtalabSubSection: React.FC<EtalabSubSectionProps> = ({ marche, theme }) =>
   })();
 
   const haiku = currentNDVI ? generateHaiku(currentNDVI, currentSeason) : undefined;
-
-  console.log('🔍 Computed values:', { currentNDVI, currentSeason, hasHaiku: !!haiku });
 
   return (
     <div className="space-y-8">
