@@ -223,17 +223,6 @@ const MarcheDetailBio = () => {
           onNavigateToMarche={handleNavigateToMarche}
         />
 
-        {/* Debug Button - Remove after issue is resolved */}
-        <div className="max-w-6xl mx-auto px-6 pt-4">
-          <Button 
-            onClick={handleForceRefresh}
-            variant="outline"
-            size="sm"
-            className="bg-red-50 border-red-200 text-red-700 hover:bg-red-100"
-          >
-            🔄 Forcer le rafraîchissement des données
-          </Button>
-        </div>
 
         <div className="max-w-6xl mx-auto px-6">
           <SimplifiedMultiSensoryNavigation
