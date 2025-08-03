@@ -114,7 +114,14 @@ async function getNASAWorldviewImage(latitude: number, longitude: number, date: 
   const buffer = 0.025;
   const bbox = `${longitude - buffer},${latitude - buffer},${longitude + buffer},${latitude + buffer}`;
   
-  const wmsUrl = `https://gibs.earthdata.nasa.gov/wms/epsg4326/best/wms.cgi?SERVICE=WMS&REQUEST=GetMap&VERSION=1.3.0&LAYERS=${layers}&STYLES=&FORMAT=${format}&TRANSPARENT=false&HEIGHT=${height}&WIDTH=${width}&CRS=EPSG:4326&BBOX=${bbox}&TIME=${date}`;
+  // Use a more recent date if the requested date is too far in the future
+  const today = new Date();
+  const requestDate = new Date(date);
+  const useDate = requestDate > today ? today.toISOString().split('T')[0] : date;
+  
+  const wmsUrl = `https://gibs.earthdata.nasa.gov/wms/epsg4326/best/wms.cgi?SERVICE=WMS&REQUEST=GetMap&VERSION=1.3.0&LAYERS=${layers}&STYLES=&FORMAT=${format}&TRANSPARENT=false&HEIGHT=${height}&WIDTH=${width}&CRS=EPSG:4326&BBOX=${bbox}&TIME=${useDate}`;
+  
+  console.log(`🛰️ NASA Worldview URL: ${wmsUrl}`);
   
   const response = await fetch(wmsUrl);
   if (!response.ok) {
@@ -122,6 +129,12 @@ async function getNASAWorldviewImage(latitude: number, longitude: number, date: 
   }
   
   const imageBuffer = await response.arrayBuffer();
+  console.log(`📊 NASA Worldview image size: ${imageBuffer.byteLength} bytes`);
+  
+  if (imageBuffer.byteLength < 1000) {
+    throw new Error('NASA Worldview returned empty/small image');
+  }
+  
   const base64 = btoa(String.fromCharCode(...new Uint8Array(imageBuffer)));
   return `data:image/jpeg;base64,${base64}`;
 }
