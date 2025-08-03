@@ -17,8 +17,10 @@ interface SimpleSatelliteDisplayProps {
   currentNDVI?: number;
   haiku?: string;
   onRefresh: () => void;
+  onChangeVisualization?: (type: 'trueColor' | 'ndvi' | 'ndviColorized') => void;
   isLoading: boolean;
   selectedDate: string;
+  visualizationType: string;
   ndviTimeSeries?: {
     dates: string[];
     ndviValues: number[];
@@ -30,8 +32,10 @@ const SimpleSatelliteDisplay: React.FC<SimpleSatelliteDisplayProps> = ({
   currentNDVI,
   haiku,
   onRefresh,
+  onChangeVisualization,
   isLoading,
   selectedDate,
+  visualizationType,
   ndviTimeSeries
 }) => {
   const formatDate = (dateString: string): string => {
@@ -69,20 +73,28 @@ const SimpleSatelliteDisplay: React.FC<SimpleSatelliteDisplayProps> = ({
               <div className="flex gap-2">
                 <Button
                   size="sm"
-                  variant="outline"
-                  onClick={() => window.location.reload()}
+                  variant={visualizationType === 'ndvi' ? 'default' : 'outline'}
+                  onClick={() => onChangeVisualization?.('ndvi')}
                   className="text-xs"
                 >
                   NDVI
                 </Button>
                 <Button
                   size="sm"
+                  variant={visualizationType === 'trueColor' ? 'default' : 'outline'}
+                  onClick={() => onChangeVisualization?.('trueColor')}
+                  className="text-xs"
+                >
+                  Couleur
+                </Button>
+                <Button
+                  size="sm"
                   variant="outline"
                   onClick={onRefresh}
                   disabled={isLoading}
-                  className="flex items-center gap-2"
+                  className="flex items-center gap-1"
                 >
-                  <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
+                  <RefreshCw className={`h-3 w-3 ${isLoading ? 'animate-spin' : ''}`} />
                   Actualiser
                 </Button>
               </div>

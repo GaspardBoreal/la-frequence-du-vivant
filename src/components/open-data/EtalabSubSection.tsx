@@ -66,8 +66,10 @@ const EtalabSubSection: React.FC<EtalabSubSectionProps> = ({ marche, theme }) =>
         currentNDVI={currentNDVI}
         haiku={haiku}
         onRefresh={refetch}
+        onChangeVisualization={setVisualizationType}
         isLoading={isLoading}
         selectedDate={selectedDate}
+        visualizationType={visualizationType}
         ndviTimeSeries={ndviTimeSeries}
       />
 
