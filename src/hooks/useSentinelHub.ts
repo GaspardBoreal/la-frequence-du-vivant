@@ -111,13 +111,22 @@ export const useSentinelHub = (latitude: number, longitude: number) => {
       console.log('🛰️ Fetching real satellite image for:', { latitude, longitude, selectedDate, visualizationType });
       
       try {
-        const response = await fetch(`https://xzbunrtgbfbhinkzkzhf.supabase.co/functions/v1/sentinel-hub?latitude=${latitude}&longitude=${longitude}&selectedDate=${selectedDate}&visualizationType=${visualizationType}&action=image`);
+        const { supabase } = await import('@/integrations/supabase/client');
+        const { data, error } = await supabase.functions.invoke('sentinel-hub', {
+          body: {
+            latitude,
+            longitude,
+            selectedDate,
+            visualizationType,
+            action: 'image'
+          }
+        });
         
-        if (!response.ok) {
-          throw new Error(`Sentinel Hub API error: ${response.status}`);
+        if (error) {
+          throw new Error(`Sentinel Hub API error: ${error.message}`);
         }
         
-        const data = await response.json();
+        console.log('✅ Sentinel Hub image data received:', data);
         return data;
       } catch (error) {
         console.error('❌ Error fetching satellite image:', error);
@@ -145,13 +154,20 @@ export const useSentinelHub = (latitude: number, longitude: number) => {
       console.log('📈 Fetching real NDVI time series for:', { latitude, longitude });
       
       try {
-        const response = await fetch(`https://xzbunrtgbfbhinkzkzhf.supabase.co/functions/v1/sentinel-hub?latitude=${latitude}&longitude=${longitude}&action=timeseries`);
+        const { supabase } = await import('@/integrations/supabase/client');
+        const { data, error } = await supabase.functions.invoke('sentinel-hub', {
+          body: {
+            latitude,
+            longitude,
+            action: 'timeseries'
+          }
+        });
         
-        if (!response.ok) {
-          throw new Error(`Sentinel Hub time series API error: ${response.status}`);
+        if (error) {
+          throw new Error(`Sentinel Hub time series API error: ${error.message}`);
         }
         
-        const data = await response.json();
+        console.log('✅ Sentinel Hub time series data received:', data);
         return data;
       } catch (error) {
         console.error('❌ Error fetching NDVI time series:', error);
