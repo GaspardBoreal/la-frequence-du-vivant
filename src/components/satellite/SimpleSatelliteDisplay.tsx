@@ -88,7 +88,8 @@ const SimpleSatelliteDisplay: React.FC<SimpleSatelliteDisplayProps> = ({
                 src={satelliteImage.imageUrl}
                 alt={`Vue satellite du ${formatDate(selectedDate)}`}
                 className="w-full h-64 object-cover rounded-xl border border-slate-200"
-                onLoad={() => console.log('🖼️ Image satellite loaded successfully')}
+                onLoad={() => console.log('🖼️ Image satellite loaded successfully, URL:', satelliteImage.imageUrl)}
+                onError={() => console.error('❌ Image satellite failed to load, URL:', satelliteImage.imageUrl)}
               />
               
               {/* Metadata */}
