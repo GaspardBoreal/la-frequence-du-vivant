@@ -233,10 +233,6 @@ const MarcheDetailBio = () => {
           />
         </div>
 
-        <div className="max-w-6xl mx-auto px-6 py-8">
-          {/* Debug Component - Remove after issue is resolved */}
-          <DebugMarcheData marche={marche} />
-        </div>
 
         <div className="max-w-6xl mx-auto px-6 py-8 relative">
           <motion.div
