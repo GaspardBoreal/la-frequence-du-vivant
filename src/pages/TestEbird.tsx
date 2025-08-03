@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { ArrowLeft, MapPin, Calendar, Database, Eye, Search, Settings, Bird, Leaf, Camera, Volume2, User, MoreVertical, ExternalLink } from 'lucide-react';
+import { ArrowLeft, MapPin, Calendar, Database, Eye, Search, Settings, Bird, Leaf, Camera, Volume2, User, MoreVertical, ExternalLink, Clock, Archive } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -18,9 +18,11 @@ import { BiodiversitySpecies } from '@/types/biodiversity';
 import { MarcheTechnoSensible } from '@/utils/googleSheetsApi';
 
 type ApiSource = 'all' | 'ebird' | 'inaturalist';
+type PeriodFilter = 'recent' | 'medium';
 
 const TestEbird: React.FC = () => {
   const [selectedApi, setSelectedApi] = useState<ApiSource>('ebird');
+  const [selectedPeriod, setSelectedPeriod] = useState<PeriodFilter>('recent');
   const [selectedMarche, setSelectedMarche] = useState<string>('');
   const [searchRadius, setSearchRadius] = useState([500]);
   const [selectedSpecies, setSelectedSpecies] = useState<BiodiversitySpecies | null>(null);
@@ -41,7 +43,7 @@ const TestEbird: React.FC = () => {
     latitude: currentMarche?.latitude || 0,
     longitude: currentMarche?.longitude || 0,
     radius: searchRadius[0],
-    dateFilter: 'recent'
+    dateFilter: selectedPeriod === 'recent' ? 'recent' : 'medium'
   });
 
   // Filtrage des espèces selon l'API sélectionnée
@@ -259,6 +261,31 @@ const TestEbird: React.FC = () => {
                 >
                   <Camera className="h-4 w-4 mr-2" />
                   iNaturalist
+                </Toggle>
+              </div>
+            </div>
+
+            {/* Période d'observation */}
+            <div>
+              <Label className="text-base font-medium mb-3 block">Période d'observation</Label>
+              <div className="flex flex-wrap gap-3">
+                <Toggle
+                  pressed={selectedPeriod === 'recent'}
+                  onPressedChange={() => setSelectedPeriod('recent')}
+                  variant="outline"
+                  className="data-[state=on]:bg-blue-100 data-[state=on]:text-blue-900 data-[state=on]:border-blue-300"
+                >
+                  <Clock className="h-4 w-4 mr-2" />
+                  Récentes (&lt; 2 ans)
+                </Toggle>
+                <Toggle
+                  pressed={selectedPeriod === 'medium'}
+                  onPressedChange={() => setSelectedPeriod('medium')}
+                  variant="outline"
+                  className="data-[state=on]:bg-green-100 data-[state=on]:text-green-900 data-[state=on]:border-green-300"
+                >
+                  <Archive className="h-4 w-4 mr-2" />
+                  Moyennes (2-5 ans)
                 </Toggle>
               </div>
             </div>
