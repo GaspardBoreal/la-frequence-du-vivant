@@ -3,7 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Input } from '@/components/ui/input';
-import { Search, User, MapPin, Camera, Volume2, List, Eye } from 'lucide-react';
+import { Search, User, MapPin, Camera, Volume2, List, Eye, ExternalLink } from 'lucide-react';
 import { BiodiversitySpecies } from '@/types/biodiversity';
 
 interface ContributorInfo {
@@ -17,6 +17,7 @@ interface ContributorInfo {
   listsCount: number;
   source: 'ebird' | 'inaturalist';
   avatar?: string;
+  urls: string[];
 }
 
 interface ContributorDetailModalProps {
@@ -154,9 +155,22 @@ export const ContributorDetailModal: React.FC<ContributorDetailModalProps> = ({
                 <div className="flex-1">
                   <div className="flex items-center justify-between mb-2">
                     <h4 className="font-semibold text-gray-900 text-lg">{contributor.name}</h4>
-                    <Badge className={currentColors.badge}>
-                      {apiSource}
-                    </Badge>
+                    <div className="flex items-center gap-2">
+                      <Badge className={currentColors.badge}>
+                        {apiSource}
+                      </Badge>
+                      {contributor.urls && contributor.urls.length > 0 && (
+                        <a
+                          href={contributor.urls[0]}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1 px-2 py-1 text-xs bg-blue-50 text-blue-600 hover:bg-blue-100 rounded transition-colors border border-blue-200"
+                        >
+                          <ExternalLink className="h-3 w-3" />
+                          Voir sur {apiSource === 'ebird' ? 'eBird' : 'iNaturalist'}
+                        </a>
+                      )}
+                    </div>
                   </div>
                   
                   {contributor.institution && (

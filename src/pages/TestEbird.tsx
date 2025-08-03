@@ -101,7 +101,8 @@ const TestEbird: React.FC = () => {
               observationsCount: 0,
               photosCount: 0,
               audioCount: 0,
-              listsCount: 1
+              listsCount: 1,
+              urls: []
             });
           }
           
@@ -111,6 +112,11 @@ const TestEbird: React.FC = () => {
           
           if (species.photos && species.photos.length > 0) {
             contributor.photosCount++;
+          }
+
+          // Ajouter l'URL si elle existe et n'est pas déjà présente
+          if (attr.originalUrl && !contributor.urls.includes(attr.originalUrl)) {
+            contributor.urls.push(attr.originalUrl);
           }
           
           // Note: audio property doesn't exist in BiodiversitySpecies type yet
