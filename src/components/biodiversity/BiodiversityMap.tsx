@@ -219,6 +219,32 @@ export const BiodiversityMap: React.FC<BiodiversityMapProps> = ({
 
       {/* Carte interactive */}
       <div className="relative w-full h-[600px] rounded-lg overflow-hidden border">
+        {/* Légende des couleurs */}
+        <div className="absolute top-4 left-4 z-10 bg-card/95 backdrop-blur-sm border rounded-lg p-3 shadow-lg">
+          <h4 className="text-sm font-semibold mb-2 flex items-center gap-2">
+            <Filter className="h-4 w-4" />
+            Légende
+          </h4>
+          <div className="space-y-2">
+            {[
+              { kingdom: 'Plantae', label: 'Flore', color: '#10b981', icon: '🌿' },
+              { kingdom: 'Animalia', label: 'Faune', color: '#3b82f6', icon: '🐦' },
+              { kingdom: 'Fungi', label: 'Champignons', color: '#8b5cf6', icon: '🍄' },
+              { kingdom: 'Other', label: 'Autres', color: '#6b7280', icon: '🔬' },
+            ].map(({ kingdom, label, color, icon }) => (
+              <div key={kingdom} className="flex items-center gap-2 text-xs">
+                <div 
+                  className="w-4 h-4 rounded-full border-2 flex items-center justify-center"
+                  style={{ backgroundColor: color, borderColor: color }}
+                >
+                  <span style={{ fontSize: '8px' }}>{icon}</span>
+                </div>
+                <span className="text-muted-foreground">{label}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+        
         <MapContainer
           center={center}
           zoom={13}
