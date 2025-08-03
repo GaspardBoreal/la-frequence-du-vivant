@@ -25,7 +25,7 @@ const TestEbird: React.FC = () => {
   const [selectedApi, setSelectedApi] = useState<ApiSource>('ebird');
   const [selectedPeriod, setSelectedPeriod] = useState<PeriodFilter>('recent');
   const [selectedMarche, setSelectedMarche] = useState<string>('');
-  const [searchRadius, setSearchRadius] = useState([500]);
+  const [searchRadius, setSearchRadius] = useState([0.5]);
   const [selectedSpecies, setSelectedSpecies] = useState<BiodiversitySpecies | null>(null);
   const [showSpeciesModal, setShowSpeciesModal] = useState(false);
   const [speciesModalApi, setSpeciesModalApi] = useState<'ebird' | 'inaturalist'>('ebird');
@@ -390,18 +390,18 @@ const TestEbird: React.FC = () => {
             {/* Rayon de recherche */}
             <div>
               <Label className="text-base font-medium mb-3 block">
-                Rayon de recherche: {searchRadius[0]}m
+                Rayon de recherche: {searchRadius[0]}km
               </Label>
               <Slider
                 value={searchRadius}
                 onValueChange={setSearchRadius}
-                max={5000}
-                min={500}
-                step={250}
+                max={5}
+                min={0.5}
+                step={0.5}
                 className="w-full max-w-md"
               />
               <div className="flex justify-between text-xs text-white mt-1 max-w-md">
-                <span>500m</span>
+                <span>0.5km</span>
                 <span>2.75km</span>
                 <span>5km</span>
               </div>

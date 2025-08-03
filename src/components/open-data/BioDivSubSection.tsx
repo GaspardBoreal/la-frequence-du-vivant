@@ -27,8 +27,8 @@ const BioDivSubSection: React.FC<BioDivSubSectionProps> = ({ marche, theme }) =>
   const [dateFilter, setDateFilter] = useState<'recent' | 'medium'>('recent');
   const [selectedContributor, setSelectedContributor] = useState<string>('all');
   const [selectedCategory, setSelectedCategory] = useState<'all' | 'flora' | 'fauna' | 'fungi' | 'other'>('all');
-  const [searchRadius, setSearchRadius] = useState<number>(500); // Valeur par défaut: 500m → 0.5km pour l'API
-  const [debouncedRadius, setDebouncedRadius] = useState<number>(500);
+  const [searchRadius, setSearchRadius] = useState<number>(0.5); // Valeur par défaut: 0.5km
+  const [debouncedRadius, setDebouncedRadius] = useState<number>(0.5);
   
   // Debounce du rayon de recherche pour éviter trop d'appels API
   useEffect(() => {
@@ -42,7 +42,7 @@ const BioDivSubSection: React.FC<BioDivSubSectionProps> = ({ marche, theme }) =>
   const { data: biodiversityData, isLoading, error } = useBiodiversityData({
     latitude: marche.latitude,
     longitude: marche.longitude,
-    radius: debouncedRadius, // Utilise la même unité que TestEbird (mètres)
+    radius: debouncedRadius, // En kilomètres pour l'edge function
     dateFilter
   });
 
@@ -934,9 +934,9 @@ const BioDivSubSection: React.FC<BioDivSubSectionProps> = ({ marche, theme }) =>
                       <div className="flex items-center gap-2">
                         <ZoomIn className="h-4 w-4 text-primary" />
                          <span className="text-sm font-medium text-foreground">Rayon de recherche:</span>
-                         <Badge variant="secondary" className="bg-green-600 text-white text-xs px-2 py-1 font-medium">
-                           {searchRadius}m
-                         </Badge>
+                          <Badge variant="secondary" className="bg-green-600 text-white text-xs px-2 py-1 font-medium">
+                            {searchRadius}km
+                          </Badge>
                       </div>
                       {debouncedRadius !== searchRadius && (
                         <div className="flex items-center gap-2 text-xs text-muted-foreground">
@@ -947,24 +947,24 @@ const BioDivSubSection: React.FC<BioDivSubSectionProps> = ({ marche, theme }) =>
                     </div>
                     
                     <div className="space-y-2">
-                       <Slider
-                         value={[searchRadius]}
-                         onValueChange={(value) => setSearchRadius(value[0])}
-                         min={500}
-                         max={5000}
-                         step={250}
-                         className="w-full"
-                       />
-                       <div className="flex justify-between text-xs text-muted-foreground">
-                         <span>500m</span>
-                         <span>2.75km</span>
-                         <span>5km</span>
-                       </div>
+                        <Slider
+                          value={[searchRadius]}
+                          onValueChange={(value) => setSearchRadius(value[0])}
+                          min={0.5}
+                          max={5}
+                          step={0.5}
+                          className="w-full"
+                        />
+                        <div className="flex justify-between text-xs text-muted-foreground">
+                          <span>0.5km</span>
+                          <span>2.75km</span>
+                          <span>5km</span>
+                        </div>
                     </div>
                     
                     {filteredSpecies && (
                        <div className="text-sm text-muted-foreground">
-                         <span className="font-medium text-foreground">{filteredSpecies.length}</span> espèce{filteredSpecies.length > 1 ? 's' : ''} trouvée{filteredSpecies.length > 1 ? 's' : ''} dans un rayon de {searchRadius}m
+                         <span className="font-medium text-foreground">{filteredSpecies.length}</span> espèce{filteredSpecies.length > 1 ? 's' : ''} trouvée{filteredSpecies.length > 1 ? 's' : ''} dans un rayon de {searchRadius}km
                        </div>
                     )}
                   </div>
