@@ -233,6 +233,27 @@ serve(async (req) => {
     const accessToken = await getAccessToken();
 
     if (action === 'image') {
+      // If Mapbox is requested, return Mapbox URL directly
+      if (visualizationType === 'mapbox') {
+        const zoom = 14;
+        const mapboxUrl = `https://api.mapbox.com/styles/v1/mapbox/satellite-v9/static/${longitude},${latitude},${zoom}/512x512@2x?access_token=${Deno.env.get('MAPBOX_PUBLIC_TOKEN')}`;
+        
+        return new Response(
+          JSON.stringify({
+            imageUrl: mapboxUrl,
+            metadata: {
+              date: selectedDate,
+              cloudCover: 0,
+              resolution: 'Variable',
+              visualizationType: 'mapbox',
+              source: 'Mapbox Satellite',
+              coordinates: { latitude, longitude }
+            }
+          }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
       const buffer = 0.01; // ~1km buffer around the point
       const bbox: [number, number, number, number] = [
         longitude - buffer,
