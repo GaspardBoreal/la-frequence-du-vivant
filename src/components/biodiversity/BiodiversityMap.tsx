@@ -104,7 +104,7 @@ export const BiodiversityMap: React.FC<BiodiversityMapProps> = ({
   isLoading 
 }) => {
   const [selectedCluster, setSelectedCluster] = useState<string | null>(null);
-  const [activeFilter, setActiveFilter] = useState<'all' | 'flora' | 'fauna' | 'fungi' | 'other'>('all');
+  const [activeFilters, setActiveFilters] = useState<Set<string>>(new Set(['flora', 'fauna', 'fungi', 'other']));
   const [isSheetOpen, setIsSheetOpen] = useState(false);
   const [radiusFilter, setRadiusFilter] = useState<number>(data?.location?.radius || 5);
   
@@ -115,16 +115,13 @@ export const BiodiversityMap: React.FC<BiodiversityMapProps> = ({
     const clusters = new Map<string, ObservationCluster>();
     
     data.species.forEach(species => {
-      // Filtrage par catégorie
-      if (activeFilter !== 'all') {
-        const matches = 
-          (activeFilter === 'flora' && species.kingdom === 'Plantae') ||
-          (activeFilter === 'fauna' && species.kingdom === 'Animalia') ||
-          (activeFilter === 'fungi' && species.kingdom === 'Fungi') ||
-          (activeFilter === 'other' && !['Plantae', 'Animalia', 'Fungi'].includes(species.kingdom));
-        
-        if (!matches) return;
-      }
+      // Filtrage par catégorie (sélection multiple)
+      const speciesCategory = 
+        species.kingdom === 'Plantae' ? 'flora' :
+        species.kingdom === 'Animalia' ? 'fauna' :
+        species.kingdom === 'Fungi' ? 'fungi' : 'other';
+      
+      if (!activeFilters.has(speciesCategory)) return;
       
       species.attributions?.forEach(attribution => {
         if (attribution.exactLatitude && attribution.exactLongitude) {
@@ -154,7 +151,7 @@ export const BiodiversityMap: React.FC<BiodiversityMapProps> = ({
     });
     
     return Array.from(clusters.values());
-  }, [data?.species, activeFilter]);
+  }, [data?.species, activeFilters]);
 
   // Statistiques filtrées
   const filteredStats = useMemo(() => {
@@ -182,6 +179,24 @@ export const BiodiversityMap: React.FC<BiodiversityMapProps> = ({
     );
   }
 
+  const toggleFilter = (filterKey: string) => {
+    if (filterKey === 'all') {
+      if (activeFilters.size === 4) {
+        setActiveFilters(new Set()); // Tout désélectionner
+      } else {
+        setActiveFilters(new Set(['flora', 'fauna', 'fungi', 'other'])); // Tout sélectionner
+      }
+    } else {
+      const newFilters = new Set(activeFilters);
+      if (newFilters.has(filterKey)) {
+        newFilters.delete(filterKey);
+      } else {
+        newFilters.add(filterKey);
+      }
+      setActiveFilters(newFilters);
+    }
+  };
+
   return (
     <div className="space-y-4">
       {/* Filtres et contrôles */}
@@ -193,21 +208,27 @@ export const BiodiversityMap: React.FC<BiodiversityMapProps> = ({
             { key: 'fauna', label: 'Faune', icon: Bird, count: filteredStats.fauna },
             { key: 'fungi', label: 'Champignons', icon: Flower2, count: filteredStats.fungi },
             { key: 'other', label: 'Autres', icon: Bug, count: filteredStats.other },
-          ].map(({ key, label, icon: Icon, count }) => (
-            <Button
-              key={key}
-              variant={activeFilter === key ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => setActiveFilter(key as any)}
-              className="flex items-center gap-2"
-            >
-              <Icon className="h-4 w-4" />
-              {label}
-              <Badge variant="secondary" className="ml-1">
-                {count}
-              </Badge>
-            </Button>
-          ))}
+          ].map(({ key, label, icon: Icon, count }) => {
+            const isActive = key === 'all' 
+              ? activeFilters.size === 4 
+              : activeFilters.has(key);
+            
+            return (
+              <Button
+                key={key}
+                variant={isActive ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => toggleFilter(key)}
+                className="flex items-center gap-2"
+              >
+                <Icon className="h-4 w-4" />
+                {label}
+                <Badge variant="secondary" className="ml-1">
+                  {count}
+                </Badge>
+              </Button>
+            );
+          })}
         </div>
         
         <div className="flex items-center gap-2 ml-auto">
