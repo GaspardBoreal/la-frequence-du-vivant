@@ -51,12 +51,12 @@ const EtalabSubSection: React.FC<EtalabSubSectionProps> = ({ marche, theme }) =>
 
         <div className="relative z-10 space-y-6">
           <h3 className="text-5xl font-crimson font-bold text-transparent bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text">
-            Etalab
+            Satellite Copernicus
           </h3>
           
           <p className="text-gray-600 text-xl max-w-2xl mx-auto leading-relaxed">
-            Accédez aux données publiques géolocalisées de{' '}
-            <span className="font-semibold text-blue-600">{marche.ville}</span> via la plateforme nationale Etalab
+            Accédez aux données satellites géolocalisées de{' '}
+            <span className="font-semibold text-blue-600">{marche.ville}</span> via la plateforme Satellite Copernicus
           </p>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-8">
@@ -88,7 +88,7 @@ const EtalabSubSection: React.FC<EtalabSubSectionProps> = ({ marche, theme }) =>
               className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white px-8 py-3 rounded-full shadow-lg"
             >
               <ExternalLink className="h-5 w-5 mr-2" />
-              Accéder à Etalab
+              Accéder à Satellite Copernicus
             </Button>
           </motion.div>
         </div>
