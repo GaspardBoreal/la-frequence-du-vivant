@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Slider } from '@/components/ui/slider';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { ContributorDetailModal } from '@/components/ContributorDetailModal';
-import { ModernMarcheSelector } from '@/components/ModernMarcheSelector';
+import { SimpleMarcheSelector } from '@/components/SimpleMarcheSelector';
 import { useSupabaseMarches } from '@/hooks/useSupabaseMarches';
 import { useBiodiversityData } from '@/hooks/useBiodiversityData';
 import { BiodiversitySpecies } from '@/types/biodiversity';
@@ -237,7 +237,7 @@ const TestEbird: React.FC = () => {
             {/* Sélection Marche */}
             <div>
               <Label className="text-base font-medium mb-3 block">Marche à analyser</Label>
-              <ModernMarcheSelector
+              <SimpleMarcheSelector
                 marches={marches}
                 selectedMarche={selectedMarche}
                 onSelectMarche={setSelectedMarche}
