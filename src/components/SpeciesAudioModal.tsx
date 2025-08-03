@@ -220,7 +220,7 @@ export const SpeciesAudioModal: React.FC<SpeciesAudioModalProps> = ({
                           )}
                           {speciesItem.audioUrl && (
                             <a
-                              href={speciesItem.audioUrl.replace('https:', 'https://xeno-canto.org')}
+                              href={speciesItem.audioUrl}
                               target="_blank"
                               rel="noopener noreferrer"
                               className="inline-flex items-center gap-1 px-2 py-1 text-xs bg-orange-50 text-orange-600 hover:bg-orange-100 rounded transition-colors border border-orange-200"
