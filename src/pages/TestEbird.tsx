@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { ArrowLeft, MapPin, Calendar, Database, Eye, Search, Settings, Bird, Leaf, Camera, Volume2 } from 'lucide-react';
+import { ArrowLeft, MapPin, Calendar, Database, Eye, Search, Settings, Bird, Leaf, Camera, Volume2, User } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -9,7 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Slider } from '@/components/ui/slider';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { ContributorDetailModal } from '@/components/ContributorDetailModal';
+import { SpeciesAudioModal } from '@/components/SpeciesAudioModal';
 import { SimpleMarcheSelector } from '@/components/SimpleMarcheSelector';
 import { useSupabaseMarches } from '@/hooks/useSupabaseMarches';
 import { useBiodiversityData } from '@/hooks/useBiodiversityData';
@@ -23,8 +23,9 @@ const TestEbird: React.FC = () => {
   const [selectedMarche, setSelectedMarche] = useState<string>('');
   const [searchRadius, setSearchRadius] = useState([500]);
   const [selectedSpecies, setSelectedSpecies] = useState<BiodiversitySpecies | null>(null);
-  const [contributorModalOpen, setContributorModalOpen] = useState<{ isOpen: boolean; source: 'ebird' | 'inaturalist' | null }>({ isOpen: false, source: null });
-  const [contributorSearchTerm, setContributorSearchTerm] = useState('');
+  const [showSpeciesModal, setShowSpeciesModal] = useState(false);
+  const [speciesModalApi, setSpeciesModalApi] = useState<'ebird' | 'inaturalist'>('ebird');
+  const [searchTerm, setSearchTerm] = useState('');
 
   // Récupération des marches
   const { data: marches = [], isLoading: isLoadingMarches } = useSupabaseMarches();
@@ -143,9 +144,9 @@ const TestEbird: React.FC = () => {
     return stats;
   }, [biodiversityData?.species]);
 
-  const handleContributorClick = (source: 'ebird' | 'inaturalist') => {
-    setContributorModalOpen({ isOpen: true, source });
-    setContributorSearchTerm('');
+  const handleSpeciesClick = (apiSource: 'ebird' | 'inaturalist') => {
+    setSpeciesModalApi(apiSource);
+    setShowSpeciesModal(true);
   };
 
   const getSpeciesIcon = (species: BiodiversitySpecies) => {
@@ -290,29 +291,29 @@ const TestEbird: React.FC = () => {
             </Card>
             <Card 
               className="cursor-pointer hover:shadow-lg transition-all duration-200 hover:border-blue-300"
-              onClick={() => handleContributorClick('ebird')}
+              onClick={() => handleSpeciesClick('ebird')}
             >
               <CardContent className="p-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <div className="text-2xl font-bold text-blue-600">{contributorStats.ebird.size}</div>
-                    <div className="text-sm text-gray-600">Contributeurs eBird</div>
+                    <div className="text-2xl font-bold text-blue-600">{filteredSpecies.filter(s => s.source === 'ebird' && s.audioUrl).length}</div>
+                    <div className="text-sm text-gray-600">Chants eBird</div>
                   </div>
-                  <Eye className="h-6 w-6 text-blue-500" />
+                  <Volume2 className="h-6 w-6 text-blue-500" />
                 </div>
               </CardContent>
             </Card>
             <Card 
               className="cursor-pointer hover:shadow-lg transition-all duration-200 hover:border-green-300"
-              onClick={() => handleContributorClick('inaturalist')}
+              onClick={() => handleSpeciesClick('inaturalist')}
             >
               <CardContent className="p-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <div className="text-2xl font-bold text-green-600">{contributorStats.inaturalist.size}</div>
-                    <div className="text-sm text-gray-600">Contributeurs iNaturalist</div>
+                    <div className="text-2xl font-bold text-green-600">{filteredSpecies.filter(s => s.source === 'inaturalist' && s.audioUrl).length}</div>
+                    <div className="text-sm text-gray-600">Chants iNaturalist</div>
                   </div>
-                  <Camera className="h-6 w-6 text-green-500" />
+                  <Volume2 className="h-6 w-6 text-green-500" />
                 </div>
               </CardContent>
             </Card>
@@ -519,14 +520,14 @@ const TestEbird: React.FC = () => {
           </DialogContent>
         </Dialog>
 
-        {/* Modal détail contributeurs */}
-        <ContributorDetailModal
-          isOpen={contributorModalOpen.isOpen}
-          onClose={() => setContributorModalOpen({ isOpen: false, source: null })}
-          contributors={contributorModalOpen.source ? contributorStats.contributorsData[contributorModalOpen.source] : []}
-          apiSource={contributorModalOpen.source || 'ebird'}
-          searchTerm={contributorSearchTerm}
-          onSearchChange={setContributorSearchTerm}
+        {/* Modal espèces avec audio */}
+        <SpeciesAudioModal
+          isOpen={showSpeciesModal}
+          onClose={() => setShowSpeciesModal(false)}
+          species={filteredSpecies}
+          apiSource={speciesModalApi}
+          searchTerm={searchTerm}
+          onSearchTermChange={setSearchTerm}
         />
       </div>
     </div>

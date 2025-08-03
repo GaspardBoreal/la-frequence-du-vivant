@@ -19,6 +19,8 @@ export interface BiodiversitySpecies {
   observations: number;
   lastSeen: string;
   photos?: string[];
+  audioUrl?: string;
+  sonogramUrl?: string;
   source: 'gbif' | 'inaturalist' | 'ebird';
   conservationStatus?: string;
   confidence?: 'high' | 'medium' | 'low';

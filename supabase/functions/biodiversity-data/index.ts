@@ -34,6 +34,8 @@ interface BiodiversitySpecies {
   observations: number;
   lastSeen: string;
   photos?: string[];
+  audioUrl?: string;
+  sonogramUrl?: string;
   source: 'gbif' | 'inaturalist' | 'ebird';
   conservationStatus?: string;
   confidence?: 'high' | 'medium' | 'low';
@@ -490,16 +492,19 @@ async function fetchEBirdData(lat: number, lon: number, radius: number, dateFilt
     
     if (!data || !Array.isArray(data)) return [];
     
-    // Traitement des données avec récupération des photos
+    // Traitement des données avec récupération des données audio xeno-canto
     const processedData = await Promise.all(
       data.map(async (item: any, index: number) => {
-        // Récupération des photos eBird pour toutes les espèces (pas seulement hasRichMedia)
-        let photos: string[] = [];
+        // Récupérer les données audio xeno-canto
+        let audioData: { audioUrl?: string; sonogramUrl?: string; } = {};
         try {
-          photos = await fetchEBirdPhotos(item.speciesCode, item.subId, apiKey || '');
-          console.log(`📸 Photos fetched for ${item.comName}: ${photos.length} photos`);
+          audioData = await fetchXenoCantoData(item.sciName || '');
+          console.log(`🎵 Audio data fetched for ${item.comName}:`, {
+            hasAudio: !!audioData.audioUrl,
+            hasSonogram: !!audioData.sonogramUrl
+          });
         } catch (error) {
-          console.log(`⚠️ Could not fetch photos for ${item.comName}:`, error);
+          console.log(`⚠️ Could not fetch audio data for ${item.comName}:`, error);
         }
 
         // Debug: afficher les détails de l'observateur
@@ -513,7 +518,9 @@ async function fetchEBirdData(lat: number, lon: number, radius: number, dateFilt
           kingdom: 'Animalia' as const,
           observations: item.howMany || 1,
           lastSeen: item.obsDt || new Date().toISOString().split('T')[0],
-          photos,
+          photos: [], // Plus besoin des photos génériques
+          audioUrl: audioData.audioUrl,
+          sonogramUrl: audioData.sonogramUrl,
           source: 'ebird' as const,
           attributions: [{
             observerName: item.userDisplayName || item.obsPerson || 'Contributeur eBird anonyme',
@@ -542,29 +549,58 @@ async function fetchEBirdData(lat: number, lon: number, radius: number, dateFilt
   }
 }
 
-// Fonction pour récupérer les photos eBird - utilise des icônes et images génériques
-async function fetchEBirdPhotos(speciesCode: string, subId: string, apiKey: string): Promise<string[]> {
+// Fonction pour récupérer les données audio xeno-canto
+async function fetchXenoCantoData(scientificName: string): Promise<{ audioUrl?: string; sonogramUrl?: string; }> {
   try {
-    console.log(`📸 eBird: Creating generic bird icons for ${speciesCode}`);
+    console.log(`🎵 xeno-canto: Searching audio for ${scientificName}`);
     
-    // Pour eBird, on utilise des données SVG inline ou des URLs d'images génériques qui fonctionnent
-    const birdIcons = [
-      // Image générique d'oiseau via une API qui fonctionne
-      `data:image/svg+xml,${encodeURIComponent(`
-        <svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100">
-          <rect width="100" height="100" fill="#e3f2fd"/>
-          <text x="50" y="55" font-family="Arial" font-size="30" text-anchor="middle" fill="#1976d2">🐦</text>
-          <text x="50" y="80" font-family="Arial" font-size="8" text-anchor="middle" fill="#666">eBird</text>
-        </svg>
-      `)}`
-    ];
+    // Parser le nom scientifique pour extraire genre et espèce
+    const nameParts = scientificName.split(' ');
+    if (nameParts.length < 2) {
+      console.log(`⚠️ xeno-canto: Invalid scientific name format: ${scientificName}`);
+      return {};
+    }
     
-    console.log(`📸 eBird: Generated ${birdIcons.length} bird icon(s) for ${speciesCode}`);
-    return birdIcons;
+    const genus = nameParts[0];
+    const species = nameParts[1];
+    
+    // Construire l'URL de recherche xeno-canto
+    const searchUrl = `https://xeno-canto.org/api/2/recordings?query=gen:${genus} sp:${species}&page=1`;
+    console.log(`🔍 xeno-canto: Searching with URL: ${searchUrl}`);
+    
+    const response = await fetch(searchUrl);
+    
+    if (!response.ok) {
+      console.log(`⚠️ xeno-canto: HTTP error ${response.status} for ${scientificName}`);
+      return {};
+    }
+    
+    const data = await response.json();
+    
+    if (!data.recordings || data.recordings.length === 0) {
+      console.log(`📭 xeno-canto: No recordings found for ${scientificName}`);
+      return {};
+    }
+    
+    // Prendre le premier enregistrement (souvent le plus populaire)
+    const recording = data.recordings[0];
+    
+    const result = {
+      audioUrl: recording.file ? `https:${recording.file}` : undefined,
+      sonogramUrl: recording.sono ? `https:${recording.sono.full}` : undefined
+    };
+    
+    console.log(`🎵 xeno-canto: Found data for ${scientificName}:`, {
+      hasAudio: !!result.audioUrl,
+      hasSonogram: !!result.sonogramUrl,
+      recordingId: recording.id
+    });
+    
+    return result;
     
   } catch (error) {
-    console.log(`📸 Error creating bird icons for ${speciesCode}:`, error);
-    return [];
+    console.log(`🎵 Error fetching xeno-canto data for ${scientificName}:`, error);
+    return {};
   }
 }
 
