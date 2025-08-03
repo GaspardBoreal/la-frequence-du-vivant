@@ -91,11 +91,13 @@ const EtalabSubSection: React.FC<EtalabSubSectionProps> = ({ marche, theme }) =>
           />
 
           {/* NDVI Time Series */}
-          <NDVITimeSeriesChart
-            data={ndviTimeSeries}
-            selectedDate={selectedDate}
-            onDateSelect={setSelectedDate}
-          />
+          {ndviTimeSeries && (
+            <NDVITimeSeriesChart
+              timeSeries={ndviTimeSeries}
+              selectedDate={selectedDate}
+              onDateSelect={setSelectedDate}
+            />
+          )}
 
           {/* 4D Dashboard Preview */}
           <motion.div

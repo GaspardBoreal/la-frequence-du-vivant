@@ -6,7 +6,7 @@ import { Card } from '../ui/card';
 import { Badge } from '../ui/badge';
 
 interface NDVITimeSeriesChartProps {
-  data?: {
+  timeSeries?: {
     dates: string[];
     ndviValues: number[];
     cloudCover: number[];
@@ -17,12 +17,12 @@ interface NDVITimeSeriesChartProps {
 }
 
 const NDVITimeSeriesChart: React.FC<NDVITimeSeriesChartProps> = ({
-  data,
+  timeSeries,
   selectedDate,
   onDateSelect,
   className = ""
 }) => {
-  if (!data) {
+  if (!timeSeries) {
     return (
       <Card className={`p-6 bg-gradient-to-br from-green-50 to-emerald-50 ${className}`}>
         <div className="animate-pulse space-y-4">
@@ -34,10 +34,10 @@ const NDVITimeSeriesChart: React.FC<NDVITimeSeriesChartProps> = ({
   }
 
   // Transform data for chart
-  const chartData = data.dates.map((date, index) => ({
+  const chartData = timeSeries.dates.map((date, index) => ({
     date,
-    ndvi: data.ndviValues[index],
-    cloudCover: data.cloudCover[index],
+    ndvi: timeSeries.ndviValues[index],
+    cloudCover: timeSeries.cloudCover[index],
     formattedDate: new Date(date).toLocaleDateString('fr-FR', { 
       month: 'short' 
     }),
@@ -45,13 +45,13 @@ const NDVITimeSeriesChart: React.FC<NDVITimeSeriesChartProps> = ({
   }));
 
   // Calculate statistics
-  const avgNDVI = data.ndviValues.reduce((a, b) => a + b, 0) / data.ndviValues.length;
-  const maxNDVI = Math.max(...data.ndviValues);
-  const minNDVI = Math.min(...data.ndviValues);
+  const avgNDVI = timeSeries.ndviValues.reduce((a, b) => a + b, 0) / timeSeries.ndviValues.length;
+  const maxNDVI = Math.max(...timeSeries.ndviValues);
+  const minNDVI = Math.min(...timeSeries.ndviValues);
 
   const getSeasonalInterpretation = () => {
-    const maxIndex = data.ndviValues.indexOf(maxNDVI);
-    const maxMonth = new Date(data.dates[maxIndex]).getMonth();
+    const maxIndex = timeSeries.ndviValues.indexOf(maxNDVI);
+    const maxMonth = new Date(timeSeries.dates[maxIndex]).getMonth();
     
     if (maxMonth >= 4 && maxMonth <= 7) {
       return "Pic de végétation en été";
