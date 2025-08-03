@@ -1,10 +1,14 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Database, ExternalLink, FileText, Map } from 'lucide-react';
+import { Sparkles, ExternalLink } from 'lucide-react';
 import { Button } from '../ui/button';
 import { MarcheTechnoSensible } from '../../utils/googleSheetsApi';
 import { RegionalTheme } from '../../utils/regionalThemes';
+import { useSentinelHub } from '../../hooks/useSentinelHub';
+import PoeticSatelliteHero from '../satellite/PoeticSatelliteHero';
+import SatelliteVisualizationPanel from '../satellite/SatelliteVisualizationPanel';
+import NDVITimeSeriesChart from '../satellite/NDVITimeSeriesChart';
 
 interface EtalabSubSectionProps {
   marche: MarcheTechnoSensible;
@@ -12,87 +16,150 @@ interface EtalabSubSectionProps {
 }
 
 const EtalabSubSection: React.FC<EtalabSubSectionProps> = ({ marche, theme }) => {
+  const [isExpanded, setIsExpanded] = useState(false);
+  
+  const {
+    satelliteImage,
+    ndviTimeSeries,
+    isLoading,
+    selectedDate,
+    setSelectedDate,
+    visualizationType,
+    setVisualizationType,
+    generateHaiku,
+    refetch
+  } = useSentinelHub(marche.latitude || 0, marche.longitude || 0);
+
+  const currentNDVI = ndviTimeSeries?.ndviValues[
+    ndviTimeSeries.dates.indexOf(selectedDate)
+  ];
+
+  const currentSeason = (() => {
+    const month = new Date(selectedDate).getMonth();
+    if (month >= 2 && month <= 4) return 'spring';
+    if (month >= 5 && month <= 7) return 'summer'; 
+    if (month >= 8 && month <= 10) return 'autumn';
+    return 'winter';
+  })();
+
+  const haiku = currentNDVI ? generateHaiku(currentNDVI, currentSeason) : undefined;
+
   return (
-    <div className="max-w-4xl mx-auto">
-      <div className="gaspard-glass rounded-3xl p-12 text-center space-y-8">
-        {/* Decorative Background */}
-        <div className="absolute inset-0 pointer-events-none opacity-10">
-          {[...Array(12)].map((_, i) => (
-            <motion.div
-              key={i}
-              className="absolute w-1 h-1 bg-blue-400 rounded-full"
-              style={{
-                left: `${Math.random() * 100}%`,
-                top: `${Math.random() * 100}%`
-              }}
-              animate={{
-                scale: [1, 2, 1],
-                opacity: [0.3, 0.8, 0.3]
-              }}
-              transition={{
-                duration: 3 + Math.random() * 2,
-                repeat: Infinity,
-                delay: Math.random() * 2
-              }}
-            />
-          ))}
-        </div>
+    <div className="space-y-8">
+      {/* Hero Section */}
+      <PoeticSatelliteHero
+        satelliteImage={satelliteImage}
+        isLoading={isLoading}
+        currentNDVI={currentNDVI}
+        haiku={haiku}
+        onRefresh={refetch}
+      />
 
-        <motion.div
-          className="relative z-10"
-          initial={{ scale: 0 }}
-          animate={{ scale: 1 }}
-          transition={{ delay: 0.2, duration: 0.5 }}
+      {/* Expandable Observatory Section */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.3 }}
+        className="text-center"
+      >
+        <Button
+          onClick={() => setIsExpanded(!isExpanded)}
+          size="lg"
+          className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white px-8 py-4 rounded-full shadow-lg text-lg"
         >
-          <div className="w-24 h-24 mx-auto bg-gradient-to-br from-blue-100 to-indigo-100 rounded-full flex items-center justify-center mb-6">
-            <Database className="h-12 w-12 text-blue-600" />
-          </div>
-        </motion.div>
+          <Sparkles className="h-6 w-6 mr-3" />
+          {isExpanded ? 'Réduire l\'Observatoire' : 'Ouvrir l\'Observatoire Vivant'}
+        </Button>
+      </motion.div>
 
-        <div className="relative z-10 space-y-6">
-          <h3 className="text-5xl font-crimson font-bold text-transparent bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text">
-            Satellite Copernicus
-          </h3>
-          
-          <p className="text-gray-600 text-xl max-w-2xl mx-auto leading-relaxed">
-            Accédez aux données satellites géolocalisées de{' '}
-            <span className="font-semibold text-blue-600">{marche.ville}</span> via la plateforme Satellite Copernicus
-          </p>
+      {/* Expanded Observatory Interface */}
+      {isExpanded && (
+        <motion.div
+          initial={{ opacity: 0, height: 0 }}
+          animate={{ opacity: 1, height: 'auto' }}
+          exit={{ opacity: 0, height: 0 }}
+          transition={{ duration: 0.6 }}
+          className="space-y-8 overflow-hidden"
+        >
+          {/* Control Panel */}
+          <SatelliteVisualizationPanel
+            visualizationType={visualizationType}
+            onVisualizationChange={setVisualizationType}
+            selectedDate={selectedDate}
+            onDateChange={setSelectedDate}
+            ndviTimeSeries={ndviTimeSeries}
+          />
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-8">
-            <div className="bg-white/50 rounded-xl p-6 text-left">
-              <FileText className="h-8 w-8 text-blue-600 mb-3" />
-              <h4 className="font-semibold text-gray-800 mb-2">Données publiques</h4>
-              <p className="text-gray-600 text-sm">
-                Métadonnées géographiques et administratives
-              </p>
-            </div>
-            
-            <div className="bg-white/50 rounded-xl p-6 text-left">
-              <Map className="h-8 w-8 text-blue-600 mb-3" />
-              <h4 className="font-semibold text-gray-800 mb-2">Géolocalisation</h4>
-              <p className="text-gray-600 text-sm">
-                Coordonnées: {marche.latitude?.toFixed(4)}, {marche.longitude?.toFixed(4)}
-              </p>
-            </div>
-          </div>
+          {/* NDVI Time Series */}
+          <NDVITimeSeriesChart
+            data={ndviTimeSeries}
+            selectedDate={selectedDate}
+            onDateSelect={setSelectedDate}
+          />
 
+          {/* 4D Dashboard Preview */}
           <motion.div
-            className="pt-6"
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ delay: 0.4 }}
+            className="bg-gradient-to-br from-indigo-50 to-purple-50 rounded-3xl p-8 border-2 border-indigo-200/50"
+          >
+            <div className="text-center space-y-4">
+              <h3 className="text-2xl font-crimson font-bold text-transparent bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text">
+                Dashboard 4D - Espace × Temps × Biodiversité
+              </h3>
+              
+              <p className="text-slate-600 max-w-2xl mx-auto">
+                Fusion des données satellites avec les observations terrain pour créer une symphonie visuelle 
+                de la vie en mouvement sur {marche.ville}.
+              </p>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
+                <div className="bg-white/60 rounded-xl p-4">
+                  <div className="text-sm text-slate-600">Évolution NDVI</div>
+                  <div className="text-2xl font-bold text-green-600">
+                    {currentNDVI ? `+${((currentNDVI - 0.3) * 100).toFixed(0)}%` : '---'}
+                  </div>
+                </div>
+                
+                <div className="bg-white/60 rounded-xl p-4">
+                  <div className="text-sm text-slate-600">Passages Satellites</div>
+                  <div className="text-2xl font-bold text-blue-600">
+                    {ndviTimeSeries?.dates.length || 0}
+                  </div>
+                </div>
+                
+                <div className="bg-white/60 rounded-xl p-4">
+                  <div className="text-sm text-slate-600">Saison Poétique</div>
+                  <div className="text-2xl font-bold text-purple-600 capitalize">
+                    {currentSeason === 'spring' && 'Printemps'}
+                    {currentSeason === 'summer' && 'Été'}
+                    {currentSeason === 'autumn' && 'Automne'}
+                    {currentSeason === 'winter' && 'Hiver'}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </motion.div>
+
+          {/* Access Sentinel Hub */}
+          <motion.div
+            className="text-center pt-6"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            transition={{ delay: 0.6 }}
+            transition={{ delay: 0.8 }}
           >
             <Button
               size="lg"
               className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white px-8 py-3 rounded-full shadow-lg"
+              onClick={() => window.open('https://apps.sentinel-hub.com/eo-browser/', '_blank')}
             >
               <ExternalLink className="h-5 w-5 mr-2" />
-              Accéder à Satellite Copernicus
+              Explorer Sentinel Hub
             </Button>
           </motion.div>
-        </div>
-      </div>
+        </motion.div>
+      )}
     </div>
   );
 };
