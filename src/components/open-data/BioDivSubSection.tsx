@@ -26,13 +26,17 @@ interface BioDivSubSectionProps {
 const BioDivSubSection: React.FC<BioDivSubSectionProps> = ({ marche, theme }) => {
   const [dateFilter, setDateFilter] = useState<'recent' | 'medium'>('recent');
   const [selectedContributor, setSelectedContributor] = useState<string>('all');
-  const [selectedCategory, setSelectedCategory] = useState<'all' | 'flora' | 'fauna' | 'fungi' | 'other'>('all');
-  const [searchRadius, setSearchRadius] = useState<number>(0.5); // Valeur par défaut: 0.5km
+  const [selectedCategory, setSelectedCategory] = useState<'all' | 'birds' | 'plants' | 'fungi' | 'others'>('all');
+  const [selectedSource, setSelectedSource] = useState<'all' | 'gbif' | 'inaturalist' | 'ebird'>('all');
+  const [selectedConfidence, setSelectedConfidence] = useState<'all' | 'high' | 'medium' | 'low'>('all');
+  const [selectedTimeRange, setSelectedTimeRange] = useState<'all' | 'recent' | 'month' | 'year'>('all');
+  const [hasAudioFilter, setHasAudioFilter] = useState<'all' | 'with-audio' | 'without-audio'>('all');
+  const [searchRadius, setSearchRadius] = useState<number>(0.5);
   const [debouncedRadius, setDebouncedRadius] = useState<number>(0.5);
-  
-  // Debounce du rayon de recherche pour éviter trop d'appels API
-  useEffect(() => {
-    const timer = setTimeout(() => {
+  const [selectedSpecies, setSelectedSpecies] = useState<BiodiversitySpecies | null>(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [sortBy, setSortBy] = useState<'name' | 'observations' | 'date'>('name');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
       setDebouncedRadius(searchRadius);
     }, 800); // Attendre 800ms après le dernier changement
     
@@ -101,27 +105,18 @@ const BioDivSubSection: React.FC<BioDivSubSectionProps> = ({ marche, theme }) =>
     
     const stats = {
       all: biodiversityData.species.length,
-      flora: 0,
-      fauna: 0,
-      fungi: 0,
-      other: 0
+      birds: biodiversityData.species.filter(s => s.kingdom === 'Animalia' && s.family.toLowerCase().includes('bird')).length,
+      plants: biodiversityData.species.filter(s => s.kingdom === 'Plantae').length,
+      fungi: biodiversityData.species.filter(s => s.kingdom === 'Fungi').length,
+      others: biodiversityData.species.filter(s => 
+        s.kingdom !== 'Plantae' && 
+        s.kingdom !== 'Fungi' && 
+        !(s.kingdom === 'Animalia' && s.family.toLowerCase().includes('bird'))
+      ).length
     };
     
     biodiversityData.species.forEach(species => {
-      switch (species.kingdom) {
-        case 'Plantae':
-          stats.flora++;
-          break;
-        case 'Animalia':
-          stats.fauna++;
-          break;
-        case 'Fungi':
-          stats.fungi++;
-          break;
-        default:
-          stats.other++;
-          break;
-      }
+      // Categories are now calculated above
     });
     
     return stats;
@@ -137,14 +132,16 @@ const BioDivSubSection: React.FC<BioDivSubSectionProps> = ({ marche, theme }) =>
     if (selectedCategory !== 'all') {
       filtered = filtered.filter(species => {
         switch (selectedCategory) {
-          case 'flora':
+          case 'plants':
             return species.kingdom === 'Plantae';
-          case 'fauna':
-            return species.kingdom === 'Animalia';
+          case 'birds':
+            return species.kingdom === 'Animalia' && species.family.toLowerCase().includes('bird');
           case 'fungi':
             return species.kingdom === 'Fungi';
-          case 'other':
-            return species.kingdom !== 'Plantae' && species.kingdom !== 'Animalia' && species.kingdom !== 'Fungi';
+          case 'others':
+            return species.kingdom !== 'Plantae' && 
+                   species.kingdom !== 'Fungi' && 
+                   !(species.kingdom === 'Animalia' && species.family.toLowerCase().includes('bird'));
           default:
             return true;
         }
@@ -988,7 +985,11 @@ const BioDivSubSection: React.FC<BioDivSubSectionProps> = ({ marche, theme }) =>
             ) : filteredSpecies && filteredSpecies.length > 0 ? (
               <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                 {filteredSpecies.map((species) => (
-                  <SpeciesCard key={species.id} species={species} />
+                  <EnhancedSpeciesCard 
+                    key={species.id} 
+                    species={species} 
+                    onSpeciesClick={setSelectedSpecies}
+                  />
                 ))}
               </div>
             ) : selectedContributor !== 'all' ? (
