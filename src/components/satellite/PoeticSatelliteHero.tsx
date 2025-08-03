@@ -67,56 +67,22 @@ const PoeticSatelliteHero: React.FC<PoeticSatelliteHeroProps> = ({
 
   return (
     <div className={`relative overflow-hidden rounded-3xl bg-gradient-to-br from-blue-900 via-indigo-900 to-purple-900 ${className}`}>
-      {/* Animated Background */}
-      <div className="absolute inset-0">
-        {[...Array(50)].map((_, i) => (
-          <motion.div
-            key={i}
-            className="absolute w-1 h-1 bg-white rounded-full"
-            style={{
-              left: `${Math.random() * 100}%`,
-              top: `${Math.random() * 100}%`
-            }}
-            animate={{
-              scale: [0, 1, 0],
-              opacity: [0, 0.6, 0]
-            }}
-            transition={{
-              duration: 2 + Math.random() * 3,
-              repeat: Infinity,
-              delay: Math.random() * 5
-            }}
-          />
-        ))}
-      </div>
+      {/* Simplified Background - NO ANIMATIONS */}
+      <div className="absolute inset-0 bg-gradient-to-br from-blue-900 via-indigo-900 to-purple-900"></div>
 
       {/* Satellite Image Container */}
       <div className="relative z-10 flex flex-col lg:flex-row min-h-[500px]">
         {/* Left Side - Satellite Image */}
         <div className="flex-1 relative p-8">
-          <motion.div
-            initial={{ scale: 0.8, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            transition={{ duration: 0.8 }}
-            className="relative h-full min-h-[300px]"
-          >
+          <div className="relative h-full min-h-[300px]">
             {isLoading ? (
               <div className="w-full h-full bg-gradient-to-br from-blue-800/50 to-purple-800/50 rounded-2xl border-2 border-white/20 flex items-center justify-center">
-                <motion.div
-                  animate={{ rotate: 360 }}
-                  transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
-                  className="text-white/60"
-                >
+                <div className="text-white/60">
                   <Satellite className="h-12 w-12" />
-                </motion.div>
+                </div>
               </div>
             ) : satelliteImage ? (
-              <motion.div
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: imageLoaded ? 1 : 0.5, scale: imageLoaded ? 1 : 0.9 }}
-                transition={{ duration: 0.6 }}
-                className="relative w-full h-full rounded-2xl overflow-hidden border-2 border-white/30 shadow-2xl"
-              >
+              <div className="relative w-full h-full rounded-2xl overflow-hidden border-2 border-white/30 shadow-2xl">
                 <img
                   src={satelliteImage.imageUrl}
                   alt="Vue satellite"
@@ -159,13 +125,13 @@ const PoeticSatelliteHero: React.FC<PoeticSatelliteHeroProps> = ({
                     Télécharger
                   </Button>
                 </div>
-              </motion.div>
+              </div>
             ) : (
               <div className="w-full h-full bg-gradient-to-br from-blue-800/30 to-purple-800/30 rounded-2xl border-2 border-white/20 flex items-center justify-center text-white/60">
                 <Eye className="h-12 w-12" />
               </div>
             )}
-          </motion.div>
+          </div>
         </div>
 
         {/* Right Side - Poetic Content */}
