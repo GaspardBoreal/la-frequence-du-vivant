@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { ArrowLeft, MapPin, Calendar, Database, Eye, Search, Settings, Bird, Leaf, Camera, Volume2, User } from 'lucide-react';
+import { ArrowLeft, MapPin, Calendar, Database, Eye, Search, Settings, Bird, Leaf, Camera, Volume2, User, MoreVertical, ExternalLink } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Toggle } from '@/components/ui/toggle';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Slider } from '@/components/ui/slider';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { SpeciesAudioModal } from '@/components/SpeciesAudioModal';
@@ -147,6 +148,27 @@ const TestEbird: React.FC = () => {
   const handleSpeciesClick = (apiSource: 'ebird' | 'inaturalist') => {
     setSpeciesModalApi(apiSource);
     setShowSpeciesModal(true);
+  };
+
+  const openInOpenStreetMap = () => {
+    if (currentMarche?.latitude && currentMarche?.longitude) {
+      const url = `https://www.openstreetmap.org/?mlat=${currentMarche.latitude}&mlon=${currentMarche.longitude}&zoom=15`;
+      window.open(url, '_blank');
+    }
+  };
+
+  const openInGoogleMaps = () => {
+    if (currentMarche?.latitude && currentMarche?.longitude) {
+      const url = `https://www.google.com/maps?q=${currentMarche.latitude},${currentMarche.longitude}&z=15`;
+      window.open(url, '_blank');
+    }
+  };
+
+  const openInGoogleEarth = () => {
+    if (currentMarche?.latitude && currentMarche?.longitude) {
+      const url = `https://earth.google.com/web/@${currentMarche.latitude},${currentMarche.longitude},200a,1000d,35y,0h,0t,0r`;
+      window.open(url, '_blank');
+    }
   };
 
   const getSpeciesIcon = (species: BiodiversitySpecies) => {
@@ -354,9 +376,41 @@ const TestEbird: React.FC = () => {
         {currentMarche && (
           <Card className="mb-8">
             <CardHeader>
-              <CardTitle className="flex items-center space-x-2">
-                <MapPin className="h-5 w-5" />
-                <span>{currentMarche.nomMarche || `Marche ${currentMarche.ville}`}</span>
+              <CardTitle className="flex items-center justify-between">
+                <div className="flex items-center space-x-2">
+                  <MapPin className="h-5 w-5" />
+                  <span>{currentMarche.nomMarche || `Marche ${currentMarche.ville}`}</span>
+                </div>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline" size="sm">
+                      <MoreVertical className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent className="bg-white border border-gray-200 shadow-lg z-50">
+                    <DropdownMenuItem 
+                      onClick={openInOpenStreetMap}
+                      className="text-black hover:bg-gray-100 cursor-pointer"
+                    >
+                      <ExternalLink className="h-4 w-4 mr-2" />
+                      Voir dans OpenStreetMap
+                    </DropdownMenuItem>
+                    <DropdownMenuItem 
+                      onClick={openInGoogleMaps}
+                      className="text-black hover:bg-gray-100 cursor-pointer"
+                    >
+                      <ExternalLink className="h-4 w-4 mr-2" />
+                      Voir dans Google Maps
+                    </DropdownMenuItem>
+                    <DropdownMenuItem 
+                      onClick={openInGoogleEarth}
+                      className="text-black hover:bg-gray-100 cursor-pointer"
+                    >
+                      <ExternalLink className="h-4 w-4 mr-2" />
+                      Voir dans Google Earth
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </CardTitle>
             </CardHeader>
             <CardContent>
