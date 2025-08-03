@@ -1,14 +1,11 @@
 
 import React, { useState } from 'react';
-import { motion } from 'framer-motion';
 import { Sparkles, ExternalLink } from 'lucide-react';
 import { Button } from '../ui/button';
 import { MarcheTechnoSensible } from '../../utils/googleSheetsApi';
 import { RegionalTheme } from '../../utils/regionalThemes';
 import { useSentinelHub } from '../../hooks/useSentinelHub';
-import PoeticSatelliteHero from '../satellite/PoeticSatelliteHero';
-import SatelliteVisualizationPanel from '../satellite/SatelliteVisualizationPanel';
-import NDVITimeSeriesChart from '../satellite/NDVITimeSeriesChart';
+import SimpleSatelliteDisplay from '../satellite/SimpleSatelliteDisplay';
 
 interface EtalabSubSectionProps {
   marche: MarcheTechnoSensible;
@@ -63,32 +60,19 @@ const EtalabSubSection: React.FC<EtalabSubSectionProps> = ({ marche, theme }) =>
 
   return (
     <div className="space-y-8">
-      {/* Hero Section */}
-      {(() => {
-        try {
-          console.log('🔍 Rendering PoeticSatelliteHero...');
-          return (
-            <PoeticSatelliteHero
-              satelliteImage={satelliteImage}
-              isLoading={isLoading}
-              currentNDVI={currentNDVI}
-              haiku={haiku}
-              onRefresh={refetch}
-            />
-          );
-        } catch (error) {
-          console.error('❌ Error in PoeticSatelliteHero:', error);
-          return <div className="p-4 bg-red-100 rounded">Erreur PoeticSatelliteHero: {error?.message}</div>;
-        }
-      })()}
+      {/* Satellite Display - Ultra Simplifié */}
+      <SimpleSatelliteDisplay
+        satelliteImage={satelliteImage}
+        currentNDVI={currentNDVI}
+        haiku={haiku}
+        onRefresh={refetch}
+        isLoading={isLoading}
+        selectedDate={selectedDate}
+        ndviTimeSeries={ndviTimeSeries}
+      />
 
       {/* Expandable Observatory Section */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.3 }}
-        className="text-center"
-      >
+      <div className="text-center">
         <Button
           onClick={() => setIsExpanded(!isExpanded)}
           size="lg"
@@ -97,7 +81,7 @@ const EtalabSubSection: React.FC<EtalabSubSectionProps> = ({ marche, theme }) =>
           <Sparkles className="h-6 w-6 mr-3" />
           {isExpanded ? 'Réduire l\'Observatoire' : 'Ouvrir l\'Observatoire Vivant'}
         </Button>
-      </motion.div>
+      </div>
 
       {/* Simplified Observatory Interface */}
       {isExpanded && (
