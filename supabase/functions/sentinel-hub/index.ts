@@ -19,6 +19,10 @@ interface SatelliteImageRequest {
   height: number;
   format: 'image/png' | 'image/jpeg';
   evalscript: string;
+  latitude: number;
+  longitude: number;
+  date: string;
+  visualizationType: string;
 }
 
 // Evalscripts for different visualizations
@@ -98,64 +102,165 @@ async function getAccessToken(): Promise<string> {
   return tokenData.access_token;
 }
 
-async function getSatelliteImage(request: SatelliteImageRequest, accessToken: string): Promise<string> {
-  const instanceId = Deno.env.get('SENTINEL_HUB_INSTANCE_ID');
+// Function to get NASA Worldview satellite image (free, no API key needed)
+async function getNASAWorldviewImage(latitude: number, longitude: number, date: string): Promise<string> {
+  const formattedDate = date.replace(/-/g, '');
+  const layers = 'MODIS_Terra_CorrectedReflectance_TrueColor';
+  const format = 'image/jpeg';
+  const width = 512;
+  const height = 512;
   
-  if (!instanceId) {
-    throw new Error('Sentinel Hub Instance ID not configured');
-  }
-
-  const processUrl = `https://services.sentinel-hub.com/api/v1/process`;
-
-  const requestBody = {
-    input: {
-      bounds: {
-        bbox: request.bbox,
-        properties: {
-          crs: "http://www.opengis.net/def/crs/EPSG/0/4326"
-        }
-      },
-      data: [{
-        type: "sentinel-2-l2a",
-        dataFilter: {
-          timeRange: {
-            from: request.time + "T00:00:00Z",
-            to: request.time + "T23:59:59Z"
-          }
-        }
-      }]
-    },
-    output: {
-      width: request.width,
-      height: request.height,
-      responses: [{
-        identifier: "default",
-        format: {
-          type: request.format
-        }
-      }]
-    },
-    evalscript: request.evalscript
-  };
-
-  const response = await fetch(processUrl, {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${accessToken}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(requestBody),
-  });
-
+  // Calculate bounding box (approximately 5km around the point)
+  const buffer = 0.025;
+  const bbox = `${longitude - buffer},${latitude - buffer},${longitude + buffer},${latitude + buffer}`;
+  
+  const wmsUrl = `https://gibs.earthdata.nasa.gov/wms/epsg4326/best/wms.cgi?SERVICE=WMS&REQUEST=GetMap&VERSION=1.3.0&LAYERS=${layers}&STYLES=&FORMAT=${format}&TRANSPARENT=false&HEIGHT=${height}&WIDTH=${width}&CRS=EPSG:4326&BBOX=${bbox}&TIME=${date}`;
+  
+  const response = await fetch(wmsUrl);
   if (!response.ok) {
-    throw new Error(`Image request failed: ${response.status}`);
+    throw new Error(`NASA Worldview error: ${response.status}`);
   }
-
-  const imageBlob = await response.blob();
-  const arrayBuffer = await imageBlob.arrayBuffer();
-  const base64 = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)));
   
-  return `data:${request.format};base64,${base64}`;
+  const imageBuffer = await response.arrayBuffer();
+  const base64 = btoa(String.fromCharCode(...new Uint8Array(imageBuffer)));
+  return `data:image/jpeg;base64,${base64}`;
+}
+
+// Function to get USGS/ArcGIS satellite image (free)
+async function getArcGISImage(latitude: number, longitude: number): Promise<string> {
+  const zoom = 14;
+  const x = Math.floor((longitude + 180) / 360 * Math.pow(2, zoom));
+  const y = Math.floor((1 - Math.log(Math.tan(latitude * Math.PI / 180) + 1 / Math.cos(latitude * Math.PI / 180)) / Math.PI) / 2 * Math.pow(2, zoom));
+  
+  const url = `https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/${zoom}/${y}/${x}`;
+  
+  const response = await fetch(url);
+  if (!response.ok) {
+    throw new Error(`ArcGIS error: ${response.status}`);
+  }
+  
+  const imageBuffer = await response.arrayBuffer();
+  const base64 = btoa(String.fromCharCode(...new Uint8Array(imageBuffer)));
+  return `data:image/jpeg;base64,${base64}`;
+}
+
+// Function to get OpenStreetMap satellite image (free fallback)
+async function getOSMImage(latitude: number, longitude: number): Promise<string> {
+  const zoom = 14;
+  const x = Math.floor((longitude + 180) / 360 * Math.pow(2, zoom));
+  const y = Math.floor((1 - Math.log(Math.tan(latitude * Math.PI / 180) + 1 / Math.cos(latitude * Math.PI / 180)) / Math.PI) / 2 * Math.pow(2, zoom));
+  
+  // Use a free satellite tile service
+  const url = `https://mt1.google.com/vt/lyrs=s&x=${x}&y=${y}&z=${zoom}`;
+  
+  const response = await fetch(url);
+  if (!response.ok) {
+    throw new Error(`OSM satellite error: ${response.status}`);
+  }
+  
+  const imageBuffer = await response.arrayBuffer();
+  const base64 = btoa(String.fromCharCode(...new Uint8Array(imageBuffer)));
+  return `data:image/jpeg;base64,${base64}`;
+}
+
+// Main function with free satellite imagery fallbacks
+async function getSatelliteImage(request: SatelliteImageRequest, accessToken: string): Promise<string> {
+  const { latitude, longitude, date, visualizationType } = request;
+  
+  // Try free services first, in order of preference
+  const freeServices = [
+    {
+      name: 'NASA Worldview',
+      func: () => getNASAWorldviewImage(latitude, longitude, date)
+    },
+    {
+      name: 'ArcGIS World Imagery',
+      func: () => getArcGISImage(latitude, longitude)
+    },
+    {
+      name: 'Google Satellite',
+      func: () => getOSMImage(latitude, longitude)
+    }
+  ];
+  
+  // Try each free service
+  for (const service of freeServices) {
+    try {
+      console.log(`🛰️ Tentative ${service.name}...`);
+      const imageUrl = await service.func();
+      console.log(`✅ ${service.name} réussi!`);
+      return imageUrl;
+    } catch (error) {
+      console.log(`❌ ${service.name} échoué: ${error.message}`);
+      continue;
+    }
+  }
+  
+  // If all free services fail, try Sentinel Hub as last resort
+  try {
+    console.log(`🛰️ Tentative Sentinel Hub en dernier recours...`);
+    const instanceId = Deno.env.get('SENTINEL_HUB_INSTANCE_ID');
+    
+    if (!instanceId) {
+      throw new Error('Sentinel Hub Instance ID not configured');
+    }
+
+    const processUrl = `https://services.sentinel-hub.com/api/v1/process`;
+    const evalscript = EVALSCRIPTS[visualizationType as keyof typeof EVALSCRIPTS] || EVALSCRIPTS.trueColor;
+
+    const requestBody = {
+      input: {
+        bounds: {
+          bbox: request.bbox,
+          properties: {
+            crs: "http://www.opengis.net/def/crs/EPSG/0/4326"
+          }
+        },
+        data: [{
+          type: "sentinel-2-l2a",
+          dataFilter: {
+            timeRange: {
+              from: request.time + "T00:00:00Z",
+              to: request.time + "T23:59:59Z"
+            }
+          }
+        }]
+      },
+      output: {
+        width: request.width,
+        height: request.height,
+        responses: [{
+          identifier: "default",
+          format: {
+            type: request.format
+          }
+        }]
+      },
+      evalscript: evalscript
+    };
+
+    const response = await fetch(processUrl, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${accessToken}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(requestBody),
+    });
+
+    if (response.ok) {
+      const imageBlob = await response.blob();
+      const arrayBuffer = await imageBlob.arrayBuffer();
+      const base64 = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)));
+      console.log(`✅ Sentinel Hub réussi!`);
+      return `data:${request.format};base64,${base64}`;
+    }
+    throw new Error(`Sentinel Hub error: ${response.status}`);
+  } catch (error) {
+    console.log(`❌ Sentinel Hub échoué: ${error.message}`);
+  }
+  
+  throw new Error(`Tous les services satellites ont échoué`);
 }
 
 async function getNDVITimeSeries(latitude: number, longitude: number, accessToken: string) {
@@ -270,7 +375,11 @@ serve(async (req) => {
         width: 512,
         height: 512,
         format: 'image/jpeg',
-        evalscript
+        evalscript,
+        latitude,
+        longitude,
+        date: selectedDate,
+        visualizationType
       };
 
       const imageUrl = await getSatelliteImage(imageRequest, accessToken);
