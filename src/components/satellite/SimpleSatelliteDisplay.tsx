@@ -64,19 +64,29 @@ const SimpleSatelliteDisplay: React.FC<SimpleSatelliteDisplayProps> = ({
       {/* Image Satellite */}
       <div className="bg-gradient-to-br from-blue-50 to-indigo-100 rounded-2xl p-6 border-2 border-blue-200/50">
         <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <h2 className="text-xl font-bold text-slate-800">Image Satellite</h2>
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={onRefresh}
-              disabled={isLoading}
-              className="flex items-center gap-2"
-            >
-              <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
-              Actualiser
-            </Button>
-          </div>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-bold text-slate-800">Image Satellite</h2>
+              <div className="flex gap-2">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => window.location.reload()}
+                  className="text-xs"
+                >
+                  NDVI
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={onRefresh}
+                  disabled={isLoading}
+                  className="flex items-center gap-2"
+                >
+                  <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
+                  Actualiser
+                </Button>
+              </div>
+            </div>
           
           {isLoading ? (
             <div className="bg-slate-200 rounded-xl h-64 flex items-center justify-center">
