@@ -719,7 +719,7 @@ async function fetchXenoCantoRecordings(scientificName: string): Promise<any[]> 
         remarks: recording.rems,
         animalSeen: recording.rems?.includes('animal seen') ? 'yes' : recording.rems?.includes('animal not seen') ? 'no' : undefined,
         playbackUsed: recording.rems?.includes('playback used') ? 'yes' : recording.rems?.includes('playback not used') ? 'no' : undefined,
-        backgroundSpecies: recording.also ? recording.also.split(',').map((s: string) => s.trim()) : [],
+        backgroundSpecies: (recording.also && typeof recording.also === 'string') ? recording.also.split(',').map((s: string) => s.trim()) : [],
         url: `https://xeno-canto.org/${recording.id}`
       }));
     }
