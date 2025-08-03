@@ -65,23 +65,41 @@ const BioDivSubSection: React.FC<BioDivSubSectionProps> = ({ marche, theme }) =>
     dateFilter
   });
 
-  // Extraction et agrégation des contributeurs
-  const contributors = useMemo(() => {
-    if (!biodiversityData?.species) return [];
+  // Extraction et agrégation des contributeurs groupés par source API
+  const contributorsBySource = useMemo(() => {
+    if (!biodiversityData?.species) return { eBird: [], iNaturalist: [], gbif: [] };
 
-    const contributorMap = new Map<string, number>();
+    const sourceGroups = { eBird: new Map<string, number>(), iNaturalist: new Map<string, number>(), gbif: new Map<string, number>() };
 
     biodiversityData.species.forEach(species => {
       species.attributions?.forEach(attribution => {
         const contributorName = attribution.observerName || 'Anonyme';
-        contributorMap.set(contributorName, (contributorMap.get(contributorName) || 0) + 1);
+        const sourceKey = species.source === 'ebird' ? 'eBird' : 
+                         species.source === 'inaturalist' ? 'iNaturalist' : 'gbif';
+        
+        const currentMap = sourceGroups[sourceKey];
+        currentMap.set(contributorName, (currentMap.get(contributorName) || 0) + 1);
       });
     });
 
-    return Array.from(contributorMap.entries())
-      .map(([name, count]) => ({ name, count }))
-      .sort((a, b) => a.name.localeCompare(b.name, 'fr'));
+    // Convertir et trier chaque groupe
+    return {
+      eBird: Array.from(sourceGroups.eBird.entries())
+        .map(([name, count]) => ({ name, count, source: 'ebird' as const }))
+        .sort((a, b) => b.count - a.count),
+      iNaturalist: Array.from(sourceGroups.iNaturalist.entries())
+        .map(([name, count]) => ({ name, count, source: 'inaturalist' as const }))
+        .sort((a, b) => b.count - a.count),
+      gbif: Array.from(sourceGroups.gbif.entries())
+        .map(([name, count]) => ({ name, count, source: 'gbif' as const }))
+        .sort((a, b) => b.count - a.count)
+    };
   }, [biodiversityData?.species]);
+
+  // Compteur total de contributeurs pour le badge
+  const totalContributors = useMemo(() => {
+    return contributorsBySource.eBird.length + contributorsBySource.iNaturalist.length + contributorsBySource.gbif.length;
+  }, [contributorsBySource]);
 
   // Calcul des catégories d'espèces
   const categoryStats = useMemo(() => {
@@ -339,8 +357,8 @@ const BioDivSubSection: React.FC<BioDivSubSectionProps> = ({ marche, theme }) =>
             </p>
           </div>
 
-          {/* Filtres existants */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {/* Filtres élargis avec contributeurs */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             <div>
               <Select value={selectedCategory} onValueChange={(value: any) => setSelectedCategory(value)}>
                 <SelectTrigger className="w-full">
@@ -379,6 +397,81 @@ const BioDivSubSection: React.FC<BioDivSubSectionProps> = ({ marche, theme }) =>
                   <SelectItem value="all">Tous</SelectItem>
                   <SelectItem value="with-audio">Avec audio</SelectItem>
                   <SelectItem value="without-audio">Sans audio</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div>
+              <Select value={selectedContributor} onValueChange={(value: any) => setSelectedContributor(value)}>
+                <SelectTrigger className="w-full">
+                  <div className="flex items-center gap-2">
+                    <User className="h-4 w-4 text-muted-foreground" />
+                    <SelectValue placeholder="Tous les contributeurs" />
+                    {totalContributors > 0 && (
+                      <Badge variant="secondary" className="ml-auto text-xs">
+                        {totalContributors}
+                      </Badge>
+                    )}
+                  </div>
+                </SelectTrigger>
+                <SelectContent className="max-h-80">
+                  <SelectItem value="all" className="font-medium">
+                    Tous les contributeurs ({totalContributors})
+                  </SelectItem>
+                  
+                  {contributorsBySource.eBird.length > 0 && (
+                    <>
+                      <div className="px-2 py-1.5 text-xs font-semibold text-blue-600 bg-blue-50 dark:bg-blue-950 dark:text-blue-400 border-b">
+                        eBird ({contributorsBySource.eBird.length})
+                      </div>
+                      {contributorsBySource.eBird.map(contributor => (
+                        <SelectItem key={`ebird-${contributor.name}`} value={contributor.name} className="pl-6">
+                          <div className="flex items-center justify-between w-full">
+                            <span className="truncate">{contributor.name}</span>
+                            <Badge variant="outline" className="ml-2 text-blue-600 border-blue-200">
+                              {contributor.count}
+                            </Badge>
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </>
+                  )}
+
+                  {contributorsBySource.iNaturalist.length > 0 && (
+                    <>
+                      <div className="px-2 py-1.5 text-xs font-semibold text-green-600 bg-green-50 dark:bg-green-950 dark:text-green-400 border-b">
+                        iNaturalist ({contributorsBySource.iNaturalist.length})
+                      </div>
+                      {contributorsBySource.iNaturalist.map(contributor => (
+                        <SelectItem key={`inaturalist-${contributor.name}`} value={contributor.name} className="pl-6">
+                          <div className="flex items-center justify-between w-full">
+                            <span className="truncate">{contributor.name}</span>
+                            <Badge variant="outline" className="ml-2 text-green-600 border-green-200">
+                              {contributor.count}
+                            </Badge>
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </>
+                  )}
+
+                  {contributorsBySource.gbif.length > 0 && (
+                    <>
+                      <div className="px-2 py-1.5 text-xs font-semibold text-orange-600 bg-orange-50 dark:bg-orange-950 dark:text-orange-400 border-b">
+                        GBIF ({contributorsBySource.gbif.length})
+                      </div>
+                      {contributorsBySource.gbif.map(contributor => (
+                        <SelectItem key={`gbif-${contributor.name}`} value={contributor.name} className="pl-6">
+                          <div className="flex items-center justify-between w-full">
+                            <span className="truncate">{contributor.name}</span>
+                            <Badge variant="outline" className="ml-2 text-orange-600 border-orange-200">
+                              {contributor.count}
+                            </Badge>
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </>
+                  )}
                 </SelectContent>
               </Select>
             </div>
