@@ -213,14 +213,13 @@ serve(async (req) => {
   }
 
   try {
-    const url = new URL(req.url);
-    const { searchParams } = url;
-    
-    const latitude = parseFloat(searchParams.get('latitude') || '0');
-    const longitude = parseFloat(searchParams.get('longitude') || '0');
-    const selectedDate = searchParams.get('selectedDate') || new Date().toISOString().split('T')[0];
-    const visualizationType = searchParams.get('visualizationType') || 'trueColor';
-    const action = searchParams.get('action') || 'image';
+    // Read parameters from request body
+    const body = await req.json();
+    const latitude = parseFloat(body.latitude || '0');
+    const longitude = parseFloat(body.longitude || '0');
+    const selectedDate = body.selectedDate || body.date || new Date().toISOString().split('T')[0];
+    const visualizationType = body.visualizationType || 'trueColor';
+    const action = body.action || 'image';
 
     if (!latitude || !longitude) {
       return new Response(
