@@ -95,23 +95,37 @@ const MarcheList: React.FC<MarcheListProps> = ({
   const formatDate = (dateString: string) => {
     if (!dateString) return '';
 
-    // Nettoyer la date pour éviter les caractères parasites et le 0 à la fin
-    const cleanDate = dateString.replace(/[^\d-]/g, '').replace(/0$/, '');
+    // Détecter si la date est déjà formatée en français
+    const frenchMonthsPattern = /(janvier|février|mars|avril|mai|juin|juillet|août|septembre|octobre|novembre|décembre)/i;
+    if (frenchMonthsPattern.test(dateString)) {
+      return dateString; // La date est déjà formatée, la retourner telle quelle
+    }
 
-    // Vérifier si c'est une date valide au format ISO (YYYY-MM-DD)
+    // Nettoyer et vérifier si c'est au format ISO (YYYY-MM-DD)
+    const cleanDate = dateString.trim();
     if (!/^\d{4}-\d{2}-\d{2}$/.test(cleanDate)) {
-      return dateString; // Retourner la date originale si le format n'est pas correct
+      return dateString; // Format non reconnu, retourner l'original
     }
     
-    // Parser la date manuellement pour éviter les problèmes de timezone
-    const [year, month, day] = cleanDate.split('-').map(Number);
-    const date = new Date(year, month - 1, day); // month - 1 car les mois commencent à 0
-    
-    return date.toLocaleDateString('fr-FR', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
-    });
+    try {
+      // Parser la date manuellement pour éviter les problèmes de timezone
+      const [year, month, day] = cleanDate.split('-').map(Number);
+      const date = new Date(year, month - 1, day); // month - 1 car les mois commencent à 0
+      
+      // Vérifier que la date est valide
+      if (isNaN(date.getTime())) {
+        return dateString;
+      }
+      
+      return date.toLocaleDateString('fr-FR', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+      });
+    } catch (error) {
+      console.warn('Erreur lors du formatage de la date:', dateString, error);
+      return dateString; // En cas d'erreur, retourner l'original
+    }
   };
 
   const getDepartmentFromRegion = (region: string): string => {
