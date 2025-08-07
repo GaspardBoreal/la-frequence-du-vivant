@@ -213,7 +213,7 @@ const WeatherStationModal: React.FC<WeatherStationModalProps> = ({
             </CardContent>
           </Card>
 
-          {/* Emplacement (section pliable) */}
+          {/* Localisation (section pliable) */}
           <Card className="bg-white/70 backdrop-blur-sm border-green-200">
             <Collapsible
               open={expandedSections.location}
@@ -224,7 +224,7 @@ const WeatherStationModal: React.FC<WeatherStationModalProps> = ({
                   <CardTitle className="flex items-center justify-between text-lg">
                     <div className="flex items-center gap-2">
                       <MapPin className="h-5 w-5 text-green-600" />
-                      Emplacement
+                      Localisation
                     </div>
                     {expandedSections.location ? 
                       <ChevronUp className="h-5 w-5" /> : 
@@ -252,6 +252,37 @@ const WeatherStationModal: React.FC<WeatherStationModalProps> = ({
                        </p>
                      </div>
                   </div>
+                  
+                  {/* Carte avec point de localisation */}
+                  {stationData?.coordinates && (
+                    <div className="mt-4 h-64 bg-gray-100 rounded-lg border overflow-hidden">
+                      <div 
+                        className="w-full h-full bg-gradient-to-br from-green-100 to-green-200 relative flex items-center justify-center"
+                        style={{
+                          backgroundImage: `radial-gradient(circle at ${((stationData.coordinates.lng + 180) / 360) * 100}% ${((90 - stationData.coordinates.lat) / 180) * 100}%, rgba(34, 197, 94, 0.3) 0%, transparent 50%)`
+                        }}
+                      >
+                        <div className="absolute inset-0 flex items-center justify-center">
+                          <div className="relative">
+                            <div className="w-4 h-4 bg-red-500 rounded-full animate-pulse shadow-lg"></div>
+                            <div className="absolute -top-1 -left-1 w-6 h-6 bg-red-200 rounded-full animate-ping"></div>
+                          </div>
+                        </div>
+                        <div className="absolute bottom-4 left-4 bg-white/90 backdrop-blur-sm rounded-lg p-3 shadow-md">
+                          <div className="flex items-center gap-2">
+                            <MapPin className="h-4 w-4 text-red-500" />
+                            <div>
+                              <p className="text-sm font-medium">{stationData.name}</p>
+                              <p className="text-xs text-gray-600">
+                                {stationData.coordinates.lat.toFixed(4)}°, {stationData.coordinates.lng.toFixed(4)}°
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                  
                   <div className="mt-4 p-4 bg-green-50 rounded-lg">
                     <p className="text-sm text-green-700">
                       📍 Cette station fait partie du réseau météorologique français et fournit des données en temps réel.
