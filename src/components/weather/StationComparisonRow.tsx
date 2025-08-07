@@ -45,25 +45,25 @@ const StationComparisonRow: React.FC<StationComparisonRowProps> = ({ station, is
       
       <div className="flex-1 grid grid-cols-4 gap-4 relative">
         <div>
-          <p className={`text-sm ${isCurrentStation ? 'text-primary-foreground/70' : 'text-muted-foreground'}`}>Nom</p>
-          <p className={`font-medium ${isCurrentStation ? 'text-primary-foreground font-semibold' : 'text-foreground'}`}>
+          <p className={`text-sm ${isCurrentStation ? 'text-white/70' : 'text-muted-foreground'}`}>Nom</p>
+          <p className={`font-medium ${isCurrentStation ? 'text-white font-semibold' : 'text-foreground'}`}>
             {station.name}
           </p>
         </div>
         <div>
-          <p className={`text-sm ${isCurrentStation ? 'text-primary-foreground/70' : 'text-muted-foreground'}`}>Code Station</p>
-          <p className={`font-mono text-sm ${isCurrentStation ? 'text-primary-foreground font-semibold' : 'text-primary/80'}`}>
+          <p className={`text-sm ${isCurrentStation ? 'text-white/70' : 'text-muted-foreground'}`}>Code Station</p>
+          <p className={`font-mono text-sm ${isCurrentStation ? 'text-white font-semibold' : 'text-primary/80'}`}>
             {station.code}
           </p>
         </div>
         <div>
-          <p className={`text-sm ${isCurrentStation ? 'text-primary-foreground/70' : 'text-muted-foreground'}`}>Ville</p>
-          <p className={`font-medium ${isCurrentStation ? 'text-primary-foreground font-semibold' : 'text-foreground'}`}>
+          <p className={`text-sm ${isCurrentStation ? 'text-white/70' : 'text-muted-foreground'}`}>Ville</p>
+          <p className={`font-medium ${isCurrentStation ? 'text-white font-semibold' : 'text-foreground'}`}>
             {station.name}
           </p>
         </div>
         <div>
-          <p className={`text-sm ${isCurrentStation ? 'text-primary-foreground/70' : 'text-muted-foreground'}`}>Distance</p>
+          <p className={`text-sm ${isCurrentStation ? 'text-white/70' : 'text-muted-foreground'}`}>Distance</p>
           <p className={`font-bold ${isCurrentStation ? 'text-accent' : 'text-accent'}`}>
             {formatDistance(station.distance)}
           </p>

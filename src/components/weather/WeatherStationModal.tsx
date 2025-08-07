@@ -99,12 +99,13 @@ const WeatherStationModal: React.FC<WeatherStationModalProps> = ({
   // Calcul des autres stations triées par distance
   const otherStations = targetCoordinates ? 
     getAllStationsSortedByDistance(targetCoordinates).filter(station => 
-      station.code !== stationData?.code
+      station.code !== stationData?.Code
     ) : [];
 
-  // Calculer la distance de la station actuelle
-  const currentStationDistance = targetCoordinates && stationData ? 
-    calculateDistance(targetCoordinates, { lat: stationData.Latitude, lng: stationData.Longitude }) :
+  // Calculer la distance de la station actuelle avec vérification des coordonnées
+  const currentStationDistance = targetCoordinates && stationData && 
+    typeof stationData.latitude === 'number' && typeof stationData.longitude === 'number' ? 
+    calculateDistance(targetCoordinates, { lat: stationData.latitude, lng: stationData.longitude }) :
     0;
 
   // Statistiques annuelles
@@ -476,13 +477,13 @@ const WeatherStationModal: React.FC<WeatherStationModalProps> = ({
                       {stationData && (
                         <div className="relative">
                           <StationComparisonRow 
-                            key={`current-${stationData.Code}`}
+                            key={`current-${stationData.code}`}
                             station={{
-                              name: stationData.Nom,
-                              code: stationData.Code,
+                              name: stationData.name,
+                              code: stationData.code,
                               coordinates: {
-                                lat: stationData.Latitude,
-                                lng: stationData.Longitude
+                                lat: stationData.latitude,
+                                lng: stationData.longitude
                               },
                               distance: currentStationDistance
                             }}
