@@ -33,27 +33,32 @@ const CadastralMap: React.FC<CadastralMapProps> = ({
   // Fonction pour récupérer la géométrie d'une parcelle via l'Edge Function
   const fetchParcelGeometry = async (parcelId: string): Promise<any | null> => {
     try {
-      console.log('🏘️ [CADASTRAL] Récupération de la géométrie pour parcelId:', parcelId);
+      console.log('🏘️ [CADASTRAL] Appel Edge Function avec parcelId:', parcelId);
       
       const { data, error } = await supabase.functions.invoke('cadastre-proxy', {
-        body: { parcelId }
+        body: { parcelId },
+        headers: {
+          'Content-Type': 'application/json'
+        }
       });
 
+      console.log('🏘️ [CADASTRAL] Réponse Edge Function:', { data, error });
+
       if (error) {
-        console.warn('⚠️ [CADASTRAL] Erreur Edge Function:', error);
-        return null;
+        console.error('❌ [CADASTRAL] Erreur Edge Function:', error);
+        throw new Error(`Edge Function error: ${error.message}`);
       }
 
       if (data?.success && data?.data) {
-        console.log('✅ [CADASTRAL] Données reçues de l\'Edge Function:', data);
+        console.log('✅ [CADASTRAL] Géométrie reçue:', data.data);
         return data.data;
       } else {
-        console.warn('⚠️ [CADASTRAL] Pas de données dans la réponse:', data);
-        return null;
+        console.warn('⚠️ [CADASTRAL] Réponse sans données:', data);
+        throw new Error(data?.message || 'Pas de données cadastrales trouvées');
       }
     } catch (error) {
-      console.error('❌ [CADASTRAL] Erreur lors de la récupération:', error);
-      return null;
+      console.error('❌ [CADASTRAL] Erreur complète:', error);
+      throw error;
     }
   };
 
@@ -206,10 +211,20 @@ const CadastralMap: React.FC<CadastralMapProps> = ({
       // Vérifier si on a une géométrie de parcelle ou si on doit la récupérer
       let finalParcelGeometry = parcelGeometry;
       
-      // Essayer avec l'identifiant cadastral si disponible
-      if (!finalParcelGeometry && parcelData?.identifiant_cadastral) {
-        console.log('🔍 [CADASTRAL MAP] Récupération de la géométrie pour:', parcelData.identifiant_cadastral);
-        finalParcelGeometry = await fetchParcelGeometry(parcelData.identifiant_cadastral);
+      // Tentative avec l'Edge Function si on a un parcelId
+      if (!finalParcelGeometry && (parcelData?.parcel_id || parcelData?.id)) {
+        const parcelId = parcelData.parcel_id || parcelData.id;
+        console.log('🏘️ [CADASTRAL] Tentative avec Edge Function, parcelId:', parcelId);
+        
+        try {
+          const parcelGeometry = await fetchParcelGeometry(parcelId);
+          if (parcelGeometry && parcelGeometry.geometry) {
+            console.log('✅ [CADASTRAL] Géométrie obtenue via Edge Function');
+            finalParcelGeometry = parcelGeometry.geometry;
+          }
+        } catch (error) {
+          console.warn('⚠️ [CADASTRAL] Edge Function a échoué, passage au fallback:', error);
+        }
       }
       
       // Fallback : essayer avec les coordonnées si aucun identifiant ou si la récupération a échoué
