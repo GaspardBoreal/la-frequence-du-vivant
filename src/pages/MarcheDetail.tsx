@@ -42,8 +42,16 @@ const MarcheDetail = () => {
     }
 
     const parseDate = (dateStr: string) => {
-      const [day, month, year] = dateStr.split('/').map(Number);
-      return new Date(year, month - 1, day);
+      if (dateStr.includes('-')) {
+        // Format ISO: YYYY-MM-DD
+        return new Date(dateStr);
+      } else if (dateStr.includes('/')) {
+        // Format français: DD/MM/YYYY
+        const [day, month, year] = dateStr.split('/').map(Number);
+        return new Date(year, month - 1, day);
+      } else {
+        return new Date(dateStr); // fallback
+      }
     };
 
     const marchesWithDates = marchesData.filter(m => m.date && m.date.trim());
