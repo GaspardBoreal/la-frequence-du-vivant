@@ -16,7 +16,7 @@ import {
   TrendingUp,
   Activity
 } from 'lucide-react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '../ui/dialog';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Button } from '../ui/button';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '../ui/collapsible';
@@ -148,6 +148,9 @@ const WeatherStationModal: React.FC<WeatherStationModalProps> = ({
               Nouvel onglet
             </Button>
           </DialogTitle>
+          <DialogDescription>
+            Informations détaillées sur la station météorologique et ses relevés historiques
+          </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-6">
@@ -163,18 +166,18 @@ const WeatherStationModal: React.FC<WeatherStationModalProps> = ({
               <div className="space-y-3">
                 <div className="flex items-center gap-3">
                   <Hash className="h-4 w-4 text-gray-500" />
-                  <div>
-                    <p className="text-sm text-gray-600">Nom</p>
-                    <p className="font-medium">{stationData?.value || 'Non disponible'}</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-3">
-                  <Globe className="h-4 w-4 text-gray-500" />
-                  <div>
-                    <p className="text-sm text-gray-600">Code station</p>
-                    <p className="font-medium">{stationData?.code || '33415001'}</p>
-                  </div>
-                </div>
+                   <div>
+                     <p className="text-sm text-gray-600">Nom</p>
+                     <p className="font-medium">{stationData?.name || stationData?.value || 'Non disponible'}</p>
+                   </div>
+                 </div>
+                 <div className="flex items-center gap-3">
+                   <Globe className="h-4 w-4 text-gray-500" />
+                   <div>
+                     <p className="text-sm text-gray-600">Code station</p>
+                     <p className="font-medium">{stationData?.code || 'Non disponible'}</p>
+                   </div>
+                 </div>
               </div>
               <div className="space-y-3">
                 <div className="flex items-center gap-3">
@@ -186,10 +189,10 @@ const WeatherStationModal: React.FC<WeatherStationModalProps> = ({
                 </div>
                 <div className="flex items-center gap-3">
                   <Mountain className="h-4 w-4 text-gray-500" />
-                  <div>
-                    <p className="text-sm text-gray-600">Élévation</p>
-                    <p className="font-medium">{stationData?.elevation || '42 m'}</p>
-                  </div>
+                   <div>
+                     <p className="text-sm text-gray-600">Élévation</p>
+                     <p className="font-medium">{stationData?.elevation || 'Non disponible'}</p>
+                   </div>
                 </div>
               </div>
             </CardContent>
@@ -227,10 +230,10 @@ const WeatherStationModal: React.FC<WeatherStationModalProps> = ({
                         }
                       </p>
                     </div>
-                    <div>
-                      <p className="text-sm text-gray-600 mb-1">Commune</p>
-                      <p className="font-medium">{stationData?.commune || 'ST GERVAIS'}</p>
-                    </div>
+                     <div>
+                       <p className="text-sm text-gray-600 mb-1">Commune</p>
+                       <p className="font-medium">{stationData?.commune || stationData?.name || 'Non disponible'}</p>
+                     </div>
                   </div>
                   <div className="mt-4 p-4 bg-green-50 rounded-lg">
                     <p className="text-sm text-green-700">
