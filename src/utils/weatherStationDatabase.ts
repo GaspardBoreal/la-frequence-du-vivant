@@ -42,6 +42,14 @@ export const WEATHER_STATIONS: Record<string, WeatherStation> = {
     region: 'Nouvelle-Aquitaine', 
     department: 'Gironde'
   },
+  '33394002': {
+    code: '33394002',
+    name: 'ST EMILION',
+    coordinates: { lat: 44.9000, lng: -0.2333 },
+    elevation: 35,
+    region: 'Nouvelle-Aquitaine',
+    department: 'Gironde'
+  },
   '33273001': {
     code: '33273001',
     name: 'MARTIGNAS-SUR-JALLE',
