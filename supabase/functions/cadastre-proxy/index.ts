@@ -12,6 +12,9 @@ serve(async (req) => {
   }
 
   try {
+    console.log('🔍 [CADASTRE PROXY] Headers reçus:', req.headers);
+    console.log('🔍 [CADASTRE PROXY] URL complète:', req.url);
+    
     const url = new URL(req.url);
     const parcelId = url.searchParams.get('parcelId');
 

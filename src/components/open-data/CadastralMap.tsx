@@ -37,6 +37,12 @@ const CadastralMap: React.FC<CadastralMapProps> = ({
       // Utiliser l'Edge Function Supabase pour contourner CORS
       const edgeFunctionUrl = `https://xzbunrtgbfbhinkzkzhf.supabase.co/functions/v1/cadastre-proxy?parcelId=${parcelId}`;
       console.log('🏘️ [CADASTRAL] URL Edge Function:', edgeFunctionUrl);
+      console.log('🏘️ [CADASTRAL] Headers envoyés:', {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+        'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inh6YnVucnRnYmZiaGlua3premhmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTM1MTMxNTIsImV4cCI6MjA2OTA4OTE1Mn0.v1QqULucMrt9JFQatk5FPtIwXmuOFuP08Udg11_20_g',
+        'authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inh6YnVucnRnYmZiaGlua3premhmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTM1MTMxNTIsImV4cCI6MjA2OTA4OTE1Mn0.v1QqULucMrt9JFQatk5FPtIwXmuOFuP08Udg11_20_g'
+      });
       
       const response = await fetch(edgeFunctionUrl, {
         method: 'GET',
