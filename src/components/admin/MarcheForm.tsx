@@ -100,6 +100,7 @@ const MarcheForm: React.FC<MarcheFormProps> = ({
   }, [mode, marche, reset]);
   
   const onSubmit = async (data: FormData) => {
+    console.log('🔄 Début de la sauvegarde avec les données:', data);
     setIsSubmitting(true);
     try {
       // Utiliser les valeurs des éditeurs riches au lieu des champs du formulaire
@@ -121,26 +122,37 @@ const MarcheForm: React.FC<MarcheFormProps> = ({
         themesPrincipaux: [themePrincipalRichText].filter(Boolean)
       };
       
+      console.log('📦 Données API préparées:', apiData);
+      
       if (mode === 'create') {
+        console.log('➕ Mode création');
         const newMarcheId = await createMarche(apiData);
         console.log('✅ Nouvelle marche créée avec l\'ID:', newMarcheId);
         toast.success('Marche créée avec succès !');
       } else if (mode === 'edit' && marcheId) {
-        await updateMarche(marcheId, apiData);
-        console.log('✅ Marche mise à jour avec succès');
-        toast.success('Marche mise à jour avec succès !');
+        console.log('✏️ Mode édition pour ID:', marcheId);
+        const result = await updateMarche(marcheId, apiData);
+        console.log('🔄 Résultat de la mise à jour:', result);
+        
+        if (result) {
+          console.log('✅ Marche mise à jour avec succès');
+          toast.success('Marche mise à jour avec succès !');
 
-        await queryClient.invalidateQueries({
-          queryKey: ['marches-supabase']
-        });
-        await queryClient.refetchQueries({
-          queryKey: ['marches-supabase']
-        });
+          await queryClient.invalidateQueries({
+            queryKey: ['marches-supabase']
+          });
+          await queryClient.refetchQueries({
+            queryKey: ['marches-supabase']
+          });
+        } else {
+          throw new Error('La mise à jour a échoué');
+        }
       }
       onSuccess();
     } catch (error) {
       console.error('💥 Erreur lors de la sauvegarde:', error);
-      toast.error('Erreur lors de la sauvegarde. Veuillez réessayer.');
+      console.error('💥 Stack trace:', error instanceof Error ? error.stack : 'Pas de stack trace');
+      toast.error(`Erreur lors de la sauvegarde: ${error instanceof Error ? error.message : 'Erreur inconnue'}`);
     } finally {
       setIsSubmitting(false);
     }
