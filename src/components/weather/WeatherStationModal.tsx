@@ -194,15 +194,19 @@ const WeatherStationModal: React.FC<WeatherStationModalProps> = ({
                 <div className="flex items-center gap-3">
                   <MapPin className="h-4 w-4 text-gray-500" />
                   <div>
-                    <p className="text-sm text-gray-600">Pays</p>
-                    <p className="font-medium">France</p>
+                     <p className="text-sm text-gray-600">Pays</p>
+                     <p className="font-bold text-xl text-green-600 bg-yellow-100 p-2 rounded">
+                       {stationData?.country || 'Non disponible'}
+                     </p>
                   </div>
                 </div>
                 <div className="flex items-center gap-3">
                   <Mountain className="h-4 w-4 text-gray-500" />
                    <div>
                      <p className="text-sm text-gray-600">Élévation</p>
-                     <p className="font-medium">{stationData?.elevation || 'Non disponible'}</p>
+                     <p className="font-bold text-xl text-purple-600 bg-yellow-100 p-2 rounded">
+                       {stationData?.elevation || 'Non disponible'}
+                     </p>
                    </div>
                 </div>
               </div>
@@ -243,7 +247,9 @@ const WeatherStationModal: React.FC<WeatherStationModalProps> = ({
                     </div>
                      <div>
                        <p className="text-sm text-gray-600 mb-1">Commune</p>
-                       <p className="font-medium">{stationData?.commune || stationData?.name || 'Non disponible'}</p>
+                       <p className="font-bold text-xl text-cyan-600 bg-yellow-100 p-2 rounded">
+                         {stationData?.commune || stationData?.name || 'Non disponible'}
+                       </p>
                      </div>
                   </div>
                   <div className="mt-4 p-4 bg-green-50 rounded-lg">
