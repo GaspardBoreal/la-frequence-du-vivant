@@ -29,38 +29,38 @@ const CadastralMap: React.FC<CadastralMapProps> = ({
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<L.Map | null>(null);
 
-  // Fonction pour récupérer la géométrie de la parcelle via l'API Etalab
+  // Fonction pour récupérer la géométrie de la parcelle via Supabase Edge Function
   const fetchParcelGeometry = async (parcelId: string) => {
     try {
       console.log('🔍 [CADASTRAL] Récupération géométrie pour:', parcelId);
       
-      // Extraire le code commune des 5 premiers caractères
-      const codeCommune = parcelId.substring(0, 5);
-      console.log('🏘️ [CADASTRAL] Code commune:', codeCommune);
+      // Utiliser l'Edge Function Supabase pour contourner CORS
+      const edgeFunctionUrl = `https://xzbunrtgbfbhinkzkzhf.supabase.co/functions/v1/cadastre-proxy?parcelId=${parcelId}`;
+      console.log('🏘️ [CADASTRAL] URL Edge Function:', edgeFunctionUrl);
       
-      // API Etalab pour récupérer la géométrie de la parcelle - nouvelle URL
-      const response = await fetch(
-        `https://cadastre.data.gouv.fr/data/etalab-cadastre/latest/geojson/communes/${codeCommune}/cadastre-${codeCommune}-parcelles.json`
-      );
+      const response = await fetch(edgeFunctionUrl, {
+        method: 'GET',
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+        },
+      });
       
       if (!response.ok) {
-        console.warn('⚠️ [CADASTRAL] Réponse API non-OK:', response.status);
+        console.warn('⚠️ [CADASTRAL] Réponse Edge Function non-OK:', response.status);
+        const errorData = await response.json();
+        console.warn('⚠️ [CADASTRAL] Détails erreur:', errorData);
         return null;
       }
       
-      const geoJsonData = await response.json();
-      console.log('📦 [CADASTRAL] Données GeoJSON reçues:', geoJsonData);
+      const result = await response.json();
+      console.log('📦 [CADASTRAL] Résultat Edge Function:', result);
       
-      // Chercher la parcelle avec l'ID correspondant
-      const parcel = geoJsonData.features?.find((feature: any) => 
-        feature.properties?.id === parcelId
-      );
-      
-      if (parcel) {
-        console.log('✅ [CADASTRAL] Parcelle trouvée:', parcel);
-        return parcel.geometry;
+      if (result.success && result.data?.geometry) {
+        console.log('✅ [CADASTRAL] Géométrie récupérée avec succès');
+        return result.data.geometry;
       } else {
-        console.warn('❌ [CADASTRAL] Parcelle non trouvée dans les données');
+        console.warn('❌ [CADASTRAL] Aucune géométrie dans la réponse');
         return null;
       }
       
