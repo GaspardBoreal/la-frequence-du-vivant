@@ -1,4 +1,3 @@
-
 project_id = "xzbunrtgbfbhinkzkzhf"
 
 [api]
@@ -15,6 +14,9 @@ verify_jwt = false
 verify_jwt = false
 
 [functions.lexicon-proxy]
+verify_jwt = false
+
+[functions.cadastre-proxy]
 verify_jwt = false
 
 [functions.biodiversity-data]
