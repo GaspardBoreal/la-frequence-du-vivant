@@ -102,10 +102,9 @@ const BioacousticHeroSection: React.FC<BioacousticHeroSectionProps> = ({
 
       {/* Content Overlay */}
       <div className="relative z-10 flex flex-col h-full px-6">
-        {/* Top Section */}
-        <div className="flex justify-between items-start pt-6">
-          {/* Left Section: Back Button + Previous Arrow */}
-          <div className="flex items-center space-x-3">
+        {/* Top Section - Centered Navigation Bar */}
+        <div className="flex justify-center items-center pt-6">
+          <div className="flex items-center space-x-6 bg-white/5 backdrop-blur-lg rounded-2xl px-6 py-3 border border-white/10">
             {/* Back Button */}
             <motion.div 
               initial={{ opacity: 0, x: -20 }}
@@ -116,7 +115,7 @@ const BioacousticHeroSection: React.FC<BioacousticHeroSectionProps> = ({
                 variant="ghost" 
                 size="sm" 
                 onClick={onBack}
-                className="bg-white/10 backdrop-blur-md hover:bg-white/20 text-white border-white/20"
+                className="bg-white/10 backdrop-blur-md hover:bg-white/20 text-white border-white/20 transition-all duration-200 hover:scale-105"
               >
                 <ArrowLeft className="h-4 w-4 mr-2" />
                 Carte
@@ -124,45 +123,52 @@ const BioacousticHeroSection: React.FC<BioacousticHeroSectionProps> = ({
             </motion.div>
 
             {/* Previous Arrow */}
-            {previousMarche && onNavigateToMarche && (
+            {previousMarche && onNavigateToMarche ? (
               <motion.div
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
                 transition={{ delay: 0.4 }}
               >
                 <Button
                   variant="ghost"
                   size="sm"
                   onClick={() => onNavigateToMarche(previousMarche)}
-                  className="bg-white/10 backdrop-blur-md hover:bg-white/20 text-white border-white/20 p-2"
+                  className="bg-gradient-to-r from-emerald-500/20 to-teal-500/20 backdrop-blur-md hover:from-emerald-400/30 hover:to-teal-400/30 text-white border border-emerald-400/30 p-3 rounded-xl transition-all duration-300 hover:scale-110 hover:shadow-lg hover:shadow-emerald-500/20"
                   title={`Expérience précédente: ${previousMarche.nomMarche || previousMarche.ville}`}
                 >
-                  <ChevronLeft className="h-4 w-4" />
+                  <ChevronLeft className="h-5 w-5" />
                 </Button>
               </motion.div>
+            ) : (
+              <div className="w-12 h-10"></div>
             )}
-          </div>
 
-          {/* Right Section: Next Arrow + Vue Badge */}
-          <div className="flex items-center space-x-3">
+            {/* Separator */}
+            <div className="h-6 w-px bg-white/20"></div>
+
             {/* Next Arrow */}
-            {nextMarche && onNavigateToMarche && (
+            {nextMarche && onNavigateToMarche ? (
               <motion.div
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
                 transition={{ delay: 0.4 }}
               >
                 <Button
                   variant="ghost"
                   size="sm"
                   onClick={() => onNavigateToMarche(nextMarche)}
-                  className="bg-white/10 backdrop-blur-md hover:bg-white/20 text-white border-white/20 p-2"
+                  className="bg-gradient-to-r from-emerald-500/20 to-teal-500/20 backdrop-blur-md hover:from-emerald-400/30 hover:to-teal-400/30 text-white border border-emerald-400/30 p-3 rounded-xl transition-all duration-300 hover:scale-110 hover:shadow-lg hover:shadow-emerald-500/20"
                   title={`Expérience suivante: ${nextMarche.nomMarche || nextMarche.ville}`}
                 >
-                  <ChevronRight className="h-4 w-4" />
+                  <ChevronRight className="h-5 w-5" />
                 </Button>
               </motion.div>
+            ) : (
+              <div className="w-12 h-10"></div>
             )}
+
+            {/* Separator */}
+            <div className="h-6 w-px bg-white/20"></div>
 
             {/* Vue Badge */}
             <motion.div 
@@ -172,7 +178,7 @@ const BioacousticHeroSection: React.FC<BioacousticHeroSectionProps> = ({
             >
               <Badge 
                 variant="outline" 
-                className="bg-amber-500/20 backdrop-blur-md text-amber-100 border-amber-400/30 px-3 py-1 font-medium"
+                className="bg-amber-500/20 backdrop-blur-md text-amber-100 border-amber-400/30 px-4 py-2 font-medium transition-all duration-200 hover:bg-amber-400/30 hover:scale-105"
               >
                 Vue 2025-2037
               </Badge>
