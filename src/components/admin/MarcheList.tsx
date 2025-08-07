@@ -98,12 +98,16 @@ const MarcheList: React.FC<MarcheListProps> = ({
     // Nettoyer la date pour éviter les caractères parasites et le 0 à la fin
     const cleanDate = dateString.replace(/[^\d-]/g, '').replace(/0$/, '');
 
-    // Vérifier si c'est une date valide
+    // Vérifier si c'est une date valide au format ISO (YYYY-MM-DD)
     const date = new Date(cleanDate);
     if (isNaN(date.getTime())) {
       return dateString; // Retourner la date originale si elle n'est pas valide
     }
-    return date.toLocaleDateString('fr-FR', {
+    
+    // S'assurer que la date est correctement interprétée en UTC pour éviter les décalages
+    const utcDate = new Date(date.getTime() + date.getTimezoneOffset() * 60000);
+    
+    return utcDate.toLocaleDateString('fr-FR', {
       year: 'numeric',
       month: 'long',
       day: 'numeric'
