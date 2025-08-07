@@ -466,10 +466,31 @@ const WeatherStationModal: React.FC<WeatherStationModalProps> = ({
                       <div className="text-sm text-gray-600 mb-4">
                         Stations triées par distance croissante depuis le point GPS de cette marche
                       </div>
+                      {/* Station actuelle en premier */}
+                      {stationData && (
+                        <div className="relative">
+                          <StationComparisonRow 
+                            key={`current-${stationData.Code}`}
+                            station={{
+                              name: stationData.Nom,
+                              code: stationData.Code,
+                              coordinates: {
+                                lat: stationData.Latitude,
+                                lng: stationData.Longitude
+                              },
+                              distance: 0
+                            }}
+                            isCurrentStation={true}
+                          />
+                        </div>
+                      )}
+                      
+                      {/* Autres stations */}
                       {otherStations.map((station) => (
                         <StationComparisonRow 
                           key={station.code} 
                           station={station}
+                          isCurrentStation={false}
                         />
                       ))}
                     </div>
