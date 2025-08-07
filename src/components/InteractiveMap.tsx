@@ -195,10 +195,9 @@ const InteractiveMap: React.FC<InteractiveMapProps> = ({
   const bonzacMarkers = validMarchesData.filter(m => m.ville === 'BONZAC');
   console.log(`🏘️ Marqueurs BONZAC valides à afficher:`, bonzacMarkers.length, bonzacMarkers);
 
-  // Forcer le re-render de la carte quand les données changent
+  // Stable map key - ne pas recréer la carte à chaque changement de données
   useEffect(() => {
-    console.log('🔄 Données filtrées changées, mise à jour de la carte');
-    setMapKey(prev => prev + 1);
+    console.log('🔄 Données filtrées changées - marqueurs mis à jour sans recréer la carte');
   }, [filteredMarchesData]);
 
   const poeticIcon = createPoeticIcon(theme);

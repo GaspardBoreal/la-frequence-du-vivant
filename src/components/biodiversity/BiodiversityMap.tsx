@@ -305,6 +305,7 @@ export const BiodiversityMap: React.FC<BiodiversityMapProps> = ({
           style={{ height: '100%', width: '100%' }}
           zoomControl={false}
           className="z-0"
+          key={`biodiversity-map-${center[0]}-${center[1]}`}
         >
           <TileLayer
             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
