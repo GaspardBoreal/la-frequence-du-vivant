@@ -55,11 +55,13 @@ const LexiconSubSection: React.FC<LexiconSubSectionProps> = ({ marche, theme }) 
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
           >
-            <CadastralMap 
-              latitude={marche.latitude} 
-              longitude={marche.longitude}
-              className="w-full h-[500px]"
-            />
+        <CadastralMap 
+          latitude={marche.latitude} 
+          longitude={marche.longitude}
+          parcelGeometry={lexiconResponse?.data?.geometry}
+          parcelData={lexiconResponse?.data}
+          className="w-full h-[500px]"
+        />
           </motion.div>
 
           {/* État de chargement */}

@@ -15,12 +15,16 @@ interface CadastralMapProps {
   latitude: number;
   longitude: number;
   className?: string;
+  parcelGeometry?: any;
+  parcelData?: any;
 }
 
 const CadastralMap: React.FC<CadastralMapProps> = ({ 
   latitude, 
   longitude, 
-  className = "w-full h-96" 
+  className = "w-full h-96",
+  parcelGeometry,
+  parcelData
 }) => {
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<L.Map | null>(null);
@@ -115,8 +119,8 @@ const CadastralMap: React.FC<CadastralMapProps> = ({
       iconAnchor: [12, 12],
     });
 
-    // Add marker
-    L.marker([latitude, longitude], { icon: customIcon })
+    // Add GPS marker for the experience location
+    const gpsMarker = L.marker([latitude, longitude], { icon: customIcon })
       .addTo(map)
       .bindPopup(`
         <div style="text-align: center; padding: 8px;">
@@ -125,16 +129,66 @@ const CadastralMap: React.FC<CadastralMapProps> = ({
         </div>
       `);
 
+    // Add parcel polygon if geometry is available
+    let parcelLayer = null;
+    const allBounds = [[latitude, longitude]];
+    
+    if (parcelGeometry && parcelGeometry.coordinates) {
+      try {
+        const parcelGeoJSON = L.geoJSON(parcelGeometry, {
+          style: {
+            color: '#ef4444',
+            weight: 3,
+            opacity: 0.8,
+            fillColor: '#fbbf24',
+            fillOpacity: 0.3,
+          }
+        }).addTo(map);
+        
+        parcelLayer = parcelGeoJSON;
+        
+        // Add popup to parcel
+        const parcelInfo = parcelData ? `
+          <div style="padding: 8px;">
+            <strong>Parcelle cadastrale</strong><br>
+            ${parcelData.parcel_id ? `ID: ${parcelData.parcel_id}<br>` : ''}
+            ${parcelData.commune ? `Commune: ${parcelData.commune}<br>` : ''}
+            ${parcelData.surface_ha ? `Surface: ${parcelData.surface_ha} ha<br>` : ''}
+            ${parcelData.culture_type ? `Culture: ${parcelData.culture_type}` : ''}
+          </div>
+        ` : `
+          <div style="padding: 8px;">
+            <strong>Parcelle cadastrale LEXICON</strong>
+          </div>
+        `;
+        
+        parcelGeoJSON.bindPopup(parcelInfo);
+        
+        // Get bounds to include both GPS point and parcel
+        const parcelBounds = parcelGeoJSON.getBounds();
+        allBounds.push([parcelBounds.getNorth(), parcelBounds.getEast()]);
+        allBounds.push([parcelBounds.getSouth(), parcelBounds.getWest()]);
+        
+      } catch (error) {
+        console.warn('Erreur lors de l\'affichage de la parcelle:', error);
+      }
+    }
+
     // Layer control
     const baseLayers = {
       'Plan': osmLayer,
       'Vue satellite': satelliteLayer
     };
 
-    const overlayLayers = {
+    const overlayLayers: any = {
       'Parcelles cadastrales': cadastralParcelsLayer,
       'Limites administratives': administrativeBoundariesLayer
     };
+    
+    // Add parcel layer to control if available
+    if (parcelLayer) {
+      overlayLayers['Parcelle LEXICON'] = parcelLayer;
+    }
 
     L.control.layers(baseLayers, overlayLayers, {
       position: 'topright',
@@ -147,6 +201,12 @@ const CadastralMap: React.FC<CadastralMapProps> = ({
       metric: true,
       imperial: false
     }).addTo(map);
+
+    // Fit map to show both GPS point and parcel (if available)
+    if (allBounds.length > 1) {
+      const group = new L.FeatureGroup([gpsMarker, ...(parcelLayer ? [parcelLayer] : [])]);
+      map.fitBounds(group.getBounds(), { padding: [20, 20] });
+    }
 
     // Cleanup function
     return () => {
