@@ -24,10 +24,12 @@ import {
   Calendar,
   TrendingUp,
   TrendingDown,
-  Activity
+  Activity,
+  MousePointer
 } from 'lucide-react';
 import { Card, CardContent } from '../ui/card';
 import { Button } from '../ui/button';
+import WeatherStationModal from '../weather/WeatherStationModal';
 
 interface WeatherDataPoint {
   timestamp: string;
@@ -51,6 +53,7 @@ const WeatherVisualization: React.FC<WeatherVisualizationProps> = ({
   const [hoveredPoint, setHoveredPoint] = useState<WeatherDataPoint | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [isStationModalOpen, setIsStationModalOpen] = useState(false);
 
   // Transformation des données LEXICON vers notre format
   const processedData = useMemo(() => {
@@ -179,6 +182,16 @@ const WeatherVisualization: React.FC<WeatherVisualizationProps> = ({
     return <Cloud className="h-8 w-8 text-gray-400" />;
   };
 
+  // Gestionnaires pour le modal de station
+  const handleStationClick = () => {
+    setIsStationModalOpen(true);
+  };
+
+  const handleOpenInNewTab = () => {
+    // Pour l'instant, on garde le modal ouvert - ceci pourrait être étendu pour ouvrir une vraie nouvelle page
+    window.open(window.location.href, '_blank');
+  };
+
   if (!processedData.length) {
     return (
       <div className="bg-white/70 backdrop-blur-sm rounded-xl p-6 text-center">
@@ -195,19 +208,26 @@ const WeatherVisualization: React.FC<WeatherVisualizationProps> = ({
         animate={{ y: 0, opacity: 1 }}
         className="grid grid-cols-1 md:grid-cols-3 gap-4"
       >
-        {/* Station info */}
-        <Card className="bg-gradient-to-br from-sky-50 to-blue-50 border-sky-200">
-          <CardContent className="p-4">
+        {/* Station info - maintenant cliquable */}
+        <Card className="bg-gradient-to-br from-sky-50 to-blue-50 border-sky-200 cursor-pointer hover:shadow-lg transition-all duration-300 hover:border-sky-300 group">
+          <CardContent className="p-4" onClick={handleStationClick}>
             <div className="flex items-center gap-3">
               <motion.div
                 animate={{ rotate: [0, 10, 0, -10, 0] }}
                 transition={{ duration: 3, repeat: Infinity }}
+                className="group-hover:scale-110 transition-transform duration-300"
               >
                 {stats && getWeatherIcon(stats.temperature.current, stats.humidity.current)}
               </motion.div>
-              <div>
-                <p className="text-sm text-gray-600">Station météorologique</p>
-                <p className="font-bold text-gray-800">{stationName}</p>
+              <div className="flex-1">
+                <div className="flex items-center gap-2">
+                  <p className="text-sm text-gray-600">Station météorologique</p>
+                  <MousePointer className="h-3 w-3 text-sky-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                </div>
+                <p className="font-bold text-gray-800 group-hover:text-sky-700 transition-colors duration-300">{stationName}</p>
+                <p className="text-xs text-sky-600 opacity-0 group-hover:opacity-100 transition-opacity duration-300 mt-1">
+                  Cliquez pour voir les détails
+                </p>
               </div>
             </div>
           </CardContent>
@@ -454,6 +474,15 @@ const WeatherVisualization: React.FC<WeatherVisualizationProps> = ({
           </Card>
         </motion.div>
       )}
+
+      {/* Modal de détails de la station */}
+      <WeatherStationModal
+        isOpen={isStationModalOpen}
+        onClose={() => setIsStationModalOpen(false)}
+        stationData={{ value: stationName }}
+        weatherData={weatherData}
+        onOpenInNewTab={handleOpenInNewTab}
+      />
     </div>
   );
 };
