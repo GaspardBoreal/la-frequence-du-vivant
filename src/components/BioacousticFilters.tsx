@@ -199,10 +199,10 @@ const BioacousticFilters: React.FC<BioacousticFiltersProps> = ({ marches, onFilt
       });
     });
     
-    // Convertir en tableau et trier
+    // Convertir en tableau et trier par ordre décroissant de count
     return Object.entries(tagCounts)
       .map(([tag, count]) => ({ tag, count }))
-      .sort((a, b) => a.tag.localeCompare(b.tag));
+      .sort((a, b) => b.count - a.count);
   };
 
   const uniqueRegions = getUniqueRegions();
