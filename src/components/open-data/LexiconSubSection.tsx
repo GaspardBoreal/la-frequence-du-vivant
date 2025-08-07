@@ -8,6 +8,7 @@ import { MarcheTechnoSensible } from '../../utils/googleSheetsApi';
 import { RegionalTheme } from '../../utils/regionalThemes';
 import { useLexiconData } from '../../hooks/useLexiconData';
 import LexiconStructuredDisplay from './LexiconStructuredDisplay';
+import CadastralMap from './CadastralMap';
 
 interface LexiconSubSectionProps {
   marche: MarcheTechnoSensible;
@@ -44,11 +45,22 @@ const LexiconSubSection: React.FC<LexiconSubSectionProps> = ({ marche, theme }) 
   };
 
   return (
-    <div className="max-w-4xl mx-auto">
+    <div className="max-w-6xl mx-auto">
       <div className="gaspard-glass rounded-3xl p-12 space-y-8">
-        <div className="relative z-10 space-y-6">
+        <div className="relative z-10 space-y-8">
 
-          {/* Informations de débogage */}
+          {/* Carte cadastrale - Toujours affichée */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
+          >
+            <CadastralMap 
+              latitude={marche.latitude} 
+              longitude={marche.longitude}
+              className="w-full h-[500px]"
+            />
+          </motion.div>
 
           {/* État de chargement */}
           {isLoading && (
@@ -82,7 +94,7 @@ const LexiconSubSection: React.FC<LexiconSubSectionProps> = ({ marche, theme }) 
             </motion.div>
           )}
 
-          {/* Affichage structuré des données - Condition moins restrictive */}
+          {/* Affichage structuré des données */}
           {lexiconResponse && (
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -108,6 +120,23 @@ const LexiconSubSection: React.FC<LexiconSubSectionProps> = ({ marche, theme }) 
               )}
             </motion.div>
           )}
+
+          {/* Bouton vers LEXICON externe */}
+          <motion.div
+            className="text-center"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.6 }}
+          >
+            <Button 
+              onClick={openLexiconPage}
+              variant="outline"
+              className="gap-2"
+            >
+              <ExternalLink className="h-4 w-4" />
+              Ouvrir dans LEXICON
+            </Button>
+          </motion.div>
 
         </div>
       </div>
