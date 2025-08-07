@@ -34,7 +34,7 @@ import {
 } from 'recharts';
 import InteractiveStationMap from './InteractiveStationMap';
 import StationComparisonRow from './StationComparisonRow';
-import { getAllStationsSortedByDistance } from '../../utils/weatherStationDatabase';
+import { getAllStationsSortedByDistance, getStationByCode } from '../../utils/weatherStationDatabase';
 import { calculateDistance } from '../../utils/weatherStationGeolocation';
 
 interface WeatherStationModalProps {
@@ -96,19 +96,33 @@ const WeatherStationModal: React.FC<WeatherStationModalProps> = ({
 
   const yearlyData = processYearlyData();
 
-  // Calcul des autres stations triées par distance
-  const otherStations = targetCoordinates ? 
-    getAllStationsSortedByDistance(targetCoordinates).filter(station => 
-      station.code !== stationData?.Code
-    ) : [];
+  // Utiliser ma base de données locale pour les stations météo
+  const allLocalStations = targetCoordinates 
+    ? getAllStationsSortedByDistance(targetCoordinates)
+    : [];
 
-  // Calculer la distance de la station actuelle avec les vraies propriétés
-  const currentStationDistance = targetCoordinates && stationData ? 
-    calculateDistance(targetCoordinates, { 
-      lat: parseFloat(stationData.Latitude || stationData.latitude || 0), 
-      lng: parseFloat(stationData.Longitude || stationData.longitude || 0) 
-    }) :
-    0;
+  // Filtrer et limiter les stations valides (exclure celle courante)
+  const otherStations = allLocalStations
+    .filter(s => s.distance <= 100) // Éliminer les distances aberrantes
+    .filter(s => s.code !== stationData?.Code && s.code !== stationData?.code)
+    .slice(0, 10);
+
+  // Pour la station actuelle, essayer de la trouver dans ma base locale d'abord
+  const currentStationFromLocal = stationData?.Code 
+    ? getStationByCode(stationData.Code)
+    : stationData?.code 
+      ? getStationByCode(stationData.code)
+      : null;
+
+  // Calculer la distance de la station actuelle
+  const currentStationDistance = targetCoordinates && currentStationFromLocal
+    ? calculateDistance(targetCoordinates, currentStationFromLocal.coordinates)
+    : targetCoordinates && stationData 
+      ? calculateDistance(targetCoordinates, {
+          lat: parseFloat(stationData.Latitude || stationData.latitude || 0),
+          lng: parseFloat(stationData.Longitude || stationData.longitude || 0)
+        })
+      : 0;
 
   // Statistiques annuelles
   const yearlyStats = yearlyData.length > 0 ? {
@@ -475,24 +489,26 @@ const WeatherStationModal: React.FC<WeatherStationModalProps> = ({
                       <div className="text-sm text-gray-600 mb-4">
                         Stations triées par distance croissante depuis le point GPS de cette marche
                       </div>
-                      {/* Station actuelle en premier */}
-                      {stationData && (
-                        <div className="relative">
-                          <StationComparisonRow 
-                            key={`current-${stationData.Code || stationData.code}`}
-                            station={{
-                              name: stationData.Nom || stationData.name,
-                              code: stationData.Code || stationData.code,
-                              coordinates: {
-                                lat: parseFloat(stationData.Latitude || stationData.latitude || 0),
-                                lng: parseFloat(stationData.Longitude || stationData.longitude || 0)
-                              },
-                              distance: currentStationDistance
-                            }}
-                            isCurrentStation={true}
-                          />
-                        </div>
-                      )}
+                       {/* Station actuelle en premier */}
+                       {(currentStationFromLocal || stationData) && (
+                         <div className="relative">
+                           <StationComparisonRow 
+                             key={`current-${currentStationFromLocal?.code || stationData?.Code || stationData?.code}`}
+                             station={{
+                               name: currentStationFromLocal?.name || stationData?.Nom || stationData?.name || 'Station inconnue',
+                               code: currentStationFromLocal?.code || stationData?.Code || stationData?.code || 'N/A',
+                               coordinates: currentStationFromLocal 
+                                 ? currentStationFromLocal.coordinates
+                                 : {
+                                     lat: parseFloat(stationData?.Latitude || stationData?.latitude || 0),
+                                     lng: parseFloat(stationData?.Longitude || stationData?.longitude || 0)
+                                   },
+                               distance: currentStationDistance
+                             }}
+                             isCurrentStation={true}
+                           />
+                         </div>
+                       )}
                       
                       {/* Autres stations */}
                       {otherStations.map((station) => (
