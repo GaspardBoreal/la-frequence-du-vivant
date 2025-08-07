@@ -41,27 +41,28 @@ const MarcheDetail = () => {
       return { previousMarche: null, nextMarche: null };
     }
 
-    const marchesWithDates = marchesData
-      .filter(m => m.date && m.date.trim())
-      .sort((a, b) => {
-        const parseDate = (dateStr: string) => {
-          const [day, month, year] = dateStr.split('/').map(Number);
-          return new Date(year, month - 1, day);
-        };
-        
-        const dateA = parseDate(a.date!);
-        const dateB = parseDate(b.date!);
-        return dateA.getTime() - dateB.getTime();
-      });
+    const parseDate = (dateStr: string) => {
+      const [day, month, year] = dateStr.split('/').map(Number);
+      return new Date(year, month - 1, day);
+    };
 
-    const currentIndex = marchesWithDates.findIndex(m => m.id === marche.id);
+    const marchesWithDates = marchesData.filter(m => m.date && m.date.trim());
     
-    if (currentIndex === -1) {
+    if (!marche.date) {
       return { previousMarche: null, nextMarche: null };
     }
 
-    const previousMarche = currentIndex > 0 ? marchesWithDates[currentIndex - 1] : null;
-    const nextMarche = currentIndex < marchesWithDates.length - 1 ? marchesWithDates[currentIndex + 1] : null;
+    const currentDate = parseDate(marche.date);
+
+    // Précédente : date < currentDate, triée par date décroissante, prendre la première
+    const previousMarche = marchesWithDates
+      .filter(m => parseDate(m.date!).getTime() < currentDate.getTime())
+      .sort((a, b) => parseDate(b.date!).getTime() - parseDate(a.date!).getTime())[0] || null;
+
+    // Suivante : date > currentDate, triée par date croissante, prendre la première  
+    const nextMarche = marchesWithDates
+      .filter(m => parseDate(m.date!).getTime() > currentDate.getTime())
+      .sort((a, b) => parseDate(a.date!).getTime() - parseDate(b.date!).getTime())[0] || null;
 
     return { previousMarche, nextMarche };
   }, [marche, marchesData]);
