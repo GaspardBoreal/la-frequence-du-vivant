@@ -52,21 +52,36 @@ const CadastralMap: React.FC<CadastralMapProps> = ({
       }
     );
 
-    // Cadastral overlay - simplified approach
-    const cadastralLayer = L.tileLayer(
-      'https://wxs.ign.fr/essentiels/geoportail/wmts?REQUEST=GetTile&SERVICE=WMTS&VERSION=1.0.0&STYLE=bdparcellaire&TILEMATRIXSET=PM&FORMAT=image/png&LAYER=CADASTRALPARCELS.PARCELLAIRE_EXPRESS&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}',
+    // Cadastral overlay - trying multiple sources
+    const cadastralLayer = L.tileLayer.wms('https://www.geoportail.gouv.fr/depot/api/carto/LIMITES_ADMINISTRATIVES/wms', {
+      layers: 'LIMITES_ADMINISTRATIVES:commune',
+      format: 'image/png',
+      transparent: true,
+      attribution: '© IGN - Limites administratives',
+      opacity: 0.6,
+      maxZoom: 18,
+    });
+
+    // Alternative cadastral layer using different service
+    const cadastralParcelsLayer = L.tileLayer(
+      'https://cadastre.data.gouv.fr/bundler/cadastre-etalab/{z}/{x}/{y}.pbf?style=parcelles',
       {
-        attribution: '© IGN - Cadastre',
+        attribution: '© Etalab - Cadastre',
         opacity: 0.7,
-        maxZoom: 18,
+        maxZoom: 20,
       }
     );
 
     // Add base layer first
     osmLayer.addTo(map);
     
-    // Add cadastral overlay
-    cadastralLayer.addTo(map);
+    // Try to add cadastral overlay (will fallback if first doesn't work)
+    try {
+      cadastralParcelsLayer.addTo(map);
+    } catch (e) {
+      console.log('Trying alternative cadastral source...');
+      cadastralLayer.addTo(map);
+    }
 
     // Custom marker for the location
     const customIcon = L.divIcon({
@@ -112,7 +127,8 @@ const CadastralMap: React.FC<CadastralMapProps> = ({
     };
 
     const overlayLayers = {
-      'Parcelles cadastrales': cadastralLayer
+      'Parcelles cadastrales': cadastralParcelsLayer,
+      'Limites communales': cadastralLayer
     };
 
     L.control.layers(baseLayers, overlayLayers, {
