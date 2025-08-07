@@ -211,9 +211,9 @@ const CadastralMap: React.FC<CadastralMapProps> = ({
       // Vérifier si on a une géométrie de parcelle ou si on doit la récupérer
       let finalParcelGeometry = parcelGeometry;
       
-      // Tentative avec l'Edge Function si on a un parcelId
-      if (!finalParcelGeometry && (parcelData?.parcel_id || parcelData?.id)) {
-        const parcelId = parcelData.parcel_id || parcelData.id;
+      // PRIORITÉ : Utiliser l'Edge Function avec l'ID cadastral de LEXICON
+      if (!finalParcelGeometry && (parcelData?.parcel_id || parcelData?.identifiant_cadastral || parcelData?.id)) {
+        const parcelId = parcelData.parcel_id || parcelData.identifiant_cadastral || parcelData.id;
         console.log('🏘️ [CADASTRAL] Tentative avec Edge Function, parcelId:', parcelId);
         
         try {
@@ -223,14 +223,13 @@ const CadastralMap: React.FC<CadastralMapProps> = ({
             finalParcelGeometry = parcelGeometry.geometry;
           }
         } catch (error) {
-          console.warn('⚠️ [CADASTRAL] Edge Function a échoué, passage au fallback:', error);
+          console.error('❌ [CADASTRAL] Edge Function a échoué:', error);
         }
       }
       
-      // Fallback : essayer avec les coordonnées si aucun identifiant ou si la récupération a échoué
       if (!finalParcelGeometry) {
-        console.log('🌍 [CADASTRAL MAP] Tentative de récupération par coordonnées');
-        finalParcelGeometry = await fetchCadastralDataByCoordinates(latitude, longitude);
+        console.warn('⚠️ [CADASTRAL MAP] Aucune géométrie de parcelle disponible');
+        console.log('🔍 [CADASTRAL MAP] Données parcelData disponibles:', Object.keys(parcelData || {}));
       }
 
       if (!finalParcelGeometry) {
