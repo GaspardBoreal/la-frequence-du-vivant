@@ -133,7 +133,10 @@ const CadastralMap: React.FC<CadastralMapProps> = ({
     let parcelLayer = null;
     const allBounds = [[latitude, longitude]];
     
+    console.log('🗺️ [CADASTRAL MAP] Données reçues:', { parcelGeometry, parcelData });
+    
     if (parcelGeometry && parcelGeometry.coordinates) {
+      console.log('✅ [CADASTRAL MAP] Géométrie de parcelle trouvée, affichage...');
       try {
         const parcelGeoJSON = L.geoJSON(parcelGeometry, {
           style: {
@@ -170,8 +173,13 @@ const CadastralMap: React.FC<CadastralMapProps> = ({
         allBounds.push([parcelBounds.getSouth(), parcelBounds.getWest()]);
         
       } catch (error) {
-        console.warn('Erreur lors de l\'affichage de la parcelle:', error);
+        console.error('❌ [CADASTRAL MAP] Erreur lors de l\'affichage de la parcelle:', error);
+        console.log('🔍 [CADASTRAL MAP] Géométrie problématique:', parcelGeometry);
       }
+    } else {
+      console.warn('⚠️ [CADASTRAL MAP] Aucune géométrie de parcelle disponible');
+      console.log('🔍 [CADASTRAL MAP] parcelGeometry reçu:', parcelGeometry);
+      console.log('🔍 [CADASTRAL MAP] parcelData reçu:', parcelData);
     }
 
     // Layer control
