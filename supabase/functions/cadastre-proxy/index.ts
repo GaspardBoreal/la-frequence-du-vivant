@@ -12,7 +12,7 @@ serve(async (req) => {
   }
 
   try {
-    console.log('🔍 [CADASTRE PROXY] Headers reçus:', req.headers);
+    console.log('🔍 [CADASTRE PROXY] Méthode de requête:', req.method);
     console.log('🔍 [CADASTRE PROXY] URL complète:', req.url);
     
     let parcelId: string | null = null;
@@ -21,9 +21,23 @@ serve(async (req) => {
     if (req.method === 'GET') {
       const url = new URL(req.url);
       parcelId = url.searchParams.get('parcelId');
+      console.log('🔍 [CADASTRE PROXY] GET parcelId:', parcelId);
     } else if (req.method === 'POST') {
-      const body = await req.json();
-      parcelId = body.parcelId;
+      try {
+        const body = await req.text();
+        console.log('🔍 [CADASTRE PROXY] Body brut reçu:', body);
+        
+        if (body && body.trim()) {
+          const parsedBody = JSON.parse(body);
+          parcelId = parsedBody.parcelId;
+          console.log('🔍 [CADASTRE PROXY] POST parcelId parsé:', parcelId);
+        } else {
+          console.warn('⚠️ [CADASTRE PROXY] Body vide ou null');
+        }
+      } catch (parseError) {
+        console.error('❌ [CADASTRE PROXY] Erreur parsing JSON:', parseError);
+        console.log('🔍 [CADASTRE PROXY] Headers content-type:', req.headers.get('content-type'));
+      }
     }
 
     if (!parcelId) {
