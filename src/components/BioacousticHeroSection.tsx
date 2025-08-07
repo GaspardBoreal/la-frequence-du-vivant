@@ -123,49 +123,51 @@ const BioacousticHeroSection: React.FC<BioacousticHeroSectionProps> = ({
             </motion.div>
 
             {/* Previous Arrow */}
-            {previousMarche && onNavigateToMarche ? (
-              <motion.div
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ delay: 0.4 }}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: 0.4 }}
+            >
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => previousMarche && onNavigateToMarche && onNavigateToMarche(previousMarche)}
+                disabled={!previousMarche || !onNavigateToMarche}
+                className={`backdrop-blur-md border p-3 rounded-xl transition-all duration-300 ${
+                  previousMarche && onNavigateToMarche
+                    ? 'bg-gradient-to-r from-emerald-500/20 to-teal-500/20 hover:from-emerald-400/30 hover:to-teal-400/30 text-white border-emerald-400/30 hover:scale-110 hover:shadow-lg hover:shadow-emerald-500/20'
+                    : 'bg-white/5 text-white/40 border-white/10 cursor-not-allowed'
+                }`}
+                title={previousMarche ? `Expérience précédente: ${previousMarche.nomMarche || previousMarche.ville}` : 'Aucune expérience précédente'}
               >
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => onNavigateToMarche(previousMarche)}
-                  className="bg-gradient-to-r from-emerald-500/20 to-teal-500/20 backdrop-blur-md hover:from-emerald-400/30 hover:to-teal-400/30 text-white border border-emerald-400/30 p-3 rounded-xl transition-all duration-300 hover:scale-110 hover:shadow-lg hover:shadow-emerald-500/20"
-                  title={`Expérience précédente: ${previousMarche.nomMarche || previousMarche.ville}`}
-                >
-                  <ChevronLeft className="h-5 w-5" />
-                </Button>
-              </motion.div>
-            ) : (
-              <div className="w-12 h-10"></div>
-            )}
+                <ChevronLeft className="h-5 w-5" />
+              </Button>
+            </motion.div>
 
             {/* Separator */}
             <div className="h-6 w-px bg-white/20"></div>
 
             {/* Next Arrow */}
-            {nextMarche && onNavigateToMarche ? (
-              <motion.div
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ delay: 0.4 }}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: 0.4 }}
+            >
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => nextMarche && onNavigateToMarche && onNavigateToMarche(nextMarche)}
+                disabled={!nextMarche || !onNavigateToMarche}
+                className={`backdrop-blur-md border p-3 rounded-xl transition-all duration-300 ${
+                  nextMarche && onNavigateToMarche
+                    ? 'bg-gradient-to-r from-emerald-500/20 to-teal-500/20 hover:from-emerald-400/30 hover:to-teal-400/30 text-white border-emerald-400/30 hover:scale-110 hover:shadow-lg hover:shadow-emerald-500/20'
+                    : 'bg-white/5 text-white/40 border-white/10 cursor-not-allowed'
+                }`}
+                title={nextMarche ? `Expérience suivante: ${nextMarche.nomMarche || nextMarche.ville}` : 'Aucune expérience suivante'}
               >
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => onNavigateToMarche(nextMarche)}
-                  className="bg-gradient-to-r from-emerald-500/20 to-teal-500/20 backdrop-blur-md hover:from-emerald-400/30 hover:to-teal-400/30 text-white border border-emerald-400/30 p-3 rounded-xl transition-all duration-300 hover:scale-110 hover:shadow-lg hover:shadow-emerald-500/20"
-                  title={`Expérience suivante: ${nextMarche.nomMarche || nextMarche.ville}`}
-                >
-                  <ChevronRight className="h-5 w-5" />
-                </Button>
-              </motion.div>
-            ) : (
-              <div className="w-12 h-10"></div>
-            )}
+                <ChevronRight className="h-5 w-5" />
+              </Button>
+            </motion.div>
 
             {/* Separator */}
             <div className="h-6 w-px bg-white/20"></div>
