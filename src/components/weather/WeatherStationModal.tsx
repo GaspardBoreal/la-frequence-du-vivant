@@ -35,6 +35,7 @@ import {
 import InteractiveStationMap from './InteractiveStationMap';
 import StationComparisonRow from './StationComparisonRow';
 import { getAllStationsSortedByDistance } from '../../utils/weatherStationDatabase';
+import { calculateDistance } from '../../utils/weatherStationGeolocation';
 
 interface WeatherStationModalProps {
   isOpen: boolean;
@@ -100,6 +101,11 @@ const WeatherStationModal: React.FC<WeatherStationModalProps> = ({
     getAllStationsSortedByDistance(targetCoordinates).filter(station => 
       station.code !== stationData?.code
     ) : [];
+
+  // Calculer la distance de la station actuelle
+  const currentStationDistance = targetCoordinates && stationData ? 
+    calculateDistance(targetCoordinates, { lat: stationData.Latitude, lng: stationData.Longitude }) :
+    0;
 
   // Statistiques annuelles
   const yearlyStats = yearlyData.length > 0 ? {
@@ -478,7 +484,7 @@ const WeatherStationModal: React.FC<WeatherStationModalProps> = ({
                                 lat: stationData.Latitude,
                                 lng: stationData.Longitude
                               },
-                              distance: 0
+                              distance: currentStationDistance
                             }}
                             isCurrentStation={true}
                           />

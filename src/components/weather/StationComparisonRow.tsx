@@ -29,14 +29,14 @@ const StationComparisonRow: React.FC<StationComparisonRowProps> = ({ station, is
 
   const baseClasses = "flex items-center justify-between p-4 rounded-lg border transition-all duration-200";
   const currentStationClasses = isCurrentStation 
-    ? "bg-gradient-to-r from-primary/10 to-accent/10 border-primary/30 shadow-md" 
+    ? "bg-primary border-accent shadow-lg" 
     : "bg-card hover:bg-accent/50 border-border";
 
   return (
     <div className={`${baseClasses} ${currentStationClasses}`}>
       {isCurrentStation && (
         <div className="absolute -top-2 -right-2">
-          <Badge variant="default" className="flex items-center gap-1 bg-primary text-primary-foreground">
+          <Badge variant="default" className="flex items-center gap-1 bg-accent text-accent-foreground shadow-md">
             <Star className="h-3 w-3" />
             Station actuelle
           </Badge>
@@ -45,26 +45,26 @@ const StationComparisonRow: React.FC<StationComparisonRowProps> = ({ station, is
       
       <div className="flex-1 grid grid-cols-4 gap-4 relative">
         <div>
-          <p className="text-sm text-muted-foreground">Nom</p>
-          <p className={`font-medium ${isCurrentStation ? 'text-primary font-semibold' : 'text-foreground'}`}>
+          <p className={`text-sm ${isCurrentStation ? 'text-primary-foreground/70' : 'text-muted-foreground'}`}>Nom</p>
+          <p className={`font-medium ${isCurrentStation ? 'text-primary-foreground font-semibold' : 'text-foreground'}`}>
             {station.name}
           </p>
         </div>
         <div>
-          <p className="text-sm text-muted-foreground">Code Station</p>
-          <p className={`font-mono text-sm ${isCurrentStation ? 'text-primary font-semibold' : 'text-primary/80'}`}>
+          <p className={`text-sm ${isCurrentStation ? 'text-primary-foreground/70' : 'text-muted-foreground'}`}>Code Station</p>
+          <p className={`font-mono text-sm ${isCurrentStation ? 'text-primary-foreground font-semibold' : 'text-primary/80'}`}>
             {station.code}
           </p>
         </div>
         <div>
-          <p className="text-sm text-muted-foreground">Ville</p>
-          <p className={`font-medium ${isCurrentStation ? 'text-primary font-semibold' : 'text-foreground'}`}>
+          <p className={`text-sm ${isCurrentStation ? 'text-primary-foreground/70' : 'text-muted-foreground'}`}>Ville</p>
+          <p className={`font-medium ${isCurrentStation ? 'text-primary-foreground font-semibold' : 'text-foreground'}`}>
             {station.name}
           </p>
         </div>
         <div>
-          <p className="text-sm text-muted-foreground">Distance</p>
-          <p className={`font-bold ${isCurrentStation ? 'text-accent-foreground' : 'text-accent'}`}>
+          <p className={`text-sm ${isCurrentStation ? 'text-primary-foreground/70' : 'text-muted-foreground'}`}>Distance</p>
+          <p className={`font-bold ${isCurrentStation ? 'text-accent' : 'text-accent'}`}>
             {formatDistance(station.distance)}
           </p>
         </div>
@@ -74,7 +74,7 @@ const StationComparisonRow: React.FC<StationComparisonRowProps> = ({ station, is
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button 
-              variant={isCurrentStation ? "default" : "outline"} 
+              variant={isCurrentStation ? "secondary" : "outline"} 
               size="sm" 
               className="flex items-center gap-2"
             >
@@ -85,14 +85,14 @@ const StationComparisonRow: React.FC<StationComparisonRowProps> = ({ station, is
           </DropdownMenuTrigger>
           <DropdownMenuContent 
             align="end" 
-            className="bg-popover/95 backdrop-blur-sm border-border shadow-lg"
+            className="bg-popover border-border shadow-lg z-50"
           >
             <DropdownMenuItem asChild>
               <a
                 href={links.openStreetMap}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center gap-2 cursor-pointer text-foreground hover:text-primary hover:bg-accent"
+                className="flex items-center gap-2 cursor-pointer text-popover-foreground hover:text-accent-foreground hover:bg-accent"
               >
                 <ExternalLink className="h-4 w-4" />
                 Voir dans OpenStreetMap
@@ -103,7 +103,7 @@ const StationComparisonRow: React.FC<StationComparisonRowProps> = ({ station, is
                 href={links.googleMaps}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center gap-2 cursor-pointer text-foreground hover:text-primary hover:bg-accent"
+                className="flex items-center gap-2 cursor-pointer text-popover-foreground hover:text-accent-foreground hover:bg-accent"
               >
                 <ExternalLink className="h-4 w-4" />
                 Voir dans Google Maps
@@ -114,7 +114,7 @@ const StationComparisonRow: React.FC<StationComparisonRowProps> = ({ station, is
                 href={links.googleStreetView}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center gap-2 cursor-pointer text-foreground hover:text-primary hover:bg-accent"
+                className="flex items-center gap-2 cursor-pointer text-popover-foreground hover:text-accent-foreground hover:bg-accent"
               >
                 <ExternalLink className="h-4 w-4" />
                 Voir dans Google Street View
