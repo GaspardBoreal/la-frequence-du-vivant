@@ -4,7 +4,7 @@ import { ChevronDown, ChevronUp, MapPin } from 'lucide-react';
 import { LayerConfig } from '../types';
 import { RegionalTheme } from '../utils/regionalThemes';
 import { MarcheTechnoSensible } from '../utils/googleSheetsApi';
-import AdvancedFilters from './AdvancedFilters';
+import BioacousticFilters from './BioacousticFilters';
 
 interface LayerSelectorProps {
   layers: LayerConfig;
@@ -118,8 +118,8 @@ const LayerSelector: React.FC<LayerSelectorProps> = ({
               Filtres avancés
             </h4>
           </div>
-          <AdvancedFilters 
-            data={marchesData}
+          <BioacousticFilters 
+            marches={marchesData}
             onFilterChange={onFilteredDataChange}
             theme={theme}
           />
