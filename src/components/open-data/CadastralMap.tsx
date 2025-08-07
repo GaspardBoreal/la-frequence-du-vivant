@@ -38,9 +38,9 @@ const CadastralMap: React.FC<CadastralMapProps> = ({
       const codeCommune = parcelId.substring(0, 5);
       console.log('🏘️ [CADASTRAL] Code commune:', codeCommune);
       
-      // API Etalab pour récupérer la géométrie de la parcelle
+      // API Etalab pour récupérer la géométrie de la parcelle - nouvelle URL
       const response = await fetch(
-        `https://cadastre.data.gouv.fr/bundler/cadastre-etalab/latest/geojson/communes/${codeCommune}/cadastre-${codeCommune}-parcelles.json`
+        `https://cadastre.data.gouv.fr/data/etalab-cadastre/latest/geojson/communes/${codeCommune}/cadastre-${codeCommune}-parcelles.json`
       );
       
       if (!response.ok) {
@@ -161,6 +161,10 @@ const CadastralMap: React.FC<CadastralMapProps> = ({
       if (!parcelGeometry && parcelData?.parcel_id) {
         console.log('🔄 [CADASTRAL] Tentative récupération géométrie avec ID:', parcelData.parcel_id);
         geometryToUse = await fetchParcelGeometry(parcelData.parcel_id);
+      } else if (!parcelGeometry && !parcelData?.parcel_id) {
+        // Test direct avec ID générique de FRONSAC
+        console.log('🔄 [CADASTRAL] Test avec ID générique 331740000A0203');
+        geometryToUse = await fetchParcelGeometry('331740000A0203');
       }
       
       if (geometryToUse && geometryToUse.coordinates) {

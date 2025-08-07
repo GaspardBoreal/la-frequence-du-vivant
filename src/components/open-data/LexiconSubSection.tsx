@@ -16,6 +16,8 @@ interface LexiconSubSectionProps {
 }
 
 const LexiconSubSection: React.FC<LexiconSubSectionProps> = ({ marche, theme }) => {
+  console.log('🚀 [LEXICON SUBSECTION] Composant rendu avec marche:', marche);
+  console.log('🚀 [LEXICON SUBSECTION] Coordonnées marche:', marche?.latitude, marche?.longitude);
   console.log(`🔍 [LEXICON DEBUG] Marché reçu:`, marche);
   console.log(`🔍 [LEXICON DEBUG] Coordonnées: lat=${marche.latitude}, lng=${marche.longitude}`);
   

@@ -21,6 +21,7 @@ const OpenDataSection: React.FC<OpenDataSectionProps> = ({
   activeSubSection
 }) => {
   const renderSubSection = () => {
+    console.log('🔄 [OPEN DATA SECTION] Rendu subsection:', activeSubSection);
     switch (activeSubSection) {
       case 'etalab':
         return <EtalabSubSection marche={marche} theme={theme} />;
