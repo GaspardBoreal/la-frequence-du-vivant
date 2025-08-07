@@ -73,41 +73,49 @@ const WeatherVisualization: React.FC<WeatherVisualizationProps> = ({
       return null;
     }
 
-    // Parser la valeur "ST GERVAIS 33415001" depuis l'objet Link
+    // Si on a des coordonnées cibles, utiliser directement la station la plus proche de notre base
+    if (targetCoordinates) {
+      const nearestStation = findNearestWeatherStation(targetCoordinates);
+      if (nearestStation) {
+        const distance = calculateDistance(targetCoordinates, nearestStation.coordinates);
+        
+        console.log(`🌡️ [WEATHER] Station la plus proche sélectionnée: ${nearestStation.name} (${nearestStation.code})`);
+        console.log(`📍 [WEATHER] Coordonnées station: ${nearestStation.coordinates.lat}, ${nearestStation.coordinates.lng}`);
+        console.log(`📏 [WEATHER] Distance: ${formatDistance(distance)}`);
+
+        return {
+          name: nearestStation.name,
+          code: nearestStation.code,
+          country: "France", 
+          commune: nearestStation.name,
+          elevation: nearestStation.elevation || "42 m",
+          coordinates: nearestStation.coordinates,
+          distance,
+          originalData: originalStation
+        };
+      }
+    }
+
+    // Fallback: parser les données originales si pas de coordonnées cibles
     const value = originalStation.value || "";
     const href = originalStation.href || "";
     
-    // Extraire le code de station depuis la valeur ou href
     const codeMatch = value.match(/(\d{8})$/) || href.match(/FR(\d{8})$/);
     const stationCode = codeMatch ? codeMatch[1] : "unknown";
     
-    // Extraire le nom de station (tout sauf les 8 derniers chiffres)
     const nameMatch = value.replace(/\s*\d{8}$/, '').trim();
     const parsedStationName = nameMatch || stationName || "Station météo";
 
-    // CORRECTION: Utiliser la base de données des stations pour obtenir les vraies coordonnées
     const stationCoords = getCorrectStationCoordinates(
       stationCode,
       parsedStationName,
-      targetCoordinates ? undefined : { lat: 44.8167, lng: -0.7833 }
+      { lat: 44.8167, lng: -0.7833 }
     );
-    
-    // Si on a des coordonnées cibles, vérifier si c'est vraiment la station la plus proche
-    if (targetCoordinates) {
-      const nearestStation = findNearestWeatherStation(targetCoordinates);
-      if (nearestStation && nearestStation.code !== stationCode) {
-        console.warn(`⚠️ [WEATHER] Station ${parsedStationName} (${stationCode}) n'est pas la plus proche`);
-        console.warn(`⚠️ [WEATHER] Station la plus proche: ${nearestStation.name} (${nearestStation.code})`);
-      }
-    }
     
     const distance = targetCoordinates ? calculateDistance(targetCoordinates, stationCoords) : undefined;
 
-    console.log(`🌡️ [WEATHER] Station enrichie: ${parsedStationName} (${stationCode})`);
+    console.log(`🌡️ [WEATHER] Station fallback: ${parsedStationName} (${stationCode})`);
     console.log(`📍 [WEATHER] Coordonnées station: ${stationCoords.lat}, ${stationCoords.lng}`);
-    if (distance) {
-      console.log(`📏 [WEATHER] Distance: ${formatDistance(distance)}`);
-    }
 
     return {
       name: parsedStationName,

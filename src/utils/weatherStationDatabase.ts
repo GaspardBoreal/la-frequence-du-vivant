@@ -41,6 +41,14 @@ export const WEATHER_STATIONS: Record<string, WeatherStation> = {
     elevation: 40,
     region: 'Nouvelle-Aquitaine', 
     department: 'Gironde'
+  },
+  '33273001': {
+    code: '33273001',
+    name: 'MARTIGNAS-SUR-JALLE',
+    coordinates: { lat: 44.8439, lng: -0.7803 },
+    elevation: 15,
+    region: 'Nouvelle-Aquitaine',
+    department: 'Gironde'
   }
 };
 
