@@ -32,6 +32,7 @@ import { Button } from '../ui/button';
 import WeatherStationModal from '../weather/WeatherStationModal';
 import { calculateDistance, formatDistance, getDataQuality } from '../../utils/weatherStationGeolocation';
 import type { Coordinates } from '../../utils/weatherStationGeolocation';
+import { getCorrectStationCoordinates, findNearestWeatherStation } from '../../utils/weatherStationDatabase';
 
 interface WeatherDataPoint {
   timestamp: string;
@@ -68,19 +69,8 @@ const WeatherVisualization: React.FC<WeatherVisualizationProps> = ({
     const originalStation = weatherData?.station;
     
     if (!originalStation) {
-      const defaultCoords = { lat: 44.8167, lng: -0.7833 };
-      const distance = targetCoordinates ? calculateDistance(targetCoordinates, defaultCoords) : undefined;
-      
-      return {
-        name: stationName || "ST GERVAIS",
-        code: "33415001",
-        country: "France",
-        commune: stationName || "ST GERVAIS",
-        elevation: "42 m",
-        coordinates: defaultCoords,
-        distance,
-        originalData: null
-      };
+      console.warn('⚠️ [WEATHER] Aucune station trouvée dans les données météo');
+      return null;
     }
 
     // Parser la valeur "ST GERVAIS 33415001" depuis l'objet Link
@@ -89,15 +79,35 @@ const WeatherVisualization: React.FC<WeatherVisualizationProps> = ({
     
     // Extraire le code de station depuis la valeur ou href
     const codeMatch = value.match(/(\d{8})$/) || href.match(/FR(\d{8})$/);
-    const stationCode = codeMatch ? codeMatch[1] : "33415001";
+    const stationCode = codeMatch ? codeMatch[1] : "unknown";
     
     // Extraire le nom de station (tout sauf les 8 derniers chiffres)
     const nameMatch = value.replace(/\s*\d{8}$/, '').trim();
-    const parsedStationName = nameMatch || "ST GERVAIS";
+    const parsedStationName = nameMatch || stationName || "Station météo";
 
-    // Coordonnées par défaut, à améliorer avec une vraie base de données de stations
-    const stationCoords = { lat: 44.8167, lng: -0.7833 };
+    // CORRECTION: Utiliser la base de données des stations pour obtenir les vraies coordonnées
+    const stationCoords = getCorrectStationCoordinates(
+      stationCode,
+      parsedStationName,
+      targetCoordinates ? undefined : { lat: 44.8167, lng: -0.7833 }
+    );
+    
+    // Si on a des coordonnées cibles, vérifier si c'est vraiment la station la plus proche
+    if (targetCoordinates) {
+      const nearestStation = findNearestWeatherStation(targetCoordinates);
+      if (nearestStation && nearestStation.code !== stationCode) {
+        console.warn(`⚠️ [WEATHER] Station ${parsedStationName} (${stationCode}) n'est pas la plus proche`);
+        console.warn(`⚠️ [WEATHER] Station la plus proche: ${nearestStation.name} (${nearestStation.code})`);
+      }
+    }
+    
     const distance = targetCoordinates ? calculateDistance(targetCoordinates, stationCoords) : undefined;
+
+    console.log(`🌡️ [WEATHER] Station enrichie: ${parsedStationName} (${stationCode})`);
+    console.log(`📍 [WEATHER] Coordonnées station: ${stationCoords.lat}, ${stationCoords.lng}`);
+    if (distance) {
+      console.log(`📏 [WEATHER] Distance: ${formatDistance(distance)}`);
+    }
 
     return {
       name: parsedStationName,
@@ -250,10 +260,12 @@ const WeatherVisualization: React.FC<WeatherVisualizationProps> = ({
     window.open(window.location.href, '_blank');
   };
 
-  if (!processedData.length) {
+  if (!processedData.length || !enrichedStationData) {
     return (
       <div className="bg-white/70 backdrop-blur-sm rounded-xl p-6 text-center">
-        <p className="text-gray-600">Aucune donnée météorologique disponible</p>
+        <p className="text-gray-600">
+          {!enrichedStationData ? 'Station météorologique non trouvée' : 'Aucune donnée météorologique disponible'}
+        </p>
       </div>
     );
   }
