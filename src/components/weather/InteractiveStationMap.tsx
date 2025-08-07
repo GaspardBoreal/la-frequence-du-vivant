@@ -52,9 +52,9 @@ const InteractiveStationMap: React.FC<InteractiveStationMapProps> = ({
     console.log('⚠️ Correction appliquée pour la station:', stationName);
   }
 
-  // Fonction pour ouvrir Google Earth à cette position
-  const openInGoogleEarth = () => {
-    const url = `https://earth.google.com/web/@${correctCoordinates.lat},${correctCoordinates.lng},100a,1000d,35y,0h,0t,0r`;
+  // Fonction pour ouvrir Google Street View à cette position
+  const openInStreetView = () => {
+    const url = `https://www.google.com/maps/@${correctCoordinates.lat},${correctCoordinates.lng},21z/data=!3m1!1e3`;
     window.open(url, '_blank');
   };
 
@@ -90,11 +90,11 @@ const InteractiveStationMap: React.FC<InteractiveStationMapProps> = ({
                   🌡️ Données météorologiques en temps réel
                 </p>
                 <button
-                  onClick={openInGoogleEarth}
+                  onClick={openInStreetView}
                   className="flex items-center gap-2 justify-center w-full mt-3 px-3 py-2 bg-blue-600 text-white text-xs rounded-lg hover:bg-blue-700 transition-colors duration-200"
                 >
                   <ExternalLink className="h-3 w-3" />
-                  Voir dans Google Earth
+                  Voir dans Street View
                 </button>
               </div>
             </div>
