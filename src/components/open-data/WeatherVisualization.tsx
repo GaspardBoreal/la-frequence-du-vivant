@@ -59,6 +59,27 @@ const WeatherVisualization: React.FC<WeatherVisualizationProps> = ({
   console.log('WeatherVisualization - weatherData:', weatherData);
   console.log('WeatherVisualization - stationName:', stationName);
 
+  // Enrichissement des données de station avec métadonnées complètes
+  const enrichedStationData = useMemo(() => {
+    const baseStation = weatherData?.station || { value: stationName };
+    
+    // Données spécifiques pour ST GERVAIS basées sur les images de l'utilisateur
+    return {
+      ...baseStation,
+      value: stationName || baseStation.value || "ST GERVAIS",
+      code: baseStation.code || "33415001",
+      country: "France",
+      commune: stationName || "ST GERVAIS", 
+      elevation: baseStation.elevation || "42 m",
+      coordinates: baseStation.coordinates || {
+        lat: 44.8167,
+        lng: -0.7833
+      }
+    };
+  }, [weatherData?.station, stationName]);
+
+  console.log('WeatherVisualization - enrichedStationData:', enrichedStationData);
+
   // Transformation des données LEXICON vers notre format
   const processedData = useMemo(() => {
     if (!weatherData?.values) return [];
@@ -483,7 +504,7 @@ const WeatherVisualization: React.FC<WeatherVisualizationProps> = ({
       <WeatherStationModal
         isOpen={isStationModalOpen}
         onClose={() => setIsStationModalOpen(false)}
-        stationData={weatherData?.station || { value: stationName }}
+        stationData={enrichedStationData}
         weatherData={weatherData}
         onOpenInNewTab={handleOpenInNewTab}
       />

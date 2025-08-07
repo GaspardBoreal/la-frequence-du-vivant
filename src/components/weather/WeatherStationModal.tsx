@@ -172,7 +172,7 @@ const WeatherStationModal: React.FC<WeatherStationModalProps> = ({
                   <Globe className="h-4 w-4 text-gray-500" />
                   <div>
                     <p className="text-sm text-gray-600">Code station</p>
-                    <p className="font-medium">{stationData?.code || stationData?.id || '33415001'}</p>
+                    <p className="font-medium">{stationData?.code || '33415001'}</p>
                   </div>
                 </div>
               </div>
@@ -229,7 +229,7 @@ const WeatherStationModal: React.FC<WeatherStationModalProps> = ({
                     </div>
                     <div>
                       <p className="text-sm text-gray-600 mb-1">Commune</p>
-                      <p className="font-medium">ST GERVAIS</p>
+                      <p className="font-medium">{stationData?.commune || 'ST GERVAIS'}</p>
                     </div>
                   </div>
                   <div className="mt-4 p-4 bg-green-50 rounded-lg">
