@@ -12,8 +12,9 @@ serve(async (req) => {
   }
 
   try {
-    console.log('🔍 [CADASTRE PROXY] Méthode de requête:', req.method);
-    console.log('🔍 [CADASTRE PROXY] URL complète:', req.url);
+    console.log('🔍 [CADASTRE PROXY] Nouvelle requête reçue');
+    console.log('🔍 [CADASTRE PROXY] Méthode:', req.method);
+    console.log('🔍 [CADASTRE PROXY] URL:', req.url);
     
     let parcelId: string | null = null;
     
@@ -24,19 +25,35 @@ serve(async (req) => {
       console.log('🔍 [CADASTRE PROXY] GET parcelId:', parcelId);
     } else if (req.method === 'POST') {
       try {
-        const body = await req.text();
-        console.log('🔍 [CADASTRE PROXY] Body brut reçu:', body);
+        const contentType = req.headers.get('content-type') || '';
+        console.log('🔍 [CADASTRE PROXY] Content-Type:', contentType);
         
-        if (body && body.trim()) {
-          const parsedBody = JSON.parse(body);
-          parcelId = parsedBody.parcelId;
-          console.log('🔍 [CADASTRE PROXY] POST parcelId parsé:', parcelId);
+        if (contentType.includes('application/json')) {
+          const bodyText = await req.text();
+          console.log('🔍 [CADASTRE PROXY] Body reçu:', bodyText);
+          
+          if (bodyText && bodyText.trim() !== '') {
+            const parsedBody = JSON.parse(bodyText);
+            parcelId = parsedBody.parcelId;
+            console.log('🔍 [CADASTRE PROXY] ParcelId parsé:', parcelId);
+          } else {
+            console.warn('⚠️ [CADASTRE PROXY] Body vide');
+          }
         } else {
-          console.warn('⚠️ [CADASTRE PROXY] Body vide ou null');
+          console.warn('⚠️ [CADASTRE PROXY] Content-Type non JSON:', contentType);
         }
-      } catch (parseError) {
-        console.error('❌ [CADASTRE PROXY] Erreur parsing JSON:', parseError);
-        console.log('🔍 [CADASTRE PROXY] Headers content-type:', req.headers.get('content-type'));
+      } catch (error) {
+        console.error('❌ [CADASTRE PROXY] Erreur parsing body:', error);
+        return new Response(
+          JSON.stringify({ 
+            success: false, 
+            message: 'Erreur de parsing du body JSON: ' + error.message 
+          }),
+          { 
+            status: 400, 
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+          }
+        );
       }
     }
 
@@ -60,7 +77,7 @@ serve(async (req) => {
     const codeCommune = parcelId.substring(0, 5);
     console.log(`🏘️ [CADASTRE PROXY] Code commune: ${codeCommune}`);
     
-    // URLs à tester dans l'ordre
+    // URLs à tester dans l'ordre de priorité
     const urlsToTry = [
       `https://cadastre.data.gouv.fr/data/etalab-cadastre/latest/geojson/communes/${codeCommune}/cadastre-${codeCommune}-parcelles.json`,
       `https://cadastre.data.gouv.fr/bundler/cadastre-etalab/latest/geojson/communes/${codeCommune}/cadastre-${codeCommune}-parcelles.json`,
@@ -70,6 +87,7 @@ serve(async (req) => {
     let geoJsonData = null;
     let workingUrl = null;
 
+    // Tester chaque URL jusqu'à en trouver une qui fonctionne
     for (const testUrl of urlsToTry) {
       try {
         console.log(`🔍 [CADASTRE PROXY] Test URL: ${testUrl}`);
@@ -82,25 +100,30 @@ serve(async (req) => {
           },
         });
 
+        console.log(`🔍 [CADASTRE PROXY] Statut réponse pour ${testUrl}: ${response.status}`);
+
         if (response.ok) {
           geoJsonData = await response.json();
           workingUrl = testUrl;
           console.log(`✅ [CADASTRE PROXY] URL fonctionnelle: ${testUrl}`);
+          console.log(`📦 [CADASTRE PROXY] ${geoJsonData.features?.length || 0} parcelles trouvées`);
           break;
         } else {
           console.warn(`⚠️ [CADASTRE PROXY] ${testUrl} retourne: ${response.status}`);
         }
       } catch (error) {
-        console.warn(`⚠️ [CADASTRE PROXY] Erreur avec ${testUrl}:`, error);
+        console.warn(`⚠️ [CADASTRE PROXY] Erreur avec ${testUrl}:`, error.message);
       }
     }
 
-    if (!geoJsonData) {
+    if (!geoJsonData || !geoJsonData.features) {
+      console.error(`❌ [CADASTRE PROXY] Aucune URL cadastrale fonctionnelle pour la commune ${codeCommune}`);
       return new Response(
         JSON.stringify({
           success: false,
-          message: `Aucune URL cadastrale fonctionnelle pour la commune ${codeCommune}`,
-          parcelId
+          message: `Aucune données cadastrales disponibles pour la commune ${codeCommune}`,
+          parcelId,
+          codeCommune
         }),
         { 
           status: 404, 
@@ -109,15 +132,15 @@ serve(async (req) => {
       );
     }
 
-    console.log(`📦 [CADASTRE PROXY] ${geoJsonData.features?.length || 0} parcelles trouvées`);
-
     // Chercher la parcelle avec l'ID correspondant
-    const parcel = geoJsonData.features?.find((feature: any) => 
+    const parcel = geoJsonData.features.find((feature: any) => 
       feature.properties?.id === parcelId
     );
 
     if (parcel) {
       console.log(`✅ [CADASTRE PROXY] Parcelle ${parcelId} trouvée`);
+      console.log(`🔍 [CADASTRE PROXY] Propriétés de la parcelle:`, parcel.properties);
+      
       return new Response(
         JSON.stringify({
           success: true,
@@ -126,7 +149,8 @@ serve(async (req) => {
             properties: parcel.properties
           },
           parcelId,
-          sourceUrl: workingUrl
+          sourceUrl: workingUrl,
+          codeCommune
         }),
         { 
           headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
@@ -134,12 +158,17 @@ serve(async (req) => {
       );
     } else {
       console.warn(`❌ [CADASTRE PROXY] Parcelle ${parcelId} non trouvée`);
+      const availableParcels = geoJsonData.features?.slice(0, 5).map((f: any) => f.properties?.id) || [];
+      console.log('🔍 [CADASTRE PROXY] Quelques IDs disponibles:', availableParcels);
+      
       return new Response(
         JSON.stringify({
           success: false,
           message: `Parcelle ${parcelId} non trouvée dans les données`,
-          availableParcels: geoJsonData.features?.slice(0, 5).map((f: any) => f.properties?.id) || [],
-          parcelId
+          availableParcels,
+          parcelId,
+          codeCommune,
+          totalParcels: geoJsonData.features?.length || 0
         }),
         { 
           status: 404, 
@@ -154,7 +183,8 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({
         success: false,
-        message: error instanceof Error ? error.message : 'Erreur inconnue lors de la récupération des données cadastrales'
+        message: 'Erreur interne du serveur: ' + (error instanceof Error ? error.message : 'Erreur inconnue'),
+        error: error instanceof Error ? error.stack : String(error)
       }),
       { 
         status: 500, 
