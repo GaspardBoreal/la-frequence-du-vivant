@@ -35,17 +35,22 @@ const CadastralMap: React.FC<CadastralMapProps> = ({
     try {
       console.log('🏘️ [CADASTRAL] Appel Edge Function avec parcelId:', parcelId);
       
+      const requestBody = { parcelId };
+      console.log('🏘️ [CADASTRAL] Body de la requête:', JSON.stringify(requestBody));
+      
       const { data, error } = await supabase.functions.invoke('cadastre-proxy', {
-        body: { parcelId },
-        headers: {
-          'Content-Type': 'application/json'
-        }
+        body: requestBody
       });
 
-      console.log('🏘️ [CADASTRAL] Réponse Edge Function:', { data, error });
+      console.log('🏘️ [CADASTRAL] Réponse Edge Function complète:', { data, error });
 
       if (error) {
-        console.error('❌ [CADASTRAL] Erreur Edge Function:', error);
+        console.error('❌ [CADASTRAL] Erreur Edge Function détaillée:', {
+          message: error.message,
+          details: error.details,
+          hint: error.hint,
+          code: error.code
+        });
         throw new Error(`Edge Function error: ${error.message}`);
       }
 

@@ -26,28 +26,55 @@ serve(async (req) => {
     } else if (req.method === 'POST') {
       try {
         const contentType = req.headers.get('content-type') || '';
-        console.log('🔍 [CADASTRE PROXY] Content-Type:', contentType);
+        console.log('🔍 [CADASTRE PROXY] Content-Type reçu:', contentType);
         
-        if (contentType.includes('application/json')) {
-          const bodyText = await req.text();
-          console.log('🔍 [CADASTRE PROXY] Body reçu:', bodyText);
-          
-          if (bodyText && bodyText.trim() !== '') {
+        // Lire le body comme texte d'abord
+        const bodyText = await req.text();
+        console.log('🔍 [CADASTRE PROXY] Body brut reçu:', bodyText);
+        console.log('🔍 [CADASTRE PROXY] Longueur du body:', bodyText?.length || 0);
+        
+        if (bodyText && bodyText.trim() !== '') {
+          try {
             const parsedBody = JSON.parse(bodyText);
+            console.log('🔍 [CADASTRE PROXY] Body parsé avec succès:', parsedBody);
             parcelId = parsedBody.parcelId;
-            console.log('🔍 [CADASTRE PROXY] ParcelId parsé:', parcelId);
-          } else {
-            console.warn('⚠️ [CADASTRE PROXY] Body vide');
+            console.log('🔍 [CADASTRE PROXY] ParcelId extrait:', parcelId);
+          } catch (parseError) {
+            console.error('❌ [CADASTRE PROXY] Erreur parsing JSON:', parseError);
+            console.log('🔍 [CADASTRE PROXY] Body qui a causé l\'erreur:', bodyText);
+            return new Response(
+              JSON.stringify({ 
+                success: false, 
+                message: 'Erreur de parsing JSON: ' + parseError.message,
+                receivedBody: bodyText,
+                contentType: contentType
+              }),
+              { 
+                status: 400, 
+                headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+              }
+            );
           }
         } else {
-          console.warn('⚠️ [CADASTRE PROXY] Content-Type non JSON:', contentType);
+          console.warn('⚠️ [CADASTRE PROXY] Body vide ou null');
+          return new Response(
+            JSON.stringify({ 
+              success: false, 
+              message: 'Body de requête vide',
+              contentType: contentType
+            }),
+            { 
+              status: 400, 
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+            }
+          );
         }
       } catch (error) {
-        console.error('❌ [CADASTRE PROXY] Erreur parsing body:', error);
+        console.error('❌ [CADASTRE PROXY] Erreur lecture body:', error);
         return new Response(
           JSON.stringify({ 
             success: false, 
-            message: 'Erreur de parsing du body JSON: ' + error.message 
+            message: 'Erreur lecture du body: ' + error.message 
           }),
           { 
             status: 400, 
