@@ -59,22 +59,42 @@ const WeatherVisualization: React.FC<WeatherVisualizationProps> = ({
   console.log('WeatherVisualization - weatherData:', weatherData);
   console.log('WeatherVisualization - stationName:', stationName);
 
-  // Enrichissement des données de station avec métadonnées complètes
+  // Enrichissement des données de station - parsing correct de l'API LEXICON
   const enrichedStationData = useMemo(() => {
-    const baseStation = weatherData?.station || { value: stationName };
+    const originalStation = weatherData?.station;
     
-    // Données spécifiques pour ST GERVAIS basées sur les images de l'utilisateur
+    if (!originalStation) {
+      return {
+        name: stationName || "ST GERVAIS",
+        code: "33415001",
+        country: "France",
+        commune: stationName || "ST GERVAIS",
+        elevation: "42 m",
+        coordinates: { lat: 44.8167, lng: -0.7833 },
+        originalData: null
+      };
+    }
+
+    // Parser la valeur "ST GERVAIS 33415001" depuis l'objet Link
+    const value = originalStation.value || "";
+    const href = originalStation.href || "";
+    
+    // Extraire le code de station depuis la valeur ou href
+    const codeMatch = value.match(/(\d{8})$/) || href.match(/FR(\d{8})$/);
+    const stationCode = codeMatch ? codeMatch[1] : "33415001";
+    
+    // Extraire le nom de station (tout sauf les 8 derniers chiffres)
+    const nameMatch = value.replace(/\s*\d{8}$/, '').trim();
+    const parsedStationName = nameMatch || "ST GERVAIS";
+
     return {
-      ...baseStation,
-      value: stationName || baseStation.value || "ST GERVAIS",
-      code: baseStation.code || "33415001",
-      country: "France",
-      commune: stationName || "ST GERVAIS", 
-      elevation: baseStation.elevation || "42 m",
-      coordinates: baseStation.coordinates || {
-        lat: 44.8167,
-        lng: -0.7833
-      }
+      name: parsedStationName,
+      code: stationCode,
+      country: "France", 
+      commune: parsedStationName,
+      elevation: "42 m",
+      coordinates: { lat: 44.8167, lng: -0.7833 },
+      originalData: originalStation
     };
   }, [weatherData?.station, stationName]);
 
