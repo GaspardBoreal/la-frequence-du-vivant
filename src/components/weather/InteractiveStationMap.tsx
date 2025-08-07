@@ -3,6 +3,7 @@ import { MapPin } from 'lucide-react';
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
+import { correctStationCoordinates, hasStationCorrection } from '../../utils/weatherStationCorrections';
 
 // Fix pour les icônes Leaflet
 delete (L.Icon.Default.prototype as any)._getIconUrl;
@@ -42,13 +43,14 @@ const InteractiveStationMap: React.FC<InteractiveStationMapProps> = ({
   console.log('InteractiveStationMap - Coordonnées reçues:', coordinates);
   console.log('InteractiveStationMap - Station:', stationName);
   
-  // Correction temporaire pour ST GERVAIS - les coordonnées de l'API sont incorrectes
-  // Vraies coordonnées de Saint-Gervais, Gironde selon Wikipedia: 45.0189°N, 0.4622°W
-  const correctCoordinates = stationName === 'ST GERVAIS' ? 
-    { lat: 45.0189, lng: -0.4622 } : 
-    coordinates;
+  // Utilisation du service de correction des coordonnées
+  const correctCoordinates = correctStationCoordinates(stationName, coordinates);
+  const hasCorrectionApplied = hasStationCorrection(stationName);
     
-  console.log('InteractiveStationMap - Coordonnées corrigées utilisées:', correctCoordinates);
+  console.log('InteractiveStationMap - Coordonnées utilisées:', correctCoordinates);
+  if (hasCorrectionApplied) {
+    console.log('⚠️ Correction appliquée pour la station:', stationName);
+  }
 
   return (
     <div className="mt-4 h-64 bg-gray-50 rounded-lg border-2 border-gray-200 overflow-hidden relative shadow-inner">
