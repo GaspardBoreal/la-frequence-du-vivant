@@ -52,36 +52,41 @@ const CadastralMap: React.FC<CadastralMapProps> = ({
       }
     );
 
-    // Cadastral overlay - trying multiple sources
-    const cadastralLayer = L.tileLayer.wms('https://www.geoportail.gouv.fr/depot/api/carto/LIMITES_ADMINISTRATIVES/wms', {
-      layers: 'LIMITES_ADMINISTRATIVES:commune',
-      format: 'image/png',
-      transparent: true,
-      attribution: '© IGN - Limites administratives',
-      opacity: 0.6,
-      maxZoom: 18,
-    });
-
-    // Alternative cadastral layer using different service
+    // Cadastral parcels - IGN WMTS official service
     const cadastralParcelsLayer = L.tileLayer(
-      'https://cadastre.data.gouv.fr/bundler/cadastre-etalab/{z}/{x}/{y}.pbf?style=parcelles',
+      'https://wxs.ign.fr/essentiels/geoportail/wmts?REQUEST=GetTile&SERVICE=WMTS&VERSION=1.0.0&STYLE=PCI%20vecteur&TILEMATRIXSET=PM&FORMAT=image/png&LAYER=CADASTRALPARCELS.PARCELLAIRE_EXPRESS&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}',
       {
-        attribution: '© Etalab - Cadastre',
-        opacity: 0.7,
+        attribution: '© IGN - Plan Cadastral Informatisé',
+        opacity: 0.8,
         maxZoom: 20,
+      }
+    );
+
+    // Administrative boundaries - IGN WMTS official service  
+    const administrativeBoundariesLayer = L.tileLayer(
+      'https://wxs.ign.fr/essentiels/geoportail/wmts?REQUEST=GetTile&SERVICE=WMTS&VERSION=1.0.0&STYLE=normal&TILEMATRIXSET=PM&FORMAT=image/png&LAYER=LIMITES_ADMINISTRATIVES.BOUNDARIES&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}',
+      {
+        attribution: '© IGN - Limites administratives',
+        opacity: 0.6,
+        maxZoom: 18,
       }
     );
 
     // Add base layer first
     osmLayer.addTo(map);
     
-    // Try to add cadastral overlay (will fallback if first doesn't work)
-    try {
-      cadastralParcelsLayer.addTo(map);
-    } catch (e) {
-      console.log('Trying alternative cadastral source...');
-      cadastralLayer.addTo(map);
-    }
+    // Add cadastral layers with error handling
+    cadastralParcelsLayer.on('tileerror', function(error) {
+      console.warn('Erreur de chargement des parcelles cadastrales:', error);
+    });
+    
+    administrativeBoundariesLayer.on('tileerror', function(error) {
+      console.warn('Erreur de chargement des limites administratives:', error);
+    });
+    
+    // Add layers to map
+    cadastralParcelsLayer.addTo(map);
+    administrativeBoundariesLayer.addTo(map);
 
     // Custom marker for the location
     const customIcon = L.divIcon({
@@ -128,7 +133,7 @@ const CadastralMap: React.FC<CadastralMapProps> = ({
 
     const overlayLayers = {
       'Parcelles cadastrales': cadastralParcelsLayer,
-      'Limites communales': cadastralLayer
+      'Limites administratives': administrativeBoundariesLayer
     };
 
     L.control.layers(baseLayers, overlayLayers, {
