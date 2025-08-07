@@ -49,6 +49,13 @@ const WeatherStationModal: React.FC<WeatherStationModalProps> = ({
 }) => {
   // Debug pour comprendre la structure des données
   console.log('WeatherStationModal - stationData:', stationData);
+  console.log('WeatherStationModal - stationData structure:', {
+    name: stationData?.name,
+    code: stationData?.code,
+    commune: stationData?.commune,
+    elevation: stationData?.elevation,
+    originalData: stationData?.originalData
+  });
   console.log('WeatherStationModal - weatherData:', weatherData);
   const [expandedSections, setExpandedSections] = useState({
     location: false,
