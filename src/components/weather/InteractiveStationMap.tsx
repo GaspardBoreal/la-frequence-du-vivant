@@ -38,11 +38,22 @@ const InteractiveStationMap: React.FC<InteractiveStationMapProps> = ({
   coordinates,
   stationName
 }) => {
+  // Debug des coordonnées reçues
+  console.log('InteractiveStationMap - Coordonnées reçues:', coordinates);
+  console.log('InteractiveStationMap - Station:', stationName);
+  
+  // Correction temporaire pour ST GERVAIS - les coordonnées de l'API sont incorrectes
+  // Vraies coordonnées de Saint-Gervais, Gironde selon Wikipedia: 45.0189°N, 0.4622°W
+  const correctCoordinates = stationName === 'ST GERVAIS' ? 
+    { lat: 45.0189, lng: -0.4622 } : 
+    coordinates;
+    
+  console.log('InteractiveStationMap - Coordonnées corrigées utilisées:', correctCoordinates);
 
   return (
     <div className="mt-4 h-64 bg-gray-50 rounded-lg border-2 border-gray-200 overflow-hidden relative shadow-inner">
       <MapContainer
-        center={[coordinates.lat, coordinates.lng]}
+        center={[correctCoordinates.lat, correctCoordinates.lng]}
         zoom={13}
         style={{ height: '100%', width: '100%' }}
         className="rounded-lg"
@@ -53,7 +64,7 @@ const InteractiveStationMap: React.FC<InteractiveStationMapProps> = ({
         />
         
         <Marker 
-          position={[coordinates.lat, coordinates.lng]}
+          position={[correctCoordinates.lat, correctCoordinates.lng]}
           icon={stationIcon}
         >
           <Popup>
@@ -65,7 +76,7 @@ const InteractiveStationMap: React.FC<InteractiveStationMapProps> = ({
               <div className="text-sm">
                 <p className="font-semibold text-gray-700">{stationName}</p>
                 <p className="text-gray-600 text-xs mt-1">
-                  📍 {coordinates.lat.toFixed(4)}°, {coordinates.lng.toFixed(4)}°
+                  📍 {correctCoordinates.lat.toFixed(4)}°, {correctCoordinates.lng.toFixed(4)}°
                 </p>
                 <p className="text-gray-500 text-xs mt-2">
                   🌡️ Données météorologiques en temps réel
@@ -83,7 +94,7 @@ const InteractiveStationMap: React.FC<InteractiveStationMapProps> = ({
           <div>
             <p className="text-xs font-semibold text-gray-800">{stationName}</p>
             <p className="text-xs text-gray-600">
-              {coordinates.lat.toFixed(4)}°, {coordinates.lng.toFixed(4)}°
+              {correctCoordinates.lat.toFixed(4)}°, {correctCoordinates.lng.toFixed(4)}°
             </p>
           </div>
         </div>
