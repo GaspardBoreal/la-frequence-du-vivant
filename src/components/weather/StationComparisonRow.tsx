@@ -27,7 +27,7 @@ const StationComparisonRow: React.FC<StationComparisonRowProps> = ({ station, is
 
   const links = generateMapLinks();
 
-  const baseClasses = "flex items-center justify-between p-4 rounded-lg border transition-all duration-200";
+  const baseClasses = "group flex items-center justify-between p-4 rounded-lg border transition-all duration-200";
   const currentStationClasses = isCurrentStation 
     ? "bg-primary border-accent shadow-lg" 
     : "bg-card hover:bg-accent/50 border-border";
@@ -46,13 +46,21 @@ const StationComparisonRow: React.FC<StationComparisonRowProps> = ({ station, is
       <div className="flex-1 grid grid-cols-3 gap-4 relative">
         <div>
           <p className={`text-sm ${isCurrentStation ? 'text-white/70' : 'text-muted-foreground'}`}>Code Station</p>
-          <p className={`font-mono text-sm font-semibold ${isCurrentStation ? 'text-white' : 'text-white'}`}>
+          <p className={`font-mono text-sm font-semibold transition-colors duration-200 ${
+            isCurrentStation 
+              ? 'text-white' 
+              : 'text-white group-hover:text-gray-700'
+          }`}>
             {station.code}
           </p>
         </div>
         <div>
           <p className={`text-sm ${isCurrentStation ? 'text-white/70' : 'text-muted-foreground'}`}>Ville</p>
-          <p className={`font-medium ${isCurrentStation ? 'text-white font-semibold' : 'text-foreground'}`}>
+          <p className={`font-medium transition-colors duration-200 ${
+            isCurrentStation 
+              ? 'text-white font-semibold' 
+              : 'text-foreground group-hover:text-gray-700'
+          }`}>
             {station.name}
           </p>
         </div>
