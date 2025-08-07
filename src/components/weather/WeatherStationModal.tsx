@@ -20,6 +20,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Button } from '../ui/button';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '../ui/collapsible';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '../ui/dropdown-menu';
 import { 
   LineChart, 
   Line, 
@@ -32,6 +33,8 @@ import {
   AreaChart
 } from 'recharts';
 import InteractiveStationMap from './InteractiveStationMap';
+import StationComparisonRow from './StationComparisonRow';
+import { getAllStationsSortedByDistance } from '../../utils/weatherStationDatabase';
 
 interface WeatherStationModalProps {
   isOpen: boolean;
@@ -39,6 +42,7 @@ interface WeatherStationModalProps {
   stationData: any;
   weatherData: any;
   onOpenInNewTab: () => void;
+  targetCoordinates?: { lat: number; lng: number };
 }
 
 const WeatherStationModal: React.FC<WeatherStationModalProps> = ({
@@ -46,7 +50,8 @@ const WeatherStationModal: React.FC<WeatherStationModalProps> = ({
   onClose,
   stationData,
   weatherData,
-  onOpenInNewTab
+  onOpenInNewTab,
+  targetCoordinates
 }) => {
   // Debug pour comprendre la structure des données
   console.log('WeatherStationModal - stationData:', stationData);
@@ -61,7 +66,8 @@ const WeatherStationModal: React.FC<WeatherStationModalProps> = ({
   const [expandedSections, setExpandedSections] = useState({
     location: false,
     temperature: false,
-    humidity: false
+    humidity: false,
+    otherStations: false
   });
 
   const toggleSection = (section: keyof typeof expandedSections) => {
@@ -88,6 +94,12 @@ const WeatherStationModal: React.FC<WeatherStationModalProps> = ({
   };
 
   const yearlyData = processYearlyData();
+
+  // Calcul des autres stations triées par distance
+  const otherStations = targetCoordinates ? 
+    getAllStationsSortedByDistance(targetCoordinates).filter(station => 
+      station.code !== stationData?.code
+    ) : [];
 
   // Statistiques annuelles
   const yearlyStats = yearlyData.length > 0 ? {
@@ -425,6 +437,47 @@ const WeatherStationModal: React.FC<WeatherStationModalProps> = ({
               </CollapsibleContent>
             </Collapsible>
           </Card>
+
+          {/* Autres stations météorologiques */}
+          {targetCoordinates && (
+            <Card className="bg-white/70 backdrop-blur-sm border-yellow-200">
+              <Collapsible
+                open={expandedSections.otherStations}
+                onOpenChange={() => toggleSection('otherStations')}
+              >
+                <CollapsibleTrigger asChild>
+                  <CardHeader className="cursor-pointer hover:bg-yellow-50/50 transition-colors">
+                    <CardTitle className="flex items-center justify-between text-lg">
+                      <div className="flex items-center gap-2">
+                        <Activity className="h-5 w-5 text-yellow-600" />
+                        <span className="font-bold text-gray-700">Autres stations météorologiques</span>
+                        <span className="text-sm text-gray-500">({otherStations.length} stations)</span>
+                      </div>
+                      {expandedSections.otherStations ? 
+                        <ChevronUp className="h-5 w-5" /> : 
+                        <ChevronDown className="h-5 w-5" />
+                      }
+                    </CardTitle>
+                  </CardHeader>
+                </CollapsibleTrigger>
+                <CollapsibleContent>
+                  <CardContent>
+                    <div className="space-y-3">
+                      <div className="text-sm text-gray-600 mb-4">
+                        Stations triées par distance croissante depuis le point GPS de cette marche
+                      </div>
+                      {otherStations.map((station) => (
+                        <StationComparisonRow 
+                          key={station.code} 
+                          station={station}
+                        />
+                      ))}
+                    </div>
+                  </CardContent>
+                </CollapsibleContent>
+              </Collapsible>
+            </Card>
+          )}
 
           {/* Prochainement */}
           <Card className="bg-gradient-to-r from-purple-50 to-pink-50 border-purple-200">

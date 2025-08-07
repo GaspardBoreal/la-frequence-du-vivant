@@ -573,6 +573,7 @@ const WeatherVisualization: React.FC<WeatherVisualizationProps> = ({
         stationData={enrichedStationData}
         weatherData={weatherData}
         onOpenInNewTab={handleOpenInNewTab}
+        targetCoordinates={targetCoordinates}
       />
     </div>
   );

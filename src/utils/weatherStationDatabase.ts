@@ -49,6 +49,55 @@ export const WEATHER_STATIONS: Record<string, WeatherStation> = {
     elevation: 15,
     region: 'Nouvelle-Aquitaine',
     department: 'Gironde'
+  },
+  // Nouvelle-Aquitaine - Autres stations
+  '33522001': {
+    code: '33522001',
+    name: 'LA TESTE-DE-BUCH',
+    coordinates: { lat: 44.6333, lng: -1.1333 },
+    elevation: 4,
+    region: 'Nouvelle-Aquitaine',
+    department: 'Gironde'
+  },
+  '33056001': {
+    code: '33056001',
+    name: 'BLAYE',
+    coordinates: { lat: 45.1333, lng: -0.6667 },
+    elevation: 18,
+    region: 'Nouvelle-Aquitaine',
+    department: 'Gironde'
+  },
+  '24037001': {
+    code: '24037001',
+    name: 'BERGERAC',
+    coordinates: { lat: 44.8333, lng: 0.4833 },
+    elevation: 66,
+    region: 'Nouvelle-Aquitaine',
+    department: 'Dordogne'
+  },
+  '47001001': {
+    code: '47001001',
+    name: 'AGEN',
+    coordinates: { lat: 44.1833, lng: 0.6167 },
+    elevation: 66,
+    region: 'Nouvelle-Aquitaine',
+    department: 'Lot-et-Garonne'
+  },
+  '40192001': {
+    code: '40192001',
+    name: 'MONT-DE-MARSAN',
+    coordinates: { lat: 43.9167, lng: -0.5000 },
+    elevation: 59,
+    region: 'Nouvelle-Aquitaine',
+    department: 'Landes'
+  },
+  '64024001': {
+    code: '64024001',
+    name: 'BIARRITZ-ANGLET',
+    coordinates: { lat: 43.4683, lng: -1.5317 },
+    elevation: 69,
+    region: 'Nouvelle-Aquitaine',
+    department: 'Pyrénées-Atlantiques'
   }
 };
 
@@ -134,4 +183,18 @@ export const getCorrectStationCoordinates = (
   // Dernier recours: coordonnées par défaut
   console.warn(`❌ [WEATHER DB] Station inconnue et aucun fallback: ${stationCode}/${stationName}`);
   return { lat: 44.8167, lng: -0.7833 }; // ST GERVAIS par défaut
+};
+
+/**
+ * Récupère toutes les stations triées par distance depuis un point donné
+ */
+export const getAllStationsSortedByDistance = (
+  targetCoordinates: { lat: number; lng: number }
+): Array<WeatherStation & { distance: number }> => {
+  const stationsWithDistance = Object.values(WEATHER_STATIONS).map(station => ({
+    ...station,
+    distance: calculateDistance(targetCoordinates, station.coordinates)
+  }));
+
+  return stationsWithDistance.sort((a, b) => a.distance - b.distance);
 };
