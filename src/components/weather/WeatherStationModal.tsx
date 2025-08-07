@@ -175,14 +175,18 @@ const WeatherStationModal: React.FC<WeatherStationModalProps> = ({
                   <Hash className="h-4 w-4 text-gray-500" />
                    <div>
                      <p className="text-sm text-gray-600">Nom</p>
-                     <p className="font-medium">{stationData?.name || stationData?.value || 'Non disponible'}</p>
+                      <p className="font-bold text-xl text-red-600 bg-yellow-100 p-2 rounded">
+                        {stationData?.name || stationData?.value || 'Non disponible'}
+                      </p>
                    </div>
                  </div>
                  <div className="flex items-center gap-3">
                    <Globe className="h-4 w-4 text-gray-500" />
                    <div>
                      <p className="text-sm text-gray-600">Code station</p>
-                     <p className="font-medium">{stationData?.code || 'Non disponible'}</p>
+                      <p className="font-bold text-xl text-blue-600 bg-yellow-100 p-2 rounded">
+                        {stationData?.code || 'Non disponible'}
+                      </p>
                    </div>
                  </div>
               </div>
