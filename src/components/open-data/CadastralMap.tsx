@@ -37,29 +37,35 @@ const CadastralMap: React.FC<CadastralMapProps> = ({
 
     mapInstanceRef.current = map;
 
-    // Base layer - Satellite imagery (like cadastre.data.gouv.fr)
-    const orthoLayer = L.tileLayer(
-      'https://wxs.ign.fr/choisirgeoportail/geoportail/wmts?REQUEST=GetTile&SERVICE=WMTS&VERSION=1.0.0&STYLE=normal&TILEMATRIXSET=PM&FORMAT=image/jpeg&LAYER=ORTHOIMAGERY.ORTHOPHOTOS&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}',
+    // Base layer - Simple OpenStreetMap first
+    const osmLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '© OpenStreetMap contributors',
+      maxZoom: 19,
+    });
+
+    // Satellite layer from IGN (simplified)
+    const satelliteLayer = L.tileLayer(
+      'https://wxs.ign.fr/essentiels/geoportail/wmts?REQUEST=GetTile&SERVICE=WMTS&VERSION=1.0.0&STYLE=normal&TILEMATRIXSET=PM&FORMAT=image/jpeg&LAYER=ORTHOIMAGERY.ORTHOPHOTOS&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}',
       {
         attribution: '© IGN',
-        maxZoom: 19,
+        maxZoom: 18,
       }
     );
 
-    // Cadastral parcels layer (WMS from IGN)
-    const cadastralLayer = L.tileLayer.wms(
-      'https://wxs.ign.fr/choisirgeoportail/geoportail/r/wms',
+    // Cadastral overlay - simplified approach
+    const cadastralLayer = L.tileLayer(
+      'https://wxs.ign.fr/essentiels/geoportail/wmts?REQUEST=GetTile&SERVICE=WMTS&VERSION=1.0.0&STYLE=bdparcellaire&TILEMATRIXSET=PM&FORMAT=image/png&LAYER=CADASTRALPARCELS.PARCELLAIRE_EXPRESS&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}',
       {
-        layers: 'CADASTRALPARCELS.PARCELLAIRE_EXPRESS',
-        format: 'image/png',
-        transparent: true,
         attribution: '© IGN - Cadastre',
-        opacity: 0.8,
+        opacity: 0.7,
+        maxZoom: 18,
       }
     );
 
-    // Add layers to map
-    orthoLayer.addTo(map);
+    // Add base layer first
+    osmLayer.addTo(map);
+    
+    // Add cadastral overlay
     cadastralLayer.addTo(map);
 
     // Custom marker for the location
@@ -101,10 +107,8 @@ const CadastralMap: React.FC<CadastralMapProps> = ({
 
     // Layer control
     const baseLayers = {
-      'Vue satellite': orthoLayer,
-      'Plan': L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '© OpenStreetMap contributors'
-      })
+      'Plan': osmLayer,
+      'Vue satellite': satelliteLayer
     };
 
     const overlayLayers = {
