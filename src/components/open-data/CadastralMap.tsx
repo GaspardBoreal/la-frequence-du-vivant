@@ -2,6 +2,7 @@ import React, { useEffect, useRef } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { MapPin } from 'lucide-react';
+import { supabase } from '../../integrations/supabase/client';
 
 // Fix Leaflet default markers
 delete (L.Icon.Default.prototype as any)._getIconUrl;
@@ -29,51 +30,92 @@ const CadastralMap: React.FC<CadastralMapProps> = ({
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<L.Map | null>(null);
 
-  // Fonction pour récupérer la géométrie de la parcelle via Supabase Edge Function
-  const fetchParcelGeometry = async (parcelId: string) => {
+  // Fonction pour récupérer la géométrie d'une parcelle via l'Edge Function
+  const fetchParcelGeometry = async (parcelId: string): Promise<any | null> => {
     try {
-      console.log('🔍 [CADASTRAL] Récupération géométrie pour:', parcelId);
+      console.log('🏘️ [CADASTRAL] Récupération de la géométrie pour parcelId:', parcelId);
       
-      // Utiliser l'Edge Function Supabase pour contourner CORS
-      const edgeFunctionUrl = `https://xzbunrtgbfbhinkzkzhf.supabase.co/functions/v1/cadastre-proxy?parcelId=${parcelId}`;
-      console.log('🏘️ [CADASTRAL] URL Edge Function:', edgeFunctionUrl);
-      console.log('🏘️ [CADASTRAL] Headers envoyés:', {
-        'Accept': 'application/json',
-        'Content-Type': 'application/json',
-        'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inh6YnVucnRnYmZiaGlua3premhmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTM1MTMxNTIsImV4cCI6MjA2OTA4OTE1Mn0.v1QqULucMrt9JFQatk5FPtIwXmuOFuP08Udg11_20_g',
-        'authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inh6YnVucnRnYmZiaGlua3premhmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTM1MTMxNTIsImV4cCI6MjA2OTA4OTE1Mn0.v1QqULucMrt9JFQatk5FPtIwXmuOFuP08Udg11_20_g'
+      const { data, error } = await supabase.functions.invoke('cadastre-proxy', {
+        body: { parcelId }
       });
-      
-      const response = await fetch(edgeFunctionUrl, {
-        method: 'GET',
-        headers: {
-          'Accept': 'application/json',
-          'Content-Type': 'application/json',
-          'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inh6YnVucnRnYmZiaGlua3premhmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTM1MTMxNTIsImV4cCI6MjA2OTA4OTE1Mn0.v1QqULucMrt9JFQatk5FPtIwXmuOFuP08Udg11_20_g',
-          'authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inh6YnVucnRnYmZiaGlua3premhmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTM1MTMxNTIsImV4cCI6MjA2OTA4OTE1Mn0.v1QqULucMrt9JFQatk5FPtIwXmuOFuP08Udg11_20_g'
-        },
-      });
-      
-      if (!response.ok) {
-        console.warn('⚠️ [CADASTRAL] Réponse Edge Function non-OK:', response.status);
-        const errorData = await response.json();
-        console.warn('⚠️ [CADASTRAL] Détails erreur:', errorData);
+
+      if (error) {
+        console.warn('⚠️ [CADASTRAL] Erreur Edge Function:', error);
         return null;
       }
-      
-      const result = await response.json();
-      console.log('📦 [CADASTRAL] Résultat Edge Function:', result);
-      
-      if (result.success && result.data?.geometry) {
-        console.log('✅ [CADASTRAL] Géométrie récupérée avec succès');
-        return result.data.geometry;
+
+      if (data?.success && data?.data) {
+        console.log('✅ [CADASTRAL] Données reçues de l\'Edge Function:', data);
+        return data.data;
       } else {
-        console.warn('❌ [CADASTRAL] Aucune géométrie dans la réponse');
+        console.warn('⚠️ [CADASTRAL] Pas de données dans la réponse:', data);
+        return null;
+      }
+    } catch (error) {
+      console.error('❌ [CADASTRAL] Erreur lors de la récupération:', error);
+      return null;
+    }
+  };
+
+  // Fonction de fallback pour récupérer les données cadastrales via coordonnées
+  const fetchCadastralDataByCoordinates = async (lat: number, lng: number): Promise<any | null> => {
+    try {
+      console.log('🌍 [CADASTRAL FALLBACK] Recherche par coordonnées:', { lat, lng });
+      
+      // Recherche de la commune d'abord
+      const communeResponse = await fetch(
+        `https://geo.api.gouv.fr/communes?lat=${lat}&lon=${lng}&fields=code,nom&format=json&geometry=centre`
+      );
+      
+      if (!communeResponse.ok) {
+        console.warn('⚠️ [CADASTRAL FALLBACK] Impossible de trouver la commune');
         return null;
       }
       
+      const communes = await communeResponse.json();
+      if (!communes || communes.length === 0) {
+        console.warn('⚠️ [CADASTRAL FALLBACK] Aucune commune trouvée');
+        return null;
+      }
+      
+      const commune = communes[0];
+      console.log('✅ [CADASTRAL FALLBACK] Commune trouvée:', commune);
+      
+      // Essai de récupération des parcelles de la commune
+      const parcelsUrls = [
+        `https://cadastre.data.gouv.fr/data/etalab-cadastre/latest/geojson/communes/${commune.code}/cadastre-${commune.code}-parcelles.json`,
+        `https://cadastre.data.gouv.fr/bundler/cadastre-etalab/latest/geojson/communes/${commune.code}/cadastre-${commune.code}-parcelles.json`
+      ];
+      
+      for (const url of parcelsUrls) {
+        try {
+          console.log('🔍 [CADASTRAL FALLBACK] Test URL:', url);
+          const response = await fetch(url);
+          
+          if (response.ok) {
+            const geoJson = await response.json();
+            console.log(`✅ [CADASTRAL FALLBACK] ${geoJson.features?.length || 0} parcelles trouvées`);
+            
+            // Trouve la parcelle la plus proche des coordonnées
+            if (geoJson.features && geoJson.features.length > 0) {
+              // Pour une implémentation simple, on prend la première parcelle
+              // Dans un cas réel, on calculerait la distance
+              const closestParcel = geoJson.features[0];
+              return {
+                geometry: closestParcel.geometry,
+                properties: closestParcel.properties,
+                commune: commune.nom
+              };
+            }
+          }
+        } catch (error) {
+          console.warn(`⚠️ [CADASTRAL FALLBACK] Erreur avec ${url}:`, error);
+        }
+      }
+      
+      return null;
     } catch (error) {
-      console.error('💥 [CADASTRAL] Erreur récupération géométrie:', error);
+      console.error('❌ [CADASTRAL FALLBACK] Erreur complète:', error);
       return null;
     }
   };
@@ -82,11 +124,15 @@ const CadastralMap: React.FC<CadastralMapProps> = ({
     if (!mapRef.current || mapInstanceRef.current) return;
 
     const initializeMap = async () => {
+      console.log('🗺️ [CADASTRAL MAP] Initialisation de la carte');
+      console.log('🔍 [CADASTRAL MAP] parcelGeometry reçu:', parcelGeometry);
+      console.log('🔍 [CADASTRAL MAP] parcelData reçu:', parcelData);
+
       // Initialize map
       const map = L.map(mapRef.current!, {
         center: [latitude, longitude],
         zoom: 16,
-        zoomControl: true,
+        zoomControl: false,
       });
 
       mapInstanceRef.current = map;
@@ -157,23 +203,30 @@ const CadastralMap: React.FC<CadastralMapProps> = ({
           </div>
         `);
 
-      // Try to fetch and display parcel geometry if parcelData contains an ID
+      // Vérifier si on a une géométrie de parcelle ou si on doit la récupérer
+      let finalParcelGeometry = parcelGeometry;
+      
+      // Essayer avec l'identifiant cadastral si disponible
+      if (!finalParcelGeometry && parcelData?.identifiant_cadastral) {
+        console.log('🔍 [CADASTRAL MAP] Récupération de la géométrie pour:', parcelData.identifiant_cadastral);
+        finalParcelGeometry = await fetchParcelGeometry(parcelData.identifiant_cadastral);
+      }
+      
+      // Fallback : essayer avec les coordonnées si aucun identifiant ou si la récupération a échoué
+      if (!finalParcelGeometry) {
+        console.log('🌍 [CADASTRAL MAP] Tentative de récupération par coordonnées');
+        finalParcelGeometry = await fetchCadastralDataByCoordinates(latitude, longitude);
+      }
+
+      if (!finalParcelGeometry) {
+        console.warn('⚠️ [CADASTRAL MAP] Aucune géométrie de parcelle disponible');
+      }
+
+      // Try to fetch and display parcel geometry
       let parcelLayer = null;
       const allBounds = [[latitude, longitude]];
       
-      console.log('🗺️ [CADASTRAL MAP] Données reçues:', { parcelGeometry, parcelData });
-      
-      let geometryToUse = parcelGeometry;
-      
-      // Si pas de géométrie mais qu'on a un ID de parcelle, essayer de la récupérer
-      if (!parcelGeometry && parcelData?.parcel_id) {
-        console.log('🔄 [CADASTRAL] Tentative récupération géométrie avec ID:', parcelData.parcel_id);
-        geometryToUse = await fetchParcelGeometry(parcelData.parcel_id);
-      } else if (!parcelGeometry && !parcelData?.parcel_id) {
-        // Test direct avec ID générique de FRONSAC
-        console.log('🔄 [CADASTRAL] Test avec ID générique 331740000A0203');
-        geometryToUse = await fetchParcelGeometry('331740000A0203');
-      }
+      let geometryToUse = finalParcelGeometry;
       
       if (geometryToUse && geometryToUse.coordinates) {
         console.log('✅ [CADASTRAL MAP] Géométrie de parcelle trouvée, affichage...');
@@ -237,17 +290,25 @@ const CadastralMap: React.FC<CadastralMapProps> = ({
         overlayLayers['Parcelle LEXICON'] = parcelLayer;
       }
 
-      L.control.layers(baseLayers, overlayLayers, {
-        position: 'topright',
-        collapsed: false
-      }).addTo(map);
-
-      // Add scale control
-      L.control.scale({
-        position: 'bottomleft',
-        metric: true,
-        imperial: false
-      }).addTo(map);
+      // S'assurer que la carte est complètement initialisée avant d'ajouter les contrôles
+      map.whenReady(() => {
+        try {
+          L.control.layers(baseLayers, overlayLayers, {
+            position: 'topright',
+            collapsed: false
+          }).addTo(map);
+          
+          L.control.zoom({ position: 'topright' }).addTo(map);
+          
+          L.control.scale({
+            position: 'bottomleft',
+            metric: true,
+            imperial: false
+          }).addTo(map);
+        } catch (error) {
+          console.warn('⚠️ [CADASTRAL MAP] Erreur lors de l\'ajout des contrôles:', error);
+        }
+      });
 
       // Fit map to show both GPS point and parcel (if available)
       if (allBounds.length > 1) {

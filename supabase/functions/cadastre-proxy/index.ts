@@ -15,8 +15,16 @@ serve(async (req) => {
     console.log('🔍 [CADASTRE PROXY] Headers reçus:', req.headers);
     console.log('🔍 [CADASTRE PROXY] URL complète:', req.url);
     
-    const url = new URL(req.url);
-    const parcelId = url.searchParams.get('parcelId');
+    let parcelId: string | null = null;
+    
+    // Récupérer parcelId depuis les paramètres URL ou le body
+    if (req.method === 'GET') {
+      const url = new URL(req.url);
+      parcelId = url.searchParams.get('parcelId');
+    } else if (req.method === 'POST') {
+      const body = await req.json();
+      parcelId = body.parcelId;
+    }
 
     if (!parcelId) {
       console.error('❌ [CADASTRE PROXY] Paramètre parcelId manquant');
