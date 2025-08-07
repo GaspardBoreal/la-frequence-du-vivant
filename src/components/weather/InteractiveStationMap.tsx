@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import { MapPin } from 'lucide-react';
+import { MapPin, ExternalLink } from 'lucide-react';
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -52,6 +52,12 @@ const InteractiveStationMap: React.FC<InteractiveStationMapProps> = ({
     console.log('⚠️ Correction appliquée pour la station:', stationName);
   }
 
+  // Fonction pour ouvrir Google Earth à cette position
+  const openInGoogleEarth = () => {
+    const url = `https://earth.google.com/web/@${correctCoordinates.lat},${correctCoordinates.lng},100a,1000d,35y,0h,0t,0r`;
+    window.open(url, '_blank');
+  };
+
   return (
     <div className="mt-4 h-64 bg-gray-50 rounded-lg border-2 border-gray-200 overflow-hidden relative shadow-inner">
       <MapContainer
@@ -70,19 +76,26 @@ const InteractiveStationMap: React.FC<InteractiveStationMapProps> = ({
           icon={stationIcon}
         >
           <Popup>
-            <div className="text-center p-2">
+            <div className="text-center p-2 min-w-[200px]">
               <div className="flex items-center gap-2 mb-2">
                 <MapPin className="h-4 w-4 text-red-600" />
                 <strong className="text-gray-800">Station Météorologique</strong>
               </div>
-              <div className="text-sm">
+              <div className="text-sm space-y-2">
                 <p className="font-semibold text-gray-700">{stationName}</p>
-                <p className="text-gray-600 text-xs mt-1">
+                <p className="text-gray-600 text-xs">
                   📍 {correctCoordinates.lat.toFixed(4)}°, {correctCoordinates.lng.toFixed(4)}°
                 </p>
-                <p className="text-gray-500 text-xs mt-2">
+                <p className="text-gray-500 text-xs">
                   🌡️ Données météorologiques en temps réel
                 </p>
+                <button
+                  onClick={openInGoogleEarth}
+                  className="flex items-center gap-2 justify-center w-full mt-3 px-3 py-2 bg-blue-600 text-white text-xs rounded-lg hover:bg-blue-700 transition-colors duration-200"
+                >
+                  <ExternalLink className="h-3 w-3" />
+                  Voir dans Google Earth
+                </button>
               </div>
             </div>
           </Popup>
