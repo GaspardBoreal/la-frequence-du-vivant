@@ -141,10 +141,6 @@ const BioacoustiquePoetique = () => {
                   <span style={{ color: '#a855f7' }}>Bioacoustique</span>
                 </h1>
                 
-                {/* Sous-titre avec interligne réduit */}
-                <p className="gaspard-subtitle max-w-2xl mx-auto leading-tight">
-                  Découvrez les territoires sonores de la poésie du vivant
-                </p>
               </div>
             </div>
           </header>
