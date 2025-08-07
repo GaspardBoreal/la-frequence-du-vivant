@@ -33,19 +33,11 @@ const LayerSelector: React.FC<LayerSelectorProps> = ({
   return (
     <div className="space-y-4">
       {/* Filtres directement accessibles */}
-      <div className="gaspard-glass rounded-2xl p-6 shadow-xl border border-accent/20 animate-fade-in">
-        <div className="flex items-center space-x-2 mb-4">
-          <div className="w-1 h-6 bg-accent rounded-full"></div>
-          <h4 className="text-lg font-medium text-foreground">
-            Filtres des Marches Techno-Sensibles
-          </h4>
-        </div>
-        <BioacousticFilters 
-          marches={marchesData}
-          onFilterChange={onFilteredDataChange}
-          theme={theme}
-        />
-      </div>
+      <BioacousticFilters 
+        marches={marchesData}
+        onFilterChange={onFilteredDataChange}
+        theme={theme}
+      />
     </div>
   );
 };
