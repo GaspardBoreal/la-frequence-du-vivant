@@ -102,10 +102,12 @@ const WeatherStationModal: React.FC<WeatherStationModalProps> = ({
       station.code !== stationData?.Code
     ) : [];
 
-  // Calculer la distance de la station actuelle avec vérification des coordonnées
-  const currentStationDistance = targetCoordinates && stationData && 
-    typeof stationData.latitude === 'number' && typeof stationData.longitude === 'number' ? 
-    calculateDistance(targetCoordinates, { lat: stationData.latitude, lng: stationData.longitude }) :
+  // Calculer la distance de la station actuelle avec les vraies propriétés
+  const currentStationDistance = targetCoordinates && stationData ? 
+    calculateDistance(targetCoordinates, { 
+      lat: parseFloat(stationData.Latitude || stationData.latitude || 0), 
+      lng: parseFloat(stationData.Longitude || stationData.longitude || 0) 
+    }) :
     0;
 
   // Statistiques annuelles
@@ -477,13 +479,13 @@ const WeatherStationModal: React.FC<WeatherStationModalProps> = ({
                       {stationData && (
                         <div className="relative">
                           <StationComparisonRow 
-                            key={`current-${stationData.code}`}
+                            key={`current-${stationData.Code || stationData.code}`}
                             station={{
-                              name: stationData.name,
-                              code: stationData.code,
+                              name: stationData.Nom || stationData.name,
+                              code: stationData.Code || stationData.code,
                               coordinates: {
-                                lat: stationData.latitude,
-                                lng: stationData.longitude
+                                lat: parseFloat(stationData.Latitude || stationData.latitude || 0),
+                                lng: parseFloat(stationData.Longitude || stationData.longitude || 0)
                               },
                               distance: currentStationDistance
                             }}
