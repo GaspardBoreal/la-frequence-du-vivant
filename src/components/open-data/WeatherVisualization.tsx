@@ -55,6 +55,10 @@ const WeatherVisualization: React.FC<WeatherVisualizationProps> = ({
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isStationModalOpen, setIsStationModalOpen] = useState(false);
 
+  // Debug pour comprendre la structure des données
+  console.log('WeatherVisualization - weatherData:', weatherData);
+  console.log('WeatherVisualization - stationName:', stationName);
+
   // Transformation des données LEXICON vers notre format
   const processedData = useMemo(() => {
     if (!weatherData?.values) return [];
@@ -479,7 +483,7 @@ const WeatherVisualization: React.FC<WeatherVisualizationProps> = ({
       <WeatherStationModal
         isOpen={isStationModalOpen}
         onClose={() => setIsStationModalOpen(false)}
-        stationData={{ value: stationName }}
+        stationData={weatherData?.station || { value: stationName }}
         weatherData={weatherData}
         onOpenInNewTab={handleOpenInNewTab}
       />
