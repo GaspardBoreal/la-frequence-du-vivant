@@ -44,14 +44,17 @@ serve(async (req) => {
       );
     }
 
-    // Extract commune code from first 5 characters
+    // Extract commune code from first 5 characters and department from first 2
     const codeCommune = parcelId.substring(0, 5);
+    const codeDepartement = parcelId.substring(0, 2);
     console.log('🔍 [CADASTRE PROXY] Commune code:', codeCommune);
+    console.log('🔍 [CADASTRE PROXY] Department code:', codeDepartement);
     
-    // Test URLs in order
+    // Test URLs in order - new structure with department folders and compressed files
     const urlsToTry = [
+      `https://cadastre.data.gouv.fr/data/etalab-cadastre/latest/geojson/communes/${codeDepartement}/${codeCommune}/cadastre-${codeCommune}-parcelles.json.gz`,
+      `https://cadastre.data.gouv.fr/data/etalab-cadastre/latest/geojson/communes/${codeDepartement}/${codeCommune}/cadastre-${codeCommune}-parcelles.json`,
       `https://cadastre.data.gouv.fr/data/etalab-cadastre/latest/geojson/communes/${codeCommune}/cadastre-${codeCommune}-parcelles.json`,
-      `https://cadastre.data.gouv.fr/bundler/cadastre-etalab/latest/geojson/communes/${codeCommune}/cadastre-${codeCommune}-parcelles.json`,
       `https://opendatasoft.github.io/cadastre-france/data/geojson/communes/${codeCommune}/cadastre-${codeCommune}-parcelles.json`
     ];
 
@@ -62,7 +65,8 @@ serve(async (req) => {
         const response = await fetch(testUrl, {
           method: 'GET',
           headers: {
-            'Accept': 'application/json',
+            'Accept': 'application/json, application/gzip',
+            'Accept-Encoding': 'gzip',
             'User-Agent': 'Supabase-Edge-Function/1.0',
           },
         });
@@ -70,7 +74,18 @@ serve(async (req) => {
         console.log('🔍 [CADASTRE PROXY] Response status:', response.status);
 
         if (response.ok) {
-          const geoJsonData = await response.json();
+          let geoJsonData;
+          
+          // Handle compressed files
+          if (testUrl.endsWith('.gz')) {
+            console.log('🗜️ [CADASTRE PROXY] Handling compressed file');
+            const decompressedStream = response.body?.pipeThrough(new DecompressionStream('gzip'));
+            const decompressedResponse = new Response(decompressedStream);
+            geoJsonData = await decompressedResponse.json();
+          } else {
+            geoJsonData = await response.json();
+          }
+          
           console.log('✅ [CADASTRE PROXY] Data fetched successfully');
           console.log('📦 [CADASTRE PROXY] Number of features:', geoJsonData.features?.length || 0);
           
