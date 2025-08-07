@@ -44,87 +44,89 @@ const InteractiveStationMap: React.FC<InteractiveStationMapProps> = ({
   };
 
   return (
-    <div className="mt-4 h-64 bg-gray-100 rounded-lg border overflow-hidden relative">
-      {/* Contrôles de zoom */}
-      <div className="absolute top-4 right-4 z-10 flex flex-col gap-2">
+    <div className="mt-4 h-64 bg-gray-50 rounded-lg border-2 border-gray-200 overflow-hidden relative shadow-inner">
+      {/* Contrôles de zoom - améliorés */}
+      <div className="absolute top-3 right-3 z-20 flex flex-col gap-1">
         <Button 
           size="sm" 
-          variant="outline" 
+          variant="default" 
           onClick={handleZoomIn}
-          className="bg-white/90 backdrop-blur-sm shadow-md p-2 h-8 w-8"
+          className="bg-white hover:bg-gray-50 border-2 border-gray-300 shadow-lg p-2 h-10 w-10 text-gray-700"
         >
-          <ZoomIn className="h-3 w-3" />
+          <ZoomIn className="h-4 w-4" />
         </Button>
         <Button 
           size="sm" 
-          variant="outline" 
+          variant="default" 
           onClick={handleZoomOut}
-          className="bg-white/90 backdrop-blur-sm shadow-md p-2 h-8 w-8"
+          className="bg-white hover:bg-gray-50 border-2 border-gray-300 shadow-lg p-2 h-10 w-10 text-gray-700"
         >
-          <ZoomOut className="h-3 w-3" />
+          <ZoomOut className="h-4 w-4" />
         </Button>
         <Button 
           size="sm" 
-          variant="outline" 
+          variant="default" 
           onClick={handleReset}
-          className="bg-white/90 backdrop-blur-sm shadow-md p-2 h-8 w-8"
+          className="bg-white hover:bg-gray-50 border-2 border-gray-300 shadow-lg p-2 h-10 w-10 text-gray-700"
         >
-          <RotateCcw className="h-3 w-3" />
+          <RotateCcw className="h-4 w-4" />
         </Button>
       </div>
 
-      {/* Carte */}
+      {/* Carte - améliorée */}
       <div 
-        className="w-full h-full cursor-move relative"
+        className="w-full h-full cursor-move relative bg-white"
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
         onMouseLeave={handleMouseUp}
-        style={{
-          background: `
-            linear-gradient(135deg, #f0f9ff 0%, #e0e7ff 25%, #ddd6fe 50%, #f3e8ff 75%, #fdf2f8 100%),
-            radial-gradient(circle at 20% 80%, rgba(120, 119, 198, 0.3) 0%, transparent 50%),
-            radial-gradient(circle at 80% 20%, rgba(34, 197, 94, 0.2) 0%, transparent 50%),
-            radial-gradient(circle at 40% 40%, rgba(59, 130, 246, 0.1) 0%, transparent 50%)
-          `,
-          backgroundSize: '100% 100%, 300px 300px, 200px 200px, 400px 400px'
-        }}
       >
-        {/* Grille décorative */}
+        {/* Fond de carte plus clair et contrasté */}
         <div 
-          className="absolute inset-0 opacity-10"
+          className="absolute inset-0"
+          style={{
+            background: `
+              linear-gradient(135deg, #f8fafc 0%, #e2e8f0 50%, #cbd5e1 100%),
+              repeating-linear-gradient(45deg, transparent, transparent 20px, rgba(148, 163, 184, 0.1) 20px, rgba(148, 163, 184, 0.1) 40px)
+            `
+          }}
+        />
+        
+        {/* Grille de référence plus visible */}
+        <div 
+          className="absolute inset-0 opacity-20"
           style={{
             backgroundImage: `
-              linear-gradient(rgba(0,0,0,0.1) 1px, transparent 1px),
-              linear-gradient(90deg, rgba(0,0,0,0.1) 1px, transparent 1px)
+              linear-gradient(rgba(71, 85, 105, 0.3) 1px, transparent 1px),
+              linear-gradient(90deg, rgba(71, 85, 105, 0.3) 1px, transparent 1px)
             `,
-            backgroundSize: '20px 20px',
+            backgroundSize: '30px 30px',
             transform: `scale(${zoom}) translate(${offset.x}px, ${offset.y}px)`
           }}
         />
         
-        {/* Point de la station météorologique */}
+        {/* Point de la station météorologique - plus visible */}
         <div 
           className="absolute flex items-center justify-center"
           style={{
             transform: `scale(${zoom}) translate(${offset.x}px, ${offset.y}px)`,
             left: '50%',
             top: '50%',
-            marginLeft: '-12px',
-            marginTop: '-12px'
+            marginLeft: '-16px',
+            marginTop: '-16px'
           }}
         >
-          {/* Cercles d'animation */}
-          <div className="absolute w-12 h-12 bg-red-200 rounded-full animate-ping opacity-30"></div>
-          <div className="absolute w-8 h-8 bg-red-300 rounded-full animate-pulse opacity-50"></div>
+          {/* Cercles d'animation plus contrastés */}
+          <div className="absolute w-16 h-16 bg-red-300 rounded-full animate-ping opacity-40"></div>
+          <div className="absolute w-12 h-12 bg-red-400 rounded-full animate-pulse opacity-60"></div>
           
-          {/* Point principal */}
-          <div className="relative w-6 h-6 bg-red-500 rounded-full shadow-lg border-2 border-white flex items-center justify-center">
-            <div className="w-2 h-2 bg-white rounded-full"></div>
+          {/* Point principal plus gros et visible */}
+          <div className="relative w-8 h-8 bg-red-600 rounded-full shadow-xl border-3 border-white flex items-center justify-center">
+            <div className="w-3 h-3 bg-white rounded-full shadow-inner"></div>
           </div>
         </div>
 
-        {/* Lignes de guidage */}
+        {/* Lignes de guidage plus visibles */}
         <div 
           className="absolute inset-0 pointer-events-none"
           style={{
@@ -133,32 +135,32 @@ const InteractiveStationMap: React.FC<InteractiveStationMapProps> = ({
         >
           {/* Ligne horizontale */}
           <div 
-            className="absolute w-full h-px bg-red-300 opacity-30"
+            className="absolute w-full h-0.5 bg-red-400 opacity-50 shadow-sm"
             style={{ top: '50%' }}
           />
           {/* Ligne verticale */}
           <div 
-            className="absolute h-full w-px bg-red-300 opacity-30"
+            className="absolute h-full w-0.5 bg-red-400 opacity-50 shadow-sm"
             style={{ left: '50%' }}
           />
         </div>
       </div>
 
-      {/* Informations de la station */}
-      <div className="absolute bottom-4 left-4 bg-white/95 backdrop-blur-sm rounded-lg p-3 shadow-lg border border-white/20">
+      {/* Informations de la station - plus contrastées */}
+      <div className="absolute bottom-3 left-3 bg-white rounded-lg p-3 shadow-xl border-2 border-gray-200">
         <div className="flex items-center gap-2">
-          <MapPin className="h-4 w-4 text-red-500" />
+          <MapPin className="h-5 w-5 text-red-600" />
           <div>
-            <p className="text-sm font-medium text-gray-800">{stationName}</p>
-            <p className="text-xs text-gray-600 font-medium">
+            <p className="text-sm font-bold text-gray-800">{stationName}</p>
+            <p className="text-xs text-gray-600 font-semibold">
               {coordinates.lat.toFixed(4)}°, {coordinates.lng.toFixed(4)}°
             </p>
           </div>
         </div>
       </div>
 
-      {/* Indicateur de zoom */}
-      <div className="absolute bottom-4 right-4 bg-white/90 backdrop-blur-sm rounded px-2 py-1 text-xs text-gray-600 font-medium">
+      {/* Indicateur de zoom - plus visible */}
+      <div className="absolute bottom-3 right-3 bg-white rounded-lg px-3 py-2 text-sm text-gray-700 font-semibold border-2 border-gray-200 shadow-lg">
         Zoom: {zoom.toFixed(1)}x
       </div>
     </div>

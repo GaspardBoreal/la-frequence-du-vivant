@@ -426,12 +426,12 @@ const WeatherStationModal: React.FC<WeatherStationModalProps> = ({
             </Collapsible>
           </Card>
 
-          {/* Voir aussi */}
+          {/* Prochainement */}
           <Card className="bg-gradient-to-r from-purple-50 to-pink-50 border-purple-200">
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-lg">
                 <TrendingUp className="h-5 w-5 text-purple-600" />
-                Voir aussi
+                <span className="font-bold text-gray-700">Prochainement</span>
               </CardTitle>
             </CardHeader>
             <CardContent>
