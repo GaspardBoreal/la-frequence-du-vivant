@@ -96,33 +96,22 @@ const WeatherStationModal: React.FC<WeatherStationModalProps> = ({
 
   const yearlyData = processYearlyData();
 
-  // Utiliser ma base de données locale pour les stations météo
+  // Utiliser UNIQUEMENT ma base de données locale pour garantir la cohérence
   const allLocalStations = targetCoordinates 
     ? getAllStationsSortedByDistance(targetCoordinates)
     : [];
 
-  // Filtrer et limiter les stations valides (exclure celle courante)
+  // La station actuelle est la plus proche (première dans la liste)
+  const currentStation = allLocalStations[0] || null;
+  
+  // Les autres stations (exclure la première)
   const otherStations = allLocalStations
-    .filter(s => s.distance <= 100) // Éliminer les distances aberrantes
-    .filter(s => s.code !== stationData?.Code && s.code !== stationData?.code)
-    .slice(0, 10);
+    .slice(1)
+    .filter(s => s.distance <= 50) // Limiter à 50km
+    .slice(0, 8); // Max 8 autres stations
 
-  // Pour la station actuelle, essayer de la trouver dans ma base locale d'abord
-  const currentStationFromLocal = stationData?.Code 
-    ? getStationByCode(stationData.Code)
-    : stationData?.code 
-      ? getStationByCode(stationData.code)
-      : null;
-
-  // Calculer la distance de la station actuelle
-  const currentStationDistance = targetCoordinates && currentStationFromLocal
-    ? calculateDistance(targetCoordinates, currentStationFromLocal.coordinates)
-    : targetCoordinates && stationData 
-      ? calculateDistance(targetCoordinates, {
-          lat: parseFloat(stationData.Latitude || stationData.latitude || 0),
-          lng: parseFloat(stationData.Longitude || stationData.longitude || 0)
-        })
-      : 0;
+  console.log('🌡️ [MODAL] Station actuelle:', currentStation?.name, currentStation?.code, currentStation?.distance?.toFixed(1), 'km');
+  console.log('🌡️ [MODAL] Autres stations:', otherStations.map(s => `${s.name} (${s.distance?.toFixed(1)}km)`));
 
   // Statistiques annuelles
   const yearlyStats = yearlyData.length > 0 ? {
@@ -486,29 +475,19 @@ const WeatherStationModal: React.FC<WeatherStationModalProps> = ({
                 <CollapsibleContent>
                   <CardContent>
                     <div className="space-y-3">
-                      <div className="text-sm text-gray-600 mb-4">
-                        Stations triées par distance croissante depuis le point GPS de cette marche
-                      </div>
-                       {/* Station actuelle en premier */}
-                       {(currentStationFromLocal || stationData) && (
-                         <div className="relative">
-                           <StationComparisonRow 
-                             key={`current-${currentStationFromLocal?.code || stationData?.Code || stationData?.code}`}
-                             station={{
-                               name: currentStationFromLocal?.name || stationData?.Nom || stationData?.name || 'Station inconnue',
-                               code: currentStationFromLocal?.code || stationData?.Code || stationData?.code || 'N/A',
-                               coordinates: currentStationFromLocal 
-                                 ? currentStationFromLocal.coordinates
-                                 : {
-                                     lat: parseFloat(stationData?.Latitude || stationData?.latitude || 0),
-                                     lng: parseFloat(stationData?.Longitude || stationData?.longitude || 0)
-                                   },
-                               distance: currentStationDistance
-                             }}
-                             isCurrentStation={true}
-                           />
-                         </div>
-                       )}
+                       <div className="text-sm text-gray-600 mb-4">
+                         Stations triées par distance croissante depuis le point GPS de cette marche
+                       </div>
+                        {/* Station actuelle (la plus proche de ma base locale) */}
+                        {currentStation && (
+                          <div className="relative">
+                            <StationComparisonRow 
+                              key={`current-${currentStation.code}`}
+                              station={currentStation}
+                              isCurrentStation={true}
+                            />
+                          </div>
+                        )}
                       
                       {/* Autres stations */}
                       {otherStations.map((station) => (

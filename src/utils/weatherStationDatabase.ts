@@ -34,14 +34,6 @@ export const WEATHER_STATIONS: Record<string, WeatherStation> = {
     region: 'Nouvelle-Aquitaine',
     department: 'Gironde'
   },
-  '33281001': {
-    code: '33281001',
-    name: 'LIBOURNE',
-    coordinates: { lat: 44.9000, lng: -0.2500 },
-    elevation: 40,
-    region: 'Nouvelle-Aquitaine', 
-    department: 'Gironde'
-  },
   '33394002': {
     code: '33394002',
     name: 'ST EMILION',
