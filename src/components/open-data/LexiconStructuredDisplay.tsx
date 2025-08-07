@@ -283,6 +283,7 @@ const LexiconStructuredDisplay: React.FC<LexiconStructuredDisplayProps> = ({ dat
                   <WeatherVisualization 
                     weatherData={data._raw['last-year-weather-reports']}
                     stationName={data._raw['last-year-weather-reports']?.station?.value || 'Station météorologique'}
+                    targetCoordinates={coordinates ? { lat: coordinates.latitude, lng: coordinates.longitude } : undefined}
                   />
                 ) : (
                   <motion.div 

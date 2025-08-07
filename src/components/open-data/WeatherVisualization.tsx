@@ -30,6 +30,8 @@ import {
 import { Card, CardContent } from '../ui/card';
 import { Button } from '../ui/button';
 import WeatherStationModal from '../weather/WeatherStationModal';
+import { calculateDistance, formatDistance, getDataQuality } from '../../utils/weatherStationGeolocation';
+import type { Coordinates } from '../../utils/weatherStationGeolocation';
 
 interface WeatherDataPoint {
   timestamp: string;
@@ -42,11 +44,13 @@ interface WeatherDataPoint {
 interface WeatherVisualizationProps {
   weatherData: any;
   stationName: string;
+  targetCoordinates?: Coordinates; // Coordonnées du point de référence pour calculer la distance
 }
 
 const WeatherVisualization: React.FC<WeatherVisualizationProps> = ({ 
   weatherData, 
-  stationName 
+  stationName,
+  targetCoordinates 
 }) => {
   const [selectedPeriod, setSelectedPeriod] = useState<'24h' | '7d' | '30d' | 'all'>('7d');
   const [activeMetric, setActiveMetric] = useState<'both' | 'temperature' | 'humidity'>('both');
@@ -59,18 +63,22 @@ const WeatherVisualization: React.FC<WeatherVisualizationProps> = ({
   console.log('WeatherVisualization - weatherData:', weatherData);
   console.log('WeatherVisualization - stationName:', stationName);
 
-  // Enrichissement des données de station - parsing correct de l'API LEXICON
+  // Enrichissement des données de station avec calcul de distance
   const enrichedStationData = useMemo(() => {
     const originalStation = weatherData?.station;
     
     if (!originalStation) {
+      const defaultCoords = { lat: 44.8167, lng: -0.7833 };
+      const distance = targetCoordinates ? calculateDistance(targetCoordinates, defaultCoords) : undefined;
+      
       return {
         name: stationName || "ST GERVAIS",
         code: "33415001",
         country: "France",
         commune: stationName || "ST GERVAIS",
         elevation: "42 m",
-        coordinates: { lat: 44.8167, lng: -0.7833 },
+        coordinates: defaultCoords,
+        distance,
         originalData: null
       };
     }
@@ -87,16 +95,21 @@ const WeatherVisualization: React.FC<WeatherVisualizationProps> = ({
     const nameMatch = value.replace(/\s*\d{8}$/, '').trim();
     const parsedStationName = nameMatch || "ST GERVAIS";
 
+    // Coordonnées par défaut, à améliorer avec une vraie base de données de stations
+    const stationCoords = { lat: 44.8167, lng: -0.7833 };
+    const distance = targetCoordinates ? calculateDistance(targetCoordinates, stationCoords) : undefined;
+
     return {
       name: parsedStationName,
       code: stationCode,
       country: "France", 
       commune: parsedStationName,
       elevation: "42 m",
-      coordinates: { lat: 44.8167, lng: -0.7833 },
+      coordinates: stationCoords,
+      distance,
       originalData: originalStation
     };
-  }, [weatherData?.station, stationName]);
+  }, [weatherData?.station, stationName, targetCoordinates]);
 
   console.log('WeatherVisualization - enrichedStationData:', enrichedStationData);
 
@@ -253,7 +266,7 @@ const WeatherVisualization: React.FC<WeatherVisualizationProps> = ({
         animate={{ y: 0, opacity: 1 }}
         className="grid grid-cols-1 md:grid-cols-3 gap-4"
       >
-        {/* Station info - maintenant cliquable */}
+        {/* Station info avec distance - maintenant cliquable */}
         <Card className="bg-gradient-to-br from-sky-50 to-blue-50 border-sky-200 cursor-pointer hover:shadow-lg transition-all duration-300 hover:border-sky-300 group">
           <CardContent className="p-4" onClick={handleStationClick}>
             <div className="flex items-center gap-3">
@@ -270,6 +283,19 @@ const WeatherVisualization: React.FC<WeatherVisualizationProps> = ({
                   <MousePointer className="h-3 w-3 text-sky-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                 </div>
                 <p className="font-bold text-gray-800 group-hover:text-sky-700 transition-colors duration-300">{stationName}</p>
+                
+                {/* Affichage de la distance si disponible */}
+                {enrichedStationData.distance && (
+                  <div className="flex items-center gap-2 mt-1">
+                    <span className="text-xs text-gray-500">📍 {formatDistance(enrichedStationData.distance)}</span>
+                    <div 
+                      className="w-2 h-2 rounded-full"
+                      style={{ backgroundColor: getDataQuality(enrichedStationData.distance).color }}
+                      title={getDataQuality(enrichedStationData.distance).description}
+                    />
+                  </div>
+                )}
+                
                 <p className="text-xs text-sky-600 opacity-0 group-hover:opacity-100 transition-opacity duration-300 mt-1">
                   Cliquez pour voir les détails
                 </p>
