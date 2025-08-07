@@ -43,16 +43,10 @@ const StationComparisonRow: React.FC<StationComparisonRowProps> = ({ station, is
         </div>
       )}
       
-      <div className="flex-1 grid grid-cols-4 gap-4 relative">
-        <div>
-          <p className={`text-sm ${isCurrentStation ? 'text-white/70' : 'text-muted-foreground'}`}>Nom</p>
-          <p className={`font-medium ${isCurrentStation ? 'text-white font-semibold' : 'text-foreground'}`}>
-            {station.name}
-          </p>
-        </div>
+      <div className="flex-1 grid grid-cols-3 gap-4 relative">
         <div>
           <p className={`text-sm ${isCurrentStation ? 'text-white/70' : 'text-muted-foreground'}`}>Code Station</p>
-          <p className={`font-mono text-sm ${isCurrentStation ? 'text-white font-semibold' : 'text-primary/80'}`}>
+          <p className={`font-mono text-sm font-semibold ${isCurrentStation ? 'text-white' : 'text-white'}`}>
             {station.code}
           </p>
         </div>
