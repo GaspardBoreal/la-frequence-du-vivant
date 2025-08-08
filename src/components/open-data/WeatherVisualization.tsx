@@ -136,11 +136,28 @@ const WeatherVisualization: React.FC<WeatherVisualizationProps> = ({
     if (!weatherData?.values) return [];
     
     return Object.entries(weatherData.values).map(([timestamp, values]: [string, any]) => {
-      const date = new Date(timestamp);
+      // Conversion du format français "jj/mm/yyyy hh:mm" vers un format ISO que JavaScript comprend
+      let date;
+      try {
+        // Si le timestamp est au format français "17/05/2025 21:00"
+        if (timestamp.includes('/') && timestamp.includes(' ')) {
+          const [datePart, timePart] = timestamp.split(' ');
+          const [day, month, year] = datePart.split('/');
+          // Convertir vers format ISO: "2025-05-17T21:00:00"
+          const isoString = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}T${timePart}:00`;
+          date = new Date(isoString);
+        } else {
+          // Fallback pour d'autres formats
+          date = new Date(timestamp);
+        }
+      } catch (error) {
+        console.warn('Erreur de parsing de date:', timestamp, error);
+        return null;
+      }
       
       // Vérification de validité de la date
       if (isNaN(date.getTime())) {
-        console.warn('Date invalide détectée:', timestamp);
+        console.warn('Date invalide après conversion:', timestamp);
         return null;
       }
       
@@ -148,9 +165,8 @@ const WeatherVisualization: React.FC<WeatherVisualizationProps> = ({
       const month = (date.getMonth() + 1).toString().padStart(2, '0');
       const year = date.getFullYear();
       
-      // Debug pour vérifier le formatage
+      // Format jour-mois-année pour l'affichage
       const formattedDate = `${day}-${month}-${year}`;
-      console.log(`Debug date: ${timestamp} -> jour: ${day}, mois: ${month}, année: ${year} -> ${formattedDate}`);
       
       return {
         timestamp,
