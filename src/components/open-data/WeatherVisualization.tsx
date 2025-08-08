@@ -163,27 +163,40 @@ const WeatherVisualization: React.FC<WeatherVisualizationProps> = memo(({
 
   // Données filtrées avec échantillonnage intelligent préservant les extrêmes
   const filteredData = useMemo(() => {
-    const maxPoints = 300; // Augmentation pour plus de précision
+    const maxPoints = 300;
     if (processedData.length <= maxPoints) return processedData;
     
-    // Tri par température pour identifier les extrêmes
-    const sortedByTemp = [...processedData].sort((a, b) => b.temperature - a.temperature);
+    // Tri chronologique d'abord pour avoir un ordre de base
+    const sortedByTime = [...processedData].sort((a, b) => {
+      const dateA = new Date(a.timestamp.replace(/(\d{2})\/(\d{2})\/(\d{4})/, '$3-$2-$1'));
+      const dateB = new Date(b.timestamp.replace(/(\d{2})\/(\d{2})\/(\d{4})/, '$3-$2-$1'));
+      return dateA.getTime() - dateB.getTime();
+    });
+    
+    // Identifier les extrêmes de température
+    const sortedByTemp = [...sortedByTime].sort((a, b) => b.temperature - a.temperature);
     const extremes = new Set();
     
-    // Garder les 20 températures les plus hautes et les 20 plus basses
-    for (let i = 0; i < Math.min(20, sortedByTemp.length); i++) {
+    // Garder les 15 températures les plus hautes et les 15 plus basses
+    for (let i = 0; i < Math.min(15, sortedByTemp.length); i++) {
       extremes.add(sortedByTemp[i].timestamp);
-      extremes.add(sortedByTemp[sortedByTemp.length - 1 - i].timestamp);
+      if (i < sortedByTemp.length) {
+        extremes.add(sortedByTemp[sortedByTemp.length - 1 - i].timestamp);
+      }
     }
     
-    // Échantillonnage régulier pour le reste
-    const step = Math.ceil(processedData.length / (maxPoints - extremes.size));
-    const sampledData = processedData.filter((item, index) => 
-      extremes.has(item.timestamp) || index % step === 0
-    );
+    // Échantillonnage régulier en gardant l'ordre chronologique
+    const step = Math.ceil(sortedByTime.length / (maxPoints - extremes.size));
+    const result = [];
     
-    // Tri final par ordre chronologique
-    return sampledData.sort((a, b) => a.timestamp.localeCompare(b.timestamp));
+    for (let i = 0; i < sortedByTime.length; i++) {
+      const item = sortedByTime[i];
+      if (extremes.has(item.timestamp) || i % step === 0) {
+        result.push(item);
+      }
+    }
+    
+    return result; // Déjà trié chronologiquement
   }, [processedData]);
 
   // Animation désactivée pour les performances
