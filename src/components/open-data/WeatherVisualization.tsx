@@ -468,6 +468,9 @@ const WeatherVisualization: React.FC<WeatherVisualizationProps> = ({
                 />
               )}
               
+              {/* Ligne de référence à Y=0 */}
+              <ReferenceLine y={0} stroke="#666" strokeDasharray="2 2" strokeWidth={1} />
+              
               {(activeMetric === 'humidity' || activeMetric === 'both') && (
                 <YAxis 
                   yAxisId="humidity"
