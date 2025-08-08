@@ -70,6 +70,12 @@ const Footer = () => {
               <Link 
                 to="/bioacoustique-poetique" 
                 className="flex items-center gap-2 text-muted-foreground hover:text-[#4ade80] transition-colors"
+                onClick={() => {
+                  // Scroll to top when navigating
+                  setTimeout(() => {
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                  }, 100);
+                }}
               >
                 <BookOpen size={16} />
                 <span>Bioacoustique Poétique</span>
