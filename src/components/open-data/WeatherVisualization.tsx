@@ -141,11 +141,15 @@ const WeatherVisualization: React.FC<WeatherVisualizationProps> = ({
         timestamp,
         temperature: values['temperature-max'] || 0,
         humidity: values.humidity || 0,
-        date: date.toLocaleDateString(),
+        date: date.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' }),
         hour: date.getHours(),
         formattedTime: date.toLocaleTimeString('fr-FR', { 
           hour: '2-digit', 
           minute: '2-digit' 
+        }),
+        fullDate: date.toLocaleDateString('fr-FR', { 
+          day: '2-digit', 
+          month: '2-digit' 
         })
       };
     }).sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
@@ -440,9 +444,10 @@ const WeatherVisualization: React.FC<WeatherVisualizationProps> = ({
               <CartesianGrid strokeDasharray="3 3" stroke="#e0e7ff" opacity={0.5} />
               
               <XAxis 
-                dataKey="formattedTime"
+                dataKey="fullDate"
                 tick={{ fontSize: 10, fill: '#64748b' }}
                 interval="preserveStartEnd"
+                tickFormatter={(value) => value}
               />
               
               {(activeMetric === 'temperature' || activeMetric === 'both') && (
