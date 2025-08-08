@@ -416,35 +416,63 @@ const WeatherVisualization: React.FC<WeatherVisualizationProps> = memo(({
         </Card>
       </motion.div>
 
-      {/* Contrôles de métrique et animation */}
-      <div className="flex flex-wrap items-center justify-between gap-4">
+      {/* Contrôles de métrique et animation avec UX améliorée */}
+      <motion.div 
+        initial={{ y: 20, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        transition={{ delay: 0.3 }}
+        className="flex flex-wrap items-center justify-between gap-4 p-4 bg-white/60 backdrop-blur-sm rounded-xl border border-white/30"
+      >
         <div className="flex gap-2">
           <Button
             variant={activeMetric === 'temperature' ? "default" : "outline"}
             size="sm"
             onClick={() => setActiveMetric('temperature')}
-            className="text-xs"
+            className={`
+              transition-all duration-300 ease-in-out
+              ${activeMetric === 'temperature' 
+                ? 'bg-gradient-to-r from-red-500 to-orange-500 text-white shadow-lg scale-105 border-red-400' 
+                : 'bg-white/80 text-gray-700 border-gray-300 hover:bg-red-50 hover:text-red-600 hover:border-red-300'
+              }
+              font-medium min-w-[100px] backdrop-blur-sm
+            `}
           >
-            <Thermometer className="h-3 w-3 mr-1" />
-            Température
+            <Thermometer className={`h-3 w-3 mr-1 ${activeMetric === 'temperature' ? 'text-white' : 'text-red-500'}`} />
+            <span className="text-xs font-medium">Température</span>
           </Button>
+
           <Button
             variant={activeMetric === 'humidity' ? "default" : "outline"}
             size="sm"
             onClick={() => setActiveMetric('humidity')}
-            className="text-xs"
+            className={`
+              transition-all duration-300 ease-in-out
+              ${activeMetric === 'humidity' 
+                ? 'bg-gradient-to-r from-blue-500 to-cyan-500 text-white shadow-lg scale-105 border-blue-400' 
+                : 'bg-white/80 text-gray-700 border-gray-300 hover:bg-blue-50 hover:text-blue-600 hover:border-blue-300'
+              }
+              font-medium min-w-[90px] backdrop-blur-sm
+            `}
           >
-            <Droplets className="h-3 w-3 mr-1" />
-            Humidité
+            <Droplets className={`h-3 w-3 mr-1 ${activeMetric === 'humidity' ? 'text-white' : 'text-blue-500'}`} />
+            <span className="text-xs font-medium">Humidité</span>
           </Button>
+
           <Button
             variant={activeMetric === 'both' ? "default" : "outline"}
             size="sm"
             onClick={() => setActiveMetric('both')}
-            className="text-xs"
+            className={`
+              transition-all duration-300 ease-in-out
+              ${activeMetric === 'both' 
+                ? 'bg-gradient-to-r from-purple-500 to-indigo-500 text-white shadow-lg scale-105 border-purple-400' 
+                : 'bg-white/80 text-gray-700 border-gray-300 hover:bg-purple-50 hover:text-purple-600 hover:border-purple-300'
+              }
+              font-medium min-w-[85px] backdrop-blur-sm
+            `}
           >
-            <Activity className="h-3 w-3 mr-1" />
-            Les deux
+            <Activity className={`h-3 w-3 mr-1 ${activeMetric === 'both' ? 'text-white' : 'text-purple-500'}`} />
+            <span className="text-xs font-medium">Les deux</span>
           </Button>
         </div>
 
@@ -452,11 +480,20 @@ const WeatherVisualization: React.FC<WeatherVisualizationProps> = memo(({
           variant="outline"
           size="sm"
           onClick={() => setIsPlaying(!isPlaying)}
-          className="text-xs"
+          className={`
+            transition-all duration-300 ease-in-out
+            ${isPlaying 
+              ? 'bg-gradient-to-r from-green-500 to-emerald-500 text-white shadow-lg border-green-400' 
+              : 'bg-white/80 text-gray-700 border-gray-300 hover:bg-green-50 hover:text-green-600 hover:border-green-300'
+            }
+            font-medium min-w-[100px] backdrop-blur-sm
+          `}
         >
-          {isPlaying ? '⏸️ Pause' : '▶️ Animation'}
+          <span className="text-xs font-medium">
+            {isPlaying ? '⏸️ Pause' : '▶️ Animation'}
+          </span>
         </Button>
-      </div>
+      </motion.div>
 
       {/* Graphique principal avec effet "wahouh" */}
       <motion.div
