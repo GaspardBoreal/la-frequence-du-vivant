@@ -152,14 +152,14 @@ const WeatherVisualization: React.FC<WeatherVisualizationProps> = ({
         timestamp,
         temperature: values['temperature-max'] || 0,
         humidity: values.humidity || 0,
-        date: `${day}-${month}-${year}`,
+        date: `${day}-${month}-${year}`, // Format jour-mois-année
         hour: date.getHours(),
         formattedTime: date.toLocaleTimeString('fr-FR', { 
           hour: '2-digit', 
           minute: '2-digit' 
         }),
         fullDate: `${day}-${month}`,
-        fullDateWithYear: `${day}-${month}-${year}`
+        fullDateWithYear: `${day}-${month}-${year}` // Format jour-mois-année
       };
     }).filter(Boolean).sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
   }, [weatherData]);
