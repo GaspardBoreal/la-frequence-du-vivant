@@ -131,23 +131,32 @@ const WeatherVisualization: React.FC<WeatherVisualizationProps> = ({
 
   console.log('WeatherVisualization - enrichedStationData:', enrichedStationData);
 
-  // Transformation des données LEXICON vers notre format
+  // Traitement optimisé des données avec limitation
   const processedData = useMemo(() => {
-    if (!weatherData?.values) return [];
+    if (!weatherData?.values) {
+      console.warn('⚠️ [WEATHER] Pas de données météo disponibles');
+      return [];
+    }
+
+    console.log('🌡️ [WEATHER] Traitement des données météo...');
     
-    return Object.entries(weatherData.values).map(([timestamp, values]: [string, any]) => {
-      // Conversion du format français "jj/mm/yyyy hh:mm" vers un format ISO que JavaScript comprend
-      let date;
+    // Limiter le nombre de points pour les performances (max 100 points)
+    const entries = Object.entries(weatherData.values);
+    const maxPoints = 100;
+    const step = Math.max(1, Math.floor(entries.length / maxPoints));
+    const limitedEntries = entries.filter((_, index) => index % step === 0);
+    
+    return limitedEntries.map(([timestamp, values]: [string, any]) => {
+      let date: Date;
+      
       try {
-        // Si le timestamp est au format français "17/05/2025 21:00"
-        if (timestamp.includes('/') && timestamp.includes(' ')) {
+        // Conversion du format français jj/mm/yyyy hh:mm vers ISO
+        if (timestamp.includes('/')) {
           const [datePart, timePart] = timestamp.split(' ');
           const [day, month, year] = datePart.split('/');
-          // Convertir vers format ISO: "2025-05-17T21:00:00"
-          const isoString = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}T${timePart}:00`;
-          date = new Date(isoString);
+          const isoTimestamp = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}T${timePart}:00`;
+          date = new Date(isoTimestamp);
         } else {
-          // Fallback pour d'autres formats
           date = new Date(timestamp);
         }
       } catch (error) {
@@ -155,38 +164,36 @@ const WeatherVisualization: React.FC<WeatherVisualizationProps> = ({
         return null;
       }
       
-      // Vérification de validité de la date
       if (isNaN(date.getTime())) {
-        console.warn('Date invalide après conversion:', timestamp);
         return null;
       }
       
       const day = date.getDate().toString().padStart(2, '0');
       const month = (date.getMonth() + 1).toString().padStart(2, '0');
       const year = date.getFullYear();
-      
-      // Format jour-mois-année pour l'affichage
       const formattedDate = `${day}-${month}-${year}`;
       
       return {
         timestamp,
         temperature: values['temperature-max'] || 0,
         humidity: values.humidity || 0,
-        date: formattedDate, // Format jour-mois-année
+        date: formattedDate,
         hour: date.getHours(),
         formattedTime: date.toLocaleTimeString('fr-FR', { 
           hour: '2-digit', 
           minute: '2-digit' 
         }),
         fullDate: `${day}-${month}`,
-        fullDateWithYear: formattedDate // Format jour-mois-année
+        fullDateWithYear: formattedDate
       };
     }).filter(Boolean).sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
   }, [weatherData]);
 
-  // Affichage de toutes les données sans filtrage par période
+  // Optimisation: limiter l'affichage pour les performances
   const filteredData = useMemo(() => {
-    return processedData;
+    // Garder seulement les 50 derniers points pour un affichage rapide
+    const maxDisplayPoints = 50;
+    return processedData.slice(-maxDisplayPoints);
   }, [processedData]);
 
   // Animation temporelle
