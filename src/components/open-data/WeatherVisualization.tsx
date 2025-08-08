@@ -468,8 +468,10 @@ const WeatherVisualization: React.FC<WeatherVisualizationProps> = ({
                 />
               )}
               
-              {/* Ligne de référence à Y=0 */}
-              <ReferenceLine y={0} stroke="#666" strokeDasharray="2 2" strokeWidth={1} />
+              {/* Ligne de référence à Y=0 pour la température */}
+              {(activeMetric === 'temperature' || activeMetric === 'both') && (
+                <ReferenceLine yAxisId="temperature" y={0} stroke="#666" strokeDasharray="2 2" strokeWidth={1} />
+              )}
               
               {(activeMetric === 'humidity' || activeMetric === 'both') && (
                 <YAxis 
