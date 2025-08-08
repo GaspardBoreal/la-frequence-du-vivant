@@ -53,7 +53,7 @@ const WeatherVisualization: React.FC<WeatherVisualizationProps> = ({
   stationName,
   targetCoordinates 
 }) => {
-  const [selectedPeriod, setSelectedPeriod] = useState<'24h' | '7d' | '30d' | 'all'>('7d');
+  const [selectedPeriod, setSelectedPeriod] = useState<'24h' | '7d' | '30d' | 'all'>('all');
   const [activeMetric, setActiveMetric] = useState<'both' | 'temperature' | 'humidity'>('both');
   const [hoveredPoint, setHoveredPoint] = useState<WeatherDataPoint | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -151,21 +151,10 @@ const WeatherVisualization: React.FC<WeatherVisualizationProps> = ({
     }).sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
   }, [weatherData]);
 
-  // Filtrage par période
+  // Affichage de toutes les données sans filtrage par période
   const filteredData = useMemo(() => {
-    const now = new Date();
-    const periods = {
-      '24h': 24 * 60 * 60 * 1000,
-      '7d': 7 * 24 * 60 * 60 * 1000,
-      '30d': 30 * 24 * 60 * 60 * 1000,
-      'all': Infinity
-    };
-    
-    const cutoff = now.getTime() - periods[selectedPeriod];
-    return processedData.filter(point => 
-      new Date(point.timestamp).getTime() >= cutoff
-    );
-  }, [processedData, selectedPeriod]);
+    return processedData;
+  }, [processedData]);
 
   // Animation temporelle
   useEffect(() => {
@@ -385,22 +374,8 @@ const WeatherVisualization: React.FC<WeatherVisualizationProps> = ({
         </Card>
       </motion.div>
 
-      {/* Contrôles interactifs */}
+      {/* Contrôles de métrique et animation */}
       <div className="flex flex-wrap items-center justify-between gap-4">
-        <div className="flex gap-2">
-          {(['24h', '7d', '30d', 'all'] as const).map((period) => (
-            <Button
-              key={period}
-              variant={selectedPeriod === period ? "default" : "outline"}
-              size="sm"
-              onClick={() => setSelectedPeriod(period)}
-              className="text-xs"
-            >
-              {period === 'all' ? 'Tout' : period}
-            </Button>
-          ))}
-        </div>
-        
         <div className="flex gap-2">
           <Button
             variant={activeMetric === 'temperature' ? "default" : "outline"}
