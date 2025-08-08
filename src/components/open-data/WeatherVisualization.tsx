@@ -148,18 +148,22 @@ const WeatherVisualization: React.FC<WeatherVisualizationProps> = ({
       const month = (date.getMonth() + 1).toString().padStart(2, '0');
       const year = date.getFullYear();
       
+      // Debug pour vérifier le formatage
+      const formattedDate = `${day}-${month}-${year}`;
+      console.log(`Debug date: ${timestamp} -> jour: ${day}, mois: ${month}, année: ${year} -> ${formattedDate}`);
+      
       return {
         timestamp,
         temperature: values['temperature-max'] || 0,
         humidity: values.humidity || 0,
-        date: `${day}-${month}-${year}`, // Format jour-mois-année
+        date: formattedDate, // Format jour-mois-année
         hour: date.getHours(),
         formattedTime: date.toLocaleTimeString('fr-FR', { 
           hour: '2-digit', 
           minute: '2-digit' 
         }),
         fullDate: `${day}-${month}`,
-        fullDateWithYear: `${day}-${month}-${year}` // Format jour-mois-année
+        fullDateWithYear: formattedDate // Format jour-mois-année
       };
     }).filter(Boolean).sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
   }, [weatherData]);
