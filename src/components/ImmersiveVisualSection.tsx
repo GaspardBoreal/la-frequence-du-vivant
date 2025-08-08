@@ -11,7 +11,9 @@ import {
   Share2,
   AlertCircle,
   CheckCircle,
-  Video as VideoIcon
+  Video as VideoIcon,
+  ChevronLeft,
+  ChevronRight
 } from 'lucide-react';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
@@ -41,11 +43,18 @@ const ImmersiveVisualSection: React.FC<ImmersiveVisualSectionProps> = ({
     ...videos.map(url => ({ url, type: 'video' as const }))
   ];
 
-  console.log(`🎥 Galerie ${marche.ville}:`, {
-    photos: photos.length,
-    videos: videos.length,
-    total: mediaItems.length
-  });
+console.log(`🎥 Galerie ${marche.ville}:`, {
+  photos: photos.length,
+  videos: videos.length,
+  total: mediaItems.length
+});
+
+// Pagination (6 éléments par page)
+const [currentPage, setCurrentPage] = useState(0);
+const pageSize = 6;
+const totalPages = Math.ceil(mediaItems.length / pageSize);
+const startIndex = currentPage * pageSize;
+const pageItems = mediaItems.slice(startIndex, startIndex + pageSize);
 
   const toggleFavorite = (mediaUrl: string) => {
     const newFavorites = new Set(favorites);
@@ -156,65 +165,94 @@ const ImmersiveVisualSection: React.FC<ImmersiveVisualSectionProps> = ({
       </motion.div>
 
       {/* Main Media Gallery */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {mediaItems.slice(0, 6).map((media, index) => (
-          <motion.div
-            key={`${media.type}-${index}-${media.url}`}
-            className="group relative aspect-square overflow-hidden rounded-2xl cursor-pointer"
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ delay: index * 0.1, duration: 0.5 }}
-            whileHover={{ scale: 1.05 }}
-            onClick={() => setSelectedMedia(media)}
-          >
-            <MediaItem
-              src={media.url}
-              type={media.type}
-              alt={`${marche.ville} - ${media.type === 'video' ? 'Vidéo' : 'Photo'} ${index + 1}`}
-              className="w-full h-full"
-            />
-            
-            {/* Type Badge */}
-            {media.type === 'video' && (
-              <Badge className="absolute top-2 left-2 bg-red-500 text-white">
-                <VideoIcon className="h-3 w-3 mr-1" />
-                Vidéo
-              </Badge>
-            )}
-            
-            {/* Overlay */}
-            <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-            
-            {/* Actions */}
-            <div className="absolute top-3 right-3 flex space-x-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-              <Button
-                size="sm"
-                variant="ghost"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  toggleFavorite(media.url);
-                }}
-                className="bg-white/20 backdrop-blur-sm hover:bg-white/30 text-white"
-              >
-                <Heart 
-                  className={`h-4 w-4 ${favorites.has(media.url) ? 'fill-red-500 text-red-500' : ''}`} 
-                />
-              </Button>
-              <Button
-                size="sm"
-                variant="ghost"
-                className="bg-white/20 backdrop-blur-sm hover:bg-white/30 text-white"
-              >
-                <Maximize className="h-4 w-4" />
-              </Button>
-            </div>
-            
-            {/* Media Counter */}
-            <div className="absolute bottom-3 left-3 text-white text-sm font-medium opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-              {index + 1} / {mediaItems.length}
-            </div>
-          </motion.div>
-        ))}
+      <div className="relative">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {pageItems.map((media, index) => (
+            <motion.div
+              key={`${media.type}-${startIndex + index}-${media.url}`}
+              className="group relative aspect-square overflow-hidden rounded-2xl cursor-pointer"
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: index * 0.1, duration: 0.5 }}
+              whileHover={{ scale: 1.05 }}
+              onClick={() => setSelectedMedia(media)}
+            >
+              <MediaItem
+                src={media.url}
+                type={media.type}
+                alt={`${marche.ville} - ${media.type === 'video' ? 'Vidéo' : 'Photo'} ${startIndex + index + 1}`}
+                className="w-full h-full"
+              />
+              
+              {/* Type Badge */}
+              {media.type === 'video' && (
+                <Badge className="absolute top-2 left-2 bg-red-500 text-white">
+                  <VideoIcon className="h-3 w-3 mr-1" />
+                  Vidéo
+                </Badge>
+              )}
+              
+              {/* Overlay */}
+              <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+              
+              {/* Actions */}
+              <div className="absolute top-3 right-3 flex space-x-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    toggleFavorite(media.url);
+                  }}
+                  className="bg-white/20 backdrop-blur-sm hover:bg-white/30 text-white"
+                >
+                  <Heart 
+                    className={`h-4 w-4 ${favorites.has(media.url) ? 'fill-red-500 text-red-500' : ''}`} 
+                  />
+                </Button>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="bg-white/20 backdrop-blur-sm hover:bg-white/30 text-white"
+                >
+                  <Maximize className="h-4 w-4" />
+                </Button>
+              </div>
+              
+              {/* Media Counter */}
+              <div className="absolute bottom-3 left-3 text-white text-sm font-medium opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                {startIndex + index + 1} / {mediaItems.length}
+              </div>
+            </motion.div>
+          ))}
+        </div>
+
+        {totalPages > 1 && (
+          <>
+            <Button
+              type="button"
+              aria-label="Page précédente"
+              onClick={() => setCurrentPage((p) => Math.max(0, p - 1))}
+              disabled={currentPage === 0}
+              size="icon"
+              variant="outline"
+              className="absolute left-2 top-1/2 -translate-y-1/2 rounded-full shadow-md bg-background/80 hover:bg-accent/60 text-foreground border-border"
+            >
+              <ChevronLeft className="h-5 w-5" />
+            </Button>
+            <Button
+              type="button"
+              aria-label="Page suivante"
+              onClick={() => setCurrentPage((p) => Math.min(totalPages - 1, p + 1))}
+              disabled={currentPage >= totalPages - 1}
+              size="icon"
+              variant="outline"
+              className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full shadow-md bg-background/80 hover:bg-accent/60 text-foreground border-border"
+            >
+              <ChevronRight className="h-5 w-5" />
+            </Button>
+          </>
+        )}
       </div>
 
       {/* Additional Videos Section */}
