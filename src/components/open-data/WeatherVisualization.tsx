@@ -475,8 +475,11 @@ const WeatherVisualization: React.FC<WeatherVisualizationProps> = ({
               <XAxis 
                 dataKey="fullDateWithYear"
                 tick={{ fontSize: 10, fill: '#64748b' }}
-                interval={Math.max(1, Math.floor(filteredData.length / 8))}
+                interval={Math.floor(filteredData.length / 6)}
                 tickFormatter={(value) => value}
+                angle={-45}
+                textAnchor="end"
+                height={60}
               />
               
               {(activeMetric === 'temperature' || activeMetric === 'both') && (
@@ -502,7 +505,10 @@ const WeatherVisualization: React.FC<WeatherVisualizationProps> = ({
                 />
               )}
               
-              <Tooltip content={<CustomTooltip />} />
+              <Tooltip 
+                content={<CustomTooltip />}
+                cursor={{ stroke: '#666', strokeWidth: 1, strokeDasharray: '3 3' }}
+              />
               
               {(activeMetric === 'temperature' || activeMetric === 'both') && (
                 <Area
