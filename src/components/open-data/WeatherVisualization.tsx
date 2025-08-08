@@ -161,14 +161,29 @@ const WeatherVisualization: React.FC<WeatherVisualizationProps> = memo(({
     return results;
   }, [weatherData]);
 
-  // Données filtrées avec limitation pour les performances
+  // Données filtrées avec échantillonnage intelligent préservant les extrêmes
   const filteredData = useMemo(() => {
-    // Échantillonnage intelligent: garder 1 point sur 3 max pour éviter la surcharge
-    const maxPoints = 200;
+    const maxPoints = 300; // Augmentation pour plus de précision
     if (processedData.length <= maxPoints) return processedData;
     
-    const step = Math.ceil(processedData.length / maxPoints);
-    return processedData.filter((_, index) => index % step === 0);
+    // Tri par température pour identifier les extrêmes
+    const sortedByTemp = [...processedData].sort((a, b) => b.temperature - a.temperature);
+    const extremes = new Set();
+    
+    // Garder les 20 températures les plus hautes et les 20 plus basses
+    for (let i = 0; i < Math.min(20, sortedByTemp.length); i++) {
+      extremes.add(sortedByTemp[i].timestamp);
+      extremes.add(sortedByTemp[sortedByTemp.length - 1 - i].timestamp);
+    }
+    
+    // Échantillonnage régulier pour le reste
+    const step = Math.ceil(processedData.length / (maxPoints - extremes.size));
+    const sampledData = processedData.filter((item, index) => 
+      extremes.has(item.timestamp) || index % step === 0
+    );
+    
+    // Tri final par ordre chronologique
+    return sampledData.sort((a, b) => a.timestamp.localeCompare(b.timestamp));
   }, [processedData]);
 
   // Animation désactivée pour les performances
