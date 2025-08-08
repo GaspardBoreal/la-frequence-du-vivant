@@ -583,6 +583,5 @@ const WeatherVisualization: React.FC<WeatherVisualizationProps> = memo(({
   );
 });
 
-WeatherVisualization.displayName = 'WeatherVisualization';
-
-export default WeatherVisualization;
+// Export du composant avec memo pour les performances
+export default memo(WeatherVisualization);
