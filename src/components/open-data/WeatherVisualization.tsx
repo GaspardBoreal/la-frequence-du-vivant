@@ -12,7 +12,9 @@ import {
   Area,
   AreaChart,
   ComposedChart,
-  Bar
+  Bar,
+  ReferenceDot,
+  ReferenceArea
 } from 'recharts';
 import { 
   Cloud, 
@@ -33,6 +35,8 @@ import WeatherStationModal from '../weather/WeatherStationModal';
 import { calculateDistance, formatDistance, getDataQuality } from '../../utils/weatherStationGeolocation';
 import type { Coordinates } from '../../utils/weatherStationGeolocation';
 import { getCorrectStationCoordinates, findNearestWeatherStation } from '../../utils/weatherStationDatabase';
+import StoryEventPanel from './StoryEventPanel';
+import { useWeatherStory } from '@/hooks/useWeatherStory';
 
 interface WeatherDataPoint {
   timestamp: string;
@@ -61,6 +65,12 @@ const WeatherVisualization: React.FC<WeatherVisualizationProps> = memo(({
   const [isStationModalOpen, setIsStationModalOpen] = useState(false);
 
   // Désactiver les logs pour optimiser les performances
+
+  // Storytelling mode
+  const [isStoryMode, setIsStoryMode] = useState(false);
+  const [storyIndex, setStoryIndex] = useState(0);
+  const [isStoryPlaying, setIsStoryPlaying] = useState(false);
+  const [ttsEnabled, setTtsEnabled] = useState(false);
 
   // Enrichissement des données de station avec calcul de distance
   const enrichedStationData = useMemo(() => {
@@ -199,6 +209,8 @@ const WeatherVisualization: React.FC<WeatherVisualizationProps> = memo(({
     return result; // Déjà trié chronologiquement
   }, [processedData]);
 
+  const { events: storyEvents } = useWeatherStory(filteredData);
+
   // Animation désactivée pour les performances
   useEffect(() => {
     if (isPlaying && filteredData.length > 0) {
@@ -208,6 +220,33 @@ const WeatherVisualization: React.FC<WeatherVisualizationProps> = memo(({
       return () => clearInterval(interval);
     }
   }, [isPlaying, filteredData.length]);
+
+  // Lecture automatique des évènements du Story Mode
+  useEffect(() => {
+    if (isStoryMode && isStoryPlaying && storyEvents.length > 0) {
+      const id = setInterval(() => {
+        setStoryIndex((prev) => (prev + 1) % storyEvents.length);
+      }, 2500);
+      return () => clearInterval(id);
+    }
+  }, [isStoryMode, isStoryPlaying, storyEvents.length]);
+
+  // Narration (TTS) simple via Web Speech API
+  useEffect(() => {
+    if (!isStoryMode || !ttsEnabled || storyEvents.length === 0) return;
+    const e = storyEvents[storyIndex];
+    const synth = (window as any).speechSynthesis as SpeechSynthesis | undefined;
+    if (!synth) return;
+    try {
+      synth.cancel();
+      const ut = new SpeechSynthesisUtterance(e.summary);
+      ut.lang = 'fr-FR';
+      synth.speak(ut);
+      return () => synth.cancel();
+    } catch (_) {
+      // fail silently
+    }
+  }, [isStoryMode, ttsEnabled, storyIndex, storyEvents]);
 
   // Statistiques dynamiques
   const stats = useMemo(() => {
