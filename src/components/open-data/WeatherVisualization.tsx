@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, memo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   LineChart, 
@@ -48,7 +48,7 @@ interface WeatherVisualizationProps {
   targetCoordinates?: Coordinates; // Coordonnées du point de référence pour calculer la distance
 }
 
-const WeatherVisualization: React.FC<WeatherVisualizationProps> = ({ 
+const WeatherVisualization: React.FC<WeatherVisualizationProps> = memo(({ 
   weatherData, 
   stationName,
   targetCoordinates 
@@ -60,9 +60,7 @@ const WeatherVisualization: React.FC<WeatherVisualizationProps> = ({
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isStationModalOpen, setIsStationModalOpen] = useState(false);
 
-  // Debug pour comprendre la structure des données
-  console.log('WeatherVisualization - weatherData:', weatherData);
-  console.log('WeatherVisualization - stationName:', stationName);
+  // Désactiver les logs pour optimiser les performances
 
   // Enrichissement des données de station avec calcul de distance
   const enrichedStationData = useMemo(() => {
@@ -78,10 +76,6 @@ const WeatherVisualization: React.FC<WeatherVisualizationProps> = ({
       const nearestStation = findNearestWeatherStation(targetCoordinates);
       if (nearestStation) {
         const distance = calculateDistance(targetCoordinates, nearestStation.coordinates);
-        
-        console.log(`🌡️ [WEATHER] Station la plus proche sélectionnée: ${nearestStation.name} (${nearestStation.code})`);
-        console.log(`📍 [WEATHER] Coordonnées station: ${nearestStation.coordinates.lat}, ${nearestStation.coordinates.lng}`);
-        console.log(`📏 [WEATHER] Distance: ${formatDistance(distance)}`);
 
         return {
           name: nearestStation.name,
@@ -133,71 +127,58 @@ const WeatherVisualization: React.FC<WeatherVisualizationProps> = ({
 
   // Traitement optimisé des données SANS limitation (toutes les données conservées)
   const processedData = useMemo(() => {
-    if (!weatherData?.values) {
-      return [];
-    }
+    if (!weatherData?.values) return [];
     
     const entries = Object.entries(weatherData.values);
     const results = [];
     
-    // Traitement par batch pour éviter de bloquer l'UI
-    for (let i = 0; i < entries.length; i++) {
-      const [timestamp, values] = entries[i];
+    // Traitement rapide sans try/catch intensif
+    for (const [timestamp, values] of entries) {
       const typedValues = values as { [key: string]: any };
-      let date: Date;
       
-      try {
-        if (timestamp.includes('/')) {
-          const [datePart, timePart] = timestamp.split(' ');
-          const [day, month, year] = datePart.split('/');
-          const isoTimestamp = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}T${timePart}:00`;
-          date = new Date(isoTimestamp);
-        } else {
-          date = new Date(timestamp);
-        }
-        
-        if (isNaN(date.getTime())) continue;
-        
-        const day = date.getDate().toString().padStart(2, '0');
-        const month = (date.getMonth() + 1).toString().padStart(2, '0');
-        const year = date.getFullYear();
-        const formattedDate = `${day}-${month}-${year}`;
-        
-        results.push({
-          timestamp,
-          temperature: typedValues['temperature-max'] || 0,
-          humidity: typedValues.humidity || 0,
-          date: formattedDate,
-          hour: date.getHours(),
-          formattedTime: date.toLocaleTimeString('fr-FR', { 
-            hour: '2-digit', 
-            minute: '2-digit' 
-          }),
-          fullDate: `${day}-${month}`,
-          fullDateWithYear: formattedDate
-        });
-      } catch (error) {
-        continue; // Skip invalid entries
-      }
+      if (!timestamp.includes('/')) continue;
+      
+      const [datePart, timePart] = timestamp.split(' ');
+      if (!datePart || !timePart) continue;
+      
+      const [day, month, year] = datePart.split('/');
+      if (!day || !month || !year) continue;
+      
+      const formattedDate = `${day.padStart(2, '0')}-${month.padStart(2, '0')}-${year}`;
+      
+      results.push({
+        timestamp,
+        temperature: typedValues['temperature-max'] || 0,
+        humidity: typedValues.humidity || 0,
+        date: formattedDate,
+        hour: parseInt(timePart.split(':')[0]) || 0,
+        formattedTime: timePart,
+        fullDate: `${day.padStart(2, '0')}-${month.padStart(2, '0')}`,
+        fullDateWithYear: formattedDate
+      });
     }
     
-    return results.sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+    return results;
   }, [weatherData]);
 
-  // Toutes les données conservées, optimisation par filtrage intelligent
+  // Données filtrées avec limitation pour les performances
   const filteredData = useMemo(() => {
-    return processedData;
+    // Échantillonnage intelligent: garder 1 point sur 3 max pour éviter la surcharge
+    const maxPoints = 200;
+    if (processedData.length <= maxPoints) return processedData;
+    
+    const step = Math.ceil(processedData.length / maxPoints);
+    return processedData.filter((_, index) => index % step === 0);
   }, [processedData]);
 
-  // Animation temporelle
+  // Animation désactivée pour les performances
   useEffect(() => {
-    if (!isPlaying) return;
-    
-    const interval = setInterval(() => {
-      setCurrentIndex(prev => (prev + 1) % filteredData.length);
-    }, 200);
-    
-    return () => clearInterval(interval);
+    if (isPlaying && filteredData.length > 0) {
+      const interval = setInterval(() => {
+        setCurrentIndex(prev => (prev + 1) % filteredData.length);
+      }, 500);
+      return () => clearInterval(interval);
+    }
   }, [isPlaying, filteredData.length]);
 
   // Statistiques dynamiques
@@ -600,6 +581,8 @@ const WeatherVisualization: React.FC<WeatherVisualizationProps> = ({
       />
     </div>
   );
-};
+});
+
+WeatherVisualization.displayName = 'WeatherVisualization';
 
 export default WeatherVisualization;
