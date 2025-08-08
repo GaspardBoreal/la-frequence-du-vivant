@@ -137,22 +137,30 @@ const WeatherVisualization: React.FC<WeatherVisualizationProps> = ({
     
     return Object.entries(weatherData.values).map(([timestamp, values]: [string, any]) => {
       const date = new Date(timestamp);
+      
+      // Vérification de validité de la date
+      if (isNaN(date.getTime())) {
+        console.warn('Date invalide détectée:', timestamp);
+        return null;
+      }
+      
+      const day = date.getDate().toString().padStart(2, '0');
+      const month = (date.getMonth() + 1).toString().padStart(2, '0');
+      const year = date.getFullYear();
+      
       return {
         timestamp,
         temperature: values['temperature-max'] || 0,
         humidity: values.humidity || 0,
-        date: date.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' }),
+        date: `${day}-${month}-${year}`,
         hour: date.getHours(),
         formattedTime: date.toLocaleTimeString('fr-FR', { 
           hour: '2-digit', 
           minute: '2-digit' 
         }),
-        fullDate: date.toLocaleDateString('fr-FR', { 
-          day: '2-digit', 
-          month: '2-digit' 
-        })
+        fullDate: `${day}-${month}`
       };
-    }).sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+    }).filter(Boolean).sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
   }, [weatherData]);
 
   // Affichage de toutes les données sans filtrage par période
