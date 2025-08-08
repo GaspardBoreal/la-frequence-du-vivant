@@ -475,11 +475,15 @@ const WeatherVisualization: React.FC<WeatherVisualizationProps> = ({
               <XAxis 
                 dataKey="fullDateWithYear"
                 tick={{ fontSize: 10, fill: '#64748b' }}
-                interval={Math.floor(filteredData.length / 6)}
+                interval={Math.floor(filteredData.length / 5)}
                 tickFormatter={(value) => value}
                 angle={-45}
                 textAnchor="end"
                 height={60}
+                includeHidden={false}
+                type="category"
+                axisLine={{ stroke: '#e0e7ff' }}
+                tickLine={{ stroke: '#e0e7ff' }}
               />
               
               {(activeMetric === 'temperature' || activeMetric === 'both') && (
