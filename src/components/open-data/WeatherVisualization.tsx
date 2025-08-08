@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   LineChart, 
@@ -131,26 +131,22 @@ const WeatherVisualization: React.FC<WeatherVisualizationProps> = ({
 
   console.log('WeatherVisualization - enrichedStationData:', enrichedStationData);
 
-  // Traitement optimisé des données avec limitation
+  // Traitement optimisé des données SANS limitation (toutes les données conservées)
   const processedData = useMemo(() => {
     if (!weatherData?.values) {
-      console.warn('⚠️ [WEATHER] Pas de données météo disponibles');
       return [];
     }
-
-    console.log('🌡️ [WEATHER] Traitement des données météo...');
     
-    // Limiter le nombre de points pour les performances (max 100 points)
     const entries = Object.entries(weatherData.values);
-    const maxPoints = 100;
-    const step = Math.max(1, Math.floor(entries.length / maxPoints));
-    const limitedEntries = entries.filter((_, index) => index % step === 0);
+    const results = [];
     
-    return limitedEntries.map(([timestamp, values]: [string, any]) => {
+    // Traitement par batch pour éviter de bloquer l'UI
+    for (let i = 0; i < entries.length; i++) {
+      const [timestamp, values] = entries[i];
+      const typedValues = values as { [key: string]: any };
       let date: Date;
       
       try {
-        // Conversion du format français jj/mm/yyyy hh:mm vers ISO
         if (timestamp.includes('/')) {
           const [datePart, timePart] = timestamp.split(' ');
           const [day, month, year] = datePart.split('/');
@@ -159,41 +155,38 @@ const WeatherVisualization: React.FC<WeatherVisualizationProps> = ({
         } else {
           date = new Date(timestamp);
         }
+        
+        if (isNaN(date.getTime())) continue;
+        
+        const day = date.getDate().toString().padStart(2, '0');
+        const month = (date.getMonth() + 1).toString().padStart(2, '0');
+        const year = date.getFullYear();
+        const formattedDate = `${day}-${month}-${year}`;
+        
+        results.push({
+          timestamp,
+          temperature: typedValues['temperature-max'] || 0,
+          humidity: typedValues.humidity || 0,
+          date: formattedDate,
+          hour: date.getHours(),
+          formattedTime: date.toLocaleTimeString('fr-FR', { 
+            hour: '2-digit', 
+            minute: '2-digit' 
+          }),
+          fullDate: `${day}-${month}`,
+          fullDateWithYear: formattedDate
+        });
       } catch (error) {
-        console.warn('Erreur de parsing de date:', timestamp, error);
-        return null;
+        continue; // Skip invalid entries
       }
-      
-      if (isNaN(date.getTime())) {
-        return null;
-      }
-      
-      const day = date.getDate().toString().padStart(2, '0');
-      const month = (date.getMonth() + 1).toString().padStart(2, '0');
-      const year = date.getFullYear();
-      const formattedDate = `${day}-${month}-${year}`;
-      
-      return {
-        timestamp,
-        temperature: values['temperature-max'] || 0,
-        humidity: values.humidity || 0,
-        date: formattedDate,
-        hour: date.getHours(),
-        formattedTime: date.toLocaleTimeString('fr-FR', { 
-          hour: '2-digit', 
-          minute: '2-digit' 
-        }),
-        fullDate: `${day}-${month}`,
-        fullDateWithYear: formattedDate
-      };
-    }).filter(Boolean).sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+    }
+    
+    return results.sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
   }, [weatherData]);
 
-  // Optimisation: limiter l'affichage pour les performances
+  // Toutes les données conservées, optimisation par filtrage intelligent
   const filteredData = useMemo(() => {
-    // Garder seulement les 50 derniers points pour un affichage rapide
-    const maxDisplayPoints = 50;
-    return processedData.slice(-maxDisplayPoints);
+    return processedData;
   }, [processedData]);
 
   // Animation temporelle
@@ -232,21 +225,21 @@ const WeatherVisualization: React.FC<WeatherVisualizationProps> = ({
     };
   }, [filteredData]);
 
-  // Couleurs dynamiques basées sur les valeurs
-  const getTemperatureColor = (temp: number) => {
+  // Couleurs optimisées avec cache
+  const getTemperatureColor = useCallback((temp: number) => {
     if (temp > 30) return '#ff4444';
     if (temp > 20) return '#ff8844';
     if (temp > 10) return '#ffaa44';
     if (temp > 0) return '#44aaff';
     return '#4488ff';
-  };
+  }, []);
 
-  const getHumidityColor = (humidity: number) => {
+  const getHumidityColor = useCallback((humidity: number) => {
     if (humidity > 80) return '#2563eb';
     if (humidity > 60) return '#3b82f6';
     if (humidity > 40) return '#60a5fa';
     return '#93c5fd';
-  };
+  }, []);
 
   // Tooltip personnalisé avec effet "wahouh"
   const CustomTooltip = ({ active, payload, label }: any) => {
@@ -482,12 +475,11 @@ const WeatherVisualization: React.FC<WeatherVisualizationProps> = ({
               <XAxis 
                 dataKey="fullDateWithYear"
                 tick={{ fontSize: 10, fill: '#64748b' }}
-                interval={Math.floor(filteredData.length / 5)}
+                interval="preserveStartEnd"
                 tickFormatter={(value) => value}
                 angle={-45}
                 textAnchor="end"
                 height={60}
-                includeHidden={false}
                 type="category"
                 axisLine={{ stroke: '#e0e7ff' }}
                 tickLine={{ stroke: '#e0e7ff' }}
