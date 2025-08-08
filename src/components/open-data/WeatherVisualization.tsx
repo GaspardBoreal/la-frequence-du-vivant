@@ -158,7 +158,8 @@ const WeatherVisualization: React.FC<WeatherVisualizationProps> = ({
           hour: '2-digit', 
           minute: '2-digit' 
         }),
-        fullDate: `${day}-${month}`
+        fullDate: `${day}-${month}`,
+        fullDateWithYear: `${day}-${month}-${year}`
       };
     }).filter(Boolean).sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
   }, [weatherData]);
@@ -452,9 +453,9 @@ const WeatherVisualization: React.FC<WeatherVisualizationProps> = ({
               <CartesianGrid strokeDasharray="3 3" stroke="#e0e7ff" opacity={0.5} />
               
               <XAxis 
-                dataKey="fullDate"
+                dataKey="fullDateWithYear"
                 tick={{ fontSize: 10, fill: '#64748b' }}
-                interval="preserveStartEnd"
+                interval={Math.max(1, Math.floor(filteredData.length / 8))}
                 tickFormatter={(value) => value}
               />
               
