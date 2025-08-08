@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { 
   Image as ImageIcon, 
@@ -32,6 +32,7 @@ const ImmersiveVisualSection: React.FC<ImmersiveVisualSectionProps> = ({
   const [selectedMedia, setSelectedMedia] = useState<{url: string, type: 'photo' | 'video'} | null>(null);
   const [favorites, setFavorites] = useState<Set<string>>(new Set());
   const [isLoading, setIsLoading] = useState(false);
+  const galleryRef = useRef<HTMLDivElement | null>(null);
 
   // Récupérer les photos et vidéos depuis les props (maintenant depuis Supabase)
   const photos = marche.photos || [];
@@ -56,6 +57,31 @@ const totalPages = Math.ceil(mediaItems.length / pageSize);
 const startIndex = currentPage * pageSize;
 const pageItems = mediaItems.slice(startIndex, startIndex + pageSize);
 
+// Réinitialiser la page quand les médias changent
+useEffect(() => {
+  setCurrentPage(0);
+}, [marche.ville, mediaItems.length]);
+
+// Scroll doux vers la galerie au changement de page
+useEffect(() => {
+  if (galleryRef.current) {
+    galleryRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+}, [currentPage]);
+
+// Navigation clavier (flèches gauche/droite)
+useEffect(() => {
+  const onKeyDown = (e: KeyboardEvent) => {
+    if (totalPages <= 1) return;
+    if (e.key === 'ArrowLeft') {
+      setCurrentPage((p) => Math.max(0, p - 1));
+    } else if (e.key === 'ArrowRight') {
+      setCurrentPage((p) => Math.min(totalPages - 1, p + 1));
+    }
+  };
+  window.addEventListener('keydown', onKeyDown);
+  return () => window.removeEventListener('keydown', onKeyDown);
+}, [totalPages]);
   const toggleFavorite = (mediaUrl: string) => {
     const newFavorites = new Set(favorites);
     if (newFavorites.has(mediaUrl)) {
@@ -165,7 +191,7 @@ const pageItems = mediaItems.slice(startIndex, startIndex + pageSize);
       </motion.div>
 
       {/* Main Media Gallery */}
-      <div className="relative">
+      <div ref={galleryRef} className="relative">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {pageItems.map((media, index) => (
             <motion.div
@@ -236,7 +262,7 @@ const pageItems = mediaItems.slice(startIndex, startIndex + pageSize);
               disabled={currentPage === 0}
               size="icon"
               variant="outline"
-              className="absolute left-2 top-1/2 -translate-y-1/2 rounded-full shadow-md bg-background/80 hover:bg-accent/60 text-foreground border-border"
+              className="hidden md:flex absolute left-2 top-1/2 -translate-y-1/2 z-20 rounded-full bg-foreground/60 text-background ring-1 ring-ring/30 hover:bg-foreground/70 backdrop-blur-sm"
             >
               <ChevronLeft className="h-5 w-5" />
             </Button>
@@ -247,13 +273,60 @@ const pageItems = mediaItems.slice(startIndex, startIndex + pageSize);
               disabled={currentPage >= totalPages - 1}
               size="icon"
               variant="outline"
-              className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full shadow-md bg-background/80 hover:bg-accent/60 text-foreground border-border"
+              className="hidden md:flex absolute right-2 top-1/2 -translate-y-1/2 z-20 rounded-full bg-foreground/60 text-background ring-1 ring-ring/30 hover:bg-foreground/70 backdrop-blur-sm"
             >
               <ChevronRight className="h-5 w-5" />
             </Button>
           </>
         )}
       </div>
+
+      {totalPages > 1 && (
+        <nav aria-label="Pagination de la galerie" className="mt-4 flex flex-col items-center gap-3">
+          <div className="flex items-center gap-3">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              aria-label="Page précédente"
+              onClick={() => setCurrentPage((p) => Math.max(0, p - 1))}
+              disabled={currentPage === 0}
+            >
+              <ChevronLeft className="h-4 w-4" />
+              <span className="hidden sm:inline">Précédent</span>
+            </Button>
+
+            <div className="flex items-center gap-2" role="group" aria-label="Choisir la page">
+              {Array.from({ length: totalPages }).map((_, i) => (
+                <button
+                  key={`dot-${i}`}
+                  type="button"
+                  aria-label={`Aller à la page ${i + 1}`}
+                  onClick={() => setCurrentPage(i)}
+                  className={`h-2.5 w-2.5 rounded-full transition-colors ${i === currentPage ? 'bg-primary' : 'bg-foreground/20 hover:bg-foreground/40'}`}
+                />
+              ))}
+            </div>
+
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              aria-label="Page suivante"
+              onClick={() => setCurrentPage((p) => Math.min(totalPages - 1, p + 1))}
+              disabled={currentPage >= totalPages - 1}
+            >
+              <span className="hidden sm:inline">Suivant</span>
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+          </div>
+
+          <div className="text-sm text-muted-foreground font-medium select-none">
+            {currentPage + 1} / {totalPages}
+          </div>
+        </nav>
+      )}
+
 
       {/* Additional Videos Section */}
       {videos.length > 0 && (
