@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import SEOHead from '@/components/SEOHead';
-import { MapPin, Calendar, Eye } from 'lucide-react';
+import { MapPin, Calendar, Eye, ArrowLeft } from 'lucide-react';
 
 const ExplorationDetail = () => {
   const { slug } = useParams<{ slug: string }>();
@@ -88,6 +88,15 @@ const ExplorationDetail = () => {
           <div className="absolute inset-0 flex items-end">
             <div className="container mx-auto px-4 pb-12">
               <div className="max-w-4xl">
+                {/* Bouton retour en haut */}
+                <Link 
+                  to="/explorations"
+                  className="inline-flex items-center gap-2 mb-6 px-4 py-2 bg-gaspard-cream/20 hover:bg-gaspard-cream/30 text-gaspard-cream border border-gaspard-cream/30 hover:border-gaspard-cream/50 rounded-full transition-all duration-300 hover:scale-105 backdrop-blur-sm"
+                >
+                  <ArrowLeft className="h-4 w-4" />
+                  <span className="font-medium">Retour aux explorations</span>
+                </Link>
+                
                 <h1 className="gaspard-main-title text-4xl md:text-6xl font-bold text-gaspard-cream mb-4 drop-shadow-lg">
                   {exploration.name}
                 </h1>
@@ -232,8 +241,9 @@ const ExplorationDetail = () => {
                 </CardHeader>
                 <CardContent className="space-y-3">
                   <Link to="/explorations">
-                    <Button className="w-full justify-start bg-gaspard-gold/20 text-gaspard-cream border-gaspard-gold/30 hover:bg-gaspard-gold/30 hover:text-gaspard-cream">
-                      ← Toutes les explorations
+                    <Button className="w-full justify-start bg-gaspard-gold/30 text-gaspard-cream border-gaspard-gold/50 hover:bg-gaspard-gold/50 hover:text-white hover:scale-105 transition-all duration-300 shadow-lg">
+                      <ArrowLeft className="h-4 w-4 mr-2" />
+                      Toutes les explorations
                     </Button>
                   </Link>
                 </CardContent>
