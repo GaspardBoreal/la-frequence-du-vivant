@@ -106,7 +106,7 @@ export default function ExplorationAnimator() {
     }
   };
 
-  const startSession = async () => {
+  const generateAnimation = async () => {
     if (!exploration?.id) return;
     const ua = typeof navigator !== 'undefined' ? navigator.userAgent : '';
     const ref = typeof document !== 'undefined' ? document.referrer : '';
@@ -117,9 +117,9 @@ export default function ExplorationAnimator() {
       .maybeSingle();
     if (error) {
       console.error(error);
-      toast.error("Impossible de démarrer l'animation");
+      toast.error("Impossible de générer l'animation");
     } else {
-      toast.success('Session d\'animation démarrée');
+      toast.success('Animation générée avec succès');
     }
   };
 
@@ -135,6 +135,12 @@ export default function ExplorationAnimator() {
       />
 
       <header className="container mx-auto px-4 py-8">
+        <div className="flex justify-end mb-6">
+          <Link to="/admin/explorations">
+            <Button variant="secondary">Retour aux explorations</Button>
+          </Link>
+        </div>
+        
         <nav className="text-sm text-foreground/70">
           <Link to="/explorations" className="underline">Explorations</Link>
           <span className="mx-2">/</span>
@@ -146,12 +152,6 @@ export default function ExplorationAnimator() {
         </nav>
         <h1 className="mt-4 text-3xl font-bold text-foreground">Animer l'exploration</h1>
         <p className="mt-2 text-foreground/80 max-w-2xl">Définissez les intentions poétiques (P1), le modèle de visualisation des marches (P2) et l'espace d'interaction (P3).</p>
-        <div className="mt-4 flex gap-3">
-          <Button onClick={startSession}>Démarrer une session</Button>
-          <Link to="/admin/explorations">
-            <Button variant="secondary">Retour aux explorations</Button>
-          </Link>
-        </div>
       </header>
 
       <main className="container mx-auto px-4 pb-16">
@@ -307,6 +307,20 @@ export default function ExplorationAnimator() {
           </Button>
         </section>
       </main>
+
+      {/* Fixed bottom button */}
+      <div className="fixed bottom-0 left-0 right-0 bg-background/80 backdrop-blur-sm border-t p-4">
+        <div className="container mx-auto flex justify-center">
+          <Button 
+            onClick={generateAnimation}
+            disabled={!exploration}
+            size="lg"
+            className="bg-primary hover:bg-primary/90"
+          >
+            Générer une animation
+          </Button>
+        </div>
+      </div>
     </>
   );
 }
