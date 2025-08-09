@@ -38,6 +38,7 @@ export default function StoryBanner({
   const event = events[currentIndex];
   const [images, setImages] = useState<Record<string, string>>({});
   const [loadingImage, setLoadingImage] = useState(false);
+  const [imageError, setImageError] = useState<string | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
   const prompt = useMemo(() => {
@@ -50,21 +51,47 @@ export default function StoryBanner({
   useEffect(() => {
     let mounted = true;
     async function generateIfNeeded() {
-      if (!event || images[event.id]) return;
-      setLoadingImage(true);
-      const { data, error } = await supabase.functions.invoke("generate-story-visuals", {
-        body: { prompt, aspect_ratio: "1:1" },
-      });
-      if (!mounted) return;
-      if (error) {
-        setLoadingImage(false);
+      if (!event || images[event.id]) {
+        console.log("🎨 Image generation skipped:", { hasEvent: !!event, hasImage: !!images[event.id], eventId: event?.id });
         return;
       }
-      const url = Array.isArray(data?.output) ? data.output[0] : undefined;
-      if (url) {
-        setImages((prev) => ({ ...prev, [event.id]: url }));
+      
+      console.log("🎨 Starting image generation for event:", event.id, "with prompt:", prompt.substring(0, 100) + "...");
+      setLoadingImage(true);
+      setImageError(null);
+      
+      try {
+        const { data, error } = await supabase.functions.invoke("generate-story-visuals", {
+          body: { prompt, aspect_ratio: "1:1" },
+        });
+        
+        if (!mounted) return;
+        
+        if (error) {
+          console.error("❌ Image generation error:", error);
+          setImageError(`Erreur de génération: ${error.message || 'Erreur inconnue'}`);
+          setLoadingImage(false);
+          return;
+        }
+        
+        console.log("🎨 Raw response from generate-story-visuals:", data);
+        const url = Array.isArray(data?.output) ? data.output[0] : data?.output;
+        
+        if (url) {
+          console.log("✅ Generated image URL:", url);
+          setImages((prev) => ({ ...prev, [event.id]: url }));
+          setImageError(null);
+        } else {
+          console.warn("⚠️ No image URL in response:", data);
+          setImageError("Aucune image reçue de l'API");
+        }
+        
+        setLoadingImage(false);
+      } catch (err) {
+        console.error("💥 Image generation exception:", err);
+        setImageError(`Exception: ${err instanceof Error ? err.message : 'Erreur inconnue'}`);
+        setLoadingImage(false);
       }
-      setLoadingImage(false);
     }
     generateIfNeeded();
     return () => {
@@ -106,6 +133,14 @@ export default function StoryBanner({
 
   const img = images[event.id];
 
+  const retryImageGeneration = () => {
+    setImageError(null);
+    setImages(prev => {
+      const { [event.id]: removed, ...rest } = prev;
+      return rest;
+    });
+  };
+
   return (
     <section className="relative overflow-hidden rounded-2xl border bg-card">
       <div className="grid grid-cols-1 md:grid-cols-2">
@@ -132,11 +167,20 @@ export default function StoryBanner({
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
               >
-                <div className="text-center">
+                <div className="text-center space-y-3">
                   <ImageIcon className="mx-auto h-10 w-10 text-muted-foreground" />
-                  <p className="mt-2 text-sm text-muted-foreground">
-                    {loadingImage ? "Génération de l’image…" : "Image poétique à venir"}
+                  <p className="text-sm text-muted-foreground">
+                    {loadingImage ? "Génération de l'image…" : imageError || "Image poétique à venir"}
                   </p>
+                  {imageError && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={retryImageGeneration}
+                    >
+                      Réessayer
+                    </Button>
+                  )}
                 </div>
               </motion.div>
             )}
