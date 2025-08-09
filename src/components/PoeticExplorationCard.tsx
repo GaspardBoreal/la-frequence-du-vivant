@@ -32,29 +32,34 @@ const PoeticExplorationCard: React.FC<PoeticExplorationCardProps> = ({ explorati
       )}
       style={{ animationDelay: `${index * 150}ms` }}
     >
-      {/* Carte principale avec forme organique et effets sophistiqués */}
-      <div className="relative bg-gradient-to-br from-background/80 via-background/60 to-background/40 backdrop-blur-xl border border-gaspard-primary/20 rounded-3xl p-8 transition-all duration-700 hover:scale-[1.02] hover:shadow-2xl hover:shadow-gaspard-primary/30 hover:border-gaspard-primary/50 hover:bg-gradient-to-br hover:from-background/90 hover:via-background/70 hover:to-background/50 group-hover:backdrop-blur-2xl">
+      {/* Carte principale avec bordures ultra-visibles et effets renforcés */}
+      <div className="relative bg-gradient-to-br from-card/80 via-card/60 to-card/40 backdrop-blur-xl border-4 border-gaspard-emerald/40 rounded-3xl p-8 transition-all duration-500 hover:scale-[1.05] hover:shadow-2xl hover:shadow-gaspard-gold/40 hover:border-gaspard-gold/80 hover:ring-4 hover:ring-gaspard-gold/30 hover:bg-gradient-to-br hover:from-card/90 hover:via-card/70 hover:to-card/50 group-hover:backdrop-blur-2xl cursor-pointer"
+           onClick={() => navigate(`/admin/explorations/${exploration.id}/edit`)}>
         
-        {/* Effet de lumière interne au hover */}
-        <div className="absolute inset-0 rounded-3xl bg-gradient-to-br from-gaspard-primary/0 via-gaspard-primary/0 to-gaspard-primary/0 group-hover:from-gaspard-primary/5 group-hover:via-gaspard-accent/3 group-hover:to-gaspard-secondary/5 transition-all duration-1000 pointer-events-none"></div>
+        {/* Effet de lumière interne renforcé au hover */}
+        <div className="absolute inset-0 rounded-3xl bg-gradient-to-br from-primary/0 via-primary/0 to-primary/0 group-hover:from-primary/20 group-hover:via-accent/15 group-hover:to-secondary/20 transition-all duration-700 pointer-events-none group-hover:animate-pulse"></div>
         
-        {/* Particules décoratives animées au hover */}
-        <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-all duration-1000">
-          <div className="absolute top-4 right-4 w-1 h-1 bg-gaspard-accent/60 rounded-full animate-gentle-float group-hover:bg-gaspard-accent group-hover:w-1.5 group-hover:h-1.5 transition-all duration-500"></div>
-          <div className="absolute bottom-6 left-6 w-1.5 h-1.5 bg-gaspard-secondary/40 rounded-full animate-gentle-float animation-delay-500 group-hover:bg-gaspard-secondary/80 group-hover:w-2 group-hover:h-2 transition-all duration-700"></div>
-          <div className="absolute top-1/2 left-4 w-0.5 h-0.5 bg-gaspard-primary/50 rounded-full animate-gentle-float animation-delay-1000 group-hover:bg-gaspard-primary group-hover:w-1 group-hover:h-1 transition-all duration-600"></div>
-          <div className="absolute top-1/3 right-1/3 w-0.5 h-0.5 bg-gaspard-accent/30 rounded-full animate-gentle-float animation-delay-1500 group-hover:bg-gaspard-accent/70 group-hover:w-1 group-hover:h-1 transition-all duration-800"></div>
+        {/* Lueur externe ultra-visible */}
+        <div className="absolute -inset-2 rounded-3xl bg-gradient-to-r from-gaspard-gold/0 via-gaspard-gold/0 to-gaspard-gold/0 group-hover:from-gaspard-gold/20 group-hover:via-gaspard-gold/40 group-hover:to-gaspard-gold/20 blur-xl transition-all duration-500 pointer-events-none opacity-0 group-hover:opacity-100"></div>
+        
+        {/* Particules décoratives ultra-animées au hover */}
+        <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-all duration-700">
+          <div className="absolute top-4 right-4 w-2 h-2 bg-gaspard-gold/80 rounded-full animate-bounce group-hover:w-3 group-hover:h-3 transition-all duration-500"></div>
+          <div className="absolute bottom-6 left-6 w-2.5 h-2.5 bg-accent/60 rounded-full animate-bounce group-hover:w-4 group-hover:h-4 transition-all duration-700" style={{ animationDelay: '0.2s' }}></div>
+          <div className="absolute top-1/2 left-4 w-1.5 h-1.5 bg-primary/70 rounded-full animate-bounce group-hover:w-2.5 group-hover:h-2.5 transition-all duration-600" style={{ animationDelay: '0.4s' }}></div>
+          <div className="absolute top-1/3 right-1/3 w-1.5 h-1.5 bg-gaspard-gold/50 rounded-full animate-bounce group-hover:w-2.5 group-hover:h-2.5 transition-all duration-800" style={{ animationDelay: '0.6s' }}></div>
+          <div className="absolute top-1/4 left-1/2 w-1 h-1 bg-accent/60 rounded-full animate-ping group-hover:w-2 group-hover:h-2 transition-all duration-500"></div>
           
-          {/* Effet de vague lumineuse */}
-          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-gaspard-primary/10 to-transparent transform -translate-x-full group-hover:translate-x-full transition-transform duration-1500 ease-out"></div>
+          {/* Effet de vague lumineuse renforcé */}
+          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-gaspard-gold/30 to-transparent transform -translate-x-full group-hover:translate-x-full transition-transform duration-1200 ease-out"></div>
         </div>
 
         {/* Header avec titre poétique */}
         <div className="flex justify-between items-start mb-6">
           <div className="flex-1">
-            <div className="flex items-center gap-3 mb-3 group-hover:gap-4 transition-all duration-500">
-              <Sparkles className="h-5 w-5 text-gaspard-accent animate-soft-pulse group-hover:text-gaspard-primary group-hover:scale-110 transition-all duration-500" />
-              <h3 className="gaspard-main-title text-xl font-bold bg-gradient-to-r from-gaspard-primary to-gaspard-accent bg-clip-text text-transparent group-hover:from-gaspard-accent group-hover:to-gaspard-primary transition-all duration-700">
+            <div className="flex items-center gap-3 mb-3 group-hover:gap-5 transition-all duration-500 group-hover:scale-105 transform-gpu">
+              <Sparkles className="h-6 w-6 text-accent animate-pulse group-hover:text-gaspard-gold group-hover:scale-125 group-hover:rotate-12 transition-all duration-500" />
+              <h3 className="gaspard-main-title text-xl font-bold bg-gradient-to-r from-foreground via-gaspard-gold to-accent bg-clip-text text-transparent group-hover:from-gaspard-gold group-hover:via-accent group-hover:to-foreground group-hover:scale-105 transition-all duration-700 transform-gpu">
                 {exploration.name}
               </h3>
             </div>
@@ -121,60 +126,63 @@ const PoeticExplorationCard: React.FC<PoeticExplorationCardProps> = ({ explorati
           )}
         </div>
 
-        {/* Actions organiques avec effets morphiques */}
-        <div className="flex flex-wrap gap-2 opacity-70 group-hover:opacity-100 transition-all duration-500 group-hover:gap-3">
+        {/* Actions ultra-interactives avec bordures et effets renforcés */}
+        <div className="flex flex-wrap gap-3 opacity-90 group-hover:opacity-100 transition-all duration-500 group-hover:gap-4 group-hover:scale-105 transform-gpu">
           {exploration.published && (
             <Button 
               variant="ghost" 
               size="sm" 
-              className="rounded-full bg-gaspard-primary/10 hover:bg-gaspard-primary/30 text-gaspard-primary border border-gaspard-primary/20 hover:border-gaspard-primary/60 transition-all duration-500 hover:scale-110 hover:shadow-xl hover:shadow-gaspard-primary/30 hover:-translate-y-1 group-hover:bg-gaspard-primary/15"
+              className="rounded-full bg-gaspard-emerald/30 hover:bg-gaspard-emerald/60 text-gaspard-cream border-2 border-gaspard-emerald/50 hover:border-gaspard-gold/80 transition-all duration-300 hover:scale-125 hover:shadow-xl hover:shadow-gaspard-emerald/40 hover:-translate-y-2 transform-gpu hover:rotate-2"
               title="Contempler en ligne"
+              onClick={(e) => { e.stopPropagation(); navigate(`/explorations/${exploration.id}`); }}
             >
-              <Eye className="h-3 w-3 mr-1.5 transition-transform duration-300 hover:scale-125" />
-              Contempler
+              <Eye className="h-4 w-4 mr-2 transition-transform duration-300 hover:scale-150 hover:rotate-12" />
+              ✨ Contempler
             </Button>
           )}
           
           <Button 
             variant="ghost" 
             size="sm" 
-            className="rounded-full bg-gaspard-secondary/10 hover:bg-gaspard-secondary/30 text-gaspard-secondary border border-gaspard-secondary/20 hover:border-gaspard-secondary/60 transition-all duration-500 hover:scale-110 hover:shadow-xl hover:shadow-gaspard-secondary/30 hover:-translate-y-1 group-hover:bg-gaspard-secondary/15"
+            className="rounded-full bg-gaspard-forest/30 hover:bg-gaspard-forest/60 text-gaspard-cream border-2 border-gaspard-forest/50 hover:border-gaspard-gold/80 transition-all duration-300 hover:scale-125 hover:shadow-xl hover:shadow-gaspard-forest/40 hover:-translate-y-2 transform-gpu hover:-rotate-2"
             title="Orchestrer les paysages"
-            onClick={() => navigate(`/admin/explorations/${exploration.id}/marches`)}
+            onClick={(e) => { e.stopPropagation(); navigate(`/admin/explorations/${exploration.id}/marches`); }}
           >
-            <Settings className="h-3 w-3 mr-1.5 transition-transform duration-300 hover:rotate-90" />
-            Orchestrer
+            <Settings className="h-4 w-4 mr-2 transition-transform duration-300 hover:rotate-180" />
+            🎼 Orchestrer
           </Button>
           
           <Button 
             variant="ghost" 
             size="sm" 
-            className="rounded-full bg-gaspard-accent/10 hover:bg-gaspard-accent/30 text-gaspard-accent border border-gaspard-accent/20 hover:border-gaspard-accent/60 transition-all duration-500 hover:scale-110 hover:shadow-xl hover:shadow-gaspard-accent/30 hover:-translate-y-1 group-hover:bg-gaspard-accent/15"
+            className="rounded-full bg-accent/30 hover:bg-accent/60 text-accent-foreground border-2 border-accent/50 hover:border-gaspard-gold/80 transition-all duration-300 hover:scale-125 hover:shadow-xl hover:shadow-accent/40 hover:-translate-y-2 transform-gpu hover:rotate-1"
             title="Archiver l'essence"
+            onClick={(e) => { e.stopPropagation(); }}
           >
-            <Download className="h-3 w-3 mr-1.5 transition-transform duration-300 hover:-translate-y-0.5" />
-            Archiver
+            <Download className="h-4 w-4 mr-2 transition-transform duration-300 hover:-translate-y-1 hover:scale-125" />
+            📦 Archiver
           </Button>
           
           <Button 
             variant="ghost" 
             size="sm" 
-            className="rounded-full bg-blue-500/10 hover:bg-blue-500/30 text-blue-600 border border-blue-500/20 hover:border-blue-500/60 transition-all duration-500 hover:scale-110 hover:shadow-xl hover:shadow-blue-500/30 hover:-translate-y-1 group-hover:bg-blue-500/15"
+            className="rounded-full bg-primary/30 hover:bg-primary/60 text-primary-foreground border-2 border-primary/50 hover:border-gaspard-gold/80 transition-all duration-300 hover:scale-125 hover:shadow-xl hover:shadow-primary/40 hover:-translate-y-2 transform-gpu hover:-rotate-1"
             title="Sculpter l'essence"
-            onClick={() => navigate(`/admin/explorations/${exploration.id}/edit`)}
+            onClick={(e) => { e.stopPropagation(); navigate(`/admin/explorations/${exploration.id}/edit`); }}
           >
-            <Edit className="h-3 w-3 mr-1.5 transition-transform duration-300 hover:rotate-12" />
-            Sculpter
+            <Edit className="h-4 w-4 mr-2 transition-transform duration-300 hover:rotate-45 hover:scale-125" />
+            🗿 Sculpter
           </Button>
           
           <Button 
             variant="ghost" 
             size="sm" 
-            className="rounded-full bg-red-500/10 hover:bg-red-500/30 text-red-600 border border-red-500/20 hover:border-red-500/60 transition-all duration-500 hover:scale-110 hover:shadow-xl hover:shadow-red-500/30 hover:-translate-y-1 group-hover:bg-red-500/15"
+            className="rounded-full bg-destructive/30 hover:bg-destructive/60 text-destructive-foreground border-2 border-destructive/50 hover:border-gaspard-gold/80 transition-all duration-300 hover:scale-125 hover:shadow-xl hover:shadow-destructive/40 hover:-translate-y-2 transform-gpu hover:rotate-2"
             title="Transmuter en néant"
+            onClick={(e) => { e.stopPropagation(); }}
           >
-            <Trash2 className="h-3 w-3 mr-1.5 transition-transform duration-300 hover:scale-125" />
-            Transmuter
+            <Trash2 className="h-4 w-4 mr-2 transition-transform duration-300 hover:scale-150 hover:rotate-12" />
+            🔮 Transmuter
           </Button>
         </div>
 
