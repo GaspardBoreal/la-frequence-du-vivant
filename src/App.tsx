@@ -23,6 +23,7 @@ import ExplorationFormPage from './pages/ExplorationFormPage';
 import ExplorationMarchesAdmin from './pages/ExplorationMarchesAdmin';
 import TestEbird from './pages/TestEbird';
 import FaviconTest from './pages/FaviconTest';
+import ExplorationAnimator from './pages/ExplorationAnimator';
 
 
 function App() {
@@ -41,8 +42,9 @@ function App() {
           {/* Routes explorations */}
           <Route path="/explorations" element={<ExplorationsList />} />
           <Route path="/explorations/:slug" element={<ExplorationDetail />} />
+          <Route path="/explorations/:slug/animer" element={<ExplorationAnimator />} />
           <Route path="/explorations/:slug/:narrativeSlug" element={<NarrativeLandscape />} />
-          
+
           {/* Routes d'administration protégées */}
           <Route path="/admin/migration" element={
             <AdminAuth>

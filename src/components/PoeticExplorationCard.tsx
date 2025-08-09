@@ -161,11 +161,11 @@ const PoeticExplorationCard: React.FC<PoeticExplorationCardProps> = ({ explorati
               variant="ghost" 
               size="sm" 
               className="rounded-full bg-gaspard-emerald/30 text-gaspard-cream border border-gaspard-emerald/50 hover:bg-gradient-to-r hover:from-gaspard-emerald hover:to-emerald-400 hover:text-black hover:border-emerald-300 hover:scale-110 hover:shadow-xl hover:shadow-emerald-500/40 transition-all duration-500 transform hover:-translate-y-1"
-              title="Contempler en ligne"
-              onClick={(e) => { e.stopPropagation(); navigate(`/explorations/${exploration.slug}`); }}
+              title="Animer l'exploration"
+              onClick={(e) => { e.stopPropagation(); navigate(`/explorations/${exploration.slug}/animer`); }}
             >
               <Eye className="h-4 w-4 mr-2" />
-              ✨ Contempler
+              ⚡ Animer
             </Button>
           )}
           

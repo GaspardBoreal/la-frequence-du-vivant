@@ -169,6 +169,62 @@ export type Database = {
           },
         ]
       }
+      exploration_narrative_settings: {
+        Row: {
+          created_at: string
+          exploration_id: string
+          id: string
+          interaction_config: Json | null
+          marche_view_config: Json | null
+          marche_view_model: string
+          updated_at: string
+          welcome_forms: string[]
+          welcome_povs: string[]
+          welcome_senses: string[]
+          welcome_template: string | null
+          welcome_timeframes: string[]
+          welcome_tones: string[]
+        }
+        Insert: {
+          created_at?: string
+          exploration_id: string
+          id?: string
+          interaction_config?: Json | null
+          marche_view_config?: Json | null
+          marche_view_model?: string
+          updated_at?: string
+          welcome_forms?: string[]
+          welcome_povs?: string[]
+          welcome_senses?: string[]
+          welcome_template?: string | null
+          welcome_timeframes?: string[]
+          welcome_tones?: string[]
+        }
+        Update: {
+          created_at?: string
+          exploration_id?: string
+          id?: string
+          interaction_config?: Json | null
+          marche_view_config?: Json | null
+          marche_view_model?: string
+          updated_at?: string
+          welcome_forms?: string[]
+          welcome_povs?: string[]
+          welcome_senses?: string[]
+          welcome_template?: string | null
+          welcome_timeframes?: string[]
+          welcome_tones?: string[]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_settings_exploration"
+            columns: ["exploration_id"]
+            isOneToOne: true
+            referencedRelation: "explorations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       explorations: {
         Row: {
           cover_image_url: string | null
@@ -577,6 +633,119 @@ export type Database = {
         }
         Relationships: []
       }
+      narrative_fragments: {
+        Row: {
+          audio_url: string | null
+          content: string
+          created_at: string
+          exploration_id: string
+          id: string
+          kind: string
+          marche_id: string | null
+          ordre: number | null
+          session_id: string
+          tts_voice: string | null
+        }
+        Insert: {
+          audio_url?: string | null
+          content: string
+          created_at?: string
+          exploration_id: string
+          id?: string
+          kind: string
+          marche_id?: string | null
+          ordre?: number | null
+          session_id: string
+          tts_voice?: string | null
+        }
+        Update: {
+          audio_url?: string | null
+          content?: string
+          created_at?: string
+          exploration_id?: string
+          id?: string
+          kind?: string
+          marche_id?: string | null
+          ordre?: number | null
+          session_id?: string
+          tts_voice?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_fragments_exploration"
+            columns: ["exploration_id"]
+            isOneToOne: false
+            referencedRelation: "explorations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_fragments_marche"
+            columns: ["marche_id"]
+            isOneToOne: false
+            referencedRelation: "marches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_fragments_session"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "narrative_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      narrative_interactions: {
+        Row: {
+          created_at: string
+          exploration_id: string
+          id: string
+          marche_id: string | null
+          payload: Json | null
+          session_id: string
+          type: string
+        }
+        Insert: {
+          created_at?: string
+          exploration_id: string
+          id?: string
+          marche_id?: string | null
+          payload?: Json | null
+          session_id: string
+          type: string
+        }
+        Update: {
+          created_at?: string
+          exploration_id?: string
+          id?: string
+          marche_id?: string | null
+          payload?: Json | null
+          session_id?: string
+          type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_interactions_exploration"
+            columns: ["exploration_id"]
+            isOneToOne: false
+            referencedRelation: "explorations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_interactions_marche"
+            columns: ["marche_id"]
+            isOneToOne: false
+            referencedRelation: "marches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_interactions_session"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "narrative_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       narrative_landscapes: {
         Row: {
           ai_prompt: string | null
@@ -629,6 +798,53 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "narrative_landscapes_exploration_id_fkey"
+            columns: ["exploration_id"]
+            isOneToOne: false
+            referencedRelation: "explorations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      narrative_sessions: {
+        Row: {
+          context: Json | null
+          created_at: string
+          exploration_id: string
+          id: string
+          language: string
+          referrer: string | null
+          session_key: string | null
+          status: string
+          updated_at: string
+          user_agent: string | null
+        }
+        Insert: {
+          context?: Json | null
+          created_at?: string
+          exploration_id: string
+          id?: string
+          language?: string
+          referrer?: string | null
+          session_key?: string | null
+          status?: string
+          updated_at?: string
+          user_agent?: string | null
+        }
+        Update: {
+          context?: Json | null
+          created_at?: string
+          exploration_id?: string
+          id?: string
+          language?: string
+          referrer?: string | null
+          session_key?: string | null
+          status?: string
+          updated_at?: string
+          user_agent?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_sessions_exploration"
             columns: ["exploration_id"]
             isOneToOne: false
             referencedRelation: "explorations"
