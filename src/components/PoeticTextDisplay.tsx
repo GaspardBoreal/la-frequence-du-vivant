@@ -44,29 +44,12 @@ const PoeticTextDisplay: React.FC<PoeticTextDisplayProps> = ({
 
   // Process rich text formatting
   const processRichText = (text: string) => {
-    let processed = text;
+    // Simple traitement qui préserve le HTML existant
+    // Le texte contient déjà du HTML formaté depuis l'éditeur riche
     
-    // Préserver le HTML existant (gras, italique, styles inline, etc.)
-    // Le texte peut déjà contenir du HTML depuis l'éditeur riche
-    
-    // Convertir les retours à la ligne simples en <br> seulement s'ils ne sont pas déjà dans du HTML
-    processed = processed.replace(/(?<!>)\n(?!<)/g, '<br>');
-    
-    // Gérer les tabulations avec un espacement approprié pour la poésie
-    processed = processed.replace(/\t/g, '<span class="inline-block w-12"></span>');
-    
-    // Améliorer le rendu des espaces multiples
-    processed = processed.replace(/  /g, '&nbsp;&nbsp;');
-    
-    // Highlight key phrases en évitant de casser le HTML existant
-    const keyPhrases = ['pont', 'Saint-Denis', 'modernité', 'Isle', 'techno sensible', 'fréquence'];
-    keyPhrases.forEach(phrase => {
-      // Regex plus sophistiquée qui évite de matcher à l'intérieur des balises HTML
-      const regex = new RegExp(`(?<!<[^>]*>)\\b(${phrase})\\b(?![^<]*</)`, 'gi');
-      processed = processed.replace(regex, `<span class="font-semibold text-primary bg-primary/10 px-1 rounded">$1</span>`);
-    });
-    
-    return processed;
+    // On retourne le texte tel quel pour préserver le formatage original
+    // Les sauts de lignes, italiques, gras sont déjà dans le HTML
+    return text;
   };
 
   // Fonction pour tronquer le titre si nécessaire
@@ -135,11 +118,10 @@ const PoeticTextDisplay: React.FC<PoeticTextDisplayProps> = ({
                 className={`relative ${isAutoReading && index === currentParagraph ? 'bg-yellow-50 rounded-lg p-6' : ''}`}
               >
                 <div 
-                  className="text-lg leading-relaxed text-gray-800 font-serif whitespace-pre-wrap max-w-none"
+                  className="text-lg leading-loose text-gray-800 font-serif max-w-none"
                   style={{ 
-                    lineHeight: '1.8',
-                    wordSpacing: '0.1em',
-                    letterSpacing: '0.02em'
+                    lineHeight: '2',
+                    wordSpacing: '0.1em'
                   }}
                   dangerouslySetInnerHTML={{ __html: processRichText(paragraph) }}
                 />
