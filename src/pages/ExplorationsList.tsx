@@ -1,19 +1,25 @@
 import React, { useState } from 'react';
-import { useExplorations } from '@/hooks/useExplorations';
-import { Input } from '@/components/ui/input';
-import { Search, Sparkles, Palette } from 'lucide-react';
+import { useExplorations, Exploration } from '@/hooks/useExplorations';
+import { Sparkles, Palette } from 'lucide-react';
 import SEOHead from '@/components/SEOHead';
 import DecorativeParticles from '@/components/DecorativeParticles';
 import PoeticExplorationCard from '@/components/PoeticExplorationCard';
+import ExplorationFilters from '@/components/ExplorationFilters';
 
 const ExplorationsList = () => {
   const { data: explorations, isLoading, error } = useExplorations();
-  const [searchTerm, setSearchTerm] = useState('');
+  const [filteredExplorations, setFilteredExplorations] = useState<Exploration[]>([]);
 
-  const filteredExplorations = explorations?.filter(exploration =>
-    exploration.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    exploration.description?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  // Initialize filtered explorations when data loads
+  React.useEffect(() => {
+    if (explorations) {
+      setFilteredExplorations(explorations);
+    }
+  }, [explorations]);
+
+  const handleFilterChange = (filtered: Exploration[]) => {
+    setFilteredExplorations(filtered);
+  };
 
   if (isLoading) {
     return (
@@ -90,22 +96,15 @@ const ExplorationsList = () => {
             <div className="mt-8 w-24 h-0.5 bg-gradient-to-r from-gaspard-primary to-gaspard-accent mx-auto rounded-full opacity-60"></div>
           </header>
 
-          {/* Barre de recherche poétique */}
-          <div className="mb-12 flex justify-center animate-fade-in animation-delay-300">
-            <div className="max-w-lg w-full relative">
-              <div className="relative group">
-                <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gaspard-muted/60 group-hover:text-gaspard-primary group-focus-within:text-gaspard-accent transition-all duration-500 group-hover:scale-110" />
-                <Input
-                  type="text"
-                  placeholder="Chercher une essence narrative..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-12 pr-4 py-3 bg-background/60 backdrop-blur-sm border-gaspard-primary/20 rounded-2xl focus:border-gaspard-primary/50 transition-all duration-500 hover:bg-background/80 focus:bg-background/90 hover:shadow-lg hover:shadow-gaspard-primary/10 focus:shadow-xl focus:shadow-gaspard-accent/20"
-                />
-                <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-gaspard-primary/10 via-transparent to-gaspard-accent/10 opacity-0 group-hover:opacity-100 group-focus-within:opacity-50 transition-opacity duration-500 pointer-events-none"></div>
-              </div>
+          {/* Filtres avancés */}
+          {explorations && (
+            <div className="animate-fade-in animation-delay-300">
+              <ExplorationFilters 
+                explorations={explorations}
+                onFilterChange={handleFilterChange}
+              />
             </div>
-          </div>
+          )}
 
           {/* Galerie d'explorations en masonry */}
           <section className="animate-fade-in animation-delay-600">
@@ -119,24 +118,24 @@ const ExplorationsList = () => {
               </span>
             </div>
 
-            {filteredExplorations?.length === 0 ? (
+            {filteredExplorations.length === 0 ? (
               <div className="text-center py-20">
                 <div className="max-w-md mx-auto">
                   <Sparkles className="h-16 w-16 text-gaspard-accent/40 mx-auto mb-6 animate-soft-pulse" />
                   <h3 className="gaspard-main-title text-xl font-semibold text-gaspard-primary mb-4">
-                    {searchTerm ? 'Aucune résonance trouvée' : 'Aucune exploration disponible'}
+                    {explorations?.length === 0 ? 'Aucune exploration disponible' : 'Aucune résonance trouvée'}
                   </h3>
                   <p className="text-gaspard-muted mb-8 font-light leading-relaxed">
-                    {searchTerm 
-                      ? 'Explorez d\'autres termes pour révéler les essences cachées'
-                      : 'Les explorations seront bientôt révélées.'
+                    {explorations?.length === 0 
+                      ? 'Les explorations seront bientôt révélées.'
+                      : 'Explorez d\'autres termes pour révéler les essences cachées'
                     }
                   </p>
                 </div>
               </div>
             ) : (
               <div className="columns-1 md:columns-2 lg:columns-3 gap-6 space-y-6">
-                {filteredExplorations?.map((exploration, index) => (
+                {filteredExplorations.map((exploration, index) => (
                   <div key={exploration.id} className="break-inside-avoid">
                     <PoeticExplorationCard 
                       exploration={exploration} 
