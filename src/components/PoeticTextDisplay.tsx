@@ -46,8 +46,12 @@ const PoeticTextDisplay: React.FC<PoeticTextDisplayProps> = ({
   const processRichText = (text: string) => {
     console.log('🎭 HTML brut reçu:', text);
     
-    // Retourner directement le HTML sans aucune transformation
-    const processedText = text;
+    // Convertir les <div> en <span> pour préserver l'espacement dans la prose
+    // et ajouter des sauts de ligne là où c'est nécessaire
+    let processedText = text
+      .replace(/<div><br><\/div>/g, '\n') // Remplacer les div vides par des sauts de ligne
+      .replace(/<div>/g, '<span style="display: block;">') // Convertir div en span block
+      .replace(/<\/div>/g, '</span>'); // Fermer les spans
     
     console.log('🎭 HTML traité final:', processedText);
     return processedText;
