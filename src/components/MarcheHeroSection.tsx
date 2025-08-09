@@ -105,7 +105,20 @@ const MarcheHeroSection: React.FC<MarcheHeroSectionProps> = ({
                 {marche.date && (
                   <div className="flex items-center space-x-2">
                     <Calendar className="h-5 w-5" />
-                    <span>{marche.date.split('/').join(' - ')}</span>
+                    <span>
+                      {(() => {
+                        // Handle both yyyy-mm-dd and dd/mm/yyyy formats
+                        if (marche.date.includes('-')) {
+                          // Format: yyyy-mm-dd -> dd-mm-yyyy
+                          const [year, month, day] = marche.date.split('-');
+                          return `${day.padStart(2, '0')} - ${month.padStart(2, '0')} - ${year}`;
+                        } else if (marche.date.includes('/')) {
+                          // Format: dd/mm/yyyy -> dd-mm-yyyy
+                          return marche.date.split('/').join(' - ');
+                        }
+                        return marche.date;
+                      })()}
+                    </span>
                   </div>
                 )}
               </div>
