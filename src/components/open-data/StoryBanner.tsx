@@ -62,7 +62,12 @@ export default function StoryBanner({
       
       try {
         const { data, error } = await supabase.functions.invoke("generate-story-visuals", {
-          body: { prompt, aspect_ratio: "1:1" },
+          body: { 
+            prompt, 
+            aspect_ratio: "1:1",
+            stationName,
+            eventType: event.type
+          },
         });
         
         if (!mounted) return;

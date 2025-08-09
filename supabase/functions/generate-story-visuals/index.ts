@@ -1,5 +1,4 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import Replicate from "https://esm.sh/replicate@0.25.2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -14,19 +13,13 @@ serve(async (req) => {
   try {
     console.log("🎨 [GENERATE-VISUALS] Request received");
     
-    const REPLICATE_API_KEY = Deno.env.get("REPLICATE_API_KEY");
-    if (!REPLICATE_API_KEY) {
-      console.error("❌ [GENERATE-VISUALS] REPLICATE_API_KEY is not set");
-      throw new Error("REPLICATE_API_KEY is not set");
-    }
-
-    const replicate = new Replicate({ auth: REPLICATE_API_KEY });
     const body = await req.json();
     
     console.log("🎨 [GENERATE-VISUALS] Request body:", { 
       hasPrompt: !!body.prompt, 
       promptLength: body.prompt?.length,
-      aspect_ratio: body.aspect_ratio 
+      stationName: body.stationName,
+      eventType: body.eventType
     });
 
     if (!body.prompt) {
@@ -37,28 +30,44 @@ serve(async (req) => {
       );
     }
 
-    const aspect_ratio = body.aspect_ratio || "1:1";
+    // Generate search terms from the prompt and event context
+    const searchTerms = generateSearchTerms(body.prompt, body.eventType, body.stationName);
     
-    console.log("🎨 [GENERATE-VISUALS] Starting Replicate generation...");
-    console.log("🎨 [GENERATE-VISUALS] Prompt:", body.prompt.substring(0, 200) + "...");
+    console.log("🎨 [GENERATE-VISUALS] Generated search terms:", searchTerms);
+    console.log("🎨 [GENERATE-VISUALS] Fetching from Unsplash...");
 
-    const output = await replicate.run("black-forest-labs/flux-schnell", {
-      input: {
-        prompt: body.prompt,
-        go_fast: true,
-        megapixels: "1",
-        num_outputs: 1,
-        aspect_ratio,
-        output_format: "webp",
-        output_quality: 80,
-        num_inference_steps: 4,
-      },
-    });
+    // Fetch from Unsplash API
+    const unsplashResponse = await fetch(
+      `https://api.unsplash.com/photos/random?query=${encodeURIComponent(searchTerms)}&orientation=landscape&w=800&h=600`,
+      {
+        headers: {
+          'Authorization': `Client-ID ${Deno.env.get("UNSPLASH_ACCESS_KEY") || "your_access_key_here"}`
+        }
+      }
+    );
     
-    console.log("✅ [GENERATE-VISUALS] Replicate response:", output);
+    if (!unsplashResponse.ok) {
+      console.error("❌ [GENERATE-VISUALS] Unsplash API error:", unsplashResponse.status);
+      // Fallback to a default placeholder image
+      const fallbackUrl = "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800&h=600&fit=crop";
+      console.log("🎨 [GENERATE-VISUALS] Using fallback image:", fallbackUrl);
+      return new Response(
+        JSON.stringify({ output: [fallbackUrl] }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
+      );
+    }
+
+    const imageData = await unsplashResponse.json();
+    const imageUrl = imageData.urls?.regular || imageData.urls?.small;
+    
+    if (!imageUrl) {
+      throw new Error("No image URL received from Unsplash");
+    }
+    
+    console.log("✅ [GENERATE-VISUALS] Unsplash response received:", imageUrl);
 
     return new Response(
-      JSON.stringify({ output }),
+      JSON.stringify({ output: [imageUrl] }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
     );
   } catch (error: any) {
@@ -69,3 +78,31 @@ serve(async (req) => {
     );
   }
 });
+
+// Helper function to generate search terms for Unsplash
+function generateSearchTerms(prompt: string, eventType?: string, stationName?: string): string {
+  const weatherKeywords = {
+    record: ["temperature extreme", "weather record", "climate"],
+    spike: ["weather change", "temperature variation", "meteorology"],
+    humidExtreme: ["humidity weather", "atmospheric conditions", "moisture"]
+  };
+
+  let baseTerms = "french landscape nature weather";
+  
+  if (eventType && weatherKeywords[eventType as keyof typeof weatherKeywords]) {
+    baseTerms += " " + weatherKeywords[eventType as keyof typeof weatherKeywords].join(" ");
+  }
+  
+  // Add regional context if station name suggests a specific region
+  if (stationName) {
+    if (stationName.toLowerCase().includes("côte") || stationName.toLowerCase().includes("mer")) {
+      baseTerms += " coastal france";
+    } else if (stationName.toLowerCase().includes("mont") || stationName.toLowerCase().includes("alpes")) {
+      baseTerms += " mountain france";
+    } else {
+      baseTerms += " countryside france";
+    }
+  }
+  
+  return baseTerms;
+}
