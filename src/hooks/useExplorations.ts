@@ -49,7 +49,7 @@ export interface ExplorationMarche {
   };
 }
 
-// Hook pour récupérer toutes les explorations
+// Hook pour récupérer toutes les explorations publiques
 export const useExplorations = () => {
   return useQuery({
     queryKey: ['explorations'],
@@ -58,6 +58,23 @@ export const useExplorations = () => {
         .from('explorations')
         .select('*')
         .eq('published', true)
+        .order('created_at', { ascending: false });
+      
+      if (error) throw error;
+      return data as Exploration[];
+    },
+    staleTime: 5 * 60 * 1000,
+  });
+};
+
+// Hook pour récupérer toutes les explorations (admin)
+export const useAdminExplorations = () => {
+  return useQuery({
+    queryKey: ['admin-explorations'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('explorations')
+        .select('*')
         .order('created_at', { ascending: false });
       
       if (error) throw error;

@@ -134,7 +134,7 @@ const ExplorationForm: React.FC<ExplorationFormProps> = ({
       }
 
       // Invalider le cache des explorations pour forcer le rechargement
-      queryClient.invalidateQueries({ queryKey: ['explorations'] });
+      queryClient.invalidateQueries({ queryKey: ['admin-explorations'] });
 
       if (onSuccess) {
         onSuccess();
