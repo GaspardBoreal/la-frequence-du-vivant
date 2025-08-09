@@ -7,7 +7,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, Save, Plus, X } from 'lucide-react';
+import { ArrowLeft, Save, Plus, X, ExternalLink } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { createSlug } from '@/utils/slugGenerator';
@@ -222,9 +222,31 @@ const ExplorationForm: React.FC<ExplorationFormProps> = ({
                 className="mt-1 bg-gaspard-cream/10 border-gaspard-cream/20 text-gaspard-cream placeholder:text-gaspard-cream/50"
                 required
               />
-              <p className="text-sm text-gaspard-cream/70 mt-1">
-                URL: /explorations/{formData.slug}
-              </p>
+              {formData.slug && formData.published && (
+                <div className="mt-2">
+                  <a
+                    href={`${window.location.origin}/explorations/${formData.slug}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-2 text-sm text-gaspard-gold hover:text-gaspard-gold/80 transition-colors duration-200 group"
+                  >
+                    <ExternalLink className="h-4 w-4 group-hover:scale-110 transition-transform duration-200" />
+                    <span className="underline decoration-gaspard-gold/50 group-hover:decoration-gaspard-gold">
+                      {window.location.origin}/explorations/{formData.slug}
+                    </span>
+                  </a>
+                </div>
+              )}
+              {!formData.published && (
+                <p className="text-sm text-gaspard-cream/70 mt-1">
+                  URL: /explorations/{formData.slug} (sera disponible après publication)
+                </p>
+              )}
+              {!formData.slug && (
+                <p className="text-sm text-gaspard-cream/70 mt-1">
+                  URL: /explorations/[slug-auto-généré]
+                </p>
+              )}
             </div>
 
             <div>
