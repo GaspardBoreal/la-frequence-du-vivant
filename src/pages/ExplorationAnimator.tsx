@@ -10,7 +10,7 @@ import { toast } from 'sonner';
 
 const TONES = ['lyrique','ironique','minimaliste','prophétique','éco-poétique','bioacoustique'] as const;
 const FORMS = ['haïku','note scientifique','dialogue','légende de carte','titre de presse','post Instagram'] as const;
-const POVS  = ["l’eau","le cormoran","un drone","un satellite","une IA de surveillance","un souvenir futur"] as const;
+const POVS  = ["l'eau","le cormoran","un drone","un satellite","une IA de surveillance","un souvenir futur"] as const;
 const SENSES = ['sonore','olfactive','tactile','chromatique'] as const;
 const TIMES  = ['passé historique','présent','futur 2050','futur 2100'] as const;
 
@@ -99,18 +99,18 @@ export default function ExplorationAnimator() {
       console.error(error);
       toast.error("Impossible de démarrer l'animation");
     } else {
-      toast.success('Session d’animation démarrée');
+      toast.success('Session d\'animation démarrée');
     }
   };
 
-  const title = exploration ? `Animer ${exploration.name} — Exploration` : 'Animer l’exploration';
+  const title = exploration ? `Animer ${exploration.name} — Exploration` : 'Animer l\'exploration';
   const canonical = exploration ? `${window.location.origin}/explorations/${exploration.slug}/animer` : `${window.location.origin}/explorations/animer`;
 
   return (
     <>
       <SEOHead 
         title={title.slice(0, 58)} 
-        description="Construisez un accueil poétique, un modèle de marche et une scène d’interaction sur mesure." 
+        description="Construisez un accueil poétique, un modèle de marche et une scène d'interaction sur mesure." 
         canonicalUrl={canonical}
       />
 
@@ -124,12 +124,12 @@ export default function ExplorationAnimator() {
           <span className="mx-2">/</span>
           <span>Animer</span>
         </nav>
-        <h1 className="mt-4 text-3xl font-bold text-foreground">Animer l’exploration</h1>
-        <p className="mt-2 text-foreground/80 max-w-2xl">Définissez les intentions poétiques (P1), le modèle de visualisation des marches (P2) et l’espace d’interaction (P3).</p>
+        <h1 className="mt-4 text-3xl font-bold text-foreground">Animer l'exploration</h1>
+        <p className="mt-2 text-foreground/80 max-w-2xl">Définissez les intentions poétiques (P1), le modèle de visualisation des marches (P2) et l'espace d'interaction (P3).</p>
         <div className="mt-4 flex gap-3">
           <Button onClick={startSession}>Démarrer une session</Button>
-          <Link to={exploration ? `/explorations/${exploration.slug}` : '/explorations'}>
-            <Button variant="secondary">Retour à l’exploration</Button>
+          <Link to="/explorations">
+            <Button variant="secondary">Retour aux explorations</Button>
           </Link>
         </div>
       </header>
@@ -138,7 +138,7 @@ export default function ExplorationAnimator() {
         {/* P1 - Accueil spécifique */}
         <section className="mt-8">
           <h2 className="text-xl font-semibold mb-3">P1 · Accueil spécifique</h2>
-          <p className="text-sm text-foreground/70 mb-4">Composez l’intonation et la forme d’un écran d’accueil propre à cette exploration.</p>
+          <p className="text-sm text-foreground/70 mb-4">Composez l'intonation et la forme d'un écran d'accueil propre à cette exploration.</p>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
@@ -220,8 +220,8 @@ export default function ExplorationAnimator() {
 
         {/* P3 - Interaction */}
         <section className="mt-10">
-          <h2 className="text-xl font-semibold mb-3">P3 · Espace d’interaction</h2>
-          <p className="text-sm text-foreground/70 mb-2">MVP: journalisez les interactions lors des tests, la scène dédiée arrivera dans l’étape suivante.</p>
+          <h2 className="text-xl font-semibold mb-3">P3 · Espace d'interaction</h2>
+          <p className="text-sm text-foreground/70 mb-2">MVP: journalisez les interactions lors des tests, la scène dédiée arrivera dans l'étape suivante.</p>
           <Button onClick={handleSave} disabled={!canSave || saving}>
             {saving ? 'Enregistrement…' : 'Enregistrer les paramètres'}
           </Button>
