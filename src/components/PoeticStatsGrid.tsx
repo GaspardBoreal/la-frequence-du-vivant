@@ -78,14 +78,14 @@ const PoeticStatsGrid: React.FC<PoeticStatsGridProps> = ({
             key={stat.label}
             className={`group relative overflow-hidden animate-fade-in ${
               isClickable ? 'cursor-pointer' : ''
-            } ${isSelected ? 'ring-2 ring-gaspard-primary/40 ring-offset-2 ring-offset-background' : ''}`}
+            } ${isSelected ? 'ring-2 ring-white/60 ring-offset-2 ring-offset-background' : ''}`}
             style={{ animationDelay: `${index * 150}ms` }}
             onClick={() => isClickable && handleCardClick(stat.filterKey)}
           >
             {/* Conteneur principal avec effet de verre sophistiqué */}
             <div className={`relative bg-gradient-to-br from-background/70 via-background/50 to-background/30 backdrop-blur-xl border rounded-2xl p-6 transition-all duration-700 hover:scale-110 hover:shadow-2xl hover:shadow-gaspard-primary/30 hover:border-gaspard-primary/50 hover:bg-gradient-to-br hover:from-background/80 hover:via-background/60 hover:to-background/40 group-hover:backdrop-blur-2xl ${
               isSelected 
-                ? 'border-gaspard-primary/50 bg-gradient-to-br from-background/80 via-background/60 to-background/40 shadow-lg shadow-gaspard-primary/20' 
+                ? 'border-white/50 bg-gradient-to-br from-background/80 via-background/60 to-background/40 shadow-lg shadow-white/10' 
                 : 'border-gaspard-primary/20'
             }`}>
               
