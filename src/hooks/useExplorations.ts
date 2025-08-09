@@ -84,6 +84,25 @@ export const useAdminExplorations = () => {
   });
 };
 
+// Hook pour récupérer une exploration par ID (admin)
+export const useExplorationById = (id: string) => {
+  return useQuery({
+    queryKey: ['exploration-by-id', id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('explorations')
+        .select('*')
+        .eq('id', id)
+        .single();
+      
+      if (error) throw error;
+      return data as Exploration;
+    },
+    staleTime: 5 * 60 * 1000,
+    enabled: !!id,
+  });
+};
+
 // Hook pour récupérer une exploration par slug
 export const useExploration = (slug: string) => {
   return useQuery({

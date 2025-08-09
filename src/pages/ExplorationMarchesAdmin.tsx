@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, Settings } from 'lucide-react';
 import SEOHead from '@/components/SEOHead';
-import { useExploration, useExplorationMarches } from '@/hooks/useExplorations';
+import { useExplorationById, useExplorationMarches } from '@/hooks/useExplorations';
 import {
   useAddMarcheToExploration,
   useRemoveMarcheFromExploration,
@@ -18,7 +18,7 @@ const ExplorationMarchesAdmin = () => {
   const navigate = useNavigate();
   const [selectedMarches, setSelectedMarches] = useState<string[]>([]);
 
-  const { data: exploration, isLoading: isLoadingExploration } = useExploration(id || '');
+  const { data: exploration, isLoading: isLoadingExploration } = useExplorationById(id || '');
   const { data: explorationMarches = [], isLoading: isLoadingMarches } = useExplorationMarches(id || '');
   
   const addMarcheMutation = useAddMarcheToExploration();

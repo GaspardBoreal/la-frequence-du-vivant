@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -12,6 +12,7 @@ import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { createSlug } from '@/utils/slugGenerator';
 import { useQueryClient } from '@tanstack/react-query';
+import { useExplorationById } from '@/hooks/useExplorations';
 
 interface ExplorationFormData {
   name: string;
@@ -41,17 +42,49 @@ const ExplorationForm: React.FC<ExplorationFormProps> = ({
   const [isLoading, setIsLoading] = useState(false);
   const [newKeyword, setNewKeyword] = useState('');
   
+  // Récupérer l'exploration si on a un ID
+  const { data: existingExploration, isLoading: isLoadingExploration } = useExplorationById(explorationId || '');
+  
   const [formData, setFormData] = useState<ExplorationFormData>({
-    name: initialData?.name || '',
-    slug: initialData?.slug || '',
-    description: initialData?.description || '',
-    cover_image_url: initialData?.cover_image_url || '',
-    language: initialData?.language || 'fr',
-    meta_title: initialData?.meta_title || '',
-    meta_description: initialData?.meta_description || '',
-    meta_keywords: initialData?.meta_keywords || [],
-    published: initialData?.published || false
+    name: '',
+    slug: '',
+    description: '',
+    cover_image_url: '',
+    language: 'fr',
+    meta_title: '',
+    meta_description: '',
+    meta_keywords: [],
+    published: false
   });
+
+  // Mettre à jour les données du formulaire quand l'exploration est chargée
+  useEffect(() => {
+    if (existingExploration) {
+      setFormData({
+        name: existingExploration.name,
+        slug: existingExploration.slug,
+        description: existingExploration.description || '',
+        cover_image_url: existingExploration.cover_image_url || '',
+        language: existingExploration.language,
+        meta_title: existingExploration.meta_title || '',
+        meta_description: existingExploration.meta_description || '',
+        meta_keywords: existingExploration.meta_keywords || [],
+        published: existingExploration.published
+      });
+    } else if (initialData) {
+      setFormData({
+        name: initialData.name || '',
+        slug: initialData.slug || '',
+        description: initialData.description || '',
+        cover_image_url: initialData.cover_image_url || '',
+        language: initialData.language || 'fr',
+        meta_title: initialData.meta_title || '',
+        meta_description: initialData.meta_description || '',
+        meta_keywords: initialData.meta_keywords || [],
+        published: initialData.published || false
+      });
+    }
+  }, [existingExploration, initialData]);
 
   const handleInputChange = (field: keyof ExplorationFormData, value: any) => {
     setFormData(prev => ({
