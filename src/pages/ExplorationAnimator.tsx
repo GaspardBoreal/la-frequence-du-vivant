@@ -290,13 +290,13 @@ export default function ExplorationAnimator() {
                 onClick={() => setMarcheViewModel(model.id)}
                 onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && setMarcheViewModel(model.id)}
                 className={`
-                  group relative rounded-xl border-2 p-6 cursor-pointer
+                  group relative rounded-xl p-6 cursor-pointer
                   transition-all duration-300 ease-out
                   hover:scale-105 hover:shadow-lg hover:shadow-primary/10
                   focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2
                   ${marcheViewModel === model.id 
-                    ? 'border-primary bg-primary/5 shadow-md shadow-primary/20 scale-[1.02]' 
-                    : 'border-border hover:border-primary/50 hover:bg-muted/30'
+                    ? 'border-4 border-primary bg-primary shadow-md shadow-primary/20 scale-[1.02]' 
+                    : 'border-2 border-border hover:border-primary/50 hover:bg-muted/30'
                   }
                 `}
                 aria-selected={marcheViewModel === model.id}
@@ -304,7 +304,7 @@ export default function ExplorationAnimator() {
                 <div className="flex items-start justify-between">
                   <div className="flex-1 mr-3">
                     <h3 className={`text-base font-semibold transition-colors duration-200 ${
-                      marcheViewModel === model.id ? 'text-primary' : 'text-foreground group-hover:text-primary'
+                      marcheViewModel === model.id ? 'text-white' : 'text-foreground group-hover:text-primary'
                     }`}>
                       {model.name}
                     </h3>
