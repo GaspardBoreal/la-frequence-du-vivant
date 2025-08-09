@@ -67,7 +67,7 @@ const PoeticStatsGrid: React.FC<PoeticStatsGridProps> = ({
   };
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
       {stats.map((stat, index) => {
         const Icon = stat.icon;
         const isSelected = selectedFilter === stat.filterKey;
