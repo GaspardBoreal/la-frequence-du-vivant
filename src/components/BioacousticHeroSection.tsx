@@ -261,7 +261,7 @@ const BioacousticHeroSection: React.FC<BioacousticHeroSectionProps> = ({
               <div className="bg-white/10 backdrop-blur-md rounded-lg px-4 py-2 border border-white/20">
                 <div className="flex items-center space-x-2">
                   <Calendar className="h-4 w-4 text-purple-300" />
-                  <span className="text-sm">{marche.date}</span>
+                  <span className="text-sm">{marche.date.split('-').reverse().join('-')}</span>
                 </div>
               </div>
             )}
