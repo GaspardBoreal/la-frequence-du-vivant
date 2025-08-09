@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
@@ -21,6 +21,7 @@ type Arr = readonly string[];
 export default function ExplorationAnimator() {
   const { slug } = useParams<{ slug: string }>();
   const { data: exploration } = useExploration(slug || '');
+  const navigate = useNavigate();
 
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -108,7 +109,7 @@ export default function ExplorationAnimator() {
   };
 
   const generateAnimation = async () => {
-    if (!exploration?.id) return;
+    if (!exploration?.id || !exploration?.slug) return;
     const ua = typeof navigator !== 'undefined' ? navigator.userAgent : '';
     const ref = typeof document !== 'undefined' ? document.referrer : '';
     const { data, error } = await supabase
@@ -116,11 +117,12 @@ export default function ExplorationAnimator() {
       .insert({ exploration_id: exploration.id, language: 'fr', user_agent: ua, referrer: ref })
       .select('id')
       .maybeSingle();
-    if (error) {
+    if (error || !data?.id) {
       console.error(error);
       toast.error("Impossible de générer l'animation");
     } else {
       toast.success('Animation générée avec succès');
+      navigate(`/explorations/${exploration.slug}/experience/${data.id}`);
     }
   };
 
