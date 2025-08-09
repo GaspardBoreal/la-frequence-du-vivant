@@ -37,11 +37,21 @@ serve(async (req) => {
     console.log("🎨 [GENERATE-VISUALS] Fetching from Unsplash...");
 
     // Fetch from Unsplash API
+    const unsplashApiKey = Deno.env.get("UNSPLASH_ACCESS_KEY");
+    if (!unsplashApiKey) {
+      console.error("❌ [GENERATE-VISUALS] Missing UNSPLASH_ACCESS_KEY");
+      const fallbackUrl = "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800&h=600&fit=crop";
+      return new Response(
+        JSON.stringify({ output: [fallbackUrl] }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
+      );
+    }
+
     const unsplashResponse = await fetch(
       `https://api.unsplash.com/photos/random?query=${encodeURIComponent(searchTerms)}&orientation=landscape&w=800&h=600`,
       {
         headers: {
-          'Authorization': `Client-ID ${Deno.env.get("UNSPLASH_ACCESS_KEY") || "your_access_key_here"}`
+          'Authorization': `Client-ID ${unsplashApiKey}`
         }
       }
     );
