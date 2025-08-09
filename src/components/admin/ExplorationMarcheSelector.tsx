@@ -74,7 +74,7 @@ const ExplorationMarcheSelector: React.FC<ExplorationMarcheSelectorProps> = ({
             <Plus className="h-5 w-5 text-gaspard-accent" />
           </div>
           <div>
-            <h3 className="gaspard-main-title text-2xl font-bold text-gaspard-accent">
+            <h3 className="gaspard-main-title text-3xl font-bold text-gaspard-accent">
               Enrichir l'exploration
             </h3>
             <p className="text-sm text-gaspard-secondary mt-1 font-light">
