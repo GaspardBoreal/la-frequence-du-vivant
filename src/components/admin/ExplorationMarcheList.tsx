@@ -301,7 +301,7 @@ const ExplorationMarcheList: React.FC<ExplorationMarcheListProps> = ({
             <div className="w-10 h-10 rounded-full bg-gradient-to-br from-gaspard-primary/20 to-gaspard-accent/30 flex items-center justify-center backdrop-blur-sm">
               <Footprints className="h-5 w-5 text-gaspard-primary" />
             </div>
-            <h3 className="gaspard-main-title text-3xl font-bold text-gaspard-primary">
+            <h3 className="gaspard-main-title text-4xl font-bold text-gaspard-primary">
               Séquence de l'exploration
             </h3>
           </div>
