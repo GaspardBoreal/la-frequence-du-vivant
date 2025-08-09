@@ -97,10 +97,10 @@ const PoeticExplorationCard: React.FC<PoeticExplorationCardProps> = ({ explorati
               <Badge 
                 variant={exploration.published ? "default" : "secondary"}
                 className={cn(
-                  "rounded-full px-4 py-1 text-xs font-medium transition-all duration-500 group-hover:px-5 group-hover:py-1.5 group-hover:scale-105",
+                  "rounded-full px-4 py-1 text-xs transition-all duration-500 group-hover:px-5 group-hover:py-1.5 group-hover:scale-105",
                   exploration.published 
-                    ? "bg-gradient-to-r from-emerald-500/20 to-green-500/20 text-emerald-700 border-emerald-300/30 hover:from-emerald-500/40 hover:to-green-500/40 hover:border-emerald-400/50 hover:shadow-lg hover:shadow-emerald-500/20" 
-                    : "bg-gradient-to-r from-amber-500/20 to-orange-500/20 text-amber-700 border-amber-300/30 hover:from-amber-500/40 hover:to-orange-500/40 hover:border-amber-400/50 hover:shadow-lg hover:shadow-amber-500/20"
+                    ? "bg-gradient-to-r from-emerald-500/20 to-green-500/20 text-white font-bold border-emerald-300/30 hover:from-emerald-500/40 hover:to-green-500/40 hover:border-emerald-400/50 hover:shadow-lg hover:shadow-emerald-500/20" 
+                    : "bg-gradient-to-r from-amber-500/20 to-orange-500/20 text-amber-700 font-medium border-amber-300/30 hover:from-amber-500/40 hover:to-orange-500/40 hover:border-amber-400/50 hover:shadow-lg hover:shadow-amber-500/20"
                 )}
               >
                 {exploration.published ? "✨ Révélé au monde" : "🌱 Germe créatif"}
@@ -112,12 +112,7 @@ const PoeticExplorationCard: React.FC<PoeticExplorationCardProps> = ({ explorati
         {/* Description poétique avec effet de révélation */}
         {exploration.description && (
           <div className="mb-6 group-hover:mb-7 transition-all duration-300">
-            <p className={cn(
-              "leading-relaxed font-light text-justify hyphens-auto transition-colors duration-500",
-              exploration.published 
-                ? "text-white font-bold group-hover:text-white/90" 
-                : "text-gaspard-muted group-hover:text-gaspard-primary/90"
-            )}>
+            <p className="text-gaspard-muted leading-relaxed font-light text-justify hyphens-auto group-hover:text-gaspard-primary/90 transition-colors duration-500">
               {exploration.description}
             </p>
           </div>
