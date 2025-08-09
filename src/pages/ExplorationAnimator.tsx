@@ -4,11 +4,15 @@ import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import SEOHead from '@/components/SEOHead';
 import { supabase } from '@/integrations/supabase/client';
-import { useExploration } from '@/hooks/useExplorations';
+import { useExploration, useExplorationMarches } from '@/hooks/useExplorations';
 import { toast } from 'sonner';
 import { marcheModels } from '@/marche-models/registry';
+import { Eye } from 'lucide-react';
+import ExperienceMarcheSimple from '@/components/experience/ExperienceMarcheSimple';
+import ExperienceMarcheElabore from '@/components/experience/ExperienceMarcheElabore';
 
 const TONES = ['lyrique','ironique','minimaliste','prophétique','éco-poétique','bioacoustique'] as const;
 const FORMS = ['haïku','note scientifique','dialogue','légende de carte','titre de presse','post Instagram'] as const;
@@ -21,10 +25,13 @@ type Arr = readonly string[];
 export default function ExplorationAnimator() {
   const { slug } = useParams<{ slug: string }>();
   const { data: exploration } = useExploration(slug || '');
+  const { data: explorationMarches } = useExplorationMarches(exploration?.id || '');
   const navigate = useNavigate();
 
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [previewOpen, setPreviewOpen] = useState(false);
+  const [previewModel, setPreviewModel] = useState<string>('');
 
   const [welcomeTones, setWelcomeTones] = useState<string[]>([]);
   const [welcomeForms, setWelcomeForms] = useState<string[]>([]);
@@ -42,6 +49,19 @@ export default function ExplorationAnimator() {
   const [timesCustom, setTimesCustom] = useState<string>('');
 
   const canSave = useMemo(() => !!exploration?.id, [exploration?.id]);
+  
+  const firstMarche = useMemo(() => {
+    return explorationMarches && explorationMarches.length > 0 ? explorationMarches[0] : null;
+  }, [explorationMarches]);
+
+  const handlePreviewModel = (modelId: string) => {
+    if (!firstMarche) {
+      toast.error('Aucune marche disponible pour la prévisualisation');
+      return;
+    }
+    setPreviewModel(modelId);
+    setPreviewOpen(true);
+  };
 
   useEffect(() => {
     const loadSettings = async () => {
@@ -303,6 +323,25 @@ export default function ExplorationAnimator() {
                 `}
                 aria-selected={marcheViewModel === model.id}
               >
+                {firstMarche && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handlePreviewModel(model.id);
+                    }}
+                    className={`
+                      absolute top-3 right-3 z-10 p-2 rounded-full transition-all duration-200
+                      ${marcheViewModel === model.id 
+                        ? 'bg-white/20 text-white hover:bg-white/30' 
+                        : 'bg-muted/80 text-muted-foreground hover:bg-primary/10 hover:text-primary'
+                      }
+                    `}
+                    title="Prévisualiser ce modèle"
+                  >
+                    <Eye className="w-4 h-4" />
+                  </button>
+                )}
+                
                 <div className="flex items-start justify-between">
                   <div className="flex-1 mr-3">
                     <h3 className={`text-base font-semibold transition-colors duration-200 ${
@@ -376,6 +415,54 @@ export default function ExplorationAnimator() {
           </Button>
         </div>
       </div>
+
+      {/* Preview Modal */}
+      <Dialog open={previewOpen} onOpenChange={setPreviewOpen}>
+        <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>
+              Aperçu du modèle "{marcheModels.find(m => m.id === previewModel)?.name}"
+            </DialogTitle>
+          </DialogHeader>
+          
+          <div className="py-4">
+            {firstMarche && previewModel && (
+              <div className="space-y-4">
+                <p className="text-sm text-muted-foreground">
+                  Prévisualisation appliquée à la première marche : <span className="font-medium">{firstMarche.marche?.nom_marche || firstMarche.marche?.ville}</span>
+                </p>
+                
+                <div className="border rounded-lg p-4 bg-muted/20">
+                  {previewModel === 'simple' ? (
+                    <ExperienceMarcheSimple marche={firstMarche} />
+                  ) : (
+                    <ExperienceMarcheElabore marche={firstMarche} />
+                  )}
+                </div>
+              </div>
+            )}
+            
+            {!firstMarche && (
+              <p className="text-center text-muted-foreground py-8">
+                Aucune marche disponible pour la prévisualisation
+              </p>
+            )}
+          </div>
+          
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setPreviewOpen(false)}>
+              Fermer
+            </Button>
+            <Button onClick={() => {
+              setMarcheViewModel(previewModel);
+              setPreviewOpen(false);
+              toast.success('Modèle sélectionné');
+            }}>
+              Utiliser ce modèle
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }
