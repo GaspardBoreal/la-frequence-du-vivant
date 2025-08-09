@@ -58,7 +58,7 @@ const MultiSensoryNavigation: React.FC<MultiSensoryNavigationProps> = ({
   };
 
   return (
-    <div className="relative flex justify-center items-center py-8 px-4">
+    <div className="relative flex justify-center items-center py-4 px-4">
       {/* Horizontal Navigation */}
       <div className="flex justify-center items-center gap-4 sm:gap-8">
         {sections.map((section, index) => {
