@@ -518,10 +518,10 @@ const WeatherVisualization: React.FC<WeatherVisualizationProps> = memo(({
         <Button
           variant="outline"
           size="sm"
-          onClick={() => setIsPlaying(!isPlaying)}
+          onClick={() => setIsStoryMode(!isStoryMode)}
           className={`
             transition-all duration-300 ease-in-out
-            ${isPlaying 
+            ${isStoryMode 
               ? 'bg-gradient-to-r from-green-500 to-emerald-500 text-white shadow-lg border-green-400' 
               : 'bg-white/80 text-gray-700 border-gray-300 hover:bg-green-50 hover:text-green-600 hover:border-green-300'
             }
@@ -529,7 +529,7 @@ const WeatherVisualization: React.FC<WeatherVisualizationProps> = memo(({
           `}
         >
           <span className="text-xs font-medium">
-            {isPlaying ? '⏸️ Pause' : '▶️ Animation'}
+            {isStoryMode ? '❌ Quitter' : '📖 Story'}
           </span>
         </Button>
       </motion.div>
@@ -634,6 +634,22 @@ const WeatherVisualization: React.FC<WeatherVisualizationProps> = memo(({
                   yAxisId={activeMetric === 'humidity' ? 'humidity' : 'temperature'}
                 />
               )}
+
+              {/* Visualisation des événements Story Mode */}
+              {isStoryMode && storyEvents.length > 0 && storyEvents[storyIndex] && (
+                <ReferenceDot
+                  x={filteredData[storyEvents[storyIndex].index]?.fullDateWithYear}
+                  y={storyEvents[storyIndex].metric === 'temperature' 
+                    ? filteredData[storyEvents[storyIndex].index]?.temperature 
+                    : filteredData[storyEvents[storyIndex].index]?.humidity
+                  }
+                  yAxisId={storyEvents[storyIndex].metric === 'temperature' ? 'temperature' : 'humidity'}
+                  r={8}
+                  fill="#fbbf24"
+                  stroke="#f59e0b"
+                  strokeWidth={3}
+                />
+              )}
             </ComposedChart>
           </ResponsiveContainer>
         </div>
@@ -671,6 +687,28 @@ const WeatherVisualization: React.FC<WeatherVisualizationProps> = memo(({
               <p className="text-lg font-bold text-indigo-700">{stats.humidity.max.toFixed(0)}%</p>
             </CardContent>
           </Card>
+        </motion.div>
+      )}
+
+      {/* Panneau Story Mode */}
+      {isStoryMode && storyEvents.length > 0 && (
+        <motion.div
+          initial={{ y: 20, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          exit={{ y: -20, opacity: 0 }}
+          transition={{ duration: 0.3 }}
+        >
+          <StoryEventPanel
+            events={storyEvents}
+            currentIndex={storyIndex}
+            isPlaying={isStoryPlaying}
+            ttsEnabled={ttsEnabled}
+            onPrev={() => setStoryIndex((prev) => (prev - 1 + storyEvents.length) % storyEvents.length)}
+            onNext={() => setStoryIndex((prev) => (prev + 1) % storyEvents.length)}
+            onPlayPause={() => setIsStoryPlaying(!isStoryPlaying)}
+            onToggleTTS={() => setTtsEnabled(!ttsEnabled)}
+            onExit={() => setIsStoryMode(false)}
+          />
         </motion.div>
       )}
 
