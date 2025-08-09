@@ -65,19 +65,19 @@ const PoeticExplorationCard: React.FC<PoeticExplorationCardProps> = ({ explorati
       )}
       style={{ animationDelay: `${index * 150}ms` }}
     >
-      {/* Carte principale avec bordures ultra-visibles et effets renforcés */}
-      <div className="relative bg-gradient-to-br from-card/80 via-card/60 to-card/40 backdrop-blur-xl border-2 border-gaspard-emerald/30 rounded-3xl p-8 transition-all duration-300 hover:scale-[1.02] hover:shadow-lg hover:border-gaspard-gold hover:shadow-gaspard-gold/20 cursor-pointer"
+      {/* Carte principale avec fond clair et contrastes améliorés */}
+      <div className="relative bg-card/95 backdrop-blur-sm border-2 border-border rounded-2xl p-6 transition-all duration-300 hover:scale-[1.02] hover:shadow-xl hover:border-gaspard-gold hover:shadow-gaspard-gold/20 cursor-pointer"
            onClick={() => navigate(`/admin/explorations/${exploration.id}/edit`)}>
         
-        {/* Effet de lumière interne minimal */}
-        <div className="absolute inset-0 rounded-3xl bg-gradient-to-br from-gaspard-primary/0 to-gaspard-gold/0 group-hover:from-gaspard-primary/5 group-hover:to-gaspard-gold/10 transition-all duration-300 pointer-events-none"></div>
+        {/* Effet de lumière interne discret */}
+        <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-transparent to-transparent group-hover:from-gaspard-gold/5 group-hover:to-gaspard-gold/10 transition-all duration-300 pointer-events-none"></div>
 
-        {/* Header avec titre poétique */}
-        <div className="flex justify-between items-start mb-6">
+        {/* Header avec titre lisible */}
+        <div className="flex justify-between items-start mb-5">
           <div className="flex-1">
             <div className="flex items-center gap-3 mb-3">
-              <Sparkles className="h-6 w-6 text-accent group-hover:text-gaspard-gold transition-colors duration-300" />
-              <h3 className="gaspard-main-title text-xl font-bold text-foreground group-hover:text-gaspard-gold transition-colors duration-300">
+              <Sparkles className="h-5 w-5 text-primary group-hover:text-gaspard-gold transition-colors duration-300" />
+              <h3 className="text-xl font-bold text-foreground group-hover:text-gaspard-gold transition-colors duration-300 line-clamp-2">
                 {exploration.name}
               </h3>
             </div>
@@ -86,10 +86,10 @@ const PoeticExplorationCard: React.FC<PoeticExplorationCardProps> = ({ explorati
               <Badge 
                 variant={exploration.published ? "default" : "secondary"}
                 className={cn(
-                  "rounded-full px-4 py-1 text-xs font-medium transition-all duration-300",
+                  "rounded-full px-4 py-1.5 text-sm font-medium transition-all duration-300",
                   exploration.published 
-                    ? "bg-accent text-accent-foreground shadow-md group-hover:bg-gaspard-gold group-hover:text-gaspard-dark group-hover:shadow-gaspard-gold/30" 
-                    : "bg-muted text-muted-foreground group-hover:bg-gaspard-emerald group-hover:text-gaspard-cream"
+                    ? "bg-primary text-primary-foreground shadow-sm group-hover:bg-gaspard-gold group-hover:text-foreground group-hover:shadow-gaspard-gold/30" 
+                    : "bg-secondary text-secondary-foreground group-hover:bg-gaspard-gold/20 group-hover:text-gaspard-gold group-hover:border-gaspard-gold"
                 )}
               >
                 {exploration.published ? "✨ Révélé au monde" : "🌱 Germe créatif"}
@@ -98,7 +98,7 @@ const PoeticExplorationCard: React.FC<PoeticExplorationCardProps> = ({ explorati
               {/* Badge compteur de marches */}
               <Badge 
                 variant="outline"
-                className="rounded-full px-3 py-1 text-xs font-medium bg-gaspard-primary/10 text-gaspard-cream border-2 border-gaspard-emerald/40 group-hover:border-gaspard-gold group-hover:bg-gaspard-gold/10 group-hover:text-gaspard-gold transition-all duration-300"
+                className="rounded-full px-3 py-1.5 text-sm font-medium bg-background border-2 border-primary/30 text-foreground group-hover:border-gaspard-gold group-hover:bg-gaspard-gold/10 group-hover:text-gaspard-gold transition-all duration-300"
               >
                 <Footprints className="h-3 w-3 mr-1.5" />
                 {marchesCount === 0 ? 'Aucune marche' : 
@@ -109,41 +109,41 @@ const PoeticExplorationCard: React.FC<PoeticExplorationCardProps> = ({ explorati
           </div>
         </div>
 
-        {/* Description poétique */}
+        {/* Description avec contraste amélioré */}
         {exploration.description && (
-          <div className="mb-6">
-            <p className="text-muted-foreground leading-relaxed font-light text-justify hyphens-auto group-hover:text-gaspard-cream transition-colors duration-300">
+          <div className="mb-5">
+            <p className="text-foreground/80 leading-relaxed text-sm text-justify hyphens-auto group-hover:text-gaspard-gold/90 transition-colors duration-300">
               {exploration.description}
             </p>
           </div>
         )}
 
-        {/* Mots-clés */}
-        <div className="flex flex-wrap gap-2 mb-6">
+        {/* Mots-clés avec meilleure visibilité */}
+        <div className="flex flex-wrap gap-2 mb-5">
           {exploration.meta_keywords.slice(0, 5).map((keyword, index) => (
             <span
               key={index}
-              className="inline-block bg-gaspard-emerald/20 text-gaspard-cream text-xs px-3 py-1.5 rounded-full border border-gaspard-emerald/40 font-medium group-hover:bg-gaspard-gold/20 group-hover:border-gaspard-gold/60 group-hover:text-gaspard-gold transition-all duration-300"
+              className="inline-block bg-primary/15 text-primary text-xs px-3 py-1.5 rounded-full border border-primary/30 font-medium group-hover:bg-gaspard-gold/15 group-hover:border-gaspard-gold/40 group-hover:text-gaspard-gold transition-all duration-300"
             >
               {keyword}
             </span>
           ))}
         </div>
 
-        {/* Métadonnées temporelles */}
-        <div className="text-xs text-muted-foreground mb-6 font-light group-hover:text-gaspard-muted transition-colors duration-300">
-          <span className="inline-flex items-center gap-1">
-            <span className="w-1 h-1 bg-gaspard-emerald/60 rounded-full group-hover:bg-gaspard-gold transition-colors duration-300"></span>
-            Né le {new Date(exploration.created_at).toLocaleDateString('fr-FR', { 
+        {/* Métadonnées temporelles lisibles */}
+        <div className="text-sm text-foreground/60 mb-5 group-hover:text-gaspard-gold/70 transition-colors duration-300">
+          <span className="inline-flex items-center gap-1.5">
+            <span className="w-1.5 h-1.5 bg-primary rounded-full group-hover:bg-gaspard-gold transition-colors duration-300"></span>
+            Créé le {new Date(exploration.created_at).toLocaleDateString('fr-FR', { 
               day: 'numeric', 
               month: 'long', 
               year: 'numeric' 
             })}
           </span>
           {exploration.updated_at !== exploration.created_at && (
-            <span className="ml-3 inline-flex items-center gap-1">
-              <span className="w-1 h-1 bg-accent/60 rounded-full group-hover:bg-gaspard-gold transition-colors duration-300"></span>
-              Métamorphosé le {new Date(exploration.updated_at).toLocaleDateString('fr-FR', { 
+            <span className="ml-4 inline-flex items-center gap-1.5">
+              <span className="w-1.5 h-1.5 bg-secondary rounded-full group-hover:bg-gaspard-gold transition-colors duration-300"></span>
+              Modifié le {new Date(exploration.updated_at).toLocaleDateString('fr-FR', { 
                 day: 'numeric', 
                 month: 'long' 
               })}
