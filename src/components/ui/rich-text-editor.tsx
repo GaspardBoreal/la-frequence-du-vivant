@@ -33,6 +33,13 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
   }, [onChange]);
 
   const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
+    if (e.key === 'Tab') {
+      e.preventDefault();
+      // Insérer une tabulation
+      executeCommand('insertText', '\t');
+      return;
+    }
+    
     if (e.ctrlKey || e.metaKey) {
       switch (e.key) {
         case 'b':
