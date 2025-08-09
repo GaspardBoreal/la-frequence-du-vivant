@@ -8,6 +8,7 @@ import SEOHead from '@/components/SEOHead';
 import { supabase } from '@/integrations/supabase/client';
 import { useExploration } from '@/hooks/useExplorations';
 import { toast } from 'sonner';
+import { marcheModels } from '@/marche-models/registry';
 
 const TONES = ['lyrique','ironique','minimaliste','prophétique','éco-poétique','bioacoustique'] as const;
 const FORMS = ['haïku','note scientifique','dialogue','légende de carte','titre de presse','post Instagram'] as const;
@@ -30,7 +31,7 @@ export default function ExplorationAnimator() {
   const [welcomeSenses, setWelcomeSenses] = useState<string[]>([]);
   const [welcomeTimes, setWelcomeTimes] = useState<string[]>([]);
   const [welcomeTemplate, setWelcomeTemplate] = useState<string>('');
-  const [marcheViewModel, setMarcheViewModel] = useState<'simple'|'elabore'>('elabore');
+  const [marcheViewModel, setMarcheViewModel] = useState<string>('elabore');
   
   // Custom text fields for "autre" options
   const [tonesCustom, setTonesCustom] = useState<string>('');
@@ -58,7 +59,7 @@ export default function ExplorationAnimator() {
         setWelcomeSenses(Array.isArray(data.welcome_senses) ? [...(data.welcome_senses as string[])] : []);
         setWelcomeTimes(Array.isArray(data.welcome_timeframes) ? [...(data.welcome_timeframes as string[])] : []);
         setWelcomeTemplate(data.welcome_template || '');
-        setMarcheViewModel((data.marche_view_model as 'simple'|'elabore') || 'elabore');
+        setMarcheViewModel((data.marche_view_model as string) || 'elabore');
         
         // Load custom text fields
         setTonesCustom(data.welcome_tones_custom || '');
@@ -279,7 +280,37 @@ export default function ExplorationAnimator() {
         {/* P2 - Modèle de visualisation des marches */}
         <section className="mt-10">
           <h2 className="text-2xl font-semibold mb-3">P2 · Modèle de page marche</h2>
-          <div className="flex items-center gap-4">
+          <p className="text-sm text-foreground/70 mb-4">Choisissez un modèle de visualisation. Vous pourrez en ajouter d'autres ultérieurement.</p>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+            {marcheModels.map((model) => (
+              <div
+                key={model.id}
+                role="button"
+                tabIndex={0}
+                onClick={() => setMarcheViewModel(model.id)}
+                onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && setMarcheViewModel(model.id)}
+                className={`rounded-lg border p-4 transition-colors cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary ${
+                  marcheViewModel === model.id ? 'border-primary' : 'border-border'
+                }`}
+                aria-selected={marcheViewModel === model.id}
+              >
+                <div className="flex items-start justify-between">
+                  <div>
+                    <h3 className="text-base font-semibold text-foreground">{model.name}</h3>
+                    <p className="text-sm text-foreground/70 mt-1">{model.description}</p>
+                  </div>
+                  <div className={`text-xs px-2 py-1 rounded-full ${
+                    marcheViewModel === model.id ? 'bg-primary/10 text-primary' : 'bg-muted text-foreground/70'
+                  }`}>
+                    {marcheViewModel === model.id ? 'Sélectionné' : 'Choisir'}
+                  </div>
+                </div>
+                <p className="text-xs text-foreground/60 mt-3">Exemple d'URL : {model.examplePath}</p>
+              </div>
+            ))}
+          </div>
+
+          <div className="flex items-center gap-4 hidden">
             <label className="flex items-center gap-2 text-sm">
               <input type="radio" name="view" value="simple" checked={marcheViewModel==='simple'} onChange={() => setMarcheViewModel('simple')} />
               <span>Modèle simple</span>
