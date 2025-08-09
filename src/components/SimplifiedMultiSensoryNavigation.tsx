@@ -77,6 +77,8 @@ const SimplifiedMultiSensoryNavigation: React.FC<SimplifiedMultiSensoryNavigatio
     onSectionChange(sectionId, subSectionId);
     // Fermer tous les dropdowns après sélection
     setOpenDropdowns(new Set());
+    // Scroll vers le haut de la page
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const getCurrentSectionLabel = (sectionId: 'opendata' | 'datacollect' | 'creative') => {
