@@ -68,10 +68,10 @@ const SortableMarcheItem: React.FC<SortableMarcheItemProps> = ({
     <div
       ref={setNodeRef}
       style={style}
-      className={`group relative overflow-hidden rounded-xl transition-all duration-300 ${
+      className={`group relative overflow-hidden rounded-xl transition-all duration-300 backdrop-blur-sm ${
         isDragging 
-          ? 'scale-105 shadow-2xl bg-gradient-to-br from-white to-sage-50' 
-          : 'hover:scale-[1.02] hover:shadow-lg bg-gradient-to-br from-white via-white to-sage-25'
+          ? 'scale-105 shadow-2xl bg-gaspard-cream/20 border-gaspard-gold/30' 
+          : 'hover:scale-[1.02] hover:shadow-lg bg-white/10 border-gaspard-emerald/20'
       }`}
     >
       {/* Motif décoratif de fréquences */}
@@ -83,17 +83,17 @@ const SortableMarcheItem: React.FC<SortableMarcheItemProps> = ({
         </svg>
       </div>
       
-      <div className="relative p-6 border border-sage-100 rounded-xl">
+      <div className="relative p-6 border border-gaspard-emerald/20 rounded-xl backdrop-blur-sm">
         <div className="flex items-start gap-4">
           {/* Icône et numéro d'ordre */}
           <div className="flex flex-col items-center gap-2">
             <div className="relative">
-              <div className="w-12 h-12 rounded-full bg-gradient-to-br from-sage-100 to-sage-200 flex items-center justify-center shadow-sm">
-                <Footprints className="h-5 w-5 text-sage-600" />
+              <div className="w-12 h-12 rounded-full bg-gradient-to-br from-gaspard-emerald/30 to-gaspard-forest/40 flex items-center justify-center shadow-sm">
+                <Footprints className="h-5 w-5 text-gaspard-cream" />
               </div>
               <Badge 
                 variant="secondary" 
-                className="absolute -top-1 -right-1 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold bg-primary text-primary-foreground"
+                className="absolute -top-1 -right-1 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold bg-gaspard-gold text-gaspard-dark"
               >
                 {index + 1}
               </Badge>
@@ -103,45 +103,45 @@ const SortableMarcheItem: React.FC<SortableMarcheItemProps> = ({
             <div
               {...attributes}
               {...listeners}
-              className="cursor-grab active:cursor-grabbing p-2 rounded-lg bg-sage-50 hover:bg-sage-100 transition-colors group/drag"
+              className="cursor-grab active:cursor-grabbing p-2 rounded-lg bg-gaspard-emerald/10 hover:bg-gaspard-emerald/20 transition-colors group/drag"
             >
-              <GripVertical className="h-4 w-4 text-sage-400 group-hover/drag:text-sage-600" />
+              <GripVertical className="h-4 w-4 text-gaspard-sage group-hover/drag:text-gaspard-forest" />
             </div>
           </div>
           
           {/* Informations de la marche */}
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-3 mb-3">
-              <h4 className="text-lg font-semibold text-sage-800 truncate">
+              <h4 className="text-lg font-semibold text-gaspard-dark truncate">
                 {marche.marche?.nom_marche || `Marché de ${marche.marche?.ville}`}
               </h4>
-              <div className="flex items-center gap-1 text-sage-500">
+              <div className="flex items-center gap-1 text-gaspard-sage">
                 <Waves className="h-4 w-4" />
                 <span className="text-xs">Étape {index + 1}</span>
               </div>
             </div>
             
             <div className="flex flex-wrap gap-2 mb-3">
-              <Badge variant="outline" className="text-xs bg-white border-sage-200">
-                <MapPin className="h-3 w-3 mr-1.5 text-sage-500" />
+              <Badge variant="outline" className="text-xs bg-gaspard-cream/50 border-gaspard-emerald/30">
+                <MapPin className="h-3 w-3 mr-1.5 text-gaspard-forest" />
                 {marche.marche?.ville}
               </Badge>
               
               {marche.marche?.date && (
-                <Badge variant="outline" className="text-xs bg-white border-sage-200">
-                  <Calendar className="h-3 w-3 mr-1.5 text-sage-500" />
+                <Badge variant="outline" className="text-xs bg-gaspard-cream/50 border-gaspard-emerald/30">
+                  <Calendar className="h-3 w-3 mr-1.5 text-gaspard-forest" />
                   {marche.marche.date}
                 </Badge>
               )}
               
-              <Badge variant="outline" className="text-xs bg-gradient-to-r from-sage-50 to-sage-100 border-sage-200">
-                <Radio className="h-3 w-3 mr-1.5 text-sage-500" />
+              <Badge variant="outline" className="text-xs bg-gradient-to-r from-gaspard-gold/20 to-gaspard-gold/30 border-gaspard-gold/40">
+                <Radio className="h-3 w-3 mr-1.5 text-gaspard-dark" />
                 Connexion {index + 1}
               </Badge>
             </div>
             
             {marche.marche?.descriptif_court && (
-              <p className="text-sm text-sage-600 leading-relaxed line-clamp-2">
+              <p className="text-sm text-gaspard-forest leading-relaxed line-clamp-2">
                 {marche.marche.descriptif_court}
               </p>
             )}
@@ -155,7 +155,7 @@ const SortableMarcheItem: React.FC<SortableMarcheItemProps> = ({
               onClick={() => onMoveUp(index)}
               disabled={index === 0}
               title="Remonter dans la séquence"
-              className="h-8 w-8 p-0 rounded-full hover:bg-sage-100 disabled:opacity-30"
+              className="h-8 w-8 p-0 rounded-full hover:bg-gaspard-emerald/20 disabled:opacity-30"
             >
               <ArrowUp className="h-3 w-3" />
             </Button>
@@ -166,7 +166,7 @@ const SortableMarcheItem: React.FC<SortableMarcheItemProps> = ({
               onClick={() => onMoveDown(index)}
               disabled={index === totalCount - 1}
               title="Descendre dans la séquence"
-              className="h-8 w-8 p-0 rounded-full hover:bg-sage-100 disabled:opacity-30"
+              className="h-8 w-8 p-0 rounded-full hover:bg-gaspard-emerald/20 disabled:opacity-30"
             >
               <ArrowDown className="h-3 w-3" />
             </Button>
@@ -254,23 +254,23 @@ const ExplorationMarcheList: React.FC<ExplorationMarcheListProps> = ({
 
   if (sortedMarches.length === 0) {
     return (
-      <Card className="bg-gradient-to-br from-sage-25 to-white border-sage-100">
+      <Card className="bg-gaspard-cream/5 backdrop-blur-sm border-gaspard-emerald/20">
         <CardContent className="p-12 text-center">
           <div className="relative mx-auto w-24 h-24 mb-6">
-            <div className="absolute inset-0 bg-gradient-to-br from-sage-100 to-sage-200 rounded-full opacity-20 animate-pulse"></div>
-            <div className="absolute inset-2 bg-gradient-to-br from-sage-200 to-sage-300 rounded-full opacity-30 animate-pulse" style={{animationDelay: '0.5s'}}></div>
-            <div className="absolute inset-4 bg-gradient-to-br from-sage-300 to-sage-400 rounded-full opacity-40 flex items-center justify-center">
-              <Footprints className="h-8 w-8 text-sage-600" />
+            <div className="absolute inset-0 bg-gradient-to-br from-gaspard-emerald/20 to-gaspard-forest/30 rounded-full opacity-20 animate-pulse"></div>
+            <div className="absolute inset-2 bg-gradient-to-br from-gaspard-forest/30 to-gaspard-sage/40 rounded-full opacity-30 animate-pulse" style={{animationDelay: '0.5s'}}></div>
+            <div className="absolute inset-4 bg-gradient-to-br from-gaspard-sage/40 to-gaspard-mint/50 rounded-full opacity-40 flex items-center justify-center">
+              <Footprints className="h-8 w-8 text-gaspard-cream" />
             </div>
           </div>
           
-          <h3 className="text-xl font-semibold text-sage-700 mb-2">
+          <h3 className="text-xl font-semibold text-gaspard-dark mb-2">
             Première étape de votre exploration
           </h3>
-          <div className="text-sage-600 mb-4">
+          <div className="text-gaspard-forest mb-4">
             Aucune marche n'a encore été assignée à cette exploration
           </div>
-          <p className="text-sm text-sage-500 max-w-md mx-auto leading-relaxed">
+          <p className="text-sm text-gaspard-sage max-w-md mx-auto leading-relaxed">
             Commencez par sélectionner des marchés dans la section ci-dessous pour créer votre parcours sensoriel unique
           </p>
         </CardContent>
@@ -279,23 +279,23 @@ const ExplorationMarcheList: React.FC<ExplorationMarcheListProps> = ({
   }
 
   return (
-    <Card className="bg-gradient-to-br from-white to-sage-25 border-sage-100 shadow-sm">
+    <Card className="bg-gaspard-cream/5 backdrop-blur-sm border-gaspard-emerald/20 shadow-sm">
       <CardHeader className="pb-4">
         <div className="flex items-center gap-3 mb-2">
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary/10 to-primary/20 flex items-center justify-center">
-              <Footprints className="h-4 w-4 text-primary" />
+            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-gaspard-gold/20 to-gaspard-gold/30 flex items-center justify-center">
+              <Footprints className="h-4 w-4 text-gaspard-dark" />
             </div>
-            <CardTitle className="text-xl text-sage-800">
+            <CardTitle className="text-xl text-gaspard-dark">
               Séquence de l'exploration
             </CardTitle>
           </div>
-          <Badge variant="secondary" className="bg-primary/10 text-primary border-primary/20">
+          <Badge variant="secondary" className="bg-gaspard-gold/20 text-gaspard-dark border-gaspard-gold/30">
             {sortedMarches.length} étape{sortedMarches.length > 1 ? 's' : ''}
           </Badge>
         </div>
         
-        <div className="flex items-center gap-2 text-sm text-sage-600">
+        <div className="flex items-center gap-2 text-sm text-gaspard-forest">
           <Waves className="h-4 w-4" />
           <span>Organisez le parcours de votre exploration multisensorielle</span>
         </div>

@@ -47,7 +47,7 @@ const ExplorationMarcheSelector: React.FC<ExplorationMarcheSelectorProps> = ({
     return (
       <Card>
         <CardContent className="p-6">
-          <div className="text-center text-sage-600">
+          <div className="text-center text-gaspard-forest">
             Chargement des marches disponibles...
           </div>
         </CardContent>
@@ -56,17 +56,17 @@ const ExplorationMarcheSelector: React.FC<ExplorationMarcheSelectorProps> = ({
   }
 
   return (
-    <Card className="bg-gradient-to-br from-white to-sage-25 border-sage-100 shadow-sm">
+    <Card className="bg-gaspard-cream/5 backdrop-blur-sm border-gaspard-emerald/20 shadow-sm">
       <CardHeader className="pb-4">
         <div className="flex items-center gap-3 mb-4">
-          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary/10 to-primary/20 flex items-center justify-center">
-            <Plus className="h-4 w-4 text-primary" />
+          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-gaspard-gold/20 to-gaspard-gold/30 flex items-center justify-center">
+            <Plus className="h-4 w-4 text-gaspard-dark" />
           </div>
           <div>
-            <CardTitle className="text-xl text-sage-800">
+            <CardTitle className="text-xl text-gaspard-dark">
               Enrichir l'exploration
             </CardTitle>
-            <p className="text-sm text-sage-600 mt-1">
+            <p className="text-sm text-gaspard-forest mt-1">
               {filteredMarches.length} marchés disponibles pour votre parcours
             </p>
           </div>
@@ -74,20 +74,20 @@ const ExplorationMarcheSelector: React.FC<ExplorationMarcheSelectorProps> = ({
         
         <div className="flex gap-3 items-center">
           <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-sage-400" />
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gaspard-sage" />
             <Input
               type="text"
               placeholder="Découvrir des marchés par ville, nom..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10 bg-white border-sage-200 focus:border-primary/50"
+              className="pl-10 bg-gaspard-cream/30 border-gaspard-emerald/30 focus:border-gaspard-gold/50"
             />
           </div>
           
           {selectedMarches.length > 0 && (
             <Button 
               onClick={onAddSelected}
-              className="bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary shadow-md transition-all duration-200 hover:shadow-lg"
+              className="bg-gradient-to-r from-gaspard-gold to-gaspard-gold/90 hover:from-gaspard-gold/90 hover:to-gaspard-gold text-gaspard-dark shadow-md transition-all duration-200 hover:shadow-lg"
             >
               <Plus className="h-4 w-4 mr-2" />
               Intégrer ({selectedMarches.length})
@@ -100,15 +100,15 @@ const ExplorationMarcheSelector: React.FC<ExplorationMarcheSelectorProps> = ({
         {filteredMarches.length === 0 ? (
           <div className="text-center py-12">
             <div className="relative mx-auto w-16 h-16 mb-4">
-              <div className="absolute inset-0 bg-gradient-to-br from-sage-100 to-sage-200 rounded-full opacity-20 animate-pulse"></div>
-              <div className="absolute inset-2 bg-gradient-to-br from-sage-200 to-sage-300 rounded-full opacity-30 flex items-center justify-center">
-                <Search className="h-6 w-6 text-sage-500" />
+              <div className="absolute inset-0 bg-gradient-to-br from-gaspard-emerald/20 to-gaspard-forest/30 rounded-full opacity-20 animate-pulse"></div>
+              <div className="absolute inset-2 bg-gradient-to-br from-gaspard-forest/30 to-gaspard-sage/40 rounded-full opacity-30 flex items-center justify-center">
+                <Search className="h-6 w-6 text-gaspard-cream" />
               </div>
             </div>
-            <p className="text-sage-600 font-medium">
+            <p className="text-gaspard-forest font-medium">
               {searchTerm ? 'Aucun marché trouvé' : 'Tous les marchés sont intégrés'}
             </p>
-            <p className="text-sm text-sage-500 mt-1">
+            <p className="text-sm text-gaspard-sage mt-1">
               {searchTerm ? 'Essayez une autre recherche' : 'Votre exploration est complète'}
             </p>
           </div>
@@ -120,10 +120,10 @@ const ExplorationMarcheSelector: React.FC<ExplorationMarcheSelectorProps> = ({
               return (
                 <div
                   key={marche.id}
-                  className={`group relative overflow-hidden rounded-xl border transition-all duration-200 cursor-pointer ${
+                  className={`group relative overflow-hidden rounded-xl border transition-all duration-200 cursor-pointer backdrop-blur-sm ${
                     isSelected 
-                      ? 'border-primary/30 bg-gradient-to-br from-primary/5 to-primary/10 scale-[1.02] shadow-md' 
-                      : 'border-sage-200 hover:border-primary/30 hover:bg-gradient-to-br hover:from-white hover:to-sage-25 hover:scale-[1.01] hover:shadow-sm'
+                      ? 'border-gaspard-gold/40 bg-gradient-to-br from-gaspard-gold/10 to-gaspard-gold/20 scale-[1.02] shadow-md' 
+                      : 'border-gaspard-emerald/30 hover:border-gaspard-gold/40 hover:bg-gradient-to-br hover:from-gaspard-cream/20 hover:to-gaspard-cream/30 hover:scale-[1.01] hover:shadow-sm'
                   }`}
                   onClick={() => onMarcheToggle(marche.id)}
                 >
@@ -144,43 +144,43 @@ const ExplorationMarcheSelector: React.FC<ExplorationMarcheSelectorProps> = ({
                           onChange={() => onMarcheToggle(marche.id)}
                           className="mt-1"
                         />
-                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-sage-100 to-sage-200 flex items-center justify-center shadow-sm">
-                          <Footprints className="h-4 w-4 text-sage-600" />
+                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-gaspard-emerald/30 to-gaspard-forest/40 flex items-center justify-center shadow-sm">
+                          <Footprints className="h-4 w-4 text-gaspard-cream" />
                         </div>
                       </div>
                       
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-3">
-                          <h4 className="font-semibold text-sage-800 truncate">
+                          <h4 className="font-semibold text-gaspard-dark truncate">
                             {marche.nom_marche || `Marché de ${marche.ville}`}
                           </h4>
-                          <Radio className="h-4 w-4 text-sage-400" />
+                          <Radio className="h-4 w-4 text-gaspard-sage" />
                         </div>
                         
                         <div className="flex flex-wrap gap-2 mb-3">
-                          <Badge variant="outline" className="text-xs bg-white border-sage-200">
-                            <MapPin className="h-3 w-3 mr-1.5 text-sage-500" />
+                          <Badge variant="outline" className="text-xs bg-gaspard-cream/50 border-gaspard-emerald/30">
+                            <MapPin className="h-3 w-3 mr-1.5 text-gaspard-forest" />
                             {marche.ville}
                           </Badge>
                           
                           {marche.date && (
-                            <Badge variant="outline" className="text-xs bg-white border-sage-200">
-                              <Calendar className="h-3 w-3 mr-1.5 text-sage-500" />
+                            <Badge variant="outline" className="text-xs bg-gaspard-cream/50 border-gaspard-emerald/30">
+                              <Calendar className="h-3 w-3 mr-1.5 text-gaspard-forest" />
                               {marche.date}
                             </Badge>
                           )}
                         </div>
                         
                         {marche.descriptif_court && (
-                          <p className="text-sm text-sage-600 leading-relaxed line-clamp-2">
+                          <p className="text-sm text-gaspard-forest leading-relaxed line-clamp-2">
                             {marche.descriptif_court}
                           </p>
                         )}
                       </div>
                       
                       {isSelected && (
-                        <div className="flex items-center justify-center w-8 h-8 rounded-full bg-primary/10">
-                          <Plus className="h-4 w-4 text-primary" />
+                        <div className="flex items-center justify-center w-8 h-8 rounded-full bg-gaspard-gold/20">
+                          <Plus className="h-4 w-4 text-gaspard-dark" />
                         </div>
                       )}
                     </div>
