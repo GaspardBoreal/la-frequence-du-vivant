@@ -187,7 +187,7 @@ const ExplorationForm: React.FC<ExplorationFormProps> = ({
       <div className="mb-8 animate-fade-in">
         <Button 
           onClick={() => navigate('/admin/explorations')}
-          className="flex items-center gap-2 mb-6 bg-gaspard-gold/20 text-gaspard-cream border-gaspard-gold/30 hover:bg-gaspard-gold/30 hover:text-gaspard-cream"
+          className="flex items-center gap-2 mb-6 bg-gaspard-gold/40 text-white border-gaspard-gold/50 hover:bg-gaspard-gold/60 hover:text-white font-medium shadow-lg"
         >
           <ArrowLeft className="h-4 w-4" />
           Retour aux explorations
@@ -195,31 +195,31 @@ const ExplorationForm: React.FC<ExplorationFormProps> = ({
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6 animate-fade-in animation-delay-300">
-        <Card className="gaspard-glass border-gaspard-cream/20 bg-gaspard-cream/10 backdrop-blur-md">
+        <Card className="gaspard-glass border-gaspard-cream/40 bg-white/15 backdrop-blur-md shadow-xl">
           <CardHeader>
-            <CardTitle className="gaspard-main-title text-gaspard-cream">Informations générales</CardTitle>
+            <CardTitle className="gaspard-main-title text-white text-xl font-bold">Informations générales</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div>
-              <Label htmlFor="name" className="text-gaspard-cream">Nom de l'exploration *</Label>
+              <Label htmlFor="name" className="text-white font-medium">Nom de l'exploration *</Label>
               <Input
                 id="name"
                 value={formData.name}
                 onChange={(e) => handleInputChange('name', e.target.value)}
                 placeholder="Ex: Exploration des marches urbaines"
-                className="mt-1 bg-gaspard-cream/10 border-gaspard-cream/20 text-gaspard-cream placeholder:text-gaspard-cream/50"
+                className="mt-1 bg-white/20 border-white/30 text-white placeholder:text-white/70 focus:bg-white/25 focus:border-white/50"
                 required
               />
             </div>
 
             <div>
-              <Label htmlFor="slug" className="text-gaspard-cream">Slug URL *</Label>
+              <Label htmlFor="slug" className="text-white font-medium">Slug URL *</Label>
               <Input
                 id="slug"
                 value={formData.slug}
                 onChange={(e) => handleInputChange('slug', e.target.value)}
                 placeholder="exploration-marches-urbaines"
-                className="mt-1 bg-gaspard-cream/10 border-gaspard-cream/20 text-gaspard-cream placeholder:text-gaspard-cream/50"
+                className="mt-1 bg-white/20 border-white/30 text-white placeholder:text-white/70 focus:bg-white/25 focus:border-white/50"
                 required
               />
               {formData.slug && formData.published && (
@@ -231,44 +231,44 @@ const ExplorationForm: React.FC<ExplorationFormProps> = ({
                     className="inline-flex items-center gap-2 text-sm text-gaspard-gold hover:text-gaspard-gold/80 transition-colors duration-200 group"
                   >
                     <ExternalLink className="h-4 w-4 group-hover:scale-110 transition-transform duration-200" />
-                    <span className="underline decoration-gaspard-gold/50 group-hover:decoration-gaspard-gold">
+                    <span className="underline decoration-gaspard-gold/50 group-hover:decoration-gaspard-gold font-medium">
                       {window.location.origin}/explorations/{formData.slug}
                     </span>
                   </a>
                 </div>
               )}
               {!formData.published && (
-                <p className="text-sm text-gaspard-cream/70 mt-1">
+                <p className="text-sm text-white/80 mt-1 font-medium">
                   URL: /explorations/{formData.slug} (sera disponible après publication)
                 </p>
               )}
               {!formData.slug && (
-                <p className="text-sm text-gaspard-cream/70 mt-1">
+                <p className="text-sm text-white/80 mt-1 font-medium">
                   URL: /explorations/[slug-auto-généré]
                 </p>
               )}
             </div>
 
             <div>
-              <Label htmlFor="description" className="text-gaspard-cream">Description</Label>
+              <Label htmlFor="description" className="text-white font-medium">Description</Label>
               <Textarea
                 id="description"
                 value={formData.description}
                 onChange={(e) => handleInputChange('description', e.target.value)}
                 placeholder="Description de l'exploration..."
-                className="mt-1 bg-gaspard-cream/10 border-gaspard-cream/20 text-gaspard-cream placeholder:text-gaspard-cream/50"
+                className="mt-1 bg-white/20 border-white/30 text-white placeholder:text-white/70 focus:bg-white/25 focus:border-white/50"
                 rows={4}
               />
             </div>
 
             <div>
-              <Label htmlFor="cover_image" className="text-gaspard-cream">URL de l'image de couverture</Label>
+              <Label htmlFor="cover_image" className="text-white font-medium">URL de l'image de couverture</Label>
               <Input
                 id="cover_image"
                 value={formData.cover_image_url}
                 onChange={(e) => handleInputChange('cover_image_url', e.target.value)}
                 placeholder="https://example.com/image.jpg"
-                className="mt-1 bg-gaspard-cream/10 border-gaspard-cream/20 text-gaspard-cream placeholder:text-gaspard-cream/50"
+                className="mt-1 bg-white/20 border-white/30 text-white placeholder:text-white/70 focus:bg-white/25 focus:border-white/50"
               />
             </div>
 
@@ -278,70 +278,70 @@ const ExplorationForm: React.FC<ExplorationFormProps> = ({
                 checked={formData.published}
                 onCheckedChange={(checked) => handleInputChange('published', checked)}
               />
-              <Label htmlFor="published" className="text-gaspard-cream">Publier l'exploration</Label>
+              <Label htmlFor="published" className="text-white font-medium">Publier l'exploration</Label>
             </div>
           </CardContent>
         </Card>
 
-        <Card className="gaspard-glass border-gaspard-cream/20 bg-gaspard-cream/10 backdrop-blur-md">
+        <Card className="gaspard-glass border-gaspard-cream/40 bg-white/15 backdrop-blur-md shadow-xl">
           <CardHeader>
-            <CardTitle className="gaspard-main-title text-gaspard-cream">SEO et métadonnées</CardTitle>
+            <CardTitle className="gaspard-main-title text-white text-xl font-bold">SEO et métadonnées</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div>
-              <Label htmlFor="meta_title" className="text-gaspard-cream">Titre SEO</Label>
+              <Label htmlFor="meta_title" className="text-white font-medium">Titre SEO</Label>
               <Input
                 id="meta_title"
                 value={formData.meta_title}
                 onChange={(e) => handleInputChange('meta_title', e.target.value)}
                 placeholder="Titre optimisé pour les moteurs de recherche"
-                className="mt-1 bg-gaspard-cream/10 border-gaspard-cream/20 text-gaspard-cream placeholder:text-gaspard-cream/50"
+                className="mt-1 bg-white/20 border-white/30 text-white placeholder:text-white/70 focus:bg-white/25 focus:border-white/50"
                 maxLength={60}
               />
-              <p className="text-sm text-gaspard-cream/70 mt-1">
+              <p className="text-sm text-white/90 mt-1 font-medium">
                 {formData.meta_title.length}/60 caractères
               </p>
             </div>
 
             <div>
-              <Label htmlFor="meta_description" className="text-gaspard-cream">Description SEO</Label>
+              <Label htmlFor="meta_description" className="text-white font-medium">Description SEO</Label>
               <Textarea
                 id="meta_description"
                 value={formData.meta_description}
                 onChange={(e) => handleInputChange('meta_description', e.target.value)}
                 placeholder="Description pour les moteurs de recherche"
-                className="mt-1 bg-gaspard-cream/10 border-gaspard-cream/20 text-gaspard-cream placeholder:text-gaspard-cream/50"
+                className="mt-1 bg-white/20 border-white/30 text-white placeholder:text-white/70 focus:bg-white/25 focus:border-white/50"
                 rows={3}
                 maxLength={160}
               />
-              <p className="text-sm text-gaspard-cream/70 mt-1">
+              <p className="text-sm text-white/90 mt-1 font-medium">
                 {formData.meta_description.length}/160 caractères
               </p>
             </div>
 
             <div>
-              <Label className="text-gaspard-cream">Mots-clés SEO</Label>
+              <Label className="text-white font-medium">Mots-clés SEO</Label>
               <div className="flex gap-2 mt-2">
                 <Input
                   value={newKeyword}
                   onChange={(e) => setNewKeyword(e.target.value)}
                   placeholder="Ajouter un mot-clé"
-                  className="bg-gaspard-cream/10 border-gaspard-cream/20 text-gaspard-cream placeholder:text-gaspard-cream/50"
+                  className="bg-white/20 border-white/30 text-white placeholder:text-white/70 focus:bg-white/25 focus:border-white/50"
                   onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addKeyword())}
                 />
-                <Button type="button" onClick={addKeyword} className="bg-gaspard-gold/20 text-gaspard-cream border-gaspard-gold/30 hover:bg-gaspard-gold/30">
+                <Button type="button" onClick={addKeyword} className="bg-gaspard-gold/40 text-white border-gaspard-gold/50 hover:bg-gaspard-gold/60 font-medium">
                   <Plus className="h-4 w-4" />
                 </Button>
               </div>
               
               <div className="flex flex-wrap gap-2 mt-3">
                 {formData.meta_keywords.map((keyword, index) => (
-                  <Badge key={index} className="bg-gaspard-gold/20 text-gaspard-cream border-gaspard-gold/30 flex items-center gap-1">
+                  <Badge key={index} className="bg-gaspard-gold/40 text-white border-gaspard-gold/50 flex items-center gap-1 font-medium">
                     {keyword}
                     <button
                       type="button"
                       onClick={() => removeKeyword(keyword)}
-                      className="ml-1 hover:text-red-400"
+                      className="ml-1 hover:text-red-300 transition-colors"
                     >
                       <X className="h-3 w-3" />
                     </button>
@@ -356,14 +356,14 @@ const ExplorationForm: React.FC<ExplorationFormProps> = ({
           <Button 
             type="button" 
             onClick={() => navigate('/admin/explorations')}
-            className="bg-gaspard-cream/10 text-gaspard-cream border-gaspard-cream/20 hover:bg-gaspard-cream/20"
+            className="bg-white/20 text-white border-white/30 hover:bg-white/30 font-medium shadow-lg"
           >
             Annuler
           </Button>
           <Button 
             type="submit" 
             disabled={isLoading}
-            className="bg-gaspard-gold/30 hover:bg-gaspard-gold/40 text-gaspard-cream border-gaspard-gold/40"
+            className="bg-gaspard-gold/50 hover:bg-gaspard-gold/70 text-white border-gaspard-gold/60 font-medium shadow-lg"
           >
             <Save className="h-4 w-4 mr-2" />
             {isLoading ? 'Enregistrement...' : (explorationId ? 'Mettre à jour' : 'Créer l\'exploration')}
