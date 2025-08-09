@@ -128,7 +128,7 @@ export default function ExplorationAnimator() {
         <p className="mt-2 text-foreground/80 max-w-2xl">Définissez les intentions poétiques (P1), le modèle de visualisation des marches (P2) et l'espace d'interaction (P3).</p>
         <div className="mt-4 flex gap-3">
           <Button onClick={startSession}>Démarrer une session</Button>
-          <Link to="/explorations">
+          <Link to="/admin/explorations">
             <Button variant="secondary">Retour aux explorations</Button>
           </Link>
         </div>
