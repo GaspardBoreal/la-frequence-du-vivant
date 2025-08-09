@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Search, MapPin, Calendar } from 'lucide-react';
+import { Search, MapPin, Calendar, Plus, Footprints, Radio } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { useAvailableMarches } from '@/hooks/useExplorationMarches';
 
@@ -56,30 +56,41 @@ const ExplorationMarcheSelector: React.FC<ExplorationMarcheSelectorProps> = ({
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="text-lg text-sage-800">
-          Ajouter des marches ({filteredMarches.length} disponibles)
-        </CardTitle>
+    <Card className="bg-gradient-to-br from-white to-sage-25 border-sage-100 shadow-sm">
+      <CardHeader className="pb-4">
+        <div className="flex items-center gap-3 mb-4">
+          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary/10 to-primary/20 flex items-center justify-center">
+            <Plus className="h-4 w-4 text-primary" />
+          </div>
+          <div>
+            <CardTitle className="text-xl text-sage-800">
+              Enrichir l'exploration
+            </CardTitle>
+            <p className="text-sm text-sage-600 mt-1">
+              {filteredMarches.length} marchés disponibles pour votre parcours
+            </p>
+          </div>
+        </div>
         
         <div className="flex gap-3 items-center">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-sage-400" />
             <Input
               type="text"
-              placeholder="Rechercher par ville, nom de marché..."
+              placeholder="Découvrir des marchés par ville, nom..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10"
+              className="pl-10 bg-white border-sage-200 focus:border-primary/50"
             />
           </div>
           
           {selectedMarches.length > 0 && (
             <Button 
               onClick={onAddSelected}
-              className="bg-sage-600 hover:bg-sage-700"
+              className="bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary shadow-md transition-all duration-200 hover:shadow-lg"
             >
-              Ajouter ({selectedMarches.length})
+              <Plus className="h-4 w-4 mr-2" />
+              Intégrer ({selectedMarches.length})
             </Button>
           )}
         </div>
@@ -87,8 +98,19 @@ const ExplorationMarcheSelector: React.FC<ExplorationMarcheSelectorProps> = ({
       
       <CardContent className="max-h-96 overflow-y-auto">
         {filteredMarches.length === 0 ? (
-          <div className="text-center py-8 text-sage-600">
-            {searchTerm ? 'Aucune marche trouvée' : 'Toutes les marches sont déjà assignées'}
+          <div className="text-center py-12">
+            <div className="relative mx-auto w-16 h-16 mb-4">
+              <div className="absolute inset-0 bg-gradient-to-br from-sage-100 to-sage-200 rounded-full opacity-20 animate-pulse"></div>
+              <div className="absolute inset-2 bg-gradient-to-br from-sage-200 to-sage-300 rounded-full opacity-30 flex items-center justify-center">
+                <Search className="h-6 w-6 text-sage-500" />
+              </div>
+            </div>
+            <p className="text-sage-600 font-medium">
+              {searchTerm ? 'Aucun marché trouvé' : 'Tous les marchés sont intégrés'}
+            </p>
+            <p className="text-sm text-sage-500 mt-1">
+              {searchTerm ? 'Essayez une autre recherche' : 'Votre exploration est complète'}
+            </p>
           </div>
         ) : (
           <div className="space-y-3">
@@ -98,45 +120,68 @@ const ExplorationMarcheSelector: React.FC<ExplorationMarcheSelectorProps> = ({
               return (
                 <div
                   key={marche.id}
-                  className={`p-4 border rounded-lg cursor-pointer transition-colors ${
+                  className={`group relative overflow-hidden rounded-xl border transition-all duration-200 cursor-pointer ${
                     isSelected 
-                      ? 'border-sage-300 bg-sage-50' 
-                      : 'border-sage-200 hover:border-sage-300 hover:bg-sage-25'
+                      ? 'border-primary/30 bg-gradient-to-br from-primary/5 to-primary/10 scale-[1.02] shadow-md' 
+                      : 'border-sage-200 hover:border-primary/30 hover:bg-gradient-to-br hover:from-white hover:to-sage-25 hover:scale-[1.01] hover:shadow-sm'
                   }`}
                   onClick={() => onMarcheToggle(marche.id)}
                 >
-                  <div className="flex items-start gap-3">
-                    <Checkbox
-                      checked={isSelected}
-                      onChange={() => onMarcheToggle(marche.id)}
-                      className="mt-1"
-                    />
-                    
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-2">
-                        <h4 className="font-medium text-sage-800 truncate">
-                          {marche.nom_marche || `Marché de ${marche.ville}`}
-                        </h4>
+                  {/* Motif décoratif */}
+                  <div className="absolute top-0 right-0 w-20 h-20 opacity-5">
+                    <svg viewBox="0 0 50 50" className="w-full h-full">
+                      <circle cx="25" cy="25" r="5" fill="none" stroke="currentColor" strokeWidth="0.5" className="animate-ping" />
+                      <circle cx="25" cy="25" r="10" fill="none" stroke="currentColor" strokeWidth="0.5" className="animate-ping" style={{animationDelay: '0.5s'}} />
+                      <circle cx="25" cy="25" r="15" fill="none" stroke="currentColor" strokeWidth="0.5" className="animate-ping" style={{animationDelay: '1s'}} />
+                    </svg>
+                  </div>
+                  
+                  <div className="relative p-5">
+                    <div className="flex items-start gap-4">
+                      <div className="flex items-center gap-3">
+                        <Checkbox
+                          checked={isSelected}
+                          onChange={() => onMarcheToggle(marche.id)}
+                          className="mt-1"
+                        />
+                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-sage-100 to-sage-200 flex items-center justify-center shadow-sm">
+                          <Footprints className="h-4 w-4 text-sage-600" />
+                        </div>
                       </div>
                       
-                      <div className="flex flex-wrap gap-2 mb-2">
-                        <Badge variant="outline" className="text-xs">
-                          <MapPin className="h-3 w-3 mr-1" />
-                          {marche.ville}
-                        </Badge>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-3">
+                          <h4 className="font-semibold text-sage-800 truncate">
+                            {marche.nom_marche || `Marché de ${marche.ville}`}
+                          </h4>
+                          <Radio className="h-4 w-4 text-sage-400" />
+                        </div>
                         
-                        {marche.date && (
-                          <Badge variant="outline" className="text-xs">
-                            <Calendar className="h-3 w-3 mr-1" />
-                            {marche.date}
+                        <div className="flex flex-wrap gap-2 mb-3">
+                          <Badge variant="outline" className="text-xs bg-white border-sage-200">
+                            <MapPin className="h-3 w-3 mr-1.5 text-sage-500" />
+                            {marche.ville}
                           </Badge>
+                          
+                          {marche.date && (
+                            <Badge variant="outline" className="text-xs bg-white border-sage-200">
+                              <Calendar className="h-3 w-3 mr-1.5 text-sage-500" />
+                              {marche.date}
+                            </Badge>
+                          )}
+                        </div>
+                        
+                        {marche.descriptif_court && (
+                          <p className="text-sm text-sage-600 leading-relaxed line-clamp-2">
+                            {marche.descriptif_court}
+                          </p>
                         )}
                       </div>
                       
-                      {marche.descriptif_court && (
-                        <p className="text-sm text-sage-600 line-clamp-2">
-                          {marche.descriptif_court}
-                        </p>
+                      {isSelected && (
+                        <div className="flex items-center justify-center w-8 h-8 rounded-full bg-primary/10">
+                          <Plus className="h-4 w-4 text-primary" />
+                        </div>
                       )}
                     </div>
                   </div>
