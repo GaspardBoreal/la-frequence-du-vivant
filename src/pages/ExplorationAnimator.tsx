@@ -141,15 +141,6 @@ export default function ExplorationAnimator() {
           </Link>
         </div>
         
-        <nav className="text-sm text-foreground/70">
-          <Link to="/explorations" className="underline">Explorations</Link>
-          <span className="mx-2">/</span>
-          {exploration && (
-            <Link to={`/explorations/${exploration.slug}`} className="underline">{exploration.name}</Link>
-          )}
-          <span className="mx-2">/</span>
-          <span>Animer</span>
-        </nav>
         <h1 className="mt-4 text-3xl font-bold text-foreground">Animer l'exploration</h1>
         <p className="mt-2 text-foreground/80 max-w-2xl">Définissez les intentions poétiques (P1), le modèle de visualisation des marches (P2) et l'espace d'interaction (P3).</p>
       </header>
