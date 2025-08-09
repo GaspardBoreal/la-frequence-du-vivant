@@ -62,7 +62,6 @@ const PoeticStatsGrid: React.FC<PoeticStatsGridProps> = ({
     if (onFilterChange) {
       // Toggle filter: if clicking on active filter, reset to 'all'
       const newFilter = selectedFilter === filterKey ? 'all' : filterKey;
-      console.log('Filter change:', { current: selectedFilter, clicked: filterKey, new: newFilter });
       onFilterChange(newFilter);
     }
   };
@@ -73,8 +72,6 @@ const PoeticStatsGrid: React.FC<PoeticStatsGridProps> = ({
         const Icon = stat.icon;
         const isSelected = selectedFilter === stat.filterKey;
         const isClickable = !!onFilterChange;
-        
-        console.log(`Card ${stat.label}:`, { filterKey: stat.filterKey, selectedFilter, isSelected });
         
         return (
           <div
