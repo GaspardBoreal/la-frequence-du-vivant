@@ -1,9 +1,11 @@
 interface BirdPhoto {
   url: string;
-  source: 'inaturalist' | 'flickr' | 'placeholder';
+  source: 'inaturalist' | 'flickr' | 'wikimedia' | 'placeholder';
   attribution?: string;
   license?: string;
   photographer?: string;
+  quality?: 'high' | 'medium' | 'low';
+  resolution?: string;
 }
 
 class BirdPhotoService {
@@ -18,31 +20,65 @@ class BirdPhotoService {
     if (cached) return cached;
 
     try {
-      // 1. Essayer iNaturalist d'abord
-      let photo = await this.fetchFromINaturalist(scientificName);
+      // Essayer toutes les sources en parallèle et prendre la meilleure
+      const sources = await Promise.allSettled([
+        this.fetchFromWikimedia(scientificName, commonName),
+        this.fetchFromINaturalist(scientificName),
+        this.fetchFromFlickr(scientificName, commonName)
+      ]);
+
+      // Sélectionner la meilleure photo disponible
+      const photos = sources
+        .filter(result => result.status === 'fulfilled' && result.value)
+        .map(result => (result as PromiseFulfilledResult<BirdPhoto | null>).value!)
+        .filter(Boolean);
+
+      const bestPhoto = this.selectBestPhoto(photos);
       
-      // 2. Fallback vers Flickr si iNaturalist échoue
-      if (!photo) {
-        photo = await this.fetchFromFlickr(scientificName, commonName);
-      }
-      
-      // 3. Fallback vers placeholder
-      if (!photo) {
-        photo = this.getPlaceholderPhoto();
+      if (bestPhoto) {
+        this.setCachedPhoto(cacheKey, bestPhoto);
+        return bestPhoto;
       }
 
-      this.setCachedPhoto(cacheKey, photo);
-      return photo;
+      return this.getPlaceholderPhoto();
     } catch (error) {
       console.warn('Erreur récupération photo:', error);
       return this.getPlaceholderPhoto();
     }
   }
 
+  private selectBestPhoto(photos: BirdPhoto[]): BirdPhoto | null {
+    if (photos.length === 0) return null;
+    if (photos.length === 1) return photos[0];
+
+    // Scoring des photos par qualité et source
+    const scorePhoto = (photo: BirdPhoto): number => {
+      let score = 0;
+      
+      // Score par source (Wikimedia généralement meilleure qualité)
+      switch (photo.source) {
+        case 'wikimedia': score += 3; break;
+        case 'inaturalist': score += 2; break;
+        case 'flickr': score += 1; break;
+      }
+      
+      // Score par qualité
+      switch (photo.quality) {
+        case 'high': score += 3; break;
+        case 'medium': score += 2; break;
+        case 'low': score += 1; break;
+      }
+      
+      return score;
+    };
+
+    return photos.sort((a, b) => scorePhoto(b) - scorePhoto(a))[0];
+  }
+
   private async fetchFromINaturalist(scientificName: string): Promise<BirdPhoto | null> {
     try {
-      // Rechercher les observations avec photos
-      const searchUrl = `https://api.inaturalist.org/v1/observations?taxon_name=${encodeURIComponent(scientificName)}&has[]=photos&quality_grade=research&per_page=5&order=desc&order_by=votes`;
+      // Rechercher les observations avec photos haute qualité
+      const searchUrl = `https://api.inaturalist.org/v1/observations?taxon_name=${encodeURIComponent(scientificName)}&has[]=photos&quality_grade=research&per_page=10&order=desc&order_by=votes`;
       
       const response = await fetch(searchUrl);
       if (!response.ok) return null;
@@ -50,17 +86,26 @@ class BirdPhotoService {
       const data = await response.json();
       
       if (data.results && data.results.length > 0) {
-        const observation = data.results[0];
-        const photo = observation.photos?.[0];
-        
-        if (photo) {
-          return {
-            url: photo.url.replace('square', 'medium'),
-            source: 'inaturalist',
-            attribution: `Photo by ${observation.user?.name || 'iNaturalist user'}`,
-            license: observation.license_code || 'Unknown',
-            photographer: observation.user?.name
-          };
+        // Chercher la meilleure photo disponible
+        for (const observation of data.results) {
+          const photo = observation.photos?.[0];
+          if (photo) {
+            // Essayer différentes résolutions, de la plus haute à la plus basse
+            const resolutions = ['original', 'large', 'medium'];
+            for (const resolution of resolutions) {
+              const highResUrl = photo.url.replace('square', resolution);
+              
+              return {
+                url: highResUrl,
+                source: 'inaturalist',
+                attribution: `Photo by ${observation.user?.name || 'iNaturalist user'}`,
+                license: observation.license_code || 'CC BY-NC',
+                photographer: observation.user?.name,
+                quality: resolution === 'original' ? 'high' : resolution === 'large' ? 'medium' : 'low',
+                resolution: resolution
+              };
+            }
+          }
         }
       }
       
@@ -73,9 +118,8 @@ class BirdPhotoService {
 
   private async fetchFromFlickr(scientificName: string, commonName?: string): Promise<BirdPhoto | null> {
     try {
-      // Utiliser l'API publique de Flickr (pas besoin de clé API pour la recherche publique)
       const searchTerm = commonName || scientificName;
-      const searchUrl = `https://api.flickr.com/services/feeds/photos_public.gne?format=json&nojsoncallback=1&tags=${encodeURIComponent(searchTerm + ' bird')}&per_page=5`;
+      const searchUrl = `https://api.flickr.com/services/feeds/photos_public.gne?format=json&nojsoncallback=1&tags=${encodeURIComponent(searchTerm + ' bird')}&per_page=10`;
       
       const response = await fetch(searchUrl);
       if (!response.ok) return null;
@@ -85,13 +129,26 @@ class BirdPhotoService {
       if (data.items && data.items.length > 0) {
         const item = data.items[0];
         
-        return {
-          url: item.media.m.replace('_m.jpg', '_c.jpg'), // Version plus grande
-          source: 'flickr',
-          attribution: `Photo by ${item.author?.replace(/.*\(([^)]+)\).*/, '$1') || 'Flickr user'}`,
-          license: 'Flickr',
-          photographer: item.author?.replace(/.*\(([^)]+)\).*/, '$1')
-        };
+        // Essayer différentes tailles Flickr, de la plus haute à la plus basse
+        const sizes = [
+          { suffix: '_h.jpg', quality: 'high', name: '1600px' },    // 1600px
+          { suffix: '_b.jpg', quality: 'medium', name: '1024px' },  // 1024px  
+          { suffix: '_c.jpg', quality: 'low', name: '800px' }       // 800px
+        ];
+        
+        for (const size of sizes) {
+          const highResUrl = item.media.m.replace('_m.jpg', size.suffix);
+          
+          return {
+            url: highResUrl,
+            source: 'flickr',
+            attribution: `Photo by ${item.author?.replace(/.*\(([^)]+)\).*/, '$1') || 'Flickr user'}`,
+            license: 'Flickr',
+            photographer: item.author?.replace(/.*\(([^)]+)\).*/, '$1'),
+            quality: size.quality as 'high' | 'medium' | 'low',
+            resolution: size.name
+          };
+        }
       }
       
       return null;
@@ -101,11 +158,52 @@ class BirdPhotoService {
     }
   }
 
+  private async fetchFromWikimedia(scientificName: string, commonName?: string): Promise<BirdPhoto | null> {
+    try {
+      // Chercher d'abord par nom scientifique puis par nom commun
+      const searchTerms = [scientificName];
+      if (commonName) searchTerms.push(commonName);
+      
+      for (const searchTerm of searchTerms) {
+        const searchUrl = `https://commons.wikimedia.org/w/api.php?action=query&format=json&origin=*&list=search&srsearch=${encodeURIComponent(searchTerm)}&srnamespace=6&srlimit=5`;
+        
+        const response = await fetch(searchUrl);
+        if (!response.ok) continue;
+        
+        const data = await response.json();
+        
+        if (data.query?.search?.length > 0) {
+          const firstResult = data.query.search[0];
+          const filename = firstResult.title.replace('File:', '');
+          
+          // Obtenir l'URL de l'image en haute résolution
+          const imageUrl = `https://commons.wikimedia.org/wiki/Special:FilePath/${encodeURIComponent(filename)}?width=1200`;
+          
+          return {
+            url: imageUrl,
+            source: 'wikimedia',
+            attribution: `Wikimedia Commons`,
+            license: 'Creative Commons',
+            photographer: 'Wikimedia contributor',
+            quality: 'high',
+            resolution: '1200px'
+          };
+        }
+      }
+      
+      return null;
+    } catch (error) {
+      console.warn('Erreur Wikimedia:', error);
+      return null;
+    }
+  }
+
   private getPlaceholderPhoto(): BirdPhoto {
     return {
       url: '/placeholder.svg',
       source: 'placeholder',
-      attribution: 'Placeholder image'
+      attribution: 'Placeholder image',
+      quality: 'low'
     };
   }
 
