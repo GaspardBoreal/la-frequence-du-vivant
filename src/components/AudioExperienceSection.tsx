@@ -269,11 +269,6 @@ const AudioExperienceSection: React.FC<AudioExperienceSectionProps> = ({ marche,
 
           {/* Audio Player */}
           <div className="text-center space-y-6 relative z-10">
-            {audioFiles.length > 1 && (
-              <Badge variant="secondary" className="text-sm px-4 py-1 bg-purple-100 text-purple-800">
-                {currentTrackIndex + 1} / {audioFiles.length}
-              </Badge>
-            )}
 
             {/* Audio HTML5 Player */}
             <div className="bg-white/50 rounded-2xl p-6 backdrop-blur-sm">
