@@ -76,10 +76,11 @@ const ExplorationsAdmin = () => {
               <div className="relative group">
                 <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gaspard-muted/60 group-hover:text-gaspard-primary group-focus-within:text-gaspard-accent transition-all duration-500 group-hover:scale-110" />
                 <Input
-                  type="text"
-                  placeholder="Chercher une essence narrative..."
+                  type="search"
+                  placeholder="Filtrer les créations..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
+                  autoComplete="off"
                   className="pl-12 pr-4 py-3 bg-background/60 backdrop-blur-sm border-gaspard-primary/20 rounded-2xl focus:border-gaspard-primary/50 transition-all duration-500 hover:bg-background/80 focus:bg-background/90 hover:shadow-lg hover:shadow-gaspard-primary/10 focus:shadow-xl focus:shadow-gaspard-accent/20"
                 />
                 <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-gaspard-primary/10 via-transparent to-gaspard-accent/10 opacity-0 group-hover:opacity-100 group-focus-within:opacity-50 transition-opacity duration-500 pointer-events-none"></div>
