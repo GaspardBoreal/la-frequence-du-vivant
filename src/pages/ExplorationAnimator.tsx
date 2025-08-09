@@ -148,7 +148,7 @@ export default function ExplorationAnimator() {
         <p className="mt-2 text-foreground/80 max-w-2xl">Définissez les intentions poétiques (P1), le modèle de visualisation des marches (P2) et l'espace d'interaction (P3).</p>
       </header>
 
-      <main className="container mx-auto px-4 pb-16">
+      <main className="container mx-auto px-4 pb-32">
         {/* P1 - Accueil spécifique */}
         <section className="mt-8">
           <h2 className="text-2xl font-semibold mb-3">P1 · Accueil spécifique</h2>
@@ -352,9 +352,9 @@ export default function ExplorationAnimator() {
         </section>
 
         {/* P3 - Interaction */}
-        <section className="mt-10">
+        <section className="mt-10 mb-12">
           <h2 className="text-2xl font-semibold mb-3">P3 · Espace d'interaction</h2>
-          <p className="text-sm text-foreground/70 mb-2">MVP: journalisez les interactions lors des tests, la scène dédiée arrivera dans l'étape suivante.</p>
+          <p className="text-sm text-foreground/70 mb-6">MVP: journalisez les interactions lors des tests, la scène dédiée arrivera dans l'étape suivante.</p>
           <Button onClick={handleSave} disabled={!canSave || saving}>
             {saving ? 'Enregistrement…' : 'Enregistrer les paramètres'}
           </Button>
