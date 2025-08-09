@@ -118,9 +118,9 @@ const PoeticTextDisplay: React.FC<PoeticTextDisplayProps> = ({
                 className={`relative ${isAutoReading && index === currentParagraph ? 'bg-yellow-50 rounded-lg p-6' : ''}`}
               >
                 <div 
-                  className="text-lg leading-loose text-gray-800 font-serif max-w-none"
+                  className="text-lg text-gray-800 font-serif prose prose-lg max-w-none"
                   style={{ 
-                    lineHeight: '2',
+                    whiteSpace: 'pre-wrap',
                     wordSpacing: '0.1em'
                   }}
                   dangerouslySetInnerHTML={{ __html: processRichText(paragraph) }}
