@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
-import { Plus, Edit, Trash2, Eye, Download, Settings } from 'lucide-react';
+import { Plus, Search, Sparkles, Palette } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAdminExplorations } from '@/hooks/useExplorations';
 import SEOHead from '@/components/SEOHead';
+import DecorativeParticles from '@/components/DecorativeParticles';
+import PoeticExplorationCard from '@/components/PoeticExplorationCard';
+import PoeticStatsGrid from '@/components/PoeticStatsGrid';
 
 const ExplorationsAdmin = () => {
   const navigate = useNavigate();
@@ -21,194 +22,141 @@ const ExplorationsAdmin = () => {
   return (
     <>
       <SEOHead 
-        title="Administration des Explorations - La Fréquence du Vivant"
-        description="Interface d'administration pour gérer les explorations thématiques"
-        keywords="admin, explorations, gestion"
+        title="Atelier de Création Poétique - La Fréquence du Vivant"
+        description="Atelier sensible pour orchestrer les explorations techno-poétiques du vivant"
+        keywords="création, poésie, techno-sensible, explorations, narratifs"
       />
       
-      <div className="min-h-screen bg-gradient-to-br from-sage-50 to-sage-100 py-8">
-        <div className="container mx-auto px-4">
-          {/* Header */}
-          <div className="mb-8">
-            <h1 className="text-3xl font-bold text-sage-800 mb-2">
-              Administration des Explorations
+      {/* Univers immersif principal */}
+      <div className="min-h-screen relative overflow-hidden">
+        {/* Arrière-plan composé avec dégradés organiques */}
+        <div className="absolute inset-0 bg-gradient-to-br from-gaspard-background via-gaspard-background/95 to-gaspard-background/90"></div>
+        <div className="absolute inset-0 bg-gradient-to-tr from-gaspard-primary/5 via-transparent to-gaspard-accent/10"></div>
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_left,_var(--gaspard-secondary-rgb)/0.1,transparent_70%)]"></div>
+        
+        {/* Particules décoratives */}
+        <DecorativeParticles />
+        
+        {/* Contenu principal */}
+        <div className="relative z-10 container mx-auto px-6 py-12">
+          
+          {/* En-tête poétique */}
+          <header className="text-center mb-16 animate-fade-in">
+            <div className="flex justify-center items-center gap-4 mb-6">
+              <Palette className="h-8 w-8 text-gaspard-accent animate-soft-pulse" />
+              <div className="w-16 h-1 bg-gradient-to-r from-transparent via-gaspard-primary to-transparent rounded-full"></div>
+              <Sparkles className="h-6 w-6 text-gaspard-secondary animate-gentle-float" />
+            </div>
+            
+            <h1 className="gaspard-main-title text-5xl md:text-6xl font-bold mb-4 bg-gradient-to-r from-gaspard-primary via-gaspard-secondary to-gaspard-accent bg-clip-text text-transparent">
+              Atelier de Création
             </h1>
-            <p className="text-sage-600">
-              Gérez les explorations thématiques et leurs paysages narratifs
+            
+            <p className="gaspard-category text-xl text-gaspard-muted max-w-2xl mx-auto leading-relaxed font-light">
+              Orchestrez les paysages narratifs et les explorations techno-sensibles du vivant
             </p>
-          </div>
+            
+            {/* Ligne décorative animée */}
+            <div className="mt-8 w-24 h-0.5 bg-gradient-to-r from-gaspard-primary to-gaspard-accent mx-auto rounded-full opacity-60"></div>
+          </header>
 
-          {/* Actions Bar */}
-          <div className="mb-6 flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center">
-            <div className="flex-1 max-w-md">
-              <Input
-                type="text"
-                placeholder="Rechercher une exploration..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full"
-              />
+          {/* Barre d'actions organiques */}
+          <div className="mb-12 flex flex-col lg:flex-row gap-6 justify-between items-start lg:items-center animate-fade-in animation-delay-300">
+            {/* Recherche poétique */}
+            <div className="flex-1 max-w-lg relative">
+              <div className="relative group">
+                <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gaspard-muted/60 group-hover:text-gaspard-primary transition-colors duration-300" />
+                <Input
+                  type="text"
+                  placeholder="Chercher une essence narrative..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-12 pr-4 py-3 bg-background/60 backdrop-blur-sm border-gaspard-primary/20 rounded-2xl focus:border-gaspard-primary/50 transition-all duration-300 hover:bg-background/80"
+                />
+                <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-gaspard-primary/10 via-transparent to-gaspard-accent/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"></div>
+              </div>
             </div>
             
-            <div className="flex gap-2">
-              <Button 
-                className="bg-sage-600 hover:bg-sage-700"
-                onClick={() => navigate('/admin/explorations/new')}
-              >
-                <Plus className="h-4 w-4 mr-2" />
-                Nouvelle Exploration
-              </Button>
+            {/* Bouton de création */}
+            <Button 
+              size="lg"
+              className="bg-gradient-to-r from-gaspard-primary to-gaspard-secondary hover:from-gaspard-primary/90 hover:to-gaspard-secondary/90 text-white rounded-2xl px-8 py-3 shadow-lg shadow-gaspard-primary/20 hover:shadow-xl hover:shadow-gaspard-primary/30 transition-all duration-300 hover:scale-105 border-0"
+              onClick={() => navigate('/admin/explorations/new')}
+            >
+              <Plus className="h-5 w-5 mr-3" />
+              Tisser une Nouvelle Exploration
+            </Button>
+          </div>
+
+          {/* Métriques poétiques */}
+          <PoeticStatsGrid explorations={explorations} />
+
+          {/* Galerie d'explorations en masonry */}
+          <section className="animate-fade-in animation-delay-600">
+            <div className="flex items-center gap-4 mb-8">
+              <h2 className="gaspard-main-title text-2xl font-bold text-gaspard-primary">
+                Paysages Narratifs
+              </h2>
+              <div className="flex-1 h-px bg-gradient-to-r from-gaspard-primary/30 via-gaspard-primary/10 to-transparent"></div>
+              <span className="text-sm text-gaspard-muted/60 font-light">
+                {filteredExplorations?.length || 0} univers tissés
+              </span>
             </div>
-          </div>
 
-          {/* Stats Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-sage-600">Total</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-sage-800">
-                  {explorations?.length || 0}
-                </div>
-              </CardContent>
-            </Card>
-            
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-sage-600">Publiées</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-green-600">
-                  {explorations?.filter(e => e.published).length || 0}
-                </div>
-              </CardContent>
-            </Card>
-            
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-sage-600">Brouillons</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-orange-600">
-                  {explorations?.filter(e => !e.published).length || 0}
-                </div>
-              </CardContent>
-            </Card>
-            
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-sage-600">Cette semaine</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-blue-600">
-                  {explorations?.filter(e => {
-                    const weekAgo = new Date();
-                    weekAgo.setDate(weekAgo.getDate() - 7);
-                    return new Date(e.created_at) > weekAgo;
-                  }).length || 0}
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Explorations List */}
-          <div className="space-y-4">
             {isLoading ? (
-              <div className="text-center py-8">
-                <p className="text-sage-600">Chargement des explorations...</p>
+              <div className="text-center py-20">
+                <div className="inline-flex items-center gap-3">
+                  <div className="w-2 h-2 bg-gaspard-primary rounded-full animate-gentle-float"></div>
+                  <div className="w-2 h-2 bg-gaspard-secondary rounded-full animate-gentle-float animation-delay-300"></div>
+                  <div className="w-2 h-2 bg-gaspard-accent rounded-full animate-gentle-float animation-delay-600"></div>
+                </div>
+                <p className="text-gaspard-muted mt-4 font-light">
+                  Révélation des essences créatives...
+                </p>
               </div>
             ) : filteredExplorations?.length === 0 ? (
-              <Card>
-                <CardContent className="text-center py-8">
-                  <p className="text-sage-600 mb-4">
-                    {searchTerm ? 'Aucune exploration trouvée' : 'Aucune exploration créée'}
+              <div className="text-center py-20">
+                <div className="max-w-md mx-auto">
+                  <Sparkles className="h-16 w-16 text-gaspard-accent/40 mx-auto mb-6 animate-soft-pulse" />
+                  <h3 className="gaspard-main-title text-xl font-semibold text-gaspard-primary mb-4">
+                    {searchTerm ? 'Aucune résonance trouvée' : 'L\'atelier attend votre première création'}
+                  </h3>
+                  <p className="text-gaspard-muted mb-8 font-light leading-relaxed">
+                    {searchTerm 
+                      ? 'Explorez d\'autres termes pour révéler les essences cachées'
+                      : 'Donnez naissance au premier paysage narratif de cette collection poétique'
+                    }
                   </p>
-                  <Button 
-                    className="bg-sage-600 hover:bg-sage-700"
-                    onClick={() => navigate('/admin/explorations/new')}
-                  >
-                    <Plus className="h-4 w-4 mr-2" />
-                    Créer la première exploration
-                  </Button>
-                </CardContent>
-              </Card>
+                  {!searchTerm && (
+                    <Button 
+                      size="lg"
+                      className="bg-gradient-to-r from-gaspard-primary to-gaspard-secondary hover:from-gaspard-primary/90 hover:to-gaspard-secondary/90 text-white rounded-2xl px-8 py-3 shadow-lg shadow-gaspard-primary/20 hover:shadow-xl hover:shadow-gaspard-primary/30 transition-all duration-300 hover:scale-105 border-0"
+                      onClick={() => navigate('/admin/explorations/new')}
+                    >
+                      <Plus className="h-5 w-5 mr-3" />
+                      Éveiller la Première Essence
+                    </Button>
+                  )}
+                </div>
+              </div>
             ) : (
-              filteredExplorations?.map((exploration) => (
-                <Card key={exploration.id} className="bg-white/80 backdrop-blur-sm border-sage-200">
-                  <CardHeader>
-                    <div className="flex justify-between items-start">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-3 mb-2">
-                          <CardTitle className="text-xl text-sage-800">
-                            {exploration.name}
-                          </CardTitle>
-                          <Badge variant={exploration.published ? "default" : "secondary"}>
-                            {exploration.published ? "Publié" : "Brouillon"}
-                          </Badge>
-                        </div>
-                        
-                        {exploration.description && (
-                          <CardDescription className="text-sage-600 line-clamp-2 mb-3">
-                            {exploration.description}
-                          </CardDescription>
-                        )}
-                        
-                        <div className="flex flex-wrap gap-2 mb-3">
-                          {exploration.meta_keywords.slice(0, 5).map((keyword, index) => (
-                            <Badge key={index} variant="outline" className="text-xs">
-                              {keyword}
-                            </Badge>
-                          ))}
-                        </div>
-                        
-                        <div className="text-sm text-sage-500">
-                          Créée le {new Date(exploration.created_at).toLocaleDateString('fr-FR')}
-                          {exploration.updated_at !== exploration.created_at && (
-                            <span> • Modifiée le {new Date(exploration.updated_at).toLocaleDateString('fr-FR')}</span>
-                          )}
-                        </div>
-                      </div>
-                      
-                      <div className="flex gap-2 ml-4">
-                        {exploration.published && (
-                          <Button variant="outline" size="sm" title="Voir en ligne">
-                            <Eye className="h-4 w-4" />
-                          </Button>
-                        )}
-                        
-                        <Button 
-                          variant="outline" 
-                          size="sm" 
-                          title="Gérer les marches et paysages"
-                          onClick={() => navigate(`/admin/explorations/${exploration.id}/marches`)}
-                        >
-                          <Settings className="h-4 w-4" />
-                        </Button>
-                        
-                        <Button variant="outline" size="sm" title="Exporter en JSON">
-                          <Download className="h-4 w-4" />
-                        </Button>
-                        
-                        <Button 
-                          variant="outline" 
-                          size="sm" 
-                          title="Modifier"
-                          onClick={() => navigate(`/admin/explorations/${exploration.id}/edit`)}
-                        >
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        
-                        <Button variant="outline" size="sm" title="Supprimer" className="text-red-600 hover:text-red-700">
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </div>
-                  </CardHeader>
-                </Card>
-              ))
+              <div className="columns-1 md:columns-2 lg:columns-3 gap-6 space-y-6">
+                {filteredExplorations?.map((exploration, index) => (
+                  <div key={exploration.id} className="break-inside-avoid">
+                    <PoeticExplorationCard 
+                      exploration={exploration} 
+                      index={index}
+                    />
+                  </div>
+                ))}
+              </div>
             )}
-          </div>
+          </section>
+        </div>
+
+        {/* Texture de fond subtile */}
+        <div className="absolute inset-0 opacity-[0.02] pointer-events-none">
+          <div className="w-full h-full bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiMwMDAiIGZpbGwtb3BhY2l0eT0iMC4xIj48Y2lyY2xlIGN4PSIzMCIgY3k9IjMwIiByPSIyIi8+PC9nPjwvZz48L3N2Zz4=')]"></div>
         </div>
       </div>
     </>
