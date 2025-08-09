@@ -105,6 +105,8 @@ export interface BiodiversitySummary {
   fungi: number;
   others: number;
   recentObservations: number;
+  withAudio?: number;
+  withPhotos?: number;
 }
 
 export interface BiodiversityData {

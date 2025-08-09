@@ -13,12 +13,27 @@ import { BiodiversitySummary } from '@/types/biodiversity';
 interface BiodiversityMetricGridProps {
   summary: BiodiversitySummary;
   isLoading?: boolean;
+  selectedFilter?: string;
+  onFilterChange?: (filter: string | null) => void;
 }
 
 export const BiodiversityMetricGrid: React.FC<BiodiversityMetricGridProps> = ({ 
   summary, 
-  isLoading = false 
+  isLoading = false,
+  selectedFilter,
+  onFilterChange 
 }) => {
+  
+  const handleCardClick = (filterKey: string) => {
+    if (!onFilterChange) return;
+    
+    // Si le filtre cliqué est déjà sélectionné, on le désélectionne
+    if (selectedFilter === filterKey) {
+      onFilterChange(null);
+    } else {
+      onFilterChange(filterKey);
+    }
+  };
   if (isLoading) {
     return (
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -45,13 +60,14 @@ export const BiodiversityMetricGrid: React.FC<BiodiversityMetricGridProps> = ({
 
   const metrics = [
     {
-      title: "Espèces totales",
+      title: "Total",
       value: summary.totalSpecies,
       icon: TreePine,
       color: "emerald-500",
       source: "gbif",
       sourceUrl: "https://www.gbif.org",
-      delay: 0
+      delay: 0,
+      filterKey: "total"
     },
     {
       title: "Oiseaux",
@@ -60,7 +76,8 @@ export const BiodiversityMetricGrid: React.FC<BiodiversityMetricGridProps> = ({
       color: "sky-500",
       source: "ebird",
       sourceUrl: "https://ebird.org",
-      delay: 0.1
+      delay: 0.1,
+      filterKey: "birds"
     },
     {
       title: "Plantes",
@@ -69,7 +86,8 @@ export const BiodiversityMetricGrid: React.FC<BiodiversityMetricGridProps> = ({
       color: "green-500",
       source: "gbif",
       sourceUrl: "https://www.gbif.org",
-      delay: 0.2
+      delay: 0.2,
+      filterKey: "plants"
     },
     {
       title: "Champignons",
@@ -78,25 +96,38 @@ export const BiodiversityMetricGrid: React.FC<BiodiversityMetricGridProps> = ({
       color: "orange-500",
       source: "inaturalist",
       sourceUrl: "https://www.inaturalist.org",
-      delay: 0.3
+      delay: 0.3,
+      filterKey: "fungi"
     },
     {
-      title: "Autres espèces",
+      title: "Autres",
       value: summary.others,
       icon: MapPin,
       color: "purple-500",
       source: "gbif",
       sourceUrl: "https://www.gbif.org",
-      delay: 0.4
+      delay: 0.4,
+      filterKey: "others"
     },
     {
-      title: "Observations récentes",
-      value: summary.recentObservations,
+      title: "Avec Audio",
+      value: summary.withAudio || 0,
       icon: Calendar,
       color: "amber-500",
+      source: "xeno-canto",
+      sourceUrl: "https://www.xeno-canto.org",
+      delay: 0.5,
+      filterKey: "withAudio"
+    },
+    {
+      title: "Avec Photos",
+      value: summary.withPhotos || 0,
+      icon: Calendar,
+      color: "cyan-500",
       source: "inaturalist",
       sourceUrl: "https://www.inaturalist.org",
-      delay: 0.5
+      delay: 0.6,
+      filterKey: "withPhotos"
     }
   ];
 
@@ -106,6 +137,8 @@ export const BiodiversityMetricGrid: React.FC<BiodiversityMetricGridProps> = ({
         <BiodiversityMetricCard
           key={metric.title}
           {...metric}
+          isSelected={selectedFilter === metric.filterKey}
+          onClick={onFilterChange ? () => handleCardClick(metric.filterKey) : undefined}
         />
       ))}
     </div>

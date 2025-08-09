@@ -48,6 +48,7 @@ const BioDivSubSection: React.FC<BioDivSubSectionProps> = ({ marche, theme }) =>
   const [searchTerm, setSearchTerm] = useState('');
   const [sortBy, setSortBy] = useState<'name' | 'observations' | 'date'>('name');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
+  const [selectedMetricFilter, setSelectedMetricFilter] = useState<string | null>(null);
   
   // Debounce du rayon de recherche pour éviter trop d'appels API
   useEffect(() => {
@@ -124,8 +125,31 @@ const BioDivSubSection: React.FC<BioDivSubSectionProps> = ({ marche, theme }) =>
 
     let filtered = biodiversityData.species;
 
-    // Filtrage par catégorie
-    if (selectedCategory !== 'all') {
+    // Filtrage par métriques sélectionnées depuis les indicateurs
+    if (selectedMetricFilter) {
+      filtered = filtered.filter(species => {
+        switch (selectedMetricFilter) {
+          case 'birds':
+            return isBirdSpecies(species);
+          case 'plants':
+            return species.kingdom === 'Plantae';
+          case 'fungi':
+            return species.kingdom === 'Fungi';
+          case 'others':
+            return species.kingdom !== 'Plantae' && species.kingdom !== 'Fungi' && !isBirdSpecies(species);
+          case 'withAudio':
+            return species.xenoCantoRecordings && species.xenoCantoRecordings.length > 0;
+          case 'withPhotos':
+            return species.photoData && species.photoData.source !== 'placeholder';
+          case 'total':
+          default:
+            return true;
+        }
+      });
+    }
+
+    // Filtrage par catégorie (garde la logique existante si pas de filtre métrique)
+    if (!selectedMetricFilter && selectedCategory !== 'all') {
       filtered = filtered.filter(species => {
         switch (selectedCategory) {
           case 'plants':
@@ -234,7 +258,7 @@ const BioDivSubSection: React.FC<BioDivSubSectionProps> = ({ marche, theme }) =>
     });
 
     return filtered;
-  }, [biodiversityData?.species, selectedCategory, selectedSource, selectedConfidence, selectedTimeRange, hasAudioFilter, selectedContributor, searchTerm, sortBy, sortOrder]);
+  }, [biodiversityData?.species, selectedMetricFilter, selectedCategory, selectedSource, selectedConfidence, selectedTimeRange, hasAudioFilter, selectedContributor, searchTerm, sortBy, sortOrder]);
 
   const summaryStats = useMemo(() => {
     if (!biodiversityData?.species) return null;
@@ -288,40 +312,32 @@ const BioDivSubSection: React.FC<BioDivSubSectionProps> = ({ marche, theme }) =>
     );
   }
 
+  const handleMetricFilterChange = (filter: string | null) => {
+    setSelectedMetricFilter(filter);
+    // Reset les autres filtres quand on utilise les métriques
+    if (filter) {
+      setSelectedCategory('all');
+    }
+  };
+
   return (
     <div className="space-y-6">
-      {/* En-tête avec métriques */}
+      {/* En-tête avec métriques cliquables */}
       {summaryStats && (
-        <div className="grid grid-cols-2 md:grid-cols-7 gap-4 mb-6">
-          <Card className="p-4 text-center">
-            <div className="text-2xl font-bold text-primary">{summaryStats.total}</div>
-            <div className="text-sm text-muted-foreground">Total</div>
-          </Card>
-          <Card className="p-4 text-center">
-            <div className="text-2xl font-bold text-blue-600">{summaryStats.birds}</div>
-            <div className="text-sm text-muted-foreground">Oiseaux</div>
-          </Card>
-          <Card className="p-4 text-center">
-            <div className="text-2xl font-bold text-green-600">{summaryStats.plants}</div>
-            <div className="text-sm text-muted-foreground">Plantes</div>
-          </Card>
-          <Card className="p-4 text-center">
-            <div className="text-2xl font-bold text-orange-600">{summaryStats.fungi}</div>
-            <div className="text-sm text-muted-foreground">Champignons</div>
-          </Card>
-          <Card className="p-4 text-center">
-            <div className="text-2xl font-bold text-purple-600">{summaryStats.others}</div>
-            <div className="text-sm text-muted-foreground">Autres</div>
-          </Card>
-          <Card className="p-4 text-center">
-            <div className="text-2xl font-bold text-amber-600">{summaryStats.withAudio}</div>
-            <div className="text-sm text-muted-foreground">Avec Audio</div>
-          </Card>
-          <Card className="p-4 text-center">
-            <div className="text-2xl font-bold text-cyan-600">{summaryStats.withPhotos}</div>
-            <div className="text-sm text-muted-foreground">Avec Photos</div>
-          </Card>
-        </div>
+        <BiodiversityMetricGrid 
+          summary={{
+            totalSpecies: summaryStats.total,
+            birds: summaryStats.birds,
+            plants: summaryStats.plants,
+            fungi: summaryStats.fungi,
+            others: summaryStats.others,
+            recentObservations: 0, // Pas utilisé dans ce contexte
+            withAudio: summaryStats.withAudio,
+            withPhotos: summaryStats.withPhotos
+          }}
+          selectedFilter={selectedMetricFilter}
+          onFilterChange={handleMetricFilterChange}
+        />
       )}
 
       {/* Contrôles de recherche et rayon */}
