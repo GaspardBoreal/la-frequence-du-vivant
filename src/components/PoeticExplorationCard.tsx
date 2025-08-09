@@ -66,18 +66,18 @@ const PoeticExplorationCard: React.FC<PoeticExplorationCardProps> = ({ explorati
       style={{ animationDelay: `${index * 150}ms` }}
     >
       {/* Carte principale avec bordures ultra-visibles et effets renforcés */}
-      <div className="relative bg-gradient-to-br from-card/80 via-card/60 to-card/40 backdrop-blur-xl border-2 border-gaspard-emerald/30 rounded-3xl p-8 transition-all duration-300 hover:scale-[1.02] hover:shadow-lg hover:border-gaspard-gold/60 cursor-pointer"
+      <div className="relative bg-gradient-to-br from-card/80 via-card/60 to-card/40 backdrop-blur-xl border-2 border-gaspard-emerald/30 rounded-3xl p-8 transition-all duration-300 hover:scale-[1.02] hover:shadow-lg hover:border-gaspard-gold hover:shadow-gaspard-gold/20 cursor-pointer"
            onClick={() => navigate(`/admin/explorations/${exploration.id}/edit`)}>
         
         {/* Effet de lumière interne minimal */}
-        <div className="absolute inset-0 rounded-3xl bg-gradient-to-br from-primary/0 to-primary/0 group-hover:from-primary/5 group-hover:to-accent/5 transition-all duration-300 pointer-events-none"></div>
+        <div className="absolute inset-0 rounded-3xl bg-gradient-to-br from-gaspard-primary/0 to-gaspard-gold/0 group-hover:from-gaspard-primary/5 group-hover:to-gaspard-gold/10 transition-all duration-300 pointer-events-none"></div>
 
         {/* Header avec titre poétique */}
         <div className="flex justify-between items-start mb-6">
           <div className="flex-1">
             <div className="flex items-center gap-3 mb-3">
-              <Sparkles className="h-6 w-6 text-accent" />
-              <h3 className="gaspard-main-title text-xl font-bold text-foreground">
+              <Sparkles className="h-6 w-6 text-accent group-hover:text-gaspard-gold transition-colors duration-300" />
+              <h3 className="gaspard-main-title text-xl font-bold text-foreground group-hover:text-gaspard-gold transition-colors duration-300">
                 {exploration.name}
               </h3>
             </div>
@@ -85,7 +85,7 @@ const PoeticExplorationCard: React.FC<PoeticExplorationCardProps> = ({ explorati
             <div className="mb-4 flex flex-wrap gap-2">
               <Badge 
                 variant={exploration.published ? "default" : "secondary"}
-                className="rounded-full px-4 py-1 text-xs"
+                className="rounded-full px-4 py-1 text-xs group-hover:shadow-gaspard-gold/20 transition-all duration-300"
               >
                 {exploration.published ? "✨ Révélé au monde" : "🌱 Germe créatif"}
               </Badge>
@@ -93,7 +93,7 @@ const PoeticExplorationCard: React.FC<PoeticExplorationCardProps> = ({ explorati
               {/* Badge compteur de marches */}
               <Badge 
                 variant="outline"
-                className="rounded-full px-3 py-1 text-xs bg-gradient-to-r from-gaspard-primary/10 to-gaspard-secondary/10 text-gaspard-primary border-gaspard-primary/30"
+                className="rounded-full px-3 py-1 text-xs bg-gradient-to-r from-gaspard-primary/10 to-gaspard-secondary/10 text-gaspard-primary border-gaspard-primary/30 group-hover:border-gaspard-gold/50 group-hover:text-gaspard-gold transition-all duration-300"
               >
                 <Footprints className="h-3 w-3 mr-1.5" />
                 {marchesCount === 0 ? 'Aucune marche' : 
