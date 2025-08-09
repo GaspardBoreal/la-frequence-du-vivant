@@ -43,14 +43,11 @@ const AudioExperienceSection: React.FC<AudioExperienceSectionProps> = ({ marche,
     ? audioData
         .sort((a, b) => (a.ordre || 0) - (b.ordre || 0)) // Trier par ordre
         .map((audio, index) => {
-          // Description spécifique pour la marche de Gauriac
+          // Utiliser le titre comme description par défaut si pas de description
           let description = audio.description;
           if (!description) {
-            if (marche.ville?.toLowerCase() === 'gauriac') {
-              description = 'Resac Bec d\'Ambès';
-            } else {
-              description = `Enregistrement audio de la marche à ${marche.ville}`;
-            }
+            // Utiliser le titre spécifique de chaque fichier audio
+            description = audio.titre || `Enregistrement audio de la marche à ${marche.ville}`;
           }
           
           return {
