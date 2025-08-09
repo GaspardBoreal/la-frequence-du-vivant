@@ -41,7 +41,6 @@ const AudioExperienceSection: React.FC<AudioExperienceSectionProps> = ({ marche,
   const audioFiles: AudioFile[] = audioUrls.map((url, index) => ({
     url,
     name: `Audio-${index + 1}-${marche.ville}.mp3`,
-    title: `Paysage sonore ${index + 1}`,
     description: `Enregistrement audio de la marche à ${marche.ville}`
   }));
 
@@ -201,7 +200,7 @@ const AudioExperienceSection: React.FC<AudioExperienceSectionProps> = ({ marche,
   console.log(`🔧 DEBUG AudioExperienceSection: Affichage du lecteur audio avec ${audioFiles.length} fichier(s)`);
 
   return (
-    <div className="space-y-12 pt-16">
+    <div className="space-y-6 pt-6">
       {/* Header Section */}
       <motion.div
         className="text-center"
@@ -253,14 +252,6 @@ const AudioExperienceSection: React.FC<AudioExperienceSectionProps> = ({ marche,
                 {currentTrackIndex + 1} / {audioFiles.length}
               </Badge>
             )}
-            
-            <h3 className="text-2xl font-crimson font-bold text-gray-800">
-              {currentTrack?.title || 'Piste Audio'}
-            </h3>
-            
-            <p className="text-gray-600 text-sm">
-              {currentTrack?.name}
-            </p>
 
             {/* Audio HTML5 Player */}
             <div className="bg-white/50 rounded-2xl p-6 backdrop-blur-sm">
@@ -303,7 +294,7 @@ const AudioExperienceSection: React.FC<AudioExperienceSectionProps> = ({ marche,
                 <div className="w-20 h-20 mx-auto bg-gradient-to-br from-purple-100 to-blue-100 rounded-full flex items-center justify-center mb-2">
                   <Music className="h-10 w-10 text-purple-600" />
                 </div>
-                <p className="text-sm text-gray-600">Lecteur audio</p>
+                <p className="text-sm text-gray-600">{currentTrack?.name}</p>
               </motion.div>
 
               {audioFiles.length > 1 && (
@@ -318,29 +309,6 @@ const AudioExperienceSection: React.FC<AudioExperienceSectionProps> = ({ marche,
               )}
             </div>
 
-            {/* Action Buttons */}
-            {currentTrack && (
-              <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                <Button
-                  onClick={() => handleDirectAccess(currentTrack)}
-                  size="lg"
-                  className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white px-8 py-3 rounded-full shadow-lg"
-                >
-                  <ExternalLink className="h-5 w-5 mr-2" />
-                  Ouvrir le fichier
-                </Button>
-                
-                <Button
-                  onClick={() => handleDownload(currentTrack)}
-                  variant="outline"
-                  size="lg"
-                  className="border-purple-300 text-purple-700 hover:bg-purple-50 px-8 py-3 rounded-full"
-                >
-                  <Download className="h-5 w-5 mr-2" />
-                  Télécharger
-                </Button>
-              </div>
-            )}
           </div>
         </div>
       </motion.div>
