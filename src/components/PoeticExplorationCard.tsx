@@ -32,35 +32,41 @@ const PoeticExplorationCard: React.FC<PoeticExplorationCardProps> = ({ explorati
       )}
       style={{ animationDelay: `${index * 150}ms` }}
     >
-      {/* Carte principale avec forme organique */}
-      <div className="relative bg-gradient-to-br from-background/80 via-background/60 to-background/40 backdrop-blur-xl border border-gaspard-primary/20 rounded-3xl p-8 transition-all duration-700 hover:scale-[1.02] hover:shadow-2xl hover:shadow-gaspard-primary/20 hover:border-gaspard-primary/40">
+      {/* Carte principale avec forme organique et effets sophistiqués */}
+      <div className="relative bg-gradient-to-br from-background/80 via-background/60 to-background/40 backdrop-blur-xl border border-gaspard-primary/20 rounded-3xl p-8 transition-all duration-700 hover:scale-[1.02] hover:shadow-2xl hover:shadow-gaspard-primary/30 hover:border-gaspard-primary/50 hover:bg-gradient-to-br hover:from-background/90 hover:via-background/70 hover:to-background/50 group-hover:backdrop-blur-2xl">
         
-        {/* Particules décoratives au hover */}
-        <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-1000">
-          <div className="absolute top-4 right-4 w-1 h-1 bg-gaspard-accent/60 rounded-full animate-gentle-float"></div>
-          <div className="absolute bottom-6 left-6 w-1.5 h-1.5 bg-gaspard-secondary/40 rounded-full animate-gentle-float animation-delay-500"></div>
-          <div className="absolute top-1/2 left-4 w-0.5 h-0.5 bg-gaspard-primary/50 rounded-full animate-gentle-float animation-delay-1000"></div>
+        {/* Effet de lumière interne au hover */}
+        <div className="absolute inset-0 rounded-3xl bg-gradient-to-br from-gaspard-primary/0 via-gaspard-primary/0 to-gaspard-primary/0 group-hover:from-gaspard-primary/5 group-hover:via-gaspard-accent/3 group-hover:to-gaspard-secondary/5 transition-all duration-1000 pointer-events-none"></div>
+        
+        {/* Particules décoratives animées au hover */}
+        <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-all duration-1000">
+          <div className="absolute top-4 right-4 w-1 h-1 bg-gaspard-accent/60 rounded-full animate-gentle-float group-hover:bg-gaspard-accent group-hover:w-1.5 group-hover:h-1.5 transition-all duration-500"></div>
+          <div className="absolute bottom-6 left-6 w-1.5 h-1.5 bg-gaspard-secondary/40 rounded-full animate-gentle-float animation-delay-500 group-hover:bg-gaspard-secondary/80 group-hover:w-2 group-hover:h-2 transition-all duration-700"></div>
+          <div className="absolute top-1/2 left-4 w-0.5 h-0.5 bg-gaspard-primary/50 rounded-full animate-gentle-float animation-delay-1000 group-hover:bg-gaspard-primary group-hover:w-1 group-hover:h-1 transition-all duration-600"></div>
+          <div className="absolute top-1/3 right-1/3 w-0.5 h-0.5 bg-gaspard-accent/30 rounded-full animate-gentle-float animation-delay-1500 group-hover:bg-gaspard-accent/70 group-hover:w-1 group-hover:h-1 transition-all duration-800"></div>
+          
+          {/* Effet de vague lumineuse */}
+          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-gaspard-primary/10 to-transparent transform -translate-x-full group-hover:translate-x-full transition-transform duration-1500 ease-out"></div>
         </div>
 
         {/* Header avec titre poétique */}
         <div className="flex justify-between items-start mb-6">
           <div className="flex-1">
-            <div className="flex items-center gap-3 mb-3">
-              <Sparkles className="h-5 w-5 text-gaspard-accent animate-soft-pulse" />
-              <h3 className="gaspard-main-title text-xl font-bold bg-gradient-to-r from-gaspard-primary to-gaspard-accent bg-clip-text text-transparent">
+            <div className="flex items-center gap-3 mb-3 group-hover:gap-4 transition-all duration-500">
+              <Sparkles className="h-5 w-5 text-gaspard-accent animate-soft-pulse group-hover:text-gaspard-primary group-hover:scale-110 transition-all duration-500" />
+              <h3 className="gaspard-main-title text-xl font-bold bg-gradient-to-r from-gaspard-primary to-gaspard-accent bg-clip-text text-transparent group-hover:from-gaspard-accent group-hover:to-gaspard-primary transition-all duration-700">
                 {exploration.name}
               </h3>
             </div>
             
-            {/* Badge de statut poétique */}
-            <div className="mb-4">
+            <div className="mb-4 group-hover:mb-5 transition-all duration-300">
               <Badge 
                 variant={exploration.published ? "default" : "secondary"}
                 className={cn(
-                  "rounded-full px-4 py-1 text-xs font-medium transition-all duration-300",
+                  "rounded-full px-4 py-1 text-xs font-medium transition-all duration-500 group-hover:px-5 group-hover:py-1.5 group-hover:scale-105",
                   exploration.published 
-                    ? "bg-gradient-to-r from-emerald-500/20 to-green-500/20 text-emerald-700 border-emerald-300/30 hover:from-emerald-500/30 hover:to-green-500/30" 
-                    : "bg-gradient-to-r from-amber-500/20 to-orange-500/20 text-amber-700 border-amber-300/30 hover:from-amber-500/30 hover:to-orange-500/30"
+                    ? "bg-gradient-to-r from-emerald-500/20 to-green-500/20 text-emerald-700 border-emerald-300/30 hover:from-emerald-500/40 hover:to-green-500/40 hover:border-emerald-400/50 hover:shadow-lg hover:shadow-emerald-500/20" 
+                    : "bg-gradient-to-r from-amber-500/20 to-orange-500/20 text-amber-700 border-amber-300/30 hover:from-amber-500/40 hover:to-orange-500/40 hover:border-amber-400/50 hover:shadow-lg hover:shadow-amber-500/20"
                 )}
               >
                 {exploration.published ? "✨ Révélé au monde" : "🌱 Germe créatif"}
@@ -69,22 +75,25 @@ const PoeticExplorationCard: React.FC<PoeticExplorationCardProps> = ({ explorati
           </div>
         </div>
 
-        {/* Description poétique */}
+        {/* Description poétique avec effet de révélation */}
         {exploration.description && (
-          <div className="mb-6">
-            <p className="text-gaspard-muted leading-relaxed font-light text-justify hyphens-auto">
+          <div className="mb-6 group-hover:mb-7 transition-all duration-300">
+            <p className="text-gaspard-muted leading-relaxed font-light text-justify hyphens-auto group-hover:text-gaspard-primary/90 transition-colors duration-500">
               {exploration.description}
             </p>
           </div>
         )}
 
-        {/* Mots-clés comme pétales */}
-        <div className="flex flex-wrap gap-2 mb-6">
+        {/* Mots-clés comme pétales flottants */}
+        <div className="flex flex-wrap gap-2 mb-6 group-hover:gap-3 transition-all duration-500">
           {exploration.meta_keywords.slice(0, 5).map((keyword, index) => (
             <span
               key={index}
-              className="inline-block bg-gaspard-primary/10 hover:bg-gaspard-primary/20 text-gaspard-primary text-xs px-3 py-1.5 rounded-full border border-gaspard-primary/20 transition-all duration-300 hover:scale-105 cursor-default"
-              style={{ animationDelay: `${index * 100}ms` }}
+              className="inline-block bg-gaspard-primary/10 hover:bg-gaspard-primary/25 text-gaspard-primary text-xs px-3 py-1.5 rounded-full border border-gaspard-primary/20 transition-all duration-500 hover:scale-110 hover:shadow-lg hover:shadow-gaspard-primary/20 hover:border-gaspard-primary/40 hover:-translate-y-0.5 cursor-default group-hover:bg-gaspard-primary/15"
+              style={{ 
+                animationDelay: `${index * 100}ms`,
+                transitionDelay: `${index * 50}ms`
+              }}
             >
               {keyword}
             </span>
@@ -112,16 +121,16 @@ const PoeticExplorationCard: React.FC<PoeticExplorationCardProps> = ({ explorati
           )}
         </div>
 
-        {/* Actions organiques */}
-        <div className="flex flex-wrap gap-2 opacity-70 group-hover:opacity-100 transition-opacity duration-500">
+        {/* Actions organiques avec effets morphiques */}
+        <div className="flex flex-wrap gap-2 opacity-70 group-hover:opacity-100 transition-all duration-500 group-hover:gap-3">
           {exploration.published && (
             <Button 
               variant="ghost" 
               size="sm" 
-              className="rounded-full bg-gaspard-primary/10 hover:bg-gaspard-primary/20 text-gaspard-primary border border-gaspard-primary/20 hover:border-gaspard-primary/40 transition-all duration-300 hover:scale-105"
+              className="rounded-full bg-gaspard-primary/10 hover:bg-gaspard-primary/30 text-gaspard-primary border border-gaspard-primary/20 hover:border-gaspard-primary/60 transition-all duration-500 hover:scale-110 hover:shadow-xl hover:shadow-gaspard-primary/30 hover:-translate-y-1 group-hover:bg-gaspard-primary/15"
               title="Contempler en ligne"
             >
-              <Eye className="h-3 w-3 mr-1.5" />
+              <Eye className="h-3 w-3 mr-1.5 transition-transform duration-300 hover:scale-125" />
               Contempler
             </Button>
           )}
@@ -129,52 +138,53 @@ const PoeticExplorationCard: React.FC<PoeticExplorationCardProps> = ({ explorati
           <Button 
             variant="ghost" 
             size="sm" 
-            className="rounded-full bg-gaspard-secondary/10 hover:bg-gaspard-secondary/20 text-gaspard-secondary border border-gaspard-secondary/20 hover:border-gaspard-secondary/40 transition-all duration-300 hover:scale-105"
+            className="rounded-full bg-gaspard-secondary/10 hover:bg-gaspard-secondary/30 text-gaspard-secondary border border-gaspard-secondary/20 hover:border-gaspard-secondary/60 transition-all duration-500 hover:scale-110 hover:shadow-xl hover:shadow-gaspard-secondary/30 hover:-translate-y-1 group-hover:bg-gaspard-secondary/15"
             title="Orchestrer les paysages"
             onClick={() => navigate(`/admin/explorations/${exploration.id}/marches`)}
           >
-            <Settings className="h-3 w-3 mr-1.5" />
+            <Settings className="h-3 w-3 mr-1.5 transition-transform duration-300 hover:rotate-90" />
             Orchestrer
           </Button>
           
           <Button 
             variant="ghost" 
             size="sm" 
-            className="rounded-full bg-gaspard-accent/10 hover:bg-gaspard-accent/20 text-gaspard-accent border border-gaspard-accent/20 hover:border-gaspard-accent/40 transition-all duration-300 hover:scale-105"
+            className="rounded-full bg-gaspard-accent/10 hover:bg-gaspard-accent/30 text-gaspard-accent border border-gaspard-accent/20 hover:border-gaspard-accent/60 transition-all duration-500 hover:scale-110 hover:shadow-xl hover:shadow-gaspard-accent/30 hover:-translate-y-1 group-hover:bg-gaspard-accent/15"
             title="Archiver l'essence"
           >
-            <Download className="h-3 w-3 mr-1.5" />
+            <Download className="h-3 w-3 mr-1.5 transition-transform duration-300 hover:-translate-y-0.5" />
             Archiver
           </Button>
           
           <Button 
             variant="ghost" 
             size="sm" 
-            className="rounded-full bg-blue-500/10 hover:bg-blue-500/20 text-blue-600 border border-blue-500/20 hover:border-blue-500/40 transition-all duration-300 hover:scale-105"
+            className="rounded-full bg-blue-500/10 hover:bg-blue-500/30 text-blue-600 border border-blue-500/20 hover:border-blue-500/60 transition-all duration-500 hover:scale-110 hover:shadow-xl hover:shadow-blue-500/30 hover:-translate-y-1 group-hover:bg-blue-500/15"
             title="Sculpter l'essence"
             onClick={() => navigate(`/admin/explorations/${exploration.id}/edit`)}
           >
-            <Edit className="h-3 w-3 mr-1.5" />
+            <Edit className="h-3 w-3 mr-1.5 transition-transform duration-300 hover:rotate-12" />
             Sculpter
           </Button>
           
           <Button 
             variant="ghost" 
             size="sm" 
-            className="rounded-full bg-red-500/10 hover:bg-red-500/20 text-red-600 border border-red-500/20 hover:border-red-500/40 transition-all duration-300 hover:scale-105"
+            className="rounded-full bg-red-500/10 hover:bg-red-500/30 text-red-600 border border-red-500/20 hover:border-red-500/60 transition-all duration-500 hover:scale-110 hover:shadow-xl hover:shadow-red-500/30 hover:-translate-y-1 group-hover:bg-red-500/15"
             title="Transmuter en néant"
           >
-            <Trash2 className="h-3 w-3 mr-1.5" />
+            <Trash2 className="h-3 w-3 mr-1.5 transition-transform duration-300 hover:scale-125" />
             Transmuter
           </Button>
         </div>
 
-        {/* Forme décorative organique en arrière-plan */}
-        <div className="absolute -top-4 -right-4 w-24 h-24 opacity-5 pointer-events-none">
-          <svg viewBox="0 0 100 100" className="w-full h-full animate-soft-pulse">
+        {/* Forme décorative organique évolutive en arrière-plan */}
+        <div className="absolute -top-4 -right-4 w-24 h-24 opacity-5 group-hover:opacity-10 pointer-events-none transition-all duration-1000 group-hover:scale-110 group-hover:rotate-12">
+          <svg viewBox="0 0 100 100" className="w-full h-full animate-soft-pulse group-hover:animate-gentle-float">
             <path 
               d="M20,50 Q50,20 80,50 Q50,80 20,50" 
               fill="url(#cardGradient)" 
+              className="transition-all duration-1000 group-hover:d-[M15,50 Q50,15 85,50 Q50,85 15,50]"
             />
             <defs>
               <radialGradient id="cardGradient">

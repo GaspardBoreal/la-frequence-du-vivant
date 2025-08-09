@@ -62,29 +62,32 @@ const ExplorationsAdmin = () => {
 
           {/* Barre d'actions organiques */}
           <div className="mb-12 flex flex-col lg:flex-row gap-6 justify-between items-start lg:items-center animate-fade-in animation-delay-300">
-            {/* Recherche poétique */}
+            {/* Recherche poétique enrichie */}
             <div className="flex-1 max-w-lg relative">
               <div className="relative group">
-                <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gaspard-muted/60 group-hover:text-gaspard-primary transition-colors duration-300" />
+                <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gaspard-muted/60 group-hover:text-gaspard-primary group-focus-within:text-gaspard-accent transition-all duration-500 group-hover:scale-110" />
                 <Input
                   type="text"
                   placeholder="Chercher une essence narrative..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-12 pr-4 py-3 bg-background/60 backdrop-blur-sm border-gaspard-primary/20 rounded-2xl focus:border-gaspard-primary/50 transition-all duration-300 hover:bg-background/80"
+                  className="pl-12 pr-4 py-3 bg-background/60 backdrop-blur-sm border-gaspard-primary/20 rounded-2xl focus:border-gaspard-primary/50 transition-all duration-500 hover:bg-background/80 focus:bg-background/90 hover:shadow-lg hover:shadow-gaspard-primary/10 focus:shadow-xl focus:shadow-gaspard-accent/20"
                 />
-                <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-gaspard-primary/10 via-transparent to-gaspard-accent/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"></div>
+                <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-gaspard-primary/10 via-transparent to-gaspard-accent/10 opacity-0 group-hover:opacity-100 group-focus-within:opacity-50 transition-opacity duration-500 pointer-events-none"></div>
+                
+                {/* Particules de recherche */}
+                <div className="absolute top-2 right-4 w-1 h-1 bg-gaspard-accent/0 rounded-full group-focus-within:bg-gaspard-accent/60 group-focus-within:animate-gentle-float transition-all duration-500"></div>
               </div>
             </div>
             
-            {/* Bouton de création */}
+            {/* Bouton de création morphique */}
             <Button 
               size="lg"
-              className="bg-gradient-to-r from-gaspard-primary to-gaspard-secondary hover:from-gaspard-primary/90 hover:to-gaspard-secondary/90 text-white rounded-2xl px-8 py-3 shadow-lg shadow-gaspard-primary/20 hover:shadow-xl hover:shadow-gaspard-primary/30 transition-all duration-300 hover:scale-105 border-0"
+              className="bg-gradient-to-r from-gaspard-primary to-gaspard-secondary hover:from-gaspard-primary/90 hover:to-gaspard-secondary/90 text-white rounded-2xl px-8 py-3 shadow-lg shadow-gaspard-primary/20 hover:shadow-2xl hover:shadow-gaspard-primary/40 transition-all duration-500 hover:scale-110 hover:-translate-y-1 border-0 group"
               onClick={() => navigate('/admin/explorations/new')}
             >
-              <Plus className="h-5 w-5 mr-3" />
-              Tisser une Nouvelle Exploration
+              <Plus className="h-5 w-5 mr-3 group-hover:rotate-90 transition-transform duration-500" />
+              <span className="group-hover:tracking-wide transition-all duration-300">Tisser une Nouvelle Exploration</span>
             </Button>
           </div>
 
