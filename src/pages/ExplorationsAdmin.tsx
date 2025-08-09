@@ -102,11 +102,13 @@ const ExplorationsAdmin = () => {
           </div>
 
           {/* Métriques poétiques */}
-          <PoeticStatsGrid 
-            explorations={explorations} 
-            selectedFilter={selectedFilter}
-            onFilterChange={setSelectedFilter}
-          />
+          {!isLoading && explorations && (
+            <PoeticStatsGrid 
+              explorations={explorations} 
+              selectedFilter={selectedFilter}
+              onFilterChange={setSelectedFilter}
+            />
+          )}
 
           {/* Galerie d'explorations en masonry */}
           <section className="animate-fade-in animation-delay-600">
