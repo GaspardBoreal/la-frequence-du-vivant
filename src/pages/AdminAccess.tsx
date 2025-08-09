@@ -3,7 +3,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { Card } from '../components/ui/card';
 import { Button } from '../components/ui/button';
-import { Settings, Map, Database, ArrowLeft } from 'lucide-react';
+import { Settings, Map, Sparkles, ArrowLeft } from 'lucide-react';
 
 const AdminAccess: React.FC = () => {
   return (
@@ -47,17 +47,17 @@ const AdminAccess: React.FC = () => {
 
           <Card className="gaspard-card p-6 hover:shadow-lg transition-shadow">
             <div className="flex items-center mb-4">
-              <Database className="h-8 w-8 text-accent mr-3" />
-              <h2 className="text-xl font-semibold text-foreground">Migration des Données</h2>
+              <Sparkles className="h-8 w-8 text-accent mr-3" />
+              <h2 className="text-xl font-semibold text-foreground">Gestion des Explorations</h2>
             </div>
             <p className="text-muted-foreground mb-4">
-              Importer et synchroniser les données depuis Google Sheets
-              et Google Drive.
+              Créer, modifier et publier les explorations poétiques.
+              Gérer les contenus multimédias et narratifs.
             </p>
-            <Link to="/admin/migration">
+            <Link to="/admin/explorations">
               <Button variant="outline" className="w-full">
-                <Database className="h-4 w-4 mr-2" />
-                Accéder à la Migration
+                <Sparkles className="h-4 w-4 mr-2" />
+                Accéder aux Explorations
               </Button>
             </Link>
           </Card>
