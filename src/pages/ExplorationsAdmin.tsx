@@ -4,10 +4,12 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Plus, Edit, Trash2, Eye, Download, Settings } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { useExplorations } from '@/hooks/useExplorations';
 import SEOHead from '@/components/SEOHead';
 
 const ExplorationsAdmin = () => {
+  const navigate = useNavigate();
   const { data: explorations, isLoading } = useExplorations();
   const [searchTerm, setSearchTerm] = useState('');
 
@@ -169,7 +171,12 @@ const ExplorationsAdmin = () => {
                           </Button>
                         )}
                         
-                        <Button variant="outline" size="sm" title="Gérer les marches et paysages">
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          title="Gérer les marches et paysages"
+                          onClick={() => navigate(`/admin/explorations/${exploration.id}/marches`)}
+                        >
                           <Settings className="h-4 w-4" />
                         </Button>
                         
