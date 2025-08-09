@@ -83,10 +83,10 @@ const PoeticStatsGrid: React.FC<PoeticStatsGridProps> = ({
             onClick={() => isClickable && handleCardClick(stat.filterKey)}
           >
             {/* Conteneur principal avec effet de verre sophistiqué */}
-            <div className={`relative bg-gradient-to-br from-background/70 via-background/50 to-background/30 backdrop-blur-xl rounded-2xl p-6 transition-all duration-700 hover:scale-110 hover:shadow-2xl hover:shadow-gaspard-primary/30 hover:border-gaspard-primary/50 hover:bg-gradient-to-br hover:from-background/80 hover:via-background/60 hover:to-background/40 group-hover:backdrop-blur-2xl ${
+            <div className={`relative bg-gradient-to-br from-background/70 via-background/50 to-background/30 backdrop-blur-xl rounded-2xl p-6 transition-all duration-700 hover:scale-110 hover:shadow-2xl hover:shadow-gaspard-primary/30 hover:bg-gradient-to-br hover:from-background/80 hover:via-background/60 hover:to-background/40 group-hover:backdrop-blur-2xl ${
               isSelected 
-                ? 'border-4 border-white/90 bg-gradient-to-br from-background/80 via-background/60 to-background/40 shadow-lg shadow-white/10' 
-                : 'border-2 border-gaspard-primary/20'
+                ? 'border-4 border-white/90 shadow-lg shadow-white/10' 
+                : 'border border-transparent hover:border-gaspard-primary/30'
             }`}>
               
               {/* Effet de lumière interne au hover */}
