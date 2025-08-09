@@ -19,6 +19,7 @@ import { BiodiversityMetricGrid } from '../biodiversity/BiodiversityMetricGrid';
 import { BiodiversityMap } from '../biodiversity/BiodiversityMap';
 // import ContributorDetailModal from '../ContributorDetailModal'; // Removed as not used in this clean version
 import { EnhancedSpeciesCard } from '../audio/EnhancedSpeciesCard';
+import SpeciesDetailModal from '../biodiversity/SpeciesDetailModal';
 
 interface BioDivSubSectionProps {
   marche: MarcheTechnoSensible;
@@ -609,6 +610,12 @@ const BioDivSubSection: React.FC<BioDivSubSectionProps> = ({ marche, theme }) =>
           </div>
         </TabsContent>
       </Tabs>
+
+      <SpeciesDetailModal
+        species={selectedSpecies}
+        isOpen={!!selectedSpecies}
+        onClose={() => setSelectedSpecies(null)}
+      />
     </div>
   );
 };
