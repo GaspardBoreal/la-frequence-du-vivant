@@ -85,7 +85,12 @@ const PoeticExplorationCard: React.FC<PoeticExplorationCardProps> = ({ explorati
             <div className="mb-4 flex flex-wrap gap-2">
               <Badge 
                 variant={exploration.published ? "default" : "secondary"}
-                className="rounded-full px-4 py-1 text-xs group-hover:shadow-gaspard-gold/20 transition-all duration-300"
+                className={cn(
+                  "rounded-full px-4 py-1 text-xs font-medium transition-all duration-300",
+                  exploration.published 
+                    ? "bg-accent text-accent-foreground shadow-md group-hover:bg-gaspard-gold group-hover:text-gaspard-dark group-hover:shadow-gaspard-gold/30" 
+                    : "bg-muted text-muted-foreground group-hover:bg-gaspard-emerald group-hover:text-gaspard-cream"
+                )}
               >
                 {exploration.published ? "✨ Révélé au monde" : "🌱 Germe créatif"}
               </Badge>
@@ -93,7 +98,7 @@ const PoeticExplorationCard: React.FC<PoeticExplorationCardProps> = ({ explorati
               {/* Badge compteur de marches */}
               <Badge 
                 variant="outline"
-                className="rounded-full px-3 py-1 text-xs bg-gradient-to-r from-gaspard-primary/10 to-gaspard-secondary/10 text-gaspard-primary border-gaspard-primary/30 group-hover:border-gaspard-gold/50 group-hover:text-gaspard-gold transition-all duration-300"
+                className="rounded-full px-3 py-1 text-xs font-medium bg-gaspard-primary/10 text-gaspard-cream border-2 border-gaspard-emerald/40 group-hover:border-gaspard-gold group-hover:bg-gaspard-gold/10 group-hover:text-gaspard-gold transition-all duration-300"
               >
                 <Footprints className="h-3 w-3 mr-1.5" />
                 {marchesCount === 0 ? 'Aucune marche' : 
@@ -107,7 +112,7 @@ const PoeticExplorationCard: React.FC<PoeticExplorationCardProps> = ({ explorati
         {/* Description poétique */}
         {exploration.description && (
           <div className="mb-6">
-            <p className="text-gaspard-muted leading-relaxed font-light text-justify hyphens-auto">
+            <p className="text-muted-foreground leading-relaxed font-light text-justify hyphens-auto group-hover:text-gaspard-cream transition-colors duration-300">
               {exploration.description}
             </p>
           </div>
@@ -118,7 +123,7 @@ const PoeticExplorationCard: React.FC<PoeticExplorationCardProps> = ({ explorati
           {exploration.meta_keywords.slice(0, 5).map((keyword, index) => (
             <span
               key={index}
-              className="inline-block bg-gaspard-primary/10 text-gaspard-primary text-xs px-3 py-1.5 rounded-full border border-gaspard-primary/20"
+              className="inline-block bg-gaspard-emerald/20 text-gaspard-cream text-xs px-3 py-1.5 rounded-full border border-gaspard-emerald/40 font-medium group-hover:bg-gaspard-gold/20 group-hover:border-gaspard-gold/60 group-hover:text-gaspard-gold transition-all duration-300"
             >
               {keyword}
             </span>
@@ -126,9 +131,9 @@ const PoeticExplorationCard: React.FC<PoeticExplorationCardProps> = ({ explorati
         </div>
 
         {/* Métadonnées temporelles */}
-        <div className="text-xs text-gaspard-muted/70 mb-6 font-light">
+        <div className="text-xs text-muted-foreground mb-6 font-light group-hover:text-gaspard-muted transition-colors duration-300">
           <span className="inline-flex items-center gap-1">
-            <span className="w-1 h-1 bg-gaspard-secondary/40 rounded-full"></span>
+            <span className="w-1 h-1 bg-gaspard-emerald/60 rounded-full group-hover:bg-gaspard-gold transition-colors duration-300"></span>
             Né le {new Date(exploration.created_at).toLocaleDateString('fr-FR', { 
               day: 'numeric', 
               month: 'long', 
@@ -137,7 +142,7 @@ const PoeticExplorationCard: React.FC<PoeticExplorationCardProps> = ({ explorati
           </span>
           {exploration.updated_at !== exploration.created_at && (
             <span className="ml-3 inline-flex items-center gap-1">
-              <span className="w-1 h-1 bg-gaspard-accent/40 rounded-full"></span>
+              <span className="w-1 h-1 bg-accent/60 rounded-full group-hover:bg-gaspard-gold transition-colors duration-300"></span>
               Métamorphosé le {new Date(exploration.updated_at).toLocaleDateString('fr-FR', { 
                 day: 'numeric', 
                 month: 'long' 

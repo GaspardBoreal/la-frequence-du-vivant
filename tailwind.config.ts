@@ -63,14 +63,18 @@ export default {
 					ring: 'hsl(var(--sidebar-ring))'
 				},
 				'gaspard': {
-					'dark': '#0a0f0d',
-					'emerald': '#1a3b2e',
-					'forest': '#234a3d',
-					'sage': '#2d5a4a',
-					'mint': '#3d6b57',
-					'light': '#4d7c64',
-					'cream': '#f5f3f0',
-					'gold': '#d4af37',
+					'dark': '140 30% 6%',        // Converti en HSL
+					'emerald': '140 35% 18%',    // Converti en HSL
+					'forest': '140 32% 22%',     // Converti en HSL
+					'sage': '140 28% 28%',       // Converti en HSL
+					'mint': '140 25% 35%',       // Converti en HSL
+					'light': '140 22% 42%',      // Converti en HSL
+					'cream': '45 25% 95%',       // Converti en HSL
+					'gold': '45 75% 55%',        // Converti en HSL
+					'primary': '140 35% 15%',    // Pour cohérence
+					'secondary': '140 28% 18%',  // Pour cohérence
+					'accent': '45 85% 75%',      // Pour cohérence
+					'muted': '45 15% 65%',       // Pour texte moins visible
 				}
 			},
 			fontFamily: {
