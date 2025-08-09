@@ -2,13 +2,27 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Button } from '../ui/button';
 import { Card } from '../ui/card';
-import { Upload, X, Plus, Trash2, Zap, Settings } from 'lucide-react';
+import { Upload, X, Plus, Trash2, Zap, Settings, GripVertical, MoveUp, MoveDown } from 'lucide-react';
 import { toast } from 'sonner';
+import {
+  DndContext,
+  DragEndEvent,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  closestCenter,
+} from '@dnd-kit/core';
+import {
+  SortableContext,
+  arrayMove,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable';
 import { processPhoto, isSupportedPhotoFormat, formatFileSize } from '../../utils/photoUtils';
 import { 
   fetchExistingPhotos, 
   deletePhoto, 
   updatePhotoMetadata,
+  updatePhotosOrder,
   PhotoToUpload,
   ExistingPhoto
 } from '../../utils/supabasePhotoOperations';
@@ -17,6 +31,7 @@ import { ParallelUploadManager, UploadTask } from '../../utils/parallelUploadMan
 import { ImageOptimizer } from '../../utils/imageOptimizer';
 import { UploadCache } from '../../utils/uploadCache';
 import PhotoCard from './PhotoCard';
+import SortablePhotoCard from './SortablePhotoCard';
 import OptimizedUploadProgress from './OptimizedUploadProgress';
 
 interface MediaUploadSectionProps {
@@ -35,6 +50,7 @@ interface MediaItem {
   metadata?: any;
   titre?: string;
   description?: string;
+  ordre?: number;
   isOptimized?: boolean;
   optimizationInfo?: {
     originalSize: number;
@@ -59,6 +75,15 @@ const MediaUploadSection: React.FC<MediaUploadSectionProps> = ({
   const [imageOptimizer] = useState(() => new ImageOptimizer());
   const [uploadCache] = useState(() => new UploadCache());
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Configuration drag & drop
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8,
+      },
+    })
+  );
 
   // Charger les photos existantes au montage
   useEffect(() => {
@@ -85,17 +110,20 @@ const MediaUploadSection: React.FC<MediaUploadSectionProps> = ({
     try {
       const existingPhotos = await fetchExistingPhotos(marcheId);
       
-      const formattedPhotos: MediaItem[] = existingPhotos.map(photo => ({
-        id: photo.id,
-        url: photo.url_supabase,
-        name: photo.nom_fichier,
-        size: 0,
-        uploaded: true,
-        isExisting: true,
-        metadata: photo.metadata,
-        titre: photo.titre,
-        description: photo.description
-      }));
+      const formattedPhotos: MediaItem[] = existingPhotos
+        .sort((a, b) => (a.ordre || 0) - (b.ordre || 0))
+        .map(photo => ({
+          id: photo.id,
+          url: photo.url_supabase,
+          name: photo.nom_fichier,
+          size: 0,
+          uploaded: true,
+          isExisting: true,
+          metadata: photo.metadata,
+          titre: photo.titre,
+          description: photo.description,
+          ordre: photo.ordre || 0
+        }));
 
       setMediaItems(formattedPhotos);
       console.log(`✅ [MediaUploadSection] ${formattedPhotos.length} photos existantes chargées`);
@@ -392,6 +420,74 @@ const MediaUploadSection: React.FC<MediaUploadSectionProps> = ({
     }
   };
 
+  // Gestion du drag & drop
+  const handleDragEnd = async (event: DragEndEvent) => {
+    const { active, over } = event;
+    
+    if (!over || active.id === over.id) return;
+    
+    const oldIndex = mediaItems.findIndex(item => item.id === active.id);
+    const newIndex = mediaItems.findIndex(item => item.id === over.id);
+    
+    if (oldIndex === -1 || newIndex === -1) return;
+    
+    // Réorganiser localement
+    const newItems = arrayMove(mediaItems, oldIndex, newIndex);
+    setMediaItems(newItems);
+    
+    // Sauvegarder l'ordre en base si ce sont des photos existantes
+    const existingPhotos = newItems.filter(item => item.isExisting);
+    if (existingPhotos.length > 0 && marcheId) {
+      try {
+        const photoIds = existingPhotos.map(item => item.id);
+        await updatePhotosOrder(photoIds);
+        toast.success('Ordre des photos sauvegardé');
+      } catch (error) {
+        console.error('❌ Erreur sauvegarde ordre:', error);
+        toast.error('Erreur lors de la sauvegarde de l\'ordre');
+      }
+    }
+  };
+
+  // Déplacer une photo vers le haut
+  const handleMoveUp = async (itemId: string) => {
+    const index = mediaItems.findIndex(item => item.id === itemId);
+    if (index <= 0) return;
+    
+    const newItems = arrayMove(mediaItems, index, index - 1);
+    setMediaItems(newItems);
+    
+    // Sauvegarder si ce sont des photos existantes
+    await savePhotosOrder(newItems);
+  };
+
+  // Déplacer une photo vers le bas
+  const handleMoveDown = async (itemId: string) => {
+    const index = mediaItems.findIndex(item => item.id === itemId);
+    if (index >= mediaItems.length - 1) return;
+    
+    const newItems = arrayMove(mediaItems, index, index + 1);
+    setMediaItems(newItems);
+    
+    // Sauvegarder si ce sont des photos existantes
+    await savePhotosOrder(newItems);
+  };
+
+  // Sauvegarder l'ordre des photos
+  const savePhotosOrder = async (items: MediaItem[]) => {
+    const existingPhotos = items.filter(item => item.isExisting);
+    if (existingPhotos.length > 0 && marcheId) {
+      try {
+        const photoIds = existingPhotos.map(item => item.id);
+        await updatePhotosOrder(photoIds);
+        toast.success('Ordre sauvegardé');
+      } catch (error) {
+        console.error('❌ Erreur sauvegarde ordre:', error);
+        toast.error('Erreur lors de la sauvegarde');
+      }
+    }
+  };
+
   const handleClearAll = (event: React.MouseEvent<HTMLButtonElement>) => {
     event.preventDefault();
     event.stopPropagation();
@@ -522,19 +618,55 @@ const MediaUploadSection: React.FC<MediaUploadSectionProps> = ({
         </Card>
       ) : (
         <div className="space-y-4">
-          {/* Grille des photos */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {mediaItems.map(item => (
-              <PhotoCard
-                key={item.id}
-                photo={item}
-                onRemove={handleRemove}
-                onUpdateMetadata={handleUpdateMetadata}
-                showOptimizationInfo={item.isOptimized}
-                optimizationInfo={item.optimizationInfo}
-              />
-            ))}
-          </div>
+          {/* Info sur la gestion de l'ordre */}
+          {mediaItems.length > 1 && mediaType === 'photos' && (
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+              <p className="text-blue-800 text-sm">
+                💡 <strong>Gérer l'ordre :</strong> Glissez-déposez les photos ou utilisez les boutons ↑↓ pour réorganiser. L'ordre est sauvegardé automatiquement.
+              </p>
+            </div>
+          )}
+
+          {/* Contexte drag & drop pour les photos */}
+          {mediaType === 'photos' ? (
+            <DndContext
+              sensors={sensors}
+              collisionDetection={closestCenter}
+              onDragEnd={handleDragEnd}
+            >
+              <SortableContext items={mediaItems} strategy={verticalListSortingStrategy}>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {mediaItems.map((item, index) => (
+                    <SortablePhotoCard
+                      key={item.id}
+                      photo={item}
+                      index={index}
+                      totalItems={mediaItems.length}
+                      onRemove={handleRemove}
+                      onUpdateMetadata={handleUpdateMetadata}
+                      onMoveUp={handleMoveUp}
+                      onMoveDown={handleMoveDown}
+                      showOptimizationInfo={item.isOptimized}
+                    />
+                  ))}
+                </div>
+              </SortableContext>
+            </DndContext>
+          ) : (
+            // Grille simple pour les vidéos
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {mediaItems.map(item => (
+                <PhotoCard
+                  key={item.id}
+                  photo={item}
+                  onRemove={handleRemove}
+                  onUpdateMetadata={handleUpdateMetadata}
+                  showOptimizationInfo={item.isOptimized}
+                  optimizationInfo={item.optimizationInfo}
+                />
+              ))}
+            </div>
+          )}
         </div>
       )}
 

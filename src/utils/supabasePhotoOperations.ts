@@ -483,3 +483,33 @@ export const updatePhotoMetadata = async (
     throw error;
   }
 };
+
+// Fonction pour mettre à jour l'ordre des photos
+export const updatePhotosOrder = async (photoIds: string[]): Promise<void> => {
+  console.log('📋 [supabasePhotoOperations] Mise à jour ordre photos:', photoIds);
+  
+  try {
+    // Mettre à jour chaque photo avec son nouvel ordre
+    const updates = photoIds.map((id, index) => 
+      supabase
+        .from('marche_photos')
+        .update({ ordre: index + 1 })
+        .eq('id', id)
+    );
+
+    // Exécuter toutes les mises à jour en parallèle
+    const results = await Promise.all(updates);
+    
+    // Vérifier les erreurs
+    for (const result of results) {
+      if (result.error) {
+        throw result.error;
+      }
+    }
+    
+    console.log('✅ [supabasePhotoOperations] Ordre des photos mis à jour');
+  } catch (error) {
+    console.error('❌ [supabasePhotoOperations] Erreur mise à jour ordre:', error);
+    throw error;
+  }
+};
