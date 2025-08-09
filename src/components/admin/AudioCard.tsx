@@ -198,9 +198,9 @@ const AudioCard: React.FC<AudioCardProps> = ({
               )}
             </Button>
             
-            <div className="flex items-center space-x-2">
-              <Music className="h-4 w-4 text-blue-600" />
-              <span className="font-medium text-sm">{audio.name}</span>
+            <div className="flex items-center space-x-2 flex-1 min-w-0">
+              <Music className="h-4 w-4 text-blue-600 flex-shrink-0" />
+              <span className="font-medium text-sm truncate" title={audio.name}>{audio.name}</span>
             </div>
           </div>
           
@@ -252,9 +252,9 @@ const AudioCard: React.FC<AudioCardProps> = ({
       {/* File Information */}
       <div className="space-y-2">
         <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-2">
-            <FileAudio className="h-4 w-4 text-gray-500" />
-            <span className="font-medium text-sm truncate">{audio.name}</span>
+          <div className="flex items-center space-x-2 flex-1 min-w-0">
+            <FileAudio className="h-4 w-4 text-gray-500 flex-shrink-0" />
+            <span className="font-medium text-sm truncate" title={audio.name}>{audio.name}</span>
           </div>
           <div className="flex items-center space-x-2">
             <Volume2 className="h-3 w-3 text-gray-400" />
@@ -326,9 +326,9 @@ const AudioCard: React.FC<AudioCardProps> = ({
         ) : (
           <div className="space-y-2">
             <div>
-              <p className="text-sm font-medium">{audio.titre || 'Sans titre'}</p>
+              <p className="text-sm font-medium truncate" title={audio.titre || 'Sans titre'}>{audio.titre || 'Sans titre'}</p>
               {audio.description && (
-                <p className="text-xs text-gray-600">{audio.description}</p>
+                <p className="text-xs text-gray-600 line-clamp-2" title={audio.description}>{audio.description}</p>
               )}
             </div>
             <Button
