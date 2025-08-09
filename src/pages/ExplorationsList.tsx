@@ -1,32 +1,35 @@
-import React from 'react';
-import { Link } from 'react-router-dom';
+import React, { useState } from 'react';
 import { useExplorations } from '@/hooks/useExplorations';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Skeleton } from '@/components/ui/skeleton';
+import { Input } from '@/components/ui/input';
+import { Search, Sparkles, Palette } from 'lucide-react';
 import SEOHead from '@/components/SEOHead';
+import DecorativeParticles from '@/components/DecorativeParticles';
+import PoeticExplorationCard from '@/components/PoeticExplorationCard';
 
 const ExplorationsList = () => {
   const { data: explorations, isLoading, error } = useExplorations();
+  const [searchTerm, setSearchTerm] = useState('');
+
+  const filteredExplorations = explorations?.filter(exploration =>
+    exploration.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    exploration.description?.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-sage-50 to-sage-100 py-12">
-        <div className="container mx-auto px-4">
-          <div className="text-center mb-12">
-            <Skeleton className="h-12 w-96 mx-auto mb-4" />
-            <Skeleton className="h-6 w-128 mx-auto" />
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {[...Array(6)].map((_, i) => (
-              <Card key={i} className="overflow-hidden">
-                <Skeleton className="h-48 w-full" />
-                <CardHeader>
-                  <Skeleton className="h-6 w-3/4" />
-                  <Skeleton className="h-4 w-full" />
-                </CardHeader>
-              </Card>
-            ))}
+      <div className="min-h-screen relative overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-br from-gaspard-background via-gaspard-background/95 to-gaspard-background/90"></div>
+        <DecorativeParticles />
+        <div className="relative z-10 container mx-auto px-6 py-12">
+          <div className="text-center py-20">
+            <div className="inline-flex items-center gap-3">
+              <div className="w-2 h-2 bg-gaspard-primary rounded-full animate-gentle-float"></div>
+              <div className="w-2 h-2 bg-gaspard-secondary rounded-full animate-gentle-float animation-delay-300"></div>
+              <div className="w-2 h-2 bg-gaspard-accent rounded-full animate-gentle-float animation-delay-600"></div>
+            </div>
+            <p className="text-gaspard-muted mt-4 font-light">
+              Révélation des essences créatives...
+            </p>
           </div>
         </div>
       </div>
@@ -35,10 +38,12 @@ const ExplorationsList = () => {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-sage-50 to-sage-100 py-12">
-        <div className="container mx-auto px-4 text-center">
-          <h1 className="text-3xl font-bold text-sage-800 mb-4">Erreur</h1>
-          <p className="text-sage-600">Impossible de charger les explorations.</p>
+      <div className="min-h-screen relative overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-br from-gaspard-background via-gaspard-background/95 to-gaspard-background/90"></div>
+        <DecorativeParticles />
+        <div className="relative z-10 container mx-auto px-6 py-12 text-center">
+          <h1 className="text-3xl font-bold text-gaspard-primary mb-4">Erreur</h1>
+          <p className="text-gaspard-muted">Impossible de charger les explorations.</p>
         </div>
       </div>
     );
@@ -52,72 +57,101 @@ const ExplorationsList = () => {
         keywords="explorations, marches, poésie, nature, biodiversité"
       />
       
-      <div className="min-h-screen bg-gradient-to-br from-sage-50 to-sage-100 py-12">
-        <div className="container mx-auto px-4">
-          {/* Header */}
-          <div className="text-center mb-12">
-            <h1 className="text-4xl md:text-5xl font-bold text-sage-800 mb-6">
+      <div className="min-h-screen relative overflow-hidden">
+        {/* Arrière-plan composé avec dégradés organiques */}
+        <div className="absolute inset-0 bg-gradient-to-br from-gaspard-background via-gaspard-background/95 to-gaspard-background/90"></div>
+        <div className="absolute inset-0 bg-gradient-to-tr from-gaspard-primary/5 via-transparent to-gaspard-accent/10"></div>
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_left,_var(--gaspard-secondary-rgb)/0.1,transparent_70%)]"></div>
+        
+        {/* Particules décoratives */}
+        <DecorativeParticles />
+        
+        {/* Contenu principal */}
+        <div className="relative z-10 container mx-auto px-6 py-12">
+          
+          {/* En-tête poétique */}
+          <header className="text-center mb-16 animate-fade-in">
+            <div className="flex justify-center items-center gap-4 mb-6">
+              <Palette className="h-8 w-8 text-gaspard-accent animate-soft-pulse" />
+              <div className="w-16 h-1 bg-gradient-to-r from-transparent via-gaspard-primary to-transparent rounded-full"></div>
+              <Sparkles className="h-6 w-6 text-gaspard-secondary animate-gentle-float" />
+            </div>
+            
+            <h1 className="gaspard-main-title text-5xl md:text-6xl font-bold mb-4 bg-gradient-to-r from-gaspard-primary via-gaspard-secondary to-gaspard-accent bg-clip-text text-transparent">
               Explorations
             </h1>
-            <p className="text-xl text-sage-600 max-w-3xl mx-auto leading-relaxed">
+            
+            <p className="gaspard-category text-xl text-gaspard-muted max-w-3xl mx-auto leading-relaxed font-light">
               Plongez dans les univers thématiques de "La Fréquence du Vivant" à travers 
               des explorations qui révèlent la poésie du monde vivant.
             </p>
-          </div>
+            
+            {/* Ligne décorative animée */}
+            <div className="mt-8 w-24 h-0.5 bg-gradient-to-r from-gaspard-primary to-gaspard-accent mx-auto rounded-full opacity-60"></div>
+          </header>
 
-          {/* Explorations Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {explorations?.map((exploration) => (
-              <Link 
-                key={exploration.id} 
-                to={`/explorations/${exploration.slug}`}
-                className="group"
-              >
-                <Card className="overflow-hidden transition-all duration-300 hover:shadow-xl hover:-translate-y-1 bg-white/80 backdrop-blur-sm border-sage-200 group-hover:border-sage-300">
-                  {exploration.cover_image_url && (
-                    <div className="relative h-48 overflow-hidden">
-                      <img 
-                        src={exploration.cover_image_url} 
-                        alt={exploration.name}
-                        className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-                      />
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />
-                    </div>
-                  )}
-                  <CardHeader>
-                    <CardTitle className="text-xl text-sage-800 group-hover:text-sage-600 transition-colors">
-                      {exploration.name}
-                    </CardTitle>
-                    {exploration.description && (
-                      <CardDescription className="text-sage-600 line-clamp-3">
-                        {exploration.description}
-                      </CardDescription>
-                    )}
-                  </CardHeader>
-                  <CardContent>
-                    <div className="flex flex-wrap gap-2">
-                      {exploration.meta_keywords.slice(0, 3).map((keyword, index) => (
-                        <Badge key={index} variant="secondary" className="text-xs">
-                          {keyword}
-                        </Badge>
-                      ))}
-                    </div>
-                  </CardContent>
-                </Card>
-              </Link>
-            ))}
-          </div>
-
-          {explorations?.length === 0 && (
-            <div className="text-center py-16">
-              <h3 className="text-2xl font-semibold text-sage-700 mb-4">
-                Aucune exploration disponible
-              </h3>
-              <p className="text-sage-600">
-                Les explorations seront bientôt disponibles.
-              </p>
+          {/* Barre de recherche poétique */}
+          <div className="mb-12 flex justify-center animate-fade-in animation-delay-300">
+            <div className="max-w-lg w-full relative">
+              <div className="relative group">
+                <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gaspard-muted/60 group-hover:text-gaspard-primary group-focus-within:text-gaspard-accent transition-all duration-500 group-hover:scale-110" />
+                <Input
+                  type="text"
+                  placeholder="Chercher une essence narrative..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-12 pr-4 py-3 bg-background/60 backdrop-blur-sm border-gaspard-primary/20 rounded-2xl focus:border-gaspard-primary/50 transition-all duration-500 hover:bg-background/80 focus:bg-background/90 hover:shadow-lg hover:shadow-gaspard-primary/10 focus:shadow-xl focus:shadow-gaspard-accent/20"
+                />
+                <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-gaspard-primary/10 via-transparent to-gaspard-accent/10 opacity-0 group-hover:opacity-100 group-focus-within:opacity-50 transition-opacity duration-500 pointer-events-none"></div>
+              </div>
             </div>
-          )}
+          </div>
+
+          {/* Galerie d'explorations en masonry */}
+          <section className="animate-fade-in animation-delay-600">
+            <div className="flex items-center gap-4 mb-8">
+              <h2 className="gaspard-main-title text-2xl font-bold text-gaspard-primary">
+                Paysages Narratifs
+              </h2>
+              <div className="flex-1 h-px bg-gradient-to-r from-gaspard-primary/30 via-gaspard-primary/10 to-transparent"></div>
+              <span className="text-sm text-gaspard-muted/60 font-light">
+                {filteredExplorations?.length || 0} univers révélés
+              </span>
+            </div>
+
+            {filteredExplorations?.length === 0 ? (
+              <div className="text-center py-20">
+                <div className="max-w-md mx-auto">
+                  <Sparkles className="h-16 w-16 text-gaspard-accent/40 mx-auto mb-6 animate-soft-pulse" />
+                  <h3 className="gaspard-main-title text-xl font-semibold text-gaspard-primary mb-4">
+                    {searchTerm ? 'Aucune résonance trouvée' : 'Aucune exploration disponible'}
+                  </h3>
+                  <p className="text-gaspard-muted mb-8 font-light leading-relaxed">
+                    {searchTerm 
+                      ? 'Explorez d\'autres termes pour révéler les essences cachées'
+                      : 'Les explorations seront bientôt révélées.'
+                    }
+                  </p>
+                </div>
+              </div>
+            ) : (
+              <div className="columns-1 md:columns-2 lg:columns-3 gap-6 space-y-6">
+                {filteredExplorations?.map((exploration, index) => (
+                  <div key={exploration.id} className="break-inside-avoid">
+                    <PoeticExplorationCard 
+                      exploration={exploration} 
+                      index={index}
+                    />
+                  </div>
+                ))}
+              </div>
+            )}
+          </section>
+        </div>
+
+        {/* Texture de fond subtile */}
+        <div className="absolute inset-0 opacity-[0.02] pointer-events-none">
+          <div className="w-full h-full bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiMwMDAiIGZpbGwtb3BhY2l0eT0iMC4xIj48Y2lyY2xlIGN4PSIzMCIgY3k9IjMwIiByPSIyIi8+PC9nPjwvZz48L3N2Zz4=')]"></div>
         </div>
       </div>
     </>
