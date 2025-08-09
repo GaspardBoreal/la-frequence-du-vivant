@@ -36,7 +36,7 @@ const PoeticStatsGrid: React.FC<PoeticStatsGridProps> = ({
       label: "Univers Créés",
       value: animatedTotal,
       icon: Sparkles,
-      gradient: "from-blue-400 via-purple-500 to-pink-500",
+      gradient: "from-gaspard-primary via-gaspard-secondary to-gaspard-accent",
       description: "Explorations tissées",
       filterKey: 'all' as FilterType
     },
@@ -44,7 +44,7 @@ const PoeticStatsGrid: React.FC<PoeticStatsGridProps> = ({
       label: "Mondes Révélés",
       value: animatedPublished,
       icon: Globe,
-      gradient: "from-emerald-400 via-green-500 to-teal-500",
+      gradient: "from-gaspard-secondary via-gaspard-accent to-gaspard-primary",
       description: "Lumières partagées",
       filterKey: 'published' as FilterType
     },
@@ -52,7 +52,7 @@ const PoeticStatsGrid: React.FC<PoeticStatsGridProps> = ({
       label: "Germes Cachés",
       value: animatedDrafts,
       icon: Sprout,
-      gradient: "from-amber-400 via-orange-500 to-red-500",
+      gradient: "from-gaspard-accent via-gaspard-primary to-gaspard-secondary",
       description: "Potentiels en devenir",
       filterKey: 'draft' as FilterType
     }
