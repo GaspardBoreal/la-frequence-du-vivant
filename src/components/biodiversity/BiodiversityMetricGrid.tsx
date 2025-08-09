@@ -64,8 +64,6 @@ export const BiodiversityMetricGrid: React.FC<BiodiversityMetricGridProps> = ({
       value: summary.totalSpecies,
       icon: TreePine,
       color: "emerald-500",
-      source: "gbif",
-      sourceUrl: "https://www.gbif.org",
       delay: 0,
       filterKey: "total"
     },
@@ -74,8 +72,6 @@ export const BiodiversityMetricGrid: React.FC<BiodiversityMetricGridProps> = ({
       value: summary.birds,
       icon: Bird,
       color: "sky-500",
-      source: "ebird",
-      sourceUrl: "https://ebird.org",
       delay: 0.1,
       filterKey: "birds"
     },
@@ -84,8 +80,6 @@ export const BiodiversityMetricGrid: React.FC<BiodiversityMetricGridProps> = ({
       value: summary.plants,
       icon: Flower2,
       color: "green-500",
-      source: "gbif",
-      sourceUrl: "https://www.gbif.org",
       delay: 0.2,
       filterKey: "plants"
     },
@@ -94,8 +88,6 @@ export const BiodiversityMetricGrid: React.FC<BiodiversityMetricGridProps> = ({
       value: summary.fungi,
       icon: Bug,
       color: "orange-500",
-      source: "inaturalist",
-      sourceUrl: "https://www.inaturalist.org",
       delay: 0.3,
       filterKey: "fungi"
     },
@@ -104,8 +96,6 @@ export const BiodiversityMetricGrid: React.FC<BiodiversityMetricGridProps> = ({
       value: summary.others,
       icon: MapPin,
       color: "purple-500",
-      source: "gbif",
-      sourceUrl: "https://www.gbif.org",
       delay: 0.4,
       filterKey: "others"
     },
@@ -114,8 +104,6 @@ export const BiodiversityMetricGrid: React.FC<BiodiversityMetricGridProps> = ({
       value: summary.withAudio || 0,
       icon: Calendar,
       color: "amber-500",
-      source: "xeno-canto",
-      sourceUrl: "https://www.xeno-canto.org",
       delay: 0.5,
       filterKey: "withAudio"
     },
@@ -124,15 +112,13 @@ export const BiodiversityMetricGrid: React.FC<BiodiversityMetricGridProps> = ({
       value: summary.withPhotos || 0,
       icon: Calendar,
       color: "cyan-500",
-      source: "inaturalist",
-      sourceUrl: "https://www.inaturalist.org",
       delay: 0.6,
       filterKey: "withPhotos"
     }
   ];
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+    <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3">
       {metrics.map((metric, index) => (
         <BiodiversityMetricCard
           key={metric.title}
