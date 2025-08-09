@@ -44,12 +44,13 @@ const PoeticTextDisplay: React.FC<PoeticTextDisplayProps> = ({
 
   // Process rich text formatting
   const processRichText = (text: string) => {
-    // Simple traitement qui préserve le HTML existant
-    // Le texte contient déjà du HTML formaté depuis l'éditeur riche
+    console.log('🎭 HTML brut reçu:', text);
     
-    // On retourne le texte tel quel pour préserver le formatage original
-    // Les sauts de lignes, italiques, gras sont déjà dans le HTML
-    return text;
+    // Retourner directement le HTML sans aucune transformation
+    const processedText = text;
+    
+    console.log('🎭 HTML traité final:', processedText);
+    return processedText;
   };
 
   // Fonction pour tronquer le titre si nécessaire
@@ -118,7 +119,7 @@ const PoeticTextDisplay: React.FC<PoeticTextDisplayProps> = ({
                 className={`relative ${isAutoReading && index === currentParagraph ? 'bg-yellow-50 rounded-lg p-6' : ''}`}
               >
                 <div 
-                  className="text-lg text-gray-800 font-serif prose prose-lg max-w-none"
+                  className="text-lg text-gray-800 font-serif prose prose-sm max-w-none"
                   style={{ 
                     whiteSpace: 'pre-wrap',
                     wordSpacing: '0.1em'
