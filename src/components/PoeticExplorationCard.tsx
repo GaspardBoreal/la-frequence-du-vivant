@@ -69,30 +69,27 @@ const PoeticExplorationCard: React.FC<PoeticExplorationCardProps> = ({ explorati
       <div className="relative bg-gradient-to-br from-card/80 via-card/60 to-card/40 backdrop-blur-xl border-4 border-gaspard-emerald/40 rounded-3xl p-8 transition-all duration-500 hover:scale-[1.05] hover:shadow-2xl hover:shadow-gaspard-gold/40 hover:border-gaspard-gold/80 hover:ring-4 hover:ring-gaspard-gold/30 hover:bg-gradient-to-br hover:from-card/90 hover:via-card/70 hover:to-card/50 group-hover:backdrop-blur-2xl cursor-pointer"
            onClick={() => navigate(`/admin/explorations/${exploration.id}/edit`)}>
         
-        {/* Effet de lumière interne renforcé au hover */}
-        <div className="absolute inset-0 rounded-3xl bg-gradient-to-br from-primary/0 via-primary/0 to-primary/0 group-hover:from-primary/20 group-hover:via-accent/15 group-hover:to-secondary/20 transition-all duration-700 pointer-events-none group-hover:animate-pulse"></div>
+        {/* Effet de lumière interne simplifié */}
+        <div className="absolute inset-0 rounded-3xl bg-gradient-to-br from-primary/0 via-primary/0 to-primary/0 group-hover:from-primary/10 group-hover:via-accent/8 group-hover:to-secondary/10 transition-all duration-500 pointer-events-none"></div>
         
-        {/* Lueur externe ultra-visible */}
-        <div className="absolute -inset-2 rounded-3xl bg-gradient-to-r from-gaspard-gold/0 via-gaspard-gold/0 to-gaspard-gold/0 group-hover:from-gaspard-gold/20 group-hover:via-gaspard-gold/40 group-hover:to-gaspard-gold/20 blur-xl transition-all duration-500 pointer-events-none opacity-0 group-hover:opacity-100"></div>
+        {/* Lueur externe simplifiée */}
+        <div className="absolute -inset-1 rounded-3xl bg-gradient-to-r from-gaspard-gold/0 via-gaspard-gold/0 to-gaspard-gold/0 group-hover:from-gaspard-gold/10 group-hover:via-gaspard-gold/20 group-hover:to-gaspard-gold/10 blur-lg transition-all duration-300 pointer-events-none opacity-0 group-hover:opacity-100"></div>
         
-        {/* Particules décoratives ultra-animées au hover */}
-        <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-all duration-700">
-          <div className="absolute top-4 right-4 w-2 h-2 bg-gaspard-gold/80 rounded-full animate-bounce group-hover:w-3 group-hover:h-3 transition-all duration-500"></div>
-          <div className="absolute bottom-6 left-6 w-2.5 h-2.5 bg-accent/60 rounded-full animate-bounce group-hover:w-4 group-hover:h-4 transition-all duration-700" style={{ animationDelay: '0.2s' }}></div>
-          <div className="absolute top-1/2 left-4 w-1.5 h-1.5 bg-primary/70 rounded-full animate-bounce group-hover:w-2.5 group-hover:h-2.5 transition-all duration-600" style={{ animationDelay: '0.4s' }}></div>
-          <div className="absolute top-1/3 right-1/3 w-1.5 h-1.5 bg-gaspard-gold/50 rounded-full animate-bounce group-hover:w-2.5 group-hover:h-2.5 transition-all duration-800" style={{ animationDelay: '0.6s' }}></div>
-          <div className="absolute top-1/4 left-1/2 w-1 h-1 bg-accent/60 rounded-full animate-ping group-hover:w-2 group-hover:h-2 transition-all duration-500"></div>
+        {/* Particules décoratives réduites */}
+        <div className="absolute inset-0 opacity-0 group-hover:opacity-60 transition-opacity duration-500">
+          <div className="absolute top-4 right-4 w-1.5 h-1.5 bg-gaspard-gold/60 rounded-full transition-all duration-300"></div>
+          <div className="absolute bottom-6 left-6 w-2 h-2 bg-accent/40 rounded-full transition-all duration-300"></div>
           
-          {/* Effet de vague lumineuse renforcé */}
-          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-gaspard-gold/30 to-transparent transform -translate-x-full group-hover:translate-x-full transition-transform duration-1200 ease-out"></div>
+          {/* Effet de vague lumineuse stabilisé */}
+          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-gaspard-gold/15 to-transparent transform -translate-x-full group-hover:translate-x-full transition-transform duration-800 ease-out"></div>
         </div>
 
         {/* Header avec titre poétique */}
         <div className="flex justify-between items-start mb-6">
           <div className="flex-1">
-            <div className="flex items-center gap-3 mb-3 group-hover:gap-5 transition-all duration-500 group-hover:scale-105 transform-gpu">
-              <Sparkles className="h-6 w-6 text-accent animate-pulse group-hover:text-gaspard-gold group-hover:scale-125 group-hover:rotate-12 transition-all duration-500" />
-              <h3 className="gaspard-main-title text-xl font-bold bg-gradient-to-r from-foreground via-gaspard-gold to-accent bg-clip-text text-transparent group-hover:from-gaspard-gold group-hover:via-accent group-hover:to-foreground group-hover:scale-105 transition-all duration-700 transform-gpu">
+            <div className="flex items-center gap-3 mb-3 group-hover:gap-4 transition-all duration-300">
+              <Sparkles className="h-6 w-6 text-accent group-hover:text-gaspard-gold transition-colors duration-300" />
+              <h3 className="gaspard-main-title text-xl font-bold bg-gradient-to-r from-foreground via-gaspard-gold to-accent bg-clip-text text-transparent group-hover:from-gaspard-gold group-hover:via-accent group-hover:to-foreground transition-all duration-300">
                 {exploration.name}
               </h3>
             </div>
@@ -115,7 +112,7 @@ const PoeticExplorationCard: React.FC<PoeticExplorationCardProps> = ({ explorati
                 variant="outline"
                 className="rounded-full px-3 py-1 text-xs transition-all duration-500 group-hover:px-4 group-hover:py-1.5 group-hover:scale-105 bg-gradient-to-r from-gaspard-primary/10 to-gaspard-secondary/10 text-gaspard-primary border-gaspard-primary/30 hover:from-gaspard-primary/20 hover:to-gaspard-secondary/20 hover:border-gaspard-primary/50"
               >
-                <Footprints className="h-3 w-3 mr-1.5 animate-soft-pulse" />
+                <Footprints className="h-3 w-3 mr-1.5" />
                 {marchesCount === 0 ? 'Aucune marche' : 
                  marchesCount === 1 ? '1 marche' : 
                  `${marchesCount} marches`}
@@ -246,9 +243,9 @@ const PoeticExplorationCard: React.FC<PoeticExplorationCardProps> = ({ explorati
           </AlertDialog>
         </div>
 
-        {/* Forme décorative organique évolutive en arrière-plan */}
-        <div className="absolute -top-4 -right-4 w-24 h-24 opacity-5 group-hover:opacity-10 pointer-events-none transition-all duration-1000 group-hover:scale-110 group-hover:rotate-12">
-          <svg viewBox="0 0 100 100" className="w-full h-full animate-soft-pulse group-hover:animate-gentle-float">
+        {/* Forme décorative organique simplifiée */}
+        <div className="absolute -top-4 -right-4 w-24 h-24 opacity-5 group-hover:opacity-8 pointer-events-none transition-opacity duration-500">
+          <svg viewBox="0 0 100 100" className="w-full h-full">
             <path 
               d="M20,50 Q50,20 80,50 Q50,80 20,50" 
               fill="url(#cardGradient)" 
