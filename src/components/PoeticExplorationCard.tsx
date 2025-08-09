@@ -1,13 +1,18 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Eye, Edit, Settings, Download, Trash2, Sparkles } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
+import { useQueryClient } from '@tanstack/react-query';
 
 interface PoeticExplorationCardProps {
   exploration: {
     id: string;
+    slug: string;
     name: string;
     description?: string;
     published: boolean;
@@ -20,9 +25,33 @@ interface PoeticExplorationCardProps {
 
 const PoeticExplorationCard: React.FC<PoeticExplorationCardProps> = ({ exploration, index }) => {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const [isDeleting, setIsDeleting] = useState(false);
   
   // Animation délayée basée sur l'index pour effet cascade
   const animationDelay = `animation-delay-${(index * 100) % 2000}`;
+
+  const handleDelete = async () => {
+    setIsDeleting(true);
+    try {
+      const { error } = await supabase
+        .from('explorations')
+        .delete()
+        .eq('id', exploration.id);
+
+      if (error) throw error;
+      
+      // Invalider le cache pour rafraîchir la liste
+      queryClient.invalidateQueries({ queryKey: ['admin-explorations'] });
+      
+      toast.success(`Exploration "${exploration.name}" supprimée avec succès`);
+    } catch (error) {
+      console.error('Erreur lors de la suppression:', error);
+      toast.error('Erreur lors de la suppression de l\'exploration');
+    } finally {
+      setIsDeleting(false);
+    }
+  };
   
   return (
     <div 
@@ -134,7 +163,7 @@ const PoeticExplorationCard: React.FC<PoeticExplorationCardProps> = ({ explorati
               size="sm" 
               className="rounded-full bg-gaspard-emerald/30 hover:bg-gaspard-emerald/60 text-gaspard-cream border-2 border-gaspard-emerald/50 hover:border-gaspard-gold/80 transition-all duration-300 hover:scale-125 hover:shadow-xl hover:shadow-gaspard-emerald/40 hover:-translate-y-2 transform-gpu hover:rotate-2"
               title="Contempler en ligne"
-              onClick={(e) => { e.stopPropagation(); navigate(`/explorations/${exploration.id}`); }}
+              onClick={(e) => { e.stopPropagation(); navigate(`/explorations/${exploration.slug}`); }}
             >
               <Eye className="h-4 w-4 mr-2 transition-transform duration-300 hover:scale-150 hover:rotate-12" />
               ✨ Contempler
@@ -174,16 +203,42 @@ const PoeticExplorationCard: React.FC<PoeticExplorationCardProps> = ({ explorati
             🗿 Sculpter
           </Button>
           
-          <Button 
-            variant="ghost" 
-            size="sm" 
-            className="rounded-full bg-destructive/30 hover:bg-destructive/60 text-destructive-foreground border-2 border-destructive/50 hover:border-gaspard-gold/80 transition-all duration-300 hover:scale-125 hover:shadow-xl hover:shadow-destructive/40 hover:-translate-y-2 transform-gpu hover:rotate-2"
-            title="Transmuter en néant"
-            onClick={(e) => { e.stopPropagation(); }}
-          >
-            <Trash2 className="h-4 w-4 mr-2 transition-transform duration-300 hover:scale-150 hover:rotate-12" />
-            🔮 Transmuter
-          </Button>
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className="rounded-full bg-destructive/30 hover:bg-destructive/60 text-destructive-foreground border-2 border-destructive/50 hover:border-gaspard-gold/80 transition-all duration-300 hover:scale-125 hover:shadow-xl hover:shadow-destructive/40 hover:-translate-y-2 transform-gpu hover:rotate-2"
+                title="Supprimer définitivement"
+                disabled={isDeleting}
+                onClick={(e) => { e.stopPropagation(); }}
+              >
+                <Trash2 className="h-4 w-4 mr-2 transition-transform duration-300 hover:scale-150 hover:rotate-12" />
+                {isDeleting ? '⏳ Suppression...' : '🗑️ Supprimer'}
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent onClick={(e) => e.stopPropagation()}>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Confirmer la suppression</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Êtes-vous sûr de vouloir supprimer définitivement l'exploration "{exploration.name}" ?
+                  Cette action est irréversible et supprimera également tous les paysages narratifs et associations de marches.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel disabled={isDeleting}>
+                  Annuler
+                </AlertDialogCancel>
+                <AlertDialogAction 
+                  onClick={handleDelete} 
+                  disabled={isDeleting}
+                  className="bg-destructive hover:bg-destructive/90"
+                >
+                  {isDeleting ? 'Suppression...' : 'Supprimer définitivement'}
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         </div>
 
         {/* Forme décorative organique évolutive en arrière-plan */}
