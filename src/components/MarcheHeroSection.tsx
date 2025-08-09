@@ -71,21 +71,6 @@ const MarcheHeroSection: React.FC<MarcheHeroSectionProps> = ({
             </Button>
           </motion.div>
 
-          {/* Region Badge */}
-          <motion.div 
-            className="absolute top-8 right-8"
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: 0.3 }}
-          >
-            <Badge 
-              variant="outline" 
-              className="bg-white/20 backdrop-blur-sm text-white border-white/30 flex items-center space-x-2"
-            >
-              <MapPin className="h-3 w-3" />
-              <span>{marche.region}</span>
-            </Badge>
-          </motion.div>
         </div>
 
         {/* Main Content - Centered in remaining space */}
@@ -120,7 +105,7 @@ const MarcheHeroSection: React.FC<MarcheHeroSectionProps> = ({
                 {marche.date && (
                   <div className="flex items-center space-x-2">
                     <Calendar className="h-5 w-5" />
-                    <span>{marche.date}</span>
+                    <span>{marche.date.split('/').join(' - ')}</span>
                   </div>
                 )}
               </div>
