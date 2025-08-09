@@ -12,6 +12,17 @@ export const transformSupabaseToLegacyFormat = (marche: MarcheComplete): MarcheT
   
   // Construire les URLs audio depuis Supabase Storage  
   const audioFiles = marche.audio.map(audio => audio.url_supabase);
+  
+  // Préparer les données audio complètes avec métadonnées
+  const audioData = marche.audio.map(audio => ({
+    id: audio.id,
+    url: audio.url_supabase,
+    nom_fichier: audio.nom_fichier,
+    titre: audio.titre,
+    description: audio.description,
+    duree_secondes: audio.duree_secondes,
+    ordre: audio.ordre
+  }));
 
   const transformed: MarcheTechnoSensible = {
     id: marche.id,
@@ -30,6 +41,7 @@ export const transformSupabaseToLegacyFormat = (marche: MarcheComplete): MarcheT
     photos: photos.length > 0 ? photos : undefined,
     videos: videos.length > 0 ? videos : undefined,
     audioFiles: audioFiles.length > 0 ? audioFiles : undefined,
+    audioData: audioData.length > 0 ? audioData : undefined,
     // Nouveaux champs spécifiques à Supabase
     supabaseId: marche.id,
     etudes: marche.etudes.map(etude => ({

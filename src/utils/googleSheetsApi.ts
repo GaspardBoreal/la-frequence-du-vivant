@@ -46,6 +46,15 @@ export interface MarcheTechnoSensible {
   photos?: string[];
   videos?: string[];
   audioFiles?: string[];
+  audioData?: Array<{
+    id: string;
+    url: string;
+    nom_fichier: string;
+    titre?: string;
+    description?: string;
+    duree_secondes?: number;
+    ordre?: number;
+  }>;
   // Legacy properties that might be used by some components
   tags?: string;
   sequencesSonores?: string[];

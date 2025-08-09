@@ -36,13 +36,23 @@ const AudioExperienceSection: React.FC<AudioExperienceSectionProps> = ({ marche,
   
   // Récupérer les fichiers audio depuis les props (maintenant depuis Supabase)
   const audioUrls = marche.audioFiles || [];
+  const audioData = marche.audioData || [];
   
-  // Transformer en format AudioFile pour compatibilité
-  const audioFiles: AudioFile[] = audioUrls.map((url, index) => ({
-    url,
-    name: `Audio-${index + 1}-${marche.ville}.mp3`,
-    description: `Enregistrement audio de la marche à ${marche.ville}`
-  }));
+  // Transformer en format AudioFile en utilisant les métadonnées Supabase si disponibles
+  const audioFiles: AudioFile[] = audioData.length > 0 
+    ? audioData
+        .sort((a, b) => (a.ordre || 0) - (b.ordre || 0)) // Trier par ordre
+        .map((audio, index) => ({
+          url: audio.url,
+          name: audio.titre || audio.nom_fichier || `Audio ${index + 1}`,
+          title: audio.titre,
+          description: audio.description || `Enregistrement audio de la marche à ${marche.ville}`
+        }))
+    : audioUrls.map((url, index) => ({
+        url,
+        name: `Audio-${index + 1}-${marche.ville}.mp3`,
+        description: `Enregistrement audio de la marche à ${marche.ville}`
+      }));
 
   const currentTrack = audioFiles[currentTrackIndex] || null;
   const hasAudioFiles = audioFiles.length > 0;
