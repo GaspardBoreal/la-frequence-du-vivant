@@ -42,17 +42,28 @@ const PoeticTextDisplay: React.FC<PoeticTextDisplayProps> = ({
     }
   };
 
-  // Highlight key phrases
-  const highlightText = (text: string) => {
-    const keyPhrases = ['pont', 'Saint-Denis', 'modernité', 'Isle', 'techno sensible', 'fréquence'];
-    let highlighted = text;
+  // Process rich text formatting
+  const processRichText = (text: string) => {
+    let processed = text;
     
+    // Convertir les retours à la ligne en <br>
+    processed = processed.replace(/\n/g, '<br>');
+    
+    // Gérer les tabulations avec un espacement approprié
+    processed = processed.replace(/\t/g, '<span class="inline-block w-8"></span>');
+    
+    // Préserver le HTML existant (gras, italique, etc.)
+    // Le texte peut déjà contenir du HTML depuis l'éditeur riche
+    
+    // Highlight key phrases en évitant de casser le HTML existant
+    const keyPhrases = ['pont', 'Saint-Denis', 'modernité', 'Isle', 'techno sensible', 'fréquence'];
     keyPhrases.forEach(phrase => {
-      const regex = new RegExp(`(${phrase})`, 'gi');
-      highlighted = highlighted.replace(regex, `<span class="font-semibold text-${theme.colors.primary} bg-${theme.colors.primary}/10 px-1 rounded">$1</span>`);
+      // Regex plus sophistiquée qui évite de matcher à l'intérieur des balises HTML
+      const regex = new RegExp(`(?<!<[^>]*)(${phrase})(?![^<]*>)`, 'gi');
+      processed = processed.replace(regex, `<span class="font-semibold text-primary bg-primary/10 px-1 rounded">$1</span>`);
     });
     
-    return highlighted;
+    return processed;
   };
 
   // Fonction pour tronquer le titre si nécessaire
@@ -120,9 +131,9 @@ const PoeticTextDisplay: React.FC<PoeticTextDisplayProps> = ({
                 transition={{ duration: 0.6, delay: index * 0.1 }}
                 className={`relative ${isAutoReading && index === currentParagraph ? 'bg-yellow-50 rounded-lg p-4' : ''}`}
               >
-                <p 
-                  className="text-xs leading-relaxed text-gray-800 font-serif break-words hyphens-auto overflow-wrap-anywhere"
-                  dangerouslySetInnerHTML={{ __html: highlightText(paragraph) }}
+                <div 
+                  className="text-xs leading-relaxed text-gray-800 font-serif break-words hyphens-auto overflow-wrap-anywhere prose prose-sm max-w-none"
+                  dangerouslySetInnerHTML={{ __html: processRichText(paragraph) }}
                 />
               </motion.div>
             ))}
