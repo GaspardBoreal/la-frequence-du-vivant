@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
-import { Eye, Edit, Settings, Trash2, Sparkles } from 'lucide-react';
+import { Eye, Edit, Settings, Trash2, Sparkles, Footprints } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
@@ -19,6 +19,7 @@ interface PoeticExplorationCardProps {
     created_at: string;
     updated_at: string;
     meta_keywords: string[];
+    marches_count?: number;
   };
   index: number;
 }
@@ -94,17 +95,32 @@ const PoeticExplorationCard: React.FC<PoeticExplorationCardProps> = ({ explorati
             </div>
             
             <div className="mb-4 group-hover:mb-5 transition-all duration-300">
-              <Badge 
-                variant={exploration.published ? "default" : "secondary"}
-                className={cn(
-                  "rounded-full px-4 py-1 text-xs transition-all duration-500 group-hover:px-5 group-hover:py-1.5 group-hover:scale-105",
-                  exploration.published 
-                    ? "bg-gradient-to-r from-emerald-500/20 to-green-500/20 text-white font-bold border-emerald-300/30 hover:from-emerald-500/40 hover:to-green-500/40 hover:border-emerald-400/50 hover:shadow-lg hover:shadow-emerald-500/20" 
-                    : "bg-gradient-to-r from-amber-500/20 to-orange-500/20 text-amber-700 font-medium border-amber-300/30 hover:from-amber-500/40 hover:to-orange-500/40 hover:border-amber-400/50 hover:shadow-lg hover:shadow-amber-500/20"
+              <div className="flex items-center gap-3 flex-wrap">
+                <Badge 
+                  variant={exploration.published ? "default" : "secondary"}
+                  className={cn(
+                    "rounded-full px-4 py-1 text-xs transition-all duration-500 group-hover:px-5 group-hover:py-1.5 group-hover:scale-105",
+                    exploration.published 
+                      ? "bg-gradient-to-r from-emerald-500/20 to-green-500/20 text-white font-bold border-emerald-300/30 hover:from-emerald-500/40 hover:to-green-500/40 hover:border-emerald-400/50 hover:shadow-lg hover:shadow-emerald-500/20" 
+                      : "bg-gradient-to-r from-amber-500/20 to-orange-500/20 text-amber-700 font-medium border-amber-300/30 hover:from-amber-500/40 hover:to-orange-500/40 hover:border-amber-400/50 hover:shadow-lg hover:shadow-amber-500/20"
+                  )}
+                >
+                  {exploration.published ? "✨ Révélé au monde" : "🌱 Germe créatif"}
+                </Badge>
+                
+                {/* Badge pour le nombre de marches */}
+                {exploration.marches_count !== undefined && (
+                  <Badge 
+                    variant="outline"
+                    className="rounded-full px-3 py-1 text-xs bg-gradient-to-r from-gaspard-primary/10 to-gaspard-accent/10 text-gaspard-primary border-gaspard-primary/30 transition-all duration-500 group-hover:scale-105 group-hover:bg-gradient-to-r group-hover:from-gaspard-primary/20 group-hover:to-gaspard-accent/20 group-hover:border-gaspard-primary/50"
+                  >
+                    <Footprints className="h-3 w-3 mr-1.5" />
+                    {exploration.marches_count === 0 ? "Aucune marche" : 
+                     exploration.marches_count === 1 ? "1 marche" : 
+                     `${exploration.marches_count} marches`}
+                  </Badge>
                 )}
-              >
-                {exploration.published ? "✨ Révélé au monde" : "🌱 Germe créatif"}
-              </Badge>
+              </div>
             </div>
           </div>
         </div>

@@ -14,6 +14,7 @@ export interface Exploration {
   published: boolean;
   created_at: string;
   updated_at: string;
+  marches_count?: number;
 }
 
 export interface NarrativeLandscape {
@@ -74,11 +75,21 @@ export const useAdminExplorations = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('explorations')
-        .select('*')
+        .select(`
+          *,
+          marches_count:exploration_marches(count)
+        `)
         .order('created_at', { ascending: false });
       
       if (error) throw error;
-      return data as Exploration[];
+      
+      // Transformer les données pour extraire le count
+      const transformedData = data?.map(exploration => ({
+        ...exploration,
+        marches_count: exploration.marches_count?.[0]?.count || 0
+      }));
+      
+      return transformedData as Exploration[];
     },
     staleTime: 5 * 60 * 1000,
   });
