@@ -38,7 +38,7 @@ const AdminAccess: React.FC = () => {
               Gérer les médias, photos et fichiers audio.
             </p>
             <Link to="/admin/marches">
-              <Button className="w-full">
+              <Button variant="outline" className="w-full">
                 <Settings className="h-4 w-4 mr-2" />
                 Accéder aux Marches
               </Button>
