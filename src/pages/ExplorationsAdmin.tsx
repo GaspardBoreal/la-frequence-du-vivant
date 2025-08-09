@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Plus, Search, Sparkles, Palette } from 'lucide-react';
+import { Plus, Search, Sparkles, Palette, ArrowLeft } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAdminExplorations } from '@/hooks/useExplorations';
 import SEOHead from '@/components/SEOHead';
@@ -49,8 +49,20 @@ const ExplorationsAdmin = () => {
         {/* Contenu principal */}
         <div className="relative z-10 container mx-auto px-6 py-12">
           
-          {/* En-tête poétique */}
+          {/* En-tête poétique avec navigation */}
           <header className="text-center mb-16 animate-fade-in">
+            <div className="flex justify-between items-start mb-6">
+              <Button 
+                variant="outline" 
+                onClick={() => navigate('/access-admin-gb2025')}
+                className="flex items-center"
+              >
+                <ArrowLeft className="h-4 w-4 mr-2" />
+                Retour à l'accueil
+              </Button>
+              <div className="flex-1" />
+            </div>
+            
             <div className="flex justify-center items-center gap-4 mb-6">
               <Palette className="h-8 w-8 text-gaspard-accent animate-soft-pulse" />
               <div className="w-16 h-1 bg-gradient-to-r from-transparent via-gaspard-primary to-transparent rounded-full"></div>

@@ -27,7 +27,7 @@ const MarcheAdmin = () => {
   }, [marches]);
 
   const handleBack = () => {
-    navigate('/');
+    navigate('/access-admin-gb2025');
   };
 
   const handleCreate = () => {
