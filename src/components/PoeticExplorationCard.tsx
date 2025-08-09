@@ -80,7 +80,7 @@ const PoeticExplorationCard: React.FC<PoeticExplorationCardProps> = ({ explorati
           <div className="flex-1">
             <div className="flex items-center gap-3 mb-3">
               <Sparkles className="h-5 w-5 text-primary group-hover:text-gaspard-accent group-hover:scale-125 transition-all duration-400 group-hover:drop-shadow-lg group-hover:filter group-hover:brightness-150" />
-              <h3 className="text-xl font-bold text-foreground group-hover:text-gaspard-accent group-hover:scale-105 transition-all duration-400 group-hover:drop-shadow-md group-hover:filter group-hover:brightness-110 line-clamp-2">
+              <h3 className="text-xl font-medium text-foreground group-hover:text-gaspard-accent group-hover:scale-105 group-hover:font-bold transition-all duration-400 group-hover:drop-shadow-md group-hover:filter group-hover:brightness-110 line-clamp-2">
                 {exploration.name}
               </h3>
             </div>
