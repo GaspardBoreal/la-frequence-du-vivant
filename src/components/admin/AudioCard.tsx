@@ -241,7 +241,7 @@ const AudioCard: React.FC<AudioCardProps> = ({
 
         {/* Upload Status */}
         {audio.uploaded && (
-          <div className="absolute top-2 right-12">
+          <div className="absolute top-1 right-12 left-12 flex justify-center">
             <Badge variant="default" className="text-xs">
               ✓ Uploadé
             </Badge>
