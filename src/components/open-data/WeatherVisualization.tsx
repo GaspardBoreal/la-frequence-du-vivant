@@ -35,7 +35,7 @@ import WeatherStationModal from '../weather/WeatherStationModal';
 import { calculateDistance, formatDistance, getDataQuality } from '../../utils/weatherStationGeolocation';
 import type { Coordinates } from '../../utils/weatherStationGeolocation';
 import { getCorrectStationCoordinates, findNearestWeatherStation } from '../../utils/weatherStationDatabase';
-import StoryEventPanel from './StoryEventPanel';
+import StoryBanner from './StoryBanner';
 import { useWeatherStory } from '@/hooks/useWeatherStory';
 
 interface WeatherDataPoint {
@@ -231,22 +231,10 @@ const WeatherVisualization: React.FC<WeatherVisualizationProps> = memo(({
     }
   }, [isStoryMode, isStoryPlaying, storyEvents.length]);
 
-  // Narration (TTS) simple via Web Speech API
+  // Premium TTS handled in StoryBanner component to avoid double playback
   useEffect(() => {
-    if (!isStoryMode || !ttsEnabled || storyEvents.length === 0) return;
-    const e = storyEvents[storyIndex];
-    const synth = (window as any).speechSynthesis as SpeechSynthesis | undefined;
-    if (!synth) return;
-    try {
-      synth.cancel();
-      const ut = new SpeechSynthesisUtterance(e.summary);
-      ut.lang = 'fr-FR';
-      synth.speak(ut);
-      return () => synth.cancel();
-    } catch (_) {
-      // fail silently
-    }
-  }, [isStoryMode, ttsEnabled, storyIndex, storyEvents]);
+    // Disabled here intentionally
+  }, []);
 
   // Statistiques dynamiques
   const stats = useMemo(() => {
@@ -698,7 +686,8 @@ const WeatherVisualization: React.FC<WeatherVisualizationProps> = memo(({
           exit={{ y: -20, opacity: 0 }}
           transition={{ duration: 0.3 }}
         >
-          <StoryEventPanel
+          <StoryBanner
+            stationName={stationName}
             events={storyEvents}
             currentIndex={storyIndex}
             isPlaying={isStoryPlaying}
@@ -708,6 +697,7 @@ const WeatherVisualization: React.FC<WeatherVisualizationProps> = memo(({
             onPlayPause={() => setIsStoryPlaying(!isStoryPlaying)}
             onToggleTTS={() => setTtsEnabled(!ttsEnabled)}
             onExit={() => setIsStoryMode(false)}
+            voiceId={"xAHsCHisxp9GlCAzoHI7"}
           />
         </motion.div>
       )}
