@@ -11,7 +11,7 @@ import { toast } from 'sonner';
 
 const TONES = ['lyrique','ironique','minimaliste','prophétique','éco-poétique','bioacoustique'] as const;
 const FORMS = ['haïku','note scientifique','dialogue','légende de carte','titre de presse','post Instagram'] as const;
-const POVS  = ["l'eau","le cormoran","un drone","un satellite","une IA oracle","un souvenir futur"] as const;
+const POVS  = ["l'eau","l'oiseau symbolique de cette exploration","un drone","un satellite","une IA oracle","un souvenir futur"] as const;
 const SENSES = ['sonore','olfactive','tactile','chromatique'] as const;
 const TIMES  = ['passé historique','présent','futur 2050','futur 2100'] as const;
 
