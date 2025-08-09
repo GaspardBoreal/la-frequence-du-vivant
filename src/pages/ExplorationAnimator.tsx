@@ -289,23 +289,52 @@ export default function ExplorationAnimator() {
                 tabIndex={0}
                 onClick={() => setMarcheViewModel(model.id)}
                 onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && setMarcheViewModel(model.id)}
-                className={`rounded-lg border p-4 transition-colors cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary ${
-                  marcheViewModel === model.id ? 'border-primary' : 'border-border'
-                }`}
+                className={`
+                  group relative rounded-xl border-2 p-6 cursor-pointer
+                  transition-all duration-300 ease-out
+                  hover:scale-105 hover:shadow-lg hover:shadow-primary/10
+                  focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2
+                  ${marcheViewModel === model.id 
+                    ? 'border-primary bg-primary/5 shadow-md shadow-primary/20 scale-[1.02]' 
+                    : 'border-border hover:border-primary/50 hover:bg-muted/30'
+                  }
+                `}
                 aria-selected={marcheViewModel === model.id}
               >
                 <div className="flex items-start justify-between">
-                  <div>
-                    <h3 className="text-base font-semibold text-foreground">{model.name}</h3>
-                    <p className="text-sm text-foreground/70 mt-1">{model.description}</p>
+                  <div className="flex-1 mr-3">
+                    <h3 className={`text-base font-semibold transition-colors duration-200 ${
+                      marcheViewModel === model.id ? 'text-primary' : 'text-foreground group-hover:text-primary'
+                    }`}>
+                      {model.name}
+                    </h3>
+                    <p className={`text-sm mt-2 transition-colors duration-200 ${
+                      marcheViewModel === model.id ? 'text-foreground' : 'text-foreground/70 group-hover:text-foreground/90'
+                    }`}>
+                      {model.description}
+                    </p>
                   </div>
-                  <div className={`text-xs px-2 py-1 rounded-full ${
-                    marcheViewModel === model.id ? 'bg-primary/10 text-primary' : 'bg-muted text-foreground/70'
-                  }`}>
+                  <div className={`
+                    flex items-center gap-2 text-xs px-3 py-1.5 rounded-full font-medium
+                    transition-all duration-200
+                    ${marcheViewModel === model.id 
+                      ? 'bg-primary text-primary-foreground shadow-sm' 
+                      : 'bg-muted text-muted-foreground group-hover:bg-primary/10 group-hover:text-primary'
+                    }
+                  `}>
+                    {marcheViewModel === model.id && (
+                      <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                      </svg>
+                    )}
                     {marcheViewModel === model.id ? 'Sélectionné' : 'Choisir'}
                   </div>
                 </div>
-                <p className="text-xs text-foreground/60 mt-3">Exemple d'URL : {model.examplePath}</p>
+                <p className={`text-xs mt-4 font-mono transition-colors duration-200 ${
+                  marcheViewModel === model.id ? 'text-foreground/70' : 'text-foreground/50 group-hover:text-foreground/70'
+                }`}>
+                  Exemple d'URL : {model.examplePath}
+                </p>
               </div>
             ))}
           </div>
