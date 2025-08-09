@@ -46,20 +46,23 @@ const PoeticTextDisplay: React.FC<PoeticTextDisplayProps> = ({
   const processRichText = (text: string) => {
     let processed = text;
     
-    // Convertir les retours à la ligne en <br>
-    processed = processed.replace(/\n/g, '<br>');
-    
-    // Gérer les tabulations avec un espacement approprié
-    processed = processed.replace(/\t/g, '<span class="inline-block w-8"></span>');
-    
-    // Préserver le HTML existant (gras, italique, etc.)
+    // Préserver le HTML existant (gras, italique, styles inline, etc.)
     // Le texte peut déjà contenir du HTML depuis l'éditeur riche
+    
+    // Convertir les retours à la ligne simples en <br> seulement s'ils ne sont pas déjà dans du HTML
+    processed = processed.replace(/(?<!>)\n(?!<)/g, '<br>');
+    
+    // Gérer les tabulations avec un espacement approprié pour la poésie
+    processed = processed.replace(/\t/g, '<span class="inline-block w-12"></span>');
+    
+    // Améliorer le rendu des espaces multiples
+    processed = processed.replace(/  /g, '&nbsp;&nbsp;');
     
     // Highlight key phrases en évitant de casser le HTML existant
     const keyPhrases = ['pont', 'Saint-Denis', 'modernité', 'Isle', 'techno sensible', 'fréquence'];
     keyPhrases.forEach(phrase => {
       // Regex plus sophistiquée qui évite de matcher à l'intérieur des balises HTML
-      const regex = new RegExp(`(?<!<[^>]*)(${phrase})(?![^<]*>)`, 'gi');
+      const regex = new RegExp(`(?<!<[^>]*>)\\b(${phrase})\\b(?![^<]*</)`, 'gi');
       processed = processed.replace(regex, `<span class="font-semibold text-primary bg-primary/10 px-1 rounded">$1</span>`);
     });
     
@@ -117,8 +120,8 @@ const PoeticTextDisplay: React.FC<PoeticTextDisplayProps> = ({
         </div>
 
         {/* Text Content - Toujours affiché */}
-        <div className="p-6">
-          <div className="space-y-6">
+        <div className="p-8">
+          <div className="space-y-8">
             {paragraphs.map((paragraph, index) => (
               <motion.div
                 key={index}
@@ -129,10 +132,15 @@ const PoeticTextDisplay: React.FC<PoeticTextDisplayProps> = ({
                   scale: isAutoReading && index === currentParagraph ? 1.02 : 1
                 }}
                 transition={{ duration: 0.6, delay: index * 0.1 }}
-                className={`relative ${isAutoReading && index === currentParagraph ? 'bg-yellow-50 rounded-lg p-4' : ''}`}
+                className={`relative ${isAutoReading && index === currentParagraph ? 'bg-yellow-50 rounded-lg p-6' : ''}`}
               >
                 <div 
-                  className="text-xs leading-relaxed text-gray-800 font-serif break-words hyphens-auto overflow-wrap-anywhere prose prose-sm max-w-none"
+                  className="text-lg leading-relaxed text-gray-800 font-serif whitespace-pre-wrap max-w-none"
+                  style={{ 
+                    lineHeight: '1.8',
+                    wordSpacing: '0.1em',
+                    letterSpacing: '0.02em'
+                  }}
                   dangerouslySetInnerHTML={{ __html: processRichText(paragraph) }}
                 />
               </motion.div>
