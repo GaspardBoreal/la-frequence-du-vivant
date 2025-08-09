@@ -160,7 +160,7 @@ const PoeticExplorationCard: React.FC<PoeticExplorationCardProps> = ({ explorati
             <Button 
               variant="ghost" 
               size="sm" 
-              className="rounded-full bg-gaspard-emerald/30 text-gaspard-cream border border-gaspard-emerald/50 hover:bg-gradient-to-r hover:from-gaspard-emerald hover:to-emerald-400 hover:text-white hover:border-emerald-300 hover:scale-110 hover:shadow-xl hover:shadow-emerald-500/40 transition-all duration-500 transform hover:-translate-y-1"
+              className="rounded-full bg-gaspard-emerald/30 text-gaspard-cream border border-gaspard-emerald/50 hover:bg-gradient-to-r hover:from-gaspard-emerald hover:to-emerald-400 hover:text-black hover:border-emerald-300 hover:scale-110 hover:shadow-xl hover:shadow-emerald-500/40 transition-all duration-500 transform hover:-translate-y-1"
               title="Contempler en ligne"
               onClick={(e) => { e.stopPropagation(); navigate(`/explorations/${exploration.slug}`); }}
             >
@@ -184,7 +184,7 @@ const PoeticExplorationCard: React.FC<PoeticExplorationCardProps> = ({ explorati
           <Button 
             variant="ghost" 
             size="sm" 
-            className="rounded-full bg-primary/30 text-primary-foreground border border-primary/50 hover:bg-gradient-to-r hover:from-gaspard-gold hover:to-amber-500 hover:text-white hover:border-amber-300 hover:scale-110 hover:shadow-xl hover:shadow-amber-500/40 transition-all duration-500 transform hover:-translate-y-1"
+            className="rounded-full bg-primary/30 text-primary-foreground border border-primary/50 hover:bg-gradient-to-r hover:from-gaspard-gold hover:to-amber-500 hover:text-black hover:border-amber-300 hover:scale-110 hover:shadow-xl hover:shadow-amber-500/40 transition-all duration-500 transform hover:-translate-y-1"
             title="Sculpter l'essence"
             onClick={(e) => { e.stopPropagation(); navigate(`/admin/explorations/${exploration.id}/edit`); }}
           >
