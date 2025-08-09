@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../ui/dialog';
 import { Badge } from '../ui/badge';
 import { Button } from '../ui/button';
@@ -10,8 +10,9 @@ import {
   MapPin, 
   Camera, 
   Volume2,
-  X,
-  Eye
+  Eye,
+  ChevronDown,
+  ChevronUp
 } from 'lucide-react';
 import { BiodiversitySpecies } from '@/types/biodiversity';
 
@@ -26,6 +27,8 @@ const SpeciesDetailModal: React.FC<SpeciesDetailModalProps> = ({
   isOpen, 
   onClose 
 }) => {
+  const [showAllObservations, setShowAllObservations] = useState(false);
+  
   if (!species) return null;
 
   const sourceColors = {
@@ -50,18 +53,8 @@ const SpeciesDetailModal: React.FC<SpeciesDetailModalProps> = ({
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="flex items-center justify-between">
-            <span className="text-lg font-semibold text-foreground">
-              {species.commonName}
-            </span>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={onClose}
-              className="h-8 w-8 p-0"
-            >
-              <X className="h-4 w-4" />
-            </Button>
+          <DialogTitle className="text-lg font-semibold text-foreground">
+            {species.commonName}
           </DialogTitle>
         </DialogHeader>
 
@@ -179,9 +172,32 @@ const SpeciesDetailModal: React.FC<SpeciesDetailModalProps> = ({
         {species.attributions && species.attributions.length > 0 && (
           <Card className="mt-6">
             <CardContent className="p-4">
-              <h4 className="font-semibold mb-3 text-foreground">Observations récentes</h4>
-              <div className="space-y-3 max-h-48 overflow-y-auto">
-                {species.attributions.slice(0, 5).map((attribution, index) => (
+              <div className="flex items-center justify-between mb-3">
+                <h4 className="font-semibold text-foreground">Observations récentes</h4>
+                {species.attributions.length > 3 && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setShowAllObservations(!showAllObservations)}
+                    className="flex items-center gap-1"
+                  >
+                    {showAllObservations ? (
+                      <>
+                        Voir moins
+                        <ChevronUp className="h-4 w-4" />
+                      </>
+                    ) : (
+                      <>
+                        Voir plus ({species.attributions.length - 3} autres)
+                        <ChevronDown className="h-4 w-4" />
+                      </>
+                    )}
+                  </Button>
+                )}
+              </div>
+              
+              <div className="space-y-3">
+                {(showAllObservations ? species.attributions : species.attributions.slice(0, 3)).map((attribution, index) => (
                   <div key={index} className="border-l-2 border-muted pl-3 space-y-1">
                     <div className="flex items-center gap-2 text-sm">
                       <User className="h-3 w-3 text-muted-foreground" />
