@@ -314,7 +314,9 @@ const AudioExperienceSection: React.FC<AudioExperienceSectionProps> = ({ marche,
 
               <motion.div className="text-center">
                 <div className="w-20 h-20 mx-auto bg-gradient-to-br from-purple-100 to-blue-100 rounded-full flex items-center justify-center mb-2">
-                  <Music className="h-10 w-10 text-purple-600" />
+                  <span className="text-xl font-bold text-purple-600">
+                    {currentTrackIndex + 1} / {audioFiles.length}
+                  </span>
                 </div>
               </motion.div>
 
