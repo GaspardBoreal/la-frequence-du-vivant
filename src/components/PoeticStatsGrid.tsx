@@ -62,6 +62,7 @@ const PoeticStatsGrid: React.FC<PoeticStatsGridProps> = ({
     if (onFilterChange) {
       // Toggle filter: if clicking on active filter, reset to 'all'
       const newFilter = selectedFilter === filterKey ? 'all' : filterKey;
+      console.log('Filter change:', { current: selectedFilter, clicked: filterKey, new: newFilter });
       onFilterChange(newFilter);
     }
   };
@@ -73,6 +74,8 @@ const PoeticStatsGrid: React.FC<PoeticStatsGridProps> = ({
         const isSelected = selectedFilter === stat.filterKey;
         const isClickable = !!onFilterChange;
         
+        console.log(`Card ${stat.label}:`, { filterKey: stat.filterKey, selectedFilter, isSelected });
+        
         return (
           <div
             key={stat.label}
@@ -82,11 +85,14 @@ const PoeticStatsGrid: React.FC<PoeticStatsGridProps> = ({
             style={{ animationDelay: `${index * 150}ms` }}
             onClick={() => isClickable && handleCardClick(stat.filterKey)}
           >
+            {/* Indicateur de sélection - bordure prioritaire */}
+            {isSelected && (
+              <div className="absolute inset-0 border-4 border-white/90 rounded-2xl pointer-events-none z-20"></div>
+            )}
+            
             {/* Conteneur principal avec effet de verre sophistiqué */}
             <div className={`relative bg-gradient-to-br from-background/70 via-background/50 to-background/30 backdrop-blur-xl rounded-2xl p-6 transition-all duration-700 hover:scale-110 hover:shadow-2xl hover:shadow-gaspard-primary/30 hover:bg-gradient-to-br hover:from-background/80 hover:via-background/60 hover:to-background/40 group-hover:backdrop-blur-2xl ${
-              isSelected 
-                ? 'border-4 border-white/90 shadow-lg shadow-white/10' 
-                : 'border border-transparent hover:border-gaspard-primary/30'
+              !isSelected ? 'border border-transparent hover:border-gaspard-primary/30' : ''
             }`}>
               
               {/* Effet de lumière interne au hover */}
