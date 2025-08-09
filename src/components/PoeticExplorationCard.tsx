@@ -112,7 +112,12 @@ const PoeticExplorationCard: React.FC<PoeticExplorationCardProps> = ({ explorati
         {/* Description poétique avec effet de révélation */}
         {exploration.description && (
           <div className="mb-6 group-hover:mb-7 transition-all duration-300">
-            <p className="text-gaspard-muted leading-relaxed font-light text-justify hyphens-auto group-hover:text-gaspard-primary/90 transition-colors duration-500">
+            <p className={cn(
+              "leading-relaxed font-light text-justify hyphens-auto transition-colors duration-500",
+              exploration.published 
+                ? "text-white font-bold group-hover:text-white/90" 
+                : "text-gaspard-muted group-hover:text-gaspard-primary/90"
+            )}>
               {exploration.description}
             </p>
           </div>
