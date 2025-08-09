@@ -16,7 +16,7 @@ const SEOHead: React.FC<SEOHeadProps> = ({
   description = "Observatoire des Mondes Hybrides (2025–2037) : poésie contemporaine, art & IA, transition agroécologique par Gaspard Boréal.",
   keywords = "bioacoustique poétique, géopoétique augmentée, marches techno-sensibles, poésie prospective, art-IA-vivant, transition agroécologique littéraire, Gaspard Boréal, observatoire poétique hybride, fréquences du vivant",
   author = "Gaspard Boréal",
-  ogImage = "https://la-frequence-du-vivant.lovable.app/og-image.jpg",
+  ogImage = "/og-image.jpg",
   canonicalUrl = "https://la-frequence-du-vivant.lovable.app"
 }) => {
   return (
