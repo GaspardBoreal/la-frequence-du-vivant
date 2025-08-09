@@ -16,7 +16,8 @@ import {
   Music,
   FileAudio,
   Volume2,
-  Loader2
+  Loader2,
+  Download
 } from 'lucide-react';
 import { formatFileSize } from '../../utils/photoUtils';
 
@@ -142,6 +143,19 @@ const AudioCard: React.FC<AudioCardProps> = ({
     if (onUpload) {
       onUpload(audio.id);
     }
+  };
+
+  const handleDownload = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    const link = document.createElement('a');
+    link.href = audio.url;
+    link.download = audio.name;
+    link.target = '_blank';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
   const formatDuration = (seconds: number | null): string => {
@@ -331,16 +345,28 @@ const AudioCard: React.FC<AudioCardProps> = ({
                 <p className="text-xs text-gray-600 line-clamp-2" title={audio.description}>{audio.description}</p>
               )}
             </div>
-            <Button
-              type="button"
-              size="sm"
-              variant="outline"
-              onClick={handleEdit}
-              className="w-full"
-            >
-              <Edit className="h-4 w-4 mr-1" />
-              Modifier
-            </Button>
+            <div className="flex space-x-2">
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                onClick={handleEdit}
+                className="flex-1"
+              >
+                <Edit className="h-4 w-4 mr-1" />
+                Modifier
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                onClick={handleDownload}
+                className="flex-shrink-0"
+                title="Télécharger le fichier audio"
+              >
+                <Download className="h-4 w-4" />
+              </Button>
+            </div>
           </div>
         )}
       </div>
