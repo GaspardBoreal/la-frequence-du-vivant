@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
-import { Eye, Edit, Settings, Download, Trash2, Sparkles } from 'lucide-react';
+import { Eye, Edit, Settings, Trash2, Sparkles } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
@@ -181,16 +181,6 @@ const PoeticExplorationCard: React.FC<PoeticExplorationCardProps> = ({ explorati
             🎼 Orchestrer
           </Button>
           
-          <Button 
-            variant="ghost" 
-            size="sm" 
-            className="rounded-full bg-accent/30 hover:bg-accent/60 text-accent-foreground border-2 border-accent/50 hover:border-gaspard-gold/80 transition-all duration-300 hover:scale-125 hover:shadow-xl hover:shadow-accent/40 hover:-translate-y-2 transform-gpu hover:rotate-1"
-            title="Archiver l'essence"
-            onClick={(e) => { e.stopPropagation(); }}
-          >
-            <Download className="h-4 w-4 mr-2 transition-transform duration-300 hover:-translate-y-1 hover:scale-125" />
-            📦 Archiver
-          </Button>
           
           <Button 
             variant="ghost" 
