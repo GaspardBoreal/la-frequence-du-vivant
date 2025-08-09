@@ -48,11 +48,15 @@ export default function FaviconTest() {
 
   const handleApplyFavicon = async (option: typeof faviconOptions[0]) => {
     setIsApplying(true);
-    // Simulating favicon application
-    await new Promise(resolve => setTimeout(resolve, 1000));
     
-    // In a real implementation, this would update the actual favicon
-    console.log(`Applying favicon: ${option.name}`);
+    // Update the actual favicon
+    const favicon = document.querySelector('link[rel="icon"]') as HTMLLinkElement;
+    if (favicon) {
+      favicon.href = option.path;
+    }
+    
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    console.log(`Applied favicon: ${option.name}`);
     setSelectedFavicon(option.id);
     setIsApplying(false);
   };
@@ -77,42 +81,98 @@ export default function FaviconTest() {
                 <CardDescription>{option.description}</CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
-                {/* Favicon à différentes tailles */}
+                {/* Favicon aux différentes tailles */}
                 <div className="bg-muted/30 rounded-lg p-6 space-y-4">
                   <div className="text-sm font-medium text-muted-foreground text-center">
                     Aperçu aux différentes tailles
                   </div>
                   <div className="flex items-center justify-center space-x-6">
                     <div className="text-center space-y-2">
-                      <div className="w-4 h-4 bg-primary/20 rounded border flex items-center justify-center">
-                        <div className="w-3 h-3 bg-primary rounded"></div>
+                      <div className="w-4 h-4 bg-background rounded border flex items-center justify-center">
+                        <img 
+                          src={option.path} 
+                          alt={option.name}
+                          className="w-4 h-4 object-contain"
+                          onError={(e) => {
+                            e.currentTarget.style.display = 'none';
+                          }}
+                        />
                       </div>
                       <span className="text-xs text-muted-foreground">16×16</span>
                     </div>
                     <div className="text-center space-y-2">
-                      <div className="w-8 h-8 bg-primary/20 rounded border flex items-center justify-center">
-                        <div className="w-6 h-6 bg-primary rounded"></div>
+                      <div className="w-8 h-8 bg-background rounded border flex items-center justify-center">
+                        <img 
+                          src={option.path} 
+                          alt={option.name}
+                          className="w-8 h-8 object-contain"
+                          onError={(e) => {
+                            e.currentTarget.style.display = 'none';
+                          }}
+                        />
                       </div>
                       <span className="text-xs text-muted-foreground">32×32</span>
                     </div>
                     <div className="text-center space-y-2">
-                      <div className="w-16 h-16 bg-primary/20 rounded border flex items-center justify-center">
-                        <div className="w-12 h-12 bg-primary rounded"></div>
+                      <div className="w-16 h-16 bg-background rounded border flex items-center justify-center">
+                        <img 
+                          src={option.path} 
+                          alt={option.name}
+                          className="w-16 h-16 object-contain"
+                          onError={(e) => {
+                            e.currentTarget.style.display = 'none';
+                          }}
+                        />
                       </div>
                       <span className="text-xs text-muted-foreground">64×64</span>
                     </div>
                   </div>
-                </div>
-
-                {/* Design concept preview */}
-                <div className="bg-card/50 rounded-lg p-4 text-center">
-                  <div className="w-24 h-24 mx-auto bg-gradient-to-br from-primary to-primary/60 rounded-full flex items-center justify-center mb-4 shadow-lg">
-                    <div className="w-16 h-16 text-primary-foreground flex items-center justify-center text-xs font-bold">
-                      {option.name.slice(0, 2)}
+                  
+                  {/* Test sur différents fonds */}
+                  <div className="grid grid-cols-2 gap-4 pt-4 border-t">
+                    <div className="text-center space-y-2">
+                      <div className="w-8 h-8 bg-white rounded border flex items-center justify-center mx-auto">
+                        <img 
+                          src={option.path} 
+                          alt={option.name}
+                          className="w-8 h-8 object-contain"
+                          onError={(e) => {
+                            e.currentTarget.style.display = 'none';
+                          }}
+                        />
+                      </div>
+                      <span className="text-xs text-muted-foreground">Fond clair</span>
+                    </div>
+                    <div className="text-center space-y-2">
+                      <div className="w-8 h-8 bg-gray-900 rounded border flex items-center justify-center mx-auto">
+                        <img 
+                          src={option.path} 
+                          alt={option.name}
+                          className="w-8 h-8 object-contain"
+                          onError={(e) => {
+                            e.currentTarget.style.display = 'none';
+                          }}
+                        />
+                      </div>
+                      <span className="text-xs text-muted-foreground">Fond sombre</span>
                     </div>
                   </div>
+                </div>
+
+                {/* Aperçu grande taille */}
+                <div className="bg-card/50 rounded-lg p-4 text-center">
+                  <div className="w-24 h-24 mx-auto bg-background rounded-lg border flex items-center justify-center mb-4 shadow-lg">
+                    <img 
+                      src={option.path} 
+                      alt={option.name}
+                      className="w-20 h-20 object-contain"
+                      onError={(e) => {
+                        e.currentTarget.style.display = 'none';
+                      }}
+                    />
+                  </div>
                   <p className="text-sm text-muted-foreground">
-                    Concept de design pour "{option.name}"
+                    Aperçu grande taille
                   </p>
                 </div>
 
