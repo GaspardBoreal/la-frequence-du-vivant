@@ -155,7 +155,7 @@ export default function ExplorationAnimator() {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
-              <h3 className="font-medium mb-2">Variations de ton</h3>
+              <h3 className="font-medium mb-2 underline">Variations de ton</h3>
               <div className="grid grid-cols-2 gap-2">
                 {TONES.map(t => (
                   <label key={t} className="flex items-center gap-2">
@@ -203,7 +203,7 @@ export default function ExplorationAnimator() {
             </div>
 
             <div>
-              <h3 className="font-medium mb-2">Variations de point de vue</h3>
+              <h3 className="font-medium mb-2 underline">Variations de point de vue</h3>
               <div className="grid grid-cols-2 gap-2">
                 {POVS.map(p => (
                   <label key={p} className="flex items-center gap-2">
@@ -251,7 +251,7 @@ export default function ExplorationAnimator() {
             </div>
 
             <div>
-              <h3 className="font-medium mb-2">Variations temporelles</h3>
+              <h3 className="font-medium mb-2 underline">Variations temporelles</h3>
               <div className="grid grid-cols-2 gap-2">
                 {TIMES.map(ti => (
                   <label key={ti} className="flex items-center gap-2">
