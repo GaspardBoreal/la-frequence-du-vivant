@@ -5,8 +5,6 @@ import {
   Image as ImageIcon, 
   Play, 
   Pause, 
-  Maximize, 
-  Heart,
   Download,
   Share2,
   AlertCircle,
@@ -30,7 +28,6 @@ const ImmersiveVisualSection: React.FC<ImmersiveVisualSectionProps> = ({
   theme
 }) => {
   const [selectedMedia, setSelectedMedia] = useState<{url: string, type: 'photo' | 'video'} | null>(null);
-  const [favorites, setFavorites] = useState<Set<string>>(new Set());
   const [isLoading, setIsLoading] = useState(false);
   const galleryRef = useRef<HTMLDivElement | null>(null);
 
@@ -82,86 +79,77 @@ useEffect(() => {
   window.addEventListener('keydown', onKeyDown);
   return () => window.removeEventListener('keydown', onKeyDown);
 }, [totalPages]);
-  const toggleFavorite = (mediaUrl: string) => {
-    const newFavorites = new Set(favorites);
-    if (newFavorites.has(mediaUrl)) {
-      newFavorites.delete(mediaUrl);
-    } else {
-      newFavorites.add(mediaUrl);
-    }
-    setFavorites(newFavorites);
-  };
 
-  const MediaItem: React.FC<{ 
-    src: string; 
-    type: 'photo' | 'video';
-    alt: string; 
-    className?: string; 
-    onClick?: () => void 
-  }> = ({ src, type, alt, className = "", onClick }) => {
-    const [mediaLoaded, setMediaLoaded] = useState(false);
-    const [mediaError, setMediaError] = useState(false);
+const MediaItem: React.FC<{ 
+  src: string; 
+  type: 'photo' | 'video';
+  alt: string; 
+  className?: string; 
+  onClick?: () => void 
+}> = ({ src, type, alt, className = "", onClick }) => {
+  const [mediaLoaded, setMediaLoaded] = useState(false);
+  const [mediaError, setMediaError] = useState(false);
 
-    if (type === 'video') {
-      return (
-        <div className={`relative ${className}`} onClick={onClick}>
-          <video
-            src={src}
-            className="w-full h-full object-cover"
-            onLoadedData={() => setMediaLoaded(true)}
-            onError={() => setMediaError(true)}
-            preload="metadata"
-            muted
-          />
-          {/* Overlay vidéo */}
-          <div className="absolute inset-0 bg-black/20 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-            <div className="bg-white/90 rounded-full p-2">
-              <VideoIcon className="h-6 w-6 text-gray-800" />
-            </div>
-          </div>
-          {!mediaLoaded && !mediaError && (
-            <div className="absolute inset-0 bg-gray-200 animate-pulse flex items-center justify-center">
-              <div className="text-gray-500 text-sm">Chargement vidéo...</div>
-            </div>
-          )}
-          {mediaError && (
-            <div className="absolute inset-0 bg-red-100 flex items-center justify-center">
-              <div className="text-red-500 text-sm text-center">
-                <AlertCircle className="h-4 w-4 mx-auto mb-1" />
-                Erreur vidéo
-              </div>
-            </div>
-          )}
-        </div>
-      );
-    }
-
+  if (type === 'video') {
     return (
       <div className={`relative ${className}`} onClick={onClick}>
-        <img
+        <video
           src={src}
-          alt={alt}
-          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
-          onLoad={() => setMediaLoaded(true)}
+          className="w-full h-full object-cover"
+          onLoadedData={() => setMediaLoaded(true)}
           onError={() => setMediaError(true)}
-          crossOrigin="anonymous"
+          preload="metadata"
+          muted
         />
+        {/* Overlay vidéo */}
+        <div className="absolute inset-0 bg-black/20 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+          <div className="bg-white/90 rounded-full p-2">
+            <VideoIcon className="h-6 w-6 text-gray-800" />
+          </div>
+        </div>
         {!mediaLoaded && !mediaError && (
           <div className="absolute inset-0 bg-gray-200 animate-pulse flex items-center justify-center">
-            <div className="text-gray-500 text-sm">Chargement...</div>
+            <div className="text-gray-500 text-sm">Chargement vidéo...</div>
           </div>
         )}
         {mediaError && (
           <div className="absolute inset-0 bg-red-100 flex items-center justify-center">
             <div className="text-red-500 text-sm text-center">
               <AlertCircle className="h-4 w-4 mx-auto mb-1" />
-              Erreur
+              Erreur vidéo
             </div>
           </div>
         )}
       </div>
     );
-  };
+  }
+
+  return (
+    <div className={`relative ${className}`} onClick={onClick}>
+      <img
+        src={src}
+        alt={alt}
+        className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+        onLoad={() => setMediaLoaded(true)}
+        onError={() => setMediaError(true)}
+        crossOrigin="anonymous"
+      />
+      {!mediaLoaded && !mediaError && (
+        <div className="absolute inset-0 bg-gray-200 animate-pulse flex items-center justify-center">
+          <div className="text-gray-500 text-sm">Chargement...</div>
+        </div>
+      )}
+      {mediaError && (
+        <div className="absolute inset-0 bg-red-100 flex items-center justify-center">
+          <div className="text-red-500 text-sm text-center">
+            <AlertCircle className="h-4 w-4 mx-auto mb-1" />
+            Erreur
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
 
   if (mediaItems.length === 0) {
     return (
@@ -220,30 +208,6 @@ useEffect(() => {
               
               {/* Overlay */}
               <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-              
-              {/* Actions */}
-              <div className="absolute top-3 right-3 flex space-x-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    toggleFavorite(media.url);
-                  }}
-                  className="bg-white/20 backdrop-blur-sm hover:bg-white/30 text-white"
-                >
-                  <Heart 
-                    className={`h-4 w-4 ${favorites.has(media.url) ? 'fill-red-500 text-red-500' : ''}`} 
-                  />
-                </Button>
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  className="bg-white/20 backdrop-blur-sm hover:bg-white/30 text-white"
-                >
-                  <Maximize className="h-4 w-4" />
-                </Button>
-              </div>
               
               {/* Media Counter */}
               <div className="absolute bottom-3 left-3 text-white text-sm font-medium opacity-0 group-hover:opacity-100 transition-opacity duration-300">
