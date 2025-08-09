@@ -188,6 +188,9 @@ const MarcheDetail = () => {
           marche={marche}
           theme={theme}
           onBack={handleBack}
+          previousMarche={previousMarche}
+          nextMarche={nextMarche}
+          onNavigateToMarche={handleNavigateToMarche}
         />
 
         <div className="max-w-6xl mx-auto px-6">
@@ -198,45 +201,7 @@ const MarcheDetail = () => {
           />
         </div>
 
-        <div className="max-w-6xl mx-auto px-6 pt-4 pb-16 relative">
-          {previousMarche && (
-            <motion.div
-              className="fixed left-4 top-1/2 transform -translate-y-1/2 z-10"
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.5 }}
-            >
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => handleNavigateToMarche(previousMarche)}
-                className="bg-white/80 backdrop-blur-sm hover:bg-white/90 shadow-lg border border-gray-200 p-3 rounded-full"
-                title={`Marche précédente: ${previousMarche.nomMarche || previousMarche.ville}`}
-              >
-                <ChevronLeft className="h-5 w-5 text-gray-600" />
-              </Button>
-            </motion.div>
-          )}
-
-          {nextMarche && (
-            <motion.div
-              className="fixed right-4 top-1/2 transform -translate-y-1/2 z-10"
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.5 }}
-            >
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => handleNavigateToMarche(nextMarche)}
-                className="bg-white/80 backdrop-blur-sm hover:bg-white/90 shadow-lg border border-gray-200 p-3 rounded-full"
-                title={`Marche suivante: ${nextMarche.nomMarche || nextMarche.ville}`}
-              >
-                <ChevronRight className="h-5 w-5 text-gray-600" />
-              </Button>
-            </motion.div>
-          )}
-
+        <div className="max-w-6xl mx-auto px-6 pt-4 pb-16">
           <motion.div
             key={activeSection}
             initial={{ opacity: 0, y: 20 }}

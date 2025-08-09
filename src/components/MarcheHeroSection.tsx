@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { motion } from 'framer-motion';
-import { MapPin, Calendar, ArrowLeft } from 'lucide-react';
+import { MapPin, Calendar, ArrowLeft, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
 import { MarcheTechnoSensible } from '../utils/googleSheetsApi';
@@ -11,12 +11,18 @@ interface MarcheHeroSectionProps {
   marche: MarcheTechnoSensible;
   theme: RegionalTheme;
   onBack: () => void;
+  previousMarche?: MarcheTechnoSensible | null;
+  nextMarche?: MarcheTechnoSensible | null;
+  onNavigateToMarche?: (marche: MarcheTechnoSensible) => void;
 }
 
 const MarcheHeroSection: React.FC<MarcheHeroSectionProps> = ({
   marche,
   theme,
-  onBack
+  onBack,
+  previousMarche,
+  nextMarche,
+  onNavigateToMarche
 }) => {
   const firstPhoto = marche.photos?.[0];
 
@@ -51,26 +57,73 @@ const MarcheHeroSection: React.FC<MarcheHeroSectionProps> = ({
 
       {/* Content Overlay */}
       <div className="relative z-10 flex flex-col min-h-screen px-6">
-        {/* Top Section with Fixed Height for Buttons */}
-        <div className="relative h-24 flex-shrink-0">
-          {/* Back Button */}
-          <motion.div 
-            className="absolute top-8 left-8"
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: 0.3 }}
-          >
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              onClick={onBack}
-              className="bg-white/20 backdrop-blur-sm hover:bg-white/30 text-white border-white/30"
+        {/* Top Section - Centered Navigation Bar */}
+        <div className="flex justify-center items-center pt-8">
+          <div className="flex items-center space-x-6 bg-black/20 backdrop-blur-md rounded-2xl px-6 py-3 border border-white/10">
+            {/* Back Button */}
+            <motion.div 
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.3 }}
             >
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Retour à la carte
-            </Button>
-          </motion.div>
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={onBack}
+                className="bg-white/10 backdrop-blur-md hover:bg-white/20 text-white border-white/20 transition-all duration-200 hover:scale-105"
+              >
+                <ArrowLeft className="h-4 w-4 mr-2" />
+                Retour à la carte
+              </Button>
+            </motion.div>
 
+            {/* Previous Arrow */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: 0.4 }}
+            >
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => previousMarche && onNavigateToMarche && onNavigateToMarche(previousMarche)}
+                disabled={!previousMarche || !onNavigateToMarche}
+                className={`backdrop-blur-md border p-3 rounded-xl transition-all duration-300 ${
+                  previousMarche && onNavigateToMarche
+                    ? 'bg-gradient-to-r from-purple-500/20 to-pink-500/20 hover:from-purple-400/30 hover:to-pink-400/30 text-white border-purple-400/30 hover:scale-110 hover:shadow-lg hover:shadow-purple-500/20'
+                    : 'bg-white/5 text-white/40 border-white/10 cursor-not-allowed'
+                }`}
+                title={previousMarche ? `Marche précédente: ${previousMarche.nomMarche || previousMarche.ville}` : 'Aucune marche précédente'}
+              >
+                <ChevronLeft className="h-5 w-5" />
+              </Button>
+            </motion.div>
+
+            {/* Separator */}
+            <div className="h-6 w-px bg-white/20"></div>
+
+            {/* Next Arrow */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: 0.4 }}
+            >
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => nextMarche && onNavigateToMarche && onNavigateToMarche(nextMarche)}
+                disabled={!nextMarche || !onNavigateToMarche}
+                className={`backdrop-blur-md border p-3 rounded-xl transition-all duration-300 ${
+                  nextMarche && onNavigateToMarche
+                    ? 'bg-gradient-to-r from-purple-500/20 to-pink-500/20 hover:from-purple-400/30 hover:to-pink-400/30 text-white border-purple-400/30 hover:scale-110 hover:shadow-lg hover:shadow-purple-500/20'
+                    : 'bg-white/5 text-white/40 border-white/10 cursor-not-allowed'
+                }`}
+                title={nextMarche ? `Marche suivante: ${nextMarche.nomMarche || nextMarche.ville}` : 'Aucune marche suivante'}
+              >
+                <ChevronRight className="h-5 w-5" />
+              </Button>
+            </motion.div>
+          </div>
         </div>
 
         {/* Main Content - Centered in remaining space */}
