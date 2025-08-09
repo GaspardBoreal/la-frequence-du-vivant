@@ -16,13 +16,6 @@ import MigrationExecution from './pages/MigrationExecution';
 import MarcheAdmin from './pages/MarcheAdmin';
 import AdminAccess from './pages/AdminAccess';
 import TestEbird from './pages/TestEbird';
-import SimpleTest from './pages/SimpleTest';
-import DebugTest from './pages/DebugTest';
-import TestRoute from './pages/TestRoute';
-import FaviconTest from './pages/FaviconTest';
-import CartesVisite from './pages/CartesVisite';
-import Kakemono from './pages/Kakemono';
-import MarquePage from './pages/MarquePage';
 
 
 function App() {
@@ -65,14 +58,6 @@ function App() {
             </AdminAuth>
           } />
           
-          {/* Routes de test */}
-          <Route path="/simple-test" element={<SimpleTest />} />
-          <Route path="/debug-test" element={<DebugTest />} />
-          <Route path="/test" element={<TestRoute />} />
-          <Route path="/favicon-test" element={<FaviconTest />} />
-          <Route path="/cartes-visite" element={<CartesVisite />} />
-          <Route path="/kakemono" element={<Kakemono />} />
-          <Route path="/marque-page" element={<MarquePage />} />
           
           <Route path="*" element={<NotFound />} />
         </Routes>
