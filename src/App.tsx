@@ -15,6 +15,10 @@ import MigrationAdmin from './pages/MigrationAdmin';
 import MigrationExecution from './pages/MigrationExecution';
 import MarcheAdmin from './pages/MarcheAdmin';
 import AdminAccess from './pages/AdminAccess';
+import ExplorationsList from './pages/ExplorationsList';
+import ExplorationDetail from './pages/ExplorationDetail';
+import NarrativeLandscape from './pages/NarrativeLandscape';
+import ExplorationsAdmin from './pages/ExplorationsAdmin';
 import TestEbird from './pages/TestEbird';
 import FaviconTest from './pages/FaviconTest';
 
@@ -32,6 +36,11 @@ function App() {
           <Route path="/bioacoustique-poetique" element={<BioacoustiquePoetique />} />
           <Route path="/bioacoustique/:slug" element={<MarcheDetailBio />} />
           
+          {/* Routes explorations */}
+          <Route path="/explorations" element={<ExplorationsList />} />
+          <Route path="/explorations/:slug" element={<ExplorationDetail />} />
+          <Route path="/explorations/:slug/:narrativeSlug" element={<NarrativeLandscape />} />
+          
           {/* Routes d'administration protégées */}
           <Route path="/admin/migration" element={
             <AdminAuth>
@@ -46,6 +55,11 @@ function App() {
           <Route path="/admin/marches" element={
             <AdminAuth>
               <MarcheAdmin />
+            </AdminAuth>
+          } />
+          <Route path="/admin/explorations" element={
+            <AdminAuth>
+              <ExplorationsAdmin />
             </AdminAuth>
           } />
           <Route path="/access-admin-gb2025" element={

@@ -14,6 +14,206 @@ export type Database = {
   }
   public: {
     Tables: {
+      exploration_clicks: {
+        Row: {
+          action: string
+          created_at: string
+          exploration_id: string | null
+          geo_lat: number | null
+          geo_lng: number | null
+          id: string
+          marche_id: string | null
+          narrative_id: string | null
+          referrer: string | null
+          user_agent: string | null
+        }
+        Insert: {
+          action: string
+          created_at?: string
+          exploration_id?: string | null
+          geo_lat?: number | null
+          geo_lng?: number | null
+          id?: string
+          marche_id?: string | null
+          narrative_id?: string | null
+          referrer?: string | null
+          user_agent?: string | null
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          exploration_id?: string | null
+          geo_lat?: number | null
+          geo_lng?: number | null
+          id?: string
+          marche_id?: string | null
+          narrative_id?: string | null
+          referrer?: string | null
+          user_agent?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "exploration_clicks_exploration_id_fkey"
+            columns: ["exploration_id"]
+            isOneToOne: false
+            referencedRelation: "explorations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "exploration_clicks_marche_id_fkey"
+            columns: ["marche_id"]
+            isOneToOne: false
+            referencedRelation: "marches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "exploration_clicks_narrative_id_fkey"
+            columns: ["narrative_id"]
+            isOneToOne: false
+            referencedRelation: "narrative_landscapes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      exploration_feedbacks: {
+        Row: {
+          comment: string
+          created_at: string
+          exploration_id: string | null
+          id: string
+          language: string
+          marche_id: string | null
+          narrative_id: string | null
+          rating: number | null
+        }
+        Insert: {
+          comment: string
+          created_at?: string
+          exploration_id?: string | null
+          id?: string
+          language?: string
+          marche_id?: string | null
+          narrative_id?: string | null
+          rating?: number | null
+        }
+        Update: {
+          comment?: string
+          created_at?: string
+          exploration_id?: string | null
+          id?: string
+          language?: string
+          marche_id?: string | null
+          narrative_id?: string | null
+          rating?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "exploration_feedbacks_exploration_id_fkey"
+            columns: ["exploration_id"]
+            isOneToOne: false
+            referencedRelation: "explorations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "exploration_feedbacks_marche_id_fkey"
+            columns: ["marche_id"]
+            isOneToOne: false
+            referencedRelation: "marches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "exploration_feedbacks_narrative_id_fkey"
+            columns: ["narrative_id"]
+            isOneToOne: false
+            referencedRelation: "narrative_landscapes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      exploration_marches: {
+        Row: {
+          created_at: string
+          exploration_id: string
+          id: string
+          marche_id: string
+          ordre: number | null
+        }
+        Insert: {
+          created_at?: string
+          exploration_id: string
+          id?: string
+          marche_id: string
+          ordre?: number | null
+        }
+        Update: {
+          created_at?: string
+          exploration_id?: string
+          id?: string
+          marche_id?: string
+          ordre?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "exploration_marches_exploration_id_fkey"
+            columns: ["exploration_id"]
+            isOneToOne: false
+            referencedRelation: "explorations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "exploration_marches_marche_id_fkey"
+            columns: ["marche_id"]
+            isOneToOne: false
+            referencedRelation: "marches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      explorations: {
+        Row: {
+          cover_image_url: string | null
+          created_at: string
+          description: string | null
+          id: string
+          language: string
+          meta_description: string | null
+          meta_keywords: string[]
+          meta_title: string | null
+          name: string
+          published: boolean
+          slug: string
+          updated_at: string
+        }
+        Insert: {
+          cover_image_url?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          language?: string
+          meta_description?: string | null
+          meta_keywords?: string[]
+          meta_title?: string | null
+          name: string
+          published?: boolean
+          slug: string
+          updated_at?: string
+        }
+        Update: {
+          cover_image_url?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          language?: string
+          meta_description?: string | null
+          meta_keywords?: string[]
+          meta_title?: string | null
+          name?: string
+          published?: boolean
+          slug?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       marche_audio: {
         Row: {
           created_at: string
@@ -376,6 +576,65 @@ export type Database = {
           ville?: string
         }
         Relationships: []
+      }
+      narrative_landscapes: {
+        Row: {
+          ai_prompt: string | null
+          cover_image_url: string | null
+          created_at: string
+          description: string | null
+          exploration_id: string
+          id: string
+          language: string
+          meta_description: string | null
+          meta_keywords: string[]
+          meta_title: string | null
+          name: string
+          ordre: number
+          slug: string
+          updated_at: string
+        }
+        Insert: {
+          ai_prompt?: string | null
+          cover_image_url?: string | null
+          created_at?: string
+          description?: string | null
+          exploration_id: string
+          id?: string
+          language?: string
+          meta_description?: string | null
+          meta_keywords?: string[]
+          meta_title?: string | null
+          name: string
+          ordre?: number
+          slug: string
+          updated_at?: string
+        }
+        Update: {
+          ai_prompt?: string | null
+          cover_image_url?: string | null
+          created_at?: string
+          description?: string | null
+          exploration_id?: string
+          id?: string
+          language?: string
+          meta_description?: string | null
+          meta_keywords?: string[]
+          meta_title?: string | null
+          name?: string
+          ordre?: number
+          slug?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "narrative_landscapes_exploration_id_fkey"
+            columns: ["exploration_id"]
+            isOneToOne: false
+            referencedRelation: "explorations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
