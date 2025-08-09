@@ -150,7 +150,7 @@ export default function ExplorationAnimator() {
       <main className="container mx-auto px-4 pb-16">
         {/* P1 - Accueil spécifique */}
         <section className="mt-8">
-          <h2 className="text-xl font-semibold mb-3">P1 · Accueil spécifique</h2>
+          <h2 className="text-2xl font-semibold mb-3">P1 · Accueil spécifique</h2>
           <p className="text-sm text-foreground/70 mb-4">Composez l'intonation et la forme d'un écran d'accueil propre à cette exploration.</p>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -278,7 +278,7 @@ export default function ExplorationAnimator() {
 
         {/* P2 - Modèle de visualisation des marches */}
         <section className="mt-10">
-          <h2 className="text-xl font-semibold mb-3">P2 · Modèle de page marche</h2>
+          <h2 className="text-2xl font-semibold mb-3">P2 · Modèle de page marche</h2>
           <div className="flex items-center gap-4">
             <label className="flex items-center gap-2 text-sm">
               <input type="radio" name="view" value="simple" checked={marcheViewModel==='simple'} onChange={() => setMarcheViewModel('simple')} />
@@ -293,7 +293,7 @@ export default function ExplorationAnimator() {
 
         {/* P3 - Interaction */}
         <section className="mt-10">
-          <h2 className="text-xl font-semibold mb-3">P3 · Espace d'interaction</h2>
+          <h2 className="text-2xl font-semibold mb-3">P3 · Espace d'interaction</h2>
           <p className="text-sm text-foreground/70 mb-2">MVP: journalisez les interactions lors des tests, la scène dédiée arrivera dans l'étape suivante.</p>
           <Button onClick={handleSave} disabled={!canSave || saving}>
             {saving ? 'Enregistrement…' : 'Enregistrer les paramètres'}
