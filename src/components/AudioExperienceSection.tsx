@@ -291,11 +291,11 @@ const AudioExperienceSection: React.FC<AudioExperienceSectionProps> = ({ marche,
                 Votre navigateur ne supporte pas l'élément audio.
               </audio>
               
-              {/* Track Description */}
+              {/* Titre principal sous le lecteur */}
               {currentTrack?.description && (
-                <p className="text-gray-600 text-sm mt-4 italic text-center">
+                <h3 className="text-xl font-bold text-gray-800 mt-4 text-center">
                   {currentTrack.description}
-                </p>
+                </h3>
               )}
             </div>
 
