@@ -18,43 +18,14 @@ const PoeticTextDisplay: React.FC<PoeticTextDisplayProps> = ({
   title,
   author
 }) => {
-  const [currentParagraph, setCurrentParagraph] = useState(0);
-  const [isAutoReading, setIsAutoReading] = useState(false);
-
-  // Split text into paragraphs and sentences
-  const paragraphs = text.split('\n').filter(p => p.trim());
+  // Count sentences for stats only
   const sentences = text.split(/[.!?]+/).filter(s => s.trim());
-  
-  // Auto-reading effect
-  useEffect(() => {
-    if (isAutoReading && currentParagraph < paragraphs.length - 1) {
-      const timer = setTimeout(() => {
-        setCurrentParagraph(prev => prev + 1);
-      }, 3000);
-      return () => clearTimeout(timer);
-    }
-  }, [isAutoReading, currentParagraph, paragraphs.length]);
 
-  const handleAutoReading = () => {
-    setIsAutoReading(!isAutoReading);
-    if (!isAutoReading) {
-      setCurrentParagraph(0);
-    }
-  };
-
-  // Process rich text formatting
+  // Simplify processRichText - no transformation needed
   const processRichText = (text: string) => {
     console.log('🎭 HTML brut reçu:', text);
-    
-    // Convertir les <div> en <span> pour préserver l'espacement dans la prose
-    // et ajouter des sauts de ligne là où c'est nécessaire
-    let processedText = text
-      .replace(/<div><br><\/div>/g, '\n') // Remplacer les div vides par des sauts de ligne
-      .replace(/<div>/g, '<span style="display: block;">') // Convertir div en span block
-      .replace(/<\/div>/g, '</span>'); // Fermer les spans
-    
-    console.log('🎭 HTML traité final:', processedText);
-    return processedText;
+    console.log('🎭 HTML traité final:', text);
+    return text; // Return HTML as-is
   };
 
   // Fonction pour tronquer le titre si nécessaire
@@ -93,58 +64,41 @@ const PoeticTextDisplay: React.FC<PoeticTextDisplayProps> = ({
               </div>
             </div>
             
-            {/* Contrôle de lecture automatique */}
+            {/* Icône décorative */}
             <div className="flex items-center space-x-1 flex-shrink-0">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleAutoReading}
-                className="text-white hover:bg-white/20 p-2"
-              >
-                {isAutoReading ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
-              </Button>
+              <Quote className="h-4 w-4 text-white/60" />
             </div>
           </div>
         </div>
 
-        {/* Text Content - Toujours affiché */}
+        {/* Text Content - Single HTML block */}
         <div className="p-8">
-          <div className="space-y-8">
-            {paragraphs.map((paragraph, index) => (
-              <motion.div
-                key={index}
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ 
-                  opacity: isAutoReading ? (index <= currentParagraph ? 1 : 0.3) : 1,
-                  x: 0,
-                  scale: isAutoReading && index === currentParagraph ? 1.02 : 1
-                }}
-                transition={{ duration: 0.6, delay: index * 0.1 }}
-                className={`relative ${isAutoReading && index === currentParagraph ? 'bg-yellow-50 rounded-lg p-6' : ''}`}
-              >
-                <div 
-                  className="text-lg text-gray-800 font-serif prose prose-sm max-w-none"
-                  style={{ 
-                    whiteSpace: 'pre-wrap',
-                    wordSpacing: '0.1em'
-                  }}
-                  dangerouslySetInnerHTML={{ __html: processRichText(paragraph) }}
-                />
-              </motion.div>
-            ))}
-          </div>
+          <motion.div
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.6 }}
+          >
+            <div 
+              className="text-lg text-gray-800 font-serif prose prose-sm max-w-none"
+              style={{ 
+                whiteSpace: 'pre-wrap',
+                wordSpacing: '0.1em'
+              }}
+              dangerouslySetInnerHTML={{ __html: processRichText(text) }}
+            />
+          </motion.div>
         </div>
 
         {/* Footer */}
         <div className="bg-gray-50 px-6 py-4 border-t border-gray-200">
           <div className="flex items-center justify-between text-xs text-gray-500">
             <div className="flex items-center space-x-4">
-              <span>{paragraphs.length} paragraphes</span>
+              <span>Texte poétique</span>
               <span>•</span>
               <span>{sentences.length} phrases</span>
             </div>
             <div className="flex items-center space-x-2">
-              <span>Mode lecture</span>
+              <span>Format enrichi</span>
               <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
             </div>
           </div>
