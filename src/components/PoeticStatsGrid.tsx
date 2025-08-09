@@ -2,14 +2,22 @@ import React from 'react';
 import { useAnimatedCounter } from '@/hooks/useAnimatedCounter';
 import { Sparkles, Sprout, Globe, TrendingUp } from 'lucide-react';
 
+export type FilterType = 'all' | 'published' | 'draft';
+
 interface PoeticStatsGridProps {
   explorations?: Array<{
     published: boolean;
     created_at: string;
   }>;
+  selectedFilter?: FilterType;
+  onFilterChange?: (filter: FilterType) => void;
 }
 
-const PoeticStatsGrid: React.FC<PoeticStatsGridProps> = ({ explorations = [] }) => {
+const PoeticStatsGrid: React.FC<PoeticStatsGridProps> = ({ 
+  explorations = [], 
+  selectedFilter = 'all', 
+  onFilterChange 
+}) => {
   const total = explorations.length;
   const published = explorations.filter(e => e.published).length;
   const drafts = explorations.filter(e => !e.published).length;
@@ -29,36 +37,57 @@ const PoeticStatsGrid: React.FC<PoeticStatsGridProps> = ({ explorations = [] }) 
       value: animatedTotal,
       icon: Sparkles,
       gradient: "from-blue-400 via-purple-500 to-pink-500",
-      description: "Explorations tissées"
+      description: "Explorations tissées",
+      filterKey: 'all' as FilterType
     },
     {
       label: "Mondes Révélés",
       value: animatedPublished,
       icon: Globe,
       gradient: "from-emerald-400 via-green-500 to-teal-500",
-      description: "Lumières partagées"
+      description: "Lumières partagées",
+      filterKey: 'published' as FilterType
     },
     {
       label: "Germes Cachés",
       value: animatedDrafts,
       icon: Sprout,
       gradient: "from-amber-400 via-orange-500 to-red-500",
-      description: "Potentiels en devenir"
+      description: "Potentiels en devenir",
+      filterKey: 'draft' as FilterType
     }
   ];
+
+  const handleCardClick = (filterKey: FilterType) => {
+    if (onFilterChange) {
+      // Toggle filter: if clicking on active filter, reset to 'all'
+      const newFilter = selectedFilter === filterKey ? 'all' : filterKey;
+      onFilterChange(newFilter);
+    }
+  };
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
       {stats.map((stat, index) => {
         const Icon = stat.icon;
+        const isSelected = selectedFilter === stat.filterKey;
+        const isClickable = !!onFilterChange;
+        
         return (
           <div
             key={stat.label}
-            className="group relative overflow-hidden animate-fade-in"
+            className={`group relative overflow-hidden animate-fade-in ${
+              isClickable ? 'cursor-pointer' : ''
+            } ${isSelected ? 'ring-2 ring-gaspard-primary/40 ring-offset-2 ring-offset-background' : ''}`}
             style={{ animationDelay: `${index * 150}ms` }}
+            onClick={() => isClickable && handleCardClick(stat.filterKey)}
           >
             {/* Conteneur principal avec effet de verre sophistiqué */}
-            <div className="relative bg-gradient-to-br from-background/70 via-background/50 to-background/30 backdrop-blur-xl border border-gaspard-primary/20 rounded-2xl p-6 transition-all duration-700 hover:scale-110 hover:shadow-2xl hover:shadow-gaspard-primary/30 hover:border-gaspard-primary/50 hover:bg-gradient-to-br hover:from-background/80 hover:via-background/60 hover:to-background/40 group-hover:backdrop-blur-2xl">
+            <div className={`relative bg-gradient-to-br from-background/70 via-background/50 to-background/30 backdrop-blur-xl border rounded-2xl p-6 transition-all duration-700 hover:scale-110 hover:shadow-2xl hover:shadow-gaspard-primary/30 hover:border-gaspard-primary/50 hover:bg-gradient-to-br hover:from-background/80 hover:via-background/60 hover:to-background/40 group-hover:backdrop-blur-2xl ${
+              isSelected 
+                ? 'border-gaspard-primary/50 bg-gradient-to-br from-background/80 via-background/60 to-background/40 shadow-lg shadow-gaspard-primary/20' 
+                : 'border-gaspard-primary/20'
+            }`}>
               
               {/* Effet de lumière interne au hover */}
               <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-gaspard-primary/0 via-gaspard-primary/0 to-gaspard-primary/0 group-hover:from-gaspard-primary/10 group-hover:via-gaspard-accent/5 group-hover:to-gaspard-secondary/8 transition-all duration-1000 pointer-events-none"></div>

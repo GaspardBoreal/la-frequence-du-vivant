@@ -7,17 +7,26 @@ import { useAdminExplorations } from '@/hooks/useExplorations';
 import SEOHead from '@/components/SEOHead';
 import DecorativeParticles from '@/components/DecorativeParticles';
 import PoeticExplorationCard from '@/components/PoeticExplorationCard';
-import PoeticStatsGrid from '@/components/PoeticStatsGrid';
+import PoeticStatsGrid, { FilterType } from '@/components/PoeticStatsGrid';
 
 const ExplorationsAdmin = () => {
   const navigate = useNavigate();
   const { data: explorations, isLoading } = useAdminExplorations();
   const [searchTerm, setSearchTerm] = useState('');
+  const [selectedFilter, setSelectedFilter] = useState<FilterType>('all');
 
-  const filteredExplorations = explorations?.filter(exploration =>
-    exploration.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    exploration.description?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredExplorations = explorations?.filter(exploration => {
+    // Apply text search filter
+    const matchesSearch = exploration.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      exploration.description?.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    // Apply status filter
+    const matchesFilter = selectedFilter === 'all' || 
+      (selectedFilter === 'published' && exploration.published) ||
+      (selectedFilter === 'draft' && !exploration.published);
+    
+    return matchesSearch && matchesFilter;
+  });
 
   return (
     <>
@@ -92,7 +101,11 @@ const ExplorationsAdmin = () => {
           </div>
 
           {/* Métriques poétiques */}
-          <PoeticStatsGrid explorations={explorations} />
+          <PoeticStatsGrid 
+            explorations={explorations} 
+            selectedFilter={selectedFilter}
+            onFilterChange={setSelectedFilter}
+          />
 
           {/* Galerie d'explorations en masonry */}
           <section className="animate-fade-in animation-delay-600">
