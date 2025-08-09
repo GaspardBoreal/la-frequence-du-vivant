@@ -484,7 +484,7 @@ export const updatePhotoMetadata = async (
   }
 };
 
-// Fonction pour mettre à jour l'ordre des photos
+// Fonction pour mettre à jour l'ordre des photos en masse
 export const updatePhotosOrder = async (photoIds: string[]): Promise<void> => {
   console.log('📋 [supabasePhotoOperations] Mise à jour ordre photos:', photoIds);
   
