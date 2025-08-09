@@ -160,7 +160,7 @@ const PoeticExplorationCard: React.FC<PoeticExplorationCardProps> = ({ explorati
             <Button 
               variant="ghost" 
               size="sm" 
-              className="rounded-full bg-gaspard-emerald/30 hover:bg-gaspard-emerald/50 text-gaspard-cream border border-gaspard-emerald/50 group-hover:border-gaspard-accent group-hover:bg-gaspard-accent/70 group-hover:text-white group-hover:scale-110 group-hover:shadow-xl group-hover:shadow-gaspard-accent/60 transition-all duration-500"
+              className="rounded-full bg-gaspard-emerald/30 text-gaspard-cream border border-gaspard-emerald/50 hover:bg-gradient-to-r hover:from-gaspard-emerald hover:to-emerald-400 hover:text-white hover:border-emerald-300 hover:scale-110 hover:shadow-xl hover:shadow-emerald-500/40 transition-all duration-500 transform hover:-translate-y-1"
               title="Contempler en ligne"
               onClick={(e) => { e.stopPropagation(); navigate(`/explorations/${exploration.slug}`); }}
             >
@@ -172,7 +172,7 @@ const PoeticExplorationCard: React.FC<PoeticExplorationCardProps> = ({ explorati
           <Button 
             variant="ghost" 
             size="sm" 
-            className="rounded-full bg-gaspard-forest/30 hover:bg-gaspard-forest/50 text-gaspard-cream border border-gaspard-forest/50 group-hover:border-gaspard-gold group-hover:bg-gaspard-gold/70 group-hover:text-white group-hover:scale-110 group-hover:shadow-xl group-hover:shadow-gaspard-gold/60 transition-all duration-500"
+            className="rounded-full bg-gaspard-forest/30 text-gaspard-cream border border-gaspard-forest/50 hover:bg-gradient-to-r hover:from-purple-600 hover:to-indigo-600 hover:text-white hover:border-purple-300 hover:scale-110 hover:shadow-xl hover:shadow-purple-500/40 transition-all duration-500 transform hover:-translate-y-1"
             title="Orchestrer les paysages"
             onClick={(e) => { e.stopPropagation(); navigate(`/admin/explorations/${exploration.id}/marches`); }}
           >
@@ -184,7 +184,7 @@ const PoeticExplorationCard: React.FC<PoeticExplorationCardProps> = ({ explorati
           <Button 
             variant="ghost" 
             size="sm" 
-            className="rounded-full bg-primary/30 hover:bg-primary/50 text-primary-foreground border border-primary/50 group-hover:border-gaspard-accent group-hover:bg-gaspard-accent/70 group-hover:text-white group-hover:scale-110 group-hover:shadow-xl group-hover:shadow-gaspard-accent/60 transition-all duration-500"
+            className="rounded-full bg-primary/30 text-primary-foreground border border-primary/50 hover:bg-gradient-to-r hover:from-gaspard-gold hover:to-amber-500 hover:text-white hover:border-amber-300 hover:scale-110 hover:shadow-xl hover:shadow-amber-500/40 transition-all duration-500 transform hover:-translate-y-1"
             title="Sculpter l'essence"
             onClick={(e) => { e.stopPropagation(); navigate(`/admin/explorations/${exploration.id}/edit`); }}
           >
