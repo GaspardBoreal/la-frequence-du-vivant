@@ -12,7 +12,9 @@ import {
   Volume2,
   Eye,
   ChevronDown,
-  ChevronUp
+  ChevronUp,
+  Expand,
+  ImageIcon
 } from 'lucide-react';
 import { BiodiversitySpecies } from '@/types/biodiversity';
 
@@ -28,6 +30,8 @@ const SpeciesDetailModal: React.FC<SpeciesDetailModalProps> = ({
   onClose 
 }) => {
   const [showAllObservations, setShowAllObservations] = useState(false);
+  const [selectedImageIndex, setSelectedImageIndex] = useState(0);
+  const [showLightbox, setShowLightbox] = useState(false);
   
   if (!species) return null;
 
@@ -63,22 +67,74 @@ const SpeciesDetailModal: React.FC<SpeciesDetailModalProps> = ({
           {/* Colonne gauche - Image */}
           <div className="md:w-1/3 flex-shrink-0">
             {species.photos && species.photos.length > 0 ? (
-              <div className="relative h-48 md:h-72 rounded-lg overflow-hidden bg-muted">
-                <img
-                  src={species.photos[0]}
-                  alt={species.commonName}
-                  className="w-full h-full object-cover"
-                  onError={(e) => {
-                    e.currentTarget.style.display = 'none';
-                  }}
-                />
-                <div className="absolute top-2 right-2">
-                  <Camera className="h-4 w-4 text-white drop-shadow-lg" />
+              <div className="space-y-3">
+                {/* Image principale */}
+                <div 
+                  className="relative h-64 md:h-96 rounded-xl overflow-hidden bg-gradient-to-br from-muted to-muted/50 shadow-lg cursor-pointer transition-all duration-300 hover:shadow-xl hover:scale-[1.02] group"
+                  onClick={() => setShowLightbox(true)}
+                >
+                  <img
+                    src={species.photos[selectedImageIndex]}
+                    alt={species.commonName}
+                    className="w-full h-full object-contain transition-transform duration-300 group-hover:scale-105"
+                    onError={(e) => {
+                      e.currentTarget.style.display = 'none';
+                    }}
+                  />
+                  
+                  {/* Overlay avec indicateurs */}
+                  <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors duration-300" />
+                  
+                  {/* Badge "Photo disponible" */}
+                  <div className="absolute top-3 right-3">
+                    <Badge variant="secondary" className="bg-background/90 backdrop-blur-sm shadow-md">
+                      <ImageIcon className="h-3 w-3 mr-1" />
+                      Photo disponible
+                    </Badge>
+                  </div>
+                  
+                  {/* Bouton agrandir */}
+                  <div className="absolute bottom-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                    <Button size="sm" variant="secondary" className="bg-background/90 backdrop-blur-sm shadow-md">
+                      <Expand className="h-4 w-4 mr-1" />
+                      Agrandir
+                    </Button>
+                  </div>
                 </div>
+                
+                {/* Vignettes pour images multiples */}
+                {species.photos.length > 1 && (
+                  <div className="flex gap-2 overflow-x-auto pb-2">
+                    {species.photos.map((photo, index) => (
+                      <div
+                        key={index}
+                        className={`relative flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden cursor-pointer transition-all duration-200 ${
+                          selectedImageIndex === index 
+                            ? 'ring-2 ring-primary shadow-md' 
+                            : 'hover:opacity-80'
+                        }`}
+                        onClick={() => setSelectedImageIndex(index)}
+                      >
+                        <img
+                          src={photo}
+                          alt={`${species.commonName} ${index + 1}`}
+                          className="w-full h-full object-cover"
+                          onError={(e) => {
+                            e.currentTarget.style.display = 'none';
+                          }}
+                        />
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             ) : (
-              <div className="h-48 md:h-72 rounded-lg bg-muted flex items-center justify-center">
-                <Camera className="h-12 w-12 text-muted-foreground" />
+              <div className="h-64 md:h-96 rounded-xl bg-gradient-to-br from-muted via-muted/80 to-muted/60 flex flex-col items-center justify-center text-center p-6 border-2 border-dashed border-muted-foreground/20">
+                <div className="w-16 h-16 rounded-full bg-muted-foreground/10 flex items-center justify-center mb-4">
+                  <Camera className="h-8 w-8 text-muted-foreground/60" />
+                </div>
+                <h4 className="font-medium text-muted-foreground mb-2">{species.commonName}</h4>
+                <p className="text-sm text-muted-foreground/80">Aucune photo disponible</p>
               </div>
             )}
           </div>
@@ -246,6 +302,47 @@ const SpeciesDetailModal: React.FC<SpeciesDetailModalProps> = ({
               </div>
             </CardContent>
           </Card>
+        )}
+        
+        {/* Lightbox pour l'image en grand */}
+        {showLightbox && species.photos && species.photos.length > 0 && (
+          <Dialog open={showLightbox} onOpenChange={setShowLightbox}>
+            <DialogContent className="max-w-6xl max-h-[95vh] p-2">
+              <div className="relative">
+                <img
+                  src={species.photos[selectedImageIndex]}
+                  alt={species.commonName}
+                  className="w-full h-auto max-h-[85vh] object-contain rounded-lg"
+                />
+                
+                {/* Navigation entre images */}
+                {species.photos.length > 1 && (
+                  <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2">
+                    <div className="flex gap-2 bg-background/90 backdrop-blur-sm rounded-lg p-2">
+                      {species.photos.map((_, index) => (
+                        <button
+                          key={index}
+                          className={`w-3 h-3 rounded-full transition-all duration-200 ${
+                            selectedImageIndex === index 
+                              ? 'bg-primary' 
+                              : 'bg-muted-foreground/40 hover:bg-muted-foreground/60'
+                          }`}
+                          onClick={() => setSelectedImageIndex(index)}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                )}
+                
+                {/* Info sur l'image */}
+                <div className="absolute top-4 left-4">
+                  <Badge variant="secondary" className="bg-background/90 backdrop-blur-sm">
+                    {selectedImageIndex + 1} / {species.photos.length}
+                  </Badge>
+                </div>
+              </div>
+            </DialogContent>
+          </Dialog>
         )}
       </DialogContent>
     </Dialog>
