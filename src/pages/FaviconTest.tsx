@@ -8,6 +8,7 @@ import { Check, Download } from 'lucide-react';
 import faviconVersion1 from '@/assets/favicon-v1.png';
 import faviconVersion2 from '@/assets/favicon-v2.png';
 import faviconVersion3 from '@/assets/favicon-v3.png';
+import faviconVersion4 from '@/assets/favicon-v4.png';
 
 const FaviconTest = () => {
   const [selectedVersion, setSelectedVersion] = useState<number | null>(null);
@@ -33,6 +34,13 @@ const FaviconTest = () => {
       description: "Palette sophistiquée orange-marron adaptée au site",
       image: faviconVersion3,
       colors: ["Orange doux", "Marron/Bronze", "Beige chaud"]
+    },
+    {
+      id: 4,
+      name: "Hyper Classe",
+      description: "Feuille à 45°, ondes blanches aérées par-dessus, fond vert clair élégant",
+      image: faviconVersion4,
+      colors: ["Vert clair élégant", "Vert foncé", "Blanc", "Beige doré (subtil)"]
     }
   ];
 
@@ -57,7 +65,7 @@ const FaviconTest = () => {
             Test des Favicons - Propositions
           </h1>
           <p className="text-muted-foreground text-lg max-w-3xl mx-auto">
-            Trois propositions de favicon avec une feuille stylisée et un élément "fréquence". 
+            Quatre propositions de favicon avec une feuille stylisée et un élément "fréquence". 
             Chaque version est optimisée pour la lisibilité en petite taille.
           </p>
         </div>
