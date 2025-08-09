@@ -179,11 +179,16 @@ export type Database = {
           marche_view_model: string
           updated_at: string
           welcome_forms: string[]
+          welcome_forms_custom: string | null
           welcome_povs: string[]
+          welcome_povs_custom: string | null
           welcome_senses: string[]
+          welcome_senses_custom: string | null
           welcome_template: string | null
           welcome_timeframes: string[]
+          welcome_timeframes_custom: string | null
           welcome_tones: string[]
+          welcome_tones_custom: string | null
         }
         Insert: {
           created_at?: string
@@ -194,11 +199,16 @@ export type Database = {
           marche_view_model?: string
           updated_at?: string
           welcome_forms?: string[]
+          welcome_forms_custom?: string | null
           welcome_povs?: string[]
+          welcome_povs_custom?: string | null
           welcome_senses?: string[]
+          welcome_senses_custom?: string | null
           welcome_template?: string | null
           welcome_timeframes?: string[]
+          welcome_timeframes_custom?: string | null
           welcome_tones?: string[]
+          welcome_tones_custom?: string | null
         }
         Update: {
           created_at?: string
@@ -209,11 +219,16 @@ export type Database = {
           marche_view_model?: string
           updated_at?: string
           welcome_forms?: string[]
+          welcome_forms_custom?: string | null
           welcome_povs?: string[]
+          welcome_povs_custom?: string | null
           welcome_senses?: string[]
+          welcome_senses_custom?: string | null
           welcome_template?: string | null
           welcome_timeframes?: string[]
+          welcome_timeframes_custom?: string | null
           welcome_tones?: string[]
+          welcome_tones_custom?: string | null
         }
         Relationships: [
           {

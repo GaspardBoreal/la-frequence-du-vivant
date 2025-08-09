@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import SEOHead from '@/components/SEOHead';
 import { supabase } from '@/integrations/supabase/client';
@@ -30,6 +31,13 @@ export default function ExplorationAnimator() {
   const [welcomeTimes, setWelcomeTimes] = useState<string[]>([]);
   const [welcomeTemplate, setWelcomeTemplate] = useState<string>('');
   const [marcheViewModel, setMarcheViewModel] = useState<'simple'|'elabore'>('elabore');
+  
+  // Custom text fields for "autre" options
+  const [tonesCustom, setTonesCustom] = useState<string>('');
+  const [formsCustom, setFormsCustom] = useState<string>('');
+  const [povsCustom, setPovsCustom] = useState<string>('');
+  const [sensesCustom, setSensesCustom] = useState<string>('');
+  const [timesCustom, setTimesCustom] = useState<string>('');
 
   const canSave = useMemo(() => !!exploration?.id, [exploration?.id]);
 
@@ -51,6 +59,13 @@ export default function ExplorationAnimator() {
         setWelcomeTimes(Array.isArray(data.welcome_timeframes) ? [...(data.welcome_timeframes as string[])] : []);
         setWelcomeTemplate(data.welcome_template || '');
         setMarcheViewModel((data.marche_view_model as 'simple'|'elabore') || 'elabore');
+        
+        // Load custom text fields
+        setTonesCustom(data.welcome_tones_custom || '');
+        setFormsCustom(data.welcome_forms_custom || '');
+        setPovsCustom(data.welcome_povs_custom || '');
+        setSensesCustom(data.welcome_senses_custom || '');
+        setTimesCustom(data.welcome_timeframes_custom || '');
       }
       setLoading(false);
     };
@@ -76,6 +91,11 @@ export default function ExplorationAnimator() {
         welcome_timeframes: welcomeTimes,
         welcome_template: welcomeTemplate,
         marche_view_model: marcheViewModel,
+        welcome_tones_custom: tonesCustom || null,
+        welcome_forms_custom: formsCustom || null,
+        welcome_povs_custom: povsCustom || null,
+        welcome_senses_custom: sensesCustom || null,
+        welcome_timeframes_custom: timesCustom || null,
       }, { onConflict: 'exploration_id' });
     setSaving(false);
     if (error) {
@@ -151,6 +171,18 @@ export default function ExplorationAnimator() {
                   </label>
                 ))}
               </div>
+              <div className="mt-3">
+                <Label htmlFor="tones-custom" className="text-sm font-medium">Autre :</Label>
+                <Input 
+                  id="tones-custom"
+                  value={tonesCustom}
+                  onChange={(e) => setTonesCustom(e.target.value.slice(0, 250))}
+                  placeholder="Décrivez un autre ton (max 250 caractères)"
+                  maxLength={250}
+                  className="mt-1"
+                />
+                <p className="text-xs text-foreground/60 mt-1">{tonesCustom.length}/250</p>
+              </div>
             </div>
 
             <div>
@@ -162,6 +194,18 @@ export default function ExplorationAnimator() {
                     <span className="text-sm">{f}</span>
                   </label>
                 ))}
+              </div>
+              <div className="mt-3">
+                <Label htmlFor="forms-custom" className="text-sm font-medium">Autre :</Label>
+                <Input 
+                  id="forms-custom"
+                  value={formsCustom}
+                  onChange={(e) => setFormsCustom(e.target.value.slice(0, 250))}
+                  placeholder="Décrivez une autre forme (max 250 caractères)"
+                  maxLength={250}
+                  className="mt-1"
+                />
+                <p className="text-xs text-foreground/60 mt-1">{formsCustom.length}/250</p>
               </div>
             </div>
 
@@ -175,6 +219,18 @@ export default function ExplorationAnimator() {
                   </label>
                 ))}
               </div>
+              <div className="mt-3">
+                <Label htmlFor="povs-custom" className="text-sm font-medium">Autre :</Label>
+                <Input 
+                  id="povs-custom"
+                  value={povsCustom}
+                  onChange={(e) => setPovsCustom(e.target.value.slice(0, 250))}
+                  placeholder="Décrivez un autre point de vue (max 250 caractères)"
+                  maxLength={250}
+                  className="mt-1"
+                />
+                <p className="text-xs text-foreground/60 mt-1">{povsCustom.length}/250</p>
+              </div>
             </div>
 
             <div>
@@ -187,6 +243,18 @@ export default function ExplorationAnimator() {
                   </label>
                 ))}
               </div>
+              <div className="mt-3">
+                <Label htmlFor="senses-custom" className="text-sm font-medium">Autre :</Label>
+                <Input 
+                  id="senses-custom"
+                  value={sensesCustom}
+                  onChange={(e) => setSensesCustom(e.target.value.slice(0, 250))}
+                  placeholder="Décrivez une autre variation sensorielle (max 250 caractères)"
+                  maxLength={250}
+                  className="mt-1"
+                />
+                <p className="text-xs text-foreground/60 mt-1">{sensesCustom.length}/250</p>
+              </div>
             </div>
 
             <div>
@@ -198,6 +266,18 @@ export default function ExplorationAnimator() {
                     <span className="text-sm">{ti}</span>
                   </label>
                 ))}
+              </div>
+              <div className="mt-3">
+                <Label htmlFor="times-custom" className="text-sm font-medium">Autre :</Label>
+                <Input 
+                  id="times-custom"
+                  value={timesCustom}
+                  onChange={(e) => setTimesCustom(e.target.value.slice(0, 250))}
+                  placeholder="Décrivez une autre variation temporelle (max 250 caractères)"
+                  maxLength={250}
+                  className="mt-1"
+                />
+                <p className="text-xs text-foreground/60 mt-1">{timesCustom.length}/250</p>
               </div>
             </div>
           </div>
