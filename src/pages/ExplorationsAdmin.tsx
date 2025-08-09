@@ -51,7 +51,10 @@ const ExplorationsAdmin = () => {
             </div>
             
             <div className="flex gap-2">
-              <Button className="bg-sage-600 hover:bg-sage-700">
+              <Button 
+                className="bg-sage-600 hover:bg-sage-700"
+                onClick={() => navigate('/admin/explorations/new')}
+              >
                 <Plus className="h-4 w-4 mr-2" />
                 Nouvelle Exploration
               </Button>
@@ -121,7 +124,10 @@ const ExplorationsAdmin = () => {
                   <p className="text-sage-600 mb-4">
                     {searchTerm ? 'Aucune exploration trouvée' : 'Aucune exploration créée'}
                   </p>
-                  <Button className="bg-sage-600 hover:bg-sage-700">
+                  <Button 
+                    className="bg-sage-600 hover:bg-sage-700"
+                    onClick={() => navigate('/admin/explorations/new')}
+                  >
                     <Plus className="h-4 w-4 mr-2" />
                     Créer la première exploration
                   </Button>
@@ -184,7 +190,12 @@ const ExplorationsAdmin = () => {
                           <Download className="h-4 w-4" />
                         </Button>
                         
-                        <Button variant="outline" size="sm" title="Modifier">
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          title="Modifier"
+                          onClick={() => navigate(`/admin/explorations/${exploration.id}/edit`)}
+                        >
                           <Edit className="h-4 w-4" />
                         </Button>
                         

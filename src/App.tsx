@@ -19,6 +19,7 @@ import ExplorationsList from './pages/ExplorationsList';
 import ExplorationDetail from './pages/ExplorationDetail';
 import NarrativeLandscape from './pages/NarrativeLandscape';
 import ExplorationsAdmin from './pages/ExplorationsAdmin';
+import ExplorationFormPage from './pages/ExplorationFormPage';
 import ExplorationMarchesAdmin from './pages/ExplorationMarchesAdmin';
 import TestEbird from './pages/TestEbird';
 import FaviconTest from './pages/FaviconTest';
@@ -61,6 +62,16 @@ function App() {
           <Route path="/admin/explorations" element={
             <AdminAuth>
               <ExplorationsAdmin />
+            </AdminAuth>
+          } />
+          <Route path="/admin/explorations/new" element={
+            <AdminAuth>
+              <ExplorationFormPage />
+            </AdminAuth>
+          } />
+          <Route path="/admin/explorations/:id/edit" element={
+            <AdminAuth>
+              <ExplorationFormPage />
             </AdminAuth>
           } />
           <Route path="/admin/explorations/:id/marches" element={
