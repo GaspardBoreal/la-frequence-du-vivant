@@ -38,16 +38,28 @@ const AudioExperienceSection: React.FC<AudioExperienceSectionProps> = ({ marche,
   const audioUrls = marche.audioFiles || [];
   const audioData = marche.audioData || [];
   
-  // Transformer en format AudioFile en utilisant les métadonnées Supabase si disponibles
+          // Transformer en format AudioFile en utilisant les métadonnées Supabase si disponibles
   const audioFiles: AudioFile[] = audioData.length > 0 
     ? audioData
         .sort((a, b) => (a.ordre || 0) - (b.ordre || 0)) // Trier par ordre
-        .map((audio, index) => ({
-          url: audio.url,
-          name: audio.titre || audio.nom_fichier || `Audio ${index + 1}`,
-          title: audio.titre,
-          description: audio.description || `Enregistrement audio de la marche à ${marche.ville}`
-        }))
+        .map((audio, index) => {
+          // Description spécifique pour la marche de Gauriac
+          let description = audio.description;
+          if (!description) {
+            if (marche.ville?.toLowerCase() === 'gauriac') {
+              description = 'Resac Bec d\'Ambès';
+            } else {
+              description = `Enregistrement audio de la marche à ${marche.ville}`;
+            }
+          }
+          
+          return {
+            url: audio.url,
+            name: audio.titre || audio.nom_fichier || `Audio ${index + 1}`,
+            title: audio.titre,
+            description
+          };
+        })
     : audioUrls.map((url, index) => ({
         url,
         name: `Audio-${index + 1}-${marche.ville}.mp3`,
@@ -281,7 +293,7 @@ const AudioExperienceSection: React.FC<AudioExperienceSectionProps> = ({ marche,
               
               {/* Track Description */}
               {currentTrack?.description && (
-                <p className="text-gray-600 text-sm mt-4 italic">
+                <p className="text-gray-600 text-sm mt-4 italic text-center">
                   {currentTrack.description}
                 </p>
               )}
