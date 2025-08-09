@@ -23,6 +23,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Slider } from '../ui/slider';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '../ui/sheet';
 import { BiodiversityData, BiodiversitySpecies } from '@/types/biodiversity';
+import SpeciesDetailModal from './SpeciesDetailModal';
 import 'leaflet/dist/leaflet.css';
 
 interface BiodiversityMapProps {
@@ -107,6 +108,7 @@ export const BiodiversityMap: React.FC<BiodiversityMapProps> = ({
   const [activeFilters, setActiveFilters] = useState<Set<string>>(new Set(['flora', 'fauna', 'fungi', 'other']));
   const [isSheetOpen, setIsSheetOpen] = useState(false);
   const [radiusFilter, setRadiusFilter] = useState<number>(data?.location?.radius || 5);
+  const [selectedSpeciesForModal, setSelectedSpeciesForModal] = useState<BiodiversitySpecies | null>(null);
   
   // Création des clusters d'observations
   const observationClusters = useMemo(() => {
@@ -446,12 +448,13 @@ export const BiodiversityMap: React.FC<BiodiversityMapProps> = ({
                      });
                      
                      return (
-                       <motion.div
-                         key={species.id}
-                         initial={{ opacity: 0, y: 20 }}
-                         animate={{ opacity: 1, y: 0 }}
-                         className="border rounded-lg p-4 hover:bg-muted/50 transition-colors"
-                       >
+                        <motion.div
+                          key={species.id}
+                          initial={{ opacity: 0, y: 20 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          className="border rounded-lg p-4 hover:bg-muted/50 transition-colors cursor-pointer"
+                          onClick={() => setSelectedSpeciesForModal(species)}
+                        >
                          <div className="flex gap-4">
                            {species.photos?.[0] ? (
                              <div className="w-20 h-20 flex-shrink-0">
@@ -543,8 +546,15 @@ export const BiodiversityMap: React.FC<BiodiversityMapProps> = ({
                );
              })()}
            </div>
-         </SheetContent>
-       </Sheet>
-     </div>
-   );
- };
+          </SheetContent>
+        </Sheet>
+        
+        {/* Modal de détails d'espèce */}
+        <SpeciesDetailModal
+          species={selectedSpeciesForModal}
+          isOpen={selectedSpeciesForModal !== null}
+          onClose={() => setSelectedSpeciesForModal(null)}
+        />
+      </div>
+    );
+  };
