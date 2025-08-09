@@ -28,7 +28,7 @@ const PoeticStatsGrid: React.FC<PoeticStatsGridProps> = ({ explorations = [] }) 
       label: "Univers Créés",
       value: animatedTotal,
       icon: Sparkles,
-      gradient: "from-gaspard-primary via-gaspard-secondary to-gaspard-accent",
+      gradient: "from-blue-400 via-purple-500 to-pink-500",
       description: "Explorations tissées"
     },
     {
@@ -44,13 +44,6 @@ const PoeticStatsGrid: React.FC<PoeticStatsGridProps> = ({ explorations = [] }) 
       icon: Sprout,
       gradient: "from-amber-400 via-orange-500 to-red-500",
       description: "Potentiels en devenir"
-    },
-    {
-      label: "Naissances Récentes",
-      value: animatedThisWeek,
-      icon: TrendingUp,
-      gradient: "from-blue-400 via-purple-500 to-pink-500",
-      description: "Éclosions de la semaine"
     }
   ];
 
