@@ -4,9 +4,6 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
   SkipBack, 
   SkipForward, 
-  BarChart3,
-  Radio,
-  Share2,
   Waves,
   Music,
   Download,
@@ -32,7 +29,6 @@ interface AudioFile {
 
 const AudioExperienceSection: React.FC<AudioExperienceSectionProps> = ({ marche, theme }) => {
   const [currentTrackIndex, setCurrentTrackIndex] = useState(0);
-  const [activeOption, setActiveOption] = useState<'spectogram' | 'frequencies' | 'share' | null>(null);
   
   // Récupérer les fichiers audio depuis les props (maintenant depuis Supabase)
   const audioUrls = marche.audioFiles || [];
@@ -106,29 +102,6 @@ const AudioExperienceSection: React.FC<AudioExperienceSectionProps> = ({ marche,
     document.body.removeChild(link);
   };
 
-  const options = [
-    {
-      id: 'spectogram' as const,
-      label: 'Voir le Spectrogramme',
-      icon: BarChart3,
-      color: theme.colors.primary,
-      description: 'Visualisation des fréquences en temps réel'
-    },
-    {
-      id: 'frequencies' as const,
-      label: 'Reconnaître les fréquences sonores',
-      icon: Radio,
-      color: theme.colors.secondary,
-      description: 'Analyse intelligente des sons captés'
-    },
-    {
-      id: 'share' as const,
-      label: 'Partager l\'expérience',
-      icon: Share2,
-      color: theme.colors.accent,
-      description: 'Diffusez votre exploration sonore'
-    }
-  ];
 
   // Affichage quand il n'y a pas de fichiers audio
   if (!hasAudioFiles) {
@@ -328,102 +301,6 @@ const AudioExperienceSection: React.FC<AudioExperienceSectionProps> = ({ marche,
         </div>
       </motion.div>
 
-      {/* Experience Options */}
-      {hasAudioFiles && (
-        <motion.div
-          className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-6xl mx-auto"
-          initial={{ opacity: 0, y: 30 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.4, duration: 0.8 }}
-        >
-          {options.map((option, index) => {
-            const Icon = option.icon;
-            const isActive = activeOption === option.id;
-            
-            return (
-              <motion.div
-                key={option.id}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.4 + index * 0.1, duration: 0.6 }}
-              >
-                <Button
-                  variant={isActive ? "default" : "outline"}
-                  onClick={() => setActiveOption(isActive ? null : option.id)}
-                  className={`
-                    w-full h-auto p-6 rounded-2xl transition-all duration-500 group
-                    ${isActive 
-                      ? 'bg-gradient-to-br from-purple-600 to-blue-600 text-white shadow-2xl scale-105' 
-                      : 'gaspard-glass hover:shadow-xl hover:scale-102'
-                    }
-                  `}
-                >
-                  <div className="flex flex-col items-center space-y-4 text-center">
-                    <motion.div
-                      animate={{ 
-                        rotate: isActive ? 360 : 0,
-                        scale: isActive ? 1.2 : 1 
-                      }}
-                      transition={{ duration: 0.6 }}
-                      className={`
-                        p-4 rounded-full 
-                        ${isActive 
-                          ? 'bg-white/20' 
-                          : 'bg-gradient-to-br from-purple-100 to-blue-100'
-                        }
-                      `}
-                    >
-                      <Icon className={`h-8 w-8 ${isActive ? 'text-white' : 'text-purple-600'}`} />
-                    </motion.div>
-                    
-                    <div className="space-y-2">
-                      <h3 className={`font-semibold text-lg ${isActive ? 'text-white' : 'text-gray-800'}`}>
-                        {option.label}
-                      </h3>
-                      <p className={`text-sm ${isActive ? 'text-white/80' : 'text-gray-600'}`}>
-                        {option.description}
-                      </p>
-                    </div>
-                    
-                    {isActive && (
-                      <motion.div
-                        initial={{ scale: 0, opacity: 0 }}
-                        animate={{ scale: 1, opacity: 1 }}
-                        className="text-xs bg-white/20 px-3 py-1 rounded-full text-white"
-                      >
-                        Bientôt disponible
-                      </motion.div>
-                    )}
-                  </div>
-                </Button>
-              </motion.div>
-            );
-          })}
-        </motion.div>
-      )}
-
-      {/* Active Option Display */}
-      <AnimatePresence>
-        {activeOption && hasAudioFiles && (
-          <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: 'auto' }}
-            exit={{ opacity: 0, height: 0 }}
-            transition={{ duration: 0.5 }}
-            className="max-w-4xl mx-auto"
-          >
-            <div className="gaspard-glass rounded-2xl p-8 text-center">
-              <h4 className="text-2xl font-bold mb-4 text-purple-600">
-                {options.find(opt => opt.id === activeOption)?.label}
-              </h4>
-              <p className="text-gray-600 text-lg">
-                Cette fonctionnalité révolutionnaire sera bientôt disponible. 
-                Restez connectés pour découvrir des expériences sonores inédites !
-              </p>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
     </div>
   );
 };
