@@ -68,32 +68,32 @@ const SortableMarcheItem: React.FC<SortableMarcheItemProps> = ({
     <div
       ref={setNodeRef}
       style={style}
-      className={`group relative overflow-hidden rounded-xl transition-all duration-300 backdrop-blur-sm ${
+      className={`group relative overflow-hidden rounded-2xl transition-all duration-500 backdrop-blur-xl border ${
         isDragging 
-          ? 'scale-105 shadow-2xl bg-gaspard-cream/20 border-gaspard-gold/30' 
-          : 'hover:scale-[1.02] hover:shadow-lg bg-white/10 border-gaspard-emerald/20'
+          ? 'scale-105 shadow-2xl bg-gradient-to-br from-gaspard-background/60 to-gaspard-background/40 border-gaspard-primary/40 shadow-gaspard-primary/20' 
+          : 'hover:scale-[1.02] hover:shadow-xl bg-gradient-to-br from-gaspard-background/30 to-gaspard-background/10 border-gaspard-primary/20 hover:border-gaspard-accent/30 shadow-lg shadow-gaspard-primary/5'
       }`}
     >
-      {/* Motif décoratif de fréquences */}
-      <div className="absolute top-0 right-0 w-32 h-32 opacity-5">
+      {/* Motif décoratif de fréquences élégant */}
+      <div className="absolute top-0 right-0 w-40 h-40 opacity-10">
         <svg viewBox="0 0 100 100" className="w-full h-full">
-          <path d="M20,50 Q50,10 80,50 Q50,90 20,50" fill="none" stroke="currentColor" strokeWidth="0.5" className="animate-pulse" />
-          <path d="M25,50 Q50,20 75,50 Q50,80 25,50" fill="none" stroke="currentColor" strokeWidth="0.5" className="animate-pulse" style={{animationDelay: '0.2s'}} />
-          <path d="M30,50 Q50,30 70,50 Q50,70 30,50" fill="none" stroke="currentColor" strokeWidth="0.5" className="animate-pulse" style={{animationDelay: '0.4s'}} />
+          <path d="M20,50 Q50,10 80,50 Q50,90 20,50" fill="none" stroke="currentColor" strokeWidth="0.3" className="animate-gentle-float text-gaspard-primary" />
+          <path d="M25,50 Q50,20 75,50 Q50,80 25,50" fill="none" stroke="currentColor" strokeWidth="0.3" className="animate-gentle-float animation-delay-300 text-gaspard-accent" />
+          <path d="M30,50 Q50,30 70,50 Q50,70 30,50" fill="none" stroke="currentColor" strokeWidth="0.3" className="animate-gentle-float animation-delay-600 text-gaspard-secondary" />
         </svg>
       </div>
       
-      <div className="relative p-6 border border-gaspard-emerald/20 rounded-xl backdrop-blur-sm">
+      <div className="relative p-8 border-0 rounded-2xl backdrop-blur-sm">
         <div className="flex items-start gap-4">
           {/* Icône et numéro d'ordre */}
           <div className="flex flex-col items-center gap-2">
             <div className="relative">
-              <div className="w-12 h-12 rounded-full bg-gradient-to-br from-gaspard-emerald/30 to-gaspard-forest/40 flex items-center justify-center shadow-sm">
-                <Footprints className="h-5 w-5 text-gaspard-cream" />
+              <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-gaspard-primary/30 to-gaspard-accent/40 flex items-center justify-center shadow-xl backdrop-blur-sm">
+                <Footprints className="h-6 w-6 text-gaspard-background" />
               </div>
               <Badge 
                 variant="secondary" 
-                className="absolute -top-1 -right-1 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold bg-gaspard-gold text-gaspard-dark"
+                className="absolute -top-2 -right-2 w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold bg-gradient-to-r from-gaspard-accent to-gaspard-secondary text-gaspard-background shadow-lg"
               >
                 {index + 1}
               </Badge>
@@ -103,61 +103,61 @@ const SortableMarcheItem: React.FC<SortableMarcheItemProps> = ({
             <div
               {...attributes}
               {...listeners}
-              className="cursor-grab active:cursor-grabbing p-2 rounded-lg bg-gaspard-emerald/10 hover:bg-gaspard-emerald/20 transition-colors group/drag"
+              className="cursor-grab active:cursor-grabbing p-3 rounded-xl bg-gaspard-primary/10 hover:bg-gaspard-primary/20 transition-colors group/drag backdrop-blur-sm"
             >
-              <GripVertical className="h-4 w-4 text-gaspard-sage group-hover/drag:text-gaspard-forest" />
+              <GripVertical className="h-5 w-5 text-gaspard-secondary group-hover/drag:text-gaspard-primary transition-colors duration-300" />
             </div>
           </div>
           
           {/* Informations de la marche */}
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-3 mb-3">
-              <h4 className="text-lg font-semibold text-gaspard-dark truncate">
+              <h4 className="text-xl font-bold text-gaspard-primary truncate leading-tight mb-2">
                 {marche.marche?.nom_marche || `Marché de ${marche.marche?.ville}`}
               </h4>
-              <div className="flex items-center gap-1 text-gaspard-sage">
+              <div className="flex items-center gap-2 text-gaspard-secondary mb-4">
                 <Waves className="h-4 w-4" />
-                <span className="text-xs">Étape {index + 1}</span>
+                <span className="text-sm font-light">Étape {index + 1}</span>
               </div>
             </div>
             
-            <div className="flex flex-wrap gap-2 mb-3">
-              <Badge variant="outline" className="text-xs bg-gaspard-cream/50 border-gaspard-emerald/30">
-                <MapPin className="h-3 w-3 mr-1.5 text-gaspard-forest" />
-                {marche.marche?.ville}
-              </Badge>
+            <div className="flex flex-wrap gap-3 mb-4">
+              <div className="px-3 py-1.5 text-xs bg-gradient-to-r from-gaspard-background/60 to-gaspard-background/40 backdrop-blur-sm border border-gaspard-primary/30 rounded-full flex items-center gap-2">
+                <MapPin className="h-3 w-3 text-gaspard-primary" />
+                <span className="text-gaspard-primary font-medium">{marche.marche?.ville}</span>
+              </div>
               
               {marche.marche?.date && (
-                <Badge variant="outline" className="text-xs bg-gaspard-cream/50 border-gaspard-emerald/30">
-                  <Calendar className="h-3 w-3 mr-1.5 text-gaspard-forest" />
-                  {marche.marche.date}
-                </Badge>
+                <div className="px-3 py-1.5 text-xs bg-gradient-to-r from-gaspard-background/60 to-gaspard-background/40 backdrop-blur-sm border border-gaspard-accent/30 rounded-full flex items-center gap-2">
+                  <Calendar className="h-3 w-3 text-gaspard-accent" />
+                  <span className="text-gaspard-accent font-medium">{marche.marche.date}</span>
+                </div>
               )}
               
-              <Badge variant="outline" className="text-xs bg-gradient-to-r from-gaspard-gold/20 to-gaspard-gold/30 border-gaspard-gold/40">
-                <Radio className="h-3 w-3 mr-1.5 text-gaspard-dark" />
-                Connexion {index + 1}
-              </Badge>
+              <div className="px-3 py-1.5 text-xs bg-gradient-to-r from-gaspard-secondary/20 to-gaspard-accent/20 backdrop-blur-sm border border-gaspard-secondary/30 rounded-full flex items-center gap-2">
+                <Radio className="h-3 w-3 text-gaspard-secondary" />
+                <span className="text-gaspard-secondary font-medium">Connexion {index + 1}</span>
+              </div>
             </div>
             
             {marche.marche?.descriptif_court && (
-              <p className="text-sm text-gaspard-forest leading-relaxed line-clamp-2">
+              <p className="text-sm text-gaspard-secondary leading-relaxed line-clamp-2 font-light">
                 {marche.marche.descriptif_court}
               </p>
             )}
           </div>
           
-          {/* Actions élégantes */}
-          <div className="flex flex-col gap-1 opacity-0 group-hover:opacity-100 transition-all duration-200">
+          {/* Actions élégantes et subtiles */}
+          <div className="flex flex-col gap-2 opacity-0 group-hover:opacity-100 transition-all duration-300">
             <Button
               variant="ghost"
               size="sm"
               onClick={() => onMoveUp(index)}
               disabled={index === 0}
               title="Remonter dans la séquence"
-              className="h-8 w-8 p-0 rounded-full hover:bg-gaspard-emerald/20 disabled:opacity-30"
+              className="h-10 w-10 p-0 rounded-xl hover:bg-gaspard-primary/20 disabled:opacity-30 transition-all duration-300 hover:scale-110 backdrop-blur-sm"
             >
-              <ArrowUp className="h-3 w-3" />
+              <ArrowUp className="h-4 w-4 text-gaspard-primary" />
             </Button>
             
             <Button
@@ -166,9 +166,9 @@ const SortableMarcheItem: React.FC<SortableMarcheItemProps> = ({
               onClick={() => onMoveDown(index)}
               disabled={index === totalCount - 1}
               title="Descendre dans la séquence"
-              className="h-8 w-8 p-0 rounded-full hover:bg-gaspard-emerald/20 disabled:opacity-30"
+              className="h-10 w-10 p-0 rounded-xl hover:bg-gaspard-primary/20 disabled:opacity-30 transition-all duration-300 hover:scale-110 backdrop-blur-sm"
             >
-              <ArrowDown className="h-3 w-3" />
+              <ArrowDown className="h-4 w-4 text-gaspard-primary" />
             </Button>
             
             <Button
@@ -176,9 +176,9 @@ const SortableMarcheItem: React.FC<SortableMarcheItemProps> = ({
               size="sm"
               onClick={() => onRemove(marche.marche_id)}
               title="Retirer de l'exploration"
-              className="h-8 w-8 p-0 rounded-full hover:bg-red-50 text-red-500 hover:text-red-600"
+              className="h-10 w-10 p-0 rounded-xl hover:bg-red-500/20 text-red-400 hover:text-red-300 transition-all duration-300 hover:scale-110 backdrop-blur-sm"
             >
-              <Trash2 className="h-3 w-3" />
+              <Trash2 className="h-4 w-4" />
             </Button>
           </div>
         </div>
@@ -254,80 +254,99 @@ const ExplorationMarcheList: React.FC<ExplorationMarcheListProps> = ({
 
   if (sortedMarches.length === 0) {
     return (
-      <Card className="bg-gaspard-cream/5 backdrop-blur-sm border-gaspard-emerald/20">
-        <CardContent className="p-12 text-center">
-          <div className="relative mx-auto w-24 h-24 mb-6">
-            <div className="absolute inset-0 bg-gradient-to-br from-gaspard-emerald/20 to-gaspard-forest/30 rounded-full opacity-20 animate-pulse"></div>
-            <div className="absolute inset-2 bg-gradient-to-br from-gaspard-forest/30 to-gaspard-sage/40 rounded-full opacity-30 animate-pulse" style={{animationDelay: '0.5s'}}></div>
-            <div className="absolute inset-4 bg-gradient-to-br from-gaspard-sage/40 to-gaspard-mint/50 rounded-full opacity-40 flex items-center justify-center">
-              <Footprints className="h-8 w-8 text-gaspard-cream" />
+      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-gaspard-background/40 via-gaspard-background/20 to-transparent backdrop-blur-xl border border-gaspard-primary/20 shadow-2xl shadow-gaspard-primary/10">
+        {/* Particules de fond */}
+        <div className="absolute inset-0 overflow-hidden">
+          <div className="absolute top-1/4 left-1/4 w-32 h-32 bg-gaspard-primary/5 rounded-full blur-3xl animate-gentle-float"></div>
+          <div className="absolute bottom-1/4 right-1/4 w-24 h-24 bg-gaspard-accent/5 rounded-full blur-3xl animate-gentle-float animation-delay-300"></div>
+        </div>
+        
+        <div className="relative p-12 text-center">
+          <div className="relative mx-auto w-24 h-24 mb-8">
+            <div className="absolute inset-0 bg-gradient-to-br from-gaspard-primary/20 to-gaspard-accent/30 rounded-full animate-gentle-float"></div>
+            <div className="absolute inset-2 bg-gradient-to-br from-gaspard-accent/30 to-gaspard-secondary/40 rounded-full animate-gentle-float animation-delay-300"></div>
+            <div className="absolute inset-4 bg-gradient-to-br from-gaspard-secondary/40 to-gaspard-primary/50 rounded-full flex items-center justify-center animate-gentle-float animation-delay-600">
+              <Footprints className="h-8 w-8 text-gaspard-background animate-soft-pulse" />
             </div>
           </div>
           
-          <h3 className="text-xl font-semibold text-gaspard-dark mb-2">
+          <h3 className="gaspard-main-title text-2xl font-bold text-gaspard-primary mb-4">
             Première étape de votre exploration
           </h3>
-          <div className="text-gaspard-forest mb-4">
+          <div className="text-lg text-gaspard-secondary mb-6 font-light">
             Aucune marche n'a encore été assignée à cette exploration
           </div>
-          <p className="text-sm text-gaspard-sage max-w-md mx-auto leading-relaxed">
-            Commencez par sélectionner des marchés dans la section ci-dessous pour créer votre parcours sensoriel unique
+          <p className="text-sm text-gaspard-muted max-w-md mx-auto leading-relaxed font-light">
+            Commencez par sélectionner des territoires dans la section d'enrichissement pour créer votre parcours sensoriel unique
           </p>
-        </CardContent>
-      </Card>
+          
+          {/* Ligne décorative */}
+          <div className="mt-8 w-16 h-0.5 bg-gradient-to-r from-gaspard-primary to-gaspard-accent mx-auto rounded-full opacity-60"></div>
+        </div>
+      </div>
     );
   }
 
   return (
-    <Card className="bg-gaspard-cream/5 backdrop-blur-sm border-gaspard-emerald/20 shadow-sm">
-      <CardHeader className="pb-4">
-        <div className="flex items-center gap-3 mb-2">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-gaspard-gold/20 to-gaspard-gold/30 flex items-center justify-center">
-              <Footprints className="h-4 w-4 text-gaspard-dark" />
+    <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-gaspard-background/40 via-gaspard-background/20 to-transparent backdrop-blur-xl border border-gaspard-primary/20 shadow-2xl shadow-gaspard-primary/10">
+      {/* Particules de fond */}
+      <div className="absolute inset-0 overflow-hidden">
+        <div className="absolute top-0 right-0 w-40 h-40 bg-gaspard-accent/5 rounded-full blur-3xl animate-gentle-float"></div>
+        <div className="absolute bottom-0 left-0 w-32 h-32 bg-gaspard-primary/5 rounded-full blur-3xl animate-gentle-float animation-delay-300"></div>
+      </div>
+      
+      <div className="relative p-8">
+        <div className="flex items-center gap-4 mb-8">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-gaspard-primary/20 to-gaspard-accent/30 flex items-center justify-center backdrop-blur-sm">
+              <Footprints className="h-5 w-5 text-gaspard-primary" />
             </div>
-            <CardTitle className="text-xl text-gaspard-dark">
+            <h3 className="gaspard-main-title text-2xl font-bold text-gaspard-primary">
               Séquence de l'exploration
-            </CardTitle>
+            </h3>
           </div>
-          <Badge variant="secondary" className="bg-gaspard-gold/20 text-gaspard-dark border-gaspard-gold/30">
-            {sortedMarches.length} étape{sortedMarches.length > 1 ? 's' : ''}
-          </Badge>
+          <div className="flex items-center gap-3 ml-auto">
+            <div className="flex items-center gap-2">
+              <div className="w-2 h-2 rounded-full bg-gaspard-accent animate-gentle-float"></div>
+              <span className="text-sm text-gaspard-muted font-light">
+                {sortedMarches.length} étape{sortedMarches.length > 1 ? 's' : ''}
+              </span>
+            </div>
+          </div>
         </div>
         
-        <div className="flex items-center gap-2 text-sm text-gaspard-forest">
+        <div className="flex items-center gap-3 mb-8 text-sm text-gaspard-secondary font-light">
           <Waves className="h-4 w-4" />
-          <span>Organisez le parcours de votre exploration multisensorielle</span>
+          <span>Orchestrez le parcours de votre exploration multisensorielle</span>
         </div>
-      </CardHeader>
-      
-      <CardContent>
-        <DndContext
-          sensors={sensors}
-          collisionDetection={closestCenter}
-          onDragEnd={handleDragEnd}
-        >
-          <SortableContext
-            items={sortedMarches.map(m => m.id)}
-            strategy={verticalListSortingStrategy}
+        <div className="relative">
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCenter}
+            onDragEnd={handleDragEnd}
           >
-            <div className="space-y-4">
-              {sortedMarches.map((marche, index) => (
-                <SortableMarcheItem
-                  key={marche.id}
-                  marche={marche}
-                  index={index}
-                  totalCount={sortedMarches.length}
-                  onRemove={onRemove}
-                  onMoveUp={handleMoveUp}
-                  onMoveDown={handleMoveDown}
-                />
-              ))}
-            </div>
-          </SortableContext>
-        </DndContext>
-      </CardContent>
-    </Card>
+            <SortableContext
+              items={sortedMarches.map(m => m.id)}
+              strategy={verticalListSortingStrategy}
+            >
+              <div className="space-y-6">
+                {sortedMarches.map((marche, index) => (
+                  <SortableMarcheItem
+                    key={marche.id}
+                    marche={marche}
+                    index={index}
+                    totalCount={sortedMarches.length}
+                    onRemove={onRemove}
+                    onMoveUp={handleMoveUp}
+                    onMoveDown={handleMoveDown}
+                  />
+                ))}
+              </div>
+            </SortableContext>
+          </DndContext>
+        </div>
+      </div>
+    </div>
   );
 };
 
