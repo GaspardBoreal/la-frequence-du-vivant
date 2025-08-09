@@ -16,6 +16,7 @@ import MigrationExecution from './pages/MigrationExecution';
 import MarcheAdmin from './pages/MarcheAdmin';
 import AdminAccess from './pages/AdminAccess';
 import TestEbird from './pages/TestEbird';
+import FaviconTest from './pages/FaviconTest';
 
 function App() {
   return (
@@ -56,6 +57,7 @@ function App() {
               <TestEbird />
             </AdminAuth>
           } />
+          <Route path="/favicon-test" element={<FaviconTest />} />
           
           <Route path="*" element={<NotFound />} />
         </Routes>
