@@ -91,7 +91,7 @@ const ExplorationMarcheSelector: React.FC<ExplorationMarcheSelectorProps> = ({
               placeholder="Découvrir des territoires par ville, nom..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-12 pr-4 py-3 bg-gaspard-background/30 backdrop-blur-sm border-gaspard-accent/30 rounded-2xl focus:border-gaspard-accent/50 transition-all duration-500 hover:bg-gaspard-background/50 focus:bg-gaspard-background/60 text-gaspard-primary"
+              className="pl-12 pr-4 py-3 bg-gaspard-background/30 backdrop-blur-sm border-gaspard-accent/30 rounded-2xl focus:border-gaspard-accent/50 transition-all duration-500 hover:bg-gaspard-background/50 focus:bg-gaspard-background/60 text-white placeholder:text-gaspard-muted/80"
             />
             <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-gaspard-accent/10 via-transparent to-gaspard-secondary/10 opacity-0 group-hover:opacity-100 group-focus-within:opacity-50 transition-opacity duration-500 pointer-events-none"></div>
           </div>
