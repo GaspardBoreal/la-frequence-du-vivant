@@ -183,13 +183,13 @@ const AudioCard: React.FC<AudioCardProps> = ({
       {/* Audio Player Section */}
       <div className="bg-gray-50 rounded-lg p-4 relative">
         <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center space-x-3">
+          <div className="flex items-center space-x-3 flex-1 min-w-0">
             <Button
               type="button"
               size="sm"
               variant="outline"
               onClick={handlePlayPause}
-              className="h-10 w-10 p-0 rounded-full"
+              className="h-10 w-10 p-0 rounded-full flex-shrink-0"
             >
               {isPlaying ? (
                 <Pause className="h-4 w-4" />
@@ -200,7 +200,7 @@ const AudioCard: React.FC<AudioCardProps> = ({
             
             <div className="flex items-center space-x-2 flex-1 min-w-0">
               <Music className="h-4 w-4 text-blue-600 flex-shrink-0" />
-              <span className="font-medium text-sm truncate" title={audio.name}>{audio.name}</span>
+              <span className="font-bold text-sm text-gray-700 truncate" title={audio.name}>{audio.name}</span>
             </div>
           </div>
           
@@ -208,7 +208,7 @@ const AudioCard: React.FC<AudioCardProps> = ({
             type="button"
             size="sm"
             variant="outline"
-            className="h-8 w-8 p-0 text-red-600 hover:text-red-700"
+            className="h-8 w-8 p-0 text-red-600 hover:text-red-700 flex-shrink-0"
             onClick={handleRemove}
           >
             <X className="h-4 w-4" />
