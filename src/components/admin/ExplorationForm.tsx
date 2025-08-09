@@ -11,6 +11,7 @@ import { ArrowLeft, Save, Plus, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { createSlug } from '@/utils/slugGenerator';
+import { useQueryClient } from '@tanstack/react-query';
 
 interface ExplorationFormData {
   name: string;
@@ -36,6 +37,7 @@ const ExplorationForm: React.FC<ExplorationFormProps> = ({
   onSuccess
 }) => {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [isLoading, setIsLoading] = useState(false);
   const [newKeyword, setNewKeyword] = useState('');
   
@@ -130,6 +132,9 @@ const ExplorationForm: React.FC<ExplorationFormProps> = ({
         if (error) throw error;
         toast.success('Exploration créée avec succès');
       }
+
+      // Invalider le cache des explorations pour forcer le rechargement
+      queryClient.invalidateQueries({ queryKey: ['explorations'] });
 
       if (onSuccess) {
         onSuccess();
