@@ -2,12 +2,13 @@ import React, { useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
-import { Eye, Edit, Settings, Trash2, Sparkles } from 'lucide-react';
+import { Eye, Edit, Settings, Trash2, Sparkles, Footprints } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useQueryClient } from '@tanstack/react-query';
+import { useExplorationMarchesCount } from '@/hooks/useExplorations';
 
 interface PoeticExplorationCardProps {
   exploration: {
@@ -27,6 +28,9 @@ const PoeticExplorationCard: React.FC<PoeticExplorationCardProps> = ({ explorati
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [isDeleting, setIsDeleting] = useState(false);
+  
+  // Récupérer le nombre de marches associées
+  const { data: marchesCount = 0 } = useExplorationMarchesCount(exploration.id);
   
   // Animation délayée basée sur l'index pour effet cascade
   const animationDelay = `animation-delay-${(index * 100) % 2000}`;
@@ -93,7 +97,7 @@ const PoeticExplorationCard: React.FC<PoeticExplorationCardProps> = ({ explorati
               </h3>
             </div>
             
-            <div className="mb-4 group-hover:mb-5 transition-all duration-300">
+            <div className="mb-4 group-hover:mb-5 transition-all duration-300 flex flex-wrap gap-2">
               <Badge 
                 variant={exploration.published ? "default" : "secondary"}
                 className={cn(
@@ -104,6 +108,17 @@ const PoeticExplorationCard: React.FC<PoeticExplorationCardProps> = ({ explorati
                 )}
               >
                 {exploration.published ? "✨ Révélé au monde" : "🌱 Germe créatif"}
+              </Badge>
+              
+              {/* Badge compteur de marches */}
+              <Badge 
+                variant="outline"
+                className="rounded-full px-3 py-1 text-xs transition-all duration-500 group-hover:px-4 group-hover:py-1.5 group-hover:scale-105 bg-gradient-to-r from-gaspard-primary/10 to-gaspard-secondary/10 text-gaspard-primary border-gaspard-primary/30 hover:from-gaspard-primary/20 hover:to-gaspard-secondary/20 hover:border-gaspard-primary/50"
+              >
+                <Footprints className="h-3 w-3 mr-1.5 animate-soft-pulse" />
+                {marchesCount === 0 ? 'Aucune marche' : 
+                 marchesCount === 1 ? '1 marche' : 
+                 `${marchesCount} marches`}
               </Badge>
             </div>
           </div>

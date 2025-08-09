@@ -225,6 +225,24 @@ export const useTrackClick = () => {
   });
 };
 
+// Hook pour récupérer le nombre de marches d'une exploration
+export const useExplorationMarchesCount = (explorationId: string) => {
+  return useQuery({
+    queryKey: ['exploration-marches-count', explorationId],
+    queryFn: async () => {
+      const { count, error } = await supabase
+        .from('exploration_marches')
+        .select('*', { count: 'exact', head: true })
+        .eq('exploration_id', explorationId);
+      
+      if (error) throw error;
+      return count || 0;
+    },
+    staleTime: 5 * 60 * 1000,
+    enabled: !!explorationId,
+  });
+};
+
 // Hook pour soumettre du feedback
 export const useSubmitFeedback = () => {
   return useMutation({
