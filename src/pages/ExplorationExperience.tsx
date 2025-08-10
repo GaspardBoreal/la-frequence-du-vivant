@@ -176,7 +176,11 @@ export default function ExplorationExperience() {
             settings.marche_view_model === 'elabore' ? (
               <ExperienceOutroBioacoustic explorationId={exploration.id} sessionId={sessionId!} />
             ) : (
-              <ExperienceOutro explorationId={exploration.id} sessionId={sessionId!} />
+              <ExperienceOutro 
+                explorationId={exploration.id} 
+                sessionId={sessionId!} 
+                onBack={() => setCurrent(marches.length)} // Go back to last marche
+              />
             )
           )}
         </section>

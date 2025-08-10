@@ -1,15 +1,17 @@
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
+import { ChevronLeft } from 'lucide-react';
 import { useSubmitFeedback } from '@/hooks/useExplorations';
 import { toast } from 'sonner';
 
 interface Props {
   explorationId: string;
   sessionId: string;
+  onBack?: () => void;
 }
 
-const ExperienceOutro: React.FC<Props> = ({ explorationId, sessionId }) => {
+const ExperienceOutro: React.FC<Props> = ({ explorationId, sessionId, onBack }) => {
   const [rating, setRating] = useState<number | undefined>();
   const [comment, setComment] = useState('');
   const { mutateAsync, isPending } = useSubmitFeedback();
@@ -31,6 +33,21 @@ const ExperienceOutro: React.FC<Props> = ({ explorationId, sessionId }) => {
 
   return (
     <article className="rounded-xl border p-6">
+      {/* Navigation Header */}
+      {onBack && (
+        <div className="mb-6 flex items-center">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={onBack}
+            className="flex items-center gap-2 text-muted-foreground hover:text-foreground"
+          >
+            <ChevronLeft className="h-4 w-4" />
+            Retour à la marche précédente
+          </Button>
+        </div>
+      )}
+      
       <h2 className="text-xl font-semibold">Merci d\'avoir voyagé avec nous</h2>
       <p className="mt-2 text-foreground/80">Quelques questions pour nourrir l\'écriture à venir :</p>
       <div className="mt-4 grid gap-4 md:grid-cols-2">
