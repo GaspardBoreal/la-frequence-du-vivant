@@ -7,7 +7,7 @@ import MultiSensoryNavigation from '@/components/MultiSensoryNavigation';
 import PoeticSection from '@/components/PoeticSection';
 import ImmersiveVisualSection from '@/components/ImmersiveVisualSection';
 import AudioExperienceSection from '@/components/AudioExperienceSection';
-import MarcheHeroSection from '@/components/MarcheHeroSection';
+import BioacousticHeroSection from '@/components/BioacousticHeroSection';
 
 interface Props {
   marche: ExplorationMarcheComplete;
@@ -95,15 +95,24 @@ const ExperienceMarcheElabore: React.FC<Props> = ({
     setActiveSection(section);
   };
 
+  // Handler to navigate using the legacy marche format expected by BioacousticHeroSection
+  const handleNavigateToMarche = (targetMarche: MarcheTechnoSensible) => {
+    // Find the matching marche by ID and call the appropriate navigation function
+    if (previousMarche && targetMarche.id === previousMarche.marche?.id) {
+      onNavigateToPrevious?.();
+    } else if (nextMarche && targetMarche.id === nextMarche.marche?.id) {
+      onNavigateToNext?.();
+    }
+  };
+
   return (
     <div className={`relative bg-background rounded-lg overflow-hidden ${isModal ? 'h-auto' : 'h-[650px]'}`}>
-      {/* Use the actual MarcheHeroSection */}
-      <MarcheHeroSection
+      {/* Use BioacousticHeroSection for the élaboré model */}
+      <BioacousticHeroSection
         marche={legacyMarche}
         theme={theme}
         onBack={onBack || (() => {})}
-        onNavigateToPrevious={onNavigateToPrevious}
-        onNavigateToNext={onNavigateToNext}
+        onNavigateToMarche={handleNavigateToMarche}
         previousMarche={previousMarche?.marche ? {
           id: previousMarche.marche.id,
           ville: previousMarche.marche.ville,
@@ -112,7 +121,7 @@ const ExperienceMarcheElabore: React.FC<Props> = ({
           theme: previousMarche.marche.theme_principal || '',
           nomMarche: previousMarche.marche.nom_marche || previousMarche.marche.ville,
           descriptifCourt: previousMarche.marche.descriptif_court || '',
-          descriptifLong: nextMarche.marche.descriptif_long || '',
+          descriptifLong: previousMarche.marche.descriptif_long || '',
           poeme: previousMarche.marche.etudes?.[0]?.contenu || '',
           date: previousMarche.marche.date || '',
           latitude: previousMarche.marche.latitude || 0,
@@ -158,7 +167,6 @@ const ExperienceMarcheElabore: React.FC<Props> = ({
           })) || [],
           supabaseTags: nextMarche.marche.tags?.map(tag => tag.tag) || []
         } : undefined}
-        isModal={isModal}
       />
 
       {/* Navigation */}
