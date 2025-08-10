@@ -3,7 +3,7 @@ import { useParams } from 'react-router-dom';
 import { useEffect, useMemo, useState } from 'react';
 import SEOHead from '@/components/SEOHead';
 import { Button } from '@/components/ui/button';
-import { useExploration, useExplorationMarches, ExplorationMarche } from '@/hooks/useExplorations';
+import { useExploration, useExplorationMarches, ExplorationMarcheComplete } from '@/hooks/useExplorations';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import DecorativeParticles from '@/components/DecorativeParticles';
@@ -30,7 +30,7 @@ export default function ExplorationExperience() {
   const [settings, setSettings] = useState<NarrativeSettings>({ marche_view_model: 'elabore' });
   const [current, setCurrent] = useState<number>(0);
   const steps = useMemo(() => {
-    const list: Array<{ type: 'welcome' | 'marche' | 'outro'; marche?: ExplorationMarche }> = [];
+    const list: Array<{ type: 'welcome' | 'marche' | 'outro'; marche?: ExplorationMarcheComplete }> = [];
     list.push({ type: 'welcome' });
     marches.forEach((m) => list.push({ type: 'marche', marche: m }));
     list.push({ type: 'outro' });

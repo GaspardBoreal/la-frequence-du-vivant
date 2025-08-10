@@ -44,8 +44,59 @@ export interface ExplorationMarche {
     nom_marche?: string;
     date?: string;
     descriptif_court?: string;
+    descriptif_long?: string;
     latitude?: number;
     longitude?: number;
+    region?: string;
+    departement?: string;
+    theme_principal?: string;
+    sous_themes?: string[];
+  };
+}
+
+export interface ExplorationMarcheComplete extends ExplorationMarche {
+  marche?: ExplorationMarche['marche'] & {
+    photos: Array<{
+      id: string;
+      url_supabase: string;
+      titre?: string;
+      description?: string;
+      ordre?: number;
+    }>;
+    audio: Array<{
+      id: string;
+      url_supabase: string;
+      titre?: string;
+      description?: string;
+      duree_secondes?: number;
+      ordre?: number;
+    }>;
+    videos: Array<{
+      id: string;
+      url_supabase: string;
+      titre?: string;
+      description?: string;
+      ordre?: number;
+    }>;
+    documents: Array<{
+      id: string;
+      url_supabase: string;
+      titre?: string;
+      description?: string;
+      ordre?: number;
+    }>;
+    etudes: Array<{
+      id: string;
+      titre: string;
+      contenu: string;
+      resume?: string;
+      ordre: number;
+    }>;
+    tags: Array<{
+      id: string;
+      tag: string;
+      categorie?: string;
+    }>;
   };
 }
 
@@ -123,7 +174,7 @@ export const useExploration = (slug: string) => {
   });
 };
 
-// Hook pour récupérer les marches d'une exploration
+// Hook pour récupérer les marches d'une exploration avec toutes leurs données
 export const useExplorationMarches = (explorationId: string) => {
   return useQuery({
     queryKey: ['exploration-marches', explorationId],
@@ -138,15 +189,53 @@ export const useExplorationMarches = (explorationId: string) => {
             nom_marche,
             date,
             descriptif_court,
+            descriptif_long,
             latitude,
-            longitude
+            longitude,
+            region,
+            departement,
+            theme_principal,
+            sous_themes
           )
         `)
         .eq('exploration_id', explorationId)
         .order('ordre', { ascending: true });
       
       if (error) throw error;
-      return data as ExplorationMarche[];
+      
+      // Pour chaque marche, récupérer tous ses médias
+      const marchesWithMedia = await Promise.all(
+        (data || []).map(async (explorationMarche) => {
+          if (!explorationMarche.marche) return explorationMarche;
+          
+          const marcheId = explorationMarche.marche.id;
+          
+          // Récupérer tous les médias en parallèle
+          const [photosResult, audioResult, videosResult, documentsResult, etudesResult, tagsResult] = await Promise.all([
+            supabase.from('marche_photos').select('*').eq('marche_id', marcheId).order('ordre'),
+            supabase.from('marche_audio').select('*').eq('marche_id', marcheId).order('ordre'),
+            supabase.from('marche_videos').select('*').eq('marche_id', marcheId).order('ordre'),
+            supabase.from('marche_documents').select('*').eq('marche_id', marcheId).order('ordre'),
+            supabase.from('marche_etudes').select('*').eq('marche_id', marcheId).order('ordre'),
+            supabase.from('marche_tags').select('*').eq('marche_id', marcheId)
+          ]);
+          
+          return {
+            ...explorationMarche,
+            marche: {
+              ...explorationMarche.marche,
+              photos: photosResult.data || [],
+              audio: audioResult.data || [],
+              videos: videosResult.data || [],
+              documents: documentsResult.data || [],
+              etudes: etudesResult.data || [],
+              tags: tagsResult.data || []
+            }
+          };
+        })
+      );
+      
+      return marchesWithMedia as ExplorationMarcheComplete[];
     },
     staleTime: 5 * 60 * 1000,
     enabled: !!explorationId,

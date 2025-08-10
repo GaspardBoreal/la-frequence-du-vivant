@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { MapPin, Calendar } from 'lucide-react';
-import type { ExplorationMarche } from '@/hooks/useExplorations';
+import type { ExplorationMarcheComplete } from '@/hooks/useExplorations';
 import { REGIONAL_THEMES, RegionalTheme } from '@/utils/regionalThemes';
 import { MarcheTechnoSensible } from '@/utils/googleSheetsApi';
 import MultiSensoryNavigation from '@/components/MultiSensoryNavigation';
@@ -10,7 +10,7 @@ import ImmersiveVisualSection from '@/components/ImmersiveVisualSection';
 import AudioExperienceSection from '@/components/AudioExperienceSection';
 
 interface Props {
-  marche: ExplorationMarche;
+  marche: ExplorationMarcheComplete;
 }
 
 const ExperienceMarcheSimple: React.FC<Props> = ({ marche }) => {
@@ -21,21 +21,29 @@ const ExperienceMarcheSimple: React.FC<Props> = ({ marche }) => {
   const legacyMarche: MarcheTechnoSensible | null = marche.marche ? {
     id: marche.marche.id,
     ville: marche.marche.ville,
-    departement: '',
-    region: 'nouvelle-aquitaine',
-    theme: '',
+    departement: marche.marche.departement || '',
+    region: marche.marche.region || 'nouvelle-aquitaine',
+    theme: marche.marche.theme_principal || '',
     nomMarche: marche.marche.nom_marche || marche.marche.ville,
     descriptifCourt: marche.marche.descriptif_court || '',
-    descriptifLong: '',
-    poeme: '',
+    descriptifLong: marche.marche.descriptif_long || '',
+    poeme: marche.marche.etudes?.[0]?.contenu || '',
     date: marche.marche.date || '',
     latitude: marche.marche.latitude || 0,
     longitude: marche.marche.longitude || 0,
-    photos: [],
-    videos: [],
-    audioFiles: [],
-    audioData: [],
-    supabaseTags: []
+    photos: marche.marche.photos?.map(photo => photo.url_supabase) || [],
+    videos: marche.marche.videos?.map(video => video.url_supabase) || [],
+    audioFiles: marche.marche.audio?.map(audio => audio.url_supabase) || [],
+    audioData: marche.marche.audio?.map(audio => ({
+      id: audio.id,
+      url: audio.url_supabase,
+      nom_fichier: audio.titre || 'Audio',
+      titre: audio.titre,
+      description: audio.description,
+      duree_secondes: audio.duree_secondes,
+      ordre: audio.ordre
+    })) || [],
+    supabaseTags: marche.marche.tags?.map(tag => tag.tag) || []
   } : null;
 
   useEffect(() => {
