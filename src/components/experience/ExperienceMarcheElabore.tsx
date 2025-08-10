@@ -17,6 +17,8 @@ interface Props {
   onNavigateToPrevious?: () => void;
   onNavigateToNext?: () => void;
   onBack?: () => void;
+  canNavigatePrev?: boolean;
+  canNavigateNext?: boolean;
 }
 
 const ExperienceMarcheElabore: React.FC<Props> = ({ 
@@ -26,7 +28,9 @@ const ExperienceMarcheElabore: React.FC<Props> = ({
   nextMarche, 
   onNavigateToPrevious, 
   onNavigateToNext, 
-  onBack 
+  onBack,
+  canNavigatePrev = false,
+  canNavigateNext = false
 }) => {
   const [activeSection, setActiveSection] = useState<'visual' | 'audio' | 'poeme'>('poeme');
   const [theme, setTheme] = useState<RegionalTheme>(REGIONAL_THEMES['nouvelle-aquitaine']);

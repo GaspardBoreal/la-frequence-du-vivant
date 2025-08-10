@@ -17,6 +17,8 @@ interface Props {
   onNavigateToPrevious?: () => void;
   onNavigateToNext?: () => void;
   onBack?: () => void;
+  canNavigatePrev?: boolean;
+  canNavigateNext?: boolean;
 }
 
 const ExperienceMarcheSimple: React.FC<Props> = ({ 
@@ -26,7 +28,9 @@ const ExperienceMarcheSimple: React.FC<Props> = ({
   nextMarche, 
   onNavigateToPrevious, 
   onNavigateToNext, 
-  onBack 
+  onBack,
+  canNavigatePrev = false,
+  canNavigateNext = false
 }) => {
   const [activeSection, setActiveSection] = useState<'visual' | 'audio' | 'poeme'>('poeme');
   const [theme, setTheme] = useState<RegionalTheme>(REGIONAL_THEMES['nouvelle-aquitaine']);
@@ -158,6 +162,8 @@ const ExperienceMarcheSimple: React.FC<Props> = ({
           })) || [],
           supabaseTags: nextMarche.marche.tags?.map(tag => tag.tag) || []
         } : undefined}
+        canNavigatePrev={canNavigatePrev}
+        canNavigateNext={canNavigateNext}
         isModal={isModal}
       />
 

@@ -16,6 +16,8 @@ interface MarcheHeroSectionProps {
   onNavigateToPrevious?: () => void;
   onNavigateToNext?: () => void;
   isModal?: boolean;
+  canNavigatePrev?: boolean;
+  canNavigateNext?: boolean;
 }
 
 const MarcheHeroSection: React.FC<MarcheHeroSectionProps> = ({
@@ -26,7 +28,9 @@ const MarcheHeroSection: React.FC<MarcheHeroSectionProps> = ({
   nextMarche,
   onNavigateToPrevious,
   onNavigateToNext,
-  isModal = false
+  isModal = false,
+  canNavigatePrev = false,
+  canNavigateNext = false
 }) => {
   const firstPhoto = marche.photos?.[0];
 
@@ -75,9 +79,9 @@ const MarcheHeroSection: React.FC<MarcheHeroSectionProps> = ({
                 variant="ghost"
                 size="sm"
                 onClick={onNavigateToPrevious}
-                disabled={!previousMarche || !onNavigateToPrevious}
+                disabled={!canNavigatePrev || !onNavigateToPrevious}
                 className={`backdrop-blur-md border p-3 rounded-xl transition-all duration-300 ${
-                  previousMarche && onNavigateToPrevious
+                  canNavigatePrev && onNavigateToPrevious
                     ? 'bg-gradient-to-r from-purple-500/20 to-pink-500/20 hover:from-purple-400/30 hover:to-pink-400/30 text-white border-purple-400/30 hover:scale-110 hover:shadow-lg hover:shadow-purple-500/20'
                     : 'bg-white/5 text-white/40 border-white/10 cursor-not-allowed'
                 }`}
@@ -100,9 +104,9 @@ const MarcheHeroSection: React.FC<MarcheHeroSectionProps> = ({
                 variant="ghost"
                 size="sm"
                 onClick={onNavigateToNext}
-                disabled={!nextMarche || !onNavigateToNext}
+                disabled={!canNavigateNext || !onNavigateToNext}
                 className={`backdrop-blur-md border p-3 rounded-xl transition-all duration-300 ${
-                  nextMarche && onNavigateToNext
+                  canNavigateNext && onNavigateToNext
                     ? 'bg-gradient-to-r from-purple-500/20 to-pink-500/20 hover:from-purple-400/30 hover:to-pink-400/30 text-white border-purple-400/30 hover:scale-110 hover:shadow-lg hover:shadow-purple-500/20'
                     : 'bg-white/5 text-white/40 border-white/10 cursor-not-allowed'
                 }`}

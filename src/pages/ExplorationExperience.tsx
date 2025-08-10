@@ -95,9 +95,13 @@ export default function ExplorationExperience() {
   const currentMarcheId = currentStep?.type === 'marche' ? currentStep.marche?.marche?.id : null;
   const marcheIndex = currentMarcheId ? marches.findIndex((m) => m.marche?.id === currentMarcheId) : -1;
   
-  // For 'simple' model, expand navigation beyond just marches
-  const prevMarche = settings.marche_view_model === 'simple' && marcheIndex === 0 ? undefined : (marcheIndex > 0 ? marches[marcheIndex - 1] : undefined);
-  const nextMarche = settings.marche_view_model === 'simple' && marcheIndex === marches.length - 1 ? undefined : (marcheIndex >= 0 && marcheIndex < marches.length - 1 ? marches[marcheIndex + 1] : undefined);
+  // For 'simple' model, always allow navigation (buttons will handle flow logic)
+  const prevMarche = settings.marche_view_model === 'simple' ? (marcheIndex > 0 ? marches[marcheIndex - 1] : undefined) : (marcheIndex > 0 ? marches[marcheIndex - 1] : undefined);
+  const nextMarche = settings.marche_view_model === 'simple' ? (marcheIndex < marches.length - 1 ? marches[marcheIndex + 1] : undefined) : (marcheIndex >= 0 && marcheIndex < marches.length - 1 ? marches[marcheIndex + 1] : undefined);
+  
+  // For simple model, enable navigation at flow extremities
+  const canNavigatePrev = settings.marche_view_model === 'simple' ? true : marcheIndex > 0;
+  const canNavigateNext = settings.marche_view_model === 'simple' ? true : marcheIndex >= 0 && marcheIndex < marches.length - 1;
 
   const navigateToPrevMarche = () => {
     if (settings.marche_view_model === 'simple') {
@@ -151,6 +155,8 @@ export default function ExplorationExperience() {
                 onNavigateToPrevious={navigateToPrevMarche}
                 onNavigateToNext={navigateToNextMarche}
                 onBack={() => setCurrent(0)}
+                canNavigatePrev={canNavigatePrev}
+                canNavigateNext={canNavigateNext}
               />
             ) : (
               <ExperienceMarcheElabore
@@ -160,6 +166,8 @@ export default function ExplorationExperience() {
                 onNavigateToPrevious={navigateToPrevMarche}
                 onNavigateToNext={navigateToNextMarche}
                 onBack={() => setCurrent(0)}
+                canNavigatePrev={canNavigatePrev}
+                canNavigateNext={canNavigateNext}
               />
             )
           )}
