@@ -421,7 +421,7 @@ export default function ExplorationAnimator() {
 
       {/* Preview Modal */}
       <Dialog open={previewOpen} onOpenChange={setPreviewOpen}>
-        <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
+        <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>
               Aperçu du modèle "{marcheModels.find(m => m.id === previewModel)?.name}"
