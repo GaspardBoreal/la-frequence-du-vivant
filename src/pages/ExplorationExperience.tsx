@@ -8,9 +8,12 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import DecorativeParticles from '@/components/DecorativeParticles';
 import ExperienceWelcome from '@/components/experience/ExperienceWelcome';
+import ExperienceWelcomeBioacoustic from '@/components/experience/ExperienceWelcomeBioacoustic';
 import ExperienceMarcheSimple from '@/components/experience/ExperienceMarcheSimple';
 import ExperienceMarcheElabore from '@/components/experience/ExperienceMarcheElabore';
 import ExperienceOutro from '@/components/experience/ExperienceOutro';
+import ExperienceOutroBioacoustic from '@/components/experience/ExperienceOutroBioacoustic';
+
 
 interface NarrativeSettings {
   marche_view_model?: 'simple' | 'elabore';
@@ -86,6 +89,21 @@ export default function ExplorationExperience() {
   const isFirst = current === 0;
   const isLast = current === steps.length - 1;
 
+  // Marche-level navigation (used by hero arrows) respects only the marches subset
+  const currentStep = steps[current];
+  const currentMarcheId = currentStep?.type === 'marche' ? currentStep.marche?.marche?.id : null;
+  const marcheIndex = currentMarcheId ? marches.findIndex((m) => m.marche?.id === currentMarcheId) : -1;
+  const prevMarche = marcheIndex > 0 ? marches[marcheIndex - 1] : undefined;
+  const nextMarche = marcheIndex >= 0 && marcheIndex < marches.length - 1 ? marches[marcheIndex + 1] : undefined;
+
+  const navigateToPrevMarche = () => {
+    if (marcheIndex > 0) setCurrent((marcheIndex - 1) + 1); // +1 offset because step 0 is welcome
+  };
+  const navigateToNextMarche = () => {
+    if (marcheIndex >= 0 && marcheIndex < marches.length - 1) setCurrent((marcheIndex + 1) + 1);
+  };
+
+
   return (
     <div className="min-h-screen relative">
       <SEOHead
@@ -117,19 +135,41 @@ export default function ExplorationExperience() {
       <main className="container mx-auto px-4 pb-28">
         <section className="mt-4">
           {steps[current]?.type === 'welcome' && (
-            <ExperienceWelcome exploration={exploration} settings={settings} onStart={goNext} />
+            settings.marche_view_model === 'elabore' ? (
+              <ExperienceWelcomeBioacoustic exploration={exploration} settings={settings} onStart={goNext} />
+            ) : (
+              <ExperienceWelcome exploration={exploration} settings={settings} onStart={goNext} />
+            )
           )}
 
           {steps[current]?.type === 'marche' && steps[current].marche && (
             settings.marche_view_model === 'simple' ? (
-              <ExperienceMarcheSimple marche={steps[current].marche!} />
+              <ExperienceMarcheSimple
+                marche={steps[current].marche!}
+                previousMarche={prevMarche}
+                nextMarche={nextMarche}
+                onNavigateToPrevious={navigateToPrevMarche}
+                onNavigateToNext={navigateToNextMarche}
+                onBack={() => setCurrent(0)}
+              />
             ) : (
-              <ExperienceMarcheElabore marche={steps[current].marche!} />
+              <ExperienceMarcheElabore
+                marche={steps[current].marche!}
+                previousMarche={prevMarche}
+                nextMarche={nextMarche}
+                onNavigateToPrevious={navigateToPrevMarche}
+                onNavigateToNext={navigateToNextMarche}
+                onBack={() => setCurrent(0)}
+              />
             )
           )}
 
           {steps[current]?.type === 'outro' && (
-            <ExperienceOutro explorationId={exploration.id} sessionId={sessionId!} />
+            settings.marche_view_model === 'elabore' ? (
+              <ExperienceOutroBioacoustic explorationId={exploration.id} sessionId={sessionId!} />
+            ) : (
+              <ExperienceOutro explorationId={exploration.id} sessionId={sessionId!} />
+            )
           )}
         </section>
       </main>
