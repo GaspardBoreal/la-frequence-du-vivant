@@ -14,7 +14,8 @@ interface Props {
   isModal?: boolean;
   previousMarche?: ExplorationMarcheComplete | null;
   nextMarche?: ExplorationMarcheComplete | null;
-  onNavigateToMarche?: (marche: ExplorationMarcheComplete) => void;
+  onNavigateToPrevious?: () => void;
+  onNavigateToNext?: () => void;
   onBack?: () => void;
 }
 
@@ -23,7 +24,8 @@ const ExperienceMarcheElabore: React.FC<Props> = ({
   isModal = false, 
   previousMarche, 
   nextMarche, 
-  onNavigateToMarche, 
+  onNavigateToPrevious, 
+  onNavigateToNext, 
   onBack 
 }) => {
   const [activeSection, setActiveSection] = useState<'visual' | 'audio' | 'poeme'>('poeme');
@@ -100,10 +102,8 @@ const ExperienceMarcheElabore: React.FC<Props> = ({
         marche={legacyMarche}
         theme={theme}
         onBack={onBack || (() => {})}
-        onNavigateToMarche={onNavigateToMarche ? (marche: any) => {
-          // Find the original ExplorationMarcheComplete from the legacy data
-          onNavigateToMarche(marche as any);
-        } : undefined}
+        onNavigateToPrevious={onNavigateToPrevious}
+        onNavigateToNext={onNavigateToNext}
         previousMarche={previousMarche?.marche ? {
           id: previousMarche.marche.id,
           ville: previousMarche.marche.ville,
@@ -112,7 +112,7 @@ const ExperienceMarcheElabore: React.FC<Props> = ({
           theme: previousMarche.marche.theme_principal || '',
           nomMarche: previousMarche.marche.nom_marche || previousMarche.marche.ville,
           descriptifCourt: previousMarche.marche.descriptif_court || '',
-          descriptifLong: previousMarche.marche.descriptif_long || '',
+          descriptifLong: nextMarche.marche.descriptif_long || '',
           poeme: previousMarche.marche.etudes?.[0]?.contenu || '',
           date: previousMarche.marche.date || '',
           latitude: previousMarche.marche.latitude || 0,

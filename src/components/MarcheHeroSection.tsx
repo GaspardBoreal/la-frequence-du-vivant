@@ -13,7 +13,8 @@ interface MarcheHeroSectionProps {
   onBack: () => void;
   previousMarche?: MarcheTechnoSensible | null;
   nextMarche?: MarcheTechnoSensible | null;
-  onNavigateToMarche?: (marche: MarcheTechnoSensible) => void;
+  onNavigateToPrevious?: () => void;
+  onNavigateToNext?: () => void;
   isModal?: boolean;
 }
 
@@ -23,7 +24,8 @@ const MarcheHeroSection: React.FC<MarcheHeroSectionProps> = ({
   onBack,
   previousMarche,
   nextMarche,
-  onNavigateToMarche,
+  onNavigateToPrevious,
+  onNavigateToNext,
   isModal = false
 }) => {
   const firstPhoto = marche.photos?.[0];
@@ -88,10 +90,10 @@ const MarcheHeroSection: React.FC<MarcheHeroSectionProps> = ({
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => previousMarche && onNavigateToMarche && onNavigateToMarche(previousMarche)}
-                disabled={!previousMarche || !onNavigateToMarche}
+                onClick={onNavigateToPrevious}
+                disabled={!previousMarche || !onNavigateToPrevious}
                 className={`backdrop-blur-md border p-3 rounded-xl transition-all duration-300 ${
-                  previousMarche && onNavigateToMarche
+                  previousMarche && onNavigateToPrevious
                     ? 'bg-gradient-to-r from-purple-500/20 to-pink-500/20 hover:from-purple-400/30 hover:to-pink-400/30 text-white border-purple-400/30 hover:scale-110 hover:shadow-lg hover:shadow-purple-500/20'
                     : 'bg-white/5 text-white/40 border-white/10 cursor-not-allowed'
                 }`}
@@ -113,10 +115,10 @@ const MarcheHeroSection: React.FC<MarcheHeroSectionProps> = ({
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => nextMarche && onNavigateToMarche && onNavigateToMarche(nextMarche)}
-                disabled={!nextMarche || !onNavigateToMarche}
+                onClick={onNavigateToNext}
+                disabled={!nextMarche || !onNavigateToNext}
                 className={`backdrop-blur-md border p-3 rounded-xl transition-all duration-300 ${
-                  nextMarche && onNavigateToMarche
+                  nextMarche && onNavigateToNext
                     ? 'bg-gradient-to-r from-purple-500/20 to-pink-500/20 hover:from-purple-400/30 hover:to-pink-400/30 text-white border-purple-400/30 hover:scale-110 hover:shadow-lg hover:shadow-purple-500/20'
                     : 'bg-white/5 text-white/40 border-white/10 cursor-not-allowed'
                 }`}

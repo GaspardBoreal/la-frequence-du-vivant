@@ -14,7 +14,8 @@ interface Props {
   isModal?: boolean;
   previousMarche?: ExplorationMarcheComplete | null;
   nextMarche?: ExplorationMarcheComplete | null;
-  onNavigateToMarche?: (marche: ExplorationMarcheComplete) => void;
+  onNavigateToPrevious?: () => void;
+  onNavigateToNext?: () => void;
   onBack?: () => void;
 }
 
@@ -23,7 +24,8 @@ const ExperienceMarcheSimple: React.FC<Props> = ({
   isModal = false, 
   previousMarche, 
   nextMarche, 
-  onNavigateToMarche, 
+  onNavigateToPrevious, 
+  onNavigateToNext, 
   onBack 
 }) => {
   const [activeSection, setActiveSection] = useState<'visual' | 'audio' | 'poeme'>('poeme');
@@ -100,10 +102,8 @@ const ExperienceMarcheSimple: React.FC<Props> = ({
         marche={legacyMarche}
         theme={theme}
         onBack={onBack || (() => {})}
-        onNavigateToMarche={onNavigateToMarche ? (marche: any) => {
-          // Find the original ExplorationMarcheComplete from the legacy data
-          onNavigateToMarche(marche as any);
-        } : undefined}
+        onNavigateToPrevious={onNavigateToPrevious}
+        onNavigateToNext={onNavigateToNext}
         previousMarche={previousMarche?.marche ? {
           id: previousMarche.marche.id,
           ville: previousMarche.marche.ville,

@@ -190,7 +190,8 @@ const MarcheDetail = () => {
           onBack={handleBack}
           previousMarche={previousMarche}
           nextMarche={nextMarche}
-          onNavigateToMarche={handleNavigateToMarche}
+          onNavigateToPrevious={() => previousMarche && handleNavigateToMarche(previousMarche)}
+          onNavigateToNext={() => nextMarche && handleNavigateToMarche(nextMarche)}
         />
 
         <div className="max-w-6xl mx-auto px-6">

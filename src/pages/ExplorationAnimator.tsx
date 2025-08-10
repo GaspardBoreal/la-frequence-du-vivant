@@ -76,12 +76,17 @@ export default function ExplorationAnimator() {
     setPreviewOpen(true);
   };
 
-  const handleNavigateToMarche = (targetMarche: any) => {
-    console.log('handleNavigateToMarche called with:', targetMarche);
-    if (!explorationMarches) return;
-    const index = explorationMarches.findIndex(m => m.id === targetMarche.id);
-    if (index !== -1) {
-      setCurrentMarcheIndex(index);
+  const handleNavigateToPrevious = () => {
+    console.log('handleNavigateToPrevious called');
+    if (explorationMarches && currentMarcheIndex > 0) {
+      setCurrentMarcheIndex(currentMarcheIndex - 1);
+    }
+  };
+
+  const handleNavigateToNext = () => {
+    console.log('handleNavigateToNext called');
+    if (explorationMarches && currentMarcheIndex < explorationMarches.length - 1) {
+      setCurrentMarcheIndex(currentMarcheIndex + 1);
     }
   };
 
@@ -480,7 +485,8 @@ export default function ExplorationAnimator() {
                       isModal={true}
                       previousMarche={getPreviousMarche}
                       nextMarche={getNextMarche}
-                      onNavigateToMarche={handleNavigateToMarche}
+                      onNavigateToPrevious={handleNavigateToPrevious}
+                      onNavigateToNext={handleNavigateToNext}
                       onBack={handleBack}
                     />
                   ) : (
@@ -489,7 +495,8 @@ export default function ExplorationAnimator() {
                       isModal={true}
                       previousMarche={getPreviousMarche}
                       nextMarche={getNextMarche}
-                      onNavigateToMarche={handleNavigateToMarche}
+                      onNavigateToPrevious={handleNavigateToPrevious}
+                      onNavigateToNext={handleNavigateToNext}
                       onBack={handleBack}
                     />
                   )}
