@@ -2,7 +2,7 @@ import React from 'react';
 import { useParams } from 'react-router-dom';
 import { useEffect, useMemo, useState } from 'react';
 import SEOHead from '@/components/SEOHead';
-import { Button } from '@/components/ui/button';
+
 import { useExploration, useExplorationMarches, ExplorationMarcheComplete } from '@/hooks/useExplorations';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -13,6 +13,7 @@ import ExperienceMarcheSimple from '@/components/experience/ExperienceMarcheSimp
 import ExperienceMarcheElabore from '@/components/experience/ExperienceMarcheElabore';
 import ExperienceOutro from '@/components/experience/ExperienceOutro';
 import ExperienceOutroBioacoustic from '@/components/experience/ExperienceOutroBioacoustic';
+import ExperienceFooter from '@/components/experience/ExperienceFooter';
 
 
 interface NarrativeSettings {
@@ -115,22 +116,6 @@ export default function ExplorationExperience() {
 
       <DecorativeParticles />
 
-      <header className="container mx-auto px-4 py-4">
-        <nav className="flex flex-wrap gap-2 text-xs">
-          {steps.map((s, i) => (
-            <button
-              key={i}
-              onClick={() => setCurrent(i)}
-              className={`px-3 py-1 rounded-full border transition-colors ${
-                i === current ? 'bg-primary text-primary-foreground border-primary' : 'border-border text-foreground/80 hover:bg-muted'
-              }`}
-              aria-current={i === current}
-            >
-              {s.type === 'welcome' ? 'Accueil' : s.type === 'outro' ? 'Fin' : (s.marche?.marche?.nom_marche || s.marche?.marche?.ville || 'Marche')}
-            </button>
-          ))}
-        </nav>
-      </header>
 
       <main className="container mx-auto px-4 pb-28">
         <section className="mt-4">
@@ -174,20 +159,7 @@ export default function ExplorationExperience() {
         </section>
       </main>
 
-      {/* Bottom navigation */}
-      <div className="fixed bottom-0 left-0 right-0 bg-background/80 backdrop-blur border-t">
-        <div className="container mx-auto px-4 py-3 flex items-center justify-between">
-          <Button variant="secondary" onClick={goPrev} disabled={isFirst}>
-            Précédent
-          </Button>
-          <div className="text-xs text-foreground/60">
-            Étape {current + 1} / {steps.length}
-          </div>
-          <Button onClick={goNext} disabled={isLast}>
-            Suivant
-          </Button>
-        </div>
-      </div>
+      <ExperienceFooter />
     </div>
   );
 }
