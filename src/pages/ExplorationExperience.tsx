@@ -90,18 +90,33 @@ export default function ExplorationExperience() {
   const isFirst = current === 0;
   const isLast = current === steps.length - 1;
 
-  // Marche-level navigation (used by hero arrows) respects only the marches subset
+  // Full navigation including welcome and outro for 'simple' model
   const currentStep = steps[current];
   const currentMarcheId = currentStep?.type === 'marche' ? currentStep.marche?.marche?.id : null;
   const marcheIndex = currentMarcheId ? marches.findIndex((m) => m.marche?.id === currentMarcheId) : -1;
-  const prevMarche = marcheIndex > 0 ? marches[marcheIndex - 1] : undefined;
-  const nextMarche = marcheIndex >= 0 && marcheIndex < marches.length - 1 ? marches[marcheIndex + 1] : undefined;
+  
+  // For 'simple' model, expand navigation beyond just marches
+  const prevMarche = settings.marche_view_model === 'simple' && marcheIndex === 0 ? undefined : (marcheIndex > 0 ? marches[marcheIndex - 1] : undefined);
+  const nextMarche = settings.marche_view_model === 'simple' && marcheIndex === marches.length - 1 ? undefined : (marcheIndex >= 0 && marcheIndex < marches.length - 1 ? marches[marcheIndex + 1] : undefined);
 
   const navigateToPrevMarche = () => {
-    if (marcheIndex > 0) setCurrent((marcheIndex - 1) + 1); // +1 offset because step 0 is welcome
+    if (settings.marche_view_model === 'simple') {
+      // Go to previous step (welcome if first marche)
+      setCurrent(current - 1);
+    } else {
+      // Original logic for 'elabore' model
+      if (marcheIndex > 0) setCurrent((marcheIndex - 1) + 1);
+    }
   };
+  
   const navigateToNextMarche = () => {
-    if (marcheIndex >= 0 && marcheIndex < marches.length - 1) setCurrent((marcheIndex + 1) + 1);
+    if (settings.marche_view_model === 'simple') {
+      // Go to next step (outro if last marche)
+      setCurrent(current + 1);
+    } else {
+      // Original logic for 'elabore' model
+      if (marcheIndex >= 0 && marcheIndex < marches.length - 1) setCurrent((marcheIndex + 1) + 1);
+    }
   };
 
 

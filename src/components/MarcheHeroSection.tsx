@@ -64,22 +64,6 @@ const MarcheHeroSection: React.FC<MarcheHeroSectionProps> = ({
         {/* Top Section - Centered Navigation Bar */}
         <div className="flex justify-center items-center pt-8">
           <div className="flex items-center space-x-6 bg-black/20 backdrop-blur-md rounded-2xl px-6 py-3 border border-white/10">
-            {/* Back Button */}
-            <motion.div 
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.3 }}
-            >
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                onClick={onBack}
-                className="bg-white/10 backdrop-blur-md hover:bg-white/20 text-white border-white/20 transition-all duration-200 hover:scale-105"
-              >
-                <ArrowLeft className="h-4 w-4 mr-2" />
-                Retour à la carte
-              </Button>
-            </motion.div>
 
             {/* Previous Arrow */}
             <motion.div
