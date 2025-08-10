@@ -52,6 +52,7 @@ export default function ExplorationAnimator() {
   const canSave = useMemo(() => !!exploration?.id, [exploration?.id]);
   
   const currentMarche = useMemo(() => {
+    console.log('Computing currentMarche with index:', currentMarcheIndex, 'from explorationMarches:', explorationMarches?.length);
     return explorationMarches && explorationMarches.length > 0 ? explorationMarches[currentMarcheIndex] : null;
   }, [explorationMarches, currentMarcheIndex]);
 
@@ -66,6 +67,7 @@ export default function ExplorationAnimator() {
   }, [explorationMarches, currentMarcheIndex]);
 
   const handlePreviewModel = (modelId: string) => {
+    console.log('handlePreviewModel called with:', modelId, 'currentMarche:', currentMarche);
     if (!currentMarche) {
       toast.error('Aucune marche disponible pour la prévisualisation');
       return;
@@ -75,6 +77,7 @@ export default function ExplorationAnimator() {
   };
 
   const handleNavigateToMarche = (targetMarche: any) => {
+    console.log('handleNavigateToMarche called with:', targetMarche);
     if (!explorationMarches) return;
     const index = explorationMarches.findIndex(m => m.id === targetMarche.id);
     if (index !== -1) {
@@ -83,8 +86,17 @@ export default function ExplorationAnimator() {
   };
 
   const handleBack = () => {
+    console.log('handleBack called');
     setPreviewOpen(false);
   };
+
+  // Reset currentMarcheIndex when explorationMarches changes
+  useEffect(() => {
+    console.log('explorationMarches changed:', explorationMarches?.length);
+    if (explorationMarches && explorationMarches.length > 0) {
+      setCurrentMarcheIndex(0);
+    }
+  }, [explorationMarches]);
 
   useEffect(() => {
     const loadSettings = async () => {
