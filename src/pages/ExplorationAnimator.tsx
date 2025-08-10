@@ -421,7 +421,7 @@ export default function ExplorationAnimator() {
 
       {/* Preview Modal */}
       <Dialog open={previewOpen} onOpenChange={setPreviewOpen}>
-        <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-[95vw] max-h-[95vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>
               Aperçu du modèle "{marcheModels.find(m => m.id === previewModel)?.name}"
@@ -437,9 +437,9 @@ export default function ExplorationAnimator() {
                 
                 <div className="border rounded-lg p-4 bg-muted/20">
                   {previewModel === 'simple' ? (
-                    <ExperienceMarcheSimple marche={firstMarche} />
+                    <ExperienceMarcheSimple marche={firstMarche} isModal={true} />
                   ) : (
-                    <ExperienceMarcheElabore marche={firstMarche} />
+                    <ExperienceMarcheElabore marche={firstMarche} isModal={true} />
                   )}
                 </div>
               </div>

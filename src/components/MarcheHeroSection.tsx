@@ -14,6 +14,7 @@ interface MarcheHeroSectionProps {
   previousMarche?: MarcheTechnoSensible | null;
   nextMarche?: MarcheTechnoSensible | null;
   onNavigateToMarche?: (marche: MarcheTechnoSensible) => void;
+  isModal?: boolean;
 }
 
 const MarcheHeroSection: React.FC<MarcheHeroSectionProps> = ({
@@ -22,12 +23,13 @@ const MarcheHeroSection: React.FC<MarcheHeroSectionProps> = ({
   onBack,
   previousMarche,
   nextMarche,
-  onNavigateToMarche
+  onNavigateToMarche,
+  isModal = false
 }) => {
   const firstPhoto = marche.photos?.[0];
 
   return (
-    <div className="relative min-h-screen overflow-hidden">
+    <div className={`relative overflow-hidden ${isModal ? 'min-h-[80vh]' : 'min-h-screen'}`}>
       {/* Background Image with Parallax Effect */}
       <motion.div 
         className="absolute inset-0 z-0"
@@ -56,7 +58,7 @@ const MarcheHeroSection: React.FC<MarcheHeroSectionProps> = ({
       </motion.div>
 
       {/* Content Overlay */}
-      <div className="relative z-10 flex flex-col min-h-screen px-6">
+      <div className={`relative z-10 flex flex-col px-6 ${isModal ? 'min-h-[80vh]' : 'min-h-screen'}`}>
         {/* Top Section - Centered Navigation Bar */}
         <div className="flex justify-center items-center pt-8">
           <div className="flex items-center space-x-6 bg-black/20 backdrop-blur-md rounded-2xl px-6 py-3 border border-white/10">
