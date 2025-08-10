@@ -100,7 +100,7 @@ const ExperienceMarcheSimple: React.FC<Props> = ({
   };
 
   return (
-    <div className={`relative bg-background rounded-lg overflow-hidden ${isModal ? 'h-auto' : 'h-[700px]'}`}>
+    <div className={`relative bg-background rounded-lg overflow-hidden ${isModal ? 'h-auto' : 'min-h-[700px] flex flex-col'}`}>
       {/* Use the actual MarcheHeroSection */}
       <MarcheHeroSection
         marche={legacyMarche}
@@ -169,7 +169,7 @@ const ExperienceMarcheSimple: React.FC<Props> = ({
 
       {/* Navigation */}
       {!isModal && (
-        <div className="px-4 py-2">
+        <div className="px-4 py-3 border-b border-border/10">
           <MultiSensoryNavigation
             activeSection={activeSection}
             onSectionChange={handleSectionChange}
@@ -180,13 +180,13 @@ const ExperienceMarcheSimple: React.FC<Props> = ({
 
       {/* Content Section */}
       {!isModal && (
-        <div className="px-4 pb-4">
+        <div className="flex-1 px-4 py-4">
           <motion.div
             key={activeSection}
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.3 }}
-            className="h-48 overflow-y-auto"
+            className="h-full"
           >
             {activeSection === 'poeme' && (
               <PoeticSection marche={legacyMarche} theme={theme} />
