@@ -31,7 +31,7 @@ const MarcheHeroSection: React.FC<MarcheHeroSectionProps> = ({
   const firstPhoto = marche.photos?.[0];
 
   return (
-    <div className={`relative overflow-hidden ${isModal ? 'min-h-[80vh]' : 'min-h-screen'}`}>
+    <div className={`relative overflow-hidden ${isModal ? 'h-[80vh]' : 'h-[400px]'}`}>
       {/* Background Image with Parallax Effect */}
       <motion.div 
         className="absolute inset-0 z-0"
@@ -60,7 +60,7 @@ const MarcheHeroSection: React.FC<MarcheHeroSectionProps> = ({
       </motion.div>
 
       {/* Content Overlay */}
-      <div className={`relative z-10 flex flex-col px-6 ${isModal ? 'min-h-[80vh]' : 'min-h-screen'}`}>
+      <div className={`relative z-10 flex flex-col px-6 ${isModal ? 'h-[80vh]' : 'h-[400px]'}`}>
         {/* Top Section - Centered Navigation Bar */}
         <div className="flex justify-center items-center pt-8">
           <div className="flex items-center space-x-6 bg-black/20 backdrop-blur-md rounded-2xl px-6 py-3 border border-white/10">

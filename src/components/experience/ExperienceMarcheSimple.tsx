@@ -96,7 +96,7 @@ const ExperienceMarcheSimple: React.FC<Props> = ({
   };
 
   return (
-    <div className={`relative bg-background rounded-lg overflow-hidden ${isModal ? 'h-auto' : 'h-[500px]'}`}>
+    <div className={`relative bg-background rounded-lg overflow-hidden ${isModal ? 'h-auto' : 'h-[700px]'}`}>
       {/* Use the actual MarcheHeroSection */}
       <MarcheHeroSection
         marche={legacyMarche}
