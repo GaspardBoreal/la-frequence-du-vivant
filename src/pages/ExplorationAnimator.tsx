@@ -32,6 +32,7 @@ export default function ExplorationAnimator() {
   const [saving, setSaving] = useState(false);
   const [previewOpen, setPreviewOpen] = useState(false);
   const [previewModel, setPreviewModel] = useState<string>('');
+  const [currentMarcheIndex, setCurrentMarcheIndex] = useState(0);
 
   const [welcomeTones, setWelcomeTones] = useState<string[]>([]);
   const [welcomeForms, setWelcomeForms] = useState<string[]>([]);
@@ -50,17 +51,39 @@ export default function ExplorationAnimator() {
 
   const canSave = useMemo(() => !!exploration?.id, [exploration?.id]);
   
-  const firstMarche = useMemo(() => {
-    return explorationMarches && explorationMarches.length > 0 ? explorationMarches[0] : null;
-  }, [explorationMarches]);
+  const currentMarche = useMemo(() => {
+    return explorationMarches && explorationMarches.length > 0 ? explorationMarches[currentMarcheIndex] : null;
+  }, [explorationMarches, currentMarcheIndex]);
+
+  const getPreviousMarche = useMemo(() => {
+    if (!explorationMarches || currentMarcheIndex <= 0) return null;
+    return explorationMarches[currentMarcheIndex - 1];
+  }, [explorationMarches, currentMarcheIndex]);
+
+  const getNextMarche = useMemo(() => {
+    if (!explorationMarches || currentMarcheIndex >= explorationMarches.length - 1) return null;
+    return explorationMarches[currentMarcheIndex + 1];
+  }, [explorationMarches, currentMarcheIndex]);
 
   const handlePreviewModel = (modelId: string) => {
-    if (!firstMarche) {
+    if (!currentMarche) {
       toast.error('Aucune marche disponible pour la prévisualisation');
       return;
     }
     setPreviewModel(modelId);
     setPreviewOpen(true);
+  };
+
+  const handleNavigateToMarche = (targetMarche: any) => {
+    if (!explorationMarches) return;
+    const index = explorationMarches.findIndex(m => m.id === targetMarche.id);
+    if (index !== -1) {
+      setCurrentMarcheIndex(index);
+    }
+  };
+
+  const handleBack = () => {
+    setPreviewOpen(false);
   };
 
   useEffect(() => {
@@ -338,7 +361,7 @@ export default function ExplorationAnimator() {
                   </div>
                   
                   <div className="flex items-center gap-2">
-                    {firstMarche && (
+                    {currentMarche && (
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
@@ -429,23 +452,40 @@ export default function ExplorationAnimator() {
           </DialogHeader>
           
           <div className="py-4">
-            {firstMarche && previewModel && (
+            {currentMarche && previewModel && (
               <div className="space-y-4">
                 <p className="text-sm text-muted-foreground">
-                  Prévisualisation appliquée à la première marche : <span className="font-medium">{firstMarche.marche?.nom_marche || firstMarche.marche?.ville}</span>
+                  Prévisualisation appliquée à la marche : <span className="font-medium">{currentMarche.marche?.nom_marche || currentMarche.marche?.ville}</span>
+                  {explorationMarches && explorationMarches.length > 1 && (
+                    <span className="ml-2">({currentMarcheIndex + 1}/{explorationMarches.length})</span>
+                  )}
                 </p>
                 
                 <div className="border rounded-lg p-4 bg-muted/20">
                   {previewModel === 'simple' ? (
-                    <ExperienceMarcheSimple marche={firstMarche} isModal={true} />
+                    <ExperienceMarcheSimple 
+                      marche={currentMarche} 
+                      isModal={true}
+                      previousMarche={getPreviousMarche}
+                      nextMarche={getNextMarche}
+                      onNavigateToMarche={handleNavigateToMarche}
+                      onBack={handleBack}
+                    />
                   ) : (
-                    <ExperienceMarcheElabore marche={firstMarche} isModal={true} />
+                    <ExperienceMarcheElabore 
+                      marche={currentMarche} 
+                      isModal={true}
+                      previousMarche={getPreviousMarche}
+                      nextMarche={getNextMarche}
+                      onNavigateToMarche={handleNavigateToMarche}
+                      onBack={handleBack}
+                    />
                   )}
                 </div>
               </div>
             )}
             
-            {!firstMarche && (
+            {!currentMarche && (
               <p className="text-center text-muted-foreground py-8">
                 Aucune marche disponible pour la prévisualisation
               </p>
