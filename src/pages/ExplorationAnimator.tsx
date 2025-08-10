@@ -323,25 +323,6 @@ export default function ExplorationAnimator() {
                 `}
                 aria-selected={marcheViewModel === model.id}
               >
-                {firstMarche && (
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handlePreviewModel(model.id);
-                    }}
-                    className={`
-                      absolute top-3 right-3 z-10 p-2 rounded-full transition-all duration-200
-                      ${marcheViewModel === model.id 
-                        ? 'bg-white/20 text-white hover:bg-white/30' 
-                        : 'bg-muted/80 text-muted-foreground hover:bg-primary/10 hover:text-primary'
-                      }
-                    `}
-                    title="Prévisualiser ce modèle"
-                  >
-                    <Eye className="w-4 h-4" />
-                  </button>
-                )}
-                
                 <div className="flex items-start justify-between">
                   <div className="flex-1 mr-3">
                     <h3 className={`text-base font-semibold transition-colors duration-200 ${
@@ -355,20 +336,42 @@ export default function ExplorationAnimator() {
                       {model.description}
                     </p>
                   </div>
-                  <div className={`
-                    flex items-center gap-2 text-xs px-3 py-1.5 rounded-full font-medium
-                    transition-all duration-200
-                    ${marcheViewModel === model.id 
-                      ? 'bg-primary text-primary-foreground shadow-sm' 
-                      : 'bg-muted text-muted-foreground group-hover:bg-primary/10 group-hover:text-primary'
-                    }
-                  `}>
-                    {marcheViewModel === model.id && (
-                      <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                      </svg>
+                  
+                  <div className="flex items-center gap-2">
+                    {firstMarche && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handlePreviewModel(model.id);
+                        }}
+                        className={`
+                          p-2 rounded-full transition-all duration-200
+                          ${marcheViewModel === model.id 
+                            ? 'bg-white/20 text-white hover:bg-white/30' 
+                            : 'bg-muted/80 text-muted-foreground hover:bg-primary/10 hover:text-primary'
+                          }
+                        `}
+                        title="Prévisualiser ce modèle"
+                      >
+                        <Eye className="w-4 h-4" />
+                      </button>
                     )}
-                    {marcheViewModel === model.id ? 'Sélectionné' : 'Choisir'}
+                    
+                    <div className={`
+                      flex items-center gap-2 text-xs px-3 py-1.5 rounded-full font-medium
+                      transition-all duration-200
+                      ${marcheViewModel === model.id 
+                        ? 'bg-primary text-primary-foreground shadow-sm' 
+                        : 'bg-muted text-muted-foreground group-hover:bg-primary/10 group-hover:text-primary'
+                      }
+                    `}>
+                      {marcheViewModel === model.id && (
+                        <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                        </svg>
+                      )}
+                      {marcheViewModel === model.id ? 'Sélectionné' : 'Choisir'}
+                    </div>
                   </div>
                 </div>
                 <p className={`text-xs mt-4 font-mono transition-colors duration-200 ${
