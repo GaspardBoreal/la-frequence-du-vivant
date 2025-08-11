@@ -8,6 +8,8 @@ import { Badge } from '@/components/ui/badge';
 import { Play, Pause, SkipForward, SkipBack, Shuffle, List, MapPin, Clock, Waves } from 'lucide-react';
 import { FloatingAudioPlayer } from '@/components/audio/FloatingAudioPlayer';
 import { useAudioPlaylist, Track } from '@/hooks/useAudioPlaylist';
+import PodcastNavigationHeader from '@/components/experience/PodcastNavigationHeader';
+import FloatingReturnButton from '@/components/experience/FloatingReturnButton';
 
 interface PodcastViewProps {
   explorationSlug: string;
@@ -66,6 +68,9 @@ const PodcastView: React.FC<PodcastViewProps> = ({ explorationSlug, sessionId })
 
   return (
     <div className="dordogne-experience min-h-screen relative overflow-hidden">
+      {/* Navigation Header */}
+      <PodcastNavigationHeader explorationName={exploration.name} />
+      
       {/* Living Waters Background */}
       <div className="fixed inset-0 z-0">
         <div className="absolute inset-0 bg-gradient-to-br from-slate-900 via-emerald-900 to-green-800"></div>
@@ -314,6 +319,7 @@ const PodcastView: React.FC<PodcastViewProps> = ({ explorationSlug, sessionId })
       </div>
 
       <FloatingAudioPlayer />
+      <FloatingReturnButton />
     </div>
   );
 };
