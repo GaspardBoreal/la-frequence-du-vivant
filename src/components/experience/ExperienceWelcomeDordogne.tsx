@@ -14,9 +14,11 @@ interface Props {
     welcome_template?: string | null;
   };
   onStart?: () => void;
+  onStartPodcast?: () => void;
 }
 
-const ExperienceWelcome: React.FC<Props> = ({ exploration, settings, onStart }) => {
+// Dedicated welcome for the Dordogne exploration only
+const ExperienceWelcomeDordogne: React.FC<Props> = ({ exploration, settings, onStart, onStartPodcast }) => {
   const subtitle = [
     settings.welcome_tones?.length ? settings.welcome_tones.join(' · ') : undefined,
     settings.welcome_forms?.length ? settings.welcome_forms[0] : undefined,
@@ -24,14 +26,14 @@ const ExperienceWelcome: React.FC<Props> = ({ exploration, settings, onStart }) 
   ].filter(Boolean).join(' — ');
 
   return (
-    <div className="relative overflow-hidden rounded-2xl border bg-gradient-to-br from-primary/10 to-accent/10 p-8">
+    <div className="relative overflow-hidden rounded-2xl border bg-gradient-to-br from-primary/15 via-primary/5 to-accent/15 p-8">
       <DecorativeParticles />
       <div className="relative">
-        <h1 className="text-3xl md:text-4xl font-bold">
+        <h1 className="text-3xl md:text-4xl font-bold tracking-tight">
           {settings.welcome_template || `Bienvenue dans « ${exploration.name} »`}
         </h1>
         {subtitle && (
-          <p className="mt-2 text-foreground/80">
+          <p className="mt-2 text-sm md:text-base text-foreground/80">
             {subtitle}
           </p>
         )}
@@ -40,12 +42,19 @@ const ExperienceWelcome: React.FC<Props> = ({ exploration, settings, onStart }) 
             {exploration.description}
           </p>
         )}
-        <div className="mt-6">
-          <Button onClick={onStart}>Entrer dans l'expérience</Button>
+        <div className="mt-6 flex flex-col sm:flex-row gap-3">
+          <Button onClick={onStart} variant="hero" className="hover-scale">
+            Entrer dans l'expérience
+          </Button>
+          {onStartPodcast && (
+            <Button onClick={onStartPodcast} variant="glass" className="hover-scale" aria-label="Écouter le podcast">
+              Écouter le podcast
+            </Button>
+          )}
         </div>
       </div>
     </div>
   );
 };
 
-export default ExperienceWelcome;
+export default ExperienceWelcomeDordogne;
