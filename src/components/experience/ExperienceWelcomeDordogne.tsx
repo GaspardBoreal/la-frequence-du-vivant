@@ -113,32 +113,8 @@ const ExperienceWelcomeDordogne: React.FC<Props> = ({ exploration, settings, onS
                   </Button>
                 )}
               </div>
-              
-              <div className="flex justify-center items-end space-x-2 h-40">
-                {Array.from({ length: 32 }).map((_, i) => (
-                  <div
-                    key={i}
-                    className="eco-audio-wave"
-                    style={{
-                      width: '6px',
-                      height: `${15 + Math.random() * 120}px`,
-                      animationDelay: `${i * 0.08}s`,
-                      animationDuration: `${0.8 + Math.random() * 1.2}s`
-                    }}
-                  />
-                ))}
-              </div>
             </div>
           </div>
-
-          {/* Poetic Settings */}
-          {settings.welcome_tones?.length && (
-            <div className="mt-12 poetic-container p-6 rounded-xl">
-              <p className="dordogne-body text-emerald-300/80 text-center italic">
-                {settings.welcome_tones.join(' • ')}
-              </p>
-            </div>
-          )}
         </div>
       </div>
       
