@@ -91,6 +91,27 @@ const ExperienceWelcomeDordogne: React.FC<Props> = ({ exploration, settings, onS
               <h3 className="dordogne-title text-2xl text-emerald-200 mb-6 text-center">
                 Poèmes et Signatures Sonores de la Dordogne
               </h3>
+              
+              {/* Action buttons */}
+              <div className="flex flex-col sm:flex-row gap-6 justify-center items-center mb-8">
+                <Button 
+                  onClick={onStart}
+                  className="btn-nature px-10 py-5 text-xl text-white border-0 rounded-2xl transform transition-all duration-400"
+                >
+                  🌊 Plonger dans l'expérience
+                </Button>
+                
+                {onStartPodcast && (
+                  <Button 
+                    onClick={onStartPodcast}
+                    variant="outline"
+                    className="px-8 py-5 text-xl bg-emerald-900/20 border-emerald-400/40 text-emerald-200 hover:bg-emerald-800/30 backdrop-blur-sm rounded-2xl transition-all duration-300"
+                  >
+                    🎙️ Écoute contemplative
+                  </Button>
+                )}
+              </div>
+              
               <div className="flex justify-center items-end space-x-2 h-40">
                 {Array.from({ length: 32 }).map((_, i) => (
                   <div
@@ -105,30 +126,7 @@ const ExperienceWelcomeDordogne: React.FC<Props> = ({ exploration, settings, onS
                   />
                 ))}
               </div>
-              <p className="dordogne-body text-sm text-emerald-300/70 text-center mt-4 italic">
-                Fréquences captées le long de la rivière • Biodiversité acoustique en temps réel
-              </p>
             </div>
-          </div>
-
-          {/* Action buttons */}
-          <div className="flex flex-col sm:flex-row gap-6 justify-center items-center">
-            <Button 
-              onClick={onStart}
-              className="btn-nature px-10 py-5 text-xl text-white border-0 rounded-2xl transform transition-all duration-400"
-            >
-              🌊 Plonger dans l'expérience
-            </Button>
-            
-            {onStartPodcast && (
-              <Button 
-                onClick={onStartPodcast}
-                variant="outline"
-                className="px-8 py-5 text-xl bg-emerald-900/20 border-emerald-400/40 text-emerald-200 hover:bg-emerald-800/30 backdrop-blur-sm rounded-2xl transition-all duration-300"
-              >
-                🎙️ Écoute contemplative
-              </Button>
-            )}
           </div>
 
           {/* Poetic Settings */}
