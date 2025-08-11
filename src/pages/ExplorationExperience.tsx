@@ -226,7 +226,7 @@ export default function ExplorationExperience() {
         </section>
       </main>
 
-      <ExperienceFooter />
+      {!isDordogneExploration && <ExperienceFooter />}
     </div>
   );
 }
