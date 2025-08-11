@@ -116,9 +116,6 @@ const PodcastView: React.FC<PodcastViewProps> = ({ explorationSlug, sessionId })
             </h1>
             <div className="poetic-container p-8 rounded-3xl max-w-3xl mx-auto">
               <h2 className="dordogne-body text-2xl text-emerald-100/90 mb-4">{exploration.name}</h2>
-              <p className="dordogne-body text-emerald-300/70 text-lg">
-                Deux chemins s'ouvrent à votre écoute...
-              </p>
             </div>
           </div>
 
