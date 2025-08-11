@@ -121,47 +121,6 @@ const PodcastView: React.FC<PodcastViewProps> = ({ explorationSlug, sessionId })
             </div>
           </div>
 
-          {/* Current Track Display */}
-          {currentTrack && (
-            <Card className="poetic-container border-emerald-400/30 mb-12">
-              <CardContent className="pt-8">
-                <div className="text-center">
-                  <Waves className="h-8 w-8 text-emerald-300 mx-auto mb-4" />
-                  <h3 className="dordogne-title text-2xl text-emerald-200 mb-2">
-                    {currentTrack.title}
-                  </h3>
-                  <p className="dordogne-body text-emerald-300/80">
-                    {currentTrack.location}
-                  </p>
-                  
-                  {/* Audio Wave Visualization */}
-                  <div className="flex justify-center items-end space-x-1 h-16 my-8">
-                    {Array.from({ length: 20 }).map((_, i) => (
-                      <div
-                        key={i}
-                        className="eco-audio-wave"
-                        style={{
-                          width: '3px',
-                          height: `${8 + Math.random() * 40}px`,
-                          animationDelay: `${i * 0.05}s`,
-                          animationDuration: `${0.6 + Math.random() * 0.8}s`,
-                          opacity: isPlaying ? 1 : 0.3
-                        }}
-                      />
-                    ))}
-                  </div>
-
-                  <Button
-                    size="icon"
-                    onClick={toggle}
-                    className="btn-nature h-16 w-16 text-white"
-                  >
-                    {isPlaying ? <Pause className="h-8 w-8" /> : <Play className="h-8 w-8" />}
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          )}
 
           {/* Two Listening Modes */}
           <div className="grid md:grid-cols-2 gap-8 mb-16">
