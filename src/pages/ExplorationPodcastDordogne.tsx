@@ -8,7 +8,7 @@ import { Play, Pause, Shuffle, ArrowRight, Waves } from 'lucide-react';
 import { FloatingAudioPlayer } from '@/components/audio/FloatingAudioPlayer';
 import { useAudioPlaylist, Track } from '@/hooks/useAudioPlaylist';
 import PodcastNavigationHeader from '@/components/experience/PodcastNavigationHeader';
-import FloatingReturnButton from '@/components/experience/FloatingReturnButton';
+
 import ExperienceFooter from '@/components/experience/ExperienceFooter';
 
 interface PodcastViewProps {
@@ -183,7 +183,6 @@ const PodcastView: React.FC<PodcastViewProps> = ({ explorationSlug, sessionId })
       </div>
 
       <FloatingAudioPlayer />
-      <FloatingReturnButton />
     </div>
   );
 };
