@@ -171,7 +171,12 @@ export default function ExplorationExperience() {
                 exploration={exploration} 
                 settings={settings} 
                 onStart={goNext} 
-                onStartPodcast={() => navigate(`/explorations/${slug}/experience/${sessionId}/podcast`)} 
+                onStartPodcast={() => {
+                  console.log('🎙️ Navigating to podcast - slug:', slug, 'sessionId:', sessionId);
+                  const podcastUrl = `/explorations/${slug}/experience/${sessionId}/podcast`;
+                  console.log('🎙️ Podcast URL:', podcastUrl);
+                  navigate(podcastUrl);
+                }}
               />
             ) : welcomeComposition ? (
               <ExperienceWelcomeAdaptive exploration={exploration} composition={welcomeComposition} onStart={goNext} onStartPodcast={() => navigate(`/explorations/${slug}/experience/${sessionId}/podcast`)} />
