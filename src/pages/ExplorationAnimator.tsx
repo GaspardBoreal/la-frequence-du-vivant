@@ -5,6 +5,8 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Switch } from '@/components/ui/switch';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import SEOHead from '@/components/SEOHead';
 import { supabase } from '@/integrations/supabase/client';
 import { useExploration, useExplorationMarches } from '@/hooks/useExplorations';
@@ -48,7 +50,11 @@ export default function ExplorationAnimator() {
   const [formsCustom, setFormsCustom] = useState<string>('');
   const [povsCustom, setPovsCustom] = useState<string>('');
   const [sensesCustom, setSensesCustom] = useState<string>('');
-  const [timesCustom, setTimesCustom] = useState<string>('');
+const [timesCustom, setTimesCustom] = useState<string>('');
+
+  // Accueil auto-adaptatif (Auto/Manuel)
+  const [welcomeAuto, setWelcomeAuto] = useState<boolean>(true);
+  const [welcomeVariant, setWelcomeVariant] = useState<'story-cover' | 'media-mosaic' | 'audio-first' | 'map-first'>('story-cover');
 
   const canSave = useMemo(() => !!exploration?.id, [exploration?.id]);
   
@@ -129,6 +135,13 @@ export default function ExplorationAnimator() {
         setPovsCustom(data.welcome_povs_custom || '');
         setSensesCustom(data.welcome_senses_custom || '');
         setTimesCustom(data.welcome_timeframes_custom || '');
+
+        // Interaction config: accueil auto/manuel
+        const ic = (data.interaction_config as any) || null;
+        if (ic) {
+          setWelcomeAuto(ic.welcome_auto ?? true);
+          setWelcomeVariant(ic.welcome_variant ?? 'story-cover');
+        }
       }
       setLoading(false);
     };
@@ -159,6 +172,10 @@ export default function ExplorationAnimator() {
         welcome_povs_custom: povsCustom || null,
         welcome_senses_custom: sensesCustom || null,
         welcome_timeframes_custom: timesCustom || null,
+        interaction_config: {
+          welcome_auto: welcomeAuto,
+          welcome_variant: welcomeVariant,
+        } as any,
       }, { onConflict: 'exploration_id' });
     setSaving(false);
     if (error) {
@@ -180,6 +197,11 @@ export default function ExplorationAnimator() {
       { marcheViewModel }
     );
 
+    // Override variant in manual mode
+    if (!welcomeAuto && welcomeVariant) {
+      (composition as any).variant = welcomeVariant as any;
+    }
+
     const { data, error } = await supabase
       .from('narrative_sessions')
       .insert({
@@ -191,6 +213,8 @@ export default function ExplorationAnimator() {
         context: ({
           created_from: 'exploration_animator',
           marche_view_model: marcheViewModel,
+          welcome_mode: welcomeAuto ? 'auto' : 'manuel',
+          welcome_variant: (composition as any).variant,
           welcome_composition: composition,
         } as any)
       })
@@ -234,6 +258,42 @@ export default function ExplorationAnimator() {
         <section className="mt-8">
           <h2 className="text-2xl font-semibold mb-3">P1 · Accueil spécifique</h2>
           <p className="text-sm text-foreground/70 mb-4">Composez l'intonation et la forme d'un écran d'accueil propre à cette exploration.</p>
+
+<div className="mb-6 rounded-lg border p-4 bg-muted/30">
+            <div className="flex items-center justify-between gap-4">
+              <div>
+                <h3 className="font-medium">Accueil auto-adaptatif</h3>
+                <p className="text-sm text-foreground/70">L’accueil se compose automatiquement selon les marches et médias. Désactivez pour choisir un variant.</p>
+              </div>
+              <div className="flex items-center gap-2">
+                <Label htmlFor="welcome-auto" className="text-sm">Auto</Label>
+                <Switch id="welcome-auto" checked={welcomeAuto} onCheckedChange={(v) => setWelcomeAuto(!!v)} />
+              </div>
+            </div>
+            {!welcomeAuto && (
+              <div className="mt-4">
+                <Label className="text-sm font-medium mb-2">Variant manuel</Label>
+                <RadioGroup value={welcomeVariant} onValueChange={(v) => setWelcomeVariant(v as any)} className="grid grid-cols-2 md:grid-cols-4 gap-2 mt-2">
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="story-cover" id="v-story" />
+                    <Label htmlFor="v-story" className="text-sm">Story cover</Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="media-mosaic" id="v-mosaic" />
+                    <Label htmlFor="v-mosaic" className="text-sm">Media mosaic</Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="audio-first" id="v-audio" />
+                    <Label htmlFor="v-audio" className="text-sm">Audio first</Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="map-first" id="v-map" />
+                    <Label htmlFor="v-map" className="text-sm">Map first</Label>
+                  </div>
+                </RadioGroup>
+              </div>
+            )}
+          </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
