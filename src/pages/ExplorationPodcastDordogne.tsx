@@ -57,6 +57,7 @@ const PodcastView: React.FC<PodcastViewProps> = ({ explorationSlug, sessionId })
     let totalSeconds = 0;
     tracks.forEach(track => {
       const duration = track.duration;
+      if (!duration) return;
       const [minutes, seconds] = duration.split(':').map(Number);
       totalSeconds += (minutes || 0) * 60 + (seconds || 0);
     });
