@@ -10,7 +10,7 @@ interface Props {
 }
 
 const Stat: React.FC<{ label: string; value: string | number }> = ({ label, value }) => (
-  <div className="flex flex-col items-center px-3 py-2 rounded-md bg-muted/40">
+  <div className="flex flex-col items-center px-3 py-2 rounded-md bg-muted/40 hover-scale animate-fade-in">
     <span className="text-lg font-semibold text-foreground">{value}</span>
     <span className="text-xs text-foreground/70">{label}</span>
   </div>
@@ -20,12 +20,12 @@ export default function ExperienceWelcomeAdaptive({ exploration, composition, on
   const { variant, title, subtitle, media, stats, cta } = composition;
 
   const Header = (
-    <header className="text-center space-y-3">
-      <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-foreground">
+    <header className="text-center space-y-3 animate-fade-in">
+      <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-foreground animate-fade-in" style={{ animationDelay: '40ms' }}>
         {title}
       </h1>
       {subtitle && (
-        <p className="text-base sm:text-lg text-foreground/80 max-w-2xl mx-auto">
+        <p className="text-base sm:text-lg text-foreground/80 max-w-2xl mx-auto animate-fade-in" style={{ animationDelay: '80ms' }}>
           {subtitle}
         </p>
       )}
@@ -33,7 +33,7 @@ export default function ExperienceWelcomeAdaptive({ exploration, composition, on
   );
 
   const Stats = (
-    <div className="mt-6 flex flex-wrap items-center justify-center gap-2 sm:gap-3">
+    <div className="mt-6 flex flex-wrap items-center justify-center gap-2 sm:gap-3 animate-fade-in" style={{ animationDelay: '120ms' }}>
       <Stat label="marches" value={stats.marches} />
       <Stat label="photos" value={stats.photos} />
       <Stat label="sons" value={stats.audio} />
@@ -44,15 +44,15 @@ export default function ExperienceWelcomeAdaptive({ exploration, composition, on
   if (variant === 'media-mosaic') {
     const imgs = media?.photos || [];
     return (
-      <section className="relative overflow-hidden rounded-xl bg-gradient-to-b from-background to-muted">
-        <div className="grid grid-cols-3 gap-1 sm:gap-2 aspect-[3/2] sm:aspect-[16/7]">
+      <section className="relative overflow-hidden rounded-xl bg-gradient-to-b from-background to-muted animate-enter">
+        <div className="grid grid-cols-3 gap-1 sm:gap-2 aspect-[3/2] sm:aspect-[16/7] animate-fade-in">
           {imgs.slice(0, 6).map((p, i) => (
             <div key={i} className={`relative ${i === 0 ? 'col-span-2 row-span-2' : ''}`}>
               <img
                 src={p.url}
                 alt={p.alt}
                 loading="lazy"
-                className="h-full w-full object-cover rounded-md"
+                className="h-full w-full object-cover rounded-md hover-scale"
               />
             </div>
           ))}
@@ -62,7 +62,7 @@ export default function ExperienceWelcomeAdaptive({ exploration, composition, on
           {Header}
           {Stats}
           <div className="mt-6 flex justify-center">
-            <Button size="lg" onClick={onStart} aria-label={cta.label}>
+            <Button size="lg" onClick={onStart} aria-label={cta.label} className="hover-scale">
               {cta.label}
             </Button>
           </div>
@@ -73,16 +73,16 @@ export default function ExperienceWelcomeAdaptive({ exploration, composition, on
 
   if (variant === 'audio-first') {
     return (
-      <section className="relative rounded-xl p-6 sm:p-8 bg-gradient-to-b from-primary/10 to-background border">
+      <section className="relative rounded-xl p-6 sm:p-8 bg-gradient-to-b from-primary/10 to-background border animate-enter">
         {Header}
         <div className="mt-6 flex items-center justify-center gap-4">
           <button
             onClick={onStart}
             aria-label="Lancer l'expérience sonore"
-            className="group inline-flex items-center gap-3 rounded-full border px-5 py-3 bg-background shadow-sm transition-transform hover:scale-105"
+            className="group inline-flex items-center gap-3 rounded-full border px-5 py-3 bg-background shadow-sm hover-scale"
           >
             <div className="relative h-10 w-10 rounded-full bg-primary/20 grid place-items-center">
-              <div className="h-3 w-3 rounded-full bg-primary animate-ping" />
+              <div className="h-3 w-3 rounded-full bg-primary pulse" />
             </div>
             <span className="text-sm sm:text-base font-medium text-foreground">
               Découvrir en audio ({stats.audio})
@@ -103,16 +103,16 @@ export default function ExperienceWelcomeAdaptive({ exploration, composition, on
 
   if (variant === 'map-first') {
     return (
-      <section className="relative rounded-xl p-6 sm:p-8 border bg-gradient-to-b from-muted/40 to-background">
+      <section className="relative rounded-xl p-6 sm:p-8 border bg-gradient-to-b from-muted/40 to-background animate-enter">
         {Header}
         <div className="mt-6 grid grid-cols-3 gap-2 sm:gap-3">
           {Array.from({ length: Math.min(6, Math.max(3, stats.marches)) }).map((_, i) => (
-            <div key={i} className="h-16 sm:h-20 rounded-md bg-primary/10" />
+            <div key={i} className="h-16 sm:h-20 rounded-md bg-primary/10 animate-fade-in hover-scale" />
           ))}
         </div>
         {Stats}
         <div className="mt-6 flex justify-center">
-          <Button size="lg" onClick={onStart}>{cta.label}</Button>
+          <Button size="lg" onClick={onStart} className="hover-scale">{cta.label}</Button>
         </div>
       </section>
     );
@@ -121,17 +121,17 @@ export default function ExperienceWelcomeAdaptive({ exploration, composition, on
   // story-cover (default)
   const cover = media?.photos?.[0];
   return (
-    <section className="relative overflow-hidden rounded-xl border bg-gradient-to-b from-background to-muted">
+    <section className="relative overflow-hidden rounded-xl border bg-gradient-to-b from-background to-muted animate-enter">
       {cover && (
         <div className="absolute inset-0 opacity-70">
-          <img src={cover.url} alt={cover.alt} loading="lazy" className="h-full w-full object-cover" />
+          <img src={cover.url} alt={cover.alt} loading="lazy" decoding="async" fetchPriority="high" className="h-full w-full object-cover" />
         </div>
       )}
-      <div className="relative px-4 sm:px-6 py-10 sm:py-14 bg-gradient-to-t from-background/80 via-background/20 to-transparent">
+      <div className="relative px-4 sm:px-6 py-10 sm:py-14 bg-gradient-to-t from-background/80 via-background/20 to-transparent animate-fade-in">
         {Header}
         {Stats}
         <div className="mt-6 flex justify-center">
-          <Button size="lg" onClick={onStart}>{cta.label}</Button>
+          <Button size="lg" onClick={onStart} className="hover-scale">{cta.label}</Button>
         </div>
       </div>
     </section>
