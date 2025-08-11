@@ -72,7 +72,7 @@ const ExperienceWelcomeDordogne: React.FC<Props> = ({ exploration, settings, onS
               <span className="text-emerald-200 font-medium tracking-wide">🎧 Exploration Écoacoustique</span>
             </div>
             
-            <h1 className="dordogne-title text-6xl md:text-8xl mb-8 bg-gradient-to-r from-emerald-200 via-yellow-200 to-green-300 bg-clip-text text-transparent leading-tight">
+            <h1 className="dordogne-title text-4xl md:text-5xl mb-8 bg-gradient-to-r from-emerald-200 via-yellow-200 to-green-300 bg-clip-text text-transparent leading-tight">
               {exploration.name}
             </h1>
             
@@ -89,7 +89,7 @@ const ExperienceWelcomeDordogne: React.FC<Props> = ({ exploration, settings, onS
           <div className="my-16 relative">
             <div className="poetic-container p-8 rounded-3xl">
               <h3 className="dordogne-title text-2xl text-emerald-200 mb-6 text-center">
-                Signature Sonore de la Dordogne
+                Poèmes et Signatures Sonores de la Dordogne
               </h3>
               <div className="flex justify-center items-end space-x-2 h-40">
                 {Array.from({ length: 32 }).map((_, i) => (
@@ -141,6 +141,22 @@ const ExperienceWelcomeDordogne: React.FC<Props> = ({ exploration, settings, onS
           )}
         </div>
       </div>
+      
+      {/* Footer */}
+      <footer className="relative z-20 border-t border-emerald-400/20">
+        <div className="container mx-auto px-4 py-8">
+          <div className="text-center">
+            <div className="signature-section p-6 rounded-xl max-w-2xl mx-auto">
+              <h3 className="dordogne-signature text-2xl text-yellow-200 mb-2">
+                Gaspard Boréal
+              </h3>
+              <p className="dordogne-body text-emerald-300/80 italic">
+                Poète de l'écoute, arpenteur de fréquences, auteur en tension
+              </p>
+            </div>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 };
