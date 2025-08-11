@@ -1,182 +1,281 @@
-import React, { useMemo, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { Shuffle, SkipBack, SkipForward, Play, Pause, ArrowLeft, List } from 'lucide-react';
+import React from 'react';
+import { useParams } from 'react-router-dom';
+import { useExploration, useExplorationMarches } from '@/hooks/useExplorations';
+import { AudioProvider } from '@/contexts/AudioContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import SEOHead from '@/components/SEOHead';
-import { useExploration, useExplorationMarches } from '@/hooks/useExplorations';
-import { useAudioPlaylist, PlayMode, Track } from '@/hooks/useAudioPlaylist';
-import { AudioProvider } from '@/contexts/AudioContext';
+import { Badge } from '@/components/ui/badge';
+import { Play, Pause, SkipForward, SkipBack, Shuffle, List, MapPin, Clock, Waves } from 'lucide-react';
 import { FloatingAudioPlayer } from '@/components/audio/FloatingAudioPlayer';
 
-const PodcastView: React.FC = () => {
-  const { slug, sessionId } = useParams<{ slug: string; sessionId: string }>();
-  const navigate = useNavigate();
-  const { data: exploration } = useExploration(slug || '');
-  const { data: marches = [] } = useExplorationMarches(exploration?.id || '');
-  const [mode, setMode] = useState<PlayMode>('order');
+interface PodcastViewProps {
+  explorationSlug: string;
+  sessionId: string;
+}
 
-  const tracks: Track[] = useMemo(() => {
-    // For now, return an empty array as the audio structure needs to be clarified
-    // This prevents build errors while maintaining the Dordogne design
-    return [];
-  }, [marches]);
+const PodcastView: React.FC<PodcastViewProps> = ({ explorationSlug, sessionId }) => {
+  const { data: exploration } = useExploration(explorationSlug);
+  const { data: marches } = useExplorationMarches(explorationSlug, sessionId);
 
-  const playlist = useAudioPlaylist(tracks, mode);
+  // For now, return empty tracks - the podcast functionality will be completed later
+  const tracks: any[] = [];
+  const currentTrack = null;
+  const isPlaying = false;
+  const currentIndex = 0;
 
-  if (!exploration) return null;
-
-  const metaTitle = `Podcast — ${exploration.name}`;
-  const canonical = `${window.location.origin}/explorations/${exploration.slug}/experience/${sessionId}/podcast`;
+  if (!exploration) {
+    return (
+      <div className="dordogne-experience min-h-screen flex items-center justify-center">
+        <div className="text-emerald-200 text-xl">Chargement de l'exploration...</div>
+      </div>
+    );
+  }
 
   return (
     <div className="dordogne-experience min-h-screen relative overflow-hidden">
-      <SEOHead
-        title={metaTitle}
-        description={`Écoutez les enregistrements audio de ${exploration.name} en mode podcast`}
-        canonicalUrl={canonical}
-      />
-
-      {/* Animated background */}
+      {/* Living Waters Background */}
       <div className="fixed inset-0 z-0">
-        <div className="absolute inset-0 bg-gradient-to-br from-slate-900 via-indigo-900 to-purple-900"></div>
-        <div className="absolute inset-0 opacity-20">
-          <div className="wave-animation absolute bottom-0 left-0 w-full h-64 bg-gradient-to-t from-indigo-400/20 to-transparent animate-wave-slow"></div>
-          <div className="wave-animation absolute bottom-0 left-0 w-full h-48 bg-gradient-to-t from-purple-400/15 to-transparent animate-wave-medium" style={{ animationDelay: '1s' }}></div>
+        <div className="absolute inset-0 bg-gradient-to-br from-slate-900 via-emerald-900 to-green-800"></div>
+        <div className="absolute inset-0 opacity-30">
+          <div className="river-wave river-wave-1 absolute bottom-0 left-0 w-full h-60"></div>
+          <div className="river-wave river-wave-2 absolute bottom-0 left-0 w-full h-40" style={{ animationDelay: '1s' }}></div>
+          <div className="river-wave river-wave-3 absolute bottom-0 left-0 w-full h-20" style={{ animationDelay: '2s' }}></div>
         </div>
       </div>
 
-      {/* Header */}
-      <header className="relative z-20 border-b border-white/10 bg-black/20 backdrop-blur-sm">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <Button
-            onClick={() => navigate(`/explorations/${slug}/experience/${sessionId}`)}
-            variant="ghost"
-            className="text-indigo-200 hover:text-white hover:bg-indigo-800/30"
-          >
-            <ArrowLeft className="w-4 h-4 mr-2" />
-            Retour à l'expérience
-          </Button>
-          <h1 className="text-xl font-semibold text-white">Mode Podcast</h1>
-          <div className="w-24"></div>
-        </div>
-      </header>
+      {/* Floating particles */}
+      <div className="fixed inset-0 z-10 pointer-events-none">
+        {Array.from({ length: 12 }).map((_, i) => (
+          <div
+            key={i}
+            className="water-bubble absolute"
+            style={{
+              left: `${Math.random() * 100}%`,
+              width: `${3 + Math.random() * 6}px`,
+              height: `${3 + Math.random() * 6}px`,
+              animationDelay: `${Math.random() * 10}s`,
+              animationDuration: `${8 + Math.random() * 6}s`
+            }}
+          />
+        ))}
+      </div>
 
-      {/* Content */}
-      <main className="relative z-20 container mx-auto px-4 py-8">
-        {/* Player Card */}
-        <Card className="mb-8 bg-white/5 backdrop-blur-sm border-white/10">
-          <CardHeader className="text-center">
-            <CardTitle className="text-2xl text-white">{exploration.name}</CardTitle>
-            <p className="text-indigo-200/80">
-              {tracks.length} enregistrement{tracks.length > 1 ? 's' : ''} audio
-            </p>
-          </CardHeader>
-          <CardContent>
-            {/* Current track info */}
-            {playlist.currentTrack && (
-              <div className="text-center mb-6 p-4 bg-white/5 rounded-lg">
-                <h3 className="text-lg font-medium text-white mb-1">
-                  {playlist.currentTrack.title}
-                </h3>
-                <p className="text-indigo-200/60 text-sm">
-                  Marche: {playlist.currentTrack.marche}
-                </p>
+      <div className="relative z-20 container mx-auto px-4 py-8">
+        <div className="max-w-5xl mx-auto">
+          {/* Header */}
+          <div className="text-center mb-12">
+            <h1 className="dordogne-title text-5xl md:text-6xl mb-6 bg-gradient-to-r from-emerald-200 via-yellow-200 to-green-300 bg-clip-text text-transparent">
+              Écoute Contemplative
+            </h1>
+            <div className="poetic-container p-6 rounded-2xl max-w-3xl mx-auto">
+              <h2 className="dordogne-body text-xl text-emerald-100/90">{exploration.name}</h2>
+            </div>
+          </div>
+
+          {/* Main Player Card */}
+          <Card className="poetic-container border-emerald-400/30 mb-8">
+            <CardHeader className="text-center">
+              <div className="mb-4">
+                <Waves className="h-12 w-12 text-emerald-300 mx-auto mb-3" />
+                <CardTitle className="dordogne-title text-3xl text-emerald-200">
+                  {currentTrack ? currentTrack.title : 'Signature Sonore de la Dordogne'}
+                </CardTitle>
               </div>
-            )}
-
-            {/* Controls */}
-            <div className="flex items-center justify-center space-x-4 mb-6">
-              <Button
-                onClick={playlist.prev}
-                variant="ghost"
-                size="icon"
-                className="text-white hover:bg-white/10"
-                disabled={playlist.currentIndex === 0}
-              >
-                <SkipBack className="w-5 h-5" />
-              </Button>
-
-              <Button
-                onClick={playlist.toggle}
-                size="lg"
-                className="btn-glow bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 text-white border-0 w-16 h-16 rounded-full"
-              >
-                {playlist.isPlaying ? (
-                  <Pause className="w-6 h-6" />
-                ) : (
-                  <Play className="w-6 h-6 ml-1" />
-                )}
-              </Button>
-
-              <Button
-                onClick={playlist.next}
-                variant="ghost"
-                size="icon"
-                className="text-white hover:bg-white/10"
-                disabled={playlist.currentIndex === playlist.list.length - 1}
-              >
-                <SkipForward className="w-5 h-5" />
-              </Button>
-            </div>
-
-            {/* Mode toggle */}
-            <div className="flex justify-center">
-              <Button
-                onClick={() => {
-                  const newMode = playlist.mode === 'order' ? 'shuffle' : 'order';
-                  setMode(newMode);
-                  playlist.setMode(newMode);
-                }}
-                variant="outline"
-                className="bg-white/10 border-white/20 text-white hover:bg-white/20"
-              >
-                <Shuffle className="w-4 h-4 mr-2" />
-                {playlist.mode === 'order' ? 'Lecture séquentielle' : 'Lecture aléatoire'}
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Track List */}
-        <Card className="bg-white/5 backdrop-blur-sm border-white/10">
-          <CardHeader>
-            <CardTitle className="flex items-center text-white">
-              <List className="w-5 h-5 mr-2" />
-              Liste des enregistrements
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-2">
-              {playlist.list.map((track, index) => (
-                <div
-                  key={track.id}
-                  className={`p-3 rounded-lg cursor-pointer transition-all duration-200 ${
-                    playlist.currentIndex === index
-                      ? 'bg-indigo-500/20 border border-indigo-400/30'
-                      : 'bg-white/5 hover:bg-white/10'
-                  }`}
-                  onClick={() => playlist.playIndex(index)}
-                >
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h4 className="text-white font-medium">
-                        {track.title}
-                      </h4>
-                      <p className="text-indigo-200/60 text-sm">
-                        {track.marche}
+            </CardHeader>
+            <CardContent>
+              {/* Current track info */}
+              {currentTrack ? (
+                <div className="mb-8 text-center">
+                  <div className="poetic-container p-6 rounded-xl mb-6">
+                    <h3 className="dordogne-body text-lg text-emerald-200 mb-2">{currentTrack.marcheTitle}</h3>
+                    <div className="flex items-center justify-center space-x-4 text-emerald-300/80">
+                      <div className="flex items-center space-x-1">
+                        <MapPin className="h-4 w-4" />
+                        <span className="text-sm">{currentTrack.location}</span>
+                      </div>
+                      <div className="flex items-center space-x-1">
+                        <Clock className="h-4 w-4" />
+                        <span className="text-sm">{currentTrack.duration}</span>
+                      </div>
+                    </div>
+                    {currentTrack.species && (
+                      <p className="dordogne-body text-emerald-300/70 text-sm mt-2 italic">
+                        Espèce captée : {currentTrack.species}
                       </p>
-                    </div>
-                    <div className="text-indigo-200/40 text-sm">
-                      #{index + 1}
-                    </div>
+                    )}
+                  </div>
+
+                  {/* Audio Wave Visualization */}
+                  <div className="flex justify-center items-end space-x-1 h-20 mb-6">
+                    {Array.from({ length: 24 }).map((_, i) => (
+                      <div
+                        key={i}
+                        className="eco-audio-wave"
+                        style={{
+                          width: '4px',
+                          height: `${10 + Math.random() * 50}px`,
+                          animationDelay: `${i * 0.05}s`,
+                          animationDuration: `${0.6 + Math.random() * 0.8}s`,
+                          opacity: isPlaying ? 1 : 0.3
+                        }}
+                      />
+                    ))}
                   </div>
                 </div>
-              ))}
+              ) : (
+                <div className="mb-8 text-center">
+                  <p className="dordogne-body text-emerald-300/70 text-lg">
+                    {tracks.length === 0 
+                      ? 'Préparation de l\'expérience sonore...' 
+                      : 'Sélectionnez un enregistrement pour commencer l\'écoute'
+                    }
+                  </p>
+                </div>
+              )}
+
+              {/* Playback controls */}
+              <div className="flex items-center justify-center space-x-6 mb-6">
+                <Button
+                  variant="outline"
+                  size="icon"
+                  disabled={true}
+                  className="bg-emerald-900/20 border-emerald-400/40 text-emerald-200 h-12 w-12"
+                >
+                  <SkipBack className="h-6 w-6" />
+                </Button>
+                
+                <Button
+                  size="icon"
+                  disabled={true}
+                  className="btn-nature h-16 w-16 text-white"
+                >
+                  <Play className="h-8 w-8" />
+                </Button>
+                
+                <Button
+                  variant="outline"
+                  size="icon"
+                  disabled={true}
+                  className="bg-emerald-900/20 border-emerald-400/40 text-emerald-200 h-12 w-12"
+                >
+                  <SkipForward className="h-6 w-6" />
+                </Button>
+                
+                <Button
+                  variant="outline"
+                  size="icon"
+                  disabled={true}
+                  className="bg-emerald-900/20 border-emerald-400/40 text-emerald-200 h-12 w-12"
+                >
+                  <Shuffle className="h-6 w-6" />
+                </Button>
+              </div>
+
+              {/* Track progress */}
+              <div className="text-center">
+                <p className="dordogne-body text-emerald-300/80">
+                  {tracks.length > 0 ? `Piste ${currentIndex + 1} sur ${tracks.length}` : 'Aucune piste disponible'}
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Track List */}
+          <Card className="poetic-container border-emerald-400/30">
+            <CardHeader>
+              <CardTitle className="dordogne-title text-2xl text-emerald-200 text-center">
+                Parcours Sonore de la Dordogne
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {tracks.length === 0 ? (
+                <div className="text-center py-12">
+                  <Waves className="h-16 w-16 text-emerald-400/50 mx-auto mb-4" />
+                  <p className="dordogne-body text-emerald-300/70 text-lg">
+                    Les enregistrements de cette exploration sont en cours de préparation.
+                  </p>
+                  <p className="dordogne-body text-emerald-400/60 text-sm mt-2">
+                    Revenez bientôt pour découvrir la richesse acoustique de nos marches.
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {tracks.map((track, index) => (
+                    <div
+                      key={track.id}
+                      className={`p-6 rounded-xl cursor-pointer transition-all duration-300 ${
+                        currentIndex === index
+                          ? 'bg-emerald-700/30 border border-emerald-400/50 transform scale-[1.02]'
+                          : 'bg-emerald-900/20 hover:bg-emerald-800/30 border border-emerald-400/20'
+                      }`}
+                      onClick={() => playTrack(index)}
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex-1">
+                          <div className="flex items-center space-x-3 mb-2">
+                            <Badge variant="secondary" className="bg-emerald-700/40 text-emerald-200 border-emerald-400/30">
+                              Marche {track.marcheIndex}
+                            </Badge>
+                            {currentIndex === index && isPlaying && (
+                              <div className="flex space-x-1">
+                                {[...Array(3)].map((_, i) => (
+                                  <div
+                                    key={i}
+                                    className="w-1 h-4 bg-emerald-400 rounded-full animate-pulse"
+                                    style={{ animationDelay: `${i * 0.2}s` }}
+                                  />
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                          <h4 className="dordogne-body text-emerald-200 font-medium text-lg mb-1">{track.title}</h4>
+                          <p className="dordogne-body text-emerald-300/70 text-sm">{track.description}</p>
+                          {track.species && (
+                            <p className="dordogne-body text-emerald-400/60 text-xs mt-1 italic">{track.species}</p>
+                          )}
+                        </div>
+                        <div className="flex items-center space-x-3">
+                          <Badge variant="outline" className="border-emerald-400/40 text-emerald-300">
+                            <Clock className="h-3 w-3 mr-1" />
+                            {track.duration}
+                          </Badge>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="text-emerald-300 hover:text-emerald-200 hover:bg-emerald-800/30"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              playTrack(index);
+                            }}
+                          >
+                            {currentIndex === index && isPlaying ? (
+                              <Pause className="h-5 w-5" />
+                            ) : (
+                              <Play className="h-5 w-5" />
+                            )}
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Gaspard Boréal Signature */}
+          <div className="signature-section p-8 rounded-2xl mt-12">
+            <div className="text-center">
+              <h3 className="dordogne-signature text-3xl text-yellow-200 mb-2">
+                Gaspard Boréal
+              </h3>
+              <p className="dordogne-body text-emerald-300/80 italic">
+                Poète de l'écoute, arpenteur de fréquences, auteur en tension
+              </p>
             </div>
-          </CardContent>
-        </Card>
-      </main>
+          </div>
+        </div>
+      </div>
 
       <FloatingAudioPlayer />
     </div>
@@ -184,9 +283,22 @@ const PodcastView: React.FC = () => {
 };
 
 const ExplorationPodcastDordogne: React.FC = () => {
+  const { explorationSlug, sessionId } = useParams<{
+    explorationSlug: string;
+    sessionId: string;
+  }>();
+
+  if (!explorationSlug || !sessionId) {
+    return (
+      <div className="dordogne-experience min-h-screen flex items-center justify-center">
+        <div className="text-emerald-200 text-xl">Paramètres d'exploration manquants</div>
+      </div>
+    );
+  }
+
   return (
     <AudioProvider>
-      <PodcastView />
+      <PodcastView explorationSlug={explorationSlug} sessionId={sessionId} />
     </AudioProvider>
   );
 };

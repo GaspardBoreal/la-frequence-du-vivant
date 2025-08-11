@@ -19,31 +19,47 @@ interface Props {
 const ExperienceWelcomeDordogne: React.FC<Props> = ({ exploration, settings, onStart, onStartPodcast }) => {
   return (
     <div className="dordogne-experience min-h-screen relative overflow-hidden">
-      {/* Animated background waves */}
+      {/* Living Waters Background */}
       <div className="fixed inset-0 z-0">
-        <div className="absolute inset-0 bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900"></div>
-        <div className="absolute inset-0 opacity-30">
-          <div className="wave-animation absolute bottom-0 left-0 w-full h-64 bg-gradient-to-t from-blue-400/20 to-transparent animate-wave-slow"></div>
-          <div className="wave-animation absolute bottom-0 left-0 w-full h-48 bg-gradient-to-t from-cyan-400/15 to-transparent animate-wave-medium" style={{ animationDelay: '1s' }}></div>
-          <div className="wave-animation absolute bottom-0 left-0 w-full h-32 bg-gradient-to-t from-teal-400/10 to-transparent animate-wave-fast" style={{ animationDelay: '2s' }}></div>
+        <div className="absolute inset-0 bg-gradient-to-br from-slate-900 via-emerald-900 to-green-800"></div>
+        <div className="absolute inset-0">
+          <div className="river-wave river-wave-1 absolute bottom-0 left-0 w-full h-80"></div>
+          <div className="river-wave river-wave-2 absolute bottom-0 left-0 w-full h-60" style={{ animationDelay: '1.5s' }}></div>
+          <div className="river-wave river-wave-3 absolute bottom-0 left-0 w-full h-40" style={{ animationDelay: '3s' }}></div>
         </div>
       </div>
 
-      {/* Floating particles */}
+      {/* Living Water Particles */}
       <div className="fixed inset-0 z-10 pointer-events-none">
-        {Array.from({ length: 12 }).map((_, i) => (
+        {/* Water Bubbles */}
+        {Array.from({ length: 8 }).map((_, i) => (
           <div
-            key={i}
-            className="absolute animate-gentle-float opacity-20"
+            key={`bubble-${i}`}
+            className="water-bubble absolute"
+            style={{
+              left: `${Math.random() * 100}%`,
+              width: `${4 + Math.random() * 8}px`,
+              height: `${4 + Math.random() * 8}px`,
+              animationDelay: `${Math.random() * 15}s`,
+              animationDuration: `${12 + Math.random() * 8}s`
+            }}
+          />
+        ))}
+        
+        {/* Sediment Particles */}
+        {Array.from({ length: 15 }).map((_, i) => (
+          <div
+            key={`sediment-${i}`}
+            className="sediment-particle absolute"
             style={{
               left: `${Math.random() * 100}%`,
               top: `${Math.random() * 100}%`,
+              width: `${2 + Math.random() * 4}px`,
+              height: `${2 + Math.random() * 4}px`,
               animationDelay: `${Math.random() * 10}s`,
-              animationDuration: `${8 + Math.random() * 8}s`
+              animationDuration: `${6 + Math.random() * 6}s`
             }}
-          >
-            <div className="w-2 h-2 bg-blue-300 rounded-full blur-sm"></div>
-          </div>
+          />
         ))}
       </div>
 
@@ -51,64 +67,76 @@ const ExperienceWelcomeDordogne: React.FC<Props> = ({ exploration, settings, onS
       <div className="relative z-20 container mx-auto px-4 py-12">
         <div className="max-w-4xl mx-auto text-center">
           {/* Header */}
-          <div className="mb-8">
-            <div className="inline-block px-6 py-2 bg-blue-500/20 border border-blue-400/30 rounded-full mb-6">
-              <span className="text-blue-200 font-medium">Exploration Bioacoustique</span>
+          <div className="mb-12">
+            <div className="poetic-container inline-block px-8 py-3 rounded-full mb-8 border">
+              <span className="text-emerald-200 font-medium tracking-wide">🎧 Exploration Écoacoustique</span>
             </div>
             
-            <h1 className="text-5xl md:text-7xl font-bold mb-6 bg-gradient-to-r from-blue-200 via-cyan-200 to-teal-200 bg-clip-text text-transparent leading-tight">
+            <h1 className="dordogne-title text-6xl md:text-8xl mb-8 bg-gradient-to-r from-emerald-200 via-yellow-200 to-green-300 bg-clip-text text-transparent leading-tight">
               {exploration.name}
             </h1>
             
             {exploration.description && (
-              <p className="text-xl text-blue-100/80 max-w-3xl mx-auto leading-relaxed">
-                {exploration.description}
-              </p>
+              <div className="poetic-container p-8 rounded-2xl max-w-4xl mx-auto">
+                <p className="dordogne-body text-xl text-emerald-100/90 leading-relaxed">
+                  {exploration.description}
+                </p>
+              </div>
             )}
           </div>
 
-          {/* Audio wave visualization */}
-          <div className="my-12 relative">
-            <div className="flex justify-center items-end space-x-1 h-32">
-              {Array.from({ length: 24 }).map((_, i) => (
-                <div
-                  key={i}
-                  className="bg-gradient-to-t from-blue-400 to-cyan-300 rounded-full animate-soft-pulse"
-                  style={{
-                    width: '8px',
-                    height: `${20 + Math.random() * 80}px`,
-                    animationDelay: `${i * 0.1}s`,
-                    animationDuration: `${1 + Math.random()}s`
-                  }}
-                ></div>
-              ))}
+          {/* Écoacoustic Spectrogram */}
+          <div className="my-16 relative">
+            <div className="poetic-container p-8 rounded-3xl">
+              <h3 className="dordogne-title text-2xl text-emerald-200 mb-6 text-center">
+                Signature Sonore de la Dordogne
+              </h3>
+              <div className="flex justify-center items-end space-x-2 h-40">
+                {Array.from({ length: 32 }).map((_, i) => (
+                  <div
+                    key={i}
+                    className="eco-audio-wave"
+                    style={{
+                      width: '6px',
+                      height: `${15 + Math.random() * 120}px`,
+                      animationDelay: `${i * 0.08}s`,
+                      animationDuration: `${0.8 + Math.random() * 1.2}s`
+                    }}
+                  />
+                ))}
+              </div>
+              <p className="dordogne-body text-sm text-emerald-300/70 text-center mt-4 italic">
+                Fréquences captées le long de la rivière • Biodiversité acoustique en temps réel
+              </p>
             </div>
           </div>
 
           {/* Action buttons */}
-          <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
+          <div className="flex flex-col sm:flex-row gap-6 justify-center items-center">
             <Button 
               onClick={onStart}
-              className="btn-glow px-8 py-4 text-lg bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 text-white border-0 shadow-2xl transform hover:scale-105 transition-all duration-300"
+              className="btn-nature px-10 py-5 text-xl text-white border-0 rounded-2xl transform transition-all duration-400"
             >
-              🎧 Commencer l'expérience
+              🌊 Plonger dans l'expérience
             </Button>
             
             {onStartPodcast && (
               <Button 
                 onClick={onStartPodcast}
                 variant="outline"
-                className="px-6 py-4 text-lg bg-white/10 border-white/30 text-white hover:bg-white/20 backdrop-blur-sm"
+                className="px-8 py-5 text-xl bg-emerald-900/20 border-emerald-400/40 text-emerald-200 hover:bg-emerald-800/30 backdrop-blur-sm rounded-2xl transition-all duration-300"
               >
-                📻 Mode Podcast
+                🎙️ Écoute contemplative
               </Button>
             )}
           </div>
 
-          {/* Settings info */}
+          {/* Poetic Settings */}
           {settings.welcome_tones?.length && (
-            <div className="mt-8 text-blue-200/60 text-sm">
-              {settings.welcome_tones.join(' • ')}
+            <div className="mt-12 poetic-container p-6 rounded-xl">
+              <p className="dordogne-body text-emerald-300/80 text-center italic">
+                {settings.welcome_tones.join(' • ')}
+              </p>
             </div>
           )}
         </div>
