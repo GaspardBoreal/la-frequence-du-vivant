@@ -15,6 +15,7 @@ import { marcheModels } from '@/marche-models/registry';
 import { Eye } from 'lucide-react';
 import ExperienceMarcheSimple from '@/components/experience/ExperienceMarcheSimple';
 import ExperienceMarcheElabore from '@/components/experience/ExperienceMarcheElabore';
+import ExperienceWelcomeAdaptive from '@/components/experience/ExperienceWelcomeAdaptive';
 import { buildWelcomeComposition } from '@/utils/welcomeComposer';
 
 const TONES = ['lyrique','ironique','minimaliste','prophétique','éco-poétique','bioacoustique'] as const;
@@ -50,16 +51,19 @@ export default function ExplorationAnimator() {
   const [formsCustom, setFormsCustom] = useState<string>('');
   const [povsCustom, setPovsCustom] = useState<string>('');
   const [sensesCustom, setSensesCustom] = useState<string>('');
-const [timesCustom, setTimesCustom] = useState<string>('');
+  const [timesCustom, setTimesCustom] = useState<string>('');
 
   // Accueil auto-adaptatif (Auto/Manuel)
   const [welcomeAuto, setWelcomeAuto] = useState<boolean>(true);
   const [welcomeVariant, setWelcomeVariant] = useState<'story-cover' | 'media-mosaic' | 'audio-first' | 'map-first'>('story-cover');
 
+  // Preview accueil
+  const [previewWelcomeOpen, setPreviewWelcomeOpen] = useState(false);
+  const [previewWelcomeComposition, setPreviewWelcomeComposition] = useState<any | null>(null);
+
   const canSave = useMemo(() => !!exploration?.id, [exploration?.id]);
   
   const currentMarche = useMemo(() => {
-    console.log('Computing currentMarche with index:', currentMarcheIndex, 'from explorationMarches:', explorationMarches?.length);
     return explorationMarches && explorationMarches.length > 0 ? explorationMarches[currentMarcheIndex] : null;
   }, [explorationMarches, currentMarcheIndex]);
 
@@ -74,7 +78,6 @@ const [timesCustom, setTimesCustom] = useState<string>('');
   }, [explorationMarches, currentMarcheIndex]);
 
   const handlePreviewModel = (modelId: string) => {
-    console.log('handlePreviewModel called with:', modelId, 'currentMarche:', currentMarche);
     if (!currentMarche) {
       toast.error('Aucune marche disponible pour la prévisualisation');
       return;
@@ -84,27 +87,37 @@ const [timesCustom, setTimesCustom] = useState<string>('');
   };
 
   const handleNavigateToPrevious = () => {
-    console.log('handleNavigateToPrevious called');
     if (explorationMarches && currentMarcheIndex > 0) {
       setCurrentMarcheIndex(currentMarcheIndex - 1);
     }
   };
 
   const handleNavigateToNext = () => {
-    console.log('handleNavigateToNext called');
     if (explorationMarches && currentMarcheIndex < explorationMarches.length - 1) {
       setCurrentMarcheIndex(currentMarcheIndex + 1);
     }
   };
 
   const handleBack = () => {
-    console.log('handleBack called');
     setPreviewOpen(false);
+  };
+
+  const openWelcomePreview = () => {
+    if (!exploration) return;
+    const composition = buildWelcomeComposition(
+      exploration as any,
+      (explorationMarches || []) as any,
+      { marcheViewModel }
+    );
+    if (!welcomeAuto && welcomeVariant) {
+      (composition as any).variant = welcomeVariant as any;
+    }
+    setPreviewWelcomeComposition(composition);
+    setPreviewWelcomeOpen(true);
   };
 
   // Reset currentMarcheIndex when explorationMarches changes
   useEffect(() => {
-    console.log('explorationMarches changed:', explorationMarches?.length);
     if (explorationMarches && explorationMarches.length > 0) {
       setCurrentMarcheIndex(0);
     }
@@ -128,14 +141,12 @@ const [timesCustom, setTimesCustom] = useState<string>('');
         setWelcomeTimes(Array.isArray(data.welcome_timeframes) ? [...(data.welcome_timeframes as string[])] : []);
         setWelcomeTemplate(data.welcome_template || '');
         setMarcheViewModel((data.marche_view_model as string) || 'elabore');
-        
         // Load custom text fields
         setTonesCustom(data.welcome_tones_custom || '');
         setFormsCustom(data.welcome_forms_custom || '');
         setPovsCustom(data.welcome_povs_custom || '');
         setSensesCustom(data.welcome_senses_custom || '');
         setTimesCustom(data.welcome_timeframes_custom || '');
-
         // Interaction config: accueil auto/manuel
         const ic = (data.interaction_config as any) || null;
         if (ic) {
@@ -172,10 +183,10 @@ const [timesCustom, setTimesCustom] = useState<string>('');
         welcome_povs_custom: povsCustom || null,
         welcome_senses_custom: sensesCustom || null,
         welcome_timeframes_custom: timesCustom || null,
-        interaction_config: {
+        interaction_config: ({
           welcome_auto: welcomeAuto,
           welcome_variant: welcomeVariant,
-        } as any,
+        } as any),
       }, { onConflict: 'exploration_id' });
     setSaving(false);
     if (error) {
@@ -196,7 +207,6 @@ const [timesCustom, setTimesCustom] = useState<string>('');
       (explorationMarches || []) as any,
       { marcheViewModel }
     );
-
     // Override variant in manual mode
     if (!welcomeAuto && welcomeVariant) {
       (composition as any).variant = welcomeVariant as any;
@@ -256,10 +266,13 @@ const [timesCustom, setTimesCustom] = useState<string>('');
       <main className="container mx-auto px-4 pb-32">
         {/* P1 - Accueil spécifique */}
         <section className="mt-8">
-          <h2 className="text-2xl font-semibold mb-3">P1 · Accueil spécifique</h2>
+          <div className="flex items-start justify-between gap-4 mb-2">
+            <h2 className="text-2xl font-semibold">P1 · Accueil spécifique</h2>
+            <Button variant="outline" onClick={openWelcomePreview} className="hover-scale">Prévisualiser l’accueil</Button>
+          </div>
           <p className="text-sm text-foreground/70 mb-4">Composez l'intonation et la forme d'un écran d'accueil propre à cette exploration.</p>
 
-<div className="mb-6 rounded-lg border p-4 bg-muted/30">
+          <div className="mb-6 rounded-lg border p-4 bg-muted/30">
             <div className="flex items-center justify-between gap-4">
               <div>
                 <h3 className="font-medium">Accueil auto-adaptatif</h3>
@@ -501,17 +514,6 @@ const [timesCustom, setTimesCustom] = useState<string>('');
               </div>
             ))}
           </div>
-
-          <div className="flex items-center gap-4 hidden">
-            <label className="flex items-center gap-2 text-sm">
-              <input type="radio" name="view" value="simple" checked={marcheViewModel==='simple'} onChange={() => setMarcheViewModel('simple')} />
-              <span>Modèle simple</span>
-            </label>
-            <label className="flex items-center gap-2 text-sm">
-              <input type="radio" name="view" value="elabore" checked={marcheViewModel==='elabore'} onChange={() => setMarcheViewModel('elabore')} />
-              <span>Modèle élaboré</span>
-            </label>
-          </div>
         </section>
 
         {/* P3 - Interaction */}
@@ -538,7 +540,7 @@ const [timesCustom, setTimesCustom] = useState<string>('');
         </div>
       </div>
 
-      {/* Preview Modal */}
+      {/* Preview Modal (Marche model) */}
       <Dialog open={previewOpen} onOpenChange={setPreviewOpen}>
         <DialogContent className="max-w-[95vw] max-h-[95vh] overflow-y-auto">
           <DialogHeader>
@@ -601,6 +603,33 @@ const [timesCustom, setTimesCustom] = useState<string>('');
             }}>
               Utiliser ce modèle
             </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Preview Welcome Modal */}
+      <Dialog open={previewWelcomeOpen} onOpenChange={setPreviewWelcomeOpen}>
+        <DialogContent className="max-w-[900px] w-[95vw] animate-fade-in">
+          <DialogHeader>
+            <DialogTitle>Aperçu de l’accueil adaptatif</DialogTitle>
+          </DialogHeader>
+          <div className="py-4">
+            {exploration && previewWelcomeComposition ? (
+              <div className="border rounded-lg p-4 bg-muted/20">
+                <ExperienceWelcomeAdaptive 
+                  exploration={exploration as any} 
+                  composition={previewWelcomeComposition}
+                  onStart={() => setPreviewWelcomeOpen(false)}
+                />
+              </div>
+            ) : (
+              <p className="text-center text-muted-foreground py-8">
+                Impossible de générer l’aperçu pour le moment.
+              </p>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setPreviewWelcomeOpen(false)}>Fermer</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
