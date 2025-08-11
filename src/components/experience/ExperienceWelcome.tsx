@@ -14,9 +14,10 @@ interface Props {
     welcome_template?: string | null;
   };
   onStart?: () => void;
+  onStartPodcast?: () => void;
 }
 
-const ExperienceWelcome: React.FC<Props> = ({ exploration, settings, onStart }) => {
+const ExperienceWelcome: React.FC<Props> = ({ exploration, settings, onStart, onStartPodcast }) => {
   const subtitle = [
     settings.welcome_tones?.length ? settings.welcome_tones.join(' · ') : undefined,
     settings.welcome_forms?.length ? settings.welcome_forms[0] : undefined,
@@ -40,8 +41,13 @@ const ExperienceWelcome: React.FC<Props> = ({ exploration, settings, onStart }) 
             {exploration.description}
           </p>
         )}
-        <div className="mt-6">
-          <Button onClick={onStart}>Entrer dans l'expérience</Button>
+        <div className="mt-6 flex flex-col sm:flex-row gap-3">
+          <Button onClick={onStart} variant="hero" className="hover-scale">Entrer dans l'expérience</Button>
+          {onStartPodcast && (
+            <Button onClick={onStartPodcast} variant="glass" className="hover-scale" aria-label="Écouter le podcast">
+              Écouter le podcast
+            </Button>
+          )}
         </div>
       </div>
     </div>

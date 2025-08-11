@@ -162,9 +162,9 @@ export default function ExplorationExperience() {
             welcomeComposition ? (
               <ExperienceWelcomeAdaptive exploration={exploration} composition={welcomeComposition} onStart={goNext} onStartPodcast={() => navigate(`/explorations/${slug}/experience/${sessionId}/podcast`)} />
             ) : settings.marche_view_model === 'elabore' ? (
-              <ExperienceWelcomeBioacoustic exploration={exploration} settings={settings} onStart={goNext} />
+              <ExperienceWelcomeBioacoustic exploration={exploration} settings={settings} onStart={goNext} onStartPodcast={() => navigate(`/explorations/${slug}/experience/${sessionId}/podcast`)} />
             ) : (
-              <ExperienceWelcome exploration={exploration} settings={settings} onStart={goNext} />
+              <ExperienceWelcome exploration={exploration} settings={settings} onStart={goNext} onStartPodcast={() => navigate(`/explorations/${slug}/experience/${sessionId}/podcast`)} />
             )
           )}
 
