@@ -51,16 +51,6 @@ const PodcastNavigationHeader: React.FC<PodcastNavigationHeaderProps> = ({ explo
               <ArrowLeft className="h-4 w-4 mr-2" />
               Retour
             </Button>
-            
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleHomeClick}
-              className="bg-emerald-900/20 border-emerald-400/40 text-emerald-200 hover:bg-emerald-800/30 hover:border-emerald-300/60 hover:text-emerald-100 transition-all duration-300"
-            >
-              <Home className="h-4 w-4 mr-2" />
-              Accueil
-            </Button>
           </div>
         </div>
       </div>

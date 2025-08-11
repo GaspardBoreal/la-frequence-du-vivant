@@ -31,20 +31,49 @@ const PodcastView: React.FC<PodcastViewProps> = ({ explorationSlug, sessionId })
     return marches.flatMap((marchData, marcheIndex) => {
       if (!marchData.marche?.audio) return [];
       
-      return marchData.marche.audio.map((audio: any, audioIndex: number) => ({
-        id: `${marchData.id}-${audioIndex}`,
-        url: audio.url || audio.file,
-        title: audio.fileName || `Enregistrement ${audioIndex + 1}`,
-        marche: marchData.marche?.nom_marche || marchData.marche?.ville || 'Marche',
-        marcheIndex: marcheIndex + 1,
-        marcheTitle: `${marchData.marche?.nom_marche || 'Marche'} - ${marchData.marche?.ville || ''}`,
-        description: audio.fileName || `Capture sonore lors de la marche à ${marchData.marche?.ville}`,
-        location: marchData.marche?.ville || 'Localisation inconnue',
-        duration: audio.length || '00:00',
-        species: audio.species || null
-      }));
+      return marchData.marche.audio.map((audio: any, audioIndex: number) => {
+        // Special title for the first track
+        let title = audio.fileName || `Enregistrement ${audioIndex + 1}`;
+        if (marcheIndex === 0 && audioIndex === 0) {
+          title = "Là où elle se jette, je me redresse à Bec d'Ambès - GAURIAC";
+        }
+        
+        return {
+          id: `${marchData.id}-${audioIndex}`,
+          url: audio.url || audio.file,
+          title,
+          marche: marchData.marche?.nom_marche || marchData.marche?.ville || 'Marche',
+          marcheIndex: marcheIndex + 1,
+          marcheTitle: `${marchData.marche?.nom_marche || 'Marche'} - ${marchData.marche?.ville || ''}`,
+          description: audio.fileName || `Capture sonore lors de la marche à ${marchData.marche?.ville}`,
+          location: marchData.marche?.ville || 'Localisation inconnue',
+          duration: audio.length || '00:00',
+          species: audio.species || null
+        };
+      });
     });
   }, [marches]);
+
+  // Calculate total duration
+  const totalDuration = useMemo(() => {
+    if (tracks.length === 0) return '00:00';
+    
+    let totalSeconds = 0;
+    tracks.forEach(track => {
+      const duration = track.duration || '00:00';
+      const [minutes, seconds] = duration.split(':').map(Number);
+      totalSeconds += (minutes || 0) * 60 + (seconds || 0);
+    });
+    
+    const hours = Math.floor(totalSeconds / 3600);
+    const minutes = Math.floor((totalSeconds % 3600) / 60);
+    const remainingSeconds = totalSeconds % 60;
+    
+    if (hours > 0) {
+      return `${hours}:${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
+    }
+    return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
+  }, [tracks]);
 
   const {
     currentTrack,
@@ -216,6 +245,9 @@ const PodcastView: React.FC<PodcastViewProps> = ({ explorationSlug, sessionId })
               <div className="text-center">
                 <p className="dordogne-body text-emerald-300/80">
                   {tracks.length > 0 ? `Piste ${currentIndex + 1} sur ${tracks.length}` : 'Aucune piste disponible'}
+                </p>
+                <p className="dordogne-body text-emerald-400/70 text-sm mt-1">
+                  Durée totale: {totalDuration}
                 </p>
               </div>
             </CardContent>
