@@ -1,5 +1,5 @@
 import React from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { useEffect, useMemo, useState } from 'react';
 import SEOHead from '@/components/SEOHead';
 
@@ -29,9 +29,9 @@ interface NarrativeSettings {
 
 export default function ExplorationExperience() {
   const { slug, sessionId } = useParams<{ slug: string; sessionId: string }>();
+  const navigate = useNavigate();
   const { data: exploration } = useExploration(slug || '');
   const { data: marches = [] } = useExplorationMarches(exploration?.id || '');
-
   const [settings, setSettings] = useState<NarrativeSettings>({ marche_view_model: 'elabore' });
   const [welcomeComposition, setWelcomeComposition] = useState<any | null>(null);
   const [current, setCurrent] = useState<number>(0);
@@ -160,7 +160,7 @@ export default function ExplorationExperience() {
         <section className="mt-4">
           {steps[current]?.type === 'welcome' && (
             welcomeComposition ? (
-              <ExperienceWelcomeAdaptive exploration={exploration} composition={welcomeComposition} onStart={goNext} />
+              <ExperienceWelcomeAdaptive exploration={exploration} composition={welcomeComposition} onStart={goNext} onStartPodcast={() => navigate(`/explorations/${slug}/experience/${sessionId}/podcast`)} />
             ) : settings.marche_view_model === 'elabore' ? (
               <ExperienceWelcomeBioacoustic exploration={exploration} settings={settings} onStart={goNext} />
             ) : (

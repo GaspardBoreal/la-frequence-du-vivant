@@ -7,6 +7,7 @@ interface Props {
   exploration: Exploration;
   composition: WelcomeComposition;
   onStart: () => void;
+  onStartPodcast?: () => void;
 }
 
 const Stat: React.FC<{ label: string; value: string | number }> = ({ label, value }) => (
@@ -16,8 +17,8 @@ const Stat: React.FC<{ label: string; value: string | number }> = ({ label, valu
   </div>
 );
 
-export default function ExperienceWelcomeAdaptive({ exploration, composition, onStart }: Props) {
-  const { variant, title, subtitle, media, stats, cta } = composition;
+export default function ExperienceWelcomeAdaptive({ exploration, composition, onStart, onStartPodcast }: Props) {
+  const { variant, title, subtitle, media, stats } = composition;
 
   const Header = (
     <header className="text-center space-y-3 animate-fade-in">
@@ -61,9 +62,12 @@ export default function ExperienceWelcomeAdaptive({ exploration, composition, on
         <div className="relative px-4 sm:px-6 -mt-10 sm:-mt-14 pb-4 sm:pb-6">
           {Header}
           {Stats}
-          <div className="mt-6 flex justify-center">
-            <Button size="lg" onClick={onStart} aria-label={cta.label} className="hover-scale">
-              {cta.label}
+          <div className="mt-6 flex flex-col sm:flex-row items-center justify-center gap-3">
+            <Button size="lg" variant="hero" onClick={onStart} aria-label="Découvrir les marches" className="hover-scale">
+              Découvrir les marches
+            </Button>
+            <Button size="lg" variant="glass" onClick={onStartPodcast} aria-label="Écouter le podcast" className="hover-scale">
+              Écouter le podcast
             </Button>
           </div>
         </div>
@@ -75,19 +79,13 @@ export default function ExperienceWelcomeAdaptive({ exploration, composition, on
     return (
       <section className="relative rounded-xl p-6 sm:p-8 bg-gradient-to-b from-primary/10 to-background border animate-enter">
         {Header}
-        <div className="mt-6 flex items-center justify-center gap-4">
-          <button
-            onClick={onStart}
-            aria-label="Lancer l'expérience sonore"
-            className="group inline-flex items-center gap-3 rounded-full border px-5 py-3 bg-background shadow-sm hover-scale"
-          >
-            <div className="relative h-10 w-10 rounded-full bg-primary/20 grid place-items-center">
-              <div className="h-3 w-3 rounded-full bg-primary pulse" />
-            </div>
-            <span className="text-sm sm:text-base font-medium text-foreground">
-              Découvrir en audio ({stats.audio})
-            </span>
-          </button>
+        <div className="mt-6 flex flex-col sm:flex-row items-center justify-center gap-3">
+          <Button size="lg" variant="hero" onClick={onStart} aria-label="Découvrir les marches" className="hover-scale">
+            Découvrir les marches
+          </Button>
+          <Button size="lg" variant="glass" onClick={onStartPodcast} aria-label="Écouter le podcast" className="hover-scale">
+            Écouter le podcast
+          </Button>
         </div>
         {Stats}
         {stats.tags.length > 0 && (
@@ -112,7 +110,10 @@ export default function ExperienceWelcomeAdaptive({ exploration, composition, on
         </div>
         {Stats}
         <div className="mt-6 flex justify-center">
-          <Button size="lg" onClick={onStart} className="hover-scale">{cta.label}</Button>
+        <div className="mt-6 flex flex-col sm:flex-row items-center justify-center gap-3">
+          <Button size="lg" variant="hero" onClick={onStart} className="hover-scale" aria-label="Découvrir les marches">Découvrir les marches</Button>
+          <Button size="lg" variant="glass" onClick={onStartPodcast} className="hover-scale" aria-label="Écouter le podcast">Écouter le podcast</Button>
+        </div>
         </div>
       </section>
     );
@@ -130,8 +131,9 @@ export default function ExperienceWelcomeAdaptive({ exploration, composition, on
       <div className="relative px-4 sm:px-6 py-10 sm:py-14 bg-gradient-to-t from-background/80 via-background/20 to-transparent animate-fade-in">
         {Header}
         {Stats}
-        <div className="mt-6 flex justify-center">
-          <Button size="lg" onClick={onStart} className="hover-scale">{cta.label}</Button>
+        <div className="mt-6 flex flex-col sm:flex-row items-center justify-center gap-3">
+          <Button size="lg" variant="hero" onClick={onStart} className="hover-scale" aria-label="Découvrir les marches">Découvrir les marches</Button>
+          <Button size="lg" variant="glass" onClick={onStartPodcast} className="hover-scale" aria-label="Écouter le podcast">Écouter le podcast</Button>
         </div>
       </div>
     </section>

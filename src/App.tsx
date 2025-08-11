@@ -25,7 +25,7 @@ import TestEbird from './pages/TestEbird';
 import FaviconTest from './pages/FaviconTest';
 import ExplorationAnimator from './pages/ExplorationAnimator';
 import ExplorationExperience from './pages/ExplorationExperience';
-
+import ExplorationPodcast from './pages/ExplorationPodcast';
 
 function App() {
   return (
@@ -45,6 +45,7 @@ function App() {
           <Route path="/explorations/:slug" element={<ExplorationDetail />} />
           <Route path="/explorations/:slug/animer" element={<ExplorationAnimator />} />
           <Route path="/explorations/:slug/experience/:sessionId" element={<ExplorationExperience />} />
+          <Route path="/explorations/:slug/experience/:sessionId/podcast" element={<ExplorationPodcast />} />
           <Route path="/explorations/:slug/:narrativeSlug" element={<NarrativeLandscape />} />
 
           {/* Routes d'administration protégées */}
