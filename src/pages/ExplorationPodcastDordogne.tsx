@@ -121,7 +121,7 @@ const PodcastView: React.FC<PodcastViewProps> = ({ explorationSlug, sessionId })
 
 
           {/* Two Listening Modes */}
-          <div className="grid md:grid-cols-2 gap-8 mb-16">
+          <div className="grid md:grid-cols-2 gap-8 mb-8">
             {/* Sequential Mode */}
             <Card className="poetic-container border-emerald-400/30 group hover:border-emerald-400/60 transition-all duration-500 cursor-pointer" onClick={handleSequentialMode}>
               <CardHeader className="text-center pb-4">
@@ -140,7 +140,7 @@ const PodcastView: React.FC<PodcastViewProps> = ({ explorationSlug, sessionId })
                 <div className="flex justify-center">
                   <Button 
                     variant="outline" 
-                    className="bg-emerald-900/20 border-emerald-400/40 text-emerald-200 hover:bg-emerald-800/30 group-hover:border-emerald-400/80"
+                    className={mode === 'order' ? "bg-white text-emerald-600 border-white" : "bg-emerald-900/20 border-emerald-400/40 text-emerald-200 hover:bg-emerald-800/30 group-hover:border-emerald-400/80"}
                   >
                     Commencer l'écoute séquentielle
                   </Button>
@@ -166,7 +166,7 @@ const PodcastView: React.FC<PodcastViewProps> = ({ explorationSlug, sessionId })
                 <div className="flex justify-center">
                   <Button 
                     variant="outline" 
-                    className="bg-emerald-900/20 border-emerald-400/40 text-emerald-200 hover:bg-emerald-800/30 group-hover:border-emerald-400/80"
+                    className={mode === 'shuffle' ? "bg-white text-emerald-600 border-white" : "bg-emerald-900/20 border-emerald-400/40 text-emerald-200 hover:bg-emerald-800/30 group-hover:border-emerald-400/80"}
                   >
                     Laisser faire le hasard
                   </Button>
@@ -175,21 +175,6 @@ const PodcastView: React.FC<PodcastViewProps> = ({ explorationSlug, sessionId })
             </Card>
           </div>
 
-          {/* Mode Indicator */}
-          {tracks.length > 0 && (
-            <div className="text-center mb-12">
-              <div className="poetic-container p-6 rounded-xl inline-block">
-                <p className="dordogne-body text-emerald-300/80">
-                  Mode actuel : <span className="text-emerald-200">
-                    {mode === 'order' ? 'Écoute séquentielle' : 'Écoute aléatoire'}
-                  </span>
-                </p>
-                <p className="dordogne-body text-emerald-400/60 text-sm mt-2">
-                  {tracks.length} fragments sonores disponibles
-                </p>
-              </div>
-            </div>
-          )}
 
         </div>
       </div>
