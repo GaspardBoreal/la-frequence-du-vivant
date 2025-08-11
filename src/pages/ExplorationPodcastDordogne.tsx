@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { useParams } from 'react-router-dom';
 import { useExploration, useExplorationMarches } from '@/hooks/useExplorations';
 import { AudioProvider } from '@/contexts/AudioContext';
@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Play, Pause, SkipForward, SkipBack, Shuffle, List, MapPin, Clock, Waves } from 'lucide-react';
 import { FloatingAudioPlayer } from '@/components/audio/FloatingAudioPlayer';
+import { useAudioPlaylist, Track } from '@/hooks/useAudioPlaylist';
 
 interface PodcastViewProps {
   explorationSlug: string;
@@ -15,13 +16,41 @@ interface PodcastViewProps {
 
 const PodcastView: React.FC<PodcastViewProps> = ({ explorationSlug, sessionId }) => {
   const { data: exploration } = useExploration(explorationSlug);
-  const { data: marches } = useExplorationMarches(explorationSlug, sessionId);
+  const { data: marches } = useExplorationMarches(exploration?.id || '');
 
-  // For now, return empty tracks - the podcast functionality will be completed later
-  const tracks: any[] = [];
-  const currentTrack = null;
-  const isPlaying = false;
-  const currentIndex = 0;
+  // Extract audio tracks from marches
+  const tracks: Track[] = useMemo(() => {
+    if (!marches) return [];
+    
+    return marches.flatMap((marchData, marcheIndex) => {
+      if (!marchData.marche?.audio) return [];
+      
+      return marchData.marche.audio.map((audio: any, audioIndex: number) => ({
+        id: `${marchData.id}-${audioIndex}`,
+        url: audio.url || audio.file,
+        title: audio.fileName || `Enregistrement ${audioIndex + 1}`,
+        marche: marchData.marche?.nom_marche || marchData.marche?.ville || 'Marche',
+        marcheIndex: marcheIndex + 1,
+        marcheTitle: `${marchData.marche?.nom_marche || 'Marche'} - ${marchData.marche?.ville || ''}`,
+        description: audio.fileName || `Capture sonore lors de la marche à ${marchData.marche?.ville}`,
+        location: marchData.marche?.ville || 'Localisation inconnue',
+        duration: audio.length || '00:00',
+        species: audio.species || null
+      }));
+    });
+  }, [marches]);
+
+  const {
+    currentTrack,
+    currentIndex,
+    isPlaying,
+    play,
+    pause,
+    toggle,
+    playIndex,
+    next,
+    prev
+  } = useAudioPlaylist(tracks);
 
   if (!exploration) {
     return (
@@ -138,7 +167,8 @@ const PodcastView: React.FC<PodcastViewProps> = ({ explorationSlug, sessionId })
                 <Button
                   variant="outline"
                   size="icon"
-                  disabled={true}
+                  disabled={currentIndex === 0}
+                  onClick={prev}
                   className="bg-emerald-900/20 border-emerald-400/40 text-emerald-200 h-12 w-12"
                 >
                   <SkipBack className="h-6 w-6" />
@@ -146,16 +176,18 @@ const PodcastView: React.FC<PodcastViewProps> = ({ explorationSlug, sessionId })
                 
                 <Button
                   size="icon"
-                  disabled={true}
+                  disabled={tracks.length === 0}
+                  onClick={toggle}
                   className="btn-nature h-16 w-16 text-white"
                 >
-                  <Play className="h-8 w-8" />
+                  {isPlaying ? <Pause className="h-8 w-8" /> : <Play className="h-8 w-8" />}
                 </Button>
                 
                 <Button
                   variant="outline"
                   size="icon"
-                  disabled={true}
+                  disabled={currentIndex >= tracks.length - 1}
+                  onClick={next}
                   className="bg-emerald-900/20 border-emerald-400/40 text-emerald-200 h-12 w-12"
                 >
                   <SkipForward className="h-6 w-6" />
@@ -208,7 +240,7 @@ const PodcastView: React.FC<PodcastViewProps> = ({ explorationSlug, sessionId })
                           ? 'bg-emerald-700/30 border border-emerald-400/50 transform scale-[1.02]'
                           : 'bg-emerald-900/20 hover:bg-emerald-800/30 border border-emerald-400/20'
                       }`}
-                      onClick={() => playTrack(index)}
+                      onClick={() => playIndex(index)}
                     >
                       <div className="flex items-center justify-between">
                         <div className="flex-1">
@@ -245,7 +277,7 @@ const PodcastView: React.FC<PodcastViewProps> = ({ explorationSlug, sessionId })
                             className="text-emerald-300 hover:text-emerald-200 hover:bg-emerald-800/30"
                             onClick={(e) => {
                               e.stopPropagation();
-                              playTrack(index);
+                              playIndex(index);
                             }}
                           >
                             {currentIndex === index && isPlaying ? (
