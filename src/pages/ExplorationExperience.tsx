@@ -14,6 +14,7 @@ import ExperienceMarcheElabore from '@/components/experience/ExperienceMarcheEla
 import ExperienceOutro from '@/components/experience/ExperienceOutro';
 import ExperienceOutroBioacoustic from '@/components/experience/ExperienceOutroBioacoustic';
 import ExperienceFooter from '@/components/experience/ExperienceFooter';
+import ExperienceWelcomeAdaptive from '@/components/experience/ExperienceWelcomeAdaptive';
 
 
 interface NarrativeSettings {
@@ -32,6 +33,7 @@ export default function ExplorationExperience() {
   const { data: marches = [] } = useExplorationMarches(exploration?.id || '');
 
   const [settings, setSettings] = useState<NarrativeSettings>({ marche_view_model: 'elabore' });
+  const [welcomeComposition, setWelcomeComposition] = useState<any | null>(null);
   const [current, setCurrent] = useState<number>(0);
   const steps = useMemo(() => {
     const list: Array<{ type: 'welcome' | 'marche' | 'outro'; marche?: ExplorationMarcheComplete }> = [];
@@ -63,6 +65,24 @@ export default function ExplorationExperience() {
     };
     load();
   }, [exploration?.id]);
+
+  // Load session context (welcome_composition) to drive adaptive welcome
+  useEffect(() => {
+    const fetchSession = async () => {
+      if (!sessionId) return;
+      const { data, error } = await supabase
+        .from('narrative_sessions')
+        .select('context')
+        .eq('id', sessionId)
+        .maybeSingle();
+      if (!error && data?.context) {
+        const ctx: any = data.context as any;
+        if (ctx?.welcome_composition) setWelcomeComposition(ctx.welcome_composition);
+        if (ctx?.marche_view_model) setSettings((prev) => ({ ...prev, marche_view_model: ctx.marche_view_model }));
+      }
+    };
+    fetchSession();
+  }, [sessionId]);
 
   useEffect(() => {
     const logView = async () => {
@@ -139,7 +159,9 @@ export default function ExplorationExperience() {
       <main className="container mx-auto px-4 pb-28">
         <section className="mt-4">
           {steps[current]?.type === 'welcome' && (
-            settings.marche_view_model === 'elabore' ? (
+            welcomeComposition ? (
+              <ExperienceWelcomeAdaptive exploration={exploration} composition={welcomeComposition} onStart={goNext} />
+            ) : settings.marche_view_model === 'elabore' ? (
               <ExperienceWelcomeBioacoustic exploration={exploration} settings={settings} onStart={goNext} />
             ) : (
               <ExperienceWelcome exploration={exploration} settings={settings} onStart={goNext} />

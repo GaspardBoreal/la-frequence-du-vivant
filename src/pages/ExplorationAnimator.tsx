@@ -13,6 +13,7 @@ import { marcheModels } from '@/marche-models/registry';
 import { Eye } from 'lucide-react';
 import ExperienceMarcheSimple from '@/components/experience/ExperienceMarcheSimple';
 import ExperienceMarcheElabore from '@/components/experience/ExperienceMarcheElabore';
+import { buildWelcomeComposition } from '@/utils/welcomeComposer';
 
 const TONES = ['lyrique','ironique','minimaliste','prophétique','éco-poétique','bioacoustique'] as const;
 const FORMS = ['haïku','note scientifique','dialogue','légende de carte','titre de presse','post Instagram'] as const;
@@ -172,9 +173,27 @@ export default function ExplorationAnimator() {
     if (!exploration?.id || !exploration?.slug) return;
     const ua = typeof navigator !== 'undefined' ? navigator.userAgent : '';
     const ref = typeof document !== 'undefined' ? document.referrer : '';
+    // Build adaptive welcome composition based on current content
+    const composition = buildWelcomeComposition(
+      exploration as any,
+      (explorationMarches || []) as any,
+      { marcheViewModel }
+    );
+
     const { data, error } = await supabase
       .from('narrative_sessions')
-      .insert({ exploration_id: exploration.id, language: 'fr', user_agent: ua, referrer: ref })
+      .insert({
+        exploration_id: exploration.id,
+        language: 'fr',
+        user_agent: ua,
+        referrer: ref,
+        status: 'active',
+        context: ({
+          created_from: 'exploration_animator',
+          marche_view_model: marcheViewModel,
+          welcome_composition: composition,
+        } as any)
+      })
       .select('id')
       .maybeSingle();
     if (error || !data?.id) {
