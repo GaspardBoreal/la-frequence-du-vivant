@@ -14,6 +14,7 @@ interface Props {
 }
 
 const ExperienceOutroDordogne: React.FC<Props> = ({ explorationId, sessionId, onBack }) => {
+  console.log('🌊 ExperienceOutroDordogne - Rendering with explorationId:', explorationId);
   const [rating, setRating] = useState<string>('');
   const [comment, setComment] = useState('');
   const { mutateAsync: submitFeedback, isPending: isSubmitting } = useSubmitFeedback();

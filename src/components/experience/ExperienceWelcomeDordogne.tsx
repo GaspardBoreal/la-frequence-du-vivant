@@ -18,6 +18,7 @@ interface Props {
 }
 
 const ExperienceWelcomeDordogne: React.FC<Props> = ({ exploration, settings, onStart, onStartPodcast }) => {
+  console.log('🌊 ExperienceWelcomeDordogne - Rendering with exploration:', exploration.name);
   return (
     <div className="dordogne-experience min-h-screen relative overflow-hidden">
       {/* Living Waters Background */}

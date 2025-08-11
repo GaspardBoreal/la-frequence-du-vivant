@@ -105,6 +105,8 @@ export default function ExplorationExperience() {
 
   // Detect if this is the Dordogne exploration
   const isDordogneExploration = exploration.slug === 'remontee-dordogne-atlas-eaux-vivantes-2050-2100';
+  console.log('🔍 ExplorationExperience - isDordogneExploration:', isDordogneExploration, 'exploration.slug:', exploration.slug);
+  console.log('🔍 ExplorationExperience - current step:', steps[current]?.type);
 
   const metaTitle = (exploration.meta_title || `Expérience — ${exploration.name}`).slice(0, 58);
   const canonical = `${window.location.origin}/explorations/${exploration.slug}/experience/${sessionId}`;
