@@ -209,13 +209,13 @@ export default function ExplorationExperience() {
           )}
 
           {steps[current]?.type === 'outro' && (
-            settings.marche_view_model === 'elabore' ? (
-              <ExperienceOutroBioacoustic explorationId={exploration.id} sessionId={sessionId!} />
+            isDordogne ? (
+              <ExperienceOutroDordogne explorationId={exploration.id} sessionId={sessionId!} />
             ) : (
               <ExperienceOutro 
                 explorationId={exploration.id} 
                 sessionId={sessionId!} 
-                onBack={() => setCurrent(marches.length)} // Go back to last marche
+                onBack={() => setCurrent(marches.length)}
               />
             )
           )}
