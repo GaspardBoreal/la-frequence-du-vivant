@@ -171,3 +171,44 @@
   0% { opacity: 0; transform: translateY(15px); }
   100% { opacity: 1; transform: translateY(0); }
 }
+
+/* DESIGN DORDOGNE - Scoped styles for Dordogne exploration only */
+.dordogne-experience {
+  /* Wave animations */
+  @keyframes wave-slow {
+    0%, 100% { transform: translateY(0) scaleY(1); }
+    50% { transform: translateY(-10px) scaleY(1.1); }
+  }
+  
+  @keyframes wave-medium {
+    0%, 100% { transform: translateY(0) scaleY(1); }
+    50% { transform: translateY(-8px) scaleY(1.05); }
+  }
+  
+  @keyframes wave-fast {
+    0%, 100% { transform: translateY(0) scaleY(1); }
+    50% { transform: translateY(-6px) scaleY(1.02); }
+  }
+}
+
+.dordogne-experience .animate-wave-slow {
+  animation: wave-slow 4s ease-in-out infinite;
+}
+
+.dordogne-experience .animate-wave-medium {
+  animation: wave-medium 3s ease-in-out infinite;
+}
+
+.dordogne-experience .animate-wave-fast {
+  animation: wave-fast 2s ease-in-out infinite;
+}
+
+.dordogne-experience .btn-glow {
+  box-shadow: 0 0 20px rgba(59, 130, 246, 0.3), 0 0 40px rgba(59, 130, 246, 0.1);
+  transition: all 0.3s ease;
+}
+
+.dordogne-experience .btn-glow:hover {
+  box-shadow: 0 0 30px rgba(59, 130, 246, 0.5), 0 0 60px rgba(59, 130, 246, 0.2);
+  transform: translateY(-2px);
+}
