@@ -86,7 +86,7 @@ const ExperienceWelcomeDordogne: React.FC<Props> = ({ exploration, settings, onS
           </div>
 
           {/* Écoacoustic Spectrogram */}
-          <div className="my-8 relative">
+          <div className="my-4 relative">
             <div className="poetic-container p-8 rounded-3xl">
               <h3 className="dordogne-title text-2xl text-emerald-200 mb-6 text-center">
                 Poèmes et Signatures Sonores de la Dordogne
