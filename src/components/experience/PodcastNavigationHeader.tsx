@@ -11,11 +11,11 @@ const PodcastNavigationHeader: React.FC<PodcastNavigationHeaderProps> = ({ explo
   const navigate = useNavigate();
 
   const handleHomeClick = () => {
-    navigate('/');
+    navigate('/explorations/remontee-dordogne-atlas-eaux-vivantes-2050-2100/experience/a467469c-358f-4ccc-bc77-0de6c06ef9ce');
   };
 
   const handleBackClick = () => {
-    window.history.back();
+    navigate('/explorations/remontee-dordogne-atlas-eaux-vivantes-2050-2100/experience/a467469c-358f-4ccc-bc77-0de6c06ef9ce');
   };
 
   return (

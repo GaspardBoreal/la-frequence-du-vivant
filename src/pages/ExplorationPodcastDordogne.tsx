@@ -9,6 +9,7 @@ import { FloatingAudioPlayer } from '@/components/audio/FloatingAudioPlayer';
 import { useAudioPlaylist, Track } from '@/hooks/useAudioPlaylist';
 import PodcastNavigationHeader from '@/components/experience/PodcastNavigationHeader';
 import FloatingReturnButton from '@/components/experience/FloatingReturnButton';
+import Footer from '@/components/Footer';
 
 interface PodcastViewProps {
   explorationSlug: string;
@@ -209,6 +210,7 @@ const PodcastView: React.FC<PodcastViewProps> = ({ explorationSlug, sessionId })
 
       <FloatingAudioPlayer />
       <FloatingReturnButton />
+      <Footer />
     </div>
   );
 };
