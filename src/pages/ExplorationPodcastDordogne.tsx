@@ -319,17 +319,16 @@ const PodcastView: React.FC<PodcastViewProps> = ({ explorationSlug, sessionId })
 };
 
 const ExplorationPodcastDordogne: React.FC = () => {
-  const { explorationSlug, sessionId } = useParams<{ 
-    explorationSlug: string; 
-    sessionId: string; 
-  }>();
+  const { sessionId } = useParams<{ sessionId: string }>();
+  const explorationSlug = 'remontee-dordogne-atlas-eaux-vivantes-2050-2100'; // Hard-coded for Dordogne
   
   console.log('🎙️ ExplorationPodcastDordogne - params:', { explorationSlug, sessionId });
 
-  if (!explorationSlug || !sessionId) {
+  if (!sessionId) {
+    console.error('🎙️ Missing sessionId parameter');
     return (
       <div className="dordogne-experience min-h-screen flex items-center justify-center">
-        <div className="text-emerald-200 text-xl">Paramètres d'exploration manquants</div>
+        <div className="text-emerald-200 text-xl">Session non trouvée</div>
       </div>
     );
   }
