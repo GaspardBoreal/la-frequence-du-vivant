@@ -15,11 +15,15 @@ interface PodcastViewProps {
 }
 
 const PodcastView: React.FC<PodcastViewProps> = ({ explorationSlug, sessionId }) => {
+  console.log('🎙️ PodcastView - explorationSlug:', explorationSlug, 'sessionId:', sessionId);
   const { data: exploration } = useExploration(explorationSlug);
   const { data: marches } = useExplorationMarches(exploration?.id || '');
+  console.log('🎙️ PodcastView - exploration:', exploration);
+  console.log('🎙️ PodcastView - marches:', marches);
 
   // Extract audio tracks from marches
   const tracks: Track[] = useMemo(() => {
+    console.log('🎵 Creating tracks from marches:', marches);
     if (!marches) return [];
     
     return marches.flatMap((marchData, marcheIndex) => {
@@ -315,10 +319,12 @@ const PodcastView: React.FC<PodcastViewProps> = ({ explorationSlug, sessionId })
 };
 
 const ExplorationPodcastDordogne: React.FC = () => {
-  const { explorationSlug, sessionId } = useParams<{
-    explorationSlug: string;
-    sessionId: string;
+  const { explorationSlug, sessionId } = useParams<{ 
+    explorationSlug: string; 
+    sessionId: string; 
   }>();
+  
+  console.log('🎙️ ExplorationPodcastDordogne - params:', { explorationSlug, sessionId });
 
   if (!explorationSlug || !sessionId) {
     return (
