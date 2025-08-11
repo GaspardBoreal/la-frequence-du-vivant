@@ -11,6 +11,7 @@ import { createSlug } from '../../utils/slugGenerator';
 import { FRENCH_DEPARTMENTS } from '../../utils/frenchDepartments';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '../ui/alert-dialog';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '../ui/dropdown-menu';
+import { useIsMobile } from '../../hooks/use-mobile';
 
 interface MarcheListProps {
   marches: MarcheTechnoSensible[];
@@ -26,6 +27,7 @@ const MarcheList: React.FC<MarcheListProps> = ({
   onDelete
 }) => {
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const isMobile = useIsMobile();
 
   const truncateWords = (text: string, wordLimit: number = 30): string => {
     if (!text) return '';
@@ -308,24 +310,35 @@ const MarcheList: React.FC<MarcheListProps> = ({
                 </div>
               </div>
 
-              <div className="flex items-center space-x-2 ml-4">
-                <Button size="sm" variant="outline" onClick={() => onEdit(marche.id)} disabled={deletingId === marche.id}>
+              <div className={`flex items-center ml-4 ${isMobile ? 'flex-col space-y-2' : 'space-x-2'}`}>
+                <Button 
+                  size={isMobile ? "sm" : "sm"} 
+                  variant="outline" 
+                  onClick={() => onEdit(marche.id)} 
+                  disabled={deletingId === marche.id}
+                  className={isMobile ? 'w-full justify-center' : ''}
+                >
                   <Edit className="h-4 w-4 mr-1" />
-                  Modifier
+                  {isMobile ? 'Modifier' : 'Modifier'}
                 </Button>
                 
                 <AlertDialog>
                   <AlertDialogTrigger asChild>
-                    <Button size="sm" variant="outline" disabled={deletingId === marche.id} className="text-red-600 hover:text-red-700 hover:bg-red-50">
+                    <Button 
+                      size={isMobile ? "sm" : "sm"} 
+                      variant="outline" 
+                      disabled={deletingId === marche.id} 
+                      className={`text-red-600 hover:text-red-700 hover:bg-red-50 ${isMobile ? 'w-full justify-center' : ''}`}
+                    >
                       {deletingId === marche.id ? (
                         <>
                           <div className="animate-spin w-4 h-4 border-2 border-red-500 border-t-transparent rounded-full mr-1" />
-                          Suppression...
+                          {isMobile ? 'Suppression...' : 'Suppression...'}
                         </>
                       ) : (
                         <>
                           <Trash2 className="h-4 w-4 mr-1" />
-                          Supprimer
+                          {isMobile ? 'Supprimer' : 'Supprimer'}
                         </>
                       )}
                     </Button>
