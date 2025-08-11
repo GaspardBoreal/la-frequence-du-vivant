@@ -32,11 +32,7 @@ const PodcastView: React.FC<PodcastViewProps> = ({ explorationSlug, sessionId })
       if (!marchData.marche?.audio) return [];
       
       return marchData.marche.audio.map((audio: any, audioIndex: number) => {
-        // Special title for the first track
-        let title = audio.fileName || `Enregistrement ${audioIndex + 1}`;
-        if (marcheIndex === 0 && audioIndex === 0) {
-          title = "Là où elle se jette, je me redresse à Bec d'Ambès - GAURIAC";
-        }
+        let title = audio.fileName;
         
         return {
           id: `${marchData.id}-${audioIndex}`,
@@ -47,7 +43,7 @@ const PodcastView: React.FC<PodcastViewProps> = ({ explorationSlug, sessionId })
           marcheTitle: `${marchData.marche?.nom_marche || 'Marche'} - ${marchData.marche?.ville || ''}`,
           description: audio.fileName || `Capture sonore lors de la marche à ${marchData.marche?.ville}`,
           location: marchData.marche?.ville || 'Localisation inconnue',
-          duration: audio.length || '00:00',
+          duration: audio.length,
           species: audio.species || null
         };
       });
@@ -56,11 +52,11 @@ const PodcastView: React.FC<PodcastViewProps> = ({ explorationSlug, sessionId })
 
   // Calculate total duration
   const totalDuration = useMemo(() => {
-    if (tracks.length === 0) return '00:00';
+    if (tracks.length === 0) return;
     
     let totalSeconds = 0;
     tracks.forEach(track => {
-      const duration = track.duration || '00:00';
+      const duration = track.duration;
       const [minutes, seconds] = duration.split(':').map(Number);
       totalSeconds += (minutes || 0) * 60 + (seconds || 0);
     });
