@@ -5,6 +5,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Label } from '@/components/ui/label';
 import { useSubmitFeedback } from '@/hooks/useExplorations';
 import { toast } from 'sonner';
+import ExperienceFooter from './ExperienceFooter';
 
 interface Props {
   explorationId: string;
@@ -175,20 +176,7 @@ const ExperienceOutroDordogne: React.FC<Props> = ({ explorationId, sessionId, on
             </div>
           </div>
 
-          {/* Gaspard Boréal Signature */}
-          <div className="signature-section p-8 rounded-2xl">
-            <div className="text-center">
-              <h3 className="dordogne-signature text-4xl text-yellow-200 mb-2">
-                Gaspard Boréal
-              </h3>
-              <p className="dordogne-body text-lg text-emerald-300/80 italic leading-relaxed">
-                Poète de l'écoute, arpenteur de fréquences, auteur en tension
-              </p>
-              <div className="mt-6 flex justify-center">
-                <div className="w-24 h-px bg-gradient-to-r from-transparent via-yellow-400/50 to-transparent"></div>
-              </div>
-            </div>
-          </div>
+          <ExperienceFooter />
         </div>
       </div>
     </div>
