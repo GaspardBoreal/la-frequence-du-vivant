@@ -177,11 +177,13 @@ const PodcastView: React.FC<PodcastViewProps> = ({ explorationSlug, sessionId })
 
 
         </div>
+        
+        {/* Footer */}
+        <ExperienceFooter />
       </div>
 
       <FloatingAudioPlayer />
       <FloatingReturnButton />
-      <ExperienceFooter />
     </div>
   );
 };
