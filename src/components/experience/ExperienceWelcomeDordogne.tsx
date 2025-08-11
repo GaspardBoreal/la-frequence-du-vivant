@@ -1,5 +1,6 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
+import ExperienceFooter from './ExperienceFooter';
 import type { Exploration } from '@/hooks/useExplorations';
 
 interface Props {
@@ -140,21 +141,7 @@ const ExperienceWelcomeDordogne: React.FC<Props> = ({ exploration, settings, onS
         </div>
       </div>
       
-      {/* Footer */}
-      <footer className="relative z-20 border-t border-emerald-400/20">
-        <div className="container mx-auto px-4 py-8">
-          <div className="text-center">
-            <div className="signature-section p-6 rounded-xl max-w-2xl mx-auto">
-              <h3 className="dordogne-signature text-2xl text-yellow-200 mb-2">
-                Gaspard Boréal
-              </h3>
-              <p className="dordogne-body text-emerald-300/80 italic">
-                Poète de l'écoute, arpenteur de fréquences, auteur en tension
-              </p>
-            </div>
-          </div>
-        </div>
-      </footer>
+      <ExperienceFooter />
     </div>
   );
 };
