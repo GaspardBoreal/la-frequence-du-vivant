@@ -20,7 +20,7 @@ interface Props {
 const ExperienceWelcomeDordogne: React.FC<Props> = ({ exploration, settings, onStart, onStartPodcast }) => {
   console.log('🌊 ExperienceWelcomeDordogne - Rendering with exploration:', exploration.name);
   return (
-    <div className="dordogne-experience min-h-screen relative overflow-hidden">
+    <div className="dordogne-experience min-h-screen relative">
       {/* Living Waters Background */}
       <div className="fixed inset-0 z-0">
         <div className="absolute inset-0 bg-gradient-to-br from-slate-900 via-emerald-900 to-green-800"></div>
@@ -142,7 +142,10 @@ const ExperienceWelcomeDordogne: React.FC<Props> = ({ exploration, settings, onS
         </div>
       </div>
       
-      <ExperienceFooter />
+      {/* Footer avec z-index élevé */}
+      <div className="relative z-30">
+        <ExperienceFooter />
+      </div>
     </div>
   );
 };
