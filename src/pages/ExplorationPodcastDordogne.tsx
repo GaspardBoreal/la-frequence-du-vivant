@@ -194,17 +194,6 @@ const PodcastView: React.FC<PodcastViewProps> = ({ explorationSlug, sessionId })
             </div>
           )}
 
-          {/* Gaspard Boréal Signature */}
-          <div className="signature-section p-8 rounded-2xl">
-            <div className="text-center">
-              <h3 className="dordogne-signature text-3xl text-yellow-200 mb-2">
-                Gaspard Boréal
-              </h3>
-              <p className="dordogne-body text-emerald-300/80 italic">
-                Poète de l'écoute, arpenteur de fréquences, auteur en tension
-              </p>
-            </div>
-          </div>
         </div>
       </div>
 
