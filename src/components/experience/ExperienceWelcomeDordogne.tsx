@@ -77,14 +77,6 @@ const ExperienceWelcomeDordogne: React.FC<Props> = ({ exploration, settings, onS
             <h1 className="dordogne-title text-4xl md:text-5xl mb-8 bg-gradient-to-r from-emerald-200 via-yellow-200 to-green-300 bg-clip-text text-transparent leading-tight">
               {exploration.name}
             </h1>
-            
-            {exploration.description && (
-              <div className="poetic-container p-8 rounded-2xl max-w-4xl mx-auto">
-                <p className="dordogne-body text-xl text-emerald-100/90 leading-relaxed">
-                  {exploration.description}
-                </p>
-              </div>
-            )}
           </div>
 
           {/* Écoacoustic Spectrogram */}
