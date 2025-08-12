@@ -182,34 +182,59 @@ export default function SpecificPagesManager({ explorationId }: Props) {
       return;
     }
 
+    console.log('🔧 Saving page:', { 
+      editingPage: editingPage?.id, 
+      formType, 
+      formNom: formNom.trim(), 
+      formDescription: formDescription.trim() 
+    });
+
     const pageType = PAGE_TYPES.find(t => t.value === formType);
     const nextOrdre = editingPage ? editingPage.ordre : Math.max(0, ...pages.map(p => p.ordre)) + 1;
 
     try {
+      let result;
       if (editingPage) {
-        await (supabase as any).rpc('update_exploration_page', {
+        console.log('🔧 Updating existing page with ID:', editingPage.id);
+        result = await (supabase as any).rpc('update_exploration_page', {
           page_id: editingPage.id,
           page_type: formType,
           page_nom: formNom.trim(),
           page_description: formDescription.trim() || pageType?.description || ''
         });
-        toast.success('Page mise à jour');
+        console.log('🔧 Update result:', result);
+        
+        if (result.error) {
+          throw result.error;
+        }
+        
+        toast.success('Page mise à jour avec succès');
       } else {
-        await (supabase as any).rpc('insert_exploration_page', {
+        console.log('🔧 Creating new page');
+        result = await (supabase as any).rpc('insert_exploration_page', {
           exploration_id_param: explorationId,
           page_type: formType,
           page_ordre: nextOrdre,
           page_nom: formNom.trim(),
           page_description: formDescription.trim() || pageType?.description || ''
         });
-        toast.success('Page ajoutée');
+        console.log('🔧 Insert result:', result);
+        
+        if (result.error) {
+          throw result.error;
+        }
+        
+        toast.success('Page ajoutée avec succès');
       }
       
-      loadPages(); // Reload to get fresh data
+      console.log('🔧 Reloading pages after successful save...');
+      await loadPages(); // Force reload to get fresh data
       setShowForm(false);
+      console.log('🔧 Save operation completed successfully');
+      
     } catch (error) {
-      console.error('Error saving page:', error);
-      toast.error('Erreur lors de la sauvegarde');
+      console.error('❌ Error saving page:', error);
+      toast.error(`Erreur lors de la sauvegarde: ${error.message || 'Erreur inconnue'}`);
     }
   };
 
