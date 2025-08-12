@@ -114,6 +114,223 @@
   }
 }
 
+/* DORDOGNE EXPERIENCE STYLES - "Eaux vivantes" */
+@import url('https://fonts.googleapis.com/css2?family=Crimson+Text:ital,wght@0,400;0,600;1,400&family=Dancing+Script:wght@400;500;600&display=swap');
+
+.dordogne-experience {
+  --dordogne-emerald-deep: 134 82% 25%;
+  --dordogne-emerald: 134 82% 35%;
+  --dordogne-emerald-light: 134 82% 45%;
+  --dordogne-golden: 45 95% 65%;
+  --dordogne-golden-light: 45 95% 75%;
+  --dordogne-copper: 25 75% 45%;
+  --dordogne-earth: 30 35% 25%;
+  --dordogne-foam: 134 45% 85%;
+  font-family: 'Crimson Text', serif;
+}
+
+.dordogne-experience .dordogne-title {
+  font-family: 'Crimson Text', serif;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  line-height: 1.1;
+}
+
+.dordogne-experience .dordogne-body {
+  font-family: 'Crimson Text', serif;
+  line-height: 1.7;
+  text-align: justify;
+  hyphens: auto;
+}
+
+.dordogne-experience .dordogne-signature {
+  font-family: 'Dancing Script', cursive;
+  font-weight: 500;
+}
+
+/* Organic River Animations */
+.dordogne-experience .river-wave {
+  background: linear-gradient(
+    125deg,
+    hsla(var(--dordogne-emerald-deep), 0.4) 0%,
+    hsla(var(--dordogne-emerald), 0.3) 35%,
+    hsla(var(--dordogne-golden), 0.2) 70%,
+    transparent 100%
+  );
+  animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  animation-iteration-count: infinite;
+  animation-direction: alternate;
+  border-radius: 50% 50% 0 0;
+  transform-origin: bottom center;
+}
+
+.dordogne-experience .river-wave-1 {
+  animation: river-flow-1 8s ease-in-out infinite;
+}
+
+.dordogne-experience .river-wave-2 {
+  animation: river-flow-2 6s ease-in-out infinite;
+}
+
+.dordogne-experience .river-wave-3 {
+  animation: river-flow-3 4s ease-in-out infinite;
+}
+
+@keyframes river-flow-1 {
+  0%, 100% { 
+    transform: translateX(-10px) scaleY(0.8);
+    opacity: 0.3;
+  }
+  50% { 
+    transform: translateX(10px) scaleY(1.2);
+    opacity: 0.6;
+  }
+}
+
+@keyframes river-flow-2 {
+  0%, 100% { 
+    transform: translateX(15px) scaleY(0.9) rotate(-1deg);
+    opacity: 0.4;
+  }
+  50% { 
+    transform: translateX(-5px) scaleY(1.1) rotate(1deg);
+    opacity: 0.7;
+  }
+}
+
+@keyframes river-flow-3 {
+  0%, 100% { 
+    transform: translateX(-5px) scaleY(1.1) rotate(0.5deg);
+    opacity: 0.2;
+  }
+  50% { 
+    transform: translateX(8px) scaleY(0.9) rotate(-0.5deg);
+    opacity: 0.5;
+  }
+}
+
+/* Living Water Particles */
+.dordogne-experience .water-bubble {
+  background: radial-gradient(
+    circle,
+    hsla(var(--dordogne-golden-light), 0.6) 0%,
+    hsla(var(--dordogne-emerald-light), 0.3) 50%,
+    transparent 100%
+  );
+  border-radius: 50%;
+  animation: bubble-rise linear infinite;
+}
+
+@keyframes bubble-rise {
+  0% {
+    transform: translateY(100vh) scale(0.8);
+    opacity: 0;
+  }
+  10% {
+    opacity: 0.6;
+  }
+  90% {
+    opacity: 0.3;
+  }
+  100% {
+    transform: translateY(-20vh) scale(1.2);
+    opacity: 0;
+  }
+}
+
+/* Sediment Particles */
+.dordogne-experience .sediment-particle {
+  background: linear-gradient(
+    45deg,
+    hsla(var(--dordogne-copper), 0.4),
+    hsla(var(--dordogne-golden), 0.3)
+  );
+  border-radius: 30% 70% 60% 40%;
+  animation: sediment-float ease-in-out infinite;
+}
+
+@keyframes sediment-float {
+  0%, 100% {
+    transform: translateY(0) rotate(0deg);
+  }
+  33% {
+    transform: translateY(-10px) rotate(120deg);
+  }
+  66% {
+    transform: translateY(5px) rotate(240deg);
+  }
+}
+
+/* Audio Waves Visualization */
+.dordogne-experience .eco-audio-wave {
+  background: linear-gradient(
+    to top,
+    hsla(var(--dordogne-emerald), 0.8) 0%,
+    hsla(var(--dordogne-emerald-light), 0.6) 50%,
+    hsla(var(--dordogne-golden), 0.4) 100%
+  );
+  border-radius: 4px 4px 0 0;
+  animation: eco-pulse ease-in-out infinite;
+}
+
+@keyframes eco-pulse {
+  0%, 100% {
+    transform: scaleY(0.3);
+    opacity: 0.6;
+  }
+  50% {
+    transform: scaleY(1);
+    opacity: 1;
+  }
+}
+
+/* Enhanced Buttons */
+.dordogne-experience .btn-nature {
+  background: linear-gradient(
+    135deg,
+    hsl(var(--dordogne-emerald)) 0%,
+    hsl(var(--dordogne-emerald-light)) 100%
+  );
+  box-shadow: 
+    0 4px 20px hsla(var(--dordogne-emerald), 0.3),
+    inset 0 1px 0 hsla(var(--dordogne-foam), 0.2);
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  border: 1px solid hsla(var(--dordogne-emerald-light), 0.3);
+}
+
+.dordogne-experience .btn-nature:hover {
+  background: linear-gradient(
+    135deg,
+    hsl(var(--dordogne-emerald-light)) 0%,
+    hsl(var(--dordogne-golden)) 100%
+  );
+  box-shadow: 
+    0 8px 40px hsla(var(--dordogne-emerald), 0.4),
+    0 0 60px hsla(var(--dordogne-golden), 0.2),
+    inset 0 1px 0 hsla(var(--dordogne-foam), 0.3);
+  transform: translateY(-3px) scale(1.02);
+}
+
+/* Poetic Text Layouts */
+.dordogne-experience .poetic-container {
+  background: linear-gradient(
+    135deg,
+    hsla(var(--dordogne-emerald-deep), 0.05) 0%,
+    hsla(var(--dordogne-golden), 0.03) 100%
+  );
+  border: 1px solid hsla(var(--dordogne-emerald), 0.1);
+  backdrop-filter: blur(10px);
+}
+
+.dordogne-experience .signature-section {
+  background: linear-gradient(
+    135deg,
+    hsla(var(--dordogne-earth), 0.1) 0%,
+    hsla(var(--dordogne-copper), 0.05) 100%
+  );
+  border-top: 2px solid hsla(var(--dordogne-golden), 0.3);
+}
+
 /* Animations subtiles */
 @layer utilities {
   .animate-gentle-float {
@@ -170,4 +387,45 @@
 @keyframes fade-in {
   0% { opacity: 0; transform: translateY(15px); }
   100% { opacity: 1; transform: translateY(0); }
+}
+
+/* DESIGN DORDOGNE - Scoped styles for Dordogne exploration only */
+.dordogne-experience {
+  /* Wave animations */
+  @keyframes wave-slow {
+    0%, 100% { transform: translateY(0) scaleY(1); }
+    50% { transform: translateY(-10px) scaleY(1.1); }
+  }
+  
+  @keyframes wave-medium {
+    0%, 100% { transform: translateY(0) scaleY(1); }
+    50% { transform: translateY(-8px) scaleY(1.05); }
+  }
+  
+  @keyframes wave-fast {
+    0%, 100% { transform: translateY(0) scaleY(1); }
+    50% { transform: translateY(-6px) scaleY(1.02); }
+  }
+}
+
+.dordogne-experience .animate-wave-slow {
+  animation: wave-slow 4s ease-in-out infinite;
+}
+
+.dordogne-experience .animate-wave-medium {
+  animation: wave-medium 3s ease-in-out infinite;
+}
+
+.dordogne-experience .animate-wave-fast {
+  animation: wave-fast 2s ease-in-out infinite;
+}
+
+.dordogne-experience .btn-glow {
+  box-shadow: 0 0 20px rgba(59, 130, 246, 0.3), 0 0 40px rgba(59, 130, 246, 0.1);
+  transition: all 0.3s ease;
+}
+
+.dordogne-experience .btn-glow:hover {
+  box-shadow: 0 0 30px rgba(59, 130, 246, 0.5), 0 0 60px rgba(59, 130, 246, 0.2);
+  transform: translateY(-2px);
 }

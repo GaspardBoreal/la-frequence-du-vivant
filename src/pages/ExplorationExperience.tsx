@@ -15,6 +15,8 @@ import ExperienceOutro from '@/components/experience/ExperienceOutro';
 import ExperienceOutroBioacoustic from '@/components/experience/ExperienceOutroBioacoustic';
 import ExperienceFooter from '@/components/experience/ExperienceFooter';
 import ExperienceWelcomeAdaptive from '@/components/experience/ExperienceWelcomeAdaptive';
+import ExperienceWelcomeDordogne from '@/components/experience/ExperienceWelcomeDordogne';
+import ExperienceOutroDordogne from '@/components/experience/ExperienceOutroDordogne';
 
 
 interface NarrativeSettings {
@@ -101,6 +103,11 @@ export default function ExplorationExperience() {
 
   if (!exploration) return null;
 
+  // Detect if this is the Dordogne exploration
+  const isDordogneExploration = exploration.slug === 'remontee-dordogne-atlas-eaux-vivantes-2050-2100';
+  console.log('🔍 ExplorationExperience - isDordogneExploration:', isDordogneExploration, 'exploration.slug:', exploration.slug);
+  console.log('🔍 ExplorationExperience - current step:', steps[current]?.type);
+
   const metaTitle = (exploration.meta_title || `Expérience — ${exploration.name}`).slice(0, 58);
   const canonical = `${window.location.origin}/explorations/${exploration.slug}/experience/${sessionId}`;
 
@@ -159,7 +166,19 @@ export default function ExplorationExperience() {
       <main className="container mx-auto px-4 pb-28">
         <section className="mt-4">
           {steps[current]?.type === 'welcome' && (
-            welcomeComposition ? (
+            isDordogneExploration ? (
+              <ExperienceWelcomeDordogne 
+                exploration={exploration} 
+                settings={settings} 
+                onStart={goNext} 
+                onStartPodcast={() => {
+                  console.log('🎙️ Navigating to podcast - slug:', slug, 'sessionId:', sessionId);
+                  const podcastUrl = `/explorations/${slug}/experience/${sessionId}/podcast`;
+                  console.log('🎙️ Podcast URL:', podcastUrl);
+                  navigate(podcastUrl);
+                }}
+              />
+            ) : welcomeComposition ? (
               <ExperienceWelcomeAdaptive exploration={exploration} composition={welcomeComposition} onStart={goNext} onStartPodcast={() => navigate(`/explorations/${slug}/experience/${sessionId}/podcast`)} />
             ) : settings.marche_view_model === 'elabore' ? (
               <ExperienceWelcomeBioacoustic exploration={exploration} settings={settings} onStart={goNext} />
@@ -195,7 +214,13 @@ export default function ExplorationExperience() {
           )}
 
           {steps[current]?.type === 'outro' && (
-            settings.marche_view_model === 'elabore' ? (
+            isDordogneExploration ? (
+              <ExperienceOutroDordogne 
+                explorationId={exploration.id} 
+                sessionId={sessionId!} 
+                onBack={() => setCurrent(marches.length)} 
+              />
+            ) : settings.marche_view_model === 'elabore' ? (
               <ExperienceOutroBioacoustic explorationId={exploration.id} sessionId={sessionId!} />
             ) : (
               <ExperienceOutro 
@@ -208,7 +233,7 @@ export default function ExplorationExperience() {
         </section>
       </main>
 
-      <ExperienceFooter />
+      {!isDordogneExploration && <ExperienceFooter />}
     </div>
   );
 }
