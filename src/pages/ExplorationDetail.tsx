@@ -1,11 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { useExploration, useTrackClick } from '@/hooks/useExplorations';
+import { useExploration, useTrackClick, useExplorationMarches } from '@/hooks/useExplorations';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import SEOHead from '@/components/SEOHead';
 import { supabase } from '@/integrations/supabase/client';
 import { Loader2, Sparkles } from 'lucide-react';
+import { buildWelcomeComposition } from '@/utils/welcomeComposer';
 
 const ExplorationDetail = () => {
   const { slug } = useParams<{ slug: string }>();
@@ -16,6 +17,7 @@ const ExplorationDetail = () => {
   const [sessionError, setSessionError] = useState<string | null>(null);
   
   const { data: exploration, isLoading: explorationLoading, error: explorationError } = useExploration(slug!);
+  const { data: marches = [] } = useExplorationMarches(exploration?.id || '');
 
   // Automatic redirection to experience when exploration is loaded
   useEffect(() => {
@@ -40,7 +42,11 @@ const ExplorationDetail = () => {
       // Generate unique session ID
       const sessionId = crypto.randomUUID();
 
-      // Create session in database
+      // Generate welcome composition for adaptive experience
+      const welcomeComposition = marches.length > 0 ? buildWelcomeComposition(exploration, marches) : null;
+      console.log('🔧 Generated welcome composition:', welcomeComposition);
+
+      // Create session in database with welcome composition
       const { data, error } = await supabase
         .from('narrative_sessions')
         .insert({
@@ -52,7 +58,8 @@ const ExplorationDetail = () => {
           status: 'active',
           context: {
             created_from: 'exploration_detail',
-            user_ip: null // Will be set by Supabase
+            user_ip: null, // Will be set by Supabase
+            welcome_composition: welcomeComposition ? JSON.parse(JSON.stringify(welcomeComposition)) : null
           }
         })
         .select()

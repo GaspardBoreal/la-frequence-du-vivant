@@ -104,7 +104,7 @@ export default function ExplorationExperience() {
   if (!exploration) return null;
 
   // Detect if this is the Dordogne exploration
-  const isDordogneExploration = exploration.slug === 'remontee-dordogne-atlas-eaux-vivantes-2050-2100';
+  const isDordogneExploration = exploration.slug === 'remontee-dordogne-atlas-eaux-vivantes-2025-2045';
   console.log('🔍 ExplorationExperience - isDordogneExploration:', isDordogneExploration, 'exploration.slug:', exploration.slug);
   console.log('🔍 ExplorationExperience - current step:', steps[current]?.type);
 
@@ -180,7 +180,7 @@ export default function ExplorationExperience() {
               />
             ) : welcomeComposition ? (
               <ExperienceWelcomeAdaptive exploration={exploration} composition={welcomeComposition} onStart={goNext} onStartPodcast={() => navigate(`/explorations/${slug}/experience/${sessionId}/podcast`)} />
-            ) : settings.marche_view_model === 'elabore' ? (
+            ) : exploration.slug === 'bioacoustique-poetique' ? (
               <ExperienceWelcomeBioacoustic exploration={exploration} settings={settings} onStart={goNext} />
             ) : (
               <ExperienceWelcome exploration={exploration} settings={settings} onStart={goNext} />
