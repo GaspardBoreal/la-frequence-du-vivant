@@ -17,6 +17,7 @@ import ExperienceMarcheSimple from '@/components/experience/ExperienceMarcheSimp
 import ExperienceMarcheElabore from '@/components/experience/ExperienceMarcheElabore';
 import ExperienceWelcomeAdaptive from '@/components/experience/ExperienceWelcomeAdaptive';
 import { buildWelcomeComposition } from '@/utils/welcomeComposer';
+import SpecificPagesManager from '@/components/admin/SpecificPagesManager';
 
 const TONES = ['lyrique','ironique','minimaliste','prophétique','éco-poétique','bioacoustique'] as const;
 const FORMS = ['haïku','note scientifique','dialogue','légende de carte','titre de presse','post Instagram'] as const;
