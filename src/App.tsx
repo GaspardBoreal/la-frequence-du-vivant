@@ -26,7 +26,6 @@ import FaviconTest from './pages/FaviconTest';
 import ExplorationAnimator from './pages/ExplorationAnimator';
 import ExplorationExperience from './pages/ExplorationExperience';
 import ExplorationPodcast from './pages/ExplorationPodcast';
-import ExplorationPodcastDordogne from './pages/ExplorationPodcastDordogne';
 
 function App() {
   return (
@@ -46,7 +45,6 @@ function App() {
           <Route path="/explorations/:slug" element={<ExplorationDetail />} />
           <Route path="/explorations/:slug/animer" element={<ExplorationAnimator />} />
           <Route path="/explorations/:slug/experience/:sessionId" element={<ExplorationExperience />} />
-          <Route path="/explorations/remontee-dordogne-atlas-eaux-vivantes-2050-2100/experience/:sessionId/podcast" element={<ExplorationPodcastDordogne />} />
           <Route path="/explorations/:slug/experience/:sessionId/podcast" element={<ExplorationPodcast />} />
           <Route path="/explorations/:slug/:narrativeSlug" element={<NarrativeLandscape />} />
 

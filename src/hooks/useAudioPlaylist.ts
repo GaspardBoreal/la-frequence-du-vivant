@@ -8,12 +8,6 @@ export interface Track {
   url: string;
   title?: string;
   marche?: string;
-  marcheIndex?: number;
-  marcheTitle?: string;
-  description?: string;
-  location?: string;
-  duration?: string;
-  species?: string | null;
 }
 
 export const useAudioPlaylist = (tracks: Track[], initialMode: PlayMode = 'order') => {

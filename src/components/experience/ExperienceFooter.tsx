@@ -1,7 +1,6 @@
 import React from 'react';
 
 const ExperienceFooter: React.FC = () => {
-  console.log('👤 ExperienceFooter - Rendering');
   return (
     <footer className="mt-8 border-t">
       <div className="container mx-auto px-4 py-6 flex flex-col sm:flex-row items-center justify-between gap-3 text-sm text-foreground/80">
