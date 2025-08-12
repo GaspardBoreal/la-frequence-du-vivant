@@ -106,7 +106,7 @@ export default function SpecificPagesManager({ explorationId }: Props) {
     setLoading(true);
     
     try {
-      const { data, error } = await supabase.rpc('get_exploration_pages', {
+      const { data, error } = await (supabase as any).rpc('get_exploration_pages', {
         exploration_id_param: explorationId
       });
       
@@ -148,7 +148,7 @@ export default function SpecificPagesManager({ explorationId }: Props) {
     
     // Save new order to database
     try {
-      await supabase.rpc('update_pages_order', {
+      await (supabase as any).rpc('update_pages_order', {
         page_ids: updatedPages.map(p => p.id),
         new_orders: updatedPages.map(p => p.ordre)
       });
@@ -187,7 +187,7 @@ export default function SpecificPagesManager({ explorationId }: Props) {
 
     try {
       if (editingPage) {
-        await supabase.rpc('update_exploration_page', {
+        await (supabase as any).rpc('update_exploration_page', {
           page_id: editingPage.id,
           page_type: formType,
           page_nom: formNom.trim(),
@@ -195,7 +195,7 @@ export default function SpecificPagesManager({ explorationId }: Props) {
         });
         toast.success('Page mise à jour');
       } else {
-        await supabase.rpc('insert_exploration_page', {
+        await (supabase as any).rpc('insert_exploration_page', {
           exploration_id_param: explorationId,
           page_type: formType,
           page_ordre: nextOrdre,
@@ -217,7 +217,7 @@ export default function SpecificPagesManager({ explorationId }: Props) {
     if (!confirm('Êtes-vous sûr de vouloir supprimer cette page ?')) return;
 
     try {
-      await supabase.rpc('delete_exploration_page', {
+      await (supabase as any).rpc('delete_exploration_page', {
         page_id: pageId
       });
       
