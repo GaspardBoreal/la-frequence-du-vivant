@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 import SEOHead from '@/components/SEOHead';
 
 import { useExploration, useExplorationMarches, ExplorationMarcheComplete } from '@/hooks/useExplorations';
+import { useExplorationPages } from '@/hooks/useExplorationPages';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import DecorativeParticles from '@/components/DecorativeParticles';
@@ -17,6 +18,10 @@ import ExperienceFooter from '@/components/experience/ExperienceFooter';
 import ExperienceWelcomeAdaptive from '@/components/experience/ExperienceWelcomeAdaptive';
 import ExperienceWelcomeDordogne from '@/components/experience/ExperienceWelcomeDordogne';
 import ExperienceOutroDordogne from '@/components/experience/ExperienceOutroDordogne';
+import ExperiencePageAccueil from '@/components/experience/ExperiencePageAccueil';
+import ExperiencePageAuteur from '@/components/experience/ExperiencePageAuteur';
+import ExperiencePageFeedback from '@/components/experience/ExperiencePageFeedback';
+import ExperiencePagePrecommande from '@/components/experience/ExperiencePagePrecommande';
 
 
 interface NarrativeSettings {
@@ -34,16 +39,51 @@ export default function ExplorationExperience() {
   const navigate = useNavigate();
   const { data: exploration } = useExploration(slug || '');
   const { data: marches = [] } = useExplorationMarches(exploration?.id || '');
+  const { data: pages = [] } = useExplorationPages(exploration?.id || '');
   const [settings, setSettings] = useState<NarrativeSettings>({ marche_view_model: 'elabore' });
   const [welcomeComposition, setWelcomeComposition] = useState<any | null>(null);
   const [current, setCurrent] = useState<number>(0);
+  
   const steps = useMemo(() => {
-    const list: Array<{ type: 'welcome' | 'marche' | 'outro'; marche?: ExplorationMarcheComplete }> = [];
-    list.push({ type: 'welcome' });
+    const list: Array<{ 
+      type: 'welcome' | 'marche' | 'outro' | 'page'; 
+      marche?: ExplorationMarcheComplete;
+      page?: any;
+    }> = [];
+    
+    // Add welcome (keeping original behavior if no specific pages)
+    const welcomePage = pages.find(p => p.type === 'intro-accueil');
+    if (welcomePage) {
+      list.push({ type: 'page', page: welcomePage });
+    } else {
+      list.push({ type: 'welcome' });
+    }
+    
+    // Add intro pages in order (like author pages)
+    const introPages = pages.filter(p => p.type.startsWith('intro-') && p.type !== 'intro-accueil')
+      .sort((a, b) => a.ordre - b.ordre);
+    introPages.forEach(page => {
+      list.push({ type: 'page', page });
+    });
+    
+    // Add marches
     marches.forEach((m) => list.push({ type: 'marche', marche: m }));
-    list.push({ type: 'outro' });
+    
+    // Add outro pages in order
+    const outroPages = pages.filter(p => p.type.startsWith('fin-'))
+      .sort((a, b) => a.ordre - b.ordre);
+    outroPages.forEach(page => {
+      list.push({ type: 'page', page });
+    });
+    
+    // Add default outro if no specific outro pages
+    if (outroPages.length === 0) {
+      list.push({ type: 'outro' });
+    }
+    
+    console.log('🔧 Built steps with pages:', list.map(s => ({ type: s.type, name: s.page?.nom || s.type })));
     return list;
-  }, [marches]);
+  }, [marches, pages]);
 
   useEffect(() => {
     const load = async () => {
@@ -186,6 +226,22 @@ export default function ExplorationExperience() {
               <ExperienceWelcome exploration={exploration} settings={settings} onStart={goNext} />
             )
           )}
+
+          {steps[current]?.type === 'page' && steps[current].page && (() => {
+            const page = steps[current].page;
+            switch (page.type) {
+              case 'intro-accueil':
+                return <ExperiencePageAccueil page={page} onContinue={goNext} />;
+              case 'intro-auteur':
+                return <ExperiencePageAuteur page={page} onContinue={goNext} />;
+              case 'fin-feedback':
+                return <ExperiencePageFeedback page={page} onBack={goPrev} />;
+              case 'fin-precommande':
+                return <ExperiencePagePrecommande page={page} onBack={goPrev} />;
+              default:
+                return <ExperiencePageAuteur page={page} onContinue={goNext} />;
+            }
+          })()}
 
           {steps[current]?.type === 'marche' && steps[current].marche && (
             settings.marche_view_model === 'simple' ? (
