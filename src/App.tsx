@@ -23,7 +23,7 @@ import ExplorationFormPage from './pages/ExplorationFormPage';
 import ExplorationMarchesAdmin from './pages/ExplorationMarchesAdmin';
 import TestEbird from './pages/TestEbird';
 import FaviconTest from './pages/FaviconTest';
-import ExplorationAnimator from './pages/ExplorationAnimator';
+import ExplorationAnimatorRefactored from './pages/ExplorationAnimatorRefactored';
 import ExplorationExperience from './pages/ExplorationExperience';
 import ExplorationPodcast from './pages/ExplorationPodcast';
 import ExplorationPodcastDordogne from './pages/ExplorationPodcastDordogne';
@@ -44,7 +44,7 @@ function App() {
           {/* Routes explorations */}
           <Route path="/explorations" element={<ExplorationsList />} />
           <Route path="/explorations/:slug" element={<ExplorationDetail />} />
-          <Route path="/explorations/:slug/animer" element={<ExplorationAnimator />} />
+          <Route path="/explorations/:slug/animer" element={<ExplorationAnimatorRefactored />} />
           <Route path="/explorations/:slug/experience/:sessionId" element={<ExplorationExperience />} />
           <Route path="/explorations/remontee-dordogne-atlas-eaux-vivantes-2050-2100/experience/:sessionId/podcast" element={<ExplorationPodcastDordogne />} />
           <Route path="/explorations/:slug/experience/:sessionId/podcast" element={<ExplorationPodcast />} />

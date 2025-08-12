@@ -105,15 +105,13 @@ export default function SpecificPagesManager({ explorationId }: Props) {
     if (!explorationId) return;
     setLoading(true);
     
-    // Use direct SQL query to fetch pages
-    const query = `SELECT * FROM exploration_pages WHERE exploration_id = '${explorationId}' ORDER BY ordre`;
-    
     try {
-      const { data, error } = await supabase.from('narrative_sessions').select('id').limit(1);
-      if (error) throw error;
+      const { data, error } = await supabase.rpc('get_exploration_pages', {
+        exploration_id_param: explorationId
+      });
       
-      // Simulate for now - in production this would be a proper query
-      setPages([]);
+      if (error) throw error;
+      setPages((data || []) as ExplorationPage[]);
     } catch (error) {
       console.error('Error loading pages:', error);
       toast.error('Erreur lors du chargement des pages');
@@ -147,7 +145,19 @@ export default function SpecificPagesManager({ explorationId }: Props) {
     }));
     
     setPages(updatedPages);
-    toast.success('Ordre des pages mis à jour');
+    
+    // Save new order to database
+    try {
+      await supabase.rpc('update_pages_order', {
+        page_ids: updatedPages.map(p => p.id),
+        new_orders: updatedPages.map(p => p.ordre)
+      });
+      toast.success('Ordre des pages mis à jour');
+    } catch (error) {
+      console.error('Error updating page order:', error);
+      toast.error('Erreur lors de la mise à jour de l\'ordre');
+      loadPages(); // Reload on error
+    }
   };
 
   const handleAdd = () => {
@@ -175,32 +185,48 @@ export default function SpecificPagesManager({ explorationId }: Props) {
     const pageType = PAGE_TYPES.find(t => t.value === formType);
     const nextOrdre = editingPage ? editingPage.ordre : Math.max(0, ...pages.map(p => p.ordre)) + 1;
 
-    const newPage: ExplorationPage = {
-      id: editingPage?.id || `temp-${Date.now()}`,
-      exploration_id: explorationId,
-      type: formType,
-      ordre: nextOrdre,
-      nom: formNom.trim(),
-      description: formDescription.trim() || pageType?.description || '',
-      config: {}
-    };
-
-    if (editingPage) {
-      setPages(pages.map(p => p.id === editingPage.id ? newPage : p));
-      toast.success('Page mise à jour');
-    } else {
-      setPages([...pages, newPage]);
-      toast.success('Page ajoutée');
+    try {
+      if (editingPage) {
+        await supabase.rpc('update_exploration_page', {
+          page_id: editingPage.id,
+          page_type: formType,
+          page_nom: formNom.trim(),
+          page_description: formDescription.trim() || pageType?.description || ''
+        });
+        toast.success('Page mise à jour');
+      } else {
+        await supabase.rpc('insert_exploration_page', {
+          exploration_id_param: explorationId,
+          page_type: formType,
+          page_ordre: nextOrdre,
+          page_nom: formNom.trim(),
+          page_description: formDescription.trim() || pageType?.description || ''
+        });
+        toast.success('Page ajoutée');
+      }
+      
+      loadPages(); // Reload to get fresh data
+      setShowForm(false);
+    } catch (error) {
+      console.error('Error saving page:', error);
+      toast.error('Erreur lors de la sauvegarde');
     }
-    
-    setShowForm(false);
   };
 
   const handleDelete = async (pageId: string) => {
     if (!confirm('Êtes-vous sûr de vouloir supprimer cette page ?')) return;
 
-    setPages(pages.filter(p => p.id !== pageId));
-    toast.success('Page supprimée');
+    try {
+      await supabase.rpc('delete_exploration_page', {
+        page_id: pageId
+      });
+      
+      setPages(pages.filter(p => p.id !== pageId));
+      toast.success('Page supprimée');
+    } catch (error) {
+      console.error('Error deleting page:', error);
+      toast.error('Erreur lors de la suppression');
+    }
   };
 
   if (loading) {
