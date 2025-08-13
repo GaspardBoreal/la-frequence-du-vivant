@@ -93,6 +93,19 @@ serve(async (req) => {
       try {
         console.log(`🔄 Processing marche: ${marche.nom_marche} (${marche.ville})`);
 
+        // Update current marche in progress
+        await supabase
+          .from('data_collection_logs')
+          .update({ 
+            summary_stats: {
+              current_marche_name: marche.nom_marche || marche.ville,
+              current_marche_id: marche.id,
+              processed: processedCount,
+              total_marches: validMarches.length
+            }
+          })
+          .eq('id', logEntry.id);
+
         // Collect biodiversity data
         if (collectionTypes.includes('biodiversity')) {
           try {
@@ -242,16 +255,22 @@ serve(async (req) => {
 
         processedCount++;
 
-        // Update progress every 10 marches
-        if (processedCount % 10 === 0) {
-          await supabase
-            .from('data_collection_logs')
-            .update({ 
-              marches_processed: processedCount,
-              errors_count: errorsCount
-            })
-            .eq('id', logEntry.id);
-        }
+        // Update progress more frequently
+        await supabase
+          .from('data_collection_logs')
+          .update({ 
+            marches_processed: processedCount,
+            errors_count: errorsCount,
+            summary_stats: {
+              current_marche_name: processedCount < validMarches.length ? 
+                `Marche ${processedCount + 1}/${validMarches.length}` : 
+                'Finalisation...',
+              processed: processedCount,
+              total_marches: validMarches.length,
+              results
+            }
+          })
+          .eq('id', logEntry.id);
 
         // Rate limiting: wait 100ms between marches
         await new Promise(resolve => setTimeout(resolve, 100));

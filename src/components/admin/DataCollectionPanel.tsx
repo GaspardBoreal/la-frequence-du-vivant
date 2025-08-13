@@ -6,6 +6,7 @@ import { useDataCollectionLogs, useTriggerBatchCollection } from '@/hooks/useSna
 import { DataCollectionLog } from '@/types/snapshots';
 import { PlayCircle, BarChart3, Clock, CheckCircle, XCircle, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
+import CollectionProgressModal from './CollectionProgressModal';
 
 interface DataCollectionPanelProps {
   marches?: Array<{
@@ -19,31 +20,44 @@ interface DataCollectionPanelProps {
 
 const DataCollectionPanel: React.FC<DataCollectionPanelProps> = ({ marches = [] }) => {
   const [isCollecting, setIsCollecting] = useState(false);
+  const [currentLogId, setCurrentLogId] = useState<string | null>(null);
+  const [currentCollectionTypes, setCurrentCollectionTypes] = useState<string[]>([]);
+  const [showProgressModal, setShowProgressModal] = useState(false);
   const { data: logs, isLoading: logsLoading, refetch: refetchLogs } = useDataCollectionLogs(10);
   const triggerCollection = useTriggerBatchCollection();
 
   const handleTriggerCollection = async (types: ('biodiversity' | 'weather' | 'real_estate')[]) => {
     try {
       setIsCollecting(true);
-      toast.info('Collecte de données lancée...');
-
+      setCurrentCollectionTypes(types);
+      
       const result = await triggerCollection({
         collectionTypes: types,
         mode: 'manual'
       });
 
-      if (result.success) {
-        toast.success(`Collecte terminée: ${result.summary.processed} marches traitées`);
+      if (result.success && result.logId) {
+        setCurrentLogId(result.logId);
+        setShowProgressModal(true);
+        toast.success('Collecte lancée avec succès');
         refetchLogs();
       } else {
         toast.error('Erreur lors de la collecte');
+        setIsCollecting(false);
       }
     } catch (error) {
       console.error('Collection error:', error);
       toast.error('Erreur lors du lancement de la collecte');
-    } finally {
       setIsCollecting(false);
     }
+  };
+
+  const handleProgressModalClose = () => {
+    setShowProgressModal(false);
+    setCurrentLogId(null);
+    setCurrentCollectionTypes([]);
+    setIsCollecting(false);
+    refetchLogs(); // Refresh logs when modal closes
   };
 
   const getStatusIcon = (status: string) => {
@@ -198,6 +212,14 @@ const DataCollectionPanel: React.FC<DataCollectionPanelProps> = ({ marches = [] 
           </div>
         )}
       </Card>
+
+      {/* Progress Modal */}
+      <CollectionProgressModal
+        isOpen={showProgressModal}
+        onClose={handleProgressModalClose}
+        logId={currentLogId}
+        collectionTypes={currentCollectionTypes}
+      />
     </div>
   );
 };

@@ -116,6 +116,8 @@ export interface DataCollectionLog {
     processed?: number;
     errors?: number;
     success_rate?: number;
+    current_marche_name?: string;
+    current_marche_id?: string;
   };
   
   created_at: string;
