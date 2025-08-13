@@ -224,7 +224,17 @@ export const BiodiversityOverviewDashboard: React.FC = () => {
                       <Cell key={`cell-${index}`} fill={entry.color} />
                     ))}
                   </Pie>
-                  <Tooltip />
+                  <Tooltip 
+                    contentStyle={{
+                      backgroundColor: 'hsl(var(--card))',
+                      border: '1px solid hsl(var(--border))',
+                      borderRadius: '8px',
+                      color: 'hsl(var(--card-foreground))'
+                    }}
+                    labelStyle={{
+                      color: '#1f2937'
+                    }}
+                  />
                 </PieChart>
               </ResponsiveContainer>
             </div>
@@ -260,7 +270,17 @@ export const BiodiversityOverviewDashboard: React.FC = () => {
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="date" />
                   <YAxis />
-                  <Tooltip />
+                  <Tooltip 
+                    contentStyle={{
+                      backgroundColor: 'hsl(var(--card))',
+                      border: '1px solid hsl(var(--border))',
+                      borderRadius: '8px',
+                      color: 'hsl(var(--card-foreground))'
+                    }}
+                    labelStyle={{
+                      color: '#1f2937'
+                    }}
+                  />
                   <Line 
                     type="monotone" 
                     dataKey="species" 
@@ -295,7 +315,17 @@ export const BiodiversityOverviewDashboard: React.FC = () => {
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis type="number" />
                   <YAxis dataKey="region" type="category" width={120} />
-                  <Tooltip />
+                  <Tooltip 
+                    contentStyle={{
+                      backgroundColor: 'hsl(var(--card))',
+                      border: '1px solid hsl(var(--border))',
+                      borderRadius: '8px',
+                      color: 'hsl(var(--card-foreground))'
+                    }}
+                    labelStyle={{
+                      color: '#1f2937'
+                    }}
+                  />
                   <Bar dataKey="species" fill="#3B82F6" />
                 </BarChart>
               </ResponsiveContainer>

@@ -187,6 +187,15 @@ export const DataCollectionTimeline: React.FC = () => {
                 <XAxis dataKey="date" />
                 <YAxis />
                 <Tooltip 
+                  contentStyle={{
+                    backgroundColor: 'hsl(var(--card))',
+                    border: '1px solid hsl(var(--border))',
+                    borderRadius: '8px',
+                    color: 'hsl(var(--card-foreground))'
+                  }}
+                  labelStyle={{
+                    color: '#1f2937'
+                  }}
                   formatter={(value, name) => [
                     value,
                     name === 'biodiversityCollections' ? 'Biodiversité' :
