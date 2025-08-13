@@ -14,16 +14,38 @@ const BioacousticTooltip: React.FC<BioacousticTooltipProps> = ({
 }) => {
   if (!visible) return null;
 
+  // Intelligent positioning with viewport detection
+  const viewportWidth = typeof window !== 'undefined' ? window.innerWidth : 1024;
+  const viewportHeight = typeof window !== 'undefined' ? window.innerHeight : 768;
+  const tooltipWidth = Math.min(320, viewportWidth * 0.85);
+  
+  // Calculate optimal position to stay in viewport
+  let adjustedX = position.x;
+  let adjustedY = position.y - 20;
+  
+  // Horizontal overflow prevention
+  if (adjustedX + tooltipWidth/2 > viewportWidth - 20) {
+    adjustedX = viewportWidth - tooltipWidth/2 - 20;
+  } else if (adjustedX - tooltipWidth/2 < 20) {
+    adjustedX = tooltipWidth/2 + 20;
+  }
+  
+  // Vertical overflow prevention
+  if (adjustedY - 160 < 20) {
+    adjustedY = position.y + 60; // Show below marker
+  }
+
   return (
     <div 
-      className="bioacoustic-hologram-tooltip"
+      className="bioacoustic-adaptive-tooltip"
       style={{
         position: 'fixed',
-        left: position.x - 100, // Center horizontally
-        top: position.y - 160, // Position above marker
+        left: adjustedX - tooltipWidth/2,
+        top: adjustedY - 140,
+        width: tooltipWidth,
         zIndex: 1000,
         pointerEvents: 'none',
-        transform: 'translate3d(0, 0, 0)', // Force hardware acceleration
+        willChange: 'transform, opacity',
       }}
     >
       {/* Main hologram container */}
@@ -83,62 +105,73 @@ const BioacousticTooltip: React.FC<BioacousticTooltipProps> = ({
       </div>
 
       <style>{`
-        .bioacoustic-hologram-tooltip {
-          width: 200px;
-          max-width: 90vw;
+        .bioacoustic-adaptive-tooltip {
+          width: 100%;
+          height: auto;
+          min-height: 120px;
         }
 
         .hologram-container {
           position: relative;
-          transform-style: preserve-3d;
-          animation: hologram-materialize 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+          width: 100%;
+          height: auto;
+          animation: tooltip-appear 0.4s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
         .hologram-backdrop {
           position: absolute;
           inset: 0;
-          background: rgba(0, 0, 0, 0.92);
+          background: rgba(0, 0, 0, 0.95);
           border: 2px solid #00ffff;
-          border-radius: 12px;
+          border-radius: 16px;
           box-shadow: 
-            0 8px 32px rgba(0, 255, 255, 0.3),
-            0 0 20px rgba(0, 255, 255, 0.2),
-            inset 0 1px 0 rgba(0, 255, 255, 0.1);
-          transform: rotateX(5deg) rotateY(-2deg);
-          animation: border-pulse 2s ease-in-out infinite;
+            0 12px 40px rgba(0, 255, 255, 0.4),
+            0 0 30px rgba(0, 255, 255, 0.3),
+            inset 0 1px 0 rgba(0, 255, 255, 0.15);
+          animation: border-glow 2s ease-in-out infinite;
         }
 
         .hologram-content {
           position: relative;
-          padding: 12px;
+          padding: 16px;
           z-index: 2;
+          width: 100%;
+          box-sizing: border-box;
         }
 
         .hologram-header {
-          margin-bottom: 8px;
-          text-align: center;
+          margin-bottom: 12px;
+          text-align: left;
         }
 
         .hologram-title {
-          font-size: 16px;
-          font-weight: 600;
+          font-size: 18px;
+          font-weight: 700;
           color: #ffffff;
-          text-shadow: 0 0 12px rgba(255, 255, 255, 0.8), 0 0 6px #00ffff;
+          text-shadow: 
+            0 0 15px rgba(255, 255, 255, 0.9), 
+            0 0 8px #00ffff,
+            0 2px 4px rgba(0, 0, 0, 0.5);
           margin: 0;
-          line-height: 1.2;
+          line-height: 1.3;
+          word-wrap: break-word;
+          overflow-wrap: break-word;
+          hyphens: auto;
         }
 
         .territorial-grid {
           display: grid;
-          gap: 6px;
+          gap: 8px;
+          margin-top: 4px;
         }
 
         .territory-item {
           display: flex;
           justify-content: space-between;
-          align-items: center;
-          padding: 4px 0;
-          border-bottom: 1px solid rgba(0, 255, 255, 0.2);
+          align-items: flex-start;
+          padding: 6px 0;
+          border-bottom: 1px solid rgba(0, 255, 255, 0.3);
+          min-height: 24px;
         }
 
         .territory-item:last-child {
@@ -146,24 +179,28 @@ const BioacousticTooltip: React.FC<BioacousticTooltipProps> = ({
         }
 
         .territory-label {
-          font-size: 12px;
+          font-size: 13px;
           color: #00ffff;
           text-transform: uppercase;
-          letter-spacing: 0.5px;
-          text-shadow: 0 0 6px rgba(0, 255, 255, 0.6);
-          font-weight: 500;
+          letter-spacing: 0.8px;
+          text-shadow: 0 0 8px rgba(0, 255, 255, 0.8);
+          font-weight: 600;
+          flex-shrink: 0;
+          margin-right: 12px;
         }
 
         .territory-value {
-          font-size: 12px;
-          font-weight: 500;
+          font-size: 13px;
+          font-weight: 600;
           color: #ffffff;
-          text-shadow: 0 0 8px rgba(255, 255, 255, 0.6);
-          max-width: 120px;
+          text-shadow: 
+            0 0 10px rgba(255, 255, 255, 0.8),
+            0 1px 2px rgba(0, 0, 0, 0.5);
           text-align: right;
-          overflow: hidden;
-          text-overflow: ellipsis;
-          white-space: nowrap;
+          flex: 1;
+          word-wrap: break-word;
+          overflow-wrap: break-word;
+          line-height: 1.2;
         }
 
         .hologram-particles {
@@ -269,44 +306,78 @@ const BioacousticTooltip: React.FC<BioacousticTooltipProps> = ({
           }
         }
 
-        @keyframes border-pulse {
+        @keyframes tooltip-appear {
+          0% {
+            opacity: 0;
+            transform: scale(0.9) translateY(10px);
+          }
+          100% {
+            opacity: 1;
+            transform: scale(1) translateY(0);
+          }
+        }
+
+        @keyframes border-glow {
           0%, 100% {
             border-color: #00ffff;
             box-shadow: 
-              0 8px 32px rgba(0, 255, 255, 0.3),
-              0 0 20px rgba(0, 255, 255, 0.2),
-              inset 0 1px 0 rgba(0, 255, 255, 0.1);
+              0 12px 40px rgba(0, 255, 255, 0.4),
+              0 0 30px rgba(0, 255, 255, 0.3),
+              inset 0 1px 0 rgba(0, 255, 255, 0.15);
           }
           50% {
             border-color: #00cccc;
             box-shadow: 
-              0 8px 32px rgba(0, 255, 255, 0.5),
-              0 0 30px rgba(0, 255, 255, 0.4),
-              inset 0 1px 0 rgba(0, 255, 255, 0.2);
+              0 12px 40px rgba(0, 255, 255, 0.6),
+              0 0 40px rgba(0, 255, 255, 0.5),
+              inset 0 1px 0 rgba(0, 255, 255, 0.25);
           }
         }
 
         /* Mobile optimizations */
         @media (max-width: 640px) {
-          .bioacoustic-hologram-tooltip {
-            width: 180px;
+          .hologram-content {
+            padding: 12px;
           }
           
+          .hologram-title {
+            font-size: 16px;
+          }
+          
+          .territory-label {
+            font-size: 11px;
+            letter-spacing: 0.5px;
+          }
+          
+          .territory-value {
+            font-size: 11px;
+          }
+          
+          .territorial-grid {
+            gap: 6px;
+          }
+          
+          .territory-item {
+            padding: 4px 0;
+            min-height: 20px;
+          }
+        }
+        
+        @media (max-width: 480px) {
           .hologram-content {
             padding: 10px;
           }
           
           .hologram-title {
-            font-size: 13px;
+            font-size: 14px;
           }
           
           .territory-label {
-            font-size: 9px;
+            font-size: 10px;
           }
           
           .territory-value {
             font-size: 10px;
-            max-width: 100px;
           }
         }
       `}</style>
