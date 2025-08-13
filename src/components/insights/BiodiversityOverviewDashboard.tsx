@@ -231,37 +231,37 @@ export const BiodiversityOverviewDashboard: React.FC = () => {
           <CardContent>
             <div className="space-y-4">
               {/* Aperçu régional simplifié */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                {regionalData?.slice(0, 6).map((region, index) => (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-3">
+                {regionalData?.slice(0, 4).map((region, index) => (
                   <motion.div
                     key={region.region}
-                    className="p-4 rounded-lg bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-950/20 dark:to-indigo-950/20 border border-blue-200 dark:border-blue-800"
+                    className="p-3 rounded-lg bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-950/20 dark:to-indigo-950/20 border border-blue-200 dark:border-blue-800 min-h-[120px] flex flex-col justify-between"
                     initial={{ opacity: 0, scale: 0.95 }}
                     animate={{ opacity: 1, scale: 1 }}
                     transition={{ delay: index * 0.1 }}
                   >
                     <div className="flex items-center justify-between mb-2">
-                      <h4 className="font-medium text-sm text-blue-800 dark:text-blue-200 truncate">
+                      <h4 className="font-medium text-xs text-blue-800 dark:text-blue-200 truncate max-w-[80px]">
                         {region.region}
                       </h4>
-                      <Badge variant="outline" className="text-xs bg-blue-100 text-blue-700 border-blue-300">
-                        {region.marches} marché{region.marches > 1 ? 's' : ''}
+                      <Badge variant="outline" className="text-xs bg-blue-100 text-blue-700 border-blue-300 px-1 py-0">
+                        {region.marches}
                       </Badge>
                     </div>
-                    <div className="space-y-2">
-                      <div className="flex justify-between text-sm">
+                    <div className="space-y-1.5 flex-1">
+                      <div className="flex justify-between text-xs">
                         <span className="text-muted-foreground">Espèces</span>
                         <span className="font-bold text-blue-700 dark:text-blue-400">
                           {region.species.toLocaleString()}
                         </span>
                       </div>
-                      <div className="flex justify-between text-sm">
+                      <div className="flex justify-between text-xs">
                         <span className="text-muted-foreground">Observations</span>
                         <span className="font-medium text-blue-600 dark:text-blue-500">
                           {region.observations.toLocaleString()}
                         </span>
                       </div>
-                      <div className="flex justify-between text-sm">
+                      <div className="flex justify-between text-xs">
                         <span className="text-muted-foreground">Densité/marché</span>
                         <span className="font-medium text-blue-600 dark:text-blue-500">
                           {Math.round(region.species / region.marches)}
@@ -271,6 +271,16 @@ export const BiodiversityOverviewDashboard: React.FC = () => {
                   </motion.div>
                 ))}
               </div>
+              
+              {regionalData && regionalData.length > 4 && (
+                <div className="text-center">
+                  <Button variant="outline" size="sm" asChild>
+                    <a href="/admin/territorial-dashboard">
+                      Voir les {regionalData.length - 4} autres régions
+                    </a>
+                  </Button>
+                </div>
+              )}
               
               {/* Lien vers le tableau de bord complet */}
               <div className="pt-4 border-t">
