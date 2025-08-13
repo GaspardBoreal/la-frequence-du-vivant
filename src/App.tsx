@@ -28,6 +28,7 @@ import ExplorationAnimatorRefactored from './pages/ExplorationAnimatorRefactored
 import ExplorationExperience from './pages/ExplorationExperience';
 import ExplorationPodcast from './pages/ExplorationPodcast';
 import ExplorationPodcastDordogne from './pages/ExplorationPodcastDordogne';
+import WeatherCalendar from './pages/WeatherCalendar';
 
 function App() {
   return (
@@ -108,7 +109,7 @@ function App() {
             </AdminAuth>
           } />
           <Route path="/favicon-test" element={<FaviconTest />} />
-          
+          <Route path="/meteo-historique" element={<WeatherCalendar />} />
           
           <Route path="*" element={<NotFound />} />
         </Routes>
