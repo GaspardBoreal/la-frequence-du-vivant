@@ -3,11 +3,16 @@ import { motion } from 'framer-motion';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, AreaChart, Area, BarChart, Bar } from 'recharts';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { CloudRain, Thermometer, Droplets, Wind, Sun, TrendingUp, AlertTriangle } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { CloudRain, Thermometer, Droplets, Wind, Sun, TrendingUp, AlertTriangle, Calendar, ExternalLink } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 
-export const WeatherOverviewDashboard: React.FC = () => {
+interface WeatherOverviewDashboardProps {
+  onNavigateToCalendar?: () => void;
+}
+
+export const WeatherOverviewDashboard: React.FC<WeatherOverviewDashboardProps> = ({ onNavigateToCalendar }) => {
   const { data: weatherData, isLoading } = useQuery({
     queryKey: ['weather-overview'],
     queryFn: async () => {
@@ -183,6 +188,33 @@ export const WeatherOverviewDashboard: React.FC = () => {
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5 }}
     >
+      {/* Quick Access to Calendar */}
+      <Card className="border-l-4 border-l-blue-500 bg-gradient-to-r from-blue-50/50 to-cyan-50/50 dark:from-blue-950/10 dark:to-cyan-950/10">
+        <CardContent className="p-6">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <div className="p-3 rounded-lg bg-blue-100 dark:bg-blue-900/30">
+                <Calendar className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold text-blue-900 dark:text-blue-100">
+                  Calendrier Météorologique Interactif
+                </h3>
+                <p className="text-sm text-blue-700 dark:text-blue-300">
+                  Explorez les données météorologiques jour par jour avec des vues détaillées
+                </p>
+              </div>
+            </div>
+            <Button 
+              onClick={onNavigateToCalendar}
+              className="gap-2 bg-blue-600 hover:bg-blue-700 text-white"
+            >
+              <Calendar className="w-4 h-4" />
+              Voir le calendrier détaillé
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
       {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         <Card className="border-0 bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-blue-950/20 dark:to-cyan-950/20">

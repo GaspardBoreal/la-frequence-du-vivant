@@ -14,6 +14,7 @@ import { RealEstateOverviewDashboard } from '@/components/insights/RealEstateOve
 import { GeographicInsightsMap } from '@/components/insights/GeographicInsightsMap';
 import { DataCollectionTimeline } from '@/components/insights/DataCollectionTimeline';
 import { InsightsFilters } from '@/components/insights/InsightsFilters';
+import { WeatherCalendarTab } from '@/components/insights/WeatherCalendarTab';
 
 const DataInsights: React.FC = () => {
   const navigate = useNavigate();
@@ -126,7 +127,10 @@ const DataInsights: React.FC = () => {
               </CardContent>
             </Card>
 
-            <Card className="group hover:shadow-lg transition-all duration-300 border-0 bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-blue-950/20 dark:to-cyan-950/20">
+            <Card 
+              className="group hover:shadow-lg transition-all duration-300 border-0 bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-blue-950/20 dark:to-cyan-950/20 cursor-pointer hover:scale-105"
+              onClick={() => setActiveTab('calendar')}
+            >
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
@@ -134,8 +138,9 @@ const DataInsights: React.FC = () => {
                     <p className="text-2xl font-bold text-blue-700 dark:text-blue-400">37</p>
                     <p className="text-xs text-blue-600 dark:text-blue-500">+8% ce mois</p>
                   </div>
-                  <div className="p-3 rounded-full bg-blue-100 dark:bg-blue-900/30 group-hover:scale-110 transition-transform">
+                  <div className="p-3 rounded-full bg-blue-100 dark:bg-blue-900/30 group-hover:scale-110 transition-transform relative">
                     <CloudRain className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+                    <Calendar className="w-3 h-3 text-blue-500 dark:text-blue-400 absolute -top-1 -right-1" />
                   </div>
                 </div>
               </CardContent>
@@ -175,7 +180,7 @@ const DataInsights: React.FC = () => {
           {/* Main Content Tabs */}
           <motion.div variants={cardVariants}>
             <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-              <TabsList className="grid w-full grid-cols-5 lg:w-auto lg:inline-grid">
+              <TabsList className="grid w-full grid-cols-6 lg:w-auto lg:inline-grid">
                 <TabsTrigger value="overview" className="gap-2">
                   <TrendingUp className="w-4 h-4" />
                   Vue d'ensemble
@@ -187,6 +192,10 @@ const DataInsights: React.FC = () => {
                 <TabsTrigger value="weather" className="gap-2">
                   <CloudRain className="w-4 h-4" />
                   Météo
+                </TabsTrigger>
+                <TabsTrigger value="calendar" className="gap-2">
+                  <Calendar className="w-4 h-4" />
+                  Calendrier
                 </TabsTrigger>
                 <TabsTrigger value="real-estate" className="gap-2">
                   <Home className="w-4 h-4" />
@@ -210,7 +219,15 @@ const DataInsights: React.FC = () => {
               </TabsContent>
 
               <TabsContent value="weather" className="space-y-6">
-                <WeatherOverviewDashboard />
+                <WeatherOverviewDashboard 
+                  onNavigateToCalendar={() => setActiveTab('calendar')}
+                />
+              </TabsContent>
+
+              <TabsContent value="calendar" className="space-y-6">
+                <WeatherCalendarTab 
+                  onOpenFullCalendar={() => window.open('/meteo-historique', '_blank')}
+                />
               </TabsContent>
 
               <TabsContent value="real-estate" className="space-y-6">
