@@ -14,34 +14,54 @@ const BioacousticTooltip: React.FC<BioacousticTooltipProps> = ({
 }) => {
   if (!visible) return null;
 
-  // Intelligent positioning with viewport detection
+  // Smart positioning system for mobile
   const viewportWidth = typeof window !== 'undefined' ? window.innerWidth : 1024;
   const viewportHeight = typeof window !== 'undefined' ? window.innerHeight : 768;
-  const tooltipWidth = Math.min(320, viewportWidth * 0.85);
+  const tooltipWidth = Math.min(320, viewportWidth * 0.9);
+  const tooltipHeight = 180; // Estimated height
+  const padding = 10;
   
-  // Calculate optimal position to stay in viewport
-  let adjustedX = position.x;
-  let adjustedY = position.y - 20;
+  // Calculate if tooltip would overflow on each side
+  const wouldOverflowRight = position.x + tooltipWidth / 2 > viewportWidth - padding;
+  const wouldOverflowLeft = position.x - tooltipWidth / 2 < padding;
+  const wouldOverflowBottom = position.y + tooltipHeight > viewportHeight - padding;
+  const wouldOverflowTop = position.y - tooltipHeight < padding;
   
-  // Horizontal overflow prevention
-  if (adjustedX + tooltipWidth/2 > viewportWidth - 20) {
-    adjustedX = viewportWidth - tooltipWidth/2 - 20;
-  } else if (adjustedX - tooltipWidth/2 < 20) {
-    adjustedX = tooltipWidth/2 + 20;
+  // Determine optimal positioning
+  let left: number;
+  let top: number;
+  let arrowPosition = 'center'; // 'left', 'right', or 'center'
+  
+  // Horizontal positioning
+  if (wouldOverflowRight) {
+    left = viewportWidth - tooltipWidth - padding;
+    arrowPosition = 'right';
+  } else if (wouldOverflowLeft) {
+    left = padding;
+    arrowPosition = 'left';
+  } else {
+    left = position.x - tooltipWidth / 2;
+    arrowPosition = 'center';
   }
   
-  // Vertical overflow prevention
-  if (adjustedY - 160 < 20) {
-    adjustedY = position.y + 60; // Show below marker
+  // Vertical positioning
+  if (wouldOverflowBottom) {
+    top = position.y - tooltipHeight - 20; // Position above marker
+  } else if (wouldOverflowTop) {
+    top = position.y + 20; // Position below marker
+  } else {
+    top = position.y - tooltipHeight / 2;
   }
+  
+  const adjustedPosition = { left, top, arrowPosition };
 
   return (
     <div 
       className="bioacoustic-adaptive-tooltip"
       style={{
         position: 'fixed',
-        left: adjustedX - tooltipWidth/2,
-        top: adjustedY - 140,
+        left: adjustedPosition.left,
+        top: adjustedPosition.top,
         width: tooltipWidth,
         zIndex: 1000,
         pointerEvents: 'none',
