@@ -8,6 +8,7 @@ import { SearchResult, LayerConfig, SelectedParcel } from '../types';
 import { MarcheTechnoSensible } from '../utils/googleSheetsApi';
 import PoeticMarkerCard from './PoeticMarkerCard';
 import BioacousticTooltip from './BioacousticTooltip';
+import { useIsMobile } from '../hooks/use-mobile';
 
 // Fix pour les marqueurs par défaut
 delete (L.Icon.Default.prototype as any)._getIconUrl;
@@ -88,11 +89,20 @@ const DynamicZoomController = ({
 };
 
 // Composant pour gérer les événements de la carte
-const MapEventHandler = ({ onMapReady }: { onMapReady: () => void }) => {
+const MapEventHandler = ({ 
+  onMapReady, 
+  onMapClick 
+}: { 
+  onMapReady: () => void;
+  onMapClick: () => void;
+}) => {
   const map = useMapEvents({
     moveend: () => {
       console.log('🗺️ Mouvement terminé');
       onMapReady();
+    },
+    click: () => {
+      onMapClick();
     }
   });
   
@@ -105,38 +115,48 @@ const MapEventHandler = ({ onMapReady }: { onMapReady: () => void }) => {
 };
 
 // Création d'icônes personnalisées pour les marqueurs poétiques
-const createPoeticIcon = (theme: RegionalTheme) => {
+const createPoeticIcon = (theme: RegionalTheme, isActive = false, isMobile = false) => {
+  const size = isActive && isMobile ? 32 : 24;
+  const scale = isActive && isMobile ? 'scale(1.2)' : 'scale(1)';
+  const animation = isActive && isMobile ? 'pulse 1s infinite, glow 2s infinite' : 'pulse 2s infinite';
+  
   return L.divIcon({
     html: `
       <div style="
         background: linear-gradient(135deg, ${theme.colors.primary}, ${theme.colors.secondary});
-        border: 2px solid white;
+        border: ${isActive && isMobile ? '3px solid #fff' : '2px solid white'};
         border-radius: 50%;
-        width: 24px;
-        height: 24px;
+        width: ${size}px;
+        height: ${size}px;
         display: flex;
         align-items: center;
         justify-content: center;
-        box-shadow: 0 4px 8px rgba(0,0,0,0.2);
-        animation: pulse 2s infinite;
+        box-shadow: ${isActive && isMobile ? '0 6px 16px rgba(0,0,0,0.3), 0 0 20px rgba(168, 85, 247, 0.4)' : '0 4px 8px rgba(0,0,0,0.2)'};
+        animation: ${animation};
+        transform: ${scale};
+        transition: all 0.3s ease;
       ">
         <div style="
           color: white;
-          font-size: 12px;
+          font-size: ${isMobile && isActive ? '16px' : '12px'};
           font-weight: bold;
         ">🌱</div>
       </div>
       <style>
         @keyframes pulse {
-          0%, 100% { transform: scale(1); }
-          50% { transform: scale(1.1); }
+          0%, 100% { transform: ${scale}; }
+          50% { transform: ${scale.replace('1', isActive && isMobile ? '1.3' : '1.1')}; }
+        }
+        @keyframes glow {
+          0%, 100% { box-shadow: 0 6px 16px rgba(0,0,0,0.3), 0 0 20px rgba(168, 85, 247, 0.4); }
+          50% { box-shadow: 0 6px 16px rgba(0,0,0,0.3), 0 0 30px rgba(168, 85, 247, 0.8); }
         }
       </style>
     `,
-    className: 'poetic-marker',
-    iconSize: [24, 24],
-    iconAnchor: [12, 12],
-    popupAnchor: [0, -12]
+    className: `poetic-marker ${isActive && isMobile ? 'active-mobile' : ''}`,
+    iconSize: [size, size],
+    iconAnchor: [size/2, size/2],
+    popupAnchor: [0, -size/2]
   });
 };
 
@@ -157,10 +177,16 @@ const InteractiveMap: React.FC<InteractiveMapProps> = ({
   filteredMarchesData,
   tooltipMode = 'default'
 }) => {
+  const isMobile = useIsMobile();
   const [mapReady, setMapReady] = useState(false);
   const [mapKey, setMapKey] = useState(0);
   const [hoveredMarker, setHoveredMarker] = useState<MarcheTechnoSensible | null>(null);
   const [mousePosition, setMousePosition] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
+  
+  // Mobile tooltip state
+  const [activeMobileMarker, setActiveMobileMarker] = useState<MarcheTechnoSensible | null>(null);
+  const [mobileTooltipPosition, setMobileTooltipPosition] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
+  const [autoCloseTimer, setAutoCloseTimer] = useState<NodeJS.Timeout | null>(null);
 
   // Valider les coordonnées des données filtrées avec logs détaillés
   const validMarchesData = filteredMarchesData.filter(marche => {
@@ -205,7 +231,12 @@ const InteractiveMap: React.FC<InteractiveMapProps> = ({
     console.log('🔄 Données filtrées changées - marqueurs mis à jour sans recréer la carte');
   }, [filteredMarchesData]);
 
-  const poeticIcon = createPoeticIcon(theme);
+  // Clean up timer on unmount
+  useEffect(() => {
+    return () => {
+      clearAutoCloseTimer();
+    };
+  }, []);
 
   const handleMapReady = () => {
     console.log('🗺️ Carte prête pour affichage des marqueurs');
@@ -216,7 +247,40 @@ const InteractiveMap: React.FC<InteractiveMapProps> = ({
   const defaultCenter: [number, number] = [46.603354, 1.888334];
   const defaultZoom = 6;
 
-  const handleMarkerClick = (marche: MarcheTechnoSensible) => {
+  const handleMarkerClick = (marche: MarcheTechnoSensible, event?: any) => {
+    if (isMobile && tooltipMode === 'bioacoustic') {
+      // Sur mobile en mode bioacoustique : gestion du double-tap
+      if (activeMobileMarker?.ville === marche.ville) {
+        // Deuxième tap sur le même marqueur : naviguer
+        clearAutoCloseTimer();
+        setActiveMobileMarker(null);
+        navigateToMarche(marche);
+      } else {
+        // Premier tap : afficher le tooltip
+        clearAutoCloseTimer();
+        
+        if (event?.originalEvent) {
+          const rect = event.target._map.getContainer().getBoundingClientRect();
+          const x = event.originalEvent.clientX - rect.left;
+          const y = event.originalEvent.clientY - rect.top;
+          setMobileTooltipPosition({ x, y });
+        }
+        
+        setActiveMobileMarker(marche);
+        
+        // Auto-close après 5 secondes
+        const timer = setTimeout(() => {
+          setActiveMobileMarker(null);
+        }, 5000);
+        setAutoCloseTimer(timer);
+      }
+    } else {
+      // Comportement normal (desktop ou mode non-bioacoustique)
+      navigateToMarche(marche);
+    }
+  };
+
+  const navigateToMarche = (marche: MarcheTechnoSensible) => {
     const parcel: SelectedParcel = {
       id: `marche-${marche.ville}-${marche.nomMarche || marche.ville}`,
       type: 'marche',
@@ -229,6 +293,21 @@ const InteractiveMap: React.FC<InteractiveMapProps> = ({
     };
     
     onParcelClick(parcel);
+  };
+
+  const clearAutoCloseTimer = () => {
+    if (autoCloseTimer) {
+      clearTimeout(autoCloseTimer);
+      setAutoCloseTimer(null);
+    }
+  };
+
+  // Fermer le tooltip mobile si on clique ailleurs
+  const handleMapClick = () => {
+    if (isMobile && activeMobileMarker) {
+      clearAutoCloseTimer();
+      setActiveMobileMarker(null);
+    }
   };
 
   const handleMarkerMouseEnter = (marche: MarcheTechnoSensible, event: any) => {
@@ -256,7 +335,7 @@ const InteractiveMap: React.FC<InteractiveMapProps> = ({
         className="rounded-lg"
         key={mapKey}
       >
-        <MapEventHandler onMapReady={handleMapReady} />
+        <MapEventHandler onMapReady={handleMapReady} onMapClick={handleMapClick} />
         <DynamicZoomController 
           validMarchesData={validMarchesData} 
           searchResult={searchResult}
@@ -303,15 +382,18 @@ const InteractiveMap: React.FC<InteractiveMapProps> = ({
             });
           }
           
+          const isActive = isMobile && activeMobileMarker?.ville === marche.ville;
+          const markerIcon = createPoeticIcon(theme, isActive, isMobile);
+
           return (
             <Marker 
               key={markerKey}
               position={[marche.latitude, marche.longitude]}
-              icon={poeticIcon}
+              icon={markerIcon}
               eventHandlers={{
-                click: () => handleMarkerClick(marche),
-                mouseover: (e) => handleMarkerMouseEnter(marche, e),
-                mouseout: handleMarkerMouseLeave
+                click: (e) => handleMarkerClick(marche, e),
+                mouseover: !isMobile ? (e) => handleMarkerMouseEnter(marche, e) : undefined,
+                mouseout: !isMobile ? handleMarkerMouseLeave : undefined
               }}
             >
               {tooltipMode !== 'bioacoustic' && (
@@ -330,13 +412,43 @@ const InteractiveMap: React.FC<InteractiveMapProps> = ({
 
       </MapContainer>
       
-      {/* Bioacoustic tooltip - rendered outside map container for proper positioning */}
-      {tooltipMode === 'bioacoustic' && hoveredMarker && (
+      {/* Bioacoustic tooltip - Desktop hover */}
+      {tooltipMode === 'bioacoustic' && !isMobile && hoveredMarker && (
         <BioacousticTooltip
           marche={hoveredMarker}
           position={mousePosition}
           visible={!!hoveredMarker}
         />
+      )}
+      
+      {/* Bioacoustic tooltip - Mobile tap */}
+      {tooltipMode === 'bioacoustic' && isMobile && activeMobileMarker && (
+        <>
+          <BioacousticTooltip
+            marche={activeMobileMarker}
+            position={mobileTooltipPosition}
+            visible={!!activeMobileMarker}
+          />
+          {/* Bouton explicite pour naviguer */}
+          <div 
+            className="absolute bg-white/95 backdrop-blur-sm rounded-lg px-4 py-2 shadow-lg border border-purple-200 cursor-pointer hover:bg-white transition-colors"
+            style={{
+              left: Math.min(mobileTooltipPosition.x + 10, window.innerWidth - 200),
+              top: mobileTooltipPosition.y + 120,
+              zIndex: 1001
+            }}
+            onClick={() => {
+              clearAutoCloseTimer();
+              setActiveMobileMarker(null);
+              navigateToMarche(activeMobileMarker);
+            }}
+          >
+            <div className="flex items-center space-x-2">
+              <span className="text-sm font-medium text-purple-700">Voir la marche</span>
+              <span className="text-purple-500">→</span>
+            </div>
+          </div>
+        </>
       )}
       
       {/* Indicateur du nombre de résultats avec style poétique */}
