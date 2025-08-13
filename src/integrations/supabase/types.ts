@@ -1124,6 +1124,13 @@ export type Database = {
           updated_at: string
         }[]
       }
+      get_top_species_optimized: {
+        Args: { limit_count?: number }
+        Returns: {
+          name: string
+          count: number
+        }[]
+      }
       insert_exploration_page: {
         Args: {
           exploration_id_param: string
