@@ -97,19 +97,15 @@ const BioacousticTooltip: React.FC<BioacousticTooltipProps> = ({
         .hologram-backdrop {
           position: absolute;
           inset: 0;
-          background: linear-gradient(
-            135deg,
-            hsla(var(--primary), 0.15) 0%,
-            hsla(var(--secondary), 0.1) 50%,
-            hsla(var(--accent), 0.05) 100%
-          );
-          backdrop-filter: blur(12px);
-          border: 1px solid hsla(var(--primary), 0.3);
+          background: rgba(0, 0, 0, 0.92);
+          border: 2px solid #00ffff;
           border-radius: 12px;
           box-shadow: 
-            0 8px 32px hsla(var(--primary), 0.2),
-            inset 0 1px 0 hsla(255, 255, 255, 0.1);
+            0 8px 32px rgba(0, 255, 255, 0.3),
+            0 0 20px rgba(0, 255, 255, 0.2),
+            inset 0 1px 0 rgba(0, 255, 255, 0.1);
           transform: rotateX(5deg) rotateY(-2deg);
+          animation: border-pulse 2s ease-in-out infinite;
         }
 
         .hologram-content {
@@ -124,10 +120,10 @@ const BioacousticTooltip: React.FC<BioacousticTooltipProps> = ({
         }
 
         .hologram-title {
-          font-size: 14px;
+          font-size: 16px;
           font-weight: 600;
-          color: hsl(var(--foreground));
-          text-shadow: 0 0 8px hsla(var(--primary), 0.5);
+          color: #ffffff;
+          text-shadow: 0 0 12px rgba(255, 255, 255, 0.8), 0 0 6px #00ffff;
           margin: 0;
           line-height: 1.2;
         }
@@ -142,7 +138,7 @@ const BioacousticTooltip: React.FC<BioacousticTooltipProps> = ({
           justify-content: space-between;
           align-items: center;
           padding: 4px 0;
-          border-bottom: 1px solid hsla(var(--border), 0.3);
+          border-bottom: 1px solid rgba(0, 255, 255, 0.2);
         }
 
         .territory-item:last-child {
@@ -150,18 +146,19 @@ const BioacousticTooltip: React.FC<BioacousticTooltipProps> = ({
         }
 
         .territory-label {
-          font-size: 10px;
-          color: hsl(var(--muted-foreground));
+          font-size: 12px;
+          color: #00ffff;
           text-transform: uppercase;
           letter-spacing: 0.5px;
-          opacity: 0.8;
+          text-shadow: 0 0 6px rgba(0, 255, 255, 0.6);
+          font-weight: 500;
         }
 
         .territory-value {
-          font-size: 11px;
+          font-size: 12px;
           font-weight: 500;
-          color: hsl(var(--foreground));
-          text-shadow: 0 0 4px hsla(var(--accent), 0.3);
+          color: #ffffff;
+          text-shadow: 0 0 8px rgba(255, 255, 255, 0.6);
           max-width: 120px;
           text-align: right;
           overflow: hidden;
@@ -181,10 +178,10 @@ const BioacousticTooltip: React.FC<BioacousticTooltipProps> = ({
           position: absolute;
           width: 2px;
           height: 2px;
-          background: hsla(var(--accent), 0.8);
+          background: #00ffff;
           border-radius: 50%;
           animation: particle-float linear infinite;
-          box-shadow: 0 0 4px hsla(var(--accent), 0.6);
+          box-shadow: 0 0 6px rgba(0, 255, 255, 0.8);
         }
 
         .projection-lines {
@@ -200,7 +197,7 @@ const BioacousticTooltip: React.FC<BioacousticTooltipProps> = ({
           position: absolute;
           background: linear-gradient(
             to bottom,
-            hsla(var(--primary), 0.6),
+            rgba(0, 255, 255, 0.8),
             transparent
           );
           animation: projection-pulse 2s ease-in-out infinite;
@@ -269,6 +266,23 @@ const BioacousticTooltip: React.FC<BioacousticTooltipProps> = ({
           50% {
             opacity: 0.8;
             transform: scaleY(1.2);
+          }
+        }
+
+        @keyframes border-pulse {
+          0%, 100% {
+            border-color: #00ffff;
+            box-shadow: 
+              0 8px 32px rgba(0, 255, 255, 0.3),
+              0 0 20px rgba(0, 255, 255, 0.2),
+              inset 0 1px 0 rgba(0, 255, 255, 0.1);
+          }
+          50% {
+            border-color: #00cccc;
+            box-shadow: 
+              0 8px 32px rgba(0, 255, 255, 0.5),
+              0 0 30px rgba(0, 255, 255, 0.4),
+              inset 0 1px 0 rgba(0, 255, 255, 0.2);
           }
         }
 
