@@ -173,15 +173,17 @@ const BioacousticTooltip: React.FC<BioacousticTooltipProps> = ({
 
         .hologram-content {
           position: relative;
-          padding: 16px;
+          padding: 0;
           z-index: 2;
           width: 100%;
           box-sizing: border-box;
         }
 
         .hologram-header {
-          margin-bottom: 12px;
+          margin-bottom: 0;
           text-align: left;
+          padding: 16px;
+          border-radius: 20px 12px 0 0;
         }
 
         .hologram-title {
@@ -201,7 +203,10 @@ const BioacousticTooltip: React.FC<BioacousticTooltipProps> = ({
         .territorial-grid {
           display: grid;
           gap: 8px;
-          margin-top: 4px;
+          background: rgba(255, 255, 255, 0.95);
+          padding: 16px;
+          border-radius: 0 0 20px 8px;
+          backdrop-filter: blur(2px);
         }
 
         .territory-item {
@@ -226,10 +231,10 @@ const BioacousticTooltip: React.FC<BioacousticTooltipProps> = ({
 
         .territory-label {
           font-size: 13px;
-          color: rgba(34, 34, 34, 0.75);
+          color: rgba(55, 65, 81, 0.8);
           text-transform: uppercase;
           letter-spacing: 0.6px;
-          text-shadow: 0 0 4px rgba(196, 181, 253, 0.3);
+          text-shadow: none;
           font-weight: 500;
           flex-shrink: 0;
           margin-right: 12px;
@@ -238,10 +243,8 @@ const BioacousticTooltip: React.FC<BioacousticTooltipProps> = ({
         .territory-value {
           font-size: 13px;
           font-weight: 600;
-          color: rgba(34, 34, 34, 0.9);
-          text-shadow: 
-            0 0 6px rgba(255, 255, 255, 0.4),
-            0 1px 2px rgba(134, 239, 172, 0.2);
+          color: rgba(31, 41, 55, 0.95);
+          text-shadow: none;
           text-align: right;
           flex: 1;
           word-wrap: break-word;
