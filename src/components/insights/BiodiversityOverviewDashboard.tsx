@@ -4,112 +4,33 @@ import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Toolti
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Leaf, Bird, TreePine, Bug, TrendingUp, MapPin, Calendar } from 'lucide-react';
-import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
+import { useBiodiversityStats } from '@/hooks/useBiodiversityStats';
+import { useBiodiversityTimeline } from '@/hooks/useBiodiversityTimeline';
+import { useBiodiversityRegional } from '@/hooks/useBiodiversityRegional';
+import { useBiodiversityTopSpecies } from '@/hooks/useBiodiversityTopSpecies';
 
 export const BiodiversityOverviewDashboard: React.FC = () => {
-  const { data: biodiversityData, isLoading } = useQuery({
-    queryKey: ['biodiversity-overview'],
-    queryFn: async () => {
-      const { data: snapshots } = await supabase
-        .from('biodiversity_snapshots')
-        .select('*')
-        .order('created_at', { ascending: false });
-      
-      const { data: marches } = await supabase
-        .from('marches')
-        .select('id, nom_marche, ville, region, latitude, longitude');
-      
-      // Manually join the data
-      return snapshots?.map(snapshot => ({
-        ...snapshot,
-        marches: marches?.find(m => m.id === snapshot.marche_id)
-      })) || [];
-    }
-  });
+  // Hooks optimisés avec requêtes spécialisées
+  const { data: stats, isLoading: isLoadingStats } = useBiodiversityStats();
+  const { data: timelineData, isLoading: isLoadingTimeline } = useBiodiversityTimeline();
+  const { data: regionalData, isLoading: isLoadingRegional } = useBiodiversityRegional();
+  const { data: topSpeciesData, isLoading: isLoadingTopSpecies } = useBiodiversityTopSpecies();
 
-  const { data: topSpeciesData } = useQuery({
-    queryKey: ['top-species'],
-    queryFn: async () => {
-      const { data } = await supabase
-        .from('biodiversity_snapshots')
-        .select('species_data')
-        .not('species_data', 'is', null);
-      
-      const speciesCount: Record<string, number> = {};
-      data?.forEach(snapshot => {
-        if (snapshot.species_data && Array.isArray(snapshot.species_data)) {
-          snapshot.species_data.forEach((species: any) => {
-            const key = species.commonName || species.scientificName;
-            speciesCount[key] = (speciesCount[key] || 0) + 1;
-          });
-        }
-      });
-      
-      return Object.entries(speciesCount)
-        .sort(([,a], [,b]) => b - a)
-        .slice(0, 10)
-        .map(([name, count]) => ({ name, count }));
-    }
-  });
+  const isLoading = isLoadingStats || isLoadingTimeline || isLoadingRegional || isLoadingTopSpecies;
 
-  const summaryStats = useMemo(() => {
-    if (!biodiversityData) return null;
+  // Distribution des espèces memoized
+  const distribution = useMemo(() => {
+    if (!stats) return [];
     
-    const total = biodiversityData.length;
-    const totalSpecies = biodiversityData.reduce((sum, item) => sum + (item.total_species || 0), 0);
-    const totalBirds = biodiversityData.reduce((sum, item) => sum + (item.birds_count || 0), 0);
-    const totalPlants = biodiversityData.reduce((sum, item) => sum + (item.plants_count || 0), 0);
-    const totalFungi = biodiversityData.reduce((sum, item) => sum + (item.fungi_count || 0), 0);
-    const totalOthers = biodiversityData.reduce((sum, item) => sum + (item.others_count || 0), 0);
-    
-    return {
-      total,
-      totalSpecies,
-      averageSpecies: total > 0 ? Math.round(totalSpecies / total) : 0,
-      distribution: [
-        { name: 'Oiseaux', value: totalBirds, color: '#3B82F6', icon: Bird },
-        { name: 'Plantes', value: totalPlants, color: '#10B981', icon: TreePine },
-        { name: 'Champignons', value: totalFungi, color: '#F59E0B', icon: Leaf },
-        { name: 'Autres', value: totalOthers, color: '#8B5CF6', icon: Bug }
-      ]
-    };
-  }, [biodiversityData]);
+    return [
+      { name: 'Oiseaux', value: stats.totalBirds, color: '#3B82F6', icon: Bird },
+      { name: 'Plantes', value: stats.totalPlants, color: '#10B981', icon: TreePine },
+      { name: 'Champignons', value: stats.totalFungi, color: '#F59E0B', icon: Leaf },
+      { name: 'Autres', value: stats.totalOthers, color: '#8B5CF6', icon: Bug }
+    ];
+  }, [stats]);
 
-  const timelineData = useMemo(() => {
-    if (!biodiversityData) return [];
-    
-    const grouped = biodiversityData.reduce((acc: Record<string, any>, item) => {
-      const date = new Date(item.snapshot_date).toLocaleDateString('fr-FR', { month: 'short', day: 'numeric' });
-      if (!acc[date]) {
-        acc[date] = { date, species: 0, count: 0 };
-      }
-      acc[date].species += item.total_species || 0;
-      acc[date].count += 1;
-      return acc;
-    }, {});
-    
-    return Object.values(grouped)
-      .sort((a: any, b: any) => new Date(a.date).getTime() - new Date(b.date).getTime())
-      .slice(-14); // Last 14 days
-  }, [biodiversityData]);
-
-  const regionalData = useMemo(() => {
-    if (!biodiversityData) return [];
-    
-    const grouped = biodiversityData.reduce((acc: Record<string, any>, item) => {
-      const region = item.marches?.region || 'Non défini';
-      if (!acc[region]) {
-        acc[region] = { region, species: 0, marches: 0, observations: 0 };
-      }
-      acc[region].species += item.total_species || 0;
-      acc[region].marches += 1;
-      acc[region].observations += item.recent_observations || 0;
-      return acc;
-    }, {});
-    
-    return Object.values(grouped).sort((a: any, b: any) => b.species - a.species);
-  }, [biodiversityData]);
+  // Plus besoin de calculs côté client - données déjà optimisées depuis les hooks
 
   if (isLoading) {
     return (
@@ -140,10 +61,10 @@ export const BiodiversityOverviewDashboard: React.FC = () => {
               <div>
                 <p className="text-sm font-medium text-gray-800 dark:text-gray-200">Total Espèces</p>
                 <p className="text-3xl font-bold text-green-700 dark:text-green-400">
-                  {summaryStats?.totalSpecies.toLocaleString()}
+                  {stats?.totalSpecies.toLocaleString()}
                 </p>
                 <p className="text-xs text-green-600 dark:text-green-500">
-                  Moy. {summaryStats?.averageSpecies}/marché
+                  Moy. {stats?.averageSpecies}/marché
                 </p>
               </div>
               <div className="p-3 rounded-full bg-green-100 dark:bg-green-900/30">
@@ -159,12 +80,10 @@ export const BiodiversityOverviewDashboard: React.FC = () => {
               <div>
                 <p className="text-sm font-medium text-gray-800 dark:text-gray-200">Collectes Effectuées</p>
                 <p className="text-3xl font-bold text-blue-700 dark:text-blue-400">
-                  {summaryStats?.total}
+                  {stats?.totalSnapshots}
                 </p>
                 <p className="text-xs text-blue-600 dark:text-blue-500">
-                  {biodiversityData?.filter(d => 
-                    new Date(d.created_at) > new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
-                  ).length} cette semaine
+                  {stats?.recentCollections} cette semaine
                 </p>
               </div>
               <div className="p-3 rounded-full bg-blue-100 dark:bg-blue-900/30">
@@ -180,7 +99,7 @@ export const BiodiversityOverviewDashboard: React.FC = () => {
               <div>
                 <p className="text-sm font-medium text-gray-800 dark:text-gray-200">Hotspots Identifiés</p>
                 <p className="text-3xl font-bold text-purple-700 dark:text-purple-400">
-                  {biodiversityData?.filter(d => (d.total_species || 0) > 100).length}
+                  {stats?.hotspots}
                 </p>
                 <p className="text-xs text-purple-600 dark:text-purple-500">
                   {'>'}100 espèces
@@ -212,7 +131,7 @@ export const BiodiversityOverviewDashboard: React.FC = () => {
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                   <Pie
-                    data={summaryStats?.distribution}
+                    data={distribution}
                     cx="50%"
                     cy="50%"
                     outerRadius={100}
@@ -220,7 +139,7 @@ export const BiodiversityOverviewDashboard: React.FC = () => {
                     dataKey="value"
                     label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
                   >
-                    {summaryStats?.distribution.map((entry, index) => (
+                    {distribution.map((entry, index) => (
                       <Cell key={`cell-${index}`} fill={entry.color} />
                     ))}
                   </Pie>
@@ -239,7 +158,7 @@ export const BiodiversityOverviewDashboard: React.FC = () => {
               </ResponsiveContainer>
             </div>
             <div className="grid grid-cols-2 gap-4 mt-4">
-              {summaryStats?.distribution.map((item, index) => {
+              {distribution.map((item, index) => {
                 const IconComponent = item.icon;
                 return (
                   <div key={index} className="flex items-center gap-2">
