@@ -1,24 +1,58 @@
-import React from 'react';
-import { MarcheTechnoSensible } from '../utils/googleSheetsApi';
+import React, { useState, useEffect } from 'react';
+import { useBiodiversityData } from '../hooks/useBiodiversityData';
+import { useLexiconData } from '../hooks/useLexiconData';
+import { useLatestSnapshotsForMarche } from '../hooks/useSnapshotData';
+import { BiodiversitySpecies } from '../types/biodiversity';
+import { Card } from './ui/card';
+import { Badge } from './ui/badge';
+import { Button } from './ui/button';
+import { ChevronDown, ChevronUp, Leaf, Bird, Bug, Thermometer, Droplets, Home } from 'lucide-react';
 
 interface BioacousticTooltipProps {
-  marche: MarcheTechnoSensible;
+  marche: {
+    id: string;
+    nomMarche?: string;
+    nom_marche?: string;
+    ville: string;
+    departement: string;
+    region: string;
+    latitude: number;
+    longitude: number;
+  };
   position: { x: number; y: number };
   visible: boolean;
+  onClose?: () => void;
 }
 
 const BioacousticTooltip: React.FC<BioacousticTooltipProps> = ({ 
   marche, 
   position, 
-  visible 
+  visible, 
+  onClose 
 }) => {
+  const [showBiodiversity, setShowBiodiversity] = useState(false);
+  
+  const { data: biodiversityData, isLoading: biodiversityLoading } = useBiodiversityData({
+    latitude: marche.latitude,
+    longitude: marche.longitude,
+    radius: 500,
+    dateFilter: 'recent'
+  });
+
+  const { data: lexiconData, isLoading: lexiconLoading } = useLexiconData(
+    marche.latitude,
+    marche.longitude
+  );
+
+  const { data: snapshots, isLoading: snapshotsLoading } = useLatestSnapshotsForMarche(marche.id);
+
   if (!visible) return null;
 
   // Smart positioning system for mobile
   const viewportWidth = typeof window !== 'undefined' ? window.innerWidth : 1024;
   const viewportHeight = typeof window !== 'undefined' ? window.innerHeight : 768;
-  const tooltipWidth = Math.min(320, viewportWidth * 0.9);
-  const tooltipHeight = 180; // Estimated height
+  const tooltipWidth = Math.min(380, viewportWidth * 0.9);
+  const tooltipHeight = showBiodiversity ? 400 : 180;
   const padding = 10;
   
   // Calculate if tooltip would overflow on each side
@@ -30,7 +64,7 @@ const BioacousticTooltip: React.FC<BioacousticTooltipProps> = ({
   // Determine optimal positioning
   let left: number;
   let top: number;
-  let arrowPosition = 'center'; // 'left', 'right', or 'center'
+  let arrowPosition = 'center';
   
   // Horizontal positioning
   if (wouldOverflowRight) {
@@ -46,9 +80,9 @@ const BioacousticTooltip: React.FC<BioacousticTooltipProps> = ({
   
   // Vertical positioning
   if (wouldOverflowBottom) {
-    top = position.y - tooltipHeight - 20; // Position above marker
+    top = position.y - tooltipHeight - 20;
   } else if (wouldOverflowTop) {
-    top = position.y + 20; // Position below marker
+    top = position.y + 20;
   } else {
     top = position.y - tooltipHeight / 2;
   }
@@ -64,7 +98,7 @@ const BioacousticTooltip: React.FC<BioacousticTooltipProps> = ({
         top: adjustedPosition.top,
         width: tooltipWidth,
         zIndex: 1000,
-        pointerEvents: 'none',
+        pointerEvents: 'auto',
         willChange: 'transform, opacity',
       }}
     >
@@ -78,25 +112,159 @@ const BioacousticTooltip: React.FC<BioacousticTooltipProps> = ({
           {/* Header with march name */}
           <div className="hologram-header">
             <h3 className="hologram-title">
-              {marche.nomMarche || marche.ville}
+              {marche.nom_marche || marche.nomMarche || marche.ville}
             </h3>
           </div>
           
           {/* Territorial info grid */}
           <div className="territorial-grid">
             <div className="territory-item">
-              <span className="territory-label">Ville</span>
+              <span className="territory-label">Commune</span>
               <span className="territory-value">{marche.ville}</span>
             </div>
-            
             <div className="territory-item">
               <span className="territory-label">Département</span>
-              <span className="territory-value">{marche.departement || 'N/A'}</span>
+              <span className="territory-value">{marche.departement}</span>
             </div>
-            
             <div className="territory-item">
               <span className="territory-label">Région</span>
-              <span className="territory-value">{marche.region || 'N/A'}</span>
+              <span className="territory-value">{marche.region}</span>
+            </div>
+            <div className="territory-item">
+              <span className="territory-label">Coordonnées</span>
+              <span className="territory-value">
+                {marche.latitude?.toFixed(4)}, {marche.longitude?.toFixed(4)}
+              </span>
+            </div>
+            
+            {lexiconData?.data && (
+              <>
+                <div className="territory-item">
+                  <span className="territory-label">Surface</span>
+                  <span className="territory-value">
+                    {lexiconData.data.surface_ha ? `${lexiconData.data.surface_ha} ha` : 'N/A'}
+                  </span>
+                </div>
+                {lexiconData.data.culture_type && (
+                  <div className="territory-item">
+                    <span className="territory-label">Culture</span>
+                    <span className="territory-value">{lexiconData.data.culture_type}</span>
+                  </div>
+                )}
+                {lexiconData.data.certification_bio && (
+                  <div className="territory-item">
+                    <span className="territory-label">Bio</span>
+                    <span className="territory-value">✓ Certifié</span>
+                  </div>
+                )}
+              </>
+            )}
+
+            {/* Biodiversity & Dynamic Section */}
+            <div className="biodiversity-section">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowBiodiversity(!showBiodiversity)}
+                className="biodiversity-toggle"
+              >
+                <Leaf className="w-4 h-4 mr-2" />
+                Biodiversité et dynamique locale
+                {showBiodiversity ? <ChevronUp className="w-4 h-4 ml-2" /> : <ChevronDown className="w-4 h-4 ml-2" />}
+              </Button>
+
+              {showBiodiversity && (
+                <div className="biodiversity-details">
+                  {/* Biodiversité locale */}
+                  <div className="biodiversity-group">
+                    <h4 className="biodiversity-subtitle">
+                      <Bird className="w-4 h-4 mr-1" />
+                      Biodiversité locale (500m)
+                    </h4>
+                    <div className="biodiversity-grid">
+                      <div className="bio-item">
+                        <span className="bio-label">FLORE</span>
+                        <span className="bio-value">
+                          {snapshots?.biodiversity?.plants_count || biodiversityData?.summary.plants || 0}
+                        </span>
+                      </div>
+                      <div className="bio-item">
+                        <span className="bio-label">FAUNE</span>
+                        <span className="bio-value">
+                          {snapshots?.biodiversity?.birds_count || biodiversityData?.summary.birds || 0}
+                        </span>
+                      </div>
+                      <div className="bio-item">
+                        <span className="bio-label">AUTRES</span>
+                        <span className="bio-value">
+                          {(snapshots?.biodiversity?.fungi_count || 0) + (snapshots?.biodiversity?.others_count || 0) || (biodiversityData?.summary.fungi || 0) + (biodiversityData?.summary.others || 0)}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Relevés météorologiques */}
+                  {snapshots?.weather && (
+                    <div className="biodiversity-group">
+                      <h4 className="biodiversity-subtitle">
+                        <Thermometer className="w-4 h-4 mr-1" />
+                        Relevés météorologiques
+                      </h4>
+                      <div className="weather-grid">
+                        <div className="weather-item">
+                          <span className="weather-label">Température</span>
+                          <span className="weather-value">
+                            Moy: {snapshots.weather.temperature_avg?.toFixed(1)}°C | 
+                            Min: {snapshots.weather.temperature_min?.toFixed(1)}°C | 
+                            Max: {snapshots.weather.temperature_max?.toFixed(1)}°C
+                          </span>
+                        </div>
+                        <div className="weather-item">
+                          <span className="weather-label">Humidité</span>
+                          <span className="weather-value">
+                            Moy: {snapshots.weather.humidity_avg?.toFixed(0)}% | 
+                            Min: {snapshots.weather.humidity_min?.toFixed(0)}% | 
+                            Max: {snapshots.weather.humidity_max?.toFixed(0)}%
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Transactions immobilières */}
+                  {snapshots?.realEstate && snapshots.realEstate.transactions_count > 0 && (
+                    <div className="biodiversity-group">
+                      <h4 className="biodiversity-subtitle">
+                        <Home className="w-4 h-4 mr-1" />
+                        Transactions immobilières
+                      </h4>
+                      <div className="real-estate-summary">
+                        <div className="estate-item">
+                          <span className="estate-label">Nombre de transactions</span>
+                          <span className="estate-value">{snapshots.realEstate.transactions_count}</span>
+                        </div>
+                        {snapshots.realEstate.avg_price_m2 && (
+                          <div className="estate-item">
+                            <span className="estate-label">Prix moyen/m²</span>
+                            <span className="estate-value">{snapshots.realEstate.avg_price_m2.toFixed(0)}€</span>
+                          </div>
+                        )}
+                      </div>
+                      {snapshots.realEstate.transactions_data && Array.isArray(snapshots.realEstate.transactions_data) && (
+                        <div className="transactions-list">
+                          {snapshots.realEstate.transactions_data.slice(0, 3).map((transaction: any, index: number) => (
+                            <div key={index} className="transaction-item">
+                              <span className="transaction-date">{transaction.date || 'N/A'}</span>
+                              <span className="transaction-type">{transaction.type || 'N/A'}</span>
+                              <span className="transaction-price">{transaction.montant ? `${transaction.montant.toLocaleString()}€` : 'N/A'}</span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           </div>
           
@@ -249,7 +417,174 @@ const BioacousticTooltip: React.FC<BioacousticTooltipProps> = ({
           flex: 1;
           word-wrap: break-word;
           overflow-wrap: break-word;
-          line-height: 1.2;
+          max-width: 180px;
+        }
+
+        .biodiversity-section {
+          margin-top: 16px;
+          border-top: 1px solid rgba(209, 213, 219, 0.3);
+          padding-top: 16px;
+        }
+
+        .biodiversity-toggle {
+          width: 100%;
+          justify-content: flex-start;
+          padding: 8px 12px;
+          background: rgba(34, 197, 94, 0.1);
+          color: rgba(34, 197, 94, 0.9);
+          border-radius: 8px;
+          transition: all 0.2s ease;
+          border: 1px solid rgba(34, 197, 94, 0.2);
+        }
+
+        .biodiversity-toggle:hover {
+          background: rgba(34, 197, 94, 0.15);
+        }
+
+        .biodiversity-details {
+          margin-top: 12px;
+          padding: 12px;
+          background: rgba(248, 250, 252, 0.8);
+          border-radius: 8px;
+          border: 1px solid rgba(226, 232, 240, 0.5);
+        }
+
+        .biodiversity-group {
+          margin-bottom: 16px;
+        }
+
+        .biodiversity-group:last-child {
+          margin-bottom: 0;
+        }
+
+        .biodiversity-subtitle {
+          font-size: 12px;
+          font-weight: 600;
+          color: rgba(75, 85, 99, 0.9);
+          margin-bottom: 8px;
+          display: flex;
+          align-items: center;
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
+        }
+
+        .biodiversity-grid {
+          display: grid;
+          grid-template-columns: repeat(3, 1fr);
+          gap: 8px;
+        }
+
+        .bio-item {
+          text-align: center;
+          padding: 8px 4px;
+          background: rgba(255, 255, 255, 0.7);
+          border-radius: 6px;
+          border: 1px solid rgba(226, 232, 240, 0.5);
+        }
+
+        .bio-label {
+          display: block;
+          font-size: 10px;
+          font-weight: 500;
+          color: rgba(107, 114, 128, 0.8);
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
+          margin-bottom: 2px;
+        }
+
+        .bio-value {
+          display: block;
+          font-size: 16px;
+          font-weight: 700;
+          color: rgba(59, 130, 246, 0.9);
+        }
+
+        .weather-grid {
+          display: flex;
+          flex-direction: column;
+          gap: 6px;
+        }
+
+        .weather-item {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          padding: 6px 8px;
+          background: rgba(255, 255, 255, 0.7);
+          border-radius: 6px;
+          border: 1px solid rgba(226, 232, 240, 0.5);
+        }
+
+        .weather-label {
+          font-size: 11px;
+          font-weight: 500;
+          color: rgba(75, 85, 99, 0.8);
+          text-transform: uppercase;
+          letter-spacing: 0.3px;
+        }
+
+        .weather-value {
+          font-size: 11px;
+          font-weight: 600;
+          color: rgba(37, 99, 235, 0.9);
+        }
+
+        .real-estate-summary {
+          display: flex;
+          flex-direction: column;
+          gap: 6px;
+          margin-bottom: 12px;
+        }
+
+        .estate-item {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          padding: 6px 8px;
+          background: rgba(255, 255, 255, 0.7);
+          border-radius: 6px;
+          border: 1px solid rgba(226, 232, 240, 0.5);
+        }
+
+        .estate-label {
+          font-size: 11px;
+          font-weight: 500;
+          color: rgba(75, 85, 99, 0.8);
+          text-transform: uppercase;
+          letter-spacing: 0.3px;
+        }
+
+        .estate-value {
+          font-size: 11px;
+          font-weight: 600;
+          color: rgba(168, 85, 247, 0.9);
+        }
+
+        .transactions-list {
+          display: flex;
+          flex-direction: column;
+          gap: 4px;
+        }
+
+        .transaction-item {
+          display: grid;
+          grid-template-columns: 1fr 1fr 1fr;
+          gap: 8px;
+          padding: 4px 8px;
+          background: rgba(255, 255, 255, 0.5);
+          border-radius: 4px;
+          font-size: 10px;
+        }
+
+        .transaction-date, .transaction-type, .transaction-price {
+          color: rgba(55, 65, 81, 0.8);
+          font-weight: 500;
+        }
+
+        .transaction-price {
+          text-align: right;
+          font-weight: 600;
+          color: rgba(168, 85, 247, 0.9);
         }
 
         .hologram-particles {

@@ -1,11 +1,13 @@
 
 import React, { useState, useEffect } from 'react';
 import { Button } from '../components/ui/button';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
 import { ArrowLeft, Plus } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useSupabaseMarches } from '../hooks/useSupabaseMarches';
 import MarcheList from '../components/admin/MarcheList';
 import MarcheForm from '../components/admin/MarcheForm';
+import DataCollectionPanel from '../components/admin/DataCollectionPanel';
 import AdminFilters from '../components/admin/AdminFilters';
 import { toast } from 'sonner';
 import { MarcheTechnoSensible } from '../utils/googleSheetsApi';
@@ -14,6 +16,7 @@ type ViewMode = 'list' | 'create' | 'edit';
 
 const MarcheAdmin = () => {
   const navigate = useNavigate();
+  const [activeTab, setActiveTab] = useState('list');
   const [viewMode, setViewMode] = useState<ViewMode>('list');
   const [editingMarcheId, setEditingMarcheId] = useState<string | null>(null);
   const [filteredMarches, setFilteredMarches] = useState<MarcheTechnoSensible[]>([]);
@@ -126,8 +129,14 @@ const MarcheAdmin = () => {
 
         {/* Content */}
         <div className="gaspard-card rounded-xl p-6">
-          {viewMode === 'list' && (
-            <>
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+            <TabsList className="grid w-full grid-cols-3">
+              <TabsTrigger value="list">Liste des Marches</TabsTrigger>
+              <TabsTrigger value="create">Créer une Marche</TabsTrigger>
+              <TabsTrigger value="data">Collecte de Données</TabsTrigger>
+            </TabsList>
+            
+            <TabsContent value="list" className="space-y-4">
               {isLoading ? (
                 <div className="text-center text-foreground py-8">
                   <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-accent"></div>
@@ -141,17 +150,24 @@ const MarcheAdmin = () => {
                   onDelete={handleDelete}
                 />
               )}
-            </>
-          )}
+            </TabsContent>
+            
+            <TabsContent value="create" className="space-y-4">
+              <MarcheForm
+                mode="create"
+                marcheId={null}
+                onCancel={() => setActiveTab('list')}
+                onSuccess={() => {
+                  handleSuccess();
+                  setActiveTab('list');
+                }}
+              />
+            </TabsContent>
 
-          {(viewMode === 'create' || viewMode === 'edit') && (
-            <MarcheForm
-              mode={viewMode}
-              marcheId={editingMarcheId}
-              onCancel={handleCancel}
-              onSuccess={handleSuccess}
-            />
-          )}
+            <TabsContent value="data" className="space-y-4">
+              <DataCollectionPanel marches={filteredMarches} />
+            </TabsContent>
+          </Tabs>
         </div>
       </div>
     </div>
