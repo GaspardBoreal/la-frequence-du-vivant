@@ -142,33 +142,33 @@ const BioacousticTooltip: React.FC<BioacousticTooltipProps> = ({
           position: absolute;
           inset: 0;
           background: linear-gradient(145deg, 
-            rgba(16, 185, 129, 0.96), 
-            rgba(5, 150, 105, 0.98)
+            rgba(134, 239, 172, 0.88), 
+            rgba(110, 231, 183, 0.92)
           );
-          border: 2px solid rgba(168, 85, 247, 0.8);
+          border: 1.5px solid rgba(196, 181, 253, 0.6);
           border-radius: 20px 12px 20px 8px;
-          backdrop-filter: blur(12px);
+          backdrop-filter: blur(8px);
           box-shadow: 
-            0 20px 50px rgba(16, 185, 129, 0.3),
-            0 8px 32px rgba(168, 85, 247, 0.2),
-            inset 0 1px 0 rgba(255, 255, 255, 0.1),
-            inset 0 -1px 0 rgba(16, 185, 129, 0.2);
-          animation: living-breath 3s ease-in-out infinite;
+            0 12px 30px rgba(134, 239, 172, 0.15),
+            0 4px 16px rgba(196, 181, 253, 0.1),
+            inset 0 1px 0 rgba(255, 255, 255, 0.2),
+            inset 0 -1px 0 rgba(134, 239, 172, 0.1);
+          animation: gentle-breath 4s ease-in-out infinite;
         }
 
         .hologram-backdrop::before {
           content: '';
           position: absolute;
-          inset: -2px;
+          inset: -1px;
           background: linear-gradient(45deg, 
-            rgba(168, 85, 247, 0.4), 
-            rgba(16, 185, 129, 0.3), 
-            rgba(168, 85, 247, 0.4)
+            rgba(196, 181, 253, 0.2), 
+            rgba(134, 239, 172, 0.15), 
+            rgba(196, 181, 253, 0.2)
           );
-          border-radius: 22px 14px 22px 10px;
-          filter: blur(8px);
+          border-radius: 21px 13px 21px 9px;
+          filter: blur(4px);
           z-index: -1;
-          animation: bio-glow 4s ease-in-out infinite;
+          animation: soft-glow 6s ease-in-out infinite;
         }
 
         .hologram-content {
@@ -186,12 +186,11 @@ const BioacousticTooltip: React.FC<BioacousticTooltipProps> = ({
 
         .hologram-title {
           font-size: 18px;
-          font-weight: 700;
-          color: #ffffff;
+          font-weight: 600;
+          color: rgba(34, 34, 34, 0.95);
           text-shadow: 
-            0 0 20px rgba(255, 255, 255, 0.9), 
-            0 0 12px rgba(16, 185, 129, 0.8),
-            0 2px 6px rgba(0, 0, 0, 0.3);
+            0 0 8px rgba(255, 255, 255, 0.4), 
+            0 1px 2px rgba(134, 239, 172, 0.3);
           margin: 0;
           line-height: 1.3;
           word-wrap: break-word;
@@ -210,7 +209,7 @@ const BioacousticTooltip: React.FC<BioacousticTooltipProps> = ({
           justify-content: space-between;
           align-items: flex-start;
           padding: 6px 0;
-          border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+          border-bottom: 1px solid rgba(34, 34, 34, 0.15);
           min-height: 24px;
           transition: all 0.3s ease;
         }
@@ -220,18 +219,18 @@ const BioacousticTooltip: React.FC<BioacousticTooltipProps> = ({
         }
 
         .territory-item:hover {
-          background: rgba(255, 255, 255, 0.05);
-          border-radius: 4px;
-          transform: scale(1.02);
+          background: rgba(255, 255, 255, 0.1);
+          border-radius: 6px;
+          transform: scale(1.01);
         }
 
         .territory-label {
           font-size: 13px;
-          color: rgba(255, 255, 255, 0.9);
+          color: rgba(34, 34, 34, 0.75);
           text-transform: uppercase;
-          letter-spacing: 0.8px;
-          text-shadow: 0 0 10px rgba(168, 85, 247, 0.6);
-          font-weight: 600;
+          letter-spacing: 0.6px;
+          text-shadow: 0 0 4px rgba(196, 181, 253, 0.3);
+          font-weight: 500;
           flex-shrink: 0;
           margin-right: 12px;
         }
@@ -239,10 +238,10 @@ const BioacousticTooltip: React.FC<BioacousticTooltipProps> = ({
         .territory-value {
           font-size: 13px;
           font-weight: 600;
-          color: #ffffff;
+          color: rgba(34, 34, 34, 0.9);
           text-shadow: 
-            0 0 15px rgba(255, 255, 255, 0.8),
-            0 1px 3px rgba(0, 0, 0, 0.3);
+            0 0 6px rgba(255, 255, 255, 0.4),
+            0 1px 2px rgba(134, 239, 172, 0.2);
           text-align: right;
           flex: 1;
           word-wrap: break-word;
@@ -260,21 +259,21 @@ const BioacousticTooltip: React.FC<BioacousticTooltipProps> = ({
 
         .particle {
           position: absolute;
-          width: 3px;
-          height: 3px;
-          background: rgba(16, 185, 129, 0.9);
+          width: 2px;
+          height: 2px;
+          background: rgba(134, 239, 172, 0.6);
           border-radius: 50%;
-          animation: spore-float linear infinite;
+          animation: gentle-spore-float linear infinite;
           box-shadow: 
-            0 0 12px rgba(16, 185, 129, 0.8),
-            0 0 6px rgba(255, 255, 255, 0.4);
+            0 0 4px rgba(134, 239, 172, 0.4),
+            0 0 2px rgba(255, 255, 255, 0.2);
         }
 
         .particle:nth-child(2n) {
-          background: rgba(168, 85, 247, 0.7);
+          background: rgba(196, 181, 253, 0.5);
           box-shadow: 
-            0 0 10px rgba(168, 85, 247, 0.6),
-            0 0 4px rgba(255, 255, 255, 0.3);
+            0 0 3px rgba(196, 181, 253, 0.3),
+            0 0 1px rgba(255, 255, 255, 0.15);
         }
 
         .projection-lines {
@@ -283,7 +282,7 @@ const BioacousticTooltip: React.FC<BioacousticTooltipProps> = ({
             adjustedPosition.arrowPosition === 'right' ? 'right: 20px;' : 
             'left: 50%; transform: translateX(-50%);'}
           bottom: -20px;
-          width: 2px;
+          width: 1px;
           height: 20px;
         }
 
@@ -291,45 +290,45 @@ const BioacousticTooltip: React.FC<BioacousticTooltipProps> = ({
           position: absolute;
           background: linear-gradient(
             to bottom,
-            rgba(16, 185, 129, 0.9),
-            rgba(168, 85, 247, 0.5),
+            rgba(134, 239, 172, 0.6),
+            rgba(196, 181, 253, 0.3),
             transparent
           );
-          animation: bio-pulse 2.5s ease-in-out infinite;
-          border-radius: 1px;
+          animation: gentle-pulse 3s ease-in-out infinite;
+          border-radius: 0.5px;
         }
 
         .line-1 {
           left: 0;
-          width: 2px;
+          width: 1px;
           height: 100%;
           animation-delay: 0s;
         }
 
         .line-2 {
-          left: -3px;
+          left: -2px;
           width: 1px;
           height: 80%;
-          animation-delay: 0.4s;
-          opacity: 0.7;
+          animation-delay: 0.5s;
+          opacity: 0.6;
         }
 
         .line-3 {
-          left: 3px;
+          left: 2px;
           width: 1px;
           height: 60%;
-          animation-delay: 0.8s;
-          opacity: 0.5;
+          animation-delay: 1s;
+          opacity: 0.4;
         }
 
         @keyframes bio-growth {
           0% {
             opacity: 0;
-            transform: scale(0.7) translateY(15px);
+            transform: scale(0.85) translateY(8px);
           }
           50% {
-            opacity: 0.8;
-            transform: scale(1.08) translateY(-3px);
+            opacity: 0.9;
+            transform: scale(1.03) translateY(-2px);
           }
           100% {
             opacity: 1;
@@ -337,63 +336,63 @@ const BioacousticTooltip: React.FC<BioacousticTooltipProps> = ({
           }
         }
 
-        @keyframes spore-float {
+        @keyframes gentle-spore-float {
           0% {
-            transform: translateY(120%) scale(0) rotate(0deg);
+            transform: translateY(110%) scale(0) rotate(0deg);
             opacity: 0;
           }
-          15% {
-            opacity: 1;
-            transform: translateY(100%) scale(1) rotate(20deg);
+          20% {
+            opacity: 0.7;
+            transform: translateY(90%) scale(1) rotate(15deg);
           }
-          85% {
-            opacity: 0.6;
-            transform: translateY(10%) scale(0.8) rotate(340deg);
+          80% {
+            opacity: 0.3;
+            transform: translateY(20%) scale(0.9) rotate(330deg);
           }
           100% {
-            transform: translateY(-10%) scale(0) rotate(360deg);
+            transform: translateY(0%) scale(0) rotate(360deg);
             opacity: 0;
           }
         }
 
-        @keyframes bio-pulse {
+        @keyframes gentle-pulse {
           0%, 100% {
-            opacity: 0.4;
-            transform: scaleY(0.9) scaleX(1);
+            opacity: 0.3;
+            transform: scaleY(0.95);
           }
           50% {
-            opacity: 0.9;
-            transform: scaleY(1.3) scaleX(1.2);
+            opacity: 0.6;
+            transform: scaleY(1.1);
           }
         }
 
-        @keyframes living-breath {
+        @keyframes gentle-breath {
           0%, 100% {
-            border-color: rgba(168, 85, 247, 0.8);
+            border-color: rgba(196, 181, 253, 0.6);
             box-shadow: 
-              0 20px 50px rgba(16, 185, 129, 0.3),
-              0 8px 32px rgba(168, 85, 247, 0.2),
-              inset 0 1px 0 rgba(255, 255, 255, 0.1);
+              0 12px 30px rgba(134, 239, 172, 0.15),
+              0 4px 16px rgba(196, 181, 253, 0.1),
+              inset 0 1px 0 rgba(255, 255, 255, 0.2);
             transform: scale(1);
           }
           50% {
-            border-color: rgba(168, 85, 247, 0.9);
+            border-color: rgba(196, 181, 253, 0.7);
             box-shadow: 
-              0 25px 60px rgba(16, 185, 129, 0.4),
-              0 12px 40px rgba(168, 85, 247, 0.3),
-              inset 0 1px 0 rgba(255, 255, 255, 0.15);
-            transform: scale(1.01);
+              0 16px 40px rgba(134, 239, 172, 0.2),
+              0 6px 20px rgba(196, 181, 253, 0.15),
+              inset 0 1px 0 rgba(255, 255, 255, 0.25);
+            transform: scale(1.005);
           }
         }
 
-        @keyframes bio-glow {
+        @keyframes soft-glow {
           0%, 100% {
-            opacity: 0.6;
-            filter: blur(8px) hue-rotate(0deg);
+            opacity: 0.3;
+            filter: blur(4px) hue-rotate(0deg);
           }
           50% {
-            opacity: 0.8;
-            filter: blur(12px) hue-rotate(10deg);
+            opacity: 0.5;
+            filter: blur(6px) hue-rotate(5deg);
           }
         }
 
