@@ -25,6 +25,7 @@ const DataCollectionPanel: React.FC<DataCollectionPanelProps> = ({ marches = [] 
   const [currentLogId, setCurrentLogId] = useState<string | null>(null);
   const [currentCollectionTypes, setCurrentCollectionTypes] = useState<string[]>([]);
   const [showProgressModal, setShowProgressModal] = useState(false);
+  const [isLaunching, setIsLaunching] = useState(false);
   const { data: logs, isLoading: logsLoading, refetch: refetchLogs } = useDataCollectionLogs(10);
   const triggerCollection = useTriggerBatchCollection();
   const deleteLog = useDeleteCollectionLog();
@@ -32,10 +33,14 @@ const DataCollectionPanel: React.FC<DataCollectionPanelProps> = ({ marches = [] 
 
   const handleTriggerCollection = async (types: ('biodiversity' | 'weather' | 'real_estate')[]) => {
     try {
+      setIsLaunching(true);
       setIsCollecting(true);
       setCurrentCollectionTypes(types);
       
       console.log('🚀 Démarrage de la collecte:', types);
+      
+      // Afficher la modal avec état de lancement
+      setShowProgressModal(true);
       
       const result = await triggerCollection({
         collectionTypes: types,
@@ -43,17 +48,14 @@ const DataCollectionPanel: React.FC<DataCollectionPanelProps> = ({ marches = [] 
       });
 
       console.log('📋 Résultat de la collecte:', result);
-
-      // Afficher la modal immédiatement avec un polling pour récupérer le logId
-      setShowProgressModal(true);
-      toast.success('Collecte lancée avec succès');
       
-      // Si on a un logId direct, l'utiliser
-      if (result?.logId) {
-        setCurrentLogId(result.logId);
-      } else {
-        // Sinon, polling pour récupérer le dernier log créé
-        setTimeout(async () => {
+      // Récupérer le logId depuis la réponse ou via polling
+      let logId = result?.logId;
+      
+      if (!logId) {
+        // Polling pour récupérer le dernier log créé
+        for (let attempts = 0; attempts < 10; attempts++) {
+          await new Promise(resolve => setTimeout(resolve, 500));
           try {
             const { data: latestLogs } = await supabase
               .from('data_collection_logs')
@@ -62,12 +64,21 @@ const DataCollectionPanel: React.FC<DataCollectionPanelProps> = ({ marches = [] 
               .limit(1);
             
             if (latestLogs?.[0]) {
-              setCurrentLogId(latestLogs[0].id);
+              logId = latestLogs[0].id;
+              break;
             }
           } catch (error) {
             console.error('Erreur lors de la récupération du logId:', error);
           }
-        }, 1000);
+        }
+      }
+      
+      if (logId) {
+        setCurrentLogId(logId);
+        setIsLaunching(false);
+        toast.success('Collecte lancée avec succès');
+      } else {
+        throw new Error('Impossible de récupérer le logId de la collecte');
       }
       
       refetchLogs();
@@ -75,6 +86,7 @@ const DataCollectionPanel: React.FC<DataCollectionPanelProps> = ({ marches = [] 
       console.error('Collection error:', error);
       toast.error('Erreur lors du lancement de la collecte');
       setIsCollecting(false);
+      setIsLaunching(false);
       setShowProgressModal(false);
     }
   };
@@ -84,6 +96,7 @@ const DataCollectionPanel: React.FC<DataCollectionPanelProps> = ({ marches = [] 
     setCurrentLogId(null);
     setCurrentCollectionTypes([]);
     setIsCollecting(false);
+    setIsLaunching(false);
     refetchLogs(); // Refresh logs when modal closes
   };
 
@@ -270,6 +283,7 @@ const DataCollectionPanel: React.FC<DataCollectionPanelProps> = ({ marches = [] 
         onClose={handleProgressModalClose}
         logId={currentLogId}
         collectionTypes={currentCollectionTypes}
+        isLaunching={isLaunching}
       />
     </div>
   );

@@ -11,6 +11,7 @@ interface CollectionProgressModalProps {
   onClose: () => void;
   logId: string | null;
   collectionTypes: string[];
+  isLaunching?: boolean;
 }
 
 const CollectionProgressModal: React.FC<CollectionProgressModalProps> = ({
@@ -18,6 +19,7 @@ const CollectionProgressModal: React.FC<CollectionProgressModalProps> = ({
   onClose,
   logId,
   collectionTypes,
+  isLaunching = false,
 }) => {
   const { 
     log, 
@@ -87,7 +89,17 @@ const CollectionProgressModal: React.FC<CollectionProgressModalProps> = ({
           </div>
 
           {/* Status */}
-          {log && (
+          {isLaunching ? (
+            <div className="p-3 rounded-lg border bg-blue-50 text-blue-700 border-blue-200">
+              <div className="flex items-center gap-2 mb-2">
+                <Clock className="w-5 h-5 text-blue-600 animate-spin" />
+                <span className="font-medium text-sm">Initialisation</span>
+              </div>
+              <p className="text-xs">
+                Préparation de la collecte...
+              </p>
+            </div>
+          ) : log ? (
             <div className={`p-3 rounded-lg border ${getStatusColor(log.status)}`}>
               <div className="flex items-center gap-2 mb-2">
                 {getStatusIcon(log.status)}
@@ -104,7 +116,7 @@ const CollectionProgressModal: React.FC<CollectionProgressModalProps> = ({
                 </p>
               )}
             </div>
-          )}
+          ) : null}
 
           {/* Progress Bar */}
           <div className="space-y-2">
