@@ -3,9 +3,11 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useDataCollectionLogs, useTriggerBatchCollection } from '@/hooks/useSnapshotData';
+import { useDeleteCollectionLog, useDeleteAllFailedLogs } from '@/hooks/useDeleteCollectionLog';
 import { DataCollectionLog } from '@/types/snapshots';
-import { PlayCircle, BarChart3, Clock, CheckCircle, XCircle, AlertCircle } from 'lucide-react';
+import { PlayCircle, BarChart3, Clock, CheckCircle, XCircle, AlertCircle, Trash2, Trash } from 'lucide-react';
 import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
 import CollectionProgressModal from './CollectionProgressModal';
 
 interface DataCollectionPanelProps {
@@ -25,30 +27,55 @@ const DataCollectionPanel: React.FC<DataCollectionPanelProps> = ({ marches = [] 
   const [showProgressModal, setShowProgressModal] = useState(false);
   const { data: logs, isLoading: logsLoading, refetch: refetchLogs } = useDataCollectionLogs(10);
   const triggerCollection = useTriggerBatchCollection();
+  const deleteLog = useDeleteCollectionLog();
+  const deleteAllFailedLogs = useDeleteAllFailedLogs();
 
   const handleTriggerCollection = async (types: ('biodiversity' | 'weather' | 'real_estate')[]) => {
     try {
       setIsCollecting(true);
       setCurrentCollectionTypes(types);
       
+      console.log('🚀 Démarrage de la collecte:', types);
+      
       const result = await triggerCollection({
         collectionTypes: types,
         mode: 'manual'
       });
 
-      if (result.success && result.logId) {
+      console.log('📋 Résultat de la collecte:', result);
+
+      // Afficher la modal immédiatement avec un polling pour récupérer le logId
+      setShowProgressModal(true);
+      toast.success('Collecte lancée avec succès');
+      
+      // Si on a un logId direct, l'utiliser
+      if (result?.logId) {
         setCurrentLogId(result.logId);
-        setShowProgressModal(true);
-        toast.success('Collecte lancée avec succès');
-        refetchLogs();
       } else {
-        toast.error('Erreur lors de la collecte');
-        setIsCollecting(false);
+        // Sinon, polling pour récupérer le dernier log créé
+        setTimeout(async () => {
+          try {
+            const { data: latestLogs } = await supabase
+              .from('data_collection_logs')
+              .select('id')
+              .order('started_at', { ascending: false })
+              .limit(1);
+            
+            if (latestLogs?.[0]) {
+              setCurrentLogId(latestLogs[0].id);
+            }
+          } catch (error) {
+            console.error('Erreur lors de la récupération du logId:', error);
+          }
+        }, 1000);
       }
+      
+      refetchLogs();
     } catch (error) {
       console.error('Collection error:', error);
       toast.error('Erreur lors du lancement de la collecte');
       setIsCollecting(false);
+      setShowProgressModal(false);
     }
   };
 
@@ -154,9 +181,21 @@ const DataCollectionPanel: React.FC<DataCollectionPanelProps> = ({ marches = [] 
 
       {/* Collection Logs */}
       <Card className="p-6">
-        <div className="flex items-center gap-3 mb-4">
-          <BarChart3 className="w-5 h-5 text-primary" />
-          <h3 className="text-lg font-semibold">Historique des Collectes</h3>
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-3">
+            <BarChart3 className="w-5 h-5 text-primary" />
+            <h3 className="text-lg font-semibold">Historique des Collectes</h3>
+          </div>
+          <Button
+            onClick={() => deleteAllFailedLogs.mutate()}
+            disabled={deleteAllFailedLogs.isPending || !logs?.some(log => log.status === 'failed')}
+            variant="outline"
+            size="sm"
+            className="text-destructive hover:text-destructive"
+          >
+            <Trash className="w-4 h-4 mr-2" />
+            Nettoyer les échecs
+          </Button>
         </div>
 
         {logsLoading ? (
@@ -194,13 +233,25 @@ const DataCollectionPanel: React.FC<DataCollectionPanelProps> = ({ marches = [] 
                   </div>
                 </div>
 
-                <Badge 
-                  variant={log.status === 'completed' ? 'default' : log.status === 'failed' ? 'destructive' : 'secondary'}
-                >
-                  {log.status === 'completed' ? 'Terminé' : 
-                   log.status === 'failed' ? 'Échec' : 
-                   log.status === 'running' ? 'En cours' : log.status}
-                </Badge>
+                <div className="flex items-center gap-2">
+                  <Badge 
+                    variant={log.status === 'completed' ? 'default' : log.status === 'failed' ? 'destructive' : 'secondary'}
+                  >
+                    {log.status === 'completed' ? 'Terminé' : 
+                     log.status === 'failed' ? 'Échec' : 
+                     log.status === 'running' ? 'En cours' : log.status}
+                  </Badge>
+                  
+                  <Button
+                    onClick={() => deleteLog.mutate(log.id)}
+                    disabled={deleteLog.isPending}
+                    variant="ghost"
+                    size="sm"
+                    className="text-muted-foreground hover:text-destructive"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </Button>
+                </div>
               </div>
             ))}
 
