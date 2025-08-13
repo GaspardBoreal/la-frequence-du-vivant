@@ -2,13 +2,14 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from '../components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
-import { ArrowLeft, Plus } from 'lucide-react';
+import { ArrowLeft, Plus, Sparkles } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useSupabaseMarches } from '../hooks/useSupabaseMarches';
 import MarcheList from '../components/admin/MarcheList';
 import MarcheForm from '../components/admin/MarcheForm';
 import DataCollectionPanel from '../components/admin/DataCollectionPanel';
 import AdminFilters from '../components/admin/AdminFilters';
+import DataInsightsPromoBanner from '../components/DataInsightsPromoBanner';
 import { toast } from 'sonner';
 import { MarcheTechnoSensible } from '../utils/googleSheetsApi';
 
@@ -119,6 +120,11 @@ const MarcheAdmin = () => {
           </div>
         </div>
 
+        {/* Data Insights Promotional Banner */}
+        {viewMode === 'list' && !isLoading && marches.length > 0 && (
+          <DataInsightsPromoBanner />
+        )}
+
         {/* Filtres - uniquement en mode liste */}
         {viewMode === 'list' && !isLoading && marches.length > 0 && (
           <AdminFilters
@@ -133,7 +139,10 @@ const MarcheAdmin = () => {
             <TabsList className="grid w-full grid-cols-3">
               <TabsTrigger value="list">Liste des Marches</TabsTrigger>
               <TabsTrigger value="create">Créer une Marche</TabsTrigger>
-              <TabsTrigger value="data">Collecte de Données</TabsTrigger>
+              <TabsTrigger value="data" className="relative">
+                Collecte de Données
+                <Sparkles className="w-3 h-3 ml-1 text-accent animate-pulse" />
+              </TabsTrigger>
             </TabsList>
             
             <TabsContent value="list" className="space-y-4">
