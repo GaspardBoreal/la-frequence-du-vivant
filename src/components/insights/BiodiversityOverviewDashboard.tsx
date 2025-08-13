@@ -138,7 +138,7 @@ export const BiodiversityOverviewDashboard: React.FC = () => {
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-muted-foreground">Total Espèces</p>
+                <p className="text-sm font-medium text-gray-800 dark:text-gray-200">Total Espèces</p>
                 <p className="text-3xl font-bold text-green-700 dark:text-green-400">
                   {summaryStats?.totalSpecies.toLocaleString()}
                 </p>
@@ -157,7 +157,7 @@ export const BiodiversityOverviewDashboard: React.FC = () => {
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-muted-foreground">Collectes Effectuées</p>
+                <p className="text-sm font-medium text-gray-800 dark:text-gray-200">Collectes Effectuées</p>
                 <p className="text-3xl font-bold text-blue-700 dark:text-blue-400">
                   {summaryStats?.total}
                 </p>
@@ -178,7 +178,7 @@ export const BiodiversityOverviewDashboard: React.FC = () => {
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-muted-foreground">Hotspots Identifiés</p>
+                <p className="text-sm font-medium text-gray-800 dark:text-gray-200">Hotspots Identifiés</p>
                 <p className="text-3xl font-bold text-purple-700 dark:text-purple-400">
                   {biodiversityData?.filter(d => (d.total_species || 0) > 100).length}
                 </p>

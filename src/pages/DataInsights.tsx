@@ -102,7 +102,7 @@ const DataInsights: React.FC = () => {
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-medium text-muted-foreground">Total Biodiversité</p>
+                    <p className="text-sm font-medium text-gray-800 dark:text-gray-200">Total Biodiversité</p>
                     <p className="text-2xl font-bold text-green-700 dark:text-green-400">71</p>
                     <p className="text-xs text-green-600 dark:text-green-500">+12% ce mois</p>
                   </div>
@@ -117,7 +117,7 @@ const DataInsights: React.FC = () => {
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-medium text-muted-foreground">Données Météo</p>
+                    <p className="text-sm font-medium text-gray-800 dark:text-gray-200">Données Météo</p>
                     <p className="text-2xl font-bold text-blue-700 dark:text-blue-400">37</p>
                     <p className="text-xs text-blue-600 dark:text-blue-500">+8% ce mois</p>
                   </div>
@@ -132,7 +132,7 @@ const DataInsights: React.FC = () => {
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-medium text-muted-foreground">Immobilier</p>
+                    <p className="text-sm font-medium text-gray-800 dark:text-gray-200">Immobilier</p>
                     <p className="text-2xl font-bold text-purple-700 dark:text-purple-400">0</p>
                     <p className="text-xs text-purple-600 dark:text-purple-500">En attente</p>
                   </div>
@@ -147,7 +147,7 @@ const DataInsights: React.FC = () => {
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-medium text-muted-foreground">Marchés Couverts</p>
+                    <p className="text-sm font-medium text-gray-800 dark:text-gray-200">Marches Couvertes</p>
                     <p className="text-2xl font-bold text-orange-700 dark:text-orange-400">21</p>
                     <p className="text-xs text-orange-600 dark:text-orange-500">Couverture complète</p>
                   </div>
