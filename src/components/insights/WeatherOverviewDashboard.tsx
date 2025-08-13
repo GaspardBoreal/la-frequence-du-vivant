@@ -11,14 +11,20 @@ export const WeatherOverviewDashboard: React.FC = () => {
   const { data: weatherData, isLoading } = useQuery({
     queryKey: ['weather-overview'],
     queryFn: async () => {
-      const { data } = await supabase
+      const { data: snapshots } = await supabase
         .from('weather_snapshots')
-        .select(`
-          *,
-          marches!inner(nom_marche, ville, region)
-        `)
+        .select('*')
         .order('snapshot_date', { ascending: false });
-      return data;
+      
+      const { data: marches } = await supabase
+        .from('marches')
+        .select('id, nom_marche, ville, region');
+      
+      // Manually join the data
+      return snapshots?.map(snapshot => ({
+        ...snapshot,
+        marches: marches?.find(m => m.id === snapshot.marche_id)
+      })) || [];
     }
   });
 

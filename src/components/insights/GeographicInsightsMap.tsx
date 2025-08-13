@@ -14,16 +14,27 @@ export const GeographicInsightsMap: React.FC<GeographicInsightsMapProps> = ({ de
   const { data: marchesData, isLoading } = useQuery({
     queryKey: ['marches-with-data'],
     queryFn: async () => {
-      const { data } = await supabase
+      const { data: marches } = await supabase
         .from('marches')
-        .select(`
-          *,
-          biodiversity_snapshots(total_species, recent_observations, created_at),
-          weather_snapshots(temperature_avg, humidity_avg, created_at)
-        `)
-        .not('biodiversity_snapshots', 'is', null)
+        .select('*')
         .order('created_at', { ascending: false });
-      return data;
+      
+      const { data: biodiversitySnapshots } = await supabase
+        .from('biodiversity_snapshots')
+        .select('*');
+      
+      const { data: weatherSnapshots } = await supabase
+        .from('weather_snapshots')
+        .select('*');
+      
+      // Manually join the data
+      return marches?.map(marche => ({
+        ...marche,
+        biodiversity_snapshots: biodiversitySnapshots?.filter(bs => bs.marche_id === marche.id) || [],
+        weather_snapshots: weatherSnapshots?.filter(ws => ws.marche_id === marche.id) || []
+      })).filter(marche => 
+        marche.biodiversity_snapshots.length > 0 || marche.weather_snapshots.length > 0
+      ) || [];
     }
   });
 

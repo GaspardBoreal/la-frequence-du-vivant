@@ -11,14 +11,20 @@ export const BiodiversityOverviewDashboard: React.FC = () => {
   const { data: biodiversityData, isLoading } = useQuery({
     queryKey: ['biodiversity-overview'],
     queryFn: async () => {
-      const { data } = await supabase
+      const { data: snapshots } = await supabase
         .from('biodiversity_snapshots')
-        .select(`
-          *,
-          marches!inner(nom_marche, ville, region, latitude, longitude)
-        `)
+        .select('*')
         .order('created_at', { ascending: false });
-      return data;
+      
+      const { data: marches } = await supabase
+        .from('marches')
+        .select('id, nom_marche, ville, region, latitude, longitude');
+      
+      // Manually join the data
+      return snapshots?.map(snapshot => ({
+        ...snapshot,
+        marches: marches?.find(m => m.id === snapshot.marche_id)
+      })) || [];
     }
   });
 
@@ -177,7 +183,7 @@ export const BiodiversityOverviewDashboard: React.FC = () => {
                   {biodiversityData?.filter(d => (d.total_species || 0) > 100).length}
                 </p>
                 <p className="text-xs text-purple-600 dark:text-purple-500">
-                  >100 espèces
+                  {'>'}100 espèces
                 </p>
               </div>
               <div className="p-3 rounded-full bg-purple-100 dark:bg-purple-900/30">

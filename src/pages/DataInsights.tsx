@@ -5,8 +5,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { SEOHead } from '@/components/SEOHead';
-import { useSnapshotData } from '@/hooks/useSnapshotData';
+import SEOHead from '@/components/SEOHead';
+import { useDataCollectionLogs } from '@/hooks/useSnapshotData';
 import { BiodiversityOverviewDashboard } from '@/components/insights/BiodiversityOverviewDashboard';
 import { WeatherOverviewDashboard } from '@/components/insights/WeatherOverviewDashboard';
 import { RealEstateOverviewDashboard } from '@/components/insights/RealEstateOverviewDashboard';
@@ -23,11 +23,9 @@ const DataInsights: React.FC = () => {
   });
 
   const {
-    biodiversityLogs,
-    weatherLogs,
-    realEstateLogs,
+    data: logs,
     isLoading
-  } = useSnapshotData();
+  } = useDataCollectionLogs();
 
   const containerVariants = {
     hidden: { opacity: 0 },
@@ -43,11 +41,7 @@ const DataInsights: React.FC = () => {
     hidden: { y: 20, opacity: 0 },
     visible: {
       y: 0,
-      opacity: 1,
-      transition: {
-        duration: 0.5,
-        ease: "easeOut"
-      }
+      opacity: 1
     }
   };
 
@@ -56,7 +50,7 @@ const DataInsights: React.FC = () => {
       <SEOHead 
         title="Analyse des Données - Insights & Visualisations"
         description="Dashboard complet d'analyse des données collectées : biodiversité, météo et immobilier avec visualisations avancées"
-        keywords={['analyse données', 'dashboard', 'biodiversité', 'météo', 'insights']}
+        keywords="analyse données, dashboard, biodiversité, météo, insights"
       />
       
       <div className="min-h-screen bg-gradient-to-br from-background via-muted/20 to-accent/5">

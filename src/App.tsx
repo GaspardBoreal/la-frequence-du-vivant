@@ -23,6 +23,7 @@ import ExplorationFormPage from './pages/ExplorationFormPage';
 import ExplorationMarchesAdmin from './pages/ExplorationMarchesAdmin';
 import TestEbird from './pages/TestEbird';
 import FaviconTest from './pages/FaviconTest';
+import DataInsights from './pages/DataInsights';
 import ExplorationAnimatorRefactored from './pages/ExplorationAnimatorRefactored';
 import ExplorationExperience from './pages/ExplorationExperience';
 import ExplorationPodcast from './pages/ExplorationPodcast';
@@ -84,6 +85,16 @@ function App() {
           <Route path="/admin/explorations/:id/marches" element={
             <AdminAuth>
               <ExplorationMarchesAdmin />
+            </AdminAuth>
+          } />
+          <Route path="/admin" element={
+            <AdminAuth>
+              <AdminAccess />
+            </AdminAuth>
+          } />
+          <Route path="/admin/data-insights" element={
+            <AdminAuth>
+              <DataInsights />
             </AdminAuth>
           } />
           <Route path="/access-admin-gb2025" element={
