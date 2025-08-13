@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { BarChart3, MapPin, TrendingUp, Filter, Download, Calendar, Users, Leaf, CloudRain, Home } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { BarChart3, MapPin, TrendingUp, Filter, Download, Calendar, Users, Leaf, CloudRain, Home, ArrowLeft } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
@@ -15,6 +16,7 @@ import { DataCollectionTimeline } from '@/components/insights/DataCollectionTime
 import { InsightsFilters } from '@/components/insights/InsightsFilters';
 
 const DataInsights: React.FC = () => {
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('overview');
   const [filters, setFilters] = useState({
     dateRange: '30d',
@@ -66,6 +68,17 @@ const DataInsights: React.FC = () => {
             variants={cardVariants}
           >
             <div className="space-y-2">
+              <div className="flex items-center gap-3">
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  onClick={() => navigate('/admin/marches')}
+                  className="gap-2 text-muted-foreground hover:text-foreground"
+                >
+                  <ArrowLeft className="w-4 h-4" />
+                  Retour aux marches
+                </Button>
+              </div>
               <div className="flex items-center gap-3">
                 <div className="p-2 rounded-lg bg-primary/10">
                   <BarChart3 className="w-6 h-6 text-primary" />
