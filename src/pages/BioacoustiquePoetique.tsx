@@ -175,7 +175,8 @@ const BioacoustiquePoetique = () => {
                       layers={layers} 
                       theme={theme} 
                       onParcelClick={handleParcelClick} 
-                      filteredMarchesData={filteredMarchesData} 
+                      filteredMarchesData={filteredMarchesData}
+                      tooltipMode="bioacoustic"
                     />
                   )}
                 </div>

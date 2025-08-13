@@ -7,6 +7,7 @@ import { RegionalTheme } from '../utils/regionalThemes';
 import { SearchResult, LayerConfig, SelectedParcel } from '../types';
 import { MarcheTechnoSensible } from '../utils/googleSheetsApi';
 import PoeticMarkerCard from './PoeticMarkerCard';
+import BioacousticTooltip from './BioacousticTooltip';
 
 // Fix pour les marqueurs par défaut
 delete (L.Icon.Default.prototype as any)._getIconUrl;
@@ -145,6 +146,7 @@ interface InteractiveMapProps {
   theme: RegionalTheme;
   onParcelClick: (parcel: SelectedParcel) => void;
   filteredMarchesData: MarcheTechnoSensible[];
+  tooltipMode?: 'bioacoustic' | 'default';
 }
 
 const InteractiveMap: React.FC<InteractiveMapProps> = ({ 
@@ -152,10 +154,13 @@ const InteractiveMap: React.FC<InteractiveMapProps> = ({
   layers, 
   theme, 
   onParcelClick,
-  filteredMarchesData 
+  filteredMarchesData,
+  tooltipMode = 'default'
 }) => {
   const [mapReady, setMapReady] = useState(false);
   const [mapKey, setMapKey] = useState(0);
+  const [hoveredMarker, setHoveredMarker] = useState<MarcheTechnoSensible | null>(null);
+  const [mousePosition, setMousePosition] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
 
   // Valider les coordonnées des données filtrées avec logs détaillés
   const validMarchesData = filteredMarchesData.filter(marche => {
@@ -226,6 +231,22 @@ const InteractiveMap: React.FC<InteractiveMapProps> = ({
     onParcelClick(parcel);
   };
 
+  const handleMarkerMouseEnter = (marche: MarcheTechnoSensible, event: any) => {
+    if (tooltipMode === 'bioacoustic') {
+      setHoveredMarker(marche);
+      setMousePosition({ 
+        x: event.originalEvent.clientX, 
+        y: event.originalEvent.clientY 
+      });
+    }
+  };
+
+  const handleMarkerMouseLeave = () => {
+    if (tooltipMode === 'bioacoustic') {
+      setHoveredMarker(null);
+    }
+  };
+
   return (
     <div className="relative h-96 md:h-[500px] lg:h-[600px]">
       <MapContainer
@@ -288,22 +309,35 @@ const InteractiveMap: React.FC<InteractiveMapProps> = ({
               position={[marche.latitude, marche.longitude]}
               icon={poeticIcon}
               eventHandlers={{
-                click: () => handleMarkerClick(marche)
+                click: () => handleMarkerClick(marche),
+                mouseover: (e) => handleMarkerMouseEnter(marche, e),
+                mouseout: handleMarkerMouseLeave
               }}
             >
-              <Popup 
-                maxWidth={400}
-                className="poetic-popup"
-              >
-                <div className="p-0 m-0">
-                  <PoeticMarkerCard marche={marche} theme={theme} />
-                </div>
-              </Popup>
+              {tooltipMode !== 'bioacoustic' && (
+                <Popup 
+                  maxWidth={400}
+                  className="poetic-popup"
+                >
+                  <div className="p-0 m-0">
+                    <PoeticMarkerCard marche={marche} theme={theme} />
+                  </div>
+                </Popup>
+              )}
             </Marker>
           );
         })}
 
       </MapContainer>
+      
+      {/* Bioacoustic tooltip - rendered outside map container for proper positioning */}
+      {tooltipMode === 'bioacoustic' && hoveredMarker && (
+        <BioacousticTooltip
+          marche={hoveredMarker}
+          position={mousePosition}
+          visible={!!hoveredMarker}
+        />
+      )}
       
       {/* Indicateur du nombre de résultats avec style poétique */}
       {layers.marchesTechnoSensibles && (
