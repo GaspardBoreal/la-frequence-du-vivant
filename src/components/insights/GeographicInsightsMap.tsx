@@ -157,7 +157,7 @@ export const GeographicInsightsMap: React.FC<GeographicInsightsMapProps> = ({ de
                       </span>
                       <span className="flex items-center gap-1">
                         <MapPin className="w-3 h-3" />
-                        {region.marches} marchés
+                        {region.marches} marches
                       </span>
                       {region.avgTemp && (
                         <span className="flex items-center gap-1">
@@ -229,7 +229,7 @@ export const GeographicInsightsMap: React.FC<GeographicInsightsMapProps> = ({ de
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <TrendingUp className="w-5 h-5" />
-                Marchés les Plus Performants
+                Marches les Plus Performants
               </CardTitle>
               <CardDescription>
                 Classement par richesse en données collectées
