@@ -94,14 +94,15 @@ export default function ExplorationExperience() {
         .eq('exploration_id', exploration.id)
         .maybeSingle();
       if (!error && data) {
+        const config = data.marche_view_config as any || {};
         setSettings({
           marche_view_model: (data.marche_view_model as any) || 'elabore',
-          welcome_tones: data.welcome_tones || [],
-          welcome_forms: data.welcome_forms || [],
-          welcome_povs: data.welcome_povs || [],
-          welcome_senses: data.welcome_senses || [],
-          welcome_timeframes: data.welcome_timeframes || [],
-          welcome_template: data.welcome_template || null,
+          welcome_tones: config.welcome_tones || [],
+          welcome_forms: config.welcome_forms || [],
+          welcome_povs: config.welcome_povs || [],
+          welcome_senses: config.welcome_senses || [],
+          welcome_timeframes: config.welcome_timeframes || [],
+          welcome_template: config.welcome_template || null,
         });
       }
     };

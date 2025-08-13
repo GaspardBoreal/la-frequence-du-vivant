@@ -14,6 +14,120 @@ export type Database = {
   }
   public: {
     Tables: {
+      biodiversity_snapshots: {
+        Row: {
+          biodiversity_index: number | null
+          birds_count: number
+          created_at: string
+          fungi_count: number
+          id: string
+          latitude: number
+          longitude: number
+          marche_id: string
+          methodology: Json | null
+          others_count: number
+          plants_count: number
+          radius_meters: number
+          recent_observations: number
+          snapshot_date: string
+          sources_data: Json | null
+          species_data: Json | null
+          species_richness: number | null
+          total_species: number
+          updated_at: string
+        }
+        Insert: {
+          biodiversity_index?: number | null
+          birds_count?: number
+          created_at?: string
+          fungi_count?: number
+          id?: string
+          latitude: number
+          longitude: number
+          marche_id: string
+          methodology?: Json | null
+          others_count?: number
+          plants_count?: number
+          radius_meters?: number
+          recent_observations?: number
+          snapshot_date?: string
+          sources_data?: Json | null
+          species_data?: Json | null
+          species_richness?: number | null
+          total_species?: number
+          updated_at?: string
+        }
+        Update: {
+          biodiversity_index?: number | null
+          birds_count?: number
+          created_at?: string
+          fungi_count?: number
+          id?: string
+          latitude?: number
+          longitude?: number
+          marche_id?: string
+          methodology?: Json | null
+          others_count?: number
+          plants_count?: number
+          radius_meters?: number
+          recent_observations?: number
+          snapshot_date?: string
+          sources_data?: Json | null
+          species_data?: Json | null
+          species_richness?: number | null
+          total_species?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      data_collection_logs: {
+        Row: {
+          collection_mode: string
+          collection_type: string
+          completed_at: string | null
+          created_at: string
+          duration_seconds: number | null
+          error_details: Json | null
+          errors_count: number | null
+          id: string
+          marches_processed: number | null
+          marches_total: number | null
+          started_at: string
+          status: string
+          summary_stats: Json | null
+        }
+        Insert: {
+          collection_mode: string
+          collection_type: string
+          completed_at?: string | null
+          created_at?: string
+          duration_seconds?: number | null
+          error_details?: Json | null
+          errors_count?: number | null
+          id?: string
+          marches_processed?: number | null
+          marches_total?: number | null
+          started_at?: string
+          status?: string
+          summary_stats?: Json | null
+        }
+        Update: {
+          collection_mode?: string
+          collection_type?: string
+          completed_at?: string | null
+          created_at?: string
+          duration_seconds?: number | null
+          error_details?: Json | null
+          errors_count?: number | null
+          id?: string
+          marches_processed?: number | null
+          marches_total?: number | null
+          started_at?: string
+          status?: string
+          summary_stats?: Json | null
+        }
+        Relationships: []
+      }
       exploration_clicks: {
         Row: {
           action: string
@@ -174,61 +288,25 @@ export type Database = {
           created_at: string
           exploration_id: string
           id: string
-          interaction_config: Json | null
           marche_view_config: Json | null
           marche_view_model: string
           updated_at: string
-          welcome_forms: string[]
-          welcome_forms_custom: string | null
-          welcome_povs: string[]
-          welcome_povs_custom: string | null
-          welcome_senses: string[]
-          welcome_senses_custom: string | null
-          welcome_template: string | null
-          welcome_timeframes: string[]
-          welcome_timeframes_custom: string | null
-          welcome_tones: string[]
-          welcome_tones_custom: string | null
         }
         Insert: {
           created_at?: string
           exploration_id: string
           id?: string
-          interaction_config?: Json | null
           marche_view_config?: Json | null
           marche_view_model?: string
           updated_at?: string
-          welcome_forms?: string[]
-          welcome_forms_custom?: string | null
-          welcome_povs?: string[]
-          welcome_povs_custom?: string | null
-          welcome_senses?: string[]
-          welcome_senses_custom?: string | null
-          welcome_template?: string | null
-          welcome_timeframes?: string[]
-          welcome_timeframes_custom?: string | null
-          welcome_tones?: string[]
-          welcome_tones_custom?: string | null
         }
         Update: {
           created_at?: string
           exploration_id?: string
           id?: string
-          interaction_config?: Json | null
           marche_view_config?: Json | null
           marche_view_model?: string
           updated_at?: string
-          welcome_forms?: string[]
-          welcome_forms_custom?: string | null
-          welcome_povs?: string[]
-          welcome_povs_custom?: string | null
-          welcome_senses?: string[]
-          welcome_senses_custom?: string | null
-          welcome_template?: string | null
-          welcome_timeframes?: string[]
-          welcome_timeframes_custom?: string | null
-          welcome_tones?: string[]
-          welcome_tones_custom?: string | null
         }
         Relationships: [
           {
@@ -239,6 +317,42 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      exploration_pages: {
+        Row: {
+          config: Json | null
+          created_at: string
+          description: string | null
+          exploration_id: string
+          id: string
+          nom: string
+          ordre: number
+          type: string
+          updated_at: string
+        }
+        Insert: {
+          config?: Json | null
+          created_at?: string
+          description?: string | null
+          exploration_id: string
+          id?: string
+          nom: string
+          ordre: number
+          type: string
+          updated_at?: string
+        }
+        Update: {
+          config?: Json | null
+          created_at?: string
+          description?: string | null
+          exploration_id?: string
+          id?: string
+          nom?: string
+          ordre?: number
+          type?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       explorations: {
         Row: {
@@ -867,12 +981,172 @@ export type Database = {
           },
         ]
       }
+      real_estate_snapshots: {
+        Row: {
+          avg_price_m2: number | null
+          created_at: string
+          id: string
+          latitude: number
+          longitude: number
+          marche_id: string
+          median_price_m2: number | null
+          radius_meters: number
+          raw_data: Json | null
+          snapshot_date: string
+          source: string
+          total_volume: number | null
+          transactions_count: number
+          transactions_data: Json | null
+          updated_at: string
+        }
+        Insert: {
+          avg_price_m2?: number | null
+          created_at?: string
+          id?: string
+          latitude: number
+          longitude: number
+          marche_id: string
+          median_price_m2?: number | null
+          radius_meters?: number
+          raw_data?: Json | null
+          snapshot_date?: string
+          source?: string
+          total_volume?: number | null
+          transactions_count?: number
+          transactions_data?: Json | null
+          updated_at?: string
+        }
+        Update: {
+          avg_price_m2?: number | null
+          created_at?: string
+          id?: string
+          latitude?: number
+          longitude?: number
+          marche_id?: string
+          median_price_m2?: number | null
+          radius_meters?: number
+          raw_data?: Json | null
+          snapshot_date?: string
+          source?: string
+          total_volume?: number | null
+          transactions_count?: number
+          transactions_data?: Json | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      weather_snapshots: {
+        Row: {
+          created_at: string
+          humidity_avg: number | null
+          humidity_max: number | null
+          humidity_min: number | null
+          id: string
+          latitude: number
+          longitude: number
+          marche_id: string
+          precipitation_days: number | null
+          precipitation_total: number | null
+          raw_data: Json | null
+          snapshot_date: string
+          source: string
+          sunshine_hours: number | null
+          temperature_avg: number | null
+          temperature_max: number | null
+          temperature_min: number | null
+          updated_at: string
+          wind_speed_avg: number | null
+        }
+        Insert: {
+          created_at?: string
+          humidity_avg?: number | null
+          humidity_max?: number | null
+          humidity_min?: number | null
+          id?: string
+          latitude: number
+          longitude: number
+          marche_id: string
+          precipitation_days?: number | null
+          precipitation_total?: number | null
+          raw_data?: Json | null
+          snapshot_date?: string
+          source?: string
+          sunshine_hours?: number | null
+          temperature_avg?: number | null
+          temperature_max?: number | null
+          temperature_min?: number | null
+          updated_at?: string
+          wind_speed_avg?: number | null
+        }
+        Update: {
+          created_at?: string
+          humidity_avg?: number | null
+          humidity_max?: number | null
+          humidity_min?: number | null
+          id?: string
+          latitude?: number
+          longitude?: number
+          marche_id?: string
+          precipitation_days?: number | null
+          precipitation_total?: number | null
+          raw_data?: Json | null
+          snapshot_date?: string
+          source?: string
+          sunshine_hours?: number | null
+          temperature_avg?: number | null
+          temperature_max?: number | null
+          temperature_min?: number | null
+          updated_at?: string
+          wind_speed_avg?: number | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      delete_exploration_page: {
+        Args: { page_id: string }
+        Returns: undefined
+      }
+      get_exploration_pages: {
+        Args: { exploration_id_param: string }
+        Returns: {
+          id: string
+          exploration_id: string
+          type: string
+          ordre: number
+          nom: string
+          description: string
+          config: Json
+          created_at: string
+          updated_at: string
+        }[]
+      }
+      insert_exploration_page: {
+        Args: {
+          exploration_id_param: string
+          page_type: string
+          page_ordre: number
+          page_nom: string
+          page_description?: string
+        }
+        Returns: string
+      }
+      update_exploration_page: {
+        Args: {
+          page_id: string
+          page_type: string
+          page_nom: string
+          page_description?: string
+        }
+        Returns: undefined
+      }
+      update_pages_order: {
+        Args: { page_ids: string[]; new_orders: number[] }
+        Returns: undefined
+      }
     }
     Enums: {
       etude_type: "principale" | "complementaire" | "annexe"
