@@ -191,10 +191,10 @@ export const DataCollectionTimeline: React.FC = () => {
                     backgroundColor: 'hsl(var(--card))',
                     border: '1px solid hsl(var(--border))',
                     borderRadius: '8px',
-                    color: 'hsl(var(--card-foreground))'
+                    color: 'white'
                   }}
                   labelStyle={{
-                    color: '#1f2937'
+                    color: 'white'
                   }}
                   formatter={(value, name) => [
                     value,
