@@ -107,9 +107,9 @@ const DebugCollectionProgressModal: React.FC<DebugCollectionProgressModalProps> 
 
           {/* Status */}
           {isLaunching ? (
-            <div className="p-3 rounded-lg border bg-blue-50 text-blue-700 border-blue-200">
+            <div className="p-3 rounded-lg border bg-green-50 text-green-700 border-green-200">
               <div className="flex items-center gap-2 mb-2">
-                <Clock className="w-5 h-5 text-blue-600 animate-spin" />
+                <Clock className="w-5 h-5 text-green-600 animate-spin" />
                 <span className="font-medium text-sm">Initialisation</span>
               </div>
               <p className="text-xs">
@@ -169,11 +169,11 @@ const DebugCollectionProgressModal: React.FC<DebugCollectionProgressModalProps> 
             
             {/* Marche courante - Affichage proéminent */}
             {currentMarcheName && log?.status === 'running' && (
-              <div className="p-3 bg-blue-50 rounded-lg border border-blue-200">
-                <p className="text-sm font-medium text-blue-900">
+              <div className="p-3 bg-green-50 rounded-lg border border-green-200">
+                <p className="text-sm font-medium text-green-900">
                   🎯 {currentMarcheName}
                 </p>
-                <p className="text-xs text-blue-700 mt-1">
+                <p className="text-xs text-green-700 mt-1">
                   {currentDataType}
                 </p>
               </div>
@@ -203,8 +203,8 @@ const DebugCollectionProgressModal: React.FC<DebugCollectionProgressModalProps> 
 
             {/* Initial Estimate Display */}
             {initialEstimate && log?.status === 'running' && (
-              <div className="p-2 bg-blue-50 rounded text-xs">
-                <span className="text-blue-600">
+              <div className="p-2 bg-green-50 rounded text-xs">
+                <span className="text-green-600">
                   💡 Durée estimée : {formatTime(initialEstimate)}
                 </span>
               </div>
