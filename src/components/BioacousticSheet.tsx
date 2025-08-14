@@ -48,7 +48,7 @@ export const BioacousticSheet: React.FC<BioacousticSheetProps> = ({
     latitude, 
     longitude, 
     radius: debouncedRadius, // Use debounced radius like in BioDivSubSection
-    dateFilter: 'recent'
+    dateFilter: 'recent' as const // Force same dateFilter as BioDivSubSection default
   });
   const { data: lexiconData } = useLexiconData(latitude, longitude);
   const { data: snapshotsData } = useLatestSnapshotsForMarche(marche.id);
