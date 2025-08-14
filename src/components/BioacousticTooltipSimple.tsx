@@ -9,16 +9,23 @@ interface BioacousticTooltipSimpleProps {
   marche: MarcheTechnoSensible;
   mapContainer?: HTMLElement | null;
   visible: boolean;
+  radius?: number;
 }
 
 export const BioacousticTooltipSimple: React.FC<BioacousticTooltipSimpleProps> = ({
   marche,
   mapContainer,
-  visible
+  visible,
+  radius = 500
 }) => {
   const latitude = marche.latitude;
   const longitude = marche.longitude;
-  const { data: biodiversityData } = useBiodiversityData({ latitude, longitude });
+  const { data: biodiversityData } = useBiodiversityData({ 
+    latitude, 
+    longitude, 
+    radius,
+    dateFilter: 'recent'
+  });
 
   if (!visible || !mapContainer) return null;
 
@@ -92,11 +99,11 @@ export const BioacousticTooltipSimple: React.FC<BioacousticTooltipSimpleProps> =
         </div>
 
         {/* Biodiversité si disponible - Vert mint avec texte blanc */}
-        {biodiversityData && biodiversityData.species.length > 0 && (
+        {biodiversityData && biodiversityData.summary && (
           <div className="px-4 py-3 flex items-center justify-center gap-3" style={{ backgroundColor: 'hsl(140 25% 35%)' }}>
             <Eye className="h-4 w-4 text-white" />
             <span className="font-bold text-base text-white font-inter">
-              {biodiversityData.species.length} espèce{biodiversityData.species.length > 1 ? 's' : ''} observée{biodiversityData.species.length > 1 ? 's' : ''}
+              {(biodiversityData.summary.birds || 0) + (biodiversityData.summary.plants || 0) + (biodiversityData.summary.fungi || 0) + (biodiversityData.summary.others || 0)} espèce{((biodiversityData.summary.birds || 0) + (biodiversityData.summary.plants || 0) + (biodiversityData.summary.fungi || 0) + (biodiversityData.summary.others || 0)) > 1 ? 's' : ''} - {radius < 1 ? `${Math.round(radius * 1000)}m` : `${radius}km`}
             </span>
           </div>
         )}

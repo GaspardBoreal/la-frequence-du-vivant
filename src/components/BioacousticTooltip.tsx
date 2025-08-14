@@ -21,13 +21,15 @@ interface BioacousticTooltipProps {
   };
   position: { x: number; y: number };
   visible: boolean;
+  radius?: number;
   onClose?: () => void;
 }
 
 const BioacousticTooltip: React.FC<BioacousticTooltipProps> = ({ 
   marche, 
   position, 
-  visible, 
+  visible,
+  radius = 500,
   onClose 
 }) => {
   const [showBiodiversity, setShowBiodiversity] = useState(false);
@@ -35,7 +37,7 @@ const BioacousticTooltip: React.FC<BioacousticTooltipProps> = ({
   const { data: biodiversityData, isLoading: biodiversityLoading } = useBiodiversityData({
     latitude: marche.latitude,
     longitude: marche.longitude,
-    radius: 500,
+    radius: radius,
     dateFilter: 'recent'
   });
 
@@ -179,25 +181,25 @@ const BioacousticTooltip: React.FC<BioacousticTooltipProps> = ({
                   <div className="biodiversity-group">
                     <h4 className="biodiversity-subtitle">
                       <Bird className="w-4 h-4 mr-1" />
-                      Biodiversité locale (500m)
+                      Biodiversité locale ({radius < 1 ? `${Math.round(radius * 1000)}m` : `${radius}km`})
                     </h4>
                     <div className="biodiversity-grid">
                       <div className="bio-item">
                         <span className="bio-label">FLORE</span>
                         <span className="bio-value">
-                          {snapshots?.biodiversity?.plants_count || biodiversityData?.summary.plants || 0}
+                          {biodiversityData?.summary.plants || snapshots?.biodiversity?.plants_count || 0}
                         </span>
                       </div>
                       <div className="bio-item">
                         <span className="bio-label">FAUNE</span>
                         <span className="bio-value">
-                          {snapshots?.biodiversity?.birds_count || biodiversityData?.summary.birds || 0}
+                          {biodiversityData?.summary.birds || snapshots?.biodiversity?.birds_count || 0}
                         </span>
                       </div>
                       <div className="bio-item">
                         <span className="bio-label">AUTRES</span>
                         <span className="bio-value">
-                          {(snapshots?.biodiversity?.fungi_count || 0) + (snapshots?.biodiversity?.others_count || 0) || (biodiversityData?.summary.fungi || 0) + (biodiversityData?.summary.others || 0)}
+                          {((biodiversityData?.summary.fungi || 0) + (biodiversityData?.summary.others || 0)) || ((snapshots?.biodiversity?.fungi_count || 0) + (snapshots?.biodiversity?.others_count || 0))}
                         </span>
                       </div>
                     </div>

@@ -17,37 +17,40 @@ interface BioacousticSheetProps {
   marche: MarcheTechnoSensible;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  radius?: number;
 }
 
 export const BioacousticSheet: React.FC<BioacousticSheetProps> = ({
   marche,
   open,
-  onOpenChange
+  onOpenChange,
+  radius = 500
 }) => {
   const navigate = useNavigate();
   const latitude = marche.latitude;
   const longitude = marche.longitude;
   
-  // State for radius expansion
-  const [searchRadius, setSearchRadius] = useState(500);
+  // State for radius expansion - use provided radius or default
+  const [searchRadius, setSearchRadius] = useState(radius);
   const [showExpandDialog, setShowExpandDialog] = useState(false);
 
   const { data: biodiversityData, isLoading: isBiodiversityLoading } = useBiodiversityData({ 
     latitude, 
     longitude, 
-    radius: searchRadius 
+    radius: searchRadius * 1000, // Convert km to meters for API
+    dateFilter: 'recent'
   });
   const { data: lexiconData } = useLexiconData(latitude, longitude);
   const { data: snapshotsData } = useLatestSnapshotsForMarche(marche.id);
 
   // Check if we should show the expand prompt
   const shouldShowExpandPrompt = !isBiodiversityLoading && 
-    biodiversityData?.species?.length === 0 && 
-    searchRadius === 500 && 
+    (!biodiversityData?.summary || ((biodiversityData.summary.birds || 0) + (biodiversityData.summary.plants || 0) + (biodiversityData.summary.fungi || 0) + (biodiversityData.summary.others || 0)) === 0) && 
+    searchRadius === radius && 
     !showExpandDialog;
 
   const handleExpandRadius = () => {
-    setSearchRadius(5000);
+    setSearchRadius(5);
   };
 
   const handleDeclineExpansion = () => {
@@ -112,7 +115,7 @@ export const BioacousticSheet: React.FC<BioacousticSheetProps> = ({
                 <div className="flex items-center justify-center gap-2 mb-4">
                   <Search className="h-5 w-5 text-orange-600 dark:text-orange-400" />
                   <p className="text-sm font-medium text-orange-800 dark:text-orange-200">
-                    Aucune donnée de biodiversité enregistrée dans un rayon de recherche de 500m
+                    Aucune donnée de biodiversité enregistrée dans un rayon de recherche de {searchRadius < 1 ? `${Math.round(searchRadius * 1000)}m` : `${searchRadius}km`}
                   </p>
                 </div>
                 <p className="text-sm text-orange-700 dark:text-orange-300 mb-6">
@@ -139,13 +142,13 @@ export const BioacousticSheet: React.FC<BioacousticSheetProps> = ({
           )}
 
           {/* Biodiversity Loading */}
-          {isBiodiversityLoading && searchRadius > 500 && (
+          {isBiodiversityLoading && searchRadius > radius && (
             <Card>
               <CardContent className="p-6 text-center">
                 <div className="flex items-center justify-center gap-2 mb-2">
                   <Search className="h-5 w-5 text-primary animate-pulse" />
                   <p className="text-sm font-medium text-muted-foreground">
-                    Recherche élargie en cours... (rayon 5km)
+                    Recherche élargie en cours... (rayon {searchRadius < 1 ? `${Math.round(searchRadius * 1000)}m` : `${searchRadius}km`})
                   </p>
                 </div>
               </CardContent>
@@ -153,38 +156,42 @@ export const BioacousticSheet: React.FC<BioacousticSheetProps> = ({
           )}
 
           {/* Biodiversity Data */}
-          {biodiversityData && biodiversityData.species.length > 0 && (
+          {biodiversityData && biodiversityData.summary && ((biodiversityData.summary.birds || 0) + (biodiversityData.summary.plants || 0) + (biodiversityData.summary.fungi || 0) + (biodiversityData.summary.others || 0)) > 0 && (
             <Card>
               <CardHeader>
                 <CardTitle className="text-lg flex items-center gap-2">
                   <Eye className="h-4 w-4" />
-                  Biodiversité ({biodiversityData.species.length} espèces)
-                  {searchRadius > 500 && (
-                    <Badge variant="outline" className="text-xs ml-2">
-                      rayon {searchRadius/1000}km
-                    </Badge>
-                  )}
+                  Biodiversité ({((biodiversityData.summary.birds || 0) + (biodiversityData.summary.plants || 0) + (biodiversityData.summary.fungi || 0) + (biodiversityData.summary.others || 0))} espèces)
+                  <Badge variant="outline" className="text-xs ml-2">
+                    rayon {searchRadius < 1 ? `${Math.round(searchRadius * 1000)}m` : `${searchRadius}km`}
+                  </Badge>
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="flex flex-wrap gap-2">
-                  {biodiversityData.species.slice(0, 6).map((species, index) => (
-                    <Badge key={index} variant="secondary" className="text-xs">
-                      {species.commonName || species.scientificName}
-                    </Badge>
-                  ))}
-                  {biodiversityData.species.length > 6 && (
-                    <Badge variant="outline" className="text-xs">
-                      +{biodiversityData.species.length - 6} autres
-                    </Badge>
-                  )}
+                <div className="grid grid-cols-2 gap-4 text-sm">
+                  <div className="flex justify-between">
+                    <span>Oiseaux:</span>
+                    <span className="font-medium">{biodiversityData.summary.birds || 0}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Plantes:</span>
+                    <span className="font-medium">{biodiversityData.summary.plants || 0}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Champignons:</span>
+                    <span className="font-medium">{biodiversityData.summary.fungi || 0}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Autres:</span>
+                    <span className="font-medium">{biodiversityData.summary.others || 0}</span>
+                  </div>
                 </div>
               </CardContent>
             </Card>
           )}
 
           {/* No Biodiversity Data (after declining expansion) */}
-          {showExpandDialog && biodiversityData?.species?.length === 0 && (
+          {showExpandDialog && (!biodiversityData?.summary || ((biodiversityData.summary.birds || 0) + (biodiversityData.summary.plants || 0) + (biodiversityData.summary.fungi || 0) + (biodiversityData.summary.others || 0)) === 0) && (
             <Card className="border-muted bg-muted/30">
               <CardContent className="p-6 text-center">
                 <EyeOff className="h-8 w-8 text-muted-foreground mx-auto mb-3" />
