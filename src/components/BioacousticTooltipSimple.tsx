@@ -74,36 +74,42 @@ export const BioacousticTooltipSimple: React.FC<BioacousticTooltipSimpleProps> =
   return (
     <div
       style={tooltipStyle}
-      className="bg-background/98 backdrop-blur-md border-2 border-primary/20 rounded-xl shadow-2xl pointer-events-none"
+      className="rounded-2xl shadow-2xl pointer-events-none overflow-hidden border border-gaspard-forest/30"
     >
-      <div className="p-4 space-y-3" style={{ width: tooltipWidth + 'px' }}>
-        {/* Header avec nom du marché */}
-        <div className="text-center border-b border-primary/10 pb-2">
-          <h3 className="font-bold text-base text-foreground leading-tight">
+      <div className="p-0 space-y-0" style={{ width: tooltipWidth + 'px' }}>
+        {/* Header avec nom du marché - Vert foncé avec texte blanc */}
+        <div className="px-4 py-3 text-center" style={{ backgroundColor: 'hsl(140 30% 6%)' }}>
+          <h3 className="font-bold text-white text-lg leading-tight font-crimson">
             {marche.nomMarche || marche.ville}
           </h3>
-          <p className="text-xs text-muted-foreground">{marche.ville}</p>
+          <p className="text-sm mt-1" style={{ color: 'hsl(140 22% 70%)' }}>{marche.ville}</p>
         </div>
         
-        {/* Date */}
-        <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
-          <Calendar className="h-3 w-3 text-primary" />
-          <span className="font-medium">{formatDate(marche.date || '')}</span>
+        {/* Date - Vert sage avec texte vert clair */}
+        <div className="px-4 py-3 flex items-center justify-center gap-3" style={{ backgroundColor: 'hsl(140 28% 28%)' }}>
+          <Calendar className="h-4 w-4" style={{ color: 'hsl(140 25% 35%)' }} />
+          <span className="font-semibold text-base text-white font-inter">{formatDate(marche.date || '')}</span>
         </div>
 
-        {/* Biodiversité si disponible */}
+        {/* Biodiversité si disponible - Vert mint avec texte blanc */}
         {biodiversityData && biodiversityData.species.length > 0 && (
-          <div className="flex items-center justify-center gap-2 text-xs bg-primary/10 rounded-lg py-2 px-3">
-            <Eye className="h-3 w-3 text-primary" />
-            <span className="font-semibold text-foreground">
+          <div className="px-4 py-3 flex items-center justify-center gap-3" style={{ backgroundColor: 'hsl(140 25% 35%)' }}>
+            <Eye className="h-4 w-4 text-white" />
+            <span className="font-bold text-base text-white font-inter">
               {biodiversityData.species.length} espèce{biodiversityData.species.length > 1 ? 's' : ''} observée{biodiversityData.species.length > 1 ? 's' : ''}
             </span>
           </div>
         )}
 
-        {/* Call to action */}
-        <div className="text-center py-1 px-3 bg-primary/15 rounded-lg">
-          <div className="text-xs text-primary font-bold">
+        {/* Call to action - Vert mint avec texte vert foncé et effet premium */}
+        <div 
+          className="px-4 py-3 text-center"
+          style={{ 
+            backgroundColor: 'hsl(140 25% 35%)',
+            backgroundImage: 'linear-gradient(135deg, hsl(140 25% 35%) 0%, hsl(140 22% 42%) 100%)'
+          }}
+        >
+          <div className="font-bold text-base font-inter" style={{ color: 'hsl(140 30% 6%)' }}>
             ✨ Cliquer pour explorer
           </div>
         </div>
