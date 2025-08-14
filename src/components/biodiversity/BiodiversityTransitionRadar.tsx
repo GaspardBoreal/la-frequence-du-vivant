@@ -292,22 +292,32 @@ const BiodiversityTransitionRadar: React.FC<BiodiversityTransitionRadarProps> = 
 
   // Filter data based on active year
   const getYearFilteredData = () => {
+    console.log('🎯 Filtering data for year:', activeYear, 'Total signals:', signals.length);
+    
     if (activeYear === 2025) {
-      return {
+      const filtered = {
         signals: signals.filter(s => s.prediction.likelihood2035 > 0.3),
         alerts: territorialAlerts.filter(a => a.timeline === '0-2years' || a.timeline === '2-5years')
       };
+      console.log('📊 2025 data:', filtered);
+      return filtered;
     } else if (activeYear === 2035) {
-      return {
+      const filtered = {
         signals: signals.filter(s => s.prediction.likelihood2035 > 0.5),
         alerts: territorialAlerts.filter(a => a.timeline === '2-5years' || a.timeline === '5-10years')
       };
+      console.log('📊 2035 data:', filtered);
+      return filtered;
     } else if (activeYear === 2045) {
-      return {
+      const filtered = {
         signals: signals.filter(s => s.prediction.likelihood2045 > 0.4),
         alerts: territorialAlerts.filter(a => a.timeline === '5-10years' || a.timeline === '10-20years')
       };
+      console.log('📊 2045 data:', filtered);
+      return filtered;
     }
+    
+    console.log('📊 Default data (all):', { signals: signals.length, alerts: territorialAlerts.length });
     return { signals, alerts: territorialAlerts };
   };
 
@@ -327,27 +337,36 @@ const BiodiversityTransitionRadar: React.FC<BiodiversityTransitionRadarProps> = 
             </p>
           </div>
           
-          {/* Temporal Slider */}
-          {onYearChange && (
-            <div className="flex items-center gap-4 bg-white/60 backdrop-blur-sm rounded-xl p-4 border border-blue-200">
-              <Clock className="h-5 w-5 text-blue-600" />
-              <div className="flex gap-2">
-                {[2025, 2035, 2045].map((year) => (
-                  <button
-                    key={year}
-                    onClick={() => onYearChange(year)}
-                    className={`px-4 py-2 rounded-lg font-medium transition-all ${
-                      activeYear === year
-                        ? 'bg-blue-600 text-white shadow-lg'
-                        : 'bg-white/60 text-blue-700 hover:bg-blue-100'
-                    }`}
-                  >
-                    {year}
-                  </button>
-                ))}
-              </div>
+          {/* Temporal Slider - Always Visible */}
+          <div className="flex items-center gap-4 bg-white/80 backdrop-blur-sm rounded-xl p-4 border-2 border-blue-300 shadow-lg">
+            <Clock className="h-6 w-6 text-blue-600" />
+            <div className="text-sm font-medium text-blue-700">Navigation temporelle:</div>
+            <div className="flex gap-2">
+              {[2025, 2035, 2045].map((year) => (
+                <button
+                  key={year}
+                  onClick={() => {
+                    console.log('🕐 Year button clicked:', year);
+                    if (onYearChange) {
+                      onYearChange(year);
+                    } else {
+                      console.warn('⚠️ onYearChange not provided');
+                    }
+                  }}
+                  className={`px-5 py-3 rounded-lg font-bold transition-all transform hover:scale-105 ${
+                    activeYear === year
+                      ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-xl'
+                      : 'bg-white text-blue-700 hover:bg-blue-100 border-2 border-blue-200'
+                  }`}
+                >
+                  {year}
+                </button>
+              ))}
             </div>
-          )}
+            <div className="text-xs text-blue-600 bg-blue-50 px-2 py-1 rounded">
+              Active: {activeYear}
+            </div>
+          </div>
         </div>
         
         {/* Year-specific indicators */}

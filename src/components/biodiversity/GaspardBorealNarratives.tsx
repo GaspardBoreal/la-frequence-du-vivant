@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { BookOpen, Calendar, Clock, MapPin, Sparkles, Heart, AlertTriangle, Eye } from 'lucide-react';
+import { BookOpen, Clock, Eye, Heart, Target, ArrowRight, X } from 'lucide-react';
 import { GaspardBorealNarrative } from '../../types/biodiversityIntelligence';
-import { Badge } from '../ui/badge';
 import { Button } from '../ui/button';
+import { Badge } from '../ui/badge';
 import { Card } from '../ui/card';
 
 interface GaspardBorealNarrativesProps {
@@ -16,111 +16,98 @@ const GaspardBorealNarratives: React.FC<GaspardBorealNarrativesProps> = ({
   onNarrativeSelect
 }) => {
   const [selectedNarrative, setSelectedNarrative] = useState<GaspardBorealNarrative | null>(null);
-  const [filter, setFilter] = useState<'all' | 'species_portrait' | 'future_chronicle' | 'ecosystem_story'>('all');
+  const [expandedCard, setExpandedCard] = useState<string | null>(null);
 
   const getMoodColor = (mood: string) => {
     switch (mood) {
-      case 'hopeful': return 'text-green-600 bg-green-50 border-green-200';
-      case 'concerning': return 'text-orange-600 bg-orange-50 border-orange-200';
-      case 'inspiring': return 'text-blue-600 bg-blue-50 border-blue-200';
-      case 'urgent': return 'text-red-600 bg-red-50 border-red-200';
-      default: return 'text-gray-600 bg-gray-50 border-gray-200';
+      case 'hopeful': return 'from-green-500 to-emerald-600';
+      case 'concerning': return 'from-orange-500 to-red-500';
+      case 'inspiring': return 'from-blue-500 to-purple-600';
+      case 'urgent': return 'from-red-500 to-pink-600';
+      default: return 'from-gray-500 to-gray-600';
     }
   };
 
-  const getMoodIcon = (mood: string) => {
+  const getMoodEmoji = (mood: string) => {
     switch (mood) {
-      case 'hopeful': return <Sparkles className="h-4 w-4" />;
-      case 'concerning': return <AlertTriangle className="h-4 w-4" />;
-      case 'inspiring': return <Heart className="h-4 w-4" />;
-      case 'urgent': return <AlertTriangle className="h-4 w-4" />;
-      default: return <BookOpen className="h-4 w-4" />;
+      case 'hopeful': return '🌱';
+      case 'concerning': return '⚠️';
+      case 'inspiring': return '✨';
+      case 'urgent': return '🚨';
+      default: return '📖';
     }
   };
 
   const getTypeIcon = (type: string) => {
     switch (type) {
-      case 'species_portrait': return '🦋';
-      case 'future_chronicle': return '🔮';
-      case 'ecosystem_story': return '🌿';
-      case 'citizen_spotlight': return '👥';
-      default: return '📖';
+      case 'species_portrait': return <Eye className="h-4 w-4" />;
+      case 'ecosystem_story': return <Target className="h-4 w-4" />;
+      case 'future_chronicle': return <Clock className="h-4 w-4" />;
+      case 'citizen_spotlight': return <Heart className="h-4 w-4" />;
+      default: return <BookOpen className="h-4 w-4" />;
     }
   };
 
   const getTypeLabel = (type: string) => {
     switch (type) {
       case 'species_portrait': return 'Portrait d\'Espèce';
-      case 'future_chronicle': return 'Chronique du Futur';
       case 'ecosystem_story': return 'Histoire d\'Écosystème';
+      case 'future_chronicle': return 'Chronique Future';
       case 'citizen_spotlight': return 'Focus Citoyen';
       default: return type;
     }
   };
 
-  const filteredNarratives = filter === 'all' 
-    ? narratives 
-    : narratives.filter(n => n.type === filter);
+  const getActionIcon = (actionType: string) => {
+    switch (actionType) {
+      case 'observe': return '👁️';
+      case 'protect': return '🛡️';
+      case 'advocate': return '📢';
+      case 'adapt': return '🔄';
+      case 'research': return '🔬';
+      default: return '🎯';
+    }
+  };
 
-  const handleNarrativeClick = (narrative: GaspardBorealNarrative) => {
+  const handleCardClick = (narrative: GaspardBorealNarrative) => {
     setSelectedNarrative(narrative);
     onNarrativeSelect?.(narrative);
   };
 
+  const handleToggleExpand = (narrativeId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setExpandedCard(expandedCard === narrativeId ? null : narrativeId);
+  };
+
+  if (!narratives || narratives.length === 0) {
+    return (
+      <div className="text-center py-12">
+        <BookOpen className="h-16 w-16 text-gray-400 mx-auto mb-4" />
+        <h3 className="text-xl font-semibold text-gray-600 mb-2">
+          Aucun récit disponible
+        </h3>
+        <p className="text-gray-500">
+          Les narratives de Gaspard Boréal sont en cours de génération...
+        </p>
+      </div>
+    );
+  }
+
   return (
-    <div className="bg-gradient-to-br from-amber-50 to-orange-100 rounded-3xl p-8 border-2 border-amber-200/50">
+    <div className="space-y-6">
       {/* Header */}
-      <div className="mb-8">
-        <div className="flex items-center gap-3 mb-4">
-          <BookOpen className="h-8 w-8 text-amber-600" />
-          <h2 className="text-3xl font-bold text-transparent bg-gradient-to-r from-amber-600 to-orange-600 bg-clip-text">
-            Chroniques de Gaspard Boréal
-          </h2>
-        </div>
-        <p className="text-amber-700 text-lg">
-          Récits immersifs et prospectifs pour comprendre les transformations du vivant
+      <div className="text-center">
+        <h2 className="text-3xl font-bold text-transparent bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text mb-2">
+          Les Récits de Gaspard Boréal
+        </h2>
+        <p className="text-gray-600">
+          Explorations narratives de la biodiversité et du changement climatique
         </p>
       </div>
 
-      {/* Filters */}
-      <div className="flex flex-wrap gap-2 mb-8">
-        <Button
-          variant={filter === 'all' ? 'default' : 'outline'}
-          size="sm"
-          onClick={() => setFilter('all')}
-          className={filter === 'all' ? 'bg-amber-600 hover:bg-amber-700' : ''}
-        >
-          Tous
-        </Button>
-        <Button
-          variant={filter === 'species_portrait' ? 'default' : 'outline'}
-          size="sm"
-          onClick={() => setFilter('species_portrait')}
-          className={filter === 'species_portrait' ? 'bg-amber-600 hover:bg-amber-700' : ''}
-        >
-          🦋 Portraits
-        </Button>
-        <Button
-          variant={filter === 'future_chronicle' ? 'default' : 'outline'}
-          size="sm"
-          onClick={() => setFilter('future_chronicle')}
-          className={filter === 'future_chronicle' ? 'bg-amber-600 hover:bg-amber-700' : ''}
-        >
-          🔮 Futur
-        </Button>
-        <Button
-          variant={filter === 'ecosystem_story' ? 'default' : 'outline'}
-          size="sm"
-          onClick={() => setFilter('ecosystem_story')}
-          className={filter === 'ecosystem_story' ? 'bg-amber-600 hover:bg-amber-700' : ''}
-        >
-          🌿 Écosystèmes
-        </Button>
-      </div>
-
       {/* Narratives Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {filteredNarratives.map((narrative, index) => (
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {narratives.map((narrative, index) => (
           <motion.div
             key={narrative.id}
             initial={{ opacity: 0, y: 20 }}
@@ -128,188 +115,224 @@ const GaspardBorealNarratives: React.FC<GaspardBorealNarrativesProps> = ({
             transition={{ delay: index * 0.1 }}
           >
             <Card 
-              className={`p-6 h-full cursor-pointer transition-all hover:shadow-lg ${getMoodColor(narrative.mood)}`}
-              onClick={() => handleNarrativeClick(narrative)}
+              className="cursor-pointer hover:shadow-xl transition-all duration-300 border-2 hover:border-blue-300"
+              onClick={() => handleCardClick(narrative)}
             >
-              {/* Header */}
-              <div className="flex items-start justify-between mb-4">
-                <div className="flex items-center gap-2">
-                  <span className="text-2xl">{getTypeIcon(narrative.type)}</span>
-                  <Badge variant="outline" className="text-xs">
-                    {getTypeLabel(narrative.type)}
-                  </Badge>
-                </div>
-                
-                <div className="flex items-center gap-2">
-                  {getMoodIcon(narrative.mood)}
-                  <div className="text-xs opacity-70">
-                    {narrative.readingTime} min
+              {/* Card Header */}
+              <div className={`bg-gradient-to-r ${getMoodColor(narrative.mood)} p-6 text-white rounded-t-lg`}>
+                <div className="flex items-start justify-between">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-2">
+                      {getTypeIcon(narrative.type)}
+                      <Badge variant="secondary" className="bg-white/20 text-white border-white/30">
+                        {getTypeLabel(narrative.type)}
+                      </Badge>
+                      {narrative.futureYear && (
+                        <Badge variant="secondary" className="bg-white/20 text-white border-white/30">
+                          {narrative.futureYear}
+                        </Badge>
+                      )}
+                    </div>
+                    
+                    <h3 className="text-xl font-bold mb-2 leading-tight">
+                      {getMoodEmoji(narrative.mood)} {narrative.title}
+                    </h3>
+                    
+                    <div className="flex items-center gap-4 text-sm opacity-80">
+                      <span className="flex items-center gap-1">
+                        <Clock className="h-3 w-3" />
+                        {narrative.readingTime} min
+                      </span>
+                      <span>{narrative.location}</span>
+                    </div>
                   </div>
                 </div>
               </div>
 
-              {/* Title */}
-              <h3 className="text-xl font-bold mb-3 line-clamp-2">
-                {narrative.title}
-              </h3>
-
-              {/* Metadata */}
-              <div className="flex flex-wrap gap-2 mb-4 text-xs opacity-70">
-                <div className="flex items-center gap-1">
-                  <MapPin className="h-3 w-3" />
-                  {narrative.location}
+              {/* Card Content */}
+              <div className="p-6">
+                {/* Story Preview */}
+                <div className="mb-4">
+                  <p className="text-gray-700 leading-relaxed">
+                    {expandedCard === narrative.id 
+                      ? narrative.story
+                      : narrative.story.length > 200 
+                        ? `${narrative.story.substring(0, 200)}...`
+                        : narrative.story
+                    }
+                  </p>
+                  
+                  {narrative.story.length > 200 && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={(e) => handleToggleExpand(narrative.id, e)}
+                      className="mt-2 text-blue-600 hover:text-blue-800"
+                    >
+                      {expandedCard === narrative.id ? 'Réduire' : 'Lire plus'}
+                    </Button>
+                  )}
                 </div>
-                {narrative.futureYear && (
-                  <div className="flex items-center gap-1">
-                    <Calendar className="h-3 w-3" />
-                    {narrative.futureYear}
-                  </div>
-                )}
+
+                {/* Species Badge */}
                 {narrative.species && (
-                  <div className="flex items-center gap-1">
-                    <Eye className="h-3 w-3" />
-                    Espèce focale
+                  <div className="mb-4">
+                    <Badge variant="outline" className="text-green-700 border-green-300 bg-green-50">
+                      🦋 {narrative.species}
+                    </Badge>
+                  </div>
+                )}
+
+                {/* Call to Action */}
+                {narrative.callToAction && (
+                  <div className="bg-gray-50 rounded-lg p-4">
+                    <div className="flex items-start gap-3">
+                      <div className="text-2xl">
+                        {getActionIcon(narrative.callToAction.actionType)}
+                      </div>
+                      <div className="flex-1">
+                        <div className="font-medium text-gray-800 mb-1">
+                          Passez à l'action
+                        </div>
+                        <p className="text-sm text-gray-600 mb-3">
+                          {narrative.callToAction.message}
+                        </p>
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          className="text-blue-600 border-blue-300 hover:bg-blue-50"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (narrative.callToAction?.link) {
+                              window.open(narrative.callToAction.link, '_blank');
+                            }
+                          }}
+                        >
+                          {narrative.callToAction.actionType === 'observe' && 'Observer'}
+                          {narrative.callToAction.actionType === 'protect' && 'Protéger'}
+                          {narrative.callToAction.actionType === 'advocate' && 'Sensibiliser'}
+                          {narrative.callToAction.actionType === 'adapt' && 'S\'adapter'}
+                          {narrative.callToAction.actionType === 'research' && 'Rechercher'}
+                          <ArrowRight className="h-3 w-3 ml-1" />
+                        </Button>
+                      </div>
+                    </div>
                   </div>
                 )}
               </div>
-
-              {/* Story Preview */}
-              <p className="text-sm opacity-80 line-clamp-3 mb-4">
-                {narrative.story.slice(0, 150)}...
-              </p>
-
-              {/* Call to Action */}
-              {narrative.callToAction && (
-                <div className="border-t pt-3 mt-3">
-                  <div className="text-xs font-medium mb-1">
-                    Action suggérée:
-                  </div>
-                  <div className="text-xs opacity-70">
-                    {narrative.callToAction.message}
-                  </div>
-                </div>
-              )}
             </Card>
           </motion.div>
         ))}
       </div>
 
-      {/* Empty State */}
-      {filteredNarratives.length === 0 && (
-        <div className="text-center py-12">
-          <BookOpen className="h-16 w-16 text-amber-400 mx-auto mb-4" />
-          <h3 className="text-xl font-semibold text-amber-800 mb-2">
-            Aucune chronique disponible
-          </h3>
-          <p className="text-amber-600">
-            Les récits de Gaspard Boréal sont en cours de génération...
-          </p>
-        </div>
-      )}
-
-      {/* Detailed Narrative Modal */}
+      {/* Detailed Modal */}
       <AnimatePresence>
         {selectedNarrative && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
             onClick={() => setSelectedNarrative(null)}
           >
             <motion.div
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.9, opacity: 0 }}
-              className="bg-white rounded-xl max-w-2xl w-full max-h-[80vh] overflow-hidden shadow-xl"
+              className="bg-white rounded-2xl shadow-2xl max-w-4xl max-h-[80vh] overflow-hidden"
               onClick={(e) => e.stopPropagation()}
             >
               {/* Modal Header */}
-              <div className={`p-6 border-b ${getMoodColor(selectedNarrative.mood)}`}>
+              <div className={`bg-gradient-to-r ${getMoodColor(selectedNarrative.mood)} p-6 text-white`}>
                 <div className="flex items-start justify-between">
-                  <div>
-                    <div className="flex items-center gap-3 mb-2">
-                      <span className="text-3xl">{getTypeIcon(selectedNarrative.type)}</span>
-                      <div>
-                        <Badge variant="outline" className="mb-1">
-                          {getTypeLabel(selectedNarrative.type)}
+                  <div className="flex-1 pr-4">
+                    <div className="flex items-center gap-2 mb-3">
+                      {getTypeIcon(selectedNarrative.type)}
+                      <Badge variant="secondary" className="bg-white/20 text-white border-white/30">
+                        {getTypeLabel(selectedNarrative.type)}
+                      </Badge>
+                      {selectedNarrative.futureYear && (
+                        <Badge variant="secondary" className="bg-white/20 text-white border-white/30">
+                          {selectedNarrative.futureYear}
                         </Badge>
-                        <h2 className="text-2xl font-bold">
-                          {selectedNarrative.title}
-                        </h2>
-                      </div>
+                      )}
                     </div>
                     
-                    <div className="flex items-center gap-4 text-sm opacity-70">
-                      <div className="flex items-center gap-1">
-                        <MapPin className="h-4 w-4" />
-                        {selectedNarrative.location}
-                      </div>
-                      {selectedNarrative.futureYear && (
-                        <div className="flex items-center gap-1">
-                          <Calendar className="h-4 w-4" />
-                          Horizon {selectedNarrative.futureYear}
-                        </div>
-                      )}
-                      <div className="flex items-center gap-1">
+                    <h2 className="text-2xl font-bold mb-3 leading-tight">
+                      {getMoodEmoji(selectedNarrative.mood)} {selectedNarrative.title}
+                    </h2>
+                    
+                    <div className="flex items-center gap-4 text-sm opacity-80">
+                      <span className="flex items-center gap-1">
                         <Clock className="h-4 w-4" />
                         {selectedNarrative.readingTime} min de lecture
-                      </div>
+                      </span>
+                      <span>{selectedNarrative.location}</span>
                     </div>
                   </div>
                   
-                  <div className="flex items-center gap-2">
-                    {getMoodIcon(selectedNarrative.mood)}
-                  </div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setSelectedNarrative(null)}
+                    className="text-white hover:bg-white/20 -mr-2 -mt-2"
+                  >
+                    <X className="h-5 w-5" />
+                  </Button>
                 </div>
               </div>
 
               {/* Modal Content */}
-              <div className="p-6 overflow-y-auto max-h-[50vh]">
-                <div className="prose prose-amber max-w-none">
-                  {selectedNarrative.story.split('\n\n').map((paragraph, index) => (
-                    <p key={index} className="mb-4 text-gray-700 leading-relaxed">
-                      {paragraph}
-                    </p>
-                  ))}
+              <div className="p-6 overflow-y-auto max-h-[60vh]">
+                {/* Species Info */}
+                {selectedNarrative.species && (
+                  <div className="mb-6">
+                    <Badge variant="outline" className="text-green-700 border-green-300 bg-green-50">
+                      🦋 Espèce concernée: {selectedNarrative.species}
+                    </Badge>
+                  </div>
+                )}
+
+                {/* Story */}
+                <div className="prose prose-lg max-w-none mb-6">
+                  <div className="text-gray-700 leading-relaxed whitespace-pre-line">
+                    {selectedNarrative.story}
+                  </div>
                 </div>
 
                 {/* Call to Action */}
                 {selectedNarrative.callToAction && (
-                  <div className="mt-8 p-4 bg-amber-50 rounded-lg border border-amber-200">
-                    <h4 className="font-semibold text-amber-800 mb-2">
-                      🌱 Passez à l'action
-                    </h4>
-                    <p className="text-amber-700 mb-3">
-                      {selectedNarrative.callToAction.message}
-                    </p>
-                    <Button 
-                      size="sm"
-                      className="bg-amber-600 hover:bg-amber-700 text-white"
-                    >
-                      {selectedNarrative.callToAction.actionType === 'observe' && '👁️ Observer'}
-                      {selectedNarrative.callToAction.actionType === 'protect' && '🛡️ Protéger'}
-                      {selectedNarrative.callToAction.actionType === 'advocate' && '📢 Sensibiliser'}
-                      {selectedNarrative.callToAction.actionType === 'adapt' && '🔄 S\'adapter'}
-                      {selectedNarrative.callToAction.actionType === 'research' && '🔬 Rechercher'}
-                    </Button>
+                  <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl p-6 border border-blue-200">
+                    <div className="flex items-start gap-4">
+                      <div className="text-3xl">
+                        {getActionIcon(selectedNarrative.callToAction.actionType)}
+                      </div>
+                      <div className="flex-1">
+                        <h3 className="text-lg font-semibold text-gray-800 mb-2">
+                          Rejoignez le mouvement
+                        </h3>
+                        <p className="text-gray-600 mb-4">
+                          {selectedNarrative.callToAction.message}
+                        </p>
+                        <Button 
+                          className="bg-gradient-to-r from-blue-600 to-purple-600 text-white"
+                          onClick={() => {
+                            if (selectedNarrative.callToAction?.link) {
+                              window.open(selectedNarrative.callToAction.link, '_blank');
+                            }
+                          }}
+                        >
+                          {selectedNarrative.callToAction.actionType === 'observe' && 'Commencer à observer'}
+                          {selectedNarrative.callToAction.actionType === 'protect' && 'Participer à la protection'}
+                          {selectedNarrative.callToAction.actionType === 'advocate' && 'Rejoindre la sensibilisation'}
+                          {selectedNarrative.callToAction.actionType === 'adapt' && 'S\'adapter ensemble'}
+                          {selectedNarrative.callToAction.actionType === 'research' && 'Contribuer à la recherche'}
+                          <ArrowRight className="h-4 w-4 ml-2" />
+                        </Button>
+                      </div>
+                    </div>
                   </div>
                 )}
-              </div>
-
-              {/* Modal Footer */}
-              <div className="p-6 border-t bg-gray-50">
-                <div className="flex items-center justify-between">
-                  <div className="text-sm text-gray-500">
-                    Généré le {new Date(selectedNarrative.generatedAt).toLocaleDateString('fr-FR')}
-                  </div>
-                  <Button 
-                    variant="outline"
-                    onClick={() => setSelectedNarrative(null)}
-                  >
-                    Fermer
-                  </Button>
-                </div>
               </div>
             </motion.div>
           </motion.div>
