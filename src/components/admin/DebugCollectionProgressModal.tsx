@@ -1,12 +1,10 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Progress } from '@/components/ui/progress';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Switch } from '@/components/ui/switch';
-import { Label } from '@/components/ui/label';
 import { useCollectionProgress } from '@/hooks/useCollectionProgress';
-import { Clock, CheckCircle, XCircle, AlertCircle, BarChart3, Bug, Eye } from 'lucide-react';
+import { Clock, CheckCircle, XCircle, AlertCircle, BarChart3 } from 'lucide-react';
 
 interface DebugCollectionProgressModalProps {
   isOpen: boolean;
@@ -23,8 +21,7 @@ const DebugCollectionProgressModal: React.FC<DebugCollectionProgressModalProps> 
   collectionTypes,
   isLaunching = false,
 }) => {
-  const [debugMode, setDebugMode] = useState(false);
-  const { 
+  const {
     log, 
     progress, 
     currentMarcheName,
@@ -75,18 +72,7 @@ const DebugCollectionProgressModal: React.FC<DebugCollectionProgressModalProps> 
         <DialogHeader>
           <DialogTitle className="flex items-center gap-3">
             <BarChart3 className="w-5 h-5 text-primary" />
-            Collecte de Données {debugMode && '(Debug Mode)'}
-            <div className="flex items-center space-x-2 ml-auto">
-              <Label htmlFor="debug-mode" className="text-sm">
-                <Bug className="w-4 h-4 mr-1 inline" />
-                Debug
-              </Label>
-              <Switch
-                id="debug-mode"
-                checked={debugMode}
-                onCheckedChange={setDebugMode}
-              />
-            </div>
+            Collecte de Données
           </DialogTitle>
         </DialogHeader>
 
@@ -125,11 +111,6 @@ const DebugCollectionProgressModal: React.FC<DebugCollectionProgressModalProps> 
                    log.status === 'failed' ? 'Échec' :
                    log.status === 'running' ? 'En cours' : log.status}
                 </span>
-                {debugMode && (
-                  <Badge variant="outline" className="text-xs">
-                    ID: {logId?.slice(-8)}
-                  </Badge>
-                )}
               </div>
 
               {log.status === 'running' && (
@@ -150,7 +131,7 @@ const DebugCollectionProgressModal: React.FC<DebugCollectionProgressModalProps> 
             <div className="flex justify-between items-center text-sm">
               <span className="text-white font-medium">Progression Temps Réel</span>
               <div className="flex items-center gap-2">
-                <span className="font-bold text-3xl text-white bg-primary/20 px-3 py-1 rounded-lg backdrop-blur-sm">{progress}%</span>
+                <span className="font-black text-5xl text-white bg-primary/30 px-4 py-2 rounded-xl backdrop-blur-sm">{progress}%</span>
                 {isPollingActive && (
                   <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse" title="Polling actif"></div>
                 )}
@@ -211,45 +192,6 @@ const DebugCollectionProgressModal: React.FC<DebugCollectionProgressModalProps> 
             )}
           </div>
 
-          {/* Debug Information */}
-          {debugMode && log && (
-            <div className="p-3 bg-gray-50 rounded-lg">
-              <div className="flex items-center gap-2 mb-2">
-                <Eye className="w-4 h-4" />
-                <span className="font-medium text-sm">Informations Debug</span>
-              </div>
-              
-              <div className="space-y-2 text-xs font-mono">
-                <div>
-                  <span className="text-muted-foreground">Log ID:</span> {logId}
-                </div>
-                <div>
-                  <span className="text-muted-foreground">Status:</span> {log.status}
-                </div>
-                <div>
-                  <span className="text-muted-foreground">Started:</span> {new Date(log.started_at).toISOString()}
-                </div>
-                <div>
-                  <span className="text-muted-foreground">Last Update:</span> {(log as any).last_ping || 'N/A'}
-                </div>
-                <div>
-                  <span className="text-muted-foreground">Summary Stats:</span>
-                  <pre className="mt-1 p-2 bg-white rounded text-xs overflow-x-auto">
-                    {JSON.stringify(log.summary_stats, null, 2)}
-                  </pre>
-                </div>
-                <div>
-                  <span className="text-muted-foreground">Collection Types:</span> {log.collection_type}
-                </div>
-                <div>
-                  <span className="text-muted-foreground">Mode:</span> {log.collection_mode}
-                </div>
-                <div>
-                  <span className="text-muted-foreground">Errors:</span> {log.errors_count || 0}
-                </div>
-              </div>
-            </div>
-          )}
 
           {/* Timing Info */}
           {log && (

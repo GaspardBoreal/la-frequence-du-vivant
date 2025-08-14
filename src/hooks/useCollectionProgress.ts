@@ -3,10 +3,11 @@ import { supabase } from '@/integrations/supabase/client';
 import { DataCollectionLog } from '@/types/snapshots';
 
 // Estimation des temps par type de collecte (en secondes par marche)
+// Mise à jour pour tenir compte de l'augmentation du nombre de marches (21 → 30 → 40)
 const COLLECTION_TIME_ESTIMATES = {
-  biodiversity: 4, // 4 secondes par marche pour la biodiversité
-  weather: 2,      // 2 secondes par marche pour la météo
-  real_estate: 3   // 3 secondes par marche pour l'immobilier
+  biodiversity: 6, // 6 secondes par marche pour la biodiversité (ajusté pour 30-40 marches)
+  weather: 3,      // 3 secondes par marche pour la météo
+  real_estate: 4   // 4 secondes par marche pour l'immobilier
 };
 
 interface ProgressState {
