@@ -12,12 +12,14 @@ interface BiodiversityTransitionRadarProps {
   intelligenceData: BiodiversityIntelligenceData;
   activeYear: number;
   onSpeciesSelect?: (species: string) => void;
+  onYearChange?: (year: number) => void;
 }
 
 const BiodiversityTransitionRadar: React.FC<BiodiversityTransitionRadarProps> = ({
   intelligenceData,
   activeYear,
-  onSpeciesSelect
+  onSpeciesSelect,
+  onYearChange
 }) => {
   const [selectedSignal, setSelectedSignal] = useState<BiodiversitySignal | null>(null);
   const [selectedAlert, setSelectedAlert] = useState<TerritorialAlert | null>(null);
@@ -96,7 +98,7 @@ const BiodiversityTransitionRadar: React.FC<BiodiversityTransitionRadarProps> = 
 
       {/* Signals List */}
       <div className="space-y-3">
-        {signals.map((signal, index) => (
+        {filteredData.signals.map((signal, index) => (
           <motion.div
             key={`${signal.species}-${signal.signalType}`}
             initial={{ opacity: 0, y: 10 }}
@@ -139,7 +141,7 @@ const BiodiversityTransitionRadar: React.FC<BiodiversityTransitionRadarProps> = 
 
   const AlertsView = () => (
     <div className="space-y-4">
-      {territorialAlerts.map((alert, index) => (
+      {filteredData.alerts.map((alert, index) => (
         <motion.div
           key={alert.id}
           initial={{ opacity: 0, x: -20 }}
@@ -288,16 +290,81 @@ const BiodiversityTransitionRadar: React.FC<BiodiversityTransitionRadarProps> = 
     </div>
   );
 
+  // Filter data based on active year
+  const getYearFilteredData = () => {
+    if (activeYear === 2025) {
+      return {
+        signals: signals.filter(s => s.prediction.likelihood2035 > 0.3),
+        alerts: territorialAlerts.filter(a => a.timeline === '0-2years' || a.timeline === '2-5years')
+      };
+    } else if (activeYear === 2035) {
+      return {
+        signals: signals.filter(s => s.prediction.likelihood2035 > 0.5),
+        alerts: territorialAlerts.filter(a => a.timeline === '2-5years' || a.timeline === '5-10years')
+      };
+    } else if (activeYear === 2045) {
+      return {
+        signals: signals.filter(s => s.prediction.likelihood2045 > 0.4),
+        alerts: territorialAlerts.filter(a => a.timeline === '5-10years' || a.timeline === '10-20years')
+      };
+    }
+    return { signals, alerts: territorialAlerts };
+  };
+
+  const filteredData = getYearFilteredData();
+
   return (
     <div className="bg-gradient-to-br from-blue-50 to-indigo-100 rounded-3xl p-8 border-2 border-blue-200/50">
-      {/* Header */}
+      {/* Header with Temporal Navigation */}
       <div className="mb-8">
-        <h2 className="text-3xl font-bold text-transparent bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text mb-2">
-          Intelligence Biodiversité
-        </h2>
-        <p className="text-blue-700">
-          Détection précoce et prédiction des changements écologiques
-        </p>
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <h2 className="text-3xl font-bold text-transparent bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text mb-2">
+              Intelligence Biodiversité {activeYear}
+            </h2>
+            <p className="text-blue-700">
+              Détection précoce et prédiction des changements écologiques
+            </p>
+          </div>
+          
+          {/* Temporal Slider */}
+          {onYearChange && (
+            <div className="flex items-center gap-4 bg-white/60 backdrop-blur-sm rounded-xl p-4 border border-blue-200">
+              <Clock className="h-5 w-5 text-blue-600" />
+              <div className="flex gap-2">
+                {[2025, 2035, 2045].map((year) => (
+                  <button
+                    key={year}
+                    onClick={() => onYearChange(year)}
+                    className={`px-4 py-2 rounded-lg font-medium transition-all ${
+                      activeYear === year
+                        ? 'bg-blue-600 text-white shadow-lg'
+                        : 'bg-white/60 text-blue-700 hover:bg-blue-100'
+                    }`}
+                  >
+                    {year}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+        
+        {/* Year-specific indicators */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="bg-white/60 rounded-lg p-3 border border-blue-200">
+            <div className="text-sm text-blue-600">Signaux détectés</div>
+            <div className="text-2xl font-bold text-blue-800">{filteredData.signals.length}</div>
+          </div>
+          <div className="bg-white/60 rounded-lg p-3 border border-blue-200">
+            <div className="text-sm text-blue-600">Alertes territoriales</div>
+            <div className="text-2xl font-bold text-blue-800">{filteredData.alerts.length}</div>
+          </div>
+          <div className="bg-white/60 rounded-lg p-3 border border-blue-200">
+            <div className="text-sm text-blue-600">Espèces analysées</div>
+            <div className="text-2xl font-bold text-blue-800">{intelligenceData.climateThresholds.length}</div>
+          </div>
+        </div>
       </div>
 
       {/* Tabs */}

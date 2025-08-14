@@ -131,6 +131,7 @@ const ProjectionsSubSection: React.FC<ProjectionsSubSectionProps> = ({ marche, t
               intelligenceData={intelligenceData}
               activeYear={activeYear}
               onSpeciesSelect={(species) => console.log('Selected species:', species)}
+              onYearChange={handleYearChange}
             />
           ) : (
             <div className="bg-purple-50 border border-purple-200 rounded-xl p-8 text-center">
