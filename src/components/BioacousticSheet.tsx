@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { MarcheTechnoSensible } from '@/utils/googleSheetsApi';
 import { createSlug } from '@/utils/slugGenerator';
@@ -32,12 +32,22 @@ export const BioacousticSheet: React.FC<BioacousticSheetProps> = ({
   
   // State for radius expansion - use provided radius or default
   const [searchRadius, setSearchRadius] = useState(radius);
+  const [debouncedRadius, setDebouncedRadius] = useState(radius);
   const [showExpandDialog, setShowExpandDialog] = useState(false);
+
+  // Debounce du rayon de recherche pour éviter trop d'appels API
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedRadius(searchRadius);
+    }, 800);
+    
+    return () => clearTimeout(timer);
+  }, [searchRadius]);
 
   const { data: biodiversityData, isLoading: isBiodiversityLoading } = useBiodiversityData({ 
     latitude, 
     longitude, 
-    radius: searchRadius, // API expects km, not meters
+    radius: debouncedRadius, // Use debounced radius like in BioDivSubSection
     dateFilter: 'recent'
   });
   const { data: lexiconData } = useLexiconData(latitude, longitude);
@@ -163,7 +173,7 @@ export const BioacousticSheet: React.FC<BioacousticSheetProps> = ({
                   <Eye className="h-4 w-4" />
                   Biodiversité ({((biodiversityData.summary.birds || 0) + (biodiversityData.summary.plants || 0) + (biodiversityData.summary.fungi || 0) + (biodiversityData.summary.others || 0))} espèces)
                   <Badge variant="outline" className="text-xs ml-2">
-                    rayon {searchRadius < 1 ? `${Math.round(searchRadius * 1000)}m` : `${searchRadius}km`}
+                    rayon {debouncedRadius < 1 ? `${Math.round(debouncedRadius * 1000)}m` : `${debouncedRadius}km`}
                   </Badge>
                 </CardTitle>
               </CardHeader>
