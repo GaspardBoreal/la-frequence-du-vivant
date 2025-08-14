@@ -30,6 +30,7 @@ import ExplorationPodcast from './pages/ExplorationPodcast';
 import ExplorationPodcastDordogne from './pages/ExplorationPodcastDordogne';
 import WeatherCalendar from './pages/WeatherCalendar';
 import ProjectPresentation from './pages/ProjectPresentation';
+import GalerieFleuvePage from './pages/GalerieFleuvePage';
 
 function App() {
   return (
@@ -46,6 +47,7 @@ function App() {
           
           {/* Routes explorations */}
           <Route path="/explorations" element={<ExplorationsList />} />
+          <Route path="/galerie-fleuve" element={<GalerieFleuvePage />} />
           <Route path="/explorations/:slug" element={<ExplorationDetail />} />
           <Route path="/explorations/:slug/animer" element={<ExplorationAnimatorRefactored />} />
           <Route path="/explorations/:slug/experience/:sessionId" element={<ExplorationExperience />} />

@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { useExplorations, Exploration } from '@/hooks/useExplorations';
-import { Sparkles, Palette } from 'lucide-react';
+import { Sparkles, Palette, Wind, Camera } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import SEOHead from '@/components/SEOHead';
 import DecorativeParticles from '@/components/DecorativeParticles';
 import PoeticExplorationCard from '@/components/PoeticExplorationCard';
@@ -94,6 +96,24 @@ const ExplorationsList = () => {
             
             {/* Ligne décorative animée */}
             <div className="mt-8 w-24 h-0.5 bg-gradient-to-r from-gaspard-primary to-gaspard-accent mx-auto rounded-full opacity-60"></div>
+            
+            {/* Bouton révolutionnaire vers la Galerie-Fleuve */}
+            <div className="mt-12 flex justify-center">
+              <Link to="/galerie-fleuve">
+                <Button
+                  size="lg"
+                  className="bg-gradient-to-r from-primary via-secondary to-accent hover:from-primary/90 hover:via-secondary/90 hover:to-accent/90 text-white shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 border-0 px-8 py-4"
+                >
+                  <Wind className="h-5 w-5 mr-3 animate-pulse" />
+                  <span className="text-lg font-medium">Découvrir la Galerie-Fleuve</span>
+                  <Camera className="h-5 w-5 ml-3" />
+                </Button>
+              </Link>
+            </div>
+            
+            <p className="text-center mt-4 text-sm text-muted-foreground italic">
+              Une expérience révolutionnaire pour explorer toutes les photos dans leur diversité
+            </p>
           </header>
 
           {/* Filtres avancés */}
