@@ -60,13 +60,13 @@ export default function PresentationHero() {
                 <br />
                 <span className="text-primary">du Vivant</span>
                 <br />
-                <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-accent">
-                  L'IA qui Écoute l'Avenir
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-accent text-3xl md:text-4xl lg:text-5xl italic font-medium">
+                  L'IA bioacoustique qui Écoute l'Avenir
                 </span>
               </h1>
               
               <p className="text-xl text-muted-foreground max-w-xl leading-relaxed">
-                La première plateforme qui transforme les données environnementales 
+                La plateforme qui transforme les données environnementales 
                 en intelligence territoriale, combinant bioacoustique, IA prédictive 
                 et création poétique.
               </p>
