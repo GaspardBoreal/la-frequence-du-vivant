@@ -443,9 +443,9 @@ const BioDivSubSection: React.FC<BioDivSubSectionProps> = ({ marche, theme }) =>
         className="md:hidden sticky top-4 z-50"
       >
         <div className="flex justify-center">
-          <div className="inline-flex items-center px-5 py-3 bg-primary text-primary-foreground rounded-full shadow-xl border-2 border-accent/30 backdrop-blur-sm">
+          <div className="inline-flex items-center px-6 py-4 bg-orange-500 text-white rounded-full shadow-2xl border-2 border-white/30 backdrop-blur-sm">
             <Target className="h-5 w-5 mr-2" />
-            <span className="font-semibold text-base">
+            <span className="font-bold text-base">
               Rayon: {debouncedRadius < 1 ? `${Math.round(debouncedRadius * 1000)}m` : `${debouncedRadius}km`}
             </span>
             <MapPin className="h-5 w-5 ml-2" />

@@ -198,7 +198,7 @@ const BioacousticHeroSection: React.FC<BioacousticHeroSectionProps> = ({
           >
             {/* Title with Digital Manuscript Effect */}
             <div className="bg-black/15 backdrop-blur-lg rounded-2xl px-6 py-4 border border-white/10">
-              <h1 className="text-4xl md:text-5xl font-crimson font-bold text-white leading-tight tracking-wide drop-shadow-2xl">
+              <h1 className="text-4xl md:text-5xl font-crimson font-bold text-white leading-tight tracking-wide drop-shadow-[0_2px_8px_rgba(0,0,0,0.9)] shadow-2xl">
                 {marche.nomMarche || marche.ville}
               </h1>
             </div>
