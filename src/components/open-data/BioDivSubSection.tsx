@@ -50,6 +50,8 @@ const BioDivSubSection: React.FC<BioDivSubSectionProps> = ({ marche, theme }) =>
   const [sortBy, setSortBy] = useState<'name' | 'observations' | 'date'>('name');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
   const [selectedMetricFilter, setSelectedMetricFilter] = useState<string | null>(null);
+  const [showExpandDialog, setShowExpandDialog] = useState<boolean>(false);
+  const [hasExpanded, setHasExpanded] = useState<boolean>(false);
   
   // Debounce du rayon de recherche pour éviter trop d'appels API
   useEffect(() => {
@@ -299,14 +301,54 @@ const BioDivSubSection: React.FC<BioDivSubSectionProps> = ({ marche, theme }) =>
     );
   }
 
-  if (!biodiversityData?.species || biodiversityData.species.length === 0) {
+  // Gestion de l'expansion du rayon de recherche
+  const shouldShowExpandDialog = !biodiversityData?.species || 
+    (biodiversityData.species.length === 0 && debouncedRadius === 0.5 && !showExpandDialog && !hasExpanded);
+
+  const handleExpandRadius = () => {
+    setSearchRadius(5);
+    setDebouncedRadius(5);
+    setHasExpanded(true);
+  };
+
+  const handleDeclineExpansion = () => {
+    setShowExpandDialog(true);
+  };
+
+  // Affichage du dialogue d'expansion si aucune donnée à 500m
+  if (shouldShowExpandDialog) {
+    return (
+      <Card className="border-orange-200 bg-orange-50/50">
+        <CardContent className="p-6 text-center">
+          <Globe className="h-12 w-12 text-orange-500 mx-auto mb-4" />
+          <p className="text-sm font-medium mb-4">
+            Aucune donnée de biodiversité enregistrée dans un rayon de recherche de 500m
+          </p>
+          <p className="text-sm text-muted-foreground mb-6">
+            Souhaitez-vous que l'on élargisse le rayon de recherche ?
+          </p>
+          <div className="flex gap-3 justify-center">
+            <Button onClick={handleExpandRadius} variant="default">
+              Oui
+            </Button>
+            <Button onClick={handleDeclineExpansion} variant="outline">
+              Non
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  // Affichage normal si pas de données et utilisateur a refusé l'expansion
+  if ((!biodiversityData?.species || biodiversityData.species.length === 0) && showExpandDialog) {
     return (
       <Card>
         <CardContent className="p-6 text-center">
           <Globe className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
           <h3 className="text-lg font-semibold mb-2">Aucune donnée trouvée</h3>
           <p className="text-muted-foreground">
-            Aucune observation de biodiversité trouvée dans un rayon de {debouncedRadius}km autour de {marche.ville}.
+            Aucune observation de biodiversité trouvée dans un rayon de {debouncedRadius < 1 ? `${Math.round(debouncedRadius * 1000)}m` : `${debouncedRadius}km`} autour de {marche.ville}.
           </p>
         </CardContent>
       </Card>
@@ -348,9 +390,16 @@ const BioDivSubSection: React.FC<BioDivSubSectionProps> = ({ marche, theme }) =>
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <Label className="text-sm font-medium">Rayon de recherche:</Label>
-              <Badge variant="outline" className="bg-primary/10 text-primary font-medium">
-                {searchRadius < 1 ? `${Math.round(searchRadius * 1000)}m` : `${searchRadius}km`}
-              </Badge>
+              <div className="flex items-center gap-2">
+                <Badge variant="outline" className="bg-primary/10 text-primary font-medium">
+                  {searchRadius < 1 ? `${Math.round(searchRadius * 1000)}m` : `${searchRadius}km`}
+                </Badge>
+                {hasExpanded && (
+                  <Badge variant="secondary" className="text-xs">
+                    Élargi
+                  </Badge>
+                )}
+              </div>
             </div>
             
             <div className="space-y-2">
