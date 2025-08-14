@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Leaf, ExternalLink, TreePine, Flower, Bird, Loader2, AlertCircle, Camera, Calendar, Globe, MapPin, Info, CheckCircle, Clock, User, Building, Eye, Users, Filter, Database, ZoomIn } from 'lucide-react';
+import { Leaf, ExternalLink, TreePine, Flower, Bird, Loader2, AlertCircle, Camera, Calendar, Globe, MapPin, Info, CheckCircle, Clock, User, Building, Eye, Users, Filter, Database, ZoomIn, Target } from 'lucide-react';
 import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
@@ -434,6 +434,24 @@ const BioDivSubSection: React.FC<BioDivSubSectionProps> = ({ marche, theme }) =>
           onFilterChange={handleMetricFilterChange}
         />
       )}
+
+      {/* Badge rayon de recherche mobile */}
+      <motion.div
+        initial={{ opacity: 0, y: -10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4 }}
+        className="md:hidden"
+      >
+        <div className="flex justify-center">
+          <div className="inline-flex items-center px-4 py-3 bg-gradient-to-r from-primary via-primary/90 to-secondary text-primary-foreground rounded-full shadow-lg border border-primary/20">
+            <Target className="h-4 w-4 mr-2" />
+            <span className="font-medium">
+              Rayon de recherche: {debouncedRadius < 1 ? `${Math.round(debouncedRadius * 1000)}m` : `${debouncedRadius}km`}
+            </span>
+            <MapPin className="h-4 w-4 ml-2" />
+          </div>
+        </div>
+      </motion.div>
 
       {/* Contrôles de recherche et rayon */}
       <Card className="p-6">
