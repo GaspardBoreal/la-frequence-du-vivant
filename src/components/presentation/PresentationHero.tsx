@@ -60,9 +60,11 @@ export default function PresentationHero() {
                 <br />
                 <span className="text-primary">du Vivant</span>
                 <br />
-                <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-accent text-3xl md:text-4xl lg:text-5xl italic font-medium">
-                  L'IA bioacoustique qui Écoute l'Avenir
-                </span>
+                <div className="mt-6">
+                  <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-accent text-3xl md:text-4xl lg:text-5xl italic font-medium">
+                    L'IA bioacoustique qui Écoute l'Avenir
+                  </span>
+                </div>
               </h1>
               
               <p className="text-xl text-muted-foreground max-w-xl leading-relaxed">
