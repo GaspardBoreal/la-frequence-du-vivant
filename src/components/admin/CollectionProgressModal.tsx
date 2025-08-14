@@ -24,11 +24,13 @@ const CollectionProgressModal: React.FC<CollectionProgressModalProps> = ({
   const { 
     log, 
     progress, 
-    currentMarcheName, 
-    estimatedTimeRemaining, 
+    currentMarcheName,
+    currentDataType,
+    estimatedTimeRemaining,
+    initialEstimate,
     isCompleted, 
     error 
-  } = useCollectionProgress(logId);
+  } = useCollectionProgress(logId, collectionTypes);
 
   const formatTime = (seconds: number | null) => {
     if (!seconds) return 'Calcul en cours...';
@@ -111,30 +113,55 @@ const CollectionProgressModal: React.FC<CollectionProgressModalProps> = ({
               </div>
 
               {log.status === 'running' && (
-                <p className="text-xs">
-                  Traitement : {currentMarcheName}
-                </p>
+                <div className="space-y-1">
+                  <p className="text-xs font-medium">
+                    {currentDataType || 'Collecte en cours...'}
+                  </p>
+                  <p className="text-xs opacity-75">
+                    Marché : {currentMarcheName}
+                  </p>
+                </div>
               )}
             </div>
           ) : null}
 
           {/* Progress Bar */}
-          <div className="space-y-2">
+          <div className="space-y-3">
             <div className="flex justify-between text-sm">
               <span>Progression</span>
               <span className="font-medium">{progress}%</span>
             </div>
-            <Progress value={progress} className="w-full" />
-            <div className="flex justify-between text-xs text-muted-foreground">
-              <span>
-                {log?.marches_processed || 0} / {log?.marches_total || 0} marches
-              </span>
-              {estimatedTimeRemaining && log?.status === 'running' && (
-                <span>
-                  Temps restant : {formatTime(estimatedTimeRemaining)}
-                </span>
+            <Progress value={progress} className="w-full h-2" />
+            
+            {/* Detailed Progress Info */}
+            <div className="grid grid-cols-2 gap-4 text-xs">
+              <div>
+                <span className="text-muted-foreground">Traitement:</span>
+                <div className="font-medium">
+                  {log?.marches_processed || 0} / {log?.marches_total || 0} marchés
+                </div>
+              </div>
+              
+              {log?.status === 'running' && (
+                <div>
+                  <span className="text-muted-foreground">Temps restant:</span>
+                  <div className="font-medium">
+                    {estimatedTimeRemaining ? 
+                      formatTime(estimatedTimeRemaining) : 
+                      'Calcul en cours...'}
+                  </div>
+                </div>
               )}
             </div>
+
+            {/* Initial Estimate Display */}
+            {initialEstimate && log?.status === 'running' && (
+              <div className="p-2 bg-blue-50 rounded text-xs">
+                <span className="text-blue-600">
+                  💡 Durée estimée : {formatTime(initialEstimate)}
+                </span>
+              </div>
+            )}
           </div>
 
           {/* Timing Info */}

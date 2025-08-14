@@ -97,17 +97,37 @@ serve(async (req) => {
         await supabase
           .from('data_collection_logs')
           .update({ 
+            marches_processed: processedCount,
             summary_stats: {
               current_marche_name: marche.nom_marche || marche.ville,
               current_marche_id: marche.id,
+              current_data_type: collectionTypes.length > 1 ? 
+                'Collecte multiple...' : 
+                (collectionTypes[0] === 'biodiversity' ? '🌿 Biodiversité' :
+                 collectionTypes[0] === 'weather' ? '🌤️ Météo' :
+                 collectionTypes[0] === 'real_estate' ? '🏠 Immobilier' : 'Collecte en cours'),
               processed: processedCount,
-              total_marches: validMarches.length
+              total_marches: validMarches.length,
+              marche_start_time: new Date().toISOString()
             }
           })
           .eq('id', logEntry.id);
 
         // Collect biodiversity data
         if (collectionTypes.includes('biodiversity')) {
+          // Update current data type
+          await supabase
+            .from('data_collection_logs')
+            .update({ 
+              summary_stats: {
+                current_marche_name: marche.nom_marche || marche.ville,
+                current_data_type: '🌿 Collecte biodiversité...',
+                processed: processedCount,
+                total_marches: validMarches.length
+              }
+            })
+            .eq('id', logEntry.id);
+
           try {
             const { data: biodivData, error: biodivError } = await supabase.functions.invoke('biodiversity-data', {
               body: {
@@ -154,6 +174,19 @@ serve(async (req) => {
 
         // Collect weather data
         if (collectionTypes.includes('weather')) {
+          // Update current data type
+          await supabase
+            .from('data_collection_logs')
+            .update({ 
+              summary_stats: {
+                current_marche_name: marche.nom_marche || marche.ville,
+                current_data_type: '🌤️ Collecte météo...',
+                processed: processedCount,
+                total_marches: validMarches.length
+              }
+            })
+            .eq('id', logEntry.id);
+
           try {
             const { data: weatherData, error: weatherError } = await supabase.functions.invoke('open-meteo-data', {
               body: {
@@ -202,6 +235,19 @@ serve(async (req) => {
 
         // Collect real estate data via LEXICON
         if (collectionTypes.includes('real_estate')) {
+          // Update current data type
+          await supabase
+            .from('data_collection_logs')
+            .update({ 
+              summary_stats: {
+                current_marche_name: marche.nom_marche || marche.ville,
+                current_data_type: '🏠 Collecte immobilier...',
+                processed: processedCount,
+                total_marches: validMarches.length
+              }
+            })
+            .eq('id', logEntry.id);
+
           try {
             const { data: realEstateData, error: realEstateError } = await supabase.functions.invoke('lexicon-proxy', {
               body: {
