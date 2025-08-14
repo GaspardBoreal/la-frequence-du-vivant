@@ -148,16 +148,24 @@ const DebugCollectionProgressModal: React.FC<DebugCollectionProgressModalProps> 
           {/* Progress Bar */}
           <div className="space-y-3">
             <div className="flex justify-between items-center text-sm">
-              <span>Progression Temps Réel</span>
+              <span className="text-white font-medium">Progression Temps Réel</span>
               <div className="flex items-center gap-2">
-                <span className="font-bold text-2xl text-primary">{progress}%</span>
+                <span className="font-bold text-3xl text-white bg-primary/20 px-3 py-1 rounded-lg backdrop-blur-sm">{progress}%</span>
                 {isPollingActive && (
-                  <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" title="Polling actif"></div>
+                  <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse" title="Polling actif"></div>
                 )}
               </div>
             </div>
             
-            <Progress value={progress} className="w-full h-4" />
+            <div className="relative">
+              <Progress value={progress} className="w-full h-6 bg-gray-800/50" />
+              <div 
+                className="absolute top-0 left-0 h-6 bg-white rounded-full transition-all duration-300 ease-out flex items-center justify-center"
+                style={{ width: `${progress}%` }}
+              >
+                <span className="text-xs font-bold text-gray-900 px-2">{progress}%</span>
+              </div>
+            </div>
             
             {/* Marche courante - Affichage proéminent */}
             {currentMarcheName && log?.status === 'running' && (
