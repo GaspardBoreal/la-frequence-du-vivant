@@ -161,19 +161,19 @@ const DebugCollectionProgressModal: React.FC<DebugCollectionProgressModalProps> 
             )}
             
             {/* Detailed Progress Info */}
-            <div className="grid grid-cols-2 gap-4 text-xs">
+            <div className="grid grid-cols-2 gap-6 text-sm">
               <div>
-                <span className="text-muted-foreground">Progression:</span>
-                <div className="font-medium text-primary text-lg">
+                <span className="text-muted-foreground text-base">Progression:</span>
+                <div className="font-bold text-primary text-2xl">
                   {log?.marches_processed || 0} / {log?.marches_total || 0}
                 </div>
-                <div className="text-xs text-muted-foreground">marches traitées</div>
+                <div className="text-sm text-muted-foreground">marches traitées</div>
               </div>
               
               {log?.status === 'running' && (
                 <div>
-                  <span className="text-muted-foreground">Temps restant:</span>
-                  <div className="font-medium">
+                  <span className="text-muted-foreground text-base">Temps restant:</span>
+                  <div className="font-bold text-2xl">
                     {estimatedTimeRemaining ? 
                       formatTime(estimatedTimeRemaining) : 
                       'Calcul en cours...'}
@@ -182,14 +182,6 @@ const DebugCollectionProgressModal: React.FC<DebugCollectionProgressModalProps> 
               )}
             </div>
 
-            {/* Initial Estimate Display */}
-            {initialEstimate && log?.status === 'running' && (
-              <div className="p-2 bg-green-50 rounded text-xs">
-                <span className="text-green-600">
-                  💡 Durée estimée : {formatTime(initialEstimate)}
-                </span>
-              </div>
-            )}
           </div>
 
 
@@ -234,10 +226,10 @@ const DebugCollectionProgressModal: React.FC<DebugCollectionProgressModalProps> 
           <div className="flex justify-end">
             <Button
               onClick={onClose}
-              variant={isCompleted ? "default" : "outline"}
+              variant="default"
               disabled={!isCompleted && !error}
             >
-              {isCompleted || error ? 'Fermer' : 'Minimiser'}
+              Fermer
             </Button>
           </div>
         </div>
