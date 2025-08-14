@@ -42,6 +42,7 @@ const MarcheAdmin = () => {
   const handleEdit = (marcheId: string) => {
     setEditingMarcheId(marcheId);
     setViewMode('edit');
+    setActiveTab('create'); // Switch to create tab for editing
   };
 
   const handleCancel = () => {
@@ -100,12 +101,7 @@ const MarcheAdmin = () => {
           </h1>
           
           <div className="flex justify-end">
-            {viewMode === 'list' && (
-              <Button onClick={handleCreate} className="flex items-center">
-                <Plus className="h-4 w-4 mr-2" />
-                Nouvelle Marche
-              </Button>
-            )}
+            {/* Removed "Nouvelle Marche" button as requested */}
           </div>
         </div>
 
@@ -138,7 +134,9 @@ const MarcheAdmin = () => {
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
             <TabsList className="grid w-full grid-cols-3">
               <TabsTrigger value="list">Liste des Marches</TabsTrigger>
-              <TabsTrigger value="create">Créer une Marche</TabsTrigger>
+              <TabsTrigger value="create">
+                {viewMode === 'edit' ? 'Modifier une Marche' : 'Créer une Marche'}
+              </TabsTrigger>
               <TabsTrigger value="data" className="relative">
                 Collecte de Données
                 <Sparkles className="w-3 h-3 ml-1 text-accent animate-pulse" />
@@ -163,9 +161,12 @@ const MarcheAdmin = () => {
             
             <TabsContent value="create" className="space-y-4">
               <MarcheForm
-                mode="create"
-                marcheId={null}
-                onCancel={() => setActiveTab('list')}
+                mode={viewMode === 'edit' ? 'edit' : 'create'}
+                marcheId={editingMarcheId}
+                onCancel={() => {
+                  setActiveTab('list');
+                  handleCancel();
+                }}
                 onSuccess={() => {
                   handleSuccess();
                   setActiveTab('list');
