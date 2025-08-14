@@ -1,6 +1,7 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { MarcheTechnoSensible } from '@/utils/googleSheetsApi';
+import { createSlug } from '@/utils/slugGenerator';
 import { useBiodiversityData } from '@/hooks/useBiodiversityData';
 import { useLexiconData } from '@/hooks/useLexiconData';
 import { useLatestSnapshotsForMarche } from '@/hooks/useSnapshotData';
@@ -158,7 +159,8 @@ export const BioacousticSheet: React.FC<BioacousticSheetProps> = ({
         <div className="sticky bottom-0 bg-background p-4 border-t border-border/50 mt-6">
           <Button 
             onClick={() => {
-              navigate(`/marche-detail/${marche.id}`);
+              const slug = createSlug(marche.nomMarche || marche.ville, marche.ville);
+              navigate(`/bioacoustique/${slug}`);
               onOpenChange(false);
             }}
             className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-semibold py-3"
