@@ -24,7 +24,7 @@ export const BioacousticSheet: React.FC<BioacousticSheetProps> = ({
   marche,
   open,
   onOpenChange,
-  radius = 500
+  radius = 0.5
 }) => {
   const navigate = useNavigate();
   const latitude = marche.latitude;
