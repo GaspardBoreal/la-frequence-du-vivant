@@ -1,11 +1,12 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { MarcheTechnoSensible } from '@/utils/googleSheetsApi';
 import { useBiodiversityData } from '@/hooks/useBiodiversityData';
 import { useLexiconData } from '@/hooks/useLexiconData';
 import { useLatestSnapshotsForMarche } from '@/hooks/useSnapshotData';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
-import { MapPin, Calendar, Thermometer, Users, Home, Eye, EyeOff } from 'lucide-react';
+import { MapPin, Calendar, Thermometer, Users, Home, Eye, EyeOff, ExternalLink } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { Badge } from '@/components/ui/badge';
@@ -22,6 +23,7 @@ export const BioacousticSheet: React.FC<BioacousticSheetProps> = ({
   open,
   onOpenChange
 }) => {
+  const navigate = useNavigate();
   const latitude = marche.latitude;
   const longitude = marche.longitude;
 
@@ -43,12 +45,12 @@ export const BioacousticSheet: React.FC<BioacousticSheetProps> = ({
         side="bottom" 
         className="h-[80vh] rounded-t-xl border-t-2 border-primary/20 overflow-y-auto"
       >
-        <SheetHeader className="pb-4 border-b border-border/50">
-          <SheetTitle className="flex items-center gap-2 text-xl font-bold text-primary">
-            <MapPin className="h-5 w-5" />
+        <SheetHeader className="pb-6 border-b border-border/50 bg-gradient-to-r from-primary/5 to-primary/10">
+          <SheetTitle className="flex items-center gap-3 text-2xl md:text-3xl font-bold text-primary">
+            <MapPin className="h-6 w-6 text-primary" />
             {marche.nomMarche || marche.ville}
           </SheetTitle>
-          <p className="text-sm text-muted-foreground">
+          <p className="text-base text-muted-foreground font-medium mt-2">
             {marche.ville} • {formatDate(marche.date || '')}
           </p>
         </SheetHeader>
@@ -118,15 +120,15 @@ export const BioacousticSheet: React.FC<BioacousticSheetProps> = ({
               <CardContent className="space-y-2">
                 <div className="grid grid-cols-2 gap-4 text-sm">
                   <div>
-                    <span className="font-medium">Température:</span>
+                    <span className="font-medium">Température moyenne:</span>
                     <p className="text-muted-foreground">
-                      {snapshotsData.weather.temperature_avg}°C
+                      {Number(snapshotsData.weather.temperature_avg).toFixed(1)}°C
                     </p>
                   </div>
                   <div>
-                    <span className="font-medium">Humidité:</span>
+                    <span className="font-medium">Humidité moyenne:</span>
                     <p className="text-muted-foreground">
-                      {snapshotsData.weather.humidity_avg}%
+                      {Number(snapshotsData.weather.humidity_avg).toFixed(1)}%
                     </p>
                   </div>
                 </div>
@@ -150,6 +152,21 @@ export const BioacousticSheet: React.FC<BioacousticSheetProps> = ({
               </CardContent>
             </Card>
           )}
+        </div>
+
+        {/* CTA Button to detailed page */}
+        <div className="sticky bottom-0 bg-background p-4 border-t border-border/50 mt-6">
+          <Button 
+            onClick={() => {
+              navigate(`/marche-detail/${marche.id}`);
+              onOpenChange(false);
+            }}
+            className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-semibold py-3"
+            size="lg"
+          >
+            <ExternalLink className="h-4 w-4 mr-2" />
+            📊 Voir la fiche complète
+          </Button>
         </div>
       </SheetContent>
     </Sheet>
