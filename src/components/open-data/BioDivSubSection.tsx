@@ -435,20 +435,20 @@ const BioDivSubSection: React.FC<BioDivSubSectionProps> = ({ marche, theme }) =>
         />
       )}
 
-      {/* Badge rayon de recherche mobile */}
+      {/* Badge rayon de recherche mobile - Plus visible et persistant */}
       <motion.div
         initial={{ opacity: 0, y: -10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4 }}
-        className="md:hidden"
+        className="md:hidden sticky top-4 z-50"
       >
         <div className="flex justify-center">
-          <div className="inline-flex items-center px-4 py-3 bg-gradient-to-r from-primary via-primary/90 to-secondary text-primary-foreground rounded-full shadow-lg border border-primary/20">
-            <Target className="h-4 w-4 mr-2" />
-            <span className="font-medium">
-              Rayon de recherche: {debouncedRadius < 1 ? `${Math.round(debouncedRadius * 1000)}m` : `${debouncedRadius}km`}
+          <div className="inline-flex items-center px-5 py-3 bg-gradient-to-r from-emerald-500 via-teal-500 to-green-500 text-white rounded-full shadow-xl border-2 border-white/20 backdrop-blur-sm">
+            <Target className="h-5 w-5 mr-2 text-emerald-100" />
+            <span className="font-semibold text-base">
+              Rayon: {debouncedRadius < 1 ? `${Math.round(debouncedRadius * 1000)}m` : `${debouncedRadius}km`}
             </span>
-            <MapPin className="h-4 w-4 ml-2" />
+            <MapPin className="h-5 w-5 ml-2 text-emerald-100" />
           </div>
         </div>
       </motion.div>
