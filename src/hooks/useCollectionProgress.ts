@@ -75,7 +75,7 @@ export const useCollectionProgress = (logId: string | null, collectionTypes: str
         processed: data.marches_processed,
         total: data.marches_total,
         summary_stats: data.summary_stats,
-        last_ping: data.last_ping,
+        last_ping: (data as any).last_ping,
         timestamp: new Date().toISOString()
       });
 

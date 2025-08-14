@@ -90,6 +90,7 @@ export type Database = {
           error_details: Json | null
           errors_count: number | null
           id: string
+          last_ping: string | null
           marches_processed: number | null
           marches_total: number | null
           started_at: string
@@ -105,6 +106,7 @@ export type Database = {
           error_details?: Json | null
           errors_count?: number | null
           id?: string
+          last_ping?: string | null
           marches_processed?: number | null
           marches_total?: number | null
           started_at?: string
@@ -120,6 +122,7 @@ export type Database = {
           error_details?: Json | null
           errors_count?: number | null
           id?: string
+          last_ping?: string | null
           marches_processed?: number | null
           marches_total?: number | null
           started_at?: string

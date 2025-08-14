@@ -202,7 +202,7 @@ const DebugCollectionProgressModal: React.FC<DebugCollectionProgressModalProps> 
                   <span className="text-muted-foreground">Started:</span> {new Date(log.started_at).toISOString()}
                 </div>
                 <div>
-                  <span className="text-muted-foreground">Last Update:</span> {log.last_ping || 'N/A'}
+                  <span className="text-muted-foreground">Last Update:</span> {(log as any).last_ping || 'N/A'}
                 </div>
                 <div>
                   <span className="text-muted-foreground">Summary Stats:</span>
