@@ -113,7 +113,7 @@ export const BioacousticSheet: React.FC<BioacousticSheetProps> = ({
             <MapPin className="h-6 w-6 text-primary" />
             {marche.nomMarche || marche.ville}
           </SheetTitle>
-          <p className="text-base text-muted-foreground font-medium mt-2">
+          <p className="text-base text-muted-foreground font-medium mt-2 text-center italic">
             {marche.ville} • {formatDate(marche.date || '')}
           </p>
         </SheetHeader>
