@@ -29,6 +29,7 @@ import ExplorationExperience from './pages/ExplorationExperience';
 import ExplorationPodcast from './pages/ExplorationPodcast';
 import ExplorationPodcastDordogne from './pages/ExplorationPodcastDordogne';
 import WeatherCalendar from './pages/WeatherCalendar';
+import ProjectPresentation from './pages/ProjectPresentation';
 
 function App() {
   return (
@@ -110,6 +111,7 @@ function App() {
           } />
           <Route path="/favicon-test" element={<FaviconTest />} />
           <Route path="/meteo-historique" element={<WeatherCalendar />} />
+          <Route path="/presentation" element={<ProjectPresentation />} />
           
           <Route path="*" element={<NotFound />} />
         </Routes>
