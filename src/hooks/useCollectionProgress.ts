@@ -2,11 +2,11 @@ import { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { DataCollectionLog } from '@/types/snapshots';
 
-// Estimation des temps par type de collecte (en secondes par marché)
+// Estimation des temps par type de collecte (en secondes par marche)
 const COLLECTION_TIME_ESTIMATES = {
-  biodiversity: 4, // 4 secondes par marché pour la biodiversité
-  weather: 2,      // 2 secondes par marché pour la météo
-  real_estate: 3   // 3 secondes par marché pour l'immobilier
+  biodiversity: 4, // 4 secondes par marche pour la biodiversité
+  weather: 2,      // 2 secondes par marche pour la météo
+  real_estate: 3   // 3 secondes par marche pour l'immobilier
 };
 
 interface ProgressState {
@@ -81,7 +81,7 @@ export const useCollectionProgress = (logId: string | null, collectionTypes: str
       // Extract current status from summary_stats
       const summaryStats = data.summary_stats as any;
       const currentMarcheName = summaryStats?.current_marche_name || 
-        (processed < total ? `Marché ${processed + 1}/${total}` : 'Finalisation...');
+        (processed < total ? `Marche ${processed + 1}/${total}` : 'Finalisation...');
       
       // Déterminer le type de donnée en cours de traitement
       const currentDataType = summaryStats?.current_data_type || 

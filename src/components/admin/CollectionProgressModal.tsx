@@ -138,7 +138,7 @@ const CollectionProgressModal: React.FC<CollectionProgressModalProps> = ({
               <div>
                 <span className="text-muted-foreground">Traitement:</span>
                 <div className="font-medium">
-                  {log?.marches_processed || 0} / {log?.marches_total || 0} marchés
+                  {log?.marches_processed || 0} / {log?.marches_total || 0} marches
                 </div>
               </div>
               
