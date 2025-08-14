@@ -6,6 +6,8 @@ import { RegionalTheme } from '../../utils/regionalThemes';
 import { useClimateProjections } from '../../hooks/useClimateProjections';
 import ClimateTimeMachine from '../climate/ClimateTimeMachine';
 import BiodiversityRiskRadar from '../biodiversity/BiodiversityRiskRadar';
+import BiodiversityTransitionRadar from '../biodiversity/BiodiversityTransitionRadar';
+import { useBiodiversityIntelligence } from '../../hooks/useBiodiversityIntelligence';
 import { Button } from '../ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
 
@@ -16,7 +18,7 @@ interface ProjectionsSubSectionProps {
 
 const ProjectionsSubSection: React.FC<ProjectionsSubSectionProps> = ({ marche, theme }) => {
   const [activeYear, setActiveYear] = useState(2025);
-  const [activeTab, setActiveTab] = useState('climate');
+  const [activeTab, setActiveTab] = useState('intelligence');
   
   console.log('🔮 ProjectionsSubSection INIT:', { 
     marcheVille: marche.ville,
@@ -28,6 +30,14 @@ const ProjectionsSubSection: React.FC<ProjectionsSubSectionProps> = ({ marche, t
     isLoading,
     error
   } = useClimateProjections(marche.latitude || 0, marche.longitude || 0);
+
+  // Fetch biodiversity intelligence
+  const { data: intelligenceData, isLoading: intelligenceLoading } = useBiodiversityIntelligence({
+    latitude: marche.latitude || 0,
+    longitude: marche.longitude || 0,
+    radius: 5,
+    timeHorizon: activeYear === 2035 ? '2035' : activeYear === 2045 ? '2045' : 'both'
+  });
 
   const handleYearChange = (year: number) => {
     setActiveYear(year);
@@ -96,7 +106,10 @@ const ProjectionsSubSection: React.FC<ProjectionsSubSectionProps> = ({ marche, t
 
       {/* Main Tabs Interface */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-3 mb-8">
+        <TabsList className="grid w-full grid-cols-4 mb-8">
+          <TabsTrigger value="intelligence" className="flex items-center gap-2">
+            🧠 Intelligence IA
+          </TabsTrigger>
           <TabsTrigger value="climate" className="flex items-center gap-2">
             <Zap className="h-4 w-4" />
             Climat Futur
@@ -110,6 +123,27 @@ const ProjectionsSubSection: React.FC<ProjectionsSubSectionProps> = ({ marche, t
             Paysages Sonores
           </TabsTrigger>
         </TabsList>
+
+        {/* Intelligence Tab - NEW */}
+        <TabsContent value="intelligence" className="space-y-6">
+          {intelligenceData ? (
+            <BiodiversityTransitionRadar
+              intelligenceData={intelligenceData}
+              activeYear={activeYear}
+              onSpeciesSelect={(species) => console.log('Selected species:', species)}
+            />
+          ) : (
+            <div className="bg-purple-50 border border-purple-200 rounded-xl p-8 text-center">
+              <div className="animate-pulse space-y-4">
+                <div className="h-8 bg-purple-200 rounded-lg w-1/2 mx-auto"></div>
+                <div className="h-32 bg-purple-200 rounded-xl"></div>
+              </div>
+              <p className="text-purple-600 mt-4">
+                {intelligenceLoading ? 'Analyse de l\'intelligence biodiversité...' : 'Chargement des données...'}
+              </p>
+            </div>
+          )}
+        </TabsContent>
 
         {/* Climate Projections Tab */}
         <TabsContent value="climate" className="space-y-6">
