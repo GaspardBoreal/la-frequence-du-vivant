@@ -347,11 +347,21 @@ const BioDivSubSection: React.FC<BioDivSubSectionProps> = ({ marche, theme }) =>
                 Aucune donnée de biodiversité
               </h3>
               <p className="text-muted-foreground leading-relaxed">
-                Aucune observation n'a été enregistrée dans un rayon de <span className="font-medium text-primary">500 mètres</span> autour de {marche.ville}.
+                Aucune observation n'a été enregistrée dans un rayon de 
+                <span className="inline-flex items-center mx-1 px-2 py-1 bg-orange-100 text-orange-800 text-xs font-semibold rounded-full border border-orange-200">
+                  500 mètres
+                </span> 
+                autour de {marche.ville}.
               </p>
-              <p className="text-sm text-muted-foreground bg-muted/50 rounded-lg p-3 border border-border/50">
-                Souhaitez-vous élargir la recherche à <span className="font-medium text-primary">5 kilomètres</span> pour découvrir plus d'espèces ?
-              </p>
+              <div className="bg-gradient-to-r from-muted/30 via-muted/50 to-muted/30 rounded-xl p-4 border border-border/50">
+                <p className="text-sm text-muted-foreground">
+                  Souhaitez-vous élargir la recherche à 
+                  <span className="inline-flex items-center mx-1 px-3 py-1 bg-gradient-to-r from-primary to-primary/80 text-primary-foreground text-sm font-bold rounded-full shadow-sm">
+                    5 kilomètres
+                  </span> 
+                  pour découvrir plus d'espèces ?
+                </p>
+              </div>
             </motion.div>
             
             <motion.div
