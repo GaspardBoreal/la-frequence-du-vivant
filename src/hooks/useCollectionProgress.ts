@@ -189,11 +189,11 @@ export const useCollectionProgress = (logId: string | null, collectionTypes: str
     // Initial fetch
     fetchProgress();
 
-    // Start polling every 500ms for maximum responsiveness
+    // Start polling every 200ms for maximum responsiveness during collection
     intervalRef.current = setInterval(() => {
       console.log('🔄 Polling progress...');
       fetchProgress();
-    }, 500);
+    }, 200);
 
     return () => {
       if (intervalRef.current) {

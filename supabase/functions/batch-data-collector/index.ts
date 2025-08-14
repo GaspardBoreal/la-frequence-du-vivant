@@ -311,12 +311,12 @@ serve(async (req) => {
         })
         .eq('id', logEntry.id);
 
-      // Rate limiting with forced transaction commit - wait 2 seconds between marches
+      // Rate limiting - wait 500ms between marches for performance
       if (i < validMarches.length - 1) {
-        console.log(`⏳ Délai de 2s avant prochain marché (${i + 2}/${validMarches.length})`);
-        await new Promise(resolve => setTimeout(resolve, 2000));
+        console.log(`⏳ Délai de 500ms avant prochain marché (${i + 2}/${validMarches.length})`);
+        await new Promise(resolve => setTimeout(resolve, 500));
         
-        // Force commit by touching the log again
+        // Update ping and next marche info
         await supabase
           .from('data_collection_logs')
           .update({ 

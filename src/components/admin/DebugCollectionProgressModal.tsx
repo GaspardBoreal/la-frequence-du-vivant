@@ -148,7 +148,7 @@ const DebugCollectionProgressModal: React.FC<DebugCollectionProgressModalProps> 
           <div className="space-y-3">
             <div className="flex justify-between text-sm">
               <span>Progression</span>
-              <span className="font-medium">{progress}%</span>
+              <span className="font-medium text-lg text-primary">{progress}%</span>
             </div>
             <Progress value={progress} className="w-full h-3" />
             
@@ -156,7 +156,7 @@ const DebugCollectionProgressModal: React.FC<DebugCollectionProgressModalProps> 
             <div className="grid grid-cols-2 gap-4 text-xs">
               <div>
                 <span className="text-muted-foreground">Traitement:</span>
-                <div className="font-medium">
+                <div className="font-medium text-primary">
                   {log?.marches_processed || 0} / {log?.marches_total || 0} marches
                 </div>
               </div>
