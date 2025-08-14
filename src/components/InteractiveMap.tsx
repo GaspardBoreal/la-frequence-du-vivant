@@ -179,23 +179,28 @@ const InteractiveMap: React.FC<InteractiveMapProps> = ({
   tooltipMode = 'default',
   onMobileMarkerClick
 }) => {
-  const isMobile = useIsMobile();
   const [mapReady, setMapReady] = useState(false);
   const [mapKey, setMapKey] = useState(0);
   const [hoveredMarker, setHoveredMarker] = useState<MarcheTechnoSensible | null>(null);
-  const [mousePosition, setMousePosition] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
-  const [isTouchDevice, setIsTouchDevice] = useState(false);
+  const [mapContainerRef, setMapContainerRef] = useState<HTMLElement | null>(null);
+  const [isMobile, setIsMobile] = useState(false);
 
-  // Enhanced mobile/touch detection
+  // Simple mobile detection
   useEffect(() => {
-    const checkTouch = () => {
-      setIsTouchDevice(window.innerWidth <= 768 || 'ontouchstart' in window || navigator.maxTouchPoints > 0);
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth <= 768);
     };
     
-    checkTouch();
-    window.addEventListener('resize', checkTouch);
-    return () => window.removeEventListener('resize', checkTouch);
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
   }, []);
+
+  // Get map container reference for tooltip positioning
+  useEffect(() => {
+    const container = document.querySelector('.leaflet-container') as HTMLElement;
+    setMapContainerRef(container);
+  }, [mapReady]);
 
   // Valider les coordonnées des données filtrées avec logs détaillés
   const validMarchesData = filteredMarchesData.filter(marche => {
@@ -289,19 +294,15 @@ const InteractiveMap: React.FC<InteractiveMapProps> = ({
     }
   };
 
-  const handleMarkerMouseEnter = (marche: MarcheTechnoSensible, event: any) => {
-    // Only show tooltip on desktop devices for bioacoustic mode
-    if (tooltipMode === 'bioacoustic' && !isTouchDevice) {
+  const handleMarkerMouseEnter = (marche: MarcheTechnoSensible) => {
+    // Only show tooltip on desktop for bioacoustic mode
+    if (tooltipMode === 'bioacoustic' && !isMobile) {
       setHoveredMarker(marche);
-      setMousePosition({ 
-        x: event.originalEvent.clientX, 
-        y: event.originalEvent.clientY 
-      });
     }
   };
 
   const handleMarkerMouseLeave = () => {
-    if (tooltipMode === 'bioacoustic' && !isTouchDevice) {
+    if (tooltipMode === 'bioacoustic' && !isMobile) {
       setHoveredMarker(null);
     }
   };
@@ -370,8 +371,8 @@ const InteractiveMap: React.FC<InteractiveMapProps> = ({
               icon={markerIcon}
               eventHandlers={{
                 click: (e) => handleMarkerClick(marche, e),
-                 mouseover: !isTouchDevice ? (e) => handleMarkerMouseEnter(marche, e) : undefined,
-                 mouseout: !isTouchDevice ? handleMarkerMouseLeave : undefined
+                 mouseover: !isMobile ? () => handleMarkerMouseEnter(marche) : undefined,
+                 mouseout: !isMobile ? handleMarkerMouseLeave : undefined
               }}
             >
               {tooltipMode !== 'bioacoustic' && (
@@ -390,11 +391,11 @@ const InteractiveMap: React.FC<InteractiveMapProps> = ({
 
       </MapContainer>
       
-      {/* Bioacoustic tooltip - Desktop hover only */}
-      {tooltipMode === 'bioacoustic' && !isTouchDevice && hoveredMarker && (
+      {/* Bioacoustic tooltip - Desktop hover only, anchored to marker */}
+      {tooltipMode === 'bioacoustic' && !isMobile && hoveredMarker && (
         <BioacousticTooltipSimple
           marche={hoveredMarker}
-          position={mousePosition}
+          mapContainer={mapContainerRef}
           visible={!!hoveredMarker}
         />
       )}
