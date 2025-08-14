@@ -37,7 +37,7 @@ export const BioacousticSheet: React.FC<BioacousticSheetProps> = ({
   const { data: biodiversityData, isLoading: isBiodiversityLoading } = useBiodiversityData({ 
     latitude, 
     longitude, 
-    radius: searchRadius * 1000, // Convert km to meters for API
+    radius: searchRadius, // API expects km, not meters
     dateFilter: 'recent'
   });
   const { data: lexiconData } = useLexiconData(latitude, longitude);
