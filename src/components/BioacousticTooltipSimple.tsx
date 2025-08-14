@@ -16,7 +16,7 @@ export const BioacousticTooltipSimple: React.FC<BioacousticTooltipSimpleProps> =
   marche,
   mapContainer,
   visible,
-  radius = 500
+  radius = 0.5
 }) => {
   const latitude = marche.latitude;
   const longitude = marche.longitude;

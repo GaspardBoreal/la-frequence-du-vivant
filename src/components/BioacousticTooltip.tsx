@@ -29,7 +29,7 @@ const BioacousticTooltip: React.FC<BioacousticTooltipProps> = ({
   marche, 
   position, 
   visible,
-  radius = 500,
+  radius = 0.5,
   onClose 
 }) => {
   const [showBiodiversity, setShowBiodiversity] = useState(false);
