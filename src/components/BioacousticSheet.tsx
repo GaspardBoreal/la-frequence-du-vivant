@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { MarcheTechnoSensible } from '@/utils/googleSheetsApi';
 import { createSlug } from '@/utils/slugGenerator';
 import { useBiodiversityData } from '@/hooks/useBiodiversityData';
+import { BiodiversitySpecies } from '@/types/biodiversity';
 import { useLexiconData } from '@/hooks/useLexiconData';
 import { useLatestSnapshotsForMarche } from '@/hooks/useSnapshotData';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
@@ -19,6 +20,15 @@ interface BioacousticSheetProps {
   onOpenChange: (open: boolean) => void;
   radius?: number;
 }
+
+// Fonction utilitaire pour identifier les oiseaux (identique à BioDivSubSection)
+const isBirdSpecies = (species: BiodiversitySpecies): boolean => {
+  const isFromEbird = species.source === 'ebird';
+  const isAvesFamily = species.family === 'Aves' || species.family?.toLowerCase().includes('aves');
+  const isBirdFamily = species.family?.toLowerCase().includes('bird') || species.family?.toLowerCase().includes('idae');
+  const isBirdInName = species.commonName?.toLowerCase().includes('oiseau') || species.commonName?.toLowerCase().includes('bird') || species.scientificName?.toLowerCase().includes('aves');
+  return isFromEbird || isAvesFamily || isBirdFamily || isBirdInName;
+};
 
 export const BioacousticSheet: React.FC<BioacousticSheetProps> = ({
   marche,
@@ -53,9 +63,26 @@ export const BioacousticSheet: React.FC<BioacousticSheetProps> = ({
   const { data: lexiconData } = useLexiconData(latitude, longitude);
   const { data: snapshotsData } = useLatestSnapshotsForMarche(marche.id);
 
+  // Calcul des catégories côté client (identique à BioDivSubSection)
+  const categoryStats = useMemo(() => {
+    if (!biodiversityData?.species) return { all: 0, birds: 0, plants: 0, fungi: 0, others: 0 };
+    
+    const stats = {
+      all: biodiversityData.species.length,
+      birds: biodiversityData.species.filter(isBirdSpecies).length,
+      plants: biodiversityData.species.filter(s => s.kingdom === 'Plantae').length,
+      fungi: biodiversityData.species.filter(s => s.kingdom === 'Fungi').length,
+      others: 0
+    };
+    
+    stats.others = stats.all - stats.birds - stats.plants - stats.fungi;
+    
+    return stats;
+  }, [biodiversityData?.species]);
+
   // Check if we should show the expand prompt
   const shouldShowExpandPrompt = !isBiodiversityLoading && 
-    (!biodiversityData?.summary || ((biodiversityData.summary.birds || 0) + (biodiversityData.summary.plants || 0) + (biodiversityData.summary.fungi || 0) + (biodiversityData.summary.others || 0)) === 0) && 
+    (!biodiversityData?.species || categoryStats.all === 0) && 
     searchRadius === radius && 
     !showExpandDialog;
 
@@ -166,12 +193,12 @@ export const BioacousticSheet: React.FC<BioacousticSheetProps> = ({
           )}
 
           {/* Biodiversity Data */}
-          {biodiversityData && biodiversityData.summary && ((biodiversityData.summary.birds || 0) + (biodiversityData.summary.plants || 0) + (biodiversityData.summary.fungi || 0) + (biodiversityData.summary.others || 0)) > 0 && (
+          {biodiversityData && categoryStats.all > 0 && (
             <Card>
               <CardHeader>
                 <CardTitle className="text-lg flex items-center gap-2">
                   <Eye className="h-4 w-4" />
-                  Biodiversité ({((biodiversityData.summary.birds || 0) + (biodiversityData.summary.plants || 0) + (biodiversityData.summary.fungi || 0) + (biodiversityData.summary.others || 0))} espèces)
+                  Biodiversité ({categoryStats.all} espèces)
                   <Badge variant="outline" className="text-xs ml-2">
                     rayon {debouncedRadius < 1 ? `${Math.round(debouncedRadius * 1000)}m` : `${debouncedRadius}km`}
                   </Badge>
@@ -181,19 +208,19 @@ export const BioacousticSheet: React.FC<BioacousticSheetProps> = ({
                 <div className="grid grid-cols-2 gap-4 text-sm">
                   <div className="flex justify-between">
                     <span>Oiseaux:</span>
-                    <span className="font-medium">{biodiversityData.summary.birds || 0}</span>
+                    <span className="font-medium">{categoryStats.birds}</span>
                   </div>
                   <div className="flex justify-between">
                     <span>Plantes:</span>
-                    <span className="font-medium">{biodiversityData.summary.plants || 0}</span>
+                    <span className="font-medium">{categoryStats.plants}</span>
                   </div>
                   <div className="flex justify-between">
                     <span>Champignons:</span>
-                    <span className="font-medium">{biodiversityData.summary.fungi || 0}</span>
+                    <span className="font-medium">{categoryStats.fungi}</span>
                   </div>
                   <div className="flex justify-between">
                     <span>Autres:</span>
-                    <span className="font-medium">{biodiversityData.summary.others || 0}</span>
+                    <span className="font-medium">{categoryStats.others}</span>
                   </div>
                 </div>
               </CardContent>
@@ -201,7 +228,7 @@ export const BioacousticSheet: React.FC<BioacousticSheetProps> = ({
           )}
 
           {/* No Biodiversity Data (after declining expansion) */}
-          {showExpandDialog && (!biodiversityData?.summary || ((biodiversityData.summary.birds || 0) + (biodiversityData.summary.plants || 0) + (biodiversityData.summary.fungi || 0) + (biodiversityData.summary.others || 0)) === 0) && (
+          {showExpandDialog && (!biodiversityData?.species || categoryStats.all === 0) && (
             <Card className="border-muted bg-muted/30">
               <CardContent className="p-6 text-center">
                 <EyeOff className="h-8 w-8 text-muted-foreground mx-auto mb-3" />
