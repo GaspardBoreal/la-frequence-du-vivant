@@ -10,6 +10,7 @@ import Sidebar from '../components/Sidebar';
 import DecorativeElements from '../components/DecorativeElements';
 import Footer from '../components/Footer';
 import SEOHead from '../components/SEOHead';
+import { BioacousticSheet } from '../components/BioacousticSheet';
 import { RegionalTheme, REGIONAL_THEMES } from '../utils/regionalThemes';
 import { fetchParcelData } from '../utils/lexiconApi';
 import { MarcheTechnoSensible } from '../utils/googleSheetsApi';
@@ -27,6 +28,8 @@ const BioacoustiquePoetique = () => {
   const [selectedParcel, setSelectedParcel] = useState<SelectedParcel | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [filteredMarchesData, setFilteredMarchesData] = useState<MarcheTechnoSensible[]>([]);
+  const [sheetOpen, setSheetOpen] = useState(false);
+  const [selectedMarche, setSelectedMarche] = useState<MarcheTechnoSensible | null>(null);
   
   console.log('🔄 Current state:', {
     theme: theme.name,
@@ -79,6 +82,11 @@ const BioacoustiquePoetique = () => {
     setSidebarOpen(false);
     setSelectedParcel(null);
   };
+
+  const handleMobileMarkerClick = useCallback((marche: MarcheTechnoSensible) => {
+    setSelectedMarche(marche);
+    setSheetOpen(true);
+  }, []);
 
   // Stabiliser la fonction avec useCallback pour éviter les re-rendus
   const handleFilteredDataChange = useCallback((data: MarcheTechnoSensible[]) => {
@@ -177,6 +185,7 @@ const BioacoustiquePoetique = () => {
                       onParcelClick={handleParcelClick} 
                       filteredMarchesData={filteredMarchesData}
                       tooltipMode="bioacoustic"
+                      onMobileMarkerClick={handleMobileMarkerClick}
                     />
                   )}
                 </div>
@@ -193,6 +202,15 @@ const BioacoustiquePoetique = () => {
             onClose={handleCloseSidebar} 
             selectedParcel={selectedParcel} 
           />
+
+          {/* Mobile Sheet Modal */}
+          {selectedMarche && (
+            <BioacousticSheet
+              marche={selectedMarche}
+              open={sheetOpen}
+              onOpenChange={setSheetOpen}
+            />
+          )}
         </div>
         
         {/* Overlay d'ambiance violet */}

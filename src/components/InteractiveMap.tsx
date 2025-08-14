@@ -7,7 +7,7 @@ import { RegionalTheme } from '../utils/regionalThemes';
 import { SearchResult, LayerConfig, SelectedParcel } from '../types';
 import { MarcheTechnoSensible } from '../utils/googleSheetsApi';
 import PoeticMarkerCard from './PoeticMarkerCard';
-import BioacousticTooltip from './BioacousticTooltip';
+import { BioacousticTooltipSimple } from './BioacousticTooltipSimple';
 import { useIsMobile } from '../hooks/use-mobile';
 
 // Fix pour les marqueurs par défaut
@@ -167,6 +167,7 @@ interface InteractiveMapProps {
   onParcelClick: (parcel: SelectedParcel) => void;
   filteredMarchesData: MarcheTechnoSensible[];
   tooltipMode?: 'bioacoustic' | 'default';
+  onMobileMarkerClick?: (marche: MarcheTechnoSensible) => void;
 }
 
 const InteractiveMap: React.FC<InteractiveMapProps> = ({ 
@@ -175,18 +176,14 @@ const InteractiveMap: React.FC<InteractiveMapProps> = ({
   theme, 
   onParcelClick,
   filteredMarchesData,
-  tooltipMode = 'default'
+  tooltipMode = 'default',
+  onMobileMarkerClick
 }) => {
   const isMobile = useIsMobile();
   const [mapReady, setMapReady] = useState(false);
   const [mapKey, setMapKey] = useState(0);
   const [hoveredMarker, setHoveredMarker] = useState<MarcheTechnoSensible | null>(null);
   const [mousePosition, setMousePosition] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
-  
-  // Mobile tooltip state
-  const [activeMobileMarker, setActiveMobileMarker] = useState<MarcheTechnoSensible | null>(null);
-  const [mobileTooltipPosition, setMobileTooltipPosition] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
-  const [autoCloseTimer, setAutoCloseTimer] = useState<NodeJS.Timeout | null>(null);
 
   // Valider les coordonnées des données filtrées avec logs détaillés
   const validMarchesData = filteredMarchesData.filter(marche => {
@@ -231,10 +228,10 @@ const InteractiveMap: React.FC<InteractiveMapProps> = ({
     console.log('🔄 Données filtrées changées - marqueurs mis à jour sans recréer la carte');
   }, [filteredMarchesData]);
 
-  // Clean up timer on unmount
+  // Clean up effect (no longer needed since no timers)
   useEffect(() => {
     return () => {
-      clearAutoCloseTimer();
+      // Cleanup if needed
     };
   }, []);
 
@@ -248,34 +245,11 @@ const InteractiveMap: React.FC<InteractiveMapProps> = ({
   const defaultZoom = 6;
 
   const handleMarkerClick = (marche: MarcheTechnoSensible, event?: any) => {
-    if (isMobile && tooltipMode === 'bioacoustic') {
-      // Sur mobile en mode bioacoustique : gestion du double-tap
-      if (activeMobileMarker?.ville === marche.ville) {
-        // Deuxième tap sur le même marqueur : naviguer
-        clearAutoCloseTimer();
-        setActiveMobileMarker(null);
-        navigateToMarche(marche);
-      } else {
-        // Premier tap : afficher le tooltip
-        clearAutoCloseTimer();
-        
-        if (event?.originalEvent) {
-          const rect = event.target._map.getContainer().getBoundingClientRect();
-          const x = event.originalEvent.clientX - rect.left;
-          const y = event.originalEvent.clientY - rect.top;
-          setMobileTooltipPosition({ x, y });
-        }
-        
-        setActiveMobileMarker(marche);
-        
-        // Auto-close après 5 secondes
-        const timer = setTimeout(() => {
-          setActiveMobileMarker(null);
-        }, 5000);
-        setAutoCloseTimer(timer);
-      }
+    if (isMobile && tooltipMode === 'bioacoustic' && onMobileMarkerClick) {
+      // Mobile bioacoustic: open bottom sheet
+      onMobileMarkerClick(marche);
     } else {
-      // Comportement normal (desktop ou mode non-bioacoustique)
+      // Desktop or direct navigation
       navigateToMarche(marche);
     }
   };
@@ -295,18 +269,11 @@ const InteractiveMap: React.FC<InteractiveMapProps> = ({
     onParcelClick(parcel);
   };
 
-  const clearAutoCloseTimer = () => {
-    if (autoCloseTimer) {
-      clearTimeout(autoCloseTimer);
-      setAutoCloseTimer(null);
-    }
-  };
-
-  // Fermer le tooltip mobile si on clique ailleurs
+  // Simple map click handler
   const handleMapClick = () => {
-    if (isMobile && activeMobileMarker) {
-      clearAutoCloseTimer();
-      setActiveMobileMarker(null);
+    // Clear any tooltips on map click
+    if (hoveredMarker) {
+      setHoveredMarker(null);
     }
   };
 
@@ -375,15 +342,13 @@ const InteractiveMap: React.FC<InteractiveMapProps> = ({
           
           // Log spécial pour BONZAC
           if (marche.ville === 'BONZAC') {
-            console.log(`🏘️ Création marqueur BONZAC:`, {
-              position: [marche.latitude, marche.longitude],
-              theme: marche.theme,
-              adresse: marche.adresse
-            });
-          }
-          
-          const isActive = isMobile && activeMobileMarker?.ville === marche.ville;
-          const markerIcon = createPoeticIcon(theme, isActive, isMobile);
+          console.log(`🏘️ Création marqueur BONZAC:`, {
+            position: [marche.latitude, marche.longitude],
+            theme: marche.theme
+          });
+        }
+        
+        const markerIcon = createPoeticIcon(theme, false, isMobile);
 
           return (
             <Marker 
@@ -412,43 +377,13 @@ const InteractiveMap: React.FC<InteractiveMapProps> = ({
 
       </MapContainer>
       
-      {/* Bioacoustic tooltip - Desktop hover */}
+      {/* Bioacoustic tooltip - Desktop hover only */}
       {tooltipMode === 'bioacoustic' && !isMobile && hoveredMarker && (
-        <BioacousticTooltip
+        <BioacousticTooltipSimple
           marche={hoveredMarker}
           position={mousePosition}
           visible={!!hoveredMarker}
         />
-      )}
-      
-      {/* Bioacoustic tooltip - Mobile tap */}
-      {tooltipMode === 'bioacoustic' && isMobile && activeMobileMarker && (
-        <>
-          <BioacousticTooltip
-            marche={activeMobileMarker}
-            position={mobileTooltipPosition}
-            visible={!!activeMobileMarker}
-          />
-          {/* Bouton explicite pour naviguer */}
-          <div 
-            className="absolute bg-white/95 backdrop-blur-sm rounded-lg px-4 py-2 shadow-lg border border-purple-200 cursor-pointer hover:bg-white transition-colors"
-            style={{
-              left: Math.min(mobileTooltipPosition.x + 10, window.innerWidth - 200),
-              top: mobileTooltipPosition.y + 120,
-              zIndex: 1001
-            }}
-            onClick={() => {
-              clearAutoCloseTimer();
-              setActiveMobileMarker(null);
-              navigateToMarche(activeMobileMarker);
-            }}
-          >
-            <div className="flex items-center space-x-2">
-              <span className="text-sm font-medium text-purple-700">Voir la marche</span>
-              <span className="text-purple-500">→</span>
-            </div>
-          </div>
-        </>
       )}
       
       {/* Indicateur du nombre de résultats avec style poétique */}
