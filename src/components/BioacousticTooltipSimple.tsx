@@ -3,7 +3,7 @@ import { MarcheTechnoSensible } from '@/utils/googleSheetsApi';
 import { useBiodiversityData } from '@/hooks/useBiodiversityData';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
-import { MapPin, Eye } from 'lucide-react';
+import { MapPin, Eye, Calendar } from 'lucide-react';
 
 interface BioacousticTooltipSimpleProps {
   marche: MarcheTechnoSensible;
@@ -30,43 +30,77 @@ export const BioacousticTooltipSimple: React.FC<BioacousticTooltipSimpleProps> =
     }
   };
 
-  // Simple positioning to avoid viewport overflow
+  // Intelligent positioning to prevent overflow
+  const tooltipWidth = 320;
+  const tooltipHeight = 160;
+  const margin = 16;
+  
+  let left = position.x + 10;
+  let top = position.y - tooltipHeight / 2;
+  
+  // Prevent right overflow
+  if (left + tooltipWidth > window.innerWidth - margin) {
+    left = position.x - tooltipWidth - 10;
+  }
+  
+  // Prevent left overflow
+  if (left < margin) {
+    left = margin;
+  }
+  
+  // Prevent top overflow
+  if (top < margin) {
+    top = margin;
+  }
+  
+  // Prevent bottom overflow
+  if (top + tooltipHeight > window.innerHeight - margin) {
+    top = window.innerHeight - tooltipHeight - margin;
+  }
+
   const tooltipStyle = {
     position: 'fixed' as const,
-    left: Math.min(position.x + 10, window.innerWidth - 280),
-    top: Math.max(position.y - 100, 10),
+    left,
+    top,
     zIndex: 9999,
   };
 
   return (
     <div
       style={tooltipStyle}
-      className="bg-background/95 backdrop-blur-sm border border-border rounded-lg shadow-lg p-3 w-64 pointer-events-none"
+      className="bg-background/98 backdrop-blur-md border-2 border-primary/20 rounded-xl shadow-2xl p-6 w-80 pointer-events-none"
     >
-      <div className="space-y-2">
-        <div className="flex items-start gap-2">
-          <MapPin className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
-          <div>
-            <h3 className="font-semibold text-sm text-foreground">{marche.nomMarche || marche.ville}</h3>
-            <p className="text-xs text-muted-foreground">{marche.ville}</p>
+      <div className="space-y-4">
+        <div className="flex items-start gap-3">
+          <div className="p-2 bg-primary/10 rounded-lg">
+            <MapPin className="h-5 w-5 text-primary flex-shrink-0" />
+          </div>
+          <div className="flex-1">
+            <h3 className="font-bold text-lg text-foreground leading-tight">
+              {marche.nomMarche || marche.ville}
+            </h3>
+            <p className="text-sm text-muted-foreground mt-1">{marche.ville}</p>
           </div>
         </div>
         
-        <div className="text-xs text-muted-foreground">
-          {formatDate(marche.date || '')}
+        <div className="flex items-center gap-2 text-sm text-muted-foreground bg-muted/30 rounded-lg p-3">
+          <Calendar className="h-4 w-4 text-primary" />
+          <span className="font-medium">{formatDate(marche.date || '')}</span>
         </div>
 
         {biodiversityData && biodiversityData.species.length > 0 && (
-          <div className="flex items-center gap-1 text-xs">
-            <Eye className="h-3 w-3 text-primary" />
-            <span className="text-muted-foreground">
-              {biodiversityData.species.length} espèce(s) observée(s)
+          <div className="flex items-center gap-2 text-sm bg-primary/5 rounded-lg p-3">
+            <Eye className="h-4 w-4 text-primary" />
+            <span className="font-semibold text-foreground">
+              {biodiversityData.species.length} espèce{biodiversityData.species.length > 1 ? 's' : ''} observée{biodiversityData.species.length > 1 ? 's' : ''}
             </span>
           </div>
         )}
 
-        <div className="text-xs text-primary/80 font-medium">
-          Cliquer pour plus de détails
+        <div className="text-center py-2 px-4 bg-primary/10 rounded-lg">
+          <div className="text-sm text-primary font-bold">
+            ✨ Cliquer pour explorer
+          </div>
         </div>
       </div>
     </div>
