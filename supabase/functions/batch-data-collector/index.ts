@@ -311,9 +311,25 @@ serve(async (req) => {
         })
         .eq('id', logEntry.id);
 
-      // Rate limiting - wait 500ms between marches for better progress visibility
+      // Rate limiting with forced transaction commit - wait 2 seconds between marches
       if (i < validMarches.length - 1) {
-        await new Promise(resolve => setTimeout(resolve, 500));
+        console.log(`⏳ Délai de 2s avant prochain marché (${i + 2}/${validMarches.length})`);
+        await new Promise(resolve => setTimeout(resolve, 2000));
+        
+        // Force commit by touching the log again
+        await supabase
+          .from('data_collection_logs')
+          .update({ 
+            last_ping: new Date().toISOString(),
+            summary_stats: {
+              current_marche_name: `Préparation marché ${i + 2}/${validMarches.length}`,
+              current_data_type: 'En attente...',
+              processed: i + 1,
+              total_marches: validMarches.length,
+              next_marche: validMarches[i + 1]?.nom_marche || validMarches[i + 1]?.ville
+            }
+          })
+          .eq('id', logEntry.id);
       }
     }
 

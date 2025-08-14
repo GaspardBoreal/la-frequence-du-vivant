@@ -8,7 +8,7 @@ import { DataCollectionLog } from '@/types/snapshots';
 import { PlayCircle, BarChart3, Clock, CheckCircle, XCircle, AlertCircle, Trash2, Trash } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
-import CollectionProgressModal from './CollectionProgressModal';
+import DebugCollectionProgressModal from './DebugCollectionProgressModal';
 
 interface DataCollectionPanelProps {
   marches?: Array<{
@@ -277,8 +277,8 @@ const DataCollectionPanel: React.FC<DataCollectionPanelProps> = ({ marches = [] 
         )}
       </Card>
 
-      {/* Progress Modal */}
-      <CollectionProgressModal
+      {/* Debug Progress Modal */}
+      <DebugCollectionProgressModal
         isOpen={showProgressModal}
         onClose={handleProgressModalClose}
         logId={currentLogId}
