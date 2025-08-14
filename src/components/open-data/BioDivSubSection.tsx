@@ -318,25 +318,67 @@ const BioDivSubSection: React.FC<BioDivSubSectionProps> = ({ marche, theme }) =>
   // Affichage du dialogue d'expansion si aucune donnée à 500m
   if (shouldShowExpandDialog) {
     return (
-      <Card className="border-orange-200 bg-orange-50/50">
-        <CardContent className="p-6 text-center">
-          <Globe className="h-12 w-12 text-orange-500 mx-auto mb-4" />
-          <p className="text-sm font-medium mb-4">
-            Aucune donnée de biodiversité enregistrée dans un rayon de recherche de 500m
-          </p>
-          <p className="text-sm text-muted-foreground mb-6">
-            Souhaitez-vous que l'on élargisse le rayon de recherche ?
-          </p>
-          <div className="flex gap-3 justify-center">
-            <Button onClick={handleExpandRadius} variant="default">
-              Oui
-            </Button>
-            <Button onClick={handleDeclineExpansion} variant="outline">
-              Non
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+      >
+        <Card className="relative overflow-hidden border-2 border-primary/20 bg-gradient-to-br from-background via-primary/5 to-secondary/10">
+          <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-secondary/5" />
+          <CardContent className="relative p-8 text-center">
+            <motion.div
+              initial={{ scale: 0.8 }}
+              animate={{ scale: 1 }}
+              transition={{ duration: 0.3, delay: 0.2 }}
+              className="mb-6"
+            >
+              <div className="mx-auto w-16 h-16 rounded-full bg-gradient-to-br from-orange-400 to-orange-600 flex items-center justify-center shadow-lg">
+                <ZoomIn className="h-8 w-8 text-white" />
+              </div>
+            </motion.div>
+            
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.4, delay: 0.3 }}
+              className="space-y-4"
+            >
+              <h3 className="text-xl font-semibold text-foreground">
+                Aucune donnée de biodiversité
+              </h3>
+              <p className="text-muted-foreground leading-relaxed">
+                Aucune observation n'a été enregistrée dans un rayon de <span className="font-medium text-primary">500 mètres</span> autour de {marche.ville}.
+              </p>
+              <p className="text-sm text-muted-foreground bg-muted/50 rounded-lg p-3 border border-border/50">
+                Souhaitez-vous élargir la recherche à <span className="font-medium text-primary">5 kilomètres</span> pour découvrir plus d'espèces ?
+              </p>
+            </motion.div>
+            
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.4, delay: 0.5 }}
+              className="flex gap-4 justify-center mt-8"
+            >
+              <Button 
+                onClick={handleExpandRadius} 
+                className="bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 text-primary-foreground shadow-lg hover:shadow-xl transition-all duration-300 px-8 py-3 font-medium"
+              >
+                <ZoomIn className="h-4 w-4 mr-2" />
+                Oui, élargir
+              </Button>
+              <Button 
+                onClick={handleDeclineExpansion} 
+                variant="outline"
+                className="border-2 border-muted-foreground/20 hover:border-muted-foreground/40 hover:bg-muted/50 transition-all duration-300 px-8 py-3"
+              >
+                <Eye className="h-4 w-4 mr-2" />
+                Non, continuer
+              </Button>
+            </motion.div>
+          </CardContent>
+        </Card>
+      </motion.div>
     );
   }
 
