@@ -109,7 +109,7 @@ export const BioacousticSheet: React.FC<BioacousticSheetProps> = ({
         className="h-[80vh] rounded-t-xl border-t-2 border-primary/20 overflow-y-auto"
       >
         <SheetHeader className="pb-6 border-b border-border/50 bg-gradient-to-r from-primary/5 to-primary/10">
-          <SheetTitle className="flex items-center gap-3 text-2xl md:text-3xl font-bold text-primary">
+          <SheetTitle className="flex items-center gap-3 text-2xl md:text-3xl font-bold text-white">
             <MapPin className="h-6 w-6 text-primary" />
             {marche.nomMarche || marche.ville}
           </SheetTitle>
