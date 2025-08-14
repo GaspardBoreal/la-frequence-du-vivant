@@ -6,8 +6,7 @@ import { RegionalTheme } from '../../utils/regionalThemes';
 import { useClimateProjections } from '../../hooks/useClimateProjections';
 import ClimateTimeMachine from '../climate/ClimateTimeMachine';
 import BiodiversityRiskRadar from '../biodiversity/BiodiversityRiskRadar';
-import BiodiversityTransitionRadar from '../biodiversity/BiodiversityTransitionRadar';
-import { useBiodiversityIntelligence } from '../../hooks/useBiodiversityIntelligence';
+import TemporalSelector from '../ui/temporal-selector';
 import { Button } from '../ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
 
@@ -18,7 +17,7 @@ interface ProjectionsSubSectionProps {
 
 const ProjectionsSubSection: React.FC<ProjectionsSubSectionProps> = ({ marche, theme }) => {
   const [activeYear, setActiveYear] = useState(2025);
-  const [activeTab, setActiveTab] = useState('intelligence');
+  const [activeTab, setActiveTab] = useState('climate');
   
   console.log('🔮 ProjectionsSubSection INIT:', { 
     marcheVille: marche.ville,
@@ -30,14 +29,6 @@ const ProjectionsSubSection: React.FC<ProjectionsSubSectionProps> = ({ marche, t
     isLoading,
     error
   } = useClimateProjections(marche.latitude || 0, marche.longitude || 0);
-
-  // Fetch biodiversity intelligence
-  const { data: intelligenceData, isLoading: intelligenceLoading } = useBiodiversityIntelligence({
-    latitude: marche.latitude || 0,
-    longitude: marche.longitude || 0,
-    radius: 5,
-    timeHorizon: activeYear === 2035 ? '2035' : activeYear === 2045 ? '2045' : 'both'
-  });
 
   const handleYearChange = (year: number) => {
     setActiveYear(year);
@@ -106,45 +97,21 @@ const ProjectionsSubSection: React.FC<ProjectionsSubSectionProps> = ({ marche, t
 
       {/* Main Tabs Interface */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-4 mb-8">
-          <TabsTrigger value="intelligence" className="flex items-center gap-2">
-            🧠 Intelligence IA
-          </TabsTrigger>
+        <TabsList className="grid w-full grid-cols-3 mb-8">
           <TabsTrigger value="climate" className="flex items-center gap-2">
             <Zap className="h-4 w-4" />
             Climat Futur
           </TabsTrigger>
           <TabsTrigger value="biodiversity" className="flex items-center gap-2">
             <TreePine className="h-4 w-4" />
-            Biodiversité
+            Biodiversité Vision
           </TabsTrigger>
           <TabsTrigger value="soundscape" className="flex items-center gap-2">
             <Volume2 className="h-4 w-4" />
-            Paysages Sonores
+            Symphonie du Futur
           </TabsTrigger>
         </TabsList>
 
-        {/* Intelligence Tab - NEW */}
-        <TabsContent value="intelligence" className="space-y-6">
-          {intelligenceData ? (
-            <BiodiversityTransitionRadar
-              intelligenceData={intelligenceData}
-              activeYear={activeYear}
-              onSpeciesSelect={(species) => console.log('Selected species:', species)}
-              onYearChange={handleYearChange}
-            />
-          ) : (
-            <div className="bg-purple-50 border border-purple-200 rounded-xl p-8 text-center">
-              <div className="animate-pulse space-y-4">
-                <div className="h-8 bg-purple-200 rounded-lg w-1/2 mx-auto"></div>
-                <div className="h-32 bg-purple-200 rounded-xl"></div>
-              </div>
-              <p className="text-purple-600 mt-4">
-                {intelligenceLoading ? 'Analyse de l\'intelligence biodiversité...' : 'Chargement des données...'}
-              </p>
-            </div>
-          )}
-        </TabsContent>
 
         {/* Climate Projections Tab */}
         <TabsContent value="climate" className="space-y-6">
@@ -167,29 +134,38 @@ const ProjectionsSubSection: React.FC<ProjectionsSubSectionProps> = ({ marche, t
 
         {/* Biodiversity Tab */}
         <TabsContent value="biodiversity" className="space-y-6">
-          {projectionsData?.biodiversityProjections ? (
-            <BiodiversityRiskRadar
-              projections={projectionsData.biodiversityProjections}
+          <div className="bg-gradient-to-br from-green-50 to-emerald-100 rounded-3xl p-8 border-2 border-green-200/50">
+            <TemporalSelector
               activeYear={activeYear}
+              onYearChange={handleYearChange}
+              title="Biodiversité Vision"
             />
-          ) : (
-            <div className="bg-green-50 border border-green-200 rounded-xl p-8 text-center">
-              <div className="animate-pulse space-y-4">
-                <div className="h-8 bg-green-200 rounded-lg w-1/2 mx-auto"></div>
-                <div className="h-32 bg-green-200 rounded-xl"></div>
+            {projectionsData?.biodiversityProjections ? (
+              <BiodiversityRiskRadar
+                projections={projectionsData.biodiversityProjections}
+                activeYear={activeYear}
+              />
+            ) : (
+              <div className="bg-green-50 border border-green-200 rounded-xl p-8 text-center">
+                <div className="animate-pulse space-y-4">
+                  <div className="h-8 bg-green-200 rounded-lg w-1/2 mx-auto"></div>
+                  <div className="h-32 bg-green-200 rounded-xl"></div>
+                </div>
+                <p className="text-green-600 mt-4">Analyse des impacts sur la biodiversité...</p>
               </div>
-              <p className="text-green-600 mt-4">Analyse des impacts sur la biodiversité...</p>
-            </div>
-          )}
+            )}
+          </div>
         </TabsContent>
 
         {/* Future Soundscapes Tab */}
         <TabsContent value="soundscape" className="space-y-6">
           <div className="bg-gradient-to-br from-indigo-50 to-purple-100 rounded-3xl p-8 border-2 border-indigo-200/50">
+            <TemporalSelector
+              activeYear={activeYear}
+              onYearChange={handleYearChange}
+              title="Symphonie du Futur"
+            />
             <div className="text-center mb-8">
-              <h2 className="text-3xl font-bold text-transparent bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text mb-4">
-                Symphonie du Futur {activeYear}
-              </h2>
               <p className="text-indigo-700">
                 Découvrez comment le paysage sonore de {marche.ville} évoluera avec le climat
               </p>
