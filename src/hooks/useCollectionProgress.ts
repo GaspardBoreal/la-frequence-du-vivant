@@ -81,11 +81,13 @@ export const useCollectionProgress = (logId: string | null, collectionTypes: str
       // Extract current status from summary_stats
       const summaryStats = data.summary_stats as any;
       const currentMarcheName = summaryStats?.current_marche_name || 
-        (processed < total ? `Marche ${processed + 1}/${total}` : 'Finalisation...');
+        (processed < total ? `Marché ${processed + 1}/${total}` : 'Finalisation...');
       
       // Déterminer le type de donnée en cours de traitement
       const currentDataType = summaryStats?.current_data_type || 
-        (data.status === 'running' ? 'Collecte en cours...' : '');
+        (data.status === 'running' ? 'Collecte en cours...' : 
+         data.status === 'completed' ? 'Collecte terminée ✅' : 
+         data.status === 'failed' ? 'Erreur ❌' : '');
 
       const isCompleted = data.status === 'completed' || data.status === 'failed';
       
@@ -143,8 +145,8 @@ export const useCollectionProgress = (logId: string | null, collectionTypes: str
     // Initial fetch
     fetchProgress();
 
-    // Start polling every 2 seconds
-    intervalRef.current = setInterval(fetchProgress, 2000);
+    // Start polling every 1 second for better responsiveness
+    intervalRef.current = setInterval(fetchProgress, 1000);
 
     return () => {
       if (intervalRef.current) {
