@@ -5,9 +5,9 @@ import { Database, ExternalLink, Download } from 'lucide-react';
 import { Button } from './ui/button';
 import { MarcheTechnoSensible } from '../utils/googleSheetsApi';
 import { RegionalTheme } from '../utils/regionalThemes';
-import EtalabSubSection from './open-data/EtalabSubSection';
 import LexiconSubSection from './open-data/LexiconSubSection';
 import BioDivSubSection from './open-data/BioDivSubSection';
+import ProjectionsSubSection from './open-data/ProjectionsSubSection';
 
 interface OpenDataSectionProps {
   marche: MarcheTechnoSensible;
@@ -23,14 +23,14 @@ const OpenDataSection: React.FC<OpenDataSectionProps> = ({
   const renderSubSection = () => {
     console.log('🔄 [OPEN DATA SECTION] Rendu subsection:', activeSubSection);
     switch (activeSubSection) {
-      case 'etalab':
-        return <EtalabSubSection marche={marche} theme={theme} />;
       case 'lexicon':
         return <LexiconSubSection marche={marche} theme={theme} />;
       case 'biodiv':
         return <BioDivSubSection marche={marche} theme={theme} />;
+      case 'projections':
+        return <ProjectionsSubSection marche={marche} theme={theme} />;
       default:
-        return <EtalabSubSection marche={marche} theme={theme} />;
+        return <ProjectionsSubSection marche={marche} theme={theme} />;
     }
   };
 

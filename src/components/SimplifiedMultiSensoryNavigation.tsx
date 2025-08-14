@@ -35,7 +35,7 @@ const SimplifiedMultiSensoryNavigation: React.FC<SimplifiedMultiSensoryNavigatio
       subMenus: [
         { id: 'biodiv', label: 'BioDiv' },
         { id: 'lexicon', label: 'Lexicon' },
-        { id: 'etalab', label: 'Satellite Copernicus' }
+        { id: 'projections', label: 'Projections 2035/2045' }
       ]
     },
     {
