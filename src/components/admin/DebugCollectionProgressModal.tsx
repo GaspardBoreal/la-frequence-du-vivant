@@ -50,7 +50,7 @@ const DebugCollectionProgressModal: React.FC<DebugCollectionProgressModalProps> 
       case 'failed':
         return <XCircle className="w-5 h-5 text-red-600" />;
       case 'running':
-        return <Clock className="w-5 h-5 text-blue-600 animate-spin" />;
+        return <Clock className="w-5 h-5 text-green-600 animate-spin" />;
       default:
         return <AlertCircle className="w-5 h-5 text-gray-600" />;
     }
@@ -63,7 +63,7 @@ const DebugCollectionProgressModal: React.FC<DebugCollectionProgressModalProps> 
       case 'failed':
         return 'bg-red-50 text-red-700 border-red-200';
       case 'running':
-        return 'bg-blue-50 text-blue-700 border-blue-200';
+        return 'bg-green-50 text-green-700 border-green-200';
       default:
         return 'bg-gray-50 text-gray-700 border-gray-200';
     }
