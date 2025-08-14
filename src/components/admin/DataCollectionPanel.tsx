@@ -39,44 +39,65 @@ const DataCollectionPanel: React.FC<DataCollectionPanelProps> = ({ marches = [] 
       
       console.log('🚀 Démarrage de la collecte:', types);
       
-      // Afficher la modal avec état de lancement
+      // Afficher la modal avec état de lancement IMMÉDIATEMENT
       setShowProgressModal(true);
       
-      const result = await triggerCollection({
+      // Pré-lancer la recherche du logId pour commencer le polling le plus tôt possible
+      let logId: string | null = null;
+      
+      // Déclencher la collecte
+      const collectionPromise = triggerCollection({
         collectionTypes: types,
         mode: 'manual'
       });
-
-      console.log('📋 Résultat de la collecte:', result);
       
-      // Récupérer le logId depuis la réponse ou via polling
-      let logId = result?.logId;
-      
-      if (!logId) {
-        // Polling pour récupérer le dernier log créé
-        for (let attempts = 0; attempts < 10; attempts++) {
-          await new Promise(resolve => setTimeout(resolve, 500));
+      // En parallèle, chercher le logId dès que possible
+      const logIdSearchPromise = (async () => {
+        // Attendre 200ms pour que la collecte commence
+        await new Promise(resolve => setTimeout(resolve, 200));
+        
+        // Polling agressif pour récupérer le logId rapidement
+        for (let attempts = 0; attempts < 15; attempts++) {
           try {
             const { data: latestLogs } = await supabase
               .from('data_collection_logs')
-              .select('id')
+              .select('id, started_at')
               .order('started_at', { ascending: false })
               .limit(1);
             
             if (latestLogs?.[0]) {
-              logId = latestLogs[0].id;
-              break;
+              const candidateLogId = latestLogs[0].id;
+              // Vérifier que ce log n'était pas déjà là avant
+              if (candidateLogId !== currentLogId) {
+                return candidateLogId;
+              }
             }
           } catch (error) {
             console.error('Erreur lors de la récupération du logId:', error);
           }
+          
+          // Polling très rapide au début (100ms)
+          await new Promise(resolve => setTimeout(resolve, 100));
         }
-      }
+        return null;
+      })();
+      
+      // Attendre les deux opérations
+      const [result, searchedLogId] = await Promise.all([
+        collectionPromise,
+        logIdSearchPromise
+      ]);
+      
+      console.log('📋 Résultat de la collecte:', result);
+      
+      // Utiliser le logId de la réponse ou celui trouvé par recherche
+      logId = result?.logId || searchedLogId;
       
       if (logId) {
+        console.log('✅ LogId trouvé, démarrage du polling temps réel:', logId);
         setCurrentLogId(logId);
         setIsLaunching(false);
-        toast.success('Collecte lancée avec succès');
+        toast.success('Collecte lancée avec succès - Suivi temps réel activé');
       } else {
         throw new Error('Impossible de récupérer le logId de la collecte');
       }

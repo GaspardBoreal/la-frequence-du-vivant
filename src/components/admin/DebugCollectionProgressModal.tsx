@@ -32,7 +32,8 @@ const DebugCollectionProgressModal: React.FC<DebugCollectionProgressModalProps> 
     estimatedTimeRemaining,
     initialEstimate,
     isCompleted, 
-    error 
+    error,
+    isPollingActive
   } = useCollectionProgress(logId, collectionTypes);
 
   const formatTime = (seconds: number | null) => {
@@ -146,19 +147,38 @@ const DebugCollectionProgressModal: React.FC<DebugCollectionProgressModalProps> 
 
           {/* Progress Bar */}
           <div className="space-y-3">
-            <div className="flex justify-between text-sm">
-              <span>Progression</span>
-              <span className="font-medium text-lg text-primary">{progress}%</span>
+            <div className="flex justify-between items-center text-sm">
+              <span>Progression Temps Réel</span>
+              <div className="flex items-center gap-2">
+                <span className="font-bold text-2xl text-primary">{progress}%</span>
+                {isPollingActive && (
+                  <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" title="Polling actif"></div>
+                )}
+              </div>
             </div>
-            <Progress value={progress} className="w-full h-3" />
+            
+            <Progress value={progress} className="w-full h-4" />
+            
+            {/* Marche courante - Affichage proéminent */}
+            {currentMarcheName && log?.status === 'running' && (
+              <div className="p-3 bg-blue-50 rounded-lg border border-blue-200">
+                <p className="text-sm font-medium text-blue-900">
+                  🎯 {currentMarcheName}
+                </p>
+                <p className="text-xs text-blue-700 mt-1">
+                  {currentDataType}
+                </p>
+              </div>
+            )}
             
             {/* Detailed Progress Info */}
             <div className="grid grid-cols-2 gap-4 text-xs">
               <div>
-                <span className="text-muted-foreground">Traitement:</span>
-                <div className="font-medium text-primary">
-                  {log?.marches_processed || 0} / {log?.marches_total || 0} marches
+                <span className="text-muted-foreground">Progression:</span>
+                <div className="font-medium text-primary text-lg">
+                  {log?.marches_processed || 0} / {log?.marches_total || 0}
                 </div>
+                <div className="text-xs text-muted-foreground">marches traitées</div>
               </div>
               
               {log?.status === 'running' && (

@@ -19,6 +19,7 @@ interface ProgressState {
   initialEstimate: number | null;
   isCompleted: boolean;
   error: string | null;
+  isPollingActive: boolean;
 }
 
 export const useCollectionProgress = (logId: string | null, collectionTypes: string[] = []) => {
@@ -32,10 +33,12 @@ export const useCollectionProgress = (logId: string | null, collectionTypes: str
     initialEstimate: null,
     isCompleted: false,
     error: null,
+    isPollingActive: false,
   });
 
   const intervalRef = useRef<NodeJS.Timeout>();
   const startTimeRef = useRef<Date>();
+  const completionTimeoutRef = useRef<NodeJS.Timeout>();
 
   // Calculer l'estimation initiale basée sur les types de collecte
   const calculateInitialEstimate = (totalMarches: number, types: string[]) => {
@@ -103,20 +106,30 @@ export const useCollectionProgress = (logId: string | null, collectionTypes: str
       const summaryStats = data.summary_stats as any;
       console.log('📋 Summary stats:', summaryStats);
       
+      // Utiliser marches_processed comme indicateur principal de progression
       const currentMarcheName = summaryStats?.current_marche_name || 
         summaryStats?.next_marche ||
-        (processed < total ? `Marche ${processed + 1}/${total}` : 'Finalisation...');
+        (processed < total ? `Marché ${processed + 1}/${total}` : 
+         processed === total ? 'Finalisation...' : 'En attente...');
       
-      // Déterminer le type de donnée en cours de traitement avec plus de détails
+      // Déterminer le type de donnée en cours de traitement avec fallback intelligent
       let currentDataType = '';
       if (summaryStats?.current_data_type) {
         currentDataType = summaryStats.current_data_type;
       } else if (data.status === 'running') {
-        currentDataType = processed === 0 ? 'Initialisation...' : 'Collecte en cours...';
+        if (processed === 0) {
+          currentDataType = 'Initialisation...';
+        } else if (processed < total) {
+          currentDataType = `Collecte en cours (${processed}/${total})`;
+        } else {
+          currentDataType = 'Finalisation...';
+        }
       } else if (data.status === 'completed') {
         currentDataType = 'Collecte terminée ✅';
       } else if (data.status === 'failed') {
         currentDataType = 'Erreur ❌';
+      } else if (data.status === 'pending') {
+        currentDataType = 'En attente de démarrage...';
       } else {
         currentDataType = `Status: ${data.status}`;
       }
@@ -147,13 +160,22 @@ export const useCollectionProgress = (logId: string | null, collectionTypes: str
         initialEstimate,
         isCompleted,
         error: null,
+        isPollingActive: !isCompleted,
       }));
 
-      // Stop polling when completed
+      // Délai de grâce après completion pour capturer les derniers états
       if (isCompleted && intervalRef.current) {
-        console.log('🛑 Stopping polling - collection completed');
-        clearInterval(intervalRef.current);
-        intervalRef.current = undefined;
+        if (!completionTimeoutRef.current) {
+          console.log('⏰ Collection terminée, délai de grâce de 3s pour capturer les derniers états...');
+          completionTimeoutRef.current = setTimeout(() => {
+            console.log('🛑 Arrêt définitif du polling après délai de grâce');
+            if (intervalRef.current) {
+              clearInterval(intervalRef.current);
+              intervalRef.current = undefined;
+            }
+            completionTimeoutRef.current = undefined;
+          }, 3000); // 3 secondes de délai de grâce
+        }
       }
 
     } catch (error) {
@@ -178,28 +200,40 @@ export const useCollectionProgress = (logId: string | null, collectionTypes: str
         initialEstimate: null,
         isCompleted: false,
         error: null,
+        isPollingActive: false,
       });
+      
+      // Nettoyer les timeouts
+      if (completionTimeoutRef.current) {
+        clearTimeout(completionTimeoutRef.current);
+        completionTimeoutRef.current = undefined;
+      }
+      
       return;
     }
 
-    console.log('🚀 Starting progress tracking for logId:', logId);
-    setState(prev => ({ ...prev, isLoading: true }));
+    console.log('🚀 Starting IMMEDIATE progress tracking for logId:', logId);
+    setState(prev => ({ ...prev, isLoading: true, isPollingActive: true }));
     startTimeRef.current = new Date();
 
-    // Initial fetch
+    // Initial fetch immédiat
     fetchProgress();
 
-    // Start polling every 200ms for maximum responsiveness during collection
+    // Polling ultra-responsif (100ms) pour capturer tous les états intermédiaires
     intervalRef.current = setInterval(() => {
-      console.log('🔄 Polling progress...');
+      console.log('🔄 Polling progress (ultra-fast mode)...');
       fetchProgress();
-    }, 200);
+    }, 100);
 
     return () => {
+      console.log('🧹 Cleaning up progress polling');
       if (intervalRef.current) {
-        console.log('🛑 Cleaning up progress polling');
         clearInterval(intervalRef.current);
         intervalRef.current = undefined;
+      }
+      if (completionTimeoutRef.current) {
+        clearTimeout(completionTimeoutRef.current);
+        completionTimeoutRef.current = undefined;
       }
     };
   }, [logId]);
