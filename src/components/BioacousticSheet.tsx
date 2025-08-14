@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { MarcheTechnoSensible } from '@/utils/googleSheetsApi';
 import { createSlug } from '@/utils/slugGenerator';
@@ -7,7 +7,7 @@ import { useLexiconData } from '@/hooks/useLexiconData';
 import { useLatestSnapshotsForMarche } from '@/hooks/useSnapshotData';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
-import { MapPin, Calendar, Thermometer, Users, Home, Eye, EyeOff, ExternalLink } from 'lucide-react';
+import { MapPin, Calendar, Thermometer, Users, Home, Eye, EyeOff, ExternalLink, Search } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { Badge } from '@/components/ui/badge';
@@ -27,10 +27,32 @@ export const BioacousticSheet: React.FC<BioacousticSheetProps> = ({
   const navigate = useNavigate();
   const latitude = marche.latitude;
   const longitude = marche.longitude;
+  
+  // State for radius expansion
+  const [searchRadius, setSearchRadius] = useState(500);
+  const [showExpandDialog, setShowExpandDialog] = useState(false);
 
-  const { data: biodiversityData } = useBiodiversityData({ latitude, longitude });
+  const { data: biodiversityData, isLoading: isBiodiversityLoading } = useBiodiversityData({ 
+    latitude, 
+    longitude, 
+    radius: searchRadius 
+  });
   const { data: lexiconData } = useLexiconData(latitude, longitude);
   const { data: snapshotsData } = useLatestSnapshotsForMarche(marche.id);
+
+  // Check if we should show the expand prompt
+  const shouldShowExpandPrompt = !isBiodiversityLoading && 
+    biodiversityData?.species?.length === 0 && 
+    searchRadius === 500 && 
+    !showExpandDialog;
+
+  const handleExpandRadius = () => {
+    setSearchRadius(5000);
+  };
+
+  const handleDeclineExpansion = () => {
+    setShowExpandDialog(true);
+  };
 
   const formatDate = (dateString: string) => {
     try {
@@ -83,13 +105,65 @@ export const BioacousticSheet: React.FC<BioacousticSheetProps> = ({
             </Card>
           )}
 
+          {/* Biodiversity Expansion Prompt */}
+          {shouldShowExpandPrompt && (
+            <Card className="border-orange-200 bg-orange-50 dark:border-orange-800 dark:bg-orange-950">
+              <CardContent className="p-6 text-center">
+                <div className="flex items-center justify-center gap-2 mb-4">
+                  <Search className="h-5 w-5 text-orange-600 dark:text-orange-400" />
+                  <p className="text-sm font-medium text-orange-800 dark:text-orange-200">
+                    Aucune donnée de biodiversité enregistrée dans un rayon de recherche de 500m
+                  </p>
+                </div>
+                <p className="text-sm text-orange-700 dark:text-orange-300 mb-6">
+                  Souhaitez-vous que l'on élargisse le rayon de recherche ?
+                </p>
+                <div className="flex gap-3 justify-center">
+                  <Button 
+                    onClick={handleExpandRadius} 
+                    variant="default"
+                    className="bg-primary hover:bg-primary/90"
+                  >
+                    Oui
+                  </Button>
+                  <Button 
+                    onClick={handleDeclineExpansion} 
+                    variant="outline"
+                    className="border-orange-300 text-orange-700 hover:bg-orange-100 dark:border-orange-700 dark:text-orange-300 dark:hover:bg-orange-900"
+                  >
+                    Non
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Biodiversity Loading */}
+          {isBiodiversityLoading && searchRadius > 500 && (
+            <Card>
+              <CardContent className="p-6 text-center">
+                <div className="flex items-center justify-center gap-2 mb-2">
+                  <Search className="h-5 w-5 text-primary animate-pulse" />
+                  <p className="text-sm font-medium text-muted-foreground">
+                    Recherche élargie en cours... (rayon 5km)
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
           {/* Biodiversity Data */}
-          {biodiversityData && (
+          {biodiversityData && biodiversityData.species.length > 0 && (
             <Card>
               <CardHeader>
                 <CardTitle className="text-lg flex items-center gap-2">
                   <Eye className="h-4 w-4" />
                   Biodiversité ({biodiversityData.species.length} espèces)
+                  {searchRadius > 500 && (
+                    <Badge variant="outline" className="text-xs ml-2">
+                      rayon {searchRadius/1000}km
+                    </Badge>
+                  )}
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -105,6 +179,18 @@ export const BioacousticSheet: React.FC<BioacousticSheetProps> = ({
                     </Badge>
                   )}
                 </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* No Biodiversity Data (after declining expansion) */}
+          {showExpandDialog && biodiversityData?.species?.length === 0 && (
+            <Card className="border-muted bg-muted/30">
+              <CardContent className="p-6 text-center">
+                <EyeOff className="h-8 w-8 text-muted-foreground mx-auto mb-3" />
+                <p className="text-sm text-muted-foreground">
+                  Aucune donnée de biodiversité disponible pour cette zone
+                </p>
               </CardContent>
             </Card>
           )}
