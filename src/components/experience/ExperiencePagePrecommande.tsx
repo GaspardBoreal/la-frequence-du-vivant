@@ -18,7 +18,7 @@ const ExperiencePagePrecommande: React.FC<Props> = ({ page, onBack }) => {
         </h1>
         
         {page.description && (
-          <div className="prose prose-lg max-w-none text-foreground/80 mb-8" dangerouslySetInnerHTML={{ __html: page.description }} />
+          <div className="prose prose-lg max-w-none text-foreground/80 mb-8" dangerouslySetInnerHTML={{ __html: page.description.replace(/\n/g, '<br />') }} />
         )}
 
         {page.config?.audioUrl && (
