@@ -10,6 +10,7 @@ import MarcheForm from '../components/admin/MarcheForm';
 import DataCollectionPanel from '../components/admin/DataCollectionPanel';
 import AdminFilters from '../components/admin/AdminFilters';
 import DataInsightsPromoBanner from '../components/DataInsightsPromoBanner';
+import PhotoGalleryAdmin from '../components/admin/PhotoGalleryAdmin';
 import { toast } from 'sonner';
 import { MarcheTechnoSensible } from '../utils/googleSheetsApi';
 
@@ -132,10 +133,13 @@ const MarcheAdmin = () => {
         {/* Content */}
         <div className="gaspard-card rounded-xl p-6">
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="grid w-full grid-cols-3">
+            <TabsList className="grid w-full grid-cols-4">
               <TabsTrigger value="list">Liste des Marches</TabsTrigger>
               <TabsTrigger value="create">
                 {viewMode === 'edit' ? 'Modifier une Marche' : 'Créer une Marche'}
+              </TabsTrigger>
+              <TabsTrigger value="gallery">
+                Galerie Photos
               </TabsTrigger>
               <TabsTrigger value="data" className="relative">
                 Collecte de Données
@@ -172,6 +176,10 @@ const MarcheAdmin = () => {
                   setActiveTab('list');
                 }}
               />
+            </TabsContent>
+
+            <TabsContent value="gallery" className="space-y-4">
+              <PhotoGalleryAdmin marches={filteredMarches} />
             </TabsContent>
 
             <TabsContent value="data" className="space-y-4">
