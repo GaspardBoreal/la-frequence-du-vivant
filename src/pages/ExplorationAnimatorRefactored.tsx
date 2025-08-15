@@ -265,6 +265,57 @@ export default function ExplorationAnimatorRefactored() {
           )}
         </section>
 
+        {/* P3 - Galerie Fleuve */}
+        <section className="mt-10">
+          <h2 className="text-2xl font-semibold mb-3">P3 · Galerie Fleuve</h2>
+          <p className="text-sm text-foreground/70 mb-4">
+            Accédez à la galerie fleuve spécifique à cette exploration pour une expérience immersive.
+          </p>
+          
+          <div className="bg-card border rounded-xl p-6">
+            <div className="flex items-center gap-4 mb-4">
+              <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center">
+                🌊
+              </div>
+              <div className="flex-1">
+                <h3 className="font-semibold text-lg mb-1">Galerie Fleuve de l'exploration</h3>
+                <p className="text-sm text-muted-foreground">
+                  Visualisation immersive des marches de cette exploration en 4 modes de vue
+                </p>
+              </div>
+            </div>
+            
+            {exploration?.slug && (
+              <div className="flex flex-col sm:flex-row gap-3">
+                <Button
+                  onClick={() => window.open(`/galerie-fleuve/exploration/${exploration.slug}`, '_blank')}
+                  className="flex-1"
+                  variant="default"
+                >
+                  🌊 Ouvrir la Galerie Fleuve
+                </Button>
+                <Button
+                  onClick={() => {
+                    const url = `${window.location.origin}/galerie-fleuve/exploration/${exploration.slug}`;
+                    navigator.clipboard.writeText(url);
+                    toast.success('URL copiée dans le presse-papiers');
+                  }}
+                  variant="outline"
+                  className="flex-1 sm:flex-initial"
+                >
+                  📋 Copier l'URL
+                </Button>
+              </div>
+            )}
+            
+            {!exploration?.slug && (
+              <div className="text-sm text-muted-foreground bg-muted/50 rounded-lg p-3">
+                L'exploration doit être sauvegardée pour générer l'URL de la galerie fleuve.
+              </div>
+            )}
+          </div>
+        </section>
+
         {/* Save and Generate buttons */}
         <div className="mt-8 flex gap-4">
           <Button 
