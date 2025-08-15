@@ -103,32 +103,34 @@ const PhotoGalleryAdmin: React.FC<PhotoGalleryAdminProps> = ({ marches }) => {
       .sort((a, b) => b.photoCount - a.photoCount);
   }, [photos, marches]);
 
-  // Obtenir tous les tags des marches avec compteurs basés sur les marches qui ont des photos
+  // Obtenir tous les tags des marches avec compteurs basés sur les photos uniques
   const getMarcheTagsWithCount = useMemo(() => {
-    const relevantMarches = getMarchesWithPhotoCount
-      .filter(({ marche }) => selectedMarche === 'all' || marche.id === selectedMarche)
-      .map(({ marche }) => marche);
+    // Filtrer les photos selon la marche sélectionnée
+    const relevantPhotos = selectedMarche === 'all' 
+      ? photos 
+      : photos.filter(photo => photo.marche.id === selectedMarche);
 
     const tagCounts = new Map<string, number>();
     
-    relevantMarches.forEach(marche => {
-      const allTags = [
-        ...(marche.supabaseTags || []),
-        ...(marche.tagsThematiques || []),
-        ...(marche.sousThemes || []),
-        marche.theme
+    // Créer un set des tags pour chaque photo et compter les photos uniques par tag
+    relevantPhotos.forEach(photo => {
+      const photoTags = [
+        ...(photo.marche.supabaseTags || []),
+        ...(photo.marche.tagsThematiques || []),
+        ...(photo.marche.sousThemes || []),
+        photo.marche.theme
       ].filter(Boolean);
       
-      allTags.forEach(tag => {
-        const marchePhotoCount = photos.filter(p => p.marche.id === marche.id).length;
-        tagCounts.set(tag, (tagCounts.get(tag) || 0) + marchePhotoCount);
+      // Ajouter cette photo au count de chaque tag qu'elle a
+      photoTags.forEach(tag => {
+        tagCounts.set(tag, (tagCounts.get(tag) || 0) + 1);
       });
     });
     
     return Array.from(tagCounts.entries())
       .map(([tag, count]) => ({ tag, count }))
       .sort((a, b) => b.count - a.count);
-  }, [getMarchesWithPhotoCount, selectedMarche, photos]);
+  }, [photos, selectedMarche]);
 
   // Tags filtrés par la recherche (optimisé avec debouncing)
   const filteredMarcheTags = useMemo(() => {
