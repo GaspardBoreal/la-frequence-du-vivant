@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Loader2 } from 'lucide-react';
+import { Loader2, RotateCcw } from 'lucide-react';
 import { MapContainer, TileLayer, Marker, Popup, useMapEvents, useMap } from 'react-leaflet';
 import L from 'leaflet';
+import { Button } from './ui/button';
 import { RegionalTheme } from '../utils/regionalThemes';
 import { SearchResult, LayerConfig, SelectedParcel } from '../types';
 import { MarcheTechnoSensible } from '../utils/googleSheetsApi';
@@ -18,72 +19,114 @@ L.Icon.Default.mergeOptions({
   shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
 });
 
-// Composant pour gérer le zoom dynamique
+// Composant pour gérer le zoom dynamique intelligent
 const DynamicZoomController = ({ 
   validMarchesData, 
-  searchResult 
+  searchResult,
+  userHasZoomed,
+  onUserZoom,
+  forceRecenter
 }: { 
   validMarchesData: MarcheTechnoSensible[];
   searchResult: SearchResult | null;
+  userHasZoomed: boolean;
+  onUserZoom: (hasZoomed: boolean) => void;
+  forceRecenter: number;
 }) => {
   const map = useMap();
+  const lastDataLengthRef = useRef(0);
+  const isInitialLoad = useRef(true);
+
+  // Mémoriser les bounds pour éviter les recalculs
+  const bounds = useMemo(() => {
+    if (!validMarchesData || validMarchesData.length === 0) return null;
+    
+    if (validMarchesData.length === 1) {
+      return { type: 'single', data: validMarchesData[0] };
+    }
+    
+    const latLngs = validMarchesData.map(marche => 
+      [marche.latitude, marche.longitude] as [number, number]
+    );
+    return { type: 'multiple', bounds: L.latLngBounds(latLngs) };
+  }, [validMarchesData]);
+
+  // Détecter les zooms manuels
+  useEffect(() => {
+    if (!map) return;
+
+    const handleZoomEnd = () => {
+      // Marquer comme zoom manuel seulement si ce n'est pas la charge initiale
+      if (!isInitialLoad.current) {
+        onUserZoom(true);
+      }
+    };
+
+    map.on('zoomend', handleZoomEnd);
+    
+    return () => {
+      map.off('zoomend', handleZoomEnd);
+    };
+  }, [map, onUserZoom]);
 
   useEffect(() => {
     if (!map) return;
 
-    // Si on a un résultat de recherche, utiliser ces coordonnées
+    // Priorité 1: Résultat de recherche (toujours override)
     if (searchResult?.coordinates) {
       console.log('🎯 Centrage sur résultat de recherche:', searchResult.coordinates);
+      isInitialLoad.current = false;
       map.setView(searchResult.coordinates, 15);
+      onUserZoom(false); // Reset pour permettre les futurs auto-zooms
       return;
     }
 
-    // Si on a des données de marches filtrées, calculer les bounds
-    if (validMarchesData && validMarchesData.length > 0) {
+    // Priorité 2: Forcer le recentrage (bouton utilisateur)
+    if (forceRecenter > 0) {
+      console.log('🔄 Recentrage forcé');
+      isInitialLoad.current = false;
+      onUserZoom(false);
+      // Continuer avec la logique normale
+    }
+
+    // Priorité 3: Si l'utilisateur a zoomé manuellement et que les données n'ont pas vraiment changé
+    const dataLengthChanged = lastDataLengthRef.current !== validMarchesData.length;
+    if (userHasZoomed && !forceRecenter && !dataLengthChanged) {
+      console.log('🔒 Zoom manuel préservé - pas de recalcul automatique');
+      return;
+    }
+
+    // Mise à jour des données - recalculer les bounds
+    lastDataLengthRef.current = validMarchesData.length;
+
+    if (!bounds) {
+      // Aucun point : vue par défaut sur la France
+      console.log('🗺️ Retour à la vue par défaut (France)');
+      isInitialLoad.current = false;
+      map.setView([46.603354, 1.888334], 6);
+      return;
+    }
+
+    if (bounds.type === 'single') {
+      // Un seul point : centrer avec zoom élevé
+      const marche = bounds.data;
+      console.log('📍 Centrage sur marche unique:', marche.ville, marche.latitude, marche.longitude);
+      isInitialLoad.current = false;
+      map.setView([marche.latitude, marche.longitude], 12);
+    } else if (bounds.type === 'multiple') {
+      // Plusieurs points : calculer les bounds
       console.log(`📊 Calcul des bounds pour ${validMarchesData.length} marches`);
       
-      // Log détaillé pour BONZAC
-      const bonzacData = validMarchesData.filter(marche => marche.ville === 'BONZAC');
-      if (bonzacData.length > 0) {
-        console.log('🏘️ Données BONZAC pour zoom:', bonzacData.map(m => ({
-          ville: m.ville,
-          lat: m.latitude,
-          lng: m.longitude,
-          isValid: m.latitude !== 0 && m.longitude !== 0
-        })));
-      }
+      const paddingOptions = {
+        paddingTopLeft: [20, 20] as [number, number],
+        paddingBottomRight: [20, 20] as [number, number],
+        maxZoom: 10
+      };
       
-      if (validMarchesData.length === 1) {
-        // Un seul point : centrer avec zoom élevé
-        const marche = validMarchesData[0];
-        console.log('📍 Centrage sur marche unique:', marche.ville, marche.latitude, marche.longitude);
-        map.setView([marche.latitude, marche.longitude], 12);
-      } else {
-        // Plusieurs points : calculer les bounds
-        const latLngs = validMarchesData.map(marche => {
-          console.log(`📍 Point pour bounds: ${marche.ville} [${marche.latitude}, ${marche.longitude}]`);
-          return [marche.latitude, marche.longitude] as [number, number];
-        });
-        
-        const bounds = L.latLngBounds(latLngs);
-        
-        console.log('📐 Bounds calculés:', bounds);
-        
-        // Ajouter un padding pour éviter que les marqueurs touchent les bords
-        const paddingOptions = {
-          paddingTopLeft: [20, 20] as [number, number],
-          paddingBottomRight: [20, 20] as [number, number],
-          maxZoom: 10 // Éviter un zoom trop élevé même pour des points proches
-        };
-        
-        map.fitBounds(bounds, paddingOptions);
-      }
-    } else {
-      // Aucun point ou pas de filtre : vue par défaut sur la France
-      console.log('🗺️ Retour à la vue par défaut (France)');
-      map.setView([46.603354, 1.888334], 6);
+      isInitialLoad.current = false;
+      map.fitBounds(bounds.bounds, paddingOptions);
     }
-  }, [map, validMarchesData, searchResult]);
+  }, [map, bounds, searchResult, userHasZoomed, forceRecenter, validMarchesData.length, onUserZoom]);
 
   return null;
 };
@@ -184,6 +227,10 @@ const InteractiveMap: React.FC<InteractiveMapProps> = ({
   const [hoveredMarker, setHoveredMarker] = useState<MarcheTechnoSensible | null>(null);
   const [mapContainerRef, setMapContainerRef] = useState<HTMLElement | null>(null);
   const [isMobile, setIsMobile] = useState(false);
+  
+  // États pour la gestion du zoom intelligent
+  const [userHasZoomed, setUserHasZoomed] = useState(false);
+  const [forceRecenter, setForceRecenter] = useState(0);
 
   // Simple mobile detection
   useEffect(() => {
@@ -320,6 +367,9 @@ const InteractiveMap: React.FC<InteractiveMapProps> = ({
         <DynamicZoomController 
           validMarchesData={validMarchesData} 
           searchResult={searchResult}
+          userHasZoomed={userHasZoomed}
+          onUserZoom={setUserHasZoomed}
+          forceRecenter={forceRecenter}
         />
         
         <TileLayer
@@ -400,15 +450,47 @@ const InteractiveMap: React.FC<InteractiveMapProps> = ({
         />
       )}
       
-      {/* Indicateur du nombre de résultats avec style poétique */}
-      {layers.marchesTechnoSensibles && (
-        <div className="absolute top-4 right-4 bg-white/90 backdrop-blur-sm rounded-lg px-3 py-2 shadow-lg border border-purple-200">
+      {/* Contrôles de la carte - Desktop uniquement */}
+      {!isMobile && (
+        <div className="absolute top-4 right-4 flex flex-col space-y-2">
+          {/* Bouton de recentrage */}
+          {userHasZoomed && (
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() => setForceRecenter(prev => prev + 1)}
+              className="bg-white/90 backdrop-blur-sm hover:bg-white shadow-lg border border-purple-200"
+            >
+              <RotateCcw className="h-4 w-4 mr-1" />
+              Recentrer la vue
+            </Button>
+          )}
+          
+          {/* Indicateur du nombre de résultats */}
+          {layers.marchesTechnoSensibles && (
+            <div className="bg-white/90 backdrop-blur-sm rounded-lg px-3 py-2 shadow-lg border border-purple-200">
+              <div className="flex items-center space-x-2">
+                <div className="w-2 h-2 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full animate-pulse"></div>
+                <p className="text-sm text-gray-700">
+                  <span className="font-semibold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
+                    {validMarchesData.length}
+                  </span> marche{validMarchesData.length !== 1 ? 's' : ''} révélée{validMarchesData.length !== 1 ? 's' : ''}
+                </p>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+      
+      {/* Indicateur mobile */}
+      {isMobile && layers.marchesTechnoSensibles && (
+        <div className="absolute top-4 left-4 bg-white/90 backdrop-blur-sm rounded-lg px-3 py-2 shadow-lg border border-purple-200">
           <div className="flex items-center space-x-2">
             <div className="w-2 h-2 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full animate-pulse"></div>
             <p className="text-sm text-gray-700">
               <span className="font-semibold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
                 {validMarchesData.length}
-              </span> marche{validMarchesData.length !== 1 ? 's' : ''} révélée{validMarchesData.length !== 1 ? 's' : ''}
+              </span> marche{validMarchesData.length !== 1 ? 's' : ''}
             </p>
           </div>
         </div>
