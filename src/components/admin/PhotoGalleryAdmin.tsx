@@ -44,12 +44,8 @@ const PhotoGalleryAdmin: React.FC<PhotoGalleryAdminProps> = ({ marches }) => {
   const [hasTitle, setHasTitle] = useState<boolean | null>(null);
   const [hasDescription, setHasDescription] = useState<boolean | null>(null);
   const [showFilters, setShowFilters] = useState(false);
-  const [selectedTags, setSelectedTags] = useState<string[]>([]);
-  const [tagSearch, setTagSearch] = useState('');
-
   // Debouncing pour optimiser les performances
   const debouncedSearchText = useDebounce(searchText, 300);
-  const debouncedTagSearch = useDebounce(tagSearch, 300);
 
   // Charger toutes les photos
   useEffect(() => {
@@ -103,93 +99,6 @@ const PhotoGalleryAdmin: React.FC<PhotoGalleryAdminProps> = ({ marches }) => {
       .sort((a, b) => b.photoCount - a.photoCount);
   }, [photos, marches]);
 
-  // Obtenir tous les tags des marches avec compteurs basés sur les photos filtrées
-  const getMarcheTagsWithCount = useMemo(() => {
-    // Utiliser les photos filtrées comme base pour le comptage des tags
-    // Cela exclut les filtres de tags eux-mêmes pour éviter les circularités
-    let basePhotos = photos;
-
-    console.log('🔍 [DEBUG] Photos totales au début:', basePhotos.length);
-
-    // Appliquer seulement les filtres non-tags
-    if (selectedMarche !== 'all') {
-      basePhotos = basePhotos.filter(photo => photo.marche.id === selectedMarche);
-      console.log('🔍 [DEBUG] Après filtre marche:', basePhotos.length);
-    }
-
-    if (hasTitle !== null) {
-      basePhotos = basePhotos.filter(photo => 
-        hasTitle ? (photo.titre && photo.titre.trim() !== '') : (!photo.titre || photo.titre.trim() === '')
-      );
-      console.log('🔍 [DEBUG] Après filtre titre:', basePhotos.length);
-    }
-
-    if (hasDescription !== null) {
-      basePhotos = basePhotos.filter(photo => 
-        hasDescription ? (photo.description && photo.description.trim() !== '') : (!photo.description || photo.description.trim() === '')
-      );
-      console.log('🔍 [DEBUG] Après filtre description:', basePhotos.length);
-    }
-
-    if (debouncedSearchText.trim()) {
-      const searchLower = debouncedSearchText.toLowerCase();
-      basePhotos = basePhotos.filter(photo => 
-        (photo.titre || '').toLowerCase().includes(searchLower) ||
-        (photo.description || '').toLowerCase().includes(searchLower) ||
-        photo.nom_fichier.toLowerCase().includes(searchLower)
-      );
-      console.log('🔍 [DEBUG] Après filtre recherche:', basePhotos.length);
-    }
-
-    const tagCounts = new Map<string, number>();
-    
-    // Collecter tous les tags uniques de toutes les marches
-    const allTagsSet = new Set<string>();
-    basePhotos.forEach(photo => {
-      const photoTags = [
-        ...(photo.marche.supabaseTags || []),
-        ...(photo.marche.tagsThematiques || []),
-        ...(photo.marche.sousThemes || []),
-        photo.marche.theme
-      ].filter(Boolean);
-      
-      photoTags.forEach(tag => allTagsSet.add(tag));
-    });
-
-    // Pour chaque tag, compter combien de photos DISTINCTES appartiennent à des marches ayant ce tag
-    allTagsSet.forEach(tag => {
-      const photosWithThisTag = basePhotos.filter(photo => {
-        const photoTags = [
-          ...(photo.marche.supabaseTags || []),
-          ...(photo.marche.tagsThematiques || []),
-          ...(photo.marche.sousThemes || []),
-          photo.marche.theme
-        ].filter(Boolean);
-        
-        return photoTags.includes(tag);
-      });
-      
-      tagCounts.set(tag, photosWithThisTag.length);
-    });
-
-    const result = Array.from(tagCounts.entries())
-      .map(([tag, count]) => ({ tag, count }))
-      .sort((a, b) => b.count - a.count);
-    
-    console.log('🔍 [DEBUG] Tags avec compteurs:', result.slice(0, 5));
-    console.log('🔍 [DEBUG] "Remontée-Dordogne" count:', tagCounts.get('Remontée-Dordogne'));
-    
-    return result;
-  }, [photos, selectedMarche, hasTitle, hasDescription, debouncedSearchText]);
-
-  // Tags filtrés par la recherche (optimisé avec debouncing)
-  const filteredMarcheTags = useMemo(() => {
-    if (!debouncedTagSearch.trim()) return getMarcheTagsWithCount;
-    const searchLower = debouncedTagSearch.toLowerCase();
-    return getMarcheTagsWithCount.filter(({ tag }) => 
-      tag.toLowerCase().includes(searchLower)
-    );
-  }, [getMarcheTagsWithCount, debouncedTagSearch]);
 
   // Photos filtrées et triées
   const filteredAndSortedPhotos = useMemo(() => {
@@ -214,19 +123,6 @@ const PhotoGalleryAdmin: React.FC<PhotoGalleryAdminProps> = ({ marches }) => {
       );
     }
 
-    // Filtre par tags
-    if (selectedTags.length > 0) {
-      filtered = filtered.filter(photo => {
-        const photoTags = [
-          ...(photo.marche.supabaseTags || []),
-          ...(photo.marche.tagsThematiques || []),
-          ...(photo.marche.sousThemes || []),
-          photo.marche.theme
-        ].filter(Boolean);
-        
-        return selectedTags.some(selectedTag => photoTags.includes(selectedTag));
-      });
-    }
 
     // Recherche textuelle dans les métadonnées des images uniquement
     if (debouncedSearchText.trim()) {
@@ -269,7 +165,7 @@ const PhotoGalleryAdmin: React.FC<PhotoGalleryAdminProps> = ({ marches }) => {
     });
 
     return filtered;
-  }, [photos, selectedMarche, hasTitle, hasDescription, selectedTags, debouncedSearchText, sortField, sortDirection]);
+  }, [photos, selectedMarche, hasTitle, hasDescription, debouncedSearchText, sortField, sortDirection]);
 
   const handleSort = useCallback((field: SortField) => {
     if (sortField === field) {
@@ -299,24 +195,14 @@ const PhotoGalleryAdmin: React.FC<PhotoGalleryAdminProps> = ({ marches }) => {
     });
   }, []);
 
-  const toggleTag = useCallback((tag: string) => {
-    setSelectedTags(prev => 
-      prev.includes(tag) 
-        ? prev.filter(t => t !== tag)
-        : [...prev, tag]
-    );
-  }, []);
-
   const clearFilters = useCallback(() => {
     setSearchText('');
     setSelectedMarche('all');
     setHasTitle(null);
     setHasDescription(null);
-    setSelectedTags([]);
-    setTagSearch('');
   }, []);
 
-  const hasActiveFilters = debouncedSearchText || selectedMarche !== 'all' || hasTitle !== null || hasDescription !== null || selectedTags.length > 0;
+  const hasActiveFilters = debouncedSearchText || selectedMarche !== 'all' || hasTitle !== null || hasDescription !== null;
 
   const getSortIcon = (field: SortField) => {
     if (sortField !== field) return null;
@@ -465,74 +351,6 @@ const PhotoGalleryAdmin: React.FC<PhotoGalleryAdminProps> = ({ marches }) => {
                 </Select>
               </div>
 
-              {/* Tags thématiques des marches */}
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <label className="text-sm font-medium">Tags thématiques</label>
-                  {selectedTags.length > 0 && (
-                    <Button 
-                      variant="ghost" 
-                      size="sm" 
-                      onClick={() => setSelectedTags([])}
-                      className="text-xs h-6"
-                    >
-                      <X className="h-3 w-3 mr-1" />
-                      Effacer
-                    </Button>
-                  )}
-                </div>
-                
-                <div className="space-y-2">
-                  {/* Recherche de tags */}
-                  <div className="relative">
-                    <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 text-muted-foreground h-3 w-3" />
-                    <Input
-                      placeholder="Rechercher un tag de marche..."
-                      value={tagSearch}
-                      onChange={(e) => setTagSearch(e.target.value)}
-                      className="pl-7 text-xs h-8"
-                    />
-                  </div>
-                  
-                  {/* Tags sélectionnés */}
-                  {selectedTags.length > 0 && (
-                    <div className="flex flex-wrap gap-1">
-                      {selectedTags.map(tag => (
-                        <Badge 
-                          key={tag}
-                          variant="default"
-                          className="text-xs cursor-pointer hover:bg-primary/80"
-                          onClick={() => toggleTag(tag)}
-                        >
-                          {tag}
-                          <X className="h-3 w-3 ml-1" />
-                        </Badge>
-                      ))}
-                    </div>
-                  )}
-                  
-                  {/* Tags disponibles */}
-                  <div className="max-h-32 overflow-y-auto space-y-1">
-                    {filteredMarcheTags.length > 0 ? (
-                      filteredMarcheTags.map(({ tag, count }) => (
-                        <Badge
-                          key={tag}
-                          variant={selectedTags.includes(tag) ? "default" : "outline"}
-                          className="text-xs cursor-pointer hover:bg-muted mr-1 mb-1"
-                          onClick={() => toggleTag(tag)}
-                        >
-                          {tag} ({count})
-                        </Badge>
-                      ))
-                    ) : (
-                      <p className="text-xs text-muted-foreground">Aucun tag de marche trouvé</p>
-                    )}
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    Les nombres indiquent le total de photos dans les marches ayant ce tag
-                  </p>
-                </div>
-              </div>
             </div>
           </div>
 
