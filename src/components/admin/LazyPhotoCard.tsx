@@ -4,6 +4,7 @@ import { Badge } from '../ui/badge';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Skeleton } from '../ui/skeleton';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '../ui/dialog';
 import { Edit2, Save, X, Loader2, ExternalLink, Trash2 } from 'lucide-react';
 import { ExistingPhoto, updatePhotoMetadata, deletePhoto } from '../../utils/supabasePhotoOperations';
 import { MarcheTechnoSensible } from '../../utils/googleSheetsApi';
@@ -115,7 +116,16 @@ const LazyPhotoCard: React.FC<LazyPhotoCardProps> = memo(({ photo, onUpdate, onD
     window.open(getFullImageUrl(photo.url_supabase), '_blank');
   };
 
-  const handleDeleteConfirm = async () => {
+  const handleDeleteClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    e.preventDefault();
+    setShowDeleteConfirm(true);
+  };
+
+  const handleDeleteConfirm = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    e.preventDefault();
+    
     if (!onDelete || deleting) return;
     
     setDeleting(true);
@@ -130,6 +140,12 @@ const LazyPhotoCard: React.FC<LazyPhotoCardProps> = memo(({ photo, onUpdate, onD
       setDeleting(false);
       setShowDeleteConfirm(false);
     }
+  };
+
+  const handleDeleteCancel = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    e.preventDefault();
+    setShowDeleteConfirm(false);
   };
 
   return (
@@ -270,7 +286,7 @@ const LazyPhotoCard: React.FC<LazyPhotoCardProps> = memo(({ photo, onUpdate, onD
                   <Button
                     size="sm"
                     variant="ghost"
-                    onClick={() => setShowDeleteConfirm(true)}
+                    onClick={handleDeleteClick}
                     className="h-7 px-2 text-destructive hover:text-destructive hover:bg-destructive/10"
                     disabled={deleting}
                   >
@@ -286,43 +302,41 @@ const LazyPhotoCard: React.FC<LazyPhotoCardProps> = memo(({ photo, onUpdate, onD
           </div>
           
           {/* Dialog de confirmation de suppression */}
-          {showDeleteConfirm && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-              <div className="bg-background border rounded-lg p-6 max-w-md mx-4">
-                <h3 className="font-semibold mb-2">Confirmer la suppression</h3>
-                <p className="text-sm text-muted-foreground mb-4">
+          <Dialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
+            <DialogContent onClick={(e) => e.stopPropagation()}>
+              <DialogHeader>
+                <DialogTitle>Confirmer la suppression</DialogTitle>
+                <DialogDescription>
                   Êtes-vous sûr de vouloir supprimer <span className="font-medium">{photo.nom_fichier}</span> ?
                   <br />
                   Cette action est irréversible.
-                </p>
-                <div className="flex justify-end space-x-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setShowDeleteConfirm(false)}
-                    disabled={deleting}
-                  >
-                    Annuler
-                  </Button>
-                  <Button
-                    variant="destructive"
-                    size="sm"
-                    onClick={handleDeleteConfirm}
-                    disabled={deleting}
-                  >
-                    {deleting ? (
-                      <>
-                        <Loader2 className="h-3 w-3 animate-spin mr-1" />
-                        Suppression...
-                      </>
-                    ) : (
-                      'Supprimer'
-                    )}
-                  </Button>
-                </div>
-              </div>
-            </div>
-          )}
+                </DialogDescription>
+              </DialogHeader>
+              <DialogFooter>
+                <Button
+                  variant="outline"
+                  onClick={handleDeleteCancel}
+                  disabled={deleting}
+                >
+                  Annuler
+                </Button>
+                <Button
+                  variant="destructive"
+                  onClick={handleDeleteConfirm}
+                  disabled={deleting}
+                >
+                  {deleting ? (
+                    <>
+                      <Loader2 className="h-3 w-3 animate-spin mr-1" />
+                      Suppression...
+                    </>
+                  ) : (
+                    'Supprimer'
+                  )}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
         </div>
       </Card>
     </div>

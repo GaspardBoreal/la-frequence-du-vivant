@@ -246,9 +246,14 @@ const PhotoGalleryAdmin: React.FC<PhotoGalleryAdminProps> = ({ marches }) => {
     ));
   }, []);
 
-  // Callback pour la suppression des photos
+  // Callback pour la suppression des photos - optimisé pour éviter la navigation
   const handlePhotoDelete = useCallback((photoId: string) => {
-    setPhotos(prev => prev.filter(photo => photo.id !== photoId));
+    console.log('Suppression photo ID:', photoId);
+    setPhotos(prev => {
+      const newPhotos = prev.filter(photo => photo.id !== photoId);
+      console.log('Photos restantes:', newPhotos.length);
+      return newPhotos;
+    });
   }, []);
 
   const toggleTag = useCallback((tag: string) => {
