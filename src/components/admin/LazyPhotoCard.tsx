@@ -54,20 +54,25 @@ const LazyPhotoCard: React.FC<LazyPhotoCardProps> = memo(({ photo, onUpdate }) =
   // Générer URL thumbnail Supabase
   const getThumbnailUrl = (originalUrl: string) => {
     if (!originalUrl) return '';
-    // Utiliser les transformations Supabase pour générer une miniature
-    const url = new URL(originalUrl);
-    url.searchParams.set('width', '200');
-    url.searchParams.set('height', '200');
-    url.searchParams.set('resize', 'cover');
-    url.searchParams.set('quality', '80');
-    return url.toString();
+    // Pour Supabase Storage, utiliser la transformation directe dans l'URL
+    // Format: /render/image/public/[path]?width=200&height=200
+    if (originalUrl.includes('supabase.co/storage/v1/object/public/')) {
+      const path = originalUrl.split('/storage/v1/object/public/')[1];
+      const baseUrl = originalUrl.split('/storage/v1/object/public/')[0];
+      return `${baseUrl}/storage/v1/render/image/public/${path}?width=200&height=200&resize=cover&quality=80`;
+    }
+    return originalUrl;
   };
 
   const getFullImageUrl = (originalUrl: string) => {
     if (!originalUrl) return '';
-    const url = new URL(originalUrl);
-    url.searchParams.set('quality', '85');
-    return url.toString();
+    // Pour la version pleine résolution, optimiser la qualité seulement
+    if (originalUrl.includes('supabase.co/storage/v1/object/public/')) {
+      const path = originalUrl.split('/storage/v1/object/public/')[1];
+      const baseUrl = originalUrl.split('/storage/v1/object/public/')[0];
+      return `${baseUrl}/storage/v1/render/image/public/${path}?quality=85`;
+    }
+    return originalUrl;
   };
 
   const startEdit = () => {
