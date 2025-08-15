@@ -85,66 +85,59 @@ const PhotoGalleryAdmin: React.FC<PhotoGalleryAdminProps> = ({ marches }) => {
     }
   }, [marches]);
 
-  // Obtenir tous les tags uniques avec compteurs (optimisé avec debouncing)
-  const getUniqueTagsWithCount = useMemo(() => {
-    const relevantPhotos = photos.filter(photo => {
-      // Appliquer tous les autres filtres sauf les tags
-      let passes = true;
-      
-      if (selectedMarche !== 'all') {
-        passes = passes && photo.marche.id === selectedMarche;
-      }
-      
-      if (hasTitle !== null) {
-        passes = passes && (hasTitle ? (photo.titre && photo.titre.trim() !== '') : (!photo.titre || photo.titre.trim() === ''));
-      }
-      
-      if (hasDescription !== null) {
-        passes = passes && (hasDescription ? (photo.description && photo.description.trim() !== '') : (!photo.description || photo.description.trim() === ''));
-      }
-      
-      if (debouncedSearchText.trim()) {
-        const searchLower = debouncedSearchText.toLowerCase();
-        passes = passes && (
-          (photo.titre || '').toLowerCase().includes(searchLower) ||
-          (photo.description || '').toLowerCase().includes(searchLower) ||
-          photo.nom_fichier.toLowerCase().includes(searchLower) ||
-          photo.marche.ville.toLowerCase().includes(searchLower) ||
-          (photo.marche.nomMarche || '').toLowerCase().includes(searchLower)
-        );
-      }
-      
-      return passes;
+  // Obtenir les marches qui ont des photos avec compteurs
+  const getMarchesWithPhotoCount = useMemo(() => {
+    const marchePhotoCounts = new Map<string, number>();
+    
+    photos.forEach(photo => {
+      const marcheId = photo.marche.id;
+      marchePhotoCounts.set(marcheId, (marchePhotoCounts.get(marcheId) || 0) + 1);
     });
+    
+    return marches
+      .filter(marche => marchePhotoCounts.has(marche.id))
+      .map(marche => ({
+        marche,
+        photoCount: marchePhotoCounts.get(marche.id) || 0
+      }))
+      .sort((a, b) => b.photoCount - a.photoCount);
+  }, [photos, marches]);
+
+  // Obtenir tous les tags des marches avec compteurs basés sur les marches qui ont des photos
+  const getMarcheTagsWithCount = useMemo(() => {
+    const relevantMarches = getMarchesWithPhotoCount
+      .filter(({ marche }) => selectedMarche === 'all' || marche.id === selectedMarche)
+      .map(({ marche }) => marche);
 
     const tagCounts = new Map<string, number>();
     
-    relevantPhotos.forEach(photo => {
+    relevantMarches.forEach(marche => {
       const allTags = [
-        ...(photo.marche.supabaseTags || []),
-        ...(photo.marche.tagsThematiques || []),
-        ...(photo.marche.sousThemes || []),
-        photo.marche.theme
+        ...(marche.supabaseTags || []),
+        ...(marche.tagsThematiques || []),
+        ...(marche.sousThemes || []),
+        marche.theme
       ].filter(Boolean);
       
       allTags.forEach(tag => {
-        tagCounts.set(tag, (tagCounts.get(tag) || 0) + 1);
+        const marchePhotoCount = photos.filter(p => p.marche.id === marche.id).length;
+        tagCounts.set(tag, (tagCounts.get(tag) || 0) + marchePhotoCount);
       });
     });
     
     return Array.from(tagCounts.entries())
       .map(([tag, count]) => ({ tag, count }))
       .sort((a, b) => b.count - a.count);
-  }, [photos, selectedMarche, hasTitle, hasDescription, debouncedSearchText]);
+  }, [getMarchesWithPhotoCount, selectedMarche, photos]);
 
   // Tags filtrés par la recherche (optimisé avec debouncing)
-  const filteredTags = useMemo(() => {
-    if (!debouncedTagSearch.trim()) return getUniqueTagsWithCount;
+  const filteredMarcheTags = useMemo(() => {
+    if (!debouncedTagSearch.trim()) return getMarcheTagsWithCount;
     const searchLower = debouncedTagSearch.toLowerCase();
-    return getUniqueTagsWithCount.filter(({ tag }) => 
+    return getMarcheTagsWithCount.filter(({ tag }) => 
       tag.toLowerCase().includes(searchLower)
     );
-  }, [getUniqueTagsWithCount, debouncedTagSearch]);
+  }, [getMarcheTagsWithCount, debouncedTagSearch]);
 
   // Photos filtrées et triées
   const filteredAndSortedPhotos = useMemo(() => {
@@ -183,15 +176,13 @@ const PhotoGalleryAdmin: React.FC<PhotoGalleryAdminProps> = ({ marches }) => {
       });
     }
 
-    // Recherche textuelle (avec debouncing)
+    // Recherche textuelle dans les métadonnées des images uniquement
     if (debouncedSearchText.trim()) {
       const searchLower = debouncedSearchText.toLowerCase();
       filtered = filtered.filter(photo => 
         (photo.titre || '').toLowerCase().includes(searchLower) ||
         (photo.description || '').toLowerCase().includes(searchLower) ||
-        photo.nom_fichier.toLowerCase().includes(searchLower) ||
-        photo.marche.ville.toLowerCase().includes(searchLower) ||
-        (photo.marche.nomMarche || '').toLowerCase().includes(searchLower)
+        photo.nom_fichier.toLowerCase().includes(searchLower)
       );
     }
 
@@ -314,194 +305,219 @@ const PhotoGalleryAdmin: React.FC<PhotoGalleryAdminProps> = ({ marches }) => {
 
       {/* Panneau de filtres */}
       {showFilters && (
-        <Card className="p-4 space-y-4">
+        <Card className="p-6 space-y-6">
           <div className="flex items-center justify-between">
-            <h3 className="font-medium">Filtres et recherche</h3>
+            <h3 className="text-lg font-semibold">Filtres</h3>
             {hasActiveFilters && (
               <Button variant="ghost" size="sm" onClick={clearFilters}>
                 <X className="h-4 w-4 mr-1" />
-                Effacer
+                Tout effacer
               </Button>
             )}
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {/* Recherche textuelle */}
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Recherche</label>
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-                <Input
-                  placeholder="Titre, description, fichier, ville..."
-                  value={searchText}
-                  onChange={(e) => setSearchText(e.target.value)}
-                  className="pl-10"
-                />
-              </div>
-            </div>
-
-            {/* Filtre par marche */}
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Marche</label>
-              <Select value={selectedMarche} onValueChange={setSelectedMarche}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Toutes les marches" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Toutes les marches</SelectItem>
-                  {marches.map((marche) => (
-                    <SelectItem key={marche.id} value={marche.id}>
-                      {marche.ville} - {marche.nomMarche || 'Sans nom'}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            {/* Tri */}
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Trier par</label>
-              <div className="flex space-x-2">
-                <Button
-                  variant={sortField === 'date' ? 'default' : 'outline'}
-                  size="sm"
-                  onClick={() => handleSort('date')}
-                  className="flex items-center"
-                >
-                  <Calendar className="h-4 w-4 mr-1" />
-                  Date {getSortIcon('date')}
-                </Button>
-                <Button
-                  variant={sortField === 'name' ? 'default' : 'outline'}
-                  size="sm"
-                  onClick={() => handleSort('name')}
-                  className="flex items-center"
-                >
-                  Nom {getSortIcon('name')}
-                </Button>
-                <Button
-                  variant={sortField === 'marche' ? 'default' : 'outline'}
-                  size="sm"
-                  onClick={() => handleSort('marche')}
-                  className="flex items-center"
-                >
-                  <MapPin className="h-4 w-4 mr-1" />
-                  Marche {getSortIcon('marche')}
-                </Button>
-              </div>
-            </div>
-          </div>
-
-          {/* Filtres par contenu */}
-          <div className="flex flex-wrap gap-4">
-            <div className="flex items-center space-x-2">
-              <Checkbox
-                id="has-title"
-                checked={hasTitle === true}
-                onCheckedChange={(checked) => setHasTitle(checked ? true : hasTitle === true ? null : false)}
-              />
-              <label htmlFor="has-title" className="text-sm">Avec titre</label>
-            </div>
+          {/* Section 1: Filtres sur les Images */}
+          <div className="border rounded-lg p-4 space-y-4">
+            <h4 className="font-medium text-primary flex items-center">
+              <Search className="h-4 w-4 mr-2" />
+              Filtres sur les Images
+            </h4>
             
-            <div className="flex items-center space-x-2">
-              <Checkbox
-                id="no-title"
-                checked={hasTitle === false}
-                onCheckedChange={(checked) => setHasTitle(checked ? false : hasTitle === false ? null : true)}
-              />
-              <label htmlFor="no-title" className="text-sm">Sans titre</label>
-            </div>
-            
-            <div className="flex items-center space-x-2">
-              <Checkbox
-                id="has-description"
-                checked={hasDescription === true}
-                onCheckedChange={(checked) => setHasDescription(checked ? true : hasDescription === true ? null : false)}
-              />
-              <label htmlFor="has-description" className="text-sm">Avec description</label>
-            </div>
-            
-            <div className="flex items-center space-x-2">
-              <Checkbox
-                id="no-description"
-                checked={hasDescription === false}
-                onCheckedChange={(checked) => setHasDescription(checked ? false : hasDescription === false ? null : true)}
-              />
-              <label htmlFor="no-description" className="text-sm">Sans description</label>
-            </div>
-          </div>
-
-          {/* Filtres par tags */}
-          <div className="space-y-3">
-            <div className="flex items-center justify-between">
-              <label className="text-sm font-medium">Tags</label>
-              {selectedTags.length > 0 && (
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
-                  onClick={() => setSelectedTags([])}
-                  className="text-xs h-6"
-                >
-                  <X className="h-3 w-3 mr-1" />
-                  Effacer tags
-                </Button>
-              )}
-            </div>
-            
-            <div className="space-y-2">
-              {/* Recherche de tags */}
-              <div className="relative">
-                <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 text-muted-foreground h-3 w-3" />
-                <Input
-                  placeholder="Rechercher un tag..."
-                  value={tagSearch}
-                  onChange={(e) => setTagSearch(e.target.value)}
-                  className="pl-7 text-xs h-8"
-                />
-              </div>
-              
-              {/* Tags sélectionnés */}
-              {selectedTags.length > 0 && (
-                <div className="flex flex-wrap gap-1">
-                  {selectedTags.map(tag => (
-                    <Badge 
-                      key={tag}
-                      variant="default"
-                      className="text-xs cursor-pointer hover:bg-primary/80"
-                      onClick={() => toggleTag(tag)}
-                    >
-                      {tag}
-                      <X className="h-3 w-3 ml-1" />
-                    </Badge>
-                  ))}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Recherche textuelle dans les métadonnées des images */}
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Recherche dans les images</label>
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+                  <Input
+                    placeholder="Titre, description, nom de fichier..."
+                    value={searchText}
+                    onChange={(e) => setSearchText(e.target.value)}
+                    className="pl-10"
+                  />
                 </div>
-              )}
-              
-              {/* Tags disponibles */}
-              <div className="flex flex-wrap gap-1 max-h-32 overflow-y-auto">
-                {filteredTags
-                  .filter(({ tag }) => !selectedTags.includes(tag))
-                  .slice(0, 20)
-                  .map(({ tag, count }) => (
-                    <Badge 
-                      key={tag}
-                      variant="outline"
-                      className="text-xs cursor-pointer hover:bg-primary/10 flex items-center"
-                      onClick={() => toggleTag(tag)}
-                    >
-                      {tag}
-                      <span className="ml-1 text-xs bg-muted px-1 rounded">
-                        {count}
-                      </span>
-                    </Badge>
-                  ))}
-              </div>
-              
-              {filteredTags.filter(({ tag }) => !selectedTags.includes(tag)).length > 20 && (
                 <p className="text-xs text-muted-foreground">
-                  ... et {filteredTags.filter(({ tag }) => !selectedTags.includes(tag)).length - 20} autres tags
+                  Recherche dans les métadonnées des photos uniquement
                 </p>
-              )}
+              </div>
+
+              {/* Filtres par contenu des images */}
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Métadonnées</label>
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="flex items-center space-x-2">
+                    <Checkbox
+                      id="has-title"
+                      checked={hasTitle === true}
+                      onCheckedChange={(checked) => setHasTitle(checked ? true : hasTitle === true ? null : false)}
+                    />
+                    <label htmlFor="has-title" className="text-sm">Avec titre</label>
+                  </div>
+                  
+                  <div className="flex items-center space-x-2">
+                    <Checkbox
+                      id="no-title"
+                      checked={hasTitle === false}
+                      onCheckedChange={(checked) => setHasTitle(checked ? false : hasTitle === false ? null : true)}
+                    />
+                    <label htmlFor="no-title" className="text-sm">Sans titre</label>
+                  </div>
+                  
+                  <div className="flex items-center space-x-2">
+                    <Checkbox
+                      id="has-description"
+                      checked={hasDescription === true}
+                      onCheckedChange={(checked) => setHasDescription(checked ? true : hasDescription === true ? null : false)}
+                    />
+                    <label htmlFor="has-description" className="text-sm">Avec description</label>
+                  </div>
+                  
+                  <div className="flex items-center space-x-2">
+                    <Checkbox
+                      id="no-description"
+                      checked={hasDescription === false}
+                      onCheckedChange={(checked) => setHasDescription(checked ? false : hasDescription === false ? null : true)}
+                    />
+                    <label htmlFor="no-description" className="text-sm">Sans description</label>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Section 2: Filtres sur les Marches */}
+          <div className="border rounded-lg p-4 space-y-4">
+            <h4 className="font-medium text-secondary flex items-center">
+              <MapPin className="h-4 w-4 mr-2" />
+              Filtres sur les Marches
+            </h4>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Sélecteur de marche */}
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Marche sélectionnée</label>
+                <Select value={selectedMarche} onValueChange={setSelectedMarche}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Toutes les marches" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">
+                      Toutes les marches ({photos.length} photos)
+                    </SelectItem>
+                    {getMarchesWithPhotoCount.map(({ marche, photoCount }) => (
+                      <SelectItem key={marche.id} value={marche.id}>
+                        {marche.ville} - {marche.nomMarche || 'Sans nom'} ({photoCount} photos)
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Tags thématiques des marches */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <label className="text-sm font-medium">Tags thématiques</label>
+                  {selectedTags.length > 0 && (
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      onClick={() => setSelectedTags([])}
+                      className="text-xs h-6"
+                    >
+                      <X className="h-3 w-3 mr-1" />
+                      Effacer
+                    </Button>
+                  )}
+                </div>
+                
+                <div className="space-y-2">
+                  {/* Recherche de tags */}
+                  <div className="relative">
+                    <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 text-muted-foreground h-3 w-3" />
+                    <Input
+                      placeholder="Rechercher un tag de marche..."
+                      value={tagSearch}
+                      onChange={(e) => setTagSearch(e.target.value)}
+                      className="pl-7 text-xs h-8"
+                    />
+                  </div>
+                  
+                  {/* Tags sélectionnés */}
+                  {selectedTags.length > 0 && (
+                    <div className="flex flex-wrap gap-1">
+                      {selectedTags.map(tag => (
+                        <Badge 
+                          key={tag}
+                          variant="default"
+                          className="text-xs cursor-pointer hover:bg-primary/80"
+                          onClick={() => toggleTag(tag)}
+                        >
+                          {tag}
+                          <X className="h-3 w-3 ml-1" />
+                        </Badge>
+                      ))}
+                    </div>
+                  )}
+                  
+                  {/* Tags disponibles */}
+                  <div className="max-h-32 overflow-y-auto space-y-1">
+                    {filteredMarcheTags.length > 0 ? (
+                      filteredMarcheTags.map(({ tag, count }) => (
+                        <Badge
+                          key={tag}
+                          variant={selectedTags.includes(tag) ? "default" : "outline"}
+                          className="text-xs cursor-pointer hover:bg-muted mr-1 mb-1"
+                          onClick={() => toggleTag(tag)}
+                        >
+                          {tag} ({count})
+                        </Badge>
+                      ))
+                    ) : (
+                      <p className="text-xs text-muted-foreground">Aucun tag de marche trouvé</p>
+                    )}
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Les nombres indiquent le total de photos dans les marches ayant ce tag
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Section Tri */}
+          <div className="border rounded-lg p-4 space-y-4">
+            <h4 className="font-medium flex items-center">
+              <SortAsc className="h-4 w-4 mr-2" />
+              Tri des résultats
+            </h4>
+            
+            <div className="flex flex-wrap gap-2">
+              <Button
+                variant={sortField === 'date' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => handleSort('date')}
+                className="flex items-center"
+              >
+                <Calendar className="h-4 w-4 mr-1" />
+                Date {getSortIcon('date')}
+              </Button>
+              <Button
+                variant={sortField === 'name' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => handleSort('name')}
+                className="flex items-center"
+              >
+                Nom {getSortIcon('name')}
+              </Button>
+              <Button
+                variant={sortField === 'marche' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => handleSort('marche')}
+                className="flex items-center"
+              >
+                <MapPin className="h-4 w-4 mr-1" />
+                Marche {getSortIcon('marche')}
+              </Button>
             </div>
           </div>
         </Card>
