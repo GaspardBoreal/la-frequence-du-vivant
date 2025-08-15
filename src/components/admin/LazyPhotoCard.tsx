@@ -4,8 +4,8 @@ import { Badge } from '../ui/badge';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Skeleton } from '../ui/skeleton';
-import { Edit2, Save, X, Loader2, ExternalLink } from 'lucide-react';
-import { ExistingPhoto, updatePhotoMetadata } from '../../utils/supabasePhotoOperations';
+import { Edit2, Save, X, Loader2, ExternalLink, Trash2 } from 'lucide-react';
+import { ExistingPhoto, updatePhotoMetadata, deletePhoto } from '../../utils/supabasePhotoOperations';
 import { MarcheTechnoSensible } from '../../utils/googleSheetsApi';
 import { formatFileSize } from '../../utils/photoUtils';
 import { toast } from 'sonner';
@@ -17,14 +17,17 @@ interface PhotoWithMarche extends ExistingPhoto {
 interface LazyPhotoCardProps {
   photo: PhotoWithMarche;
   onUpdate: (photoId: string, updates: { titre?: string; description?: string }) => void;
+  onDelete?: (photoId: string) => void;
 }
 
-const LazyPhotoCard: React.FC<LazyPhotoCardProps> = memo(({ photo, onUpdate }) => {
+const LazyPhotoCard: React.FC<LazyPhotoCardProps> = memo(({ photo, onUpdate, onDelete }) => {
   const [isVisible, setIsVisible] = useState(false);
   const [imageLoaded, setImageLoaded] = useState(false);
   const [imageError, setImageError] = useState(false);
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [titre, setTitre] = useState(photo.titre || '');
   const [description, setDescription] = useState(photo.description || '');
   
@@ -110,6 +113,23 @@ const LazyPhotoCard: React.FC<LazyPhotoCardProps> = memo(({ photo, onUpdate }) =
 
   const openFullImage = () => {
     window.open(getFullImageUrl(photo.url_supabase), '_blank');
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!onDelete || deleting) return;
+    
+    setDeleting(true);
+    try {
+      await deletePhoto(photo.id);
+      onDelete(photo.id);
+      toast.success('Photo supprimée');
+    } catch (error) {
+      console.error('Erreur suppression:', error);
+      toast.error('Erreur lors de la suppression');
+    } finally {
+      setDeleting(false);
+      setShowDeleteConfirm(false);
+    }
   };
 
   return (
@@ -235,16 +255,74 @@ const LazyPhotoCard: React.FC<LazyPhotoCardProps> = memo(({ photo, onUpdate }) =
                 </Button>
               </>
             ) : (
-              <Button
-                size="sm"
-                variant="ghost"
-                onClick={startEdit}
-                className="h-7 px-2"
-              >
-                <Edit2 className="h-3 w-3" />
-              </Button>
+              <>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={startEdit}
+                  className="h-7 px-2"
+                  disabled={deleting}
+                >
+                  <Edit2 className="h-3 w-3" />
+                </Button>
+                
+                {onDelete && (
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => setShowDeleteConfirm(true)}
+                    className="h-7 px-2 text-destructive hover:text-destructive hover:bg-destructive/10"
+                    disabled={deleting}
+                  >
+                    {deleting ? (
+                      <Loader2 className="h-3 w-3 animate-spin" />
+                    ) : (
+                      <Trash2 className="h-3 w-3" />
+                    )}
+                  </Button>
+                )}
+              </>
             )}
           </div>
+          
+          {/* Dialog de confirmation de suppression */}
+          {showDeleteConfirm && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+              <div className="bg-background border rounded-lg p-6 max-w-md mx-4">
+                <h3 className="font-semibold mb-2">Confirmer la suppression</h3>
+                <p className="text-sm text-muted-foreground mb-4">
+                  Êtes-vous sûr de vouloir supprimer <span className="font-medium">{photo.nom_fichier}</span> ?
+                  <br />
+                  Cette action est irréversible.
+                </p>
+                <div className="flex justify-end space-x-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setShowDeleteConfirm(false)}
+                    disabled={deleting}
+                  >
+                    Annuler
+                  </Button>
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    onClick={handleDeleteConfirm}
+                    disabled={deleting}
+                  >
+                    {deleting ? (
+                      <>
+                        <Loader2 className="h-3 w-3 animate-spin mr-1" />
+                        Suppression...
+                      </>
+                    ) : (
+                      'Supprimer'
+                    )}
+                  </Button>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </Card>
     </div>

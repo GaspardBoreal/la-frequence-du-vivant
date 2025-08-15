@@ -18,7 +18,7 @@ import {
   X
 } from 'lucide-react';
 import { MarcheTechnoSensible } from '../../utils/googleSheetsApi';
-import { fetchExistingPhotos, ExistingPhoto } from '../../utils/supabasePhotoOperations';
+import { fetchExistingPhotos, ExistingPhoto, deletePhoto } from '../../utils/supabasePhotoOperations';
 import { toast } from 'sonner';
 import { useDebounce } from '../../hooks/useDebounce';
 import LazyPhotoCard from './LazyPhotoCard';
@@ -244,6 +244,11 @@ const PhotoGalleryAdmin: React.FC<PhotoGalleryAdminProps> = ({ marches }) => {
         ? { ...photo, ...updates }
         : photo
     ));
+  }, []);
+
+  // Callback pour la suppression des photos
+  const handlePhotoDelete = useCallback((photoId: string) => {
+    setPhotos(prev => prev.filter(photo => photo.id !== photoId));
   }, []);
 
   const toggleTag = useCallback((tag: string) => {
@@ -516,6 +521,7 @@ const PhotoGalleryAdmin: React.FC<PhotoGalleryAdminProps> = ({ marches }) => {
               key={photo.id} 
               photo={photo} 
               onUpdate={handlePhotoUpdate}
+              onDelete={handlePhotoDelete}
             />
           ))}
         </div>
