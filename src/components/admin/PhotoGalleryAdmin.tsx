@@ -143,7 +143,8 @@ const PhotoGalleryAdmin: React.FC<PhotoGalleryAdminProps> = ({ marches }) => {
 
     const tagCounts = new Map<string, number>();
     
-    // Compter les photos par tag en utilisant la base filtrée
+    // Collecter tous les tags uniques de toutes les marches
+    const allTagsSet = new Set<string>();
     basePhotos.forEach(photo => {
       const photoTags = [
         ...(photo.marche.supabaseTags || []),
@@ -152,9 +153,23 @@ const PhotoGalleryAdmin: React.FC<PhotoGalleryAdminProps> = ({ marches }) => {
         photo.marche.theme
       ].filter(Boolean);
       
-      photoTags.forEach(tag => {
-        tagCounts.set(tag, (tagCounts.get(tag) || 0) + 1);
+      photoTags.forEach(tag => allTagsSet.add(tag));
+    });
+
+    // Pour chaque tag, compter combien de photos DISTINCTES appartiennent à des marches ayant ce tag
+    allTagsSet.forEach(tag => {
+      const photosWithThisTag = basePhotos.filter(photo => {
+        const photoTags = [
+          ...(photo.marche.supabaseTags || []),
+          ...(photo.marche.tagsThematiques || []),
+          ...(photo.marche.sousThemes || []),
+          photo.marche.theme
+        ].filter(Boolean);
+        
+        return photoTags.includes(tag);
       });
+      
+      tagCounts.set(tag, photosWithThisTag.length);
     });
 
     const result = Array.from(tagCounts.entries())
