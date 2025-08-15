@@ -1,0 +1,251 @@
+import React, { useState, useRef, useEffect, memo } from 'react';
+import { Card } from '../ui/card';
+import { Badge } from '../ui/badge';
+import { Button } from '../ui/button';
+import { Input } from '../ui/input';
+import { Skeleton } from '../ui/skeleton';
+import { Edit2, Save, X, Loader2, ExternalLink } from 'lucide-react';
+import { ExistingPhoto, updatePhotoMetadata } from '../../utils/supabasePhotoOperations';
+import { MarcheTechnoSensible } from '../../utils/googleSheetsApi';
+import { formatFileSize } from '../../utils/photoUtils';
+import { toast } from 'sonner';
+
+interface PhotoWithMarche extends ExistingPhoto {
+  marche: MarcheTechnoSensible;
+}
+
+interface LazyPhotoCardProps {
+  photo: PhotoWithMarche;
+  onUpdate: (photoId: string, updates: { titre?: string; description?: string }) => void;
+}
+
+const LazyPhotoCard: React.FC<LazyPhotoCardProps> = memo(({ photo, onUpdate }) => {
+  const [isVisible, setIsVisible] = useState(false);
+  const [imageLoaded, setImageLoaded] = useState(false);
+  const [imageError, setImageError] = useState(false);
+  const [editing, setEditing] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [titre, setTitre] = useState(photo.titre || '');
+  const [description, setDescription] = useState(photo.description || '');
+  
+  const cardRef = useRef<HTMLDivElement>(null);
+
+  // Intersection Observer pour le lazy loading
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setIsVisible(true);
+          observer.disconnect();
+        }
+      },
+      {
+        rootMargin: '100px' // Commencer à charger 100px avant que l'élément soit visible
+      }
+    );
+
+    if (cardRef.current) {
+      observer.observe(cardRef.current);
+    }
+
+    return () => observer.disconnect();
+  }, []);
+
+  // Générer URL thumbnail Supabase
+  const getThumbnailUrl = (originalUrl: string) => {
+    if (!originalUrl) return '';
+    // Utiliser les transformations Supabase pour générer une miniature
+    const url = new URL(originalUrl);
+    url.searchParams.set('width', '200');
+    url.searchParams.set('height', '200');
+    url.searchParams.set('resize', 'cover');
+    url.searchParams.set('quality', '80');
+    return url.toString();
+  };
+
+  const getFullImageUrl = (originalUrl: string) => {
+    if (!originalUrl) return '';
+    const url = new URL(originalUrl);
+    url.searchParams.set('quality', '85');
+    return url.toString();
+  };
+
+  const startEdit = () => {
+    setEditing(true);
+    setTitre(photo.titre || '');
+    setDescription(photo.description || '');
+  };
+
+  const saveEdit = async () => {
+    if (saving) return;
+    
+    setSaving(true);
+    try {
+      await updatePhotoMetadata(photo.id, {
+        titre: titre,
+        description: description
+      });
+      
+      onUpdate(photo.id, { titre, description });
+      setEditing(false);
+      toast.success('Photo mise à jour');
+    } catch (error) {
+      console.error('Erreur sauvegarde:', error);
+      toast.error('Erreur lors de la sauvegarde');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const cancelEdit = () => {
+    setEditing(false);
+    setTitre(photo.titre || '');
+    setDescription(photo.description || '');
+  };
+
+  const openFullImage = () => {
+    window.open(getFullImageUrl(photo.url_supabase), '_blank');
+  };
+
+  return (
+    <div ref={cardRef}>
+      <Card className="overflow-hidden">
+        <div className="aspect-square relative bg-muted">
+          {!isVisible ? (
+            // Skeleton loader avant que l'image ne soit visible
+            <Skeleton className="w-full h-full" />
+          ) : imageError ? (
+            // Affichage d'erreur
+            <div className="w-full h-full flex items-center justify-center text-muted-foreground">
+              <div className="text-center">
+                <div className="text-2xl mb-2">⚠️</div>
+                <div className="text-sm">Image non disponible</div>
+              </div>
+            </div>
+          ) : (
+            <>
+              {!imageLoaded && <Skeleton className="w-full h-full absolute inset-0" />}
+              <img
+                src={getThumbnailUrl(photo.url_supabase)}
+                alt={photo.titre || photo.nom_fichier}
+                className={`w-full h-full object-cover transition-opacity duration-300 ${
+                  imageLoaded ? 'opacity-100' : 'opacity-0'
+                }`}
+                onLoad={() => setImageLoaded(true)}
+                onError={() => {
+                  setImageError(true);
+                  setImageLoaded(true);
+                }}
+              />
+              
+              {/* Bouton pour ouvrir en pleine résolution */}
+              {imageLoaded && !imageError && (
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  className="absolute top-2 right-2 h-8 w-8 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                  onClick={openFullImage}
+                >
+                  <ExternalLink className="h-4 w-4" />
+                </Button>
+              )}
+            </>
+          )}
+        </div>
+        
+        <div className="p-3 space-y-2">
+          {/* Marche */}
+          <div className="flex items-center justify-between">
+            <Badge variant="secondary" className="text-xs">
+              {photo.marche.ville}
+            </Badge>
+            <span className="text-xs text-muted-foreground">
+              {formatFileSize(photo.metadata?.size || 0)}
+            </span>
+          </div>
+          
+          {/* Nom du fichier */}
+          <div className="text-xs text-muted-foreground font-mono truncate" title={photo.nom_fichier}>
+            {photo.nom_fichier}
+          </div>
+          
+          {/* Titre éditable */}
+          <div className="space-y-1">
+            <label className="text-xs font-medium text-muted-foreground">Titre</label>
+            {editing ? (
+              <Input
+                value={titre}
+                onChange={(e) => setTitre(e.target.value)}
+                placeholder="Titre de la photo"
+                className="text-sm h-8"
+              />
+            ) : (
+              <div className="text-sm min-h-[2rem] flex items-center">
+                {photo.titre || <span className="text-muted-foreground italic">Pas de titre</span>}
+              </div>
+            )}
+          </div>
+          
+          {/* Description éditable */}
+          <div className="space-y-1">
+            <label className="text-xs font-medium text-muted-foreground">Description</label>
+            {editing ? (
+              <Input
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                placeholder="Description de la photo"
+                className="text-sm h-8"
+              />
+            ) : (
+              <div className="text-sm min-h-[2rem] flex items-center">
+                {photo.description || <span className="text-muted-foreground italic">Pas de description</span>}
+              </div>
+            )}
+          </div>
+          
+          {/* Actions */}
+          <div className="flex items-center justify-end space-x-1 pt-2">
+            {editing ? (
+              <>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={cancelEdit}
+                  className="h-7 px-2"
+                  disabled={saving}
+                >
+                  <X className="h-3 w-3" />
+                </Button>
+                <Button
+                  size="sm"
+                  onClick={saveEdit}
+                  className="h-7 px-2"
+                  disabled={saving}
+                >
+                  {saving ? (
+                    <Loader2 className="h-3 w-3 animate-spin" />
+                  ) : (
+                    <Save className="h-3 w-3" />
+                  )}
+                </Button>
+              </>
+            ) : (
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={startEdit}
+                className="h-7 px-2"
+              >
+                <Edit2 className="h-3 w-3" />
+              </Button>
+            )}
+          </div>
+        </div>
+      </Card>
+    </div>
+  );
+});
+
+LazyPhotoCard.displayName = 'LazyPhotoCard';
+
+export default LazyPhotoCard;

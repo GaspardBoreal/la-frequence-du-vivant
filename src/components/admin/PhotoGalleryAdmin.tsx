@@ -1,31 +1,27 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { Card } from '../ui/card';
 import { Badge } from '../ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
 import { Checkbox } from '../ui/checkbox';
 import { 
   Search, 
   Filter, 
   SortAsc, 
   SortDesc, 
-  Image as ImageIcon,
-  FileText,
   Calendar,
   MapPin,
-  Edit2,
-  Save,
-  X,
   Loader2,
   ChevronDown,
-  ChevronUp
+  ChevronUp,
+  X
 } from 'lucide-react';
 import { MarcheTechnoSensible } from '../../utils/googleSheetsApi';
-import { fetchExistingPhotos, ExistingPhoto, updatePhotoMetadata } from '../../utils/supabasePhotoOperations';
+import { fetchExistingPhotos, ExistingPhoto } from '../../utils/supabasePhotoOperations';
 import { toast } from 'sonner';
-import { formatFileSize } from '../../utils/photoUtils';
+import { useDebounce } from '../../hooks/useDebounce';
+import LazyPhotoCard from './LazyPhotoCard';
 
 interface PhotoGalleryAdminProps {
   marches: MarcheTechnoSensible[];
@@ -48,12 +44,12 @@ const PhotoGalleryAdmin: React.FC<PhotoGalleryAdminProps> = ({ marches }) => {
   const [hasTitle, setHasTitle] = useState<boolean | null>(null);
   const [hasDescription, setHasDescription] = useState<boolean | null>(null);
   const [showFilters, setShowFilters] = useState(false);
-  const [editingPhoto, setEditingPhoto] = useState<string | null>(null);
-  const [editTitre, setEditTitre] = useState('');
-  const [editDescription, setEditDescription] = useState('');
-  const [savingPhoto, setSavingPhoto] = useState<string | null>(null);
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [tagSearch, setTagSearch] = useState('');
+
+  // Debouncing pour optimiser les performances
+  const debouncedSearchText = useDebounce(searchText, 300);
+  const debouncedTagSearch = useDebounce(tagSearch, 300);
 
   // Charger toutes les photos
   useEffect(() => {
@@ -89,7 +85,7 @@ const PhotoGalleryAdmin: React.FC<PhotoGalleryAdminProps> = ({ marches }) => {
     }
   }, [marches]);
 
-  // Obtenir tous les tags uniques avec compteurs
+  // Obtenir tous les tags uniques avec compteurs (optimisé avec debouncing)
   const getUniqueTagsWithCount = useMemo(() => {
     const relevantPhotos = photos.filter(photo => {
       // Appliquer tous les autres filtres sauf les tags
@@ -107,8 +103,8 @@ const PhotoGalleryAdmin: React.FC<PhotoGalleryAdminProps> = ({ marches }) => {
         passes = passes && (hasDescription ? (photo.description && photo.description.trim() !== '') : (!photo.description || photo.description.trim() === ''));
       }
       
-      if (searchText.trim()) {
-        const searchLower = searchText.toLowerCase();
+      if (debouncedSearchText.trim()) {
+        const searchLower = debouncedSearchText.toLowerCase();
         passes = passes && (
           (photo.titre || '').toLowerCase().includes(searchLower) ||
           (photo.description || '').toLowerCase().includes(searchLower) ||
@@ -139,16 +135,16 @@ const PhotoGalleryAdmin: React.FC<PhotoGalleryAdminProps> = ({ marches }) => {
     return Array.from(tagCounts.entries())
       .map(([tag, count]) => ({ tag, count }))
       .sort((a, b) => b.count - a.count);
-  }, [photos, selectedMarche, hasTitle, hasDescription, searchText]);
+  }, [photos, selectedMarche, hasTitle, hasDescription, debouncedSearchText]);
 
-  // Tags filtrés par la recherche
+  // Tags filtrés par la recherche (optimisé avec debouncing)
   const filteredTags = useMemo(() => {
-    if (!tagSearch.trim()) return getUniqueTagsWithCount;
-    const searchLower = tagSearch.toLowerCase();
+    if (!debouncedTagSearch.trim()) return getUniqueTagsWithCount;
+    const searchLower = debouncedTagSearch.toLowerCase();
     return getUniqueTagsWithCount.filter(({ tag }) => 
       tag.toLowerCase().includes(searchLower)
     );
-  }, [getUniqueTagsWithCount, tagSearch]);
+  }, [getUniqueTagsWithCount, debouncedTagSearch]);
 
   // Photos filtrées et triées
   const filteredAndSortedPhotos = useMemo(() => {
@@ -187,9 +183,9 @@ const PhotoGalleryAdmin: React.FC<PhotoGalleryAdminProps> = ({ marches }) => {
       });
     }
 
-    // Recherche textuelle
-    if (searchText.trim()) {
-      const searchLower = searchText.toLowerCase();
+    // Recherche textuelle (avec debouncing)
+    if (debouncedSearchText.trim()) {
+      const searchLower = debouncedSearchText.toLowerCase();
       filtered = filtered.filter(photo => 
         (photo.titre || '').toLowerCase().includes(searchLower) ||
         (photo.description || '').toLowerCase().includes(searchLower) ||
@@ -230,74 +226,44 @@ const PhotoGalleryAdmin: React.FC<PhotoGalleryAdminProps> = ({ marches }) => {
     });
 
     return filtered;
-  }, [photos, selectedMarche, hasTitle, hasDescription, selectedTags, searchText, sortField, sortDirection]);
+  }, [photos, selectedMarche, hasTitle, hasDescription, selectedTags, debouncedSearchText, sortField, sortDirection]);
 
-  const handleSort = (field: SortField) => {
+  const handleSort = useCallback((field: SortField) => {
     if (sortField === field) {
       setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
     } else {
       setSortField(field);
       setSortDirection('asc');
     }
-  };
+  }, [sortField, sortDirection]);
 
-  const startEdit = (photo: PhotoWithMarche) => {
-    setEditingPhoto(photo.id);
-    setEditTitre(photo.titre || '');
-    setEditDescription(photo.description || '');
-  };
+  // Callback optimisé pour la mise à jour des photos
+  const handlePhotoUpdate = useCallback((photoId: string, updates: { titre?: string; description?: string }) => {
+    setPhotos(prev => prev.map(photo => 
+      photo.id === photoId 
+        ? { ...photo, ...updates }
+        : photo
+    ));
+  }, []);
 
-  const saveEdit = async (photoId: string) => {
-    if (savingPhoto) return;
-    
-    setSavingPhoto(photoId);
-    try {
-      await updatePhotoMetadata(photoId, {
-        titre: editTitre,
-        description: editDescription
-      });
-      
-      // Mettre à jour l'état local
-      setPhotos(prev => prev.map(photo => 
-        photo.id === photoId 
-          ? { ...photo, titre: editTitre, description: editDescription }
-          : photo
-      ));
-      
-      setEditingPhoto(null);
-      toast.success('Photo mise à jour');
-    } catch (error) {
-      console.error('Erreur sauvegarde:', error);
-      toast.error('Erreur lors de la sauvegarde');
-    } finally {
-      setSavingPhoto(null);
-    }
-  };
-
-  const cancelEdit = () => {
-    setEditingPhoto(null);
-    setEditTitre('');
-    setEditDescription('');
-  };
-
-  const toggleTag = (tag: string) => {
+  const toggleTag = useCallback((tag: string) => {
     setSelectedTags(prev => 
       prev.includes(tag) 
         ? prev.filter(t => t !== tag)
         : [...prev, tag]
     );
-  };
+  }, []);
 
-  const clearFilters = () => {
+  const clearFilters = useCallback(() => {
     setSearchText('');
     setSelectedMarche('all');
     setHasTitle(null);
     setHasDescription(null);
     setSelectedTags([]);
     setTagSearch('');
-  };
+  }, []);
 
-  const hasActiveFilters = searchText || selectedMarche !== 'all' || hasTitle !== null || hasDescription !== null || selectedTags.length > 0;
+  const hasActiveFilters = debouncedSearchText || selectedMarche !== 'all' || hasTitle !== null || hasDescription !== null || selectedTags.length > 0;
 
   const getSortIcon = (field: SortField) => {
     if (sortField !== field) return null;
@@ -531,10 +497,10 @@ const PhotoGalleryAdmin: React.FC<PhotoGalleryAdminProps> = ({ marches }) => {
         </Card>
       )}
 
-      {/* Grille de photos */}
+      {/* Grille de photos optimisée avec lazy loading */}
       {filteredAndSortedPhotos.length === 0 ? (
         <Card className="p-8 text-center">
-          <ImageIcon className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+          <div className="h-12 w-12 mx-auto text-muted-foreground mb-4 text-4xl">📷</div>
           <p className="text-lg font-medium">Aucune photo trouvée</p>
           <p className="text-muted-foreground">
             {hasActiveFilters 
@@ -546,123 +512,11 @@ const PhotoGalleryAdmin: React.FC<PhotoGalleryAdminProps> = ({ marches }) => {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
           {filteredAndSortedPhotos.map((photo) => (
-            <Card key={photo.id} className="overflow-hidden">
-              {/* Image */}
-              <div className="aspect-square bg-muted relative">
-                <img 
-                  src={photo.url_supabase} 
-                  alt={photo.titre || photo.nom_fichier}
-                  className="w-full h-full object-cover"
-                />
-                <div className="absolute top-2 right-2">
-                  <Button
-                    size="sm"
-                    variant="secondary"
-                    onClick={() => window.open(photo.url_supabase, '_blank')}
-                    className="h-8 w-8 p-0"
-                  >
-                    <ImageIcon className="h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
-
-              {/* Informations */}
-              <div className="p-4 space-y-3">
-                {/* Contexte marche */}
-                <div className="flex items-center justify-between">
-                  <Badge variant="outline" className="text-xs">
-                    <MapPin className="h-3 w-3 mr-1" />
-                    {photo.marche.ville}
-                  </Badge>
-                  <span className="text-xs text-muted-foreground">
-                    {new Date(photo.created_at).toLocaleDateString('fr-FR')}
-                  </span>
-                </div>
-
-                {/* Nom de fichier */}
-                <div className="text-sm font-medium truncate" title={photo.nom_fichier}>
-                  {photo.nom_fichier}
-                </div>
-
-                {/* Taille */}
-                {photo.metadata?.size && (
-                  <div className="text-xs text-muted-foreground">
-                    {formatFileSize(photo.metadata.size)}
-                  </div>
-                )}
-
-                {/* Métadonnées éditables */}
-                <div className="space-y-2 pt-2 border-t">
-                  {editingPhoto === photo.id ? (
-                    <div className="space-y-2">
-                      <Input
-                        value={editTitre}
-                        onChange={(e) => setEditTitre(e.target.value)}
-                        placeholder="Titre de la photo"
-                        className="text-sm"
-                      />
-                      <Input
-                        value={editDescription}
-                        onChange={(e) => setEditDescription(e.target.value)}
-                        placeholder="Description"
-                        className="text-sm"
-                      />
-                      <div className="flex space-x-2">
-                        <Button 
-                          size="sm" 
-                          onClick={() => saveEdit(photo.id)}
-                          disabled={savingPhoto === photo.id}
-                          className="flex-1"
-                        >
-                          {savingPhoto === photo.id ? (
-                            <Loader2 className="h-3 w-3 animate-spin mr-1" />
-                          ) : (
-                            <Save className="h-3 w-3 mr-1" />
-                          )}
-                          Sauver
-                        </Button>
-                        <Button 
-                          size="sm" 
-                          variant="outline" 
-                          onClick={cancelEdit}
-                          className="flex-1"
-                        >
-                          <X className="h-3 w-3 mr-1" />
-                          Annuler
-                        </Button>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="space-y-2">
-                      <div className="min-h-[2.5rem]">
-                        <p className="text-sm font-medium line-clamp-2" title={photo.titre}>
-                          {photo.titre || 
-                            <span className="text-muted-foreground italic">Sans titre</span>
-                          }
-                        </p>
-                        {photo.description && (
-                          <p className="text-xs text-muted-foreground line-clamp-2" title={photo.description}>
-                            {photo.description}
-                          </p>
-                        )}
-                        {!photo.description && (
-                          <p className="text-xs text-muted-foreground italic">Sans description</p>
-                        )}
-                      </div>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => startEdit(photo)}
-                        className="w-full"
-                      >
-                        <Edit2 className="h-3 w-3 mr-1" />
-                        Modifier
-                      </Button>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </Card>
+            <LazyPhotoCard 
+              key={photo.id} 
+              photo={photo} 
+              onUpdate={handlePhotoUpdate}
+            />
           ))}
         </div>
       )}
