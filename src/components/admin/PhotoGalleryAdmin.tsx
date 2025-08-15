@@ -109,21 +109,26 @@ const PhotoGalleryAdmin: React.FC<PhotoGalleryAdminProps> = ({ marches }) => {
     // Cela exclut les filtres de tags eux-mêmes pour éviter les circularités
     let basePhotos = photos;
 
+    console.log('🔍 [DEBUG] Photos totales au début:', basePhotos.length);
+
     // Appliquer seulement les filtres non-tags
     if (selectedMarche !== 'all') {
       basePhotos = basePhotos.filter(photo => photo.marche.id === selectedMarche);
+      console.log('🔍 [DEBUG] Après filtre marche:', basePhotos.length);
     }
 
     if (hasTitle !== null) {
       basePhotos = basePhotos.filter(photo => 
         hasTitle ? (photo.titre && photo.titre.trim() !== '') : (!photo.titre || photo.titre.trim() === '')
       );
+      console.log('🔍 [DEBUG] Après filtre titre:', basePhotos.length);
     }
 
     if (hasDescription !== null) {
       basePhotos = basePhotos.filter(photo => 
         hasDescription ? (photo.description && photo.description.trim() !== '') : (!photo.description || photo.description.trim() === '')
       );
+      console.log('🔍 [DEBUG] Après filtre description:', basePhotos.length);
     }
 
     if (debouncedSearchText.trim()) {
@@ -133,6 +138,7 @@ const PhotoGalleryAdmin: React.FC<PhotoGalleryAdminProps> = ({ marches }) => {
         (photo.description || '').toLowerCase().includes(searchLower) ||
         photo.nom_fichier.toLowerCase().includes(searchLower)
       );
+      console.log('🔍 [DEBUG] Après filtre recherche:', basePhotos.length);
     }
 
     const tagCounts = new Map<string, number>();
@@ -150,10 +156,15 @@ const PhotoGalleryAdmin: React.FC<PhotoGalleryAdminProps> = ({ marches }) => {
         tagCounts.set(tag, (tagCounts.get(tag) || 0) + 1);
       });
     });
-    
-    return Array.from(tagCounts.entries())
+
+    const result = Array.from(tagCounts.entries())
       .map(([tag, count]) => ({ tag, count }))
       .sort((a, b) => b.count - a.count);
+    
+    console.log('🔍 [DEBUG] Tags avec compteurs:', result.slice(0, 5));
+    console.log('🔍 [DEBUG] "Remontée-Dordogne" count:', tagCounts.get('Remontée-Dordogne'));
+    
+    return result;
   }, [photos, selectedMarche, hasTitle, hasDescription, debouncedSearchText]);
 
   // Tags filtrés par la recherche (optimisé avec debouncing)
