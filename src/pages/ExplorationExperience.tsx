@@ -219,7 +219,9 @@ export default function ExplorationExperience() {
                 }}
               />
             ) : welcomeComposition ? (
-              <ExperienceWelcomeAdaptive exploration={exploration} composition={welcomeComposition} onStart={goNext} onStartPodcast={() => navigate(`/explorations/${slug}/experience/${sessionId}/podcast`)} />
+              <ExperienceWelcomeAdaptive exploration={exploration} composition={welcomeComposition} onStart={goNext} onStartPodcast={() => {
+                console.log('🎙️ Starting podcast audio directly');
+              }} />
             ) : exploration.slug === 'bioacoustique-poetique' ? (
               <ExperienceWelcomeBioacoustic exploration={exploration} settings={settings} onStart={goNext} />
             ) : (

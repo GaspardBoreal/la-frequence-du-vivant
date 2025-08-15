@@ -53,7 +53,6 @@ function App() {
           <Route path="/explorations/:slug" element={<ExplorationDetail />} />
           <Route path="/explorations/:slug/animer" element={<ExplorationAnimatorRefactored />} />
           <Route path="/explorations/:slug/experience/:sessionId" element={<ExplorationExperience />} />
-          <Route path="/explorations/remontee-dordogne-atlas-eaux-vivantes-2050-2100/experience/:sessionId/podcast" element={<ExplorationPodcastDordogne />} />
           <Route path="/explorations/:slug/experience/:sessionId/podcast" element={<ExplorationPodcast />} />
           <Route path="/explorations/:slug/:narrativeSlug" element={<NarrativeLandscape />} />
 
