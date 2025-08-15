@@ -265,57 +265,6 @@ export default function ExplorationAnimatorRefactored() {
           )}
         </section>
 
-        {/* P3 - Galerie Fleuve */}
-        <section className="mt-10">
-          <h2 className="text-2xl font-semibold mb-3">P3 · Galerie Fleuve</h2>
-          <p className="text-sm text-foreground/70 mb-4">
-            Accédez à la galerie fleuve spécifique à cette exploration pour une expérience immersive.
-          </p>
-          
-          <div className="bg-card border rounded-xl p-6">
-            <div className="flex items-center gap-4 mb-4">
-              <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center">
-                🌊
-              </div>
-              <div className="flex-1">
-                <h3 className="font-semibold text-lg mb-1">Galerie Fleuve de l'exploration</h3>
-                <p className="text-sm text-muted-foreground">
-                  Visualisation immersive des marches de cette exploration en 4 modes de vue
-                </p>
-              </div>
-            </div>
-            
-            {exploration?.slug && (
-              <div className="flex flex-col sm:flex-row gap-3">
-                <Button
-                  onClick={() => window.open(`/galerie-fleuve/exploration/${exploration.slug}`, '_blank')}
-                  className="flex-1"
-                  variant="default"
-                >
-                  🌊 Ouvrir la Galerie Fleuve
-                </Button>
-                <Button
-                  onClick={() => {
-                    const url = `${window.location.origin}/galerie-fleuve/exploration/${exploration.slug}`;
-                    navigator.clipboard.writeText(url);
-                    toast.success('URL copiée dans le presse-papiers');
-                  }}
-                  variant="outline"
-                  className="flex-1 sm:flex-initial"
-                >
-                  📋 Copier l'URL
-                </Button>
-              </div>
-            )}
-            
-            {!exploration?.slug && (
-              <div className="text-sm text-muted-foreground bg-muted/50 rounded-lg p-3">
-                L'exploration doit être sauvegardée pour générer l'URL de la galerie fleuve.
-              </div>
-            )}
-          </div>
-        </section>
-
         {/* Save and Generate buttons */}
         <div className="mt-8 flex gap-4">
           <Button 
@@ -326,6 +275,153 @@ export default function ExplorationAnimatorRefactored() {
             {saving ? 'Sauvegarde...' : 'Sauvegarder les paramètres'}
           </Button>
         </div>
+
+        {/* Section URLs publiques */}
+        <section className="mt-16 mb-16">
+          <div className="relative">
+            {/* Titre avec ligne décorative */}
+            <div className="flex items-center mb-8">
+              <div className="flex-1 h-px bg-gradient-to-r from-transparent via-border to-border"></div>
+              <h2 className="px-6 text-2xl font-semibold text-foreground bg-background">
+                URLs publiques de l'exploration
+              </h2>
+              <div className="flex-1 h-px bg-gradient-to-l from-transparent via-border to-border"></div>
+            </div>
+
+            {/* Grille des URLs */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* URL Exploration */}
+              <div className="group relative">
+                <div className="absolute inset-0 bg-gradient-to-r from-primary/5 to-accent/5 rounded-2xl blur-xl group-hover:blur-2xl transition-all duration-500"></div>
+                <div className="relative bg-card/80 backdrop-blur-sm border border-border/50 rounded-2xl p-8 hover:border-primary/30 transition-all duration-300 hover:shadow-lg hover:shadow-primary/5">
+                  {/* Icône et titre */}
+                  <div className="flex items-start gap-4 mb-6">
+                    <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-primary to-primary-foreground/20 flex items-center justify-center text-2xl shadow-lg">
+                      🎭
+                    </div>
+                    <div className="flex-1">
+                      <h3 className="text-xl font-semibold text-foreground mb-2">
+                        Exploration interactive
+                      </h3>
+                      <p className="text-sm text-muted-foreground leading-relaxed">
+                        URL principale pour découvrir l'exploration avec ses pages spécifiques et ses marches
+                      </p>
+                    </div>
+                  </div>
+                  
+                  {/* URL */}
+                  {exploration?.slug ? (
+                    <div className="space-y-4">
+                      <div className="p-4 bg-muted/30 rounded-xl border border-border/30">
+                        <code className="text-sm text-foreground/80 break-all">
+                          {window.location.origin}/explorations/{exploration.slug}
+                        </code>
+                      </div>
+                      
+                      {/* Actions */}
+                      <div className="flex gap-3">
+                        <Button
+                          onClick={() => window.open(`/explorations/${exploration.slug}`, '_blank')}
+                          className="flex-1 bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70"
+                          size="sm"
+                        >
+                          🚀 Ouvrir l'exploration
+                        </Button>
+                        <Button
+                          onClick={() => {
+                            const url = `${window.location.origin}/explorations/${exploration.slug}`;
+                            navigator.clipboard.writeText(url);
+                            toast.success('URL copiée dans le presse-papiers');
+                          }}
+                          variant="outline"
+                          size="sm"
+                          className="flex-none px-4"
+                        >
+                          📋
+                        </Button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl">
+                      <p className="text-sm text-amber-800">
+                        L'exploration doit être sauvegardée pour générer l'URL
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* URL Galerie Fleuve */}
+              <div className="group relative">
+                <div className="absolute inset-0 bg-gradient-to-r from-blue-500/5 to-cyan-500/5 rounded-2xl blur-xl group-hover:blur-2xl transition-all duration-500"></div>
+                <div className="relative bg-card/80 backdrop-blur-sm border border-border/50 rounded-2xl p-8 hover:border-blue-400/30 transition-all duration-300 hover:shadow-lg hover:shadow-blue-500/5">
+                  {/* Icône et titre */}
+                  <div className="flex items-start gap-4 mb-6">
+                    <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center text-2xl shadow-lg">
+                      🌊
+                    </div>
+                    <div className="flex-1">
+                      <h3 className="text-xl font-semibold text-foreground mb-2">
+                        Galerie Fleuve
+                      </h3>
+                      <p className="text-sm text-muted-foreground leading-relaxed">
+                        Visualisation immersive des marches avec 4 modes de vue : carte, liste, grille et timeline
+                      </p>
+                    </div>
+                  </div>
+                  
+                  {/* URL */}
+                  {exploration?.slug ? (
+                    <div className="space-y-4">
+                      <div className="p-4 bg-muted/30 rounded-xl border border-border/30">
+                        <code className="text-sm text-foreground/80 break-all">
+                          {window.location.origin}/galerie-fleuve/exploration/{exploration.slug}
+                        </code>
+                      </div>
+                      
+                      {/* Actions */}
+                      <div className="flex gap-3">
+                        <Button
+                          onClick={() => window.open(`/galerie-fleuve/exploration/${exploration.slug}`, '_blank')}
+                          className="flex-1 bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 text-white"
+                          size="sm"
+                        >
+                          🌊 Ouvrir la galerie
+                        </Button>
+                        <Button
+                          onClick={() => {
+                            const url = `${window.location.origin}/galerie-fleuve/exploration/${exploration.slug}`;
+                            navigator.clipboard.writeText(url);
+                            toast.success('URL copiée dans le presse-papiers');
+                          }}
+                          variant="outline"
+                          size="sm"
+                          className="flex-none px-4"
+                        >
+                          📋
+                        </Button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl">
+                      <p className="text-sm text-amber-800">
+                        L'exploration doit être sauvegardée pour générer l'URL
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Note d'aide */}
+            <div className="mt-8 text-center">
+              <div className="inline-flex items-center gap-2 px-4 py-2 bg-muted/40 rounded-full text-sm text-muted-foreground">
+                <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
+                Ces URLs sont publiques et peuvent être partagées librement
+              </div>
+            </div>
+          </div>
+        </section>
       </main>
 
       {/* Fixed Generate Button */}
