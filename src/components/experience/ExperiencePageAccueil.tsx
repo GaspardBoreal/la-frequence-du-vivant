@@ -17,11 +17,6 @@ const ExperiencePageAccueil: React.FC<Props> = ({ page, onContinue }) => {
           {page.nom}
         </h1>
         
-        {page.description && (
-          <div className="prose prose-lg max-w-none text-foreground/80 mb-8">
-            <p>{page.description}</p>
-          </div>
-        )}
 
         <div className="mt-8">
           <Button onClick={onContinue} size="lg">
