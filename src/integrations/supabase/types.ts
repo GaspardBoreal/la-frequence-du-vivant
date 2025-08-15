@@ -7,7 +7,7 @@ export type Json =
   | Json[]
 
 export type Database = {
-  // Allows to automatically instanciate createClient with right options
+  // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
     PostgrestVersion: "12.2.12 (cd3cf9e)"
@@ -1116,45 +1116,62 @@ export type Database = {
       get_exploration_pages: {
         Args: { exploration_id_param: string }
         Returns: {
-          id: string
-          exploration_id: string
-          type: string
-          ordre: number
-          nom: string
-          description: string
           config: Json
           created_at: string
+          description: string
+          exploration_id: string
+          id: string
+          nom: string
+          ordre: number
+          type: string
           updated_at: string
         }[]
       }
       get_top_species_optimized: {
         Args: { limit_count?: number }
         Returns: {
-          name: string
           count: number
+          name: string
         }[]
       }
       insert_exploration_page: {
-        Args: {
-          exploration_id_param: string
-          page_type: string
-          page_ordre: number
-          page_nom: string
-          page_description?: string
-        }
+        Args:
+          | {
+              exploration_id_param: string
+              page_config?: Json
+              page_description?: string
+              page_nom: string
+              page_ordre: number
+              page_type: string
+            }
+          | {
+              exploration_id_param: string
+              page_description?: string
+              page_nom: string
+              page_ordre: number
+              page_type: string
+            }
         Returns: string
       }
       update_exploration_page: {
-        Args: {
-          page_id: string
-          page_type: string
-          page_nom: string
-          page_description?: string
-        }
+        Args:
+          | {
+              page_config?: Json
+              page_description?: string
+              page_id: string
+              page_nom: string
+              page_type: string
+            }
+          | {
+              page_description?: string
+              page_id: string
+              page_nom: string
+              page_type: string
+            }
         Returns: undefined
       }
       update_pages_order: {
-        Args: { page_ids: string[]; new_orders: number[] }
+        Args: { new_orders: number[]; page_ids: string[] }
         Returns: undefined
       }
     }

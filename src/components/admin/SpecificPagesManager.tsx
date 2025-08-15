@@ -95,6 +95,7 @@ export default function SpecificPagesManager({ explorationId }: Props) {
   const [formType, setFormType] = useState('');
   const [formNom, setFormNom] = useState('');
   const [formDescription, setFormDescription] = useState('');
+  const [formAudioUrl, setFormAudioUrl] = useState('');
 
   const getPlaceholderForType = (type: string) => {
     switch (type) {
@@ -182,6 +183,7 @@ export default function SpecificPagesManager({ explorationId }: Props) {
     setFormType('');
     setFormNom('');
     setFormDescription('');
+    setFormAudioUrl('');
     setShowForm(true);
   };
 
@@ -190,6 +192,7 @@ export default function SpecificPagesManager({ explorationId }: Props) {
     setFormType(page.type);
     setFormNom(page.nom);
     setFormDescription(page.description || '');
+    setFormAudioUrl(page.config?.audioUrl || '');
     setShowForm(true);
   };
 
@@ -209,6 +212,9 @@ export default function SpecificPagesManager({ explorationId }: Props) {
     const pageType = PAGE_TYPES.find(t => t.value === formType);
     const nextOrdre = editingPage ? editingPage.ordre : Math.max(0, ...pages.map(p => p.ordre)) + 1;
 
+    // Prepare config with audio URL
+    const config = formAudioUrl ? { audioUrl: formAudioUrl } : {};
+
     try {
       let result;
       if (editingPage) {
@@ -217,7 +223,8 @@ export default function SpecificPagesManager({ explorationId }: Props) {
           page_id: editingPage.id,
           page_type: formType,
           page_nom: formNom.trim(),
-          page_description: formDescription.trim() || pageType?.description || ''
+          page_description: formDescription.trim() || pageType?.description || '',
+          page_config: config
         });
         console.log('🔧 Update result:', result);
         
@@ -233,7 +240,8 @@ export default function SpecificPagesManager({ explorationId }: Props) {
           page_type: formType,
           page_ordre: nextOrdre,
           page_nom: formNom.trim(),
-          page_description: formDescription.trim() || pageType?.description || ''
+          page_description: formDescription.trim() || pageType?.description || '',
+          page_config: config
         });
         console.log('🔧 Insert result:', result);
         
@@ -369,12 +377,12 @@ export default function SpecificPagesManager({ explorationId }: Props) {
               <div className="mt-2">
                 <PageAudioUpload
                   pageId={editingPage?.id}
-                  currentAudioUrl={editingPage?.config?.audioUrl}
+                  currentAudioUrl={formAudioUrl}
                   onAudioUploaded={(audioUrl) => {
-                    // We'll handle this in the save function
+                    setFormAudioUrl(audioUrl);
                   }}
                   onAudioDeleted={() => {
-                    // We'll handle this in the save function
+                    setFormAudioUrl('');
                   }}
                 />
               </div>
