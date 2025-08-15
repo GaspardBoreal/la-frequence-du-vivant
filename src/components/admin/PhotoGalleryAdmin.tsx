@@ -52,6 +52,8 @@ const PhotoGalleryAdmin: React.FC<PhotoGalleryAdminProps> = ({ marches }) => {
   const [editTitre, setEditTitre] = useState('');
   const [editDescription, setEditDescription] = useState('');
   const [savingPhoto, setSavingPhoto] = useState<string | null>(null);
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  const [tagSearch, setTagSearch] = useState('');
 
   // Charger toutes les photos
   useEffect(() => {
@@ -87,6 +89,67 @@ const PhotoGalleryAdmin: React.FC<PhotoGalleryAdminProps> = ({ marches }) => {
     }
   }, [marches]);
 
+  // Obtenir tous les tags uniques avec compteurs
+  const getUniqueTagsWithCount = useMemo(() => {
+    const relevantPhotos = photos.filter(photo => {
+      // Appliquer tous les autres filtres sauf les tags
+      let passes = true;
+      
+      if (selectedMarche !== 'all') {
+        passes = passes && photo.marche.id === selectedMarche;
+      }
+      
+      if (hasTitle !== null) {
+        passes = passes && (hasTitle ? (photo.titre && photo.titre.trim() !== '') : (!photo.titre || photo.titre.trim() === ''));
+      }
+      
+      if (hasDescription !== null) {
+        passes = passes && (hasDescription ? (photo.description && photo.description.trim() !== '') : (!photo.description || photo.description.trim() === ''));
+      }
+      
+      if (searchText.trim()) {
+        const searchLower = searchText.toLowerCase();
+        passes = passes && (
+          (photo.titre || '').toLowerCase().includes(searchLower) ||
+          (photo.description || '').toLowerCase().includes(searchLower) ||
+          photo.nom_fichier.toLowerCase().includes(searchLower) ||
+          photo.marche.ville.toLowerCase().includes(searchLower) ||
+          (photo.marche.nomMarche || '').toLowerCase().includes(searchLower)
+        );
+      }
+      
+      return passes;
+    });
+
+    const tagCounts = new Map<string, number>();
+    
+    relevantPhotos.forEach(photo => {
+      const allTags = [
+        ...(photo.marche.supabaseTags || []),
+        ...(photo.marche.tagsThematiques || []),
+        ...(photo.marche.sousThemes || []),
+        photo.marche.theme
+      ].filter(Boolean);
+      
+      allTags.forEach(tag => {
+        tagCounts.set(tag, (tagCounts.get(tag) || 0) + 1);
+      });
+    });
+    
+    return Array.from(tagCounts.entries())
+      .map(([tag, count]) => ({ tag, count }))
+      .sort((a, b) => b.count - a.count);
+  }, [photos, selectedMarche, hasTitle, hasDescription, searchText]);
+
+  // Tags filtrés par la recherche
+  const filteredTags = useMemo(() => {
+    if (!tagSearch.trim()) return getUniqueTagsWithCount;
+    const searchLower = tagSearch.toLowerCase();
+    return getUniqueTagsWithCount.filter(({ tag }) => 
+      tag.toLowerCase().includes(searchLower)
+    );
+  }, [getUniqueTagsWithCount, tagSearch]);
+
   // Photos filtrées et triées
   const filteredAndSortedPhotos = useMemo(() => {
     let filtered = photos;
@@ -108,6 +171,20 @@ const PhotoGalleryAdmin: React.FC<PhotoGalleryAdminProps> = ({ marches }) => {
       filtered = filtered.filter(photo => 
         hasDescription ? (photo.description && photo.description.trim() !== '') : (!photo.description || photo.description.trim() === '')
       );
+    }
+
+    // Filtre par tags
+    if (selectedTags.length > 0) {
+      filtered = filtered.filter(photo => {
+        const photoTags = [
+          ...(photo.marche.supabaseTags || []),
+          ...(photo.marche.tagsThematiques || []),
+          ...(photo.marche.sousThemes || []),
+          photo.marche.theme
+        ].filter(Boolean);
+        
+        return selectedTags.some(selectedTag => photoTags.includes(selectedTag));
+      });
     }
 
     // Recherche textuelle
@@ -153,7 +230,7 @@ const PhotoGalleryAdmin: React.FC<PhotoGalleryAdminProps> = ({ marches }) => {
     });
 
     return filtered;
-  }, [photos, selectedMarche, hasTitle, hasDescription, searchText, sortField, sortDirection]);
+  }, [photos, selectedMarche, hasTitle, hasDescription, selectedTags, searchText, sortField, sortDirection]);
 
   const handleSort = (field: SortField) => {
     if (sortField === field) {
@@ -203,14 +280,24 @@ const PhotoGalleryAdmin: React.FC<PhotoGalleryAdminProps> = ({ marches }) => {
     setEditDescription('');
   };
 
+  const toggleTag = (tag: string) => {
+    setSelectedTags(prev => 
+      prev.includes(tag) 
+        ? prev.filter(t => t !== tag)
+        : [...prev, tag]
+    );
+  };
+
   const clearFilters = () => {
     setSearchText('');
     setSelectedMarche('all');
     setHasTitle(null);
     setHasDescription(null);
+    setSelectedTags([]);
+    setTagSearch('');
   };
 
-  const hasActiveFilters = searchText || selectedMarche !== 'all' || hasTitle !== null || hasDescription !== null;
+  const hasActiveFilters = searchText || selectedMarche !== 'all' || hasTitle !== null || hasDescription !== null || selectedTags.length > 0;
 
   const getSortIcon = (field: SortField) => {
     if (sortField !== field) return null;
@@ -365,6 +452,80 @@ const PhotoGalleryAdmin: React.FC<PhotoGalleryAdminProps> = ({ marches }) => {
                 onCheckedChange={(checked) => setHasDescription(checked ? false : hasDescription === false ? null : true)}
               />
               <label htmlFor="no-description" className="text-sm">Sans description</label>
+            </div>
+          </div>
+
+          {/* Filtres par tags */}
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <label className="text-sm font-medium">Tags</label>
+              {selectedTags.length > 0 && (
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  onClick={() => setSelectedTags([])}
+                  className="text-xs h-6"
+                >
+                  <X className="h-3 w-3 mr-1" />
+                  Effacer tags
+                </Button>
+              )}
+            </div>
+            
+            <div className="space-y-2">
+              {/* Recherche de tags */}
+              <div className="relative">
+                <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 text-muted-foreground h-3 w-3" />
+                <Input
+                  placeholder="Rechercher un tag..."
+                  value={tagSearch}
+                  onChange={(e) => setTagSearch(e.target.value)}
+                  className="pl-7 text-xs h-8"
+                />
+              </div>
+              
+              {/* Tags sélectionnés */}
+              {selectedTags.length > 0 && (
+                <div className="flex flex-wrap gap-1">
+                  {selectedTags.map(tag => (
+                    <Badge 
+                      key={tag}
+                      variant="default"
+                      className="text-xs cursor-pointer hover:bg-primary/80"
+                      onClick={() => toggleTag(tag)}
+                    >
+                      {tag}
+                      <X className="h-3 w-3 ml-1" />
+                    </Badge>
+                  ))}
+                </div>
+              )}
+              
+              {/* Tags disponibles */}
+              <div className="flex flex-wrap gap-1 max-h-32 overflow-y-auto">
+                {filteredTags
+                  .filter(({ tag }) => !selectedTags.includes(tag))
+                  .slice(0, 20)
+                  .map(({ tag, count }) => (
+                    <Badge 
+                      key={tag}
+                      variant="outline"
+                      className="text-xs cursor-pointer hover:bg-primary/10 flex items-center"
+                      onClick={() => toggleTag(tag)}
+                    >
+                      {tag}
+                      <span className="ml-1 text-xs bg-muted px-1 rounded">
+                        {count}
+                      </span>
+                    </Badge>
+                  ))}
+              </div>
+              
+              {filteredTags.filter(({ tag }) => !selectedTags.includes(tag)).length > 20 && (
+                <p className="text-xs text-muted-foreground">
+                  ... et {filteredTags.filter(({ tag }) => !selectedTags.includes(tag)).length - 20} autres tags
+                </p>
+              )}
             </div>
           </div>
         </Card>
