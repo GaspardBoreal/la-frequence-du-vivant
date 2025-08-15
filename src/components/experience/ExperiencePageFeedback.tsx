@@ -18,8 +18,15 @@ const ExperiencePageFeedback: React.FC<Props> = ({ page, onBack }) => {
         </h1>
         
         {page.description && (
-          <div className="prose prose-lg max-w-none text-foreground/80 mb-8">
-            <p>{page.description}</p>
+          <div className="prose prose-lg max-w-none text-foreground/80 mb-8" dangerouslySetInnerHTML={{ __html: page.description }} />
+        )}
+
+        {page.config?.audioUrl && (
+          <div className="mb-6">
+            <audio controls className="w-full max-w-md mx-auto">
+              <source src={page.config.audioUrl} type="audio/mpeg" />
+              Votre navigateur ne supporte pas l'élément audio.
+            </audio>
           </div>
         )}
 

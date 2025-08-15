@@ -6,7 +6,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { RichTextEditor } from '@/components/ui/rich-text-editor';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Plus, Trash2, GripVertical, Edit3 } from 'lucide-react';
+import { Plus, Trash2, GripVertical, Edit3, Upload, Play, Pause, Volume2 } from 'lucide-react';
+import { PageAudioUpload } from '@/components/admin/PageAudioUpload';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
@@ -94,6 +95,21 @@ export default function SpecificPagesManager({ explorationId }: Props) {
   const [formType, setFormType] = useState('');
   const [formNom, setFormNom] = useState('');
   const [formDescription, setFormDescription] = useState('');
+
+  const getPlaceholderForType = (type: string) => {
+    switch (type) {
+      case 'intro-accueil':
+        return "Rédigez ici le texte narratif d'introduction qui apparaîtra sous le titre de l'exploration...";
+      case 'intro-auteur':
+        return "Rédigez ici le texte narratif de présentation de l'auteur...";
+      case 'fin-feedback':
+        return "Rédigez ici le texte d'incitation au feedback...";
+      case 'fin-precommande':
+        return "Rédigez ici le texte d'incitation à la précommande...";
+      default:
+        return "Rédigez ici le contenu narratif de cette page...";
+    }
+  };
 
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -338,24 +354,30 @@ export default function SpecificPagesManager({ explorationId }: Props) {
 
             <div>
               <Label htmlFor="page-description">
-                {formType === 'intro-accueil' ? 'Texte narratif d\'introduction' : 'Description'}
+                Texte narratif de la page
               </Label>
-              {formType === 'intro-accueil' ? (
-                <RichTextEditor
-                  value={formDescription}
-                  onChange={setFormDescription}
-                  placeholder="Rédigez ici le texte narratif d'introduction qui apparaîtra sous le titre de l'exploration..."
-                  className="mt-2"
+              <RichTextEditor
+                value={formDescription}
+                onChange={setFormDescription}
+                placeholder={getPlaceholderForType(formType)}
+                className="mt-2"
+              />
+            </div>
+
+            <div>
+              <Label>Narration audio</Label>
+              <div className="mt-2">
+                <PageAudioUpload
+                  pageId={editingPage?.id}
+                  currentAudioUrl={editingPage?.config?.audioUrl}
+                  onAudioUploaded={(audioUrl) => {
+                    // We'll handle this in the save function
+                  }}
+                  onAudioDeleted={() => {
+                    // We'll handle this in the save function
+                  }}
                 />
-              ) : (
-                <Textarea
-                  id="page-description"
-                  value={formDescription}
-                  onChange={(e) => setFormDescription(e.target.value)}
-                  placeholder="Description de cette page..."
-                  rows={3}
-                />
-              )}
+              </div>
             </div>
 
             <div className="flex gap-2 pt-4">
