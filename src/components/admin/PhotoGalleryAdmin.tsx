@@ -103,17 +103,42 @@ const PhotoGalleryAdmin: React.FC<PhotoGalleryAdminProps> = ({ marches }) => {
       .sort((a, b) => b.photoCount - a.photoCount);
   }, [photos, marches]);
 
-  // Obtenir tous les tags des marches avec compteurs basés sur les photos uniques
+  // Obtenir tous les tags des marches avec compteurs basés sur les photos filtrées
   const getMarcheTagsWithCount = useMemo(() => {
-    // Filtrer les photos selon la marche sélectionnée
-    const relevantPhotos = selectedMarche === 'all' 
-      ? photos 
-      : photos.filter(photo => photo.marche.id === selectedMarche);
+    // Utiliser les photos filtrées comme base pour le comptage des tags
+    // Cela exclut les filtres de tags eux-mêmes pour éviter les circularités
+    let basePhotos = photos;
+
+    // Appliquer seulement les filtres non-tags
+    if (selectedMarche !== 'all') {
+      basePhotos = basePhotos.filter(photo => photo.marche.id === selectedMarche);
+    }
+
+    if (hasTitle !== null) {
+      basePhotos = basePhotos.filter(photo => 
+        hasTitle ? (photo.titre && photo.titre.trim() !== '') : (!photo.titre || photo.titre.trim() === '')
+      );
+    }
+
+    if (hasDescription !== null) {
+      basePhotos = basePhotos.filter(photo => 
+        hasDescription ? (photo.description && photo.description.trim() !== '') : (!photo.description || photo.description.trim() === '')
+      );
+    }
+
+    if (debouncedSearchText.trim()) {
+      const searchLower = debouncedSearchText.toLowerCase();
+      basePhotos = basePhotos.filter(photo => 
+        (photo.titre || '').toLowerCase().includes(searchLower) ||
+        (photo.description || '').toLowerCase().includes(searchLower) ||
+        photo.nom_fichier.toLowerCase().includes(searchLower)
+      );
+    }
 
     const tagCounts = new Map<string, number>();
     
-    // Créer un set des tags pour chaque photo et compter les photos uniques par tag
-    relevantPhotos.forEach(photo => {
+    // Compter les photos par tag en utilisant la base filtrée
+    basePhotos.forEach(photo => {
       const photoTags = [
         ...(photo.marche.supabaseTags || []),
         ...(photo.marche.tagsThematiques || []),
@@ -121,7 +146,6 @@ const PhotoGalleryAdmin: React.FC<PhotoGalleryAdminProps> = ({ marches }) => {
         photo.marche.theme
       ].filter(Boolean);
       
-      // Ajouter cette photo au count de chaque tag qu'elle a
       photoTags.forEach(tag => {
         tagCounts.set(tag, (tagCounts.get(tag) || 0) + 1);
       });
@@ -130,7 +154,7 @@ const PhotoGalleryAdmin: React.FC<PhotoGalleryAdminProps> = ({ marches }) => {
     return Array.from(tagCounts.entries())
       .map(([tag, count]) => ({ tag, count }))
       .sort((a, b) => b.count - a.count);
-  }, [photos, selectedMarche]);
+  }, [photos, selectedMarche, hasTitle, hasDescription, debouncedSearchText]);
 
   // Tags filtrés par la recherche (optimisé avec debouncing)
   const filteredMarcheTags = useMemo(() => {
