@@ -22,6 +22,7 @@ import ExperiencePageAccueil from '@/components/experience/ExperiencePageAccueil
 import ExperiencePageAuteur from '@/components/experience/ExperiencePageAuteur';
 import ExperiencePageFeedback from '@/components/experience/ExperiencePageFeedback';
 import ExperiencePagePrecommande from '@/components/experience/ExperiencePagePrecommande';
+import { AudioProvider } from '@/contexts/AudioContext';
 
 
 interface NarrativeSettings {
@@ -193,15 +194,16 @@ export default function ExplorationExperience() {
 
 
   return (
-    <div className="min-h-screen relative">
-      <SEOHead
-        title={metaTitle}
-        description={exploration.meta_description || exploration.description || ''}
-        keywords={(exploration.meta_keywords || []).join(', ')}
-        canonicalUrl={canonical}
-      />
+    <AudioProvider>
+      <div className="min-h-screen relative">
+        <SEOHead
+          title={metaTitle}
+          description={exploration.meta_description || exploration.description || ''}
+          keywords={(exploration.meta_keywords || []).join(', ')}
+          canonicalUrl={canonical}
+        />
 
-      <DecorativeParticles />
+        <DecorativeParticles />
 
 
       <main className="container mx-auto px-4 pb-28">
@@ -213,10 +215,7 @@ export default function ExplorationExperience() {
                 settings={settings} 
                 onStart={goNext} 
                 onStartPodcast={() => {
-                  console.log('🎙️ Navigating to podcast - slug:', slug, 'sessionId:', sessionId);
-                  const podcastUrl = `/explorations/${slug}/experience/${sessionId}/podcast`;
-                  console.log('🎙️ Podcast URL:', podcastUrl);
-                  navigate(podcastUrl);
+                  console.log('🎙️ Starting podcast directly in welcome component');
                 }}
               />
             ) : welcomeComposition ? (
@@ -290,7 +289,8 @@ export default function ExplorationExperience() {
         </section>
       </main>
 
-      {!isDordogneExploration && <ExperienceFooter />}
-    </div>
+        {!isDordogneExploration && <ExperienceFooter />}
+      </div>
+    </AudioProvider>
   );
 }

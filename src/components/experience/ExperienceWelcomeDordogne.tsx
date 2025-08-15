@@ -1,6 +1,9 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import ExperienceFooter from './ExperienceFooter';
+import { FloatingAudioPlayer } from '@/components/audio/FloatingAudioPlayer';
+import { useExplorationMarches } from '@/hooks/useExplorations';
+import { useAudioPlaylist, Track } from '@/hooks/useAudioPlaylist';
 import type { Exploration } from '@/hooks/useExplorations';
 
 interface Props {
@@ -19,6 +22,41 @@ interface Props {
 
 const ExperienceWelcomeDordogne: React.FC<Props> = ({ exploration, settings, onStart, onStartPodcast }) => {
   console.log('🌊 ExperienceWelcomeDordogne - Rendering with exploration:', exploration.name);
+  
+  // Récupérer les marches de l'exploration pour la playlist audio
+  const { data: marches = [] } = useExplorationMarches(exploration.id);
+  
+  // Transformer les marches en tracks pour l'audio
+  const tracks = useMemo((): Track[] => {
+    return marches
+      .filter(em => em.marche?.audio && em.marche.audio.length > 0)
+      .flatMap(em => 
+        em.marche!.audio!.map((audio, audioIndex) => ({
+          id: `${em.marche!.id}-${audioIndex}`,
+          url: audio.url_supabase,
+          title: audio.titre || `Audio ${audioIndex + 1}`,
+          marche: em.marche!.nom_marche,
+          marcheIndex: em.ordre || 0,
+          marcheTitle: em.marche!.nom_marche,
+          description: em.marche!.descriptif_court || '',
+          location: em.marche!.ville,
+          species: null,
+        }))
+      )
+      .sort((a, b) => (a.marcheIndex || 0) - (b.marcheIndex || 0));
+  }, [marches]);
+  
+  // Hook pour gérer la playlist audio
+  const playlist = useAudioPlaylist(tracks, 'order');
+  
+  // Fonction pour démarrer la lecture contemplative
+  const handleStartPodcast = async () => {
+    if (tracks.length > 0) {
+      await playlist.play();
+    } else if (onStartPodcast) {
+      onStartPodcast();
+    }
+  };
   return (
     <div className="dordogne-experience min-h-screen relative">
       {/* Living Waters Background */}
@@ -97,7 +135,7 @@ const ExperienceWelcomeDordogne: React.FC<Props> = ({ exploration, settings, onS
                 
                 {onStartPodcast && (
                   <Button 
-                    onClick={onStartPodcast}
+                    onClick={handleStartPodcast}
                     variant="outline"
                     className="px-8 py-5 text-xl bg-emerald-900/20 border-emerald-400/40 text-emerald-200 hover:bg-emerald-800/30 backdrop-blur-sm rounded-2xl transition-all duration-300"
                   >
@@ -109,6 +147,13 @@ const ExperienceWelcomeDordogne: React.FC<Props> = ({ exploration, settings, onS
           </div>
         </div>
       </div>
+      
+      {/* Audio Player flottant */}
+      {playlist.isPlaying && (
+        <div className="fixed bottom-4 right-4 z-50">
+          <FloatingAudioPlayer />
+        </div>
+      )}
       
       {/* Footer avec z-index élevé */}
       <div className="relative z-30">
