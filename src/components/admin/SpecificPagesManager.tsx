@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { RichTextEditor } from '@/components/ui/rich-text-editor';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Plus, Trash2, GripVertical, Edit3 } from 'lucide-react';
@@ -336,14 +337,25 @@ export default function SpecificPagesManager({ explorationId }: Props) {
             </div>
 
             <div>
-              <Label htmlFor="page-description">Description</Label>
-              <Textarea
-                id="page-description"
-                value={formDescription}
-                onChange={(e) => setFormDescription(e.target.value)}
-                placeholder="Description de cette page..."
-                rows={3}
-              />
+              <Label htmlFor="page-description">
+                {formType === 'intro-accueil' ? 'Texte narratif d\'introduction' : 'Description'}
+              </Label>
+              {formType === 'intro-accueil' ? (
+                <RichTextEditor
+                  value={formDescription}
+                  onChange={setFormDescription}
+                  placeholder="Rédigez ici le texte narratif d'introduction qui apparaîtra sous le titre de l'exploration..."
+                  className="mt-2"
+                />
+              ) : (
+                <Textarea
+                  id="page-description"
+                  value={formDescription}
+                  onChange={(e) => setFormDescription(e.target.value)}
+                  placeholder="Description de cette page..."
+                  rows={3}
+                />
+              )}
             </div>
 
             <div className="flex gap-2 pt-4">
