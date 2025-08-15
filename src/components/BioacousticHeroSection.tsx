@@ -6,6 +6,7 @@ import { Button } from './ui/button';
 import { Badge } from './ui/badge';
 import { MarcheTechnoSensible } from '../utils/googleSheetsApi';
 import { RegionalTheme } from '../utils/regionalThemes';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 interface BioacousticHeroSectionProps {
   marche: MarcheTechnoSensible;
@@ -24,6 +25,7 @@ const BioacousticHeroSection: React.FC<BioacousticHeroSectionProps> = ({
   nextMarche,
   onNavigateToMarche
 }) => {
+  const isMobile = useIsMobile();
   const firstPhoto = marche.photos?.[0];
 
   const handleCopyCoordinate = async (coordinate: string, type: 'latitude' | 'longitude') => {
@@ -249,15 +251,17 @@ const BioacousticHeroSection: React.FC<BioacousticHeroSectionProps> = ({
             </div>
 
             {/* Location */}
-            <div className="bg-white/10 backdrop-blur-md rounded-lg px-4 py-2 border border-white/20">
-              <div className="flex items-center space-x-2">
-                <MapPin className="h-4 w-4 text-blue-300" />
-                <span className="text-sm">{marche.ville}, {marche.departement}</span>
+            {!isMobile && (
+              <div className="bg-white/10 backdrop-blur-md rounded-lg px-4 py-2 border border-white/20">
+                <div className="flex items-center space-x-2">
+                  <MapPin className="h-4 w-4 text-blue-300" />
+                  <span className="text-sm">{marche.ville}, {marche.departement}</span>
+                </div>
               </div>
-            </div>
+            )}
 
             {/* Date - Right */}
-            {marche.date && (
+            {!isMobile && marche.date && (
               <div className="bg-white/10 backdrop-blur-md rounded-lg px-4 py-2 border border-white/20">
                 <div className="flex items-center space-x-2">
                   <Calendar className="h-4 w-4 text-purple-300" />
