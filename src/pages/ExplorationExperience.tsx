@@ -44,6 +44,7 @@ export default function ExplorationExperience() {
   const [settings, setSettings] = useState<NarrativeSettings>({ marche_view_model: 'elabore' });
   const [welcomeComposition, setWelcomeComposition] = useState<any | null>(null);
   const [current, setCurrent] = useState<number>(0);
+  const [sessionCreated, setSessionCreated] = useState<boolean>(false);
   console.log('⏳ Loading states:', { explorationLoading, pagesLoading, marchesLoading, pagesCount: pages.length, marchesCount: marches.length });
   
   const steps = useMemo(() => {
@@ -161,7 +162,17 @@ export default function ExplorationExperience() {
     logView();
   }, [current, exploration?.id, sessionId, steps]);
 
-  if (!exploration) return null;
+  // Show loading until we have basic data
+  if (!exploration || explorationLoading || pagesLoading || marchesLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary mb-4"></div>
+          <p className="text-muted-foreground">Chargement de l'exploration...</p>
+        </div>
+      </div>
+    );
+  }
 
   // Detect if this is the Dordogne exploration
   const isDordogneExploration = exploration.slug === 'remontee-dordogne-atlas-eaux-vivantes-2025-2045';
@@ -173,6 +184,43 @@ export default function ExplorationExperience() {
 
   const goPrev = () => setCurrent((c) => Math.max(0, c - 1));
   const goNext = () => setCurrent((c) => Math.min(steps.length - 1, c + 1));
+
+  const handleStart = async () => {
+    if (!exploration?.id || sessionCreated) return;
+    
+    const ua = typeof navigator !== 'undefined' ? navigator.userAgent : '';
+    const ref = typeof document !== 'undefined' ? document.referrer : '';
+    
+    try {
+      const { data, error } = await supabase
+        .from('narrative_sessions')
+        .insert({
+          exploration_id: exploration.id,
+          language: 'fr',
+          user_agent: ua,
+          referrer: ref,
+          status: 'active',
+          context: {
+            created_from: 'exploration_experience',
+            marche_view_model: settings.marche_view_model || 'elabore',
+            welcome_composition: welcomeComposition,
+          }
+        })
+        .select('id')
+        .maybeSingle();
+      
+      if (error) {
+        console.error('Error creating session:', error);
+      } else {
+        console.log('✅ Session created:', data?.id);
+        setSessionCreated(true);
+      }
+    } catch (error) {
+      console.error('Error creating session:', error);
+    }
+    
+    goNext();
+  };
 
 
   // Full navigation including welcome and outro for 'simple' model
@@ -246,7 +294,7 @@ export default function ExplorationExperience() {
             const page = steps[current].page;
             switch (page.type) {
               case 'intro-accueil':
-                return <ExperiencePageAccueil page={page} onContinue={goNext} />;
+                return <ExperiencePageAccueil page={page} onContinue={handleStart} />;
               case 'intro-auteur':
                 return <ExperiencePageAuteur page={page} onContinue={goNext} />;
               case 'fin-feedback':

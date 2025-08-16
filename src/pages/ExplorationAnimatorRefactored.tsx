@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { useParams, Link, useNavigate } from 'react-router-dom';
+import { useParams, Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
@@ -13,13 +13,11 @@ import { Eye } from 'lucide-react';
 import ExperienceMarcheSimple from '@/components/experience/ExperienceMarcheSimple';
 import ExperienceMarcheElabore from '@/components/experience/ExperienceMarcheElabore';
 import SpecificPagesManager from '@/components/admin/SpecificPagesManager';
-import { buildWelcomeComposition } from '@/utils/welcomeComposer';
 
 export default function ExplorationAnimatorRefactored() {
   const { slug } = useParams<{ slug: string }>();
   const { data: exploration } = useExploration(slug || '');
   const { data: explorationMarches } = useExplorationMarches(exploration?.id || '');
-  const navigate = useNavigate();
 
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -113,42 +111,7 @@ export default function ExplorationAnimatorRefactored() {
     }
   };
 
-  const generateAnimation = async () => {
-    if (!exploration?.id || !exploration?.slug) return;
-    const ua = typeof navigator !== 'undefined' ? navigator.userAgent : '';
-    const ref = typeof document !== 'undefined' ? document.referrer : '';
-    
-    // Build adaptive welcome composition based on current content
-    const composition = buildWelcomeComposition(
-      exploration as any,
-      (explorationMarches || []) as any,
-      { marcheViewModel }
-    );
-
-    const { data, error } = await supabase
-      .from('narrative_sessions')
-      .insert({
-        exploration_id: exploration.id,
-        language: 'fr',
-        user_agent: ua,
-        referrer: ref,
-        status: 'active',
-        context: ({
-          created_from: 'exploration_animator_refactored',
-          marche_view_model: marcheViewModel,
-          welcome_composition: composition,
-        } as any)
-      })
-      .select('id')
-      .maybeSingle();
-    if (error || !data?.id) {
-      console.error(error);
-      toast.error("Impossible de générer l'animation");
-    } else {
-      toast.success('Animation générée avec succès');
-      navigate(`/explorations/${exploration.slug}/experience/${data.id}`);
-    }
-  };
+  // Session creation moved to ExplorationExperience component
 
   const title = exploration ? `Animer ${exploration.name} — Exploration` : 'Animer l\'exploration';
   const canonical = exploration ? `${window.location.origin}/explorations/${exploration.slug}/animer` : `${window.location.origin}/explorations/animer`;
@@ -424,17 +387,7 @@ export default function ExplorationAnimatorRefactored() {
         </section>
       </main>
 
-      {/* Fixed Generate Button */}
-      <div className="fixed bottom-6 right-6 z-50">
-        <Button 
-          onClick={generateAnimation} 
-          disabled={!exploration?.id}
-          size="lg"
-          className="shadow-lg hover-scale"
-        >
-          🎬 Générer l'animation
-        </Button>
-      </div>
+      {/* Fixed Generate Button removed - session creation now handled in experience */}
 
       {/* Preview Dialog */}
       {previewOpen && currentMarche && (
