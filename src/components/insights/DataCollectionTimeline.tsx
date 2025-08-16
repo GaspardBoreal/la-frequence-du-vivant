@@ -17,6 +17,8 @@ interface DataCollectionTimelineProps {
   filters?: {
     dateRange: string;
     regions: string[];
+    marches: string[];
+    explorations: string[];
   };
 }
 
@@ -50,9 +52,30 @@ export const DataCollectionTimeline: React.FC<DataCollectionTimelineProps> = ({ 
       }
 
       // Apply region filter
-      if (filters?.regions) {
+      if (filters?.regions && filters.regions.length > 0) {
         biodiversityData = applyRegionFilter(biodiversityData, validMarches, filters.regions);
         weatherData = applyRegionFilter(weatherData, validMarches, filters.regions);
+      }
+
+      // Apply marche filter if specified
+      if (filters?.marches && filters.marches.length > 0) {
+        const marcheIds = new Set(filters.marches);
+        biodiversityData = biodiversityData.filter(item => marcheIds.has(item.marche_id));
+        weatherData = weatherData.filter(item => marcheIds.has(item.marche_id));
+      }
+
+      // Apply exploration filter if specified
+      if (filters?.explorations && filters.explorations.length > 0) {
+        const { data: explorationMarches } = await supabase
+          .from('exploration_marches')
+          .select('marche_id')
+          .in('exploration_id', filters.explorations);
+
+        if (explorationMarches) {
+          const explorationMarcheIds = new Set(explorationMarches.map(em => em.marche_id));
+          biodiversityData = biodiversityData.filter(item => explorationMarcheIds.has(item.marche_id));
+          weatherData = weatherData.filter(item => explorationMarcheIds.has(item.marche_id));
+        }
       }
       
       return {

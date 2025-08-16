@@ -21,6 +21,8 @@ interface GeographicInsightsMapProps {
   filters?: {
     dateRange: string;
     regions: string[];
+    marches: string[];
+    explorations: string[];
   };
 }
 
@@ -61,6 +63,29 @@ export const GeographicInsightsMap: React.FC<GeographicInsightsMapProps> = ({ de
         filteredMarches = validMarches.filter(marche => 
           filters.regions.includes(marche.region || '')
         );
+      }
+
+      // Apply marche filter if specified
+      if (filters?.marches && filters.marches.length > 0) {
+        const marcheIds = new Set(filters.marches);
+        filteredMarches = filteredMarches.filter(marche => marcheIds.has(marche.id));
+        filteredBiodiversitySnapshots = filteredBiodiversitySnapshots.filter(item => marcheIds.has(item.marche_id));
+        filteredWeatherSnapshots = filteredWeatherSnapshots.filter(item => marcheIds.has(item.marche_id));
+      }
+
+      // Apply exploration filter if specified
+      if (filters?.explorations && filters.explorations.length > 0) {
+        const { data: explorationMarches } = await supabase
+          .from('exploration_marches')
+          .select('marche_id')
+          .in('exploration_id', filters.explorations);
+
+        if (explorationMarches) {
+          const explorationMarcheIds = new Set(explorationMarches.map(em => em.marche_id));
+          filteredMarches = filteredMarches.filter(marche => explorationMarcheIds.has(marche.id));
+          filteredBiodiversitySnapshots = filteredBiodiversitySnapshots.filter(item => explorationMarcheIds.has(item.marche_id));
+          filteredWeatherSnapshots = filteredWeatherSnapshots.filter(item => explorationMarcheIds.has(item.marche_id));
+        }
       }
 
       // Filter marches based on showAllMarkets toggle and data availability

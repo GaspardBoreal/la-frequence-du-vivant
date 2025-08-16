@@ -218,7 +218,7 @@ const DataInsightsContent: React.FC = () => {
                     <p className="text-2xl font-bold text-purple-700 dark:text-purple-400">
                       {metricsLoading ? '...' : metrics?.totalMarches || 0}
                     </p>
-                    <p className="text-xs text-purple-600 dark:text-purple-500">Dans la base</p>
+                    <p className="text-xs text-purple-600 dark:text-purple-500">Dans la sélection</p>
                   </div>
                   <div className="p-3 rounded-full bg-purple-100 dark:bg-purple-900/30 group-hover:scale-110 transition-transform">
                     <Home className="w-6 h-6 text-purple-600 dark:text-purple-400" />
