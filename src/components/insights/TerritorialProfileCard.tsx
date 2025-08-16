@@ -63,7 +63,7 @@ export const TerritorialProfileCard: React.FC<TerritorialProfileCardProps> = ({ 
             </Badge>
           </div>
           <CardDescription className="text-sm">
-            {metrics.totalMarkets} marché{metrics.totalMarkets > 1 ? 's' : ''} • 
+            {metrics.totalMarkets} marche{metrics.totalMarkets > 1 ? 's' : ''} • 
             {metrics.totalSpecies.toLocaleString()} espèces • 
             {metrics.totalObservations.toLocaleString()} observations
           </CardDescription>
@@ -102,7 +102,7 @@ export const TerritorialProfileCard: React.FC<TerritorialProfileCardProps> = ({ 
           {/* Métriques détaillées */}
           <div className="grid grid-cols-2 gap-3 pt-2 border-t">
             <div className="flex flex-col">
-              <span className="text-xs text-muted-foreground">Densité espèces/marché</span>
+              <span className="text-xs text-muted-foreground">Densité espèces/marche</span>
               <span className="text-lg font-bold text-primary">
                 {metrics.speciesDensity}
               </span>

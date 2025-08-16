@@ -165,7 +165,7 @@ export const GeographicInsightsMap: React.FC<GeographicInsightsMapProps> = ({ de
                   {showAllMarkets ? (
                     <span className="flex items-center gap-1">
                       <Eye className="w-3 h-3" />
-                      Tous les marchés
+                      Toutes les marches
                     </span>
                   ) : (
                     <span className="flex items-center gap-1">
@@ -221,7 +221,7 @@ export const GeographicInsightsMap: React.FC<GeographicInsightsMapProps> = ({ de
                   </div>
                   <div className="text-right">
                     <div className="text-sm font-medium">
-                      {region.avgSpeciesPerMarche} esp/marché
+                      {region.avgSpeciesPerMarche} esp/marche
                     </div>
                     <div className="text-xs text-muted-foreground">
                       Top: {region.topMarche?.nom_marche}
@@ -244,7 +244,7 @@ export const GeographicInsightsMap: React.FC<GeographicInsightsMapProps> = ({ de
                     {region.region}
                   </CardTitle>
                   <CardDescription>
-                    {region.marches} marché(s) analysé(s)
+                    {region.marches} marche(s) analysée(s)
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -264,7 +264,7 @@ export const GeographicInsightsMap: React.FC<GeographicInsightsMapProps> = ({ de
                       </div>
                     )}
                     <div className="pt-2 border-t">
-                      <div className="text-xs text-muted-foreground">Marché top biodiversité:</div>
+                      <div className="text-xs text-muted-foreground">Marche top biodiversité:</div>
                       <div className="text-sm font-medium">{region.topMarche?.nom_marche}</div>
                       <div className="text-xs text-muted-foreground">
                         {region.topMarche?.enrichedData.latestSpeciesCount} espèces

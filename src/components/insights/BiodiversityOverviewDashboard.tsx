@@ -65,7 +65,7 @@ export const BiodiversityOverviewDashboard: React.FC = () => {
                   {stats?.totalSpecies.toLocaleString()}
                 </p>
                 <p className="text-xs text-green-600 dark:text-green-500">
-                  Moy. {stats?.averageSpecies}/marché
+                  Moy. {stats?.averageSpecies}/marche
                 </p>
               </div>
               <div className="p-3 rounded-full bg-green-100 dark:bg-green-900/30">
@@ -262,7 +262,7 @@ export const BiodiversityOverviewDashboard: React.FC = () => {
                         </span>
                       </div>
                       <div className="flex justify-between text-xs">
-                        <span className="text-muted-foreground">Densité/marché</span>
+                        <span className="text-muted-foreground">Densité/marche</span>
                         <span className="font-medium text-blue-600 dark:text-blue-500">
                           {Math.round(region.species / region.marches)}
                         </span>

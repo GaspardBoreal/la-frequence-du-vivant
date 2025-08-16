@@ -22,16 +22,16 @@ export const MarketDensityHeatmap: React.FC = () => {
 
     const { marketPoints, heatmapZones, territorialGaps } = data;
     
-    // Zones haute densité (>= 5 marchés)
+    // Zones haute densité (>= 5 marches)
     const highDensityZones = heatmapZones.filter(zone => zone.marketCount >= 5);
     
-    // Marchés stratégiques (forte valeur + faible proximité = expansion potential)
+    // Marches stratégiques (forte valeur + faible proximité = expansion potential)
     const strategicMarkets = marketPoints
       .filter(market => market.strategicValue >= 70 && market.expansionSuitability >= 60)
       .sort((a, b) => b.strategicValue - a.strategicValue)
       .slice(0, 5);
     
-    // Marchés isolés nécessitant du soutien
+    // Marches isolées nécessitant du soutien
     const isolatedMarkets = marketPoints.filter(market => market.isolationLevel === 'fort');
     
     return {
@@ -93,7 +93,7 @@ export const MarketDensityHeatmap: React.FC = () => {
                   {strategicInsights.highDensityZones.length}
                 </p>
                 <p className="text-xs text-blue-600 dark:text-blue-500">
-                  ≥5 marchés/zone
+                  ≥5 marches/zone
                 </p>
               </div>
               <div className="p-2 rounded-full bg-blue-100 dark:bg-blue-900/30">
@@ -107,7 +107,7 @@ export const MarketDensityHeatmap: React.FC = () => {
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-800 dark:text-gray-200">Marchés Stratégiques</p>
+                <p className="text-sm font-medium text-gray-800 dark:text-gray-200">Marches Stratégiques</p>
                 <p className="text-2xl font-bold text-green-700 dark:text-green-400">
                   {strategicInsights.strategicMarkets.length}
                 </p>
@@ -188,9 +188,9 @@ export const MarketDensityHeatmap: React.FC = () => {
                         </span>
                       </div>
                       <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                        <span>{zone.marketCount} marché{zone.marketCount > 1 ? 's' : ''}</span>
+                        <span>{zone.marketCount} marche{zone.marketCount > 1 ? 's' : ''}</span>
                         <span>•</span>
-                        <span>{zone.avgBiodiversity} esp./marché</span>
+                        <span>{zone.avgBiodiversity} esp./marche</span>
                       </div>
                     </div>
                   </div>
@@ -205,16 +205,16 @@ export const MarketDensityHeatmap: React.FC = () => {
         </CardContent>
       </Card>
 
-      {/* Marchés stratégiques */}
+      {/* Marches stratégiques */}
       {strategicInsights.strategicMarkets.length > 0 && (
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Target className="w-5 h-5" />
-              Marchés à Fort Potentiel Stratégique
+              Marches à Fort Potentiel Stratégique
             </CardTitle>
             <CardDescription>
-              Marchés performants avec opportunités d'expansion
+              Marches performantes avec opportunités d'expansion
             </CardDescription>
           </CardHeader>
           <CardContent>

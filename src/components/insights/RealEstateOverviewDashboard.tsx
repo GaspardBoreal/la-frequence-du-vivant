@@ -92,7 +92,7 @@ export const RealEstateOverviewDashboard: React.FC = () => {
                   --
                 </p>
                 <p className="text-xs text-blue-600 dark:text-blue-500">
-                  Valeur marchés
+                  Valeur marches
                 </p>
               </div>
               <Database className="w-8 h-8 text-blue-600 dark:text-blue-400" />
@@ -109,7 +109,7 @@ export const RealEstateOverviewDashboard: React.FC = () => {
                   --
                 </p>
                 <p className="text-xs text-orange-600 dark:text-orange-500">
-                  Marchés analysés
+                  Marches analysées
                 </p>
               </div>
               <MapPin className="w-8 h-8 text-orange-600 dark:text-orange-400" />

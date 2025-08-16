@@ -129,7 +129,7 @@ export const DataCollectionTimeline: React.FC = () => {
                 {summaryStats?.totalMarkets || 0}
               </div>
               <div className="text-xs text-blue-600 dark:text-blue-500">
-                Marchés collectés
+                Marches collectées
               </div>
             </div>
             <div className="text-center p-3 rounded-lg bg-green-50 dark:bg-green-950/20">
@@ -167,10 +167,10 @@ export const DataCollectionTimeline: React.FC = () => {
                   labelStyle={{
                     color: 'white'
                   }}
-                  formatter={(value) => [value, 'Marchés collectés']}
+                  formatter={(value) => [value, 'Marches collectées']}
                 />
                 <Legend 
-                  formatter={() => 'Marchés collectés'}
+                  formatter={() => 'Marches collectées'}
                 />
                 <Line 
                   type="monotone" 
@@ -188,7 +188,7 @@ export const DataCollectionTimeline: React.FC = () => {
             <div className="flex items-center gap-4">
               <Badge variant="secondary" className="gap-1">
                 <Activity className="w-3 h-3" />
-                {summaryStats?.totalMarkets} marchés
+                {summaryStats?.totalMarkets} marches
               </Badge>
               <Badge variant="outline" className="gap-1">
                 <Activity className="w-3 h-3" />
