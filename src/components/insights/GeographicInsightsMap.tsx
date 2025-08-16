@@ -8,6 +8,12 @@ import { Label } from '@/components/ui/label';
 import { MapPin, Leaf, Thermometer, TrendingUp, RefreshCw, Eye, EyeOff } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { 
+  getValidMarcheIds, 
+  filterValidSnapshots, 
+  applyRegionFilter, 
+  applyDateFilter 
+} from '@/utils/dataIntegrityUtils';
 import { useMarketDataSync } from '@/hooks/useMarketDataSync';
 
 interface GeographicInsightsMapProps {
@@ -29,50 +35,30 @@ export const GeographicInsightsMap: React.FC<GeographicInsightsMapProps> = ({ de
   } = useQuery({
     queryKey: ['marches-with-data', showAllMarkets, filters],
     queryFn: async () => {
-      // Fetch base marches data
-      const { data: marches } = await supabase
-        .from('marches')
-        .select('*');
-
-      if (!marches) return { marches: [], biodiversitySnapshots: [], weatherSnapshots: [] };
-
-      // Calculate date filter
-      let dateFilter = '';
-      if (filters?.dateRange && filters.dateRange !== 'all') {
-        const days = parseInt(filters.dateRange.replace('d', ''));
-        const cutoffDate = new Date();
-        cutoffDate.setDate(cutoffDate.getDate() - days);
-        dateFilter = cutoffDate.toISOString().split('T')[0];
-      }
-
-      // Build snapshot queries with date filter
-      let biodiversityQuery = supabase.from('biodiversity_snapshots').select('*');
-      let weatherQuery = supabase.from('weather_snapshots').select('*');
-
-      if (dateFilter) {
-        biodiversityQuery = biodiversityQuery.gte('snapshot_date', dateFilter);
-        weatherQuery = weatherQuery.gte('snapshot_date', dateFilter);
-      }
-
-      // Fetch related snapshots data
-      const [biodiversitySnapshots, weatherSnapshots] = await Promise.all([
-        biodiversityQuery,
-        weatherQuery
+      // Get valid marches and snapshots
+      const [validMarches, biodiversitySnapshots, weatherSnapshots] = await Promise.all([
+        getValidMarcheIds(),
+        supabase.from('biodiversity_snapshots').select('*'),
+        supabase.from('weather_snapshots').select('*')
       ]);
 
-      // Filter out orphan snapshots that don't have valid marche_ids
-      const validMarcheIds = new Set(marches.map(m => m.id));
-      const filteredBiodiversitySnapshots = (biodiversitySnapshots.data || []).filter(s => 
-        validMarcheIds.has(s.marche_id)
-      );
-      const filteredWeatherSnapshots = (weatherSnapshots.data || []).filter(s => 
-        validMarcheIds.has(s.marche_id)
-      );
+      if (!validMarches) return { marches: [], biodiversitySnapshots: [], weatherSnapshots: [] };
 
-      // Apply region filter to marches if specified
-      let filteredMarches = marches;
+      // Filter out orphan snapshots first
+      const validMarcheIds = new Set(validMarches.map(m => m.id));
+      let filteredBiodiversitySnapshots = filterValidSnapshots(biodiversitySnapshots.data || [], validMarcheIds);
+      let filteredWeatherSnapshots = filterValidSnapshots(weatherSnapshots.data || [], validMarcheIds);
+
+      // Apply date filter
+      if (filters?.dateRange) {
+        filteredBiodiversitySnapshots = applyDateFilter(filteredBiodiversitySnapshots, filters.dateRange);
+        filteredWeatherSnapshots = applyDateFilter(filteredWeatherSnapshots, filters.dateRange);
+      }
+
+      // Apply region filter to marches
+      let filteredMarches = validMarches;
       if (filters?.regions && filters.regions.length > 0) {
-        filteredMarches = marches.filter(marche => 
+        filteredMarches = validMarches.filter(marche => 
           filters.regions.includes(marche.region || '')
         );
       }

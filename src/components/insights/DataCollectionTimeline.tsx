@@ -6,6 +6,12 @@ import { Badge } from '@/components/ui/badge';
 import { Calendar, TrendingUp, Activity } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { 
+  getValidMarcheIds, 
+  filterValidSnapshots, 
+  applyRegionFilter, 
+  applyDateFilter 
+} from '@/utils/dataIntegrityUtils';
 
 interface DataCollectionTimelineProps {
   filters?: {
@@ -18,66 +24,35 @@ export const DataCollectionTimeline: React.FC<DataCollectionTimelineProps> = ({ 
   const { data: collectionsData, isLoading } = useQuery({
     queryKey: ['collection-timeline', filters],
     queryFn: async () => {
-      // Calculate date filter
-      let dateFilter = '';
-      if (filters?.dateRange && filters.dateRange !== 'all') {
-        const days = parseInt(filters.dateRange.replace('d', ''));
-        const cutoffDate = new Date();
-        cutoffDate.setDate(cutoffDate.getDate() - days);
-        dateFilter = cutoffDate.toISOString().split('T')[0];
-      }
-
-      // Build queries - client-side filtering for region
-      let biodiversityQuery = supabase
-        .from('biodiversity_snapshots')
-        .select(`
+      // Get valid marches and snapshots
+      const [validMarches, biodiversityResult, weatherResult] = await Promise.all([
+        getValidMarcheIds(),
+        supabase.from('biodiversity_snapshots').select(`
           snapshot_date, 
           total_species, 
           marche_id
-        `)
-        .order('snapshot_date', { ascending: true });
-
-      let weatherQuery = supabase
-        .from('weather_snapshots')
-        .select(`
+        `).order('snapshot_date', { ascending: true }),
+        supabase.from('weather_snapshots').select(`
           snapshot_date, 
           marche_id
-        `)
-        .order('snapshot_date', { ascending: true });
-
-      // Apply date filter
-      if (dateFilter) {
-        biodiversityQuery = biodiversityQuery.gte('snapshot_date', dateFilter);
-        weatherQuery = weatherQuery.gte('snapshot_date', dateFilter);
-      }
-
-      const [biodiversityResult, weatherResult, marchesResult] = await Promise.all([
-        biodiversityQuery,
-        weatherQuery,
-        supabase.from('marches').select('id, region')
+        `).order('snapshot_date', { ascending: true })
       ]);
 
-      // Filter out orphan snapshots (marche_ids that don't exist in marches table)
-      const validMarcheIds = new Set(marchesResult.data?.map(m => m.id) || []);
-      let biodiversityData = (biodiversityResult.data || []).filter(item => 
-        validMarcheIds.has(item.marche_id)
-      );
-      let weatherData = (weatherResult.data || []).filter(item => 
-        validMarcheIds.has(item.marche_id)
-      );
-      
-      // Client-side region filtering
-      if (filters?.regions && filters.regions.length > 0 && marchesResult.data) {
-        const allowedMarcheIds = marchesResult.data
-          .filter(marche => filters.regions.includes(marche.region))
-          .map(marche => marche.id);
-        
-        biodiversityData = biodiversityData.filter(item => 
-          allowedMarcheIds.includes(item.marche_id)
-        );
-        weatherData = weatherData.filter(item => 
-          allowedMarcheIds.includes(item.marche_id)
-        );
+      // Filter out orphan snapshots first
+      const validMarcheIds = new Set(validMarches.map(m => m.id));
+      let biodiversityData = filterValidSnapshots(biodiversityResult.data || [], validMarcheIds);
+      let weatherData = filterValidSnapshots(weatherResult.data || [], validMarcheIds);
+
+      // Apply date filter
+      if (filters?.dateRange) {
+        biodiversityData = applyDateFilter(biodiversityData, filters.dateRange);
+        weatherData = applyDateFilter(weatherData, filters.dateRange);
+      }
+
+      // Apply region filter
+      if (filters?.regions) {
+        biodiversityData = applyRegionFilter(biodiversityData, validMarches, filters.regions);
+        weatherData = applyRegionFilter(weatherData, validMarches, filters.regions);
       }
       
       return {
