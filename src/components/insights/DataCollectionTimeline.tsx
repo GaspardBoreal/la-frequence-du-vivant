@@ -30,7 +30,7 @@ export const DataCollectionTimeline: React.FC = () => {
   });
 
   const timelineData = useMemo(() => {
-    if (!collectionsData) return [];
+    if (!collectionsData || !collectionsData.biodiversity || !collectionsData.weather) return [];
     
     const dateMap = new Map();
     
@@ -73,7 +73,7 @@ export const DataCollectionTimeline: React.FC = () => {
   }, [collectionsData]);
 
   const summaryStats = useMemo(() => {
-    if (!collectionsData) return null;
+    if (!collectionsData || !collectionsData.biodiversity || !collectionsData.weather) return null;
     
     // Calculate total unique markets
     const allUniqueMarkets = new Set();
