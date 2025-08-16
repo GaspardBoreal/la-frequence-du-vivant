@@ -14,12 +14,12 @@ export const DataCollectionTimeline: React.FC = () => {
       const [biodiversityData, weatherData] = await Promise.all([
         supabase
           .from('biodiversity_snapshots')
-          .select('created_at, total_species')
-          .order('created_at', { ascending: true }),
+          .select('snapshot_date, total_species')
+          .order('snapshot_date', { ascending: true }),
         supabase
           .from('weather_snapshots')
-          .select('created_at, temperature_avg')
-          .order('created_at', { ascending: true })
+          .select('snapshot_date, temperature_avg')
+          .order('snapshot_date', { ascending: true })
       ]);
       
       return {
@@ -36,7 +36,7 @@ export const DataCollectionTimeline: React.FC = () => {
     
     // Process biodiversity data
     collectionsData.biodiversity.forEach(item => {
-      const date = new Date(item.created_at).toLocaleDateString('fr-FR', { 
+      const date = new Date(item.snapshot_date).toLocaleDateString('fr-FR', { 
         month: 'short', 
         day: 'numeric' 
       });
@@ -57,7 +57,7 @@ export const DataCollectionTimeline: React.FC = () => {
     
     // Process weather data
     collectionsData.weather.forEach(item => {
-      const date = new Date(item.created_at).toLocaleDateString('fr-FR', { 
+      const date = new Date(item.snapshot_date).toLocaleDateString('fr-FR', { 
         month: 'short', 
         day: 'numeric' 
       });
@@ -90,19 +90,19 @@ export const DataCollectionTimeline: React.FC = () => {
     const last30Days = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
     
     const recentBio = collectionsData.biodiversity.filter(item => 
-      new Date(item.created_at) > last7Days
+      new Date(item.snapshot_date) > last7Days
     ).length;
     
     const recentWeather = collectionsData.weather.filter(item => 
-      new Date(item.created_at) > last7Days
+      new Date(item.snapshot_date) > last7Days
     ).length;
     
     const monthlyBio = collectionsData.biodiversity.filter(item => 
-      new Date(item.created_at) > last30Days
+      new Date(item.snapshot_date) > last30Days
     ).length;
     
     const monthlyWeather = collectionsData.weather.filter(item => 
-      new Date(item.created_at) > last30Days
+      new Date(item.snapshot_date) > last30Days
     ).length;
     
     return {

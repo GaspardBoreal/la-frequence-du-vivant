@@ -19,6 +19,8 @@ export const useDeleteCollectionLog = () => {
     onSuccess: () => {
       // Invalider le cache des logs pour forcer un refresh
       queryClient.invalidateQueries({ queryKey: ['data-collection-logs'] });
+      queryClient.invalidateQueries({ queryKey: ['collection-timeline'] });
+      queryClient.invalidateQueries({ queryKey: ['biodiversity-timeline'] });
       toast.success('Log supprimé avec succès');
     },
     onError: (error) => {
@@ -44,6 +46,8 @@ export const useDeleteAllFailedLogs = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['data-collection-logs'] });
+      queryClient.invalidateQueries({ queryKey: ['collection-timeline'] });
+      queryClient.invalidateQueries({ queryKey: ['biodiversity-timeline'] });
       toast.success('Tous les logs en échec ont été supprimés');
     },
     onError: (error) => {
