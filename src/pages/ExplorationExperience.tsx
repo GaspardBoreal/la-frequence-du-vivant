@@ -52,19 +52,9 @@ export default function ExplorationExperience() {
       page?: any;
     }> = [];
     
-    // Add welcome (prefer any configured "accueil" page)
-    const accueilPage = pages.find((p) =>
-      p.type === 'intro-accueil' || /accueil/i.test(p.type || '') || /accueil/i.test(p.nom || '')
-    );
-    if (accueilPage) {
-      list.push({ type: 'page', page: accueilPage });
-    } else {
-      list.push({ type: 'welcome' });
-    }
-    
-    // Add remaining intro pages in order (excluding accueil)
+    // Add all intro pages in order (no automatic welcome fallback)
     const introPages = pages
-      .filter((p) => p.type?.startsWith('intro-') && p.id !== accueilPage?.id)
+      .filter((p) => p.type?.startsWith('intro-'))
       .sort((a, b) => (a.ordre ?? 0) - (b.ordre ?? 0));
     introPages.forEach((page) => {
       list.push({ type: 'page', page });
