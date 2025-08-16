@@ -129,7 +129,7 @@ const MarcheHeroSection: React.FC<MarcheHeroSectionProps> = ({
             transition={{ delay: 0.5, duration: 0.8 }}
           >
             <div className="bg-black/20 backdrop-blur-md rounded-2xl px-8 py-6">
-              <h1 className="text-5xl md:text-7xl font-crimson font-bold text-white leading-tight lg:text-6xl">
+              <h1 className="text-3xl md:text-4xl lg:text-5xl font-crimson font-bold text-white leading-tight">
                 {marche.nomMarche || marche.ville}
               </h1>
             </div>
