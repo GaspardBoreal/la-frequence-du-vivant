@@ -25,22 +25,20 @@ export const useInsightsMetrics = (filters: InsightsFilters) => {
         dateFilter = cutoffDate.toISOString().split('T')[0];
       }
 
-      // Build query for snapshots with marches join to exclude orphans
+      // Build query for snapshots - client-side filtering for region
       let biodiversityQuery = supabase
         .from('biodiversity_snapshots')
         .select(`
           marche_id,
           total_species,
-          snapshot_date,
-          marches!inner(id, region)
+          snapshot_date
         `);
 
       let weatherQuery = supabase
         .from('weather_snapshots')
         .select(`
           marche_id,
-          snapshot_date,
-          marches!inner(id, region)
+          snapshot_date
         `);
 
       // Apply date filter
@@ -49,35 +47,42 @@ export const useInsightsMetrics = (filters: InsightsFilters) => {
         weatherQuery = weatherQuery.gte('snapshot_date', dateFilter);
       }
 
-      // Apply region filter
-      if (filters.regions.length > 0) {
-        biodiversityQuery = biodiversityQuery.in('marches.region', filters.regions);
-        weatherQuery = weatherQuery.in('marches.region', filters.regions);
-      }
-
-      const [biodiversityData, weatherData] = await Promise.all([
+      const [biodiversityData, weatherData, marchesData] = await Promise.all([
         biodiversityQuery,
-        weatherQuery
+        weatherQuery,
+        supabase.from('marches').select('id, region')
       ]);
 
-      // Calculate unique covered marches (existing in marches table)
+      // Client-side region filtering
+      let filteredBiodiversity = biodiversityData.data || [];
+      let filteredWeather = weatherData.data || [];
+      
+      if (filters.regions.length > 0 && marchesData.data) {
+        const allowedMarcheIds = marchesData.data
+          .filter(marche => filters.regions.includes(marche.region))
+          .map(marche => marche.id);
+        
+        filteredBiodiversity = filteredBiodiversity.filter(item => 
+          allowedMarcheIds.includes(item.marche_id)
+        );
+        filteredWeather = filteredWeather.filter(item => 
+          allowedMarcheIds.includes(item.marche_id)
+        );
+      }
+
+      // Calculate unique covered marches
       const uniqueCoveredMarches = new Set();
       
-      if (biodiversityData.data) {
-        biodiversityData.data.forEach(item => uniqueCoveredMarches.add(item.marche_id));
-      }
-      
-      if (weatherData.data) {
-        weatherData.data.forEach(item => uniqueCoveredMarches.add(item.marche_id));
-      }
+      filteredBiodiversity.forEach(item => uniqueCoveredMarches.add(item.marche_id));
+      filteredWeather.forEach(item => uniqueCoveredMarches.add(item.marche_id));
 
       // Calculate total species collected
-      const totalSpeciesCollected = biodiversityData.data?.reduce((sum, item) => 
+      const totalSpeciesCollected = filteredBiodiversity.reduce((sum, item) => 
         sum + (item.total_species || 0), 0
-      ) || 0;
+      );
 
       // Calculate total weather points
-      const totalWeatherPoints = weatherData.data?.length || 0;
+      const totalWeatherPoints = filteredWeather.length;
 
       return {
         totalMarches: totalMarches || 0,

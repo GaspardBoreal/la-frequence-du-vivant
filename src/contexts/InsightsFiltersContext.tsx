@@ -20,7 +20,7 @@ interface InsightsFiltersProviderProps {
 
 export const InsightsFiltersProvider: React.FC<InsightsFiltersProviderProps> = ({ children }) => {
   const [filters, setFilters] = useState<InsightsFilters>({
-    dateRange: '30d', // Default to 30 days to avoid confusion
+    dateRange: 'all', // Default to all data to show everything
     regions: [],
     dataTypes: ['biodiversity', 'weather', 'real_estate']
   });

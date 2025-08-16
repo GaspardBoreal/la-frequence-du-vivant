@@ -27,14 +27,13 @@ export const DataCollectionTimeline: React.FC<DataCollectionTimelineProps> = ({ 
         dateFilter = cutoffDate.toISOString().split('T')[0];
       }
 
-      // Build queries with marches join to exclude orphans
+      // Build queries - client-side filtering for region
       let biodiversityQuery = supabase
         .from('biodiversity_snapshots')
         .select(`
           snapshot_date, 
           total_species, 
-          marche_id,
-          marches!inner(id, region)
+          marche_id
         `)
         .order('snapshot_date', { ascending: true });
 
@@ -42,8 +41,7 @@ export const DataCollectionTimeline: React.FC<DataCollectionTimelineProps> = ({ 
         .from('weather_snapshots')
         .select(`
           snapshot_date, 
-          marche_id,
-          marches!inner(id, region)
+          marche_id
         `)
         .order('snapshot_date', { ascending: true });
 
@@ -53,20 +51,32 @@ export const DataCollectionTimeline: React.FC<DataCollectionTimelineProps> = ({ 
         weatherQuery = weatherQuery.gte('snapshot_date', dateFilter);
       }
 
-      // Apply region filter
-      if (filters?.regions && filters.regions.length > 0) {
-        biodiversityQuery = biodiversityQuery.in('marches.region', filters.regions);
-        weatherQuery = weatherQuery.in('marches.region', filters.regions);
-      }
-
-      const [biodiversityData, weatherData] = await Promise.all([
+      const [biodiversityResult, weatherResult, marchesResult] = await Promise.all([
         biodiversityQuery,
-        weatherQuery
+        weatherQuery,
+        supabase.from('marches').select('id, region')
       ]);
+
+      // Client-side region filtering
+      let biodiversityData = biodiversityResult.data || [];
+      let weatherData = weatherResult.data || [];
+      
+      if (filters?.regions && filters.regions.length > 0 && marchesResult.data) {
+        const allowedMarcheIds = marchesResult.data
+          .filter(marche => filters.regions.includes(marche.region))
+          .map(marche => marche.id);
+        
+        biodiversityData = biodiversityData.filter(item => 
+          allowedMarcheIds.includes(item.marche_id)
+        );
+        weatherData = weatherData.filter(item => 
+          allowedMarcheIds.includes(item.marche_id)
+        );
+      }
       
       return {
-        biodiversity: biodiversityData.data || [],
-        weather: weatherData.data || []
+        biodiversity: biodiversityData,
+        weather: weatherData
       };
     }
   });
