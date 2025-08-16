@@ -136,14 +136,14 @@ const MarcheHeroSection: React.FC<MarcheHeroSectionProps> = ({
             
             
             <div className="bg-black/10 backdrop-blur-sm rounded-lg px-6 py-3 inline-block">
-              <div className="flex flex-wrap justify-center gap-6 text-white/90 text-lg">
+              <div className="flex flex-wrap justify-center gap-4 text-white/90 text-sm">
                 <div className="flex items-center space-x-2">
-                  <MapPin className="h-5 w-5" />
+                  <MapPin className="h-4 w-4" />
                   <span>{marche.ville}, {marche.departement}</span>
                 </div>
                 {marche.date && (
                   <div className="flex items-center space-x-2">
-                    <Calendar className="h-5 w-5" />
+                    <Calendar className="h-4 w-4" />
                     <span>
                       {(() => {
                         // Handle both yyyy-mm-dd and dd/mm/yyyy formats
