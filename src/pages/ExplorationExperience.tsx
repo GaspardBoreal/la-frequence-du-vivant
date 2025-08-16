@@ -1,12 +1,12 @@
 import React from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 import { useEffect, useMemo, useState } from 'react';
 import SEOHead from '@/components/SEOHead';
 
 import { useExploration, useExplorationMarches, ExplorationMarcheComplete } from '@/hooks/useExplorations';
 import { useExplorationPages } from '@/hooks/useExplorationPages';
 import { supabase } from '@/integrations/supabase/client';
-import { toast } from 'sonner';
+
 import DecorativeParticles from '@/components/DecorativeParticles';
 import ExperienceWelcome from '@/components/experience/ExperienceWelcome';
 import ExperienceWelcomeBioacoustic from '@/components/experience/ExperienceWelcomeBioacoustic';
@@ -16,7 +16,7 @@ import ExperienceOutro from '@/components/experience/ExperienceOutro';
 import ExperienceOutroBioacoustic from '@/components/experience/ExperienceOutroBioacoustic';
 import ExperienceFooter from '@/components/experience/ExperienceFooter';
 import ExperienceWelcomeAdaptive from '@/components/experience/ExperienceWelcomeAdaptive';
-import ExperienceWelcomeDordogne from '@/components/experience/ExperienceWelcomeDordogne';
+
 import ExperienceOutroDordogne from '@/components/experience/ExperienceOutroDordogne';
 import ExperiencePageAccueil from '@/components/experience/ExperiencePageAccueil';
 import ExperiencePageAuteur from '@/components/experience/ExperiencePageAuteur';
@@ -37,7 +37,7 @@ interface NarrativeSettings {
 
 export default function ExplorationExperience() {
   const { slug, sessionId } = useParams<{ slug: string; sessionId: string }>();
-  const navigate = useNavigate();
+  
   const { data: exploration } = useExploration(slug || '');
   const { data: marches = [] } = useExplorationMarches(exploration?.id || '');
   const { data: pages = [] } = useExplorationPages(exploration?.id || '');
@@ -52,18 +52,21 @@ export default function ExplorationExperience() {
       page?: any;
     }> = [];
     
-    // Add welcome (keeping original behavior if no specific pages)
-    const welcomePage = pages.find(p => p.type === 'intro-accueil');
-    if (welcomePage) {
-      list.push({ type: 'page', page: welcomePage });
+    // Add welcome (prefer any configured "accueil" page)
+    const accueilPage = pages.find((p) =>
+      p.type === 'intro-accueil' || /accueil/i.test(p.type || '') || /accueil/i.test(p.nom || '')
+    );
+    if (accueilPage) {
+      list.push({ type: 'page', page: accueilPage });
     } else {
       list.push({ type: 'welcome' });
     }
     
-    // Add intro pages in order (like author pages)
-    const introPages = pages.filter(p => p.type.startsWith('intro-') && p.type !== 'intro-accueil')
-      .sort((a, b) => a.ordre - b.ordre);
-    introPages.forEach(page => {
+    // Add remaining intro pages in order (excluding accueil)
+    const introPages = pages
+      .filter((p) => p.type?.startsWith('intro-') && p.id !== accueilPage?.id)
+      .sort((a, b) => (a.ordre ?? 0) - (b.ordre ?? 0));
+    introPages.forEach((page) => {
       list.push({ type: 'page', page });
     });
     
@@ -71,9 +74,10 @@ export default function ExplorationExperience() {
     marches.forEach((m) => list.push({ type: 'marche', marche: m }));
     
     // Add outro pages in order
-    const outroPages = pages.filter(p => p.type.startsWith('fin-'))
-      .sort((a, b) => a.ordre - b.ordre);
-    outroPages.forEach(page => {
+    const outroPages = pages
+      .filter((p) => p.type?.startsWith('fin-'))
+      .sort((a, b) => (a.ordre ?? 0) - (b.ordre ?? 0));
+    outroPages.forEach((page) => {
       list.push({ type: 'page', page });
     });
     
@@ -85,6 +89,21 @@ export default function ExplorationExperience() {
     console.log('🔧 Built steps with pages:', list.map(s => ({ type: s.type, name: s.page?.nom || s.type })));
     return list;
   }, [marches, pages]);
+
+  // Ensure we don't show a transient generic welcome if an accueil page loads later
+  useEffect(() => {
+    if (!steps.length) return;
+    const first = steps[0];
+    // If first step is a configured page and we are on a leftover welcome, snap to 0
+    if (first.type === 'page' && steps[current]?.type === 'welcome' && current !== 0) {
+      setCurrent(0);
+      return;
+    }
+    // Clamp current within bounds when steps change
+    if (current > steps.length - 1) {
+      setCurrent(steps.length - 1);
+    }
+  }, [steps]);
 
   useEffect(() => {
     const load = async () => {
@@ -156,8 +175,6 @@ export default function ExplorationExperience() {
   const goPrev = () => setCurrent((c) => Math.max(0, c - 1));
   const goNext = () => setCurrent((c) => Math.min(steps.length - 1, c + 1));
 
-  const isFirst = current === 0;
-  const isLast = current === steps.length - 1;
 
   // Full navigation including welcome and outro for 'simple' model
   const currentStep = steps[current];
@@ -174,21 +191,27 @@ export default function ExplorationExperience() {
 
   const navigateToPrevMarche = () => {
     if (settings.marche_view_model === 'simple') {
-      // Go to previous step (welcome if first marche)
-      setCurrent(current - 1);
+      setCurrent((c) => Math.max(0, c - 1));
     } else {
-      // Original logic for 'elabore' model
-      if (marcheIndex > 0) setCurrent((marcheIndex - 1) + 1);
+      if (prevMarche) {
+        const idx = steps.findIndex(
+          (s) => s.type === 'marche' && s.marche?.marche?.id === prevMarche.marche?.id
+        );
+        if (idx >= 0) setCurrent(idx);
+      }
     }
   };
   
   const navigateToNextMarche = () => {
     if (settings.marche_view_model === 'simple') {
-      // Go to next step (outro if last marche)
-      setCurrent(current + 1);
+      setCurrent((c) => Math.min(steps.length - 1, c + 1));
     } else {
-      // Original logic for 'elabore' model
-      if (marcheIndex >= 0 && marcheIndex < marches.length - 1) setCurrent((marcheIndex + 1) + 1);
+      if (nextMarche) {
+        const idx = steps.findIndex(
+          (s) => s.type === 'marche' && s.marche?.marche?.id === nextMarche.marche?.id
+        );
+        if (idx >= 0) setCurrent(idx);
+      }
     }
   };
 
