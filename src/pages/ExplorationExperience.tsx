@@ -162,6 +162,11 @@ export default function ExplorationExperience() {
     logView();
   }, [current, exploration?.id, sessionId, steps]);
 
+  // Scroll to top when navigating between steps
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, [current]);
+
   // Show loading until we have basic data
   if (!exploration || explorationLoading || pagesLoading || marchesLoading) {
     return (
