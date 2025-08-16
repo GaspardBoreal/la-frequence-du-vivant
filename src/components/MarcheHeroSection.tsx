@@ -135,35 +135,33 @@ const MarcheHeroSection: React.FC<MarcheHeroSectionProps> = ({
             </div>
             
             
-            {!isMobile && (
-              <div className="bg-black/10 backdrop-blur-sm rounded-lg px-6 py-3 inline-block">
-                <div className="flex flex-wrap justify-center gap-6 text-white/90 text-lg">
-                  <div className="flex items-center space-x-2">
-                    <MapPin className="h-5 w-5" />
-                    <span>{marche.ville}, {marche.departement}</span>
-                  </div>
-                  {marche.date && (
-                    <div className="flex items-center space-x-2">
-                      <Calendar className="h-5 w-5" />
-                      <span>
-                        {(() => {
-                          // Handle both yyyy-mm-dd and dd/mm/yyyy formats
-                          if (marche.date.includes('-')) {
-                            // Format: yyyy-mm-dd -> dd-mm-yyyy
-                            const [year, month, day] = marche.date.split('-');
-                            return `${day.padStart(2, '0')} - ${month.padStart(2, '0')} - ${year}`;
-                          } else if (marche.date.includes('/')) {
-                            // Format: dd/mm/yyyy -> dd-mm-yyyy
-                            return marche.date.split('/').join(' - ');
-                          }
-                          return marche.date;
-                        })()}
-                      </span>
-                    </div>
-                  )}
+            <div className="bg-black/10 backdrop-blur-sm rounded-lg px-6 py-3 inline-block">
+              <div className="flex flex-wrap justify-center gap-6 text-white/90 text-lg">
+                <div className="flex items-center space-x-2">
+                  <MapPin className="h-5 w-5" />
+                  <span>{marche.ville}, {marche.departement}</span>
                 </div>
+                {marche.date && (
+                  <div className="flex items-center space-x-2">
+                    <Calendar className="h-5 w-5" />
+                    <span>
+                      {(() => {
+                        // Handle both yyyy-mm-dd and dd/mm/yyyy formats
+                        if (marche.date.includes('-')) {
+                          // Format: yyyy-mm-dd -> dd-mm-yyyy
+                          const [year, month, day] = marche.date.split('-');
+                          return `${day.padStart(2, '0')} - ${month.padStart(2, '0')} - ${year}`;
+                        } else if (marche.date.includes('/')) {
+                          // Format: dd/mm/yyyy -> dd-mm-yyyy
+                          return marche.date.split('/').join(' - ');
+                        }
+                        return marche.date;
+                      })()}
+                    </span>
+                  </div>
+                )}
               </div>
-            )}
+            </div>
           </motion.div>
         </div>
 
