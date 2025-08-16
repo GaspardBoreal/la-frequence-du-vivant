@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { fetchMarchesFromSupabase, fetchMarcheById, searchMarchesByVille, MarcheComplete } from '../utils/supabaseApi';
 import { transformSupabaseToLegacyFormat } from '../utils/supabaseDataTransformer';
 import { MarcheTechnoSensible } from '../utils/googleSheetsApi';
+import { useMarketDataSync } from './useMarketDataSync';
 
 // Hook pour récupérer toutes les marches avec tri par date décroissante
 export const useSupabaseMarches = () => {

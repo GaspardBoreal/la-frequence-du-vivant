@@ -1,18 +1,24 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { MapPin, Leaf, Thermometer, TrendingUp } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
+import { MapPin, Leaf, Thermometer, TrendingUp, RefreshCw, Eye, EyeOff } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { useMarketDataSync } from '@/hooks/useMarketDataSync';
 
 interface GeographicInsightsMapProps {
   detailed?: boolean;
 }
 
 export const GeographicInsightsMap: React.FC<GeographicInsightsMapProps> = ({ detailed = false }) => {
+  const [showAllMarkets, setShowAllMarkets] = useState(false);
+  const { refreshMarketData } = useMarketDataSync();
   const { data: marchesData, isLoading } = useQuery({
-    queryKey: ['marches-with-data'],
+    queryKey: ['marches-with-data', showAllMarkets],
     queryFn: async () => {
       const { data: marches } = await supabase
         .from('marches')
@@ -28,13 +34,20 @@ export const GeographicInsightsMap: React.FC<GeographicInsightsMapProps> = ({ de
         .select('*');
       
       // Manually join the data
-      return marches?.map(marche => ({
+      const enrichedMarches = marches?.map(marche => ({
         ...marche,
         biodiversity_snapshots: biodiversitySnapshots?.filter(bs => bs.marche_id === marche.id) || [],
         weather_snapshots: weatherSnapshots?.filter(ws => ws.marche_id === marche.id) || []
-      })).filter(marche => 
-        marche.biodiversity_snapshots.length > 0 || marche.weather_snapshots.length > 0
-      ) || [];
+      })) || [];
+
+      // Filtrer selon le mode d'affichage
+      if (showAllMarkets) {
+        return enrichedMarches;
+      } else {
+        return enrichedMarches.filter(marche => 
+          marche.biodiversity_snapshots.length > 0 || marche.weather_snapshots.length > 0
+        );
+      }
     }
   });
 
@@ -87,6 +100,7 @@ export const GeographicInsightsMap: React.FC<GeographicInsightsMapProps> = ({ de
       acc[region].marches += 1;
       acc[region].totalSpecies += marche.enrichedData.totalSpecies;
       acc[region].totalObservations += marche.enrichedData.recentObservations;
+      acc[region].hasData = marche.biodiversity_snapshots.length > 0 || marche.weather_snapshots.length > 0;
       
       if (marche.enrichedData.avgTemperature !== null) {
         acc[region].avgTemp += marche.enrichedData.avgTemperature;
@@ -127,12 +141,45 @@ export const GeographicInsightsMap: React.FC<GeographicInsightsMapProps> = ({ de
       {!detailed ? (
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <MapPin className="w-5 h-5" />
-              Aperçu Géographique
+            <CardTitle className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <MapPin className="w-5 h-5" />
+                Aperçu Géographique
+              </div>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={refreshMarketData}
+                  className="gap-1"
+                >
+                  <RefreshCw className="w-4 h-4" />
+                  Actualiser
+                </Button>
+              </div>
             </CardTitle>
-            <CardDescription>
-              Distribution des données par région
+            <CardDescription className="flex items-center justify-between">
+              <span>Distribution des données par région</span>
+              <div className="flex items-center gap-2">
+                <Label htmlFor="show-all" className="text-xs">
+                  {showAllMarkets ? (
+                    <span className="flex items-center gap-1">
+                      <Eye className="w-3 h-3" />
+                      Tous les marchés
+                    </span>
+                  ) : (
+                    <span className="flex items-center gap-1">
+                      <EyeOff className="w-3 h-3" />
+                      Avec données uniquement
+                    </span>
+                  )}
+                </Label>
+                <Switch
+                  id="show-all"
+                  checked={showAllMarkets}
+                  onCheckedChange={setShowAllMarkets}
+                />
+              </div>
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -158,6 +205,11 @@ export const GeographicInsightsMap: React.FC<GeographicInsightsMapProps> = ({ de
                       <span className="flex items-center gap-1">
                         <MapPin className="w-3 h-3" />
                         {region.marches} marches
+                        {showAllMarkets && region.hasData && (
+                          <Badge variant="secondary" className="ml-1 text-xs px-1">
+                            Données
+                          </Badge>
+                        )}
                       </span>
                       {region.avgTemp && (
                         <span className="flex items-center gap-1">

@@ -1,6 +1,7 @@
 import { supabase } from '../integrations/supabase/client';
 import { MarcheTechnoSensible } from './googleSheetsApi';
 import { uploadPhoto, uploadVideo, uploadAudio } from './supabaseUpload';
+import { toast } from 'sonner';
 
 export interface MarcheFormData {
   ville: string;
@@ -85,6 +86,11 @@ export const createMarche = async (formData: MarcheFormData): Promise<string | n
       await saveTags(marcheId, formData.tags);
     }
 
+    // Notification de succès avec invalidation de cache
+    toast.success('Marche créée avec succès', {
+      description: 'Les données seront actualisées automatiquement'
+    });
+
     return marcheId;
 
   } catch (error) {
@@ -121,6 +127,12 @@ export const updateMarche = async (marcheId: string, formData: MarcheFormData): 
     }
 
     console.log(`✅ Marche ${marcheId} mise à jour avec succès.`);
+    
+    // Notification de succès
+    toast.success('Marche mise à jour avec succès', {
+      description: 'Les données seront actualisées automatiquement'
+    });
+    
     return true;
 
   } catch (error) {
