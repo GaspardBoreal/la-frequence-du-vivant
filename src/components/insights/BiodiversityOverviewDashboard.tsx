@@ -1,10 +1,11 @@
 import React, { useMemo } from 'react';
 import { motion } from 'framer-motion';
-import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LineChart, Line } from 'recharts';
+import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend, ResponsiveContainer, LineChart, Line } from 'recharts';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Leaf, Bird, TreePine, Bug, TrendingUp, MapPin, Calendar } from 'lucide-react';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { Leaf, Bird, TreePine, Bug, TrendingUp, MapPin, Calendar, Info, Database, Zap } from 'lucide-react';
 import { useBiodiversityStats } from '@/hooks/useBiodiversityStats';
 import { useBiodiversityTimeline } from '@/hooks/useBiodiversityTimeline';
 import { useBiodiversityRegional } from '@/hooks/useBiodiversityRegional';
@@ -65,13 +66,59 @@ export const BiodiversityOverviewDashboard: React.FC = () => {
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5 }}
     >
+      {/* Méthodologie Alert */}
+      <Card className="border-amber-200 bg-amber-50 dark:border-amber-800 dark:bg-amber-950/20">
+        <CardContent className="p-4">
+          <div className="flex items-start gap-3">
+            <div className="p-2 rounded-full bg-amber-100 dark:bg-amber-900/30">
+              <Info className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+            </div>
+            <div className="space-y-2">
+              <h3 className="font-medium text-amber-900 dark:text-amber-100">
+                Analyse de Biodiversité : Potentiel Régional vs Collectes Terrain
+              </h3>
+              <div className="text-sm text-amber-800 dark:text-amber-200 space-y-1">
+                <div className="flex items-center gap-2">
+                  <Database className="w-3 h-3" />
+                  <span><strong>Snapshots Régionaux</strong> : Données agrégées sur large rayon (APIs GBIF, eBird...)</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Zap className="w-3 h-3" />
+                  <span><strong>Collectes Terrain</strong> : Observations directes géolocalisées précisément</span>
+                </div>
+                <p className="text-xs mt-2 italic">
+                  Les deux métriques sont complémentaires : potentiel de biodiversité d'une région vs observations réelles collectées.
+                </p>
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
       {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <Card className="border-0 bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-950/20 dark:to-emerald-950/20">
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-800 dark:text-gray-200">Total Espèces</p>
+                <div className="flex items-center gap-2 mb-1">
+                  <p className="text-sm font-medium text-gray-800 dark:text-gray-200">Espèces (Snapshots Régionaux)</p>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger>
+                        <Info className="w-3 h-3 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200" />
+                      </TooltipTrigger>
+                      <TooltipContent side="top" className="max-w-xs">
+                        <div className="space-y-2">
+                          <p className="font-medium flex items-center gap-1">
+                            <Database className="w-3 h-3" />
+                            Données agrégées (Snapshots)
+                          </p>
+                          <p className="text-xs">Données régionales consolidées provenant de GBIF, eBird et autres sources. Rayon large (~10km) pour estimer le potentiel de biodiversité de la zone.</p>
+                        </div>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                </div>
                 <p className="text-3xl font-bold text-green-700 dark:text-green-400">
                   {stats?.totalSpecies.toLocaleString()}
                 </p>
@@ -80,7 +127,10 @@ export const BiodiversityOverviewDashboard: React.FC = () => {
                 </p>
               </div>
               <div className="p-3 rounded-full bg-green-100 dark:bg-green-900/30">
-                <Leaf className="w-8 h-8 text-green-600 dark:text-green-400" />
+                <div className="relative">
+                  <Leaf className="w-8 h-8 text-green-600 dark:text-green-400" />
+                  <Database className="w-3 h-3 text-green-500 absolute -top-1 -right-1" />
+                </div>
               </div>
             </div>
           </CardContent>
@@ -90,7 +140,19 @@ export const BiodiversityOverviewDashboard: React.FC = () => {
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-800 dark:text-gray-200">Collectes Effectuées</p>
+                <div className="flex items-center gap-2 mb-1">
+                  <p className="text-sm font-medium text-gray-800 dark:text-gray-200">Snapshots Collectés</p>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger>
+                        <Info className="w-3 h-3 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200" />
+                      </TooltipTrigger>
+                      <TooltipContent side="top" className="max-w-xs">
+                        <p className="text-xs">Nombre de collectes de données automatisées stockées en base. Chaque snapshot capture l'état de la biodiversité d'une zone à un moment donné.</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                </div>
                 <p className="text-3xl font-bold text-blue-700 dark:text-blue-400">
                   {stats?.totalSnapshots}
                 </p>
@@ -155,7 +217,7 @@ export const BiodiversityOverviewDashboard: React.FC = () => {
                       <Cell key={`cell-${index}`} fill={entry.color} />
                     ))}
                   </Pie>
-                  <Tooltip 
+                  <RechartsTooltip 
                     contentStyle={{
                       backgroundColor: 'hsl(var(--card))',
                       border: '1px solid hsl(var(--border))',
@@ -201,7 +263,7 @@ export const BiodiversityOverviewDashboard: React.FC = () => {
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="date" />
                   <YAxis />
-                  <Tooltip 
+                  <RechartsTooltip 
                     contentStyle={{
                       backgroundColor: 'hsl(var(--card))',
                       border: '1px solid hsl(var(--border))',
