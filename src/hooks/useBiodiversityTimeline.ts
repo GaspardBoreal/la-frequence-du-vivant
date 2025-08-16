@@ -9,6 +9,8 @@ export interface TimelineDataPoint {
 
 export const useBiodiversityTimeline = (filters?: {
   regions?: string[];
+  marches?: string[];
+  explorations?: string[];
   days?: number;
 }) => {
   return useQuery({
@@ -19,7 +21,9 @@ export const useBiodiversityTimeline = (filters?: {
       
       const snapshots = await getFilteredBiodiversitySnapshots({
         dateRange,
-        regions: filters?.regions
+        regions: filters?.regions,
+        marches: filters?.marches,
+        explorations: filters?.explorations
       });
       
       return groupBiodiversityByDate(snapshots, days);

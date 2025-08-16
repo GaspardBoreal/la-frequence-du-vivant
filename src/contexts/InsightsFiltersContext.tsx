@@ -4,6 +4,8 @@ interface InsightsFilters {
   dateRange: string;
   regions: string[];
   dataTypes: string[];
+  marches: string[];
+  explorations: string[];
 }
 
 interface InsightsFiltersContextType {
@@ -22,7 +24,9 @@ export const InsightsFiltersProvider: React.FC<InsightsFiltersProviderProps> = (
   const [filters, setFilters] = useState<InsightsFilters>({
     dateRange: 'all', // Default to all data to show everything
     regions: [],
-    dataTypes: ['biodiversity', 'weather', 'real_estate']
+    dataTypes: ['biodiversity', 'weather', 'real_estate'],
+    marches: [],
+    explorations: []
   });
 
   const updateFilter = (key: keyof InsightsFilters, value: any) => {

@@ -1,5 +1,7 @@
 import React from 'react';
 import { Filter, Calendar, MapPin, Database } from 'lucide-react';
+import { MarcheFilter } from './MarcheFilter';
+import { ExplorationFilter } from './ExplorationFilter';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -16,6 +18,8 @@ interface InsightsFiltersProps {
     dateRange: string;
     regions: string[];
     dataTypes: string[];
+    marches: string[];
+    explorations: string[];
   };
   onFiltersChange: (filters: any) => void;
 }
@@ -68,6 +72,8 @@ export const InsightsFilters: React.FC<InsightsFiltersProps> = ({
   const activeFiltersCount = 
     (filters.dateRange !== 'all' ? 1 : 0) +
     filters.regions.length +
+    filters.marches.length +
+    filters.explorations.length +
     (filters.dataTypes.length < 3 ? 1 : 0);
 
   return (
@@ -94,6 +100,18 @@ export const InsightsFilters: React.FC<InsightsFiltersProps> = ({
           ))}
         </DropdownMenuContent>
       </DropdownMenu>
+
+      {/* Marches Filter */}
+      <MarcheFilter
+        selectedMarches={filters.marches}
+        onMarchesChange={(marches) => updateFilter('marches', marches)}
+      />
+
+      {/* Explorations Filter */}
+      <ExplorationFilter
+        selectedExplorations={filters.explorations}
+        onExplorationsChange={(explorations) => updateFilter('explorations', explorations)}
+      />
 
       {/* Regions Filter */}
       <DropdownMenu>
@@ -177,7 +195,9 @@ export const InsightsFilters: React.FC<InsightsFiltersProps> = ({
             onClick={() => onFiltersChange({
               dateRange: 'all',
               regions: [],
-              dataTypes: ['biodiversity', 'weather', 'real_estate']
+              dataTypes: ['biodiversity', 'weather', 'real_estate'],
+              marches: [],
+              explorations: []
             })}
           >
             Réinitialiser les filtres

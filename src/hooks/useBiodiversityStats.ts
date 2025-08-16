@@ -16,6 +16,8 @@ export interface BiodiversityStats {
 export const useBiodiversityStats = (filters?: {
   dateRange?: string;
   regions?: string[];
+  marches?: string[];
+  explorations?: string[];
 }) => {
   return useQuery({
     queryKey: ['biodiversity-stats', filters],

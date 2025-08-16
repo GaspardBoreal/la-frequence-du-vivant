@@ -14,6 +14,8 @@ interface InsightsFilters {
   dateRange: string;
   regions: string[];
   dataTypes: string[];
+  marches: string[];
+  explorations: string[];
 }
 
 export const useInsightsMetrics = (filters: InsightsFilters) => {
@@ -76,6 +78,28 @@ export const useInsightsMetrics = (filters: InsightsFilters) => {
       // Apply region filter
       filteredBiodiversity = applyRegionFilter(filteredBiodiversity, validMarches, filters.regions);
       filteredWeather = applyRegionFilter(filteredWeather, validMarches, filters.regions);
+
+      // Apply marche filter if specified
+      if (filters.marches && filters.marches.length > 0) {
+        const marcheIds = new Set(filters.marches);
+        filteredBiodiversity = filteredBiodiversity.filter(item => marcheIds.has(item.marche_id));
+        filteredWeather = filteredWeather.filter(item => marcheIds.has(item.marche_id));
+      }
+
+      // Apply exploration filter if specified
+      if (filters.explorations && filters.explorations.length > 0) {
+        // Get marche IDs for selected explorations
+        const { data: explorationMarches } = await supabase
+          .from('exploration_marches')
+          .select('marche_id')
+          .in('exploration_id', filters.explorations);
+
+        if (explorationMarches) {
+          const explorationMarcheIds = new Set(explorationMarches.map(em => em.marche_id));
+          filteredBiodiversity = filteredBiodiversity.filter(item => explorationMarcheIds.has(item.marche_id));
+          filteredWeather = filteredWeather.filter(item => explorationMarcheIds.has(item.marche_id));
+        }
+      }
 
       // Calculate metrics using centralized logic
       return calculateDataMetrics(

@@ -136,6 +136,8 @@ export const applyDateFilter = <T extends { snapshot_date: string }>(
 export const getFilteredBiodiversitySnapshots = async (filters?: {
   dateRange?: string;
   regions?: string[];
+  marches?: string[];
+  explorations?: string[];
 }): Promise<BiodiversitySnapshot[]> => {
   // Get valid marches
   const validMarches = await getValidMarcheIds();
@@ -175,6 +177,26 @@ export const getFilteredBiodiversitySnapshots = async (filters?: {
   // Apply region filter if specified
   if (filters?.regions && filters.regions.length > 0) {
     filtered = applyRegionFilter(filtered, validMarches, filters.regions);
+  }
+
+  // Apply marche filter if specified
+  if (filters?.marches && filters.marches.length > 0) {
+    const marcheIds = new Set(filters.marches);
+    filtered = filtered.filter(item => marcheIds.has(item.marche_id));
+  }
+
+  // Apply exploration filter if specified
+  if (filters?.explorations && filters.explorations.length > 0) {
+    // Get marche IDs for selected explorations
+    const { data: explorationMarches } = await supabase
+      .from('exploration_marches')
+      .select('marche_id')
+      .in('exploration_id', filters.explorations);
+
+    if (explorationMarches) {
+      const explorationMarcheIds = new Set(explorationMarches.map(em => em.marche_id));
+      filtered = filtered.filter(item => explorationMarcheIds.has(item.marche_id));
+    }
   }
 
   return filtered;

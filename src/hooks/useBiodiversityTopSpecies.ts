@@ -10,6 +10,8 @@ export interface TopSpeciesData {
 export const useBiodiversityTopSpecies = (filters?: {
   dateRange?: string;
   regions?: string[];
+  marches?: string[];
+  explorations?: string[];
   limit?: number;
 }) => {
   return useQuery({

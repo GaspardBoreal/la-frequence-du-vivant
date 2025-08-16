@@ -10,11 +10,17 @@ export interface RegionalDataPoint {
 
 export const useBiodiversityRegional = (filters?: {
   dateRange?: string;
+  marches?: string[];
+  explorations?: string[];
 }) => {
   return useQuery({
     queryKey: ['biodiversity-regional', filters],
     queryFn: async (): Promise<RegionalDataPoint[]> => {
-      const snapshots = await getFilteredBiodiversitySnapshots(filters);
+      const snapshots = await getFilteredBiodiversitySnapshots({
+        dateRange: filters?.dateRange,
+        marches: filters?.marches,
+        explorations: filters?.explorations
+      });
       return await groupBiodiversityByRegion(snapshots);
     },
     staleTime: 1000 * 60 * 20, // 20 minutes
