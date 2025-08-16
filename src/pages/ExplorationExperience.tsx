@@ -38,12 +38,13 @@ interface NarrativeSettings {
 export default function ExplorationExperience() {
   const { slug, sessionId } = useParams<{ slug: string; sessionId: string }>();
   
-  const { data: exploration } = useExploration(slug || '');
-  const { data: marches = [] } = useExplorationMarches(exploration?.id || '');
-  const { data: pages = [] } = useExplorationPages(exploration?.id || '');
+  const { data: exploration, isLoading: explorationLoading } = useExploration(slug || '');
+  const { data: marches = [], isLoading: marchesLoading } = useExplorationMarches(exploration?.id || '');
+  const { data: pages = [], isLoading: pagesLoading } = useExplorationPages(exploration?.id || '');
   const [settings, setSettings] = useState<NarrativeSettings>({ marche_view_model: 'elabore' });
   const [welcomeComposition, setWelcomeComposition] = useState<any | null>(null);
   const [current, setCurrent] = useState<number>(0);
+  console.log('⏳ Loading states:', { explorationLoading, pagesLoading, marchesLoading, pagesCount: pages.length, marchesCount: marches.length });
   
   const steps = useMemo(() => {
     const list: Array<{ 
@@ -52,9 +53,17 @@ export default function ExplorationExperience() {
       page?: any;
     }> = [];
     
-    // Add all intro pages in order (no automatic welcome fallback)
+    // Prioritize configured "accueil" page if present (no automatic welcome fallback)
+    const accueilPage = pages.find((p) =>
+      p.type === 'intro-accueil' || /accueil/i.test(p.type || '') || /accueil/i.test(p.nom || '')
+    );
+    if (accueilPage) {
+      list.push({ type: 'page', page: accueilPage });
+    }
+    
+    // Add remaining intro pages in order (excluding accueil)
     const introPages = pages
-      .filter((p) => p.type?.startsWith('intro-'))
+      .filter((p) => p.type?.startsWith('intro-') && p.id !== accueilPage?.id)
       .sort((a, b) => (a.ordre ?? 0) - (b.ordre ?? 0));
     introPages.forEach((page) => {
       list.push({ type: 'page', page });
