@@ -209,16 +209,7 @@ export default function ExplorationExperience() {
       <main className="container mx-auto px-4 pb-28">
         <section className="mt-4">
           {steps[current]?.type === 'welcome' && (
-            isDordogneExploration ? (
-              <ExperienceWelcomeDordogne 
-                exploration={exploration} 
-                settings={settings} 
-                onStart={goNext} 
-                onStartPodcast={() => {
-                  console.log('🎙️ Starting podcast directly in welcome component');
-                }}
-              />
-            ) : welcomeComposition ? (
+            welcomeComposition ? (
               <ExperienceWelcomeAdaptive exploration={exploration} composition={welcomeComposition} onStart={goNext} onStartPodcast={() => {
                 console.log('🎙️ Starting podcast audio directly');
               }} />
