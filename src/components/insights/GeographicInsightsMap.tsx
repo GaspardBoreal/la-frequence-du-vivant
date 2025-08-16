@@ -60,6 +60,15 @@ export const GeographicInsightsMap: React.FC<GeographicInsightsMapProps> = ({ de
         weatherQuery
       ]);
 
+      // Filter out orphan snapshots that don't have valid marche_ids
+      const validMarcheIds = new Set(marches.map(m => m.id));
+      const filteredBiodiversitySnapshots = (biodiversitySnapshots.data || []).filter(s => 
+        validMarcheIds.has(s.marche_id)
+      );
+      const filteredWeatherSnapshots = (weatherSnapshots.data || []).filter(s => 
+        validMarcheIds.has(s.marche_id)
+      );
+
       // Apply region filter to marches if specified
       let filteredMarches = marches;
       if (filters?.regions && filters.regions.length > 0) {
@@ -72,15 +81,15 @@ export const GeographicInsightsMap: React.FC<GeographicInsightsMapProps> = ({ de
       const finalFilteredMarches = showAllMarkets 
         ? filteredMarches 
         : filteredMarches.filter(marche => {
-            const hasBiodiversity = biodiversitySnapshots.data?.some(s => s.marche_id === marche.id);
-            const hasWeather = weatherSnapshots.data?.some(s => s.marche_id === marche.id);
+            const hasBiodiversity = filteredBiodiversitySnapshots.some(s => s.marche_id === marche.id);
+            const hasWeather = filteredWeatherSnapshots.some(s => s.marche_id === marche.id);
             return hasBiodiversity || hasWeather;
           });
 
       return {
         marches: finalFilteredMarches,
-        biodiversitySnapshots: biodiversitySnapshots.data || [],
-        weatherSnapshots: weatherSnapshots.data || []
+        biodiversitySnapshots: filteredBiodiversitySnapshots,
+        weatherSnapshots: filteredWeatherSnapshots
       };
     }
   });

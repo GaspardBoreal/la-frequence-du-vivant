@@ -57,10 +57,16 @@ export const DataCollectionTimeline: React.FC<DataCollectionTimelineProps> = ({ 
         supabase.from('marches').select('id, region')
       ]);
 
-      // Client-side region filtering
-      let biodiversityData = biodiversityResult.data || [];
-      let weatherData = weatherResult.data || [];
+      // Filter out orphan snapshots (marche_ids that don't exist in marches table)
+      const validMarcheIds = new Set(marchesResult.data?.map(m => m.id) || []);
+      let biodiversityData = (biodiversityResult.data || []).filter(item => 
+        validMarcheIds.has(item.marche_id)
+      );
+      let weatherData = (weatherResult.data || []).filter(item => 
+        validMarcheIds.has(item.marche_id)
+      );
       
+      // Client-side region filtering
       if (filters?.regions && filters.regions.length > 0 && marchesResult.data) {
         const allowedMarcheIds = marchesResult.data
           .filter(marche => filters.regions.includes(marche.region))
