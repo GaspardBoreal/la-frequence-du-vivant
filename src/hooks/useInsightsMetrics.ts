@@ -70,11 +70,20 @@ export const useInsightsMetrics = (filters: InsightsFilters) => {
         );
       }
 
-      // Calculate unique covered marches
+      // Calculate unique covered marches (only those that exist in marches table)
+      const validMarcheIds = new Set(marchesData.data?.map(m => m.id) || []);
       const uniqueCoveredMarches = new Set();
       
-      filteredBiodiversity.forEach(item => uniqueCoveredMarches.add(item.marche_id));
-      filteredWeather.forEach(item => uniqueCoveredMarches.add(item.marche_id));
+      filteredBiodiversity.forEach(item => {
+        if (validMarcheIds.has(item.marche_id)) {
+          uniqueCoveredMarches.add(item.marche_id);
+        }
+      });
+      filteredWeather.forEach(item => {
+        if (validMarcheIds.has(item.marche_id)) {
+          uniqueCoveredMarches.add(item.marche_id);
+        }
+      });
 
       // Calculate total species collected
       const totalSpeciesCollected = filteredBiodiversity.reduce((sum, item) => 
