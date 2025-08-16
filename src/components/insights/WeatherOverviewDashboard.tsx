@@ -7,29 +7,79 @@ import { Button } from '@/components/ui/button';
 import { CloudRain, Thermometer, Droplets, Wind, Sun, TrendingUp, AlertTriangle, Calendar, ExternalLink } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { useInsightsFilters } from '@/contexts/InsightsFiltersContext';
 
 interface WeatherOverviewDashboardProps {
   onNavigateToCalendar?: () => void;
 }
 
 export const WeatherOverviewDashboard: React.FC<WeatherOverviewDashboardProps> = ({ onNavigateToCalendar }) => {
+  const { filters } = useInsightsFilters();
+
   const { data: weatherData, isLoading } = useQuery({
-    queryKey: ['weather-overview'],
+    queryKey: ['weather-overview', filters],
     queryFn: async () => {
-      const { data: snapshots } = await supabase
+      let query = supabase
         .from('weather_snapshots')
         .select('*')
         .order('snapshot_date', { ascending: false });
+
+      // Apply date range filter
+      if (filters.dateRange && filters.dateRange !== 'all') {
+        const days = parseInt(filters.dateRange.replace('d', ''));
+        if (!isNaN(days)) {
+          const startDate = new Date();
+          startDate.setDate(startDate.getDate() - days);
+          query = query.gte('snapshot_date', startDate.toISOString().split('T')[0]);
+        }
+      }
+
+      const { data: snapshots } = await query;
       
+      // Get marche data separately
       const { data: marches } = await supabase
         .from('marches')
         .select('id, nom_marche, ville, region');
-      
-      // Manually join the data
-      return snapshots?.map(snapshot => ({
-        ...snapshot,
-        marches: marches?.find(m => m.id === snapshot.marche_id)
-      })) || [];
+
+      // Apply additional filters on client side for now
+      let filteredSnapshots = snapshots || [];
+
+      // Filter by marches first (most restrictive)
+      if (filters.marches && filters.marches.length > 0) {
+        filteredSnapshots = filteredSnapshots.filter(snapshot => 
+          snapshot.marche_id && filters.marches.includes(snapshot.marche_id)
+        );
+      }
+
+      // Filter by explorations (need to join with exploration_marches)
+      if (filters.explorations && filters.explorations.length > 0) {
+        const { data: explorationMarches } = await supabase
+          .from('exploration_marches')
+          .select('marche_id')
+          .in('exploration_id', filters.explorations);
+        
+        const allowedMarcheIds = explorationMarches?.map(em => em.marche_id) || [];
+        filteredSnapshots = filteredSnapshots.filter(snapshot => 
+          allowedMarcheIds.includes(snapshot.marche_id)
+        );
+      }
+
+      // Join with marche data and filter by regions
+      return filteredSnapshots.map(snapshot => {
+        const marche = marches?.find(m => m.id === snapshot.marche_id);
+        
+        // Filter by regions if specified
+        if (filters.regions && filters.regions.length > 0) {
+          if (!marche?.region || !filters.regions.includes(marche.region)) {
+            return null;
+          }
+        }
+        
+        return {
+          ...snapshot,
+          marches: marche
+        };
+      }).filter(Boolean); // Remove null entries
     }
   });
 

@@ -4,8 +4,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Home, TrendingUp, MapPin, Calendar, Database, AlertCircle, Play } from 'lucide-react';
+import { useInsightsFilters } from '@/contexts/InsightsFiltersContext';
 
 export const RealEstateOverviewDashboard: React.FC = () => {
+  const { filters } = useInsightsFilters();
+  
+  // Ready for when real estate data collection is implemented
+  // All filters (dateRange, regions, marches, explorations) will be applied
   return (
     <motion.div 
       className="space-y-6"

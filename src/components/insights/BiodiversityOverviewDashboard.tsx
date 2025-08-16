@@ -14,16 +14,18 @@ import { useInsightsFilters } from '@/contexts/InsightsFiltersContext';
 export const BiodiversityOverviewDashboard: React.FC = () => {
   const { filters } = useInsightsFilters();
   
-  // Apply filters to all hooks
+  // Apply ALL filters to all hooks
   const filterConfig = {
     dateRange: filters.dateRange,
-    regions: filters.regions
+    regions: filters.regions,
+    marches: filters.marches,
+    explorations: filters.explorations
   };
 
   // Hooks optimisés avec requêtes spécialisées et filtres intégrés
   const { data: stats, isLoading: isLoadingStats } = useBiodiversityStats(filterConfig);
-  const { data: timelineData, isLoading: isLoadingTimeline } = useBiodiversityTimeline({ regions: filters.regions });
-  const { data: regionalData, isLoading: isLoadingRegional } = useBiodiversityRegional({ dateRange: filters.dateRange });
+  const { data: timelineData, isLoading: isLoadingTimeline } = useBiodiversityTimeline(filterConfig);
+  const { data: regionalData, isLoading: isLoadingRegional } = useBiodiversityRegional(filterConfig);
   const { data: topSpeciesData, isLoading: isLoadingTopSpecies } = useBiodiversityTopSpecies(filterConfig);
 
   const isLoading = isLoadingStats || isLoadingTimeline || isLoadingRegional || isLoadingTopSpecies;
