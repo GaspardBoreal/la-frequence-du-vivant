@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { BarChart3, MapPin, TrendingUp, Filter, Download, Calendar, Users, Leaf, CloudRain, Home, ArrowLeft, RefreshCw, Wrench, AlertTriangle } from 'lucide-react';
+import { BarChart3, MapPin, TrendingUp, Filter, Download, Calendar, Users, Leaf, CloudRain, Home, ArrowLeft, RefreshCw, Wrench, AlertTriangle, Trash2, Edit } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
@@ -43,7 +43,9 @@ const DataInsightsContent: React.FC = () => {
     fixCoverage,
     isFixing,
     cleanupOrphans,
-    isCleaning
+    isCleaning,
+    lastCorrectionResult,
+    clearLastCorrectionResult
   } = useCoverageDiagnostics();
 
   const handleRefresh = async () => {
@@ -54,6 +56,11 @@ const DataInsightsContent: React.FC = () => {
   const handleFixCoverage = () => {
     if (diagnostics?.marchesManquantes?.length) {
       const marcheIds = diagnostics.marchesManquantes.map(m => m.id);
+      
+      // Clear previous result
+      clearLastCorrectionResult();
+      
+      // Execute the fix - the hook will handle the result internally
       fixCoverage(marcheIds);
     }
   };
@@ -236,18 +243,63 @@ const DataInsightsContent: React.FC = () => {
                         Sur {getDateRangeLabel(filters.dateRange).toLowerCase()}
                       </p>
                       {diagnostics && diagnostics.marchesManquantes.length > 0 && (
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="h-6 px-2 text-xs gap-1"
-                          onClick={handleFixCoverage}
-                          disabled={isFixing || diagnosticsLoading}
-                        >
-                          <Wrench className="w-3 h-3" />
-                          {isFixing ? 'Correction...' : 'Corriger'}
-                        </Button>
+                        <div className="flex items-center gap-2">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="h-6 px-2 text-xs gap-1"
+                            onClick={handleFixCoverage}
+                            disabled={isFixing || diagnosticsLoading}
+                          >
+                            <Wrench className="w-3 h-3" />
+                            {isFixing ? 'Correction...' : 'Corriger'}
+                          </Button>
+                          {diagnostics.orphanSnapshots.orphanIds.length > 0 && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="h-6 px-2 text-xs gap-1 text-red-600 border-red-200 hover:bg-red-50"
+                              onClick={() => cleanupOrphans()}
+                              disabled={isCleaning || diagnosticsLoading}
+                            >
+                              <Trash2 className="w-3 h-3" />
+                              {isCleaning ? 'Nettoyage...' : 'Nettoyer'}
+                            </Button>
+                          )}
+                        </div>
                       )}
                     </div>
+                    
+                    {/* Show correction details */}
+                    {lastCorrectionResult && lastCorrectionResult.non_corrigees.length > 0 && (
+                      <div className="mt-2 p-2 bg-amber-50 dark:bg-amber-950/20 rounded border border-amber-200 dark:border-amber-800">
+                        <p className="text-xs text-amber-700 dark:text-amber-300 font-medium mb-1">
+                          {lastCorrectionResult.non_corrigees.length} marche(s) à corriger manuellement :
+                        </p>
+                        <div className="space-y-1">
+                          {lastCorrectionResult.non_corrigees.slice(0, 2).map((marche: any) => (
+                            <div key={marche.id} className="flex items-center justify-between gap-2">
+                              <span className="text-xs text-amber-600 dark:text-amber-400 truncate">
+                                {marche.nom_marche} ({marche.ville})
+                              </span>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                className="h-5 px-2 text-xs"
+                                onClick={() => navigate(`/admin/marches/${marche.id}`)}
+                              >
+                                <Edit className="w-3 h-3" />
+                              </Button>
+                            </div>
+                          ))}
+                          {lastCorrectionResult.non_corrigees.length > 2 && (
+                            <p className="text-xs text-amber-600 dark:text-amber-400">
+                              +{lastCorrectionResult.non_corrigees.length - 2} autre(s)...
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    )}
                   </div>
                   <div className="p-3 rounded-full bg-orange-100 dark:bg-orange-900/30 group-hover:scale-110 transition-transform">
                     <MapPin className="w-6 h-6 text-orange-600 dark:text-orange-400" />
