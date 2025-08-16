@@ -7,19 +7,61 @@ import { Calendar, TrendingUp, Activity } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 
-export const DataCollectionTimeline: React.FC = () => {
+interface DataCollectionTimelineProps {
+  filters?: {
+    dateRange: string;
+    regions: string[];
+  };
+}
+
+export const DataCollectionTimeline: React.FC<DataCollectionTimelineProps> = ({ filters }) => {
   const { data: collectionsData, isLoading } = useQuery({
-    queryKey: ['collection-timeline'],
+    queryKey: ['collection-timeline', filters],
     queryFn: async () => {
+      // Calculate date filter
+      let dateFilter = '';
+      if (filters?.dateRange && filters.dateRange !== 'all') {
+        const days = parseInt(filters.dateRange.replace('d', ''));
+        const cutoffDate = new Date();
+        cutoffDate.setDate(cutoffDate.getDate() - days);
+        dateFilter = cutoffDate.toISOString().split('T')[0];
+      }
+
+      // Build queries with marches join to exclude orphans
+      let biodiversityQuery = supabase
+        .from('biodiversity_snapshots')
+        .select(`
+          snapshot_date, 
+          total_species, 
+          marche_id,
+          marches!inner(id, region)
+        `)
+        .order('snapshot_date', { ascending: true });
+
+      let weatherQuery = supabase
+        .from('weather_snapshots')
+        .select(`
+          snapshot_date, 
+          marche_id,
+          marches!inner(id, region)
+        `)
+        .order('snapshot_date', { ascending: true });
+
+      // Apply date filter
+      if (dateFilter) {
+        biodiversityQuery = biodiversityQuery.gte('snapshot_date', dateFilter);
+        weatherQuery = weatherQuery.gte('snapshot_date', dateFilter);
+      }
+
+      // Apply region filter
+      if (filters?.regions && filters.regions.length > 0) {
+        biodiversityQuery = biodiversityQuery.in('marches.region', filters.regions);
+        weatherQuery = weatherQuery.in('marches.region', filters.regions);
+      }
+
       const [biodiversityData, weatherData] = await Promise.all([
-        supabase
-          .from('biodiversity_snapshots')
-          .select('snapshot_date, total_species, marche_id')
-          .order('snapshot_date', { ascending: true }),
-        supabase
-          .from('weather_snapshots')
-          .select('snapshot_date, marche_id')
-          .order('snapshot_date', { ascending: true })
+        biodiversityQuery,
+        weatherQuery
       ]);
       
       return {

@@ -12,51 +12,85 @@ import { useMarketDataSync } from '@/hooks/useMarketDataSync';
 
 interface GeographicInsightsMapProps {
   detailed?: boolean;
+  filters?: {
+    dateRange: string;
+    regions: string[];
+  };
 }
 
-export const GeographicInsightsMap: React.FC<GeographicInsightsMapProps> = ({ detailed = false }) => {
+export const GeographicInsightsMap: React.FC<GeographicInsightsMapProps> = ({ detailed = false, filters }) => {
   const [showAllMarkets, setShowAllMarkets] = useState(false);
   const { refreshMarketData } = useMarketDataSync();
-  const { data: marchesData, isLoading } = useQuery({
-    queryKey: ['marches-with-data', showAllMarkets],
+  
+  const {
+    data: { marches: marchesData, biodiversitySnapshots, weatherSnapshots } = {},
+    isLoading,
+    refetch
+  } = useQuery({
+    queryKey: ['marches-with-data', showAllMarkets, filters],
     queryFn: async () => {
+      // Fetch base marches data
       const { data: marches } = await supabase
         .from('marches')
-        .select('*')
-        .order('created_at', { ascending: false });
-      
-      const { data: biodiversitySnapshots } = await supabase
-        .from('biodiversity_snapshots')
         .select('*');
-      
-      const { data: weatherSnapshots } = await supabase
-        .from('weather_snapshots')
-        .select('*');
-      
-      // Manually join the data
-      const enrichedMarches = marches?.map(marche => ({
-        ...marche,
-        biodiversity_snapshots: biodiversitySnapshots?.filter(bs => bs.marche_id === marche.id) || [],
-        weather_snapshots: weatherSnapshots?.filter(ws => ws.marche_id === marche.id) || []
-      })) || [];
 
-      // Filtrer selon le mode d'affichage
-      if (showAllMarkets) {
-        return enrichedMarches;
-      } else {
-        return enrichedMarches.filter(marche => 
-          marche.biodiversity_snapshots.length > 0 || marche.weather_snapshots.length > 0
+      if (!marches) return { marches: [], biodiversitySnapshots: [], weatherSnapshots: [] };
+
+      // Calculate date filter
+      let dateFilter = '';
+      if (filters?.dateRange && filters.dateRange !== 'all') {
+        const days = parseInt(filters.dateRange.replace('d', ''));
+        const cutoffDate = new Date();
+        cutoffDate.setDate(cutoffDate.getDate() - days);
+        dateFilter = cutoffDate.toISOString().split('T')[0];
+      }
+
+      // Build snapshot queries with date filter
+      let biodiversityQuery = supabase.from('biodiversity_snapshots').select('*');
+      let weatherQuery = supabase.from('weather_snapshots').select('*');
+
+      if (dateFilter) {
+        biodiversityQuery = biodiversityQuery.gte('snapshot_date', dateFilter);
+        weatherQuery = weatherQuery.gte('snapshot_date', dateFilter);
+      }
+
+      // Fetch related snapshots data
+      const [biodiversitySnapshots, weatherSnapshots] = await Promise.all([
+        biodiversityQuery,
+        weatherQuery
+      ]);
+
+      // Apply region filter to marches if specified
+      let filteredMarches = marches;
+      if (filters?.regions && filters.regions.length > 0) {
+        filteredMarches = marches.filter(marche => 
+          filters.regions.includes(marche.region || '')
         );
       }
+
+      // Filter marches based on showAllMarkets toggle and data availability
+      const finalFilteredMarches = showAllMarkets 
+        ? filteredMarches 
+        : filteredMarches.filter(marche => {
+            const hasBiodiversity = biodiversitySnapshots.data?.some(s => s.marche_id === marche.id);
+            const hasWeather = weatherSnapshots.data?.some(s => s.marche_id === marche.id);
+            return hasBiodiversity || hasWeather;
+          });
+
+      return {
+        marches: finalFilteredMarches,
+        biodiversitySnapshots: biodiversitySnapshots.data || [],
+        weatherSnapshots: weatherSnapshots.data || []
+      };
     }
   });
 
   const enrichedMarches = useMemo(() => {
-    if (!marchesData) return [];
+    if (!marchesData || !biodiversitySnapshots || !weatherSnapshots) return [];
     
     return marchesData.map(marche => {
-      const biodiversityData = marche.biodiversity_snapshots || [];
-      const weatherData = marche.weather_snapshots || [];
+      const biodiversityData = biodiversitySnapshots.filter(s => s.marche_id === marche.id);
+      const weatherData = weatherSnapshots.filter(s => s.marche_id === marche.id);
       
       const latestBio = biodiversityData[0];
       const latestWeather = weatherData[0];
@@ -74,11 +108,12 @@ export const GeographicInsightsMap: React.FC<GeographicInsightsMapProps> = ({ de
           recentObservations: latestBio?.recent_observations || 0,
           avgTemperature: avgTemp ? Math.round(avgTemp * 10) / 10 : null,
           dataQuality: biodiversityData.length + weatherData.length,
-          lastUpdate: latestBio?.created_at || latestWeather?.created_at
+          lastUpdate: latestBio?.created_at || latestWeather?.created_at,
+          hasData: biodiversityData.length > 0 || weatherData.length > 0
         }
       };
     }).sort((a, b) => b.enrichedData.dataQuality - a.enrichedData.dataQuality);
-  }, [marchesData]);
+  }, [marchesData, biodiversitySnapshots, weatherSnapshots]);
 
   const regionStats = useMemo(() => {
     if (!enrichedMarches) return [];
@@ -100,7 +135,7 @@ export const GeographicInsightsMap: React.FC<GeographicInsightsMapProps> = ({ de
       acc[region].marches += 1;
       acc[region].totalSpecies += marche.enrichedData.totalSpecies;
       acc[region].totalObservations += marche.enrichedData.recentObservations;
-      acc[region].hasData = marche.biodiversity_snapshots.length > 0 || marche.weather_snapshots.length > 0;
+      acc[region].hasData = marche.enrichedData.hasData;
       
       if (marche.enrichedData.avgTemperature !== null) {
         acc[region].avgTemp += marche.enrichedData.avgTemperature;

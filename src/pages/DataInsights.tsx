@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { BarChart3, MapPin, TrendingUp, Filter, Download, Calendar, Users, Leaf, CloudRain, Home, ArrowLeft } from 'lucide-react';
+import { BarChart3, MapPin, TrendingUp, Filter, Download, Calendar, Users, Leaf, CloudRain, Home, ArrowLeft, RefreshCw } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
@@ -15,20 +15,40 @@ import { GeographicInsightsMap } from '@/components/insights/GeographicInsightsM
 import { DataCollectionTimeline } from '@/components/insights/DataCollectionTimeline';
 import { InsightsFilters } from '@/components/insights/InsightsFilters';
 import { WeatherCalendarTab } from '@/components/insights/WeatherCalendarTab';
+import { InsightsFiltersProvider, useInsightsFilters } from '@/contexts/InsightsFiltersContext';
+import { useInsightsMetrics } from '@/hooks/useInsightsMetrics';
+import { useMarketDataSync } from '@/hooks/useMarketDataSync';
 
-const DataInsights: React.FC = () => {
+const DataInsightsContent: React.FC = () => {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('overview');
-  const [filters, setFilters] = useState({
-    dateRange: '30d',
-    regions: [],
-    dataTypes: ['biodiversity', 'weather', 'real_estate']
-  });
+  const { filters, setFilters } = useInsightsFilters();
+  const { refreshMarketData } = useMarketDataSync();
 
   const {
     data: logs,
-    isLoading
+    isLoading: logsLoading
   } = useDataCollectionLogs();
+
+  const {
+    data: metrics,
+    isLoading: metricsLoading,
+    refetch: refetchMetrics
+  } = useInsightsMetrics(filters);
+
+  const handleRefresh = async () => {
+    await refreshMarketData();
+    refetchMetrics();
+  };
+
+  const getDateRangeLabel = (dateRange: string) => {
+    switch (dateRange) {
+      case '7d': return '7 derniers jours';
+      case '30d': return '30 derniers jours';
+      case '90d': return '3 derniers mois';
+      default: return 'Toutes les données';
+    }
+  };
 
   const containerVariants = {
     hidden: { opacity: 0 },
@@ -100,6 +120,16 @@ const DataInsights: React.FC = () => {
                 filters={filters}
                 onFiltersChange={setFilters}
               />
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="gap-2"
+                onClick={handleRefresh}
+                disabled={metricsLoading}
+              >
+                <RefreshCw className={`w-4 h-4 ${metricsLoading ? 'animate-spin' : ''}`} />
+                Actualiser
+              </Button>
               <Button variant="outline" size="sm" className="gap-2">
                 <Download className="w-4 h-4" />
                 Exporter
@@ -116,9 +146,13 @@ const DataInsights: React.FC = () => {
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-medium text-gray-800 dark:text-gray-200">Total Biodiversité</p>
-                    <p className="text-2xl font-bold text-green-700 dark:text-green-400">71</p>
-                    <p className="text-xs text-green-600 dark:text-green-500">+12% ce mois</p>
+                    <p className="text-sm font-medium text-gray-800 dark:text-gray-200">Espèces Collectées</p>
+                    <p className="text-2xl font-bold text-green-700 dark:text-green-400">
+                      {metricsLoading ? '...' : metrics?.totalSpeciesCollected || 0}
+                    </p>
+                    <p className="text-xs text-green-600 dark:text-green-500">
+                      Sur {getDateRangeLabel(filters.dateRange).toLowerCase()}
+                    </p>
                   </div>
                   <div className="p-3 rounded-full bg-green-100 dark:bg-green-900/30 group-hover:scale-110 transition-transform">
                     <Leaf className="w-6 h-6 text-green-600 dark:text-green-400" />
@@ -134,9 +168,13 @@ const DataInsights: React.FC = () => {
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-medium text-gray-800 dark:text-gray-200">Données Météo</p>
-                    <p className="text-2xl font-bold text-blue-700 dark:text-blue-400">37</p>
-                    <p className="text-xs text-blue-600 dark:text-blue-500">+8% ce mois</p>
+                    <p className="text-sm font-medium text-gray-800 dark:text-gray-200">Points Météo</p>
+                    <p className="text-2xl font-bold text-blue-700 dark:text-blue-400">
+                      {metricsLoading ? '...' : metrics?.totalWeatherPoints || 0}
+                    </p>
+                    <p className="text-xs text-blue-600 dark:text-blue-500">
+                      Sur {getDateRangeLabel(filters.dateRange).toLowerCase()}
+                    </p>
                   </div>
                   <div className="p-3 rounded-full bg-blue-100 dark:bg-blue-900/30 group-hover:scale-110 transition-transform relative">
                     <CloudRain className="w-6 h-6 text-blue-600 dark:text-blue-400" />
@@ -150,9 +188,11 @@ const DataInsights: React.FC = () => {
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-medium text-gray-800 dark:text-gray-200">Immobilier</p>
-                    <p className="text-2xl font-bold text-purple-700 dark:text-purple-400">0</p>
-                    <p className="text-xs text-purple-600 dark:text-purple-500">En attente</p>
+                    <p className="text-sm font-medium text-gray-800 dark:text-gray-200">Total Marches</p>
+                    <p className="text-2xl font-bold text-purple-700 dark:text-purple-400">
+                      {metricsLoading ? '...' : metrics?.totalMarches || 0}
+                    </p>
+                    <p className="text-xs text-purple-600 dark:text-purple-500">Dans la base</p>
                   </div>
                   <div className="p-3 rounded-full bg-purple-100 dark:bg-purple-900/30 group-hover:scale-110 transition-transform">
                     <Home className="w-6 h-6 text-purple-600 dark:text-purple-400" />
@@ -166,8 +206,12 @@ const DataInsights: React.FC = () => {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm font-medium text-gray-800 dark:text-gray-200">Marches Couvertes</p>
-                    <p className="text-2xl font-bold text-orange-700 dark:text-orange-400">21</p>
-                    <p className="text-xs text-orange-600 dark:text-orange-500">Couverture complète</p>
+                    <p className="text-2xl font-bold text-orange-700 dark:text-orange-400">
+                      {metricsLoading ? '...' : metrics?.marchesCouvertes || 0}
+                    </p>
+                    <p className="text-xs text-orange-600 dark:text-orange-500">
+                      Sur {getDateRangeLabel(filters.dateRange).toLowerCase()}
+                    </p>
                   </div>
                   <div className="p-3 rounded-full bg-orange-100 dark:bg-orange-900/30 group-hover:scale-110 transition-transform">
                     <MapPin className="w-6 h-6 text-orange-600 dark:text-orange-400" />
@@ -209,8 +253,8 @@ const DataInsights: React.FC = () => {
 
               <TabsContent value="overview" className="space-y-6">
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                  <DataCollectionTimeline />
-                  <GeographicInsightsMap />
+                  <DataCollectionTimeline filters={filters} />
+                  <GeographicInsightsMap filters={filters} />
                 </div>
               </TabsContent>
 
@@ -247,7 +291,7 @@ const DataInsights: React.FC = () => {
                   </CardHeader>
                   <CardContent>
                     <div className="h-96">
-                      <GeographicInsightsMap detailed />
+                      <GeographicInsightsMap detailed filters={filters} />
                     </div>
                   </CardContent>
                 </Card>
@@ -257,6 +301,14 @@ const DataInsights: React.FC = () => {
         </motion.div>
       </div>
     </>
+  );
+};
+
+const DataInsights: React.FC = () => {
+  return (
+    <InsightsFiltersProvider>
+      <DataInsightsContent />
+    </InsightsFiltersProvider>
   );
 };
 
