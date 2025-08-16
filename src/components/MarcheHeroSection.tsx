@@ -134,14 +134,6 @@ const MarcheHeroSection: React.FC<MarcheHeroSectionProps> = ({
               </h1>
             </div>
             
-            {!isMobile && marche.descriptifCourt && (
-              <div className="bg-black/15 backdrop-blur-sm rounded-xl px-6 py-4 max-w-3xl mx-auto">
-                <div 
-                  className="text-xl text-white/95 leading-relaxed md:text-xl prose prose-invert max-w-none"
-                  dangerouslySetInnerHTML={{ __html: marche.descriptifCourt }}
-                />
-              </div>
-            )}
             
             {!isMobile && (
               <div className="bg-black/10 backdrop-blur-sm rounded-lg px-6 py-3 inline-block">
