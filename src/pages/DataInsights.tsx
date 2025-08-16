@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { BarChart3, MapPin, TrendingUp, Filter, Download, Calendar, Users, Leaf, CloudRain, Home, ArrowLeft, RefreshCw } from 'lucide-react';
+import { BarChart3, MapPin, TrendingUp, Filter, Download, Calendar, Users, Leaf, CloudRain, Home, ArrowLeft, RefreshCw, Wrench, AlertTriangle } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
@@ -18,6 +18,7 @@ import { WeatherCalendarTab } from '@/components/insights/WeatherCalendarTab';
 import { InsightsFiltersProvider, useInsightsFilters } from '@/contexts/InsightsFiltersContext';
 import { useInsightsMetrics } from '@/hooks/useInsightsMetrics';
 import { useMarketDataSync } from '@/hooks/useMarketDataSync';
+import { useCoverageDiagnostics } from '@/hooks/useCoverageDiagnostics';
 
 const DataInsightsContent: React.FC = () => {
   const navigate = useNavigate();
@@ -36,9 +37,25 @@ const DataInsightsContent: React.FC = () => {
     refetch: refetchMetrics
   } = useInsightsMetrics(filters);
 
+  const {
+    diagnostics,
+    isLoading: diagnosticsLoading,
+    fixCoverage,
+    isFixing,
+    cleanupOrphans,
+    isCleaning
+  } = useCoverageDiagnostics();
+
   const handleRefresh = async () => {
     await refreshMarketData();
     refetchMetrics();
+  };
+
+  const handleFixCoverage = () => {
+    if (diagnostics?.marchesManquantes?.length) {
+      const marcheIds = diagnostics.marchesManquantes.map(m => m.id);
+      fixCoverage(marcheIds);
+    }
   };
 
   const getDateRangeLabel = (dateRange: string) => {
@@ -204,14 +221,33 @@ const DataInsightsContent: React.FC = () => {
             <Card className="group hover:shadow-lg transition-all duration-300 border-0 bg-gradient-to-br from-orange-50 to-red-50 dark:from-orange-950/20 dark:to-red-950/20">
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-gray-800 dark:text-gray-200">Marches Couvertes</p>
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2">
+                      <p className="text-sm font-medium text-gray-800 dark:text-gray-200">Marches Couvertes</p>
+                      {diagnostics && diagnostics.marchesCouvertes < diagnostics.totalMarches && (
+                        <AlertTriangle className="w-4 h-4 text-amber-500" />
+                      )}
+                    </div>
                     <p className="text-2xl font-bold text-orange-700 dark:text-orange-400">
-                      {metricsLoading ? '...' : metrics?.marchesCouvertes || 0}
+                      {metricsLoading ? '...' : `${metrics?.marchesCouvertes || 0}/${metrics?.totalMarches || 0}`}
                     </p>
-                    <p className="text-xs text-orange-600 dark:text-orange-500">
-                      Sur {getDateRangeLabel(filters.dateRange).toLowerCase()}
-                    </p>
+                    <div className="flex items-center gap-2 mt-1">
+                      <p className="text-xs text-orange-600 dark:text-orange-500">
+                        Sur {getDateRangeLabel(filters.dateRange).toLowerCase()}
+                      </p>
+                      {diagnostics && diagnostics.marchesManquantes.length > 0 && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="h-6 px-2 text-xs gap-1"
+                          onClick={handleFixCoverage}
+                          disabled={isFixing || diagnosticsLoading}
+                        >
+                          <Wrench className="w-3 h-3" />
+                          {isFixing ? 'Correction...' : 'Corriger'}
+                        </Button>
+                      )}
+                    </div>
                   </div>
                   <div className="p-3 rounded-full bg-orange-100 dark:bg-orange-900/30 group-hover:scale-110 transition-transform">
                     <MapPin className="w-6 h-6 text-orange-600 dark:text-orange-400" />
