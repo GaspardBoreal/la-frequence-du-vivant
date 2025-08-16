@@ -108,11 +108,11 @@ const DataInsightsPromoBanner = () => {
             animate={{ opacity: 1 }}
             transition={{ delay: 0.6, duration: 0.4 }}
           >
-            {[
-              "Tableaux de bord interactifs",
-              "Cartes géographiques",
-              "Tendances temporelles"
-            ].map((feature, index) => (
+              {[
+                "Biodiversité (rayon 500m)",
+                "Météo (point exact)",
+                "Immobilier (parcelle exacte)"
+              ].map((feature, index) => (
               <div 
                 key={feature}
                 className="px-3 py-1 bg-accent/10 text-accent text-xs rounded-full border border-accent/20"

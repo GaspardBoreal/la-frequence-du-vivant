@@ -9,6 +9,7 @@ import { PlayCircle, BarChart3, Clock, CheckCircle, XCircle, AlertCircle, Trash2
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import DebugCollectionProgressModal from './DebugCollectionProgressModal';
+import SearchRadiusTooltip from './SearchRadiusTooltip';
 
 interface DataCollectionPanelProps {
   marches?: Array<{
@@ -158,8 +159,11 @@ const DataCollectionPanel: React.FC<DataCollectionPanelProps> = ({ marches = [] 
             className="flex flex-col items-center p-4 h-auto"
           >
             <div className="text-green-600 mb-2">🌿</div>
-            <span className="font-medium">Biodiversité</span>
-            <span className="text-xs text-muted-foreground">eBird + iNaturalist</span>
+            <div className="flex items-center gap-2">
+              <span className="font-medium">Biodiversité</span>
+              <SearchRadiusTooltip dataType="biodiversity" />
+            </div>
+            <span className="text-xs text-muted-foreground">Rayon 500m • eBird + iNaturalist</span>
           </Button>
 
           <Button
@@ -169,8 +173,11 @@ const DataCollectionPanel: React.FC<DataCollectionPanelProps> = ({ marches = [] 
             className="flex flex-col items-center p-4 h-auto"
           >
             <div className="text-blue-600 mb-2">🌤️</div>
-            <span className="font-medium">Météo</span>
-            <span className="text-xs text-muted-foreground">Open-Meteo</span>
+            <div className="flex items-center gap-2">
+              <span className="font-medium">Météo</span>
+              <SearchRadiusTooltip dataType="weather" />
+            </div>
+            <span className="text-xs text-muted-foreground">Point exact • Open-Meteo</span>
           </Button>
 
           <Button
@@ -180,8 +187,11 @@ const DataCollectionPanel: React.FC<DataCollectionPanelProps> = ({ marches = [] 
             className="flex flex-col items-center p-4 h-auto"
           >
             <div className="text-purple-600 mb-2">🏠</div>
-            <span className="font-medium">Immobilier</span>
-            <span className="text-xs text-muted-foreground">LEXICON</span>
+            <div className="flex items-center gap-2">
+              <span className="font-medium">Immobilier</span>
+              <SearchRadiusTooltip dataType="realEstate" />
+            </div>
+            <span className="text-xs text-muted-foreground">Parcelle exacte • LEXICON</span>
           </Button>
         </div>
 

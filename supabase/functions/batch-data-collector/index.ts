@@ -141,11 +141,14 @@ serve(async (req) => {
               .eq('id', logEntry.id);
 
             try {
+              // Configuration du rayon de recherche biodiversité
+              const biodiversityRadius = 500; // Rayon par défaut selon SEARCH_RADIUS_CONFIG
+              
               const { data: biodivData, error: biodivError } = await supabase.functions.invoke('biodiversity-data', {
                 body: {
                   latitude: marche.latitude,
                   longitude: marche.longitude,
-                  radius: 500
+                  radius: biodiversityRadius
                 }
               });
 
@@ -155,7 +158,7 @@ serve(async (req) => {
                   marche_id: marche.id,
                   latitude: marche.latitude,
                   longitude: marche.longitude,
-                  radius_meters: 500,
+                  radius_meters: biodiversityRadius,
                   total_species: biodivData.summary?.totalSpecies || 0,
                   birds_count: biodivData.summary?.birds || 0,
                   plants_count: biodivData.summary?.plants || 0,
@@ -274,10 +277,13 @@ serve(async (req) => {
                 // Process transactions if available
                 const transactions = realEstateData.transactions || [];
                 
+                // Note: LEXICON utilise des données ponctuelles (pas de rayon)
+                // Le radius_meters est conservé pour compatibilité historique uniquement
                 const snapshot = {
                   marche_id: marche.id,
                   latitude: marche.latitude,
                   longitude: marche.longitude,
+                  radius_meters: 0, // Point-based, pas de rayon réel
                   transactions_count: transactions.length,
                   transactions_data: transactions.length > 0 ? transactions : null,
                   raw_data: realEstateData
