@@ -109,37 +109,39 @@ const DataInsightsContent: React.FC = () => {
         >
           {/* Header */}
           <motion.div 
-            className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6"
+            className="space-y-6"
             variants={cardVariants}
           >
-            <div className="space-y-2">
-              <div className="flex items-center gap-3">
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
-                  onClick={() => navigate('/admin/marches')}
-                  className="gap-2 text-muted-foreground hover:text-foreground"
-                >
-                  <ArrowLeft className="w-4 h-4" />
-                  Retour aux marches
-                </Button>
+            {/* Navigation */}
+            <div className="flex items-center gap-3">
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={() => navigate('/admin/marches')}
+                className="gap-2 text-muted-foreground hover:text-foreground"
+              >
+                <ArrowLeft className="w-4 h-4" />
+                Retour aux marches
+              </Button>
+            </div>
+
+            {/* Title Line */}
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-primary/10">
+                <BarChart3 className="w-6 h-6 text-primary" />
               </div>
-              <div className="flex items-center gap-3">
-                <div className="p-2 rounded-lg bg-primary/10">
-                  <BarChart3 className="w-6 h-6 text-primary" />
-                </div>
-                <div>
-                  <h1 className="text-3xl font-bold text-accent">
-                    Data Insights
-                  </h1>
-                  <p className="text-muted-foreground">
-                    Analyse avancée des données collectées
-                  </p>
-                </div>
+              <div>
+                <h1 className="text-3xl font-bold text-accent">
+                  Data Insights
+                </h1>
+                <p className="text-muted-foreground max-w-4xl">
+                  Analyse avancée des données collectées lors des marches techno sensibles (biodiversité, impact climat, futurs possibles)
+                </p>
               </div>
             </div>
             
-            <div className="flex items-center gap-3">
+            {/* Filters Line */}
+            <div className="flex flex-wrap items-center gap-3">
               <InsightsFilters 
                 filters={filters}
                 onFiltersChange={setFilters}
