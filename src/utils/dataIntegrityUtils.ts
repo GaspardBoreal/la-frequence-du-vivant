@@ -25,6 +25,13 @@ export interface BiodiversitySnapshot {
   marche_id: string;
   total_species: number;
   snapshot_date: string;
+  birds_count?: number;
+  plants_count?: number;
+  fungi_count?: number;
+  others_count?: number;
+  recent_observations?: number;
+  created_at?: string;
+  species_data?: any;
 }
 
 export interface WeatherSnapshot {
@@ -121,4 +128,154 @@ export const applyDateFilter = <T extends { snapshot_date: string }>(
   const cutoffDateString = cutoffDate.toISOString().split('T')[0];
   
   return snapshots.filter(snapshot => snapshot.snapshot_date >= cutoffDateString);
+};
+
+/**
+ * Fetches biodiversity snapshots with filtering for valid marches
+ */
+export const getFilteredBiodiversitySnapshots = async (filters?: {
+  dateRange?: string;
+  regions?: string[];
+}): Promise<BiodiversitySnapshot[]> => {
+  // Get valid marches
+  const validMarches = await getValidMarcheIds();
+  const validMarcheIds = new Set(validMarches.map(m => m.id));
+
+  // Build query
+  let query = supabase
+    .from('biodiversity_snapshots')
+    .select(`
+      marche_id,
+      total_species,
+      birds_count,
+      plants_count,
+      fungi_count,
+      others_count,
+      recent_observations,
+      snapshot_date,
+      created_at,
+      species_data
+    `);
+
+  // Apply date filter at SQL level if specified
+  if (filters?.dateRange && filters.dateRange !== 'all') {
+    const days = parseInt(filters.dateRange.replace('d', ''));
+    const cutoffDate = new Date();
+    cutoffDate.setDate(cutoffDate.getDate() - days);
+    const cutoffDateString = cutoffDate.toISOString().split('T')[0];
+    query = query.gte('snapshot_date', cutoffDateString);
+  }
+
+  const { data, error } = await query;
+  if (error) throw error;
+
+  // Filter out orphan snapshots and cast types properly
+  let filtered = filterValidSnapshots(data || [], validMarcheIds) as BiodiversitySnapshot[];
+
+  // Apply region filter if specified
+  if (filters?.regions && filters.regions.length > 0) {
+    filtered = applyRegionFilter(filtered, validMarches, filters.regions);
+  }
+
+  return filtered;
+};
+
+/**
+ * Calculates comprehensive biodiversity statistics
+ */
+export const calculateBiodiversityStats = (snapshots: BiodiversitySnapshot[]) => {
+  if (!snapshots || snapshots.length === 0) {
+    return {
+      totalSnapshots: 0,
+      totalSpecies: 0,
+      averageSpecies: 0,
+      totalBirds: 0,
+      totalPlants: 0,
+      totalFungi: 0,
+      totalOthers: 0,
+      recentCollections: 0,
+      hotspots: 0
+    };
+  }
+
+  const totalSnapshots = snapshots.length;
+  const totalSpecies = snapshots.reduce((sum, item) => sum + (item.total_species || 0), 0);
+  const totalBirds = snapshots.reduce((sum, item) => sum + (item.birds_count || 0), 0);
+  const totalPlants = snapshots.reduce((sum, item) => sum + (item.plants_count || 0), 0);
+  const totalFungi = snapshots.reduce((sum, item) => sum + (item.fungi_count || 0), 0);
+  const totalOthers = snapshots.reduce((sum, item) => sum + (item.others_count || 0), 0);
+  
+  const lastWeek = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+  const recentCollections = snapshots.filter(d => 
+    d.created_at && new Date(d.created_at) > lastWeek
+  ).length;
+  
+  const hotspots = snapshots.filter(d => (d.total_species || 0) > 100).length;
+
+  return {
+    totalSnapshots,
+    totalSpecies,
+    averageSpecies: totalSnapshots > 0 ? Math.round(totalSpecies / totalSnapshots) : 0,
+    totalBirds,
+    totalPlants,
+    totalFungi,
+    totalOthers,
+    recentCollections,
+    hotspots
+  };
+};
+
+/**
+ * Groups biodiversity data by date for timeline visualization
+ */
+export const groupBiodiversityByDate = (snapshots: BiodiversitySnapshot[], days: number = 14) => {
+  const cutoffDate = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
+  
+  const filtered = snapshots.filter(snapshot => 
+    new Date(snapshot.snapshot_date) >= cutoffDate
+  );
+  
+  const grouped = filtered.reduce((acc: Record<string, { date: string; species: number; count: number }>, item) => {
+    const date = new Date(item.snapshot_date).toLocaleDateString('fr-FR', { 
+      month: 'short', 
+      day: 'numeric' 
+    });
+    
+    if (!acc[date]) {
+      acc[date] = { date, species: 0, count: 0 };
+    }
+    
+    acc[date].species += item.total_species || 0;
+    acc[date].count += 1;
+    
+    return acc;
+  }, {});
+
+  return Object.values(grouped).sort((a, b) => 
+    new Date(a.date).getTime() - new Date(b.date).getTime()
+  );
+};
+
+/**
+ * Groups biodiversity data by region
+ */
+export const groupBiodiversityByRegion = async (snapshots: BiodiversitySnapshot[]) => {
+  const validMarches = await getValidMarcheIds();
+  
+  const grouped = snapshots.reduce((acc: Record<string, { region: string; species: number; marches: number; observations: number }>, item) => {
+    const marche = validMarches.find(m => m.id === item.marche_id);
+    const region = marche?.region || 'Non défini';
+    
+    if (!acc[region]) {
+      acc[region] = { region, species: 0, marches: 0, observations: 0 };
+    }
+    
+    acc[region].species += item.total_species || 0;
+    acc[region].marches += 1;
+    acc[region].observations += item.recent_observations || 0;
+    
+    return acc;
+  }, {});
+
+  return Object.values(grouped).sort((a, b) => b.species - a.species);
 };

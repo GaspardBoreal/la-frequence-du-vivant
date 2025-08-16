@@ -9,13 +9,22 @@ import { useBiodiversityStats } from '@/hooks/useBiodiversityStats';
 import { useBiodiversityTimeline } from '@/hooks/useBiodiversityTimeline';
 import { useBiodiversityRegional } from '@/hooks/useBiodiversityRegional';
 import { useBiodiversityTopSpecies } from '@/hooks/useBiodiversityTopSpecies';
+import { useInsightsFilters } from '@/contexts/InsightsFiltersContext';
 
 export const BiodiversityOverviewDashboard: React.FC = () => {
-  // Hooks optimisés avec requêtes spécialisées
-  const { data: stats, isLoading: isLoadingStats } = useBiodiversityStats();
-  const { data: timelineData, isLoading: isLoadingTimeline } = useBiodiversityTimeline();
-  const { data: regionalData, isLoading: isLoadingRegional } = useBiodiversityRegional();
-  const { data: topSpeciesData, isLoading: isLoadingTopSpecies } = useBiodiversityTopSpecies();
+  const { filters } = useInsightsFilters();
+  
+  // Apply filters to all hooks
+  const filterConfig = {
+    dateRange: filters.dateRange,
+    regions: filters.regions
+  };
+
+  // Hooks optimisés avec requêtes spécialisées et filtres intégrés
+  const { data: stats, isLoading: isLoadingStats } = useBiodiversityStats(filterConfig);
+  const { data: timelineData, isLoading: isLoadingTimeline } = useBiodiversityTimeline({ regions: filters.regions });
+  const { data: regionalData, isLoading: isLoadingRegional } = useBiodiversityRegional({ dateRange: filters.dateRange });
+  const { data: topSpeciesData, isLoading: isLoadingTopSpecies } = useBiodiversityTopSpecies(filterConfig);
 
   const isLoading = isLoadingStats || isLoadingTimeline || isLoadingRegional || isLoadingTopSpecies;
 
