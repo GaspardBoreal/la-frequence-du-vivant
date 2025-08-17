@@ -168,19 +168,13 @@ export default function GalerieFluveExploration() {
             ))}
           </div>
 
-          <div className="relative container mx-auto px-4 py-8">
-            <div className="flex justify-between items-start mb-6">
-              <Link to={`/explorations/${exploration.slug}`}>
-                <Button variant="ghost" className="text-primary-foreground hover:bg-white/20">
-                  <ArrowLeft className="h-4 w-4 mr-2" />
-                  Retour à l'exploration
-                </Button>
-              </Link>
-              <Badge className="bg-white/20 text-primary-foreground border-white/30">
-                <Palette className="h-3 w-3 mr-1" />
-                Galerie Fleuve
-              </Badge>
-            </div>
+            <div className="relative container mx-auto px-4 py-8">
+              <div className="flex justify-end items-start mb-6">
+                <Badge className="bg-white/20 text-primary-foreground border-white/30">
+                  <Palette className="h-3 w-3 mr-1" />
+                  Galerie Fleuve
+                </Badge>
+              </div>
 
             <motion.div
               initial={{ y: 30, opacity: 0 }}
