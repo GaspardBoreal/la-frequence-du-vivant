@@ -252,6 +252,35 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes 
     }
   }, [allPhotos, filterMode]);
 
+  // Navigation adaptative par groupes selon l'appareil
+  const getNavigationStep = useCallback(() => {
+    if (typeof window === 'undefined') return 1;
+    const width = window.innerWidth;
+    if (width < 768) return 1; // Mobile: 1 photo
+    if (width < 1024) return 2; // Tablette: 2 photos
+    return 3; // Desktop: 3 photos
+  }, []);
+
+  // Fonctions de navigation avec steps adaptatifs
+  const navigateNext = useCallback(() => {
+    const step = getNavigationStep();
+    setCurrentPhoto(prev => Math.min(prev + step, filteredPhotos.length - 1));
+  }, [getNavigationStep, filteredPhotos.length]);
+
+  const navigatePrevious = useCallback(() => {
+    const step = getNavigationStep();
+    setCurrentPhoto(prev => Math.max(prev - step, 0));
+  }, [getNavigationStep]);
+
+  // Navigation unitaire pour les touches haut/bas
+  const navigateOne = useCallback((direction: 'next' | 'prev') => {
+    if (direction === 'next') {
+      setCurrentPhoto(prev => Math.min(prev + 1, filteredPhotos.length - 1));
+    } else {
+      setCurrentPhoto(prev => Math.max(prev - 1, 0));
+    }
+  }, [filteredPhotos.length]);
+
   // Touch gesture detection
   const [touchStart, setTouchStart] = useState<number | null>(null);
   const [touchEnd, setTouchEnd] = useState<number | null>(null);
@@ -272,12 +301,50 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes 
     const isRightSwipe = distance < -50;
 
     if (isLeftSwipe && currentPhoto < filteredPhotos.length - 1) {
-      setCurrentPhoto(currentPhoto + 1);
+      navigateNext();
     }
     if (isRightSwipe && currentPhoto > 0) {
-      setCurrentPhoto(currentPhoto - 1);
+      navigatePrevious();
     }
   };
+
+  // Gestion du clavier avec navigation adaptative
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      switch (e.key) {
+        case 'ArrowLeft':
+          e.preventDefault();
+          navigatePrevious();
+          break;
+        case 'ArrowRight':
+          e.preventDefault();
+          navigateNext();
+          break;
+        case 'ArrowUp':
+          e.preventDefault();
+          navigateOne('prev');
+          break;
+        case 'ArrowDown':
+          e.preventDefault();
+          navigateOne('next');
+          break;
+        case ' ':
+          e.preventDefault();
+          if (viewMode === 'immersion-totale') {
+            setIsPlaying(!isPlaying);
+          }
+          break;
+        case 'Escape':
+          if (selectedPhoto !== null) {
+            setSelectedPhoto(null);
+          }
+          break;
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [navigateNext, navigatePrevious, navigateOne, viewMode, isPlaying, selectedPhoto]);
 
   // Contextual Navigation Controls - Adaptive design
   const NavigationControls = () => {
@@ -357,7 +424,7 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes 
               </motion.button>
             </div>
 
-            {/* Swipe indicator */}
+            {/* Navigation info */}
             {(viewMode === 'constellation' || viewMode === 'immersion-totale') && (
               <motion.div
                 className="bg-emerald-900/20 backdrop-blur-xl rounded-2xl p-2 border border-emerald-200/20 text-center"
@@ -366,7 +433,8 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes 
                 transition={{ delay: 1 }}
               >
                 <div className="text-emerald-200 text-xs">
-                  👈 👉
+                  👈 👉 <br/>
+                  {currentPhoto + 1}/{filteredPhotos.length}
                 </div>
               </motion.div>
             )}
@@ -455,11 +523,11 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes 
               <span className="text-xs capitalize">{filterMode === 'all' ? 'Tous' : filterMode}</span>
             </motion.button>
 
-            {/* Navigation arrows for constellation mode */}
-            {viewMode === 'constellation' && (
+            {/* Navigation arrows for constellation and immersion modes */}
+            {(viewMode === 'constellation' || viewMode === 'immersion-totale') && (
               <div className="flex gap-1">
                 <motion.button
-                  onClick={() => setCurrentPhoto(Math.max(0, currentPhoto - 1))}
+                  onClick={navigatePrevious}
                   disabled={currentPhoto === 0}
                   className="p-2 rounded-2xl bg-emerald-700/30 hover:bg-emerald-600/50 text-emerald-200 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300"
                   whileHover={{ scale: 1.05 }}
@@ -467,9 +535,12 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes 
                 >
                   <ArrowUp className="h-4 w-4 rotate-[-90deg]" />
                 </motion.button>
+                <div className="px-2 py-1 text-xs text-emerald-200 flex items-center">
+                  {currentPhoto + 1}/{filteredPhotos.length}
+                </div>
                 <motion.button
-                  onClick={() => setCurrentPhoto(Math.min(filteredPhotos.length - 1, currentPhoto + 1))}
-                  disabled={currentPhoto === filteredPhotos.length - 1}
+                  onClick={navigateNext}
+                  disabled={currentPhoto >= filteredPhotos.length - getNavigationStep()}
                   className="p-2 rounded-2xl bg-emerald-700/30 hover:bg-emerald-600/50 text-emerald-200 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300"
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
@@ -736,13 +807,16 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes 
 
             {/* Navigation immersive */}
             <div className="flex justify-between items-center">
-              <Button
+               <Button
                 variant="ghost"
-                onClick={() => setCurrentPhoto(prev => prev > 0 ? prev - 1 : filteredPhotos.length - 1)}
+                onClick={navigatePrevious}
                 className="text-white hover:bg-white/20"
               >
                 <ArrowUp className="h-5 w-5 mr-2" />
-                Précédent
+                {(() => {
+                  const step = getNavigationStep();
+                  return step === 1 ? 'Précédent' : `${step} précédentes`;
+                })()}
               </Button>
               
               <span className="text-sm opacity-75">
@@ -751,10 +825,13 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes 
               
               <Button
                 variant="ghost"
-                onClick={() => setCurrentPhoto(prev => (prev + 1) % filteredPhotos.length)}
+                onClick={navigateNext}
                 className="text-white hover:bg-white/20"
               >
-                Suivant
+                {(() => {
+                  const step = getNavigationStep();
+                  return step === 1 ? 'Suivant' : `${step} suivantes`;
+                })()}
                 <ArrowDown className="h-5 w-5 ml-2" />
               </Button>
             </div>
