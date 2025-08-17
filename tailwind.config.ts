@@ -78,9 +78,12 @@ export default {
 				}
 			},
 			fontFamily: {
+				'sans': ['Inter', 'system-ui', 'sans-serif'],
+				'serif': ['Crimson Text', 'serif'],
+				'mono': ['IBM Plex Mono', 'monospace'],
+				'libre': ['Libre Baskerville', 'serif'],
 				'crimson': ['Crimson Text', 'serif'],
 				'inter': ['Inter', 'sans-serif'],
-				'mono': ['IBM Plex Mono', 'monospace'],
 			},
 			borderRadius: {
 				lg: 'var(--radius)',
