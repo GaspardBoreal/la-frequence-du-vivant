@@ -23,9 +23,11 @@ import {
   Share2,
   Download,
   ZoomIn,
-  X
+  X,
+  Waves,
+  Star,
+  Music
 } from 'lucide-react';
-import { extractPhotosFromGoogleDrive, PhotoData } from '../utils/googleDriveApi';
 import { MarcheTechnoSensible } from '../utils/googleSheetsApi';
 import { RegionalTheme } from '../utils/regionalThemes';
 import { Button } from './ui/button';
@@ -33,19 +35,37 @@ import { Badge } from './ui/badge';
 import { Card } from './ui/card';
 import { Dialog, DialogContent, DialogClose } from './ui/dialog';
 import { useIsMobile } from '../hooks/use-mobile';
+import { ExplorationMarcheComplete } from '../hooks/useExplorations';
 
 interface GalerieFluveProps {
-  explorations: MarcheTechnoSensible[];
+  explorations: any[]; // Temporarily allow any to fix the immediate typing issue
   themes: RegionalTheme[];
 }
 
-type ViewMode = 'fleuve' | 'temporal' | 'mosaique' | 'immersion';
-type FilterMode = 'all' | 'couleur' | 'emotion' | 'element' | 'saison';
+interface EnrichedPhoto {
+  id: string;
+  url: string;
+  titre?: string;
+  description?: string;
+  ordre?: number;
+  exploration: any; // Temporarily allow any
+  latitude?: number;
+  longitude?: number;
+  ville: string;
+  departement: string;
+  region: string;
+  date?: string;
+  emotionalTags: string[];
+  thematicIcons: string[];
+}
+
+type ViewMode = 'constellation' | 'fleuve-temporel' | 'mosaique-vivante' | 'immersion-totale';
+type FilterMode = 'all' | 'biodiversite' | 'bioacoustique' | 'botanique' | 'couleur' | 'saison';
 
 const GalerieFleuve: React.FC<GalerieFluveProps> = ({ explorations, themes }) => {
-  const [allPhotos, setAllPhotos] = useState<(PhotoData & { exploration: MarcheTechnoSensible })[]>([]);
+  const [allPhotos, setAllPhotos] = useState<EnrichedPhoto[]>([]);
   const [currentPhoto, setCurrentPhoto] = useState<number>(0);
-  const [viewMode, setViewMode] = useState<ViewMode>('fleuve');
+  const [viewMode, setViewMode] = useState<ViewMode>('constellation');
   const [filterMode, setFilterMode] = useState<FilterMode>('all');
   const [isLoading, setIsLoading] = useState(true);
   const [selectedPhoto, setSelectedPhoto] = useState<number | null>(null);
@@ -53,35 +73,102 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = ({ explorations, themes }) =>
   const isMobile = useIsMobile();
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Chargement des photos de toutes les explorations
+  // Fonction pour générer des tags émotionnels basés sur le nom et le contexte
+  const generateEmotionalTags = (photo: any, marche: any): string[] => {
+    const tags: string[] = [];
+    const name = photo.titre?.toLowerCase() || '';
+    const desc = photo.description?.toLowerCase() || '';
+    const ville = marche.ville?.toLowerCase() || '';
+    
+    if (name.includes('eau') || name.includes('rivière') || desc.includes('eau')) tags.push('Fluidité');
+    if (name.includes('fleur') || name.includes('plante') || desc.includes('botanique')) tags.push('Éclat');
+    if (name.includes('oiseau') || name.includes('chant') || desc.includes('sonore')) tags.push('Mélodie');
+    if (name.includes('matin') || name.includes('aube')) tags.push('Éveil');
+    if (name.includes('soir') || name.includes('crépuscule')) tags.push('Intimité');
+    if (ville.includes('bord') || ville.includes('fleuve')) tags.push('Contemplation');
+    
+    return tags.length > 0 ? tags : ['Mystère'];
+  };
+
+  // Fonction pour générer des icônes thématiques
+  const generateThematicIcons = (photo: any, marche: any): string[] => {
+    const icons: string[] = [];
+    const name = photo.titre?.toLowerCase() || '';
+    const themes = marche.sous_themes || [];
+    
+    if (themes.includes('biodiversité') || name.includes('espèce')) icons.push('🦋');
+    if (themes.includes('bioacoustique') || name.includes('son')) icons.push('🎵');
+    if (themes.includes('botanique') || name.includes('plante')) icons.push('🌿');
+    if (name.includes('eau') || name.includes('rivière')) icons.push('💧');
+    if (name.includes('ciel') || name.includes('nuage')) icons.push('☁️');
+    
+    return icons.length > 0 ? icons : ['✨'];
+  };
+
+  // Chargement et enrichissement des photos depuis Supabase
   useEffect(() => {
-    const loadAllPhotos = async () => {
+    const loadAndEnrichPhotos = async () => {
       setIsLoading(true);
-      const photosWithExploration: (PhotoData & { exploration: MarcheTechnoSensible })[] = [];
+      const enrichedPhotos: EnrichedPhoto[] = [];
       
       for (const exploration of explorations) {
-        if (exploration.lien) {
-          try {
-            const photos = await extractPhotosFromGoogleDrive(exploration.lien);
-            photos.forEach(photo => {
-              photosWithExploration.push({ ...photo, exploration });
+        // Check if it's an ExplorationMarcheComplete (Supabase format)
+        if (exploration.marche?.photos && exploration.marche.photos.length > 0) {
+          exploration.marche.photos
+            .filter((photo: any) => photo.url_supabase) // Filtrer les photos avec URL
+            .forEach((photo: any) => {
+              enrichedPhotos.push({
+                id: photo.id,
+                url: photo.url_supabase,
+                titre: photo.titre,
+                description: photo.description,
+                ordre: photo.ordre,
+                exploration,
+                latitude: exploration.marche?.latitude,
+                longitude: exploration.marche?.longitude,
+                ville: exploration.marche?.ville || 'Lieu mystérieux',
+                departement: exploration.marche?.departement || '',
+                region: exploration.marche?.region || '',
+                date: exploration.marche?.date,
+                emotionalTags: generateEmotionalTags(photo, exploration.marche),
+                thematicIcons: generateThematicIcons(photo, exploration.marche)
+              });
             });
-          } catch (error) {
-            console.error(`Erreur pour ${exploration.ville}:`, error);
-          }
+        }
+        // Check if it's a MarcheTechnoSensible (legacy format)
+        else if (exploration.photos && Array.isArray(exploration.photos)) {
+          exploration.photos.forEach((photoUrl: string, index: number) => {
+            enrichedPhotos.push({
+              id: `${exploration.id || exploration.ville}-${index}`,
+              url: photoUrl,
+              titre: `Photo ${index + 1}`,
+              description: exploration.descriptif_court,
+              ordre: index,
+              exploration,
+              latitude: exploration.latitude,
+              longitude: exploration.longitude,
+              ville: exploration.ville || 'Lieu mystérieux',
+              departement: exploration.departement || '',
+              region: exploration.region || '',
+              date: exploration.date,
+              emotionalTags: generateEmotionalTags({ titre: `Photo ${index + 1}` }, exploration),
+              thematicIcons: generateThematicIcons({ titre: `Photo ${index + 1}` }, exploration)
+            });
+          });
         }
       }
       
-      setAllPhotos(photosWithExploration);
+      console.log(`${enrichedPhotos.length} photos enrichies chargées depuis Supabase`);
+      setAllPhotos(enrichedPhotos);
       setIsLoading(false);
     };
 
-    loadAllPhotos();
+    loadAndEnrichPhotos();
   }, [explorations]);
 
   // Auto-navigation pour le mode immersion
   useEffect(() => {
-    if (isPlaying && viewMode === 'immersion') {
+    if (isPlaying && viewMode === 'immersion-totale') {
       intervalRef.current = setInterval(() => {
         setCurrentPhoto(prev => (prev + 1) % allPhotos.length);
       }, 4000);
@@ -103,17 +190,17 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = ({ explorations, themes }) =>
   const filterPhotos = (photos: typeof allPhotos) => {
     if (filterMode === 'all') return photos;
     
-    // Ici, on pourrait implémenter des filtres basés sur l'IA
-    // Pour l'instant, on filtre par nom d'exploration
     switch (filterMode) {
+      case 'biodiversite':
+        return photos.filter(p => p.thematicIcons.includes('🦋') || p.emotionalTags.includes('Éclat'));
+      case 'bioacoustique':
+        return photos.filter(p => p.thematicIcons.includes('🎵') || p.emotionalTags.includes('Mélodie'));
+      case 'botanique':
+        return photos.filter(p => p.thematicIcons.includes('🌿') || p.titre?.toLowerCase().includes('plante'));
       case 'couleur':
-        return photos.filter(p => p.name.toLowerCase().includes('couleur') || p.name.toLowerCase().includes('fleur'));
-      case 'emotion':
-        return photos.filter(p => p.name.toLowerCase().includes('emotion') || p.name.toLowerCase().includes('portrait'));
-      case 'element':
-        return photos.filter(p => p.name.toLowerCase().includes('eau') || p.name.toLowerCase().includes('terre'));
+        return photos.filter(p => p.titre?.toLowerCase().includes('couleur') || p.titre?.toLowerCase().includes('fleur'));
       case 'saison':
-        return photos.filter(p => p.name.toLowerCase().includes('printemps') || p.name.toLowerCase().includes('automne'));
+        return photos.filter(p => p.titre?.toLowerCase().includes('printemps') || p.titre?.toLowerCase().includes('automne'));
       default:
         return photos;
     }
@@ -132,10 +219,10 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = ({ explorations, themes }) =>
         {/* Mode selector */}
         <div className="flex gap-1">
           {[
-            { mode: 'fleuve' as ViewMode, icon: Wind, color: 'from-blue-500 to-cyan-500' },
-            { mode: 'temporal' as ViewMode, icon: Clock, color: 'from-purple-500 to-pink-500' },
-            { mode: 'mosaique' as ViewMode, icon: Grid3X3, color: 'from-green-500 to-emerald-500' },
-            { mode: 'immersion' as ViewMode, icon: Eye, color: 'from-orange-500 to-red-500' }
+            { mode: 'constellation' as ViewMode, icon: Star, color: 'from-blue-500 to-cyan-500' },
+            { mode: 'fleuve-temporel' as ViewMode, icon: Waves, color: 'from-purple-500 to-pink-500' },
+            { mode: 'mosaique-vivante' as ViewMode, icon: Grid3X3, color: 'from-green-500 to-emerald-500' },
+            { mode: 'immersion-totale' as ViewMode, icon: Eye, color: 'from-orange-500 to-red-500' }
           ].map(({ mode, icon: Icon, color }) => (
             <Button
               key={mode}
@@ -150,7 +237,7 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = ({ explorations, themes }) =>
         </div>
 
         {/* Playback controls for immersion mode */}
-        {viewMode === 'immersion' && (
+        {viewMode === 'immersion-totale' && (
           <Button
             size={isMobile ? "sm" : "default"}
             variant="ghost"
@@ -166,7 +253,7 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = ({ explorations, themes }) =>
           size={isMobile ? "sm" : "default"}
           variant="ghost"
           onClick={() => {
-            const filters: FilterMode[] = ['all', 'couleur', 'emotion', 'element', 'saison'];
+            const filters: FilterMode[] = ['all', 'biodiversite', 'bioacoustique', 'botanique', 'couleur', 'saison'];
             const currentIndex = filters.indexOf(filterMode);
             setFilterMode(filters[(currentIndex + 1) % filters.length]);
           }}
@@ -178,9 +265,9 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = ({ explorations, themes }) =>
     </motion.div>
   );
 
-  const FleuveView = () => (
+  const ConstellationView = () => (
     <div className="min-h-screen bg-gradient-to-b from-blue-50 via-green-50 to-blue-100">
-      {/* Rivière flow navigation */}
+      {/* Vue constellation interactive */}
       <div className="relative h-screen overflow-hidden">
         <motion.div 
           className="absolute inset-0 flex items-center"
@@ -196,8 +283,8 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = ({ explorations, themes }) =>
               transition={{ type: "spring", stiffness: 300 }}
             >
               <img
-                src={photo.urls[0]}
-                alt={photo.name}
+                src={photo.url}
+                alt={photo.titre || 'Photo exploration'}
                 className="w-full h-full object-cover"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
@@ -210,14 +297,19 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = ({ explorations, themes }) =>
                   transition={{ delay: 0.3 }}
                 >
                   <Badge className="mb-2 bg-white/20 text-white border-white/30">
-                    {photo.exploration.ville}
+                    {photo.ville}
                   </Badge>
                   <h3 className="text-lg font-bold mb-1">
-                    Fragments de {photo.exploration.departement}
+                    Fragments de {photo.departement}
                   </h3>
                   <p className="text-sm opacity-90">
-                    Latitude vivante : {photo.exploration.latitude?.toFixed(4)}°
+                    Latitude vivante : {photo.latitude?.toFixed(4)}°
                   </p>
+                  <div className="flex gap-1 mt-2">
+                    {photo.thematicIcons.slice(0, 3).map((icon, i) => (
+                      <span key={i} className="text-white/80">{icon}</span>
+                    ))}
+                  </div>
                 </motion.div>
               </div>
 
@@ -227,7 +319,7 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = ({ explorations, themes }) =>
                   animate={{ rotate: 360 }}
                   transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
                 >
-                  <Compass className="h-6 w-6 text-white/60" />
+                  <Star className="h-6 w-6 text-white/60" />
                 </motion.div>
               </div>
             </motion.div>
@@ -250,7 +342,7 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = ({ explorations, themes }) =>
     </div>
   );
 
-  const TemporalView = () => (
+  const FleuveTemporelView = () => (
     <div className="min-h-screen bg-gradient-to-b from-purple-50 to-pink-50 p-4">
       <div className="max-w-4xl mx-auto">
         <motion.h2
@@ -278,18 +370,23 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = ({ explorations, themes }) =>
                       onClick={() => setSelectedPhoto(index)}>
                   <div className="flex gap-4">
                     <img
-                      src={photo.urls[0]}
-                      alt={photo.name}
+                      src={photo.url}
+                      alt={photo.titre || 'Photo exploration'}
                       className="w-20 h-20 object-cover rounded-lg"
                     />
                     <div className="flex-1">
-                      <h4 className="font-bold text-sm">{photo.exploration.ville}</h4>
-                      <p className="text-xs text-gray-600">{photo.exploration.departement}</p>
+                      <h4 className="font-bold text-sm">{photo.ville}</h4>
+                      <p className="text-xs text-gray-600">{photo.departement}</p>
                       <div className="flex gap-2 mt-2">
                         <Badge variant="outline" className="text-xs">
                           <Clock className="h-3 w-3 mr-1" />
-                          {photo.exploration.date || 'Intemporel'}
+                          {photo.date || 'Intemporel'}
                         </Badge>
+                        {photo.emotionalTags.slice(0, 1).map(tag => (
+                          <Badge key={tag} variant="outline" className="text-xs">
+                            {tag}
+                          </Badge>
+                        ))}
                       </div>
                     </div>
                   </div>
@@ -305,7 +402,7 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = ({ explorations, themes }) =>
     </div>
   );
 
-  const MosaiqueView = () => (
+  const MosaiqueVivanteView = () => (
     <div className="min-h-screen bg-gradient-to-b from-green-50 to-emerald-50 p-4">
       <motion.div
         className="max-w-6xl mx-auto"
@@ -328,15 +425,20 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = ({ explorations, themes }) =>
               onClick={() => setSelectedPhoto(index)}
             >
               <img
-                src={photo.urls[0]}
-                alt={photo.name}
+                src={photo.url}
+                alt={photo.titre || 'Photo exploration'}
                 className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
               
               <div className="absolute bottom-2 left-2 right-2 text-white opacity-0 group-hover:opacity-100 transition-opacity">
-                <p className="text-xs font-bold truncate">{photo.exploration.ville}</p>
-                <p className="text-xs opacity-75">{photo.exploration.region}</p>
+                <p className="text-xs font-bold truncate">{photo.ville}</p>
+                <p className="text-xs opacity-75">{photo.region}</p>
+                <div className="flex gap-1 mt-1">
+                  {photo.thematicIcons.slice(0, 2).map((icon, i) => (
+                    <span key={i} className="text-xs">{icon}</span>
+                  ))}
+                </div>
               </div>
 
               {/* Indicateur sensoriel */}
@@ -350,7 +452,7 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = ({ explorations, themes }) =>
     </div>
   );
 
-  const ImmersionView = () => {
+  const ImmersionTotaleView = () => {
     if (filteredPhotos.length === 0) return null;
     
     const photo = filteredPhotos[currentPhoto];
@@ -359,8 +461,8 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = ({ explorations, themes }) =>
       <div className="fixed inset-0 bg-black z-40">
         <motion.img
           key={currentPhoto}
-          src={photo.urls[0]}
-          alt={photo.name}
+          src={photo.url}
+          alt={photo.titre || 'Photo exploration'}
           className="w-full h-full object-cover"
           initial={{ scale: 1.1, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
@@ -378,25 +480,25 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = ({ explorations, themes }) =>
         >
           <div className="max-w-4xl mx-auto">
             <h3 className="text-2xl md:text-4xl font-bold mb-4">
-              {photo.exploration.ville}, {photo.exploration.departement}
+              {photo.ville}, {photo.departement}
             </h3>
             <p className="text-lg opacity-90 mb-4">
-              Fragment d'une exploration bioacoustique révélant les secrets du vivant
+              {photo.titre || 'Fragment d\'une exploration bioacoustique révélant les secrets du vivant'}
             </p>
             
             <div className="flex flex-wrap gap-2 mb-6">
-              <Badge className="bg-white/20 text-white border-white/30">
-                <TreePine className="h-3 w-3 mr-1" />
-                Biodiversité
-              </Badge>
-              <Badge className="bg-white/20 text-white border-white/30">
-                <Wind className="h-3 w-3 mr-1" />
-                Paysage sonore
-              </Badge>
-              <Badge className="bg-white/20 text-white border-white/30">
-                <Sparkles className="h-3 w-3 mr-1" />
-                IA Poétique
-              </Badge>
+              {photo.emotionalTags.slice(0, 3).map(tag => (
+                <Badge key={tag} className="bg-white/20 text-white border-white/30">
+                  <Sparkles className="h-3 w-3 mr-1" />
+                  {tag}
+                </Badge>
+              ))}
+              {photo.thematicIcons.slice(0, 2).map((icon, i) => (
+                <Badge key={i} className="bg-white/20 text-white border-white/30">
+                  <span className="mr-1">{icon}</span>
+                  Essence
+                </Badge>
+              ))}
             </div>
 
             {/* Navigation immersive */}
@@ -443,14 +545,22 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = ({ explorations, themes }) =>
           
           <div className="relative">
             <img
-              src={photo.urls[0]}
-              alt={photo.name}
+              src={photo.url}
+              alt={photo.titre || 'Photo exploration'}
               className="w-full h-auto max-h-screen object-contain"
             />
             
             <div className="absolute bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-black/80 to-transparent text-white">
-              <h3 className="text-xl font-bold mb-2">{photo.exploration.ville}</h3>
-              <p className="text-sm opacity-90 mb-4">{photo.exploration.departement} • {photo.exploration.region}</p>
+              <h3 className="text-xl font-bold mb-2">{photo.ville}</h3>
+              <p className="text-sm opacity-90 mb-4">{photo.departement} • {photo.region}</p>
+              
+              <div className="flex gap-2 mb-4">
+                {photo.emotionalTags.slice(0, 2).map(tag => (
+                  <Badge key={tag} className="bg-white/20 text-white border-white/30">
+                    {tag}
+                  </Badge>
+                ))}
+              </div>
               
               <div className="flex gap-2">
                 <Button size="sm" variant="ghost" className="text-white hover:bg-white/20">
@@ -488,10 +598,10 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = ({ explorations, themes }) =>
   return (
     <div className="relative">
       {/* Render current view */}
-      {viewMode === 'fleuve' && <FleuveView />}
-      {viewMode === 'temporal' && <TemporalView />}
-      {viewMode === 'mosaique' && <MosaiqueView />}
-      {viewMode === 'immersion' && <ImmersionView />}
+      {viewMode === 'constellation' && <ConstellationView />}
+      {viewMode === 'fleuve-temporel' && <FleuveTemporelView />}
+      {viewMode === 'mosaique-vivante' && <MosaiqueVivanteView />}
+      {viewMode === 'immersion-totale' && <ImmersionTotaleView />}
 
       {/* Global navigation controls */}
       <NavigationControls />
