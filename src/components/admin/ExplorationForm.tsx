@@ -167,8 +167,17 @@ const ExplorationForm: React.FC<ExplorationFormProps> = ({
         toast.success('Exploration créée avec succès');
       }
 
-      // Invalider le cache des explorations pour forcer le rechargement
+      // Invalider tous les caches liés à cette exploration
       queryClient.invalidateQueries({ queryKey: ['admin-explorations'] });
+      queryClient.invalidateQueries({ queryKey: ['explorations'] });
+      
+      if (explorationId) {
+        queryClient.invalidateQueries({ queryKey: ['exploration-by-id', explorationId] });
+      }
+      
+      if (formData.slug) {
+        queryClient.invalidateQueries({ queryKey: ['exploration', formData.slug] });
+      }
 
       if (onSuccess) {
         onSuccess();
