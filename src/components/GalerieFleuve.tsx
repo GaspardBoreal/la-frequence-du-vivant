@@ -1,8 +1,8 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useCallback, memo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Camera, 
-  Map, 
+  Map as MapIcon, 
   Clock, 
   Palette, 
   Heart, 
@@ -62,62 +62,76 @@ interface EnrichedPhoto {
 type ViewMode = 'constellation' | 'fleuve-temporel' | 'mosaique-vivante' | 'immersion-totale';
 type FilterMode = 'all' | 'biodiversite' | 'bioacoustique' | 'botanique' | 'couleur' | 'saison';
 
-const GalerieFleuve: React.FC<GalerieFluveProps> = ({ explorations, themes }) => {
+const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes }) => {
   const [allPhotos, setAllPhotos] = useState<EnrichedPhoto[]>([]);
+  const [visiblePhotos, setVisiblePhotos] = useState<EnrichedPhoto[]>([]);
   const [currentPhoto, setCurrentPhoto] = useState<number>(0);
   const [viewMode, setViewMode] = useState<ViewMode>('constellation');
   const [filterMode, setFilterMode] = useState<FilterMode>('all');
   const [isLoading, setIsLoading] = useState(true);
+  const [loadingProgress, setLoadingProgress] = useState(0);
   const [selectedPhoto, setSelectedPhoto] = useState<number | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const isMobile = useIsMobile();
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  const metadataCache = useRef<Map<string, { emotionalTags: string[], thematicIcons: string[] }>>(new Map());
 
-  // Fonction pour générer des tags émotionnels basés sur le nom et le contexte
-  const generateEmotionalTags = (photo: any, marche: any): string[] => {
-    const tags: string[] = [];
+  // Cache des métadonnées avec mémoïsation
+  const generateMetadata = useCallback((photo: any, marche: any) => {
+    const cacheKey = `${photo.id || photo.titre}-${marche.ville}`;
+    
+    if (metadataCache.current.has(cacheKey)) {
+      return metadataCache.current.get(cacheKey)!;
+    }
+
     const name = photo.titre?.toLowerCase() || '';
     const desc = photo.description?.toLowerCase() || '';
     const ville = marche.ville?.toLowerCase() || '';
-    
-    if (name.includes('eau') || name.includes('rivière') || desc.includes('eau')) tags.push('Fluidité');
-    if (name.includes('fleur') || name.includes('plante') || desc.includes('botanique')) tags.push('Éclat');
-    if (name.includes('oiseau') || name.includes('chant') || desc.includes('sonore')) tags.push('Mélodie');
-    if (name.includes('matin') || name.includes('aube')) tags.push('Éveil');
-    if (name.includes('soir') || name.includes('crépuscule')) tags.push('Intimité');
-    if (ville.includes('bord') || ville.includes('fleuve')) tags.push('Contemplation');
-    
-    return tags.length > 0 ? tags : ['Mystère'];
-  };
-
-  // Fonction pour générer des icônes thématiques
-  const generateThematicIcons = (photo: any, marche: any): string[] => {
-    const icons: string[] = [];
-    const name = photo.titre?.toLowerCase() || '';
     const themes = marche.sous_themes || [];
     
-    if (themes.includes('biodiversité') || name.includes('espèce')) icons.push('🦋');
-    if (themes.includes('bioacoustique') || name.includes('son')) icons.push('🎵');
-    if (themes.includes('botanique') || name.includes('plante')) icons.push('🌿');
-    if (name.includes('eau') || name.includes('rivière')) icons.push('💧');
-    if (name.includes('ciel') || name.includes('nuage')) icons.push('☁️');
+    // Générer tags émotionnels
+    const emotionalTags: string[] = [];
+    if (name.includes('eau') || name.includes('rivière') || desc.includes('eau')) emotionalTags.push('Fluidité');
+    if (name.includes('fleur') || name.includes('plante') || desc.includes('botanique')) emotionalTags.push('Éclat');
+    if (name.includes('oiseau') || name.includes('chant') || desc.includes('sonore')) emotionalTags.push('Mélodie');
+    if (name.includes('matin') || name.includes('aube')) emotionalTags.push('Éveil');
+    if (name.includes('soir') || name.includes('crépuscule')) emotionalTags.push('Intimité');
+    if (ville.includes('bord') || ville.includes('fleuve')) emotionalTags.push('Contemplation');
     
-    return icons.length > 0 ? icons : ['✨'];
-  };
+    // Générer icônes thématiques
+    const thematicIcons: string[] = [];
+    if (themes.includes('biodiversité') || name.includes('espèce')) thematicIcons.push('🦋');
+    if (themes.includes('bioacoustique') || name.includes('son')) thematicIcons.push('🎵');
+    if (themes.includes('botanique') || name.includes('plante')) thematicIcons.push('🌿');
+    if (name.includes('eau') || name.includes('rivière')) thematicIcons.push('💧');
+    if (name.includes('ciel') || name.includes('nuage')) thematicIcons.push('☁️');
+    
+    const result = {
+      emotionalTags: emotionalTags.length > 0 ? emotionalTags : ['Mystère'],
+      thematicIcons: thematicIcons.length > 0 ? thematicIcons : ['✨']
+    };
 
-  // Chargement et enrichissement des photos depuis Supabase
+    metadataCache.current.set(cacheKey, result);
+    return result;
+  }, []);
+
+  // Chargement asynchrone et progressif des photos
   useEffect(() => {
     const loadAndEnrichPhotos = async () => {
       setIsLoading(true);
-      const enrichedPhotos: EnrichedPhoto[] = [];
+      setLoadingProgress(0);
       
-      for (const exploration of explorations) {
-        // Check if it's an ExplorationMarcheComplete (Supabase format)
+      // Collecter toutes les photos des explorations
+      const photoTasks: Array<() => Promise<EnrichedPhoto[]>> = [];
+      
+      explorations.forEach(exploration => {
         if (exploration.marche?.photos && exploration.marche.photos.length > 0) {
-          exploration.marche.photos
-            .filter((photo: any) => photo.url_supabase) // Filtrer les photos avec URL
-            .forEach((photo: any) => {
-              enrichedPhotos.push({
+          // Photos Supabase
+          const validPhotos = exploration.marche.photos.filter((photo: any) => photo.url_supabase);
+          if (validPhotos.length > 0) {
+            photoTasks.push(async () => {
+              const metadata = generateMetadata(validPhotos[0], exploration.marche);
+              return validPhotos.map((photo: any) => ({
                 id: photo.id,
                 url: photo.url_supabase,
                 titre: photo.titre,
@@ -130,41 +144,72 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = ({ explorations, themes }) =>
                 departement: exploration.marche?.departement || '',
                 region: exploration.marche?.region || '',
                 date: exploration.marche?.date,
-                emotionalTags: generateEmotionalTags(photo, exploration.marche),
-                thematicIcons: generateThematicIcons(photo, exploration.marche)
-              });
+                emotionalTags: metadata.emotionalTags,
+                thematicIcons: metadata.thematicIcons
+              }));
             });
+          }
+        } else if (exploration.photos && Array.isArray(exploration.photos)) {
+          // Photos legacy
+          if (exploration.photos.length > 0) {
+            photoTasks.push(async () => {
+              const metadata = generateMetadata({ titre: 'Photo 1' }, exploration);
+              return exploration.photos.map((photoUrl: string, index: number) => ({
+                id: `${exploration.id || exploration.ville}-${index}`,
+                url: photoUrl,
+                titre: `Photo ${index + 1}`,
+                description: exploration.descriptif_court,
+                ordre: index,
+                exploration,
+                latitude: exploration.latitude,
+                longitude: exploration.longitude,
+                ville: exploration.ville || 'Lieu mystérieux',
+                departement: exploration.departement || '',
+                region: exploration.region || '',
+                date: exploration.date,
+                emotionalTags: metadata.emotionalTags,
+                thematicIcons: metadata.thematicIcons
+              }));
+            });
+          }
         }
-        // Check if it's a MarcheTechnoSensible (legacy format)
-        else if (exploration.photos && Array.isArray(exploration.photos)) {
-          exploration.photos.forEach((photoUrl: string, index: number) => {
-            enrichedPhotos.push({
-              id: `${exploration.id || exploration.ville}-${index}`,
-              url: photoUrl,
-              titre: `Photo ${index + 1}`,
-              description: exploration.descriptif_court,
-              ordre: index,
-              exploration,
-              latitude: exploration.latitude,
-              longitude: exploration.longitude,
-              ville: exploration.ville || 'Lieu mystérieux',
-              departement: exploration.departement || '',
-              region: exploration.region || '',
-              date: exploration.date,
-              emotionalTags: generateEmotionalTags({ titre: `Photo ${index + 1}` }, exploration),
-              thematicIcons: generateThematicIcons({ titre: `Photo ${index + 1}` }, exploration)
-            });
-          });
+      });
+
+      console.log(`Traitement de ${photoTasks.length} groupes de photos...`);
+      
+      // Traitement parallèle par batches
+      const BATCH_SIZE = 5;
+      const enrichedPhotos: EnrichedPhoto[] = [];
+      
+      for (let i = 0; i < photoTasks.length; i += BATCH_SIZE) {
+        const batch = photoTasks.slice(i, i + BATCH_SIZE);
+        const batchResults = await Promise.all(batch.map(task => task()));
+        
+        batchResults.forEach(photos => {
+          enrichedPhotos.push(...photos);
+        });
+        
+        // Mise à jour progressive
+        const progress = Math.min(((i + BATCH_SIZE) / photoTasks.length) * 100, 100);
+        setLoadingProgress(progress);
+        setAllPhotos([...enrichedPhotos]);
+        
+        // Petit délai pour éviter le blocage UI
+        if (i + BATCH_SIZE < photoTasks.length) {
+          await new Promise(resolve => setTimeout(resolve, 10));
         }
       }
       
-      console.log(`${enrichedPhotos.length} photos enrichies chargées depuis Supabase`);
+      console.log(`${enrichedPhotos.length} photos enrichies chargées avec succès`);
       setAllPhotos(enrichedPhotos);
+      setVisiblePhotos(enrichedPhotos.slice(0, 20)); // Lazy loading initial
       setIsLoading(false);
     };
 
-    loadAndEnrichPhotos();
-  }, [explorations]);
+    if (explorations.length > 0) {
+      loadAndEnrichPhotos();
+    }
+  }, [explorations, generateMetadata]);
 
   // Auto-navigation pour le mode immersion
   useEffect(() => {
@@ -186,8 +231,9 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = ({ explorations, themes }) =>
     };
   }, [isPlaying, viewMode, allPhotos.length]);
 
-  // Filtrage intelligent des photos
-  const filterPhotos = (photos: typeof allPhotos) => {
+  // Filtrage intelligent avec mémoïsation
+  const filteredPhotos = useMemo(() => {
+    const photos = allPhotos;
     if (filterMode === 'all') return photos;
     
     switch (filterMode) {
@@ -204,9 +250,7 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = ({ explorations, themes }) =>
       default:
         return photos;
     }
-  };
-
-  const filteredPhotos = filterPhotos(allPhotos);
+  }, [allPhotos, filterMode]);
 
   const NavigationControls = () => (
     <motion.div 
@@ -581,16 +625,44 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = ({ explorations, themes }) =>
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-blue-50 to-green-50">
-        <motion.div
-          className="text-center"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-        >
-          <div className="w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-          <p className="text-lg font-medium text-gray-700">Collecte des fragments du vivant...</p>
-          <p className="text-sm text-gray-500">Initialisation de la Galerie-Fleuve</p>
-        </motion.div>
+      <div className="min-h-screen bg-gradient-to-b from-blue-50 via-purple-50 to-pink-50 flex items-center justify-center">
+        <div className="text-center max-w-md mx-auto px-4">
+          <motion.div
+            className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full mx-auto mb-4"
+            animate={{ rotate: 360 }}
+            transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+          />
+          
+          {/* Barre de progression */}
+          <div className="w-full bg-gray-200 rounded-full h-2 mb-4">
+            <motion.div 
+              className="bg-gradient-to-r from-blue-500 to-purple-500 h-2 rounded-full"
+              initial={{ width: 0 }}
+              animate={{ width: `${loadingProgress}%` }}
+              transition={{ duration: 0.3 }}
+            />
+          </div>
+          
+          <p className="text-lg font-medium text-gray-700">
+            Révélation des fragments visuels...
+          </p>
+          <p className="text-sm text-gray-500 mt-2">
+            {loadingProgress < 100 
+              ? `Chargement ${Math.round(loadingProgress)}% • ${allPhotos.length} photos découvertes` 
+              : "Finalisation de l'expérience visuelle..."
+            }
+          </p>
+          
+          {allPhotos.length > 0 && (
+            <motion.p 
+              className="text-xs text-primary mt-2"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+            >
+              Premières images disponibles ! Finalisation en cours...
+            </motion.p>
+          )}
+        </div>
       </div>
     );
   }
@@ -624,6 +696,6 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = ({ explorations, themes }) =>
       )}
     </div>
   );
-};
+});
 
 export default GalerieFleuve;
