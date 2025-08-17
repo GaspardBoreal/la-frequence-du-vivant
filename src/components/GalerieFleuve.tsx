@@ -382,18 +382,21 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes 
 
   // Contextual Navigation Controls - Adaptive design
   const NavigationControls = () => {
+    // Add debug logging
+    console.log('NavigationControls render:', { isMobile, windowWidth: typeof window !== 'undefined' ? window.innerWidth : 'undefined' })
+    
     // Mobile: Floating right-side navigation (thumb zone)
     if (isMobile) {
       return (
         <motion.div 
-          className="fixed right-4 top-1/2 transform -translate-y-1/2 z-50"
+          className="fixed right-4 top-1/2 transform -translate-y-1/2 z-[60] pointer-events-auto"
           initial={{ x: 100, opacity: 0 }}
           animate={{ x: 0, opacity: 1 }}
           transition={{ delay: 0.5 }}
         >
           <div className="flex flex-col gap-3">
             {/* Mode selector - River pebbles design */}
-            <div className="flex flex-col gap-2 bg-emerald-900/20 backdrop-blur-xl rounded-2xl p-3 border border-emerald-200/20">
+            <div className="flex flex-col gap-2 bg-emerald-900/90 backdrop-blur-xl rounded-2xl p-3 border border-emerald-200/30 shadow-2xl pointer-events-auto">
               {[
                 { mode: 'constellation' as ViewMode, icon: Star, label: 'Constellation', emoji: '✨' },
                 { mode: 'fleuve-temporel' as ViewMode, icon: Waves, label: 'Temporel', emoji: '🌊' },
@@ -403,10 +406,10 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes 
                 <motion.button
                   key={mode}
                   onClick={() => setViewMode(mode)}
-                  className={`relative w-12 h-12 rounded-full transition-all duration-300 ${
+                  className={`relative w-12 h-12 rounded-full transition-all duration-300 touch-manipulation ${
                     viewMode === mode 
-                      ? 'bg-emerald-600/90 shadow-lg shadow-emerald-400/30 scale-110' 
-                      : 'bg-emerald-800/30 hover:bg-emerald-700/50'
+                      ? 'bg-emerald-500 shadow-lg shadow-emerald-400/50 scale-110 text-white' 
+                      : 'bg-emerald-700/80 hover:bg-emerald-600/90 text-emerald-100'
                   }`}
                   whileHover={{ scale: 1.1 }}
                   whileTap={{ scale: 0.95 }}
@@ -426,12 +429,12 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes 
             </div>
 
             {/* Contextual controls */}
-            <div className="flex flex-col gap-2 bg-emerald-900/20 backdrop-blur-xl rounded-2xl p-3 border border-emerald-200/20">
+            <div className="flex flex-col gap-2 bg-emerald-900/90 backdrop-blur-xl rounded-2xl p-3 border border-emerald-200/30 shadow-2xl pointer-events-auto">
               {/* Playback for immersion mode */}
               {viewMode === 'immersion-totale' && (
                 <motion.button
                   onClick={() => setIsPlaying(!isPlaying)}
-                  className="w-12 h-12 rounded-full bg-emerald-700/50 hover:bg-emerald-600/70 transition-all duration-300 flex items-center justify-center"
+                  className="w-12 h-12 rounded-full bg-emerald-700/80 hover:bg-emerald-600/90 transition-all duration-300 flex items-center justify-center touch-manipulation"
                   whileHover={{ scale: 1.1 }}
                   whileTap={{ scale: 0.95 }}
                 >
@@ -446,10 +449,10 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes 
                   const currentIndex = filters.indexOf(filterMode);
                   setFilterMode(filters[(currentIndex + 1) % filters.length]);
                 }}
-                className={`w-12 h-12 rounded-full transition-all duration-300 flex items-center justify-center ${
+                className={`w-12 h-12 rounded-full transition-all duration-300 flex items-center justify-center touch-manipulation ${
                   filterMode !== 'all' 
-                    ? 'bg-amber-600/90 shadow-lg shadow-amber-400/30' 
-                    : 'bg-emerald-700/50 hover:bg-emerald-600/70'
+                    ? 'bg-amber-500 shadow-lg shadow-amber-400/50 text-white' 
+                    : 'bg-emerald-700/80 hover:bg-emerald-600/90 text-emerald-100'
                 }`}
                 whileHover={{ scale: 1.1 }}
                 whileTap={{ scale: 0.95 }}
