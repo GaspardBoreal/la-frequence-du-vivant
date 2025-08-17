@@ -191,9 +191,8 @@ export default function GalerieFluveExploration() {
                 {exploration.name}
               </h1>
               {exploration.description && (
-                <p className="text-lg md:text-xl opacity-90 max-w-3xl mb-6">
-                  {exploration.description}
-                </p>
+                <div className="text-lg md:text-xl opacity-90 max-w-3xl mb-6 prose prose-xl prose-invert max-w-none" dangerouslySetInnerHTML={{ __html: exploration.description }}>
+                </div>
               )}
             </motion.div>
 

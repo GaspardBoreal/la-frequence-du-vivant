@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { RichTextEditor } from '@/components/ui/rich-text-editor';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
@@ -251,14 +252,14 @@ const ExplorationForm: React.FC<ExplorationFormProps> = ({
 
             <div>
               <Label htmlFor="description" className="text-white font-medium">Description</Label>
-              <Textarea
-                id="description"
-                value={formData.description}
-                onChange={(e) => handleInputChange('description', e.target.value)}
-                placeholder="Description de l'exploration..."
-                className="mt-1 bg-white/20 border-white/30 text-white placeholder:text-white/70 focus:bg-white/25 focus:border-white/50"
-                rows={4}
-              />
+              <div className="mt-1">
+                <RichTextEditor
+                  value={formData.description}
+                  onChange={(value) => handleInputChange('description', value)}
+                  placeholder="Description de l'exploration..."
+                  className="bg-white/20 border-white/30 text-white placeholder:text-white/70 focus:bg-white/25 focus:border-white/50"
+                />
+              </div>
             </div>
 
             <div>

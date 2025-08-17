@@ -115,9 +115,8 @@ const PoeticExplorationCard: React.FC<PoeticExplorationCardProps> = ({ explorati
         {/* Description avec contraste amélioré */}
         {exploration.description && (
           <div className="mb-5">
-            <p className="text-foreground/80 leading-relaxed text-sm text-justify hyphens-auto group-hover:text-gaspard-accent group-hover:font-medium transition-all duration-400">
-              {exploration.description}
-            </p>
+            <div className="text-foreground/80 leading-relaxed text-sm text-justify hyphens-auto group-hover:text-gaspard-accent group-hover:font-medium transition-all duration-400 prose prose-sm prose-invert max-w-none" dangerouslySetInnerHTML={{ __html: exploration.description }}>
+            </div>
           </div>
         )}
 

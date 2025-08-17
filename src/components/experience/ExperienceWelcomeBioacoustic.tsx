@@ -37,9 +37,8 @@ const ExperienceWelcomeBioacoustic: React.FC<Props> = ({ exploration, settings, 
           </p>
         )}
         {exploration.description && (
-          <p className="mt-4 max-w-3xl text-foreground/80">
-            {exploration.description}
-          </p>
+          <div className="mt-4 max-w-3xl text-foreground/80 prose prose-lg prose-invert max-w-none" dangerouslySetInnerHTML={{ __html: exploration.description }}>
+          </div>
         )}
         <div className="mt-6">
           <Button onClick={onStart} className="hover-scale">

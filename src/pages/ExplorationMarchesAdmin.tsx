@@ -175,9 +175,8 @@ const ExplorationMarchesAdmin = () => {
               </h2>
               
               {exploration.description && (
-                <p className="gaspard-category text-lg text-gaspard-muted leading-relaxed font-light">
-                  {exploration.description}
-                </p>
+                <div className="gaspard-category text-lg text-gaspard-muted leading-relaxed font-light prose prose-lg max-w-none" dangerouslySetInnerHTML={{ __html: exploration.description }}>
+                </div>
               )}
             </div>
             

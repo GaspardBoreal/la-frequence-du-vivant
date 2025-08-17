@@ -220,9 +220,8 @@ const ExplorationDetail = () => {
           </h1>
           
           {exploration.description && (
-            <p className="text-gaspard-cream/80 text-lg mb-8 leading-relaxed">
-              {exploration.description}
-            </p>
+            <div className="text-gaspard-cream/80 text-lg mb-8 leading-relaxed prose prose-lg prose-invert max-w-none" dangerouslySetInnerHTML={{ __html: exploration.description }}>
+            </div>
           )}
           
           <div className="flex items-center justify-center space-x-3 text-gaspard-cream/70">
