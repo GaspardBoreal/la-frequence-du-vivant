@@ -72,8 +72,10 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes 
   const [loadingProgress, setLoadingProgress] = useState(0);
   const [selectedPhoto, setSelectedPhoto] = useState<number | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
+  const [isMenuVisible, setIsMenuVisible] = useState(true);
   const isMobile = useIsMobile();
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  const hideMenuTimer = useRef<NodeJS.Timeout | null>(null);
   const metadataCache = useRef<Map<string, { emotionalTags: string[], thematicIcons: string[] }>>(new Map());
 
   // Cache des métadonnées avec mémoïsation
@@ -230,6 +232,38 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes 
       }
     };
   }, [isPlaying, viewMode, allPhotos.length]);
+
+  // Auto-hide menu on desktop after inactivity
+  useEffect(() => {
+    if (isMobile) return;
+
+    const resetHideTimer = () => {
+      if (hideMenuTimer.current) {
+        clearTimeout(hideMenuTimer.current);
+      }
+      setIsMenuVisible(true);
+      hideMenuTimer.current = setTimeout(() => {
+        setIsMenuVisible(false);
+      }, 4000); // Hide after 4 seconds of inactivity
+    };
+
+    const handleMouseMove = () => resetHideTimer();
+    const handleKeyPress = () => resetHideTimer();
+
+    // Initial timer
+    resetHideTimer();
+
+    window.addEventListener('mousemove', handleMouseMove);
+    window.addEventListener('keydown', handleKeyPress);
+
+    return () => {
+      if (hideMenuTimer.current) {
+        clearTimeout(hideMenuTimer.current);
+      }
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('keydown', handleKeyPress);
+    };
+  }, [isMobile]);
 
   // Filtrage intelligent avec mémoïsation
   const filteredPhotos = useMemo(() => {
@@ -443,115 +477,149 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes 
       );
     }
 
-    // Desktop: Bottom elegant bar with more space
+    // Desktop: Discreet bottom bar with auto-hide functionality
     return (
-      <motion.div 
-        className="fixed bottom-8 left-1/2 transform -translate-x-1/2 z-50"
-        initial={{ y: 100, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        transition={{ delay: 0.5 }}
-      >
-        <div className="flex items-center gap-4 bg-emerald-900/10 backdrop-blur-xl rounded-3xl px-8 py-4 border border-emerald-200/20 shadow-2xl">
-          {/* Mode selector - River pebbles design */}
-          <div className="flex gap-3">
-            {[
-              { mode: 'constellation' as ViewMode, icon: Star, label: 'Constellation', emoji: '✨', color: 'from-blue-500 to-cyan-500' },
-              { mode: 'fleuve-temporel' as ViewMode, icon: Waves, label: 'Fleuve Temporel', emoji: '🌊', color: 'from-purple-500 to-pink-500' },
-              { mode: 'mosaique-vivante' as ViewMode, icon: Grid3X3, label: 'Mosaïque Vivante', emoji: '🎨', color: 'from-green-500 to-emerald-500' },
-              { mode: 'immersion-totale' as ViewMode, icon: Eye, label: 'Immersion Totale', emoji: '🌿', color: 'from-orange-500 to-red-500' }
-            ].map(({ mode, icon: Icon, label, emoji, color }) => (
+      <>
+        <motion.div 
+          className="fixed bottom-8 left-1/2 transform -translate-x-1/2 z-50"
+          initial={{ y: 100, opacity: 0 }}
+          animate={{ 
+            y: 0, 
+            opacity: isMenuVisible ? 1 : 0.3,
+            scale: isMenuVisible ? 1 : 0.8
+          }}
+          whileHover={{ 
+            opacity: 1, 
+            scale: 1,
+            transition: { duration: 0.2 }
+          }}
+          transition={{ 
+            y: { delay: 0.5 },
+            opacity: { duration: 0.3 },
+            scale: { duration: 0.3 }
+          }}
+        >
+          <div className={`flex items-center gap-3 rounded-3xl px-6 py-3 border shadow-2xl transition-all duration-300 ${
+            isMenuVisible 
+              ? 'bg-emerald-900/15 backdrop-blur-xl border-emerald-200/25' 
+              : 'bg-emerald-900/8 backdrop-blur-lg border-emerald-200/15'
+          }`}>
+            {/* Mode selector - More compact */}
+            <div className="flex gap-2">
+              {[
+                { mode: 'constellation' as ViewMode, emoji: '✨' },
+                { mode: 'fleuve-temporel' as ViewMode, emoji: '🌊' },
+                { mode: 'mosaique-vivante' as ViewMode, emoji: '🎨' },
+                { mode: 'immersion-totale' as ViewMode, emoji: '🌿' }
+              ].map(({ mode, emoji }) => (
+                <motion.button
+                  key={mode}
+                  onClick={() => setViewMode(mode)}
+                  className={`relative flex items-center justify-center w-10 h-10 rounded-xl transition-all duration-300 ${
+                    viewMode === mode 
+                      ? 'bg-emerald-600/90 shadow-lg shadow-emerald-400/30 text-white' 
+                      : 'bg-emerald-800/20 hover:bg-emerald-700/40 text-emerald-300'
+                  }`}
+                  whileHover={{ scale: 1.1, y: -2 }}
+                  whileTap={{ scale: 0.95 }}
+                  style={{ opacity: isMenuVisible ? 1 : 0.7 }}
+                >
+                  <span className="text-lg">{emoji}</span>
+                  
+                  {viewMode === mode && (
+                    <motion.div
+                      className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-amber-400 rounded-full"
+                      initial={{ scale: 0 }}
+                      animate={{ scale: 1 }}
+                      transition={{ type: "spring", stiffness: 500, damping: 30 }}
+                    />
+                  )}
+                </motion.button>
+              ))}
+            </div>
+
+            {/* Separator - thinner */}
+            <div className="w-px h-6 bg-emerald-200/30" />
+
+            {/* Contextual controls - more compact */}
+            <div className="flex items-center gap-2">
+              {/* Playback for immersion mode */}
+              {viewMode === 'immersion-totale' && (
+                <motion.button
+                  onClick={() => setIsPlaying(!isPlaying)}
+                  className="flex items-center gap-1 px-3 py-2 rounded-xl bg-emerald-700/30 hover:bg-emerald-600/50 text-emerald-200 transition-all duration-300"
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  style={{ opacity: isMenuVisible ? 1 : 0.7 }}
+                >
+                  {isPlaying ? <Pause className="h-3 w-3" /> : <Play className="h-3 w-3" />}
+                </motion.button>
+              )}
+
+              {/* Filter button - compact */}
               <motion.button
-                key={mode}
-                onClick={() => setViewMode(mode)}
-                className={`relative flex flex-col items-center gap-1 px-4 py-2 rounded-2xl transition-all duration-300 group ${
-                  viewMode === mode 
-                    ? `bg-gradient-to-r ${color} shadow-lg text-white` 
-                    : 'bg-emerald-800/20 hover:bg-emerald-700/30 text-emerald-200'
+                onClick={() => {
+                  const filters: FilterMode[] = ['all', 'biodiversite', 'bioacoustique', 'botanique', 'couleur', 'saison'];
+                  const currentIndex = filters.indexOf(filterMode);
+                  setFilterMode(filters[(currentIndex + 1) % filters.length]);
+                }}
+                className={`flex items-center justify-center w-8 h-8 rounded-xl transition-all duration-300 ${
+                  filterMode !== 'all' 
+                    ? 'bg-amber-600/90 text-white shadow-lg shadow-amber-400/30' 
+                    : 'bg-emerald-700/30 hover:bg-emerald-600/50 text-emerald-200'
                 }`}
-                whileHover={{ scale: 1.05, y: -2 }}
-                whileTap={{ scale: 0.95 }}
-              >
-                <span className="text-xl">{emoji}</span>
-                <span className="text-xs font-medium">{label}</span>
-                
-                {viewMode === mode && (
-                  <motion.div
-                    className="absolute -top-1 -right-1 w-3 h-3 bg-amber-400 rounded-full"
-                    initial={{ scale: 0 }}
-                    animate={{ scale: 1 }}
-                    transition={{ type: "spring", stiffness: 500, damping: 30 }}
-                  />
-                )}
-              </motion.button>
-            ))}
-          </div>
-
-          {/* Separator */}
-          <div className="w-px h-8 bg-emerald-200/30" />
-
-          {/* Contextual controls */}
-          <div className="flex items-center gap-3">
-            {/* Playback for immersion mode */}
-            {viewMode === 'immersion-totale' && (
-              <motion.button
-                onClick={() => setIsPlaying(!isPlaying)}
-                className="flex items-center gap-2 px-4 py-2 rounded-2xl bg-emerald-700/30 hover:bg-emerald-600/50 text-emerald-200 transition-all duration-300"
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
+                style={{ opacity: isMenuVisible ? 1 : 0.7 }}
               >
-                {isPlaying ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
-                <span className="text-xs">{isPlaying ? 'Pause' : 'Lecture'}</span>
+                <Filter className="h-3 w-3" />
               </motion.button>
-            )}
 
-            {/* Filter button */}
-            <motion.button
-              onClick={() => {
-                const filters: FilterMode[] = ['all', 'biodiversite', 'bioacoustique', 'botanique', 'couleur', 'saison'];
-                const currentIndex = filters.indexOf(filterMode);
-                setFilterMode(filters[(currentIndex + 1) % filters.length]);
-              }}
-              className={`flex items-center gap-2 px-4 py-2 rounded-2xl transition-all duration-300 ${
-                filterMode !== 'all' 
-                  ? 'bg-amber-600/90 text-white shadow-lg shadow-amber-400/30' 
-                  : 'bg-emerald-700/30 hover:bg-emerald-600/50 text-emerald-200'
-              }`}
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-            >
-              <Filter className="h-4 w-4" />
-              <span className="text-xs capitalize">{filterMode === 'all' ? 'Tous' : filterMode}</span>
-            </motion.button>
-
-            {/* Navigation arrows for constellation and immersion modes */}
-            {(viewMode === 'constellation' || viewMode === 'immersion-totale') && (
-              <div className="flex gap-1">
-                <motion.button
-                  onClick={navigatePrevious}
-                  disabled={currentPhoto === 0}
-                  className="p-2 rounded-2xl bg-emerald-700/30 hover:bg-emerald-600/50 text-emerald-200 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300"
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                >
-                  <ArrowUp className="h-4 w-4 rotate-[-90deg]" />
-                </motion.button>
-                <div className="px-2 py-1 text-xs text-emerald-200 flex items-center">
-                  {currentPhoto + 1}/{filteredPhotos.length}
+              {/* Navigation arrows for constellation and immersion modes */}
+              {(viewMode === 'constellation' || viewMode === 'immersion-totale') && (
+                <div className="flex gap-1">
+                  <motion.button
+                    onClick={navigatePrevious}
+                    disabled={currentPhoto === 0}
+                    className="p-1.5 rounded-xl bg-emerald-700/30 hover:bg-emerald-600/50 text-emerald-200 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300"
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    style={{ opacity: isMenuVisible ? 1 : 0.7 }}
+                  >
+                    <ArrowUp className="h-3 w-3 rotate-[-90deg]" />
+                  </motion.button>
+                  <div className="px-2 py-1 text-xs text-emerald-200 flex items-center min-w-[40px] justify-center"
+                       style={{ opacity: isMenuVisible ? 1 : 0.7 }}>
+                    {currentPhoto + 1}/{filteredPhotos.length}
+                  </div>
+                  <motion.button
+                    onClick={navigateNext}
+                    disabled={currentPhoto >= filteredPhotos.length - getNavigationStep()}
+                    className="p-1.5 rounded-xl bg-emerald-700/30 hover:bg-emerald-600/50 text-emerald-200 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300"
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    style={{ opacity: isMenuVisible ? 1 : 0.7 }}
+                  >
+                    <ArrowUp className="h-3 w-3 rotate-90" />
+                  </motion.button>
                 </div>
-                <motion.button
-                  onClick={navigateNext}
-                  disabled={currentPhoto >= filteredPhotos.length - getNavigationStep()}
-                  className="p-2 rounded-2xl bg-emerald-700/30 hover:bg-emerald-600/50 text-emerald-200 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300"
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                >
-                  <ArrowUp className="h-4 w-4 rotate-90" />
-                </motion.button>
-              </div>
-            )}
+              )}
+            </div>
           </div>
-        </div>
-      </motion.div>
+        </motion.div>
+
+        {/* Hidden menu indicator - appears when menu is auto-hidden */}
+        {!isMenuVisible && (
+          <motion.div
+            className="fixed bottom-4 left-1/2 transform -translate-x-1/2 z-40"
+            initial={{ opacity: 0, scale: 0 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ delay: 0.5, type: "spring" }}
+          >
+            <div className="w-12 h-1 bg-emerald-400/60 rounded-full animate-pulse" />
+          </motion.div>
+        )}
+      </>
     );
   };
 
