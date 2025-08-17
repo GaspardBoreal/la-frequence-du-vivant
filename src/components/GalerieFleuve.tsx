@@ -252,65 +252,245 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes 
     }
   }, [allPhotos, filterMode]);
 
-  const NavigationControls = () => (
-    <motion.div 
-      className="fixed bottom-4 left-1/2 transform -translate-x-1/2 z-50"
-      initial={{ y: 100, opacity: 0 }}
-      animate={{ y: 0, opacity: 1 }}
-      transition={{ delay: 0.5 }}
-    >
-      <div className="flex items-center gap-2 bg-black/20 backdrop-blur-lg rounded-full px-4 py-2 border border-white/20">
-        {/* Mode selector */}
-        <div className="flex gap-1">
-          {[
-            { mode: 'constellation' as ViewMode, icon: Star, color: 'from-blue-500 to-cyan-500' },
-            { mode: 'fleuve-temporel' as ViewMode, icon: Waves, color: 'from-purple-500 to-pink-500' },
-            { mode: 'mosaique-vivante' as ViewMode, icon: Grid3X3, color: 'from-green-500 to-emerald-500' },
-            { mode: 'immersion-totale' as ViewMode, icon: Eye, color: 'from-orange-500 to-red-500' }
-          ].map(({ mode, icon: Icon, color }) => (
-            <Button
-              key={mode}
-              size={isMobile ? "sm" : "default"}
-              variant={viewMode === mode ? "default" : "ghost"}
-              onClick={() => setViewMode(mode)}
-              className={`p-2 ${viewMode === mode ? `bg-gradient-to-r ${color}` : 'bg-white/10'} hover:scale-110 transition-all`}
-            >
-              <Icon className="h-4 w-4" />
-            </Button>
-          ))}
-        </div>
+  // Touch gesture detection
+  const [touchStart, setTouchStart] = useState<number | null>(null);
+  const [touchEnd, setTouchEnd] = useState<number | null>(null);
 
-        {/* Playback controls for immersion mode */}
-        {viewMode === 'immersion-totale' && (
-          <Button
-            size={isMobile ? "sm" : "default"}
-            variant="ghost"
-            onClick={() => setIsPlaying(!isPlaying)}
-            className="bg-white/10 hover:bg-white/20"
-          >
-            {isPlaying ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
-          </Button>
-        )}
+  const handleTouchStart = (e: React.TouchEvent) => {
+    setTouchEnd(null);
+    setTouchStart(e.targetTouches[0].clientX);
+  };
 
-        {/* Filter button */}
-        <Button
-          size={isMobile ? "sm" : "default"}
-          variant="ghost"
-          onClick={() => {
-            const filters: FilterMode[] = ['all', 'biodiversite', 'bioacoustique', 'botanique', 'couleur', 'saison'];
-            const currentIndex = filters.indexOf(filterMode);
-            setFilterMode(filters[(currentIndex + 1) % filters.length]);
-          }}
-          className="bg-white/10 hover:bg-white/20"
+  const handleTouchMove = (e: React.TouchEvent) => {
+    setTouchEnd(e.targetTouches[0].clientX);
+  };
+
+  const handleTouchEnd = () => {
+    if (!touchStart || !touchEnd) return;
+    const distance = touchStart - touchEnd;
+    const isLeftSwipe = distance > 50;
+    const isRightSwipe = distance < -50;
+
+    if (isLeftSwipe && currentPhoto < filteredPhotos.length - 1) {
+      setCurrentPhoto(currentPhoto + 1);
+    }
+    if (isRightSwipe && currentPhoto > 0) {
+      setCurrentPhoto(currentPhoto - 1);
+    }
+  };
+
+  // Contextual Navigation Controls - Adaptive design
+  const NavigationControls = () => {
+    // Mobile: Floating right-side navigation (thumb zone)
+    if (isMobile) {
+      return (
+        <motion.div 
+          className="fixed right-4 top-1/2 transform -translate-y-1/2 z-50"
+          initial={{ x: 100, opacity: 0 }}
+          animate={{ x: 0, opacity: 1 }}
+          transition={{ delay: 0.5 }}
         >
-          <Filter className="h-4 w-4" />
-        </Button>
-      </div>
-    </motion.div>
-  );
+          <div className="flex flex-col gap-3">
+            {/* Mode selector - River pebbles design */}
+            <div className="flex flex-col gap-2 bg-emerald-900/20 backdrop-blur-xl rounded-2xl p-3 border border-emerald-200/20">
+              {[
+                { mode: 'constellation' as ViewMode, icon: Star, label: 'Constellation', emoji: '✨' },
+                { mode: 'fleuve-temporel' as ViewMode, icon: Waves, label: 'Temporel', emoji: '🌊' },
+                { mode: 'mosaique-vivante' as ViewMode, icon: Grid3X3, label: 'Mosaïque', emoji: '🎨' },
+                { mode: 'immersion-totale' as ViewMode, icon: Eye, label: 'Immersion', emoji: '🌿' }
+              ].map(({ mode, icon: Icon, label, emoji }) => (
+                <motion.button
+                  key={mode}
+                  onClick={() => setViewMode(mode)}
+                  className={`relative w-12 h-12 rounded-full transition-all duration-300 ${
+                    viewMode === mode 
+                      ? 'bg-emerald-600/90 shadow-lg shadow-emerald-400/30 scale-110' 
+                      : 'bg-emerald-800/30 hover:bg-emerald-700/50'
+                  }`}
+                  whileHover={{ scale: 1.1 }}
+                  whileTap={{ scale: 0.95 }}
+                >
+                  <span className="text-lg">{emoji}</span>
+                  {viewMode === mode && (
+                    <motion.div
+                      className="absolute -right-16 top-1/2 transform -translate-y-1/2 bg-emerald-900/90 text-emerald-100 text-xs px-2 py-1 rounded-lg whitespace-nowrap"
+                      initial={{ opacity: 0, x: -10 }}
+                      animate={{ opacity: 1, x: 0 }}
+                    >
+                      {label}
+                    </motion.div>
+                  )}
+                </motion.button>
+              ))}
+            </div>
+
+            {/* Contextual controls */}
+            <div className="flex flex-col gap-2 bg-emerald-900/20 backdrop-blur-xl rounded-2xl p-3 border border-emerald-200/20">
+              {/* Playback for immersion mode */}
+              {viewMode === 'immersion-totale' && (
+                <motion.button
+                  onClick={() => setIsPlaying(!isPlaying)}
+                  className="w-12 h-12 rounded-full bg-emerald-700/50 hover:bg-emerald-600/70 transition-all duration-300 flex items-center justify-center"
+                  whileHover={{ scale: 1.1 }}
+                  whileTap={{ scale: 0.95 }}
+                >
+                  {isPlaying ? <Pause className="h-5 w-5 text-white" /> : <Play className="h-5 w-5 text-white" />}
+                </motion.button>
+              )}
+
+              {/* Filter button */}
+              <motion.button
+                onClick={() => {
+                  const filters: FilterMode[] = ['all', 'biodiversite', 'bioacoustique', 'botanique', 'couleur', 'saison'];
+                  const currentIndex = filters.indexOf(filterMode);
+                  setFilterMode(filters[(currentIndex + 1) % filters.length]);
+                }}
+                className={`w-12 h-12 rounded-full transition-all duration-300 flex items-center justify-center ${
+                  filterMode !== 'all' 
+                    ? 'bg-amber-600/90 shadow-lg shadow-amber-400/30' 
+                    : 'bg-emerald-700/50 hover:bg-emerald-600/70'
+                }`}
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.95 }}
+              >
+                <Filter className="h-5 w-5 text-white" />
+              </motion.button>
+            </div>
+
+            {/* Swipe indicator */}
+            {(viewMode === 'constellation' || viewMode === 'immersion-totale') && (
+              <motion.div
+                className="bg-emerald-900/20 backdrop-blur-xl rounded-2xl p-2 border border-emerald-200/20 text-center"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 1 }}
+              >
+                <div className="text-emerald-200 text-xs">
+                  👈 👉
+                </div>
+              </motion.div>
+            )}
+          </div>
+        </motion.div>
+      );
+    }
+
+    // Desktop: Bottom elegant bar with more space
+    return (
+      <motion.div 
+        className="fixed bottom-8 left-1/2 transform -translate-x-1/2 z-50"
+        initial={{ y: 100, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        transition={{ delay: 0.5 }}
+      >
+        <div className="flex items-center gap-4 bg-emerald-900/10 backdrop-blur-xl rounded-3xl px-8 py-4 border border-emerald-200/20 shadow-2xl">
+          {/* Mode selector - River pebbles design */}
+          <div className="flex gap-3">
+            {[
+              { mode: 'constellation' as ViewMode, icon: Star, label: 'Constellation', emoji: '✨', color: 'from-blue-500 to-cyan-500' },
+              { mode: 'fleuve-temporel' as ViewMode, icon: Waves, label: 'Fleuve Temporel', emoji: '🌊', color: 'from-purple-500 to-pink-500' },
+              { mode: 'mosaique-vivante' as ViewMode, icon: Grid3X3, label: 'Mosaïque Vivante', emoji: '🎨', color: 'from-green-500 to-emerald-500' },
+              { mode: 'immersion-totale' as ViewMode, icon: Eye, label: 'Immersion Totale', emoji: '🌿', color: 'from-orange-500 to-red-500' }
+            ].map(({ mode, icon: Icon, label, emoji, color }) => (
+              <motion.button
+                key={mode}
+                onClick={() => setViewMode(mode)}
+                className={`relative flex flex-col items-center gap-1 px-4 py-2 rounded-2xl transition-all duration-300 group ${
+                  viewMode === mode 
+                    ? `bg-gradient-to-r ${color} shadow-lg text-white` 
+                    : 'bg-emerald-800/20 hover:bg-emerald-700/30 text-emerald-200'
+                }`}
+                whileHover={{ scale: 1.05, y: -2 }}
+                whileTap={{ scale: 0.95 }}
+              >
+                <span className="text-xl">{emoji}</span>
+                <span className="text-xs font-medium">{label}</span>
+                
+                {viewMode === mode && (
+                  <motion.div
+                    className="absolute -top-1 -right-1 w-3 h-3 bg-amber-400 rounded-full"
+                    initial={{ scale: 0 }}
+                    animate={{ scale: 1 }}
+                    transition={{ type: "spring", stiffness: 500, damping: 30 }}
+                  />
+                )}
+              </motion.button>
+            ))}
+          </div>
+
+          {/* Separator */}
+          <div className="w-px h-8 bg-emerald-200/30" />
+
+          {/* Contextual controls */}
+          <div className="flex items-center gap-3">
+            {/* Playback for immersion mode */}
+            {viewMode === 'immersion-totale' && (
+              <motion.button
+                onClick={() => setIsPlaying(!isPlaying)}
+                className="flex items-center gap-2 px-4 py-2 rounded-2xl bg-emerald-700/30 hover:bg-emerald-600/50 text-emerald-200 transition-all duration-300"
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+              >
+                {isPlaying ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
+                <span className="text-xs">{isPlaying ? 'Pause' : 'Lecture'}</span>
+              </motion.button>
+            )}
+
+            {/* Filter button */}
+            <motion.button
+              onClick={() => {
+                const filters: FilterMode[] = ['all', 'biodiversite', 'bioacoustique', 'botanique', 'couleur', 'saison'];
+                const currentIndex = filters.indexOf(filterMode);
+                setFilterMode(filters[(currentIndex + 1) % filters.length]);
+              }}
+              className={`flex items-center gap-2 px-4 py-2 rounded-2xl transition-all duration-300 ${
+                filterMode !== 'all' 
+                  ? 'bg-amber-600/90 text-white shadow-lg shadow-amber-400/30' 
+                  : 'bg-emerald-700/30 hover:bg-emerald-600/50 text-emerald-200'
+              }`}
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+            >
+              <Filter className="h-4 w-4" />
+              <span className="text-xs capitalize">{filterMode === 'all' ? 'Tous' : filterMode}</span>
+            </motion.button>
+
+            {/* Navigation arrows for constellation mode */}
+            {viewMode === 'constellation' && (
+              <div className="flex gap-1">
+                <motion.button
+                  onClick={() => setCurrentPhoto(Math.max(0, currentPhoto - 1))}
+                  disabled={currentPhoto === 0}
+                  className="p-2 rounded-2xl bg-emerald-700/30 hover:bg-emerald-600/50 text-emerald-200 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300"
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                >
+                  <ArrowUp className="h-4 w-4 rotate-[-90deg]" />
+                </motion.button>
+                <motion.button
+                  onClick={() => setCurrentPhoto(Math.min(filteredPhotos.length - 1, currentPhoto + 1))}
+                  disabled={currentPhoto === filteredPhotos.length - 1}
+                  className="p-2 rounded-2xl bg-emerald-700/30 hover:bg-emerald-600/50 text-emerald-200 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300"
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                >
+                  <ArrowUp className="h-4 w-4 rotate-90" />
+                </motion.button>
+              </div>
+            )}
+          </div>
+        </div>
+      </motion.div>
+    );
+  };
 
   const ConstellationView = () => (
-    <div className="min-h-screen bg-gradient-to-b from-blue-50 via-green-50 to-blue-100">
+    <div 
+      className="min-h-screen bg-gradient-to-b from-blue-50 via-green-50 to-blue-100"
+      onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
+      onTouchEnd={handleTouchEnd}
+    >
       {/* Vue constellation interactive */}
       <div className="relative h-screen overflow-hidden">
         <motion.div 
@@ -323,7 +503,7 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes 
               key={`${photo.id}-${index}`}
               className={`flex-shrink-0 ${isMobile ? 'w-full' : 'w-1/3'} h-full relative cursor-pointer`}
               onClick={() => setSelectedPhoto(index)}
-              whileHover={{ scale: 1.05 }}
+              whileHover={{ scale: isMobile ? 1 : 1.02 }}
               transition={{ type: "spring", stiffness: 300 }}
             >
               <img
@@ -334,13 +514,13 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes 
               <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
               
               {/* Métadonnées géopoétiques */}
-              <div className="absolute bottom-4 left-4 right-4 text-white">
+              <div className={`absolute bottom-4 left-4 text-white ${isMobile ? 'right-20' : 'right-4'}`}>
                 <motion.div
                   initial={{ y: 20, opacity: 0 }}
                   animate={{ y: 0, opacity: 1 }}
                   transition={{ delay: 0.3 }}
                 >
-                  <Badge className="mb-2 bg-white/20 text-white border-white/30">
+                  <Badge className="mb-2 bg-emerald-600/80 text-white border-emerald-400/30 backdrop-blur-sm">
                     {photo.ville}
                   </Badge>
                   <h3 className="text-lg font-bold mb-1">
@@ -370,17 +550,26 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes 
           ))}
         </motion.div>
 
-        {/* Navigation dots */}
-        <div className="absolute bottom-20 left-1/2 transform -translate-x-1/2 flex gap-2">
-          {filteredPhotos.map((_, index) => (
-            <button
+        {/* Navigation dots - repositioned for mobile */}
+        <div className={`absolute ${isMobile ? 'bottom-32' : 'bottom-24'} left-1/2 transform -translate-x-1/2 flex gap-2`}>
+          {filteredPhotos.slice(0, 8).map((_, index) => (
+            <motion.button
               key={index}
               onClick={() => setCurrentPhoto(index)}
-              className={`w-2 h-2 rounded-full transition-all ${
-                index === currentPhoto ? 'bg-white scale-125' : 'bg-white/50'
+              className={`rounded-full transition-all duration-300 ${
+                index === currentPhoto 
+                  ? 'w-8 h-3 bg-emerald-400 shadow-lg shadow-emerald-400/50' 
+                  : 'w-3 h-3 bg-white/50 hover:bg-white/70'
               }`}
+              whileHover={{ scale: 1.2 }}
+              whileTap={{ scale: 0.9 }}
             />
           ))}
+          {filteredPhotos.length > 8 && (
+            <span className="text-white/60 text-sm self-center ml-2">
+              +{filteredPhotos.length - 8}
+            </span>
+          )}
         </div>
       </div>
     </div>
@@ -684,13 +873,13 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes 
       {/* Filter indicator */}
       {filterMode !== 'all' && (
         <motion.div
-          className="fixed top-4 left-4 z-50"
-          initial={{ x: -100, opacity: 0 }}
-          animate={{ x: 0, opacity: 1 }}
+          className={`fixed ${isMobile ? 'top-4 left-4' : 'top-6 right-6'} z-40`}
+          initial={{ scale: 0, rotate: -10 }}
+          animate={{ scale: 1, rotate: 0 }}
+          transition={{ type: "spring", stiffness: 500, damping: 30 }}
         >
-          <Badge className="bg-black/20 backdrop-blur-lg text-white border-white/30">
-            <Filter className="h-3 w-3 mr-1" />
-            {filterMode}
+          <Badge className="bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-lg shadow-amber-400/30 px-3 py-1 rounded-full backdrop-blur-sm border border-amber-300/20">
+            🌿 {filterMode}
           </Badge>
         </motion.div>
       )}
