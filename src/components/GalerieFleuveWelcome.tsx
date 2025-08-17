@@ -96,11 +96,8 @@ const GalerieFleuveWelcome: React.FC<GalerieFleuveWelcomeProps> = ({
           <h1 className="text-4xl md:text-6xl font-bold mb-4 leading-tight">
             Fréquences de la rivière <span className="opacity-90">Dordogne</span>
           </h1>
-          <p className="text-xl md:text-2xl opacity-80 mb-4">
-            Atlas des vivants — Remontée techno-sensible
-          </p>
           <p className="text-lg opacity-70 max-w-2xl">
-            Un périple de 480 kilomètres à travers 6 départements, où la technologie révèle 
+            Une marche poétique de 480 kilomètres à travers 6 départements, où l'écoute révèle 
             les fréquences secrètes du vivant le long des eaux de la Dordogne.
           </p>
           {description && (
