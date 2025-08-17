@@ -95,7 +95,7 @@ const GalerieFleuveWelcome: React.FC<GalerieFleuveWelcomeProps> = ({
         >
           <h1 className="text-4xl md:text-6xl font-bold mb-4 leading-tight">
             <span className="block">Fréquences de la rivière</span>
-            <span className="block text-3xl md:text-5xl opacity-90">Dordogne</span>
+            <span className="block opacity-90">Dordogne</span>
           </h1>
           <p className="text-xl md:text-2xl opacity-80 mb-4">
             Atlas des vivants — Remontée techno-sensible
