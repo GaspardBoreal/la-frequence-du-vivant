@@ -356,14 +356,6 @@ const MediaItem: React.FC<{
                 crossOrigin="anonymous"
               />
             )}
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setSelectedMedia(null)}
-              className="absolute top-4 right-4 bg-white/20 backdrop-blur-sm text-white hover:bg-white/30"
-            >
-              ×
-            </Button>
           </motion.div>
         </motion.div>
       )}
