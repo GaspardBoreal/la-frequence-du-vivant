@@ -398,59 +398,124 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes 
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [navigateNext, navigatePrevious, navigateOne, viewMode, isPlaying, selectedPhoto]);
 
-  // Contextual Navigation Controls - Enhanced Mobile Design
+  // Contextual Navigation Controls - Elegant Mobile Design
   const NavigationControls = () => {
-    // Add debug logging
-    console.log('NavigationControls render:', { isMobile, windowWidth: typeof window !== 'undefined' ? window.innerWidth : 'undefined' })
+    const [showModeDropdown, setShowModeDropdown] = useState(false);
+    const [menuVisible, setMenuVisible] = useState(true);
     
-    // Mobile: Horizontal bottom navigation bar - wider and more accessible
+    // Auto-hide menu after 3 seconds of inactivity
+    useEffect(() => {
+      const timer = setTimeout(() => setMenuVisible(false), 3000);
+      return () => clearTimeout(timer);
+    }, [currentPhoto, viewMode, filterMode]);
+
+    // Close dropdown when clicking outside
+    useEffect(() => {
+      const handleClickOutside = (event: MouseEvent) => {
+        if (showModeDropdown) {
+          setShowModeDropdown(false);
+        }
+      };
+      
+      if (showModeDropdown) {
+        document.addEventListener('click', handleClickOutside);
+        return () => document.removeEventListener('click', handleClickOutside);
+      }
+    }, [showModeDropdown]);
+
+    // Show menu on any interaction
+    const showMenu = () => setMenuVisible(true);
+    
+    // Mobile: Elegant and discreet bottom navigation
     if (isMobile) {
       return (
         <motion.div 
-          className="fixed bottom-12 left-4 right-4 z-[60] pointer-events-auto"
+          className="fixed bottom-16 left-6 right-6 z-[60] pointer-events-auto"
           initial={{ y: 100, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          transition={{ delay: 0.3, type: "spring", stiffness: 300, damping: 30 }}
+          animate={{ 
+            y: 0, 
+            opacity: menuVisible ? 1 : 0.4,
+            scale: menuVisible ? 1 : 0.95
+          }}
+          transition={{ type: "spring", stiffness: 300, damping: 30 }}
+          onTap={showMenu}
         >
-          <div className="bg-emerald-900/95 backdrop-blur-xl rounded-3xl p-4 border border-emerald-200/30 shadow-2xl">
+          <div className="bg-black/40 backdrop-blur-md rounded-2xl p-2 border border-white/10 shadow-xl">
             <div className="flex items-center justify-between">
               
               {/* Previous Button */}
               <motion.button
-                onClick={navigatePrevious}
+                onClick={() => { navigatePrevious(); showMenu(); }}
                 disabled={currentPhoto === 0}
-                className={`w-14 h-14 rounded-2xl flex items-center justify-center transition-all duration-300 touch-manipulation ${
+                className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300 touch-manipulation ${
                   currentPhoto === 0 
-                    ? 'bg-emerald-800/30 text-emerald-400/50' 
-                    : 'bg-emerald-600/90 text-white shadow-lg shadow-emerald-400/30 active:bg-emerald-500'
+                    ? 'bg-white/10 text-white/30' 
+                    : 'bg-white/20 text-white active:bg-white/30'
                 }`}
-                whileHover={currentPhoto > 0 ? { scale: 1.05 } : {}}
-                whileTap={currentPhoto > 0 ? { scale: 0.95 } : {}}
+                whileTap={currentPhoto > 0 ? { scale: 0.9 } : {}}
               >
-                <ArrowUp className="h-6 w-6 rotate-[-90deg]" />
+                <ArrowUp className="h-4 w-4 rotate-[-90deg]" />
               </motion.button>
 
-              {/* Center Controls Group */}
-              <div className="flex items-center space-x-3">
+              {/* Center Controls */}
+              <div className="flex items-center space-x-2 relative">
                 
-                {/* Mode Selector */}
-                <motion.button
-                  onClick={() => {
-                    const modes: ViewMode[] = ['constellation', 'fleuve-temporel', 'mosaique-vivante', 'immersion-totale'];
-                    const currentIndex = modes.indexOf(viewMode);
-                    setViewMode(modes[(currentIndex + 1) % modes.length]);
-                  }}
-                  className="w-12 h-12 rounded-2xl bg-emerald-700/80 flex items-center justify-center transition-all duration-300 touch-manipulation active:bg-emerald-600"
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                >
-                  <span className="text-lg">
-                    {viewMode === 'constellation' && '✨'}
-                    {viewMode === 'fleuve-temporel' && '🌊'}
-                    {viewMode === 'mosaique-vivante' && '🎨'}
-                    {viewMode === 'immersion-totale' && '🌿'}
-                  </span>
-                </motion.button>
+                {/* Mode Selector with Dropdown */}
+                <div className="relative">
+                  <motion.button
+                    onClick={() => { 
+                      setShowModeDropdown(!showModeDropdown); 
+                      showMenu(); 
+                    }}
+                    className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center transition-all duration-300 touch-manipulation active:bg-white/30"
+                    whileTap={{ scale: 0.9 }}
+                  >
+                    <span className="text-base">
+                      {viewMode === 'constellation' && '✨'}
+                      {viewMode === 'fleuve-temporel' && '🌊'}
+                      {viewMode === 'mosaique-vivante' && '🎨'}
+                      {viewMode === 'immersion-totale' && '🌿'}
+                    </span>
+                  </motion.button>
+
+                  {/* Mode Dropdown */}
+                  <AnimatePresence>
+                    {showModeDropdown && (
+                      <motion.div
+                        initial={{ opacity: 0, y: 10, scale: 0.9 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        exit={{ opacity: 0, y: 10, scale: 0.9 }}
+                        className="absolute bottom-full mb-2 left-1/2 transform -translate-x-1/2 bg-black/80 backdrop-blur-md rounded-xl p-2 border border-white/20 shadow-2xl"
+                      >
+                        {[
+                          { mode: 'constellation' as ViewMode, emoji: '✨', name: 'Constellation' },
+                          { mode: 'fleuve-temporel' as ViewMode, emoji: '🌊', name: 'Fleuve' },
+                          { mode: 'mosaique-vivante' as ViewMode, emoji: '🎨', name: 'Mosaïque' },
+                          { mode: 'immersion-totale' as ViewMode, emoji: '🌿', name: 'Immersion' }
+                        ].map(({ mode, emoji, name }) => (
+                          <motion.button
+                            key={mode}
+                            onClick={() => {
+                              setViewMode(mode);
+                              setShowModeDropdown(false);
+                              showMenu();
+                            }}
+                            className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-all duration-200 w-full ${
+                              viewMode === mode 
+                                ? 'bg-white/20 text-white' 
+                                : 'text-white/70 hover:bg-white/10 hover:text-white'
+                            }`}
+                            whileHover={{ x: 2 }}
+                            whileTap={{ scale: 0.95 }}
+                          >
+                            <span className="text-sm">{emoji}</span>
+                            <span className="text-xs font-medium whitespace-nowrap">{name}</span>
+                          </motion.button>
+                        ))}
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
 
                 {/* Filter Button */}
                 <motion.button
@@ -458,21 +523,22 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes 
                     const filters: FilterMode[] = ['all', 'biodiversite', 'bioacoustique', 'botanique', 'couleur', 'saison'];
                     const currentIndex = filters.indexOf(filterMode);
                     setFilterMode(filters[(currentIndex + 1) % filters.length]);
+                    showMenu();
                   }}
-                  className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-all duration-300 touch-manipulation ${
+                  className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300 touch-manipulation ${
                     filterMode !== 'all' 
-                      ? 'bg-amber-600/90 text-white shadow-lg shadow-amber-400/30' 
-                      : 'bg-emerald-700/80 text-emerald-200 active:bg-emerald-600'
+                      ? 'bg-amber-500/60 text-white' 
+                      : 'bg-white/20 text-white/70 active:bg-white/30'
                   }`}
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
+                  whileTap={{ scale: 0.9 }}
                 >
-                  <Filter className="h-5 w-5" />
+                  <Filter className="h-3.5 w-3.5" />
+                  {filterMode !== 'all' && <div className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-amber-400 rounded-full" />}
                 </motion.button>
 
                 {/* Position Indicator */}
-                <div className="bg-emerald-800/60 px-4 py-2 rounded-xl">
-                  <span className="text-emerald-100 text-sm font-medium">
+                <div className="bg-white/15 px-2 py-1 rounded-lg">
+                  <span className="text-white text-xs font-medium">
                     {currentPhoto + 1}/{filteredPhotos.length}
                   </span>
                 </div>
@@ -480,45 +546,29 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes 
                 {/* Play/Pause for Immersion Mode */}
                 {viewMode === 'immersion-totale' && (
                   <motion.button
-                    onClick={() => setIsPlaying(!isPlaying)}
-                    className="w-12 h-12 rounded-2xl bg-emerald-700/80 flex items-center justify-center transition-all duration-300 touch-manipulation active:bg-emerald-600"
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
+                    onClick={() => { setIsPlaying(!isPlaying); showMenu(); }}
+                    className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center transition-all duration-300 touch-manipulation active:bg-white/30"
+                    whileTap={{ scale: 0.9 }}
                   >
-                    {isPlaying ? <Pause className="h-5 w-5 text-white" /> : <Play className="h-5 w-5 text-white" />}
+                    {isPlaying ? <Pause className="h-3.5 w-3.5 text-white" /> : <Play className="h-3.5 w-3.5 text-white" />}
                   </motion.button>
                 )}
               </div>
 
               {/* Next Button */}
               <motion.button
-                onClick={navigateNext}
+                onClick={() => { navigateNext(); showMenu(); }}
                 disabled={currentPhoto >= filteredPhotos.length - 1}
-                className={`w-14 h-14 rounded-2xl flex items-center justify-center transition-all duration-300 touch-manipulation ${
+                className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300 touch-manipulation ${
                   currentPhoto >= filteredPhotos.length - 1
-                    ? 'bg-emerald-800/30 text-emerald-400/50' 
-                    : 'bg-emerald-600/90 text-white shadow-lg shadow-emerald-400/30 active:bg-emerald-500'
+                    ? 'bg-white/10 text-white/30' 
+                    : 'bg-white/20 text-white active:bg-white/30'
                 }`}
-                whileHover={currentPhoto < filteredPhotos.length - 1 ? { scale: 1.05 } : {}}
-                whileTap={currentPhoto < filteredPhotos.length - 1 ? { scale: 0.95 } : {}}
+                whileTap={currentPhoto < filteredPhotos.length - 1 ? { scale: 0.9 } : {}}
               >
-                <ArrowUp className="h-6 w-6 rotate-90" />
+                <ArrowUp className="h-4 w-4 rotate-90" />
               </motion.button>
             </div>
-            
-            {/* Swipe Indicator */}
-            <motion.div 
-              className="mt-3 text-center"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 1 }}
-            >
-              <div className="text-emerald-300/60 text-xs flex items-center justify-center gap-2">
-                <span>👈</span>
-                <span>Glissez pour naviguer</span>
-                <span>👉</span>
-              </div>
-            </motion.div>
           </div>
         </motion.div>
       );
