@@ -1,0 +1,113 @@
+export interface ExplorationTheme {
+  slug: string;
+  title: {
+    main: string;
+    subtitle?: string;
+  };
+  description: string;
+  particles: {
+    type: 'water' | 'leaves' | 'stars';
+    count: number;
+  };
+  colors: {
+    gradient: {
+      from: string;
+      via?: string;
+      to: string;
+    };
+    text: string;
+    badge: string;
+  };
+  immersionModes: Array<{
+    icon: string;
+    label: string;
+    desc: string;
+  }>;
+  signature: {
+    author: string;
+    title: string;
+  };
+  badge: {
+    icon: string;
+    text: string;
+  };
+}
+
+export const EXPLORATION_THEMES: Record<string, ExplorationTheme> = {
+  'frequences-de-la-riviere-dordogne-atlas-des-vivants': {
+    slug: 'frequences-de-la-riviere-dordogne-atlas-des-vivants',
+    title: {
+      main: 'Fréquences de la rivière Dordogne',
+      subtitle: 'Atlas des vivants',
+    },
+    description: 'Une marche poétique de 480 kilomètres à travers 6 départements, où l\'écoute révèle les fréquences secrètes du vivant le long des eaux de la Dordogne.',
+    particles: {
+      type: 'water',
+      count: 25,
+    },
+    colors: {
+      gradient: {
+        from: 'from-primary/90',
+        via: 'via-accent/80',
+        to: 'to-secondary/70',
+      },
+      text: 'text-primary-foreground',
+      badge: 'bg-white/20 text-primary-foreground border-white/30',
+    },
+    immersionModes: [
+      { icon: 'Stars', label: 'Constellation', desc: 'Navigation spatiale des souvenirs' },
+      { icon: 'Waves', label: 'Fleuve temporel', desc: 'Chronologie du périple' },
+      { icon: 'Grid3x3', label: 'Mosaïque vivante', desc: 'Composition visuelle' },
+      { icon: 'Eye', label: 'Immersion totale', desc: 'Plongée photographique' },
+      { icon: 'Heart', label: 'Filtrage émotions', desc: 'Exploration thématique' }
+    ],
+    signature: {
+      author: 'Gaspard Boréal',
+      title: 'Poète des Mondes Hybrides',
+    },
+    badge: {
+      icon: 'Palette',
+      text: 'Galerie Fleuve',
+    },
+  },
+
+  'bonzac-en-intimite-partagee': {
+    slug: 'bonzac-en-intimite-partagee',
+    title: {
+      main: 'Bonzac en intimité partagée',
+    },
+    description: 'Une exploration sensible du territoire de Bonzac, entre vignes ancestrales, orchidées sauvages et méandres de l\'Isle. Un voyage au cœur des liens intimes qui unissent terre et habitants.',
+    particles: {
+      type: 'leaves',
+      count: 30,
+    },
+    colors: {
+      gradient: {
+        from: 'from-emerald-800/90',
+        via: 'via-amber-700/70',
+        to: 'to-green-600/80',
+      },
+      text: 'text-amber-50',
+      badge: 'bg-amber-100/20 text-amber-50 border-amber-200/30',
+    },
+    immersionModes: [
+      { icon: 'Grape', label: 'Vignoble', desc: 'Entre les rangs de vignes' },
+      { icon: 'Flower', label: 'Orchidées', desc: 'Floraisons secrètes' },
+      { icon: 'Waves', label: 'Rivière Isle', desc: 'Méandres aquatiques' },
+      { icon: 'Eye', label: 'Intimité', desc: 'Regards partagés' },
+      { icon: 'Heart', label: 'Territoire', desc: 'Liens du vivant' }
+    ],
+    signature: {
+      author: 'Gaspard Boréal',
+      title: 'Poète des Mondes Hybrides',
+    },
+    badge: {
+      icon: 'Leaf',
+      text: 'Galerie Terroir',
+    },
+  },
+};
+
+export function getExplorationTheme(slug: string): ExplorationTheme | null {
+  return EXPLORATION_THEMES[slug] || null;
+}

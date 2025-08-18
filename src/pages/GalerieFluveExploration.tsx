@@ -10,6 +10,7 @@ import SEOHead from '@/components/SEOHead';
 import { extractPhotosFromGoogleDrive, PhotoData } from '@/utils/googleDriveApi';
 import { MarcheTechnoSensible } from '@/utils/googleSheetsApi';
 import { RegionalTheme } from '@/utils/regionalThemes';
+import { getExplorationTheme } from '@/utils/explorationThemes';
 
 export default function GalerieFluveExploration() {
   const { slug } = useParams<{ slug: string }>();
@@ -138,11 +139,12 @@ export default function GalerieFluveExploration() {
       />
 
       <div className="min-h-screen bg-gradient-to-b from-background via-secondary/20 to-primary/10">
-        {/* Welcome header avec le nouveau composant */}
+        {/* Welcome header avec le thème adapté */}
         <GalerieFleuveWelcome
           title={exploration.name}
           description={exploration.description || undefined}
           stats={stats}
+          theme={getExplorationTheme(exploration.slug) || undefined}
         />
 
         {/* Instructions pour mobile */}
