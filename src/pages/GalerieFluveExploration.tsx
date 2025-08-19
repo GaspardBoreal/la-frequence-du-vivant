@@ -160,7 +160,6 @@ export default function GalerieFluveExploration() {
           <GalerieFleuve 
             explorations={marchesTechnoSensibles} 
             themes={themes}
-            showWelcome={true}
           />
         </motion.div>
       </div>
