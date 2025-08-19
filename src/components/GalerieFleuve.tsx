@@ -72,7 +72,7 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes 
   const [loadingProgress, setLoadingProgress] = useState(0);
   const [selectedPhoto, setSelectedPhoto] = useState<number | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
-  const [isMenuVisible, setIsMenuVisible] = useState(true);
+  const [isMenuVisible, setIsMenuVisible] = useState(false);
   const isMobile = useIsMobile();
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const hideMenuTimer = useRef<NodeJS.Timeout | null>(null);
@@ -233,7 +233,25 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes 
     };
   }, [isPlaying, viewMode, allPhotos.length]);
 
-  // Auto-hide menu on desktop after inactivity
+  // Menu visibility based on scroll position for mobile
+  useEffect(() => {
+    if (!isMobile) return;
+
+    const handleScroll = () => {
+      const galerieElement = document.getElementById('galerie');
+      if (galerieElement) {
+        const rect = galerieElement.getBoundingClientRect();
+        // Show menu when galerie section is visible
+        setIsMenuVisible(rect.top <= window.innerHeight && rect.bottom >= 0);
+      }
+    };
+
+    // Initial check
+    handleScroll();
+    
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, [isMobile]);
   useEffect(() => {
     if (isMobile) return;
 
@@ -434,8 +452,8 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes 
           initial={{ y: 100, opacity: 0 }}
           animate={{ 
             y: 0, 
-            opacity: menuVisible ? 1 : 0.4,
-            scale: menuVisible ? 1 : 0.95
+            opacity: isMenuVisible ? (menuVisible ? 1 : 0.4) : 0,
+            scale: isMenuVisible ? (menuVisible ? 1 : 0.95) : 0.9
           }}
           transition={{ type: "spring", stiffness: 300, damping: 30 }}
           onTap={showMenu}

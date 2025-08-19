@@ -144,7 +144,7 @@ const GalerieFleuveWelcome: React.FC<GalerieFleuveWelcomeProps> = ({
             <h1 className="text-4xl md:text-6xl font-bold mb-4 leading-tight">
               {theme?.title.main || title}
               {theme?.title.subtitle && (
-                <span className="opacity-90"> {theme.title.subtitle}</span>
+                <span className="opacity-90">{window.innerWidth < 768 ? ` ${theme.title.subtitle}` : ` ${theme.title.subtitle}`}</span>
               )}
             </h1>
             <p className="text-lg opacity-70 max-w-2xl">
@@ -168,26 +168,26 @@ const GalerieFleuveWelcome: React.FC<GalerieFleuveWelcomeProps> = ({
             <div className="text-center">
               <div className="flex items-center justify-center mb-2">
                 <MapPin className="h-5 w-5 mr-2" />
-                <span className="text-3xl font-bold">{stats.marches}</span>
+                <span className="text-3xl font-bold">{window.innerWidth < 768 ? 6 : stats.marches}</span>
               </div>
               <p className="text-sm opacity-80">
-                {stats.marches > 1 ? 'Marches' : 'Marche'}
+                {window.innerWidth < 768 ? 'Départements' : (stats.marches > 1 ? 'Marches' : 'Marche')}
               </p>
             </div>
             <div className="text-center">
               <div className="flex items-center justify-center mb-2">
                 <Camera className="h-5 w-5 mr-2" />
-                <span className="text-3xl font-bold">{stats.photos}</span>
+                <span className="text-3xl font-bold">{window.innerWidth < 768 ? 18 : stats.photos}</span>
               </div>
-              <p className="text-sm opacity-80">Visuels</p>
+              <p className="text-sm opacity-80">{window.innerWidth < 768 ? 'Marches' : 'Visuels'}</p>
             </div>
             <div className="text-center">
               <div className="flex items-center justify-center mb-2">
                 <Clock className="h-5 w-5 mr-2" />
-                <span className="text-3xl font-bold">{stats.regions}</span>
+                <span className="text-3xl font-bold">{window.innerWidth < 768 ? 480 : stats.regions}</span>
               </div>
               <p className="text-sm opacity-80">
-                {stats.regions > 1 ? 'Régions' : 'Région'}
+                {window.innerWidth < 768 ? 'km' : (stats.regions > 1 ? 'Régions' : 'Région')}
               </p>
             </div>
           </motion.div>

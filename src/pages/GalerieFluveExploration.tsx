@@ -147,19 +147,6 @@ export default function GalerieFluveExploration() {
           theme={getExplorationTheme(exploration.slug) || undefined}
         />
 
-        {/* Instructions pour mobile */}
-        <motion.section 
-          className="bg-muted/30 px-4 py-6 md:hidden"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.7 }}
-        >
-          <div className="container mx-auto text-center">
-            <p className="text-sm text-muted-foreground">
-              Explorez les modes de vue en bas d'écran • Balayez pour naviguer
-            </p>
-          </div>
-        </motion.section>
 
         {/* Ancre pour le scroll */}
         <div id="galerie" />
