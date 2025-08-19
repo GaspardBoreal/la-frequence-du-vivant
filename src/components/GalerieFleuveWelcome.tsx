@@ -145,6 +145,9 @@ const GalerieFleuveWelcome: React.FC<GalerieFleuveWelcomeProps> = ({
             <h1 className={`${isMobile ? 'text-3xl' : 'text-4xl md:text-6xl'} font-bold ${isMobile ? 'mb-2' : 'mb-4'} leading-tight`}>
               {theme?.title.main || title}
             </h1>
+            {isMobile && (
+              <p className="text-sm italic opacity-70 mt-2">08.2025</p>
+            )}
             {!isMobile && (
               <>
                 {(theme?.description || description) && (
@@ -168,7 +171,7 @@ const GalerieFleuveWelcome: React.FC<GalerieFleuveWelcomeProps> = ({
         <div className="flex-1 flex flex-col justify-center space-y-6">
           {/* Statistiques - position mobile ajustée */}
           <motion.div 
-            className={`grid grid-cols-3 ${isMobile ? 'gap-3 mt-4' : 'gap-6'} max-w-lg mx-auto`}
+            className={`grid grid-cols-3 ${isMobile ? 'gap-3 mt-10' : 'gap-6'} max-w-lg mx-auto`}
             initial={{ y: 30, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             transition={{ delay: 0.4 }}
