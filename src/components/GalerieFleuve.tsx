@@ -102,6 +102,8 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes,
       
       console.log('Device type:', newDeviceType, { width, height });
       setDeviceType(newDeviceType);
+      // Reset currentPage when device type changes to prevent invalid states
+      setCurrentPage(0);
     };
 
     updateDeviceType();
@@ -114,6 +116,20 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes,
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const hideMenuTimer = useRef<NodeJS.Timeout | null>(null);
   const metadataCache = useRef<Map<string, { emotionalTags: string[], thematicIcons: string[] }>>(new Map());
+
+  // Helper function to show menu and reset hide timer
+  const showMenuNow = useCallback(() => {
+    setIsMenuVisible(true);
+    if (hideMenuTimer.current) {
+      clearTimeout(hideMenuTimer.current);
+    }
+    // Only set hide timer for non-desktop devices or when not on welcome screen
+    if (deviceType !== 'desktop' && hasPassedWelcome) {
+      hideMenuTimer.current = setTimeout(() => {
+        setIsMenuVisible(false);
+      }, 4000);
+    }
+  }, [deviceType, hasPassedWelcome]);
 
   // Cache des métadonnées avec mémoïsation
   const generateMetadata = useCallback((photo: any, marche: any) => {
@@ -355,6 +371,12 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes,
     }
   }, [allPhotos, filterMode]);
 
+  // Reset currentPage when filters change to prevent invalid states
+  useEffect(() => {
+    setCurrentPage(0);
+    setCurrentPhoto(0);
+  }, [filteredPhotos.length, filterMode]);
+
   // Navigation lock to prevent rapid duplicate actions
   const navLockRef = useRef(false);
   const didSwipeRef = useRef(false);
@@ -444,9 +466,13 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes,
     const dx = touchStart.x - x;
     const dy = touchStart.y - y;
     
-    // Mark as swipe if significant horizontal movement
-    if (Math.abs(dx) > 30) {
+    // Use 60px threshold for swipe detection as per plan
+    const SWIPE_THRESHOLD = 60;
+    
+    // Mark as swipe if significant horizontal movement beyond threshold
+    if (Math.abs(dx) > SWIPE_THRESHOLD) {
       didSwipeRef.current = true;
+      // Prevent default only for true swipes to allow taps
       if (Math.abs(dx) > Math.abs(dy)) {
         e.preventDefault();
       }
@@ -459,14 +485,22 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes,
     if (!touchStart || !touchEnd) return;
     
     const deltaX = touchStart.x - touchEnd.x;
-    const minSwipeDistance = 60;
+    const SWIPE_THRESHOLD = 60;
     
     // Process swipe for navigation
-    if (didSwipeRef.current && Math.abs(deltaX) > minSwipeDistance) {
+    if (didSwipeRef.current && Math.abs(deltaX) > SWIPE_THRESHOLD) {
       if (deltaX > 0) {
         navigateToNextPage();
+        showMenuNow(); // Show menu after navigation
       } else {
         navigateToPreviousPage();
+        showMenuNow(); // Show menu after navigation
+      }
+    } else if (!didSwipeRef.current) {
+      // Handle tap - advance navigation on mobile devices only
+      if (deviceType !== 'desktop') {
+        navigateToNextPage();
+        showMenuNow(); // Show menu after tap navigation
       }
     }
     
@@ -481,24 +515,29 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes,
         case 'ArrowLeft':
           e.preventDefault();
           navigatePrevious();
+          showMenuNow(); // Show menu after keyboard navigation
           break;
         case 'ArrowRight':
           e.preventDefault();
           navigateNext();
+          showMenuNow(); // Show menu after keyboard navigation
           break;
         case 'ArrowUp':
           e.preventDefault();
           navigateOne('prev');
+          showMenuNow(); // Show menu after keyboard navigation
           break;
         case 'ArrowDown':
           e.preventDefault();
           navigateOne('next');
+          showMenuNow(); // Show menu after keyboard navigation
           break;
         case ' ':
           e.preventDefault();
           if (viewMode === 'ecoute-contemplative') {
             setIsPlaying(!isPlaying);
           }
+          showMenuNow(); // Show menu after space
           break;
         case 'Escape':
           if (selectedPhoto !== null) {
@@ -510,7 +549,7 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes,
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [navigateNext, navigatePrevious, navigateOne, viewMode, isPlaying, selectedPhoto]);
+  }, [navigateNext, navigatePrevious, navigateOne, viewMode, isPlaying, selectedPhoto, showMenuNow]);
 
   // Contextual Navigation Controls - Elegant Mobile Design
   const NavigationControls = () => {
@@ -540,16 +579,18 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes,
     // Show menu on any interaction
     const showMenu = () => setMenuVisible(true);
     
-    // Unified menu design for all platforms - Using the validated mobile design
-    // Show menu when we have photos, passed the welcome section, and menu should be visible
-    if (filteredPhotos.length > 0 && hasPassedWelcome && isMenuVisible) {
+    // Always render menu but control visibility and interactivity
+    if (filteredPhotos.length > 0 && hasPassedWelcome) {
       return (
         <motion.div 
-          className="fixed top-0 left-0 right-0 z-[60] pointer-events-none px-4 pt-[env(safe-area-inset-top)]"
+          className="fixed top-0 left-0 right-0 z-[60] px-4 pt-[env(safe-area-inset-top)]"
           initial={{ y: -100, opacity: 0 }}
           animate={{ 
             y: 0, 
-            opacity: 1
+            opacity: isMenuVisible ? 1 : 0
+          }}
+          style={{
+            pointerEvents: isMenuVisible ? 'auto' : 'none'
           }}
           transition={{ type: "spring", stiffness: 300, damping: 30 }}
         >
@@ -569,7 +610,10 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes,
               <div className="flex items-center gap-1">
                 {/* Previous Button */}
                 <motion.button
-                  onClick={() => navigatePrevious()}
+                  onClick={() => {
+                    navigatePrevious();
+                    showMenuNow();
+                  }}
                   disabled={currentPhoto === 0}
                   className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-300 touch-manipulation ${
                     currentPhoto === 0 
@@ -590,7 +634,10 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes,
 
                 {/* Next Button */}
                 <motion.button
-                  onClick={() => navigateNext()}
+                  onClick={() => {
+                    navigateNext();
+                    showMenuNow();
+                  }}
                   disabled={currentPhoto >= filteredPhotos.length - 1}
                   className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-300 touch-manipulation ${
                     currentPhoto >= filteredPhotos.length - 1
@@ -863,7 +910,10 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes,
             <div className="hidden md:flex justify-between items-center">
                <Button
                 variant="ghost"
-                onClick={navigatePrevious}
+                onClick={() => {
+                  navigatePrevious();
+                  showMenuNow();
+                }}
                 className="text-white hover:bg-white/20"
               >
                 <ArrowUp className="h-5 w-5 mr-2" />
@@ -876,7 +926,10 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes,
               
               <Button
                 variant="ghost"
-                onClick={navigateNext}
+                onClick={() => {
+                  navigateNext();
+                  showMenuNow();
+                }}
                 className="text-white hover:bg-white/20"
               >
                 {imagesPerPage === 1 ? 'Suivant' : `${imagesPerPage} suivantes`}
