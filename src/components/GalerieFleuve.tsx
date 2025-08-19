@@ -528,8 +528,8 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes,
     const showMenu = () => setMenuVisible(true);
     
     // Unified menu design for all platforms - Using the validated mobile design
-    // Afficher le menu sauf sur la page d'accueil (showWelcome = true)
-    if (!showWelcome && filteredPhotos.length > 0 && isMenuVisible) {
+    // Afficher le menu seulement quand on n'est PAS sur la page d'accueil (showWelcome = false)
+    if (showWelcome === false && filteredPhotos.length > 0 && isMenuVisible) {
       return (
         <motion.div 
           className="fixed top-0 left-0 right-0 z-[60] pointer-events-none px-4 pt-[env(safe-area-inset-top)]"
