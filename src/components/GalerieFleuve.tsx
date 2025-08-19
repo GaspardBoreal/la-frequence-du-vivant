@@ -76,6 +76,23 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes 
   const [isPlaying, setIsPlaying] = useState(false);
   const [isMenuVisible, setIsMenuVisible] = useState(false);
   const isMobile = useIsMobile();
+
+  // Detect phone-like devices (including mobile landscape mode)
+  const [isPhoneLike, setIsPhoneLike] = useState(false);
+  
+  useEffect(() => {
+    const checkIsPhoneLike = () => {
+      // Check for touch device AND reasonable mobile screen size (even in landscape)
+      const hasCoarsePointer = window.matchMedia('(pointer: coarse)').matches;
+      const isMobileSize = window.innerWidth < 1024;
+      const phoneLike = hasCoarsePointer && isMobileSize;
+      setIsPhoneLike(phoneLike);
+    };
+
+    checkIsPhoneLike();
+    window.addEventListener('resize', checkIsPhoneLike);
+    return () => window.removeEventListener('resize', checkIsPhoneLike);
+  }, []);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const hideMenuTimer = useRef<NodeJS.Timeout | null>(null);
   const metadataCache = useRef<Map<string, { emotionalTags: string[], thematicIcons: string[] }>>(new Map());
@@ -491,7 +508,7 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes 
     const showMenu = () => setMenuVisible(true);
     
     // Mobile: Clean top navigation bar - Only show when menu should be visible
-    if (isMobile && filteredPhotos.length > 0 && isMenuVisible) {
+    if ((isMobile || isPhoneLike) && filteredPhotos.length > 0 && isMenuVisible) {
       return (
         <motion.div 
           className="fixed top-0 left-0 right-0 z-[60] pointer-events-none px-4 pt-[env(safe-area-inset-top)]"
@@ -561,6 +578,11 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes 
     }
 
     // Desktop: Discreet bottom bar with auto-hide functionality
+    // Only show if NOT phone-like (prevents desktop menu on mobile landscape)
+    if (isPhoneLike) {
+      return null;
+    }
+
     return (
       <>
         <motion.div 
