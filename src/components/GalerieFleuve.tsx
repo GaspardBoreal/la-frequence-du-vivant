@@ -487,57 +487,70 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes 
     // Show menu on any interaction
     const showMenu = () => setMenuVisible(true);
     
-    // Mobile: Simplified navigation - only prev/next and position
+    // Mobile: Clean top navigation bar
     if (isMobile) {
       return (
         <motion.div 
-          className="fixed bottom-16 left-6 right-6 z-[60] pointer-events-auto"
-          initial={{ y: 100, opacity: 0 }}
+          className="fixed top-6 left-4 right-4 z-[60] pointer-events-auto"
+          initial={{ y: -100, opacity: 0 }}
           animate={{ 
             y: 0, 
-            opacity: isMenuVisible ? (menuVisible ? 1 : 0.4) : 0,
-            scale: isMenuVisible ? (menuVisible ? 1 : 0.95) : 0.9
+            opacity: isMenuVisible ? 1 : 0
           }}
           transition={{ type: "spring", stiffness: 300, damping: 30 }}
-          onTap={showMenu}
         >
-          <div className="bg-black/40 backdrop-blur-md rounded-2xl p-2 border border-white/10 shadow-xl">
+          <div className="bg-black/40 backdrop-blur-md rounded-2xl px-4 py-3 border border-white/10 shadow-xl">
             <div className="flex items-center justify-between">
               
-              {/* Previous Button */}
+              {/* Home Button - Left */}
               <motion.button
-                onClick={() => { navigatePrevious(); showMenu(); }}
-                disabled={currentPhoto === 0}
-                className={`w-12 h-12 rounded-xl flex items-center justify-center transition-all duration-300 touch-manipulation ${
-                  currentPhoto === 0 
-                    ? 'bg-white/10 text-white/30' 
-                    : 'bg-white/20 text-white active:bg-white/30'
-                }`}
-                whileTap={currentPhoto > 0 ? { scale: 0.9 } : {}}
+                onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+                className="w-10 h-10 rounded-xl flex items-center justify-center bg-white/20 text-white active:bg-white/30 touch-manipulation"
+                whileTap={{ scale: 0.9 }}
               >
-                <ArrowUp className="h-5 w-5 rotate-[-90deg]" />
+                <Home className="h-5 w-5" />
               </motion.button>
 
-              {/* Position Indicator */}
-              <div className="bg-white/15 px-4 py-2 rounded-xl">
-                <span className="text-white text-sm font-medium">
-                  {currentPhoto + 1}/{filteredPhotos.length}
-                </span>
+              {/* Navigation Controls - Center */}
+              <div className="flex items-center gap-3">
+                {/* Previous Button */}
+                <motion.button
+                  onClick={() => navigatePrevious()}
+                  disabled={currentPhoto === 0}
+                  className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-300 touch-manipulation ${
+                    currentPhoto === 0 
+                      ? 'bg-white/10 text-white/30' 
+                      : 'bg-white/20 text-white active:bg-white/30'
+                  }`}
+                  whileTap={currentPhoto > 0 ? { scale: 0.9 } : {}}
+                >
+                  <ArrowUp className="h-4 w-4 rotate-[-90deg]" />
+                </motion.button>
+
+                {/* Position Counter */}
+                <div className="bg-white/15 px-3 py-1 rounded-lg">
+                  <span className="text-white text-sm font-medium">
+                    {currentPhoto + 1}/{filteredPhotos.length}
+                  </span>
+                </div>
+
+                {/* Next Button */}
+                <motion.button
+                  onClick={() => navigateNext()}
+                  disabled={currentPhoto >= filteredPhotos.length - 1}
+                  className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-300 touch-manipulation ${
+                    currentPhoto >= filteredPhotos.length - 1
+                      ? 'bg-white/10 text-white/30' 
+                      : 'bg-white/20 text-white active:bg-white/30'
+                  }`}
+                  whileTap={currentPhoto < filteredPhotos.length - 1 ? { scale: 0.9 } : {}}
+                >
+                  <ArrowUp className="h-4 w-4 rotate-90" />
+                </motion.button>
               </div>
 
-              {/* Next Button */}
-              <motion.button
-                onClick={() => { navigateNext(); showMenu(); }}
-                disabled={currentPhoto >= filteredPhotos.length - 1}
-                className={`w-12 h-12 rounded-xl flex items-center justify-center transition-all duration-300 touch-manipulation ${
-                  currentPhoto >= filteredPhotos.length - 1
-                    ? 'bg-white/10 text-white/30' 
-                    : 'bg-white/20 text-white active:bg-white/30'
-                }`}
-                whileTap={currentPhoto < filteredPhotos.length - 1 ? { scale: 0.9 } : {}}
-              >
-                <ArrowUp className="h-5 w-5 rotate-90" />
-              </motion.button>
+              {/* Right spacer to balance layout */}
+              <div className="w-10" />
             </div>
           </div>
         </motion.div>
@@ -773,9 +786,6 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes 
                   <h3 className="text-lg font-bold mb-1">
                     Fragments de {photo.departement}
                   </h3>
-                  <p className="text-sm opacity-90">
-                    Latitude vivante : {photo.latitude?.toFixed(4)}°
-                  </p>
                   <div className="flex gap-1 mt-2">
                     {photo.thematicIcons.slice(0, 3).map((icon, i) => (
                       <span key={i} className="text-white/80">{icon}</span>
@@ -787,27 +797,6 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes 
           ))}
         </motion.div>
 
-        {/* Navigation dots - repositioned for mobile */}
-        <div className={`absolute ${isMobile ? 'bottom-32' : 'bottom-24'} left-1/2 transform -translate-x-1/2 flex gap-2`}>
-          {filteredPhotos.slice(0, 8).map((_, index) => (
-            <motion.button
-              key={index}
-              onClick={() => setCurrentPhoto(index)}
-              className={`rounded-full transition-all duration-300 ${
-                index === currentPhoto 
-                  ? 'w-8 h-3 bg-emerald-400 shadow-lg shadow-emerald-400/50' 
-                  : 'w-3 h-3 bg-white/50 hover:bg-white/70'
-              }`}
-              whileHover={{ scale: 1.2 }}
-              whileTap={{ scale: 0.9 }}
-            />
-          ))}
-          {filteredPhotos.length > 8 && (
-            <span className="text-white/60 text-sm self-center ml-2">
-              +{filteredPhotos.length - 8}
-            </span>
-          )}
-        </div>
       </div>
     </div>
   );
