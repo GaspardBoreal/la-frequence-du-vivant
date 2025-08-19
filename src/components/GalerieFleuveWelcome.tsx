@@ -102,8 +102,7 @@ const GalerieFleuveWelcome: React.FC<GalerieFleuveWelcomeProps> = ({
     { icon: 'Stars', label: 'Constellation', desc: 'Navigation spatiale des souvenirs' },
     { icon: 'Waves', label: 'Fleuve temporel', desc: 'Chronologie du périple' },
     { icon: 'Grid3x3', label: 'Mosaïque vivante', desc: 'Composition visuelle' },
-    { icon: 'Eye', label: 'Immersion totale', desc: 'Plongée photographique' },
-    { icon: 'Heart', label: 'Filtrage émotions', desc: 'Exploration thématique' }
+    { icon: 'Eye', label: 'Ecoute attentive', desc: 'Plongée photographique' }
   ];
 
   const gradientClass = theme?.colors.gradient 
@@ -125,13 +124,13 @@ const GalerieFleuveWelcome: React.FC<GalerieFleuveWelcomeProps> = ({
         {renderParticles()}
       </div>
 
-      <div className="relative container mx-auto px-4 py-8 md:py-12 flex-1 flex flex-col justify-between">
-        <div className="space-y-6 md:space-y-8">
+      <div className="relative container mx-auto px-4 py-4 md:py-12 flex-1 flex flex-col justify-between">
+        <div className="space-y-3 md:space-y-8">
           {/* Badge */}
           <div className="flex justify-end items-start">
-            <Badge className={badgeClass}>
-              {React.createElement(iconMap[theme?.badge.icon as keyof typeof iconMap] || Palette, { className: 'h-3 w-3 mr-1' })}
-              {theme?.badge.text || 'Galerie Fleuve'}
+            <Badge className={`${badgeClass} ${window.innerWidth < 768 ? 'px-2 py-1 text-xs' : ''}`}>
+              {React.createElement(iconMap[theme?.badge.icon as keyof typeof iconMap] || Palette, { className: `${window.innerWidth < 768 ? 'h-2 w-2 mr-1' : 'h-3 w-3 mr-1'}` })}
+              <span className={window.innerWidth < 768 ? 'text-xs' : ''}>{theme?.badge.text || 'Galerie Fleuve'}</span>
             </Badge>
           </div>
 
@@ -141,13 +140,10 @@ const GalerieFleuveWelcome: React.FC<GalerieFleuveWelcomeProps> = ({
             animate={{ y: 0, opacity: 1 }}
             transition={{ delay: 0.2 }}
           >
-            <h1 className="text-4xl md:text-6xl font-bold mb-4 leading-tight">
+            <h1 className={`${window.innerWidth < 768 ? 'text-3xl' : 'text-4xl md:text-6xl'} font-bold ${window.innerWidth < 768 ? 'mb-2' : 'mb-4'} leading-tight`}>
               {theme?.title.main || title}
-              {theme?.title.subtitle && (
-                <span className="opacity-90">{window.innerWidth < 768 ? ` ${theme.title.subtitle}` : ` ${theme.title.subtitle}`}</span>
-              )}
             </h1>
-            <p className="text-lg opacity-70 max-w-2xl">
+            <p className={`${window.innerWidth < 768 ? 'text-base' : 'text-lg'} opacity-70 max-w-2xl`}>
               {theme?.description || description || 'Découvrez cette exploration immersive à travers ses visuels et récits.'}
             </p>
             {description && description !== theme?.description && (
@@ -160,33 +156,33 @@ const GalerieFleuveWelcome: React.FC<GalerieFleuveWelcomeProps> = ({
 
           {/* Statistiques */}
           <motion.div 
-            className="grid grid-cols-3 gap-6 max-w-lg"
+            className={`grid grid-cols-3 ${window.innerWidth < 768 ? 'gap-3' : 'gap-6'} max-w-lg`}
             initial={{ y: 30, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             transition={{ delay: 0.4 }}
           >
             <div className="text-center">
-              <div className="flex items-center justify-center mb-2">
-                <MapPin className="h-5 w-5 mr-2" />
-                <span className="text-3xl font-bold">{window.innerWidth < 768 ? 6 : stats.marches}</span>
+              <div className={`flex items-center justify-center ${window.innerWidth < 768 ? 'mb-1' : 'mb-2'}`}>
+                <MapPin className={`${window.innerWidth < 768 ? 'h-4 w-4 mr-1' : 'h-5 w-5 mr-2'}`} />
+                <span className={`${window.innerWidth < 768 ? 'text-2xl' : 'text-3xl'} font-bold`}>{window.innerWidth < 768 ? 6 : stats.marches}</span>
               </div>
-              <p className="text-sm opacity-80">
+              <p className={`${window.innerWidth < 768 ? 'text-xs' : 'text-sm'} opacity-80`}>
                 {window.innerWidth < 768 ? 'Départements' : (stats.marches > 1 ? 'Marches' : 'Marche')}
               </p>
             </div>
             <div className="text-center">
-              <div className="flex items-center justify-center mb-2">
-                <Camera className="h-5 w-5 mr-2" />
-                <span className="text-3xl font-bold">{window.innerWidth < 768 ? 18 : stats.photos}</span>
+              <div className={`flex items-center justify-center ${window.innerWidth < 768 ? 'mb-1' : 'mb-2'}`}>
+                <Camera className={`${window.innerWidth < 768 ? 'h-4 w-4 mr-1' : 'h-5 w-5 mr-2'}`} />
+                <span className={`${window.innerWidth < 768 ? 'text-2xl' : 'text-3xl'} font-bold`}>{window.innerWidth < 768 ? 18 : stats.photos}</span>
               </div>
-              <p className="text-sm opacity-80">{window.innerWidth < 768 ? 'Marches' : 'Visuels'}</p>
+              <p className={`${window.innerWidth < 768 ? 'text-xs' : 'text-sm'} opacity-80`}>{window.innerWidth < 768 ? 'Marches' : 'Visuels'}</p>
             </div>
             <div className="text-center">
-              <div className="flex items-center justify-center mb-2">
-                <Clock className="h-5 w-5 mr-2" />
-                <span className="text-3xl font-bold">{window.innerWidth < 768 ? 480 : stats.regions}</span>
+              <div className={`flex items-center justify-center ${window.innerWidth < 768 ? 'mb-1' : 'mb-2'}`}>
+                <Clock className={`${window.innerWidth < 768 ? 'h-4 w-4 mr-1' : 'h-5 w-5 mr-2'}`} />
+                <span className={`${window.innerWidth < 768 ? 'text-2xl' : 'text-3xl'} font-bold`}>{window.innerWidth < 768 ? 480 : stats.regions}</span>
               </div>
-              <p className="text-sm opacity-80">
+              <p className={`${window.innerWidth < 768 ? 'text-xs' : 'text-sm'} opacity-80`}>
                 {window.innerWidth < 768 ? 'km' : (stats.regions > 1 ? 'Régions' : 'Région')}
               </p>
             </div>
@@ -198,17 +194,17 @@ const GalerieFleuveWelcome: React.FC<GalerieFleuveWelcomeProps> = ({
             animate={{ y: 0, opacity: 1 }}
             transition={{ delay: 0.6 }}
           >
-            <h3 className="text-lg font-semibold mb-4 opacity-90">Modes d'immersion disponibles</h3>
-            <div className="flex flex-wrap gap-4">
+            <h3 className={`${window.innerWidth < 768 ? 'text-base' : 'text-lg'} font-semibold ${window.innerWidth < 768 ? 'mb-2' : 'mb-4'} opacity-90`}>Modes d'immersion disponibles</h3>
+            <div className={`flex flex-wrap ${window.innerWidth < 768 ? 'gap-2' : 'gap-4'}`}>
               {immersionModes.map((mode, index) => {
                 const IconComponent = iconMap[mode.icon as keyof typeof iconMap] || Heart;
                 return (
                   <div 
                     key={index}
-                    className="flex items-center space-x-2 bg-white/10 rounded-lg px-3 py-2 backdrop-blur-sm border border-white/20"
+                    className={`flex items-center ${window.innerWidth < 768 ? 'space-x-1 px-2 py-1' : 'space-x-2 px-3 py-2'} bg-white/10 rounded-lg backdrop-blur-sm border border-white/20`}
                   >
-                    <IconComponent className="h-4 w-4" />
-                    <span className="text-sm font-medium">{mode.label}</span>
+                    <IconComponent className={`${window.innerWidth < 768 ? 'h-3 w-3' : 'h-4 w-4'}`} />
+                    <span className={`${window.innerWidth < 768 ? 'text-xs' : 'text-sm'} font-medium`}>{mode.label}</span>
                   </div>
                 );
               })}
@@ -223,8 +219,8 @@ const GalerieFleuveWelcome: React.FC<GalerieFleuveWelcomeProps> = ({
           >
             <Button 
               onClick={handleStart}
-              size="lg"
-              className="bg-white text-primary hover:bg-white/90 font-semibold px-8 py-3"
+              size={window.innerWidth < 768 ? "default" : "lg"}
+              className={`bg-white text-primary hover:bg-white/90 font-semibold ${window.innerWidth < 768 ? 'px-6 py-2 text-sm' : 'px-8 py-3'}`}
             >
               Commencer l'exploration
             </Button>
@@ -236,11 +232,11 @@ const GalerieFleuveWelcome: React.FC<GalerieFleuveWelcomeProps> = ({
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 1.0 }}
-          className="self-end text-right mt-auto pt-8"
+          className={`self-end text-right mt-auto ${window.innerWidth < 768 ? 'pt-4' : 'pt-8'}`}
         >
           <div className="text-white/80">
-            <div className="font-libre text-lg font-bold">{theme?.signature.author || 'Gaspard Boréal'}</div>
-            <div className="font-mono text-sm opacity-70">{theme?.signature.title || 'Poète des Mondes Hybrides'}</div>
+            <div className={`font-libre ${window.innerWidth < 768 ? 'text-base' : 'text-lg'} font-bold`}>{theme?.signature.author || 'Gaspard Boréal'}</div>
+            <div className={`font-mono ${window.innerWidth < 768 ? 'text-xs' : 'text-sm'} opacity-70`}>{theme?.signature.title || 'Poète des Mondes Hybrides'}</div>
           </div>
         </motion.div>
       </div>

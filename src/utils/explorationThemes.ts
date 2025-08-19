@@ -58,8 +58,7 @@ export const EXPLORATION_THEMES: Record<string, ExplorationTheme> = {
       { icon: 'Stars', label: 'Constellation', desc: 'Navigation spatiale des souvenirs' },
       { icon: 'Waves', label: 'Fleuve temporel', desc: 'Chronologie du périple' },
       { icon: 'Grid3x3', label: 'Mosaïque vivante', desc: 'Composition visuelle' },
-      { icon: 'Eye', label: 'Immersion totale', desc: 'Plongée photographique' },
-      { icon: 'Heart', label: 'Filtrage émotions', desc: 'Exploration thématique' }
+      { icon: 'Eye', label: 'Ecoute attentive', desc: 'Plongée photographique' }
     ],
     signature: {
       author: 'Gaspard Boréal',
@@ -94,8 +93,7 @@ export const EXPLORATION_THEMES: Record<string, ExplorationTheme> = {
       { icon: 'Grape', label: 'Vignoble', desc: 'Entre les rangs de vignes' },
       { icon: 'Flower', label: 'Orchidées', desc: 'Floraisons secrètes' },
       { icon: 'Waves', label: 'Rivière Isle', desc: 'Méandres aquatiques' },
-      { icon: 'Eye', label: 'Intimité', desc: 'Regards partagés' },
-      { icon: 'Heart', label: 'Territoire', desc: 'Liens du vivant' }
+      { icon: 'Eye', label: 'Intimité', desc: 'Regards partagés' }
     ],
     signature: {
       author: 'Gaspard Boréal',
