@@ -12,10 +12,14 @@ import { useSearchParams } from 'react-router-dom';
 const GalerieFleuvePage: React.FC = () => {
   const { data: marches = [], isLoading } = useSupabaseMarches();
   const [searchParams, setSearchParams] = useSearchParams();
-  const initialViewParam = searchParams.get('view') as 'galerie' | 'fleuve-temporel' | 'mosaique-vivante' | 'ecoute-contemplative' | null;
+  type ViewKey = 'galerie' | 'fleuve-temporel' | 'mosaique-vivante' | 'ecoute-contemplative';
+  const initialViewParam = searchParams.get('view') as ViewKey | null;
+  const [selectedView, setSelectedView] = useState<ViewKey | null>(initialViewParam);
   const [showWelcome, setShowWelcome] = useState(!initialViewParam);
 
-  const selectMode = (key: 'galerie' | 'fleuve-temporel' | 'mosaique-vivante' | 'ecoute-contemplative') => {
+  const selectMode = (key: ViewKey) => {
+    console.log('🔧 DEBUG selectMode:', key);
+    setSelectedView(key);
     if (key === 'galerie') {
       setSearchParams({});
     } else {
@@ -252,7 +256,7 @@ const GalerieFleuvePage: React.FC = () => {
         <GalerieFleuve 
           explorations={marches} 
           themes={Object.values(REGIONAL_THEMES)}
-          initialViewMode={initialViewParam || undefined}
+          initialViewMode={(selectedView || initialViewParam) || undefined}
         />
       </motion.div>
     </AnimatePresence>

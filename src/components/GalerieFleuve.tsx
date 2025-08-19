@@ -76,6 +76,14 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes,
   const [viewMode, setViewMode] = useState<ViewMode>(initialViewMode || 'galerie');
   console.log('🔧 DEBUG GalerieFleuve - viewMode initialisé à:', viewMode);
   const [filterMode, setFilterMode] = useState<FilterMode>('all');
+
+  // Sync when initialViewMode prop changes after mount (e.g., URL param set after navigation)
+  useEffect(() => {
+    if (initialViewMode && initialViewMode !== viewMode) {
+      console.log('🔧 DEBUG GalerieFleuve - sync viewMode depuis prop:', initialViewMode);
+      setViewMode(initialViewMode);
+    }
+  }, [initialViewMode]);
   const [isLoading, setIsLoading] = useState(true);
   const [loadingProgress, setLoadingProgress] = useState(0);
   const [selectedPhoto, setSelectedPhoto] = useState<number | null>(null);
