@@ -59,14 +59,14 @@ interface EnrichedPhoto {
   thematicIcons: string[];
 }
 
-type ViewMode = 'constellation' | 'fleuve-temporel' | 'mosaique-vivante' | 'ecoute-attentive';
+type ViewMode = 'galerie' | 'fleuve-temporel' | 'mosaique-vivante' | 'ecoute-contemplative';
 type FilterMode = 'all' | 'biodiversite' | 'bioacoustique' | 'botanique' | 'couleur' | 'saison';
 
 const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes }) => {
   const [allPhotos, setAllPhotos] = useState<EnrichedPhoto[]>([]);
   const [visiblePhotos, setVisiblePhotos] = useState<EnrichedPhoto[]>([]);
   const [currentPhoto, setCurrentPhoto] = useState<number>(0);
-  const [viewMode, setViewMode] = useState<ViewMode>('constellation');
+  const [viewMode, setViewMode] = useState<ViewMode>('galerie');
   const [filterMode, setFilterMode] = useState<FilterMode>('all');
   const [isLoading, setIsLoading] = useState(true);
   const [loadingProgress, setLoadingProgress] = useState(0);
@@ -215,7 +215,7 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes 
 
   // Auto-navigation pour le mode immersion
   useEffect(() => {
-    if (isPlaying && viewMode === 'ecoute-attentive') {
+    if (isPlaying && viewMode === 'ecoute-contemplative') {
       intervalRef.current = setInterval(() => {
         setCurrentPhoto(prev => (prev + 1) % allPhotos.length);
       }, 4000);
@@ -405,7 +405,7 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes 
           break;
         case ' ':
           e.preventDefault();
-          if (viewMode === 'ecoute-attentive') {
+          if (viewMode === 'ecoute-contemplative') {
             setIsPlaying(!isPlaying);
           }
           break;
@@ -494,10 +494,10 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes 
                     whileTap={{ scale: 0.9 }}
                   >
                     <span className="text-base">
-                      {viewMode === 'constellation' && '✨'}
+                      {viewMode === 'galerie' && '✨'}
                       {viewMode === 'fleuve-temporel' && '🌊'}
                       {viewMode === 'mosaique-vivante' && '🎨'}
-                      {viewMode === 'ecoute-attentive' && '🌿'}
+                      {viewMode === 'ecoute-contemplative' && '🌿'}
                     </span>
                   </motion.button>
 
@@ -511,10 +511,10 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes 
                         className="absolute bottom-full mb-2 left-1/2 transform -translate-x-1/2 bg-black/80 backdrop-blur-md rounded-xl p-2 border border-white/20 shadow-2xl"
                       >
                         {[
-                          { mode: 'constellation' as ViewMode, emoji: '✨', name: 'Constellation' },
+                          { mode: 'galerie' as ViewMode, emoji: '✨', name: 'Galerie' },
                           { mode: 'fleuve-temporel' as ViewMode, emoji: '🌊', name: 'Fleuve temporel' },
                           { mode: 'mosaique-vivante' as ViewMode, emoji: '🎨', name: 'Mosaïque vivante' },
-                          { mode: 'ecoute-attentive' as ViewMode, emoji: '🌿', name: 'Écoute attentive' }
+                          { mode: 'ecoute-contemplative' as ViewMode, emoji: '🌿', name: 'Ecoute contemplative' }
                         ].map(({ mode, emoji, name }) => (
                           <motion.button
                             key={mode}
@@ -567,7 +567,7 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes 
                 </div>
 
                 {/* Play/Pause for Immersion Mode */}
-                {viewMode === 'ecoute-attentive' && (
+                {viewMode === 'ecoute-contemplative' && (
                   <motion.button
                     onClick={() => { setIsPlaying(!isPlaying); showMenu(); }}
                     className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center transition-all duration-300 touch-manipulation active:bg-white/30"
@@ -627,10 +627,10 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes 
             {/* Mode selector - More compact */}
             <div className="flex gap-2">
               {[
-                { mode: 'constellation' as ViewMode, emoji: '✨' },
+                { mode: 'galerie' as ViewMode, emoji: '✨' },
                 { mode: 'fleuve-temporel' as ViewMode, emoji: '🌊' },
                 { mode: 'mosaique-vivante' as ViewMode, emoji: '🎨' },
-                { mode: 'ecoute-attentive' as ViewMode, emoji: '🌿' }
+                { mode: 'ecoute-contemplative' as ViewMode, emoji: '🌿' }
               ].map(({ mode, emoji }) => (
                 <motion.button
                   key={mode}
@@ -664,7 +664,7 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes 
             {/* Contextual controls - more compact */}
             <div className="flex items-center gap-2">
               {/* Playback for immersion mode */}
-              {viewMode === 'ecoute-attentive' && (
+              {viewMode === 'ecoute-contemplative' && (
                 <motion.button
                   onClick={() => setIsPlaying(!isPlaying)}
                   className="flex items-center gap-1 px-3 py-2 rounded-xl bg-emerald-700/30 hover:bg-emerald-600/50 text-emerald-200 transition-all duration-300"
@@ -695,8 +695,8 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes 
                 <Filter className="h-3 w-3" />
               </motion.button>
 
-              {/* Navigation arrows for constellation and immersion modes */}
-              {(viewMode === 'constellation' || viewMode === 'ecoute-attentive') && (
+              {/* Navigation arrows for galerie and immersion modes */}
+              {(viewMode === 'galerie' || viewMode === 'ecoute-contemplative') && (
                 <div className="flex gap-1">
                   <motion.button
                     onClick={navigatePrevious}
@@ -743,14 +743,14 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes 
     );
   };
 
-  const ConstellationView = () => (
+  const GalerieView = () => (
   <div 
       className="min-h-screen bg-gradient-to-b from-blue-50 via-green-50 to-blue-100 touch-pan-y overscroll-none select-none"
       onTouchStart={handleTouchStart}
       onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}
     >
-      {/* Vue constellation interactive */}
+      {/* Vue galerie interactive */}
       <div className="relative h-screen overflow-hidden">
         <motion.div 
           className="absolute inset-0 flex items-center"
@@ -954,7 +954,7 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes 
     </div>
   );
 
-  const ImmersionTotaleView = () => {
+  const EcouteContemplativeView = () => {
     if (filteredPhotos.length === 0) return null;
     
     const photo = filteredPhotos[currentPhoto];
@@ -1139,10 +1139,10 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes 
   return (
     <div className="relative">
       {/* Render current view */}
-      {viewMode === 'constellation' && <ConstellationView />}
+      {viewMode === 'galerie' && <GalerieView />}
       {viewMode === 'fleuve-temporel' && <FleuveTemporelView />}
       {viewMode === 'mosaique-vivante' && <MosaiqueVivanteView />}
-      {viewMode === 'ecoute-attentive' && <ImmersionTotaleView />}
+      {viewMode === 'ecoute-contemplative' && <EcouteContemplativeView />}
 
       {/* Global navigation controls */}
       <NavigationControls />

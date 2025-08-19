@@ -55,10 +55,10 @@ export const EXPLORATION_THEMES: Record<string, ExplorationTheme> = {
       badge: 'bg-white/20 text-primary-foreground border-white/30',
     },
     immersionModes: [
-      { icon: 'Stars', label: 'Constellation', desc: 'Navigation spatiale des souvenirs' },
+      { icon: 'Stars', label: 'Galerie', desc: 'Navigation spatiale des souvenirs' },
       { icon: 'Waves', label: 'Fleuve temporel', desc: 'Chronologie du périple' },
       { icon: 'Grid3x3', label: 'Mosaïque vivante', desc: 'Composition visuelle' },
-      { icon: 'Eye', label: 'Ecoute attentive', desc: 'Plongée photographique' }
+      { icon: 'Eye', label: 'Ecoute contemplative', desc: 'Plongée photographique' }
     ],
     signature: {
       author: 'Gaspard Boréal',
@@ -90,10 +90,10 @@ export const EXPLORATION_THEMES: Record<string, ExplorationTheme> = {
       badge: 'bg-amber-100/20 text-amber-50 border-amber-200/30',
     },
     immersionModes: [
-      { icon: 'Grape', label: 'Vignoble', desc: 'Entre les rangs de vignes' },
+      { icon: 'Grape', label: 'Galerie', desc: 'Entre les rangs de vignes' },
       { icon: 'Flower', label: 'Orchidées', desc: 'Floraisons secrètes' },
       { icon: 'Waves', label: 'Rivière Isle', desc: 'Méandres aquatiques' },
-      { icon: 'Eye', label: 'Intimité', desc: 'Regards partagés' }
+      { icon: 'Eye', label: 'Ecoute contemplative', desc: 'Regards partagés' }
     ],
     signature: {
       author: 'Gaspard Boréal',

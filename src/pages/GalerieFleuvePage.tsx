@@ -145,7 +145,7 @@ const GalerieFleuvePage: React.FC = () => {
               {[
                 {
                   icon: Sparkles,
-                  mode: 'Constellation',
+                  mode: 'Galerie',
                   description: 'Navigation spatiale des souvenirs photographiques',
                   color: 'from-purple-500 to-pink-500'
                 },
