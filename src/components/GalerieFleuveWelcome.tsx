@@ -32,7 +32,7 @@ const iconMap = {
   Grape,
 };
 
-interface GalerieFleuveWelcomeProps {
+interface GalerieFluveWelcomeProps {
   title: string;
   description?: string;
   stats: {
@@ -42,14 +42,16 @@ interface GalerieFleuveWelcomeProps {
   };
   theme?: ExplorationTheme;
   onStart?: () => void;
+  explorationSlug?: string;
 }
 
-const GalerieFleuveWelcome: React.FC<GalerieFleuveWelcomeProps> = ({
+const GalerieFleuveWelcome: React.FC<GalerieFluveWelcomeProps> = ({
   title,
   description,
   stats,
   theme,
-  onStart
+  onStart,
+  explorationSlug
 }) => {
   const isMobile = useIsMobile();
   const handleStart = () => {
@@ -64,8 +66,13 @@ const GalerieFleuveWelcome: React.FC<GalerieFleuveWelcomeProps> = ({
     if (modeLabel === 'Galerie') {
       handleStart(); // Same action as "Commencer l'exploration"
     } else if (modeLabel === 'Fleuve temporel') {
-      // Navigate to fleuve temporel view
-      window.location.href = '/galerie-fleuve?view=fleuve-temporel';
+      // Navigate to fleuve temporel view for this specific exploration
+      if (explorationSlug) {
+        window.location.href = `/galerie-fleuve/exploration/${explorationSlug}?view=fleuve-temporel`;
+      } else {
+        // Fallback to default exploration if no slug provided
+        window.location.href = '/galerie-fleuve/exploration/remontee-dordogne-atlas-eaux-vivantes-2025-2045?view=fleuve-temporel';
+      }
     }
     // TODO: Add other mode handlers later
   };

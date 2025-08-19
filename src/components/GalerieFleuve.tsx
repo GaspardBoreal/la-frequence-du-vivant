@@ -40,6 +40,7 @@ interface GalerieFluveProps {
   themes: RegionalTheme[];
   showWelcome?: boolean;
   viewMode?: ViewMode;
+  explorationName?: string;
 }
 
 interface EnrichedPhoto {
@@ -63,7 +64,7 @@ interface EnrichedPhoto {
 type ViewMode = 'galerie' | 'fleuve-temporel';
 type FilterMode = 'all' | 'biodiversite' | 'bioacoustique' | 'botanique' | 'couleur' | 'saison';
 
-const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes, showWelcome = false, viewMode: initialViewMode = 'galerie' }) => {
+const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes, showWelcome = false, viewMode: initialViewMode = 'galerie', explorationName }) => {
   const [allPhotos, setAllPhotos] = useState<EnrichedPhoto[]>([]);
   const [visiblePhotos, setVisiblePhotos] = useState<EnrichedPhoto[]>([]);
   const [currentPhoto, setCurrentPhoto] = useState<number>(0);
@@ -488,7 +489,7 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes,
     <div className="relative">
       {/* Render based on view mode */}
       {viewMode === 'fleuve-temporel' ? (
-        <FleuveTemporel explorations={explorations} />
+        <FleuveTemporel explorations={explorations} explorationName={explorationName} />
       ) : (
         <>
           {/* Render current view - only galerie mode supported */}

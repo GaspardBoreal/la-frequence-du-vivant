@@ -23,7 +23,8 @@ const Index = () => {
   };
 
   const handleFleuveTemporelClick = () => {
-    navigate('/galerie-fleuve?view=fleuve-temporel');
+    // Navigate to the default exploration's fleuve temporel view
+    navigate('/galerie-fleuve/exploration/remontee-dordogne-atlas-eaux-vivantes-2025-2045?view=fleuve-temporel');
   };
 
 

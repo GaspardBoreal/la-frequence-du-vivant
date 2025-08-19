@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { ArrowLeft } from 'lucide-react';
 import { useExploration, useExplorationMarches } from '@/hooks/useExplorations';
@@ -14,8 +14,12 @@ import { getExplorationTheme } from '@/utils/explorationThemes';
 
 export default function GalerieFluveExploration() {
   const { slug } = useParams<{ slug: string }>();
+  const [searchParams] = useSearchParams();
   const { data: exploration, isLoading: explorationLoading } = useExploration(slug || '');
   const { data: explorationMarches, isLoading: marchesLoading } = useExplorationMarches(exploration?.id || '');
+  
+  // Get view mode from URL parameters
+  const viewMode = searchParams.get('view') as 'galerie' | 'fleuve-temporel' | null;
   
   const [marchesTechnoSensibles, setMarchesTechnoSensibles] = useState<MarcheTechnoSensible[]>([]);
   const [themes, setThemes] = useState<RegionalTheme[]>([]);
@@ -139,28 +143,33 @@ export default function GalerieFluveExploration() {
       />
 
       <div className="min-h-screen bg-gradient-to-b from-background via-secondary/20 to-primary/10">
-        {/* Welcome header avec le thème adapté */}
-        <GalerieFleuveWelcome
-          title={exploration.name}
-          description={exploration.description || undefined}
-          stats={stats}
-          theme={getExplorationTheme(exploration.slug) || undefined}
-        />
+        {/* Welcome header avec le thème adapté - seulement si pas en mode fleuve temporel */}
+        {viewMode !== 'fleuve-temporel' && (
+          <GalerieFleuveWelcome
+            title={exploration.name}
+            description={exploration.description || undefined}
+            stats={stats}
+            theme={getExplorationTheme(exploration.slug) || undefined}
+            explorationSlug={exploration.slug}
+          />
+        )}
 
 
-        {/* Ancre pour le scroll */}
-        <div id="galerie" />
+        {/* Ancre pour le scroll - seulement si pas en mode fleuve temporel */}
+        {viewMode !== 'fleuve-temporel' && <div id="galerie" />}
 
         {/* Galerie principale adaptée à l'exploration */}
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          transition={{ delay: 0.9 }}
+          transition={{ delay: viewMode === 'fleuve-temporel' ? 0 : 0.9 }}
         >
           <GalerieFleuve 
             explorations={marchesTechnoSensibles} 
             themes={themes}
             showWelcome={false}
+            viewMode={viewMode || 'galerie'}
+            explorationName={exploration.name}
           />
         </motion.div>
       </div>
