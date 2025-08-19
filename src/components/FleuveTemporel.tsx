@@ -1,10 +1,10 @@
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { MapPin, Calendar, Camera, Volume2, ChevronLeft, ChevronRight, Home } from 'lucide-react';
 import { Button } from './ui/button';
 import { Card } from './ui/card';
 import { Badge } from './ui/badge';
-import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import { MarcheTechnoSensible } from '../utils/googleSheetsApi';
 import { useNavigate } from 'react-router-dom';
@@ -26,6 +26,32 @@ const customIcon = new L.Icon({
   shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
   shadowSize: [41, 41]
 });
+
+// Map controller component to handle automatic bounds adjustment
+const MapController: React.FC<{ markers: MarcheTechnoSensible[] }> = ({ markers }) => {
+  const map = useMap();
+
+  useEffect(() => {
+    if (markers.length === 0) return;
+
+    const validMarkers = markers.filter(m => m.latitude && m.longitude);
+    if (validMarkers.length === 0) return;
+
+    if (validMarkers.length === 1) {
+      // Single marker: center and zoom to reasonable level
+      const marker = validMarkers[0];
+      map.setView([Number(marker.latitude), Number(marker.longitude)], 12);
+    } else {
+      // Multiple markers: fit bounds with padding
+      const bounds = L.latLngBounds(
+        validMarkers.map(m => [Number(m.latitude), Number(m.longitude)])
+      );
+      map.fitBounds(bounds, { padding: [20, 20] });
+    }
+  }, [markers, map]);
+
+  return null;
+};
 
 interface FleuveTemporelProps {
   explorations: MarcheTechnoSensible[];
@@ -279,6 +305,7 @@ const FleuveTemporel: React.FC<FleuveTemporelProps> = ({ explorations, explorati
               style={{ height: '100%', width: '100%' }}
             >
               <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+              <MapController markers={mapMarkers} />
               {mapMarkers.map((marche, index) => (
                 <Marker 
                   key={`${marche.id}-${index}`}
