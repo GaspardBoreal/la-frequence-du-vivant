@@ -487,8 +487,8 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes 
     // Show menu on any interaction
     const showMenu = () => setMenuVisible(true);
     
-    // Mobile: Clean top navigation bar
-    if (isMobile) {
+    // Mobile: Clean top navigation bar - Only show when menu should be visible
+    if (isMobile && filteredPhotos.length > 0 && isMenuVisible) {
       return (
         <motion.div 
           className="fixed top-0 left-0 right-0 z-[60] pointer-events-auto px-4 pt-[env(safe-area-inset-top)]"
@@ -757,7 +757,7 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes 
               <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
               
               {/* Métadonnées géopoétiques */}
-              <div className={`absolute bottom-4 left-4 text-white ${isMobile ? 'right-20' : 'right-4'}`}>
+              <div className={`absolute bottom-6 left-4 text-white ${isMobile ? 'right-20' : 'right-4'}`}>
                 <motion.div
                   initial={{ y: 20, opacity: 0 }}
                   animate={{ y: 0, opacity: 1 }}
@@ -769,11 +769,6 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes 
                   <h3 className="text-lg font-bold mb-1">
                     Fragments de {photo.departement}
                   </h3>
-                  <div className="flex gap-1 mt-2">
-                    {photo.thematicIcons.slice(0, 3).map((icon, i) => (
-                      <span key={i} className="text-white/80">{icon}</span>
-                    ))}
-                  </div>
                 </motion.div>
               </div>
             </motion.div>
