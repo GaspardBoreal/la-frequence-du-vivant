@@ -304,25 +304,55 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes 
     }
   }, [allPhotos, filterMode]);
 
+  // Navigation lock to prevent rapid duplicate actions
+  const navLockRef = useRef(false);
+  const didSwipeRef = useRef(false);
+
   // Navigation adaptative par groupes selon l'appareil
   const getNavigationStep = useCallback(() => {
     if (typeof window === 'undefined') return 1;
     const width = window.innerWidth;
-    if (width < 768) return 1; // Mobile: 1 photo
-    if (width < 1024) return 2; // Tablette: 2 photos
+    // Force single step for all mobile/tablet to fix jumping issue
+    if (width < 1024) return 1; // Mobile & Tablet: always 1 photo
     return 3; // Desktop: 3 photos
   }, []);
 
-  // Fonctions de navigation avec steps adaptatifs
+  // Fonctions de navigation avec steps adaptatifs et protection contre les appels multiples
   const navigateNext = useCallback(() => {
+    if (navLockRef.current) {
+      console.log('Navigation locked, ignoring next');
+      return;
+    }
+    
+    navLockRef.current = true;
     const step = getNavigationStep();
+    console.log('Navigate next:', { currentPhoto, step, total: filteredPhotos.length });
+    
     setCurrentPhoto(prev => Math.min(prev + step, filteredPhotos.length - 1));
-  }, [getNavigationStep, filteredPhotos.length]);
+    
+    // Unlock after animation completes
+    setTimeout(() => {
+      navLockRef.current = false;
+    }, isMobile ? 300 : 600);
+  }, [getNavigationStep, filteredPhotos.length, isMobile]);
 
   const navigatePrevious = useCallback(() => {
+    if (navLockRef.current) {
+      console.log('Navigation locked, ignoring previous');
+      return;
+    }
+    
+    navLockRef.current = true;
     const step = getNavigationStep();
+    console.log('Navigate previous:', { currentPhoto, step });
+    
     setCurrentPhoto(prev => Math.max(prev - step, 0));
-  }, [getNavigationStep]);
+    
+    // Unlock after animation completes
+    setTimeout(() => {
+      navLockRef.current = false;
+    }, isMobile ? 300 : 600);
+  }, [getNavigationStep, isMobile]);
 
   // Navigation unitaire pour les touches haut/bas
   const navigateOne = useCallback((direction: 'next' | 'prev') => {
@@ -338,6 +368,7 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes 
   const [touchEnd, setTouchEnd] = useState<{ x: number; y: number } | null>(null);
 
   const handleTouchStart = (e: React.TouchEvent) => {
+    didSwipeRef.current = false; // Reset swipe flag
     setTouchEnd(null);
     setTouchStart({
       x: e.targetTouches[0].clientX,
@@ -351,9 +382,15 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes 
     const y = e.targetTouches[0].clientY;
     const dx = touchStart.x - x;
     const dy = touchStart.y - y;
-    if (Math.abs(dx) > Math.abs(dy)) {
-      e.preventDefault();
+    
+    // Mark as potential swipe if significant horizontal movement
+    if (Math.abs(dx) > 20) {
+      didSwipeRef.current = true;
+      if (Math.abs(dx) > Math.abs(dy)) {
+        e.preventDefault(); // Prevent scrolling on horizontal swipe
+      }
     }
+    
     setTouchEnd({ x, y });
   };
 
@@ -362,21 +399,25 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes 
     
     const deltaX = touchStart.x - touchEnd.x;
     const deltaY = touchStart.y - touchEnd.y;
-    const minSwipeDistance = 50; // Increased threshold for more reliable detection
+    const minSwipeDistance = 80; // Increased threshold for more reliable detection
     
-    console.log('Swipe detected:', { deltaX, deltaY, minSwipeDistance });
+    console.log('Touch end:', { deltaX, deltaY, minSwipeDistance, didSwipe: didSwipeRef.current });
     
-    // Horizontal swipe (left/right navigation) - only if horizontal movement is dominant
-    if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > minSwipeDistance) {
+    // Only process as swipe if we detected movement during touchmove
+    if (didSwipeRef.current && Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > minSwipeDistance) {
       console.log('Processing horizontal swipe:', deltaX > 0 ? 'left->right (next)' : 'right->left (prev)');
       if (deltaX > 0 && currentPhoto < filteredPhotos.length - 1) {
-        console.log('Navigating to next photo');
+        console.log('Swiping to next photo');
         navigateNext();
       } else if (deltaX < 0 && currentPhoto > 0) {
-        console.log('Navigating to previous photo');
+        console.log('Swiping to previous photo');
         navigatePrevious();
       }
     }
+    
+    // Reset touch tracking
+    setTouchStart(null);
+    setTouchEnd(null);
   };
 
   // Gestion du clavier avec navigation adaptative
@@ -651,8 +692,13 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes 
   // Handle tap on image (mobile only)
   const handleImageTap = (index: number) => {
     if (isMobile) {
-      // Tap on image goes to next photo
-      navigateNext();
+      // Only navigate if it wasn't a swipe gesture
+      if (!didSwipeRef.current) {
+        console.log('Tap detected on image, navigating to next');
+        navigateNext();
+      } else {
+        console.log('Ignoring tap - was a swipe');
+      }
     } else {
       // Desktop still opens modal
       setSelectedPhoto(index);
@@ -690,7 +736,13 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes 
         <motion.div 
           className="absolute inset-0 flex items-center"
           animate={{ x: `-${currentPhoto * (isMobile ? 100 : 33.33)}%` }}
-          transition={{ type: "spring", stiffness: 50, damping: 20 }}
+          transition={{ 
+            type: isMobile ? "tween" : "spring", 
+            duration: isMobile ? 0.3 : 0.6,
+            stiffness: 50, 
+            damping: 20,
+            ease: isMobile ? "easeInOut" : undefined
+          }}
         >
           {filteredPhotos.map((photo, index) => (
             <motion.div
