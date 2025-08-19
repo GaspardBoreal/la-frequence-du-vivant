@@ -84,6 +84,7 @@ const FleuveTemporel: React.FC<FleuveTemporelProps> = ({ explorations, explorati
   const navigate = useNavigate();
   const isMobile = useIsMobile();
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
+  const [selectedMarche, setSelectedMarche] = useState<string | null>(null);
   const [selectedPhoto, setSelectedPhoto] = useState<PhotoData | null>(null);
   const [photoPage, setPhotoPage] = useState(0);
 
@@ -192,12 +193,18 @@ const FleuveTemporel: React.FC<FleuveTemporelProps> = ({ explorations, explorati
 
   // Get current photos to display
   const currentPhotos = useMemo(() => {
+    if (selectedMarche) {
+      // Filter by specific marche
+      return timelineData.flatMap(point => 
+        point.photos.filter(photo => photo.marcheId === selectedMarche)
+      );
+    }
     if (selectedDate) {
       const point = timelineData.find(p => p.date === selectedDate);
       return point?.photos || [];
     }
     return timelineData.flatMap(point => point.photos);
-  }, [timelineData, selectedDate]);
+  }, [timelineData, selectedDate, selectedMarche]);
 
   // Get photos per page based on device
   const photosPerPage = isMobile ? 1 : 3;
@@ -206,12 +213,16 @@ const FleuveTemporel: React.FC<FleuveTemporelProps> = ({ explorations, explorati
 
   // Map markers
   const mapMarkers = useMemo(() => {
+    if (selectedMarche) {
+      // Show only selected marche
+      return explorations.filter(m => m.id === selectedMarche && m.latitude && m.longitude);
+    }
     if (selectedDate) {
       const point = timelineData.find(p => p.date === selectedDate);
       return point ? point.marches : [];
     }
     return explorations.filter(m => m.latitude && m.longitude);
-  }, [timelineData, selectedDate, explorations]);
+  }, [timelineData, selectedDate, selectedMarche, explorations]);
 
   const handlePhotoClick = useCallback((photo: PhotoData, index: number) => {
     if (isMobile) {
@@ -254,13 +265,11 @@ const FleuveTemporel: React.FC<FleuveTemporelProps> = ({ explorations, explorati
     }, 0);
   };
 
-  // Handle marker click to sync with timeline
+  // Handle marker click to show only that marche's photos
   const handleMarkerClick = useCallback((marche: MarcheTechnoSensible) => {
-    const marcheDate = marche.date;
-    if (marcheDate) {
-      setSelectedDate(marcheDate);
-      setPhotoPage(0);
-    }
+    setSelectedMarche(marche.id!);
+    setSelectedDate(null); // Clear date selection
+    setPhotoPage(0);
   }, []);
 
   return (
@@ -344,9 +353,12 @@ const FleuveTemporel: React.FC<FleuveTemporelProps> = ({ explorations, explorati
           </h2>
           <div className="space-y-2 max-h-96 overflow-y-auto">
             <Button
-              onClick={() => setSelectedDate(null)}
-              variant={selectedDate === null ? "secondary" : "ghost"}
-              className={`w-full justify-start ${selectedDate === null ? 'bg-white/20' : 'hover:bg-white/10'}`}
+              onClick={() => {
+                setSelectedDate(null);
+                setSelectedMarche(null);
+              }}
+              variant={selectedDate === null && selectedMarche === null ? "secondary" : "ghost"}
+              className={`w-full justify-start ${selectedDate === null && selectedMarche === null ? 'bg-white/20' : 'hover:bg-white/10'}`}
             >
               <MapPin className="h-4 w-4 mr-2" />
               Toutes les dates ({explorations.length} marches)
@@ -356,10 +368,11 @@ const FleuveTemporel: React.FC<FleuveTemporelProps> = ({ explorations, explorati
                 key={point.date}
                 onClick={() => {
                   setSelectedDate(point.date);
+                  setSelectedMarche(null);
                   setPhotoPage(0);
                 }}
-                variant={selectedDate === point.date ? "secondary" : "ghost"}
-                className={`w-full justify-start text-left ${selectedDate === point.date ? 'bg-white/20' : 'hover:bg-white/10'}`}
+                variant={selectedDate === point.date && !selectedMarche ? "secondary" : "ghost"}
+                className={`w-full justify-start text-left ${selectedDate === point.date && !selectedMarche ? 'bg-white/20' : 'hover:bg-white/10'}`}
               >
                 <Calendar className="h-4 w-4 mr-2 flex-shrink-0" />
                 <div className="text-left">
@@ -382,7 +395,7 @@ const FleuveTemporel: React.FC<FleuveTemporelProps> = ({ explorations, explorati
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-xl font-semibold flex items-center">
               <Camera className="h-5 w-5 mr-2" />
-              Photos {selectedDate ? `du ${selectedDate}` : 'du périple'} 
+              Photos {selectedMarche ? `de ${explorations.find(e => e.id === selectedMarche)?.ville || 'la marche'}` : selectedDate ? `du ${selectedDate}` : 'du périple'} 
               <Badge variant="secondary" className="ml-2">
                 {currentPhotos.length}
               </Badge>
