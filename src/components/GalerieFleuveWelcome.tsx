@@ -17,6 +17,7 @@ import {
   Grape
 } from 'lucide-react';
 import { ExplorationTheme } from '@/utils/explorationThemes';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 // Mapping des icônes string vers composants
 const iconMap = {
@@ -50,6 +51,7 @@ const GalerieFleuveWelcome: React.FC<GalerieFleuveWelcomeProps> = ({
   theme,
   onStart
 }) => {
+  const isMobile = useIsMobile();
   const handleStart = () => {
     const galerieElement = document.getElementById('galerie');
     if (galerieElement) {
@@ -114,7 +116,7 @@ const GalerieFleuveWelcome: React.FC<GalerieFleuveWelcomeProps> = ({
 
   return (
     <motion.section 
-      className={`relative overflow-hidden ${gradientClass} ${textClass} min-h-screen flex flex-col`}
+      className={`relative overflow-hidden ${gradientClass} ${textClass} min-h-[100svh] md:min-h-screen flex flex-col`}
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.8 }}
@@ -128,9 +130,9 @@ const GalerieFleuveWelcome: React.FC<GalerieFleuveWelcomeProps> = ({
         <div className="space-y-3 md:space-y-8">
           {/* Badge */}
           <div className="flex justify-end items-start">
-            <Badge className={`${badgeClass} ${window.innerWidth < 768 ? 'px-2 py-1 text-xs' : ''}`}>
-              {React.createElement(iconMap[theme?.badge.icon as keyof typeof iconMap] || Palette, { className: `${window.innerWidth < 768 ? 'h-2 w-2 mr-1' : 'h-3 w-3 mr-1'}` })}
-              <span className={window.innerWidth < 768 ? 'text-xs' : ''}>{theme?.badge.text || 'Galerie Fleuve'}</span>
+            <Badge className={`${badgeClass} ${isMobile ? 'px-2 py-1 text-xs' : ''}`}>
+              {React.createElement(iconMap[theme?.badge.icon as keyof typeof iconMap] || Palette, { className: `${isMobile ? 'h-2 w-2 mr-1' : 'h-3 w-3 mr-1'}` })}
+              <span className={isMobile ? 'text-xs' : ''}>{theme?.badge.text || 'Galerie Fleuve'}</span>
             </Badge>
           </div>
 
@@ -140,78 +142,63 @@ const GalerieFleuveWelcome: React.FC<GalerieFleuveWelcomeProps> = ({
             animate={{ y: 0, opacity: 1 }}
             transition={{ delay: 0.2 }}
           >
-            <h1 className={`${window.innerWidth < 768 ? 'text-3xl' : 'text-4xl md:text-6xl'} font-bold ${window.innerWidth < 768 ? 'mb-2' : 'mb-4'} leading-tight`}>
+            <h1 className={`${isMobile ? 'text-3xl' : 'text-4xl md:text-6xl'} font-bold ${isMobile ? 'mb-2' : 'mb-4'} leading-tight`}>
               {theme?.title.main || title}
             </h1>
-            <p className={`${window.innerWidth < 768 ? 'text-base' : 'text-lg'} opacity-70 max-w-2xl`}>
-              {theme?.description || description || 'Découvrez cette exploration immersive à travers ses visuels et récits.'}
-            </p>
-            {description && description !== theme?.description && (
-              <div 
-                className="mt-4 text-base opacity-80 max-w-3xl prose prose-lg prose-invert" 
-                dangerouslySetInnerHTML={{ __html: description }}
-              />
+            {!isMobile && (
+              <>
+                {(theme?.description || description) && (
+                  <p className={`${isMobile ? 'text-base' : 'text-lg'} opacity-70 max-w-2xl`}>
+                    {(theme?.description || description)?.replace(/<br\s*\/?>(\n)?/gi, ' ')}
+                  </p>
+                )}
+                {description && description !== theme?.description && (
+                  <div 
+                    className="mt-4 text-base opacity-80 max-w-3xl prose prose-lg prose-invert" 
+                    dangerouslySetInnerHTML={{ __html: description }}
+                  />
+                )}
+              </>
             )}
           </motion.div>
 
           {/* Statistiques */}
           <motion.div 
-            className={`grid grid-cols-3 ${window.innerWidth < 768 ? 'gap-3' : 'gap-6'} max-w-lg`}
+            className={`grid grid-cols-3 ${isMobile ? 'gap-3' : 'gap-6'} max-w-lg`}
             initial={{ y: 30, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             transition={{ delay: 0.4 }}
           >
             <div className="text-center">
-              <div className={`flex items-center justify-center ${window.innerWidth < 768 ? 'mb-1' : 'mb-2'}`}>
-                <MapPin className={`${window.innerWidth < 768 ? 'h-4 w-4 mr-1' : 'h-5 w-5 mr-2'}`} />
-                <span className={`${window.innerWidth < 768 ? 'text-2xl' : 'text-3xl'} font-bold`}>{window.innerWidth < 768 ? 6 : stats.marches}</span>
+              <div className={`flex items-center justify-center ${isMobile ? 'mb-1' : 'mb-2'}`}>
+                <MapPin className={`${isMobile ? 'h-4 w-4 mr-1' : 'h-5 w-5 mr-2'}`} />
+                <span className={`${isMobile ? 'text-2xl' : 'text-3xl'} font-bold`}>{stats.marches}</span>
               </div>
-              <p className={`${window.innerWidth < 768 ? 'text-xs' : 'text-sm'} opacity-80`}>
-                {window.innerWidth < 768 ? 'Départements' : (stats.marches > 1 ? 'Marches' : 'Marche')}
+              <p className={`${isMobile ? 'text-xs' : 'text-sm'} opacity-80`}>
+                {stats.marches > 1 ? 'Marches' : 'Marche'}
               </p>
             </div>
             <div className="text-center">
-              <div className={`flex items-center justify-center ${window.innerWidth < 768 ? 'mb-1' : 'mb-2'}`}>
-                <Camera className={`${window.innerWidth < 768 ? 'h-4 w-4 mr-1' : 'h-5 w-5 mr-2'}`} />
-                <span className={`${window.innerWidth < 768 ? 'text-2xl' : 'text-3xl'} font-bold`}>{window.innerWidth < 768 ? 18 : stats.photos}</span>
+              <div className={`flex items-center justify-center ${isMobile ? 'mb-1' : 'mb-2'}`}>
+                <Camera className={`${isMobile ? 'h-4 w-4 mr-1' : 'h-5 w-5 mr-2'}`} />
+                <span className={`${isMobile ? 'text-2xl' : 'text-3xl'} font-bold`}>{stats.photos}</span>
               </div>
-              <p className={`${window.innerWidth < 768 ? 'text-xs' : 'text-sm'} opacity-80`}>{window.innerWidth < 768 ? 'Marches' : 'Visuels'}</p>
+              <p className={`${isMobile ? 'text-xs' : 'text-sm'} opacity-80`}>Photos</p>
             </div>
             <div className="text-center">
-              <div className={`flex items-center justify-center ${window.innerWidth < 768 ? 'mb-1' : 'mb-2'}`}>
-                <Clock className={`${window.innerWidth < 768 ? 'h-4 w-4 mr-1' : 'h-5 w-5 mr-2'}`} />
-                <span className={`${window.innerWidth < 768 ? 'text-2xl' : 'text-3xl'} font-bold`}>{window.innerWidth < 768 ? 480 : stats.regions}</span>
+              <div className={`flex items-center justify-center ${isMobile ? 'mb-1' : 'mb-2'}`}>
+                <Clock className={`${isMobile ? 'h-4 w-4 mr-1' : 'h-5 w-5 mr-2'}`} />
+                <span className={`${isMobile ? 'text-2xl' : 'text-3xl'} font-bold`}>{stats.regions}</span>
               </div>
-              <p className={`${window.innerWidth < 768 ? 'text-xs' : 'text-sm'} opacity-80`}>
-                {window.innerWidth < 768 ? 'km' : (stats.regions > 1 ? 'Régions' : 'Région')}
+              <p className={`${isMobile ? 'text-xs' : 'text-sm'} opacity-80`}>
+                {stats.regions > 1 ? 'Régions' : 'Région'}
               </p>
             </div>
           </motion.div>
 
-          {/* Mini-menu des modes d'immersion */}
-          <motion.div 
-            initial={{ y: 30, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            transition={{ delay: 0.6 }}
-          >
-            <h3 className={`${window.innerWidth < 768 ? 'text-base' : 'text-lg'} font-semibold ${window.innerWidth < 768 ? 'mb-2' : 'mb-4'} opacity-90`}>Modes d'immersion disponibles</h3>
-            <div className={`flex flex-wrap ${window.innerWidth < 768 ? 'gap-2' : 'gap-4'}`}>
-              {immersionModes.map((mode, index) => {
-                const IconComponent = iconMap[mode.icon as keyof typeof iconMap] || Heart;
-                return (
-                  <div 
-                    key={index}
-                    className={`flex items-center ${window.innerWidth < 768 ? 'space-x-1 px-2 py-1' : 'space-x-2 px-3 py-2'} bg-white/10 rounded-lg backdrop-blur-sm border border-white/20`}
-                  >
-                    <IconComponent className={`${window.innerWidth < 768 ? 'h-3 w-3' : 'h-4 w-4'}`} />
-                    <span className={`${window.innerWidth < 768 ? 'text-xs' : 'text-sm'} font-medium`}>{mode.label}</span>
-                  </div>
-                );
-              })}
-            </div>
-          </motion.div>
+          {/* Modes déplacés sous le bouton pour une meilleure hiérarchie mobile */}
 
-          {/* Bouton d'action */}
+          {/* Bouton d'action + Modes d'immersion */}
           <motion.div
             initial={{ y: 30, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
@@ -219,11 +206,37 @@ const GalerieFleuveWelcome: React.FC<GalerieFleuveWelcomeProps> = ({
           >
             <Button 
               onClick={handleStart}
-              size={window.innerWidth < 768 ? "default" : "lg"}
-              className={`bg-white text-primary hover:bg-white/90 font-semibold ${window.innerWidth < 768 ? 'px-6 py-2 text-sm' : 'px-8 py-3'}`}
+              size={isMobile ? "default" : "lg"}
+              className={`bg-white text-primary hover:bg-white/90 font-semibold ${isMobile ? 'px-6 py-2 text-sm' : 'px-8 py-3'}`}
             >
               Commencer l'exploration
             </Button>
+
+            {/* Modes d'immersion - plus bas et scrollable en mobile */}
+            <motion.div 
+              className={`mt-3 md:mt-6`}
+              initial={{ y: 30, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              transition={{ delay: 1.0 }}
+            >
+              {!isMobile && (
+                <h3 className={`text-lg font-semibold mb-4 opacity-90`}>Modes d'immersion disponibles</h3>
+              )}
+              <div className={`flex ${isMobile ? 'gap-2 overflow-x-auto no-scrollbar -mx-2 px-2' : 'flex-wrap gap-4'}`}>
+                {immersionModes.map((mode, index) => {
+                  const IconComponent = iconMap[mode.icon as keyof typeof iconMap] || Heart;
+                  return (
+                    <div 
+                      key={index}
+                      className={`flex items-center ${isMobile ? 'space-x-1 px-2 py-1' : 'space-x-2 px-3 py-2'} bg-white/10 rounded-lg backdrop-blur-sm border border-white/20 whitespace-nowrap`}
+                    >
+                      <IconComponent className={`${isMobile ? 'h-3 w-3' : 'h-4 w-4'}`} />
+                      <span className={`${isMobile ? 'text-xs' : 'text-sm'} font-medium`}>{mode.label}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            </motion.div>
           </motion.div>
         </div>
 
@@ -232,11 +245,11 @@ const GalerieFleuveWelcome: React.FC<GalerieFleuveWelcomeProps> = ({
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 1.0 }}
-          className={`self-end text-right mt-auto ${window.innerWidth < 768 ? 'pt-4' : 'pt-8'}`}
+          className={`self-end text-right mt-auto ${isMobile ? 'pt-3 pb-4' : 'pt-8 pb-8'}`}
         >
           <div className="text-white/80">
-            <div className={`font-libre ${window.innerWidth < 768 ? 'text-base' : 'text-lg'} font-bold`}>{theme?.signature.author || 'Gaspard Boréal'}</div>
-            <div className={`font-mono ${window.innerWidth < 768 ? 'text-xs' : 'text-sm'} opacity-70`}>{theme?.signature.title || 'Poète des Mondes Hybrides'}</div>
+            <div className={`font-libre ${isMobile ? 'text-base' : 'text-lg'} font-bold`}>{theme?.signature.author || 'Gaspard Boréal'}</div>
+            <div className={`font-mono ${isMobile ? 'text-xs' : 'text-sm'} opacity-70`}>{theme?.signature.title || 'Poète des Mondes Hybrides'}</div>
           </div>
         </motion.div>
       </div>

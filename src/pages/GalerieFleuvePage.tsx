@@ -163,7 +163,7 @@ const GalerieFleuvePage: React.FC = () => {
                 },
                 {
                   icon: Eye,
-                  mode: 'Immersion totale',
+                  mode: 'Écoute attentive',
                   description: 'Plongée contemplative dans chaque fragment',
                   color: 'from-orange-500 to-red-500'
                 }

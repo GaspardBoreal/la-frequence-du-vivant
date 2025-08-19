@@ -59,7 +59,7 @@ interface EnrichedPhoto {
   thematicIcons: string[];
 }
 
-type ViewMode = 'constellation' | 'fleuve-temporel' | 'mosaique-vivante' | 'immersion-totale';
+type ViewMode = 'constellation' | 'fleuve-temporel' | 'mosaique-vivante' | 'ecoute-attentive';
 type FilterMode = 'all' | 'biodiversite' | 'bioacoustique' | 'botanique' | 'couleur' | 'saison';
 
 const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes }) => {
@@ -215,7 +215,7 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes 
 
   // Auto-navigation pour le mode immersion
   useEffect(() => {
-    if (isPlaying && viewMode === 'immersion-totale') {
+    if (isPlaying && viewMode === 'ecoute-attentive') {
       intervalRef.current = setInterval(() => {
         setCurrentPhoto(prev => (prev + 1) % allPhotos.length);
       }, 4000);
@@ -346,10 +346,15 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes 
   };
 
   const handleTouchMove = (e: React.TouchEvent) => {
-    setTouchEnd({
-      x: e.targetTouches[0].clientX,
-      y: e.targetTouches[0].clientY
-    });
+    if (!touchStart) return;
+    const x = e.targetTouches[0].clientX;
+    const y = e.targetTouches[0].clientY;
+    const dx = touchStart.x - x;
+    const dy = touchStart.y - y;
+    if (Math.abs(dx) > Math.abs(dy)) {
+      e.preventDefault();
+    }
+    setTouchEnd({ x, y });
   };
 
   const handleTouchEnd = () => {
@@ -400,7 +405,7 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes 
           break;
         case ' ':
           e.preventDefault();
-          if (viewMode === 'immersion-totale') {
+          if (viewMode === 'ecoute-attentive') {
             setIsPlaying(!isPlaying);
           }
           break;
@@ -492,7 +497,7 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes 
                       {viewMode === 'constellation' && '✨'}
                       {viewMode === 'fleuve-temporel' && '🌊'}
                       {viewMode === 'mosaique-vivante' && '🎨'}
-                      {viewMode === 'immersion-totale' && '🌿'}
+                      {viewMode === 'ecoute-attentive' && '🌿'}
                     </span>
                   </motion.button>
 
@@ -507,9 +512,9 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes 
                       >
                         {[
                           { mode: 'constellation' as ViewMode, emoji: '✨', name: 'Constellation' },
-                          { mode: 'fleuve-temporel' as ViewMode, emoji: '🌊', name: 'Fleuve' },
-                          { mode: 'mosaique-vivante' as ViewMode, emoji: '🎨', name: 'Mosaïque' },
-                          { mode: 'immersion-totale' as ViewMode, emoji: '🌿', name: 'Immersion' }
+                          { mode: 'fleuve-temporel' as ViewMode, emoji: '🌊', name: 'Fleuve temporel' },
+                          { mode: 'mosaique-vivante' as ViewMode, emoji: '🎨', name: 'Mosaïque vivante' },
+                          { mode: 'ecoute-attentive' as ViewMode, emoji: '🌿', name: 'Écoute attentive' }
                         ].map(({ mode, emoji, name }) => (
                           <motion.button
                             key={mode}
@@ -562,7 +567,7 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes 
                 </div>
 
                 {/* Play/Pause for Immersion Mode */}
-                {viewMode === 'immersion-totale' && (
+                {viewMode === 'ecoute-attentive' && (
                   <motion.button
                     onClick={() => { setIsPlaying(!isPlaying); showMenu(); }}
                     className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center transition-all duration-300 touch-manipulation active:bg-white/30"
@@ -625,7 +630,7 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes 
                 { mode: 'constellation' as ViewMode, emoji: '✨' },
                 { mode: 'fleuve-temporel' as ViewMode, emoji: '🌊' },
                 { mode: 'mosaique-vivante' as ViewMode, emoji: '🎨' },
-                { mode: 'immersion-totale' as ViewMode, emoji: '🌿' }
+                { mode: 'ecoute-attentive' as ViewMode, emoji: '🌿' }
               ].map(({ mode, emoji }) => (
                 <motion.button
                   key={mode}
@@ -659,7 +664,7 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes 
             {/* Contextual controls - more compact */}
             <div className="flex items-center gap-2">
               {/* Playback for immersion mode */}
-              {viewMode === 'immersion-totale' && (
+              {viewMode === 'ecoute-attentive' && (
                 <motion.button
                   onClick={() => setIsPlaying(!isPlaying)}
                   className="flex items-center gap-1 px-3 py-2 rounded-xl bg-emerald-700/30 hover:bg-emerald-600/50 text-emerald-200 transition-all duration-300"
@@ -691,7 +696,7 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes 
               </motion.button>
 
               {/* Navigation arrows for constellation and immersion modes */}
-              {(viewMode === 'constellation' || viewMode === 'immersion-totale') && (
+              {(viewMode === 'constellation' || viewMode === 'ecoute-attentive') && (
                 <div className="flex gap-1">
                   <motion.button
                     onClick={navigatePrevious}
@@ -739,8 +744,8 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes 
   };
 
   const ConstellationView = () => (
-    <div 
-      className="min-h-screen bg-gradient-to-b from-blue-50 via-green-50 to-blue-100"
+  <div 
+      className="min-h-screen bg-gradient-to-b from-blue-50 via-green-50 to-blue-100 touch-pan-y overscroll-none select-none"
       onTouchStart={handleTouchStart}
       onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}
@@ -830,8 +835,8 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes 
   );
 
   const FleuveTemporelView = () => (
-    <div 
-      className="min-h-screen bg-gradient-to-b from-purple-50 to-pink-50 p-4"
+  <div 
+      className="min-h-screen bg-gradient-to-b from-purple-50 to-pink-50 p-4 touch-pan-y overscroll-none select-none"
       onTouchStart={handleTouchStart}
       onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}
@@ -895,8 +900,8 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes 
   );
 
   const MosaiqueVivanteView = () => (
-    <div 
-      className="min-h-screen bg-gradient-to-b from-green-50 to-emerald-50 p-4"
+  <div 
+      className="min-h-screen bg-gradient-to-b from-green-50 to-emerald-50 p-4 touch-pan-y overscroll-none select-none"
       onTouchStart={handleTouchStart}
       onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}
@@ -955,8 +960,8 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes 
     const photo = filteredPhotos[currentPhoto];
     
     return (
-      <div 
-        className="fixed inset-0 bg-black z-40"
+  <div 
+        className="fixed inset-0 bg-black z-40 touch-pan-y overscroll-none select-none"
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
@@ -1137,7 +1142,7 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes 
       {viewMode === 'constellation' && <ConstellationView />}
       {viewMode === 'fleuve-temporel' && <FleuveTemporelView />}
       {viewMode === 'mosaique-vivante' && <MosaiqueVivanteView />}
-      {viewMode === 'immersion-totale' && <ImmersionTotaleView />}
+      {viewMode === 'ecoute-attentive' && <ImmersionTotaleView />}
 
       {/* Global navigation controls */}
       <NavigationControls />
