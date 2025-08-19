@@ -21,6 +21,7 @@ L.Icon.Default.mergeOptions({
 
 interface FleuveTemporelProps {
   explorations: MarcheTechnoSensible[];
+  explorationName?: string;
 }
 
 interface PhotoData {
@@ -45,7 +46,7 @@ interface TimelinePoint {
   coordinates: { lat: number; lng: number }[];
 }
 
-const FleuveTemporel: React.FC<FleuveTemporelProps> = ({ explorations }) => {
+const FleuveTemporel: React.FC<FleuveTemporelProps> = ({ explorations, explorationName }) => {
   const navigate = useNavigate();
   const isMobile = useIsMobile();
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
@@ -116,6 +117,30 @@ const FleuveTemporel: React.FC<FleuveTemporelProps> = ({ explorations }) => {
               longitude: marche.longitude ? Number(marche.longitude) : undefined,
             };
           }
+          
+          if (photoData.url) {
+            point.photos.push(photoData);
+          }
+        });
+      }
+
+      // Also check for photosData (full photo objects from Supabase)
+      if ((marche as any).photosData && Array.isArray((marche as any).photosData)) {
+        (marche as any).photosData.forEach((photo: any, index: number) => {
+          const photoData: PhotoData = {
+            id: `${marche.id}-photos-${index}`,
+            url: photo.url_supabase || '',
+            titre: photo.titre || `Photo ${index + 1}`,
+            description: photo.description || '',
+            marcheId: marche.id!,
+            marcheName: marche.nomMarche || marche.ville,
+            ville: marche.ville,
+            departement: marche.departement || '',
+            region: marche.region || '',
+            date: marche.date || '',
+            latitude: marche.latitude ? Number(marche.latitude) : undefined,
+            longitude: marche.longitude ? Number(marche.longitude) : undefined,
+          };
           
           if (photoData.url) {
             point.photos.push(photoData);
@@ -194,8 +219,12 @@ const FleuveTemporel: React.FC<FleuveTemporelProps> = ({ explorations }) => {
           </Badge>
         </div>
 
-        <h1 className="text-3xl md:text-5xl font-bold mb-2">Chronologie du Périple</h1>
-        <p className="text-lg opacity-80 mb-8">Naviguez dans le temps de la remontée Dordogne</p>
+        <h1 className="text-3xl md:text-5xl font-bold mb-2">
+          {explorationName || 'Chronologie du Périple'}
+        </h1>
+        <p className="text-lg opacity-80 mb-8">
+          Naviguez dans le temps de {explorationName ? 'cette exploration' : 'la remontée Dordogne'} • {explorations.length} marches
+        </p>
       </div>
 
       <div className="container mx-auto px-4 grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
@@ -225,7 +254,7 @@ const FleuveTemporel: React.FC<FleuveTemporelProps> = ({ explorations }) => {
                 className={`w-full justify-start ${selectedDate === point.date ? 'bg-white/20' : 'hover:bg-white/10'}`}
               >
                 <Calendar className="h-4 w-4 mr-2" />
-                {point.date} ({point.marches.length} marches, {point.photos.length} photos)
+                {point.date} ({point.marches.length} marche{point.marches.length > 1 ? 's' : ''}, {point.photos.length} photo{point.photos.length > 1 ? 's' : ''})
               </Button>
             ))}
           </div>
