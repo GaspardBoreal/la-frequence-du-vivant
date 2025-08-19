@@ -199,13 +199,43 @@ const FleuveTemporel: React.FC<FleuveTemporelProps> = ({ explorations, explorati
     setPhotoPage((prev) => (prev - 1 + totalPages) % totalPages);
   };
 
+  // Helper functions for timeline formatting
+  const formatTimelineDate = (date: string) => {
+    if (date === 'Non daté') return date;
+    try {
+      const dateObj = new Date(date);
+      return dateObj.toLocaleDateString('fr-FR', {
+        day: '2-digit',
+        month: '2-digit', 
+        year: 'numeric'
+      });
+    } catch {
+      return date;
+    }
+  };
+
+  const getTotalAudios = (marches: MarcheTechnoSensible[]) => {
+    return marches.reduce((total, marche) => {
+      return total + (marche.audioFiles?.length || 0) + (marche.audioData?.length || 0);
+    }, 0);
+  };
+
+  // Handle marker click to sync with timeline
+  const handleMarkerClick = useCallback((marche: MarcheTechnoSensible) => {
+    const marcheDate = marche.date;
+    if (marcheDate) {
+      setSelectedDate(marcheDate);
+      setPhotoPage(0);
+    }
+  }, []);
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-primary via-accent/80 to-secondary text-primary-foreground">
       {/* Navigation Header */}
       <div className="container mx-auto px-4 py-6">
         <div className="flex items-center justify-between mb-8">
           <Button
-            onClick={() => navigate('/')}
+            onClick={() => window.location.href = `/galerie-fleuve/exploration/${window.location.pathname.split('/')[3]}`}
             variant="ghost"
             size="sm"
             className="text-primary-foreground hover:bg-white/10"
@@ -228,43 +258,11 @@ const FleuveTemporel: React.FC<FleuveTemporelProps> = ({ explorations, explorati
       </div>
 
       <div className="container mx-auto px-4 grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
-        {/* Timeline Section */}
-        <div className="space-y-4">
-          <h2 className="text-xl font-semibold mb-4 flex items-center">
-            <Calendar className="h-5 w-5 mr-2" />
-            Timeline des marches
-          </h2>
-          <div className="space-y-2 max-h-96 overflow-y-auto">
-            <Button
-              onClick={() => setSelectedDate(null)}
-              variant={selectedDate === null ? "secondary" : "ghost"}
-              className={`w-full justify-start ${selectedDate === null ? 'bg-white/20' : 'hover:bg-white/10'}`}
-            >
-              <MapPin className="h-4 w-4 mr-2" />
-              Toutes les dates ({explorations.length} marches)
-            </Button>
-            {timelineData.map((point) => (
-              <Button
-                key={point.date}
-                onClick={() => {
-                  setSelectedDate(point.date);
-                  setPhotoPage(0);
-                }}
-                variant={selectedDate === point.date ? "secondary" : "ghost"}
-                className={`w-full justify-start ${selectedDate === point.date ? 'bg-white/20' : 'hover:bg-white/10'}`}
-              >
-                <Calendar className="h-4 w-4 mr-2" />
-                {point.date} ({point.marches.length} marche{point.marches.length > 1 ? 's' : ''}, {point.photos.length} photo{point.photos.length > 1 ? 's' : ''})
-              </Button>
-            ))}
-          </div>
-        </div>
-
-        {/* Map Section */}
-        <div className="space-y-4">
+        {/* Map Section - Now on the left */}
+        <div className="space-y-4 order-2 lg:order-1">
           <h2 className="text-xl font-semibold mb-4 flex items-center">
             <MapPin className="h-5 w-5 mr-2" />
-            Carte des points
+            Carte des marches
           </h2>
           <div className="h-96 rounded-lg overflow-hidden border border-white/20">
             <MapContainer
@@ -277,6 +275,9 @@ const FleuveTemporel: React.FC<FleuveTemporelProps> = ({ explorations, explorati
                 <Marker 
                   key={`${marche.id}-${index}`}
                   position={[Number(marche.latitude), Number(marche.longitude)]}
+                  eventHandlers={{
+                    click: () => handleMarkerClick(marche)
+                  }}
                 >
                   <Popup>
                     <div className="text-slate-800">
@@ -298,6 +299,45 @@ const FleuveTemporel: React.FC<FleuveTemporelProps> = ({ explorations, explorati
                 </Marker>
               ))}
             </MapContainer>
+          </div>
+        </div>
+
+        {/* Timeline Section - Now on the right */}
+        <div className="space-y-4 order-1 lg:order-2">
+          <h2 className="text-xl font-semibold mb-4 flex items-center">
+            <Calendar className="h-5 w-5 mr-2" />
+            Timeline des marches
+          </h2>
+          <div className="space-y-2 max-h-96 overflow-y-auto">
+            <Button
+              onClick={() => setSelectedDate(null)}
+              variant={selectedDate === null ? "secondary" : "ghost"}
+              className={`w-full justify-start ${selectedDate === null ? 'bg-white/20' : 'hover:bg-white/10'}`}
+            >
+              <MapPin className="h-4 w-4 mr-2" />
+              Toutes les dates ({explorations.length} marches)
+            </Button>
+            {timelineData.map((point) => (
+              <Button
+                key={point.date}
+                onClick={() => {
+                  setSelectedDate(point.date);
+                  setPhotoPage(0);
+                }}
+                variant={selectedDate === point.date ? "secondary" : "ghost"}
+                className={`w-full justify-start text-left ${selectedDate === point.date ? 'bg-white/20' : 'hover:bg-white/10'}`}
+              >
+                <Calendar className="h-4 w-4 mr-2 flex-shrink-0" />
+                <div className="text-left">
+                  <div>
+                    {formatTimelineDate(point.date)} ({point.marches.length} marche{point.marches.length > 1 ? 's' : ''})
+                  </div>
+                  <div className="text-xs opacity-80">
+                    {point.marches.map(m => m.ville).join(', ')} • {point.photos.length} photo{point.photos.length > 1 ? 's' : ''} • {getTotalAudios(point.marches)} audio{getTotalAudios(point.marches) > 1 ? 's' : ''}
+                  </div>
+                </div>
+              </Button>
+            ))}
           </div>
         </div>
       </div>
