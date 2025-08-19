@@ -26,7 +26,8 @@ import {
   X,
   Waves,
   Star,
-  Music
+  Music,
+  Home
 } from 'lucide-react';
 import { MarcheTechnoSensible } from '../utils/googleSheetsApi';
 import { RegionalTheme } from '../utils/regionalThemes';
@@ -729,7 +730,7 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes 
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: 0.5 }}
           >
-            <ArrowUp className="h-4 w-4 text-white rotate-[-90deg]" />
+            <Home className="h-4 w-4 text-white" />
           </motion.button>
         )}
 
