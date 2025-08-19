@@ -27,7 +27,9 @@ import {
   Waves,
   Star,
   Music,
-  Home
+  Home,
+  ChevronLeft,
+  ChevronRight
 } from 'lucide-react';
 import { MarcheTechnoSensible } from '../utils/googleSheetsApi';
 import { RegionalTheme } from '../utils/regionalThemes';
@@ -39,9 +41,9 @@ import { useIsMobile } from '../hooks/use-mobile';
 import { ExplorationMarcheComplete } from '../hooks/useExplorations';
 
 interface GalerieFluveProps {
-  explorations: any[]; // Temporarily allow any to fix the immediate typing issue
+  explorations: any[];
   themes: RegionalTheme[];
-  showWelcome?: boolean; // Nouvelle prop pour contrôler l'affichage du menu
+  showWelcome?: boolean;
 }
 
 interface EnrichedPhoto {
@@ -50,7 +52,7 @@ interface EnrichedPhoto {
   titre?: string;
   description?: string;
   ordre?: number;
-  exploration: any; // Temporarily allow any
+  exploration: any;
   nomMarche: string;
   latitude?: number;
   longitude?: number;
@@ -75,11 +77,9 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes,
   const [loadingProgress, setLoadingProgress] = useState(0);
   const [selectedPhoto, setSelectedPhoto] = useState<number | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
-  const [isMenuVisible, setIsMenuVisible] = useState(false);
-  const [hasPassedWelcome, setHasPassedWelcome] = useState(!showWelcome); // true if no welcome section
   const isMobile = useIsMobile();
 
-  // Simplified device detection for stable navigation
+  // Device detection
   const [deviceType, setDeviceType] = useState<'mobile-portrait' | 'mobile-landscape' | 'desktop'>('desktop');
   const [currentPage, setCurrentPage] = useState(0);
   
@@ -100,9 +100,7 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes,
         newDeviceType = 'desktop';
       }
       
-      console.log('Device type:', newDeviceType, { width, height });
       setDeviceType(newDeviceType);
-      // Reset currentPage when device type changes to prevent invalid states
       setCurrentPage(0);
     };
 
@@ -113,23 +111,12 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes,
       window.removeEventListener('resize', updateDeviceType);
     };
   }, []);
+  
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
-  const hideMenuTimer = useRef<NodeJS.Timeout | null>(null);
   const metadataCache = useRef<Map<string, { emotionalTags: string[], thematicIcons: string[] }>>(new Map());
 
-  // Helper function to show menu and reset hide timer
-  const showMenuNow = useCallback(() => {
-    setIsMenuVisible(true);
-    if (hideMenuTimer.current) {
-      clearTimeout(hideMenuTimer.current);
-    }
-    // Only set hide timer for non-desktop devices or when not on welcome screen
-    if (deviceType !== 'desktop' && hasPassedWelcome) {
-      hideMenuTimer.current = setTimeout(() => {
-        setIsMenuVisible(false);
-      }, 4000);
-    }
-  }, [deviceType, hasPassedWelcome]);
+  // Menu visibility: always show except on welcome page
+  const shouldShowMenu = !showWelcome;
 
   // Cache des métadonnées avec mémoïsation
   const generateMetadata = useCallback((photo: any, marche: any) => {
@@ -259,7 +246,7 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes,
       
       console.log(`${enrichedPhotos.length} photos enrichies chargées avec succès`);
       setAllPhotos(enrichedPhotos);
-      setVisiblePhotos(enrichedPhotos.slice(0, 20)); // Lazy loading initial
+      setVisiblePhotos(enrichedPhotos.slice(0, 20));
       setIsLoading(false);
     };
 
@@ -288,68 +275,6 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes,
     };
   }, [isPlaying, viewMode, allPhotos.length]);
 
-  // Unified scroll and welcome detection for proper menu control
-  useEffect(() => {
-    const handleScrollOrAnchorCheck = () => {
-      const galerieElement = document.getElementById('galerie');
-      
-      if (showWelcome && galerieElement) {
-        // There's a welcome section, check if we've passed the anchor
-        const rect = galerieElement.getBoundingClientRect();
-        const passedAnchor = rect.top < 0;
-        setHasPassedWelcome(passedAnchor);
-        
-        // For mobile, also control isMenuVisible based on scroll
-        if (isMobile) {
-          setIsMenuVisible(passedAnchor);
-        }
-      } else if (!showWelcome) {
-        // No welcome section, we can always show menu
-        setHasPassedWelcome(true);
-        if (isMobile) {
-          setIsMenuVisible(true);
-        }
-      }
-    };
-
-    // Initial check
-    handleScrollOrAnchorCheck();
-    
-    // Listen to scroll events
-    window.addEventListener('scroll', handleScrollOrAnchorCheck);
-    return () => window.removeEventListener('scroll', handleScrollOrAnchorCheck);
-  }, [isMobile, showWelcome]);
-  useEffect(() => {
-    if (isMobile) return;
-
-    const resetHideTimer = () => {
-      if (hideMenuTimer.current) {
-        clearTimeout(hideMenuTimer.current);
-      }
-      setIsMenuVisible(true);
-      hideMenuTimer.current = setTimeout(() => {
-        setIsMenuVisible(false);
-      }, 4000); // Hide after 4 seconds of inactivity
-    };
-
-    const handleMouseMove = () => resetHideTimer();
-    const handleKeyPress = () => resetHideTimer();
-
-    // Initial timer
-    resetHideTimer();
-
-    window.addEventListener('mousemove', handleMouseMove);
-    window.addEventListener('keydown', handleKeyPress);
-
-    return () => {
-      if (hideMenuTimer.current) {
-        clearTimeout(hideMenuTimer.current);
-      }
-      window.removeEventListener('mousemove', handleMouseMove);
-      window.removeEventListener('keydown', handleKeyPress);
-    };
-  }, [isMobile]);
-
   // Filtrage intelligent avec mémoïsation
   const filteredPhotos = useMemo(() => {
     const photos = allPhotos;
@@ -371,320 +296,123 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes,
     }
   }, [allPhotos, filterMode]);
 
-  // Reset currentPage when filters change to prevent invalid states
+  // Reset currentPage when filters change
   useEffect(() => {
     setCurrentPage(0);
     setCurrentPhoto(0);
   }, [filteredPhotos.length, filterMode]);
 
-  // Navigation lock to prevent rapid duplicate actions
-  const navLockRef = useRef(false);
-  const didSwipeRef = useRef(false);
-
-  // Unified navigation logic based on device type
+  // Navigation logic based on device type
   const getImagesPerPage = useCallback(() => {
     return deviceType === 'mobile-portrait' ? 1 : 3;
   }, [deviceType]);
 
-  // Calculate total pages and current position
   const imagesPerPage = getImagesPerPage();
   const totalPages = Math.ceil(filteredPhotos.length / imagesPerPage);
 
-  // Unified navigation functions with page-based logic
-  const navigateToNextPage = useCallback(() => {
-    if (navLockRef.current || currentPage >= totalPages - 1) {
-      return;
+  // Simple navigation functions
+  const navigateNext = useCallback(() => {
+    if (currentPage < totalPages - 1) {
+      const nextPage = currentPage + 1;
+      setCurrentPage(nextPage);
+      setCurrentPhoto(nextPage * imagesPerPage);
     }
-    
-    navLockRef.current = true;
-    setCurrentPage(prev => Math.min(prev + 1, totalPages - 1));
-    
-    // Update currentPhoto for compatibility with existing code
-    const nextPhoto = Math.min((currentPage + 1) * imagesPerPage, filteredPhotos.length - 1);
-    setCurrentPhoto(nextPhoto);
-    
-    setTimeout(() => {
-      navLockRef.current = false;
-    }, 400);
-  }, [currentPage, totalPages, imagesPerPage, filteredPhotos.length]);
+  }, [currentPage, totalPages, imagesPerPage]);
 
-  const navigateToPreviousPage = useCallback(() => {
-    if (navLockRef.current || currentPage <= 0) {
-      return;
+  const navigatePrevious = useCallback(() => {
+    if (currentPage > 0) {
+      const prevPage = currentPage - 1;
+      setCurrentPage(prevPage);
+      setCurrentPhoto(prevPage * imagesPerPage);
     }
-    
-    navLockRef.current = true;
-    setCurrentPage(prev => Math.max(prev - 1, 0));
-    
-    // Update currentPhoto for compatibility with existing code
-    const prevPhoto = Math.max((currentPage - 1) * imagesPerPage, 0);
-    setCurrentPhoto(prevPhoto);
-    
-    setTimeout(() => {
-      navLockRef.current = false;
-    }, 400);
   }, [currentPage, imagesPerPage]);
 
-  // Legacy navigation functions for backward compatibility
-  const navigateNext = useCallback(() => navigateToNextPage(), [navigateToNextPage]);
-  const navigatePrevious = useCallback(() => navigateToPreviousPage(), [navigateToPreviousPage]);
-
-  // Navigation unitaire pour les touches haut/bas
-  const navigateOne = useCallback((direction: 'next' | 'prev') => {
-    if (direction === 'next') {
-      setCurrentPhoto(prev => Math.min(prev + 1, filteredPhotos.length - 1));
-    } else {
-      setCurrentPhoto(prev => Math.max(prev - 1, 0));
-    }
-  }, [filteredPhotos.length]);
-
-  // Simplified touch handling for navigation and menu visibility
-  const [touchStart, setTouchStart] = useState<{ x: number; y: number } | null>(null);
-  const [touchEnd, setTouchEnd] = useState<{ x: number; y: number } | null>(null);
-
-  const handleTouchStart = (e: React.TouchEvent) => {
-    didSwipeRef.current = false;
-    setTouchEnd(null);
-    const x = e.targetTouches[0].clientX;
-    const y = e.targetTouches[0].clientY;
-    setTouchStart({ x, y });
-    
-    // Show menu on touch for mobile devices
-    if (deviceType !== 'desktop') {
-      setIsMenuVisible(true);
-      if (hideMenuTimer.current) {
-        clearTimeout(hideMenuTimer.current);
-      }
-      hideMenuTimer.current = setTimeout(() => setIsMenuVisible(false), 4000);
-    }
-  };
-
-  const handleTouchMove = (e: React.TouchEvent) => {
-    if (!touchStart) return;
-    const x = e.targetTouches[0].clientX;
-    const y = e.targetTouches[0].clientY;
-    const dx = touchStart.x - x;
-    const dy = touchStart.y - y;
-    
-    // Use 60px threshold for swipe detection as per plan
-    const SWIPE_THRESHOLD = 60;
-    
-    // Mark as swipe if significant horizontal movement beyond threshold
-    if (Math.abs(dx) > SWIPE_THRESHOLD) {
-      didSwipeRef.current = true;
-      // Prevent default only for true swipes to allow taps
-      if (Math.abs(dx) > Math.abs(dy)) {
-        e.preventDefault();
-      }
-    }
-    
-    setTouchEnd({ x, y });
-  };
-
-  const handleTouchEnd = () => {
-    if (!touchStart || !touchEnd) return;
-    
-    const deltaX = touchStart.x - touchEnd.x;
-    const SWIPE_THRESHOLD = 60;
-    
-    // Process swipe for navigation
-    if (didSwipeRef.current && Math.abs(deltaX) > SWIPE_THRESHOLD) {
-      if (deltaX > 0) {
-        navigateToNextPage();
-        showMenuNow(); // Show menu after navigation
-      } else {
-        navigateToPreviousPage();
-        showMenuNow(); // Show menu after navigation
-      }
-    } else if (!didSwipeRef.current) {
-      // Handle tap - advance navigation on mobile devices only
-      if (deviceType !== 'desktop') {
-        navigateToNextPage();
-        showMenuNow(); // Show menu after tap navigation
-      }
-    }
-    
-    setTouchStart(null);
-    setTouchEnd(null);
-  };
-
-  // Gestion du clavier avec navigation adaptative
+  // Keyboard navigation
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      switch (e.key) {
-        case 'ArrowLeft':
-          e.preventDefault();
-          navigatePrevious();
-          showMenuNow(); // Show menu after keyboard navigation
-          break;
-        case 'ArrowRight':
-          e.preventDefault();
-          navigateNext();
-          showMenuNow(); // Show menu after keyboard navigation
-          break;
-        case 'ArrowUp':
-          e.preventDefault();
-          navigateOne('prev');
-          showMenuNow(); // Show menu after keyboard navigation
-          break;
-        case 'ArrowDown':
-          e.preventDefault();
-          navigateOne('next');
-          showMenuNow(); // Show menu after keyboard navigation
-          break;
-        case ' ':
-          e.preventDefault();
-          if (viewMode === 'ecoute-contemplative') {
-            setIsPlaying(!isPlaying);
-          }
-          showMenuNow(); // Show menu after space
-          break;
-        case 'Escape':
-          if (selectedPhoto !== null) {
-            setSelectedPhoto(null);
-          }
-          break;
+      if (e.key === 'ArrowRight') {
+        navigateNext();
+      } else if (e.key === 'ArrowLeft') {
+        navigatePrevious();
       }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [navigateNext, navigatePrevious, navigateOne, viewMode, isPlaying, selectedPhoto, showMenuNow]);
+  }, [navigateNext, navigatePrevious]);
 
-  // Contextual Navigation Controls - Elegant Mobile Design
+  // Contextual Navigation Controls
   const NavigationControls = () => {
-    const [showModeDropdown, setShowModeDropdown] = useState(false);
-    const [menuVisible, setMenuVisible] = useState(true);
+    if (!shouldShowMenu) return null;
     
-    // Auto-hide menu after 3 seconds of inactivity
-    useEffect(() => {
-      const timer = setTimeout(() => setMenuVisible(false), 3000);
-      return () => clearTimeout(timer);
-    }, [currentPhoto, viewMode, filterMode]);
+    return (
+      <motion.div 
+        className="fixed top-0 left-0 right-0 z-[60] px-4 pt-[env(safe-area-inset-top)]"
+        initial={{ y: -100, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        transition={{ type: "spring", stiffness: 300, damping: 30 }}
+      >
+        <div className="flex items-center justify-between">
+          
+          {/* Home Button - Left */}
+          <motion.button
+            onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+            className="w-10 h-10 rounded-xl flex items-center justify-center bg-black/40 backdrop-blur-md text-white active:bg-white/30 touch-manipulation pointer-events-auto border border-white/10 shadow-xl"
+            whileTap={{ scale: 0.9 }}
+          >
+            <Home className="h-5 w-5" />
+          </motion.button>
 
-    // Close dropdown when clicking outside
-    useEffect(() => {
-      const handleClickOutside = (event: MouseEvent) => {
-        if (showModeDropdown) {
-          setShowModeDropdown(false);
-        }
-      };
-      
-      if (showModeDropdown) {
-        document.addEventListener('click', handleClickOutside);
-        return () => document.removeEventListener('click', handleClickOutside);
-      }
-    }, [showModeDropdown]);
+          {/* Navigation Controls - Center */}
+          <div className="bg-black/40 backdrop-blur-md rounded-2xl px-3 py-2 border border-white/10 shadow-xl pointer-events-auto">
+            <div className="flex items-center gap-1">
+              {/* Previous Button */}
+              <motion.button
+                onClick={navigatePrevious}
+                disabled={currentPage === 0}
+                className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-300 touch-manipulation ${
+                  currentPage === 0 
+                    ? 'bg-white/10 text-white/30' 
+                    : 'bg-white/20 text-white active:bg-white/30'
+                }`}
+                whileTap={currentPage > 0 ? { scale: 0.9 } : {}}
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </motion.button>
 
-    // Show menu on any interaction
-    const showMenu = () => setMenuVisible(true);
-    
-    // Always render menu but control visibility and interactivity
-    if (filteredPhotos.length > 0 && hasPassedWelcome) {
-      return (
-        <motion.div 
-          className="fixed top-0 left-0 right-0 z-[60] px-4 pt-[env(safe-area-inset-top)]"
-          initial={{ y: -100, opacity: 0 }}
-          animate={{ 
-            y: 0, 
-            opacity: isMenuVisible ? 1 : 0
-          }}
-          style={{
-            pointerEvents: isMenuVisible ? 'auto' : 'none'
-          }}
-          transition={{ type: "spring", stiffness: 300, damping: 30 }}
-        >
-          <div className="flex items-center justify-between">
-            
-            {/* Home Button - Left - Separate from main bar */}
-            <motion.button
-              onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-              className="w-10 h-10 rounded-xl flex items-center justify-center bg-black/40 backdrop-blur-md text-white active:bg-white/30 touch-manipulation pointer-events-auto border border-white/10 shadow-xl"
-              whileTap={{ scale: 0.9 }}
-            >
-              <Home className="h-5 w-5" />
-            </motion.button>
+              {/* Position Counter */}
+              <div className="bg-white/15 px-2 py-0.5 rounded-lg">
+                <span className="text-white text-sm font-medium">
+                  {currentPage + 1}/{totalPages}
+                </span>
+              </div>
 
-            {/* Navigation Controls - Center - Compact bar */}
-            <div className="bg-black/40 backdrop-blur-md rounded-2xl px-3 py-2 border border-white/10 shadow-xl pointer-events-auto">
-              <div className="flex items-center gap-1">
-                {/* Previous Button */}
-                <motion.button
-                  onClick={() => {
-                    navigatePrevious();
-                    showMenuNow();
-                  }}
-                  disabled={currentPhoto === 0}
-                  className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-300 touch-manipulation ${
-                    currentPhoto === 0 
-                      ? 'bg-white/10 text-white/30' 
-                      : 'bg-white/20 text-white active:bg-white/30'
-                  }`}
-                  whileTap={currentPhoto > 0 ? { scale: 0.9 } : {}}
-                >
-                  <ArrowUp className="h-4 w-4 rotate-[-90deg]" />
-                </motion.button>
-
-                {/* Position Counter */}
-                <div className="bg-white/15 px-2 py-0.5 rounded-lg">
-                  <span className="text-white text-sm font-medium">
-                    {currentPhoto + 1}/{filteredPhotos.length}
-                  </span>
-                </div>
-
-                {/* Next Button */}
-                <motion.button
-                  onClick={() => {
-                    navigateNext();
-                    showMenuNow();
-                  }}
-                  disabled={currentPhoto >= filteredPhotos.length - 1}
-                  className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-300 touch-manipulation ${
-                    currentPhoto >= filteredPhotos.length - 1
-                      ? 'bg-white/10 text-white/30' 
-                      : 'bg-white/20 text-white active:bg-white/30'
-                  }`}
-                  whileTap={currentPhoto < filteredPhotos.length - 1 ? { scale: 0.9 } : {}}
-                >
-                  <ArrowUp className="h-4 w-4 rotate-90" />
-                </motion.button>
-               </div>
-            </div>
-            
-            {/* Spacer to balance centering */}
-            <div className="w-10"></div>
+              {/* Next Button */}
+              <motion.button
+                onClick={navigateNext}
+                disabled={currentPage >= totalPages - 1}
+                className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-300 touch-manipulation ${
+                  currentPage >= totalPages - 1
+                    ? 'bg-white/10 text-white/30' 
+                    : 'bg-white/20 text-white active:bg-white/30'
+                }`}
+                whileTap={currentPage < totalPages - 1 ? { scale: 0.9 } : {}}
+              >
+                <ChevronRight className="h-4 w-4" />
+              </motion.button>
+             </div>
           </div>
-        </motion.div>
-      );
-    }
-
-    return null;
-  };
-
-  // Unified image interaction handling
-  const handleImageInteraction = (index: number) => {
-    if (!didSwipeRef.current) {
-      if (deviceType === 'desktop') {
-        // Desktop: open modal
-        setSelectedPhoto(index);
-      } else {
-        // Mobile: advance to next page
-        navigateToNextPage();
-      }
-    }
+          
+          {/* Spacer to balance centering */}
+          <div className="w-10"></div>
+        </div>
+      </motion.div>
+    );
   };
 
   const GalerieView = () => (
-  <div 
-      className="min-h-screen bg-gradient-to-b from-blue-50 via-green-50 to-blue-100 touch-pan-y overscroll-none select-none"
-      onTouchStart={handleTouchStart}
-      onTouchMove={handleTouchMove}
-      onTouchEnd={handleTouchEnd}
-    >
-      {/* Vue galerie interactive */}
+    <div className="min-h-screen bg-gradient-to-b from-blue-50 via-green-50 to-blue-100">
       <div className="relative h-screen overflow-hidden">
-        {/* Back to gallery home button - top left */}
-
         <motion.div 
           className="absolute inset-0 flex items-center"
           animate={{ x: `-${currentPage * 100}%` }}
@@ -697,8 +425,14 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes,
           {filteredPhotos.map((photo, index) => (
             <motion.div
               key={`${photo.id}-${index}`}
-              className={`flex-shrink-0 ${deviceType === 'mobile-portrait' ? 'w-full' : 'w-1/3'} h-full relative cursor-pointer`}
-              onClick={() => handleImageInteraction(index)}
+              className={`flex-shrink-0 ${deviceType === 'mobile-portrait' ? 'w-full' : 'w-1/3'} h-full relative`}
+              onClick={() => {
+                // Desktop only: open modal
+                if (deviceType === 'desktop') {
+                  setSelectedPhoto(index);
+                }
+                // Mobile: no action on image click
+              }}
               whileHover={{ scale: deviceType === 'desktop' ? 1.02 : 1 }}
               transition={{ type: "spring", stiffness: 300 }}
             >
@@ -727,18 +461,12 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes,
             </motion.div>
           ))}
         </motion.div>
-
       </div>
     </div>
   );
 
   const FleuveTemporelView = () => (
-  <div 
-      className="min-h-screen bg-gradient-to-b from-purple-50 to-pink-50 p-4 touch-pan-y overscroll-none select-none"
-      onTouchStart={handleTouchStart}
-      onTouchMove={handleTouchMove}
-      onTouchEnd={handleTouchEnd}
-    >
+    <div className="min-h-screen bg-gradient-to-b from-purple-50 to-pink-50 p-4">
       <div className="max-w-4xl mx-auto">
         <motion.h2
           className="text-2xl font-bold text-center mb-8 bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent"
@@ -798,12 +526,7 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes,
   );
 
   const MosaiqueVivanteView = () => (
-  <div 
-      className="min-h-screen bg-gradient-to-b from-green-50 to-emerald-50 p-4 touch-pan-y overscroll-none select-none"
-      onTouchStart={handleTouchStart}
-      onTouchMove={handleTouchMove}
-      onTouchEnd={handleTouchEnd}
-    >
+    <div className="min-h-screen bg-gradient-to-b from-green-50 to-emerald-50 p-4">
       <motion.div
         className="max-w-6xl mx-auto"
         initial={{ opacity: 0 }}
@@ -858,12 +581,7 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes,
     const photo = filteredPhotos[currentPhoto];
     
     return (
-  <div 
-        className="fixed inset-0 bg-black z-40 touch-pan-y overscroll-none select-none"
-        onTouchStart={handleTouchStart}
-        onTouchMove={handleTouchMove}
-        onTouchEnd={handleTouchEnd}
-      >
+      <div className="fixed inset-0 bg-black z-40">
         <motion.img
           key={currentPhoto}
           src={photo.url}
@@ -910,13 +628,10 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes,
             <div className="hidden md:flex justify-between items-center">
                <Button
                 variant="ghost"
-                onClick={() => {
-                  navigatePrevious();
-                  showMenuNow();
-                }}
+                onClick={navigatePrevious}
                 className="text-white hover:bg-white/20"
               >
-                <ArrowUp className="h-5 w-5 mr-2" />
+                <ChevronLeft className="h-5 w-5 mr-2" />
                {imagesPerPage === 1 ? 'Précédent' : `${imagesPerPage} précédentes`}
               </Button>
               
@@ -926,14 +641,11 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes,
               
               <Button
                 variant="ghost"
-                onClick={() => {
-                  navigateNext();
-                  showMenuNow();
-                }}
+                onClick={navigateNext}
                 className="text-white hover:bg-white/20"
               >
                 {imagesPerPage === 1 ? 'Suivant' : `${imagesPerPage} suivantes`}
-                <ArrowDown className="h-5 w-5 ml-2" />
+                <ChevronRight className="h-5 w-5 ml-2" />
               </Button>
             </div>
           </div>
