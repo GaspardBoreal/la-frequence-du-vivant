@@ -81,8 +81,9 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes,
 
   // Device detection
   const [deviceType, setDeviceType] = useState<'mobile-portrait' | 'mobile-landscape' | 'desktop'>('desktop');
-  const [prevDeviceType, setPrevDeviceType] = useState<'mobile-portrait' | 'mobile-landscape' | 'desktop'>('desktop');
+  
   const [currentPage, setCurrentPage] = useState(0);
+  const prevDeviceTypeRef = useRef<'mobile-portrait' | 'mobile-landscape' | 'desktop'>('desktop');
   
   useEffect(() => {
     const updateDeviceType = () => {
@@ -101,7 +102,6 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes,
         newDeviceType = 'desktop';
       }
       
-      setPrevDeviceType(deviceType);
       setDeviceType(newDeviceType);
     };
 
@@ -115,24 +115,51 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes,
   
   // Preserve position when device type changes (orientation rotation)
   useEffect(() => {
-    if (prevDeviceType !== deviceType && allPhotos.length > 0) {
-      // Calculate current image index from previous device type
-      const prevImagesPerPage = prevDeviceType === 'mobile-portrait' ? 1 : 3;
-      const currentImageIndex = currentPage * prevImagesPerPage;
-      
-      // Calculate new page that contains the same image
-      const newImagesPerPage = deviceType === 'mobile-portrait' ? 1 : 3;
-      const newPage = Math.floor(currentImageIndex / newImagesPerPage);
-      
-      // Ensure we don't exceed available pages (using allPhotos as safe fallback)
-      const photoCount = allPhotos.length;
-      const maxPages = Math.ceil(photoCount / newImagesPerPage) - 1;
-      const targetPage = Math.min(newPage, Math.max(0, maxPages));
-      
-      setCurrentPage(targetPage);
+    const prev = prevDeviceTypeRef.current;
+    if (prev === deviceType) return;
+
+    // Determine count according to current filter
+    const getFilteredCount = () => {
+      if (filterMode === 'all') return allPhotos.length;
+      switch (filterMode) {
+        case 'biodiversite':
+          return allPhotos.filter(p => p.thematicIcons.includes('🦋') || p.emotionalTags.includes('Éclat')).length;
+        case 'bioacoustique':
+          return allPhotos.filter(p => p.thematicIcons.includes('🎵') || p.emotionalTags.includes('Mélodie')).length;
+        case 'botanique':
+          return allPhotos.filter(p => p.thematicIcons.includes('🌿') || p.titre?.toLowerCase().includes('plante')).length;
+        case 'couleur':
+          return allPhotos.filter(p => p.titre?.toLowerCase().includes('couleur') || p.titre?.toLowerCase().includes('fleur')).length;
+        case 'saison':
+          return allPhotos.filter(p => p.titre?.toLowerCase().includes('printemps') || p.titre?.toLowerCase().includes('automne')).length;
+        default:
+          return allPhotos.length;
+      }
+    };
+
+    const count = getFilteredCount();
+    if (count === 0) {
+      prevDeviceTypeRef.current = deviceType;
+      return;
     }
-  }, [deviceType, prevDeviceType, currentPage, allPhotos.length]);
-  
+
+    const ipp = (t: 'mobile-portrait' | 'mobile-landscape' | 'desktop') => (t === 'mobile-portrait' ? 1 : 3);
+    const prevIPP = ipp(prev);
+    const newIPP = ipp(deviceType);
+
+    const currentFirstIndex = currentPage * prevIPP;
+    const newPage = Math.floor(currentFirstIndex / newIPP);
+
+    const maxPages = Math.max(0, Math.ceil(count / newIPP) - 1);
+    const targetPage = Math.min(Math.max(0, newPage), maxPages);
+
+    if (targetPage !== currentPage) {
+      setCurrentPage(targetPage);
+      setCurrentPhoto(targetPage * newIPP);
+    }
+
+    prevDeviceTypeRef.current = deviceType;
+  }, [deviceType, allPhotos.length, filterMode]);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const metadataCache = useRef<Map<string, { emotionalTags: string[], thematicIcons: string[] }>>(new Map());
 
