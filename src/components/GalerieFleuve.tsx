@@ -41,6 +41,7 @@ import { ExplorationMarcheComplete } from '../hooks/useExplorations';
 interface GalerieFluveProps {
   explorations: any[]; // Temporarily allow any to fix the immediate typing issue
   themes: RegionalTheme[];
+  showWelcome?: boolean; // Nouvelle prop pour contrôler l'affichage du menu
 }
 
 interface EnrichedPhoto {
@@ -64,7 +65,7 @@ interface EnrichedPhoto {
 type ViewMode = 'galerie' | 'fleuve-temporel' | 'mosaique-vivante' | 'ecoute-contemplative';
 type FilterMode = 'all' | 'biodiversite' | 'bioacoustique' | 'botanique' | 'couleur' | 'saison';
 
-const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes }) => {
+const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes, showWelcome = false }) => {
   const [allPhotos, setAllPhotos] = useState<EnrichedPhoto[]>([]);
   const [visiblePhotos, setVisiblePhotos] = useState<EnrichedPhoto[]>([]);
   const [currentPhoto, setCurrentPhoto] = useState<number>(0);
@@ -562,7 +563,8 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes 
     const showMenu = () => setMenuVisible(true);
     
     // Unified menu design for all platforms - Using the validated mobile design
-    if (filteredPhotos.length > 0 && isMenuVisible) {
+    // Ne pas afficher le menu si on est sur la page welcome ou si pas de photos
+    if (!showWelcome && filteredPhotos.length > 0 && isMenuVisible) {
       return (
         <motion.div 
           className="fixed top-0 left-0 right-0 z-[60] pointer-events-none px-4 pt-[env(safe-area-inset-top)]"
