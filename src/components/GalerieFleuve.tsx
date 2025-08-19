@@ -547,11 +547,11 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes 
                 >
                   <ArrowUp className="h-4 w-4 rotate-90" />
                 </motion.button>
-              </div>
-
-              {/* Right spacer to balance layout */}
-              <div className="w-10" />
+               </div>
             </div>
+            
+            {/* Spacer to balance centering */}
+            <div className="w-10"></div>
           </div>
         </motion.div>
       );
@@ -767,7 +767,7 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes 
                     {photo.ville}
                   </Badge>
                   <h3 className="text-lg font-bold mb-1">
-                    Fragments de {photo.departement}
+                    {photo.exploration?.descriptif_court || photo.exploration?.titre || `Exploration ${photo.ville}`}
                   </h3>
                 </motion.div>
               </div>
