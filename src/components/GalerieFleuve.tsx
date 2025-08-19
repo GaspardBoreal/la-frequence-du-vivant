@@ -426,14 +426,8 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes,
             <motion.div
               key={`${photo.id}-${index}`}
               className={`flex-shrink-0 ${deviceType === 'mobile-portrait' ? 'w-full' : 'w-1/3'} h-full relative`}
-              onClick={() => {
-                // Desktop only: open modal
-                if (deviceType === 'desktop') {
-                  setSelectedPhoto(index);
-                }
-                // Mobile: no action on image click
-              }}
-              whileHover={{ scale: deviceType === 'desktop' ? 1.02 : 1 }}
+              // No click action on any device
+              // No hover effect
               transition={{ type: "spring", stiffness: 300 }}
             >
               <img
@@ -489,8 +483,8 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes,
               transition={{ delay: index * 0.1 }}
             >
               <div className={`w-full ${deviceType !== 'desktop' ? 'px-2' : 'px-8'}`}>
-                <Card className="p-4 bg-white/80 backdrop-blur-sm hover:shadow-lg transition-all cursor-pointer"
-                      onClick={() => setSelectedPhoto(index)}>
+                <Card className="p-4 bg-white/80 backdrop-blur-sm hover:shadow-lg transition-all">
+                  {/* No click action - image interaction disabled */}
                   <div className="flex gap-4">
                     <img
                       src={photo.url}
@@ -545,7 +539,7 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes,
               animate={{ scale: 1, rotate: 0 }}
               transition={{ delay: index * 0.05, type: "spring" }}
               whileHover={{ scale: 1.05, zIndex: 10 }}
-              onClick={() => setSelectedPhoto(index)}
+              // No click action - image interaction disabled
             >
               <img
                 src={photo.url}
@@ -757,8 +751,8 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes,
       {/* Global navigation controls */}
       <NavigationControls />
 
-      {/* Photo detail modal */}
-      <PhotoModal />
+      {/* Photo detail modal - DISABLED */}
+      {/* <PhotoModal /> */}
 
       {/* Filter indicator */}
       {filterMode !== 'all' && (
