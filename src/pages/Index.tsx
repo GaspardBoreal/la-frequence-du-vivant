@@ -23,7 +23,10 @@ const Index = () => {
   };
 
   const handleCardClick = (viewMode: string) => {
-    navigate(`/marche/entre-deux-frequences-bonzac-bonzac?view=${viewMode}`);
+    console.log('🔧 DEBUG handleCardClick appelée avec viewMode:', viewMode);
+    const targetUrl = `/marche/entre-deux-frequences-bonzac-bonzac?view=${viewMode}`;
+    console.log('🔧 DEBUG Navigation vers:', targetUrl);
+    navigate(targetUrl);
   };
 
   return <HelmetProvider>

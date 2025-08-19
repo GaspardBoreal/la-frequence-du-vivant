@@ -16,6 +16,8 @@ export default function GalerieFluveExploration() {
   const { slug } = useParams<{ slug: string }>();
   const [searchParams] = useSearchParams();
   const initialView = searchParams.get('view') as 'galerie' | 'fleuve-temporel' | 'mosaique-vivante' | 'ecoute-contemplative' | null;
+  console.log('🔧 DEBUG GalerieFluveExploration - searchParams.get("view"):', searchParams.get('view'));
+  console.log('🔧 DEBUG GalerieFluveExploration - initialView after cast:', initialView);
   const { data: exploration, isLoading: explorationLoading } = useExploration(slug || '');
   const { data: explorationMarches, isLoading: marchesLoading } = useExplorationMarches(exploration?.id || '');
   

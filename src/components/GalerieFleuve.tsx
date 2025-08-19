@@ -69,10 +69,12 @@ type ViewMode = 'galerie' | 'fleuve-temporel' | 'mosaique-vivante' | 'ecoute-con
 type FilterMode = 'all' | 'biodiversite' | 'bioacoustique' | 'botanique' | 'couleur' | 'saison';
 
 const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes, showWelcome = false, initialViewMode }) => {
+  console.log('🔧 DEBUG GalerieFleuve - initialViewMode reçue:', initialViewMode);
   const [allPhotos, setAllPhotos] = useState<EnrichedPhoto[]>([]);
   const [visiblePhotos, setVisiblePhotos] = useState<EnrichedPhoto[]>([]);
   const [currentPhoto, setCurrentPhoto] = useState<number>(0);
   const [viewMode, setViewMode] = useState<ViewMode>(initialViewMode || 'galerie');
+  console.log('🔧 DEBUG GalerieFleuve - viewMode initialisé à:', viewMode);
   const [filterMode, setFilterMode] = useState<FilterMode>('all');
   const [isLoading, setIsLoading] = useState(true);
   const [loadingProgress, setLoadingProgress] = useState(0);
