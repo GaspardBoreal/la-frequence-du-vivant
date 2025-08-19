@@ -50,6 +50,7 @@ interface EnrichedPhoto {
   description?: string;
   ordre?: number;
   exploration: any; // Temporarily allow any
+  nomMarche: string;
   latitude?: number;
   longitude?: number;
   ville: string;
@@ -141,6 +142,7 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes 
                 description: photo.description,
                 ordre: photo.ordre,
                 exploration,
+                nomMarche: exploration.marche?.nom || exploration.marche?.nom_marche || exploration.titre || `Marche à ${exploration.marche?.ville}`,
                 latitude: exploration.marche?.latitude,
                 longitude: exploration.marche?.longitude,
                 ville: exploration.marche?.ville || 'Lieu mystérieux',
@@ -164,6 +166,7 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes 
                 description: exploration.descriptif_court,
                 ordre: index,
                 exploration,
+                nomMarche: exploration.nom || exploration.nom_marche || exploration.titre || `Exploration ${exploration.ville}`,
                 latitude: exploration.latitude,
                 longitude: exploration.longitude,
                 ville: exploration.ville || 'Lieu mystérieux',
@@ -767,7 +770,7 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes 
                     {photo.ville}
                   </Badge>
                   <h3 className="text-lg font-bold mb-1">
-                    {photo.exploration?.descriptif_court || photo.exploration?.titre || `Exploration ${photo.ville}`}
+                    {photo.nomMarche}
                   </h3>
                 </motion.div>
               </div>
