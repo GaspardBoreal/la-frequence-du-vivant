@@ -175,12 +175,6 @@ const GalerieFleuveWelcome: React.FC<GalerieFleuveWelcomeProps> = ({
                     {(theme?.description || description)?.replace(/<br\s*\/?>(\n)?/gi, ' ')}
                   </p>
                 )}
-                {description && description !== theme?.description && (
-                  <div 
-                    className="mt-4 text-base opacity-80 max-w-3xl prose prose-lg prose-invert" 
-                    dangerouslySetInnerHTML={{ __html: description }}
-                  />
-                )}
               </>
             )}
           </motion.div>
