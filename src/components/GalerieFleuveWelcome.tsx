@@ -2,6 +2,7 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Slider } from '@/components/ui/slider';
 import { 
   Palette, 
   Camera, 
@@ -14,7 +15,8 @@ import {
   Heart,
   Leaf,
   Flower2 as Flower,
-  Grape
+  Grape,
+  Settings
 } from 'lucide-react';
 import { ExplorationTheme } from '@/utils/explorationThemes';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -60,7 +62,18 @@ const GalerieFleuveWelcome: React.FC<GalerieFleuveWelcomeProps> = ({
     onStart?.();
   };
 
-  // Mobile: positionner les indicateurs à 30% de la hauteur de l'écran
+  // Tuning panel for testing positions
+  const [showTuning] = React.useState(() => new URLSearchParams(window.location.search).get('tune') === '1');
+  const [indicatorPosition, setIndicatorPosition] = React.useState(() => {
+    const saved = localStorage.getItem('tune-indicator-position');
+    return saved ? parseInt(saved) : 30;
+  });
+  const [buttonOffset, setButtonOffset] = React.useState(() => {
+    const saved = localStorage.getItem('tune-button-offset');
+    return saved ? parseInt(saved) : 20;
+  });
+
+  // Mobile: positionner les indicateurs selon le réglage
   const headerRef = React.useRef<HTMLDivElement>(null);
   const [mobileStatsMargin, setMobileStatsMargin] = React.useState<number | undefined>(undefined);
 
@@ -68,14 +81,24 @@ const GalerieFleuveWelcome: React.FC<GalerieFleuveWelcomeProps> = ({
     if (!isMobile) return;
     const compute = () => {
       const headerH = headerRef.current?.getBoundingClientRect().height ?? 0;
-      const targetTop = Math.round(window.innerHeight * 0.3);
+      const targetTop = Math.round(window.innerHeight * (indicatorPosition / 100));
       const margin = Math.max(0, targetTop - headerH);
       setMobileStatsMargin(margin);
     };
     compute();
     window.addEventListener('resize', compute);
     return () => window.removeEventListener('resize', compute);
-  }, [isMobile]);
+  }, [isMobile, indicatorPosition]);
+
+  const handleIndicatorChange = (value: number) => {
+    setIndicatorPosition(value);
+    localStorage.setItem('tune-indicator-position', value.toString());
+  };
+
+  const handleButtonChange = (value: number) => {
+    setButtonOffset(value);
+    localStorage.setItem('tune-button-offset', value.toString());
+  };
 
   // Particules adaptées au thème
   const renderParticles = () => {
@@ -254,6 +277,7 @@ const GalerieFleuveWelcome: React.FC<GalerieFleuveWelcomeProps> = ({
           {/* Bouton d'action - en bas pour mobile */}
           <motion.div
             className={`${isMobile ? 'mt-8' : ''}`}
+            style={isMobile ? { marginTop: `${buttonOffset}px` } : undefined}
             initial={{ y: 30, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             transition={{ delay: 0.8 }}
@@ -281,6 +305,51 @@ const GalerieFleuveWelcome: React.FC<GalerieFleuveWelcomeProps> = ({
           </div>
         </motion.div>
       </div>
+
+      {/* Tuning Panel - Only visible when ?tune=1 */}
+      {showTuning && (
+        <div className="fixed top-4 right-4 bg-black/80 backdrop-blur-md p-4 rounded-lg border border-white/20 z-50 text-white min-w-[280px]">
+          <div className="flex items-center gap-2 mb-4">
+            <Settings className="h-4 w-4" />
+            <h3 className="font-semibold">Réglage Position</h3>
+          </div>
+          
+          <div className="space-y-4">
+            <div>
+              <label className="text-sm font-medium mb-2 block">
+                Position indicateurs: {indicatorPosition}%
+              </label>
+              <Slider
+                value={[indicatorPosition]}
+                onValueChange={(value) => handleIndicatorChange(value[0])}
+                min={20}
+                max={45}
+                step={1}
+                className="w-full"
+              />
+            </div>
+            
+            <div>
+              <label className="text-sm font-medium mb-2 block">
+                Décalage bouton: {buttonOffset}px
+              </label>
+              <Slider
+                value={[buttonOffset]}
+                onValueChange={(value) => handleButtonChange(value[0])}
+                min={-40}
+                max={120}
+                step={5}
+                className="w-full"
+              />
+            </div>
+          </div>
+          
+          <div className="mt-4 text-xs text-white/60">
+            URL: ?tune=1<br/>
+            DevTools: F12 → Toggle device toolbar → iPhone 13
+          </div>
+        </div>
+      )}
     </motion.section>
   );
 };
