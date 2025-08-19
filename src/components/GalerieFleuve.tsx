@@ -237,14 +237,14 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes 
   useEffect(() => {
     if (!isMobile) return;
 
-    const handleScroll = () => {
-      const galerieElement = document.getElementById('galerie');
-      if (galerieElement) {
-        const rect = galerieElement.getBoundingClientRect();
-        // Show menu when galerie section is visible
-        setIsMenuVisible(rect.top <= window.innerHeight && rect.bottom >= 0);
-      }
-    };
+      const handleScroll = () => {
+        const galerieElement = document.getElementById('galerie');
+        if (galerieElement) {
+          const rect = galerieElement.getBoundingClientRect();
+          // Show menu only after passing the accueil anchor
+          setIsMenuVisible(rect.top < 0);
+        }
+      };
 
     // Initial check
     handleScroll();
