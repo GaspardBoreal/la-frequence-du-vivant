@@ -76,6 +76,7 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes,
   const [selectedPhoto, setSelectedPhoto] = useState<number | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [isMenuVisible, setIsMenuVisible] = useState(false);
+  const [hasPassedWelcome, setHasPassedWelcome] = useState(!showWelcome); // true if no welcome section
   const isMobile = useIsMobile();
 
   // Simplified device detection for stable navigation
@@ -271,25 +272,37 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes,
     };
   }, [isPlaying, viewMode, allPhotos.length]);
 
-  // Menu visibility based on scroll position for mobile
+  // Unified scroll and welcome detection for proper menu control
   useEffect(() => {
-    if (!isMobile) return;
-
-      const handleScroll = () => {
-        const galerieElement = document.getElementById('galerie');
-        if (galerieElement) {
-          const rect = galerieElement.getBoundingClientRect();
-          // Show menu only after passing the accueil anchor
-          setIsMenuVisible(rect.top < 0);
+    const handleScrollOrAnchorCheck = () => {
+      const galerieElement = document.getElementById('galerie');
+      
+      if (showWelcome && galerieElement) {
+        // There's a welcome section, check if we've passed the anchor
+        const rect = galerieElement.getBoundingClientRect();
+        const passedAnchor = rect.top < 0;
+        setHasPassedWelcome(passedAnchor);
+        
+        // For mobile, also control isMenuVisible based on scroll
+        if (isMobile) {
+          setIsMenuVisible(passedAnchor);
         }
-      };
+      } else if (!showWelcome) {
+        // No welcome section, we can always show menu
+        setHasPassedWelcome(true);
+        if (isMobile) {
+          setIsMenuVisible(true);
+        }
+      }
+    };
 
     // Initial check
-    handleScroll();
+    handleScrollOrAnchorCheck();
     
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, [isMobile]);
+    // Listen to scroll events
+    window.addEventListener('scroll', handleScrollOrAnchorCheck);
+    return () => window.removeEventListener('scroll', handleScrollOrAnchorCheck);
+  }, [isMobile, showWelcome]);
   useEffect(() => {
     if (isMobile) return;
 
@@ -528,8 +541,8 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes,
     const showMenu = () => setMenuVisible(true);
     
     // Unified menu design for all platforms - Using the validated mobile design
-    // Afficher le menu seulement quand on n'est PAS sur la page d'accueil (showWelcome = false)
-    if (showWelcome === false && filteredPhotos.length > 0 && isMenuVisible) {
+    // Show menu when we have photos, passed the welcome section, and menu should be visible
+    if (filteredPhotos.length > 0 && hasPassedWelcome && isMenuVisible) {
       return (
         <motion.div 
           className="fixed top-0 left-0 right-0 z-[60] pointer-events-none px-4 pt-[env(safe-area-inset-top)]"
