@@ -11,12 +11,20 @@ import { useNavigate } from 'react-router-dom';
 import { useIsMobile } from '../hooks/use-mobile';
 import 'leaflet/dist/leaflet.css';
 
-// Fix Leaflet default markers
-delete (L.Icon.Default.prototype as any)._getIconUrl;
-L.Icon.Default.mergeOptions({
-  iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
-  iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
+// Custom marker icon for Dordogne theme
+const customIcon = new L.Icon({
+  iconUrl: 'data:image/svg+xml;base64,' + btoa(`
+    <svg width="25" height="41" viewBox="0 0 25 41" xmlns="http://www.w3.org/2000/svg">
+      <path d="M12.5 0C5.596 0 0 5.596 0 12.5c0 12.5 12.5 28.5 12.5 28.5s12.5-16 12.5-28.5C25 5.596 19.404 0 12.5 0z" fill="#8B4513"/>
+      <circle cx="12.5" cy="12.5" r="6" fill="#FFFFFF"/>
+      <circle cx="12.5" cy="12.5" r="3" fill="#8B4513"/>
+    </svg>
+  `),
+  iconSize: [25, 41],
+  iconAnchor: [12, 41],
+  popupAnchor: [1, -34],
   shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
+  shadowSize: [41, 41]
 });
 
 interface FleuveTemporelProps {
@@ -275,6 +283,7 @@ const FleuveTemporel: React.FC<FleuveTemporelProps> = ({ explorations, explorati
                 <Marker 
                   key={`${marche.id}-${index}`}
                   position={[Number(marche.latitude), Number(marche.longitude)]}
+                  icon={customIcon}
                   eventHandlers={{
                     click: () => handleMarkerClick(marche)
                   }}
@@ -284,15 +293,13 @@ const FleuveTemporel: React.FC<FleuveTemporelProps> = ({ explorations, explorati
                       <h3 className="font-semibold">{marche.nomMarche || marche.ville}</h3>
                       <p className="text-sm">{marche.ville}, {marche.departement}</p>
                       <p className="text-sm">{marche.region}</p>
-                      <div className="mt-2 space-y-1">
-                        <div className="flex items-center text-xs">
-                          <Camera className="h-3 w-3 mr-1" />
-                          {marche.photos?.length || 0} photos
-                        </div>
-                        <div className="flex items-center text-xs">
-                          <Volume2 className="h-3 w-3 mr-1" />
-                          {marche.audioFiles?.length || marche.audioData?.length || 0} audio
-                        </div>
+                      <div className="flex items-center text-xs">
+                        <Camera className="h-3 w-3 mr-1" />
+                        {marche.photos?.length || 0} photos
+                      </div>
+                      <div className="flex items-center text-xs">
+                        <Volume2 className="h-3 w-3 mr-1" />
+                        {marche.audioFiles?.length || marche.audioData?.length || 0} audio
                       </div>
                     </div>
                   </Popup>
