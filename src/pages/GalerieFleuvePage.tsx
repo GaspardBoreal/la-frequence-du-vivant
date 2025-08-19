@@ -7,10 +7,22 @@ import GalerieFleuve from '../components/GalerieFleuve';
 import { useSupabaseMarches } from '../hooks/useSupabaseMarches';
 import { REGIONAL_THEMES } from '../utils/regionalThemes';
 import { useAnimatedCounter } from '../hooks/useAnimatedCounter';
+import { useSearchParams } from 'react-router-dom';
 
 const GalerieFleuvePage: React.FC = () => {
   const { data: marches = [], isLoading } = useSupabaseMarches();
+  const [searchParams] = useSearchParams();
   const [showWelcome, setShowWelcome] = useState(true);
+  
+  // Get view mode from URL parameters
+  const viewMode = searchParams.get('view') as 'galerie' | 'fleuve-temporel' | null;
+  
+  // If we have a specific view mode, don't show welcome
+  React.useEffect(() => {
+    if (viewMode) {
+      setShowWelcome(false);
+    }
+  }, [viewMode]);
 
   // Calculate statistics
   const totalPhotos = marches.reduce((sum, marche) => sum + (marche.photos?.length || 0), 0);
@@ -208,6 +220,7 @@ const GalerieFleuvePage: React.FC = () => {
         <GalerieFleuve 
           explorations={marches} 
           themes={Object.values(REGIONAL_THEMES)}
+          viewMode={viewMode || 'galerie'}
         />
       </motion.div>
     </AnimatePresence>

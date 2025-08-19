@@ -63,6 +63,9 @@ const GalerieFleuveWelcome: React.FC<GalerieFleuveWelcomeProps> = ({
   const handleModeClick = (modeLabel: string) => {
     if (modeLabel === 'Galerie') {
       handleStart(); // Same action as "Commencer l'exploration"
+    } else if (modeLabel === 'Fleuve temporel') {
+      // Navigate to fleuve temporel view
+      window.location.href = '/galerie-fleuve?view=fleuve-temporel';
     }
     // TODO: Add other mode handlers later
   };

@@ -33,11 +33,13 @@ import { Card } from './ui/card';
 import { Dialog, DialogContent, DialogClose } from './ui/dialog';
 import { useIsMobile } from '../hooks/use-mobile';
 import { ExplorationMarcheComplete } from '../hooks/useExplorations';
+import FleuveTemporel from './FleuveTemporel';
 
 interface GalerieFluveProps {
   explorations: any[];
   themes: RegionalTheme[];
   showWelcome?: boolean;
+  viewMode?: ViewMode;
 }
 
 interface EnrichedPhoto {
@@ -58,14 +60,14 @@ interface EnrichedPhoto {
   thematicIcons: string[];
 }
 
-type ViewMode = 'galerie';
+type ViewMode = 'galerie' | 'fleuve-temporel';
 type FilterMode = 'all' | 'biodiversite' | 'bioacoustique' | 'botanique' | 'couleur' | 'saison';
 
-const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes, showWelcome = false }) => {
+const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes, showWelcome = false, viewMode: initialViewMode = 'galerie' }) => {
   const [allPhotos, setAllPhotos] = useState<EnrichedPhoto[]>([]);
   const [visiblePhotos, setVisiblePhotos] = useState<EnrichedPhoto[]>([]);
   const [currentPhoto, setCurrentPhoto] = useState<number>(0);
-  const [viewMode] = useState<ViewMode>('galerie');
+  const [viewMode, setViewMode] = useState<ViewMode>(initialViewMode);
   const [filterMode, setFilterMode] = useState<FilterMode>('all');
   const [isLoading, setIsLoading] = useState(true);
   const [loadingProgress, setLoadingProgress] = useState(0);
@@ -484,27 +486,34 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes,
 
   return (
     <div className="relative">
-      {/* Render current view - only galerie mode supported */}
-      <GalerieView />
+      {/* Render based on view mode */}
+      {viewMode === 'fleuve-temporel' ? (
+        <FleuveTemporel explorations={explorations} />
+      ) : (
+        <>
+          {/* Render current view - only galerie mode supported */}
+          <GalerieView />
 
-      {/* Global navigation controls */}
-      <NavigationControls />
+          {/* Global navigation controls */}
+          <NavigationControls />
 
-      {/* Photo detail modal - DISABLED */}
-      {/* <PhotoModal /> */}
+          {/* Photo detail modal - DISABLED */}
+          {/* <PhotoModal /> */}
 
-      {/* Filter indicator */}
-      {filterMode !== 'all' && (
-        <motion.div
-          className={`fixed ${deviceType !== 'desktop' ? 'top-4 left-4' : 'top-6 right-6'} z-40`}
-          initial={{ scale: 0, rotate: -10 }}
-          animate={{ scale: 1, rotate: 0 }}
-          transition={{ type: "spring", stiffness: 500, damping: 30 }}
-        >
-          <Badge className="bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-lg shadow-amber-400/30 px-3 py-1 rounded-full backdrop-blur-sm border border-amber-300/20">
-            🌿 {filterMode}
-          </Badge>
-        </motion.div>
+          {/* Filter indicator */}
+          {filterMode !== 'all' && (
+            <motion.div
+              className={`fixed ${deviceType !== 'desktop' ? 'top-4 left-4' : 'top-6 right-6'} z-40`}
+              initial={{ scale: 0, rotate: -10 }}
+              animate={{ scale: 1, rotate: 0 }}
+              transition={{ type: "spring", stiffness: 500, damping: 30 }}
+            >
+              <Badge className="bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-lg shadow-amber-400/30 px-3 py-1 rounded-full backdrop-blur-sm border border-amber-300/20">
+                🌿 {filterMode}
+              </Badge>
+            </motion.div>
+          )}
+        </>
       )}
     </div>
   );
