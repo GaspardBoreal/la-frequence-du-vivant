@@ -66,7 +66,7 @@ const GalerieFleuveWelcome: React.FC<GalerieFleuveWelcomeProps> = ({
   const [showTuning] = React.useState(() => new URLSearchParams(window.location.search).get('tune') === '1');
   const [indicatorPosition, setIndicatorPosition] = React.useState(() => {
     const saved = localStorage.getItem('tune-indicator-position');
-    return saved ? parseInt(saved) : 15;
+    return saved ? parseInt(saved) : 34;
   });
   const [buttonOffset, setButtonOffset] = React.useState(() => {
     const saved = localStorage.getItem('tune-button-offset');
@@ -218,32 +218,32 @@ const GalerieFleuveWelcome: React.FC<GalerieFleuveWelcomeProps> = ({
             animate={{ y: 0, opacity: 1 }}
             transition={{ delay: 0.4 }}
           >
-            <div className="text-center">
+            <div className="text-center w-full flex flex-col items-center">
               <div className={`flex items-center justify-center ${isMobile ? 'mb-1' : 'mb-2'}`}>
                 <MapPin className={`${isMobile ? 'h-4 w-4 mr-1' : 'h-5 w-5 mr-2'}`} />
                 <span className={`${isMobile ? 'text-2xl' : 'text-3xl'} font-bold`}>{stats.marches}</span>
               </div>
-              <p className={`${isMobile ? 'text-xs' : 'text-sm'} opacity-80`}>
+              <p className={`${isMobile ? 'text-xs' : 'text-sm'} opacity-80 text-center`}>
                 {stats.marches > 1 ? 'Marches' : 'Marche'}
               </p>
             </div>
-            <div className="text-center">
+            <div className="text-center w-full flex flex-col items-center">
               <div className={`flex items-center justify-center ${isMobile ? 'mb-1' : 'mb-2'}`}>
                 <Camera className={`${isMobile ? 'h-4 w-4 mr-1' : 'h-5 w-5 mr-2'}`} />
                 <span className={`${isMobile ? 'text-2xl' : 'text-3xl'} font-bold`}>{stats.photos}</span>
               </div>
-              <p className={`${isMobile ? 'text-xs' : 'text-sm'} opacity-80`}>
+              <p className={`${isMobile ? 'text-xs' : 'text-sm'} opacity-80 text-center`}>
                 {isMobile ? 'Observations' : 'Photos'}
               </p>
             </div>
-            <div className="text-center">
+            <div className="text-center w-full flex flex-col items-center">
               <div className={`flex items-center justify-center ${isMobile ? 'mb-1' : 'mb-2'}`}>
                 <Clock className={`${isMobile ? 'h-4 w-4 mr-1' : 'h-5 w-5 mr-2'}`} />
                 <span className={`${isMobile ? 'text-2xl' : 'text-3xl'} font-bold`}>
                   {isMobile ? '480' : stats.regions}
                 </span>
               </div>
-              <p className={`${isMobile ? 'text-xs' : 'text-sm'} opacity-80`}>
+              <p className={`${isMobile ? 'text-xs' : 'text-sm'} opacity-80 text-center`}>
                 {isMobile ? 'Km' : (stats.regions > 1 ? 'Régions' : 'Région')}
               </p>
             </div>
