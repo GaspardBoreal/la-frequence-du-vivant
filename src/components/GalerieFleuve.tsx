@@ -3,7 +3,6 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Camera, 
   Map as MapIcon, 
-  Clock, 
   Palette, 
   Heart, 
   Eye, 
@@ -13,10 +12,6 @@ import {
   TreePine,
   Sparkles,
   Compass,
-  Play,
-  Pause,
-  ArrowUp,
-  ArrowDown,
   Grid3X3,
   Search,
   Filter,
@@ -26,7 +21,6 @@ import {
   X,
   Waves,
   Star,
-  Music,
   Home,
   ChevronLeft,
   ChevronRight
@@ -44,7 +38,6 @@ interface GalerieFluveProps {
   explorations: any[];
   themes: RegionalTheme[];
   showWelcome?: boolean;
-  initialViewMode?: ViewMode;
 }
 
 interface EnrichedPhoto {
@@ -65,29 +58,18 @@ interface EnrichedPhoto {
   thematicIcons: string[];
 }
 
-type ViewMode = 'galerie' | 'fleuve-temporel' | 'mosaique-vivante' | 'ecoute-contemplative';
+type ViewMode = 'galerie';
 type FilterMode = 'all' | 'biodiversite' | 'bioacoustique' | 'botanique' | 'couleur' | 'saison';
 
-const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes, showWelcome = false, initialViewMode }) => {
-  console.log('🔧 DEBUG GalerieFleuve - initialViewMode reçue:', initialViewMode);
+const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes, showWelcome = false }) => {
   const [allPhotos, setAllPhotos] = useState<EnrichedPhoto[]>([]);
   const [visiblePhotos, setVisiblePhotos] = useState<EnrichedPhoto[]>([]);
   const [currentPhoto, setCurrentPhoto] = useState<number>(0);
-  const [viewMode, setViewMode] = useState<ViewMode>(initialViewMode || 'galerie');
-  console.log('🔧 DEBUG GalerieFleuve - viewMode initialisé à:', viewMode);
+  const [viewMode] = useState<ViewMode>('galerie');
   const [filterMode, setFilterMode] = useState<FilterMode>('all');
-
-  // Sync when initialViewMode prop changes after mount (e.g., URL param set after navigation)
-  useEffect(() => {
-    if (initialViewMode && initialViewMode !== viewMode) {
-      console.log('🔧 DEBUG GalerieFleuve - sync viewMode depuis prop:', initialViewMode);
-      setViewMode(initialViewMode);
-    }
-  }, [initialViewMode]);
   const [isLoading, setIsLoading] = useState(true);
   const [loadingProgress, setLoadingProgress] = useState(0);
   const [selectedPhoto, setSelectedPhoto] = useState<number | null>(null);
-  const [isPlaying, setIsPlaying] = useState(false);
   const isMobile = useIsMobile();
 
   // Device detection
@@ -314,25 +296,7 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes,
     }
   }, [explorations, generateMetadata]);
 
-  // Auto-navigation pour le mode immersion
-  useEffect(() => {
-    if (isPlaying && viewMode === 'ecoute-contemplative') {
-      intervalRef.current = setInterval(() => {
-        setCurrentPhoto(prev => (prev + 1) % allPhotos.length);
-      }, 4000);
-    } else {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-        intervalRef.current = null;
-      }
-    }
-
-    return () => {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-      }
-    };
-  }, [isPlaying, viewMode, allPhotos.length]);
+  // Auto-navigation removed - only galerie mode supported
 
   // Filtrage intelligent avec mémoïsation
   const filteredPhotos = useMemo(() => {
@@ -518,294 +482,10 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes,
     </div>
   );
 
-  const FleuveTemporelView = () => (
-    <div className="min-h-screen bg-gradient-to-b from-purple-50 to-pink-50 p-4">
-      <div className="max-w-4xl mx-auto">
-        <motion.h2
-          className="text-2xl font-bold text-center mb-8 bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent"
-          initial={{ y: -50, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-        >
-          Remontée Temporelle du Vivant
-        </motion.h2>
-
-        {/* Timeline interactive */}
-        <div className="relative">
-          <div className="absolute left-1/2 transform -translate-x-1/2 w-1 bg-gradient-to-b from-purple-400 to-pink-400 h-full" />
-          
-          {filteredPhotos.map((photo, index) => (
-            <motion.div
-              key={`${photo.id}-temporal`}
-              className={`flex items-center mb-8 ${index % 2 === 0 ? 'flex-row' : 'flex-row-reverse'}`}
-              initial={{ x: index % 2 === 0 ? -100 : 100, opacity: 0 }}
-              animate={{ x: 0, opacity: 1 }}
-              transition={{ delay: index * 0.1 }}
-            >
-              <div className={`w-full ${deviceType !== 'desktop' ? 'px-2' : 'px-8'}`}>
-                <Card className="p-4 bg-white/80 backdrop-blur-sm hover:shadow-lg transition-all">
-                  {/* No click action - image interaction disabled */}
-                  <div className="flex gap-4">
-                    <img
-                      src={photo.url}
-                      alt={photo.titre || 'Photo exploration'}
-                      className="w-20 h-20 object-cover rounded-lg"
-                    />
-                    <div className="flex-1">
-                      <h4 className="font-bold text-sm">{photo.ville}</h4>
-                      <p className="text-xs text-gray-600">{photo.departement}</p>
-                      <div className="flex gap-2 mt-2">
-                        <Badge variant="outline" className="text-xs">
-                          <Clock className="h-3 w-3 mr-1" />
-                          {photo.date || 'Intemporel'}
-                        </Badge>
-                        {photo.emotionalTags.slice(0, 1).map(tag => (
-                          <Badge key={tag} variant="outline" className="text-xs">
-                            {tag}
-                          </Badge>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                </Card>
-              </div>
-              
-              {/* Timeline dot */}
-              <div className="absolute left-1/2 transform -translate-x-1/2 w-4 h-4 bg-white rounded-full border-4 border-purple-400 z-10" />
-            </motion.div>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
-
-  const MosaiqueVivanteView = () => (
-    <div className="min-h-screen bg-gradient-to-b from-green-50 to-emerald-50 p-4">
-      <motion.div
-        className="max-w-6xl mx-auto"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-      >
-        <h2 className="text-2xl font-bold text-center mb-8 bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent">
-          Mosaïque Vivante du Territoire
-        </h2>
-
-        <div className={`grid gap-4 ${deviceType !== 'desktop' ? 'grid-cols-2' : 'grid-cols-3 lg:grid-cols-4'}`}>
-          {filteredPhotos.map((photo, index) => (
-            <motion.div
-              key={`${photo.id}-mosaic`}
-              className="relative group cursor-pointer aspect-square overflow-hidden rounded-xl"
-              initial={{ scale: 0, rotate: -10 }}
-              animate={{ scale: 1, rotate: 0 }}
-              transition={{ delay: index * 0.05, type: "spring" }}
-              whileHover={{ scale: 1.05, zIndex: 10 }}
-              // No click action - image interaction disabled
-            >
-              <img
-                src={photo.url}
-                alt={photo.titre || 'Photo exploration'}
-                className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-              
-              <div className="absolute bottom-2 left-2 right-2 text-white opacity-0 group-hover:opacity-100 transition-opacity">
-                <p className="text-xs font-bold truncate">{photo.ville}</p>
-                <p className="text-xs opacity-75">{photo.region}</p>
-                <div className="flex gap-1 mt-1">
-                  {photo.thematicIcons.slice(0, 2).map((icon, i) => (
-                    <span key={i} className="text-xs">{icon}</span>
-                  ))}
-                </div>
-              </div>
-
-              {/* Indicateur sensoriel */}
-              <div className="absolute top-2 right-2">
-                <div className="w-3 h-3 rounded-full bg-gradient-to-r from-green-400 to-emerald-400 animate-pulse" />
-              </div>
-            </motion.div>
-          ))}
-        </div>
-      </motion.div>
-    </div>
-  );
-
-  const EcouteContemplativeView = () => {
-    if (filteredPhotos.length === 0) return null;
-    
-    const photo = filteredPhotos[currentPhoto];
-    
-    return (
-      <div className="fixed inset-0 bg-black z-40">
-        <motion.img
-          key={currentPhoto}
-          src={photo.url}
-          alt={photo.titre || 'Photo exploration'}
-          className="w-full h-full object-cover"
-          initial={{ scale: 1.1, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          transition={{ duration: 0.8 }}
-        />
-        
-        {/* Overlay narratif */}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
-        
-        <motion.div
-          className="absolute bottom-0 left-0 right-0 p-6 text-white"
-          initial={{ y: 100, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          transition={{ delay: 0.5 }}
-        >
-          <div className="max-w-4xl mx-auto">
-            <h3 className="text-2xl md:text-4xl font-bold mb-4">
-              {photo.ville}, {photo.departement}
-            </h3>
-            <p className="text-lg opacity-90 mb-4">
-              {photo.nomMarche || photo.titre}
-            </p>
-            
-            <div className="flex flex-wrap gap-2 mb-6">
-              {photo.emotionalTags.slice(0, 3).map(tag => (
-                <Badge key={tag} className="bg-white/20 text-white border-white/30">
-                  <Sparkles className="h-3 w-3 mr-1" />
-                  {tag}
-                </Badge>
-              ))}
-              {photo.thematicIcons.slice(0, 2).map((icon, i) => (
-                <Badge key={i} className="bg-white/20 text-white border-white/30">
-                  <span className="mr-1">{icon}</span>
-                  Essence
-                </Badge>
-              ))}
-            </div>
-
-            {/* Navigation immersive */}
-            <div className="hidden md:flex justify-between items-center">
-               <Button
-                variant="ghost"
-                onClick={navigatePrevious}
-                className="text-white hover:bg-white/20"
-              >
-                <ChevronLeft className="h-5 w-5 mr-2" />
-               {imagesPerPage === 1 ? 'Précédent' : `${imagesPerPage} précédentes`}
-              </Button>
-              
-              <span className="text-sm opacity-75">
-                {currentPhoto + 1} / {filteredPhotos.length}
-              </span>
-              
-              <Button
-                variant="ghost"
-                onClick={navigateNext}
-                className="text-white hover:bg-white/20"
-              >
-                {imagesPerPage === 1 ? 'Suivant' : `${imagesPerPage} suivantes`}
-                <ChevronRight className="h-5 w-5 ml-2" />
-              </Button>
-            </div>
-          </div>
-        </motion.div>
-      </div>
-    );
-  };
-
-  const PhotoModal = () => {
-    if (selectedPhoto === null) return null;
-    
-    const photo = filteredPhotos[selectedPhoto];
-    
-    return (
-      <Dialog open={selectedPhoto !== null} onOpenChange={() => setSelectedPhoto(null)}>
-        <DialogContent className="max-w-4xl w-full h-full md:h-auto bg-black/90 border-none p-0">
-          <DialogClose className="absolute top-4 right-4 z-50 text-white hover:bg-white/20 rounded-full p-2">
-            <X className="h-6 w-6" />
-          </DialogClose>
-          
-          <div className="relative">
-            <img
-              src={photo.url}
-              alt={photo.titre || 'Photo exploration'}
-              className="w-full h-auto max-h-screen object-contain"
-            />
-            
-            <div className="absolute bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-black/80 to-transparent text-white">
-              <h3 className="text-xl font-bold mb-2">{photo.ville}</h3>
-              <p className="text-sm opacity-90 mb-4">{photo.departement} • {photo.region}</p>
-              
-              <div className="flex gap-2 mb-4">
-                {photo.emotionalTags.slice(0, 2).map(tag => (
-                  <Badge key={tag} className="bg-white/20 text-white border-white/30">
-                    {tag}
-                  </Badge>
-                ))}
-              </div>
-              
-              <div className="flex gap-2">
-                <Button size="sm" variant="ghost" className="text-white hover:bg-white/20">
-                  <Download className="h-4 w-4 mr-2" />
-                  Télécharger
-                </Button>
-                <Button size="sm" variant="ghost" className="text-white hover:bg-white/20">
-                  <Share2 className="h-4 w-4 mr-2" />
-                  Partager
-                </Button>
-              </div>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
-    );
-  };
-
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-gradient-to-b from-blue-50 via-purple-50 to-pink-50 flex items-center justify-center">
-        <div className="text-center max-w-md mx-auto px-4">
-          <motion.div
-            className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full mx-auto mb-4"
-            animate={{ rotate: 360 }}
-            transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-          />
-          
-          {/* Barre de progression */}
-          <div className="w-full bg-gray-200 rounded-full h-2 mb-4">
-            <motion.div 
-              className="bg-gradient-to-r from-blue-500 to-purple-500 h-2 rounded-full"
-              initial={{ width: 0 }}
-              animate={{ width: `${loadingProgress}%` }}
-              transition={{ duration: 0.3 }}
-            />
-          </div>
-          
-          <p className="text-lg font-medium text-gray-700">
-            Révélation des fragments visuels...
-          </p>
-          <p className="text-sm text-gray-500 mt-2">
-            {loadingProgress < 100 
-              ? `Chargement ${Math.round(loadingProgress)}% • ${allPhotos.length} photos découvertes` 
-              : "Finalisation de l'expérience visuelle..."
-            }
-          </p>
-          
-          {allPhotos.length > 0 && (
-            <motion.p 
-              className="text-xs text-primary mt-2"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-            >
-              Premières images disponibles ! Finalisation en cours...
-            </motion.p>
-          )}
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="relative">
-      {/* Render current view */}
-      {viewMode === 'galerie' && <GalerieView />}
-      {viewMode === 'fleuve-temporel' && <FleuveTemporelView />}
-      {viewMode === 'mosaique-vivante' && <MosaiqueVivanteView />}
-      {viewMode === 'ecoute-contemplative' && <EcouteContemplativeView />}
+      {/* Render current view - only galerie mode supported */}
+      <GalerieView />
 
       {/* Global navigation controls */}
       <NavigationControls />

@@ -22,12 +22,6 @@ const Index = () => {
     navigate('/galerie-fleuve');
   };
 
-  const handleCardClick = (viewMode: string) => {
-    console.log('🔧 DEBUG handleCardClick appelée avec viewMode:', viewMode);
-    const targetUrl = `/galerie-fleuve?view=${viewMode}`;
-    console.log('🔧 DEBUG Navigation vers:', targetUrl);
-    navigate(targetUrl);
-  };
 
   return <HelmetProvider>
       <div className="min-h-screen bg-background relative overflow-hidden">
@@ -84,10 +78,7 @@ const Index = () => {
           <div className="max-w-6xl mx-auto px-6 py-24">
             <div className="text-center space-y-12">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                <button 
-                  onClick={() => handleCardClick('ecoute-contemplative')}
-                  className="gaspard-card rounded-xl p-8 space-y-4 hover:scale-105 transition-all duration-300 hover:shadow-2xl cursor-pointer border-0 bg-transparent w-full"
-                >
+                <div className="gaspard-card rounded-xl p-8 space-y-4 hover:scale-105 transition-all duration-300 hover:shadow-2xl border-0 bg-transparent w-full">
                   <div className="w-12 h-12 bg-gradient-to-r from-green-500 to-emerald-500 rounded-full flex items-center justify-center mx-auto">
                     <span className="text-white text-xl">🎵</span>
                   </div>
@@ -95,12 +86,9 @@ const Index = () => {
                   <p className="text-gray-300">
                     Exploration des paysages sonores et des fréquences du vivant
                   </p>
-                </button>
+                </div>
 
-                <button 
-                  onClick={() => handleCardClick('fleuve-temporel')}
-                  className="gaspard-card rounded-xl p-8 space-y-4 hover:scale-105 transition-all duration-300 hover:shadow-2xl cursor-pointer border-0 bg-transparent w-full"
-                >
+                <div className="gaspard-card rounded-xl p-8 space-y-4 hover:scale-105 transition-all duration-300 hover:shadow-2xl border-0 bg-transparent w-full">
                   <div className="w-12 h-12 bg-gradient-to-r from-green-500 to-emerald-500 rounded-full flex items-center justify-center mx-auto">
                     <span className="text-white text-xl">🌱</span>
                   </div>
@@ -108,12 +96,9 @@ const Index = () => {
                   <p className="text-gray-300">
                     Cartographie interactive des marches techno-sensibles
                   </p>
-                </button>
+                </div>
 
-                <button 
-                  onClick={() => handleCardClick('mosaique-vivante')}
-                  className="gaspard-card rounded-xl p-8 space-y-4 hover:scale-105 transition-all duration-300 hover:shadow-2xl cursor-pointer border-0 bg-transparent w-full"
-                >
+                <div className="gaspard-card rounded-xl p-8 space-y-4 hover:scale-105 transition-all duration-300 hover:shadow-2xl border-0 bg-transparent w-full">
                   <div className="w-12 h-12 bg-gradient-to-r from-green-500 to-emerald-500 rounded-full flex items-center justify-center mx-auto">
                     <span className="text-white text-xl">📖</span>
                   </div>
@@ -121,7 +106,7 @@ const Index = () => {
                   <p className="text-gray-300">
                     Création poétique à l'intersection de l'art et de la science
                   </p>
-                </button>
+                </div>
               </div>
             </div>
           </div>

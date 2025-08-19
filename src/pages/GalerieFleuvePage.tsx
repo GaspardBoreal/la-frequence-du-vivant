@@ -1,32 +1,16 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowRight, Wind, Clock, Grid3X3, Eye, Sparkles, Camera, MapPin, Waves } from 'lucide-react';
+import { ArrowRight, Waves, Sparkles } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Badge } from '../components/ui/badge';
 import GalerieFleuve from '../components/GalerieFleuve';
 import { useSupabaseMarches } from '../hooks/useSupabaseMarches';
 import { REGIONAL_THEMES } from '../utils/regionalThemes';
 import { useAnimatedCounter } from '../hooks/useAnimatedCounter';
-import { useSearchParams } from 'react-router-dom';
 
 const GalerieFleuvePage: React.FC = () => {
   const { data: marches = [], isLoading } = useSupabaseMarches();
-  const [searchParams, setSearchParams] = useSearchParams();
-  type ViewKey = 'galerie' | 'fleuve-temporel' | 'mosaique-vivante' | 'ecoute-contemplative';
-  const initialViewParam = searchParams.get('view') as ViewKey | null;
-  const [selectedView, setSelectedView] = useState<ViewKey | null>(initialViewParam);
-  const [showWelcome, setShowWelcome] = useState(!initialViewParam);
-
-  const selectMode = (key: ViewKey) => {
-    console.log('🔧 DEBUG selectMode:', key);
-    setSelectedView(key);
-    if (key === 'galerie') {
-      setSearchParams({});
-    } else {
-      setSearchParams({ view: key });
-    }
-    setShowWelcome(false);
-  };
+  const [showWelcome, setShowWelcome] = useState(true);
 
   // Calculate statistics
   const totalPhotos = marches.reduce((sum, marche) => sum + (marche.photos?.length || 0), 0);
@@ -157,54 +141,22 @@ const GalerieFleuvePage: React.FC = () => {
             <h2 className="text-2xl md:text-3xl font-serif text-center mb-8 text-slate-800 dark:text-slate-100">
               Modes d'immersion dans l'atlas vivant
             </h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              {[
-                {
-                  icon: Sparkles,
-                  mode: 'Galerie',
-                  description: 'Navigation spatiale des souvenirs photographiques',
-                  color: 'from-purple-500 to-pink-500',
-                  viewKey: 'galerie' as const,
-                },
-                {
-                  icon: Wind,
-                  mode: 'Fleuve temporel',
-                  description: 'Chronologie fluide du périple au fil de l\'eau',
-                  color: 'from-blue-500 to-cyan-500',
-                  viewKey: 'fleuve-temporel' as const,
-                },
-                {
-                  icon: Grid3X3,
-                  mode: 'Mosaïque vivante',
-                  description: 'Composition visuelle révélant les territoires',
-                  color: 'from-green-500 to-emerald-500',
-                  viewKey: 'mosaique-vivante' as const,
-                },
-                {
-                  icon: Eye,
-                  mode: 'Écoute contemplative',
-                  description: 'Plongée contemplative dans chaque fragment',
-                  color: 'from-orange-500 to-red-500',
-                  viewKey: 'ecoute-contemplative' as const,
-                }
-              ].map(({ icon: Icon, mode, description, color, viewKey }, index) => (
-                <motion.div
-                  key={mode}
-                  className="bg-white/60 dark:bg-slate-800/60 backdrop-blur-sm border border-slate-200/50 dark:border-slate-700/50 rounded-xl p-6 text-center hover:shadow-xl transition-all duration-300 hover:scale-105 cursor-pointer"
-                  initial={{ y: 30, opacity: 0 }}
-                  animate={{ y: 0, opacity: 1 }}
-                  transition={{ delay: 0.8 + index * 0.1 }}
-                  onClick={() => selectMode(viewKey)}
-                  role="button"
-                  tabIndex={0}
-                >
-                  <div className={`w-14 h-14 rounded-full bg-gradient-to-r ${color} flex items-center justify-center mx-auto mb-4`}>
-                    <Icon className="h-7 w-7 text-white" />
-                  </div>
-                  <h3 className="font-semibold text-slate-800 dark:text-slate-100 mb-2 text-lg">{mode}</h3>
-                  <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed">{description}</p>
-                </motion.div>
-              ))}
+            <div className="grid grid-cols-1 gap-4">
+              <motion.div
+                className="bg-white/60 dark:bg-slate-800/60 backdrop-blur-sm border border-slate-200/50 dark:border-slate-700/50 rounded-xl p-6 text-center hover:shadow-xl transition-all duration-300 hover:scale-105 cursor-pointer"
+                initial={{ y: 30, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                transition={{ delay: 0.8 }}
+                onClick={() => setShowWelcome(false)}
+                role="button"
+                tabIndex={0}
+              >
+                <div className="w-14 h-14 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 flex items-center justify-center mx-auto mb-4">
+                  <Sparkles className="h-7 w-7 text-white" />
+                </div>
+                <h3 className="font-semibold text-slate-800 dark:text-slate-100 mb-2 text-lg">Galerie</h3>
+                <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed">Navigation spatiale des souvenirs photographiques</p>
+              </motion.div>
             </div>
           </motion.div>
 
@@ -256,7 +208,6 @@ const GalerieFleuvePage: React.FC = () => {
         <GalerieFleuve 
           explorations={marches} 
           themes={Object.values(REGIONAL_THEMES)}
-          initialViewMode={(selectedView || initialViewParam) || undefined}
         />
       </motion.div>
     </AnimatePresence>
