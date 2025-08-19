@@ -491,7 +491,7 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes 
     if (isMobile && filteredPhotos.length > 0 && isMenuVisible) {
       return (
         <motion.div 
-          className="fixed top-0 left-0 right-0 z-[60] pointer-events-auto px-4 pt-[env(safe-area-inset-top)]"
+          className="fixed top-0 left-0 right-0 z-[60] pointer-events-none px-4 pt-[env(safe-area-inset-top)]"
           initial={{ y: -100, opacity: 0 }}
           animate={{ 
             y: 0, 
@@ -499,19 +499,19 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes 
           }}
           transition={{ type: "spring", stiffness: 300, damping: 30 }}
         >
-          <div className="bg-black/40 backdrop-blur-md rounded-2xl px-4 py-3 border border-white/10 shadow-xl">
-            <div className="flex items-center justify-between">
-              
-              {/* Home Button - Left */}
-              <motion.button
-                onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-                className="w-10 h-10 rounded-xl flex items-center justify-center bg-white/20 text-white active:bg-white/30 touch-manipulation"
-                whileTap={{ scale: 0.9 }}
-              >
-                <Home className="h-5 w-5" />
-              </motion.button>
+          <div className="flex items-center justify-between">
+            
+            {/* Home Button - Left - Separate from main bar */}
+            <motion.button
+              onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+              className="w-10 h-10 rounded-xl flex items-center justify-center bg-black/40 backdrop-blur-md text-white active:bg-white/30 touch-manipulation pointer-events-auto border border-white/10 shadow-xl"
+              whileTap={{ scale: 0.9 }}
+            >
+              <Home className="h-5 w-5" />
+            </motion.button>
 
-              {/* Navigation Controls - Center */}
+            {/* Navigation Controls - Center - Compact bar */}
+            <div className="bg-black/40 backdrop-blur-md rounded-2xl px-3 py-2 border border-white/10 shadow-xl pointer-events-auto">
               <div className="flex items-center gap-1">
                 {/* Previous Button */}
                 <motion.button
