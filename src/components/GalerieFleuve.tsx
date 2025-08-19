@@ -391,10 +391,22 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes 
   const handleTouchStart = (e: React.TouchEvent) => {
     didSwipeRef.current = false; // Reset swipe flag
     setTouchEnd(null);
-    setTouchStart({
-      x: e.targetTouches[0].clientX,
-      y: e.targetTouches[0].clientY
-    });
+    const x = e.targetTouches[0].clientX;
+    const y = e.targetTouches[0].clientY;
+    setTouchStart({ x, y });
+    
+    console.log('Touch start:', { x, y, resetDidSwipe: true });
+    
+    // Show menu on touch for mobile devices
+    if (isMobile || isPhoneLike) {
+      setIsMenuVisible(true);
+      
+      // Reset auto-hide timer
+      if (hideMenuTimer.current) {
+        clearTimeout(hideMenuTimer.current);
+      }
+      hideMenuTimer.current = setTimeout(() => setIsMenuVisible(false), 4000);
+    }
   };
 
   const handleTouchMove = (e: React.TouchEvent) => {
@@ -730,7 +742,10 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes 
 
   // Handle tap on image (mobile only)
   const handleImageTap = (index: number) => {
-    if (isMobile) {
+    const isMobileDevice = isMobile || isPhoneLike;
+    console.log('Image tap detected:', { isMobile, isPhoneLike, isMobileDevice, didSwipe: didSwipeRef.current });
+    
+    if (isMobileDevice) {
       // Only navigate if it wasn't a swipe gesture
       if (!didSwipeRef.current) {
         console.log('Tap detected on image, navigating to next');
@@ -757,21 +772,21 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes 
 
         <motion.div 
           className="absolute inset-0 flex items-center"
-          animate={{ x: `-${currentPhoto * (isMobile ? 100 : 33.33)}%` }}
+          animate={{ x: `-${currentPhoto * ((isMobile || isPhoneLike) ? 100 : 33.33)}%` }}
           transition={{ 
-            type: isMobile ? "tween" : "spring", 
-            duration: isMobile ? 0.3 : 0.6,
+            type: (isMobile || isPhoneLike) ? "tween" : "spring", 
+            duration: (isMobile || isPhoneLike) ? 0.3 : 0.6,
             stiffness: 50, 
             damping: 20,
-            ease: isMobile ? "easeInOut" : undefined
+            ease: (isMobile || isPhoneLike) ? "easeInOut" : undefined
           }}
         >
           {filteredPhotos.map((photo, index) => (
             <motion.div
               key={`${photo.id}-${index}`}
-              className={`flex-shrink-0 ${isMobile ? 'w-full' : 'w-1/3'} h-full relative cursor-pointer`}
+              className={`flex-shrink-0 ${(isMobile || isPhoneLike) ? 'w-full' : 'w-1/3'} h-full relative cursor-pointer`}
               onClick={() => handleImageTap(index)}
-              whileHover={{ scale: isMobile ? 1 : 1.02 }}
+              whileHover={{ scale: (isMobile || isPhoneLike) ? 1 : 1.02 }}
               transition={{ type: "spring", stiffness: 300 }}
             >
               <img
@@ -782,7 +797,7 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes 
               <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
               
               {/* Métadonnées géopoétiques */}
-              <div className={`absolute bottom-6 left-4 text-white ${isMobile ? 'right-20' : 'right-4'}`}>
+              <div className={`absolute bottom-6 left-4 text-white ${(isMobile || isPhoneLike) ? 'right-20' : 'right-4'}`}>
                 <motion.div
                   initial={{ y: 20, opacity: 0 }}
                   animate={{ y: 0, opacity: 1 }}
@@ -832,7 +847,7 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes 
               animate={{ x: 0, opacity: 1 }}
               transition={{ delay: index * 0.1 }}
             >
-              <div className={`w-full ${isMobile ? 'px-2' : 'px-8'}`}>
+              <div className={`w-full ${(isMobile || isPhoneLike) ? 'px-2' : 'px-8'}`}>
                 <Card className="p-4 bg-white/80 backdrop-blur-sm hover:shadow-lg transition-all cursor-pointer"
                       onClick={() => setSelectedPhoto(index)}>
                   <div className="flex gap-4">
@@ -885,7 +900,7 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes 
           Mosaïque Vivante du Territoire
         </h2>
 
-        <div className={`grid gap-4 ${isMobile ? 'grid-cols-2' : 'grid-cols-3 lg:grid-cols-4'}`}>
+        <div className={`grid gap-4 ${(isMobile || isPhoneLike) ? 'grid-cols-2' : 'grid-cols-3 lg:grid-cols-4'}`}>
           {filteredPhotos.map((photo, index) => (
             <motion.div
               key={`${photo.id}-mosaic`}
@@ -1123,7 +1138,7 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes 
       {/* Filter indicator */}
       {filterMode !== 'all' && (
         <motion.div
-          className={`fixed ${isMobile ? 'top-4 left-4' : 'top-6 right-6'} z-40`}
+          className={`fixed ${(isMobile || isPhoneLike) ? 'top-4 left-4' : 'top-6 right-6'} z-40`}
           initial={{ scale: 0, rotate: -10 }}
           animate={{ scale: 1, rotate: 0 }}
           transition={{ type: "spring", stiffness: 500, damping: 30 }}
