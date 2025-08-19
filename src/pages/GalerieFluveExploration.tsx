@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { ArrowLeft } from 'lucide-react';
 import { useExploration, useExplorationMarches } from '@/hooks/useExplorations';
@@ -14,6 +14,8 @@ import { getExplorationTheme } from '@/utils/explorationThemes';
 
 export default function GalerieFluveExploration() {
   const { slug } = useParams<{ slug: string }>();
+  const [searchParams] = useSearchParams();
+  const initialView = searchParams.get('view') as 'galerie' | 'fleuve-temporel' | 'mosaique-vivante' | 'ecoute-contemplative' | null;
   const { data: exploration, isLoading: explorationLoading } = useExploration(slug || '');
   const { data: explorationMarches, isLoading: marchesLoading } = useExplorationMarches(exploration?.id || '');
   
@@ -161,6 +163,7 @@ export default function GalerieFluveExploration() {
             explorations={marchesTechnoSensibles} 
             themes={themes}
             showWelcome={false}
+            initialViewMode={initialView || undefined}
           />
         </motion.div>
       </div>

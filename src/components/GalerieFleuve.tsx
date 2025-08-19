@@ -44,6 +44,7 @@ interface GalerieFluveProps {
   explorations: any[];
   themes: RegionalTheme[];
   showWelcome?: boolean;
+  initialViewMode?: ViewMode;
 }
 
 interface EnrichedPhoto {
@@ -67,11 +68,11 @@ interface EnrichedPhoto {
 type ViewMode = 'galerie' | 'fleuve-temporel' | 'mosaique-vivante' | 'ecoute-contemplative';
 type FilterMode = 'all' | 'biodiversite' | 'bioacoustique' | 'botanique' | 'couleur' | 'saison';
 
-const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes, showWelcome = false }) => {
+const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes, showWelcome = false, initialViewMode }) => {
   const [allPhotos, setAllPhotos] = useState<EnrichedPhoto[]>([]);
   const [visiblePhotos, setVisiblePhotos] = useState<EnrichedPhoto[]>([]);
   const [currentPhoto, setCurrentPhoto] = useState<number>(0);
-  const [viewMode, setViewMode] = useState<ViewMode>('galerie');
+  const [viewMode, setViewMode] = useState<ViewMode>(initialViewMode || 'galerie');
   const [filterMode, setFilterMode] = useState<FilterMode>('all');
   const [isLoading, setIsLoading] = useState(true);
   const [loadingProgress, setLoadingProgress] = useState(0);
