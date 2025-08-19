@@ -60,6 +60,23 @@ const GalerieFleuveWelcome: React.FC<GalerieFleuveWelcomeProps> = ({
     onStart?.();
   };
 
+  // Mobile: positionner les indicateurs à 30% de la hauteur de l'écran
+  const headerRef = React.useRef<HTMLDivElement>(null);
+  const [mobileStatsMargin, setMobileStatsMargin] = React.useState<number | undefined>(undefined);
+
+  React.useLayoutEffect(() => {
+    if (!isMobile) return;
+    const compute = () => {
+      const headerH = headerRef.current?.getBoundingClientRect().height ?? 0;
+      const targetTop = Math.round(window.innerHeight * 0.3);
+      const margin = Math.max(0, targetTop - headerH);
+      setMobileStatsMargin(margin);
+    };
+    compute();
+    window.addEventListener('resize', compute);
+    return () => window.removeEventListener('resize', compute);
+  }, [isMobile]);
+
   // Particules adaptées au thème
   const renderParticles = () => {
     const particleType = theme?.particles.type || 'water';
@@ -127,7 +144,7 @@ const GalerieFleuveWelcome: React.FC<GalerieFleuveWelcomeProps> = ({
       </div>
 
       <div className="relative container mx-auto px-4 py-4 md:py-12 flex-1 flex flex-col justify-between">
-        <div className="space-y-3 md:space-y-8">
+        <div ref={headerRef} className="space-y-3 md:space-y-8">
           {/* Badge */}
           <div className="flex justify-end items-start">
             <Badge className={`${badgeClass} ${isMobile ? 'px-2 py-1 text-xs' : ''}`}>
@@ -171,7 +188,8 @@ const GalerieFleuveWelcome: React.FC<GalerieFleuveWelcomeProps> = ({
         <div className="flex-1 flex flex-col justify-center space-y-6">
           {/* Statistiques - position mobile ajustée */}
           <motion.div 
-            className={`grid grid-cols-3 ${isMobile ? 'gap-3 mt-10' : 'gap-6'} max-w-lg mx-auto`}
+            className={`grid grid-cols-3 ${isMobile ? 'gap-3' : 'gap-6'} max-w-lg mx-auto`}
+            style={isMobile ? { marginTop: mobileStatsMargin } : undefined}
             initial={{ y: 30, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             transition={{ delay: 0.4 }}
