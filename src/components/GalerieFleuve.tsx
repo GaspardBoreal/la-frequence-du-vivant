@@ -142,7 +142,7 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes 
                 description: photo.description,
                 ordre: photo.ordre,
                 exploration,
-                nomMarche: exploration.marche?.nom || exploration.marche?.nom_marche || exploration.titre || `Marche à ${exploration.marche?.ville}`,
+                nomMarche: exploration.marche?.nom_marche || exploration.marche?.nom || `Marche à ${exploration.marche?.ville || ''}`,
                 latitude: exploration.marche?.latitude,
                 longitude: exploration.marche?.longitude,
                 ville: exploration.marche?.ville || 'Lieu mystérieux',
@@ -166,7 +166,7 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes 
                 description: exploration.descriptif_court,
                 ordre: index,
                 exploration,
-                nomMarche: exploration.nom || exploration.nom_marche || exploration.titre || `Exploration ${exploration.ville}`,
+                nomMarche: exploration.nomMarche || exploration.nom_marche || exploration.nom || `Marche à ${exploration.ville}`,
                 latitude: exploration.latitude,
                 longitude: exploration.longitude,
                 ville: exploration.ville || 'Lieu mystérieux',
@@ -938,7 +938,7 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes 
               {photo.ville}, {photo.departement}
             </h3>
             <p className="text-lg opacity-90 mb-4">
-              {photo.titre || 'Fragment d\'une exploration bioacoustique révélant les secrets du vivant'}
+              {photo.nomMarche || photo.titre}
             </p>
             
             <div className="flex flex-wrap gap-2 mb-6">
