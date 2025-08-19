@@ -11,9 +11,18 @@ import { useSearchParams } from 'react-router-dom';
 
 const GalerieFleuvePage: React.FC = () => {
   const { data: marches = [], isLoading } = useSupabaseMarches();
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const initialViewParam = searchParams.get('view') as 'galerie' | 'fleuve-temporel' | 'mosaique-vivante' | 'ecoute-contemplative' | null;
   const [showWelcome, setShowWelcome] = useState(!initialViewParam);
+
+  const selectMode = (key: 'galerie' | 'fleuve-temporel' | 'mosaique-vivante' | 'ecoute-contemplative') => {
+    if (key === 'galerie') {
+      setSearchParams({});
+    } else {
+      setSearchParams({ view: key });
+    }
+    setShowWelcome(false);
+  };
 
   // Calculate statistics
   const totalPhotos = marches.reduce((sum, marche) => sum + (marche.photos?.length || 0), 0);
@@ -150,33 +159,40 @@ const GalerieFleuvePage: React.FC = () => {
                   icon: Sparkles,
                   mode: 'Galerie',
                   description: 'Navigation spatiale des souvenirs photographiques',
-                  color: 'from-purple-500 to-pink-500'
+                  color: 'from-purple-500 to-pink-500',
+                  viewKey: 'galerie' as const,
                 },
                 {
                   icon: Wind,
                   mode: 'Fleuve temporel',
                   description: 'Chronologie fluide du périple au fil de l\'eau',
-                  color: 'from-blue-500 to-cyan-500'
+                  color: 'from-blue-500 to-cyan-500',
+                  viewKey: 'fleuve-temporel' as const,
                 },
                 {
                   icon: Grid3X3,
                   mode: 'Mosaïque vivante',
                   description: 'Composition visuelle révélant les territoires',
-                  color: 'from-green-500 to-emerald-500'
+                  color: 'from-green-500 to-emerald-500',
+                  viewKey: 'mosaique-vivante' as const,
                 },
                 {
                   icon: Eye,
-                  mode: 'Écoute attentive',
+                  mode: 'Écoute contemplative',
                   description: 'Plongée contemplative dans chaque fragment',
-                  color: 'from-orange-500 to-red-500'
+                  color: 'from-orange-500 to-red-500',
+                  viewKey: 'ecoute-contemplative' as const,
                 }
-              ].map(({ icon: Icon, mode, description, color }, index) => (
+              ].map(({ icon: Icon, mode, description, color, viewKey }, index) => (
                 <motion.div
                   key={mode}
-                  className="bg-white/60 dark:bg-slate-800/60 backdrop-blur-sm border border-slate-200/50 dark:border-slate-700/50 rounded-xl p-6 text-center hover:shadow-xl transition-all duration-300 hover:scale-105"
+                  className="bg-white/60 dark:bg-slate-800/60 backdrop-blur-sm border border-slate-200/50 dark:border-slate-700/50 rounded-xl p-6 text-center hover:shadow-xl transition-all duration-300 hover:scale-105 cursor-pointer"
                   initial={{ y: 30, opacity: 0 }}
                   animate={{ y: 0, opacity: 1 }}
                   transition={{ delay: 0.8 + index * 0.1 }}
+                  onClick={() => selectMode(viewKey)}
+                  role="button"
+                  tabIndex={0}
                 >
                   <div className={`w-14 h-14 rounded-full bg-gradient-to-r ${color} flex items-center justify-center mx-auto mb-4`}>
                     <Icon className="h-7 w-7 text-white" />
