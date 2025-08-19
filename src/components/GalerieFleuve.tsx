@@ -491,11 +491,11 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes 
     if (isMobile) {
       return (
         <motion.div 
-          className="fixed top-6 left-4 right-4 z-[60] pointer-events-auto"
+          className="fixed top-0 left-0 right-0 z-[60] pointer-events-auto px-4 pt-[env(safe-area-inset-top)]"
           initial={{ y: -100, opacity: 0 }}
           animate={{ 
             y: 0, 
-            opacity: isMenuVisible ? 1 : 0
+            opacity: 1
           }}
           transition={{ type: "spring", stiffness: 300, damping: 30 }}
         >
@@ -512,7 +512,7 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes 
               </motion.button>
 
               {/* Navigation Controls - Center */}
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-1">
                 {/* Previous Button */}
                 <motion.button
                   onClick={() => navigatePrevious()}
@@ -528,7 +528,7 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes 
                 </motion.button>
 
                 {/* Position Counter */}
-                <div className="bg-white/15 px-3 py-1 rounded-lg">
+                <div className="bg-white/15 px-2 py-0.5 rounded-lg">
                   <span className="text-white text-sm font-medium">
                     {currentPhoto + 1}/{filteredPhotos.length}
                   </span>
@@ -561,7 +561,7 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes 
     return (
       <>
         <motion.div 
-          className="fixed bottom-8 left-1/2 transform -translate-x-1/2 z-50"
+          className="hidden md:block fixed bottom-8 left-1/2 transform -translate-x-1/2 z-50"
           initial={{ y: 100, opacity: 0 }}
           animate={{ 
             y: 0, 
@@ -691,7 +691,7 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes 
         {/* Hidden menu indicator - appears when menu is auto-hidden */}
         {!isMenuVisible && (
           <motion.div
-            className="fixed bottom-4 left-1/2 transform -translate-x-1/2 z-40"
+            className="hidden md:block fixed bottom-4 left-1/2 transform -translate-x-1/2 z-40"
             initial={{ opacity: 0, scale: 0 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ delay: 0.5, type: "spring" }}
@@ -729,23 +729,6 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes 
       {/* Vue galerie interactive */}
       <div className="relative h-screen overflow-hidden">
         {/* Back to gallery home button - top left */}
-        {isMobile && (
-          <motion.button
-            onClick={() => {
-              const galerieElement = document.getElementById('accueil');
-              if (galerieElement) {
-                galerieElement.scrollIntoView({ behavior: 'smooth' });
-              }
-            }}
-            className="fixed top-6 left-6 z-50 w-10 h-10 rounded-full bg-black/40 backdrop-blur-md flex items-center justify-center border border-white/20 shadow-xl"
-            whileTap={{ scale: 0.9 }}
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: 0.5 }}
-          >
-            <Home className="h-4 w-4 text-white" />
-          </motion.button>
-        )}
 
         <motion.div 
           className="absolute inset-0 flex items-center"
@@ -976,7 +959,7 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes 
             </div>
 
             {/* Navigation immersive */}
-            <div className="flex justify-between items-center">
+            <div className="hidden md:flex justify-between items-center">
                <Button
                 variant="ghost"
                 onClick={navigatePrevious}
