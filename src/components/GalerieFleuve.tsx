@@ -78,41 +78,36 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes,
   const [isMenuVisible, setIsMenuVisible] = useState(false);
   const isMobile = useIsMobile();
 
-  // Enhanced mobile and orientation detection
-  const [isPhoneLike, setIsPhoneLike] = useState(false);
-  const [isLandscape, setIsLandscape] = useState(false);
-  const [isPhonePortrait, setIsPhonePortrait] = useState(false);
-  const [isPhoneLandscape, setIsPhoneLandscape] = useState(false);
+  // Simplified device detection for stable navigation
+  const [deviceType, setDeviceType] = useState<'mobile-portrait' | 'mobile-landscape' | 'desktop'>('desktop');
+  const [currentPage, setCurrentPage] = useState(0);
   
   useEffect(() => {
-    const updateDeviceState = () => {
-      const hasCoarsePointer = window.matchMedia('(pointer: coarse)').matches;
-      const isMobileSize = window.innerWidth < 1024;
-      const phoneLike = hasCoarsePointer && isMobileSize;
-      const landscape = window.innerWidth > window.innerHeight;
+    const updateDeviceType = () => {
+      const width = window.innerWidth;
+      const height = window.innerHeight;
+      const isMobileSize = width < 1024;
+      const isPortrait = height > width;
       
-      setIsPhoneLike(phoneLike);
-      setIsLandscape(landscape);
-      setIsPhonePortrait(phoneLike && !landscape);
-      setIsPhoneLandscape(phoneLike && landscape);
+      let newDeviceType: 'mobile-portrait' | 'mobile-landscape' | 'desktop';
       
-      console.log('Device state updated:', { 
-        phoneLike, 
-        landscape, 
-        isPhonePortrait: phoneLike && !landscape, 
-        isPhoneLandscape: phoneLike && landscape,
-        width: window.innerWidth,
-        height: window.innerHeight
-      });
+      if (isMobileSize && isPortrait) {
+        newDeviceType = 'mobile-portrait';
+      } else if (isMobileSize && !isPortrait) {
+        newDeviceType = 'mobile-landscape';
+      } else {
+        newDeviceType = 'desktop';
+      }
+      
+      console.log('Device type:', newDeviceType, { width, height });
+      setDeviceType(newDeviceType);
     };
 
-    updateDeviceState();
-    window.addEventListener('resize', updateDeviceState);
-    window.addEventListener('orientationchange', updateDeviceState);
+    updateDeviceType();
+    window.addEventListener('resize', updateDeviceType);
     
     return () => {
-      window.removeEventListener('resize', updateDeviceState);
-      window.removeEventListener('orientationchange', updateDeviceState);
+      window.removeEventListener('resize', updateDeviceType);
     };
   }, []);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -351,72 +346,53 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes,
   const navLockRef = useRef(false);
   const didSwipeRef = useRef(false);
 
-  // Navigation adaptative par groupes selon l'appareil et orientation
-  const getNavigationStep = useCallback(() => {
-    if (typeof window === 'undefined') return 1;
-    
-    // Phone Portrait: 1 image per page
-    if (isPhonePortrait) return 1;
-    
-    // Phone Landscape or Desktop: 3 images per page
-    if (isPhoneLandscape || window.innerWidth >= 1024) return 3;
-    
-    // Fallback for other cases
-    return 1;
-  }, [isPhonePortrait, isPhoneLandscape]);
+  // Unified navigation logic based on device type
+  const getImagesPerPage = useCallback(() => {
+    return deviceType === 'mobile-portrait' ? 1 : 3;
+  }, [deviceType]);
 
-  // Fonctions de navigation avec steps adaptatifs et protection contre les appels multiples
-  const navigateNext = useCallback(() => {
-    if (navLockRef.current) {
-      console.log('Navigation locked, ignoring next');
+  // Calculate total pages and current position
+  const imagesPerPage = getImagesPerPage();
+  const totalPages = Math.ceil(filteredPhotos.length / imagesPerPage);
+
+  // Unified navigation functions with page-based logic
+  const navigateToNextPage = useCallback(() => {
+    if (navLockRef.current || currentPage >= totalPages - 1) {
       return;
     }
     
     navLockRef.current = true;
-    const step = getNavigationStep();
-    console.log('Navigate next:', { currentPhoto, step, total: filteredPhotos.length });
+    setCurrentPage(prev => Math.min(prev + 1, totalPages - 1));
     
-    if (step === 3) {
-      // For 3-image navigation, align to page boundaries
-      const currentBase = Math.floor(currentPhoto / 3) * 3;
-      const nextBase = Math.min(currentBase + 3, filteredPhotos.length - 1);
-      setCurrentPhoto(nextBase);
-    } else {
-      // For single image navigation
-      setCurrentPhoto(prev => Math.min(prev + 1, filteredPhotos.length - 1));
-    }
+    // Update currentPhoto for compatibility with existing code
+    const nextPhoto = Math.min((currentPage + 1) * imagesPerPage, filteredPhotos.length - 1);
+    setCurrentPhoto(nextPhoto);
     
-    // Unlock after animation completes
     setTimeout(() => {
       navLockRef.current = false;
-    }, isPhonePortrait ? 300 : 600);
-  }, [getNavigationStep, filteredPhotos.length, isPhonePortrait]);
+    }, 400);
+  }, [currentPage, totalPages, imagesPerPage, filteredPhotos.length]);
 
-  const navigatePrevious = useCallback(() => {
-    if (navLockRef.current) {
-      console.log('Navigation locked, ignoring previous');
+  const navigateToPreviousPage = useCallback(() => {
+    if (navLockRef.current || currentPage <= 0) {
       return;
     }
     
     navLockRef.current = true;
-    const step = getNavigationStep();
-    console.log('Navigate previous:', { currentPhoto, step });
+    setCurrentPage(prev => Math.max(prev - 1, 0));
     
-    if (step === 3) {
-      // For 3-image navigation, align to page boundaries
-      const currentBase = Math.floor(currentPhoto / 3) * 3;
-      const prevBase = Math.max(currentBase - 3, 0);
-      setCurrentPhoto(prevBase);
-    } else {
-      // For single image navigation
-      setCurrentPhoto(prev => Math.max(prev - 1, 0));
-    }
+    // Update currentPhoto for compatibility with existing code
+    const prevPhoto = Math.max((currentPage - 1) * imagesPerPage, 0);
+    setCurrentPhoto(prevPhoto);
     
-    // Unlock after animation completes
     setTimeout(() => {
       navLockRef.current = false;
-    }, isPhonePortrait ? 300 : 600);
-  }, [getNavigationStep, isPhonePortrait]);
+    }, 400);
+  }, [currentPage, imagesPerPage]);
+
+  // Legacy navigation functions for backward compatibility
+  const navigateNext = useCallback(() => navigateToNextPage(), [navigateToNextPage]);
+  const navigatePrevious = useCallback(() => navigateToPreviousPage(), [navigateToPreviousPage]);
 
   // Navigation unitaire pour les touches haut/bas
   const navigateOne = useCallback((direction: 'next' | 'prev') => {
@@ -427,24 +403,20 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes,
     }
   }, [filteredPhotos.length]);
 
-  // Enhanced touch gesture detection - works across all views
+  // Simplified touch handling for navigation and menu visibility
   const [touchStart, setTouchStart] = useState<{ x: number; y: number } | null>(null);
   const [touchEnd, setTouchEnd] = useState<{ x: number; y: number } | null>(null);
 
   const handleTouchStart = (e: React.TouchEvent) => {
-    didSwipeRef.current = false; // Reset swipe flag
+    didSwipeRef.current = false;
     setTouchEnd(null);
     const x = e.targetTouches[0].clientX;
     const y = e.targetTouches[0].clientY;
     setTouchStart({ x, y });
     
-    console.log('Touch start:', { x, y, resetDidSwipe: true });
-    
     // Show menu on touch for mobile devices
-    if (isMobile || isPhoneLike) {
+    if (deviceType !== 'desktop') {
       setIsMenuVisible(true);
-      
-      // Reset auto-hide timer
       if (hideMenuTimer.current) {
         clearTimeout(hideMenuTimer.current);
       }
@@ -459,11 +431,11 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes,
     const dx = touchStart.x - x;
     const dy = touchStart.y - y;
     
-    // Mark as potential swipe if significant horizontal movement
-    if (Math.abs(dx) > 20) {
+    // Mark as swipe if significant horizontal movement
+    if (Math.abs(dx) > 30) {
       didSwipeRef.current = true;
       if (Math.abs(dx) > Math.abs(dy)) {
-        e.preventDefault(); // Prevent scrolling on horizontal swipe
+        e.preventDefault();
       }
     }
     
@@ -474,24 +446,17 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes,
     if (!touchStart || !touchEnd) return;
     
     const deltaX = touchStart.x - touchEnd.x;
-    const deltaY = touchStart.y - touchEnd.y;
-    const minSwipeDistance = 80; // Increased threshold for more reliable detection
+    const minSwipeDistance = 60;
     
-    console.log('Touch end:', { deltaX, deltaY, minSwipeDistance, didSwipe: didSwipeRef.current });
-    
-    // Only process as swipe if we detected movement during touchmove
-    if (didSwipeRef.current && Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > minSwipeDistance) {
-      console.log('Processing horizontal swipe:', deltaX > 0 ? 'left->right (next)' : 'right->left (prev)');
-      if (deltaX > 0 && currentPhoto < filteredPhotos.length - 1) {
-        console.log('Swiping to next photo');
-        navigateNext();
-      } else if (deltaX < 0 && currentPhoto > 0) {
-        console.log('Swiping to previous photo');
-        navigatePrevious();
+    // Process swipe for navigation
+    if (didSwipeRef.current && Math.abs(deltaX) > minSwipeDistance) {
+      if (deltaX > 0) {
+        navigateToNextPage();
+      } else {
+        navigateToPreviousPage();
       }
     }
     
-    // Reset touch tracking
     setTouchStart(null);
     setTouchEnd(null);
   };
@@ -636,26 +601,16 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes,
     return null;
   };
 
-  // Handle tap on image (mobile only)
-  const handleImageTap = (index: number) => {
-    console.log('Image tap detected:', { 
-      isPhoneLike, 
-      isPhonePortrait, 
-      isPhoneLandscape, 
-      didSwipe: didSwipeRef.current 
-    });
-    
-    if (isPhoneLike) {
-      // Only navigate if it wasn't a swipe gesture
-      if (!didSwipeRef.current) {
-        console.log('Tap detected on image, navigating to next');
-        navigateNext();
+  // Unified image interaction handling
+  const handleImageInteraction = (index: number) => {
+    if (!didSwipeRef.current) {
+      if (deviceType === 'desktop') {
+        // Desktop: open modal
+        setSelectedPhoto(index);
       } else {
-        console.log('Ignoring tap - was a swipe');
+        // Mobile: advance to next page
+        navigateToNextPage();
       }
-    } else {
-      // Desktop still opens modal
-      setSelectedPhoto(index);
     }
   };
 
@@ -672,21 +627,19 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes,
 
         <motion.div 
           className="absolute inset-0 flex items-center"
-          animate={{ x: `-${currentPhoto * (isPhonePortrait ? 100 : 33.33)}%` }}
+          animate={{ x: `-${currentPage * 100}%` }}
           transition={{ 
-            type: isPhonePortrait ? "tween" : "spring", 
-            duration: isPhonePortrait ? 0.3 : 0.6,
-            stiffness: 50, 
-            damping: 20,
-            ease: isPhonePortrait ? "easeInOut" : undefined
+            type: "tween",
+            duration: 0.4,
+            ease: "easeInOut"
           }}
         >
           {filteredPhotos.map((photo, index) => (
             <motion.div
               key={`${photo.id}-${index}`}
-              className={`flex-shrink-0 ${isPhonePortrait ? 'w-full' : 'w-1/3'} h-full relative cursor-pointer`}
-              onClick={() => handleImageTap(index)}
-              whileHover={{ scale: isPhoneLike ? 1 : 1.02 }}
+              className={`flex-shrink-0 ${deviceType === 'mobile-portrait' ? 'w-full' : 'w-1/3'} h-full relative cursor-pointer`}
+              onClick={() => handleImageInteraction(index)}
+              whileHover={{ scale: deviceType === 'desktop' ? 1.02 : 1 }}
               transition={{ type: "spring", stiffness: 300 }}
             >
               <img
@@ -697,7 +650,7 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes,
               <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
               
               {/* Métadonnées géopoétiques */}
-              <div className={`absolute bottom-6 left-4 text-white ${isPhoneLike ? 'right-20' : 'right-4'}`}>
+              <div className={`absolute bottom-6 left-4 text-white ${deviceType !== 'desktop' ? 'right-20' : 'right-4'}`}>
                 <motion.div
                   initial={{ y: 20, opacity: 0 }}
                   animate={{ y: 0, opacity: 1 }}
@@ -747,7 +700,7 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes,
               animate={{ x: 0, opacity: 1 }}
               transition={{ delay: index * 0.1 }}
             >
-              <div className={`w-full ${(isMobile || isPhoneLike) ? 'px-2' : 'px-8'}`}>
+              <div className={`w-full ${deviceType !== 'desktop' ? 'px-2' : 'px-8'}`}>
                 <Card className="p-4 bg-white/80 backdrop-blur-sm hover:shadow-lg transition-all cursor-pointer"
                       onClick={() => setSelectedPhoto(index)}>
                   <div className="flex gap-4">
@@ -800,7 +753,7 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes,
           Mosaïque Vivante du Territoire
         </h2>
 
-        <div className={`grid gap-4 ${(isMobile || isPhoneLike) ? 'grid-cols-2' : 'grid-cols-3 lg:grid-cols-4'}`}>
+        <div className={`grid gap-4 ${deviceType !== 'desktop' ? 'grid-cols-2' : 'grid-cols-3 lg:grid-cols-4'}`}>
           {filteredPhotos.map((photo, index) => (
             <motion.div
               key={`${photo.id}-mosaic`}
@@ -901,10 +854,7 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes,
                 className="text-white hover:bg-white/20"
               >
                 <ArrowUp className="h-5 w-5 mr-2" />
-                {(() => {
-                  const step = getNavigationStep();
-                  return step === 1 ? 'Précédent' : `${step} précédentes`;
-                })()}
+               {imagesPerPage === 1 ? 'Précédent' : `${imagesPerPage} précédentes`}
               </Button>
               
               <span className="text-sm opacity-75">
@@ -916,10 +866,7 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes,
                 onClick={navigateNext}
                 className="text-white hover:bg-white/20"
               >
-                {(() => {
-                  const step = getNavigationStep();
-                  return step === 1 ? 'Suivant' : `${step} suivantes`;
-                })()}
+                {imagesPerPage === 1 ? 'Suivant' : `${imagesPerPage} suivantes`}
                 <ArrowDown className="h-5 w-5 ml-2" />
               </Button>
             </div>
@@ -1038,7 +985,7 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes,
       {/* Filter indicator */}
       {filterMode !== 'all' && (
         <motion.div
-          className={`fixed ${(isMobile || isPhoneLike) ? 'top-4 left-4' : 'top-6 right-6'} z-40`}
+          className={`fixed ${deviceType !== 'desktop' ? 'top-4 left-4' : 'top-6 right-6'} z-40`}
           initial={{ scale: 0, rotate: -10 }}
           animate={{ scale: 1, rotate: 0 }}
           transition={{ type: "spring", stiffness: 500, damping: 30 }}
