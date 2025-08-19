@@ -81,6 +81,7 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes,
 
   // Device detection
   const [deviceType, setDeviceType] = useState<'mobile-portrait' | 'mobile-landscape' | 'desktop'>('desktop');
+  const [prevDeviceType, setPrevDeviceType] = useState<'mobile-portrait' | 'mobile-landscape' | 'desktop'>('desktop');
   const [currentPage, setCurrentPage] = useState(0);
   
   useEffect(() => {
@@ -100,8 +101,8 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes,
         newDeviceType = 'desktop';
       }
       
+      setPrevDeviceType(deviceType);
       setDeviceType(newDeviceType);
-      setCurrentPage(0);
     };
 
     updateDeviceType();
@@ -111,6 +112,26 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes,
       window.removeEventListener('resize', updateDeviceType);
     };
   }, []);
+  
+  // Preserve position when device type changes (orientation rotation)
+  useEffect(() => {
+    if (prevDeviceType !== deviceType && allPhotos.length > 0) {
+      // Calculate current image index from previous device type
+      const prevImagesPerPage = prevDeviceType === 'mobile-portrait' ? 1 : 3;
+      const currentImageIndex = currentPage * prevImagesPerPage;
+      
+      // Calculate new page that contains the same image
+      const newImagesPerPage = deviceType === 'mobile-portrait' ? 1 : 3;
+      const newPage = Math.floor(currentImageIndex / newImagesPerPage);
+      
+      // Ensure we don't exceed available pages (using allPhotos as safe fallback)
+      const photoCount = allPhotos.length;
+      const maxPages = Math.ceil(photoCount / newImagesPerPage) - 1;
+      const targetPage = Math.min(newPage, Math.max(0, maxPages));
+      
+      setCurrentPage(targetPage);
+    }
+  }, [deviceType, prevDeviceType, currentPage, allPhotos.length]);
   
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const metadataCache = useRef<Map<string, { emotionalTags: string[], thematicIcons: string[] }>>(new Map());
