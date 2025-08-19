@@ -212,8 +212,8 @@ const GalerieFleuveWelcome: React.FC<GalerieFleuveWelcomeProps> = ({
           {/* Statistiques - position mobile ajustée */}
           <motion.div 
             data-gf-indicators
-            className={`grid grid-cols-3 ${isMobile ? 'gap-3' : 'gap-6'} max-w-lg mx-auto`}
-            style={isMobile ? { position: 'absolute', top: `${indicatorPosition}svh`, left: '50%', transform: 'translateX(-50%)', marginTop: 0 } : undefined}
+            className={`grid grid-cols-3 place-items-center ${isMobile ? 'gap-3' : 'gap-6'} max-w-lg mx-auto`}
+            style={isMobile ? { position: 'absolute', top: `${indicatorPosition}svh`, left: 0, right: 0, marginTop: 0 } : undefined}
             initial={{ y: 30, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             transition={{ delay: 0.4 }}
@@ -323,8 +323,8 @@ const GalerieFleuveWelcome: React.FC<GalerieFleuveWelcomeProps> = ({
               <Slider
                 value={[indicatorPosition]}
                 onValueChange={(value) => handleIndicatorChange(value[0])}
-                min={10}
-                max={30}
+                min={5}
+                max={85}
                 step={1}
                 className="w-full"
               />
