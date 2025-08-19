@@ -62,6 +62,20 @@ const GalerieFleuveWelcome: React.FC<GalerieFleuveWelcomeProps> = ({
     onStart?.();
   };
 
+  const handleModeClick = (modeLabel: string) => {
+    if (modeLabel === 'Galerie') {
+      handleStart(); // Same action as "Commencer l'exploration"
+    }
+    // TODO: Add other mode handlers later
+  };
+
+  const handleSwipe = (event: any, info: any) => {
+    // Swipe left (deltaX < -50) triggers start
+    if (info.offset.x < -50) {
+      handleStart();
+    }
+  };
+
   // Tuning panel for testing positions
   const [showTuning] = React.useState(() => new URLSearchParams(window.location.search).get('tune') === '1');
   const [indicatorPosition, setIndicatorPosition] = React.useState(() => {
@@ -166,7 +180,10 @@ const GalerieFleuveWelcome: React.FC<GalerieFleuveWelcomeProps> = ({
         {renderParticles()}
       </div>
 
-      <div className="relative container mx-auto px-4 py-4 md:py-12 flex-1 flex flex-col justify-between">
+        <motion.div 
+          className="relative container mx-auto px-4 py-4 md:py-12 flex-1 flex flex-col justify-between"
+          onPanEnd={handleSwipe}
+        >
         <div ref={headerRef} className="space-y-3 md:space-y-8">
           {/* Badge */}
           <div className="flex justify-end items-start">
@@ -263,13 +280,14 @@ const GalerieFleuveWelcome: React.FC<GalerieFleuveWelcomeProps> = ({
               {immersionModes.map((mode, index) => {
                 const IconComponent = iconMap[mode.icon as keyof typeof iconMap] || Heart;
                 return (
-                  <div 
+                  <button 
                     key={index}
-                    className={`flex items-center ${isMobile ? 'space-x-1 px-2 py-1 justify-center' : 'space-x-2 px-3 py-2'} bg-white/10 rounded-lg backdrop-blur-sm border border-white/20 ${isMobile ? '' : 'whitespace-nowrap'}`}
+                    onClick={() => handleModeClick(mode.label)}
+                    className={`flex items-center ${isMobile ? 'space-x-1 px-2 py-1 justify-center' : 'space-x-2 px-3 py-2'} bg-white/10 rounded-lg backdrop-blur-sm border border-white/20 ${isMobile ? '' : 'whitespace-nowrap'} cursor-pointer hover:bg-white/20 transition-colors ${mode.label === 'Galerie' ? 'ring-1 ring-white/40' : ''}`}
                   >
                     <IconComponent className={`${isMobile ? 'h-3 w-3' : 'h-4 w-4'}`} />
                     <span className={`${isMobile ? 'text-xs' : 'text-sm'} font-medium`}>{mode.label}</span>
-                  </div>
+                  </button>
                 );
               })}
             </div>
@@ -305,7 +323,7 @@ const GalerieFleuveWelcome: React.FC<GalerieFleuveWelcomeProps> = ({
             <div className={`font-mono ${isMobile ? 'text-xs' : 'text-sm'} opacity-70`}>{theme?.signature.title || 'Poète des Mondes Hybrides'}</div>
           </div>
         </motion.div>
-      </div>
+        </motion.div>
 
       {/* Tuning Panel - Only visible when ?tune=1 */}
       {showTuning && (
