@@ -66,11 +66,11 @@ const GalerieFleuveWelcome: React.FC<GalerieFleuveWelcomeProps> = ({
   const [showTuning] = React.useState(() => new URLSearchParams(window.location.search).get('tune') === '1');
   const [indicatorPosition, setIndicatorPosition] = React.useState(() => {
     const saved = localStorage.getItem('tune-indicator-position');
-    return saved ? parseInt(saved) : 34;
+    return saved ? parseInt(saved) : 36;
   });
   const [buttonOffset, setButtonOffset] = React.useState(() => {
     const saved = localStorage.getItem('tune-button-offset');
-    return saved ? parseInt(saved) : 90;
+    return saved ? parseInt(saved) : 15;
   });
 
   // Mobile: positionner les indicateurs selon le réglage
