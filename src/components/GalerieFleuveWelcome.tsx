@@ -66,7 +66,7 @@ const GalerieFleuveWelcome: React.FC<GalerieFleuveWelcomeProps> = ({
   const [showTuning] = React.useState(() => new URLSearchParams(window.location.search).get('tune') === '1');
   const [indicatorPosition, setIndicatorPosition] = React.useState(() => {
     const saved = localStorage.getItem('tune-indicator-position');
-    return saved ? parseInt(saved) : 20;
+    return saved ? parseInt(saved) : 15;
   });
   const [buttonOffset, setButtonOffset] = React.useState(() => {
     const saved = localStorage.getItem('tune-button-offset');
@@ -322,8 +322,8 @@ const GalerieFleuveWelcome: React.FC<GalerieFleuveWelcomeProps> = ({
               <Slider
                 value={[indicatorPosition]}
                 onValueChange={(value) => handleIndicatorChange(value[0])}
-                min={20}
-                max={45}
+                min={10}
+                max={30}
                 step={1}
                 className="w-full"
               />
