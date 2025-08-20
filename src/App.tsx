@@ -51,7 +51,7 @@ function App() {
           <Route path="/galerie-fleuve" element={<GalerieFleuvePage />} />
           <Route path="/galerie-fleuve/exploration/:slug" element={<GalerieFluveExploration />} />
           <Route path="/explorations/:slug" element={<ExplorationDetail />} />
-          <Route path="/explorations/:slug/animer" element={<ExplorationAnimatorRefactored />} />
+          <Route path="/explorations/:slug/animer" element={<ExplorationDetail />} />
           <Route path="/explorations/:slug/experience/:sessionId" element={<ExplorationExperience />} />
           <Route path="/explorations/:slug/experience/:sessionId/podcast" element={<ExplorationPodcast />} />
           <Route path="/explorations/:slug/:narrativeSlug" element={<NarrativeLandscape />} />

@@ -21,19 +21,25 @@ const ExplorationDetail = () => {
 
   // Automatic redirection to experience when exploration is loaded
   useEffect(() => {
-    if (exploration?.id && !isCreatingSession) {
+    if (exploration?.id && !isCreatingSession && !sessionError) {
+      console.log('🔧 Starting automatic session creation for exploration:', exploration.id);
       createSessionAndRedirect();
     }
-  }, [exploration?.id, isCreatingSession]);
+  }, [exploration?.id, isCreatingSession, sessionError]);
 
   const createSessionAndRedirect = async () => {
-    if (!exploration?.id) return;
+    if (!exploration?.id) {
+      console.error('🔧 No exploration ID available');
+      return;
+    }
     
     try {
+      console.log('🔧 Starting session creation process');
       setIsCreatingSession(true);
       setSessionError(null);
 
       // Track exploration view
+      console.log('🔧 Tracking exploration view');
       trackClick.mutate({
         exploration_id: exploration.id,
         action: 'view_exploration'
@@ -41,12 +47,14 @@ const ExplorationDetail = () => {
 
       // Generate unique session ID
       const sessionId = crypto.randomUUID();
+      console.log('🔧 Generated session ID:', sessionId);
 
       // Generate welcome composition for adaptive experience
       const welcomeComposition = marches.length > 0 ? buildWelcomeComposition(exploration, marches) : null;
       console.log('🔧 Generated welcome composition:', welcomeComposition);
 
       // Create session in database with welcome composition
+      console.log('🔧 Creating session in database');
       const { data, error } = await supabase
         .from('narrative_sessions')
         .insert({
@@ -66,15 +74,19 @@ const ExplorationDetail = () => {
         .single();
 
       if (error) {
-        console.error('Error creating session:', error);
+        console.error('🔧 Database error creating session:', error);
         throw new Error('Impossible de créer votre session personnalisée');
       }
 
+      console.log('🔧 Session created successfully:', data);
+      
       // Redirect to experience
-      navigate(`/explorations/${slug}/experience/${sessionId}`, { replace: true });
+      const redirectUrl = `/explorations/${slug}/experience/${sessionId}`;
+      console.log('🔧 Redirecting to:', redirectUrl);
+      navigate(redirectUrl, { replace: true });
       
     } catch (error) {
-      console.error('Session creation failed:', error);
+      console.error('🔧 Session creation failed:', error);
       setSessionError(error instanceof Error ? error.message : 'Une erreur est survenue');
       setIsCreatingSession(false);
     }
@@ -224,14 +236,24 @@ const ExplorationDetail = () => {
             </div>
           )}
           
-          <div className="flex items-center justify-center space-x-3 text-gaspard-cream/70">
+          <div className="flex items-center justify-center space-x-3 text-gaspard-cream/70 mb-8">
             <Loader2 className="h-6 w-6 animate-spin" />
             <span className="text-lg">Préparation de votre expérience personnalisée...</span>
           </div>
           
-          <div className="mt-8 text-sm text-gaspard-cream/50">
+          <div className="mt-4 text-sm text-gaspard-cream/50 mb-6">
             Vous allez être redirigé automatiquement
           </div>
+          
+          {/* Manual fallback button */}
+          <Button 
+            onClick={createSessionAndRedirect}
+            variant="outline"
+            className="text-gaspard-cream border-gaspard-cream/30 hover:bg-gaspard-cream/10"
+            disabled={isCreatingSession}
+          >
+            Continuer manuellement
+          </Button>
         </div>
         
         {/* Subtle background texture */}
