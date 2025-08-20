@@ -19,7 +19,7 @@ const Index = () => {
   }, [theme]);
 
   const handleExploreClick = () => {
-    navigate('/galerie-fleuve');
+    navigate('/bioacoustique-poetique');
   };
 
 
