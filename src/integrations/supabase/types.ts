@@ -14,6 +14,27 @@ export type Database = {
   }
   public: {
     Tables: {
+      admin_initialization: {
+        Row: {
+          created_at: string
+          id: string
+          is_initialized: boolean
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_initialized?: boolean
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_initialized?: boolean
+          updated_at?: string
+        }
+        Relationships: []
+      }
       admin_users: {
         Row: {
           created_at: string
@@ -1185,6 +1206,10 @@ export type Database = {
           name: string
         }[]
       }
+      initialize_first_admin: {
+        Args: { new_email: string; new_user_id: string }
+        Returns: boolean
+      }
       insert_exploration_page: {
         Args:
           | {
@@ -1205,6 +1230,10 @@ export type Database = {
         Returns: string
       }
       is_admin_user: {
+        Args: Record<PropertyKey, never>
+        Returns: boolean
+      }
+      is_system_initialized: {
         Args: Record<PropertyKey, never>
         Returns: boolean
       }

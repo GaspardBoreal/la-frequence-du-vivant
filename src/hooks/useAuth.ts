@@ -100,7 +100,7 @@ export const useAuth = () => {
     if (error) {
       toast.error(`Erreur d'inscription: ${error.message}`);
     } else {
-      toast.success('Inscription réussie - Vérifiez votre email');
+      toast.success('Inscription réussie');
     }
     
     return { error };

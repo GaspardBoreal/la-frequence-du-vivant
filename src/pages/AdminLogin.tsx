@@ -1,17 +1,24 @@
 import React from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { Navigate } from 'react-router-dom';
+import { useAdminInitialization } from '@/hooks/useAdminInitialization';
 import AdminAuth from '@/components/AdminAuth';
 
 const AdminLogin: React.FC = () => {
   const { user, isAdmin, isLoading } = useAuth();
+  const { isInitialized, isLoading: initLoading } = useAdminInitialization();
 
-  if (isLoading) {
+  if (isLoading || initLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-accent"></div>
       </div>
     );
+  }
+
+  // If system is not initialized, redirect to setup
+  if (!isInitialized) {
+    return <Navigate to="/admin/setup" replace />;
   }
 
   // If user is already authenticated and is admin, redirect to admin

@@ -5,6 +5,8 @@ import { QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from 'sonner';
 import { queryClient } from './lib/queryClient';
 import AdminAuth from './components/AdminAuth';
+import AdminLogin from './pages/AdminLogin';
+import AdminSetup from './pages/AdminSetup';
 import Index from './pages/Index';
 import NotFound from './pages/NotFound';
 import MarcheDetail from './pages/MarcheDetail';
@@ -56,6 +58,10 @@ function App() {
           <Route path="/explorations/:slug/experience/:sessionId/podcast" element={<ExplorationPodcast />} />
           <Route path="/explorations/:slug/:narrativeSlug" element={<NarrativeLandscape />} />
 
+          {/* Routes d'administration */}
+          <Route path="/admin/setup" element={<AdminSetup />} />
+          <Route path="/admin/login" element={<AdminLogin />} />
+          
           {/* Routes d'administration protégées */}
           <Route path="/admin/migration" element={
             <AdminAuth>
