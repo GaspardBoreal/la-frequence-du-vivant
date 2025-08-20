@@ -1214,6 +1214,10 @@ export type Database = {
         Args: { new_email: string; new_user_id: string }
         Returns: boolean
       }
+      initialize_first_admin_by_email: {
+        Args: { target_email: string }
+        Returns: Json
+      }
       initialize_first_admin_direct: {
         Args: { new_email: string; new_password: string }
         Returns: Json
