@@ -114,8 +114,8 @@ const AudioExperienceSection: React.FC<AudioExperienceSectionProps> = ({ marche,
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6 }}
         >
-          <h2 className="text-5xl font-crimson font-bold flex items-center justify-center gap-4">
-            <Waves className="h-10 w-10 text-purple-600" />
+          <h2 className="text-4xl font-crimson font-bold flex items-center justify-center gap-3">
+            <Waves className="h-8 w-8 text-purple-600" />
             Expérience Audio
           </h2>
         </motion.div>
@@ -200,8 +200,8 @@ const AudioExperienceSection: React.FC<AudioExperienceSectionProps> = ({ marche,
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6 }}
       >
-        <h2 className="text-5xl font-crimson font-bold flex items-center justify-center gap-4">
-          <Waves className="h-10 w-10 text-purple-600" />
+        <h2 className="text-4xl font-crimson font-bold flex items-center justify-center gap-3">
+          <Waves className="h-8 w-8 text-purple-600" />
           Expérience Audio
         </h2>
       </motion.div>
