@@ -2,6 +2,7 @@ import React from 'react';
 import { Button } from '@/components/ui/button';
 import DecorativeParticles from '@/components/DecorativeParticles';
 import type { ExplorationPage } from '@/hooks/useExplorationPages';
+import { createSafeHtmlWithLineBreaks } from '@/utils/htmlSanitizer';
 
 interface Props {
   page: ExplorationPage;
@@ -18,7 +19,7 @@ const ExperiencePageAccueil: React.FC<Props> = ({ page, onContinue }) => {
         </h1>
         
         {page.description && (
-          <div className="prose prose-lg max-w-none text-foreground/80 mb-8" dangerouslySetInnerHTML={{ __html: page.description.replace(/\n/g, '<br />') }} />
+          <div className="prose prose-lg max-w-none text-foreground/80 mb-8" dangerouslySetInnerHTML={createSafeHtmlWithLineBreaks(page.description)} />
         )}
 
         {page.config?.audioUrl && (

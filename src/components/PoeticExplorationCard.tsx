@@ -9,6 +9,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useQueryClient } from '@tanstack/react-query';
 import { useExplorationMarchesCount } from '@/hooks/useExplorations';
+import { createSafeHtml } from '@/utils/htmlSanitizer';
 
 interface PoeticExplorationCardProps {
   exploration: {
@@ -115,7 +116,7 @@ const PoeticExplorationCard: React.FC<PoeticExplorationCardProps> = ({ explorati
         {/* Description avec contraste amélioré */}
         {exploration.description && (
           <div className="mb-5">
-            <div className="text-foreground/80 leading-relaxed text-sm text-justify hyphens-auto group-hover:text-gaspard-accent group-hover:font-medium transition-all duration-400 prose prose-sm prose-invert max-w-none" dangerouslySetInnerHTML={{ __html: exploration.description }}>
+            <div className="text-foreground/80 leading-relaxed text-sm text-justify hyphens-auto group-hover:text-gaspard-accent group-hover:font-medium transition-all duration-400 prose prose-sm prose-invert max-w-none" dangerouslySetInnerHTML={createSafeHtml(exploration.description)}>
             </div>
           </div>
         )}
