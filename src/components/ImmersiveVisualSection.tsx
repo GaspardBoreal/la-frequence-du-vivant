@@ -164,7 +164,7 @@ const MediaItem: React.FC<{
   }
 
   return (
-    <div className="space-y-8 pt-16">
+    <div className="space-y-8 pt-6">
       {/* Section Header */}
       <motion.div
         className="text-center"
@@ -172,8 +172,8 @@ const MediaItem: React.FC<{
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6 }}
       >
-        <h2 className="text-3xl font-crimson font-bold flex items-center justify-center gap-3">
-          <ImageIcon className="h-8 w-8" />
+        <h2 className="text-4xl font-crimson font-bold flex items-center justify-center gap-3">
+          <ImageIcon className="h-8 w-8 text-purple-600" />
           Exploration Visuelle
         </h2>
       </motion.div>
