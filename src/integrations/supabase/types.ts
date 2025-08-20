@@ -1140,15 +1140,26 @@ export type Database = {
         Args: { check_user_id: string }
         Returns: boolean
       }
+      create_admin_user: {
+        Args: { new_email: string; new_user_id: string }
+        Returns: boolean
+      }
       delete_exploration_page: {
         Args: { page_id: string }
         Returns: undefined
+      }
+      get_admin_count: {
+        Args: Record<PropertyKey, never>
+        Returns: number
+      }
+      get_current_admin_email: {
+        Args: Record<PropertyKey, never>
+        Returns: string
       }
       get_current_admin_user: {
         Args: Record<PropertyKey, never>
         Returns: {
           created_at: string
-          email: string
           id: string
           role: string
         }[]
@@ -1195,6 +1206,10 @@ export type Database = {
       }
       is_admin_user: {
         Args: Record<PropertyKey, never>
+        Returns: boolean
+      }
+      remove_admin_user: {
+        Args: { target_user_id: string }
         Returns: boolean
       }
       update_exploration_page: {
