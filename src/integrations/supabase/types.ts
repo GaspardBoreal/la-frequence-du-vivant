@@ -1136,9 +1136,22 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      check_is_admin_user: {
+        Args: { check_user_id: string }
+        Returns: boolean
+      }
       delete_exploration_page: {
         Args: { page_id: string }
         Returns: undefined
+      }
+      get_current_admin_user: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          created_at: string
+          email: string
+          id: string
+          role: string
+        }[]
       }
       get_exploration_pages: {
         Args: { exploration_id_param: string }
