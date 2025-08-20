@@ -24,7 +24,7 @@ const PoeticSection: React.FC<PoeticSectionProps> = ({ marche, theme }) => {
   console.log('📝 Texte à afficher:', textToDisplay.substring(0, 100) + '...');
 
   return (
-    <div className="space-y-12 pt-16">
+    <div className="space-y-12 pt-6">
       {/* Section Header */}
       <motion.div
         className="text-center"
