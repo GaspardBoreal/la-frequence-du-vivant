@@ -1210,6 +1210,10 @@ export type Database = {
         Args: { new_email: string; new_user_id: string }
         Returns: boolean
       }
+      initialize_first_admin_direct: {
+        Args: { new_email: string; new_password: string }
+        Returns: Json
+      }
       insert_exploration_page: {
         Args:
           | {

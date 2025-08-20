@@ -11,8 +11,8 @@ import { toast } from 'sonner';
 import { Eye, EyeOff, Shield } from 'lucide-react';
 
 const AdminSetup: React.FC = () => {
-  const { user, signUp, signIn } = useAuth();
-  const { isInitialized, isLoading, initializeFirstAdmin } = useAdminInitialization();
+  const { user, signIn } = useAuth();
+  const { isInitialized, isLoading, initializeFirstAdminDirect } = useAdminInitialization();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -54,45 +54,44 @@ const AdminSetup: React.FC = () => {
     setIsSubmitting(true);
 
     try {
-      // First, create the user account
-      const { error: signUpError } = await signUp(email, password);
-      
-      if (signUpError) {
-        throw new Error(signUpError.message);
-      }
-
-      // Sign them in immediately (for email confirmation disabled)
-      const { error: signInError } = await signIn(email, password);
-      
-      if (signInError) {
-        throw new Error(signInError.message);
-      }
-
-      // Wait a bit for the auth state to update
-      await new Promise(resolve => setTimeout(resolve, 1000));
-
-      // Get the current user to initialize as admin
-      const { data: { user: currentUser } } = await supabase.auth.getUser();
-      
-      if (!currentUser) {
-        throw new Error('Utilisateur non trouvé après la connexion');
-      }
-
-      // Initialize as first admin
-      const initResult = await initializeFirstAdmin(currentUser.id, email);
+      // Use direct initialization to bypass email confirmation
+      const initResult = await initializeFirstAdminDirect(email, password);
       
       if (!initResult.success) {
+        // Handle specific error cases
+        if (initResult.error?.includes('rate_limit') || initResult.error?.includes('rate limit')) {
+          throw new Error('Trop de tentatives. Veuillez attendre quelques minutes avant de réessayer.');
+        }
         throw new Error(initResult.error || 'Échec de l\'initialisation administrateur');
       }
 
       toast.success('Compte administrateur créé avec succès !');
       
-      // Force a page reload to update the auth state properly
+      // Now sign in the newly created user
+      const { error: signInError } = await signIn(email, password);
+      
+      if (signInError) {
+        // If sign in fails, at least the admin was created
+        toast.warning('Compte créé mais connexion échouée. Utilisez la page de connexion.');
+        window.location.href = '/admin/login';
+        return;
+      }
+
+      // Redirect to admin area
       window.location.href = '/admin';
       
-    } catch (error) {
+    } catch (error: any) {
       console.error('Setup error:', error);
-      toast.error(`Erreur lors de la création du compte : ${error.message}`);
+      
+      // Provide user-friendly error messages
+      let errorMessage = error.message;
+      if (errorMessage.includes('duplicate key')) {
+        errorMessage = 'Un compte avec cette adresse email existe déjà.';
+      } else if (errorMessage.includes('invalid input syntax')) {
+        errorMessage = 'Format d\'email invalide.';
+      }
+      
+      toast.error(`Erreur lors de la création du compte : ${errorMessage}`);
     } finally {
       setIsSubmitting(false);
     }
@@ -180,6 +179,9 @@ const AdminSetup: React.FC = () => {
             <p className="text-sm text-muted-foreground">
               <strong>Important :</strong> Ce formulaire n'est accessible que lors de la première configuration. 
               Une fois un administrateur créé, cette page ne sera plus disponible.
+            </p>
+            <p className="text-xs text-muted-foreground mt-2">
+              Cette méthode d'initialisation contourne la confirmation d'email pour faciliter la configuration initiale.
             </p>
           </div>
         </CardContent>

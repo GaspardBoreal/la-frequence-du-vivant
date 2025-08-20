@@ -49,10 +49,34 @@ export const useAdminInitialization = () => {
     }
   };
 
+  const initializeFirstAdminDirect = async (email: string, password: string) => {
+    try {
+      const { data, error } = await supabase.rpc('initialize_first_admin_direct', {
+        new_email: email,
+        new_password: password
+      });
+
+      if (error) {
+        throw error;
+      }
+
+      const result = data as any;
+      if (result?.success) {
+        setIsInitialized(true);
+        return { success: true, userId: result.user_id };
+      } else {
+        return { success: false, error: result?.error || 'L\'initialisation a échoué' };
+      }
+    } catch (error: any) {
+      return { success: false, error: error.message };
+    }
+  };
+
   return {
     isInitialized,
     isLoading,
     initializeFirstAdmin,
+    initializeFirstAdminDirect,
     refetch: checkInitializationStatus
   };
 };
