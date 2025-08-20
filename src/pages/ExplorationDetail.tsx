@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useExploration, useTrackClick, useExplorationMarches } from '@/hooks/useExplorations';
 import { Button } from '@/components/ui/button';
@@ -16,6 +16,8 @@ const ExplorationDetail = () => {
   const [isCreatingSession, setIsCreatingSession] = useState(false);
   const [sessionError, setSessionError] = useState<string | null>(null);
   const [generatedSessionId, setGeneratedSessionId] = useState<string | null>(null);
+  const sessionIdRef = useRef<string | null>(null);
+  const didNavigateRef = useRef(false);
   
   const { data: exploration, isLoading: explorationLoading, error: explorationError } = useExploration(slug!);
   const { data: marches = [] } = useExplorationMarches(exploration?.id || '');
@@ -52,6 +54,17 @@ const ExplorationDetail = () => {
       setIsCreatingSession(true);
       setSessionError(null);
 
+      // Safety timer: force navigation if anything hangs
+      const safetyTimer = setTimeout(() => {
+        if (!didNavigateRef.current) {
+          const sid = sessionIdRef.current || generateSessionId();
+          sessionIdRef.current = sid;
+          const url = `/explorations/${slug}/experience/${sid}`;
+          console.log('🔧 Safety timer redirect to:', url);
+          navigate(url, { replace: true });
+        }
+      }, 8000);
+
       // Track exploration view
       console.log('🔧 Tracking exploration view');
       trackClick.mutate({
@@ -61,6 +74,7 @@ const ExplorationDetail = () => {
 
       // Generate unique session ID
       const sessionId = generateSessionId();
+      sessionIdRef.current = sessionId;
       console.log('🔧 Generated session ID:', sessionId);
       setGeneratedSessionId(sessionId);
 
@@ -102,6 +116,7 @@ const ExplorationDetail = () => {
       // Redirect to experience
       const redirectUrl = `/explorations/${slug}/experience/${sessionId}`;
       console.log('🔧 Redirecting to:', redirectUrl);
+      didNavigateRef.current = true;
       navigate(redirectUrl, { replace: true });
       
     } catch (error) {
@@ -110,12 +125,13 @@ const ExplorationDetail = () => {
       if (error instanceof Error && error.message === 'TIMEOUT') {
         console.log('🔧 Timeout occurred, redirecting anyway with generated session ID');
         // Navigate even on timeout - session will be auto-created in ExplorationExperience
-        if (generatedSessionId) {
-          const redirectUrl = `/explorations/${slug}/experience/${generatedSessionId}`;
-          console.log('🔧 Timeout redirect to:', redirectUrl);
-          navigate(redirectUrl, { replace: true });
-          return;
-        }
+        const sid = sessionIdRef.current || generateSessionId();
+        sessionIdRef.current = sid;
+        const redirectUrl = `/explorations/${slug}/experience/${sid}`;
+        console.log('🔧 Timeout redirect to:', redirectUrl);
+        didNavigateRef.current = true;
+        navigate(redirectUrl, { replace: true });
+        return;
       }
       
       setSessionError(error instanceof Error ? error.message : 'Une erreur est survenue');
@@ -126,9 +142,11 @@ const ExplorationDetail = () => {
   const forceNavigate = () => {
     if (!exploration?.id) return;
     
-    const sessionId = generatedSessionId || generateSessionId();
-    const redirectUrl = `/explorations/${slug}/experience/${sessionId}`;
+    const sid = sessionIdRef.current || generatedSessionId || generateSessionId();
+    sessionIdRef.current = sid;
+    const redirectUrl = `/explorations/${slug}/experience/${sid}`;
     console.log('🔧 Force navigation to:', redirectUrl);
+    didNavigateRef.current = true;
     navigate(redirectUrl, { replace: true });
   };
 
@@ -287,12 +305,12 @@ const ExplorationDetail = () => {
           
           {/* Manual fallback button */}
           <Button 
-            onClick={generatedSessionId ? forceNavigate : createSessionAndRedirect}
+            onClick={forceNavigate}
             variant="outline"
             className="text-gaspard-cream border-gaspard-cream/30 hover:bg-gaspard-cream/10"
             disabled={isCreatingSession}
           >
-            {generatedSessionId ? 'Continuer maintenant' : 'Continuer manuellement'}
+            Continuer maintenant
           </Button>
         </div>
         
