@@ -132,20 +132,59 @@ export default function ExplorationExperience() {
   // Load session context (welcome_composition) to drive adaptive welcome
   useEffect(() => {
     const fetchSession = async () => {
-      if (!sessionId) return;
+      if (!sessionId || !exploration?.id) return;
+      
+      console.log('🔧 Fetching session context for ID:', sessionId);
       const { data, error } = await supabase
         .from('narrative_sessions')
         .select('context')
         .eq('id', sessionId)
         .maybeSingle();
-      if (!error && data?.context) {
+        
+      if (error) {
+        console.log('🔧 Session fetch error:', error);
+      }
+      
+      if (!data) {
+        console.log('🔧 Session not found, auto-creating with minimal data');
+        // Auto-create session if it doesn't exist
+        try {
+          const { error: insertError } = await supabase
+            .from('narrative_sessions')
+            .insert({
+              id: sessionId,
+              exploration_id: exploration.id,
+              language: 'fr',
+              user_agent: navigator.userAgent || 'unknown',
+              referrer: document.referrer || null,
+              status: 'active',
+              context: {
+                created_from: 'exploration_experience_auto',
+                auto_created: true,
+                welcome_composition: null
+              }
+            });
+            
+          if (insertError) {
+            console.error('🔧 Failed to auto-create session:', insertError);
+          } else {
+            console.log('🔧 Session auto-created successfully');
+          }
+        } catch (autoCreateError) {
+          console.error('🔧 Auto-create session exception:', autoCreateError);
+        }
+        return;
+      }
+      
+      if (data?.context) {
         const ctx: any = data.context as any;
+        console.log('🔧 Loaded session context:', ctx);
         if (ctx?.welcome_composition) setWelcomeComposition(ctx.welcome_composition);
         if (ctx?.marche_view_model) setSettings((prev) => ({ ...prev, marche_view_model: ctx.marche_view_model }));
       }
     };
     fetchSession();
-  }, [sessionId]);
+  }, [sessionId, exploration?.id]);
 
   useEffect(() => {
     const logView = async () => {

@@ -15,6 +15,7 @@ const ExplorationDetail = () => {
   
   const [isCreatingSession, setIsCreatingSession] = useState(false);
   const [sessionError, setSessionError] = useState<string | null>(null);
+  const [generatedSessionId, setGeneratedSessionId] = useState<string | null>(null);
   
   const { data: exploration, isLoading: explorationLoading, error: explorationError } = useExploration(slug!);
   const { data: marches = [] } = useExplorationMarches(exploration?.id || '');
@@ -26,6 +27,19 @@ const ExplorationDetail = () => {
       createSessionAndRedirect();
     }
   }, [exploration?.id, isCreatingSession, sessionError]);
+
+  // UUID fallback for older browsers or environments
+  const generateSessionId = () => {
+    if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+      return crypto.randomUUID();
+    }
+    // Fallback UUID generation
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+      const r = Math.random() * 16 | 0;
+      const v = c === 'x' ? r : (r & 0x3 | 0x8);
+      return v.toString(16);
+    });
+  };
 
   const createSessionAndRedirect = async () => {
     if (!exploration?.id) {
@@ -46,15 +60,17 @@ const ExplorationDetail = () => {
       });
 
       // Generate unique session ID
-      const sessionId = crypto.randomUUID();
+      const sessionId = generateSessionId();
       console.log('🔧 Generated session ID:', sessionId);
+      setGeneratedSessionId(sessionId);
 
       // Generate welcome composition for adaptive experience
       const welcomeComposition = marches.length > 0 ? buildWelcomeComposition(exploration, marches) : null;
       console.log('🔧 Generated welcome composition:', welcomeComposition);
 
-      console.log('🔧 Creating session in database');
-      const { error } = await (supabase as any)
+      // Create session with timeout
+      console.log('🔧 Creating session in database with timeout');
+      const sessionCreationPromise = (supabase as any)
         .from('narrative_sessions')
         .insert({
           id: sessionId,
@@ -70,6 +86,12 @@ const ExplorationDetail = () => {
           }
         }, { returning: 'minimal' });
 
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('TIMEOUT')), 4000)
+      );
+
+      const { error } = await Promise.race([sessionCreationPromise, timeoutPromise]);
+
       if (error) {
         console.error('🔧 Database error creating session:', error);
         throw new Error('Impossible de créer votre session personnalisée');
@@ -84,9 +106,30 @@ const ExplorationDetail = () => {
       
     } catch (error) {
       console.error('🔧 Session creation failed:', error);
+      
+      if (error instanceof Error && error.message === 'TIMEOUT') {
+        console.log('🔧 Timeout occurred, redirecting anyway with generated session ID');
+        // Navigate even on timeout - session will be auto-created in ExplorationExperience
+        if (generatedSessionId) {
+          const redirectUrl = `/explorations/${slug}/experience/${generatedSessionId}`;
+          console.log('🔧 Timeout redirect to:', redirectUrl);
+          navigate(redirectUrl, { replace: true });
+          return;
+        }
+      }
+      
       setSessionError(error instanceof Error ? error.message : 'Une erreur est survenue');
       setIsCreatingSession(false);
     }
+  };
+
+  const forceNavigate = () => {
+    if (!exploration?.id) return;
+    
+    const sessionId = generatedSessionId || generateSessionId();
+    const redirectUrl = `/explorations/${slug}/experience/${sessionId}`;
+    console.log('🔧 Force navigation to:', redirectUrl);
+    navigate(redirectUrl, { replace: true });
   };
 
   // Loading state - Exploration is loading
@@ -244,12 +287,12 @@ const ExplorationDetail = () => {
           
           {/* Manual fallback button */}
           <Button 
-            onClick={createSessionAndRedirect}
+            onClick={generatedSessionId ? forceNavigate : createSessionAndRedirect}
             variant="outline"
             className="text-gaspard-cream border-gaspard-cream/30 hover:bg-gaspard-cream/10"
             disabled={isCreatingSession}
           >
-            Continuer manuellement
+            {generatedSessionId ? 'Continuer maintenant' : 'Continuer manuellement'}
           </Button>
         </div>
         
