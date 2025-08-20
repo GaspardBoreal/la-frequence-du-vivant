@@ -1161,6 +1161,10 @@ export type Database = {
         Args: { check_user_id: string }
         Returns: boolean
       }
+      confirm_admin_email: {
+        Args: { target_email: string }
+        Returns: boolean
+      }
       create_admin_user: {
         Args: { new_email: string; new_user_id: string }
         Returns: boolean
