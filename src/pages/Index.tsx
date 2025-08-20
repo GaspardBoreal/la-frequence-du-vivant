@@ -22,10 +22,6 @@ const Index = () => {
     navigate('/galerie-fleuve');
   };
 
-  const handleFleuveTemporelClick = () => {
-    // Navigate to the default exploration's fleuve temporel view
-    navigate('/galerie-fleuve/exploration/remontee-dordogne-atlas-eaux-vivantes-2025-2045?view=fleuve-temporel');
-  };
 
 
   return <HelmetProvider>
@@ -71,15 +67,8 @@ const Index = () => {
                   <span className="text-white text-base">Gaspard Boréal</span>
                 </div>
 
-                {/* Button pour accéder à la carte */}
-                <div className="pt-8 space-y-4">
+                <div className="pt-8">
                   <Button onClick={handleExploreClick} className="bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white px-8 py-4 text-lg font-medium rounded-full transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl">Explorons les Fréquences du Vivant ...</Button>
-                  
-                  <div className="pt-4">
-                    <Button onClick={handleFleuveTemporelClick} variant="outline" className="border-green-400/40 text-green-200 hover:bg-green-900/30 px-6 py-3 text-base rounded-full transition-all duration-300">
-                      🌊 Fleuve temporel
-                    </Button>
-                  </div>
                 </div>
               </div>
             </div>
