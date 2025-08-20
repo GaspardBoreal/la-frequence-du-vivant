@@ -53,9 +53,8 @@ const ExplorationDetail = () => {
       const welcomeComposition = marches.length > 0 ? buildWelcomeComposition(exploration, marches) : null;
       console.log('🔧 Generated welcome composition:', welcomeComposition);
 
-      // Create session in database with welcome composition
       console.log('🔧 Creating session in database');
-      const { data, error } = await supabase
+      const { error } = await (supabase as any)
         .from('narrative_sessions')
         .insert({
           id: sessionId,
@@ -69,16 +68,14 @@ const ExplorationDetail = () => {
             user_ip: null, // Will be set by Supabase
             welcome_composition: welcomeComposition ? JSON.parse(JSON.stringify(welcomeComposition)) : null
           }
-        })
-        .select()
-        .single();
+        }, { returning: 'minimal' });
 
       if (error) {
         console.error('🔧 Database error creating session:', error);
         throw new Error('Impossible de créer votre session personnalisée');
       }
 
-      console.log('🔧 Session created successfully:', data);
+      console.log('🔧 Session created successfully');
       
       // Redirect to experience
       const redirectUrl = `/explorations/${slug}/experience/${sessionId}`;
