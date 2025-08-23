@@ -70,6 +70,17 @@ export default function GalerieFluveExploration() {
           temperature: 0,
           id: marche.id,
           photos: marche.photos?.map(p => p.url_supabase) || [],
+          // Ajouter les données audio avec les bonnes propriétés
+          audioData: marche.audio?.map(a => ({
+            id: a.id,
+            url: a.url_supabase,
+            nom_fichier: a.titre || `audio-${a.id}`,
+            titre: a.titre,
+            description: a.description,
+            duree_secondes: a.duree_secondes,
+            ordre: a.ordre
+          })) || [],
+          audioFiles: marche.audio?.map(a => a.url_supabase) || [],
         };
         
         converted.push(convertedMarche);
