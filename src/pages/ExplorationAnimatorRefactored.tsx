@@ -9,7 +9,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useExploration, useExplorationMarches } from '@/hooks/useExplorations';
 import { toast } from 'sonner';
 import { marcheModels } from '@/marche-models/registry';
-import { Eye } from 'lucide-react';
+import { Eye, ArrowLeft } from 'lucide-react';
 import ExperienceMarcheSimple from '@/components/experience/ExperienceMarcheSimple';
 import ExperienceMarcheElabore from '@/components/experience/ExperienceMarcheElabore';
 import SpecificPagesManager from '@/components/admin/SpecificPagesManager';
@@ -124,7 +124,15 @@ export default function ExplorationAnimatorRefactored() {
         canonicalUrl={canonical}
       />
 
-      <header className="container mx-auto px-4 py-8">        
+      <header className="container mx-auto px-4 py-8">
+        <div className="flex items-center gap-4 mb-4">
+          <Link to="/admin/explorations">
+            <Button variant="outline" size="sm">
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Retour aux explorations
+            </Button>
+          </Link>
+        </div>
         <h1 className="mt-4 text-3xl font-bold text-foreground">
           Animer l'exploration {exploration ? `« ${exploration.name} »` : ''}
         </h1>
