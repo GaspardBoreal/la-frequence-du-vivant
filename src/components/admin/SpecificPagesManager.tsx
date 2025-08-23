@@ -32,6 +32,7 @@ interface Props {
 const PAGE_TYPES = [
   { value: 'intro-accueil', label: 'Page d\'accueil', description: 'Page de présentation générale de l\'exploration' },
   { value: 'intro-auteur', label: 'Page auteur', description: 'Page où l\'auteur écrit un texte narratif pour introduire l\'exploration' },
+  { value: 'page-audio', label: 'Page Audio', description: 'Page dédiée aux contenus audio avec lecteur intégré et narration' },
   { value: 'marches', label: 'Page marches', description: 'Utiliser le modèle ci-dessous' },
   { value: 'fin-feedback', label: 'Page Feedback', description: 'Inciter convaincre les lecteurs de faire des feed back sur l\'app et les contenus (poèmes, haïku, photo, sons …)' },
   { value: 'fin-precommande', label: 'Page pré commande', description: 'Inciter convaincre les lecteurs à acheter l\'ouvrage en pré commandes' },
@@ -103,6 +104,8 @@ export default function SpecificPagesManager({ explorationId }: Props) {
         return "Rédigez ici le texte narratif d'introduction qui apparaîtra sous le titre de l'exploration...";
       case 'intro-auteur':
         return "Rédigez ici le texte narratif de présentation de l'auteur...";
+      case 'page-audio':
+        return "Rédigez ici le texte d'accompagnement pour la page audio, qui sera affiché avec le lecteur audio...";
       case 'fin-feedback':
         return "Rédigez ici le texte d'incitation au feedback...";
       case 'fin-precommande':
