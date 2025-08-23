@@ -10,6 +10,7 @@ import {
   saveAudioFiles, 
   deleteAudio, 
   updateAudioMetadata,
+  updateAudioOrder,
   validateAudioFile,
   getAudioDuration,
   AudioToUpload,
@@ -17,6 +18,23 @@ import {
   AudioUploadProgress
 } from '../../utils/supabaseAudioOperations';
 import AudioCard from './AudioCard';
+import SortableAudioCard from './SortableAudioCard';
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent
+} from '@dnd-kit/core';
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy
+} from '@dnd-kit/sortable';
+// Remove the modifiers import since it's not available in this version
 
 interface AudioUploadSectionProps {
   marcheId: string | null;
@@ -43,7 +61,20 @@ const AudioUploadSection: React.FC<AudioUploadSectionProps> = ({ marcheId }) => 
   const [isLoading, setIsLoading] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [isReordering, setIsReordering] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Configuration des capteurs pour le drag & drop
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8, // Évite les clics accidentels
+      },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
 
   // Charger les fichiers audio existants au montage
   useEffect(() => {
@@ -71,6 +102,13 @@ const AudioUploadSection: React.FC<AudioUploadSectionProps> = ({ marcheId }) => 
         titre: audio.titre,
         description: audio.description
       }));
+
+      // Trier par ordre
+      formattedAudio.sort((a, b) => {
+        const aOrder = existingAudio.find(e => e.id === a.id)?.ordre || 0;
+        const bOrder = existingAudio.find(e => e.id === b.id)?.ordre || 0;
+        return aOrder - bOrder;
+      });
 
       setAudioItems(formattedAudio);
       console.log(`✅ [AudioUploadSection] ${formattedAudio.length} fichiers audio existants chargés`);
@@ -341,6 +379,78 @@ const AudioUploadSection: React.FC<AudioUploadSectionProps> = ({ marcheId }) => 
     toast.info('Tous les fichiers ont été supprimés de la liste');
   };
 
+  // Gestion du drag & drop
+  const handleDragEnd = async (event: DragEndEvent) => {
+    const { active, over } = event;
+
+    if (!over || active.id === over.id) {
+      return;
+    }
+
+    const oldIndex = audioItems.findIndex(item => item.id === active.id);
+    const newIndex = audioItems.findIndex(item => item.id === over.id);
+
+    if (oldIndex === -1 || newIndex === -1) {
+      return;
+    }
+
+    const reorderedItems = arrayMove(audioItems, oldIndex, newIndex);
+    setAudioItems(reorderedItems);
+
+    // Sauvegarder l'ordre uniquement pour les fichiers déjà uploadés
+    const uploadedItems = reorderedItems.filter(item => item.uploaded && item.isExisting);
+    if (uploadedItems.length > 0) {
+      await handleSaveOrder(uploadedItems.map(item => item.id));
+    }
+  };
+
+  // Déplacement manuel (boutons)
+  const handleMoveUp = async (audioId: string) => {
+    const currentIndex = audioItems.findIndex(item => item.id === audioId);
+    if (currentIndex <= 0) return;
+
+    const newItems = arrayMove(audioItems, currentIndex, currentIndex - 1);
+    setAudioItems(newItems);
+
+    // Sauvegarder l'ordre si nécessaire
+    const uploadedItems = newItems.filter(item => item.uploaded && item.isExisting);
+    if (uploadedItems.length > 0) {
+      await handleSaveOrder(uploadedItems.map(item => item.id));
+    }
+  };
+
+  const handleMoveDown = async (audioId: string) => {
+    const currentIndex = audioItems.findIndex(item => item.id === audioId);
+    if (currentIndex >= audioItems.length - 1) return;
+
+    const newItems = arrayMove(audioItems, currentIndex, currentIndex + 1);
+    setAudioItems(newItems);
+
+    // Sauvegarder l'ordre si nécessaire
+    const uploadedItems = newItems.filter(item => item.uploaded && item.isExisting);
+    if (uploadedItems.length > 0) {
+      await handleSaveOrder(uploadedItems.map(item => item.id));
+    }
+  };
+
+  // Sauvegarder l'ordre des fichiers audio
+  const handleSaveOrder = async (audioIds: string[]) => {
+    if (!marcheId || audioIds.length === 0) return;
+
+    setIsReordering(true);
+    try {
+      await updateAudioOrder(audioIds);
+      console.log('✅ [AudioUploadSection] Ordre des fichiers audio sauvegardé');
+    } catch (error) {
+      console.error('❌ [AudioUploadSection] Erreur sauvegarde ordre:', error);
+      toast.error('Erreur lors de la sauvegarde de l\'ordre');
+      // Recharger pour restaurer l'ordre correct
+      await loadExistingAudio();
+    } finally {
+      setIsReordering(false);
+    }
+  };
+
   const hasUnsavedFiles = audioItems.some(item => !item.uploaded);
 
   if (isLoading) {
@@ -426,33 +536,69 @@ const AudioUploadSection: React.FC<AudioUploadSectionProps> = ({ marcheId }) => 
         </Card>
       ) : (
         <div className="space-y-4">
-          {/* Grille des fichiers audio */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {audioItems.map(item => (
-              <AudioCard
-                key={item.id}
-                audio={item}
-                onRemove={handleRemove}
-                onUpload={handleUploadSingle}
-                onUpdateMetadata={handleUpdateMetadata}
-                isUploading={isUploading}
-              />
-            ))}
-          </div>
+          {/* Indicateur de réorganisation */}
+          {isReordering && (
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+              <div className="flex items-center">
+                <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                <span className="text-blue-800 text-sm">Sauvegarde de l'ordre en cours...</span>
+              </div>
+            </div>
+          )}
+
+          {/* Contexte de drag & drop */}
+          <DndContext 
+            sensors={sensors}
+            collisionDetection={closestCenter}
+            onDragEnd={handleDragEnd}
+          >
+            <SortableContext 
+              items={audioItems.map(item => item.id)} 
+              strategy={verticalListSortingStrategy}
+            >
+              {/* Grille responsive des fichiers audio */}
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                {audioItems.map((item, index) => (
+                  <SortableAudioCard
+                    key={item.id}
+                    audio={item}
+                    index={index}
+                    totalItems={audioItems.length}
+                    onRemove={handleRemove}
+                    onUpload={handleUploadSingle}
+                    onUpdateMetadata={handleUpdateMetadata}
+                    onMoveUp={handleMoveUp}
+                    onMoveDown={handleMoveDown}
+                    isUploading={isUploading}
+                  />
+                ))}
+              </div>
+            </SortableContext>
+          </DndContext>
         </div>
       )}
 
       {audioItems.length > 0 && (
-        <div className="flex justify-between items-center pt-4 border-t">
-          <span className="text-sm text-gray-600">
-            {audioItems.length} fichier(s) audio • {audioItems.filter(item => item.uploaded).length} uploadé(s)
-          </span>
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 pt-4 border-t">
+          <div className="text-sm text-gray-600">
+            <div className="flex flex-wrap gap-2 items-center">
+              <span>{audioItems.length} fichier(s) audio</span>
+              <span>•</span>
+              <span>{audioItems.filter(item => item.uploaded).length} uploadé(s)</span>
+              {isReordering && (
+                <>
+                  <span>•</span>
+                  <span className="text-blue-600">Réorganisation...</span>
+                </>
+              )}
+            </div>
+          </div>
           <Button
             type="button"
             variant="outline"
             onClick={handleClearAll}
-            className="text-red-600 hover:text-red-700"
-            disabled={isProcessing}
+            className="text-red-600 hover:text-red-700 w-full sm:w-auto"
+            disabled={isProcessing || isReordering}
           >
             <Trash2 className="h-4 w-4 mr-2" />
             Tout supprimer

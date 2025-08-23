@@ -550,3 +550,33 @@ export const updateAudioMetadata = async (
     throw error;
   }
 };
+
+// Fonction pour mettre à jour l'ordre des fichiers audio en masse
+export const updateAudioOrder = async (audioIds: string[]): Promise<void> => {
+  console.log('📋 [updateAudioOrder] Mise à jour ordre audio:', audioIds);
+  
+  try {
+    // Mettre à jour chaque audio avec son nouvel ordre
+    const updates = audioIds.map((id, index) => 
+      supabase
+        .from('marche_audio')
+        .update({ ordre: index + 1 })
+        .eq('id', id)
+    );
+
+    // Exécuter toutes les mises à jour en parallèle
+    const results = await Promise.all(updates);
+    
+    // Vérifier les erreurs
+    const errors = results.filter(result => result.error);
+    if (errors.length > 0) {
+      console.error('❌ [updateAudioOrder] Erreurs lors de la mise à jour:', errors);
+      throw new Error(`Erreur lors de la mise à jour de l'ordre: ${errors[0].error?.message}`);
+    }
+
+    console.log('✅ [updateAudioOrder] Ordre des fichiers audio mis à jour avec succès');
+  } catch (error) {
+    console.error('💥 [updateAudioOrder] Erreur complète:', error);
+    throw error;
+  }
+};
