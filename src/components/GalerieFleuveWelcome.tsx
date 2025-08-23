@@ -63,18 +63,27 @@ const GalerieFleuveWelcome: React.FC<GalerieFluveWelcomeProps> = ({
   };
 
   const handleModeClick = (modeLabel: string) => {
-    if (modeLabel === 'Galerie') {
-      handleStart(); // Same action as "Commencer l'exploration"
-    } else if (modeLabel === 'Fleuve temporel') {
-      // Navigate to fleuve temporel view for this specific exploration
+    if (modeLabel === 'Voir') {
+      handleStart(); // Same action as "Commencer l'exploration" (formerly "Galerie")
+    } else if (modeLabel === 'Suivre') {
+      // Navigate to fleuve temporel view for this specific exploration (formerly "Fleuve temporel")
       if (explorationSlug) {
         window.location.href = `/galerie-fleuve/exploration/${explorationSlug}?view=fleuve-temporel`;
       } else {
         // Fallback to default exploration if no slug provided
         window.location.href = '/galerie-fleuve/exploration/remontee-dordogne-atlas-eaux-vivantes-2025-2045?view=fleuve-temporel';
       }
+    } else if (modeLabel === 'Ecouter') {
+      // Navigate to audio/bioacoustic experience
+      if (explorationSlug) {
+        window.location.href = `/explorations/${explorationSlug}/experience/audio`;
+      }
+    } else if (modeLabel === 'Lire') {
+      // Navigate to poetic/text content
+      if (explorationSlug) {
+        window.location.href = `/explorations/${explorationSlug}/experience/text`;
+      }
     }
-    // TODO: Add other mode handlers later
   };
 
   const handleSwipe = (event: any, info: any) => {
@@ -123,12 +132,12 @@ const GalerieFleuveWelcome: React.FC<GalerieFluveWelcomeProps> = ({
     ));
   };
 
-  // Modes d'immersion adaptés
+  // Modes d'immersion harmonisés
   const immersionModes = theme?.immersionModes || [
-    { icon: 'Stars', label: 'Galerie', desc: 'Navigation spatiale des souvenirs' },
-    { icon: 'Waves', label: 'Fleuve temporel', desc: 'Chronologie du périple' },
-    { icon: 'Grid3x3', label: 'Mosaïque vivante', desc: 'Composition visuelle' },
-    { icon: 'Eye', label: 'Ecoute contemplative', desc: 'Plongée photographique' }
+    { icon: 'Eye', label: 'Voir', desc: 'Navigation spatiale des souvenirs' },
+    { icon: 'Waves', label: 'Suivre', desc: 'Chronologie du périple' },
+    { icon: 'Heart', label: 'Ecouter', desc: 'Paysages sonores' },
+    { icon: 'Stars', label: 'Lire', desc: 'Récits poétiques' }
   ];
 
   const gradientClass = theme?.colors.gradient 
@@ -246,7 +255,7 @@ const GalerieFleuveWelcome: React.FC<GalerieFluveWelcomeProps> = ({
                   <button 
                     key={index}
                     onClick={() => handleModeClick(mode.label)}
-                    className={`flex items-center ${isMobile ? 'space-x-1 px-2 py-1 justify-center' : 'space-x-2 px-3 py-2'} bg-white/10 rounded-lg backdrop-blur-sm border border-white/20 ${isMobile ? '' : 'whitespace-nowrap'} cursor-pointer hover:bg-white/20 transition-colors ${mode.label === 'Galerie' ? 'ring-1 ring-white/40' : ''}`}
+                    className={`flex items-center ${isMobile ? 'space-x-1 px-2 py-1 justify-center' : 'space-x-2 px-3 py-2'} bg-white/10 rounded-lg backdrop-blur-sm border border-white/20 ${isMobile ? '' : 'whitespace-nowrap'} cursor-pointer hover:bg-white/20 transition-colors ${mode.label === 'Voir' ? 'ring-1 ring-white/40' : ''}`}
                   >
                     <IconComponent className={`${isMobile ? 'h-3 w-3' : 'h-4 w-4'}`} />
                     <span className={`${isMobile ? 'text-xs' : 'text-sm'} font-medium`}>{mode.label}</span>
