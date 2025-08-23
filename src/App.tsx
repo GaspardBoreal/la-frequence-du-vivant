@@ -96,6 +96,11 @@ function App() {
               <ExplorationMarchesAdmin />
             </AdminAuth>
           } />
+          <Route path="/admin/explorations/:slug/animer" element={
+            <AdminAuth>
+              <ExplorationAnimatorRefactored />
+            </AdminAuth>
+          } />
           <Route path="/admin" element={
             <AdminAuth>
               <AdminAccess />
