@@ -1,16 +1,17 @@
-// Phase 2.1: Component for "Ecouter" mode - Continuous audio playback
+// "Wahouhh" Experience Audio Continue - Beautiful immersive audio player
 
-import React, { useEffect, useState } from 'react';
-import { motion } from 'framer-motion';
-import { useParams } from 'react-router-dom';
+import React, { useEffect, useState, useCallback } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { useParams, Link } from 'react-router-dom';
 import { useExploration } from '@/hooks/useExplorations';
 import { useExplorationPages } from '@/hooks/useExplorationPages';
-import { useExplorationContext } from '@/contexts/ExplorationContext';
+import { useExplorationAudioPlaylist } from '@/hooks/useExplorationAudioPlaylist';
 import { useGlobalAudioPlayer } from '@/contexts/AudioContext';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
+import { Separator } from '@/components/ui/separator';
 import { 
   Play, 
   Pause, 
@@ -19,15 +20,21 @@ import {
   Volume2, 
   Clock,
   List,
-  ArrowLeft
+  ArrowLeft,
+  Shuffle,
+  Repeat,
+  MapPin,
+  Music,
+  Waves
 } from 'lucide-react';
 import { Slider } from '@/components/ui/slider';
-import { Link } from 'react-router-dom';
-import type { ExplorationAudioTrack } from '@/types/exploration';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import EcoAudioVisualizer from '@/components/audio/EcoAudioVisualizer';
 import type { XenoCantoRecording } from '@/types/biodiversity';
+import type { AudioTrackEnhanced } from '@/hooks/useExplorationAudioPlaylist';
 
-// Helper function to convert ExplorationAudioTrack to XenoCantoRecording
-const trackToXenoCantoRecording = (track: ExplorationAudioTrack): XenoCantoRecording => ({
+// Helper function to convert AudioTrackEnhanced to XenoCantoRecording
+const trackToXenoCantoRecording = (track: AudioTrackEnhanced): XenoCantoRecording => ({
   id: track.id,
   file: track.url,
   url: track.url,
@@ -50,11 +57,28 @@ const trackToXenoCantoRecording = (track: ExplorationAudioTrack): XenoCantoRecor
   license: ''
 });
 
+const formatTime = (time: number): string => {
+  const minutes = Math.floor(time / 60);
+  const seconds = Math.floor(time % 60);
+  return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+};
+
 export default function ExperienceAudioContinue() {
   const { slug } = useParams<{ slug: string }>();
+  
+  // Data fetching
   const { data: exploration, isLoading: explorationLoading } = useExploration(slug || '');
   const { data: pages, isLoading: pagesLoading } = useExplorationPages(exploration?.id || '');
-  const { state, setAudioPlaylist, setCurrentMode } = useExplorationContext();
+  const { 
+    audioPlaylist, 
+    totalDuration, 
+    totalMarches, 
+    totalTracks,
+    isLoading: playlistLoading,
+    isEmpty 
+  } = useExplorationAudioPlaylist(exploration?.id || '');
+
+  // Audio player
   const { 
     currentRecording,
     isPlaying,
@@ -66,29 +90,37 @@ export default function ExperienceAudioContinue() {
     setVolume 
   } = useGlobalAudioPlayer();
   
+  // State management
   const [currentTrackIndex, setCurrentTrackIndex] = useState(0);
   const [showPlaylist, setShowPlaylist] = useState(false);
+  const [playMode, setPlayMode] = useState<'order' | 'shuffle' | 'repeat'>('order');
 
   // Find Audio Page content
   const audioPage = pages?.find(page => page.type === 'audio');
   const audioPageText = audioPage?.description || '';
 
-  // Set current mode
-  useEffect(() => {
-    setCurrentMode('ecouter');
-  }, [setCurrentMode]);
+  // Current track logic
+  const currentTrack = audioPlaylist[currentTrackIndex];
+  const canGoNext = currentTrackIndex < audioPlaylist.length - 1;
+  const canGoPrevious = currentTrackIndex > 0;
 
-  // Load audio playlist from marches
+  // Auto-play next track when current ends
   useEffect(() => {
-    if (!state.audioPlaylist.length && exploration) {
-      // This would be populated by the parent component with march audio data
-      // For now, we'll handle the structure
+    // This will be handled by the global audio context
+    // We just need to set up the playlist continuation logic
+  }, [currentTrackIndex, audioPlaylist]);
+
+  // Initialize first track
+  useEffect(() => {
+    if (audioPlaylist.length > 0 && !currentRecording) {
+      const firstTrack = audioPlaylist[0];
+      if (firstTrack) {
+        setCurrentTrackIndex(0);
+      }
     }
-  }, [exploration, state.audioPlaylist, setAudioPlaylist]);
+  }, [audioPlaylist, currentRecording]);
 
-  const currentTrack = state.audioPlaylist[currentTrackIndex];
-
-  const handlePlayPause = () => {
+  const handlePlayPause = useCallback(() => {
     if (!currentTrack) return;
 
     if (currentRecording?.url === currentTrack.url && isPlaying) {
@@ -96,262 +128,472 @@ export default function ExperienceAudioContinue() {
     } else {
       playRecording(trackToXenoCantoRecording(currentTrack));
     }
-  };
+  }, [currentTrack, currentRecording, isPlaying, pause, playRecording]);
 
-  const handleNextTrack = () => {
-    if (currentTrackIndex < state.audioPlaylist.length - 1) {
+  const handleNextTrack = useCallback(() => {
+    if (canGoNext) {
       const nextIndex = currentTrackIndex + 1;
       setCurrentTrackIndex(nextIndex);
-      const nextTrack = state.audioPlaylist[nextIndex];
-      playRecording(trackToXenoCantoRecording(nextTrack));
+      const nextTrack = audioPlaylist[nextIndex];
+      if (nextTrack) {
+        playRecording(trackToXenoCantoRecording(nextTrack));
+      }
     }
-  };
+  }, [currentTrackIndex, canGoNext, audioPlaylist, playRecording]);
 
-  const handlePreviousTrack = () => {
-    if (currentTrackIndex > 0) {
+  const handlePreviousTrack = useCallback(() => {
+    if (canGoPrevious) {
       const prevIndex = currentTrackIndex - 1;
       setCurrentTrackIndex(prevIndex);
-      const prevTrack = state.audioPlaylist[prevIndex];
-      playRecording(trackToXenoCantoRecording(prevTrack));
+      const prevTrack = audioPlaylist[prevIndex];
+      if (prevTrack) {
+        playRecording(trackToXenoCantoRecording(prevTrack));
+      }
     }
-  };
+  }, [currentTrackIndex, canGoPrevious, audioPlaylist, playRecording]);
 
-  const handleVolumeChange = (newVolume: number[]) => {
+  const handleVolumeChange = useCallback((newVolume: number[]) => {
     setVolume(newVolume[0]);
-  };
+  }, [setVolume]);
 
-  const formatTime = (time: number): string => {
-    const minutes = Math.floor(time / 60);
-    const seconds = Math.floor(time % 60);
-    return `${minutes}:${seconds.toString().padStart(2, '0')}`;
-  };
+  const handleTrackSelect = useCallback((index: number) => {
+    setCurrentTrackIndex(index);
+    const track = audioPlaylist[index];
+    if (track) {
+      playRecording(trackToXenoCantoRecording(track));
+    }
+    setShowPlaylist(false);
+  }, [audioPlaylist, playRecording]);
 
-  if (explorationLoading || pagesLoading) {
+  if (explorationLoading || pagesLoading || playlistLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
+      <div className="min-h-screen flex items-center justify-center dordogne-experience">
+        <motion.div 
+          className="text-center space-y-4"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+        >
+          <div className="relative">
+            <div className="animate-spin rounded-full h-16 w-16 border-4 border-accent/30 border-t-accent mx-auto"></div>
+            <Waves className="h-8 w-8 absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-accent" />
+          </div>
+          <p className="text-accent dordogne-body">Chargement de l'expérience sonore...</p>
+        </motion.div>
       </div>
     );
   }
 
   if (!exploration) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <h2 className="text-2xl font-bold mb-4">Exploration non trouvée</h2>
+      <div className="min-h-screen flex items-center justify-center dordogne-experience">
+        <motion.div 
+          className="text-center space-y-6"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+        >
+          <h2 className="text-3xl font-bold text-accent dordogne-title">Exploration introuvable</h2>
+          <p className="text-muted-foreground dordogne-body">
+            Cette exploration sonore n'existe pas ou n'est plus disponible.
+          </p>
           <Link to="/galerie-fleuve">
-            <Button variant="outline">
-              <ArrowLeft className="h-4 w-4 mr-2" />
+            <Button variant="outline" size="lg" className="btn-nature">
+              <ArrowLeft className="h-5 w-5 mr-2" />
               Retour à la galerie
             </Button>
           </Link>
-        </div>
+        </motion.div>
+      </div>
+    );
+  }
+
+  if (isEmpty) {
+    return (
+      <div className="min-h-screen flex items-center justify-center dordogne-experience">
+        <motion.div 
+          className="text-center space-y-6"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+        >
+          <Music className="h-16 w-16 text-muted-foreground mx-auto" />
+          <h2 className="text-3xl font-bold text-accent dordogne-title">Aucun contenu audio</h2>
+          <p className="text-muted-foreground dordogne-body max-w-md">
+            Cette exploration ne contient pas encore de contenu audio. 
+            Les enregistrements seront bientôt disponibles.
+          </p>
+          <Link to={`/galerie-fleuve/exploration/${slug}`}>
+            <Button variant="outline" size="lg" className="btn-nature">
+              <ArrowLeft className="h-5 w-5 mr-2" />
+              Retour à l'exploration
+            </Button>
+          </Link>
+        </motion.div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-background/95 to-primary/5">
-      <div className="container mx-auto px-4 py-8">
+    <div className="min-h-screen dordogne-experience">
+      {/* Background Effects */}
+      <div className="fixed inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute inset-0 bg-gradient-to-br from-emerald-950/20 via-emerald-900/10 to-amber-950/20" />
+        {/* Animated river waves */}
+        <div className="absolute bottom-0 left-0 w-full h-32 river-wave river-wave-1" />
+        <div className="absolute bottom-0 left-1/4 w-3/4 h-24 river-wave river-wave-2" />
+        <div className="absolute bottom-0 right-0 w-1/2 h-16 river-wave river-wave-3" />
         
-        {/* Header */}
-        <motion.div 
-          className="mb-8"
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-        >
-          <div className="flex items-center justify-between mb-4">
-            <Link to={`/galerie-fleuve/exploration/${slug}`}>
-              <Button variant="outline" size="sm">
-                <ArrowLeft className="h-4 w-4 mr-2" />
-                Retour à l'exploration
-              </Button>
-            </Link>
-            <Badge variant="secondary" className="flex items-center gap-2">
-              <Clock className="h-3 w-3" />
-              {state.audioPlaylist.length} pistes
-            </Badge>
-          </div>
+        {/* Floating particles */}
+        {Array.from({ length: 12 }, (_, i) => (
+          <motion.div
+            key={i}
+            className="absolute w-2 h-2 water-bubble"
+            style={{
+              left: `${Math.random() * 100}%`,
+              animationDelay: `${Math.random() * 8}s`,
+              animationDuration: `${8 + Math.random() * 4}s`
+            }}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 0.6 }}
+            transition={{ delay: i * 0.2 }}
+          />
+        ))}
+      </div>
+
+      <div className="relative z-10">
+        <div className="container mx-auto px-4 py-8">
           
-          <h1 className="text-4xl font-bold mb-2">{exploration.name}</h1>
-          <h2 className="text-xl text-muted-foreground flex items-center gap-2">
-            <Volume2 className="h-5 w-5" />
-            Écoute Continue
-          </h2>
-        </motion.div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          
-          {/* Audio Player */}
+          {/* Header */}
           <motion.div 
-            className="lg:col-span-2"
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.5, delay: 0.2 }}
-          >
-            <Card className="h-fit">
-              <CardHeader>
-                <CardTitle className="flex items-center justify-between">
-                  <span>Lecteur Audio</span>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setShowPlaylist(!showPlaylist)}
-                  >
-                    <List className="h-4 w-4 mr-2" />
-                    Playlist
-                  </Button>
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                
-                {/* Current Track Info */}
-                {currentTrack && (
-                  <div className="text-center space-y-2">
-                    <h3 className="text-xl font-semibold">{currentTrack.title}</h3>
-                    {currentTrack.marcheName && (
-                      <p className="text-muted-foreground">{currentTrack.marcheName}</p>
-                    )}
-                    {currentTrack.description && (
-                      <p className="text-sm text-muted-foreground">{currentTrack.description}</p>
-                    )}
-                  </div>
-                )}
-
-                {/* Progress Bar */}
-                <div className="space-y-2">
-                  <Progress value={duration > 0 ? (currentTime / duration) * 100 : 0} className="w-full" />
-                  <div className="flex justify-between text-sm text-muted-foreground">
-                    <span>{formatTime(currentTime)}</span>
-                    <span>{formatTime(duration)}</span>
-                  </div>
-                </div>
-
-                {/* Controls */}
-                <div className="flex items-center justify-center space-x-4">
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    onClick={handlePreviousTrack}
-                    disabled={currentTrackIndex === 0}
-                  >
-                    <SkipBack className="h-4 w-4" />
-                  </Button>
-                  
-                  <Button
-                    size="lg"
-                    onClick={handlePlayPause}
-                    disabled={!currentTrack}
-                    className="h-12 w-12 rounded-full"
-                  >
-                    {isPlaying && currentRecording?.url === currentTrack?.url ? (
-                      <Pause className="h-6 w-6" />
-                    ) : (
-                      <Play className="h-6 w-6" />
-                    )}
-                  </Button>
-                  
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    onClick={handleNextTrack}
-                    disabled={currentTrackIndex >= state.audioPlaylist.length - 1}
-                  >
-                    <SkipForward className="h-4 w-4" />
-                  </Button>
-                </div>
-
-                {/* Volume Control */}
-                <div className="flex items-center space-x-4">
-                  <Volume2 className="h-4 w-4" />
-                  <Slider
-                    value={[volume]}
-                    onValueChange={handleVolumeChange}
-                    max={1}
-                    step={0.1}
-                    className="flex-1"
-                  />
-                  <span className="text-sm text-muted-foreground w-12">
-                    {Math.round(volume * 100)}%
-                  </span>
-                </div>
-              </CardContent>
-            </Card>
-          </motion.div>
-
-          {/* Audio Page Content */}
-          <motion.div 
-            className="lg:col-span-1"
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.5, delay: 0.4 }}
-          >
-            <Card className="h-fit">
-              <CardHeader>
-                <CardTitle>Texte d'accompagnement</CardTitle>
-              </CardHeader>
-              <CardContent>
-                {audioPageText ? (
-                  <div 
-                    className="prose prose-sm dark:prose-invert"
-                    dangerouslySetInnerHTML={{ __html: audioPageText }}
-                  />
-                ) : (
-                  <p className="text-muted-foreground italic">
-                    Aucun texte d'accompagnement configuré pour cette exploration.
-                  </p>
-                )}
-              </CardContent>
-            </Card>
-          </motion.div>
-        </div>
-
-        {/* Playlist */}
-        {showPlaylist && (
-          <motion.div 
-            className="mt-8"
-            initial={{ opacity: 0, y: 20 }}
+            className="mb-12"
+            initial={{ opacity: 0, y: -30 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.3 }}
+            transition={{ duration: 0.8, ease: "easeOut" }}
           >
-            <Card>
-              <CardHeader>
-                <CardTitle>Playlist complète</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-2">
-                  {state.audioPlaylist.map((track, index) => (
-                    <div
-                      key={track.id}
-                      className={`p-3 rounded-lg cursor-pointer transition-colors ${
-                        index === currentTrackIndex 
-                          ? 'bg-primary/10 border border-primary/20' 
-                          : 'hover:bg-muted/50'
-                      }`}
-                      onClick={() => {
-                        setCurrentTrackIndex(index);
-                        playRecording(trackToXenoCantoRecording(track));
-                      }}
-                    >
-                      <div className="flex items-center justify-between">
-                        <div className="flex-1">
-                          <h4 className="font-medium">{track.title}</h4>
-                          {track.marcheName && (
-                            <p className="text-sm text-muted-foreground">{track.marcheName}</p>
+            <div className="flex items-center justify-between mb-6">
+              <Link to={`/galerie-fleuve/exploration/${slug}`}>
+                <Button variant="outline" size="lg" className="btn-nature">
+                  <ArrowLeft className="h-5 w-5 mr-2" />
+                  Retour à l'exploration
+                </Button>
+              </Link>
+              
+              <div className="flex items-center space-x-4">
+                <Badge variant="secondary" className="flex items-center gap-2 px-4 py-2">
+                  <Clock className="h-4 w-4" />
+                  {Math.floor(totalDuration / 60)}min d'écoute
+                </Badge>
+                <Badge variant="outline" className="flex items-center gap-2 px-4 py-2">
+                  <MapPin className="h-4 w-4" />
+                  {totalMarches} marches
+                </Badge>
+                <Badge variant="outline" className="flex items-center gap-2 px-4 py-2">
+                  <Music className="h-4 w-4" />
+                  {totalTracks} pistes
+                </Badge>
+              </div>
+            </div>
+            
+            <div className="text-center space-y-4">
+              <motion.h1 
+                className="text-6xl font-bold text-accent dordogne-title"
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ duration: 0.8, delay: 0.2 }}
+              >
+                {exploration.name}
+              </motion.h1>
+              
+              <motion.div 
+                className="flex items-center justify-center gap-3 text-2xl text-muted-foreground"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6, delay: 0.4 }}
+              >
+                <Waves className="h-8 w-8 text-accent animate-gentle-float" />
+                <span className="dordogne-signature">Écoute Continue</span>
+                <Volume2 className="h-8 w-8 text-accent animate-gentle-float" />
+              </motion.div>
+            </div>
+          </motion.div>
+
+          <div className="grid grid-cols-1 xl:grid-cols-12 gap-8">
+            {/* Main Audio Player */}
+            <motion.div 
+              className="xl:col-span-8"
+              initial={{ opacity: 0, y: 30 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8, delay: 0.6 }}
+            >
+              <Card className="backdrop-blur-md bg-card/70 border-accent/20 shadow-2xl">
+                <CardContent className="p-8 space-y-8">
+                  
+                  {/* Current Track Info */}
+                  <AnimatePresence mode="wait">
+                    {currentTrack && (
+                      <motion.div 
+                        className="text-center space-y-6"
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -20 }}
+                        key={currentTrack.id}
+                      >
+                        <div className="space-y-3">
+                          <h3 className="text-3xl font-bold text-accent dordogne-title">
+                            {currentTrack.title}
+                          </h3>
+                          <div className="flex items-center justify-center gap-4">
+                            {currentTrack.marcheName && (
+                              <Badge variant="outline" className="flex items-center gap-2">
+                                <MapPin className="h-3 w-3" />
+                                {currentTrack.marcheName}
+                              </Badge>
+                            )}
+                            {currentTrack.marcheLocation && (
+                              <Badge variant="secondary" className="flex items-center gap-2">
+                                {currentTrack.marcheLocation}
+                              </Badge>
+                            )}
+                            <Badge variant="outline">
+                              Piste {currentTrackIndex + 1}/{totalTracks}
+                            </Badge>
+                          </div>
+                          {currentTrack.description && (
+                            <p className="text-muted-foreground max-w-2xl mx-auto dordogne-body">
+                              {currentTrack.description}
+                            </p>
                           )}
                         </div>
-                        <div className="text-sm text-muted-foreground">
-                          {track.duration && formatTime(track.duration)}
+
+                        {/* Audio Visualizer */}
+                        <div className="flex justify-center py-6">
+                          <EcoAudioVisualizer
+                            isPlaying={isPlaying && currentRecording?.url === currentTrack.url}
+                            currentTime={currentTime}
+                            duration={duration}
+                            className="w-full max-w-md"
+                          />
                         </div>
-                      </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+
+                  {/* Progress Bar */}
+                  <div className="space-y-3">
+                    <Progress 
+                      value={duration > 0 ? (currentTime / duration) * 100 : 0} 
+                      className="h-3 w-full"
+                    />
+                    <div className="flex justify-between text-sm text-muted-foreground dordogne-body">
+                      <span>{formatTime(currentTime)}</span>
+                      <span className="flex items-center gap-1">
+                        <Clock className="h-3 w-3" />
+                        {formatTime(duration)}
+                      </span>
                     </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          </motion.div>
-        )}
+                  </div>
+
+                  {/* Main Controls */}
+                  <div className="flex items-center justify-center space-x-6">
+                    <Button
+                      variant="outline"
+                      size="lg"
+                      onClick={handlePreviousTrack}
+                      disabled={!canGoPrevious}
+                      className="h-14 w-14 rounded-full btn-nature"
+                    >
+                      <SkipBack className="h-6 w-6" />
+                    </Button>
+                    
+                    <Button
+                      size="lg"
+                      onClick={handlePlayPause}
+                      disabled={!currentTrack}
+                      className="h-20 w-20 rounded-full btn-nature text-xl shadow-2xl"
+                    >
+                      {isPlaying && currentRecording?.url === currentTrack?.url ? (
+                        <Pause className="h-10 w-10" />
+                      ) : (
+                        <Play className="h-10 w-10" />
+                      )}
+                    </Button>
+                    
+                    <Button
+                      variant="outline"
+                      size="lg"
+                      onClick={handleNextTrack}
+                      disabled={!canGoNext}
+                      className="h-14 w-14 rounded-full btn-nature"
+                    >
+                      <SkipForward className="h-6 w-6" />
+                    </Button>
+                  </div>
+
+                  {/* Secondary Controls */}
+                  <div className="flex items-center justify-between pt-4">
+                    {/* Volume Control */}
+                    <div className="flex items-center space-x-3 flex-1 max-w-xs">
+                      <Volume2 className="h-5 w-5 text-accent" />
+                      <Slider
+                        value={[volume]}
+                        onValueChange={handleVolumeChange}
+                        max={1}
+                        step={0.1}
+                        className="flex-1"
+                      />
+                      <span className="text-sm text-muted-foreground w-12 dordogne-body">
+                        {Math.round(volume * 100)}%
+                      </span>
+                    </div>
+
+                    {/* Playlist Toggle */}
+                    <Button
+                      variant="outline"
+                      onClick={() => setShowPlaylist(!showPlaylist)}
+                      className="btn-nature"
+                    >
+                      <List className="h-4 w-4 mr-2" />
+                      Playlist ({totalTracks})
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            </motion.div>
+
+            {/* Accompanying Text */}
+            <motion.div 
+              className="xl:col-span-4"
+              initial={{ opacity: 0, x: 30 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.8, delay: 0.8 }}
+            >
+              <Card className="backdrop-blur-md bg-card/50 border-accent/10 shadow-xl h-full">
+                <CardContent className="p-8">
+                  <div className="space-y-6">
+                    <div className="flex items-center gap-3">
+                      <div className="w-1 h-8 bg-accent rounded-full" />
+                      <h3 className="text-2xl font-bold text-accent dordogne-title">
+                        Texte d'accompagnement
+                      </h3>
+                    </div>
+                    
+                    <Separator className="bg-accent/20" />
+                    
+                    <ScrollArea className="h-96">
+                      {audioPageText ? (
+                        <div 
+                          className="prose prose-sm dark:prose-invert dordogne-body text-justify"
+                          dangerouslySetInnerHTML={{ __html: audioPageText }}
+                        />
+                      ) : (
+                        <div className="text-center py-12 space-y-4">
+                          <Music className="h-12 w-12 text-muted-foreground mx-auto opacity-50" />
+                          <p className="text-muted-foreground italic dordogne-body">
+                            Aucun texte d'accompagnement configuré pour cette exploration.
+                          </p>
+                          <p className="text-sm text-muted-foreground dordogne-body">
+                            Laissez-vous porter par les sons et les récits de cette expérience immersive.
+                          </p>
+                        </div>
+                      )}
+                    </ScrollArea>
+                  </div>
+                </CardContent>
+              </Card>
+            </motion.div>
+          </div>
+
+          {/* Playlist Modal */}
+          <AnimatePresence>
+            {showPlaylist && (
+              <motion.div 
+                className="mt-12"
+                initial={{ opacity: 0, y: 30 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: 30 }}
+                transition={{ duration: 0.4 }}
+              >
+                <Card className="backdrop-blur-md bg-card/80 border-accent/20 shadow-2xl">
+                  <CardContent className="p-8">
+                    <div className="flex items-center justify-between mb-6">
+                      <div className="flex items-center gap-3">
+                        <div className="w-1 h-8 bg-accent rounded-full" />
+                        <h3 className="text-2xl font-bold text-accent dordogne-title">
+                          Playlist Complète
+                        </h3>
+                      </div>
+                      <Button
+                        variant="outline"
+                        onClick={() => setShowPlaylist(false)}
+                        className="btn-nature"
+                      >
+                        Fermer
+                      </Button>
+                    </div>
+                    
+                    <Separator className="bg-accent/20 mb-6" />
+                    
+                    <ScrollArea className="h-96">
+                      <div className="space-y-1">
+                        {audioPlaylist.map((track, index) => (
+                          <motion.div
+                            key={track.id}
+                            className={`p-4 rounded-xl cursor-pointer transition-all duration-300 ${
+                              index === currentTrackIndex 
+                                ? 'bg-accent/20 border-2 border-accent/40 shadow-lg' 
+                                : 'hover:bg-accent/5 border-2 border-transparent hover:border-accent/20'
+                            }`}
+                            onClick={() => handleTrackSelect(index)}
+                            whileHover={{ scale: 1.02 }}
+                            whileTap={{ scale: 0.98 }}
+                          >
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center space-x-4 flex-1 min-w-0">
+                                <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${
+                                  index === currentTrackIndex ? 'bg-accent text-background' : 'bg-muted text-muted-foreground'
+                                }`}>
+                                  {index === currentTrackIndex && isPlaying ? (
+                                    <Pause className="h-4 w-4" />
+                                  ) : (
+                                    <Play className="h-4 w-4" />
+                                  )}
+                                </div>
+                                
+                                <div className="flex-1 min-w-0 space-y-1">
+                                  <h4 className="font-semibold text-accent dordogne-title truncate">
+                                    {track.title}
+                                  </h4>
+                                  <div className="flex items-center gap-3 text-sm text-muted-foreground">
+                                    {track.marcheName && (
+                                      <span className="flex items-center gap-1">
+                                        <MapPin className="h-3 w-3" />
+                                        {track.marcheName}
+                                      </span>
+                                    )}
+                                    {track.marcheLocation && (
+                                      <span>{track.marcheLocation}</span>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+                              
+                              <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                                <Badge variant="outline" className="text-xs">
+                                  {track.audioIndex + 1}/{track.totalTracksInMarche}
+                                </Badge>
+                                <span className="font-mono">
+                                  {formatTime(track.duration || 0)}
+                                </span>
+                              </div>
+                            </div>
+                          </motion.div>
+                        ))}
+                      </div>
+                    </ScrollArea>
+                  </CardContent>
+                </Card>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
       </div>
     </div>
   );
