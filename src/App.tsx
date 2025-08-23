@@ -4,6 +4,7 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from 'sonner';
 import { queryClient } from './lib/queryClient';
+import { AudioProvider } from './contexts/AudioContext';
 import AdminAuth from './components/AdminAuth';
 import AdminLogin from './pages/AdminLogin';
 import Index from './pages/Index';
@@ -39,100 +40,104 @@ import ExperienceLecture from './components/experience/ExperienceLecture';
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Index />} />
-          <Route path="/marches-techno-sensibles" element={<MarchesTechnoSensibles />} />
-          <Route path="/marche/:slug" element={<MarcheDetail />} />
-          
-          {/* Nouvelles routes bioacoustiques */}
-          <Route path="/bioacoustique-poetique" element={<BioacoustiquePoetique />} />
-          <Route path="/bioacoustique/:slug" element={<MarcheDetailBio />} />
-          
-          {/* Routes explorations */}
-          <Route path="/explorations" element={<ExplorationsList />} />
-          <Route path="/galerie-fleuve" element={<GalerieFleuvePage />} />
-          <Route path="/galerie-fleuve/exploration/:slug" element={<GalerieFluveExploration />} />
-          <Route path="/galerie-fleuve/exploration/:slug/ecouter" element={<ExperienceAudioContinue />} />
-          <Route path="/galerie-fleuve/exploration/:slug/lire" element={<ExperienceLecture />} />
-          <Route path="/explorations/:slug" element={<ExplorationDetail />} />
-          <Route path="/explorations/:slug/animer" element={<ExplorationDetail />} />
-          <Route path="/explorations/:slug/experience/:sessionId" element={<ExplorationExperience />} />
-          <Route path="/explorations/:slug/experience/:sessionId/podcast" element={<ExplorationPodcast />} />
-          <Route path="/explorations/:slug/:narrativeSlug" element={<NarrativeLandscape />} />
+      <AudioProvider>
+        <BrowserRouter>
+          <Routes>
+            <Route path="/" element={<Index />} />
+            <Route path="/marches-techno-sensibles" element={<MarchesTechnoSensibles />} />
+            <Route path="/marche/:slug" element={<MarcheDetail />} />
+            
+            {/* Nouvelles routes bioacoustiques */}
+            <Route path="/bioacoustique-poetique" element={<BioacoustiquePoetique />} />
+            <Route path="/bioacoustique/:slug" element={<MarcheDetailBio />} />
+            
+            {/* Routes explorations */}
+            <Route path="/explorations" element={<ExplorationsList />} />
+            <Route path="/galerie-fleuve" element={<GalerieFleuvePage />} />
+            <Route path="/galerie-fleuve/exploration/:slug" element={<GalerieFluveExploration />} />
+            <Route path="/galerie-fleuve/exploration/:slug/ecouter" element={<ExperienceAudioContinue />} />
+            <Route path="/galerie-fleuve/exploration/:slug/lire" element={<ExperienceLecture />} />
+            <Route path="/explorations/:slug" element={<ExplorationDetail />} />
+            <Route path="/explorations/:slug/animer" element={<ExplorationDetail />} />
+            <Route path="/explorations/:slug/experience/audio" element={<ExperienceAudioContinue />} />
+            <Route path="/explorations/:slug/experience/lire" element={<ExperienceLecture />} />
+            <Route path="/explorations/:slug/experience/:sessionId" element={<ExplorationExperience />} />
+            <Route path="/explorations/:slug/experience/:sessionId/podcast" element={<ExplorationPodcast />} />
+            <Route path="/explorations/:slug/:narrativeSlug" element={<NarrativeLandscape />} />
 
-          {/* Routes d'administration */}
-          <Route path="/admin/login" element={<AdminLogin />} />
-          
-          {/* Routes d'administration protégées */}
-          <Route path="/admin/migration" element={
-            <AdminAuth>
-              <MigrationAdmin />
-            </AdminAuth>
-          } />
-          <Route path="/admin/migration/execute" element={
-            <AdminAuth>
-              <MigrationExecution />
-            </AdminAuth>
-          } />
-          <Route path="/admin/marches" element={
-            <AdminAuth>
-              <MarcheAdmin />
-            </AdminAuth>
-          } />
-          <Route path="/admin/explorations" element={
-            <AdminAuth>
-              <ExplorationsAdmin />
-            </AdminAuth>
-          } />
-          <Route path="/admin/explorations/new" element={
-            <AdminAuth>
-              <ExplorationFormPage />
-            </AdminAuth>
-          } />
-          <Route path="/admin/explorations/:id/edit" element={
-            <AdminAuth>
-              <ExplorationFormPage />
-            </AdminAuth>
-          } />
-          <Route path="/admin/explorations/:id/marches" element={
-            <AdminAuth>
-              <ExplorationMarchesAdmin />
-            </AdminAuth>
-          } />
-          <Route path="/admin/explorations/:slug/animer" element={
-            <AdminAuth>
-              <ExplorationAnimatorRefactored />
-            </AdminAuth>
-          } />
-          <Route path="/admin" element={
-            <AdminAuth>
-              <AdminAccess />
-            </AdminAuth>
-          } />
-          <Route path="/admin/data-insights" element={
-            <AdminAuth>
-              <DataInsights />
-            </AdminAuth>
-          } />
-          <Route path="/access-admin-gb2025" element={
-            <AdminAuth>
-              <AdminAccess />
-            </AdminAuth>
-          } />
-          <Route path="/test-ebird" element={
-            <AdminAuth>
-              <TestEbird />
-            </AdminAuth>
-          } />
-          <Route path="/favicon-test" element={<FaviconTest />} />
-          <Route path="/meteo-historique" element={<WeatherCalendar />} />
-          <Route path="/presentation" element={<ProjectPresentation />} />
-          
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-        <Toaster position="top-right" />
-      </BrowserRouter>
+            {/* Routes d'administration */}
+            <Route path="/admin/login" element={<AdminLogin />} />
+            
+            {/* Routes d'administration protégées */}
+            <Route path="/admin/migration" element={
+              <AdminAuth>
+                <MigrationAdmin />
+              </AdminAuth>
+            } />
+            <Route path="/admin/migration/execute" element={
+              <AdminAuth>
+                <MigrationExecution />
+              </AdminAuth>
+            } />
+            <Route path="/admin/marches" element={
+              <AdminAuth>
+                <MarcheAdmin />
+              </AdminAuth>
+            } />
+            <Route path="/admin/explorations" element={
+              <AdminAuth>
+                <ExplorationsAdmin />
+              </AdminAuth>
+            } />
+            <Route path="/admin/explorations/new" element={
+              <AdminAuth>
+                <ExplorationFormPage />
+              </AdminAuth>
+            } />
+            <Route path="/admin/explorations/:id/edit" element={
+              <AdminAuth>
+                <ExplorationFormPage />
+              </AdminAuth>
+            } />
+            <Route path="/admin/explorations/:id/marches" element={
+              <AdminAuth>
+                <ExplorationMarchesAdmin />
+              </AdminAuth>
+            } />
+            <Route path="/admin/explorations/:slug/animer" element={
+              <AdminAuth>
+                <ExplorationAnimatorRefactored />
+              </AdminAuth>
+            } />
+            <Route path="/admin" element={
+              <AdminAuth>
+                <AdminAccess />
+              </AdminAuth>
+            } />
+            <Route path="/admin/data-insights" element={
+              <AdminAuth>
+                <DataInsights />
+              </AdminAuth>
+            } />
+            <Route path="/access-admin-gb2025" element={
+              <AdminAuth>
+                <AdminAccess />
+              </AdminAuth>
+            } />
+            <Route path="/test-ebird" element={
+              <AdminAuth>
+                <TestEbird />
+              </AdminAuth>
+            } />
+            <Route path="/favicon-test" element={<FaviconTest />} />
+            <Route path="/meteo-historique" element={<WeatherCalendar />} />
+            <Route path="/presentation" element={<ProjectPresentation />} />
+            
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+          <Toaster position="top-right" />
+        </BrowserRouter>
+      </AudioProvider>
     </QueryClientProvider>
   );
 }
