@@ -7,11 +7,12 @@ import { useExploration } from '@/hooks/useExplorations';
 import { useExplorationPages } from '@/hooks/useExplorationPages';
 import { useExplorationAudioPlaylist } from '@/hooks/useExplorationAudioPlaylist';
 import { useGlobalAudioPlayer } from '@/contexts/AudioContext';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { 
   Play, 
   Pause, 
@@ -30,6 +31,7 @@ import {
 import { Slider } from '@/components/ui/slider';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import EcoAudioVisualizer from '@/components/audio/EcoAudioVisualizer';
+import ExperienceFooter from '@/components/experience/ExperienceFooter';
 import type { XenoCantoRecording } from '@/types/biodiversity';
 import type { AudioTrackEnhanced } from '@/hooks/useExplorationAudioPlaylist';
 
@@ -65,6 +67,7 @@ const formatTime = (time: number): string => {
 
 export default function ExperienceAudioContinue() {
   const { slug } = useParams<{ slug: string }>();
+  const isMobile = useIsMobile();
   
   // Data fetching
   const { data: exploration, isLoading: explorationLoading } = useExploration(slug || '');
@@ -85,9 +88,11 @@ export default function ExperienceAudioContinue() {
     currentTime,
     duration,
     volume,
+    audioRef,
     playRecording,
     pause,
-    setVolume 
+    setVolume,
+    seekTo
   } = useGlobalAudioPlayer();
   
   // State management
@@ -95,8 +100,10 @@ export default function ExperienceAudioContinue() {
   const [showPlaylist, setShowPlaylist] = useState(false);
   const [playMode, setPlayMode] = useState<'order' | 'shuffle' | 'repeat'>('order');
 
-  // Find Audio Page content
-  const audioPage = pages?.find(page => page.type === 'audio');
+  // Find Audio Page content - try both 'audio' and 'Audio' types
+  const audioPage = pages?.find(page => 
+    page.type === 'audio' || page.type === 'Audio' || page.nom?.toLowerCase().includes('audio')
+  );
   const audioPageText = audioPage?.description || '';
 
   // Current track logic
@@ -104,11 +111,20 @@ export default function ExperienceAudioContinue() {
   const canGoNext = currentTrackIndex < audioPlaylist.length - 1;
   const canGoPrevious = currentTrackIndex > 0;
 
-  // Auto-play next track when current ends
+  // Auto-advance to next track when current ends
   useEffect(() => {
-    // This will be handled by the global audio context
-    // We just need to set up the playlist continuation logic
-  }, [currentTrackIndex, audioPlaylist]);
+    const audio = audioRef.current;
+    if (!audio) return;
+
+    const handleEnded = () => {
+      if (canGoNext) {
+        handleNextTrack();
+      }
+    };
+
+    audio.addEventListener('ended', handleEnded);
+    return () => audio.removeEventListener('ended', handleEnded);
+  }, [audioRef, canGoNext, currentTrackIndex]);
 
   // Initialize first track
   useEffect(() => {
@@ -155,6 +171,11 @@ export default function ExperienceAudioContinue() {
   const handleVolumeChange = useCallback((newVolume: number[]) => {
     setVolume(newVolume[0]);
   }, [setVolume]);
+
+  const handleProgressChange = useCallback((newTime: number[]) => {
+    const time = newTime[0];
+    seekTo(time);
+  }, [seekTo]);
 
   const handleTrackSelect = useCallback((index: number) => {
     setCurrentTrackIndex(index);
@@ -268,25 +289,25 @@ export default function ExperienceAudioContinue() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, ease: "easeOut" }}
           >
-            <div className="flex items-center justify-between mb-6">
-              <Link to={`/galerie-fleuve/exploration/${slug}`}>
-                <Button variant="outline" size="lg" className="btn-nature">
-                  <ArrowLeft className="h-5 w-5 mr-2" />
+            <div className="flex flex-col gap-4 mb-6">
+              <Link to={`/galerie-fleuve/exploration/${slug}`} className="self-start">
+                <Button variant="outline" size={isMobile ? "default" : "lg"} className="btn-nature">
+                  <ArrowLeft className="h-4 w-4 mr-2" />
                   Retour à l'exploration
                 </Button>
               </Link>
               
-              <div className="flex items-center space-x-4">
-                <Badge variant="secondary" className="flex items-center gap-2 px-4 py-2">
-                  <Clock className="h-4 w-4" />
+              <div className={`flex ${isMobile ? 'flex-col gap-2' : 'flex-row gap-4'} items-start ${isMobile ? '' : 'justify-end'}`}>
+                <Badge variant="secondary" className={`flex items-center gap-2 ${isMobile ? 'px-3 py-1.5 text-sm' : 'px-4 py-2'}`}>
+                  <Clock className="h-3 w-3" />
                   {Math.floor(totalDuration / 60)}min d'écoute
                 </Badge>
-                <Badge variant="outline" className="flex items-center gap-2 px-4 py-2">
-                  <MapPin className="h-4 w-4" />
+                <Badge variant="outline" className={`flex items-center gap-2 ${isMobile ? 'px-3 py-1.5 text-sm' : 'px-4 py-2'}`}>
+                  <MapPin className="h-3 w-3" />
                   {totalMarches} marches
                 </Badge>
-                <Badge variant="outline" className="flex items-center gap-2 px-4 py-2">
-                  <Music className="h-4 w-4" />
+                <Badge variant="outline" className={`flex items-center gap-2 ${isMobile ? 'px-3 py-1.5 text-sm' : 'px-4 py-2'}`}>
+                  <Music className="h-3 w-3" />
                   {totalTracks} pistes
                 </Badge>
               </div>
@@ -294,7 +315,7 @@ export default function ExperienceAudioContinue() {
             
             <div className="text-center space-y-4">
               <motion.h1 
-                className="text-6xl font-bold text-accent dordogne-title"
+                className={`${isMobile ? 'text-3xl' : 'text-6xl'} font-bold text-accent dordogne-title`}
                 initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ duration: 0.8, delay: 0.2 }}
@@ -303,14 +324,14 @@ export default function ExperienceAudioContinue() {
               </motion.h1>
               
               <motion.div 
-                className="flex items-center justify-center gap-3 text-2xl text-muted-foreground"
+                className={`flex items-center justify-center gap-3 ${isMobile ? 'text-lg' : 'text-2xl'} text-muted-foreground`}
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.6, delay: 0.4 }}
               >
-                <Waves className="h-8 w-8 text-accent animate-gentle-float" />
+                <Waves className={`${isMobile ? 'h-6 w-6' : 'h-8 w-8'} text-accent animate-gentle-float`} />
                 <span className="dordogne-signature">Écoute Continue</span>
-                <Volume2 className="h-8 w-8 text-accent animate-gentle-float" />
+                <Volume2 className={`${isMobile ? 'h-6 w-6' : 'h-8 w-8'} text-accent animate-gentle-float`} />
               </motion.div>
             </div>
           </motion.div>
@@ -337,7 +358,7 @@ export default function ExperienceAudioContinue() {
                         key={currentTrack.id}
                       >
                         <div className="space-y-3">
-                          <h3 className="text-3xl font-bold text-accent dordogne-title">
+                          <h3 className={`${isMobile ? 'text-xl' : 'text-3xl'} font-bold text-accent dordogne-title`}>
                             {currentTrack.title}
                           </h3>
                           <div className="flex items-center justify-center gap-4">
@@ -376,11 +397,14 @@ export default function ExperienceAudioContinue() {
                     )}
                   </AnimatePresence>
 
-                  {/* Progress Bar */}
+                  {/* Interactive Progress Slider */}
                   <div className="space-y-3">
-                    <Progress 
-                      value={duration > 0 ? (currentTime / duration) * 100 : 0} 
-                      className="h-3 w-full"
+                    <Slider
+                      value={[currentTime]}
+                      onValueChange={handleProgressChange}
+                      max={duration || 1}
+                      step={1}
+                      className="w-full"
                     />
                     <div className="flex justify-between text-sm text-muted-foreground dordogne-body">
                       <span>{formatTime(currentTime)}</span>
@@ -445,14 +469,81 @@ export default function ExperienceAudioContinue() {
                     </div>
 
                     {/* Playlist Toggle */}
-                    <Button
-                      variant="outline"
-                      onClick={() => setShowPlaylist(!showPlaylist)}
-                      className="btn-nature"
-                    >
-                      <List className="h-4 w-4 mr-2" />
-                      Playlist ({totalTracks})
-                    </Button>
+                    <Sheet>
+                      <SheetTrigger asChild>
+                        <Button
+                          variant="outline"
+                          className="btn-nature"
+                        >
+                          <List className="h-4 w-4 mr-2" />
+                          Playlist ({totalTracks})
+                        </Button>
+                      </SheetTrigger>
+                      <SheetContent side="bottom" className="h-[80vh] bg-card/95 backdrop-blur-md">
+                        <SheetHeader className="pb-4">
+                          <SheetTitle className="text-accent dordogne-title">
+                            Playlist Complète
+                          </SheetTitle>
+                        </SheetHeader>
+                        <ScrollArea className="h-full">
+                          <div className="space-y-1 pr-4">
+                            {audioPlaylist.map((track, index) => (
+                              <motion.div
+                                key={track.id}
+                                className={`p-4 rounded-xl cursor-pointer transition-all duration-300 ${
+                                  index === currentTrackIndex 
+                                    ? 'bg-accent/20 border-2 border-accent/40 shadow-lg' 
+                                    : 'hover:bg-accent/5 border-2 border-transparent hover:border-accent/20'
+                                }`}
+                                onClick={() => handleTrackSelect(index)}
+                                whileHover={{ scale: 1.02 }}
+                                whileTap={{ scale: 0.98 }}
+                              >
+                                <div className="flex items-center justify-between">
+                                  <div className="flex items-center space-x-4 flex-1 min-w-0">
+                                    <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${
+                                      index === currentTrackIndex ? 'bg-accent text-background' : 'bg-muted text-muted-foreground'
+                                    }`}>
+                                      {index === currentTrackIndex && isPlaying ? (
+                                        <Pause className="h-4 w-4" />
+                                      ) : (
+                                        <Play className="h-4 w-4" />
+                                      )}
+                                    </div>
+                                    
+                                    <div className="flex-1 min-w-0 space-y-1">
+                                      <h4 className="font-semibold text-accent dordogne-title truncate">
+                                        {track.title}
+                                      </h4>
+                                      <div className="flex items-center gap-3 text-sm text-muted-foreground">
+                                        {track.marcheName && (
+                                          <span className="flex items-center gap-1">
+                                            <MapPin className="h-3 w-3" />
+                                            {track.marcheName}
+                                          </span>
+                                        )}
+                                        {track.marcheLocation && (
+                                          <span>{track.marcheLocation}</span>
+                                        )}
+                                      </div>
+                                    </div>
+                                  </div>
+                                  
+                                  <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                                    <Badge variant="outline" className="text-xs">
+                                      {track.audioIndex + 1}/{track.totalTracksInMarche}
+                                    </Badge>
+                                    <span className="font-mono">
+                                      {formatTime(track.duration || 0)}
+                                    </span>
+                                  </div>
+                                </div>
+                              </motion.div>
+                            ))}
+                          </div>
+                        </ScrollArea>
+                      </SheetContent>
+                    </Sheet>
                   </div>
                 </CardContent>
               </Card>
@@ -501,98 +592,8 @@ export default function ExperienceAudioContinue() {
             </motion.div>
           </div>
 
-          {/* Playlist Modal */}
-          <AnimatePresence>
-            {showPlaylist && (
-              <motion.div 
-                className="mt-12"
-                initial={{ opacity: 0, y: 30 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: 30 }}
-                transition={{ duration: 0.4 }}
-              >
-                <Card className="backdrop-blur-md bg-card/80 border-accent/20 shadow-2xl">
-                  <CardContent className="p-8">
-                    <div className="flex items-center justify-between mb-6">
-                      <div className="flex items-center gap-3">
-                        <div className="w-1 h-8 bg-accent rounded-full" />
-                        <h3 className="text-2xl font-bold text-accent dordogne-title">
-                          Playlist Complète
-                        </h3>
-                      </div>
-                      <Button
-                        variant="outline"
-                        onClick={() => setShowPlaylist(false)}
-                        className="btn-nature"
-                      >
-                        Fermer
-                      </Button>
-                    </div>
-                    
-                    <Separator className="bg-accent/20 mb-6" />
-                    
-                    <ScrollArea className="h-96">
-                      <div className="space-y-1">
-                        {audioPlaylist.map((track, index) => (
-                          <motion.div
-                            key={track.id}
-                            className={`p-4 rounded-xl cursor-pointer transition-all duration-300 ${
-                              index === currentTrackIndex 
-                                ? 'bg-accent/20 border-2 border-accent/40 shadow-lg' 
-                                : 'hover:bg-accent/5 border-2 border-transparent hover:border-accent/20'
-                            }`}
-                            onClick={() => handleTrackSelect(index)}
-                            whileHover={{ scale: 1.02 }}
-                            whileTap={{ scale: 0.98 }}
-                          >
-                            <div className="flex items-center justify-between">
-                              <div className="flex items-center space-x-4 flex-1 min-w-0">
-                                <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${
-                                  index === currentTrackIndex ? 'bg-accent text-background' : 'bg-muted text-muted-foreground'
-                                }`}>
-                                  {index === currentTrackIndex && isPlaying ? (
-                                    <Pause className="h-4 w-4" />
-                                  ) : (
-                                    <Play className="h-4 w-4" />
-                                  )}
-                                </div>
-                                
-                                <div className="flex-1 min-w-0 space-y-1">
-                                  <h4 className="font-semibold text-accent dordogne-title truncate">
-                                    {track.title}
-                                  </h4>
-                                  <div className="flex items-center gap-3 text-sm text-muted-foreground">
-                                    {track.marcheName && (
-                                      <span className="flex items-center gap-1">
-                                        <MapPin className="h-3 w-3" />
-                                        {track.marcheName}
-                                      </span>
-                                    )}
-                                    {track.marcheLocation && (
-                                      <span>{track.marcheLocation}</span>
-                                    )}
-                                  </div>
-                                </div>
-                              </div>
-                              
-                              <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                                <Badge variant="outline" className="text-xs">
-                                  {track.audioIndex + 1}/{track.totalTracksInMarche}
-                                </Badge>
-                                <span className="font-mono">
-                                  {formatTime(track.duration || 0)}
-                                </span>
-                              </div>
-                            </div>
-                          </motion.div>
-                        ))}
-                      </div>
-                    </ScrollArea>
-                  </CardContent>
-                </Card>
-              </motion.div>
-            )}
-          </AnimatePresence>
+          {/* Footer */}
+          <ExperienceFooter />
         </div>
       </div>
     </div>
