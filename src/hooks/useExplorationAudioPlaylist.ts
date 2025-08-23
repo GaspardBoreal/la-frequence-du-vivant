@@ -23,8 +23,8 @@ export const useExplorationAudioPlaylist = (explorationId: string) => {
     marches
       .sort((a, b) => (a.ordre || 0) - (b.ordre || 0))
       .forEach((marche, marcheIndex) => {
-        if (marche.marche_audio && marche.marche_audio.length > 0) {
-          const sortedAudio = [...marche.marche_audio].sort((a, b) => (a.ordre || 0) - (b.ordre || 0));
+        if (marche.marche?.audio && marche.marche.audio.length > 0) {
+          const sortedAudio = [...marche.marche.audio].sort((a, b) => (a.ordre || 0) - (b.ordre || 0));
           
           sortedAudio.forEach((audio, audioIndex) => {
             playlist.push({
@@ -34,8 +34,8 @@ export const useExplorationAudioPlaylist = (explorationId: string) => {
               description: audio.description,
               duration: audio.duree_secondes || 0,
               order: audio.ordre || audioIndex,
-              marcheName: marche.marches?.nom_marche || `Marche ${marcheIndex + 1}`,
-              marcheLocation: marche.marches?.ville,
+              marcheName: marche.marche?.nom_marche || `Marche ${marcheIndex + 1}`,
+              marcheLocation: marche.marche?.ville,
               marcheIndex,
               audioIndex,
               totalTracksInMarche: sortedAudio.length,
