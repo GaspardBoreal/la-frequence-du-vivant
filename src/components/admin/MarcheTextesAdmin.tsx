@@ -239,29 +239,13 @@ function TexteFormDialog({
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      {getTextTypesByFamily('poetique').map((type) => (
-                        <SelectItem key={type.id} value={type.id}>
-                          {type.icon} {type.label}
-                        </SelectItem>
-                      ))}
-                      <Separator />
-                      {getTextTypesByFamily('narrative').map((type) => (
-                        <SelectItem key={type.id} value={type.id}>
-                          {type.icon} {type.label}
-                        </SelectItem>
-                      ))}
-                      <Separator />
-                      {getTextTypesByFamily('terrain').map((type) => (
-                        <SelectItem key={type.id} value={type.id}>
-                          {type.icon} {type.label}
-                        </SelectItem>
-                      ))}
-                      <Separator />
-                      {getTextTypesByFamily('hybride').map((type) => (
-                        <SelectItem key={type.id} value={type.id}>
-                          {type.icon} {type.label}
-                        </SelectItem>
-                      ))}
+                      {Object.values(TEXT_TYPES_REGISTRY)
+                        .sort((a, b) => a.label.localeCompare(b.label))
+                        .map((type) => (
+                          <SelectItem key={type.id} value={type.id}>
+                            {type.icon} {type.label}
+                          </SelectItem>
+                        ))}
                     </SelectContent>
                   </Select>
                 </div>
