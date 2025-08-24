@@ -2,7 +2,7 @@
 // Transforme la lecture en voyage sensoriel total pour "La Fréquence du Vivant"
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { useParams, Link } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -31,7 +31,8 @@ import {
 } from 'lucide-react';
 
 import { useExploration, useExplorationMarches } from '@/hooks/useExplorations';
-import { useMarcheTextes, MarcheTexte } from '@/hooks/useMarcheTextes';
+import type { MarcheTexte } from '@/hooks/useMarcheTextes';
+import { useExplorationTexts } from '@/hooks/useExplorationTexts';
 import { TextType, getTextTypeInfo } from '@/types/textTypes';
 import { useToast } from '@/hooks/use-toast';
 
@@ -58,6 +59,7 @@ export default function SymphonieTextuelle() {
   // Données de base
   const { data: exploration, isLoading: loadingExploration } = useExploration(slug || '');
   const { data: marches = [], isLoading: loadingMarches } = useExplorationMarches(exploration?.id || '');
+  const { data: explorationTexts = [], isLoading: loadingTexts } = useExplorationTexts(exploration?.id || '');
   
   // État de l'expérience
   const [experienceLevel, setExperienceLevel] = useState<ExperienceLevel>('eveil');
@@ -75,59 +77,20 @@ export default function SymphonieTextuelle() {
     focusMode: false
   });
   
-  // Pour l'instant, utilisons des textes d'exemple le temps de corriger l'architecture
   const allTextes = useMemo(() => {
-    if (!exploration || marches.length === 0) return [];
-    
-    // Textes d'exemple pour chaque marche
-    const textes: TexteEnrichi[] = [];
-    
-    marches.forEach((marcheData, index) => {
-      // Créer quelques textes d'exemple pour chaque marche
-      const marcheName = marcheData.marche?.nom_marche || marcheData.marche?.ville || 'Marche inconnue';
-      
-      textes.push({
-        id: `${marcheData.marche?.id}-haiku-${index}`,
-        marche_id: marcheData.marche?.id || '',
-        titre: `Haïku de ${marcheName}`,
-        contenu: `Sous les branches vertes\nLa rivière murmure\nL'éternité coule`,
-        type_texte: 'haiku' as TextType,
-        ordre: index * 3 + 1,
-        metadata: { tags: ['nature', 'eau', 'contemplation'] },
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-        marcheName
-      });
-      
-      textes.push({
-        id: `${marcheData.marche?.id}-fragment-${index}`,
-        marche_id: marcheData.marche?.id || '',
-        titre: `Fragment poétique - ${marcheName}`,
-        contenu: `Je marche le long de cette terre qui me raconte ses secrets. Chaque pas révèle une histoire, chaque souffle porte l'écho d'un monde en transformation. Ici, l'humain et le vivant tissent ensemble la trame d'un récit hybride, où la technologie devient sensible et la nature reprend ses droits.`,
-        type_texte: 'fragment' as TextType,
-        ordre: index * 3 + 2,
-        metadata: { tags: ['marche', 'hybride', 'territoire'] },
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-        marcheName
-      });
-      
-      textes.push({
-        id: `${marcheData.marche?.id}-prose-${index}`,
-        marche_id: marcheData.marche?.id || '',
-        titre: `Prose territoriale - ${marcheName}`,
-        contenu: `Dans cette géographie sensible, je découvre les mutations du territoire. Les infrastructures deviennent poétiques, les données se transforment en récit, et le paysage révèle sa complexité hybride. C'est ici que naît "La Fréquence du Vivant", cette symphonie où résonnent ensemble les voix de la terre et de la technologie.`,
-        type_texte: 'prose' as TextType,
-        ordre: index * 3 + 3,
-        metadata: { tags: ['territoire', 'données', 'symphonie'] },
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-        marcheName
-      });
-    });
-    
-    return textes.sort((a, b) => a.ordre - b.ordre);
-  }, [exploration, marches]);
+    if (!exploration || marches.length === 0) return [] as TexteEnrichi[];
+
+    const marcheNameById = new Map<string | undefined, string | undefined>(
+      marches.map((m) => [m.marche?.id, m.marche?.nom_marche || m.marche?.ville || 'Marche'])
+    );
+
+    return (explorationTexts || [])
+      .map((t) => ({
+        ...t,
+        marcheName: marcheNameById.get(t.marche_id),
+      }))
+      .sort((a, b) => (a.ordre ?? 0) - (b.ordre ?? 0));
+  }, [exploration, marches, explorationTexts]);
 
   // Calcul des constellations thématiques
   const constellations = useMemo(() => {
@@ -211,7 +174,7 @@ export default function SymphonieTextuelle() {
     setAmbiance(prev => ({ ...prev, [key]: !prev[key] }));
   };
 
-  if (loadingExploration || loadingMarches) {
+  if (loadingExploration || loadingMarches || loadingTexts) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-primary/5 to-accent/5">
         <motion.div 
@@ -330,51 +293,51 @@ export default function SymphonieTextuelle() {
             </p>
           </motion.div>
 
-          {/* Stats poétiques */}
+          {/* Anthologie d'arrivée */}
           <motion.div 
-            className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12"
+            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12"
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.5 }}
           >
-            <Card className="text-center border-primary/20 bg-gradient-to-b from-primary/5 to-transparent">
-              <CardContent className="pt-6">
-                <motion.div 
-                  className="text-3xl font-bold text-primary mb-2"
-                  animate={{ scale: [1, 1.1, 1] }}
-                  transition={{ duration: 2, repeat: Infinity }}
+            {allTextes.slice(0, 6).map((texte, index) => {
+              const typeInfo = getTextTypeInfo(texte.type_texte);
+              const plain = texte.contenu.replace(/<[^>]+>/g, '');
+              const excerpt = plain.length > 200 ? `${plain.substring(0, 200)}...` : plain;
+              return (
+                <motion.div
+                  key={texte.id}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.1 * index }}
                 >
-                  {Object.keys(constellations).length}
+                  <Card 
+                    className="h-full border-primary/20 bg-gradient-to-br from-white to-primary/5 hover:shadow-lg transition-all duration-300 cursor-pointer"
+                    onClick={() => handleTextSelect(texte.id)}
+                  >
+                    <CardHeader className="pb-3">
+                      <div className="flex items-start justify-between">
+                        <Badge variant="secondary" className="text-xs">{typeInfo.label}</Badge>
+                        {texte.marcheName && (
+                          <span className="text-xs text-muted-foreground">{texte.marcheName}</span>
+                        )}
+                      </div>
+                      <CardTitle className="text-base line-clamp-1">{texte.titre}</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <p className="text-sm text-muted-foreground leading-relaxed line-clamp-5">{excerpt}</p>
+                    </CardContent>
+                  </Card>
                 </motion.div>
-                <p className="text-sm text-muted-foreground">Constellations thématiques</p>
-              </CardContent>
-            </Card>
-
-            <Card className="text-center border-accent/20 bg-gradient-to-b from-accent/5 to-transparent">
-              <CardContent className="pt-6">
-                <motion.div 
-                  className="text-3xl font-bold text-accent mb-2"
-                  animate={{ scale: [1, 1.1, 1] }}
-                  transition={{ duration: 2, repeat: Infinity, delay: 0.5 }}
-                >
-                  {marches.length}
-                </motion.div>
-                <p className="text-sm text-muted-foreground">Marches poétiques</p>
-              </CardContent>
-            </Card>
-
-            <Card className="text-center border-secondary/20 bg-gradient-to-b from-secondary/5 to-transparent">
-              <CardContent className="pt-6">
-                <motion.div 
-                  className="text-3xl font-bold text-secondary mb-2"
-                  animate={{ scale: [1, 1.1, 1] }}
-                  transition={{ duration: 2, repeat: Infinity, delay: 1 }}
-                >
-                  {availableTags.length}
-                </motion.div>
-                <p className="text-sm text-muted-foreground">Résonances thématiques</p>
-              </CardContent>
-            </Card>
+              );
+            })}
+            {allTextes.length === 0 && (
+              <Card className="col-span-full">
+                <CardContent className="py-10 text-center text-muted-foreground">
+                  Aucun texte littéraire disponible pour cette exploration.
+                </CardContent>
+              </Card>
+            )}
           </motion.div>
 
           {/* Invitation à l'exploration */}
@@ -539,7 +502,14 @@ export default function SymphonieTextuelle() {
 
             {/* Affichage selon le mode */}
             <div className="lg:col-span-3">
-              <TabsContent value={constellationMode}>
+              {filteredTextes.length === 0 ? (
+                <Card className="p-8 text-center">
+                  <CardContent>
+                    <p className="text-muted-foreground">Aucun texte disponible pour cette exploration.</p>
+                  </CardContent>
+                </Card>
+              ) : (
+                <TabsContent value={constellationMode}>
                 {/* Mode Cosmos - Visualisation gravitationnelle */}
                 {constellationMode === 'cosmos' && (
                   <motion.div 
@@ -721,6 +691,7 @@ export default function SymphonieTextuelle() {
                   </motion.div>
                 )}
               </TabsContent>
+              )}
             </div>
           </motion.div>
         </div>
