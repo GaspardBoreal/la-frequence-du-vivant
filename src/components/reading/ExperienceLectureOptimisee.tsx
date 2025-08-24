@@ -177,7 +177,7 @@ export default function ExperienceLectureOptimisee() {
         <div className="text-center space-y-4">
           <p className="text-slate-600 dark:text-slate-400">Aucun texte trouvé pour cette exploration</p>
           <Button asChild variant="outline">
-            <Link to={`/explorations/${slug}`}>
+            <Link to={`/galerie-fleuve/exploration/${slug}`}>
               <ArrowLeft className="h-4 w-4 mr-2" />
               Retour à l'exploration
             </Link>
@@ -208,7 +208,7 @@ export default function ExperienceLectureOptimisee() {
               {/* Left: Back + Type Selector */}
               <div className="flex items-center gap-3">
                 <Button variant="ghost" size="sm" asChild>
-                  <Link to={`/explorations/${slug}`}>
+                  <Link to={`/galerie-fleuve/exploration/${slug}`}>
                     <ArrowLeft className="h-4 w-4" />
                   </Link>
                 </Button>
