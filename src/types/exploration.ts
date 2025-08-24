@@ -134,7 +134,7 @@ export interface ExplorationTextContent {
   id: string;
   title: string;
   content: string;
-  type: 'poeme' | 'haiku' | 'haibun' | 'prose';
+  type: import('@/types/textTypes').TextType;
   tags: string[];
   marcheId?: string;
   marcheName?: string;
