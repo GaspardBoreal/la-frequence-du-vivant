@@ -264,7 +264,7 @@ export default function ExperienceLectureOptimisee() {
                   <DropdownMenuContent align="end" className="w-36 bg-white/95 dark:bg-slate-950/95 backdrop-blur-sm border-slate-200/60 dark:border-slate-800/60">
                     <DropdownMenuItem
                       onClick={() => setAppearanceMode('light')}
-                      className={`flex items-center gap-2 cursor-pointer ${
+                      className={`flex items-center gap-2 cursor-pointer hover:text-green-800 ${
                         appearanceMode === 'light' 
                           ? 'bg-yellow-200 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-200'
                           : 'text-slate-800 dark:text-slate-300'
@@ -275,7 +275,7 @@ export default function ExperienceLectureOptimisee() {
                     </DropdownMenuItem>
                     <DropdownMenuItem
                       onClick={() => setAppearanceMode('system')}
-                      className={`flex items-center gap-2 cursor-pointer ${
+                      className={`flex items-center gap-2 cursor-pointer hover:text-green-800 ${
                         appearanceMode === 'system' 
                           ? 'bg-yellow-200 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-200'
                           : 'text-slate-800 dark:text-slate-300'
@@ -286,7 +286,7 @@ export default function ExperienceLectureOptimisee() {
                     </DropdownMenuItem>
                     <DropdownMenuItem
                       onClick={() => setAppearanceMode('dark')}
-                      className={`flex items-center gap-2 cursor-pointer ${
+                      className={`flex items-center gap-2 cursor-pointer hover:text-green-800 ${
                         appearanceMode === 'dark' 
                           ? 'bg-yellow-200 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-200'
                           : 'text-slate-800 dark:text-slate-300'

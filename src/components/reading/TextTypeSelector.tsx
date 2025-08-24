@@ -52,7 +52,7 @@ export default function TextTypeSelector({ currentType, availableTypes, onTypeSe
                 onTypeSelect(type);
                 setOpen(false);
               }}
-              className={`flex items-center gap-2 cursor-pointer hover:bg-muted/50 ${
+              className={`flex items-center gap-2 cursor-pointer hover:bg-muted/50 hover:text-green-800 ${
                 isActive 
                   ? 'bg-yellow-200 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-200' 
                   : 'text-slate-800 dark:text-slate-300'
