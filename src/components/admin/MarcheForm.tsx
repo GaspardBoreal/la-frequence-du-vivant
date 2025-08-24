@@ -12,6 +12,7 @@ import { useSupabaseMarche } from '../../hooks/useSupabaseMarches';
 import { createMarche, updateMarche, MarcheFormData } from '../../utils/supabaseMarcheOperations';
 import MediaUploadSection from './MediaUploadSection';
 import AudioUploadSection from './AudioUploadSection';
+import MarcheTextesAdmin from './MarcheTextesAdmin';
 import { queryClient } from '../../lib/queryClient';
 import { FRENCH_REGIONS } from '../../utils/frenchRegions';
 import { FRENCH_DEPARTMENTS } from '../../utils/frenchDepartments';
@@ -177,7 +178,7 @@ const MarcheForm: React.FC<MarcheFormProps> = ({
 
       <form onSubmit={handleSubmit(onSubmit)}>
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="general">Informations</TabsTrigger>
             <TabsTrigger value="description" className="flex items-center gap-2">
               <FileText className="h-4 w-4" />
@@ -185,6 +186,10 @@ const MarcheForm: React.FC<MarcheFormProps> = ({
             </TabsTrigger>
             <TabsTrigger value="photos">Photos</TabsTrigger>
             <TabsTrigger value="audio">Audio</TabsTrigger>
+            <TabsTrigger value="texts" className="flex items-center gap-2">
+              <PenTool className="h-4 w-4" />
+              Textes littéraires
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="general" className="space-y-4">
@@ -367,6 +372,21 @@ const MarcheForm: React.FC<MarcheFormProps> = ({
 
           <TabsContent value="audio">
             <AudioUploadSection marcheId={marcheId} />
+          </TabsContent>
+
+          <TabsContent value="texts">
+            {marcheId && (
+              <MarcheTextesAdmin 
+                marcheId={marcheId}
+                marcheName={marche?.nomMarche || ''}
+              />
+            )}
+            {!marcheId && (
+              <div className="text-center py-8 text-muted-foreground">
+                <PenTool className="h-12 w-12 mx-auto mb-4 opacity-20" />
+                <p>Veuillez d'abord sauvegarder la marche pour pouvoir ajouter des textes littéraires.</p>
+              </div>
+            )}
           </TabsContent>
         </Tabs>
 
