@@ -432,7 +432,7 @@ const AdminFilters: React.FC<AdminFiltersProps> = ({ marches, onFilterChange }) 
           <div className="space-y-3">
             <label className="text-white text-sm font-medium">Filtres de contenu</label>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="flex items-center space-x-2">
+              <div className="flex items-center space-x-2 bg-white/5 border border-white/30 rounded-lg px-3 py-2">
                 <Checkbox
                   id="without-photos"
                   checked={withoutPhotos}
@@ -446,7 +446,7 @@ const AdminFilters: React.FC<AdminFiltersProps> = ({ marches, onFilterChange }) 
                 </label>
               </div>
               
-              <div className="flex items-center space-x-2">
+              <div className="flex items-center space-x-2 bg-white/5 border border-white/30 rounded-lg px-3 py-2">
                 <Checkbox
                   id="without-audio"
                   checked={withoutAudio}
@@ -460,7 +460,7 @@ const AdminFilters: React.FC<AdminFiltersProps> = ({ marches, onFilterChange }) 
                 </label>
               </div>
               
-              <div className="flex items-center space-x-2">
+              <div className="flex items-center space-x-2 bg-white/5 border border-white/30 rounded-lg px-3 py-2">
                 <Checkbox
                   id="without-texts"
                   checked={withoutTexts}
