@@ -18,7 +18,7 @@ const PhotoTagInput: React.FC<PhotoTagInputProps> = ({
   onTagsChange,
   placeholder = "Ajouter des tags...",
   disabled = false
-}) => {
+}: PhotoTagInputProps) => {
   const [inputValue, setInputValue] = useState('');
   const [isOpen, setIsOpen] = useState(false);
   const [suggestedTags, setSuggestedTags] = useState<string[]>([]);
@@ -26,8 +26,10 @@ const PhotoTagInput: React.FC<PhotoTagInputProps> = ({
   const inputRef = useRef<HTMLInputElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  // Charger les tags suggérés
+  // Charger les tags suggérés (uniquement en mode édition pour éviter les appels multiples)
   useEffect(() => {
+    if (disabled || suggestedTags.length > 0) return;
+
     const loadSuggestions = async () => {
       try {
         const suggestions = await getSuggestedTags(50);
@@ -38,7 +40,7 @@ const PhotoTagInput: React.FC<PhotoTagInputProps> = ({
     };
     
     loadSuggestions();
-  }, []);
+  }, [disabled, suggestedTags.length]);
 
   // Filtrer les suggestions basé sur l'input
   useEffect(() => {
@@ -177,9 +179,25 @@ const PhotoTagInput: React.FC<PhotoTagInputProps> = ({
           </div>
 
           {/* Suggestions dropdown */}
-          {isOpen && filteredSuggestions.length > 0 && (
-            <div className="absolute z-50 w-full bg-background border border-border rounded-md shadow-lg max-h-32 overflow-y-auto">
+          {isOpen && (filteredSuggestions.length > 0 || inputValue.trim().length > 0) && (
+            <div className="absolute z-50 w-full bg-background border border-border rounded-md shadow-lg max-h-40 overflow-y-auto">
               <div className="p-1">
+                {/* Option de création si rien ne correspond */}
+                {(() => {
+                  const normalized = inputValue.trim().toLowerCase();
+                  const canCreate = normalized.length > 0 && !tags.includes(normalized) && !suggestedTags.includes(normalized);
+                  return canCreate ? (
+                    <button
+                      key={`create-${normalized}`}
+                      className="w-full text-left px-2 py-1 text-sm hover:bg-muted rounded flex items-center gap-2"
+                      onClick={() => addTag(normalized)}
+                    >
+                      <Plus className="h-3 w-3 text-primary" />
+                      Créer "{inputValue.trim()}"
+                    </button>
+                  ) : null;
+                })()}
+
                 {filteredSuggestions.map((suggestion) => (
                   <button
                     key={suggestion}

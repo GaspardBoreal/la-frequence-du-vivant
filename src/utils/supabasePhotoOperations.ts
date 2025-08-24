@@ -546,10 +546,24 @@ export const savePhotoTags = async (
   console.log('🏷️ [savePhotoTags] Sauvegarde des tags pour photo:', photoId, tags);
   
   try {
+    // Normaliser et dédupliquer les tags
+    const normalized = Array.from(
+      new Set(
+        (tags || [])
+          .map((t) => (t || '').trim().toLowerCase())
+          .filter((t) => t.length > 0)
+      )
+    );
+
+    if (normalized.length === 0) {
+      console.log('ℹ️ [savePhotoTags] Aucun tag à insérer');
+      return;
+    }
+
     // Préparer les données d'insertion
-    const tagsToInsert = tags.map(tag => ({
+    const tagsToInsert = normalized.map(tag => ({
       photo_id: photoId,
-      tag: tag.trim(),
+      tag,
       categorie: categorie || null
     }));
 
@@ -590,8 +604,16 @@ export const updatePhotoTags = async (
     }
 
     // Insérer les nouveaux tags si il y en a
-    if (newTags.length > 0) {
-      await savePhotoTags(photoId, newTags, categorie);
+    const normalized = Array.from(
+      new Set(
+        (newTags || [])
+          .map((t) => (t || '').trim().toLowerCase())
+          .filter((t) => t.length > 0)
+      )
+    );
+
+    if (normalized.length > 0) {
+      await savePhotoTags(photoId, normalized, categorie);
     }
 
     console.log('✅ [updatePhotoTags] Tags mis à jour avec succès');
