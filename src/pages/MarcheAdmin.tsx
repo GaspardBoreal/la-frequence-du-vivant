@@ -13,6 +13,7 @@ import DataInsightsPromoBanner from '../components/DataInsightsPromoBanner';
 import PhotoGalleryAdmin from '../components/admin/PhotoGalleryAdmin';
 import MarcheTextesAdmin from '../components/admin/MarcheTextesAdmin';
 import TextesLitterairesGalleryAdmin from '../components/admin/TextesLitterairesGalleryAdmin';
+import ExportPanel from '../components/admin/ExportPanel';
 import { toast } from 'sonner';
 import { MarcheTechnoSensible } from '../utils/googleSheetsApi';
 
@@ -135,7 +136,7 @@ const MarcheAdmin = () => {
         {/* Content */}
         <div className="gaspard-card rounded-xl p-6">
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="grid w-full grid-cols-5">
+            <TabsList className="grid w-full grid-cols-6">
               <TabsTrigger value="list">Liste des Marches</TabsTrigger>
               <TabsTrigger value="create">
                 {viewMode === 'edit' ? 'Modifier une Marche' : 'Créer une Marche'}
@@ -149,6 +150,9 @@ const MarcheAdmin = () => {
               <TabsTrigger value="data" className="relative">
                 Collecte de Données
                 <Sparkles className="w-3 h-3 ml-1 text-accent animate-pulse" />
+              </TabsTrigger>
+              <TabsTrigger value="export">
+                Exports
               </TabsTrigger>
             </TabsList>
             
@@ -193,6 +197,14 @@ const MarcheAdmin = () => {
 
             <TabsContent value="data" className="space-y-4">
               <DataCollectionPanel marches={filteredMarches} />
+            </TabsContent>
+
+            <TabsContent value="export" className="space-y-4">
+              <ExportPanel 
+                data={filteredMarches} 
+                type="marches"
+                title="Export des Marches"
+              />
             </TabsContent>
           </Tabs>
         </div>

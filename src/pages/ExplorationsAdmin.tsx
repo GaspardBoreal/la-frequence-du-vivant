@@ -1,19 +1,22 @@
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Plus, Search, Sparkles, Palette, ArrowLeft } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Plus, Search, Sparkles, Palette, ArrowLeft, Download } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAdminExplorations } from '@/hooks/useExplorations';
 import SEOHead from '@/components/SEOHead';
 import DecorativeParticles from '@/components/DecorativeParticles';
 import PoeticExplorationCard from '@/components/PoeticExplorationCard';
 import PoeticStatsGrid, { FilterType } from '@/components/PoeticStatsGrid';
+import ExportPanel from '@/components/admin/ExportPanel';
 
 const ExplorationsAdmin = () => {
   const navigate = useNavigate();
   const { data: explorations, isLoading } = useAdminExplorations();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedFilter, setSelectedFilter] = useState<FilterType>('all');
+  const [showExportDialog, setShowExportDialog] = useState(false);
 
   const filteredExplorations = explorations?.filter(exploration => {
     // Apply text search filter
@@ -102,15 +105,41 @@ const ExplorationsAdmin = () => {
               </div>
             </div>
             
-            {/* Bouton de création morphique */}
-            <Button 
-              size="lg"
-              className="bg-gradient-to-r from-gaspard-primary to-gaspard-secondary hover:from-gaspard-primary/90 hover:to-gaspard-secondary/90 text-white rounded-2xl px-8 py-3 shadow-lg shadow-gaspard-primary/20 hover:shadow-2xl hover:shadow-gaspard-primary/40 transition-all duration-500 hover:scale-110 hover:-translate-y-1 border-0 group"
-              onClick={() => navigate('/admin/explorations/new')}
-            >
-              <Plus className="h-5 w-5 mr-3 group-hover:rotate-90 transition-transform duration-500" />
-              <span className="group-hover:tracking-wide transition-all duration-300">Tisser une Nouvelle Exploration</span>
-            </Button>
+            {/* Actions */}
+            <div className="flex gap-3">
+              <Dialog open={showExportDialog} onOpenChange={setShowExportDialog}>
+                <DialogTrigger asChild>
+                  <Button 
+                    variant="outline"
+                    size="lg"
+                    className="rounded-2xl px-6 py-3 border-gaspard-primary/30 hover:border-gaspard-primary/50 hover:bg-gaspard-primary/10 transition-all duration-300 group"
+                  >
+                    <Download className="h-5 w-5 mr-3 group-hover:scale-110 transition-transform duration-300" />
+                    <span>Exporter</span>
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+                  <DialogHeader>
+                    <DialogTitle>Export des Explorations</DialogTitle>
+                  </DialogHeader>
+                  <ExportPanel 
+                    data={filteredExplorations || []} 
+                    type="explorations"
+                    title="Export des Explorations"
+                  />
+                </DialogContent>
+              </Dialog>
+              
+              {/* Bouton de création morphique */}
+              <Button 
+                size="lg"
+                className="bg-gradient-to-r from-gaspard-primary to-gaspard-secondary hover:from-gaspard-primary/90 hover:to-gaspard-secondary/90 text-white rounded-2xl px-8 py-3 shadow-lg shadow-gaspard-primary/20 hover:shadow-2xl hover:shadow-gaspard-primary/40 transition-all duration-500 hover:scale-110 hover:-translate-y-1 border-0 group"
+                onClick={() => navigate('/admin/explorations/new')}
+              >
+                <Plus className="h-5 w-5 mr-3 group-hover:rotate-90 transition-transform duration-500" />
+                <span className="group-hover:tracking-wide transition-all duration-300">Tisser une Nouvelle Exploration</span>
+              </Button>
+            </div>
           </div>
 
           {/* Métriques poétiques */}
