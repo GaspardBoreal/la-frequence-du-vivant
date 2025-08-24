@@ -1,11 +1,13 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { Checkbox } from '../ui/checkbox';
 import { Filter, X, Search } from 'lucide-react';
 import { MarcheTechnoSensible } from '../../utils/googleSheetsApi';
+import { useAdminExplorations } from '../../hooks/useExplorations';
+import { supabase } from '../../integrations/supabase/client';
 
 interface AdminFiltersProps {
   marches: MarcheTechnoSensible[];
@@ -22,15 +24,60 @@ const AdminFilters: React.FC<AdminFiltersProps> = ({ marches, onFilterChange }) 
   const [withoutPhotos, setWithoutPhotos] = useState(false);
   const [withoutAudio, setWithoutAudio] = useState(false);
   const [withoutTexts, setWithoutTexts] = useState(false);
+  const [explorationFilter, setExplorationFilter] = useState('');
+  const [explorationMarchesIds, setExplorationMarchesIds] = useState<string[]>([]);
+
+  // Hook pour récupérer les explorations
+  const { data: explorations = [] } = useAdminExplorations();
+
+  // Fonction pour récupérer les IDs des marches d'une exploration
+  const fetchExplorationMarches = async (explorationId: string) => {
+    if (!explorationId || explorationId === 'all') {
+      setExplorationMarchesIds([]);
+      return;
+    }
+
+    try {
+      const { data, error } = await supabase
+        .from('exploration_marches')
+        .select('marche_id')
+        .eq('exploration_id', explorationId);
+
+      if (error) throw error;
+      
+      const marchesIds = data?.map(em => em.marche_id) || [];
+      setExplorationMarchesIds(marchesIds);
+    } catch (error) {
+      console.error('Erreur lors de la récupération des marches de l\'exploration:', error);
+      setExplorationMarchesIds([]);
+    }
+  };
+
+  // Effet pour récupérer les marches quand l'exploration change
+  useEffect(() => {
+    if (explorationFilter && explorationFilter !== 'all') {
+      fetchExplorationMarches(explorationFilter);
+    } else {
+      setExplorationMarchesIds([]);
+    }
+  }, [explorationFilter]);
 
   // Fonction sécurisée pour filtrer les marches
-  const applyFilters = (ville: string, region: string, departement: string, tags: string, search: string, noPhotos: boolean, noAudio: boolean, noTexts: boolean) => {
+  const applyFilters = (ville: string, region: string, departement: string, tags: string, search: string, noPhotos: boolean, noAudio: boolean, noTexts: boolean, exploration: string) => {
     if (!marches || marches.length === 0) {
       onFilterChange([]);
       return;
     }
 
     let filtered = marches;
+
+    // Filtre par exploration
+    if (exploration && exploration !== 'all' && explorationMarchesIds.length > 0) {
+      filtered = filtered.filter(marche => {
+        const marcheId = marche?.supabaseId || marche?.id;
+        return marcheId && explorationMarchesIds.includes(marcheId);
+      });
+    }
 
     // Filtre par ville
     if (ville.trim()) {
@@ -112,42 +159,47 @@ const AdminFilters: React.FC<AdminFiltersProps> = ({ marches, onFilterChange }) 
   // Gestionnaires d'événements
   const handleVilleChange = (value: string) => {
     setVilleFilter(value);
-    applyFilters(value, regionFilter, departementFilter, tagsFilter, searchText, withoutPhotos, withoutAudio, withoutTexts);
+    applyFilters(value, regionFilter, departementFilter, tagsFilter, searchText, withoutPhotos, withoutAudio, withoutTexts, explorationFilter);
   };
 
   const handleRegionChange = (value: string) => {
     setRegionFilter(value);
-    applyFilters(villeFilter, value, departementFilter, tagsFilter, searchText, withoutPhotos, withoutAudio, withoutTexts);
+    applyFilters(villeFilter, value, departementFilter, tagsFilter, searchText, withoutPhotos, withoutAudio, withoutTexts, explorationFilter);
   };
 
   const handleDepartementChange = (value: string) => {
     setDepartementFilter(value);
-    applyFilters(villeFilter, regionFilter, value, tagsFilter, searchText, withoutPhotos, withoutAudio, withoutTexts);
+    applyFilters(villeFilter, regionFilter, value, tagsFilter, searchText, withoutPhotos, withoutAudio, withoutTexts, explorationFilter);
   };
 
   const handleTagsChange = (value: string) => {
     setTagsFilter(value);
-    applyFilters(villeFilter, regionFilter, departementFilter, value, searchText, withoutPhotos, withoutAudio, withoutTexts);
+    applyFilters(villeFilter, regionFilter, departementFilter, value, searchText, withoutPhotos, withoutAudio, withoutTexts, explorationFilter);
   };
 
   const handleSearchChange = (value: string) => {
     setSearchText(value);
-    applyFilters(villeFilter, regionFilter, departementFilter, tagsFilter, value, withoutPhotos, withoutAudio, withoutTexts);
+    applyFilters(villeFilter, regionFilter, departementFilter, tagsFilter, value, withoutPhotos, withoutAudio, withoutTexts, explorationFilter);
   };
 
   const handleWithoutPhotosChange = (checked: boolean) => {
     setWithoutPhotos(checked);
-    applyFilters(villeFilter, regionFilter, departementFilter, tagsFilter, searchText, checked, withoutAudio, withoutTexts);
+    applyFilters(villeFilter, regionFilter, departementFilter, tagsFilter, searchText, checked, withoutAudio, withoutTexts, explorationFilter);
   };
 
   const handleWithoutAudioChange = (checked: boolean) => {
     setWithoutAudio(checked);
-    applyFilters(villeFilter, regionFilter, departementFilter, tagsFilter, searchText, withoutPhotos, checked, withoutTexts);
+    applyFilters(villeFilter, regionFilter, departementFilter, tagsFilter, searchText, withoutPhotos, checked, withoutTexts, explorationFilter);
   };
 
   const handleWithoutTextsChange = (checked: boolean) => {
     setWithoutTexts(checked);
-    applyFilters(villeFilter, regionFilter, departementFilter, tagsFilter, searchText, withoutPhotos, withoutAudio, checked);
+    applyFilters(villeFilter, regionFilter, departementFilter, tagsFilter, searchText, withoutPhotos, withoutAudio, checked, explorationFilter);
+  };
+
+  const handleExplorationChange = (value: string) => {
+    setExplorationFilter(value);
+    applyFilters(villeFilter, regionFilter, departementFilter, tagsFilter, searchText, withoutPhotos, withoutAudio, withoutTexts, value);
   };
 
   const clearFilters = () => {
@@ -159,6 +211,8 @@ const AdminFilters: React.FC<AdminFiltersProps> = ({ marches, onFilterChange }) 
     setWithoutPhotos(false);
     setWithoutAudio(false);
     setWithoutTexts(false);
+    setExplorationFilter('');
+    setExplorationMarchesIds([]);
     onFilterChange(marches);
   };
 
@@ -253,7 +307,7 @@ const AdminFilters: React.FC<AdminFiltersProps> = ({ marches, onFilterChange }) 
   const uniqueRegions = getUniqueRegions();
   const uniqueDepartements = getUniqueDepartements();
   const uniqueTagsWithCount = getUniqueTagsWithCount();
-  const hasActiveFilters = villeFilter || regionFilter || departementFilter || tagsFilter || searchText || withoutPhotos || withoutAudio || withoutTexts;
+  const hasActiveFilters = villeFilter || regionFilter || departementFilter || tagsFilter || searchText || withoutPhotos || withoutAudio || withoutTexts || explorationFilter;
 
   return (
     <div className="mb-6">
@@ -295,7 +349,29 @@ const AdminFilters: React.FC<AdminFiltersProps> = ({ marches, onFilterChange }) 
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            {/* Filtre par exploration */}
+            {explorations.length > 0 && (
+              <div className="space-y-2">
+                <label className="text-white text-sm font-medium">Exploration</label>
+                <Select value={explorationFilter} onValueChange={handleExplorationChange}>
+                  <SelectTrigger className="bg-white/10 border-white/20 text-white">
+                    <SelectValue placeholder="Toutes les explorations" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-white border border-gray-200 shadow-lg z-50 max-h-60 overflow-y-auto">
+                    <SelectItem value="all" className="text-gray-900 hover:bg-gray-100">
+                      Toutes les explorations
+                    </SelectItem>
+                    {explorations.map((exploration) => (
+                      <SelectItem key={exploration.id} value={exploration.id} className="text-gray-900 hover:bg-gray-100">
+                        {exploration.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+
             {/* Filtre par ville */}
             <div className="space-y-2">
               <label className="text-white text-sm font-medium">Ville</label>
