@@ -285,46 +285,28 @@ const GalerieFleuveWelcome: React.FC<GalerieFluveWelcomeProps> = ({
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 1.0 }}
-            className={`${isMobile ? 'grid grid-cols-1 gap-6' : 'grid grid-cols-3 gap-8'} text-left max-w-5xl mx-auto`}
+            className={`${isMobile ? 'flex flex-col space-y-2 text-center' : 'flex justify-between items-center'} w-full`}
           >
-            {/* Exploration Spatiale */}
-            <div className="space-y-3">
-              <h4 className={`${isMobile ? 'text-sm' : 'text-base'} font-semibold text-white/95 mb-3`}>
-                Exploration Spatiale
-              </h4>
-              <a 
-                href={explorationSlug ? `/galerie-fleuve/exploration/${explorationSlug}?view=fleuve-temporel` : '#'}
-                className={`block text-white/80 hover:text-white transition-colors ${isMobile ? 'text-xs' : 'text-sm'} hover:underline`}
-              >
-                📍 Carte de l'exploration
-              </a>
-            </div>
+            <a 
+              href={explorationSlug ? `/galerie-fleuve/exploration/${explorationSlug}?view=fleuve-temporel` : '#'}
+              className={`text-white/80 hover:text-white transition-colors ${isMobile ? 'text-sm' : 'text-base'} hover:underline`}
+            >
+              Carte de l'exploration
+            </a>
 
-            {/* Archives & Mémoire */}
-            <div className="space-y-3">
-              <h4 className={`${isMobile ? 'text-sm' : 'text-base'} font-semibold text-white/95 mb-3`}>
-                Archives & Mémoire
-              </h4>
-              <a 
-                href={explorationSlug ? `/galerie-fleuve/exploration/${explorationSlug}/historique` : '#'}
-                className={`block text-white/80 hover:text-white transition-colors ${isMobile ? 'text-xs' : 'text-sm'} hover:underline`}
-              >
-                📚 Recherche historique
-              </a>
-            </div>
+            <a 
+              href={explorationSlug ? `/galerie-fleuve/exploration/${explorationSlug}/historique` : '#'}
+              className={`text-white/80 hover:text-white transition-colors ${isMobile ? 'text-sm' : 'text-base'} hover:underline`}
+            >
+              Recherche historique
+            </a>
 
-            {/* Réflexions Géopoétiques */}
-            <div className="space-y-3">
-              <h4 className={`${isMobile ? 'text-sm' : 'text-base'} font-semibold text-white/95 mb-3`}>
-                Réflexions Géopoétiques
-              </h4>
-              <a 
-                href={explorationSlug ? `/galerie-fleuve/exploration/${explorationSlug}/essais` : '#'}
-                className={`block text-white/80 hover:text-white transition-colors ${isMobile ? 'text-xs' : 'text-sm'} hover:underline`}
-              >
-                ✍️ Essais
-              </a>
-            </div>
+            <a 
+              href={explorationSlug ? `/galerie-fleuve/exploration/${explorationSlug}/essais` : '#'}
+              className={`text-white/80 hover:text-white transition-colors ${isMobile ? 'text-sm' : 'text-base'} hover:underline`}
+            >
+              Essais
+            </a>
           </motion.div>
         </div>
 
