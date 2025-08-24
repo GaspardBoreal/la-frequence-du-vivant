@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
+import { Checkbox } from '../ui/checkbox';
 import { Filter, X, Search } from 'lucide-react';
 import { MarcheTechnoSensible } from '../../utils/googleSheetsApi';
 
@@ -18,9 +19,12 @@ const AdminFilters: React.FC<AdminFiltersProps> = ({ marches, onFilterChange }) 
   const [departementFilter, setDepartementFilter] = useState('');
   const [tagsFilter, setTagsFilter] = useState('');
   const [searchText, setSearchText] = useState('');
+  const [withoutPhotos, setWithoutPhotos] = useState(false);
+  const [withoutAudio, setWithoutAudio] = useState(false);
+  const [withoutTexts, setWithoutTexts] = useState(false);
 
   // Fonction sécurisée pour filtrer les marches
-  const applyFilters = (ville: string, region: string, departement: string, tags: string, search: string) => {
+  const applyFilters = (ville: string, region: string, departement: string, tags: string, search: string, noPhotos: boolean, noAudio: boolean, noTexts: boolean) => {
     if (!marches || marches.length === 0) {
       onFilterChange([]);
       return;
@@ -78,33 +82,72 @@ const AdminFilters: React.FC<AdminFiltersProps> = ({ marches, onFilterChange }) 
       });
     }
 
+    // Filtre marches sans photos
+    if (noPhotos) {
+      filtered = filtered.filter(marche => {
+        const photos = marche?.photos || [];
+        return photos.length === 0;
+      });
+    }
+
+    // Filtre marches sans audio
+    if (noAudio) {
+      filtered = filtered.filter(marche => {
+        const audio = marche?.audioFiles || [];
+        return audio.length === 0;
+      });
+    }
+
+    // Filtre marches sans textes
+    if (noTexts) {
+      filtered = filtered.filter(marche => {
+        const textes = marche?.textes || [];
+        return textes.length === 0;
+      });
+    }
+
     onFilterChange(filtered);
   };
 
   // Gestionnaires d'événements
   const handleVilleChange = (value: string) => {
     setVilleFilter(value);
-    applyFilters(value, regionFilter, departementFilter, tagsFilter, searchText);
+    applyFilters(value, regionFilter, departementFilter, tagsFilter, searchText, withoutPhotos, withoutAudio, withoutTexts);
   };
 
   const handleRegionChange = (value: string) => {
     setRegionFilter(value);
-    applyFilters(villeFilter, value, departementFilter, tagsFilter, searchText);
+    applyFilters(villeFilter, value, departementFilter, tagsFilter, searchText, withoutPhotos, withoutAudio, withoutTexts);
   };
 
   const handleDepartementChange = (value: string) => {
     setDepartementFilter(value);
-    applyFilters(villeFilter, regionFilter, value, tagsFilter, searchText);
+    applyFilters(villeFilter, regionFilter, value, tagsFilter, searchText, withoutPhotos, withoutAudio, withoutTexts);
   };
 
   const handleTagsChange = (value: string) => {
     setTagsFilter(value);
-    applyFilters(villeFilter, regionFilter, departementFilter, value, searchText);
+    applyFilters(villeFilter, regionFilter, departementFilter, value, searchText, withoutPhotos, withoutAudio, withoutTexts);
   };
 
   const handleSearchChange = (value: string) => {
     setSearchText(value);
-    applyFilters(villeFilter, regionFilter, departementFilter, tagsFilter, value);
+    applyFilters(villeFilter, regionFilter, departementFilter, tagsFilter, value, withoutPhotos, withoutAudio, withoutTexts);
+  };
+
+  const handleWithoutPhotosChange = (checked: boolean) => {
+    setWithoutPhotos(checked);
+    applyFilters(villeFilter, regionFilter, departementFilter, tagsFilter, searchText, checked, withoutAudio, withoutTexts);
+  };
+
+  const handleWithoutAudioChange = (checked: boolean) => {
+    setWithoutAudio(checked);
+    applyFilters(villeFilter, regionFilter, departementFilter, tagsFilter, searchText, withoutPhotos, checked, withoutTexts);
+  };
+
+  const handleWithoutTextsChange = (checked: boolean) => {
+    setWithoutTexts(checked);
+    applyFilters(villeFilter, regionFilter, departementFilter, tagsFilter, searchText, withoutPhotos, withoutAudio, checked);
   };
 
   const clearFilters = () => {
@@ -113,6 +156,9 @@ const AdminFilters: React.FC<AdminFiltersProps> = ({ marches, onFilterChange }) 
     setDepartementFilter('');
     setTagsFilter('');
     setSearchText('');
+    setWithoutPhotos(false);
+    setWithoutAudio(false);
+    setWithoutTexts(false);
     onFilterChange(marches);
   };
 
@@ -207,7 +253,7 @@ const AdminFilters: React.FC<AdminFiltersProps> = ({ marches, onFilterChange }) 
   const uniqueRegions = getUniqueRegions();
   const uniqueDepartements = getUniqueDepartements();
   const uniqueTagsWithCount = getUniqueTagsWithCount();
-  const hasActiveFilters = villeFilter || regionFilter || departementFilter || tagsFilter || searchText;
+  const hasActiveFilters = villeFilter || regionFilter || departementFilter || tagsFilter || searchText || withoutPhotos || withoutAudio || withoutTexts;
 
   return (
     <div className="mb-6">
@@ -304,6 +350,54 @@ const AdminFilters: React.FC<AdminFiltersProps> = ({ marches, onFilterChange }) 
                 </Select>
               </div>
             )}
+          </div>
+
+          {/* Filtres de contenu manquant */}
+          <div className="space-y-3">
+            <label className="text-white text-sm font-medium">Filtres de contenu</label>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="without-photos"
+                  checked={withoutPhotos}
+                  onCheckedChange={handleWithoutPhotosChange}
+                />
+                <label
+                  htmlFor="without-photos"
+                  className="text-white text-sm cursor-pointer"
+                >
+                  Marches sans photo
+                </label>
+              </div>
+              
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="without-audio"
+                  checked={withoutAudio}
+                  onCheckedChange={handleWithoutAudioChange}
+                />
+                <label
+                  htmlFor="without-audio"
+                  className="text-white text-sm cursor-pointer"
+                >
+                  Marches sans audio
+                </label>
+              </div>
+              
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="without-texts"
+                  checked={withoutTexts}
+                  onCheckedChange={handleWithoutTextsChange}
+                />
+                <label
+                  htmlFor="without-texts"
+                  className="text-white text-sm cursor-pointer"
+                >
+                  Marches sans texte
+                </label>
+              </div>
+            </div>
           </div>
 
           {/* Filtre par tags avec comptage */}
