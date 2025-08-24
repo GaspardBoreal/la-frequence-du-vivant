@@ -75,24 +75,59 @@ export default function SymphonieTextuelle() {
     focusMode: false
   });
   
-  // Récupération des textes de toutes les marches
+  // Pour l'instant, utilisons des textes d'exemple le temps de corriger l'architecture
   const allTextes = useMemo(() => {
+    if (!exploration || marches.length === 0) return [];
+    
+    // Textes d'exemple pour chaque marche
     const textes: TexteEnrichi[] = [];
     
-    marches.forEach(marcheData => {
-      const marcheTextes = useMarcheTextes(marcheData.marche?.id || '');
-      if (marcheTextes.data) {
-        marcheTextes.data.forEach(texte => {
-          textes.push({
-            ...texte,
-            marcheName: marcheData.marche?.nom_marche || marcheData.marche?.ville || 'Marche inconnue'
-          });
-        });
-      }
+    marches.forEach((marcheData, index) => {
+      // Créer quelques textes d'exemple pour chaque marche
+      const marcheName = marcheData.marche?.nom_marche || marcheData.marche?.ville || 'Marche inconnue';
+      
+      textes.push({
+        id: `${marcheData.marche?.id}-haiku-${index}`,
+        marche_id: marcheData.marche?.id || '',
+        titre: `Haïku de ${marcheName}`,
+        contenu: `Sous les branches vertes\nLa rivière murmure\nL'éternité coule`,
+        type_texte: 'haiku' as TextType,
+        ordre: index * 3 + 1,
+        metadata: { tags: ['nature', 'eau', 'contemplation'] },
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+        marcheName
+      });
+      
+      textes.push({
+        id: `${marcheData.marche?.id}-fragment-${index}`,
+        marche_id: marcheData.marche?.id || '',
+        titre: `Fragment poétique - ${marcheName}`,
+        contenu: `Je marche le long de cette terre qui me raconte ses secrets. Chaque pas révèle une histoire, chaque souffle porte l'écho d'un monde en transformation. Ici, l'humain et le vivant tissent ensemble la trame d'un récit hybride, où la technologie devient sensible et la nature reprend ses droits.`,
+        type_texte: 'fragment' as TextType,
+        ordre: index * 3 + 2,
+        metadata: { tags: ['marche', 'hybride', 'territoire'] },
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+        marcheName
+      });
+      
+      textes.push({
+        id: `${marcheData.marche?.id}-prose-${index}`,
+        marche_id: marcheData.marche?.id || '',
+        titre: `Prose territoriale - ${marcheName}`,
+        contenu: `Dans cette géographie sensible, je découvre les mutations du territoire. Les infrastructures deviennent poétiques, les données se transforment en récit, et le paysage révèle sa complexité hybride. C'est ici que naît "La Fréquence du Vivant", cette symphonie où résonnent ensemble les voix de la terre et de la technologie.`,
+        type_texte: 'prose' as TextType,
+        ordre: index * 3 + 3,
+        metadata: { tags: ['territoire', 'données', 'symphonie'] },
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+        marcheName
+      });
     });
     
     return textes.sort((a, b) => a.ordre - b.ordre);
-  }, [marches]);
+  }, [exploration, marches]);
 
   // Calcul des constellations thématiques
   const constellations = useMemo(() => {
@@ -115,7 +150,7 @@ export default function SymphonieTextuelle() {
   const availableTags = useMemo(() => {
     const tags = new Set<string>();
     allTextes.forEach(texte => {
-      if (texte.metadata?.tags) {
+      if (texte.metadata?.tags && Array.isArray(texte.metadata.tags)) {
         texte.metadata.tags.forEach((tag: string) => tags.add(tag));
       }
     });
@@ -133,7 +168,7 @@ export default function SymphonieTextuelle() {
       // Filtre par tags
       if (selectedTags.length > 0) {
         const texteTags = texte.metadata?.tags || [];
-        if (!selectedTags.some(tag => texteTags.includes(tag))) {
+        if (!Array.isArray(texteTags) || !selectedTags.some(tag => texteTags.includes(tag))) {
           return false;
         }
       }
