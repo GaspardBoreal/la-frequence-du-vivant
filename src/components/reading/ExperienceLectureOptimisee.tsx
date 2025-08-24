@@ -225,7 +225,90 @@ export default function ExperienceLectureOptimisee() {
           className="sticky top-0 z-40 border-b border-slate-200/60 dark:border-slate-800/60 bg-white/80 dark:bg-slate-950/80 backdrop-blur-xl"
         >
           <div className="px-4 py-3">
-            <div className="flex items-center justify-between">
+            {/* Mobile Layout */}
+            <div className="flex md:hidden items-center justify-between">
+              {/* Mobile Left: Return button */}
+              <Button variant="ghost" size="sm" asChild className="text-slate-800 dark:text-slate-300 hover:text-slate-900 dark:hover:text-slate-100">
+                <Link to={`/galerie-fleuve/exploration/${slug}`}>
+                  <ArrowLeft className="h-4 w-4" />
+                </Link>
+              </Button>
+
+              {/* Mobile Center: Navigation + Type Selector */}
+              <div className="flex items-center gap-2 flex-1 justify-center">
+                {selectedTextType && (
+                  <TextTypeSelector
+                    currentType={selectedTextType}
+                    availableTypes={availableTypes}
+                    onTypeSelect={handleTypeSelect}
+                  />
+                )}
+                <NavigationLitteraire
+                  currentIndex={currentIndex}
+                  totalTexts={filteredTexts.length}
+                  onPrevious={handlePrevious}
+                  onNext={handleNext}
+                />
+              </div>
+
+              {/* Mobile Right: Actions */}
+              <div className="flex items-center gap-1">
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-slate-800 dark:text-slate-300">
+                      <Palette className="h-3.5 w-3.5" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-36 bg-white/95 dark:bg-slate-950/95 backdrop-blur-sm border-slate-200/60 dark:border-slate-800/60">
+                    <DropdownMenuItem
+                      onClick={() => setAppearanceMode('light')}
+                      className={`flex items-center gap-2 cursor-pointer hover:text-emerald-900 dark:hover:text-emerald-900 data-[highlighted]:text-emerald-900 dark:data-[highlighted]:text-emerald-900 ${
+                        appearanceMode === 'light' 
+                          ? 'bg-yellow-200 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-200'
+                          : 'text-slate-800 dark:text-slate-300'
+                      }`}
+                    >
+                      <Sun className="h-4 w-4" />
+                      <span>Clair</span>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={() => setAppearanceMode('system')}
+                      className={`flex items-center gap-2 cursor-pointer hover:text-emerald-900 dark:hover:text-emerald-900 data-[highlighted]:text-emerald-900 dark:data-[highlighted]:text-emerald-900 ${
+                        appearanceMode === 'system' 
+                          ? 'bg-yellow-200 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-200'
+                          : 'text-slate-800 dark:text-slate-300'
+                      }`}
+                    >
+                      <Monitor className="h-4 w-4" />
+                      <span>Système</span>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={() => setAppearanceMode('dark')}
+                      className={`flex items-center gap-2 cursor-pointer hover:text-emerald-900 dark:hover:text-emerald-900 data-[highlighted]:text-emerald-900 dark:data-[highlighted]:text-emerald-900 ${
+                        appearanceMode === 'dark' 
+                          ? 'bg-yellow-200 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-200'
+                          : 'text-slate-800 dark:text-slate-300'
+                      }`}
+                    >
+                      <Moon className="h-4 w-4" />
+                      <span>Sombre</span>
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+                
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleShare}
+                  className="h-8 w-8 p-0 text-slate-800 dark:text-slate-300"
+                >
+                  <Share2 className="h-3.5 w-3.5" />
+                </Button>
+              </div>
+            </div>
+
+            {/* Desktop Layout */}
+            <div className="hidden md:flex items-center justify-between">
               {/* Left: Gaspard Boréal signature */}
               <div className="font-crimson text-slate-800 dark:text-slate-200">
                 <div className="text-lg font-medium">Gaspard Boréal</div>
