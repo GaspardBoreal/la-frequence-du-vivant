@@ -38,6 +38,7 @@ export default function ExperienceLectureOptimisee() {
   
   // States
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [selectedTextType, setSelectedTextType] = useState<TextType | 'all'>('all');
   const [appearanceMode, setAppearanceMode] = useState<AppearanceMode>('system');
   const [readingMode, setReadingMode] = useState<ReadingMode>('rich');
   
@@ -63,20 +64,40 @@ export default function ExperienceLectureOptimisee() {
     }
   }, [appearanceMode]);
   
+  // Get available text types
+  const availableTypes = useMemo(() => {
+    const types = new Set(texts.map(t => t.type_texte));
+    return Array.from(types) as TextType[];
+  }, [texts]);
+
+  // Get filtered texts based on selected type
+  const filteredTexts = useMemo(() => {
+    if (selectedTextType === 'all') {
+      return texts;
+    }
+    return texts.filter(t => t.type_texte === selectedTextType);
+  }, [texts, selectedTextType]);
+
   // Find current text index from URL parameter
   useEffect(() => {
     if (textId && texts.length > 0) {
-      const index = texts.findIndex(t => t.id === textId);
-      if (index >= 0) {
-        setCurrentIndex(index);
+      const textIndex = texts.findIndex(t => t.id === textId);
+      if (textIndex >= 0) {
+        const text = texts[textIndex];
+        setSelectedTextType(text.type_texte);
+        // Find the index in filtered texts
+        const filteredIndex = texts.filter(t => t.type_texte === text.type_texte).findIndex(t => t.id === textId);
+        if (filteredIndex >= 0) {
+          setCurrentIndex(filteredIndex);
+        }
       }
     }
   }, [textId, texts]);
   
-  // Update URL when index changes
+  // Update URL when index or type changes
   useEffect(() => {
-    if (texts.length > 0 && texts[currentIndex]) {
-      const newTextId = texts[currentIndex].id;
+    if (filteredTexts.length > 0 && filteredTexts[currentIndex]) {
+      const newTextId = filteredTexts[currentIndex].id;
       const basePath = `/explorations/${slug}/lire`;
       const newUrl = `${basePath}/${newTextId}`;
       
@@ -84,17 +105,11 @@ export default function ExperienceLectureOptimisee() {
         window.history.replaceState(null, '', newUrl);
       }
     }
-  }, [currentIndex, texts, slug]);
-
-  // Get available text types
-  const availableTypes = useMemo(() => {
-    const types = new Set(texts.map(t => t.type_texte));
-    return Array.from(types) as TextType[];
-  }, [texts]);
+  }, [currentIndex, filteredTexts, slug]);
 
   // Current text and navigation
-  const currentText = texts[currentIndex];
-  const currentType = currentText?.type_texte;
+  const currentText = filteredTexts[currentIndex];
+  const currentType = selectedTextType === 'all' ? currentText?.type_texte : selectedTextType;
 
   // Navigation handlers
   const handlePrevious = useCallback(() => {
@@ -104,22 +119,20 @@ export default function ExperienceLectureOptimisee() {
   }, [currentIndex]);
 
   const handleNext = useCallback(() => {
-    if (currentIndex < texts.length - 1) {
+    if (currentIndex < filteredTexts.length - 1) {
       setCurrentIndex(currentIndex + 1);
     }
-  }, [currentIndex, texts.length]);
+  }, [currentIndex, filteredTexts.length]);
 
-  const handleTypeSelect = useCallback((type: TextType) => {
-    const firstTextOfType = texts.findIndex(t => t.type_texte === type);
-    if (firstTextOfType >= 0) {
-      setCurrentIndex(firstTextOfType);
-    }
-  }, [texts]);
+  const handleTypeSelect = useCallback((type: TextType | 'all') => {
+    setSelectedTextType(type);
+    setCurrentIndex(0); // Reset to first text when changing type
+  }, []);
 
   const handleRandomText = useCallback(() => {
-    const randomIndex = Math.floor(Math.random() * texts.length);
+    const randomIndex = Math.floor(Math.random() * filteredTexts.length);
     setCurrentIndex(randomIndex);
-  }, [texts.length]);
+  }, [filteredTexts.length]);
 
   const handleChronologicalNext = useCallback(() => {
     handleNext();
@@ -213,9 +226,9 @@ export default function ExperienceLectureOptimisee() {
                   </Link>
                 </Button>
                 
-                {currentType && (
+                {selectedTextType && (
                   <TextTypeSelector
-                    currentType={currentType}
+                    currentType={selectedTextType}
                     availableTypes={availableTypes}
                     onTypeSelect={handleTypeSelect}
                   />
@@ -225,7 +238,7 @@ export default function ExperienceLectureOptimisee() {
               {/* Center: Navigation */}
               <NavigationLitteraire
                 currentIndex={currentIndex}
-                totalTexts={texts.length}
+                totalTexts={filteredTexts.length}
                 onPrevious={handlePrevious}
                 onNext={handleNext}
               />

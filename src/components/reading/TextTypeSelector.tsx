@@ -11,20 +11,22 @@ import { ChevronDown } from 'lucide-react';
 import { getTextTypeInfo, TextType } from '@/types/textTypes';
 
 interface Props {
-  currentType: TextType;
+  currentType: TextType | 'all';
   availableTypes: TextType[];
-  onTypeSelect: (type: TextType) => void;
+  onTypeSelect: (type: TextType | 'all') => void;
 }
 
 export default function TextTypeSelector({ currentType, availableTypes, onTypeSelect }: Props) {
   const [open, setOpen] = useState(false);
-  const currentTypeInfo = getTextTypeInfo(currentType);
+  const currentTypeInfo = currentType === 'all' 
+    ? { icon: '📚', label: 'Tous les textes' }
+    : getTextTypeInfo(currentType);
 
-  const sortedTypes = [...availableTypes].sort((a, b) => {
+  const allTypes: (TextType | 'all')[] = ['all', ...availableTypes.sort((a, b) => {
     const aInfo = getTextTypeInfo(a);
     const bInfo = getTextTypeInfo(b);
     return aInfo.label.localeCompare(bInfo.label);
-  });
+  })];
 
   return (
     <DropdownMenu open={open} onOpenChange={setOpen}>
@@ -38,8 +40,10 @@ export default function TextTypeSelector({ currentType, availableTypes, onTypeSe
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="start" className="w-48 bg-white/95 dark:bg-slate-950/95 backdrop-blur-sm border-slate-200/60 dark:border-slate-800/60">
-        {sortedTypes.map((type) => {
-          const typeInfo = getTextTypeInfo(type);
+        {allTypes.map((type) => {
+          const typeInfo = type === 'all' 
+            ? { icon: '📚', label: 'Tous les textes' }
+            : getTextTypeInfo(type);
           const isActive = type === currentType;
           return (
             <DropdownMenuItem
