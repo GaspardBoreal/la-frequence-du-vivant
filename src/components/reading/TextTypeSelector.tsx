@@ -37,9 +37,10 @@ export default function TextTypeSelector({ currentType, availableTypes, onTypeSe
           <ChevronDown className="h-3 w-3 opacity-50 text-slate-800 dark:text-slate-300" />
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="start" className="w-48 bg-background/95 backdrop-blur-sm border-border/50">
+      <DropdownMenuContent align="start" className="w-48 bg-white/95 dark:bg-slate-950/95 backdrop-blur-sm border-slate-200/60 dark:border-slate-800/60">
         {sortedTypes.map((type) => {
           const typeInfo = getTextTypeInfo(type);
+          const isActive = type === currentType;
           return (
             <DropdownMenuItem
               key={type}
@@ -47,7 +48,11 @@ export default function TextTypeSelector({ currentType, availableTypes, onTypeSe
                 onTypeSelect(type);
                 setOpen(false);
               }}
-              className="flex items-center gap-2 cursor-pointer hover:bg-muted/50 text-slate-800 dark:text-slate-300"
+              className={`flex items-center gap-2 cursor-pointer hover:bg-muted/50 ${
+                isActive 
+                  ? 'bg-yellow-200 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-200' 
+                  : 'text-slate-800 dark:text-slate-300'
+              }`}
             >
               <span className="text-sm">{typeInfo.icon}</span>
               <span className="text-sm">{typeInfo.label}</span>

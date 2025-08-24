@@ -243,21 +243,33 @@ export default function ExperienceLectureOptimisee() {
                   <DropdownMenuContent align="end" className="w-36 bg-white/95 dark:bg-slate-950/95 backdrop-blur-sm border-slate-200/60 dark:border-slate-800/60">
                     <DropdownMenuItem
                       onClick={() => setAppearanceMode('light')}
-                      className="flex items-center gap-2 cursor-pointer text-slate-800 dark:text-slate-300"
+                      className={`flex items-center gap-2 cursor-pointer ${
+                        appearanceMode === 'light' 
+                          ? 'bg-yellow-200 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-200'
+                          : 'text-slate-800 dark:text-slate-300'
+                      }`}
                     >
                       <Sun className="h-4 w-4" />
                       <span>Clair</span>
                     </DropdownMenuItem>
                     <DropdownMenuItem
                       onClick={() => setAppearanceMode('system')}
-                      className="flex items-center gap-2 cursor-pointer text-slate-800 dark:text-slate-300"
+                      className={`flex items-center gap-2 cursor-pointer ${
+                        appearanceMode === 'system' 
+                          ? 'bg-yellow-200 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-200'
+                          : 'text-slate-800 dark:text-slate-300'
+                      }`}
                     >
                       <Monitor className="h-4 w-4" />
                       <span>Système</span>
                     </DropdownMenuItem>
                     <DropdownMenuItem
                       onClick={() => setAppearanceMode('dark')}
-                      className="flex items-center gap-2 cursor-pointer text-slate-800 dark:text-slate-300"
+                      className={`flex items-center gap-2 cursor-pointer ${
+                        appearanceMode === 'dark' 
+                          ? 'bg-yellow-200 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-200'
+                          : 'text-slate-800 dark:text-slate-300'
+                      }`}
                     >
                       <Moon className="h-4 w-4" />
                       <span>Sombre</span>
