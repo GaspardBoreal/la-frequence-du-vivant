@@ -336,10 +336,9 @@ export default function ExperienceAudioContinue() {
             </div>
           </motion.div>
 
-          <div className="grid grid-cols-1 xl:grid-cols-12 gap-8">
-            {/* Main Audio Player */}
+          <div className="max-w-5xl mx-auto">
+            {/* Main Audio Player - Full Width */}
             <motion.div 
-              className="xl:col-span-8"
               initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8, delay: 0.6 }}
@@ -544,48 +543,6 @@ export default function ExperienceAudioContinue() {
                         </ScrollArea>
                       </SheetContent>
                     </Sheet>
-                  </div>
-                </CardContent>
-              </Card>
-            </motion.div>
-
-            {/* Accompanying Text */}
-            <motion.div 
-              className="xl:col-span-4"
-              initial={{ opacity: 0, x: 30 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.8, delay: 0.8 }}
-            >
-              <Card className="backdrop-blur-md bg-card/50 border-accent/10 shadow-xl h-full">
-                <CardContent className="p-8">
-                  <div className="space-y-6">
-                    <div className="flex items-center gap-3">
-                      <div className="w-1 h-8 bg-accent rounded-full" />
-                      <h3 className="text-2xl font-bold text-accent dordogne-title">
-                        Texte d'accompagnement
-                      </h3>
-                    </div>
-                    
-                    <Separator className="bg-accent/20" />
-                    
-                    <ScrollArea className="h-96">
-                      {audioPageText ? (
-                        <div 
-                          className="prose prose-sm dark:prose-invert dordogne-body text-justify"
-                          dangerouslySetInnerHTML={{ __html: audioPageText }}
-                        />
-                      ) : (
-                        <div className="text-center py-12 space-y-4">
-                          <Music className="h-12 w-12 text-muted-foreground mx-auto opacity-50" />
-                          <p className="text-muted-foreground italic dordogne-body">
-                            Aucun texte d'accompagnement configuré pour cette exploration.
-                          </p>
-                          <p className="text-sm text-muted-foreground dordogne-body">
-                            Laissez-vous porter par les sons et les récits de cette expérience immersive.
-                          </p>
-                        </div>
-                      )}
-                    </ScrollArea>
                   </div>
                 </CardContent>
               </Card>
