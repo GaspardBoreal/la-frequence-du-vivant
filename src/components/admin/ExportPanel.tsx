@@ -5,7 +5,10 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { Download, FileText, Eye, Loader2 } from 'lucide-react';
+import { Label } from '@/components/ui/label';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Download, FileText, Eye, Loader2, Search } from 'lucide-react';
 import { toast } from 'sonner';
 import { MarcheTechnoSensible } from '@/utils/googleSheetsApi';
 import { exportMarchesToJSON, exportExplorationsToJSON } from '@/utils/exportUtils';
@@ -37,6 +40,11 @@ const ExportPanel: React.FC<ExportPanelProps> = ({
   const [dateFilter, setDateFilter] = useState<'all' | '30d' | '90d' | '1y'>('all');
   const [showPreview, setShowPreview] = useState(false);
   
+  // Selection options for explorations
+  const [exportScope, setExportScope] = useState<'all' | 'selected'>('all');
+  const [selectedExplorations, setSelectedExplorations] = useState<string[]>([]);
+  const [searchTerm, setSearchTerm] = useState('');
+  
   const [exportOptions, setExportOptions] = useState<ExportOptions>({
     includeBasicInfo: true,
     includeCoordinates: true,
@@ -49,28 +57,63 @@ const ExportPanel: React.FC<ExportPanelProps> = ({
   });
 
   const filteredData = useMemo(() => {
-    if (dateFilter === 'all') return data;
+    let result = data;
     
-    const now = new Date();
-    const cutoffDate = new Date();
-    
-    switch (dateFilter) {
-      case '30d':
-        cutoffDate.setDate(now.getDate() - 30);
-        break;
-      case '90d':
-        cutoffDate.setDate(now.getDate() - 90);
-        break;
-      case '1y':
-        cutoffDate.setFullYear(now.getFullYear() - 1);
-        break;
+    // Filter by date
+    if (dateFilter !== 'all') {
+      const now = new Date();
+      const cutoffDate = new Date();
+      
+      switch (dateFilter) {
+        case '30d':
+          cutoffDate.setDate(now.getDate() - 30);
+          break;
+        case '90d':
+          cutoffDate.setDate(now.getDate() - 90);
+          break;
+        case '1y':
+          cutoffDate.setFullYear(now.getFullYear() - 1);
+          break;
+      }
+      
+      result = result.filter(item => {
+        const itemDate = item.created_at ? new Date(item.created_at) : new Date();
+        return itemDate >= cutoffDate;
+      });
     }
     
-    return data.filter(item => {
-      const itemDate = item.created_at ? new Date(item.created_at) : new Date();
-      return itemDate >= cutoffDate;
-    });
-  }, [data, dateFilter]);
+    // Filter by exploration selection (only for explorations)
+    if (type === 'explorations' && exportScope === 'selected') {
+      result = result.filter(item => selectedExplorations.includes(item.id));
+    }
+    
+    return result;
+  }, [data, dateFilter, type, exportScope, selectedExplorations]);
+
+  // Filtered explorations for selection list
+  const filteredExplorationsForSelection = useMemo(() => {
+    if (type !== 'explorations') return [];
+    return data.filter(exploration => 
+      exploration.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      exploration.description?.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+  }, [data, searchTerm, type]);
+
+  const handleExplorationToggle = (explorationId: string) => {
+    setSelectedExplorations(prev => 
+      prev.includes(explorationId) 
+        ? prev.filter(id => id !== explorationId)
+        : [...prev, explorationId]
+    );
+  };
+
+  const handleSelectAll = () => {
+    setSelectedExplorations(filteredExplorationsForSelection.map(item => item.id));
+  };
+
+  const handleDeselectAll = () => {
+    setSelectedExplorations([]);
+  };
 
   const handleOptionChange = (option: keyof ExportOptions) => {
     setExportOptions(prev => ({
@@ -80,8 +123,17 @@ const ExportPanel: React.FC<ExportPanelProps> = ({
   };
 
   const handleExport = async () => {
-    if (filteredData.length === 0) {
+    const dataToExport = type === 'explorations' && exportScope === 'selected' 
+      ? data.filter(item => selectedExplorations.includes(item.id))
+      : filteredData;
+
+    if (dataToExport.length === 0) {
       toast.error('Aucune donnée à exporter');
+      return;
+    }
+
+    if (type === 'explorations' && exportScope === 'selected' && selectedExplorations.length === 0) {
+      toast.error('Veuillez sélectionner au moins une exploration');
       return;
     }
 
@@ -91,9 +143,9 @@ const ExportPanel: React.FC<ExportPanelProps> = ({
       let result;
       
       if (type === 'marches') {
-        result = await exportMarchesToJSON(filteredData as MarcheTechnoSensible[], exportOptions);
+        result = await exportMarchesToJSON(dataToExport as MarcheTechnoSensible[], exportOptions);
       } else {
-        result = await exportExplorationsToJSON(filteredData, exportOptions);
+        result = await exportExplorationsToJSON(dataToExport, exportOptions);
       }
 
       // Télécharger le fichier JSON
@@ -103,13 +155,19 @@ const ExportPanel: React.FC<ExportPanelProps> = ({
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
-      link.download = `${type}_export_${new Date().toISOString().split('T')[0]}.json`;
+      const scopeSuffix = type === 'explorations' && exportScope === 'selected' 
+        ? '_selection' 
+        : '';
+      link.download = `${type}_export${scopeSuffix}_${new Date().toISOString().split('T')[0]}.json`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
 
-      toast.success(`Export réussi : ${result.items.length} éléments exportés`);
+      const scopeText = type === 'explorations' && exportScope === 'selected' 
+        ? ` (${selectedExplorations.length} sélectionnées)`
+        : '';
+      toast.success(`Export réussi : ${result.items.length} éléments exportés${scopeText}`);
     } catch (error) {
       console.error('Erreur lors de l\'export:', error);
       toast.error('Erreur lors de l\'export');
@@ -123,14 +181,19 @@ const ExportPanel: React.FC<ExportPanelProps> = ({
       .filter(([_, value]) => value)
       .map(([key]) => key);
     
+    const dataToPreview = type === 'explorations' && exportScope === 'selected' 
+      ? data.filter(item => selectedExplorations.includes(item.id))
+      : filteredData;
+    
     const preview = {
       metadata: {
         exportDate: new Date().toISOString(),
         type: type,
-        totalItems: filteredData.length,
+        scope: type === 'explorations' ? exportScope : 'all',
+        totalItems: dataToPreview.length,
         exportOptions: selectedOptions
       },
-      items: filteredData.slice(0, 2).map(item => ({
+      items: dataToPreview.slice(0, 2).map(item => ({
         id: item.id,
         ...(exportOptions.includeBasicInfo && {
           nom: type === 'marches' ? item.ville : item.name,
@@ -167,6 +230,106 @@ const ExportPanel: React.FC<ExportPanelProps> = ({
         </CardHeader>
         
         <CardContent className="space-y-6">
+          {/* Sélection des explorations (uniquement pour les explorations) */}
+          {type === 'explorations' && (
+            <div className="space-y-4">
+              <div className="space-y-3">
+                <Label className="text-sm font-medium">Scope de l'export</Label>
+                <RadioGroup value={exportScope} onValueChange={(value: any) => setExportScope(value)}>
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="all" id="all" />
+                    <Label htmlFor="all">Toutes les explorations ({data.length})</Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="selected" id="selected" />
+                    <Label htmlFor="selected">Explorations sélectionnées ({selectedExplorations.length})</Label>
+                  </div>
+                </RadioGroup>
+              </div>
+
+              {/* Liste de sélection des explorations */}
+              {exportScope === 'selected' && (
+                <Card className="border-dashed">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-sm">Sélectionner les explorations</CardTitle>
+                    <div className="flex items-center gap-2">
+                      <div className="relative flex-1">
+                        <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+                        <input
+                          type="text"
+                          placeholder="Rechercher une exploration..."
+                          className="w-full pl-8 pr-3 py-2 border border-input bg-background rounded-md text-sm"
+                          value={searchTerm}
+                          onChange={(e) => setSearchTerm(e.target.value)}
+                        />
+                      </div>
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={handleSelectAll}
+                        disabled={filteredExplorationsForSelection.length === 0}
+                      >
+                        Tout sélectionner
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={handleDeselectAll}
+                        disabled={selectedExplorations.length === 0}
+                      >
+                        Tout désélectionner
+                      </Button>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <ScrollArea className="h-48">
+                      <div className="space-y-2">
+                        {filteredExplorationsForSelection.length === 0 ? (
+                          <p className="text-sm text-muted-foreground text-center py-4">
+                            {searchTerm ? 'Aucune exploration trouvée' : 'Aucune exploration disponible'}
+                          </p>
+                        ) : (
+                          filteredExplorationsForSelection.map(exploration => (
+                            <div 
+                              key={exploration.id} 
+                              className="flex items-start space-x-2 p-2 rounded-lg hover:bg-muted/50 cursor-pointer"
+                              onClick={() => handleExplorationToggle(exploration.id)}
+                            >
+                              <Checkbox
+                                checked={selectedExplorations.includes(exploration.id)}
+                                onCheckedChange={() => handleExplorationToggle(exploration.id)}
+                              />
+                              <div className="flex-1 min-w-0">
+                                <div className="font-medium text-sm truncate">
+                                  {exploration.name}
+                                </div>
+                                {exploration.description && (
+                                  <div className="text-xs text-muted-foreground truncate">
+                                    {exploration.description}
+                                  </div>
+                                )}
+                                <div className="flex items-center gap-2 mt-1">
+                                  <Badge variant={exploration.published ? "default" : "secondary"} className="text-xs">
+                                    {exploration.published ? 'Publié' : 'Brouillon'}
+                                  </Badge>
+                                  <span className="text-xs text-muted-foreground">
+                                    {new Date(exploration.created_at).toLocaleDateString('fr-FR')}
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+                          ))
+                        )}
+                      </div>
+                    </ScrollArea>
+                  </CardContent>
+                </Card>
+              )}
+            </div>
+          )}
+
+          {type === 'explorations' && <Separator />}
+
           {/* Filtres généraux */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
@@ -329,7 +492,7 @@ const ExportPanel: React.FC<ExportPanelProps> = ({
             
             <Button
               onClick={handleExport}
-              disabled={isExporting || filteredData.length === 0}
+              disabled={isExporting || filteredData.length === 0 || (type === 'explorations' && exportScope === 'selected' && selectedExplorations.length === 0)}
               className="flex items-center gap-2 flex-1"
             >
               {isExporting ? (
@@ -337,7 +500,11 @@ const ExportPanel: React.FC<ExportPanelProps> = ({
               ) : (
                 <Download className="h-4 w-4" />
               )}
-              Exporter ({filteredData.length} élément{filteredData.length > 1 ? 's' : ''})
+              Exporter ({
+                type === 'explorations' && exportScope === 'selected' 
+                  ? selectedExplorations.length 
+                  : filteredData.length
+              } élément{(type === 'explorations' && exportScope === 'selected' ? selectedExplorations.length : filteredData.length) > 1 ? 's' : ''})
             </Button>
           </div>
 
