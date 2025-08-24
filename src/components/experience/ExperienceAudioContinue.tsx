@@ -344,60 +344,55 @@ export default function ExperienceAudioContinue() {
               transition={{ duration: 0.8, delay: 0.6 }}
             >
               <Card className="backdrop-blur-md bg-card/70 border-accent/20 shadow-2xl">
-                <CardContent className="p-8 space-y-8">
+                <CardContent className="p-6 space-y-6">
                   
                   {/* Current Track Info */}
                   <AnimatePresence mode="wait">
                     {currentTrack && (
                       <motion.div 
-                        className="text-center space-y-6"
+                        className="space-y-4"
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: -20 }}
                         key={currentTrack.id}
                       >
-                        <div className="space-y-3">
-                          <h3 className={`${isMobile ? 'text-xl' : 'text-3xl'} font-bold text-accent dordogne-title`}>
+                        <div className="text-center space-y-2">
+                          <h3 className={`${isMobile ? 'text-lg' : 'text-2xl'} font-bold text-accent dordogne-title`}>
                             {currentTrack.title}
                           </h3>
-                          <div className="flex items-center justify-center gap-4">
+                          <div className={`flex ${isMobile ? 'flex-col gap-1' : 'items-center justify-center gap-3'} text-sm`}>
                             {currentTrack.marcheName && (
-                              <Badge variant="outline" className="flex items-center gap-2">
+                              <Badge variant="outline" className="flex items-center gap-1 text-xs">
                                 <MapPin className="h-3 w-3" />
                                 {currentTrack.marcheName}
                               </Badge>
                             )}
                             {currentTrack.marcheLocation && (
-                              <Badge variant="secondary" className="flex items-center gap-2">
+                              <Badge variant="secondary" className="text-xs">
                                 {currentTrack.marcheLocation}
                               </Badge>
                             )}
-                            <Badge variant="outline">
+                            <Badge variant="outline" className="text-xs">
                               Piste {currentTrackIndex + 1}/{totalTracks}
                             </Badge>
                           </div>
-                          {currentTrack.description && (
-                            <p className="text-muted-foreground max-w-2xl mx-auto dordogne-body">
-                              {currentTrack.description}
-                            </p>
-                          )}
                         </div>
 
-                        {/* Audio Visualizer */}
-                        <div className="flex justify-center py-6">
+                        {/* Compact Audio Visualizer */}
+                        <div className="flex justify-center py-3">
                           <EcoAudioVisualizer
                             isPlaying={isPlaying && currentRecording?.url === currentTrack.url}
                             currentTime={currentTime}
                             duration={duration}
-                            className="w-full max-w-md"
+                            className={`w-full ${isMobile ? 'max-w-xs' : 'max-w-sm'} h-16`}
                           />
                         </div>
                       </motion.div>
                     )}
                   </AnimatePresence>
 
-                  {/* Interactive Progress Slider */}
-                  <div className="space-y-3">
+                  {/* Compact Progress Slider */}
+                  <div className="space-y-2">
                     <Slider
                       value={[currentTime]}
                       onValueChange={handleProgressChange}
@@ -405,7 +400,7 @@ export default function ExperienceAudioContinue() {
                       step={1}
                       className="w-full"
                     />
-                    <div className="flex justify-between text-sm text-muted-foreground dordogne-body">
+                    <div className="flex justify-between text-xs text-muted-foreground dordogne-body">
                       <span>{formatTime(currentTime)}</span>
                       <span className="flex items-center gap-1">
                         <Clock className="h-3 w-3" />
@@ -414,129 +409,116 @@ export default function ExperienceAudioContinue() {
                     </div>
                   </div>
 
-                  {/* Main Controls */}
-                  <div className="flex items-center justify-center space-x-6">
+                  {/* Compact Main Controls */}
+                  <div className="flex items-center justify-center space-x-4">
                     <Button
                       variant="outline"
-                      size="lg"
+                      size={isMobile ? "default" : "lg"}
                       onClick={handlePreviousTrack}
                       disabled={!canGoPrevious}
-                      className="h-14 w-14 rounded-full btn-nature"
+                      className={`${isMobile ? 'h-10 w-10' : 'h-12 w-12'} rounded-full btn-nature`}
                     >
-                      <SkipBack className="h-6 w-6" />
+                      <SkipBack className={`${isMobile ? 'h-4 w-4' : 'h-5 w-5'}`} />
                     </Button>
                     
                     <Button
-                      size="lg"
+                      size={isMobile ? "default" : "lg"}
                       onClick={handlePlayPause}
                       disabled={!currentTrack}
-                      className="h-20 w-20 rounded-full btn-nature text-xl shadow-2xl"
+                      className={`${isMobile ? 'h-14 w-14' : 'h-16 w-16'} rounded-full btn-nature shadow-xl`}
                     >
                       {isPlaying && currentRecording?.url === currentTrack?.url ? (
-                        <Pause className="h-10 w-10" />
+                        <Pause className={`${isMobile ? 'h-6 w-6' : 'h-8 w-8'}`} />
                       ) : (
-                        <Play className="h-10 w-10" />
+                        <Play className={`${isMobile ? 'h-6 w-6' : 'h-8 w-8'}`} />
                       )}
                     </Button>
                     
                     <Button
                       variant="outline"
-                      size="lg"
+                      size={isMobile ? "default" : "lg"}
                       onClick={handleNextTrack}
                       disabled={!canGoNext}
-                      className="h-14 w-14 rounded-full btn-nature"
+                      className={`${isMobile ? 'h-10 w-10' : 'h-12 w-12'} rounded-full btn-nature`}
                     >
-                      <SkipForward className="h-6 w-6" />
+                      <SkipForward className={`${isMobile ? 'h-4 w-4' : 'h-5 w-5'}`} />
                     </Button>
                   </div>
 
-                  {/* Secondary Controls */}
-                  <div className="flex items-center justify-between pt-4">
-                    {/* Volume Control */}
-                    <div className="flex items-center space-x-3 flex-1 max-w-xs">
-                      <Volume2 className="h-5 w-5 text-accent" />
+                  {/* Compact Bottom Controls Row */}
+                  <div className="flex items-center justify-between pt-2">
+                    {/* Volume Control - Compact */}
+                    <div className="flex items-center space-x-2">
+                      <Volume2 className="h-4 w-4 text-muted-foreground" />
                       <Slider
                         value={[volume]}
                         onValueChange={handleVolumeChange}
                         max={1}
                         step={0.1}
-                        className="flex-1"
+                        className={`${isMobile ? 'w-16' : 'w-20'}`}
                       />
-                      <span className="text-sm text-muted-foreground w-12 dordogne-body">
+                      <span className="text-xs text-muted-foreground min-w-[2rem]">
                         {Math.round(volume * 100)}%
                       </span>
                     </div>
 
-                    {/* Playlist Toggle */}
-                    <Sheet>
+                    {/* Playlist Button - Compact */}
+                    <Sheet open={showPlaylist} onOpenChange={setShowPlaylist}>
                       <SheetTrigger asChild>
-                        <Button
-                          variant="outline"
-                          className="btn-nature"
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          className="btn-nature text-xs h-8"
                         >
-                          <List className="h-4 w-4 mr-2" />
-                          Playlist ({totalTracks})
+                          <List className="h-3 w-3 mr-1" />
+                          Playlist ({audioPlaylist.length})
                         </Button>
                       </SheetTrigger>
-                      <SheetContent side="bottom" className="h-[80vh] bg-card/95 backdrop-blur-md">
-                        <SheetHeader className="pb-4">
+                      <SheetContent className="w-full sm:max-w-lg bg-card/95 backdrop-blur-xl border-accent/20">
+                        <SheetHeader>
                           <SheetTitle className="text-accent dordogne-title">
-                            Playlist Complète
+                            Playlist Audio - {exploration.name}
                           </SheetTitle>
                         </SheetHeader>
-                        <ScrollArea className="h-full">
-                          <div className="space-y-1 pr-4">
+                        
+                        <ScrollArea className="h-full mt-6">
+                          <div className="space-y-2">
                             {audioPlaylist.map((track, index) => (
                               <motion.div
                                 key={track.id}
-                                className={`p-4 rounded-xl cursor-pointer transition-all duration-300 ${
-                                  index === currentTrackIndex 
-                                    ? 'bg-accent/20 border-2 border-accent/40 shadow-lg' 
-                                    : 'hover:bg-accent/5 border-2 border-transparent hover:border-accent/20'
-                                }`}
-                                onClick={() => handleTrackSelect(index)}
                                 whileHover={{ scale: 1.02 }}
                                 whileTap={{ scale: 0.98 }}
                               >
-                                <div className="flex items-center justify-between">
-                                  <div className="flex items-center space-x-4 flex-1 min-w-0">
-                                    <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${
-                                      index === currentTrackIndex ? 'bg-accent text-background' : 'bg-muted text-muted-foreground'
-                                    }`}>
-                                      {index === currentTrackIndex && isPlaying ? (
-                                        <Pause className="h-4 w-4" />
-                                      ) : (
-                                        <Play className="h-4 w-4" />
+                                <Button
+                                  variant={index === currentTrackIndex ? "default" : "ghost"}
+                                  onClick={() => handleTrackSelect(index)}
+                                  className="w-full justify-start text-left p-4 h-auto btn-nature"
+                                >
+                                  <div className="space-y-1">
+                                    <div className="flex items-center gap-2">
+                                      <span className="text-xs text-muted-foreground">
+                                        {String(index + 1).padStart(2, '0')}
+                                      </span>
+                                      <span className="font-medium truncate">
+                                        {track.title}
+                                      </span>
+                                    </div>
+                                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                                      {track.marcheName && (
+                                        <span className="flex items-center gap-1">
+                                          <MapPin className="h-3 w-3" />
+                                          {track.marcheName}
+                                        </span>
+                                      )}
+                                      {track.duration && (
+                                        <span className="flex items-center gap-1">
+                                          <Clock className="h-3 w-3" />
+                                          {formatTime(track.duration)}
+                                        </span>
                                       )}
                                     </div>
-                                    
-                                    <div className="flex-1 min-w-0 space-y-1">
-                                      <h4 className="font-semibold text-accent dordogne-title truncate">
-                                        {track.title}
-                                      </h4>
-                                      <div className="flex items-center gap-3 text-sm text-muted-foreground">
-                                        {track.marcheName && (
-                                          <span className="flex items-center gap-1">
-                                            <MapPin className="h-3 w-3" />
-                                            {track.marcheName}
-                                          </span>
-                                        )}
-                                        {track.marcheLocation && (
-                                          <span>{track.marcheLocation}</span>
-                                        )}
-                                      </div>
-                                    </div>
                                   </div>
-                                  
-                                  <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                                    <Badge variant="outline" className="text-xs">
-                                      {track.audioIndex + 1}/{track.totalTracksInMarche}
-                                    </Badge>
-                                    <span className="font-mono">
-                                      {formatTime(track.duration || 0)}
-                                    </span>
-                                  </div>
-                                </div>
+                                </Button>
                               </motion.div>
                             ))}
                           </div>
