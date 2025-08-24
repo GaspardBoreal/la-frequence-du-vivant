@@ -207,6 +207,14 @@ export default function ExperienceLectureOptimisee() {
     return readingMode === mode ? 'default' : 'ghost';
   };
 
+  // Helper function to get button styles
+  const getButtonStyles = (mode: ReadingMode): string => {
+    if (readingMode === mode) {
+      return "rounded-lg px-3 py-2 text-xs font-bold h-auto text-white";
+    }
+    return "rounded-lg px-3 py-2 text-xs font-medium h-auto text-slate-800 dark:text-slate-300";
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-950 dark:to-slate-900 transition-colors duration-300">
       {/* Header */}
@@ -349,7 +357,7 @@ export default function ExperienceLectureOptimisee() {
                 onClick={() => setReadingMode('standard')}
                 variant={getButtonVariant('standard')}
                 size="sm"
-                className="rounded-lg px-3 py-2 text-xs font-medium h-auto text-slate-800 dark:text-slate-300"
+                className={getButtonStyles('standard')}
               >
                 Simple
               </Button>
@@ -357,7 +365,7 @@ export default function ExperienceLectureOptimisee() {
                 onClick={() => setReadingMode('rich')}
                 variant={getButtonVariant('rich')}
                 size="sm"
-                className="rounded-lg px-3 py-2 text-xs font-medium h-auto text-slate-800 dark:text-slate-300"
+                className={getButtonStyles('rich')}
               >
                 Enrichi
               </Button>
@@ -365,7 +373,7 @@ export default function ExperienceLectureOptimisee() {
                 onClick={() => setReadingMode('focus')}
                 variant={getButtonVariant('focus')}
                 size="sm"
-                className="rounded-lg px-3 py-2 text-xs font-medium h-auto text-slate-800 dark:text-slate-300"
+                className={getButtonStyles('focus')}
               >
                 Focus
               </Button>
