@@ -10,9 +10,10 @@ const Footer = () => {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           {/* Écosystème Gaspard Boréal */}
           <div className="space-y-4">
-            <h3 className="font-crimson text-xl text-white font-medium">
-              Une Création Gaspard Boréal
-            </h3>
+            <div className="font-crimson text-white text-center sm:text-left">
+              <div className="text-xl font-medium">Gaspard Boréal</div>
+              <div className="text-sm opacity-80">Poète des Mondes Hybrides</div>
+            </div>
             <div className="space-y-2">
               <a 
                 href="https://www.gaspardboreal.com/" 
