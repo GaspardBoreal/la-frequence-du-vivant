@@ -322,12 +322,20 @@ const PhotoGalleryAdmin: React.FC<PhotoGalleryAdminProps> = ({ marches }) => {
         <Card className="p-6 space-y-6">
           <div className="flex items-center justify-between">
             <h3 className="text-lg font-semibold">Filtres</h3>
-            {hasActiveFilters && (
-              <Button variant="ghost" size="sm" onClick={clearFilters}>
-                <X className="h-4 w-4 mr-1" />
-                Tout effacer
-              </Button>
-            )}
+            <div className="flex items-center gap-2">
+              {filteredAndSortedPhotos.length === 0 && hasActiveFilters && (
+                <div className="flex items-center gap-2 px-3 py-1 bg-yellow-50 border border-yellow-200 rounded-lg text-sm text-yellow-700">
+                  <Search className="h-4 w-4" />
+                  Aucun résultat - essayez de modifier les filtres
+                </div>
+              )}
+              {hasActiveFilters && (
+                <Button variant="ghost" size="sm" onClick={clearFilters}>
+                  <X className="h-4 w-4 mr-1" />
+                  Tout effacer
+                </Button>
+              )}
+            </div>
           </div>
           
           {/* Section 1: Filtres sur les Images */}
@@ -460,6 +468,11 @@ const PhotoGalleryAdmin: React.FC<PhotoGalleryAdminProps> = ({ marches }) => {
                 <p className="text-xs text-muted-foreground">
                   Cliquez sur un tag pour filtrer ({selectedTags.length} sélectionné{selectedTags.length > 1 ? 's' : ''}) - 
                   Tri par {tagSortBy === 'name' ? 'nom' : 'nombre d\'occurrences'}
+                  {selectedTags.length > 0 && (
+                    <span className="block mt-1 font-medium text-primary">
+                      Tags actifs: {selectedTags.join(', ')}
+                    </span>
+                  )}
                 </p>
               </div>
             </div>
@@ -563,14 +576,53 @@ const PhotoGalleryAdmin: React.FC<PhotoGalleryAdminProps> = ({ marches }) => {
       {/* Grille de photos optimisée avec lazy loading */}
       {filteredAndSortedPhotos.length === 0 ? (
         <Card className="p-8 text-center">
-          <div className="h-12 w-12 mx-auto text-muted-foreground mb-4 text-4xl">📷</div>
-          <p className="text-lg font-medium">Aucune photo trouvée</p>
-          <p className="text-muted-foreground">
-            {hasActiveFilters 
-              ? 'Essayez de modifier vos filtres'
-              : 'Aucune photo disponible dans les marches sélectionnées'
-            }
-          </p>
+          <div className="space-y-4">
+            <Search className="h-12 w-12 text-muted-foreground mx-auto" />
+            <div>
+              <h3 className="text-lg font-semibold">Aucune photo trouvée</h3>
+              {hasActiveFilters ? (
+                <div className="space-y-3">
+                  <p className="text-muted-foreground">
+                    Aucune photo ne correspond à la combinaison de filtres sélectionnés
+                  </p>
+                  <div className="bg-muted/50 p-3 rounded-lg space-y-1 text-sm">
+                    <p className="font-medium text-foreground">Filtres actifs :</p>
+                    {selectedMarche !== 'all' && (
+                      <p className="text-muted-foreground">• Marche: {marches.find(m => m.id === selectedMarche)?.ville}</p>
+                    )}
+                    {selectedExploration !== 'all' && (
+                      <p className="text-muted-foreground">• Exploration sélectionnée</p>
+                    )}
+                    {hasTitle !== null && (
+                      <p className="text-muted-foreground">• Photos {hasTitle ? 'avec' : 'sans'} titre</p>
+                    )}
+                    {hasDescription !== null && (
+                      <p className="text-muted-foreground">• Photos {hasDescription ? 'avec' : 'sans'} description</p>
+                    )}
+                    {selectedTags.length > 0 && (
+                      <p className="text-muted-foreground">• Tags requis: <span className="font-medium">{selectedTags.join(', ')}</span></p>
+                    )}
+                    {debouncedSearchText && (
+                      <p className="text-muted-foreground">• Recherche: "{debouncedSearchText}"</p>
+                    )}
+                  </div>
+                  <div className="space-y-2">
+                    <p className="text-sm text-orange-600">
+                      💡 Les filtres s'appliquent en combinaison. Essayez de décocher certains filtres pour voir plus de résultats.
+                    </p>
+                    <Button variant="outline" size="sm" onClick={clearFilters} className="mt-3">
+                      <X className="h-4 w-4 mr-1" />
+                      Effacer tous les filtres
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <p className="text-muted-foreground">
+                  Aucune photo disponible dans les marches sélectionnées
+                </p>
+              )}
+            </div>
+          </div>
         </Card>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
