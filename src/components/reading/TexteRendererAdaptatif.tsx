@@ -67,7 +67,7 @@ export default function TexteRendererAdaptatif({ texte, readingMode = 'rich' }: 
                 <Quote className="absolute -top-4 -left-8 h-8 w-8 text-emerald-200 dark:text-emerald-700" />
               )}
               <div 
-                className="text-xl md:text-2xl leading-loose text-slate-700 dark:text-slate-200 font-serif italic"
+                className="text-xl md:text-2xl leading-loose text-slate-800 dark:text-slate-100 font-serif font-normal italic"
                 style={{ 
                   textAlign: 'left',
                   paddingLeft: '3rem',
@@ -152,10 +152,10 @@ export default function TexteRendererAdaptatif({ texte, readingMode = 'rich' }: 
             </div>
 
             <div 
-              className={`prose prose-lg max-w-none ${
+              className={`prose prose-lg max-w-none font-normal ${
                 readingMode === 'focus' 
-                  ? 'prose-slate dark:prose-invert text-lg leading-relaxed' 
-                  : 'prose-slate dark:prose-invert'
+                  ? 'prose-slate dark:prose-invert text-lg leading-relaxed text-slate-800 dark:text-slate-100' 
+                  : 'prose-slate dark:prose-invert text-slate-800 dark:text-slate-100'
               }`}
               dangerouslySetInnerHTML={{ __html: sanitizeHtml(texte.contenu || '') }}
             />

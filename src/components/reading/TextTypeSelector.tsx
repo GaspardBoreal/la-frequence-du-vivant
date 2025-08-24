@@ -47,7 +47,7 @@ export default function TextTypeSelector({ currentType, availableTypes, onTypeSe
                 onTypeSelect(type);
                 setOpen(false);
               }}
-              className="flex items-center gap-2 cursor-pointer hover:bg-muted/50"
+              className="flex items-center gap-2 cursor-pointer hover:bg-muted/50 text-slate-800 dark:text-slate-300"
             >
               <span className="text-sm">{typeInfo.icon}</span>
               <span className="text-sm">{typeInfo.label}</span>
