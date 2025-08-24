@@ -285,7 +285,7 @@ const PhotoGalleryAdmin: React.FC<PhotoGalleryAdminProps> = ({ marches }) => {
           
           {/* Section 1: Filtres sur les Images */}
           <div className="border rounded-lg p-4 space-y-4">
-            <h4 className="font-medium text-primary flex items-center">
+            <h4 className="font-medium text-accent flex items-center">
               <Search className="h-4 w-4 mr-2" />
               Filtres sur les Images
             </h4>
@@ -400,7 +400,7 @@ const PhotoGalleryAdmin: React.FC<PhotoGalleryAdminProps> = ({ marches }) => {
 
           {/* Section 3: Filtres sur les Marches */}
           <div className="border rounded-lg p-4 space-y-4">
-            <h4 className="font-medium text-secondary flex items-center">
+            <h4 className="font-medium text-accent flex items-center">
               <MapPin className="h-4 w-4 mr-2" />
               Filtres sur les Marches
             </h4>
