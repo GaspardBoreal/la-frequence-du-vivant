@@ -1177,6 +1177,15 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: number
       }
+      get_admin_list_safe: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          created_at: string
+          id: string
+          role: string
+          user_id: string
+        }[]
+      }
       get_current_admin_email: {
         Args: Record<PropertyKey, never>
         Returns: string
