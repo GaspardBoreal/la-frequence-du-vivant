@@ -17,9 +17,10 @@ import {
   Palette
 } from 'lucide-react';
 import { useParams, Link } from 'react-router-dom';
-import { useExploration } from '@/hooks/useExplorations';
-import { useExplorationContext } from '@/contexts/ExplorationContext';
+import { useExploration, useExplorationMarches } from '@/hooks/useExplorations';
 import { buildWelcomeComposition } from '@/utils/welcomeComposer';
+import { TextType } from '@/types/textTypes';
+import { ExplorationTextContent } from '@/types/exploration';
 
 import ExperienceLivreWelcome from './ExperienceLivreWelcome';
 import NavigationPoetique from './NavigationPoetique';
@@ -39,7 +40,7 @@ interface ReadingPreferences {
 const LectureImmersive: React.FC = () => {
   const { slug } = useParams<{ slug: string }>();
   const { data: exploration, isLoading } = useExploration(slug || '');
-  const { state, setCurrentMode, setTextContent } = useExplorationContext();
+  const { data: marches = [] } = useExplorationMarches(exploration?.id || '');
   
   const [experienceState, setExperienceState] = useState<ExperienceState>('welcome');
   const [navigationMode, setNavigationMode] = useState<NavigationMode>('constellation');
@@ -51,11 +52,34 @@ const LectureImmersive: React.FC = () => {
     autoScroll: false,
   });
   const [readerNotes, setReaderNotes] = useState<Record<string, string[]>>({});
+  const [textContent, setTextContent] = useState<ExplorationTextContent[]>([]);
 
-  // Set current mode
+  // Generate text content from exploration data
   useEffect(() => {
-    setCurrentMode('lire');
-  }, [setCurrentMode]);
+    if (!exploration) return;
+    
+    // Create sample text content - this would normally come from your database
+    const sampleTexts: ExplorationTextContent[] = [
+      {
+        id: '1',
+        title: 'Fragment d\'éveil',
+        content: 'Dans la brume matinale, les marchés s\'éveillent comme des organismes vivants...',
+        type: 'fragment' as TextType,
+        tags: ['éveil', 'marché', 'matin'],
+        order: 1
+      },
+      {
+        id: '2', 
+        title: 'Haiku du marché',
+        content: 'Fruits colorés\nSur l\'étal du vendeur\nLa vie qui danse',
+        type: 'haiku' as TextType,
+        tags: ['haiku', 'fruits', 'couleurs'],
+        order: 2
+      }
+    ];
+    
+    setTextContent(sampleTexts);
+  }, [exploration]);
 
   // Handle entry mode selection from welcome screen
   const handleEntryMode = (mode: EntryMode) => {
@@ -76,12 +100,12 @@ const LectureImmersive: React.FC = () => {
 
   // Get current text
   const currentText = selectedTextId 
-    ? state.textContent.find(t => t.id === selectedTextId)
+    ? textContent.find(t => t.id === selectedTextId)
     : undefined;
 
   // Build welcome composition
-  const welcomeComposition = exploration && state.textContent.length > 0 
-    ? buildWelcomeComposition(exploration, [], { marcheViewModel: 'elabore' })
+  const welcomeComposition = exploration && textContent.length > 0 
+    ? buildWelcomeComposition(exploration, marches, { marcheViewModel: 'elabore' })
     : null;
 
   if (isLoading) {
@@ -198,8 +222,8 @@ const LectureImmersive: React.FC = () => {
         {experienceState === 'navigation' && (
           <NavigationPoetique
             exploration={exploration}
-            marches={[]}
-            textContent={state.textContent}
+            marches={marches}
+            textContent={textContent}
             currentMode={navigationMode}
             onModeChange={setNavigationMode}
             onTextSelect={handleTextSelect}
