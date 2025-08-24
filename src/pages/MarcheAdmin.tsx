@@ -11,6 +11,7 @@ import DataCollectionPanel from '../components/admin/DataCollectionPanel';
 import AdminFilters from '../components/admin/AdminFilters';
 import DataInsightsPromoBanner from '../components/DataInsightsPromoBanner';
 import PhotoGalleryAdmin from '../components/admin/PhotoGalleryAdmin';
+import MarcheTextesAdmin from '../components/admin/MarcheTextesAdmin';
 import { toast } from 'sonner';
 import { MarcheTechnoSensible } from '../utils/googleSheetsApi';
 
@@ -133,10 +134,13 @@ const MarcheAdmin = () => {
         {/* Content */}
         <div className="gaspard-card rounded-xl p-6">
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="grid w-full grid-cols-4">
+            <TabsList className="grid w-full grid-cols-5">
               <TabsTrigger value="list">Liste des Marches</TabsTrigger>
               <TabsTrigger value="create">
                 {viewMode === 'edit' ? 'Modifier une Marche' : 'Créer une Marche'}
+              </TabsTrigger>
+              <TabsTrigger value="texts">
+                Textes Littéraires
               </TabsTrigger>
               <TabsTrigger value="gallery">
                 Galerie Photos
@@ -176,6 +180,18 @@ const MarcheAdmin = () => {
                   setActiveTab('list');
                 }}
               />
+            </TabsContent>
+
+            <TabsContent value="texts" className="space-y-4">
+              <div className="grid gap-6">
+                {filteredMarches.map((marche) => (
+                  <MarcheTextesAdmin 
+                    key={marche.id}
+                    marcheId={marche.id}
+                    marcheName={marche.nomMarche}
+                  />
+                ))}
+              </div>
             </TabsContent>
 
             <TabsContent value="gallery" className="space-y-4">

@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { useParams, Link } from 'react-router-dom';
 import { useExploration, useExplorationMarches } from '@/hooks/useExplorations';
+import { useExplorationTextStats } from '@/hooks/useMarcheTextes';
 import { buildWelcomeComposition } from '@/utils/welcomeComposer';
 import { TextType } from '@/types/textTypes';
 import { ExplorationTextContent } from '@/types/exploration';
@@ -103,17 +104,24 @@ const LectureImmersive: React.FC = () => {
     ? textContent.find(t => t.id === selectedTextId)
     : undefined;
 
-  // Build welcome composition with accurate text count
+  const textStats = useExplorationTextStats(exploration?.id || '');
+
+  // Build welcome composition with accurate text count including literary texts
   const welcomeComposition = exploration && marches.length > 0 
     ? (() => {
         const composition = buildWelcomeComposition(exploration, marches, { marcheViewModel: 'elabore' });
-        // Calculate actual text content from marches data
-        const textCount = marches.reduce((acc, marche) => {
+        // Calculate actual text content from marches data including literary texts
+        const legacyTextCount = marches.reduce((acc, marche) => {
           const etudes = marche.marche?.etudes?.length || 0;
           const documents = marche.marche?.documents?.length || 0;
           return acc + etudes + documents;
         }, 0);
-        composition.stats.texts = Math.max(textCount, textContent.length);
+        
+        // Add literary texts count
+        const literaryTextCount = textStats.data?.totalTexts || 0;
+        
+        // Total includes both legacy content and new literary texts
+        composition.stats.texts = Math.max(legacyTextCount + literaryTextCount, textContent.length);
         return composition;
       })()
     : null;

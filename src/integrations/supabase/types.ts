@@ -688,6 +688,42 @@ export type Database = {
           },
         ]
       }
+      marche_textes: {
+        Row: {
+          contenu: string
+          created_at: string
+          id: string
+          marche_id: string
+          metadata: Json | null
+          ordre: number | null
+          titre: string
+          type_texte: string
+          updated_at: string
+        }
+        Insert: {
+          contenu: string
+          created_at?: string
+          id?: string
+          marche_id: string
+          metadata?: Json | null
+          ordre?: number | null
+          titre: string
+          type_texte: string
+          updated_at?: string
+        }
+        Update: {
+          contenu?: string
+          created_at?: string
+          id?: string
+          marche_id?: string
+          metadata?: Json | null
+          ordre?: number | null
+          titre?: string
+          type_texte?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       marche_videos: {
         Row: {
           created_at: string
