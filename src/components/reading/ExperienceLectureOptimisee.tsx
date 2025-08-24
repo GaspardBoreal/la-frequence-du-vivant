@@ -257,88 +257,68 @@ export default function ExperienceLectureOptimisee() {
                 />
               </div>
 
-              {/* Right: Author links */}
-              <div className="flex items-center space-x-4">
-                <a 
-                  href="https://www.gaspardboreal.com/" 
-                  target="_blank" 
-                  rel="noopener noreferrer"
-                  className="text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 transition-colors text-sm hover:underline"
-                >
-                  Découvrir l'auteur
-                </a>
-                <a 
-                  href="https://www.gaspardboreal.com/conferences" 
-                  target="_blank" 
-                  rel="noopener noreferrer"
-                  className="text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 transition-colors text-sm hover:underline"
-                >
-                  Conférences et formation IA
-                </a>
+              {/* Right: Actions only */}
+              <div className="flex items-center gap-2">
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="sm" className="h-8 gap-1.5 text-slate-800 dark:text-slate-300">
+                      <Palette className="h-3.5 w-3.5" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-36 bg-white/95 dark:bg-slate-950/95 backdrop-blur-sm border-slate-200/60 dark:border-slate-800/60">
+                    <DropdownMenuItem
+                      onClick={() => setAppearanceMode('light')}
+                      className={`flex items-center gap-2 cursor-pointer hover:text-emerald-900 dark:hover:text-emerald-900 data-[highlighted]:text-emerald-900 dark:data-[highlighted]:text-emerald-900 ${
+                        appearanceMode === 'light' 
+                          ? 'bg-yellow-200 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-200'
+                          : 'text-slate-800 dark:text-slate-300'
+                      }`}
+                    >
+                      <Sun className="h-4 w-4" />
+                      <span>Clair</span>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={() => setAppearanceMode('system')}
+                      className={`flex items-center gap-2 cursor-pointer hover:text-emerald-900 dark:hover:text-emerald-900 data-[highlighted]:text-emerald-900 dark:data-[highlighted]:text-emerald-900 ${
+                        appearanceMode === 'system' 
+                          ? 'bg-yellow-200 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-200'
+                          : 'text-slate-800 dark:text-slate-300'
+                      }`}
+                    >
+                      <Monitor className="h-4 w-4" />
+                      <span>Système</span>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={() => setAppearanceMode('dark')}
+                      className={`flex items-center gap-2 cursor-pointer hover:text-emerald-900 dark:hover:text-emerald-900 data-[highlighted]:text-emerald-900 dark:data-[highlighted]:text-emerald-900 ${
+                        appearanceMode === 'dark' 
+                          ? 'bg-yellow-200 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-200'
+                          : 'text-slate-800 dark:text-slate-300'
+                      }`}
+                    >
+                      <Moon className="h-4 w-4" />
+                      <span>Sombre</span>
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
                 
-                {/* Actions moved to compact area */}
-                <div className="flex items-center gap-2 ml-4 border-l border-slate-200 dark:border-slate-700 pl-4">
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="sm" className="h-8 gap-1.5 text-slate-800 dark:text-slate-300">
-                        <Palette className="h-3.5 w-3.5" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="w-36 bg-white/95 dark:bg-slate-950/95 backdrop-blur-sm border-slate-200/60 dark:border-slate-800/60">
-                      <DropdownMenuItem
-                        onClick={() => setAppearanceMode('light')}
-                        className={`flex items-center gap-2 cursor-pointer hover:text-emerald-900 dark:hover:text-emerald-900 data-[highlighted]:text-emerald-900 dark:data-[highlighted]:text-emerald-900 ${
-                          appearanceMode === 'light' 
-                            ? 'bg-yellow-200 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-200'
-                            : 'text-slate-800 dark:text-slate-300'
-                        }`}
-                      >
-                        <Sun className="h-4 w-4" />
-                        <span>Clair</span>
-                      </DropdownMenuItem>
-                      <DropdownMenuItem
-                        onClick={() => setAppearanceMode('system')}
-                        className={`flex items-center gap-2 cursor-pointer hover:text-emerald-900 dark:hover:text-emerald-900 data-[highlighted]:text-emerald-900 dark:data-[highlighted]:text-emerald-900 ${
-                          appearanceMode === 'system' 
-                            ? 'bg-yellow-200 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-200'
-                            : 'text-slate-800 dark:text-slate-300'
-                        }`}
-                      >
-                        <Monitor className="h-4 w-4" />
-                        <span>Système</span>
-                      </DropdownMenuItem>
-                      <DropdownMenuItem
-                        onClick={() => setAppearanceMode('dark')}
-                        className={`flex items-center gap-2 cursor-pointer hover:text-emerald-900 dark:hover:text-emerald-900 data-[highlighted]:text-emerald-900 dark:data-[highlighted]:text-emerald-900 ${
-                          appearanceMode === 'dark' 
-                            ? 'bg-yellow-200 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-200'
-                            : 'text-slate-800 dark:text-slate-300'
-                        }`}
-                      >
-                        <Moon className="h-4 w-4" />
-                        <span>Sombre</span>
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                  
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => toast({ title: "Marquer", description: "Prochainement disponible" })}
-                    className="h-8 gap-1.5 text-slate-800 dark:text-slate-300"
-                  >
-                    <Bookmark className="h-3.5 w-3.5" />
-                  </Button>
-                  
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={handleShare}
-                    className="h-8 gap-1.5 text-slate-800 dark:text-slate-300"
-                  >
-                    <Share2 className="h-3.5 w-3.5" />
-                  </Button>
-                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => toast({ title: "Marquer", description: "Prochainement disponible" })}
+                  className="h-8 gap-1.5 text-slate-800 dark:text-slate-300"
+                >
+                  <Bookmark className="h-3.5 w-3.5" />
+                </Button>
+                
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleShare}
+                  className="h-8 gap-1.5 text-slate-800 dark:text-slate-300"
+                >
+                  <Share2 className="h-3.5 w-3.5" />
+                </Button>
               </div>
             </div>
           </div>
