@@ -1,15 +1,11 @@
-// Revolutionary Reading Experience - Complete Integration
-// Replaces the old ExperienceLecture with the new 3-level architecture
+// Symphonie Textuelle Hybride - Point d'entrée révolutionnaire
+// Architecture à 3 niveaux : Éveil → Constellation → Immersion
 
 import React from 'react';
-import { useParams } from 'react-router-dom';
-import { useExploration } from '@/hooks/useExplorations';
-import LectureImmersive from './LectureImmersive';
+import SymphonieTextuelle from './SymphonieTextuelle';
 
 const ExperienceLectureRevolutionnaire: React.FC = () => {
-  const { slug } = useParams<{ slug: string }>();
-  
-  return <LectureImmersive />;
+  return <SymphonieTextuelle />;
 };
 
 export default ExperienceLectureRevolutionnaire;
