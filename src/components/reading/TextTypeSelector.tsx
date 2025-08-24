@@ -29,15 +29,15 @@ export default function TextTypeSelector({ currentType, availableTypes, onTypeSe
   return (
     <DropdownMenu open={open} onOpenChange={setOpen}>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="sm" className="h-auto p-2 gap-1.5">
-          <Badge variant="outline" className="text-xs font-medium">
+        <Button variant="outline" size="sm" className="h-auto p-2 gap-1.5 border-slate-300 hover:bg-slate-100 text-slate-700">
+          <Badge variant="outline" className="text-xs font-medium border-slate-300 text-slate-700">
             <span className="mr-1">{currentTypeInfo.icon}</span>
             {currentTypeInfo.label}
           </Badge>
-          <ChevronDown className="h-3 w-3 opacity-50" />
+          <ChevronDown className="h-3 w-3 opacity-70" />
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="start" className="w-48 bg-background/95 backdrop-blur-sm border-border/50">
+      <DropdownMenuContent align="start" className="w-48 bg-white dark:bg-background/95 backdrop-blur-sm border-slate-300 dark:border-border/50 shadow-lg">
         {sortedTypes.map((type) => {
           const typeInfo = getTextTypeInfo(type);
           return (
@@ -47,7 +47,7 @@ export default function TextTypeSelector({ currentType, availableTypes, onTypeSe
                 onTypeSelect(type);
                 setOpen(false);
               }}
-              className="flex items-center gap-2 cursor-pointer hover:bg-muted/50"
+              className="flex items-center gap-2 cursor-pointer hover:bg-slate-100 dark:hover:bg-muted/50 text-slate-700 dark:text-slate-300"
             >
               <span className="text-sm">{typeInfo.icon}</span>
               <span className="text-sm">{typeInfo.label}</span>

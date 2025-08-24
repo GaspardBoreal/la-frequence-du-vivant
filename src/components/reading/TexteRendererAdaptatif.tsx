@@ -67,7 +67,7 @@ export default function TexteRendererAdaptatif({ texte, readingMode = 'rich' }: 
                 <Quote className="absolute -top-4 -left-8 h-8 w-8 text-emerald-200 dark:text-emerald-700" />
               )}
               <div 
-                className="text-xl md:text-2xl leading-loose text-slate-800 dark:text-slate-200 font-serif italic"
+                className="text-xl md:text-2xl leading-loose text-slate-900 dark:text-slate-200 font-serif italic font-semibold"
                 style={{ 
                   textAlign: 'left',
                   paddingLeft: '3rem',

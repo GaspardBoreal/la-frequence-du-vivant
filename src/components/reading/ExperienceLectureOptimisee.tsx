@@ -201,15 +201,15 @@ export default function ExperienceLectureOptimisee() {
         <motion.header
           initial={{ y: -20, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
-          className="sticky top-0 z-40 border-b border-slate-200/60 dark:border-slate-800/60 bg-white/80 dark:bg-slate-950/80 backdrop-blur-xl"
+          className="sticky top-0 z-40 border-b border-slate-300 dark:border-slate-800/60 bg-white/95 dark:bg-slate-950/80 backdrop-blur-xl shadow-sm"
         >
           <div className="px-4 py-3">
             <div className="flex items-center justify-between">
               {/* Left: Back + Type Selector */}
               <div className="flex items-center gap-3">
-                <Button variant="ghost" size="sm" asChild>
+                <Button variant="outline" size="sm" asChild className="border-slate-300 hover:bg-slate-100">
                   <Link to={`/galerie-fleuve/exploration/${slug}`}>
-                    <ArrowLeft className="h-4 w-4" />
+                    <ArrowLeft className="h-4 w-4 text-slate-700" />
                   </Link>
                 </Button>
                 
@@ -235,12 +235,12 @@ export default function ExperienceLectureOptimisee() {
                 {/* Appearance Selector */}
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="sm" className="h-8 gap-1.5">
+                    <Button variant="outline" size="sm" className="h-8 gap-1.5 border-slate-300 hover:bg-slate-100 text-slate-700">
                       <Palette className="h-3.5 w-3.5" />
                       <span className="hidden sm:inline text-xs">Apparence</span>
                     </Button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-36 bg-white/95 dark:bg-slate-950/95 backdrop-blur-sm border-slate-200/60 dark:border-slate-800/60">
+                  <DropdownMenuContent align="end" className="w-36 bg-white dark:bg-slate-950/95 backdrop-blur-sm border-slate-300 dark:border-slate-800/60 shadow-lg">
                     <DropdownMenuItem
                       onClick={() => setAppearanceMode('light')}
                       className="flex items-center gap-2 cursor-pointer"
@@ -266,19 +266,19 @@ export default function ExperienceLectureOptimisee() {
                 </DropdownMenu>
                 
                 <Button
-                  variant="ghost"
+                  variant="outline"
                   size="sm"
                   onClick={() => toast({ title: "Marquer", description: "Prochainement disponible" })}
-                  className="h-8 gap-1.5"
+                  className="h-8 gap-1.5 border-slate-300 hover:bg-slate-100 text-slate-700"
                 >
                   <Bookmark className="h-3.5 w-3.5" />
                 </Button>
                 
                 <Button
-                  variant="ghost"
+                  variant="outline"
                   size="sm"
                   onClick={handleShare}
-                  className="h-8 gap-1.5"
+                  className="h-8 gap-1.5 border-slate-300 hover:bg-slate-100 text-slate-700"
                 >
                   <Share2 className="h-3.5 w-3.5" />
                 </Button>
