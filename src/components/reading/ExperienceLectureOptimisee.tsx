@@ -207,7 +207,7 @@ export default function ExperienceLectureOptimisee() {
             <div className="flex items-center justify-between">
               {/* Left: Back + Type Selector */}
               <div className="flex items-center gap-3">
-                <Button variant="ghost" size="sm" asChild>
+                <Button variant="ghost" size="sm" asChild className="text-slate-800 dark:text-slate-300 hover:text-slate-900 dark:hover:text-slate-100">
                   <Link to={`/galerie-fleuve/exploration/${slug}`}>
                     <ArrowLeft className="h-4 w-4" />
                   </Link>
@@ -235,7 +235,7 @@ export default function ExperienceLectureOptimisee() {
                 {/* Appearance Selector */}
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="sm" className="h-8 gap-1.5">
+                    <Button variant="ghost" size="sm" className="h-8 gap-1.5 text-slate-800 dark:text-slate-300">
                       <Palette className="h-3.5 w-3.5" />
                       <span className="hidden sm:inline text-xs">Apparence</span>
                     </Button>
@@ -269,7 +269,7 @@ export default function ExperienceLectureOptimisee() {
                   variant="ghost"
                   size="sm"
                   onClick={() => toast({ title: "Marquer", description: "Prochainement disponible" })}
-                  className="h-8 gap-1.5"
+                  className="h-8 gap-1.5 text-slate-800 dark:text-slate-300"
                 >
                   <Bookmark className="h-3.5 w-3.5" />
                 </Button>
@@ -278,7 +278,7 @@ export default function ExperienceLectureOptimisee() {
                   variant="ghost"
                   size="sm"
                   onClick={handleShare}
-                  className="h-8 gap-1.5"
+                  className="h-8 gap-1.5 text-slate-800 dark:text-slate-300"
                 >
                   <Share2 className="h-3.5 w-3.5" />
                 </Button>

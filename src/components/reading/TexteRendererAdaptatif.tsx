@@ -47,7 +47,7 @@ export default function TexteRendererAdaptatif({ texte, readingMode = 'rich' }: 
                 </div>
               </div>
             )}
-            <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold text-slate-800 dark:text-slate-100 leading-relaxed tracking-wide">
+            <h1 className="text-2xl md:text-3xl lg:text-4xl font-normal text-slate-800 dark:text-slate-100 leading-relaxed tracking-wide">
               {texte.titre}
             </h1>
             {readingMode === 'rich' && (
@@ -129,7 +129,7 @@ export default function TexteRendererAdaptatif({ texte, readingMode = 'rich' }: 
                 </div>
               )}
               
-              <h1 className="text-3xl md:text-4xl font-bold text-slate-800 dark:text-slate-100 mb-4 leading-tight">
+              <h1 className="text-3xl md:text-4xl font-normal text-slate-800 dark:text-slate-100 mb-4 leading-tight">
                 {texte.titre}
               </h1>
               

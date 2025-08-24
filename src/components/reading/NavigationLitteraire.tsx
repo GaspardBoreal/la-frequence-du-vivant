@@ -28,12 +28,12 @@ export default function NavigationLitteraire({
         size="sm"
         onClick={onPrevious}
         disabled={!hasPrevious}
-        className="h-8 w-8 p-0 rounded-full hover:bg-muted/50 disabled:opacity-30"
+        className="h-8 w-8 p-0 rounded-full hover:bg-muted/50 disabled:opacity-30 text-slate-800 dark:text-slate-300"
       >
         <ArrowLeft className="h-4 w-4" />
       </Button>
       
-      <div className="text-xs text-muted-foreground font-medium min-w-[3rem] text-center">
+      <div className="text-xs text-slate-800 dark:text-slate-300 font-normal min-w-[3rem] text-center">
         {currentIndex + 1} / {totalTexts}
       </div>
       
@@ -42,7 +42,7 @@ export default function NavigationLitteraire({
         size="sm"
         onClick={onNext}
         disabled={!hasNext}
-        className="h-8 w-8 p-0 rounded-full hover:bg-muted/50 disabled:opacity-30"
+        className="h-8 w-8 p-0 rounded-full hover:bg-muted/50 disabled:opacity-30 text-slate-800 dark:text-slate-300"
       >
         <ArrowRight className="h-4 w-4" />
       </Button>

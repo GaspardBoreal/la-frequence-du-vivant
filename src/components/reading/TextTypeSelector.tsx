@@ -29,12 +29,12 @@ export default function TextTypeSelector({ currentType, availableTypes, onTypeSe
   return (
     <DropdownMenu open={open} onOpenChange={setOpen}>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="sm" className="h-auto p-2 gap-1.5">
-          <Badge variant="outline" className="text-xs font-medium">
+        <Button variant="ghost" size="sm" className="h-auto p-2 gap-1.5 text-slate-800 dark:text-slate-300">
+          <Badge variant="outline" className="text-xs font-normal text-slate-800 dark:text-slate-300 border-slate-800/20 dark:border-slate-300/20">
             <span className="mr-1">{currentTypeInfo.icon}</span>
             {currentTypeInfo.label}
           </Badge>
-          <ChevronDown className="h-3 w-3 opacity-50" />
+          <ChevronDown className="h-3 w-3 opacity-50 text-slate-800 dark:text-slate-300" />
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="start" className="w-48 bg-background/95 backdrop-blur-sm border-border/50">
