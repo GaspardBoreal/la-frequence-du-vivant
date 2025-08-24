@@ -228,13 +228,19 @@ const TexteEditDialog: React.FC<{
   ];
 
   useEffect(() => {
-    if (texte) {
-      setTitre(texte.titre);
-      setContenu(texte.contenu);
-      setTypeTexte(texte.type_texte);
-      setOrdre(texte.ordre);
+    if (texte && open) {
+      setTitre(texte.titre || '');
+      setContenu(texte.contenu || '');
+      setTypeTexte(texte.type_texte || 'haiku');
+      setOrdre(texte.ordre || 1);
+    } else if (!open) {
+      // Reset values when dialog closes
+      setTitre('');
+      setContenu('');
+      setTypeTexte('haiku');
+      setOrdre(1);
     }
-  }, [texte]);
+  }, [texte, open]);
 
   const handleSave = async () => {
     if (!texte || !titre.trim() || !contenu.trim()) {
