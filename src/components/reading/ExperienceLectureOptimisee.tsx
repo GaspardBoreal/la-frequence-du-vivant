@@ -124,15 +124,14 @@ export default function ExperienceLectureOptimisee() {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background to-muted/20">
         <motion.div
-          initial={{ opacity: 0, scale: 0.9 }}
-          animate={{ opacity: 1, scale: 1 }}
-          className="text-center space-y-4"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.3 }}
+          className="text-center space-y-2"
         >
-          <div className="animate-pulse text-muted-foreground">
-            Préparation de la symphonie...
-          </div>
+          <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto"></div>
           <div className="text-sm text-muted-foreground">
-            Composition de l'univers littéraire
+            Chargement des textes...
           </div>
         </motion.div>
       </div>
