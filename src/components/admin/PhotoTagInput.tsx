@@ -11,13 +11,15 @@ interface PhotoTagInputProps {
   onTagsChange: (tags: string[]) => void;
   placeholder?: string;
   disabled?: boolean;
+  refreshKey?: number; // Pour forcer le rechargement des suggestions
 }
 
 const PhotoTagInput: React.FC<PhotoTagInputProps> = ({
   tags,
   onTagsChange,
   placeholder = "Ajouter des tags...",
-  disabled = false
+  disabled = false,
+  refreshKey = 0
 }: PhotoTagInputProps) => {
   const [inputValue, setInputValue] = useState('');
   const [isOpen, setIsOpen] = useState(false);
@@ -26,21 +28,23 @@ const PhotoTagInput: React.FC<PhotoTagInputProps> = ({
   const inputRef = useRef<HTMLInputElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  // Charger les tags suggérés (uniquement en mode édition pour éviter les appels multiples)
+  // Charger les tags suggérés (recharge quand refreshKey change)
   useEffect(() => {
-    if (disabled || suggestedTags.length > 0) return;
+    if (disabled) return;
 
     const loadSuggestions = async () => {
       try {
+        console.log('🔄 [PhotoTagInput] Chargement des suggestions...');
         const suggestions = await getSuggestedTags(50);
         setSuggestedTags(suggestions);
+        console.log('✅ [PhotoTagInput] Suggestions chargées:', suggestions);
       } catch (error) {
-        console.warn('Erreur chargement suggestions tags:', error);
+        console.warn('⚠️ [PhotoTagInput] Erreur chargement suggestions:', error);
       }
     };
     
     loadSuggestions();
-  }, [disabled, suggestedTags.length]);
+  }, [disabled, refreshKey]); // Recharge quand refreshKey change
 
   // Filtrer les suggestions basé sur l'input
   useEffect(() => {

@@ -47,6 +47,7 @@ const PhotoGalleryAdmin: React.FC<PhotoGalleryAdminProps> = ({ marches }) => {
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [tagsWithCounts, setTagsWithCounts] = useState<Array<{ tag: string; count: number; categorie?: string }>>([]);
   const [showFilters, setShowFilters] = useState(false);
+  const [tagRefreshKey, setTagRefreshKey] = useState(0); // Pour forcer le rechargement des tags
   // Debouncing pour optimiser les performances
   const debouncedSearchText = useDebounce(searchText, 300);
 
@@ -207,9 +208,14 @@ const PhotoGalleryAdmin: React.FC<PhotoGalleryAdminProps> = ({ marches }) => {
         : photo
     ));
     
-    // Recharger les tags avec compteurs si des tags ont été modifiés
+    // Recharger les tags avec compteurs et forcer le refresh des suggestions si des tags ont été modifiés
     if (updates.tags !== undefined) {
-      getTagsWithCounts().then(setTagsWithCounts).catch(console.error);
+      console.log('🔄 [PhotoGalleryAdmin] Tags modifiés, rechargement en cours...');
+      getTagsWithCounts().then((newTags) => {
+        setTagsWithCounts(newTags);
+        setTagRefreshKey(prev => prev + 1); // Force le refresh des suggestions dans toutes les cartes
+        console.log('✅ [PhotoGalleryAdmin] Tags rechargés:', newTags.length);
+      }).catch(console.error);
     }
   }, []);
 
@@ -488,6 +494,7 @@ const PhotoGalleryAdmin: React.FC<PhotoGalleryAdminProps> = ({ marches }) => {
               photo={photo} 
               onUpdate={handlePhotoUpdate}
               onDelete={handlePhotoDelete}
+              tagRefreshKey={tagRefreshKey}
             />
           ))}
         </div>

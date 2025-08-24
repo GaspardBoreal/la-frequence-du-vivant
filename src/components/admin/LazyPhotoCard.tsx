@@ -20,9 +20,10 @@ interface LazyPhotoCardProps {
   photo: PhotoWithMarche;
   onUpdate: (photoId: string, updates: { titre?: string; description?: string; tags?: string[] }) => void;
   onDelete?: (photoId: string) => void;
+  tagRefreshKey?: number; // Pour forcer le rechargement des suggestions de tags
 }
 
-const LazyPhotoCard: React.FC<LazyPhotoCardProps> = memo(({ photo, onUpdate, onDelete }) => {
+const LazyPhotoCard: React.FC<LazyPhotoCardProps> = memo(({ photo, onUpdate, onDelete, tagRefreshKey = 0 }) => {
   const [isVisible, setIsVisible] = useState(false);
   const [imageLoaded, setImageLoaded] = useState(false);
   const [imageError, setImageError] = useState(false);
@@ -260,6 +261,7 @@ const LazyPhotoCard: React.FC<LazyPhotoCardProps> = memo(({ photo, onUpdate, onD
               onTagsChange={setTags}
               disabled={!editing}
               placeholder="Ajouter des tags..."
+              refreshKey={tagRefreshKey}
             />
           </div>
           
