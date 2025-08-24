@@ -680,3 +680,6 @@ export const getSuggestedTags = async (limit: number = 20): Promise<string[]> =>
     return [];
   }
 };
+
+// Force module refresh
+console.log('🔄 supabasePhotoOperations module loaded with tag functions');
