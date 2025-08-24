@@ -207,83 +207,87 @@ function TexteFormDialog({
 
   return (
     <Dialog open={isOpen} onOpenChange={handleOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[90vh]" key={texte?.id || 'new'}>
-        <DialogHeader>
+      <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col" key={texte?.id || 'new'}>
+        <DialogHeader className="flex-shrink-0">
           <DialogTitle>
             {texte ? 'Modifier le texte' : 'Nouveau texte'}
           </DialogTitle>
         </DialogHeader>
         
-        <form onSubmit={handleSubmit} className="space-y-6">
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="titre">Titre</Label>
-              <Input
-                id="titre"
-                value={formData.titre}
-                onChange={(e) => setFormData(prev => ({ ...prev, titre: e.target.value }))}
-                placeholder="Titre du texte..."
-                required
-              />
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="type">Type de texte</Label>
-              <Select 
-                value={formData.type_texte} 
-                onValueChange={(value: TextType) => setFormData(prev => ({ ...prev, type_texte: value }))}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {getTextTypesByFamily('poetique').map((type) => (
-                    <SelectItem key={type.id} value={type.id}>
-                      {type.icon} {type.label}
-                    </SelectItem>
-                  ))}
-                  <Separator />
-                  {getTextTypesByFamily('narrative').map((type) => (
-                    <SelectItem key={type.id} value={type.id}>
-                      {type.icon} {type.label}
-                    </SelectItem>
-                  ))}
-                  <Separator />
-                  {getTextTypesByFamily('terrain').map((type) => (
-                    <SelectItem key={type.id} value={type.id}>
-                      {type.icon} {type.label}
-                    </SelectItem>
-                  ))}
-                  <Separator />
-                  {getTextTypesByFamily('hybride').map((type) => (
-                    <SelectItem key={type.id} value={type.id}>
-                      {type.icon} {type.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+        <form onSubmit={handleSubmit} className="flex flex-col h-full min-h-0">
+          <div className="flex-1 overflow-hidden">
+            <div className="space-y-6 h-full overflow-y-auto pr-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="titre">Titre</Label>
+                  <Input
+                    id="titre"
+                    value={formData.titre}
+                    onChange={(e) => setFormData(prev => ({ ...prev, titre: e.target.value }))}
+                    placeholder="Titre du texte..."
+                    required
+                  />
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="type">Type de texte</Label>
+                  <Select 
+                    value={formData.type_texte} 
+                    onValueChange={(value: TextType) => setFormData(prev => ({ ...prev, type_texte: value }))}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {getTextTypesByFamily('poetique').map((type) => (
+                        <SelectItem key={type.id} value={type.id}>
+                          {type.icon} {type.label}
+                        </SelectItem>
+                      ))}
+                      <Separator />
+                      {getTextTypesByFamily('narrative').map((type) => (
+                        <SelectItem key={type.id} value={type.id}>
+                          {type.icon} {type.label}
+                        </SelectItem>
+                      ))}
+                      <Separator />
+                      {getTextTypesByFamily('terrain').map((type) => (
+                        <SelectItem key={type.id} value={type.id}>
+                          {type.icon} {type.label}
+                        </SelectItem>
+                      ))}
+                      <Separator />
+                      {getTextTypesByFamily('hybride').map((type) => (
+                        <SelectItem key={type.id} value={type.id}>
+                          {type.icon} {type.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              {selectedTypeInfo && (
+                <div className="p-3 bg-muted rounded-lg">
+                  <p className="text-sm text-muted-foreground">
+                    <strong>{selectedTypeInfo.label}:</strong> {selectedTypeInfo.description}
+                  </p>
+                </div>
+              )}
+              
+              <div className="space-y-2">
+                <Label htmlFor="contenu">Contenu</Label>
+                <SecureRichTextEditor
+                  value={formData.contenu}
+                  onChange={(value) => setFormData(prev => ({ ...prev, contenu: value }))}
+                  placeholder="Écrivez votre texte ici..."
+                  className="min-h-[300px] max-h-[400px] overflow-y-auto"
+                />
+              </div>
             </div>
           </div>
 
-          {selectedTypeInfo && (
-            <div className="p-3 bg-muted rounded-lg">
-              <p className="text-sm text-muted-foreground">
-                <strong>{selectedTypeInfo.label}:</strong> {selectedTypeInfo.description}
-              </p>
-            </div>
-          )}
-          
-          <div className="space-y-2">
-            <Label htmlFor="contenu">Contenu</Label>
-            <SecureRichTextEditor
-              value={formData.contenu}
-              onChange={(value) => setFormData(prev => ({ ...prev, contenu: value }))}
-              placeholder="Écrivez votre texte ici..."
-              className="min-h-[300px]"
-            />
-          </div>
-
-          <div className="flex justify-end gap-2">
+          <div className="flex justify-end gap-2 pt-4 border-t flex-shrink-0">
             <Button type="button" variant="outline" onClick={onClose}>
               Annuler
             </Button>
