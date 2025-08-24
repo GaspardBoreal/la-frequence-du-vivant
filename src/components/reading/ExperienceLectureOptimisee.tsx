@@ -217,7 +217,7 @@ export default function ExperienceLectureOptimisee() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-950 dark:to-slate-900 transition-colors duration-300">
-      {/* Header */}
+      {/* Header Navigation - Style copie 2 */}
       {!isFocusMode && (
         <motion.header
           initial={{ y: -20, opacity: 0 }}
@@ -226,11 +226,18 @@ export default function ExperienceLectureOptimisee() {
         >
           <div className="px-4 py-3">
             <div className="flex items-center justify-between">
-              {/* Left: Back + Type Selector */}
-              <div className="flex items-center gap-3">
+              {/* Left: Gaspard Boréal signature */}
+              <div className="font-crimson text-slate-800 dark:text-slate-200">
+                <div className="text-lg font-medium">Gaspard Boréal</div>
+                <div className="text-xs opacity-80">Poète des Mondes Hybrides</div>
+              </div>
+
+              {/* Center: Navigation + Type Selector */}
+              <div className="flex items-center gap-6">
                 <Button variant="ghost" size="sm" asChild className="text-slate-800 dark:text-slate-300 hover:text-slate-900 dark:hover:text-slate-100">
                   <Link to={`/galerie-fleuve/exploration/${slug}`}>
-                    <ArrowLeft className="h-4 w-4" />
+                    <ArrowLeft className="h-4 w-4 mr-2" />
+                    Retour
                   </Link>
                 </Button>
                 
@@ -241,80 +248,97 @@ export default function ExperienceLectureOptimisee() {
                     onTypeSelect={handleTypeSelect}
                   />
                 )}
+
+                <NavigationLitteraire
+                  currentIndex={currentIndex}
+                  totalTexts={filteredTexts.length}
+                  onPrevious={handlePrevious}
+                  onNext={handleNext}
+                />
               </div>
 
-              {/* Center: Navigation */}
-              <NavigationLitteraire
-                currentIndex={currentIndex}
-                totalTexts={filteredTexts.length}
-                onPrevious={handlePrevious}
-                onNext={handleNext}
-              />
-
-              {/* Right: Actions */}
-              <div className="flex items-center gap-2">
-                {/* Appearance Selector */}
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="sm" className="h-8 gap-1.5 text-slate-800 dark:text-slate-300">
-                      <Palette className="h-3.5 w-3.5" />
-                      <span className="hidden sm:inline text-xs">Apparence</span>
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-36 bg-white/95 dark:bg-slate-950/95 backdrop-blur-sm border-slate-200/60 dark:border-slate-800/60">
-                    <DropdownMenuItem
-                      onClick={() => setAppearanceMode('light')}
-                      className={`flex items-center gap-2 cursor-pointer hover:text-emerald-900 dark:hover:text-emerald-900 data-[highlighted]:text-emerald-900 dark:data-[highlighted]:text-emerald-900 ${
-                        appearanceMode === 'light' 
-                          ? 'bg-yellow-200 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-200'
-                          : 'text-slate-800 dark:text-slate-300'
-                      }`}
-                    >
-                      <Sun className="h-4 w-4" />
-                      <span>Clair</span>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
-                      onClick={() => setAppearanceMode('system')}
-                      className={`flex items-center gap-2 cursor-pointer hover:text-emerald-900 dark:hover:text-emerald-900 data-[highlighted]:text-emerald-900 dark:data-[highlighted]:text-emerald-900 ${
-                        appearanceMode === 'system' 
-                          ? 'bg-yellow-200 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-200'
-                          : 'text-slate-800 dark:text-slate-300'
-                      }`}
-                    >
-                      <Monitor className="h-4 w-4" />
-                      <span>Système</span>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
-                      onClick={() => setAppearanceMode('dark')}
-                      className={`flex items-center gap-2 cursor-pointer hover:text-emerald-900 dark:hover:text-emerald-900 data-[highlighted]:text-emerald-900 dark:data-[highlighted]:text-emerald-900 ${
-                        appearanceMode === 'dark' 
-                          ? 'bg-yellow-200 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-200'
-                          : 'text-slate-800 dark:text-slate-300'
-                      }`}
-                    >
-                      <Moon className="h-4 w-4" />
-                      <span>Sombre</span>
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-                
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => toast({ title: "Marquer", description: "Prochainement disponible" })}
-                  className="h-8 gap-1.5 text-slate-800 dark:text-slate-300"
+              {/* Right: Author links */}
+              <div className="flex items-center space-x-4">
+                <a 
+                  href="https://www.gaspardboreal.com/" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 transition-colors text-sm hover:underline"
                 >
-                  <Bookmark className="h-3.5 w-3.5" />
-                </Button>
-                
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={handleShare}
-                  className="h-8 gap-1.5 text-slate-800 dark:text-slate-300"
+                  Découvrir l'auteur
+                </a>
+                <a 
+                  href="https://www.gaspardboreal.com/conferences" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 transition-colors text-sm hover:underline"
                 >
-                  <Share2 className="h-3.5 w-3.5" />
-                </Button>
+                  Conférences et formation IA
+                </a>
+                
+                {/* Actions moved to compact area */}
+                <div className="flex items-center gap-2 ml-4 border-l border-slate-200 dark:border-slate-700 pl-4">
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="sm" className="h-8 gap-1.5 text-slate-800 dark:text-slate-300">
+                        <Palette className="h-3.5 w-3.5" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="w-36 bg-white/95 dark:bg-slate-950/95 backdrop-blur-sm border-slate-200/60 dark:border-slate-800/60">
+                      <DropdownMenuItem
+                        onClick={() => setAppearanceMode('light')}
+                        className={`flex items-center gap-2 cursor-pointer hover:text-emerald-900 dark:hover:text-emerald-900 data-[highlighted]:text-emerald-900 dark:data-[highlighted]:text-emerald-900 ${
+                          appearanceMode === 'light' 
+                            ? 'bg-yellow-200 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-200'
+                            : 'text-slate-800 dark:text-slate-300'
+                        }`}
+                      >
+                        <Sun className="h-4 w-4" />
+                        <span>Clair</span>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        onClick={() => setAppearanceMode('system')}
+                        className={`flex items-center gap-2 cursor-pointer hover:text-emerald-900 dark:hover:text-emerald-900 data-[highlighted]:text-emerald-900 dark:data-[highlighted]:text-emerald-900 ${
+                          appearanceMode === 'system' 
+                            ? 'bg-yellow-200 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-200'
+                            : 'text-slate-800 dark:text-slate-300'
+                        }`}
+                      >
+                        <Monitor className="h-4 w-4" />
+                        <span>Système</span>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        onClick={() => setAppearanceMode('dark')}
+                        className={`flex items-center gap-2 cursor-pointer hover:text-emerald-900 dark:hover:text-emerald-900 data-[highlighted]:text-emerald-900 dark:data-[highlighted]:text-emerald-900 ${
+                          appearanceMode === 'dark' 
+                            ? 'bg-yellow-200 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-200'
+                            : 'text-slate-800 dark:text-slate-300'
+                        }`}
+                      >
+                        <Moon className="h-4 w-4" />
+                        <span>Sombre</span>
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                  
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => toast({ title: "Marquer", description: "Prochainement disponible" })}
+                    className="h-8 gap-1.5 text-slate-800 dark:text-slate-300"
+                  >
+                    <Bookmark className="h-3.5 w-3.5" />
+                  </Button>
+                  
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={handleShare}
+                    className="h-8 gap-1.5 text-slate-800 dark:text-slate-300"
+                  >
+                    <Share2 className="h-3.5 w-3.5" />
+                  </Button>
+                </div>
               </div>
             </div>
           </div>
