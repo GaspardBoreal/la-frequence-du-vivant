@@ -76,12 +76,12 @@ const GalerieFleuveWelcome: React.FC<GalerieFluveWelcomeProps> = ({
     } else if (modeLabel === 'Ecouter') {
       // Navigate to audio/bioacoustic experience
       if (explorationSlug) {
-        window.location.href = `/explorations/${explorationSlug}/experience/audio`;
+        window.location.href = `/galerie-fleuve/exploration/${explorationSlug}/ecouter`;
       }
     } else if (modeLabel === 'Lire') {
-      // Navigate to poetic/text content
+      // Navigate to revolutionary reading experience
       if (explorationSlug) {
-        window.location.href = `/explorations/${explorationSlug}/experience/text`;
+        window.location.href = `/galerie-fleuve/exploration/${explorationSlug}/lire`;
       }
     }
   };
