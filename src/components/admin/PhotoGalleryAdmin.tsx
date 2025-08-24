@@ -22,6 +22,8 @@ import { MarcheTechnoSensible } from '../../utils/googleSheetsApi';
 import { fetchExistingPhotos, ExistingPhoto, deletePhoto, getTagsWithCounts } from '../../utils/supabasePhotoOperations';
 import { toast } from 'sonner';
 import { useDebounce } from '../../hooks/useDebounce';
+import { useAdminExplorations } from '../../hooks/useExplorations';
+import { supabase } from '../../integrations/supabase/client';
 import LazyPhotoCard from './LazyPhotoCard';
 
 interface PhotoGalleryAdminProps {
@@ -42,6 +44,7 @@ const PhotoGalleryAdmin: React.FC<PhotoGalleryAdminProps> = ({ marches }) => {
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
   const [searchText, setSearchText] = useState('');
   const [selectedMarche, setSelectedMarche] = useState<string>('all');
+  const [selectedExploration, setSelectedExploration] = useState<string>('all');
   const [hasTitle, setHasTitle] = useState<boolean | null>(null);
   const [hasDescription, setHasDescription] = useState<boolean | null>(null);
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
@@ -50,6 +53,36 @@ const PhotoGalleryAdmin: React.FC<PhotoGalleryAdminProps> = ({ marches }) => {
   const [tagRefreshKey, setTagRefreshKey] = useState(0); // Pour forcer le rechargement des tags
   // Debouncing pour optimiser les performances
   const debouncedSearchText = useDebounce(searchText, 300);
+
+  // Charger les explorations pour le filtre
+  const { data: explorations = [] } = useAdminExplorations();
+
+  // Charger les relations exploration-marches pour le filtre par exploration
+  const [explorationMarcheIds, setExplorationMarcheIds] = useState<string[]>([]);
+  
+  useEffect(() => {
+    const loadExplorationMarches = async () => {
+      if (selectedExploration === 'all') {
+        setExplorationMarcheIds([]);
+        return;
+      }
+      
+      try {
+        const { data, error } = await supabase
+          .from('exploration_marches')
+          .select('marche_id')
+          .eq('exploration_id', selectedExploration);
+        
+        if (error) throw error;
+        setExplorationMarcheIds(data?.map(em => em.marche_id) || []);
+      } catch (error) {
+        console.error('Erreur chargement marches d\'exploration:', error);
+        setExplorationMarcheIds([]);
+      }
+    };
+    
+    loadExplorationMarches();
+  }, [selectedExploration]);
 
   // Charger toutes les photos
   useEffect(() => {
@@ -115,6 +148,12 @@ const PhotoGalleryAdmin: React.FC<PhotoGalleryAdminProps> = ({ marches }) => {
     // Filtre par marche
     if (selectedMarche !== 'all') {
       filtered = filtered.filter(photo => photo.marche.id === selectedMarche);
+    }
+
+    // Filtre par exploration
+    if (selectedExploration !== 'all') {
+      // Filtrer les photos des marches associées à l'exploration sélectionnée
+      filtered = filtered.filter(photo => explorationMarcheIds.includes(photo.marche.id));
     }
 
     // Filtre par titre
@@ -185,7 +224,7 @@ const PhotoGalleryAdmin: React.FC<PhotoGalleryAdminProps> = ({ marches }) => {
     });
 
     return filtered;
-  }, [photos, selectedMarche, hasTitle, hasDescription, debouncedSearchText, sortField, sortDirection]);
+  }, [photos, selectedMarche, selectedExploration, explorationMarcheIds, hasTitle, hasDescription, selectedTags, debouncedSearchText, sortField, sortDirection]);
 
   const handleSort = useCallback((field: SortField) => {
     if (sortField === field) {
@@ -232,12 +271,13 @@ const PhotoGalleryAdmin: React.FC<PhotoGalleryAdminProps> = ({ marches }) => {
   const clearFilters = useCallback(() => {
     setSearchText('');
     setSelectedMarche('all');
+    setSelectedExploration('all');
     setHasTitle(null);
     setHasDescription(null);
     setSelectedTags([]);
   }, []);
 
-  const hasActiveFilters = debouncedSearchText || selectedMarche !== 'all' || hasTitle !== null || hasDescription !== null || selectedTags.length > 0;
+  const hasActiveFilters = debouncedSearchText || selectedMarche !== 'all' || selectedExploration !== 'all' || hasTitle !== null || hasDescription !== null || selectedTags.length > 0;
 
   const getSortIcon = (field: SortField) => {
     if (sortField !== field) return null;
@@ -432,6 +472,31 @@ const PhotoGalleryAdmin: React.FC<PhotoGalleryAdminProps> = ({ marches }) => {
                     ))}
                   </SelectContent>
                 </Select>
+              </div>
+
+              {/* Sélecteur d'exploration */}
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Exploration sélectionnée</label>
+                <Select value={selectedExploration} onValueChange={setSelectedExploration}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Toutes les explorations" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">
+                      Toutes les explorations
+                    </SelectItem>
+                    {explorations
+                      .sort((a, b) => a.name.localeCompare(b.name)) // Tri alphabétique
+                      .map((exploration) => (
+                        <SelectItem key={exploration.id} value={exploration.id}>
+                          {exploration.name} ({exploration.published ? 'Publiée' : 'Non publiée'})
+                        </SelectItem>
+                      ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground">
+                  Filtre par exploration (classées par ordre alphabétique)
+                </p>
               </div>
 
             </div>
