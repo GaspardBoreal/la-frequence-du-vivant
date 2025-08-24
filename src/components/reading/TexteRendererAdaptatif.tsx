@@ -134,8 +134,8 @@ export default function TexteRendererAdaptatif({ texte, readingMode = 'rich' }: 
               </h1>
               
               {readingMode !== 'focus' && (
-                <div className="flex items-center justify-center gap-3 text-sm text-slate-500 dark:text-slate-400">
-                  <Badge variant="outline" className="bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700">
+                <div className="flex items-center justify-center gap-3 text-sm text-slate-600 dark:text-slate-400">
+                  <Badge variant="outline" className="bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200 font-normal">
                     <span className="mr-2">{typeInfo.icon}</span>
                     {typeInfo.label}
                   </Badge>
