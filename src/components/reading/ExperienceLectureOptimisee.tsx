@@ -189,6 +189,11 @@ export default function ExperienceLectureOptimisee() {
 
   const isFocusMode = readingMode === 'focus';
 
+  // Helper function to get button variant
+  const getButtonVariant = (mode: ReadingMode): 'default' | 'ghost' => {
+    return readingMode === mode ? 'default' : 'ghost';
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-950 dark:to-slate-900 transition-colors duration-300">
       {/* Header */}
@@ -317,7 +322,7 @@ export default function ExperienceLectureOptimisee() {
             <div className="flex bg-slate-100 dark:bg-slate-800 rounded-xl p-1">
               <Button
                 onClick={() => setReadingMode('standard')}
-                variant={readingMode === 'standard' ? 'default' : 'ghost'}
+                variant={getButtonVariant('standard')}
                 size="sm"
                 className="rounded-lg px-3 py-2 text-xs font-medium h-auto"
               >
@@ -325,7 +330,7 @@ export default function ExperienceLectureOptimisee() {
               </Button>
               <Button
                 onClick={() => setReadingMode('rich')}
-                variant={readingMode === 'rich' ? 'default' : 'ghost'}
+                variant={getButtonVariant('rich')}
                 size="sm"
                 className="rounded-lg px-3 py-2 text-xs font-medium h-auto"
               >
@@ -333,7 +338,7 @@ export default function ExperienceLectureOptimisee() {
               </Button>
               <Button
                 onClick={() => setReadingMode('focus')}
-                variant={readingMode === 'focus' ? 'default' : 'ghost'}
+                variant={getButtonVariant('focus')}
                 size="sm"
                 className="rounded-lg px-3 py-2 text-xs font-medium h-auto"
               >
