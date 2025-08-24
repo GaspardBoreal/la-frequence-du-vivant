@@ -280,48 +280,38 @@ const GalerieFleuveWelcome: React.FC<GalerieFluveWelcomeProps> = ({
             className="w-full h-px bg-white/30"
           />
 
-          {/* Navigation organisée en sections thématiques */}
+          {/* Header navigation style - copie 2 */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 1.0 }}
             className={`${isMobile ? 'flex flex-col space-y-2 text-center' : 'flex justify-between items-center'} w-full`}
           >
-            <a 
-              href={explorationSlug ? `/galerie-fleuve/exploration/${explorationSlug}?view=fleuve-temporel` : '#'}
-              className={`text-white/80 hover:text-white transition-colors ${isMobile ? 'text-sm' : 'text-base'} hover:underline`}
-            >
-              Carte de l'exploration
-            </a>
-
-            <a 
-              href={explorationSlug ? `/galerie-fleuve/exploration/${explorationSlug}/historique` : '#'}
-              className={`text-white/80 hover:text-white transition-colors ${isMobile ? 'text-sm' : 'text-base'} hover:underline`}
-            >
-              Recherche historique
-            </a>
-
-            <a 
-              href={explorationSlug ? `/galerie-fleuve/exploration/${explorationSlug}/essais` : '#'}
-              className={`text-white/80 hover:text-white transition-colors ${isMobile ? 'text-sm' : 'text-base'} hover:underline`}
-            >
-              Essais
-            </a>
+            <div className="font-crimson text-white">
+              <div className={`${isMobile ? 'text-lg' : 'text-xl'} font-medium`}>Gaspard Boréal</div>
+              <div className={`${isMobile ? 'text-xs' : 'text-sm'} opacity-80`}>Poète des Mondes Hybrides</div>
+            </div>
+            
+            <div className={`${isMobile ? 'flex flex-col space-y-1' : 'flex items-center space-x-6'}`}>
+              <a 
+                href="https://www.gaspardboreal.com/" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className={`text-white/80 hover:text-white transition-colors ${isMobile ? 'text-sm' : 'text-base'} hover:underline`}
+              >
+                Découvrir l'auteur
+              </a>
+              <a 
+                href="https://www.gaspardboreal.com/conferences" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className={`text-white/80 hover:text-white transition-colors ${isMobile ? 'text-sm' : 'text-base'} hover:underline`}
+              >
+                Conférences et formation IA
+              </a>
+            </div>
           </motion.div>
         </div>
-
-        {/* Signature adaptée */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 1.0 }}
-          className={`self-end text-right mt-auto ${isMobile ? 'pt-3 pb-4' : 'pt-8 pb-8'}`}
-        >
-          <div className="text-white/80">
-            <div className={`font-libre ${isMobile ? 'text-base' : 'text-lg'} font-bold`}>{theme?.signature.author || 'Gaspard Boréal'}</div>
-            <div className={`font-mono ${isMobile ? 'text-xs' : 'text-sm'} opacity-70`}>{theme?.signature.title || 'Poète des Mondes Hybrides'}</div>
-          </div>
-        </motion.div>
         </motion.div>
     </motion.section>
   );
