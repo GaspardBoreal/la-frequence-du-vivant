@@ -609,6 +609,38 @@ export type Database = {
           },
         ]
       }
+      marche_photo_tags: {
+        Row: {
+          categorie: string | null
+          created_at: string
+          id: string
+          photo_id: string
+          tag: string
+        }
+        Insert: {
+          categorie?: string | null
+          created_at?: string
+          id?: string
+          photo_id: string
+          tag: string
+        }
+        Update: {
+          categorie?: string | null
+          created_at?: string
+          id?: string
+          photo_id?: string
+          tag?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "marche_photo_tags_photo_id_fkey"
+            columns: ["photo_id"]
+            isOneToOne: false
+            referencedRelation: "marche_photos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       marche_photos: {
         Row: {
           created_at: string

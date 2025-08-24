@@ -6,7 +6,8 @@ import { Input } from '../ui/input';
 import { Skeleton } from '../ui/skeleton';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '../ui/dialog';
 import { Edit2, Save, X, Loader2, ExternalLink, Trash2 } from 'lucide-react';
-import { ExistingPhoto, updatePhotoMetadata, deletePhoto } from '../../utils/supabasePhotoOperations';
+import { ExistingPhoto, updatePhotoMetadata, deletePhoto, updatePhotoTags } from '../../utils/supabasePhotoOperations';
+import PhotoTagInput from './PhotoTagInput';
 import { MarcheTechnoSensible } from '../../utils/googleSheetsApi';
 import { formatFileSize } from '../../utils/photoUtils';
 import { toast } from 'sonner';
@@ -17,7 +18,7 @@ interface PhotoWithMarche extends ExistingPhoto {
 
 interface LazyPhotoCardProps {
   photo: PhotoWithMarche;
-  onUpdate: (photoId: string, updates: { titre?: string; description?: string }) => void;
+  onUpdate: (photoId: string, updates: { titre?: string; description?: string; tags?: string[] }) => void;
   onDelete?: (photoId: string) => void;
 }
 
@@ -31,6 +32,7 @@ const LazyPhotoCard: React.FC<LazyPhotoCardProps> = memo(({ photo, onUpdate, onD
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [titre, setTitre] = useState(photo.titre || '');
   const [description, setDescription] = useState(photo.description || '');
+  const [tags, setTags] = useState<string[]>(photo.tags?.map(t => t.tag) || []);
   
   const cardRef = useRef<HTMLDivElement>(null);
 
@@ -83,6 +85,7 @@ const LazyPhotoCard: React.FC<LazyPhotoCardProps> = memo(({ photo, onUpdate, onD
     setEditing(true);
     setTitre(photo.titre || '');
     setDescription(photo.description || '');
+    setTags(photo.tags?.map(t => t.tag) || []);
   };
 
   const saveEdit = async () => {
@@ -90,12 +93,16 @@ const LazyPhotoCard: React.FC<LazyPhotoCardProps> = memo(({ photo, onUpdate, onD
     
     setSaving(true);
     try {
+      // Mettre à jour les métadonnées
       await updatePhotoMetadata(photo.id, {
         titre: titre,
         description: description
       });
       
-      onUpdate(photo.id, { titre, description });
+      // Mettre à jour les tags
+      await updatePhotoTags(photo.id, tags);
+      
+      onUpdate(photo.id, { titre, description, tags });
       setEditing(false);
       toast.success('Photo mise à jour');
     } catch (error) {
@@ -110,6 +117,7 @@ const LazyPhotoCard: React.FC<LazyPhotoCardProps> = memo(({ photo, onUpdate, onD
     setEditing(false);
     setTitre(photo.titre || '');
     setDescription(photo.description || '');
+    setTags(photo.tags?.map(t => t.tag) || []);
   };
 
   const openFullImage = () => {
@@ -242,6 +250,17 @@ const LazyPhotoCard: React.FC<LazyPhotoCardProps> = memo(({ photo, onUpdate, onD
                 {photo.description || <span className="text-muted-foreground italic">Pas de description</span>}
               </div>
             )}
+          </div>
+          
+          {/* Tags éditables */}
+          <div className="space-y-1">
+            <label className="text-xs font-medium text-muted-foreground">Tags</label>
+            <PhotoTagInput
+              tags={editing ? tags : (photo.tags?.map(t => t.tag) || [])}
+              onTagsChange={setTags}
+              disabled={!editing}
+              placeholder="Ajouter des tags..."
+            />
           </div>
           
           {/* Actions */}

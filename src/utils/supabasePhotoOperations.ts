@@ -12,6 +12,14 @@ export interface ExistingPhoto {
   ordre?: number;
   metadata?: any;
   created_at: string;
+  tags?: PhotoTag[];
+}
+
+export interface PhotoTag {
+  id: string;
+  tag: string;
+  categorie?: string;
+  created_at: string;
 }
 
 export interface PhotoToUpload extends ProcessedPhoto {
@@ -92,7 +100,15 @@ export const fetchExistingPhotos = async (marcheId: string): Promise<ExistingPho
   try {
     const { data: photos, error } = await supabase
       .from('marche_photos')
-      .select('*')
+      .select(`
+        *,
+        marche_photo_tags (
+          id,
+          tag,
+          categorie,
+          created_at
+        )
+      `)
       .eq('marche_id', marcheId)
       .order('ordre', { ascending: true });
 
@@ -101,8 +117,13 @@ export const fetchExistingPhotos = async (marcheId: string): Promise<ExistingPho
       throw error;
     }
 
-    console.log(`✅ [fetchExistingPhotos] ${photos?.length || 0} photos récupérées`);
-    return photos || [];
+    const photosWithTags = photos?.map(photo => ({
+      ...photo,
+      tags: photo.marche_photo_tags || []
+    })) || [];
+
+    console.log(`✅ [fetchExistingPhotos] ${photosWithTags.length} photos récupérées avec tags`);
+    return photosWithTags;
   } catch (error) {
     console.error('💥 [fetchExistingPhotos] Erreur lors de la récupération:', error);
     throw error;
@@ -511,5 +532,151 @@ export const updatePhotosOrder = async (photoIds: string[]): Promise<void> => {
   } catch (error) {
     console.error('❌ [supabasePhotoOperations] Erreur mise à jour ordre:', error);
     throw error;
+  }
+};
+
+// ========== GESTION DES TAGS ==========
+
+// Sauvegarder les tags d'une photo
+export const savePhotoTags = async (
+  photoId: string,
+  tags: string[],
+  categorie?: string
+): Promise<void> => {
+  console.log('🏷️ [savePhotoTags] Sauvegarde des tags pour photo:', photoId, tags);
+  
+  try {
+    // Préparer les données d'insertion
+    const tagsToInsert = tags.map(tag => ({
+      photo_id: photoId,
+      tag: tag.trim(),
+      categorie: categorie || null
+    }));
+
+    const { error } = await supabase
+      .from('marche_photo_tags')
+      .insert(tagsToInsert);
+
+    if (error) {
+      console.error('❌ [savePhotoTags] Erreur insertion tags:', error);
+      throw error;
+    }
+
+    console.log('✅ [savePhotoTags] Tags sauvegardés avec succès');
+  } catch (error) {
+    console.error('💥 [savePhotoTags] Erreur complète:', error);
+    throw error;
+  }
+};
+
+// Mettre à jour les tags d'une photo (suppression + réinsertion)
+export const updatePhotoTags = async (
+  photoId: string,
+  newTags: string[],
+  categorie?: string
+): Promise<void> => {
+  console.log('🏷️ [updatePhotoTags] Mise à jour tags pour photo:', photoId, newTags);
+  
+  try {
+    // Supprimer les anciens tags
+    const { error: deleteError } = await supabase
+      .from('marche_photo_tags')
+      .delete()
+      .eq('photo_id', photoId);
+
+    if (deleteError) {
+      console.error('❌ [updatePhotoTags] Erreur suppression anciens tags:', deleteError);
+      throw deleteError;
+    }
+
+    // Insérer les nouveaux tags si il y en a
+    if (newTags.length > 0) {
+      await savePhotoTags(photoId, newTags, categorie);
+    }
+
+    console.log('✅ [updatePhotoTags] Tags mis à jour avec succès');
+  } catch (error) {
+    console.error('💥 [updatePhotoTags] Erreur complète:', error);
+    throw error;
+  }
+};
+
+// Supprimer les tags d'une photo
+export const deletePhotoTags = async (photoId: string): Promise<void> => {
+  console.log('🏷️ [deletePhotoTags] Suppression tags pour photo:', photoId);
+  
+  try {
+    const { error } = await supabase
+      .from('marche_photo_tags')
+      .delete()
+      .eq('photo_id', photoId);
+
+    if (error) {
+      console.error('❌ [deletePhotoTags] Erreur suppression tags:', error);
+      throw error;
+    }
+
+    console.log('✅ [deletePhotoTags] Tags supprimés avec succès');
+  } catch (error) {
+    console.error('💥 [deletePhotoTags] Erreur complète:', error);
+    throw error;
+  }
+};
+
+// Récupérer tous les tags avec compteurs pour les filtres
+export const getTagsWithCounts = async (): Promise<Array<{ tag: string; count: number; categorie?: string }>> => {
+  console.log('📊 [getTagsWithCounts] Récupération des tags avec compteurs');
+  
+  try {
+    const { data, error } = await supabase
+      .from('marche_photo_tags')
+      .select('tag, categorie')
+      .order('tag');
+
+    if (error) {
+      console.error('❌ [getTagsWithCounts] Erreur récupération tags:', error);
+      throw error;
+    }
+
+    // Compter les occurrences de chaque tag
+    const tagCounts = new Map<string, { count: number; categorie?: string }>();
+    
+    data?.forEach(item => {
+      const existing = tagCounts.get(item.tag);
+      if (existing) {
+        existing.count++;
+      } else {
+        tagCounts.set(item.tag, { count: 1, categorie: item.categorie || undefined });
+      }
+    });
+
+    // Convertir en array et trier par count décroissant
+    const result = Array.from(tagCounts.entries())
+      .map(([tag, { count, categorie }]) => ({ tag, count, categorie }))
+      .sort((a, b) => b.count - a.count);
+
+    console.log(`✅ [getTagsWithCounts] ${result.length} tags récupérés avec compteurs`);
+    return result;
+  } catch (error) {
+    console.error('💥 [getTagsWithCounts] Erreur complète:', error);
+    throw error;
+  }
+};
+
+// Récupérer les tags suggérés (les plus populaires)
+export const getSuggestedTags = async (limit: number = 20): Promise<string[]> => {
+  console.log('💡 [getSuggestedTags] Récupération des tags suggérés');
+  
+  try {
+    const tagsWithCounts = await getTagsWithCounts();
+    const suggested = tagsWithCounts
+      .slice(0, limit)
+      .map(item => item.tag);
+
+    console.log(`✅ [getSuggestedTags] ${suggested.length} tags suggérés récupérés`);
+    return suggested;
+  } catch (error) {
+    console.error('💥 [getSuggestedTags] Erreur complète:', error);
+    return [];
   }
 };

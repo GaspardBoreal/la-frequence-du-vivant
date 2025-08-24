@@ -15,10 +15,11 @@ import {
   Loader2,
   ChevronDown,
   ChevronUp,
-  X
+  X,
+  Tag
 } from 'lucide-react';
 import { MarcheTechnoSensible } from '../../utils/googleSheetsApi';
-import { fetchExistingPhotos, ExistingPhoto, deletePhoto } from '../../utils/supabasePhotoOperations';
+import { fetchExistingPhotos, ExistingPhoto, deletePhoto, getTagsWithCounts } from '../../utils/supabasePhotoOperations';
 import { toast } from 'sonner';
 import { useDebounce } from '../../hooks/useDebounce';
 import LazyPhotoCard from './LazyPhotoCard';
@@ -43,6 +44,8 @@ const PhotoGalleryAdmin: React.FC<PhotoGalleryAdminProps> = ({ marches }) => {
   const [selectedMarche, setSelectedMarche] = useState<string>('all');
   const [hasTitle, setHasTitle] = useState<boolean | null>(null);
   const [hasDescription, setHasDescription] = useState<boolean | null>(null);
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  const [tagsWithCounts, setTagsWithCounts] = useState<Array<{ tag: string; count: number; categorie?: string }>>([]);
   const [showFilters, setShowFilters] = useState(false);
   // Debouncing pour optimiser les performances
   const debouncedSearchText = useDebounce(searchText, 300);
@@ -68,6 +71,10 @@ const PhotoGalleryAdmin: React.FC<PhotoGalleryAdminProps> = ({ marches }) => {
         }
         
         setPhotos(allPhotos);
+        
+        // Charger les tags avec compteurs
+        const tags = await getTagsWithCounts();
+        setTagsWithCounts(tags);
       } catch (error) {
         console.error('Erreur chargement photos:', error);
         toast.error('Erreur lors du chargement des photos');
@@ -124,14 +131,26 @@ const PhotoGalleryAdmin: React.FC<PhotoGalleryAdminProps> = ({ marches }) => {
     }
 
 
-    // Recherche textuelle dans les métadonnées des images uniquement
+    // Filtre par tags sélectionnés
+    if (selectedTags.length > 0) {
+      filtered = filtered.filter(photo => {
+        const photoTags = photo.tags?.map(t => t.tag) || [];
+        return selectedTags.every(selectedTag => photoTags.includes(selectedTag));
+      });
+    }
+
+    // Recherche textuelle dans les métadonnées des images (y compris les tags)
     if (debouncedSearchText.trim()) {
       const searchLower = debouncedSearchText.toLowerCase();
-      filtered = filtered.filter(photo => 
-        (photo.titre || '').toLowerCase().includes(searchLower) ||
-        (photo.description || '').toLowerCase().includes(searchLower) ||
-        photo.nom_fichier.toLowerCase().includes(searchLower)
-      );
+      filtered = filtered.filter(photo => {
+        const photoTags = photo.tags?.map(t => t.tag).join(' ') || '';
+        return (
+          (photo.titre || '').toLowerCase().includes(searchLower) ||
+          (photo.description || '').toLowerCase().includes(searchLower) ||
+          photo.nom_fichier.toLowerCase().includes(searchLower) ||
+          photoTags.toLowerCase().includes(searchLower)
+        );
+      });
     }
 
     // Tri
@@ -177,12 +196,21 @@ const PhotoGalleryAdmin: React.FC<PhotoGalleryAdminProps> = ({ marches }) => {
   }, [sortField, sortDirection]);
 
   // Callback optimisé pour la mise à jour des photos
-  const handlePhotoUpdate = useCallback((photoId: string, updates: { titre?: string; description?: string }) => {
+  const handlePhotoUpdate = useCallback((photoId: string, updates: { titre?: string; description?: string; tags?: string[] }) => {
     setPhotos(prev => prev.map(photo => 
       photo.id === photoId 
-        ? { ...photo, ...updates }
+        ? { 
+            ...photo, 
+            ...updates,
+            tags: updates.tags ? updates.tags.map(tag => ({ id: '', tag, created_at: '' })) : photo.tags
+          }
         : photo
     ));
+    
+    // Recharger les tags avec compteurs si des tags ont été modifiés
+    if (updates.tags !== undefined) {
+      getTagsWithCounts().then(setTagsWithCounts).catch(console.error);
+    }
   }, []);
 
   // Callback pour la suppression des photos - optimisé pour éviter la navigation
@@ -200,9 +228,10 @@ const PhotoGalleryAdmin: React.FC<PhotoGalleryAdminProps> = ({ marches }) => {
     setSelectedMarche('all');
     setHasTitle(null);
     setHasDescription(null);
+    setSelectedTags([]);
   }, []);
 
-  const hasActiveFilters = debouncedSearchText || selectedMarche !== 'all' || hasTitle !== null || hasDescription !== null;
+  const hasActiveFilters = debouncedSearchText || selectedMarche !== 'all' || hasTitle !== null || hasDescription !== null || selectedTags.length > 0;
 
   const getSortIcon = (field: SortField) => {
     if (sortField !== field) return null;
@@ -268,14 +297,14 @@ const PhotoGalleryAdmin: React.FC<PhotoGalleryAdminProps> = ({ marches }) => {
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
                   <Input
-                    placeholder="Titre, description, nom de fichier..."
+                    placeholder="Titre, description, nom de fichier, tags..."
                     value={searchText}
                     onChange={(e) => setSearchText(e.target.value)}
                     className="pl-10"
                   />
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  Recherche dans les métadonnées des photos uniquement
+                  Recherche dans les métadonnées des photos (titre, description, nom de fichier, tags)
                 </p>
               </div>
 
@@ -323,7 +352,53 @@ const PhotoGalleryAdmin: React.FC<PhotoGalleryAdminProps> = ({ marches }) => {
             </div>
           </div>
 
-          {/* Section 2: Filtres sur les Marches */}
+          {/* Section 2: Filtres par Tags */}
+          <div className="border rounded-lg p-4 space-y-4">
+            <h4 className="font-medium text-accent flex items-center">
+              <Tag className="h-4 w-4 mr-2" />
+              Filtres par Tags
+            </h4>
+            
+            <div className="grid grid-cols-1 gap-4">
+              {/* Tags avec compteurs */}
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Tags disponibles</label>
+                {tagsWithCounts.length > 0 ? (
+                  <div className="flex flex-wrap gap-1 max-h-32 overflow-y-auto">
+                    {tagsWithCounts.map(({ tag, count }) => {
+                      const isSelected = selectedTags.includes(tag);
+                      return (
+                        <Badge
+                          key={tag}
+                          variant={isSelected ? "default" : "outline"}
+                          className={`cursor-pointer text-xs transition-colors ${
+                            isSelected ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'
+                          }`}
+                          onClick={() => {
+                            if (isSelected) {
+                              setSelectedTags(prev => prev.filter(t => t !== tag));
+                            } else {
+                              setSelectedTags(prev => [...prev, tag]);
+                            }
+                          }}
+                        >
+                          <Tag className="h-3 w-3 mr-1" />
+                          {tag} ({count})
+                        </Badge>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <p className="text-sm text-muted-foreground">Aucun tag disponible</p>
+                )}
+                <p className="text-xs text-muted-foreground">
+                  Cliquez sur un tag pour filtrer ({selectedTags.length} sélectionné{selectedTags.length > 1 ? 's' : ''})
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Section 3: Filtres sur les Marches */}
           <div className="border rounded-lg p-4 space-y-4">
             <h4 className="font-medium text-secondary flex items-center">
               <MapPin className="h-4 w-4 mr-2" />
