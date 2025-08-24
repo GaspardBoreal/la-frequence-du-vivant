@@ -11,6 +11,7 @@ import DataCollectionPanel from '../components/admin/DataCollectionPanel';
 import AdminFilters from '../components/admin/AdminFilters';
 import DataInsightsPromoBanner from '../components/DataInsightsPromoBanner';
 import PhotoGalleryAdmin from '../components/admin/PhotoGalleryAdmin';
+import AudioGalleryAdmin from '../components/admin/AudioGalleryAdmin';
 import MarcheTextesAdmin from '../components/admin/MarcheTextesAdmin';
 import TextesLitterairesGalleryAdmin from '../components/admin/TextesLitterairesGalleryAdmin';
 import ExportPanel from '../components/admin/ExportPanel';
@@ -136,7 +137,7 @@ const MarcheAdmin = () => {
         {/* Content */}
         <div className="gaspard-card rounded-xl p-6">
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="grid w-full grid-cols-6">
+            <TabsList className="grid w-full grid-cols-7">
               <TabsTrigger value="list">Liste des Marches</TabsTrigger>
               <TabsTrigger value="create">
                 {viewMode === 'edit' ? 'Modifier une Marche' : 'Créer une Marche'}
@@ -146,6 +147,9 @@ const MarcheAdmin = () => {
               </TabsTrigger>
               <TabsTrigger value="gallery">
                 Galerie Photos
+              </TabsTrigger>
+              <TabsTrigger value="audio">
+                Galerie Audio
               </TabsTrigger>
               <TabsTrigger value="data" className="relative">
                 Collecte de Données
@@ -193,6 +197,10 @@ const MarcheAdmin = () => {
 
             <TabsContent value="gallery" className="space-y-4">
               <PhotoGalleryAdmin marches={filteredMarches} />
+            </TabsContent>
+
+            <TabsContent value="audio" className="space-y-4">
+              <AudioGalleryAdmin marches={filteredMarches} />
             </TabsContent>
 
             <TabsContent value="data" className="space-y-4">
