@@ -292,6 +292,11 @@ const MarcheList: React.FC<MarcheListProps> = ({
                       {marche.audioFiles.length} audio{marche.audioFiles.length > 1 ? 's' : ''}
                     </Badge>
                   )}
+                  {marche.textes && marche.textes.length > 0 && (
+                    <Badge variant="secondary" className="text-xs">
+                      {marche.textes.length} texte{marche.textes.length > 1 ? 's' : ''}
+                    </Badge>
+                  )}
                   {marche.videos && marche.videos.length > 0 && (
                     <Badge variant="secondary" className="text-xs">
                       {marche.videos.length} vidéo{marche.videos.length > 1 ? 's' : ''}

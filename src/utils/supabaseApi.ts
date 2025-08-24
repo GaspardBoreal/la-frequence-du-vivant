@@ -105,12 +105,25 @@ export interface MarcheTag {
   created_at: string;
 }
 
+export interface MarcheTexte {
+  id: string;
+  marche_id: string;
+  titre: string;
+  contenu: string;
+  type_texte: string;
+  ordre?: number;
+  metadata?: any;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface MarcheComplete extends MarcheSupabase {
   photos: MarchePhoto[];
   audio: MarcheAudio[];
   videos: MarcheVideo[];
   documents: MarcheDocument[];
   etudes: MarcheEtude[];
+  textes: MarcheTexte[];
   tags: MarcheTag[];
   latitude?: number;
   longitude?: number;
@@ -178,12 +191,13 @@ export const fetchMarchesFromSupabase = async (): Promise<MarcheComplete[]> => {
         });
         
         // Récupérer en parallèle tous les médias
-        const [photosResult, audioResult, videosResult, documentsResult, etudesResult, tagsResult] = await Promise.all([
+        const [photosResult, audioResult, videosResult, documentsResult, etudesResult, textesResult, tagsResult] = await Promise.all([
           supabase.from('marche_photos').select('*').eq('marche_id', marcheId).order('ordre'),
           supabase.from('marche_audio').select('*').eq('marche_id', marcheId).order('ordre'),
           supabase.from('marche_videos').select('*').eq('marche_id', marcheId).order('ordre'),
           supabase.from('marche_documents').select('*').eq('marche_id', marcheId).order('ordre'),
           supabase.from('marche_etudes').select('*').eq('marche_id', marcheId).order('ordre'),
+          supabase.from('marche_textes').select('*').eq('marche_id', marcheId).order('ordre'),
           supabase.from('marche_tags').select('*').eq('marche_id', marcheId)
         ]);
 
@@ -221,6 +235,7 @@ export const fetchMarchesFromSupabase = async (): Promise<MarcheComplete[]> => {
           videos: videosResult.data || [],
           documents: documentsResult.data || [],
           etudes: etudesResult.data || [],
+          textes: textesResult.data || [],
           tags: tagsResult.data || [],
           latitude: finalLatitude,
           longitude: finalLongitude
@@ -232,6 +247,7 @@ export const fetchMarchesFromSupabase = async (): Promise<MarcheComplete[]> => {
           videos: marcheComplete.videos.length,
           documents: marcheComplete.documents.length,
           etudes: marcheComplete.etudes.length,
+          textes: marcheComplete.textes.length,
           tags: marcheComplete.tags.length,
           finalLatitude: marcheComplete.latitude,
           finalLongitude: marcheComplete.longitude
@@ -280,12 +296,13 @@ export const fetchMarcheById = async (id: string): Promise<MarcheComplete | null
     });
 
     // Récupérer tous les médias associés
-    const [photosResult, audioResult, videosResult, documentsResult, etudesResult, tagsResult] = await Promise.all([
+    const [photosResult, audioResult, videosResult, documentsResult, etudesResult, textesResult, tagsResult] = await Promise.all([
       supabase.from('marche_photos').select('*').eq('marche_id', id).order('ordre'),
       supabase.from('marche_audio').select('*').eq('marche_id', id).order('ordre'),
       supabase.from('marche_videos').select('*').eq('marche_id', id).order('ordre'),
       supabase.from('marche_documents').select('*').eq('marche_id', id).order('ordre'),
       supabase.from('marche_etudes').select('*').eq('marche_id', id).order('ordre'),
+      supabase.from('marche_textes').select('*').eq('marche_id', id).order('ordre'),
       supabase.from('marche_tags').select('*').eq('marche_id', id)
     ]);
 
@@ -323,6 +340,7 @@ export const fetchMarcheById = async (id: string): Promise<MarcheComplete | null
       videos: videosResult.data || [],
       documents: documentsResult.data || [],
       etudes: etudesResult.data || [],
+      textes: textesResult.data || [],
       tags: tagsResult.data || [],
       latitude: finalLatitude,
       longitude: finalLongitude
@@ -367,12 +385,13 @@ export const searchMarchesByVille = async (ville: string): Promise<MarcheComplet
           coordonnees: marche.coordonnees
         });
 
-        const [photosResult, audioResult, videosResult, documentsResult, etudesResult, tagsResult] = await Promise.all([
+        const [photosResult, audioResult, videosResult, documentsResult, etudesResult, textesResult, tagsResult] = await Promise.all([
           supabase.from('marche_photos').select('*').eq('marche_id', marche.id).order('ordre'),
           supabase.from('marche_audio').select('*').eq('marche_id', marche.id).order('ordre'),
           supabase.from('marche_videos').select('*').eq('marche_id', marche.id).order('ordre'),
           supabase.from('marche_documents').select('*').eq('marche_id', marche.id).order('ordre'),
           supabase.from('marche_etudes').select('*').eq('marche_id', marche.id).order('ordre'),
+          supabase.from('marche_textes').select('*').eq('marche_id', marche.id).order('ordre'),
           supabase.from('marche_tags').select('*').eq('marche_id', marche.id)
         ]);
 
@@ -410,6 +429,7 @@ export const searchMarchesByVille = async (ville: string): Promise<MarcheComplet
           videos: videosResult.data || [],
           documents: documentsResult.data || [],
           etudes: etudesResult.data || [],
+          textes: textesResult.data || [],
           tags: tagsResult.data || [],
           latitude: finalLatitude,
           longitude: finalLongitude

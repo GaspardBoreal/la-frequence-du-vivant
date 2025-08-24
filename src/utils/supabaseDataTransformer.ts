@@ -64,6 +64,13 @@ export const transformSupabaseToLegacyFormat = (marche: MarcheComplete): MarcheT
     supabaseTags: marche.tags.map(tag => tag.tag),
     sousThemes: marche.sous_themes || undefined,
     adresse: marche.adresse || undefined,
+    textes: marche.textes.map(texte => ({
+      id: texte.id,
+      titre: texte.titre,
+      contenu: texte.contenu,
+      type_texte: texte.type_texte,
+      ordre: texte.ordre
+    })),
     // Propriétés legacy pour compatibilité
     tags: marche.tags.map(tag => tag.tag).join(', '),
     sequencesSonores: audioFiles.length > 0 ? audioFiles : undefined,
@@ -81,6 +88,7 @@ export const transformSupabaseToLegacyFormat = (marche: MarcheComplete): MarcheT
     audio: audioFiles.length,
     etudes: marche.etudes.length,
     documents: marche.documents.length,
+    textes: marche.textes.length,
     tags: marche.tags.length,
     latitude: transformed.latitude,
     longitude: transformed.longitude,

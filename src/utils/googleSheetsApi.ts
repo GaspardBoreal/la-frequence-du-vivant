@@ -95,6 +95,13 @@ export interface MarcheTechnoSensible {
   supabaseTags?: string[];
   sousThemes?: string[];
   adresse?: string;
+  textes?: Array<{
+    id: string;
+    titre: string;
+    contenu: string;
+    type_texte: string;
+    ordre?: number;
+  }>;
 }
 
 // Placeholder function for backward compatibility
