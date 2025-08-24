@@ -183,8 +183,14 @@ function TexteFormDialog({
 
   const selectedTypeInfo = getTextTypeInfo(formData.type_texte);
 
+  const handleOpenChange = (open: boolean) => {
+    if (!open) {
+      onClose();
+    }
+  };
+
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
+    <Dialog open={isOpen} onOpenChange={handleOpenChange}>
       <DialogContent className="max-w-4xl max-h-[90vh]">
         <DialogHeader>
           <DialogTitle>
@@ -291,8 +297,14 @@ function TextePreviewDialog({
 
   const typeInfo = getTextTypeInfo(texte.type_texte);
 
+  const handleOpenChange = (open: boolean) => {
+    if (!open) {
+      onClose();
+    }
+  };
+
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
+    <Dialog open={isOpen} onOpenChange={handleOpenChange}>
       <DialogContent className="max-w-2xl max-h-[80vh]">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
