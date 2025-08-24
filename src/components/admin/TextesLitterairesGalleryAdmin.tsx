@@ -36,6 +36,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../ui/dialog';
 import { Label } from '../ui/label';
 import { SecureRichTextEditor } from '../ui/secure-rich-text-editor';
 import { Alert, AlertDescription } from '../ui/alert';
+import { sanitizeHtml } from '@/utils/htmlSanitizer';
 
 interface TextesLitterairesGalleryAdminProps {
   marches: MarcheTechnoSensible[];
@@ -64,7 +65,14 @@ const getTextFamily = (type: TextType): string => {
   return TEXT_FAMILIES[type] || 'Autre';
 };
 
-// Composant pour afficher une carte de texte
+// Convertit un HTML en texte brut pour les aperçus (en conservant la sécurité)
+const toPlainText = (html: string): string => {
+  if (!html) return '';
+  const div = document.createElement('div');
+  div.innerHTML = sanitizeHtml(html);
+  return (div.textContent || '').replace(/\u00A0/g, ' ').trim();
+};
+
 const TexteCard: React.FC<{
   texte: TexteWithMarche;
   onPreview: (texte: TexteWithMarche) => void;
@@ -89,7 +97,7 @@ const TexteCard: React.FC<{
         
         {/* Aperçu du contenu */}
         <div className="text-sm text-muted-foreground">
-          <p className="line-clamp-3">{texte.contenu}</p>
+          <p className="line-clamp-3">{toPlainText(texte.contenu)}</p>
         </div>
         
         {/* Informations contextuelles */}
@@ -178,9 +186,7 @@ const TextePreviewDialog: React.FC<{
             </div>
           </div>
           
-          <div className="prose prose-sm max-w-none">
-            <div className="whitespace-pre-wrap">{texte.contenu}</div>
-          </div>
+          <div className="prose prose-sm max-w-none" dangerouslySetInnerHTML={{ __html: sanitizeHtml(texte.contenu) }} />
           
           {texte.metadata && Object.keys(texte.metadata).length > 0 && (
             <div className="border-t pt-4">
