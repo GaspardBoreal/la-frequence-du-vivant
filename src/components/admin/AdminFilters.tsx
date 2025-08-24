@@ -487,17 +487,17 @@ const AdminFilters: React.FC<AdminFiltersProps> = ({ marches, onFilterChange }) 
                 className="bg-white/10 border-white/20 text-white placeholder:text-white/60"
               />
               <div className="flex flex-wrap gap-2 mt-2">
-                {uniqueTagsWithCount.slice(0, 10).map(({ tag, count }) => (
-                  <button
-                    key={tag}
-                    onClick={() => handleTagsChange(tag)}
-                    className="px-3 py-1 bg-white/20 hover:bg-white/30 rounded-full text-white text-xs transition-colors flex items-center space-x-1"
-                  >
-                    <span>{tag}</span>
-                    <span className="bg-white/30 px-1.5 py-0.5 rounded-full text-xs font-medium">
-                      {count}
-                    </span>
-                  </button>
+                 {uniqueTagsWithCount.slice(0, 10).map(({ tag, count }) => (
+                   <button
+                     key={tag}
+                     onClick={() => handleTagsChange(tag)}
+                     className="px-3 py-1 bg-white/20 hover:bg-white/30 border border-white/30 rounded-full text-white text-xs transition-colors flex items-center space-x-1"
+                   >
+                     <span>{tag}</span>
+                     <span className="bg-white/30 px-1.5 py-0.5 rounded-full text-xs font-medium">
+                       {count}
+                     </span>
+                   </button>
                 ))}
                 {uniqueTagsWithCount.length > 10 && (
                   <span className="text-white/60 text-xs">+{uniqueTagsWithCount.length - 10} autres tags</span>
