@@ -21,6 +21,10 @@ export interface WelcomeComposition {
     videos: number;
     tags: string[];
     regions: string[];
+    // Total counts for accurate display
+    totalTags: number;
+    totalRegions: number;
+    texts?: number; // Can be injected later
   };
   media?: {
     photos?: Array<{ url: string; alt: string }>; // used by media-mosaic/story-cover
@@ -41,12 +45,16 @@ export function buildWelcomeComposition(
   const photos = marches.flatMap(m => m.marche?.photos || []);
   const audio = marches.flatMap(m => m.marche?.audio || []);
   const videos = marches.flatMap(m => m.marche?.videos || []);
-  const tags = unique(
+  const allTags = unique(
     marches.flatMap(m => (m.marche?.tags || []).map(t => t.tag)).filter(Boolean) as string[]
-  ).slice(0, 8);
-  const regions = unique(
+  );
+  const allRegions = unique(
     marches.map(m => m.marche?.region).filter(Boolean) as string[]
-  ).slice(0, 4);
+  );
+  
+  // Keep limited lists for display purposes
+  const tags = allTags.slice(0, 8);
+  const regions = allRegions.slice(0, 4);
 
   const photosCount = photos.length;
   const audioCount = audio.length;
@@ -78,6 +86,8 @@ export function buildWelcomeComposition(
       videos: videosCount,
       tags,
       regions,
+      totalTags: allTags.length,
+      totalRegions: allRegions.length,
     },
     media: {
       photos: mediaPhotos,

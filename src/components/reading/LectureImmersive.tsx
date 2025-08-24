@@ -103,9 +103,19 @@ const LectureImmersive: React.FC = () => {
     ? textContent.find(t => t.id === selectedTextId)
     : undefined;
 
-  // Build welcome composition
-  const welcomeComposition = exploration && textContent.length > 0 
-    ? buildWelcomeComposition(exploration, marches, { marcheViewModel: 'elabore' })
+  // Build welcome composition with accurate text count
+  const welcomeComposition = exploration && marches.length > 0 
+    ? (() => {
+        const composition = buildWelcomeComposition(exploration, marches, { marcheViewModel: 'elabore' });
+        // Calculate actual text content from marches data
+        const textCount = marches.reduce((acc, marche) => {
+          const etudes = marche.marche?.etudes?.length || 0;
+          const documents = marche.marche?.documents?.length || 0;
+          return acc + etudes + documents;
+        }, 0);
+        composition.stats.texts = Math.max(textCount, textContent.length);
+        return composition;
+      })()
     : null;
 
   if (isLoading) {
@@ -213,7 +223,7 @@ const LectureImmersive: React.FC = () => {
         {experienceState === 'welcome' && welcomeComposition && (
           <ExperienceLivreWelcome
             exploration={exploration}
-            marches={[]}
+            marches={marches}
             composition={welcomeComposition}
             onEnterMode={handleEntryMode}
           />

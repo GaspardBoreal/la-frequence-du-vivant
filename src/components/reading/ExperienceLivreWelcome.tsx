@@ -51,7 +51,7 @@ const ExperienceLivreWelcome: React.FC<Props> = ({ exploration, marches, composi
       description: 'Navigation immersive par liens thématiques et sémantiques',
       icon: Sparkles,
       gradient: 'from-violet-500/20 via-purple-500/10 to-pink-500/20',
-      stats: `${composition.stats.tags.length} thèmes interconnectés`,
+      stats: `${composition.stats.totalTags} thèmes interconnectés`,
     },
     {
       id: 'laboratoire-formes',
@@ -90,10 +90,10 @@ const ExperienceLivreWelcome: React.FC<Props> = ({ exploration, marches, composi
           {/* Stats Overview */}
           <div className="flex flex-wrap justify-center gap-4 mb-8">
             {[
-              { icon: Library, label: 'Textes', value: composition.stats.photos + composition.stats.audio },
+              { icon: Library, label: 'Textes', value: composition.stats.texts || 0 },
               { icon: Map, label: 'Marches', value: composition.stats.marches },
-              { icon: Users, label: 'Régions', value: composition.stats.regions.length },
-              { icon: Brain, label: 'Thèmes', value: composition.stats.tags.length },
+              { icon: Users, label: 'Régions', value: composition.stats.totalRegions },
+              { icon: Brain, label: 'Thèmes', value: composition.stats.totalTags },
             ].map((stat, index) => (
               <motion.div
                 key={stat.label}
