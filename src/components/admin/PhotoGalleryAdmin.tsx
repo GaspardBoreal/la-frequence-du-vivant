@@ -51,6 +51,7 @@ const PhotoGalleryAdmin: React.FC<PhotoGalleryAdminProps> = ({ marches }) => {
   const [tagsWithCounts, setTagsWithCounts] = useState<Array<{ tag: string; count: number; categorie?: string }>>([]);
   const [showFilters, setShowFilters] = useState(false);
   const [tagRefreshKey, setTagRefreshKey] = useState(0); // Pour forcer le rechargement des tags
+  const [tagSortBy, setTagSortBy] = useState<'name' | 'count'>('name');
   // Debouncing pour optimiser les performances
   const debouncedSearchText = useDebounce(searchText, 300);
 
@@ -406,13 +407,30 @@ const PhotoGalleryAdmin: React.FC<PhotoGalleryAdminProps> = ({ marches }) => {
             </h4>
             
             <div className="grid grid-cols-1 gap-4">
-              {/* Tags avec compteurs */}
+              {/* Sélecteur de tri pour les tags */}
               <div className="space-y-2">
-                <label className="text-sm font-medium">Tags disponibles</label>
+                <div className="flex items-center justify-between">
+                  <label className="text-sm font-medium">Tags disponibles</label>
+                  <Select value={tagSortBy} onValueChange={(value) => setTagSortBy(value as 'name' | 'count')}>
+                    <SelectTrigger className="w-32">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent className="z-50 bg-card">
+                      <SelectItem value="name">Nom</SelectItem>
+                      <SelectItem value="count">Nombre</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
                 {tagsWithCounts.length > 0 ? (
                   <div className="flex flex-wrap gap-1 max-h-32 overflow-y-auto">
                     {tagsWithCounts
-                      .sort((a, b) => a.tag.localeCompare(b.tag)) // Tri alphabétique
+                      .sort((a, b) => {
+                        if (tagSortBy === 'name') {
+                          return a.tag.localeCompare(b.tag);
+                        } else {
+                          return b.count - a.count; // Tri par nombre décroissant
+                        }
+                      })
                       .map(({ tag, count }) => {
                       const isSelected = selectedTags.includes(tag);
                       return (
@@ -440,7 +458,8 @@ const PhotoGalleryAdmin: React.FC<PhotoGalleryAdminProps> = ({ marches }) => {
                   <p className="text-sm text-muted-foreground">Aucun tag disponible</p>
                 )}
                 <p className="text-xs text-muted-foreground">
-                  Cliquez sur un tag pour filtrer ({selectedTags.length} sélectionné{selectedTags.length > 1 ? 's' : ''})
+                  Cliquez sur un tag pour filtrer ({selectedTags.length} sélectionné{selectedTags.length > 1 ? 's' : ''}) - 
+                  Tri par {tagSortBy === 'name' ? 'nom' : 'nombre d\'occurrences'}
                 </p>
               </div>
             </div>
@@ -450,7 +469,7 @@ const PhotoGalleryAdmin: React.FC<PhotoGalleryAdminProps> = ({ marches }) => {
           <div className="border rounded-lg p-4 space-y-4">
             <h4 className="font-medium text-accent flex items-center">
               <MapPin className="h-4 w-4 mr-2" />
-              Filtres sur les Marches
+              Filtres sur les Marches et/ Explorations
             </h4>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
