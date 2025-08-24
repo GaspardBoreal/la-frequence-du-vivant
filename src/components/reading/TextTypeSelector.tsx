@@ -30,7 +30,7 @@ export default function TextTypeSelector({ currentType, availableTypes, onTypeSe
     <DropdownMenu open={open} onOpenChange={setOpen}>
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" size="sm" className="h-auto p-2 gap-1.5 text-slate-800 dark:text-slate-300">
-          <Badge variant="outline" className="text-xs font-normal text-slate-800 dark:text-slate-300 border-slate-800/20 dark:border-slate-300/20">
+          <Badge variant="outline" className="text-xs font-normal text-slate-800 dark:text-slate-300 border-slate-800/30 dark:border-slate-300/20 bg-white/50 dark:bg-slate-800/50">
             <span className="mr-1">{currentTypeInfo.icon}</span>
             {currentTypeInfo.label}
           </Badge>

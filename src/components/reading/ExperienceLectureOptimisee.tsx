@@ -324,7 +324,7 @@ export default function ExperienceLectureOptimisee() {
                 onClick={() => setReadingMode('standard')}
                 variant={getButtonVariant('standard')}
                 size="sm"
-                className="rounded-lg px-3 py-2 text-xs font-medium h-auto"
+                className="rounded-lg px-3 py-2 text-xs font-medium h-auto text-slate-800 dark:text-slate-300"
               >
                 Simple
               </Button>
@@ -332,7 +332,7 @@ export default function ExperienceLectureOptimisee() {
                 onClick={() => setReadingMode('rich')}
                 variant={getButtonVariant('rich')}
                 size="sm"
-                className="rounded-lg px-3 py-2 text-xs font-medium h-auto"
+                className="rounded-lg px-3 py-2 text-xs font-medium h-auto text-slate-800 dark:text-slate-300"
               >
                 Enrichi
               </Button>
@@ -340,7 +340,7 @@ export default function ExperienceLectureOptimisee() {
                 onClick={() => setReadingMode('focus')}
                 variant={getButtonVariant('focus')}
                 size="sm"
-                className="rounded-lg px-3 py-2 text-xs font-medium h-auto"
+                className="rounded-lg px-3 py-2 text-xs font-medium h-auto text-slate-800 dark:text-slate-300"
               >
                 Focus
               </Button>
