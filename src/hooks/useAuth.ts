@@ -59,14 +59,17 @@ export const useAuth = () => {
 
   const checkAdminStatus = async (userId: string) => {
     try {
-      const { data } = await supabase
-        .from('admin_users')
-        .select('id')
-        .eq('user_id', userId)
-        .single();
+      const { data, error } = await supabase.rpc('is_admin_user');
+      
+      if (error) {
+        console.error('Error checking admin status:', error);
+        setAuthState(prev => ({ ...prev, isAdmin: false }));
+        return;
+      }
 
       setAuthState(prev => ({ ...prev, isAdmin: !!data }));
     } catch (error) {
+      console.error('Error checking admin status:', error);
       setAuthState(prev => ({ ...prev, isAdmin: false }));
     }
   };
