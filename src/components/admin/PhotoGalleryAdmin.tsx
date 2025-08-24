@@ -371,7 +371,9 @@ const PhotoGalleryAdmin: React.FC<PhotoGalleryAdminProps> = ({ marches }) => {
                 <label className="text-sm font-medium">Tags disponibles</label>
                 {tagsWithCounts.length > 0 ? (
                   <div className="flex flex-wrap gap-1 max-h-32 overflow-y-auto">
-                    {tagsWithCounts.map(({ tag, count }) => {
+                    {tagsWithCounts
+                      .sort((a, b) => a.tag.localeCompare(b.tag)) // Tri alphabétique
+                      .map(({ tag, count }) => {
                       const isSelected = selectedTags.includes(tag);
                       return (
                         <Badge

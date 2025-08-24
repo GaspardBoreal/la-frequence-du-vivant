@@ -672,12 +672,12 @@ export const getTagsWithCounts = async (): Promise<Array<{ tag: string; count: n
       }
     });
 
-    // Convertir en array et trier par count décroissant
+    // Convertir en array et trier par ordre alphabétique, puis par count décroissant
     const result = Array.from(tagCounts.entries())
       .map(([tag, { count, categorie }]) => ({ tag, count, categorie }))
-      .sort((a, b) => b.count - a.count);
+      .sort((a, b) => a.tag.localeCompare(b.tag)); // Tri alphabétique
 
-    console.log(`✅ [getTagsWithCounts] ${result.length} tags récupérés avec compteurs`);
+    console.log(`✅ [getTagsWithCounts] ${result.length} tags récupérés avec compteurs (ordre alphabétique)`);
     return result;
   } catch (error) {
     console.error('💥 [getTagsWithCounts] Erreur complète:', error);
@@ -692,10 +692,11 @@ export const getSuggestedTags = async (limit: number = 20): Promise<string[]> =>
   try {
     const tagsWithCounts = await getTagsWithCounts();
     const suggested = tagsWithCounts
+      .sort((a, b) => a.tag.localeCompare(b.tag)) // Tri alphabétique
       .slice(0, limit)
       .map(item => item.tag);
 
-    console.log(`✅ [getSuggestedTags] ${suggested.length} tags suggérés récupérés`);
+    console.log(`✅ [getSuggestedTags] ${suggested.length} tags suggérés récupérés (ordre alphabétique)`);
     return suggested;
   } catch (error) {
     console.error('💥 [getSuggestedTags] Erreur complète:', error);
