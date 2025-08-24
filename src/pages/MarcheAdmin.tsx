@@ -12,6 +12,7 @@ import AdminFilters from '../components/admin/AdminFilters';
 import DataInsightsPromoBanner from '../components/DataInsightsPromoBanner';
 import PhotoGalleryAdmin from '../components/admin/PhotoGalleryAdmin';
 import MarcheTextesAdmin from '../components/admin/MarcheTextesAdmin';
+import TextesLitterairesGalleryAdmin from '../components/admin/TextesLitterairesGalleryAdmin';
 import { toast } from 'sonner';
 import { MarcheTechnoSensible } from '../utils/googleSheetsApi';
 
@@ -183,15 +184,7 @@ const MarcheAdmin = () => {
             </TabsContent>
 
             <TabsContent value="texts" className="space-y-4">
-              <div className="grid gap-6">
-                {filteredMarches.map((marche) => (
-                  <MarcheTextesAdmin 
-                    key={marche.id}
-                    marcheId={marche.id}
-                    marcheName={marche.nomMarche}
-                  />
-                ))}
-              </div>
+              <TextesLitterairesGalleryAdmin marches={filteredMarches} />
             </TabsContent>
 
             <TabsContent value="gallery" className="space-y-4">
