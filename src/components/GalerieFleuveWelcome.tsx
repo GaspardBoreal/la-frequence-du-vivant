@@ -65,14 +65,6 @@ const GalerieFleuveWelcome: React.FC<GalerieFluveWelcomeProps> = ({
   const handleModeClick = (modeLabel: string) => {
     if (modeLabel === 'Voir') {
       handleStart(); // Same action as "Commencer l'exploration" (formerly "Galerie")
-    } else if (modeLabel === 'Suivre') {
-      // Navigate to fleuve temporel view for this specific exploration (formerly "Fleuve temporel")
-      if (explorationSlug) {
-        window.location.href = `/galerie-fleuve/exploration/${explorationSlug}?view=fleuve-temporel`;
-      } else {
-        // Fallback to default exploration if no slug provided
-        window.location.href = '/galerie-fleuve/exploration/remontee-dordogne-atlas-eaux-vivantes-2025-2045?view=fleuve-temporel';
-      }
     } else if (modeLabel === 'Ecouter') {
       // Navigate to audio/bioacoustic experience
       if (explorationSlug) {
@@ -132,10 +124,9 @@ const GalerieFleuveWelcome: React.FC<GalerieFluveWelcomeProps> = ({
     ));
   };
 
-  // Modes d'immersion harmonisés
-  const immersionModes = theme?.immersionModes || [
+  // Modes d'immersion harmonisés - suppression du mode "Suivre"
+  const immersionModes = theme?.immersionModes?.filter(mode => mode.label !== 'Suivre') || [
     { icon: 'Eye', label: 'Voir', desc: 'Navigation spatiale des souvenirs' },
-    { icon: 'Waves', label: 'Suivre', desc: 'Chronologie du périple' },
     { icon: 'Heart', label: 'Ecouter', desc: 'Paysages sonores' },
     { icon: 'Stars', label: 'Lire', desc: 'Récits poétiques' }
   ];
@@ -279,6 +270,67 @@ const GalerieFleuveWelcome: React.FC<GalerieFluveWelcomeProps> = ({
             >
               Commencer l'exploration
             </Button>
+          </motion.div>
+
+          {/* Trait séparateur */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.9 }}
+            className="mx-auto w-24 h-px bg-white/30"
+          />
+
+          {/* Nouveaux menus */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 1.0 }}
+            className={`${isMobile ? 'space-y-2' : 'space-y-3'} max-w-md mx-auto`}
+          >
+            {/* Carte de l'exploration */}
+            <button 
+              onClick={() => {
+                if (explorationSlug) {
+                  window.location.href = `/galerie-fleuve/exploration/${explorationSlug}?view=fleuve-temporel`;
+                }
+              }}
+              className={`w-full flex items-center justify-between ${isMobile ? 'px-4 py-2' : 'px-6 py-3'} bg-white/5 rounded-lg backdrop-blur-sm border border-white/20 hover:bg-white/10 transition-colors text-left`}
+            >
+              <div className="flex items-center space-x-3">
+                <MapPin className={`${isMobile ? 'h-4 w-4' : 'h-5 w-5'} text-white/80`} />
+                <span className={`${isMobile ? 'text-sm' : 'text-base'} font-medium`}>Carte de l'exploration</span>
+              </div>
+            </button>
+
+            {/* Recherche historique */}
+            <button 
+              onClick={() => {
+                if (explorationSlug) {
+                  window.location.href = `/galerie-fleuve/exploration/${explorationSlug}/historique`;
+                }
+              }}
+              className={`w-full flex items-center justify-between ${isMobile ? 'px-4 py-2' : 'px-6 py-3'} bg-white/5 rounded-lg backdrop-blur-sm border border-white/20 hover:bg-white/10 transition-colors text-left`}
+            >
+              <div className="flex items-center space-x-3">
+                <Clock className={`${isMobile ? 'h-4 w-4' : 'h-5 w-5'} text-white/80`} />
+                <span className={`${isMobile ? 'text-sm' : 'text-base'} font-medium`}>Recherche historique</span>
+              </div>
+            </button>
+
+            {/* Essais */}
+            <button 
+              onClick={() => {
+                if (explorationSlug) {
+                  window.location.href = `/galerie-fleuve/exploration/${explorationSlug}/essais`;
+                }
+              }}
+              className={`w-full flex items-center justify-between ${isMobile ? 'px-4 py-2' : 'px-6 py-3'} bg-white/5 rounded-lg backdrop-blur-sm border border-white/20 hover:bg-white/10 transition-colors text-left`}
+            >
+              <div className="flex items-center space-x-3">
+                <Palette className={`${isMobile ? 'h-4 w-4' : 'h-5 w-5'} text-white/80`} />
+                <span className={`${isMobile ? 'text-sm' : 'text-base'} font-medium`}>Essais</span>
+              </div>
+            </button>
           </motion.div>
         </div>
 

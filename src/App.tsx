@@ -34,6 +34,8 @@ import WeatherCalendar from './pages/WeatherCalendar';
 import ProjectPresentation from './pages/ProjectPresentation';
 import GalerieFleuvePage from './pages/GalerieFleuvePage';
 import GalerieFluveExploration from './pages/GalerieFluveExploration';
+import ExplorationHistorique from './pages/ExplorationHistorique';
+import ExplorationEssais from './pages/ExplorationEssais';
 import ExperienceAudioContinue from './components/experience/ExperienceAudioContinue';
 import ExperienceLectureOptimisee from './components/reading/ExperienceLectureOptimisee';
 
@@ -58,6 +60,8 @@ function App() {
             <Route path="/galerie-fleuve/exploration/:slug/ecouter" element={<ExperienceAudioContinue />} />
             <Route path="/galerie-fleuve/exploration/:slug/lire" element={<ExperienceLectureOptimisee />} />
             <Route path="/galerie-fleuve/exploration/:slug/lire/:textId" element={<ExperienceLectureOptimisee />} />
+            <Route path="/galerie-fleuve/exploration/:slug/historique" element={<ExplorationHistorique />} />
+            <Route path="/galerie-fleuve/exploration/:slug/essais" element={<ExplorationEssais />} />
             <Route path="/explorations/:slug" element={<ExplorationDetail />} />
             <Route path="/explorations/:slug/animer" element={<ExplorationDetail />} />
             <Route path="/explorations/:slug/experience/audio" element={<ExperienceAudioContinue />} />
