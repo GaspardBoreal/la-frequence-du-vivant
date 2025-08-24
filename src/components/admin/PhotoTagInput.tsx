@@ -184,34 +184,58 @@ const PhotoTagInput: React.FC<PhotoTagInputProps> = ({
 
           {/* Suggestions dropdown */}
           {isOpen && (filteredSuggestions.length > 0 || inputValue.trim().length > 0) && (
-            <div className="absolute z-50 w-full bg-background border border-border rounded-md shadow-lg max-h-40 overflow-y-auto">
-              <div className="p-1">
+            <div className="absolute z-50 w-full mt-1 bg-card border border-border rounded-lg shadow-xl max-h-48 overflow-hidden">
+              <div className="max-h-48 overflow-y-auto scrollbar-thin scrollbar-thumb-border scrollbar-track-transparent">
                 {/* Option de création si rien ne correspond */}
                 {(() => {
                   const normalized = inputValue.trim().toLowerCase();
                   const canCreate = normalized.length > 0 && !tags.includes(normalized) && !suggestedTags.includes(normalized);
                   return canCreate ? (
-                    <button
-                      key={`create-${normalized}`}
-                      className="w-full text-left px-2 py-1 text-sm hover:bg-muted rounded flex items-center gap-2"
-                      onClick={() => addTag(normalized)}
-                    >
-                      <Plus className="h-3 w-3 text-primary" />
-                      Créer "{inputValue.trim()}"
-                    </button>
+                    <div className="border-b border-border bg-muted/50">
+                      <button
+                        key={`create-${normalized}`}
+                        className="w-full text-left px-3 py-2.5 text-sm hover:bg-primary/10 transition-colors flex items-center gap-2 font-medium text-primary"
+                        onClick={() => addTag(normalized)}
+                      >
+                        <Plus className="h-4 w-4" />
+                        <span>Créer "<span className="font-semibold">{inputValue.trim()}</span>"</span>
+                      </button>
+                    </div>
                   ) : null;
                 })()}
 
-                {filteredSuggestions.map((suggestion) => (
-                  <button
-                    key={suggestion}
-                    className="w-full text-left px-2 py-1 text-sm hover:bg-muted rounded flex items-center gap-2"
-                    onClick={() => handleSuggestionClick(suggestion)}
-                  >
-                    <Tag className="h-3 w-3 text-muted-foreground" />
-                    {suggestion}
-                  </button>
-                ))}
+                {/* Tags suggérés */}
+                {filteredSuggestions.length > 0 && (
+                  <div className="py-1">
+                    {inputValue.trim().length === 0 && (
+                      <div className="px-3 py-1 text-xs font-medium text-muted-foreground bg-muted/30">
+                        Tags populaires
+                      </div>
+                    )}
+                    {filteredSuggestions.map((suggestion, index) => (
+                      <button
+                        key={suggestion}
+                        className="w-full text-left px-3 py-2 text-sm hover:bg-accent hover:text-accent-foreground transition-colors flex items-center gap-2 group"
+                        onClick={() => handleSuggestionClick(suggestion)}
+                      >
+                        <Tag className="h-3.5 w-3.5 text-muted-foreground group-hover:text-accent-foreground" />
+                        <span className="flex-1">{suggestion}</span>
+                        <Plus className="h-3 w-3 opacity-0 group-hover:opacity-50 transition-opacity" />
+                      </button>
+                    ))}
+                  </div>
+                )}
+                
+                {/* Message si aucune suggestion */}
+                {filteredSuggestions.length === 0 && inputValue.trim().length > 0 && !(() => {
+                  const normalized = inputValue.trim().toLowerCase();
+                  return normalized.length > 0 && !tags.includes(normalized) && !suggestedTags.includes(normalized);
+                })() && (
+                  <div className="px-3 py-4 text-center text-sm text-muted-foreground">
+                    <Tag className="h-4 w-4 mx-auto mb-1 opacity-50" />
+                    Aucun tag correspondant trouvé
+                  </div>
+                )}
               </div>
             </div>
           )}
