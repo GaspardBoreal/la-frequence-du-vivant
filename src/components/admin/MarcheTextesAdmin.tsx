@@ -11,6 +11,7 @@ import { Badge } from '@/components/ui/badge';
 import { Label } from '@/components/ui/label';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
+import { SecureRichTextEditor } from '@/components/ui/secure-rich-text-editor';
 import {
   useMarcheTextes,
   useCreateMarcheTexte,
@@ -274,13 +275,11 @@ function TexteFormDialog({
           
           <div className="space-y-2">
             <Label htmlFor="contenu">Contenu</Label>
-            <Textarea
-              id="contenu"
+            <SecureRichTextEditor
               value={formData.contenu}
-              onChange={(e) => setFormData(prev => ({ ...prev, contenu: e.target.value }))}
+              onChange={(value) => setFormData(prev => ({ ...prev, contenu: value }))}
               placeholder="Écrivez votre texte ici..."
-              className="min-h-[300px] resize-none"
-              required
+              className="min-h-[300px]"
             />
           </div>
 
