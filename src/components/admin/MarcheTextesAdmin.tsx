@@ -1,5 +1,5 @@
 // Admin interface for managing literary texts of a marche
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Plus, Edit2, Trash2, GripVertical, Eye, FileText } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -163,6 +163,18 @@ function TexteFormDialog({
     metadata: texte?.metadata || {},
   });
 
+  // Sync form when opening or when texte changes
+  useEffect(() => {
+    if (isOpen) {
+      setFormData({
+        titre: texte?.titre || '',
+        contenu: texte?.contenu || '',
+        type_texte: (texte?.type_texte as TextType) || 'poeme',
+        metadata: texte?.metadata || {},
+      });
+    }
+  }, [isOpen, texte]);
+
   const createMutation = useCreateMarcheTexte();
   const updateMutation = useUpdateMarcheTexte();
 
@@ -194,7 +206,7 @@ function TexteFormDialog({
 
   return (
     <Dialog open={isOpen} onOpenChange={handleOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[90vh]">
+      <DialogContent className="max-w-4xl max-h-[90vh]" key={texte?.id || 'new'}>
         <DialogHeader>
           <DialogTitle>
             {texte ? 'Modifier le texte' : 'Nouveau texte'}
