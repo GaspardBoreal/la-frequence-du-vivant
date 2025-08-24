@@ -1,4 +1,4 @@
-import React, { useState, useRef, useCallback } from 'react';
+import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { Button } from './button';
 import { Separator } from './separator';
 import { 
@@ -31,6 +31,7 @@ export const SecureRichTextEditor: React.FC<SecureRichTextEditorProps> = ({
 }) => {
   const editorRef = useRef<HTMLDivElement>(null);
   const [selection, setSelection] = useState<Range | null>(null);
+  const [isTyping, setIsTyping] = useState(false);
 
   const saveSelection = useCallback(() => {
     const sel = window.getSelection();
@@ -158,8 +159,10 @@ export const SecureRichTextEditor: React.FC<SecureRichTextEditorProps> = ({
 
   const updateContent = useCallback(() => {
     if (editorRef.current) {
+      setIsTyping(true);
       const sanitizedContent = sanitizeHtml(editorRef.current.innerHTML);
       onChange(sanitizedContent);
+      setTimeout(() => setIsTyping(false), 50);
     }
   }, [onChange]);
 
@@ -186,6 +189,64 @@ export const SecureRichTextEditor: React.FC<SecureRichTextEditorProps> = ({
       }
     }
   }, [executeCommand]);
+
+  // Update editor content when value changes from outside (but not when typing)
+  useEffect(() => {
+    if (!isTyping && editorRef.current) {
+      const currentContent = editorRef.current.innerHTML;
+      const sanitizedValue = sanitizeHtml(value);
+      
+      // Only update if the content is actually different
+      if (currentContent !== sanitizedValue) {
+        const selection = window.getSelection();
+        const range = selection?.rangeCount ? selection.getRangeAt(0) : null;
+        const startOffset = range?.startOffset || 0;
+        const endOffset = range?.endOffset || 0;
+        
+        editorRef.current.innerHTML = sanitizedValue;
+        
+        // Restore cursor position if possible
+        if (range && selection) {
+          try {
+            const newRange = document.createRange();
+            const walker = document.createTreeWalker(
+              editorRef.current,
+              NodeFilter.SHOW_TEXT,
+              null
+            );
+            
+            let currentOffset = 0;
+            let startNode = null;
+            let endNode = null;
+            
+            while (walker.nextNode()) {
+              const node = walker.currentNode;
+              const nodeLength = node.textContent?.length || 0;
+              
+              if (!startNode && currentOffset + nodeLength >= startOffset) {
+                startNode = node;
+              }
+              if (!endNode && currentOffset + nodeLength >= endOffset) {
+                endNode = node;
+                break;
+              }
+              
+              currentOffset += nodeLength;
+            }
+            
+            if (startNode && endNode) {
+              newRange.setStart(startNode, Math.min(startOffset - (currentOffset - (startNode.textContent?.length || 0)), startNode.textContent?.length || 0));
+              newRange.setEnd(endNode, Math.min(endOffset - (currentOffset - (endNode.textContent?.length || 0)), endNode.textContent?.length || 0));
+              selection.removeAllRanges();
+              selection.addRange(newRange);
+            }
+          } catch (e) {
+            // If cursor restoration fails, just continue
+          }
+        }
+      }
+    }
+  }, [value, isTyping]);
 
   return (
     <div className={`border border-input rounded-md ${className}`}>
@@ -295,12 +356,12 @@ export const SecureRichTextEditor: React.FC<SecureRichTextEditorProps> = ({
         onKeyDown={handleKeyDown}
         onMouseUp={saveSelection}
         onKeyUp={saveSelection}
-        dangerouslySetInnerHTML={{ __html: sanitizeHtml(value) }}
         data-placeholder={placeholder}
         style={{
           // Show placeholder when empty
           position: 'relative'
         }}
+        suppressContentEditableWarning={true}
       />
       
       <style>{`
