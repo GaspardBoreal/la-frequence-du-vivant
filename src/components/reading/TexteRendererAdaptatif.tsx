@@ -6,6 +6,7 @@ import { getTextTypeInfo } from '@/types/textTypes';
 import type { ExplorationTextOptimized } from '@/hooks/useExplorationTextsOptimized';
 import { BookOpen, Quote, Feather } from 'lucide-react';
 import { ReadingMode } from '@/types/readingTypes';
+import { sanitizeHtml } from '@/utils/htmlSanitizer';
 
 interface Props {
   texte: ExplorationTextOptimized;
@@ -73,19 +74,8 @@ export default function TexteRendererAdaptatif({ texte, readingMode = 'rich' }: 
                   lineHeight: '2.8rem',
                   letterSpacing: '0.03em'
                 }}
-              >
-                {texte.contenu?.split('\n').map((line, index) => (
-                  <motion.div
-                    key={index}
-                    initial={{ opacity: 0, x: -30 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: 0.9 + index * 0.4, duration: 0.6 }}
-                    className="block mb-2"
-                  >
-                    {line}
-                  </motion.div>
-                ))}
-              </div>
+                dangerouslySetInnerHTML={{ __html: sanitizeHtml(texte.contenu || '') }}
+              />
             </div>
           </motion.div>
 
@@ -161,25 +151,14 @@ export default function TexteRendererAdaptatif({ texte, readingMode = 'rich' }: 
               )}
             </div>
 
-            <div className={`prose prose-lg max-w-none ${
-              readingMode === 'focus' 
-                ? 'prose-slate dark:prose-invert text-lg leading-relaxed' 
-                : 'prose-slate dark:prose-invert'
-            }`}>
-              {texte.contenu?.split('\n\n').map((paragraph, index) => (
-                <motion.p
-                  key={index}
-                  initial={{ opacity: 0, y: 15 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: index * 0.2, duration: 0.6 }}
-                  className={`mb-6 text-slate-700 dark:text-slate-200 ${
-                    readingMode === 'focus' ? 'text-xl leading-relaxed' : 'text-lg'
-                  }`}
-                >
-                  {paragraph}
-                </motion.p>
-              ))}
-            </div>
+            <div 
+              className={`prose prose-lg max-w-none ${
+                readingMode === 'focus' 
+                  ? 'prose-slate dark:prose-invert text-lg leading-relaxed' 
+                  : 'prose-slate dark:prose-invert'
+              }`}
+              dangerouslySetInnerHTML={{ __html: sanitizeHtml(texte.contenu || '') }}
+            />
           </div>
         </div>
       </motion.div>
