@@ -22,15 +22,20 @@ import {
   Trash2,
   Plus,
   Type,
-  FileText
+  FileText,
+  Save,
+  AlertCircle
 } from 'lucide-react';
 import { MarcheTechnoSensible } from '../../utils/googleSheetsApi';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useDebounce } from '../../hooks/useDebounce';
-import { MarcheTexte, useDeleteMarcheTexte } from '../../hooks/useMarcheTextes';
+import { MarcheTexte, useDeleteMarcheTexte, useUpdateMarcheTexte } from '../../hooks/useMarcheTextes';
 import { TextType } from '@/types/textTypes';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../ui/dialog';
+import { Label } from '../ui/label';
+import { SecureRichTextEditor } from '../ui/secure-rich-text-editor';
+import { Alert, AlertDescription } from '../ui/alert';
 
 interface TextesLitterairesGalleryAdminProps {
   marches: MarcheTechnoSensible[];
@@ -191,6 +196,156 @@ const TextePreviewDialog: React.FC<{
   );
 };
 
+// Composant pour l'édition d'un texte
+const TexteEditDialog: React.FC<{
+  texte: TexteWithMarche | null;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onSave: (id: string, updates: Partial<MarcheTexte>) => void;
+}> = ({ texte, open, onOpenChange, onSave }) => {
+  const [titre, setTitre] = useState('');
+  const [contenu, setContenu] = useState('');
+  const [typeTexte, setTypeTexte] = useState<TextType>('haiku');
+  const [ordre, setOrdre] = useState(1);
+  const [saving, setSaving] = useState(false);
+
+  // Types de texte disponibles
+  const textTypes: { value: TextType; label: string }[] = [
+    { value: 'haiku', label: 'Haïku' },
+    { value: 'poeme', label: 'Poème' },
+    { value: 'carte-poetique', label: 'Carte Poétique' },
+    { value: 'haibun', label: 'Haibun' },
+    { value: 'dialogue-polyphonique', label: 'Dialogue Polyphonique' },
+    { value: 'fragment', label: 'Fragment' },
+    { value: 'fable', label: 'Fable' },
+    { value: 'essai-bref', label: 'Essai Bref' }
+  ];
+
+  useEffect(() => {
+    if (texte) {
+      setTitre(texte.titre);
+      setContenu(texte.contenu);
+      setTypeTexte(texte.type_texte);
+      setOrdre(texte.ordre);
+    }
+  }, [texte]);
+
+  const handleSave = async () => {
+    if (!texte || !titre.trim() || !contenu.trim()) {
+      toast.error('Le titre et le contenu sont obligatoires');
+      return;
+    }
+
+    setSaving(true);
+    try {
+      await onSave(texte.id, {
+        titre: titre.trim(),
+        contenu: contenu.trim(),
+        type_texte: typeTexte,
+        ordre
+      });
+      onOpenChange(false);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  if (!texte) return null;
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <Edit2 className="h-5 w-5" />
+            Éditer le texte
+          </DialogTitle>
+        </DialogHeader>
+
+        <div className="space-y-6">
+          {/* Infos de la marche */}
+          <Alert>
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>
+              Marche : {texte.marche.ville} - {texte.marche.nomMarche || 'Sans nom'}
+            </AlertDescription>
+          </Alert>
+
+          {/* Champs d'édition */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="edit-titre">Titre *</Label>
+              <Input
+                id="edit-titre"
+                value={titre}
+                onChange={(e) => setTitre(e.target.value)}
+                placeholder="Titre du texte"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="edit-type">Type de texte</Label>
+              <Select value={typeTexte} onValueChange={(value) => setTypeTexte(value as TextType)}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {textTypes.map(type => (
+                    <SelectItem key={type.value} value={type.value}>
+                      {type.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="edit-ordre">Ordre</Label>
+              <Input
+                id="edit-ordre"
+                type="number"
+                min="1"
+                value={ordre}
+                onChange={(e) => setOrdre(parseInt(e.target.value) || 1)}
+              />
+            </div>
+          </div>
+
+          {/* Éditeur de contenu riche */}
+          <div className="space-y-2">
+            <Label>Contenu *</Label>
+            <SecureRichTextEditor
+              value={contenu}
+              onChange={setContenu}
+              placeholder="Saisissez le contenu du texte..."
+              className="min-h-[300px]"
+            />
+          </div>
+
+          {/* Actions */}
+          <div className="flex justify-end gap-2 pt-4 border-t">
+            <Button
+              variant="outline"
+              onClick={() => onOpenChange(false)}
+              disabled={saving}
+            >
+              Annuler
+            </Button>
+            <Button
+              onClick={handleSave}
+              disabled={saving || !titre.trim() || !contenu.trim()}
+            >
+              {saving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              <Save className="h-4 w-4 mr-2" />
+              Sauvegarder
+            </Button>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+};
+
 const TextesLitterairesGalleryAdmin: React.FC<TextesLitterairesGalleryAdminProps> = ({ marches }) => {
   const [textes, setTextes] = useState<TexteWithMarche[]>([]);
   const [loading, setLoading] = useState(true);
@@ -204,42 +359,49 @@ const TextesLitterairesGalleryAdmin: React.FC<TextesLitterairesGalleryAdminProps
   const [showFilters, setShowFilters] = useState(false);
   const [previewTexte, setPreviewTexte] = useState<TexteWithMarche | null>(null);
   const [previewOpen, setPreviewOpen] = useState(false);
+  const [editTexte, setEditTexte] = useState<TexteWithMarche | null>(null);
+  const [editOpen, setEditOpen] = useState(false);
   
   // Debouncing pour optimiser les performances
   const debouncedSearchText = useDebounce(searchText, 300);
   
   const deleteTexte = useDeleteMarcheTexte();
+  const updateTexte = useUpdateMarcheTexte();
 
-  // Charger tous les textes
+  // Charger tous les textes avec une requête optimisée
   useEffect(() => {
     const loadAllTextes = async () => {
       setLoading(true);
       try {
-        const allTextes: TexteWithMarche[] = [];
-        
-        for (const marche of marches) {
-          try {
-            const { data, error } = await supabase
-              .from('marche_textes')
-              .select('*')
-              .eq('marche_id', marche.id)
-              .order('ordre', { ascending: true });
-              
-            if (error) throw error;
-            
-            const textesWithMarche = data.map(texte => ({
-              ...texte,
-              type_texte: texte.type_texte as TextType, // Cast to TextType
-              metadata: texte.metadata as Record<string, any> | null, // Cast metadata
-              marche
-            }));
-            allTextes.push(...textesWithMarche);
-          } catch (error) {
-            console.warn(`Erreur chargement textes pour marche ${marche.ville}:`, error);
-          }
+        if (marches.length === 0) {
+          setTextes([]);
+          setLoading(false);
+          return;
         }
+
+        const marcheIds = marches.map(m => m.id);
         
-        setTextes(allTextes);
+        // Une seule requête pour tous les textes
+        const { data, error } = await supabase
+          .from('marche_textes')
+          .select('*')
+          .in('marche_id', marcheIds)
+          .order('created_at', { ascending: false });
+          
+        if (error) throw error;
+        
+        // Mapper les textes avec les marches
+        const textesWithMarche: TexteWithMarche[] = data.map(texte => {
+          const marche = marches.find(m => m.id === texte.marche_id);
+          return {
+            ...texte,
+            type_texte: texte.type_texte as TextType,
+            metadata: texte.metadata as Record<string, any> | null,
+            marche: marche!
+          };
+        }).filter(texte => texte.marche); // Filtrer les textes sans marche
+        
+        setTextes(textesWithMarche);
       } catch (error) {
         console.error('Erreur chargement textes:', error);
         toast.error('Erreur lors du chargement des textes');
@@ -248,9 +410,7 @@ const TextesLitterairesGalleryAdmin: React.FC<TextesLitterairesGalleryAdminProps
       }
     };
 
-    if (marches.length > 0) {
-      loadAllTextes();
-    }
+    loadAllTextes();
   }, [marches]);
 
   // Obtenir les marches qui ont des textes avec compteurs
@@ -387,9 +547,21 @@ const TextesLitterairesGalleryAdmin: React.FC<TextesLitterairesGalleryAdminProps
   }, []);
 
   const handleEdit = useCallback((texte: TexteWithMarche) => {
-    // TODO: Implémenter l'édition
-    toast.info('Édition en cours de développement');
+    setEditTexte(texte);
+    setEditOpen(true);
   }, []);
+
+  const handleSaveEdit = useCallback(async (id: string, updates: Partial<MarcheTexte>) => {
+    try {
+      await updateTexte.mutateAsync({ id, ...updates });
+      // Mettre à jour la liste locale
+      setTextes(prev => prev.map(t => t.id === id ? { ...t, ...updates } : t));
+      toast.success('Texte modifié avec succès');
+    } catch (error) {
+      console.error('Erreur modification:', error);
+      toast.error('Erreur lors de la modification');
+    }
+  }, [updateTexte]);
 
   const handleDelete = useCallback(async (id: string) => {
     if (confirm('Êtes-vous sûr de vouloir supprimer ce texte ?')) {
@@ -667,6 +839,14 @@ const TextesLitterairesGalleryAdmin: React.FC<TextesLitterairesGalleryAdminProps
         texte={previewTexte}
         open={previewOpen}
         onOpenChange={setPreviewOpen}
+      />
+
+      {/* Dialog d'édition */}
+      <TexteEditDialog
+        texte={editTexte}
+        open={editOpen}
+        onOpenChange={setEditOpen}
+        onSave={handleSaveEdit}
       />
     </div>
   );
