@@ -52,6 +52,7 @@ const PhotoGalleryAdmin: React.FC<PhotoGalleryAdminProps> = ({ marches }) => {
   const [showFilters, setShowFilters] = useState(false);
   const [tagRefreshKey, setTagRefreshKey] = useState(0); // Pour forcer le rechargement des tags
   const [tagSortBy, setTagSortBy] = useState<'name' | 'count'>('name');
+  const [showOnlyWithoutTags, setShowOnlyWithoutTags] = useState(false);
   // Debouncing pour optimiser les performances
   const debouncedSearchText = useDebounce(searchText, 300);
 
@@ -172,10 +173,17 @@ const PhotoGalleryAdmin: React.FC<PhotoGalleryAdminProps> = ({ marches }) => {
     }
 
 
-    // Filtre par tags sélectionnés
-    if (selectedTags.length > 0) {
+    // Filtre par tags sélectionnés ou absence de tags
+    if (selectedTags.length > 0 || showOnlyWithoutTags) {
       filtered = filtered.filter(photo => {
         const photoTags = photo.tags?.map(t => t.tag) || [];
+        
+        // Si on veut uniquement les photos sans tags
+        if (showOnlyWithoutTags) {
+          return photoTags.length === 0;
+        }
+        
+        // Sinon, appliquer le filtre normal par tags sélectionnés
         return selectedTags.every(selectedTag => photoTags.includes(selectedTag));
       });
     }
@@ -225,7 +233,7 @@ const PhotoGalleryAdmin: React.FC<PhotoGalleryAdminProps> = ({ marches }) => {
     });
 
     return filtered;
-  }, [photos, selectedMarche, selectedExploration, explorationMarcheIds, hasTitle, hasDescription, selectedTags, debouncedSearchText, sortField, sortDirection]);
+  }, [photos, selectedMarche, selectedExploration, explorationMarcheIds, hasTitle, hasDescription, selectedTags, showOnlyWithoutTags, debouncedSearchText, sortField, sortDirection]);
 
   const handleSort = useCallback((field: SortField) => {
     if (sortField === field) {
@@ -276,9 +284,10 @@ const PhotoGalleryAdmin: React.FC<PhotoGalleryAdminProps> = ({ marches }) => {
     setHasTitle(null);
     setHasDescription(null);
     setSelectedTags([]);
+    setShowOnlyWithoutTags(false);
   }, []);
 
-  const hasActiveFilters = debouncedSearchText || selectedMarche !== 'all' || selectedExploration !== 'all' || hasTitle !== null || hasDescription !== null || selectedTags.length > 0;
+  const hasActiveFilters = debouncedSearchText || selectedMarche !== 'all' || selectedExploration !== 'all' || hasTitle !== null || hasDescription !== null || selectedTags.length > 0 || showOnlyWithoutTags;
 
   const getSortIcon = (field: SortField) => {
     if (sortField !== field) return null;
@@ -415,11 +424,41 @@ const PhotoGalleryAdmin: React.FC<PhotoGalleryAdminProps> = ({ marches }) => {
             </h4>
             
             <div className="grid grid-cols-1 gap-4">
+              {/* Option pour voir uniquement les photos sans tags */}
+              <div className="space-y-2">
+                <div className="flex items-center space-x-2 p-3 bg-muted/30 rounded-lg">
+                  <Checkbox
+                    id="only-without-tags"
+                    checked={showOnlyWithoutTags}
+                    onCheckedChange={(checked) => {
+                      setShowOnlyWithoutTags(checked as boolean);
+                      // Si on active ce filtre, on désactive les tags sélectionnés
+                      if (checked) {
+                        setSelectedTags([]);
+                      }
+                    }}
+                  />
+                  <label htmlFor="only-without-tags" className="text-sm font-medium">
+                    Afficher uniquement les photos sans aucun tag
+                  </label>
+                </div>
+                {showOnlyWithoutTags && (
+                  <p className="text-xs text-orange-600 bg-orange-50 p-2 rounded">
+                    <strong>Mode actif :</strong> Seules les photos sans tags sont affichées. 
+                    La sélection de tags individuels est désactivée.
+                  </p>
+                )}
+              </div>
+
               {/* Sélecteur de tri pour les tags */}
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
                   <label className="text-sm font-medium">Tags disponibles</label>
-                  <Select value={tagSortBy} onValueChange={(value) => setTagSortBy(value as 'name' | 'count')}>
+                  <Select 
+                    value={tagSortBy} 
+                    onValueChange={(value) => setTagSortBy(value as 'name' | 'count')}
+                    disabled={showOnlyWithoutTags}
+                  >
                     <SelectTrigger className="w-32">
                       <SelectValue />
                     </SelectTrigger>
@@ -430,7 +469,7 @@ const PhotoGalleryAdmin: React.FC<PhotoGalleryAdminProps> = ({ marches }) => {
                   </Select>
                 </div>
                 {tagsWithCounts.length > 0 ? (
-                  <div className="flex flex-wrap gap-1 max-h-32 overflow-y-auto">
+                  <div className={`flex flex-wrap gap-1 max-h-32 overflow-y-auto ${showOnlyWithoutTags ? 'opacity-50 pointer-events-none' : ''}`}>
                     {tagsWithCounts
                       .sort((a, b) => {
                         if (tagSortBy === 'name') {
@@ -449,6 +488,8 @@ const PhotoGalleryAdmin: React.FC<PhotoGalleryAdminProps> = ({ marches }) => {
                             isSelected ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'
                           }`}
                           onClick={() => {
+                            if (showOnlyWithoutTags) return; // Désactiver si mode "sans tags" activé
+                            
                             if (isSelected) {
                               setSelectedTags(prev => prev.filter(t => t !== tag));
                             } else {
@@ -466,12 +507,18 @@ const PhotoGalleryAdmin: React.FC<PhotoGalleryAdminProps> = ({ marches }) => {
                   <p className="text-sm text-muted-foreground">Aucun tag disponible</p>
                 )}
                 <p className="text-xs text-muted-foreground">
-                  Cliquez sur un tag pour filtrer ({selectedTags.length} sélectionné{selectedTags.length > 1 ? 's' : ''}) - 
-                  Tri par {tagSortBy === 'name' ? 'nom' : 'nombre d\'occurrences'}
-                  {selectedTags.length > 0 && (
-                    <span className="block mt-1 font-medium text-primary">
-                      Tags actifs: {selectedTags.join(', ')}
-                    </span>
+                  {showOnlyWithoutTags ? (
+                    'Mode "sans tags" activé - sélection individuelle désactivée'
+                  ) : (
+                    <>
+                      Cliquez sur un tag pour filtrer ({selectedTags.length} sélectionné{selectedTags.length > 1 ? 's' : ''}) - 
+                      Tri par {tagSortBy === 'name' ? 'nom' : 'nombre d\'occurrences'}
+                      {selectedTags.length > 0 && (
+                        <span className="block mt-1 font-medium text-primary">
+                          Tags actifs: {selectedTags.join(', ')}
+                        </span>
+                      )}
+                    </>
                   )}
                 </p>
               </div>
@@ -601,6 +648,9 @@ const PhotoGalleryAdmin: React.FC<PhotoGalleryAdminProps> = ({ marches }) => {
                     )}
                     {selectedTags.length > 0 && (
                       <p className="text-muted-foreground">• Tags requis: <span className="font-medium">{selectedTags.join(', ')}</span></p>
+                    )}
+                    {showOnlyWithoutTags && (
+                      <p className="text-muted-foreground">• Photos sans aucun tag uniquement</p>
                     )}
                     {debouncedSearchText && (
                       <p className="text-muted-foreground">• Recherche: "{debouncedSearchText}"</p>
