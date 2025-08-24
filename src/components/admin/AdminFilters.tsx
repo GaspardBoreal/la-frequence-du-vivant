@@ -437,6 +437,7 @@ const AdminFilters: React.FC<AdminFiltersProps> = ({ marches, onFilterChange }) 
                   id="without-photos"
                   checked={withoutPhotos}
                   onCheckedChange={handleWithoutPhotosChange}
+                  className="border-white data-[state=checked]:bg-white data-[state=checked]:text-primary"
                 />
                 <label
                   htmlFor="without-photos"
@@ -451,6 +452,7 @@ const AdminFilters: React.FC<AdminFiltersProps> = ({ marches, onFilterChange }) 
                   id="without-audio"
                   checked={withoutAudio}
                   onCheckedChange={handleWithoutAudioChange}
+                  className="border-white data-[state=checked]:bg-white data-[state=checked]:text-primary"
                 />
                 <label
                   htmlFor="without-audio"
@@ -465,6 +467,7 @@ const AdminFilters: React.FC<AdminFiltersProps> = ({ marches, onFilterChange }) 
                   id="without-texts"
                   checked={withoutTexts}
                   onCheckedChange={handleWithoutTextsChange}
+                  className="border-white data-[state=checked]:bg-white data-[state=checked]:text-primary"
                 />
                 <label
                   htmlFor="without-texts"
