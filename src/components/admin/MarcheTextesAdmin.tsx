@@ -115,6 +115,7 @@ function SortableTexteCard({ texte, onEdit, onDelete, onPreview }: {
         
         <div className="flex items-center gap-1">
           <Button
+            type="button"
             variant="ghost"
             size="sm"
             onClick={() => onPreview(texte)}
@@ -122,6 +123,7 @@ function SortableTexteCard({ texte, onEdit, onDelete, onPreview }: {
             <Eye className="h-4 w-4" />
           </Button>
           <Button
+            type="button"
             variant="ghost"
             size="sm"
             onClick={() => onEdit(texte)}
@@ -129,6 +131,7 @@ function SortableTexteCard({ texte, onEdit, onDelete, onPreview }: {
             <Edit2 className="h-4 w-4" />
           </Button>
           <Button
+            type="button"
             variant="ghost"
             size="sm"
             onClick={() => onDelete(texte.id)}
@@ -413,7 +416,7 @@ export default function MarcheTextesAdmin({ marcheId, marcheName }: MarcheTextes
               </p>
             )}
           </div>
-          <Button onClick={() => setIsFormOpen(true)}>
+          <Button type="button" onClick={() => setIsFormOpen(true)}>
             <Plus className="h-4 w-4 mr-2" />
             Nouveau texte
           </Button>
