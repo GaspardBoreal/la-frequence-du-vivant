@@ -4,10 +4,16 @@ import { ExportOptions } from '@/components/admin/ExportPanel';
 
 export interface ExportedMarche {
   id: string;
+  ordre?: number; // Pour l'ordre dans les explorations
   nom_marche?: string;
   ville?: string;
   departement?: string;
   region?: string;
+  date?: string;
+  descriptif_court?: string;
+  descriptif_long?: string;
+  theme_principal?: string;
+  sous_themes?: string[];
   coordinates?: {
     latitude: number;
     longitude: number;
@@ -88,6 +94,10 @@ export interface ExportResult {
     exportDate: string;
     type: 'marches' | 'explorations';
     totalItems: number;
+    totalMarches?: number;
+    totalTextes?: number;
+    totalPhotos?: number;
+    totalAudios?: number;
     exportOptions: string[];
     version: string;
   };
@@ -363,25 +373,178 @@ export async function exportMarchesToJSON(
   };
 }
 
-// Export des explorations (simplifié pour le moment)
+// Export des explorations avec toutes les données associées
 export async function exportExplorationsToJSON(
   explorations: any[], 
   options: ExportOptions
 ): Promise<ExportResult> {
   const exportedExplorations = [];
   
-  for (const exploration of explorations) {
+  console.log(`🚀 Début export de ${explorations.length} explorations...`);
+  
+  for (let i = 0; i < explorations.length; i++) {
+    const exploration = explorations[i];
+    console.log(`📖 Export exploration ${i + 1}/${explorations.length}: ${exploration.name}`);
+    
     const exported: any = {
       id: exploration.id,
       name: exploration.name,
       slug: exploration.slug,
       description: exploration.description,
       published: exploration.published,
-      created_at: exploration.created_at
+      created_at: exploration.created_at,
+      meta_title: exploration.meta_title,
+      meta_description: exploration.meta_description,
+      meta_keywords: exploration.meta_keywords,
+      cover_image_url: exploration.cover_image_url,
+      language: exploration.language
     };
 
-    // TODO: Ajouter la logique pour récupérer les marches associées et leurs données
-    // selon les options sélectionnées
+    try {
+      // Récupérer les marches associées à cette exploration
+      const { data: explorationMarches } = await supabase
+        .from('exploration_marches')
+        .select(`
+          marche_id,
+          ordre,
+          marches (*)
+        `)
+        .eq('exploration_id', exploration.id)
+        .order('ordre');
+
+      if (explorationMarches && explorationMarches.length > 0) {
+        console.log(`  📍 ${explorationMarches.length} marches trouvées pour ${exploration.name}`);
+        
+        const exportedMarches: ExportedMarche[] = [];
+        
+        for (const em of explorationMarches) {
+          const marche = em.marches;
+          if (!marche) continue;
+
+          const exportedMarche: ExportedMarche = {
+            id: marche.id,
+            ordre: em.ordre
+          };
+
+          // Données de base
+          if (options.includeBasicInfo) {
+            exportedMarche.nom_marche = marche.nom_marche;
+            exportedMarche.ville = marche.ville;
+            exportedMarche.departement = marche.departement;
+            exportedMarche.region = marche.region;
+            exportedMarche.date = marche.date;
+            exportedMarche.descriptif_court = marche.descriptif_court;
+            exportedMarche.descriptif_long = marche.descriptif_long;
+            exportedMarche.theme_principal = marche.theme_principal;
+            exportedMarche.sous_themes = marche.sous_themes;
+          }
+
+          // Coordonnées
+          if (options.includeCoordinates && marche.latitude && marche.longitude) {
+            exportedMarche.coordinates = {
+              latitude: parseFloat(marche.latitude.toString()),
+              longitude: parseFloat(marche.longitude.toString())
+            };
+          }
+
+          // Récupération des données supplémentaires en parallèle
+          const dataPromises = [];
+          
+          if (options.includeTexts) {
+            dataPromises.push(fetchMarcheTexts(marche.id));
+          }
+          if (options.includePhotos) {
+            dataPromises.push(fetchMarchePhotos(marche.id));
+          }
+          if (options.includeAudio) {
+            dataPromises.push(fetchMarcheAudio(marche.id));
+          }
+          if (options.includeBiodiversity) {
+            dataPromises.push(fetchMarcheBiodiversity(marche.id));
+          }
+          if (options.includeWeather) {
+            dataPromises.push(fetchMarcheWeather(marche.id));
+          }
+          if (options.includeRealEstate) {
+            dataPromises.push(fetchMarcheRealEstate(marche.id));
+          }
+
+          try {
+            const results = await Promise.all(dataPromises);
+            let resultIndex = 0;
+
+            if (options.includeTexts) {
+              const textes = results[resultIndex++];
+              if (textes && textes.length > 0) {
+                exportedMarche.textes = textes;
+                console.log(`    📝 ${textes.length} textes exportés`);
+              }
+            }
+            if (options.includePhotos) {
+              const photos = results[resultIndex++];
+              if (photos && photos.length > 0) {
+                exportedMarche.photos = photos;
+                console.log(`    📷 ${photos.length} photos exportées`);
+              }
+            }
+            if (options.includeAudio) {
+              const audios = results[resultIndex++];
+              if (audios && audios.length > 0) {
+                exportedMarche.audios = audios;
+                console.log(`    🎵 ${audios.length} audios exportés`);
+              }
+            }
+            if (options.includeBiodiversity) {
+              const bioData = results[resultIndex++];
+              if (bioData) {
+                exportedMarche.biodiversite = bioData;
+                console.log(`    🌱 Biodiversité exportée`);
+              }
+            }
+            if (options.includeWeather) {
+              const weatherData = results[resultIndex++];
+              if (weatherData) {
+                exportedMarche.meteo = weatherData;
+                console.log(`    🌤️ Météo exportée`);
+              }
+            }
+            if (options.includeRealEstate) {
+              const realEstateData = results[resultIndex++];
+              if (realEstateData) {
+                exportedMarche.immobilier = realEstateData;
+                console.log(`    🏠 Immobilier exporté`);
+              }
+            }
+          } catch (error) {
+            console.error(`Erreur lors de l'export de la marche ${marche.ville}:`, error);
+          }
+
+          exportedMarches.push(exportedMarche);
+        }
+        
+        exported.marches = exportedMarches;
+        console.log(`  ✅ Export terminé: ${exportedMarches.length} marches exportées`);
+      } else {
+        console.log(`  ⚠️ Aucune marche trouvée pour ${exploration.name}`);
+        exported.marches = [];
+      }
+
+      // Récupérer les pages de l'exploration
+      const { data: pages } = await supabase
+        .from('exploration_pages')
+        .select('*')
+        .eq('exploration_id', exploration.id)
+        .order('ordre');
+
+      if (pages && pages.length > 0) {
+        exported.pages = pages;
+        console.log(`  📄 ${pages.length} pages exportées`);
+      }
+
+    } catch (error) {
+      console.error(`Erreur lors de l'export de l'exploration ${exploration.name}:`, error);
+      exported.error = `Erreur lors de l'export: ${error.message}`;
+    }
     
     exportedExplorations.push(exported);
   }
@@ -390,11 +553,29 @@ export async function exportExplorationsToJSON(
     .filter(([_, value]) => value)
     .map(([key]) => key);
 
+  // Calculer les statistiques totales
+  const totalMarches = exportedExplorations.reduce((acc, exp) => acc + (exp.marches?.length || 0), 0);
+  const totalTextes = exportedExplorations.reduce((acc, exp) => 
+    acc + (exp.marches?.reduce((marcheAcc: number, marche: any) => 
+      marcheAcc + (marche.textes?.length || 0), 0) || 0), 0);
+  const totalPhotos = exportedExplorations.reduce((acc, exp) => 
+    acc + (exp.marches?.reduce((marcheAcc: number, marche: any) => 
+      marcheAcc + (marche.photos?.length || 0), 0) || 0), 0);
+  const totalAudios = exportedExplorations.reduce((acc, exp) => 
+    acc + (exp.marches?.reduce((marcheAcc: number, marche: any) => 
+      marcheAcc + (marche.audios?.length || 0), 0) || 0), 0);
+
+  console.log(`✅ Export terminé: ${totalMarches} marches, ${totalTextes} textes, ${totalPhotos} photos, ${totalAudios} audios`);
+
   return {
     metadata: {
       exportDate: new Date().toISOString(),
       type: 'explorations',
       totalItems: exportedExplorations.length,
+      totalMarches,
+      totalTextes,
+      totalPhotos,
+      totalAudios,
       exportOptions: selectedOptions,
       version: '1.0.0'
     },
