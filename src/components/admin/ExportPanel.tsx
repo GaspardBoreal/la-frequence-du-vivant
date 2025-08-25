@@ -81,7 +81,7 @@ const ExportPanel: React.FC<ExportPanelProps> = ({
         if (type === 'marches') {
           return true; // Skip date filtering for marches as they don't have created_at
         }
-        const itemDate = item.created_at ? new Date(item.created_at) : new Date();
+        const itemDate = 'created_at' in item && item.created_at ? new Date(item.created_at) : new Date();
         return itemDate >= cutoffDate;
       });
     }
@@ -99,9 +99,11 @@ const ExportPanel: React.FC<ExportPanelProps> = ({
     if (type !== 'explorations') return [];
     return data.filter(exploration => {
       const searchLower = searchTerm.toLowerCase();
+      const name = 'name' in exploration ? exploration.name : '';
+      const description = 'description' in exploration ? exploration.description : '';
       return (
-        exploration.name?.toLowerCase().includes(searchLower) ||
-        exploration.description?.toLowerCase().includes(searchLower)
+        name?.toLowerCase().includes(searchLower) ||
+        description?.toLowerCase().includes(searchLower)
       );
     });
   }, [data, searchTerm, type]);

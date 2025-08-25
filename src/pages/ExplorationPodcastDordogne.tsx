@@ -54,7 +54,9 @@ const PodcastView: React.FC<PodcastViewProps> = ({ explorationSlug, sessionId })
     isPlaying,
     mode,
     setMode,
-    toggle
+    toggle,
+    currentIndex,
+    playIndex
   } = useAudioPlaylist(tracks, 'order');
 
   if (!exploration) {
@@ -78,7 +80,17 @@ const PodcastView: React.FC<PodcastViewProps> = ({ explorationSlug, sessionId })
   return (
     <div className="dordogne-experience min-h-screen relative overflow-hidden">
       {/* Navigation Header */}
-      <PodcastNavigationHeader explorationName={exploration.name} />
+      <PodcastNavigationHeader 
+        explorationName={exploration.name}
+        currentTrackIndex={currentIndex}
+        totalTracks={tracks.length}
+        tracks={tracks.map(track => ({
+          id: track.id,
+          title: track.title,
+          marche: track.marcheTitle
+        }))}
+        onTrackSelect={playIndex}
+      />
       
       {/* Living Waters Background */}
       <div className="fixed inset-0 z-0">
