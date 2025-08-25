@@ -50,12 +50,12 @@ export default function AudioTypeSelector({ currentType, availableTypes, onTypeS
   return (
     <DropdownMenu open={open} onOpenChange={setOpen}>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="sm" className="h-auto p-2 gap-1.5 text-emerald-200 hover:text-emerald-100">
-          <Badge variant="outline" className="text-xs font-normal text-emerald-200 border-emerald-400/30 bg-emerald-900/20">
+        <Button variant="ghost" size="sm" className="h-auto p-2 gap-1.5 text-slate-800 dark:text-slate-300">
+          <Badge variant="outline" className="text-xs font-normal text-slate-800 dark:text-slate-300 border-slate-200/60 dark:border-slate-800/60 bg-white/40 dark:bg-slate-900/40">
             <span className="mr-1">{currentTypeInfo.icon}</span>
             {currentTypeInfo.label}
           </Badge>
-          <ChevronDown className="h-3 w-3 opacity-50 text-emerald-200" />
+          <ChevronDown className="h-3 w-3 opacity-50 text-slate-800 dark:text-slate-300" />
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="start" className="z-50 w-48 bg-slate-800 border-emerald-400/30">

@@ -116,13 +116,13 @@ const PodcastNavigationHeader: React.FC<PodcastNavigationHeaderProps> = ({
     <motion.header
       initial={{ y: -20, opacity: 0 }}
       animate={{ y: 0, opacity: 1 }}
-      className="sticky top-0 z-40 border-b border-emerald-400/20 bg-slate-900/80 backdrop-blur-xl"
+      className="sticky top-0 z-40 border-b bg-white/95 dark:bg-slate-950/90 backdrop-blur-sm border-slate-200/60 dark:border-slate-800/60"
     >
       <div className="px-4 py-3">
         {/* Mobile Layout */}
         <div className="flex md:hidden items-center justify-between">
           {/* Mobile Left: Return button */}
-          <Button variant="ghost" size="sm" asChild className="text-emerald-200 hover:text-emerald-100 hover:bg-emerald-800/20">
+          <Button variant="ghost" size="sm" asChild className="text-slate-800 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-emerald-800/20 hover:text-slate-900 dark:hover:text-emerald-100">
             <Link to={`/galerie-fleuve/exploration/${slug}`}>
               <ArrowLeft className="h-4 w-4" />
             </Link>
@@ -151,17 +151,17 @@ const PodcastNavigationHeader: React.FC<PodcastNavigationHeaderProps> = ({
           <div className="flex items-center gap-1">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-emerald-200 hover:text-emerald-100 hover:bg-emerald-800/20">
+                <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-slate-800 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-emerald-800/20">
                   <Palette className="h-3.5 w-3.5" />
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="z-50 w-36 bg-slate-800 border-emerald-400/30">
+              <DropdownMenuContent align="end" className="z-50 w-36 bg-white/95 dark:bg-slate-950/95 backdrop-blur-sm border-slate-200/60 dark:border-slate-800/60">
                 <DropdownMenuItem
                   onClick={() => setAppearanceMode('light')}
-                  className={`flex items-center gap-2 cursor-pointer hover:bg-emerald-800/30 focus:bg-emerald-800/30 ${
+                  className={`flex items-center gap-2 cursor-pointer hover:text-emerald-900 dark:hover:text-emerald-900 data-[highlighted]:text-emerald-900 dark:data-[highlighted]:text-emerald-900 ${
                     appearanceMode === 'light' 
-                      ? 'bg-emerald-700/50 text-emerald-100'
-                      : 'text-emerald-200'
+                      ? 'bg-yellow-200 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-200'
+                      : 'text-slate-800 dark:text-slate-300'
                   }`}
                 >
                   <Sun className="h-4 w-4" />
@@ -169,10 +169,10 @@ const PodcastNavigationHeader: React.FC<PodcastNavigationHeaderProps> = ({
                 </DropdownMenuItem>
                 <DropdownMenuItem
                   onClick={() => setAppearanceMode('system')}
-                  className={`flex items-center gap-2 cursor-pointer hover:bg-emerald-800/30 focus:bg-emerald-800/30 ${
+                  className={`flex items-center gap-2 cursor-pointer hover:text-emerald-900 dark:hover:text-emerald-900 data-[highlighted]:text-emerald-900 dark:data-[highlighted]:text-emerald-900 ${
                     appearanceMode === 'system' 
-                      ? 'bg-emerald-700/50 text-emerald-100'
-                      : 'text-emerald-200'
+                      ? 'bg-yellow-200 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-200'
+                      : 'text-slate-800 dark:text-slate-300'
                   }`}
                 >
                   <Monitor className="h-4 w-4" />
@@ -180,10 +180,10 @@ const PodcastNavigationHeader: React.FC<PodcastNavigationHeaderProps> = ({
                 </DropdownMenuItem>
                 <DropdownMenuItem
                   onClick={() => setAppearanceMode('dark')}
-                  className={`flex items-center gap-2 cursor-pointer hover:bg-emerald-800/30 focus:bg-emerald-800/30 ${
+                  className={`flex items-center gap-2 cursor-pointer hover:text-emerald-900 dark:hover:text-emerald-900 data-[highlighted]:text-emerald-900 dark:data-[highlighted]:text-emerald-900 ${
                     appearanceMode === 'dark' 
-                      ? 'bg-emerald-700/50 text-emerald-100'
-                      : 'text-emerald-200'
+                      ? 'bg-yellow-200 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-200'
+                      : 'text-slate-800 dark:text-slate-300'
                   }`}
                 >
                   <Moon className="h-4 w-4" />
@@ -196,7 +196,7 @@ const PodcastNavigationHeader: React.FC<PodcastNavigationHeaderProps> = ({
               variant="ghost"
               size="sm"
               onClick={handleShare}
-              className="h-8 w-8 p-0 text-emerald-200 hover:text-emerald-100 hover:bg-emerald-800/20"
+              className="h-8 w-8 p-0 text-slate-800 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-emerald-800/20 hover:text-slate-900 dark:hover:text-emerald-100"
             >
               <Share2 className="h-3.5 w-3.5" />
             </Button>
@@ -206,14 +206,14 @@ const PodcastNavigationHeader: React.FC<PodcastNavigationHeaderProps> = ({
         {/* Desktop Layout */}
         <div className="hidden md:flex items-center justify-between">
           {/* Left: Gaspard Boréal signature */}
-          <div className="font-crimson text-emerald-200">
+          <div className="font-crimson text-slate-800 dark:text-emerald-200">
             <div className="text-lg font-medium">Gaspard Boréal</div>
             <div className="text-xs opacity-80">Poète des Mondes Hybrides</div>
           </div>
 
           {/* Center: Navigation + Type Selector */}
           <div className="flex items-center gap-6">
-            <Button variant="ghost" size="sm" asChild className="text-emerald-200 hover:text-emerald-100 hover:bg-emerald-800/20">
+            <Button variant="ghost" size="sm" asChild className="text-slate-800 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-emerald-800/20 hover:text-slate-900 dark:hover:text-emerald-100">
               <Link to={`/galerie-fleuve/exploration/${slug}`}>
                 <ArrowLeft className="h-4 w-4 mr-2" />
                 Retour
@@ -236,7 +236,7 @@ const PodcastNavigationHeader: React.FC<PodcastNavigationHeaderProps> = ({
                       key={type}
                       variant={isActive ? 'default' : 'ghost'}
                       size="sm"
-                      className={isActive ? 'bg-emerald-700/50 text-emerald-100' : 'text-emerald-200 hover:text-emerald-100 hover:bg-emerald-800/20'}
+                      className={isActive ? 'bg-slate-200 text-slate-900 dark:bg-emerald-700/50 dark:text-emerald-100' : 'text-slate-800 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-emerald-800/20 hover:text-slate-900 dark:hover:text-emerald-100'}
                       onClick={() => handleTypeSelect(type)}
                     >
                       {label}
@@ -260,7 +260,7 @@ const PodcastNavigationHeader: React.FC<PodcastNavigationHeaderProps> = ({
           <div className="flex items-center gap-2">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="sm" className="h-8 gap-1.5 text-emerald-200 hover:text-emerald-100 hover:bg-emerald-800/20">
+                <Button variant="ghost" size="sm" className="h-8 gap-1.5 text-slate-800 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-emerald-800/20">
                   <Palette className="h-3.5 w-3.5" />
                 </Button>
               </DropdownMenuTrigger>
