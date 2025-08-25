@@ -116,7 +116,7 @@ const PodcastNavigationHeader: React.FC<PodcastNavigationHeaderProps> = ({
     <motion.header
       initial={{ y: -20, opacity: 0 }}
       animate={{ y: 0, opacity: 1 }}
-      className="sticky top-0 z-40 border-b bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800/60"
+      className="sticky top-0 z-40 border-b bg-white/90 dark:bg-slate-950/80 backdrop-blur-xl border-slate-200/70 dark:border-slate-800/60 supports-[backdrop-filter]:bg-white/70 dark:supports-[backdrop-filter]:bg-slate-950/70"
     >
       <div className="px-4 py-3">
         {/* Mobile Layout */}
