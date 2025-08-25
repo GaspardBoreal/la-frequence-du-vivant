@@ -58,7 +58,7 @@ export default function AudioTypeSelector({ currentType, availableTypes, onTypeS
           <ChevronDown className="h-3 w-3 opacity-50 text-slate-800 dark:text-slate-300" />
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="start" className="z-50 w-48 bg-slate-800 border-emerald-400/30">
+      <DropdownMenuContent align="start" className="z-50 w-48 bg-white/95 dark:bg-slate-950/95 backdrop-blur-sm border border-slate-200/60 dark:border-slate-800/60 shadow-lg">
         {allTypes.map((type) => {
           const typeInfo = type === 'all' 
             ? { icon: '🎧', label: 'Tous les audio' }
@@ -71,10 +71,10 @@ export default function AudioTypeSelector({ currentType, availableTypes, onTypeS
                 onTypeSelect(type);
                 setOpen(false);
               }}
-              className={`flex items-center gap-2 cursor-pointer hover:bg-emerald-800/30 focus:bg-emerald-800/30 ${
+              className={`flex items-center gap-2 cursor-pointer hover:bg-slate-100 dark:hover:bg-emerald-800/30 focus:bg-slate-100 dark:focus:bg-emerald-800/30 ${
                 isActive 
-                  ? 'bg-emerald-700/50 text-emerald-100' 
-                  : 'text-emerald-200'
+                  ? 'bg-slate-100 text-slate-900 dark:bg-emerald-700/50 dark:text-emerald-100' 
+                  : 'text-slate-800 dark:text-emerald-200'
               }`}
             >
               <span className="text-sm">{typeInfo.icon}</span>

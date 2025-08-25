@@ -264,13 +264,13 @@ const PodcastNavigationHeader: React.FC<PodcastNavigationHeaderProps> = ({
                   <Palette className="h-3.5 w-3.5" />
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="z-50 w-36 bg-slate-800 border-emerald-400/30">
+              <DropdownMenuContent align="end" className="z-50 w-36 bg-white/95 dark:bg-slate-950/95 backdrop-blur-sm border border-slate-200/60 dark:border-slate-800/60 shadow-lg">
                 <DropdownMenuItem
                   onClick={() => setAppearanceMode('light')}
-                  className={`flex items-center gap-2 cursor-pointer hover:bg-emerald-800/30 focus:bg-emerald-800/30 ${
+                  className={`flex items-center gap-2 cursor-pointer hover:bg-slate-100 dark:hover:bg-emerald-800/30 focus:bg-slate-100 dark:focus:bg-emerald-800/30 ${
                     appearanceMode === 'light' 
-                      ? 'bg-emerald-700/50 text-emerald-100'
-                      : 'text-emerald-200'
+                      ? 'bg-slate-100 text-slate-900 dark:bg-emerald-700/50 dark:text-emerald-100'
+                      : 'text-slate-800 dark:text-emerald-200'
                   }`}
                 >
                   <Sun className="h-4 w-4" />
@@ -278,10 +278,10 @@ const PodcastNavigationHeader: React.FC<PodcastNavigationHeaderProps> = ({
                 </DropdownMenuItem>
                 <DropdownMenuItem
                   onClick={() => setAppearanceMode('system')}
-                  className={`flex items-center gap-2 cursor-pointer hover:bg-emerald-800/30 focus:bg-emerald-800/30 ${
+                  className={`flex items-center gap-2 cursor-pointer hover:bg-slate-100 dark:hover:bg-emerald-800/30 focus:bg-slate-100 dark:focus:bg-emerald-800/30 ${
                     appearanceMode === 'system' 
-                      ? 'bg-emerald-700/50 text-emerald-100'
-                      : 'text-emerald-200'
+                      ? 'bg-slate-100 text-slate-900 dark:bg-emerald-700/50 dark:text-emerald-100'
+                      : 'text-slate-800 dark:text-emerald-200'
                   }`}
                 >
                   <Monitor className="h-4 w-4" />
@@ -289,10 +289,10 @@ const PodcastNavigationHeader: React.FC<PodcastNavigationHeaderProps> = ({
                 </DropdownMenuItem>
                 <DropdownMenuItem
                   onClick={() => setAppearanceMode('dark')}
-                  className={`flex items-center gap-2 cursor-pointer hover:bg-emerald-800/30 focus:bg-emerald-800/30 ${
+                  className={`flex items-center gap-2 cursor-pointer hover:bg-slate-100 dark:hover:bg-emerald-800/30 focus:bg-slate-100 dark:focus:bg-emerald-800/30 ${
                     appearanceMode === 'dark' 
-                      ? 'bg-emerald-700/50 text-emerald-100'
-                      : 'text-emerald-200'
+                      ? 'bg-slate-100 text-slate-900 dark:bg-emerald-700/50 dark:text-emerald-100'
+                      : 'text-slate-800 dark:text-emerald-200'
                   }`}
                 >
                   <Moon className="h-4 w-4" />
@@ -305,7 +305,7 @@ const PodcastNavigationHeader: React.FC<PodcastNavigationHeaderProps> = ({
               variant="ghost"
               size="sm"
               onClick={() => toast({ title: "Enregistrer", description: "Prochainement disponible" })}
-              className="h-8 gap-1.5 text-emerald-200 hover:text-emerald-100 hover:bg-emerald-800/20"
+              className="h-8 gap-1.5 text-slate-800 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-emerald-800/20 hover:text-slate-900 dark:hover:text-emerald-100"
             >
               <Bookmark className="h-3.5 w-3.5" />
             </Button>
@@ -314,7 +314,7 @@ const PodcastNavigationHeader: React.FC<PodcastNavigationHeaderProps> = ({
               variant="ghost"
               size="sm"
               onClick={handleShare}
-              className="h-8 gap-1.5 text-emerald-200 hover:text-emerald-100 hover:bg-emerald-800/20"
+              className="h-8 gap-1.5 text-slate-800 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-emerald-800/20 hover:text-slate-900 dark:hover:text-emerald-100"
             >
               <Share2 className="h-3.5 w-3.5" />
             </Button>
