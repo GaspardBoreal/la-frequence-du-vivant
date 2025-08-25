@@ -231,7 +231,7 @@ export default function ExperienceAudioContinue() {
           animate={{ opacity: 1, y: 0 }}
         >
           <h2 className="text-3xl font-bold text-accent dordogne-title">Exploration introuvable</h2>
-          <p className="text-muted-foreground dordogne-body">
+          <p className="text-emerald-800 dark:text-muted-foreground dordogne-body">
             Cette exploration sonore n'existe pas ou n'est plus disponible.
           </p>
           <Link to="/galerie-fleuve">
@@ -253,9 +253,9 @@ export default function ExperienceAudioContinue() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
         >
-          <Music className="h-16 w-16 text-muted-foreground mx-auto" />
+          <Music className="h-16 w-16 text-emerald-700 dark:text-muted-foreground mx-auto" />
           <h2 className="text-3xl font-bold text-accent dordogne-title">Aucun contenu audio</h2>
-          <p className="text-muted-foreground dordogne-body max-w-md">
+          <p className="text-emerald-800 dark:text-muted-foreground dordogne-body max-w-md">
             Cette exploration ne contient pas encore de contenu audio. 
             Les enregistrements seront bientôt disponibles.
           </p>
@@ -271,10 +271,10 @@ export default function ExperienceAudioContinue() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:dordogne-experience">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:bg-gradient-to-br dark:from-emerald-950 dark:via-emerald-900 dark:to-emerald-800 dordogne-experience">
       {/* Background Effects */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute inset-0 hidden dark:block bg-gradient-to-br from-emerald-950/20 via-emerald-900/10 to-amber-950/20" />
+        <div className="absolute inset-0 hidden dark:block bg-gradient-to-br from-emerald-950/30 via-emerald-900/20 to-emerald-800/10" />
         {/* Animated river waves - only in dark mode */}
         <div className="absolute bottom-0 left-0 w-full h-32 hidden dark:block river-wave river-wave-1" />
         <div className="absolute bottom-0 left-1/4 w-3/4 h-24 hidden dark:block river-wave river-wave-2" />
@@ -333,7 +333,7 @@ export default function ExperienceAudioContinue() {
                         key={currentTrack.id}
                       >
                         <div className="text-center space-y-2">
-                          <h3 className={`${isMobile ? 'text-lg' : 'text-2xl'} font-bold text-slate-800 dark:text-accent dordogne-title`}>
+                          <h3 className={`${isMobile ? 'text-lg' : 'text-2xl'} font-bold text-emerald-900 dark:text-accent dordogne-title`}>
                             {currentTrack.title}
                           </h3>
                           <div className={`flex ${isMobile ? 'flex-col gap-1' : 'items-center justify-center gap-3'} text-sm`}>
@@ -376,7 +376,7 @@ export default function ExperienceAudioContinue() {
                       step={1}
                       className="w-full"
                     />
-                    <div className="flex justify-between text-xs text-slate-600 dark:text-muted-foreground dordogne-body">
+                    <div className="flex justify-between text-xs text-emerald-800 dark:text-muted-foreground dordogne-body">
                       <span>{formatTime(currentTime)}</span>
                       <span className="flex items-center gap-1">
                         <Clock className="h-3 w-3" />
@@ -425,7 +425,7 @@ export default function ExperienceAudioContinue() {
                   <div className="flex items-center justify-between pt-2">
                     {/* Volume Control - Compact */}
                     <div className="flex items-center space-x-2">
-                      <Volume2 className="h-4 w-4 text-slate-600 dark:text-muted-foreground" />
+                      <Volume2 className="h-4 w-4 text-emerald-800 dark:text-muted-foreground" />
                       <Slider
                         value={[volume]}
                         onValueChange={handleVolumeChange}
@@ -433,7 +433,7 @@ export default function ExperienceAudioContinue() {
                         step={0.1}
                         className={`${isMobile ? 'w-16' : 'w-20'}`}
                       />
-                      <span className="text-xs text-slate-600 dark:text-muted-foreground min-w-[2rem]">
+                      <span className="text-xs text-emerald-800 dark:text-muted-foreground min-w-[2rem]">
                         {Math.round(volume * 100)}%
                       </span>
                     </div>
@@ -472,14 +472,14 @@ export default function ExperienceAudioContinue() {
                                 >
                                   <div className="space-y-1">
                                     <div className="flex items-center gap-2">
-                                      <span className="text-xs text-muted-foreground">
+                                      <span className="text-xs text-emerald-700 dark:text-muted-foreground">
                                         {String(index + 1).padStart(2, '0')}
                                       </span>
                                       <span className="font-medium truncate">
                                         {track.title}
                                       </span>
                                     </div>
-                                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                                    <div className="flex items-center gap-2 text-xs text-emerald-600 dark:text-muted-foreground">
                                       {track.marcheName && (
                                         <span className="flex items-center gap-1">
                                           <MapPin className="h-3 w-3" />
