@@ -1,20 +1,37 @@
-import React from 'react';
-import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Waves, Headphones, ChevronDown, Share, MoreHorizontal } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, Link } from 'react-router-dom';
+import { motion } from 'framer-motion';
 import { 
-  DropdownMenu, 
-  DropdownMenuContent, 
-  DropdownMenuItem, 
-  DropdownMenuTrigger 
+  ArrowLeft, 
+  Palette, 
+  Bookmark, 
+  Share2,
+  Monitor,
+  Sun,
+  Moon
+} from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { useToast } from '@/hooks/use-toast';
+import AudioTypeSelector, { AudioType } from '@/components/audio/AudioTypeSelector';
+import NavigationAudio from '@/components/audio/NavigationAudio';
+
+type AppearanceMode = 'light' | 'dark' | 'system';
 
 interface PodcastNavigationHeaderProps {
   explorationName?: string;
   currentTrackIndex?: number;
   totalTracks?: number;
-  tracks?: Array<{ id: string; title: string; marche?: string }>;
+  tracks?: Array<{ id: string; title: string; marche?: string; type?: AudioType }>;
   onTrackSelect?: (index: number) => void;
+  onPrevious?: () => void;
+  onNext?: () => void;
+  slug?: string;
 }
 
 const PodcastNavigationHeader: React.FC<PodcastNavigationHeaderProps> = ({ 
@@ -22,12 +39,40 @@ const PodcastNavigationHeader: React.FC<PodcastNavigationHeaderProps> = ({
   currentTrackIndex = 0, 
   totalTracks = 0, 
   tracks = [],
-  onTrackSelect 
+  onTrackSelect,
+  onPrevious,
+  onNext,
+  slug
 }) => {
   const navigate = useNavigate();
+  const { toast } = useToast();
+  const [selectedAudioType, setSelectedAudioType] = useState<AudioType | 'all'>('all');
+  const [appearanceMode, setAppearanceMode] = useState<AppearanceMode>('system');
+
+  // Apply theme class to document
+  useEffect(() => {
+    const applyTheme = () => {
+      const root = document.documentElement;
+      
+      if (appearanceMode === 'system') {
+        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        root.classList.toggle('dark', prefersDark);
+      } else {
+        root.classList.toggle('dark', appearanceMode === 'dark');
+      }
+    };
+
+    applyTheme();
+    
+    if (appearanceMode === 'system') {
+      const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+      mediaQuery.addEventListener('change', applyTheme);
+      return () => mediaQuery.removeEventListener('change', applyTheme);
+    }
+  }, [appearanceMode]);
 
   const handleBackClick = () => {
-    navigate('/explorations/remontee-dordogne-atlas-eaux-vivantes-2050-2100/experience/a467469c-358f-4ccc-bc77-0de6c06ef9ce');
+    navigate(`/galerie-fleuve/exploration/${slug}`);
   };
 
   const handleShare = async () => {
@@ -39,108 +84,226 @@ const PodcastNavigationHeader: React.FC<PodcastNavigationHeaderProps> = ({
     } catch (error) {
       // Fallback: copy to clipboard
       navigator.clipboard.writeText(window.location.href);
+      toast({ 
+        title: "Lien copié", 
+        description: "Le lien a été copié dans le presse-papiers" 
+      });
     }
   };
 
-  const currentTrack = tracks[currentTrackIndex];
-  const displayTitle = currentTrack?.title || 'Toutes les pistes';
+  // Get available audio types from tracks
+  const availableTypes = Array.from(new Set(tracks.map(t => t.type).filter(Boolean))) as AudioType[];
+
+  // Filter tracks based on selected type
+  const filteredTracks = selectedAudioType === 'all' 
+    ? tracks 
+    : tracks.filter(t => t.type === selectedAudioType);
+
+  const handleTypeSelect = (type: AudioType | 'all') => {
+    setSelectedAudioType(type);
+    // Reset to first track of the new type
+    if (onTrackSelect && filteredTracks.length > 0) {
+      const firstTrackIndex = tracks.findIndex(t => 
+        type === 'all' ? true : t.type === type
+      );
+      if (firstTrackIndex >= 0) {
+        onTrackSelect(firstTrackIndex);
+      }
+    }
+  };
 
   return (
-    <header className="relative z-30 w-full border-b border-emerald-400/20">
-      <div className="container mx-auto px-4 py-3">
-        <div className="flex items-center justify-between gap-2">
-          {/* Left section - Back button and logo */}
-          <div className="flex items-center gap-3">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleBackClick}
-              className="text-emerald-200 hover:text-emerald-100 hover:bg-emerald-800/20 p-2"
-            >
+    <motion.header
+      initial={{ y: -20, opacity: 0 }}
+      animate={{ y: 0, opacity: 1 }}
+      className="sticky top-0 z-40 border-b border-emerald-400/20 bg-slate-900/80 backdrop-blur-xl"
+    >
+      <div className="px-4 py-3">
+        {/* Mobile Layout */}
+        <div className="flex md:hidden items-center justify-between">
+          {/* Mobile Left: Return button */}
+          <Button variant="ghost" size="sm" asChild className="text-emerald-200 hover:text-emerald-100 hover:bg-emerald-800/20">
+            <Link to={`/galerie-fleuve/exploration/${slug}`}>
               <ArrowLeft className="h-4 w-4" />
-            </Button>
+            </Link>
+          </Button>
 
-            <div className="hidden sm:flex items-center gap-2">
-              <Headphones className="h-5 w-5 text-emerald-300" />
-              <span className="dordogne-title text-lg text-emerald-200">
-                Écoute
-              </span>
-            </div>
-          </div>
-
-          {/* Center section - Track selector and navigation */}
-          <div className="flex items-center gap-2 flex-1 justify-center max-w-md">
-            {tracks.length > 0 && (
-              <>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button 
-                      variant="ghost" 
-                      className="text-emerald-200 hover:text-emerald-100 hover:bg-emerald-800/20 max-w-48 truncate text-sm"
-                    >
-                      <span className="truncate">{displayTitle}</span>
-                      <ChevronDown className="h-3 w-3 ml-1 flex-shrink-0" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent className="bg-slate-800 border-emerald-400/30 max-w-80">
-                    {tracks.map((track, index) => (
-                      <DropdownMenuItem
-                        key={track.id}
-                        onClick={() => onTrackSelect?.(index)}
-                        className="text-emerald-200 hover:bg-emerald-800/30 focus:bg-emerald-800/30 cursor-pointer"
-                      >
-                        <div className="flex flex-col gap-1 max-w-full">
-                          <span className="text-sm truncate">{track.title}</span>
-                          {track.marche && (
-                            <span className="text-xs text-emerald-400/70 truncate">{track.marche}</span>
-                          )}
-                        </div>
-                      </DropdownMenuItem>
-                    ))}
-                  </DropdownMenuContent>
-                </DropdownMenu>
-
-                <div className="text-emerald-300/70 text-sm font-mono bg-emerald-900/20 px-2 py-1 rounded border border-emerald-400/30">
-                  {currentTrackIndex + 1}/{totalTracks}
-                </div>
-              </>
+          {/* Mobile Center: Navigation + Type Selector */}
+          <div className="flex items-center gap-2 flex-1 justify-center">
+            {availableTypes.length > 0 && (
+              <AudioTypeSelector
+                currentType={selectedAudioType}
+                availableTypes={availableTypes}
+                onTypeSelect={handleTypeSelect}
+              />
+            )}
+            {onPrevious && onNext && (
+              <NavigationAudio
+                currentIndex={currentTrackIndex}
+                totalTracks={totalTracks}
+                onPrevious={onPrevious}
+                onNext={onNext}
+              />
             )}
           </div>
 
-          {/* Right section - Action buttons */}
+          {/* Mobile Right: Actions */}
           <div className="flex items-center gap-1">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-emerald-200 hover:text-emerald-100 hover:bg-emerald-800/20">
+                  <Palette className="h-3.5 w-3.5" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-36 bg-slate-800 border-emerald-400/30">
+                <DropdownMenuItem
+                  onClick={() => setAppearanceMode('light')}
+                  className={`flex items-center gap-2 cursor-pointer hover:bg-emerald-800/30 focus:bg-emerald-800/30 ${
+                    appearanceMode === 'light' 
+                      ? 'bg-emerald-700/50 text-emerald-100'
+                      : 'text-emerald-200'
+                  }`}
+                >
+                  <Sun className="h-4 w-4" />
+                  <span>Clair</span>
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={() => setAppearanceMode('system')}
+                  className={`flex items-center gap-2 cursor-pointer hover:bg-emerald-800/30 focus:bg-emerald-800/30 ${
+                    appearanceMode === 'system' 
+                      ? 'bg-emerald-700/50 text-emerald-100'
+                      : 'text-emerald-200'
+                  }`}
+                >
+                  <Monitor className="h-4 w-4" />
+                  <span>Système</span>
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={() => setAppearanceMode('dark')}
+                  className={`flex items-center gap-2 cursor-pointer hover:bg-emerald-800/30 focus:bg-emerald-800/30 ${
+                    appearanceMode === 'dark' 
+                      ? 'bg-emerald-700/50 text-emerald-100'
+                      : 'text-emerald-200'
+                  }`}
+                >
+                  <Moon className="h-4 w-4" />
+                  <span>Sombre</span>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+            
             <Button
               variant="ghost"
               size="sm"
               onClick={handleShare}
-              className="text-emerald-200 hover:text-emerald-100 hover:bg-emerald-800/20 p-2"
+              className="h-8 w-8 p-0 text-emerald-200 hover:text-emerald-100 hover:bg-emerald-800/20"
             >
-              <Share className="h-4 w-4" />
+              <Share2 className="h-3.5 w-3.5" />
             </Button>
+          </div>
+        </div>
 
+        {/* Desktop Layout */}
+        <div className="hidden md:flex items-center justify-between">
+          {/* Left: Gaspard Boréal signature */}
+          <div className="font-crimson text-emerald-200">
+            <div className="text-lg font-medium">Gaspard Boréal</div>
+            <div className="text-xs opacity-80">Poète des Mondes Hybrides</div>
+          </div>
+
+          {/* Center: Navigation + Type Selector */}
+          <div className="flex items-center gap-6">
+            <Button variant="ghost" size="sm" asChild className="text-emerald-200 hover:text-emerald-100 hover:bg-emerald-800/20">
+              <Link to={`/galerie-fleuve/exploration/${slug}`}>
+                <ArrowLeft className="h-4 w-4 mr-2" />
+                Retour
+              </Link>
+            </Button>
+            
+            {availableTypes.length > 0 && (
+              <AudioTypeSelector
+                currentType={selectedAudioType}
+                availableTypes={availableTypes}
+                onTypeSelect={handleTypeSelect}
+              />
+            )}
+
+            {onPrevious && onNext && (
+              <NavigationAudio
+                currentIndex={currentTrackIndex}
+                totalTracks={totalTracks}
+                onPrevious={onPrevious}
+                onNext={onNext}
+              />
+            )}
+          </div>
+
+          {/* Right: Actions */}
+          <div className="flex items-center gap-2">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="text-emerald-200 hover:text-emerald-100 hover:bg-emerald-800/20 p-2"
-                >
-                  <MoreHorizontal className="h-4 w-4" />
+                <Button variant="ghost" size="sm" className="h-8 gap-1.5 text-emerald-200 hover:text-emerald-100 hover:bg-emerald-800/20">
+                  <Palette className="h-3.5 w-3.5" />
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent className="bg-slate-800 border-emerald-400/30">
-                <DropdownMenuItem 
-                  onClick={handleBackClick}
-                  className="text-emerald-200 hover:bg-emerald-800/30 focus:bg-emerald-800/30 cursor-pointer"
+              <DropdownMenuContent align="end" className="w-36 bg-slate-800 border-emerald-400/30">
+                <DropdownMenuItem
+                  onClick={() => setAppearanceMode('light')}
+                  className={`flex items-center gap-2 cursor-pointer hover:bg-emerald-800/30 focus:bg-emerald-800/30 ${
+                    appearanceMode === 'light' 
+                      ? 'bg-emerald-700/50 text-emerald-100'
+                      : 'text-emerald-200'
+                  }`}
                 >
-                  Retour à l'exploration
+                  <Sun className="h-4 w-4" />
+                  <span>Clair</span>
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={() => setAppearanceMode('system')}
+                  className={`flex items-center gap-2 cursor-pointer hover:bg-emerald-800/30 focus:bg-emerald-800/30 ${
+                    appearanceMode === 'system' 
+                      ? 'bg-emerald-700/50 text-emerald-100'
+                      : 'text-emerald-200'
+                  }`}
+                >
+                  <Monitor className="h-4 w-4" />
+                  <span>Système</span>
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={() => setAppearanceMode('dark')}
+                  className={`flex items-center gap-2 cursor-pointer hover:bg-emerald-800/30 focus:bg-emerald-800/30 ${
+                    appearanceMode === 'dark' 
+                      ? 'bg-emerald-700/50 text-emerald-100'
+                      : 'text-emerald-200'
+                  }`}
+                >
+                  <Moon className="h-4 w-4" />
+                  <span>Sombre</span>
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
+            
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => toast({ title: "Enregistrer", description: "Prochainement disponible" })}
+              className="h-8 gap-1.5 text-emerald-200 hover:text-emerald-100 hover:bg-emerald-800/20"
+            >
+              <Bookmark className="h-3.5 w-3.5" />
+            </Button>
+            
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleShare}
+              className="h-8 gap-1.5 text-emerald-200 hover:text-emerald-100 hover:bg-emerald-800/20"
+            >
+              <Share2 className="h-3.5 w-3.5" />
+            </Button>
           </div>
         </div>
       </div>
-    </header>
+    </motion.header>
   );
 };
 

@@ -8,6 +8,7 @@ import { Play, Pause, Shuffle, ArrowRight, Waves } from 'lucide-react';
 import { FloatingAudioPlayer } from '@/components/audio/FloatingAudioPlayer';
 import { useAudioPlaylist, Track } from '@/hooks/useAudioPlaylist';
 import PodcastNavigationHeader from '@/components/experience/PodcastNavigationHeader';
+import { AudioType } from '@/components/audio/AudioTypeSelector';
 
 import ExperienceFooter from '@/components/experience/ExperienceFooter';
 
@@ -27,8 +28,29 @@ const PodcastView: React.FC<PodcastViewProps> = ({ explorationSlug, sessionId })
   const { data: exploration } = useExploration(explorationSlug);
   const { data: marches } = useExplorationMarches(exploration?.id || '');
 
+  // Helper function to determine audio type based on title/description
+  const getAudioType = (audio: any): AudioType => {
+    const title = (audio.titre || audio.nom_fichier || '').toLowerCase();
+    const description = (audio.description || '').toLowerCase();
+    
+    if (title.includes('gaspard') || description.includes('gaspard') || 
+        title.includes('récit') || description.includes('récit') ||
+        title.includes('poème') || description.includes('poème')) {
+      return 'gaspard';
+    }
+    
+    if (title.includes('rivière') || description.includes('rivière') ||
+        title.includes('dordogne') || description.includes('dordogne') ||
+        title.includes('eau') || description.includes('eau') ||
+        title.includes('courant') || description.includes('courant')) {
+      return 'dordogne';
+    }
+    
+    return 'sounds'; // Default to "Sons captés"
+  };
+
   // Transform march data into tracks for the audio player
-  const tracks: Track[] = useMemo(() => {
+  const tracks: (Track & { type: AudioType })[] = useMemo(() => {
     if (!marches) return [];
     
     return marches.flatMap((marchData, marcheIndex) => {
@@ -44,7 +66,8 @@ const PodcastView: React.FC<PodcastViewProps> = ({ explorationSlug, sessionId })
         description: audio.description || `Capture sonore lors de la marche à ${marchData.marche?.ville}`,
         location: marchData.marche?.ville || 'Localisation inconnue',
         duration: audio.duree_secondes ? formatDuration(audio.duree_secondes) : '0:00',
-        species: ''
+        species: '',
+        type: getAudioType(audio)
       }));
     });
   }, [marches]);
@@ -56,7 +79,9 @@ const PodcastView: React.FC<PodcastViewProps> = ({ explorationSlug, sessionId })
     setMode,
     toggle,
     currentIndex,
-    playIndex
+    playIndex,
+    prev,
+    next
   } = useAudioPlaylist(tracks, 'order');
 
   if (!exploration) {
@@ -87,9 +112,13 @@ const PodcastView: React.FC<PodcastViewProps> = ({ explorationSlug, sessionId })
         tracks={tracks.map(track => ({
           id: track.id,
           title: track.title,
-          marche: track.marcheTitle
+          marche: track.marcheTitle,
+          type: track.type
         }))}
         onTrackSelect={playIndex}
+        onPrevious={prev}
+        onNext={next}
+        slug="remontee-dordogne-atlas-eaux-vivantes-2050-2100"
       />
       
       {/* Living Waters Background */}
