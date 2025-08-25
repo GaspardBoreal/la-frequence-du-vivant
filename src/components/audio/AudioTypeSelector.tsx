@@ -58,7 +58,7 @@ export default function AudioTypeSelector({ currentType, availableTypes, onTypeS
           <ChevronDown className="h-3 w-3 opacity-50 text-emerald-200" />
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="start" className="w-48 bg-slate-800 border-emerald-400/30">
+      <DropdownMenuContent align="start" className="z-50 w-48 bg-slate-800 border-emerald-400/30">
         {allTypes.map((type) => {
           const typeInfo = type === 'all' 
             ? { icon: '🎧', label: 'Tous les audio' }

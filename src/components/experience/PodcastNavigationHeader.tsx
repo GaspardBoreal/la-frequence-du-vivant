@@ -155,7 +155,7 @@ const PodcastNavigationHeader: React.FC<PodcastNavigationHeaderProps> = ({
                   <Palette className="h-3.5 w-3.5" />
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-36 bg-slate-800 border-emerald-400/30">
+              <DropdownMenuContent align="end" className="z-50 w-36 bg-slate-800 border-emerald-400/30">
                 <DropdownMenuItem
                   onClick={() => setAppearanceMode('light')}
                   className={`flex items-center gap-2 cursor-pointer hover:bg-emerald-800/30 focus:bg-emerald-800/30 ${
@@ -221,11 +221,29 @@ const PodcastNavigationHeader: React.FC<PodcastNavigationHeaderProps> = ({
             </Button>
             
             {availableTypes.length > 0 && (
-              <AudioTypeSelector
-                currentType={selectedAudioType}
-                availableTypes={availableTypes}
-                onTypeSelect={handleTypeSelect}
-              />
+              <div className="flex items-center gap-2">
+                {(['all', ...availableTypes] as (AudioType | 'all')[]).map((type) => {
+                  const label = type === 'all'
+                    ? 'Tous les audio'
+                    : type === 'gaspard'
+                      ? 'Gaspard parle'
+                      : type === 'dordogne'
+                        ? 'La Dordogne parle'
+                        : 'Sons captés';
+                  const isActive = selectedAudioType === type;
+                  return (
+                    <Button
+                      key={type}
+                      variant={isActive ? 'default' : 'ghost'}
+                      size="sm"
+                      className={isActive ? 'bg-emerald-700/50 text-emerald-100' : 'text-emerald-200 hover:text-emerald-100 hover:bg-emerald-800/20'}
+                      onClick={() => handleTypeSelect(type)}
+                    >
+                      {label}
+                    </Button>
+                  );
+                })}
+              </div>
             )}
 
             {onPrevious && onNext && (
@@ -246,7 +264,7 @@ const PodcastNavigationHeader: React.FC<PodcastNavigationHeaderProps> = ({
                   <Palette className="h-3.5 w-3.5" />
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-36 bg-slate-800 border-emerald-400/30">
+              <DropdownMenuContent align="end" className="z-50 w-36 bg-slate-800 border-emerald-400/30">
                 <DropdownMenuItem
                   onClick={() => setAppearanceMode('light')}
                   className={`flex items-center gap-2 cursor-pointer hover:bg-emerald-800/30 focus:bg-emerald-800/30 ${

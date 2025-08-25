@@ -1,6 +1,6 @@
 // "Wahouhh" Experience Audio Continue - Beautiful immersive audio player
 
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useParams, Link } from 'react-router-dom';
 import { useExploration } from '@/hooks/useExplorations';
@@ -34,6 +34,8 @@ import EcoAudioVisualizer from '@/components/audio/EcoAudioVisualizer';
 import ExperienceFooter from '@/components/experience/ExperienceFooter';
 import type { XenoCantoRecording } from '@/types/biodiversity';
 import type { AudioTrackEnhanced } from '@/hooks/useExplorationAudioPlaylist';
+import PodcastNavigationHeader from '@/components/experience/PodcastNavigationHeader';
+import type { AudioType } from '@/components/audio/AudioTypeSelector';
 
 // Helper function to convert AudioTrackEnhanced to XenoCantoRecording
 const trackToXenoCantoRecording = (track: AudioTrackEnhanced): XenoCantoRecording => ({
@@ -110,6 +112,22 @@ export default function ExperienceAudioContinue() {
   const currentTrack = audioPlaylist[currentTrackIndex];
   const canGoNext = currentTrackIndex < audioPlaylist.length - 1;
   const canGoPrevious = currentTrackIndex > 0;
+
+  // Build header tracks with audio type classification
+  const headerTracks = useMemo(() => {
+    const classify = (t: AudioTrackEnhanced): AudioType => {
+      const text = `${t.title} ${t.description || ''} ${t.marcheName || ''}`.toLowerCase();
+      if (text.includes('dordogne')) return 'dordogne';
+      if (text.includes('gaspard') || text.includes('parle')) return 'gaspard';
+      return 'sounds';
+    };
+    return audioPlaylist.map(t => ({
+      id: t.id,
+      title: t.title,
+      marche: t.marcheName,
+      type: classify(t)
+    }));
+  }, [audioPlaylist]);
 
   // Auto-advance to next track when current ends
   useEffect(() => {
@@ -283,58 +301,16 @@ export default function ExperienceAudioContinue() {
         <div className="container mx-auto px-4 py-8">
           
           {/* Header */}
-          <motion.div 
-            className="mb-12"
-            initial={{ opacity: 0, y: -30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, ease: "easeOut" }}
-          >
-            <div className="flex flex-col gap-4 mb-6">
-              <Link to={`/galerie-fleuve/exploration/${slug}`} className="self-start">
-                <Button variant="outline" size={isMobile ? "default" : "lg"} className="btn-nature">
-                  <ArrowLeft className="h-4 w-4 mr-2" />
-                  Retour à l'exploration
-                </Button>
-              </Link>
-              
-              <div className={`flex ${isMobile ? 'flex-col gap-2' : 'flex-row gap-4'} items-start ${isMobile ? '' : 'justify-end'}`}>
-                <Badge variant="secondary" className={`flex items-center gap-2 ${isMobile ? 'px-3 py-1.5 text-sm' : 'px-4 py-2'}`}>
-                  <Clock className="h-3 w-3" />
-                  {Math.floor(totalDuration / 60)}min d'écoute
-                </Badge>
-                <Badge variant="outline" className={`flex items-center gap-2 ${isMobile ? 'px-3 py-1.5 text-sm' : 'px-4 py-2'}`}>
-                  <MapPin className="h-3 w-3" />
-                  {totalMarches} marches
-                </Badge>
-                <Badge variant="outline" className={`flex items-center gap-2 ${isMobile ? 'px-3 py-1.5 text-sm' : 'px-4 py-2'}`}>
-                  <Music className="h-3 w-3" />
-                  {totalTracks} pistes
-                </Badge>
-              </div>
-            </div>
-            
-            <div className="text-center space-y-4">
-              <motion.h1 
-                className={`${isMobile ? 'text-3xl' : 'text-6xl'} font-bold text-accent dordogne-title`}
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ duration: 0.8, delay: 0.2 }}
-              >
-                {exploration.name}
-              </motion.h1>
-              
-              <motion.div 
-                className={`flex items-center justify-center gap-3 ${isMobile ? 'text-lg' : 'text-2xl'} text-muted-foreground`}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6, delay: 0.4 }}
-              >
-                <Waves className={`${isMobile ? 'h-6 w-6' : 'h-8 w-8'} text-accent animate-gentle-float`} />
-                <span className="dordogne-signature">Écoute Continue</span>
-                <Volume2 className={`${isMobile ? 'h-6 w-6' : 'h-8 w-8'} text-accent animate-gentle-float`} />
-              </motion.div>
-            </div>
-          </motion.div>
+          <PodcastNavigationHeader
+            explorationName={exploration.name}
+            currentTrackIndex={currentTrackIndex}
+            totalTracks={totalTracks}
+            tracks={headerTracks}
+            onTrackSelect={handleTrackSelect}
+            onPrevious={handlePreviousTrack}
+            onNext={handleNextTrack}
+            slug={slug}
+          />
 
           <div className="max-w-5xl mx-auto">
             {/* Main Audio Player - Full Width */}
