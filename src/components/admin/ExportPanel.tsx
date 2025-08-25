@@ -77,6 +77,10 @@ const ExportPanel: React.FC<ExportPanelProps> = ({
       }
       
       result = result.filter(item => {
+        // For marches, check if there's a date field, otherwise skip date filtering
+        if (type === 'marches') {
+          return true; // Skip date filtering for marches as they don't have created_at
+        }
         const itemDate = item.created_at ? new Date(item.created_at) : new Date();
         return itemDate >= cutoffDate;
       });
@@ -93,10 +97,13 @@ const ExportPanel: React.FC<ExportPanelProps> = ({
   // Filtered explorations for selection list
   const filteredExplorationsForSelection = useMemo(() => {
     if (type !== 'explorations') return [];
-    return data.filter(exploration => 
-      exploration.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      exploration.description?.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+    return data.filter(exploration => {
+      const searchLower = searchTerm.toLowerCase();
+      return (
+        exploration.name?.toLowerCase().includes(searchLower) ||
+        exploration.description?.toLowerCase().includes(searchLower)
+      );
+    });
   }, [data, searchTerm, type]);
 
   const handleExplorationToggle = (explorationId: string) => {

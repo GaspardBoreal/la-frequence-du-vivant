@@ -114,10 +114,24 @@ export const useExplorationTextsOptimized = (explorationSlug: string) => {
 
       // Sort by exploration marche order, then by text order
       enrichedTexts.sort((a, b) => {
-        if (a.marcheOrdre !== b.marcheOrdre) {
-          return a.marcheOrdre - b.marcheOrdre;
+        // First sort by marche order in exploration
+        const marcheOrderA = a.marcheOrdre || 999;
+        const marcheOrderB = b.marcheOrdre || 999;
+        
+        if (marcheOrderA !== marcheOrderB) {
+          return marcheOrderA - marcheOrderB;
         }
-        return (a.ordre || 0) - (b.ordre || 0);
+        
+        // Then sort by text order within marche
+        const textOrderA = a.ordre || 999;
+        const textOrderB = b.ordre || 999;
+        
+        if (textOrderA !== textOrderB) {
+          return textOrderA - textOrderB;
+        }
+        
+        // Finally sort by creation date as fallback
+        return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
       });
 
       console.log('✨ Final enriched texts:', enrichedTexts.length);
