@@ -51,14 +51,14 @@ export default function AudioTypeSelector({ currentType, availableTypes, onTypeS
     <DropdownMenu open={open} onOpenChange={setOpen}>
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" size="sm" className="h-auto p-2 gap-1.5 text-slate-800 dark:text-slate-300">
-          <Badge variant="outline" className="text-xs font-normal text-slate-800 dark:text-slate-300 border-slate-200/60 dark:border-slate-800/60 bg-white/40 dark:bg-slate-900/40">
+          <Badge variant="outline" className="text-xs font-normal text-slate-800 dark:text-slate-300 border-slate-200/60 dark:border-slate-800/60 bg-white dark:bg-slate-900">
             <span className="mr-1">{currentTypeInfo.icon}</span>
             {currentTypeInfo.label}
           </Badge>
           <ChevronDown className="h-3 w-3 opacity-50 text-slate-800 dark:text-slate-300" />
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="start" className="z-50 w-48 bg-white/95 dark:bg-slate-950/95 backdrop-blur-sm border border-slate-200/60 dark:border-slate-800/60 shadow-lg">
+      <DropdownMenuContent align="start" className="z-50 w-48 bg-white dark:bg-slate-950 border border-slate-200/60 dark:border-slate-800/60 shadow-lg">
         {allTypes.map((type) => {
           const typeInfo = type === 'all' 
             ? { icon: '🎧', label: 'Tous les audio' }

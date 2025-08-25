@@ -116,7 +116,7 @@ const PodcastNavigationHeader: React.FC<PodcastNavigationHeaderProps> = ({
     <motion.header
       initial={{ y: -20, opacity: 0 }}
       animate={{ y: 0, opacity: 1 }}
-      className="sticky top-0 z-40 border-b bg-white dark:bg-slate-950/90 backdrop-blur-sm border-slate-200 dark:border-slate-800/60"
+      className="sticky top-0 z-40 border-b bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800/60"
     >
       <div className="px-4 py-3">
         {/* Mobile Layout */}
@@ -155,7 +155,7 @@ const PodcastNavigationHeader: React.FC<PodcastNavigationHeaderProps> = ({
                   <Palette className="h-3.5 w-3.5" />
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="z-50 w-36 bg-white/95 dark:bg-slate-950/95 backdrop-blur-sm border-slate-200/60 dark:border-slate-800/60">
+              <DropdownMenuContent align="end" className="z-50 w-36 bg-white dark:bg-slate-950 border border-slate-200/60 dark:border-slate-800/60 shadow-lg">
                 <DropdownMenuItem
                   onClick={() => setAppearanceMode('light')}
                   className={`flex items-center gap-2 cursor-pointer hover:text-emerald-900 dark:hover:text-emerald-900 data-[highlighted]:text-emerald-900 dark:data-[highlighted]:text-emerald-900 ${
@@ -264,7 +264,7 @@ const PodcastNavigationHeader: React.FC<PodcastNavigationHeaderProps> = ({
                   <Palette className="h-3.5 w-3.5" />
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="z-50 w-36 bg-white/95 dark:bg-slate-950/95 backdrop-blur-sm border border-slate-200/60 dark:border-slate-800/60 shadow-lg">
+              <DropdownMenuContent align="end" className="z-50 w-36 bg-white dark:bg-slate-950 border border-slate-200/60 dark:border-slate-800/60 shadow-lg">
                 <DropdownMenuItem
                   onClick={() => setAppearanceMode('light')}
                   className={`flex items-center gap-2 cursor-pointer hover:bg-slate-100 dark:hover:bg-emerald-800/30 focus:bg-slate-100 dark:focus:bg-emerald-800/30 ${
