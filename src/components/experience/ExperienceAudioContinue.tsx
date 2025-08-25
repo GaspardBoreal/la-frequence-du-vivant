@@ -271,20 +271,20 @@ export default function ExperienceAudioContinue() {
   }
 
   return (
-    <div className="min-h-screen dordogne-experience">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:dordogne-experience">
       {/* Background Effects */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute inset-0 bg-gradient-to-br from-emerald-950/20 via-emerald-900/10 to-amber-950/20" />
-        {/* Animated river waves */}
-        <div className="absolute bottom-0 left-0 w-full h-32 river-wave river-wave-1" />
-        <div className="absolute bottom-0 left-1/4 w-3/4 h-24 river-wave river-wave-2" />
-        <div className="absolute bottom-0 right-0 w-1/2 h-16 river-wave river-wave-3" />
+        <div className="absolute inset-0 hidden dark:block bg-gradient-to-br from-emerald-950/20 via-emerald-900/10 to-amber-950/20" />
+        {/* Animated river waves - only in dark mode */}
+        <div className="absolute bottom-0 left-0 w-full h-32 hidden dark:block river-wave river-wave-1" />
+        <div className="absolute bottom-0 left-1/4 w-3/4 h-24 hidden dark:block river-wave river-wave-2" />
+        <div className="absolute bottom-0 right-0 w-1/2 h-16 hidden dark:block river-wave river-wave-3" />
         
-        {/* Floating particles */}
+        {/* Floating particles - only in dark mode */}
         {Array.from({ length: 12 }, (_, i) => (
           <motion.div
             key={i}
-            className="absolute w-2 h-2 water-bubble"
+            className="absolute w-2 h-2 hidden dark:block water-bubble"
             style={{
               left: `${Math.random() * 100}%`,
               animationDelay: `${Math.random() * 8}s`,
@@ -319,7 +319,7 @@ export default function ExperienceAudioContinue() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8, delay: 0.6 }}
             >
-              <Card className="backdrop-blur-md bg-card/70 border-accent/20 shadow-2xl">
+              <Card className="bg-white border border-slate-200 shadow-2xl dark:backdrop-blur-md dark:bg-card/70 dark:border-accent/20">
                 <CardContent className="p-6 space-y-6">
                   
                   {/* Current Track Info */}
@@ -333,7 +333,7 @@ export default function ExperienceAudioContinue() {
                         key={currentTrack.id}
                       >
                         <div className="text-center space-y-2">
-                          <h3 className={`${isMobile ? 'text-lg' : 'text-2xl'} font-bold text-accent dordogne-title`}>
+                          <h3 className={`${isMobile ? 'text-lg' : 'text-2xl'} font-bold text-slate-800 dark:text-accent dordogne-title`}>
                             {currentTrack.title}
                           </h3>
                           <div className={`flex ${isMobile ? 'flex-col gap-1' : 'items-center justify-center gap-3'} text-sm`}>
@@ -376,7 +376,7 @@ export default function ExperienceAudioContinue() {
                       step={1}
                       className="w-full"
                     />
-                    <div className="flex justify-between text-xs text-muted-foreground dordogne-body">
+                    <div className="flex justify-between text-xs text-slate-600 dark:text-muted-foreground dordogne-body">
                       <span>{formatTime(currentTime)}</span>
                       <span className="flex items-center gap-1">
                         <Clock className="h-3 w-3" />
@@ -425,7 +425,7 @@ export default function ExperienceAudioContinue() {
                   <div className="flex items-center justify-between pt-2">
                     {/* Volume Control - Compact */}
                     <div className="flex items-center space-x-2">
-                      <Volume2 className="h-4 w-4 text-muted-foreground" />
+                      <Volume2 className="h-4 w-4 text-slate-600 dark:text-muted-foreground" />
                       <Slider
                         value={[volume]}
                         onValueChange={handleVolumeChange}
@@ -433,7 +433,7 @@ export default function ExperienceAudioContinue() {
                         step={0.1}
                         className={`${isMobile ? 'w-16' : 'w-20'}`}
                       />
-                      <span className="text-xs text-muted-foreground min-w-[2rem]">
+                      <span className="text-xs text-slate-600 dark:text-muted-foreground min-w-[2rem]">
                         {Math.round(volume * 100)}%
                       </span>
                     </div>

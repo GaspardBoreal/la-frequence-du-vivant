@@ -47,7 +47,13 @@ const PodcastNavigationHeader: React.FC<PodcastNavigationHeaderProps> = ({
   const navigate = useNavigate();
   const { toast } = useToast();
   const [selectedAudioType, setSelectedAudioType] = useState<AudioType | 'all'>('all');
-  const [appearanceMode, setAppearanceMode] = useState<AppearanceMode>('system');
+  const [appearanceMode, setAppearanceMode] = useState<AppearanceMode>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('appearanceMode') as AppearanceMode;
+      return saved || 'system';
+    }
+    return 'system';
+  });
 
   // Apply theme class to document
   useEffect(() => {
@@ -60,6 +66,9 @@ const PodcastNavigationHeader: React.FC<PodcastNavigationHeaderProps> = ({
       } else {
         root.classList.toggle('dark', appearanceMode === 'dark');
       }
+      
+      // Persist the choice
+      localStorage.setItem('appearanceMode', appearanceMode);
     };
 
     applyTheme();
