@@ -34,6 +34,7 @@ import { Dialog, DialogContent, DialogClose } from './ui/dialog';
 import { useIsMobile } from '../hooks/use-mobile';
 import { ExplorationMarcheComplete } from '../hooks/useExplorations';
 import FleuveTemporel from './FleuveTemporel';
+import MarcheSelector from './MarcheSelector';
 
 interface GalerieFluveProps {
   explorations: any[];
@@ -73,6 +74,8 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes,
   const [isLoading, setIsLoading] = useState(true);
   const [loadingProgress, setLoadingProgress] = useState(0);
   const [selectedPhoto, setSelectedPhoto] = useState<number | null>(null);
+  const [selectedMarcheId, setSelectedMarcheId] = useState<string | null>(null);
+  const [isMarcheSelectorOpen, setIsMarcheSelectorOpen] = useState(false);
   const isMobile = useIsMobile();
 
   // Device detection
@@ -303,7 +306,16 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes,
 
   // Filtrage intelligent avec mémoïsation
   const filteredPhotos = useMemo(() => {
-    const photos = allPhotos;
+    let photos = allPhotos;
+    
+    // Filter by selected marche first
+    if (selectedMarcheId) {
+      photos = photos.filter(photo => {
+        const marcheId = `${photo.ville}-${photo.nomMarche}`;
+        return marcheId === selectedMarcheId;
+      });
+    }
+    
     if (filterMode === 'all') return photos;
     
     switch (filterMode) {
@@ -320,7 +332,7 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes,
       default:
         return photos;
     }
-  }, [allPhotos, filterMode]);
+  }, [allPhotos, filterMode, selectedMarcheId]);
 
   // Reset currentPage when filters change
   useEffect(() => {
@@ -406,12 +418,16 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes,
                 <ChevronLeft className="h-4 w-4" />
               </motion.button>
 
-              {/* Position Counter */}
-              <div className="bg-white/15 px-2 py-0.5 rounded-lg">
+              {/* Position Counter - Clickable */}
+              <motion.button
+                onClick={() => setIsMarcheSelectorOpen(true)}
+                className="bg-white/15 hover:bg-white/25 px-2 py-0.5 rounded-lg transition-all duration-200 touch-manipulation"
+                whileTap={{ scale: 0.95 }}
+              >
                 <span className="text-white text-sm font-medium">
                   {currentPage + 1}/{totalPages}
                 </span>
-              </div>
+              </motion.button>
 
               {/* Next Button */}
               <motion.button
@@ -497,6 +513,19 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes,
 
           {/* Global navigation controls */}
           <NavigationControls />
+
+          {/* Marche Selector */}
+          <MarcheSelector
+            isOpen={isMarcheSelectorOpen}
+            onClose={() => setIsMarcheSelectorOpen(false)}
+            photos={filteredPhotos}
+            onMarcheSelect={(marcheId) => {
+              setSelectedMarcheId(marcheId);
+              setCurrentPage(0); // Reset to first photo of selected marche
+            }}
+            selectedMarcheId={selectedMarcheId}
+            currentIndex={currentPage}
+          />
 
           {/* Photo detail modal - DISABLED */}
           {/* <PhotoModal /> */}
