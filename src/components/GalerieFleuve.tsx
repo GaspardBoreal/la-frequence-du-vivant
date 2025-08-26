@@ -304,41 +304,41 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes,
 
   // Auto-navigation removed - only galerie mode supported
 
-  // Filtrage intelligent avec mémoïsation
-  const filteredPhotos = useMemo(() => {
-    let photos = allPhotos;
-    
-    // Filter by selected marche first
-    if (selectedMarcheId) {
-      photos = photos.filter(photo => {
-        const marcheId = `${photo.ville}-${photo.nomMarche}`;
-        return marcheId === selectedMarcheId;
-      });
-    }
-    
-    if (filterMode === 'all') return photos;
+  // Base photos avec seulement les filtres thématiques (pour navigation globale)
+  const basePhotos = useMemo(() => {
+    if (filterMode === 'all') return allPhotos;
     
     switch (filterMode) {
       case 'biodiversite':
-        return photos.filter(p => p.thematicIcons.includes('🦋') || p.emotionalTags.includes('Éclat'));
+        return allPhotos.filter(p => p.thematicIcons.includes('🦋') || p.emotionalTags.includes('Éclat'));
       case 'bioacoustique':
-        return photos.filter(p => p.thematicIcons.includes('🎵') || p.emotionalTags.includes('Mélodie'));
+        return allPhotos.filter(p => p.thematicIcons.includes('🎵') || p.emotionalTags.includes('Mélodie'));
       case 'botanique':
-        return photos.filter(p => p.thematicIcons.includes('🌿') || p.titre?.toLowerCase().includes('plante'));
+        return allPhotos.filter(p => p.thematicIcons.includes('🌿') || p.titre?.toLowerCase().includes('plante'));
       case 'couleur':
-        return photos.filter(p => p.titre?.toLowerCase().includes('couleur') || p.titre?.toLowerCase().includes('fleur'));
+        return allPhotos.filter(p => p.titre?.toLowerCase().includes('couleur') || p.titre?.toLowerCase().includes('fleur'));
       case 'saison':
-        return photos.filter(p => p.titre?.toLowerCase().includes('printemps') || p.titre?.toLowerCase().includes('automne'));
+        return allPhotos.filter(p => p.titre?.toLowerCase().includes('printemps') || p.titre?.toLowerCase().includes('automne'));
       default:
-        return photos;
+        return allPhotos;
     }
-  }, [allPhotos, filterMode, selectedMarcheId]);
+  }, [allPhotos, filterMode]);
 
-  // Reset currentPage when filters change
+  // Photos filtrées pour l'affichage (avec filtre marche)
+  const filteredPhotos = useMemo(() => {
+    if (!selectedMarcheId) return basePhotos;
+    
+    return basePhotos.filter(photo => {
+      const marcheId = `${photo.ville}-${photo.nomMarche}`;
+      return marcheId === selectedMarcheId;
+    });
+  }, [basePhotos, selectedMarcheId]);
+
+  // Reset currentPage when thematic filters change
   useEffect(() => {
     setCurrentPage(0);
     setCurrentPhoto(0);
-  }, [filteredPhotos.length, filterMode]);
+  }, [basePhotos.length, filterMode]);
 
   // Navigation logic based on device type
   const getImagesPerPage = useCallback(() => {
@@ -346,7 +346,7 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes,
   }, [deviceType]);
 
   const imagesPerPage = getImagesPerPage();
-  const totalPages = Math.ceil(filteredPhotos.length / imagesPerPage);
+  const totalPages = Math.ceil(basePhotos.length / imagesPerPage);
 
   // Simple navigation functions
   const navigateNext = useCallback(() => {
@@ -424,9 +424,9 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes,
                 className="bg-white/15 hover:bg-white/25 px-2 py-0.5 rounded-lg transition-all duration-200 touch-manipulation"
                 whileTap={{ scale: 0.95 }}
               >
-                <span className="text-white text-sm font-medium">
-                  {currentPage + 1}/{totalPages}
-                </span>
+                 <span className="text-white text-sm font-medium">
+                   {currentPhoto + 1}/{basePhotos.length}
+                 </span>
               </motion.button>
 
               {/* Next Button */}
@@ -518,13 +518,26 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes,
           <MarcheSelector
             isOpen={isMarcheSelectorOpen}
             onClose={() => setIsMarcheSelectorOpen(false)}
-            photos={filteredPhotos}
+            photos={basePhotos}
             onMarcheSelect={(marcheId) => {
+              // Trouver l'index global de la première photo de cette marche
+              const marchePhotoIndex = basePhotos.findIndex(photo => {
+                const photoMarcheId = `${photo.ville}-${photo.nomMarche}`;
+                return photoMarcheId === marcheId;
+              });
+              
+              if (marchePhotoIndex !== -1) {
+                // Calculer la page correspondante
+                const targetPage = Math.floor(marchePhotoIndex / imagesPerPage);
+                setCurrentPage(targetPage);
+                setCurrentPhoto(marchePhotoIndex);
+              }
+              
               setSelectedMarcheId(marcheId);
-              setCurrentPage(0); // Reset to first photo of selected marche
+              setIsMarcheSelectorOpen(false);
             }}
             selectedMarcheId={selectedMarcheId}
-            currentIndex={currentPage}
+            currentIndex={currentPhoto}
           />
 
           {/* Photo detail modal - DISABLED */}
