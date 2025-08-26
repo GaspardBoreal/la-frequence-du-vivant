@@ -147,7 +147,7 @@ const MarcheSelector: React.FC<MarcheSelectorProps> = ({
   const totalPages = Math.ceil(marches.length / maxVisible);
   const currentPage = Math.floor(visibleRange.start / maxVisible) + 1;
 
-  // Mobile: Modal centrée | Desktop: Popover contextuel
+  // Mobile: Full-screen optimized modal | Desktop: Popover contextuel
   if (isMobile) {
     return (
       <AnimatePresence>
@@ -155,23 +155,23 @@ const MarcheSelector: React.FC<MarcheSelectorProps> = ({
           <>
             {/* Mobile Backdrop */}
             <motion.div
-              className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[70]"
+              className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[70]"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={onClose}
             />
             
-            {/* Mobile Modal */}
+            {/* Mobile Full-Screen Modal */}
             <motion.div
-              className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[71] w-[90vw] max-w-md"
-              initial={{ scale: 0.9, opacity: 0, y: 20 }}
+              className="fixed inset-x-4 top-16 bottom-20 z-[71]"
+              initial={{ scale: 0.95, opacity: 0, y: 50 }}
               animate={{ scale: 1, opacity: 1, y: 0 }}
-              exit={{ scale: 0.9, opacity: 0, y: 20 }}
+              exit={{ scale: 0.95, opacity: 0, y: 50 }}
               transition={{ type: "spring", stiffness: 300, damping: 30 }}
             >
-              <div className="bg-background/95 backdrop-blur-md rounded-2xl border border-border/50 shadow-2xl">
-                <MarcheSelectorContent />
+              <div className="bg-background/95 backdrop-blur-md rounded-3xl border border-border/50 shadow-2xl h-full flex flex-col">
+                <MarcheSelectorMobileContent />
               </div>
             </motion.div>
           </>
@@ -208,6 +208,107 @@ const MarcheSelector: React.FC<MarcheSelectorProps> = ({
     </AnimatePresence>
   );
 
+  // Mobile-optimized content component
+  function MarcheSelectorMobileContent() {
+    return (
+      <>
+        {/* Mobile Header - Compact and touch-friendly */}
+        <div className="flex items-center justify-between p-6 border-b border-border/20 flex-shrink-0">
+          <div className="flex items-center gap-3">
+            <Calendar className="h-6 w-6 text-primary" />
+            <h2 className="text-xl font-bold text-foreground">Marches</h2>
+          </div>
+          <Button
+            variant="ghost"
+            size="lg"
+            onClick={onClose}
+            className="h-12 w-12 p-0 hover:bg-muted rounded-full"
+          >
+            <X className="h-6 w-6" />
+          </Button>
+        </div>
+
+        {/* Mobile Content - Full native scrolling */}
+        <div className="flex-1 overflow-y-auto px-4 py-4">
+          <div className="space-y-3">
+            {marches.map((marche, index) => {
+              const isSelected = marche.id === currentMarcheId;
+              const dateFormatted = marche.date 
+                ? new Date(marche.date).toLocaleDateString('fr-FR', { 
+                    day: '2-digit', 
+                    month: '2-digit',
+                    year: '2-digit'
+                  })
+                : '';
+
+              return (
+                <motion.button
+                  key={marche.id}
+                  onClick={() => {
+                    onMarcheSelect(marche.id);
+                    onClose();
+                  }}
+                  className={`w-full p-6 rounded-2xl text-left transition-all duration-200 min-h-[80px] ${
+                    isSelected
+                      ? 'bg-primary/20 border-2 border-primary/40 shadow-lg'
+                      : 'bg-muted/50 hover:bg-muted border-2 border-transparent hover:border-border'
+                  }`}
+                  whileHover={{ scale: 1.01 }}
+                  whileTap={{ scale: 0.99 }}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: index * 0.03 }}
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex-1 min-w-0">
+                      <p className={`text-lg font-semibold mb-1 ${
+                        isSelected ? 'text-primary' : 'text-foreground'
+                      }`}>
+                        {marche.nomMarche}
+                      </p>
+                      <p className="text-base text-muted-foreground mb-1">
+                        {marche.ville}
+                      </p>
+                      {dateFormatted && (
+                        <p className="text-sm text-muted-foreground/80">
+                          {dateFormatted}
+                        </p>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-3 ml-4">
+                      <Badge 
+                        variant={isSelected ? "default" : "secondary"} 
+                        className="text-sm px-3 py-1 min-w-[48px] justify-center"
+                      >
+                        {marche.photoCount}
+                      </Badge>
+                      {isSelected && (
+                        <div className="w-3 h-3 bg-primary rounded-full animate-pulse" />
+                      )}
+                    </div>
+                  </div>
+                </motion.button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Mobile Footer - Compact stats */}
+        <div className="px-6 py-4 border-t border-border/20 flex-shrink-0">
+          <div className="flex items-center justify-between text-sm text-muted-foreground">
+            <span className="font-medium">
+              {marches.length} marche{marches.length > 1 ? 's' : ''} disponible{marches.length > 1 ? 's' : ''}
+            </span>
+            <span className="bg-muted px-3 py-1.5 rounded-full text-xs font-medium">
+              {photos.length} photo{photos.length > 1 ? 's' : ''}
+            </span>
+          </div>
+        </div>
+      </>
+    );
+  }
+
+  // Desktop content component (unchanged)
   function MarcheSelectorContent() {
     return (
       <div onWheel={handleWheel} className="select-none">
