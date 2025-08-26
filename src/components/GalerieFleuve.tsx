@@ -464,7 +464,7 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes,
             ease: "easeInOut"
           }}
         >
-          {filteredPhotos.map((photo, index) => (
+          {basePhotos.map((photo, index) => (
             <motion.div
               key={`${photo.id}-${index}`}
               className={`flex-shrink-0 ${deviceType === 'mobile-portrait' ? 'w-full' : 'w-1/3'} h-full relative`}
