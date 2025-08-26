@@ -70,6 +70,17 @@ export default function ExperienceLectureOptimisee() {
     return Array.from(types) as TextType[];
   }, [texts]);
 
+  // Calculate text counts by type
+  const textCounts = useMemo(() => {
+    const counts: Record<TextType, number> = {} as Record<TextType, number>;
+    texts.forEach(text => {
+      if (text.type_texte) {
+        counts[text.type_texte] = (counts[text.type_texte] || 0) + 1;
+      }
+    });
+    return counts;
+  }, [texts]);
+
   // Get filtered texts based on selected type
   const filteredTexts = useMemo(() => {
     if (selectedTextType === 'all') {
@@ -241,6 +252,7 @@ export default function ExperienceLectureOptimisee() {
                     currentType={selectedTextType}
                     availableTypes={availableTypes}
                     onTypeSelect={handleTypeSelect}
+                    textCounts={textCounts}
                   />
                 )}
                 <NavigationLitteraire
@@ -329,6 +341,7 @@ export default function ExperienceLectureOptimisee() {
                     currentType={selectedTextType}
                     availableTypes={availableTypes}
                     onTypeSelect={handleTypeSelect}
+                    textCounts={textCounts}
                   />
                 )}
 

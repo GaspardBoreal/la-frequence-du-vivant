@@ -14,9 +14,10 @@ interface Props {
   currentType: TextType | 'all';
   availableTypes: TextType[];
   onTypeSelect: (type: TextType | 'all') => void;
+  textCounts?: Record<TextType, number>;
 }
 
-export default function TextTypeSelector({ currentType, availableTypes, onTypeSelect }: Props) {
+export default function TextTypeSelector({ currentType, availableTypes, onTypeSelect, textCounts }: Props) {
   const [open, setOpen] = useState(false);
   const currentTypeInfo = currentType === 'all' 
     ? { icon: '📚', label: 'Tous les textes' }
@@ -59,7 +60,14 @@ export default function TextTypeSelector({ currentType, availableTypes, onTypeSe
               }`}
             >
               <span className="text-sm">{typeInfo.icon}</span>
-              <span className="text-sm">{typeInfo.label}</span>
+              <span className="text-sm">
+                {typeInfo.label}
+                {type !== 'all' && textCounts && textCounts[type] !== undefined && (
+                  <span className="ml-1 text-slate-600 dark:text-slate-400">
+                    ({textCounts[type]})
+                  </span>
+                )}
+              </span>
             </DropdownMenuItem>
           );
         })}
