@@ -62,13 +62,31 @@ serve(async (req) => {
 
     console.log('🌡️ Fetching from Open-Meteo API:', weatherUrl.toString());
 
-    const weatherResponse = await fetch(weatherUrl.toString());
+    // Add robust timeout with AbortController
+    const controller = new AbortController();
+    const timeoutMs = 12000; // 12 second timeout
     
-    if (!weatherResponse.ok) {
-      throw new Error(`Open-Meteo API error: ${weatherResponse.status}`);
-    }
-
-    const weatherData = await weatherResponse.json();
+    const weatherData = await Promise.race([
+      // Actual API call
+      (async () => {
+        const weatherResponse = await fetch(weatherUrl.toString(), {
+          signal: controller.signal
+        });
+        
+        if (!weatherResponse.ok) {
+          throw new Error(`Open-Meteo API error: ${weatherResponse.status}`);
+        }
+        
+        return await weatherResponse.json();
+      })(),
+      // Timeout promise
+      new Promise((_, reject) => {
+        setTimeout(() => {
+          controller.abort();
+          reject(new Error(`Open-Meteo API timeout after ${timeoutMs}ms`));
+        }, timeoutMs);
+      })
+    ]);
     
     let climateData = null;
     
@@ -84,10 +102,26 @@ serve(async (req) => {
       climateUrl.searchParams.set('daily', 'temperature_2m_mean,precipitation_sum');
 
       try {
-        const climateResponse = await fetch(climateUrl.toString());
-        if (climateResponse.ok) {
-          climateData = await climateResponse.json();
-        }
+        // Add timeout for climate API too
+        const climateController = new AbortController();
+        const climateTimeoutMs = 10000; // 10 second timeout for climate data
+        
+        const climateData_temp = await Promise.race([
+          (async () => {
+            const climateResponse = await fetch(climateUrl.toString(), {
+              signal: climateController.signal
+            });
+            return climateResponse.ok ? await climateResponse.json() : null;
+          })(),
+          new Promise((_, reject) => {
+            setTimeout(() => {
+              climateController.abort();
+              reject(new Error(`Climate API timeout after ${climateTimeoutMs}ms`));
+            }, climateTimeoutMs);
+          })
+        ]);
+        
+        climateData = climateData_temp;
       } catch (error) {
         console.log('⚠️ Climate data unavailable:', error);
       }

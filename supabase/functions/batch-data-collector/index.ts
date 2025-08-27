@@ -151,7 +151,29 @@ serve(async (req) => {
               
               // Add timeout and batch mode for robustness
               const controller = new AbortController();
-              const timeout = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+              const timeoutMs = 30000; // 30 second timeout
+              
+              // Heartbeat mechanism for long operations
+              const heartbeatInterval = setInterval(async () => {
+                await supabase
+                  .from('data_collection_logs')
+                  .update({ 
+                    last_ping: new Date().toISOString(),
+                    summary_stats: {
+                      current_marche_name: marche.nom_marche || marche.ville,
+                      current_data_type: '🌿 Collecte biodiversité... (en cours)',
+                      marche_start_time: new Date().toISOString(),
+                      processed: i,
+                      total_marches: validMarches.length
+                    }
+                  })
+                  .eq('id', logEntry.id);
+              }, 5000); // 5 second heartbeat
+              
+              const timeout = setTimeout(() => {
+                clearInterval(heartbeatInterval);
+                controller.abort();
+              }, timeoutMs);
               
               const { data: biodivData, error: biodivError } = await supabase.functions.invoke('biodiversity-data', {
                 body: {
@@ -163,6 +185,7 @@ serve(async (req) => {
               });
               
               clearTimeout(timeout);
+              clearInterval(heartbeatInterval);
 
               if (!biodivError && biodivData) {
                 // Store biodiversity snapshot
@@ -194,6 +217,9 @@ serve(async (req) => {
                 }
               }
             } catch (error) {
+              clearInterval(heartbeatInterval); // Clear heartbeat on error
+              clearTimeout(timeout);
+              
               if (error.name === 'AbortError') {
                 console.error(`⏱️ Biodiversity collection timeout for ${marche.nom_marche}`);
               } else {
@@ -222,7 +248,29 @@ serve(async (req) => {
             try {
               // Add timeout for weather collection too
               const controller = new AbortController();
-              const timeout = setTimeout(() => controller.abort(), 15000); // 15 second timeout
+              const timeoutMs = 12000; // 12 second timeout (matching open-meteo-data)
+              
+              // Heartbeat for weather collection
+              const heartbeatInterval = setInterval(async () => {
+                await supabase
+                  .from('data_collection_logs')
+                  .update({ 
+                    last_ping: new Date().toISOString(),
+                    summary_stats: {
+                      current_marche_name: marche.nom_marche || marche.ville,
+                      current_data_type: '🌤️ Collecte météo... (en cours)',
+                      marche_start_time: new Date().toISOString(),
+                      processed: i,
+                      total_marches: validMarches.length
+                    }
+                  })
+                  .eq('id', logEntry.id);
+              }, 5000); // 5 second heartbeat
+              
+              const timeout = setTimeout(() => {
+                clearInterval(heartbeatInterval);
+                controller.abort();
+              }, timeoutMs);
               
               const { data: weatherData, error: weatherError } = await supabase.functions.invoke('open-meteo-data', {
                 body: {
@@ -233,6 +281,7 @@ serve(async (req) => {
               });
               
               clearTimeout(timeout);
+              clearInterval(heartbeatInterval);
 
               if (!weatherError && weatherData?.success && weatherData.data) {
                 const aggregated = weatherData.data.aggregated;
@@ -266,6 +315,9 @@ serve(async (req) => {
                 }
               }
             } catch (error) {
+              clearInterval(heartbeatInterval); // Clear heartbeat on error
+              clearTimeout(timeout);
+              
               if (error.name === 'AbortError') {
                 console.error(`⏱️ Weather collection timeout for ${marche.nom_marche}`);
               } else {
@@ -294,7 +346,29 @@ serve(async (req) => {
             try {
               // Add timeout for real estate collection too
               const controller = new AbortController();
-              const timeout = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+              const timeoutMs = 8000; // 8 second timeout
+              
+              // Heartbeat for real estate collection
+              const heartbeatInterval = setInterval(async () => {
+                await supabase
+                  .from('data_collection_logs')
+                  .update({ 
+                    last_ping: new Date().toISOString(),
+                    summary_stats: {
+                      current_marche_name: marche.nom_marche || marche.ville,
+                      current_data_type: '🏠 Collecte immobilier... (en cours)',
+                      marche_start_time: new Date().toISOString(),
+                      processed: i,
+                      total_marches: validMarches.length
+                    }
+                  })
+                  .eq('id', logEntry.id);
+              }, 5000); // 5 second heartbeat
+              
+              const timeout = setTimeout(() => {
+                clearInterval(heartbeatInterval);
+                controller.abort();
+              }, timeoutMs);
               
               const { data: realEstateData, error: realEstateError } = await supabase.functions.invoke('lexicon-proxy', {
                 body: {
@@ -304,6 +378,7 @@ serve(async (req) => {
               });
               
               clearTimeout(timeout);
+              clearInterval(heartbeatInterval);
 
               if (!realEstateError && realEstateData) {
                 // Process transactions if available
@@ -346,6 +421,9 @@ serve(async (req) => {
                 }
               }
             } catch (error) {
+              clearInterval(heartbeatInterval); // Clear heartbeat on error
+              clearTimeout(timeout);
+              
               if (error.name === 'AbortError') {
                 console.error(`⏱️ Real estate collection timeout for ${marche.nom_marche}`);
               } else {
