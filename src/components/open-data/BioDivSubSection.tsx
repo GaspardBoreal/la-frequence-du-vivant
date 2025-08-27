@@ -698,7 +698,7 @@ const BioDivSubSection: React.FC<BioDivSubSectionProps> = ({ marche, theme }) =>
         <TabsContent value="birds" className="space-y-4">
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
             {filteredSpecies
-              .filter(isBirdSpecies)
+              .filter(species => species.kingdom === 'Animalia')
                .map((species, index) => (
                  <EnhancedSpeciesCard 
                    key={`${species.id}-${index}`} 
@@ -746,7 +746,7 @@ const BioDivSubSection: React.FC<BioDivSubSectionProps> = ({ marche, theme }) =>
               .filter(species => 
                 species.kingdom !== 'Plantae' && 
                 species.kingdom !== 'Fungi' && 
-                !isBirdSpecies(species)
+                species.kingdom !== 'Animalia'
               )
                .map((species, index) => (
                  <EnhancedSpeciesCard 

@@ -754,9 +754,39 @@ function calculateDistance(lat1: number, lon1: number, lat2: number, lon2: numbe
 function mapKingdom(kingdom: string): 'Plantae' | 'Animalia' | 'Fungi' | 'Other' {
   if (!kingdom) return 'Other';
   const k = kingdom.toLowerCase();
+  
+  // Plants
   if (k.includes('plantae') || k.includes('plant')) return 'Plantae';
-  if (k.includes('animalia') || k.includes('animal')) return 'Animalia';
+  
+  // Fungi
   if (k.includes('fungi') || k.includes('fungus')) return 'Fungi';
+  
+  // Animals - include all animal groups
+  if (k.includes('animalia') || k.includes('animal') || 
+      k.includes('aves') || k.includes('bird') ||
+      k.includes('mammalia') || k.includes('mammal') ||
+      k.includes('reptilia') || k.includes('reptile') ||
+      k.includes('amphibia') || k.includes('amphibian') ||
+      k.includes('insecta') || k.includes('insect') ||
+      k.includes('arachnida') || k.includes('spider') ||
+      k.includes('crustacea') || k.includes('crustacean') ||
+      k.includes('mollusca') || k.includes('mollusk') ||
+      k.includes('cnidaria') || k.includes('actinopterygii') ||
+      k.includes('fish') || k.includes('poisson')) {
+    return 'Animalia';
+  }
+  
+  // For iNaturalist iconic taxon names
+  if (k === 'lepidoptera' || k === 'hymenoptera' || k === 'diptera' || 
+      k === 'coleoptera' || k === 'hemiptera' || k === 'orthoptera' ||
+      k === 'odonata' || k === 'neuroptera' || k === 'mantodea' ||
+      k === 'phasmatodea' || k === 'dermaptera' || k === 'psocoptera' ||
+      k === 'thysanoptera' || k === 'siphonaptera' || k === 'mecoptera' ||
+      k === 'strepsiptera' || k === 'notoptera' || k === 'zoraptera' ||
+      k === 'embioptera' || k === 'grylloblattodea' || k === 'mantophasmatodea') {
+    return 'Animalia';
+  }
+  
   return 'Other';
 }
 
