@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -143,6 +143,29 @@ const DataCollectionPanel: React.FC<DataCollectionPanelProps> = ({ marches = [] 
     return `${mins}m ${secs}s`;
   };
 
+  // Ouvrir la modale de suivi pour un log donné
+  const openProgressForLog = (log: DataCollectionLog) => {
+    const types = log.collection_type
+      ? log.collection_type.split(',').map((t) => t.trim()).filter(Boolean)
+      : [];
+    setCurrentCollectionTypes(types);
+    setCurrentLogId(log.id);
+    setShowProgressModal(true);
+    setIsLaunching(false);
+    setIsCollecting(log.status === 'running');
+  };
+
+  // Reprise automatique si une collecte est en cours
+  useEffect(() => {
+    if (!showProgressModal && logs && logs.length > 0) {
+      const running = logs.find((l: DataCollectionLog) => l.status === 'running');
+      if (running) {
+        openProgressForLog(running);
+        toast.info('Reprise du suivi de la collecte en cours');
+      }
+    }
+  }, [logs, showProgressModal]);
+
   return (
     <div className="space-y-6">
       {/* Collection Triggers */}
@@ -286,6 +309,14 @@ const DataCollectionPanel: React.FC<DataCollectionPanelProps> = ({ marches = [] 
                      log.status === 'failed' ? 'Échec' : 
                      log.status === 'running' ? 'En cours' : log.status}
                   </Badge>
+
+                  <Button
+                    onClick={() => openProgressForLog(log)}
+                    variant="secondary"
+                    size="sm"
+                  >
+                    {log.status === 'running' ? 'Suivre en temps réel' : 'Voir'}
+                  </Button>
                   
                   <Button
                     onClick={() => deleteLog.mutate(log.id)}
@@ -293,6 +324,8 @@ const DataCollectionPanel: React.FC<DataCollectionPanelProps> = ({ marches = [] 
                     variant="ghost"
                     size="sm"
                     className="text-muted-foreground hover:text-destructive"
+                    aria-label="Supprimer le log"
+                    title="Supprimer ce log"
                   >
                     <Trash2 className="w-4 h-4" />
                   </Button>
