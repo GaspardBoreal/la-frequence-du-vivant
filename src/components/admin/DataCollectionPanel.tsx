@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { useDataCollectionLogs, useTriggerBatchCollection } from '@/hooks/useSnapshotData';
 import { useDeleteCollectionLog, useDeleteAllFailedLogs } from '@/hooks/useDeleteCollectionLog';
 import { DataCollectionLog } from '@/types/snapshots';
-import { PlayCircle, BarChart3, Clock, CheckCircle, XCircle, AlertCircle, Trash2, Trash } from 'lucide-react';
+import { PlayCircle, BarChart3, Clock, CheckCircle, XCircle, AlertCircle, Trash, Loader2, AlertTriangle } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import DebugCollectionProgressModal from './DebugCollectionProgressModal';
@@ -166,6 +166,77 @@ const DataCollectionPanel: React.FC<DataCollectionPanelProps> = ({ marches = [] 
     }
   }, [logs, showProgressModal]);
 
+  // Vérifier si une collecte est bloquée (>60s sans ping)
+  const blockedLog = logs?.find((l: DataCollectionLog) => {
+    if (l.status !== 'running') return false;
+    const lastPing = (l as any).last_ping;
+    if (!lastPing) return false;
+    const ageSeconds = Math.floor((Date.now() - new Date(lastPing).getTime()) / 1000);
+    return ageSeconds > 60;
+  });
+
+  const handleForceStopAndRestart = async () => {
+    if (!logs || logs.length === 0) return;
+    
+    try {
+      // Trouver le log en cours
+      const runningLog = logs.find((l: DataCollectionLog) => l.status === 'running');
+      if (!runningLog) {
+        toast.error('Aucune collecte en cours à arrêter');
+        return;
+      }
+
+      setIsLaunching(true);
+      toast.info('Arrêt forcé et relance de la collecte...');
+
+      // 1. Forcer l'arrêt du log en cours
+      await supabase
+        .from('data_collection_logs')
+        .update({ 
+          status: 'failed',
+          completed_at: new Date().toISOString(),
+          duration_seconds: Math.floor((Date.now() - new Date(runningLog.started_at).getTime()) / 1000),
+          summary_stats: {
+            ...((runningLog.summary_stats as any) || {}),
+            current_data_type: 'Arrêt forcé ❌',
+            error: 'Arrêt forcé par l\'utilisateur'
+          }
+        })
+        .eq('id', runningLog.id);
+
+      // 2. Récupérer les types de collecte du log arrêté
+      const collectionTypes = runningLog.collection_type
+        ? runningLog.collection_type.split(',').map((t) => t.trim()).filter(Boolean)
+        : ['biodiversity', 'weather', 'real_estate'];
+
+      // 3. Relancer immédiatement une nouvelle collecte
+      const { data: result, error: triggerError } = await supabase.functions.invoke('batch-data-collector', {
+        body: {
+          collectionTypes,
+          mode: 'manual',
+          batchMode: true
+        }
+      });
+
+      if (triggerError || !result?.success) {
+        throw new Error(triggerError?.message || result?.error || 'Erreur lors du redémarrage');
+      }
+
+      // 4. Ouvrir la modale de suivi pour le nouveau log
+      setCurrentLogId(result.logId);
+      setCurrentCollectionTypes(collectionTypes);
+      setShowProgressModal(true);
+      setIsCollecting(true);
+
+      toast.success('Collecte relancée avec succès');
+    } catch (error) {
+      console.error('❌ Erreur lors du forçage arrêt/relance:', error);
+      toast.error(error instanceof Error ? error.message : 'Erreur lors du forçage arrêt/relance');
+    } finally {
+      setIsLaunching(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* Collection Triggers */}
@@ -220,23 +291,42 @@ const DataCollectionPanel: React.FC<DataCollectionPanelProps> = ({ marches = [] 
         </div>
 
         <div className="mt-4 pt-4 border-t">
-          <Button
-            onClick={() => handleTriggerCollection(['biodiversity', 'weather', 'real_estate'])}
-            disabled={isCollecting}
-            className="w-full"
-          >
-            {isCollecting ? (
-              <>
-                <Clock className="w-4 h-4 mr-2 animate-spin" />
-                Collecte en cours...
-              </>
-            ) : (
-              <>
-                <PlayCircle className="w-4 h-4 mr-2" />
-                Collecte Complète (Tout)
-              </>
+            <Button
+              onClick={() => handleTriggerCollection(['biodiversity', 'weather', 'real_estate'])}
+              disabled={isCollecting || isLaunching}
+              className="w-full"
+            >
+              {isLaunching ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Lancement...
+                </>
+              ) : (
+                'Lancer Collecte Complète'
+              )}
+            </Button>
+
+            {/* Bouton Forcer Arrêt + Relancer si collecte bloquée */}
+            {blockedLog && (
+              <Button
+                onClick={handleForceStopAndRestart}
+                disabled={isLaunching}
+                variant="destructive"
+                className="w-full mt-2"
+              >
+                {isLaunching ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Redémarrage...
+                  </>
+                ) : (
+                  <>
+                    <AlertTriangle className="w-4 h-4 mr-2" />
+                    Forcer Arrêt + Relancer
+                  </>
+                )}
+              </Button>
             )}
-          </Button>
         </div>
 
         <div className="mt-4 p-3 bg-blue-50 rounded-lg">
@@ -327,7 +417,7 @@ const DataCollectionPanel: React.FC<DataCollectionPanelProps> = ({ marches = [] 
                     aria-label="Supprimer le log"
                     title="Supprimer ce log"
                   >
-                    <Trash2 className="w-4 h-4" />
+                    <Trash className="w-4 h-4" />
                   </Button>
                 </div>
               </div>

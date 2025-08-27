@@ -159,17 +159,45 @@ export const useCollectionProgress = (logId: string | null, collectionTypes: str
       const lastPingAt = (data as any).last_ping || null;
       const lastPingAgeSeconds = lastPingAt ? Math.floor((Date.now() - new Date(lastPingAt).getTime()) / 1000) : null;
 
+      // Auto-fail si pas de ping depuis plus de 60 secondes et status = 'running'
+      let finalStatus = data.status;
+      let finalIsCompleted = data.status === 'completed' || data.status === 'failed';
+      
+      if (data.status === 'running' && lastPingAgeSeconds && lastPingAgeSeconds > 60) {
+        console.warn(`⚠️ Collection expired: no ping for ${lastPingAgeSeconds}s, marking as failed`);
+        finalStatus = 'failed';
+        finalIsCompleted = true;
+        
+        // Mettre à jour le statut en base (fire and forget)
+        supabase
+          .from('data_collection_logs')
+          .update({ 
+            status: 'failed',
+            completed_at: new Date().toISOString(),
+            duration_seconds: Math.floor((Date.now() - new Date(data.started_at).getTime()) / 1000),
+            summary_stats: {
+              ...((data.summary_stats as any) || {}),
+              current_data_type: 'Échec (timeout) ❌',
+              error: `Pas de mise à jour depuis ${lastPingAgeSeconds}s`
+            }
+          })
+          .eq('id', logId)
+          .then(() => console.log('✅ Log marked as failed due to timeout'));
+      }
+
       setState(prev => ({
         ...prev,
-        log: data as DataCollectionLog,
+        log: { ...data as DataCollectionLog, status: finalStatus as 'running' | 'completed' | 'failed' },
         progress,
         currentMarcheName,
-        currentDataType,
+        currentDataType: finalStatus === 'failed' && lastPingAgeSeconds && lastPingAgeSeconds > 60 
+          ? `Échec (timeout après ${lastPingAgeSeconds}s) ❌` 
+          : currentDataType,
         estimatedTimeRemaining,
         initialEstimate,
-        isCompleted,
+        isCompleted: finalIsCompleted,
         error: null,
-        isPollingActive: !isCompleted,
+        isPollingActive: !finalIsCompleted,
         lastPingAt,
         lastPingAgeSeconds,
       }));
