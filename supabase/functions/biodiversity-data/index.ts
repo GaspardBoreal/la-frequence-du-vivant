@@ -762,6 +762,27 @@ function mapKingdom(taxon: any, family?: string, scientificName?: string): 'Plan
     }
   }
   
+  // Check iNaturalist iconic_taxon_name (CRITICAL: this was missing!)
+  if (taxon?.iconic_taxon_name) {
+    const iconicTaxon = taxon.iconic_taxon_name.toLowerCase();
+    // Map animal classes to Animalia
+    if (iconicTaxon === 'insecta' || iconicTaxon === 'aves' || iconicTaxon === 'mammalia' || 
+        iconicTaxon === 'reptilia' || iconicTaxon === 'amphibia' || iconicTaxon === 'actinopterygii' ||
+        iconicTaxon === 'arachnida' || iconicTaxon === 'mollusca' || iconicTaxon === 'crustacea' ||
+        iconicTaxon === 'animalia') {
+      console.log(`🔍 Classification "${scientificName}": kingdom="Animalia", commonName="${taxon?.preferred_common_name}", source=inaturalist, iconic_taxon="${iconicTaxon}"`);
+      return 'Animalia';
+    }
+    // Map plant classes to Plantae
+    if (iconicTaxon === 'plantae' || iconicTaxon === 'tracheophyta') {
+      return 'Plantae';
+    }
+    // Map fungal classes to Fungi
+    if (iconicTaxon === 'fungi') {
+      return 'Fungi';
+    }
+  }
+  
   // Check direct taxon kingdom  
   const kingdomValue = taxon?.kingdom || taxon?.rank_kingdom || family;
   if (kingdomValue) {
