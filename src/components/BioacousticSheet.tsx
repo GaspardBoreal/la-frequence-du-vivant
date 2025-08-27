@@ -6,6 +6,7 @@ import { useBiodiversityData } from '@/hooks/useBiodiversityData';
 import { BiodiversitySpecies } from '@/types/biodiversity';
 import { useLexiconData } from '@/hooks/useLexiconData';
 import { useLatestSnapshotsForMarche } from '@/hooks/useSnapshotData';
+import { useSpeciesTranslationBatch } from '@/hooks/useSpeciesTranslation';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import { MapPin, Calendar, Thermometer, Users, Home, Eye, EyeOff, ExternalLink, Search } from 'lucide-react';
@@ -62,6 +63,43 @@ export const BioacousticSheet: React.FC<BioacousticSheetProps> = ({
   });
   const { data: lexiconData } = useLexiconData(latitude, longitude);
   const { data: snapshotsData } = useLatestSnapshotsForMarche(marche.id);
+
+  // Prepare species for translation (identique à BioDivSubSection)
+  const speciesForTranslation = useMemo(() => {
+    return biodiversityData?.species?.map(species => ({
+      scientificName: species.scientificName,
+      commonName: species.commonName
+    })) || [];
+  }, [biodiversityData?.species]);
+
+  // Get translations
+  const { data: translationsData } = useSpeciesTranslationBatch(speciesForTranslation);
+
+  // Create translation map
+  const translationMap = useMemo(() => {
+    if (!translationsData) return new Map();
+    
+    return new Map(
+      translationsData.map(translation => [
+        translation.scientificName,
+        translation
+      ])
+    );
+  }, [translationsData]);
+
+  // Translated species with French names
+  const translatedSpecies = useMemo(() => {
+    if (!biodiversityData?.species) return [];
+    
+    return biodiversityData.species.map(species => {
+      const translation = translationMap.get(species.scientificName);
+      return {
+        ...species,
+        commonName: translation?.commonName || species.commonName,
+        translationSource: translation?.source || 'original'
+      };
+    });
+  }, [biodiversityData?.species, translationMap]);
 
   // Calcul des catégories côté client (identique à BioDivSubSection)
   const categoryStats = useMemo(() => {
@@ -205,9 +243,9 @@ export const BioacousticSheet: React.FC<BioacousticSheetProps> = ({
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="grid grid-cols-2 gap-4 text-sm">
+                <div className="grid grid-cols-2 gap-4 text-sm mb-4">
                   <div className="flex justify-between">
-                    <span>Oiseaux:</span>
+                    <span>Faune:</span>
                     <span className="font-medium">{categoryStats.faune}</span>
                   </div>
                   <div className="flex justify-between">
@@ -223,6 +261,33 @@ export const BioacousticSheet: React.FC<BioacousticSheetProps> = ({
                     <span className="font-medium">{categoryStats.others}</span>
                   </div>
                 </div>
+                
+                {/* Species List */}
+                {translatedSpecies.length > 0 && (
+                  <div className="border-t pt-4">
+                    <h4 className="text-sm font-medium mb-3 text-muted-foreground">Espèces observées :</h4>
+                    <div className="space-y-2 max-h-32 overflow-y-auto">
+                      {translatedSpecies.slice(0, 8).map((species, index) => (
+                        <div key={`${species.scientificName}-${index}`} className="flex justify-between items-start text-xs">
+                          <div className="flex-1 pr-2">
+                            <p className="font-medium text-foreground">{species.commonName}</p>
+                            <p className="text-muted-foreground italic">{species.scientificName}</p>
+                          </div>
+                          <Badge variant="outline" className="text-xs shrink-0">
+                            {species.kingdom === 'Animalia' ? 'Faune' : 
+                             species.kingdom === 'Plantae' ? 'Plante' : 
+                             species.kingdom === 'Fungi' ? 'Champignon' : 'Autre'}
+                          </Badge>
+                        </div>
+                      ))}
+                      {translatedSpecies.length > 8 && (
+                        <p className="text-xs text-muted-foreground text-center pt-2">
+                          Et {translatedSpecies.length - 8} autres espèces...
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                )}
               </CardContent>
             </Card>
           )}
