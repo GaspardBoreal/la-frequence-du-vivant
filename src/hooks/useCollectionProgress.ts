@@ -21,6 +21,8 @@ interface ProgressState {
   isCompleted: boolean;
   error: string | null;
   isPollingActive: boolean;
+  lastPingAt?: string | null;
+  lastPingAgeSeconds: number | null;
 }
 
 export const useCollectionProgress = (logId: string | null, collectionTypes: string[] = []) => {
@@ -35,6 +37,8 @@ export const useCollectionProgress = (logId: string | null, collectionTypes: str
     isCompleted: false,
     error: null,
     isPollingActive: false,
+    lastPingAt: null,
+    lastPingAgeSeconds: null,
   });
 
   const intervalRef = useRef<NodeJS.Timeout>();
@@ -151,6 +155,10 @@ export const useCollectionProgress = (logId: string | null, collectionTypes: str
         console.log('📈 Initial estimate calculated:', initialEstimate, 'seconds');
       }
 
+      // Calculer l'âge du dernier ping
+      const lastPingAt = (data as any).last_ping || null;
+      const lastPingAgeSeconds = lastPingAt ? Math.floor((Date.now() - new Date(lastPingAt).getTime()) / 1000) : null;
+
       setState(prev => ({
         ...prev,
         log: data as DataCollectionLog,
@@ -162,6 +170,8 @@ export const useCollectionProgress = (logId: string | null, collectionTypes: str
         isCompleted,
         error: null,
         isPollingActive: !isCompleted,
+        lastPingAt,
+        lastPingAgeSeconds,
       }));
 
       // Délai de grâce après completion pour capturer les derniers états
@@ -202,6 +212,8 @@ export const useCollectionProgress = (logId: string | null, collectionTypes: str
         isCompleted: false,
         error: null,
         isPollingActive: false,
+        lastPingAt: null,
+        lastPingAgeSeconds: null,
       });
       
       // Nettoyer les timeouts
@@ -220,11 +232,11 @@ export const useCollectionProgress = (logId: string | null, collectionTypes: str
     // Initial fetch immédiat
     fetchProgress();
 
-    // Polling ultra-responsif (100ms) pour capturer tous les états intermédiaires
+    // Polling plus doux (750ms) pour limiter la charge
     intervalRef.current = setInterval(() => {
-      console.log('🔄 Polling progress (ultra-fast mode)...');
+      console.log('🔄 Polling progress (balanced mode)...');
       fetchProgress();
-    }, 100);
+    }, 750);
 
     return () => {
       console.log('🧹 Cleaning up progress polling');

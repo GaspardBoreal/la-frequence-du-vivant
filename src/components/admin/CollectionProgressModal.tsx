@@ -29,7 +29,8 @@ const CollectionProgressModal: React.FC<CollectionProgressModalProps> = ({
     estimatedTimeRemaining,
     initialEstimate,
     isCompleted, 
-    error 
+    error,
+    lastPingAgeSeconds
   } = useCollectionProgress(logId, collectionTypes);
 
   const formatTime = (seconds: number | null) => {
@@ -127,9 +128,14 @@ const CollectionProgressModal: React.FC<CollectionProgressModalProps> = ({
 
           {/* Progress Bar */}
           <div className="space-y-3">
-            <div className="flex justify-between text-sm">
+            <div className="flex justify-between text-sm items-center">
               <span>Progression</span>
-              <span className="font-medium">{progress}%</span>
+              <div className="flex items-center gap-2">
+                <span className="font-medium">{progress}%</span>
+                {typeof lastPingAgeSeconds === 'number' && lastPingAgeSeconds > 10 && (
+                  <span className="text-xs text-muted-foreground">Aucune mise à jour depuis {lastPingAgeSeconds}s</span>
+                )}
+              </div>
             </div>
             <Progress value={progress} className="w-full h-2" />
             

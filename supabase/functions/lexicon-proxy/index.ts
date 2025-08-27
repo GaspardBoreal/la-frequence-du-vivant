@@ -12,9 +12,22 @@ serve(async (req) => {
   }
 
   try {
+    // Support both JSON body (POST) and URL query params (GET)
     const url = new URL(req.url);
-    const latitude = url.searchParams.get('latitude');
-    const longitude = url.searchParams.get('longitude');
+    let latitude: string | null = url.searchParams.get('latitude');
+    let longitude: string | null = url.searchParams.get('longitude');
+
+    if ((!latitude || !longitude) && (req.method === 'POST' || req.method === 'PUT')) {
+      try {
+        const body = await req.json().catch(() => null) as any;
+        if (body && (body.latitude !== undefined) && (body.longitude !== undefined)) {
+          latitude = String(body.latitude);
+          longitude = String(body.longitude);
+        }
+      } catch (e) {
+        console.warn('⚠️ [LEXICON PROXY] Impossible de parser le corps JSON:', e);
+      }
+    }
 
     if (!latitude || !longitude) {
       console.error('❌ [LEXICON PROXY] Paramètres manquants - latitude ou longitude');
@@ -35,14 +48,24 @@ serve(async (req) => {
     const lexiconUrl = `https://lexicon.osfarm.org/tools/parcel-identifier.json?latitude=${latitude}&longitude=${longitude}`;
     console.log(`🌱 [LEXICON PROXY] URL LEXICON: ${lexiconUrl}`);
 
-    const response = await fetch(lexiconUrl, {
-      method: 'GET',
-      headers: {
-        'Accept': 'application/json',
-        'Content-Type': 'application/json',
-        'User-Agent': 'Supabase-Edge-Function/1.0',
-      },
-    });
+    // Internal timeout to avoid hanging
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 8000);
+
+    let response: Response;
+    try {
+      response = await fetch(lexiconUrl, {
+        method: 'GET',
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+          'User-Agent': 'Supabase-Edge-Function/1.0',
+        },
+        signal: controller.signal,
+      });
+    } finally {
+      clearTimeout(timeoutId);
+    }
 
     console.log(`🌱 [LEXICON PROXY] Statut de la réponse: ${response.status}`);
 

@@ -145,6 +145,8 @@ serve(async (req) => {
               })
               .eq('id', logEntry.id);
 
+            let heartbeatInterval: number | undefined;
+            let timeoutId: number | undefined;
             try {
               // Configuration du rayon de recherche biodiversité
               const biodiversityRadius = 500; // Rayon par défaut selon SEARCH_RADIUS_CONFIG
@@ -154,7 +156,7 @@ serve(async (req) => {
               const timeoutMs = 30000; // 30 second timeout
               
               // Heartbeat mechanism for long operations
-              const heartbeatInterval = setInterval(async () => {
+              heartbeatInterval = setInterval(async () => {
                 await supabase
                   .from('data_collection_logs')
                   .update({ 
@@ -170,8 +172,8 @@ serve(async (req) => {
                   .eq('id', logEntry.id);
               }, 5000); // 5 second heartbeat
               
-              const timeout = setTimeout(() => {
-                clearInterval(heartbeatInterval);
+              timeoutId = setTimeout(() => {
+                if (heartbeatInterval) clearInterval(heartbeatInterval);
                 controller.abort();
               }, timeoutMs);
               
@@ -184,8 +186,8 @@ serve(async (req) => {
                 }
               });
               
-              clearTimeout(timeout);
-              clearInterval(heartbeatInterval);
+              if (timeoutId) clearTimeout(timeoutId);
+              if (heartbeatInterval) clearInterval(heartbeatInterval);
 
               if (!biodivError && biodivData) {
                 // Store biodiversity snapshot
@@ -217,10 +219,10 @@ serve(async (req) => {
                 }
               }
             } catch (error) {
-              clearInterval(heartbeatInterval); // Clear heartbeat on error
-              clearTimeout(timeout);
+              if (heartbeatInterval) clearInterval(heartbeatInterval); // Clear heartbeat on error
+              if (timeoutId) clearTimeout(timeoutId);
               
-              if (error.name === 'AbortError') {
+              if ((error as any).name === 'AbortError') {
                 console.error(`⏱️ Biodiversity collection timeout for ${marche.nom_marche}`);
               } else {
                 console.error(`❌ Biodiversity collection error for ${marche.nom_marche}:`, error);
@@ -245,13 +247,15 @@ serve(async (req) => {
               })
               .eq('id', logEntry.id);
 
+            let heartbeatIntervalW: number | undefined;
+            let timeoutIdW: number | undefined;
             try {
               // Add timeout for weather collection too
               const controller = new AbortController();
               const timeoutMs = 12000; // 12 second timeout (matching open-meteo-data)
               
               // Heartbeat for weather collection
-              const heartbeatInterval = setInterval(async () => {
+              heartbeatIntervalW = setInterval(async () => {
                 await supabase
                   .from('data_collection_logs')
                   .update({ 
@@ -267,8 +271,8 @@ serve(async (req) => {
                   .eq('id', logEntry.id);
               }, 5000); // 5 second heartbeat
               
-              const timeout = setTimeout(() => {
-                clearInterval(heartbeatInterval);
+              timeoutIdW = setTimeout(() => {
+                if (heartbeatIntervalW) clearInterval(heartbeatIntervalW);
                 controller.abort();
               }, timeoutMs);
               
@@ -280,8 +284,8 @@ serve(async (req) => {
                 }
               });
               
-              clearTimeout(timeout);
-              clearInterval(heartbeatInterval);
+              if (timeoutIdW) clearTimeout(timeoutIdW);
+              if (heartbeatIntervalW) clearInterval(heartbeatIntervalW);
 
               if (!weatherError && weatherData?.success && weatherData.data) {
                 const aggregated = weatherData.data.aggregated;
@@ -315,10 +319,10 @@ serve(async (req) => {
                 }
               }
             } catch (error) {
-              clearInterval(heartbeatInterval); // Clear heartbeat on error
-              clearTimeout(timeout);
+              if (heartbeatIntervalW) clearInterval(heartbeatIntervalW); // Clear heartbeat on error
+              if (timeoutIdW) clearTimeout(timeoutIdW);
               
-              if (error.name === 'AbortError') {
+              if ((error as any).name === 'AbortError') {
                 console.error(`⏱️ Weather collection timeout for ${marche.nom_marche}`);
               } else {
                 console.error(`❌ Weather collection error for ${marche.nom_marche}:`, error);
@@ -343,13 +347,15 @@ serve(async (req) => {
               })
               .eq('id', logEntry.id);
 
+            let heartbeatIntervalR: number | undefined;
+            let timeoutIdR: number | undefined;
             try {
               // Add timeout for real estate collection too
               const controller = new AbortController();
               const timeoutMs = 8000; // 8 second timeout
               
               // Heartbeat for real estate collection
-              const heartbeatInterval = setInterval(async () => {
+              heartbeatIntervalR = setInterval(async () => {
                 await supabase
                   .from('data_collection_logs')
                   .update({ 
@@ -365,8 +371,8 @@ serve(async (req) => {
                   .eq('id', logEntry.id);
               }, 5000); // 5 second heartbeat
               
-              const timeout = setTimeout(() => {
-                clearInterval(heartbeatInterval);
+              timeoutIdR = setTimeout(() => {
+                if (heartbeatIntervalR) clearInterval(heartbeatIntervalR);
                 controller.abort();
               }, timeoutMs);
               
@@ -377,8 +383,8 @@ serve(async (req) => {
                 }
               });
               
-              clearTimeout(timeout);
-              clearInterval(heartbeatInterval);
+              if (timeoutIdR) clearTimeout(timeoutIdR);
+              if (heartbeatIntervalR) clearInterval(heartbeatIntervalR);
 
               if (!realEstateError && realEstateData) {
                 // Process transactions if available
@@ -386,7 +392,7 @@ serve(async (req) => {
                 
                 // Note: LEXICON utilise des données ponctuelles (pas de rayon)
                 // Le radius_meters est conservé pour compatibilité historique uniquement
-                const snapshot = {
+                const snapshot: any = {
                   marche_id: marche.id,
                   latitude: marche.latitude,
                   longitude: marche.longitude,
@@ -421,10 +427,10 @@ serve(async (req) => {
                 }
               }
             } catch (error) {
-              clearInterval(heartbeatInterval); // Clear heartbeat on error
-              clearTimeout(timeout);
+              if (heartbeatIntervalR) clearInterval(heartbeatIntervalR); // Clear heartbeat on error
+              if (timeoutIdR) clearTimeout(timeoutIdR);
               
-              if (error.name === 'AbortError') {
+              if ((error as any).name === 'AbortError') {
                 console.error(`⏱️ Real estate collection timeout for ${marche.nom_marche}`);
               } else {
                 console.error(`❌ Real estate collection error for ${marche.nom_marche}:`, error);

@@ -30,7 +30,8 @@ const DebugCollectionProgressModal: React.FC<DebugCollectionProgressModalProps> 
     initialEstimate,
     isCompleted, 
     error,
-    isPollingActive
+    isPollingActive,
+    lastPingAgeSeconds
   } = useCollectionProgress(logId, collectionTypes);
 
   const formatTime = (seconds: number | null) => {
@@ -134,6 +135,9 @@ const DebugCollectionProgressModal: React.FC<DebugCollectionProgressModalProps> 
                 <span className="font-black text-5xl text-white bg-primary/30 px-4 py-2 rounded-xl backdrop-blur-sm">{progress}%</span>
                 {isPollingActive && (
                   <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse" title="Polling actif"></div>
+                )}
+                {typeof lastPingAgeSeconds === 'number' && lastPingAgeSeconds > 10 && (
+                  <span className="text-xs text-muted-foreground">Aucune mise à jour depuis {lastPingAgeSeconds}s</span>
                 )}
               </div>
             </div>
