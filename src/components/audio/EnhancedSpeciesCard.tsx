@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { BiodiversitySpecies } from '@/types/biodiversity';
 import { useGlobalAudioPlayer } from '@/contexts/AudioContext';
 import { MiniSpectrogramPreview } from './MiniSpectrogramPreview';
+import { useSpeciesTranslation } from '@/hooks/useSpeciesTranslation';
 
 interface EnhancedSpeciesCardProps {
   species: BiodiversitySpecies;
@@ -16,6 +17,7 @@ export const EnhancedSpeciesCard = ({ species, onSpeciesClick }: EnhancedSpecies
   const [showSpectrogram, setShowSpectrogram] = useState(false);
   const [imageError, setImageError] = useState(false);
   const { playRecording, pause, currentRecording, isPlaying } = useGlobalAudioPlayer();
+  const { data: translation } = useSpeciesTranslation(species.scientificName, species.commonName);
 
   const hasAudio = species.xenoCantoRecordings && species.xenoCantoRecordings.length > 0;
   const hasPhoto = species.photoData && species.photoData.source !== 'placeholder';
@@ -69,7 +71,7 @@ export const EnhancedSpeciesCard = ({ species, onSpeciesClick }: EnhancedSpecies
               {species.photoData && !imageError ? (
                 <img
                   src={species.photoData.url}
-                  alt={species.commonName}
+                  alt={translation?.commonName || species.commonName}
                   className="w-full h-full object-cover"
                   onError={() => setImageError(true)}
                 />
@@ -125,7 +127,7 @@ export const EnhancedSpeciesCard = ({ species, onSpeciesClick }: EnhancedSpecies
         <div className="flex-1 min-w-0">
           <div className="flex items-center justify-between">
             <h3 className="font-medium text-sm leading-tight truncate">
-              {species.commonName}
+              {translation?.commonName || species.commonName}
             </h3>
             
             {/* Audio Controls */}

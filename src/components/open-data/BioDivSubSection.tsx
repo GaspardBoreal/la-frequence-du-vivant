@@ -20,6 +20,8 @@ import { BiodiversityMap } from '../biodiversity/BiodiversityMap';
 // import ContributorDetailModal from '../ContributorDetailModal'; // Removed as not used in this clean version
 import { EnhancedSpeciesCard } from '../audio/EnhancedSpeciesCard';
 import SpeciesDetailModal from '../biodiversity/SpeciesDetailModal';
+import { LanguageToggle } from '@/components/ui/language-toggle';
+import { useSpeciesTranslationBatch } from '@/hooks/useSpeciesTranslation';
 
 interface BioDivSubSectionProps {
   marche: MarcheTechnoSensible;
@@ -121,6 +123,18 @@ const BioDivSubSection: React.FC<BioDivSubSectionProps> = ({ marche, theme }) =>
     
     return stats;
   }, [biodiversityData?.species]);
+
+  // Prepare species for batch translation
+  const speciesForTranslation = useMemo(() => {
+    if (!biodiversityData?.species) return [];
+    return biodiversityData.species.map(species => ({
+      scientificName: species.scientificName,
+      commonName: species.commonName
+    }));
+  }, [biodiversityData?.species]);
+
+  // Batch translation hook
+  const { data: translations } = useSpeciesTranslationBatch(speciesForTranslation);
 
   // Filtrage des espèces par catégorie et contributeur
   const filteredSpecies = useMemo(() => {
@@ -456,9 +470,9 @@ const BioDivSubSection: React.FC<BioDivSubSectionProps> = ({ marche, theme }) =>
       {/* Contrôles de recherche et rayon */}
       <Card className="p-6">
         <div className="space-y-6">
-          {/* Rayon de recherche */}
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
+          {/* Header avec contrôles principaux */}
+          <div className="flex items-center justify-between flex-wrap gap-4">
+            <div className="flex items-center gap-4">
               <Label className="text-sm font-medium">Rayon de recherche:</Label>
               <div className="flex items-center gap-2">
                 <Badge variant="outline" className="bg-primary/10 text-primary font-medium">
@@ -471,6 +485,11 @@ const BioDivSubSection: React.FC<BioDivSubSectionProps> = ({ marche, theme }) =>
                 )}
               </div>
             </div>
+            <LanguageToggle size="sm" />
+          </div>
+          
+          {/* Rayon de recherche */}
+          <div className="space-y-4">
             
             <div className="space-y-2">
               <Slider
