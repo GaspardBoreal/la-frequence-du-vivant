@@ -3,6 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../ui/dialog';
 import { Badge } from '../ui/badge';
 import { Button } from '../ui/button';
 import { Card, CardContent } from '../ui/card';
+import { LanguageToggle } from '../ui/language-toggle';
 import { 
   ExternalLink, 
   Calendar, 
@@ -17,6 +18,7 @@ import {
   ImageIcon
 } from 'lucide-react';
 import { BiodiversitySpecies } from '@/types/biodiversity';
+import { useSpeciesTranslation } from '@/hooks/useSpeciesTranslation';
 
 interface SpeciesDetailModalProps {
   species: BiodiversitySpecies | null;
@@ -33,7 +35,14 @@ const SpeciesDetailModal: React.FC<SpeciesDetailModalProps> = ({
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const [showLightbox, setShowLightbox] = useState(false);
   
+  const { data: translation, isLoading: translationLoading } = useSpeciesTranslation(
+    species?.scientificName || '',
+    species?.commonName
+  );
+  
   if (!species) return null;
+
+  const displayName = translation?.commonName || species.commonName;
 
   const sourceColors = {
     ebird: 'hsl(var(--chart-1))',
@@ -57,9 +66,16 @@ const SpeciesDetailModal: React.FC<SpeciesDetailModalProps> = ({
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="text-lg font-semibold text-foreground">
-            {species.commonName}
-          </DialogTitle>
+          <div className="flex items-center justify-between">
+            <DialogTitle className="text-lg font-semibold text-foreground">
+              {translationLoading ? (
+                <div className="h-6 bg-muted/50 rounded animate-pulse w-48" />
+              ) : (
+                displayName
+              )}
+            </DialogTitle>
+            <LanguageToggle size="sm" />
+          </div>
         </DialogHeader>
 
         {/* Layout principal - deux colonnes sur desktop, vertical sur mobile */}
@@ -145,9 +161,36 @@ const SpeciesDetailModal: React.FC<SpeciesDetailModalProps> = ({
             <Card>
               <CardContent className="p-4 space-y-3">
                 <div>
-                  <h3 className="font-semibold text-foreground">{species.commonName}</h3>
-                  <p className="text-sm text-muted-foreground italic">{species.scientificName}</p>
-                  <p className="text-sm text-muted-foreground">Famille: {species.family}</p>
+                  {translationLoading ? (
+                    <div className="space-y-2">
+                      <div className="h-5 bg-muted/50 rounded animate-pulse w-40" />
+                      <div className="h-4 bg-muted/30 rounded animate-pulse w-32" />
+                    </div>
+                  ) : (
+                    <>
+                      <h3 className="font-semibold text-foreground">{displayName}</h3>
+                      <p className="text-sm text-muted-foreground italic">{species.scientificName}</p>
+                      <p className="text-sm text-muted-foreground">Famille: {species.family}</p>
+                      
+                      {/* Indicateur de traduction */}
+                      {translation && translation.source !== 'fallback' && (
+                        <div className="flex items-center gap-2 mt-1">
+                          <Badge 
+                            variant="outline" 
+                            className={`text-xs ${
+                              translation.confidence === 'high' 
+                                ? 'bg-green-50 text-green-700 border-green-200' 
+                                : translation.confidence === 'medium'
+                                ? 'bg-yellow-50 text-yellow-700 border-yellow-200'
+                                : 'bg-gray-50 text-gray-700 border-gray-200'
+                            }`}
+                          >
+                            Traduction {translation.confidence} - {translation.source}
+                          </Badge>
+                        </div>
+                      )}
+                    </>
+                  )}
                 </div>
 
                 <div className="flex flex-wrap gap-2">

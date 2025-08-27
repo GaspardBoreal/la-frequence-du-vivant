@@ -5,6 +5,7 @@ import { QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from 'sonner';
 import { queryClient } from './lib/queryClient';
 import { AudioProvider } from './contexts/AudioContext';
+import { LanguageProvider } from './contexts/LanguageContext';
 import AdminAuth from './components/AdminAuth';
 import AdminLogin from './pages/AdminLogin';
 import Index from './pages/Index';
@@ -42,8 +43,9 @@ import ExperienceLectureOptimisee from './components/reading/ExperienceLectureOp
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <AudioProvider>
-        <BrowserRouter>
+      <LanguageProvider>
+        <AudioProvider>
+          <BrowserRouter>
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/marches-techno-sensibles" element={<MarchesTechnoSensibles />} />
@@ -143,8 +145,9 @@ function App() {
             <Route path="*" element={<NotFound />} />
           </Routes>
           <Toaster position="top-right" />
-        </BrowserRouter>
-      </AudioProvider>
+          </BrowserRouter>
+        </AudioProvider>
+      </LanguageProvider>
     </QueryClientProvider>
   );
 }

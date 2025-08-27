@@ -4,9 +4,11 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import { LanguageToggle } from '@/components/ui/language-toggle';
 import { Search, Play, Pause, Volume2, User, MapPin, ExternalLink, Bird } from 'lucide-react';
 import { BiodiversitySpecies } from '@/types/biodiversity';
 import { SpeciesXenoCantoModal } from '@/components/biodiversity/SpeciesXenoCantoModal';
+import { useSpeciesTranslationBatch } from '@/hooks/useSpeciesTranslation';
 
 interface SpeciesAudioModalProps {
   isOpen: boolean;
@@ -28,15 +30,37 @@ export const SpeciesAudioModal: React.FC<SpeciesAudioModalProps> = ({
   const [playingAudio, setPlayingAudio] = useState<string | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
-  const filteredSpecies = useMemo(() => {
+  // Préparer les données pour la traduction par lot
+  const filteredSpeciesForTranslation = useMemo(() => {
     return species
       .filter(s => s.source === apiSource && (s.audioUrl || s.sonogramUrl))
+      .map(s => ({ scientificName: s.scientificName, commonName: s.commonName }));
+  }, [species, apiSource]);
+
+  // Obtenir les traductions par lot
+  const { data: translations = [] } = useSpeciesTranslationBatch(filteredSpeciesForTranslation);
+
+  const filteredSpecies = useMemo(() => {
+    // Créer une map des traductions
+    const translationMap = new Map(
+      translations.map(t => [t.scientificName, t])
+    );
+
+    return species
+      .filter(s => s.source === apiSource && (s.audioUrl || s.sonogramUrl))
+      .map(s => {
+        const translation = translationMap.get(s.scientificName);
+        return {
+          ...s,
+          displayName: translation?.commonName || s.commonName
+        };
+      })
       .filter(s => 
-        s.commonName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        s.displayName.toLowerCase().includes(searchTerm.toLowerCase()) ||
         s.scientificName.toLowerCase().includes(searchTerm.toLowerCase())
       )
-      .sort((a, b) => a.commonName.localeCompare(b.commonName));
-  }, [species, apiSource, searchTerm]);
+      .sort((a, b) => a.displayName.localeCompare(b.displayName));
+  }, [species, apiSource, searchTerm, translations]);
 
   const apiColors = {
     ebird: {
@@ -103,15 +127,16 @@ export const SpeciesAudioModal: React.FC<SpeciesAudioModalProps> = ({
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-4xl max-h-[80vh] overflow-hidden flex flex-col">
         <DialogHeader>
-          <DialogTitle className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
+          <div className="flex items-center justify-between">
+            <DialogTitle className="flex items-center gap-2">
               <Bird className="h-5 w-5" />
               Chants d'oiseaux - {apiSource === 'ebird' ? 'eBird' : 'iNaturalist'}
-            </div>
-            <Badge className={currentColors.badge}>
-              {filteredSpecies.length} espèces
-            </Badge>
-          </DialogTitle>
+              <Badge className={currentColors.badge}>
+                {filteredSpecies.length} espèces
+              </Badge>
+            </DialogTitle>
+            <LanguageToggle size="sm" />
+          </div>
         </DialogHeader>
 
         {/* Statistiques */}
@@ -182,7 +207,7 @@ export const SpeciesAudioModal: React.FC<SpeciesAudioModalProps> = ({
                         <div className="flex items-start justify-between mb-2">
                           <div>
                             <h3 className="font-semibold text-lg text-gray-900">
-                              {speciesItem.commonName}
+                              {speciesItem.displayName}
                             </h3>
                             <p className="text-sm text-gray-600 italic">
                               {speciesItem.scientificName}

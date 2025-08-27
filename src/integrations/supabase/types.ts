@@ -1154,6 +1154,42 @@ export type Database = {
         }
         Relationships: []
       }
+      species_translations: {
+        Row: {
+          alternative_names_fr: string[] | null
+          common_name_en: string | null
+          common_name_fr: string | null
+          confidence_level: string
+          created_at: string
+          id: string
+          scientific_name: string
+          source: string
+          updated_at: string
+        }
+        Insert: {
+          alternative_names_fr?: string[] | null
+          common_name_en?: string | null
+          common_name_fr?: string | null
+          confidence_level?: string
+          created_at?: string
+          id?: string
+          scientific_name: string
+          source?: string
+          updated_at?: string
+        }
+        Update: {
+          alternative_names_fr?: string[] | null
+          common_name_en?: string | null
+          common_name_fr?: string | null
+          confidence_level?: string
+          created_at?: string
+          id?: string
+          scientific_name?: string
+          source?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       weather_snapshots: {
         Row: {
           created_at: string
