@@ -129,6 +129,7 @@ export const useTriggerBatchCollection = () => {
     collectionTypes: ('biodiversity' | 'weather' | 'real_estate')[]; 
     mode: 'manual' | 'scheduled';
     batchMode?: boolean;
+    foreground?: boolean;
   }) => {
     const { data, error } = await supabase.functions.invoke('batch-data-collector', {
       body: request
@@ -136,6 +137,26 @@ export const useTriggerBatchCollection = () => {
 
     if (error) {
       throw new Error(`Failed to trigger batch collection: ${error.message}`);
+    }
+
+    return data;
+  };
+};
+
+export const useRealEstateStepCollection = () => {
+  return async (stepRequest: {
+    logId: string;
+    marcheId: string;
+    latitude: number;
+    longitude: number;
+    marcheName?: string;
+  }) => {
+    const { data, error } = await supabase.functions.invoke('collect-real-estate-step', {
+      body: stepRequest
+    });
+
+    if (error) {
+      throw new Error(`Failed to collect real estate step: ${error.message}`);
     }
 
     return data;

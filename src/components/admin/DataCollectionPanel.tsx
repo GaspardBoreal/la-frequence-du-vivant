@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { useDataCollectionLogs, useTriggerBatchCollection } from '@/hooks/useSnapshotData';
+import { useDataCollectionLogs, useTriggerBatchCollection, useRealEstateStepCollection } from '@/hooks/useSnapshotData';
 import { useDeleteCollectionLog, useDeleteAllFailedLogs } from '@/hooks/useDeleteCollectionLog';
 import { DataCollectionLog } from '@/types/snapshots';
 import { PlayCircle, BarChart3, Clock, CheckCircle, XCircle, AlertCircle, Trash, Loader2, AlertTriangle } from 'lucide-react';
@@ -29,6 +29,7 @@ const DataCollectionPanel: React.FC<DataCollectionPanelProps> = ({ marches = [] 
   const [isLaunching, setIsLaunching] = useState(false);
   const { data: logs, isLoading: logsLoading, refetch: refetchLogs } = useDataCollectionLogs(10);
   const triggerCollection = useTriggerBatchCollection();
+  const realEstateStepCollection = useRealEstateStepCollection();
   const deleteLog = useDeleteCollectionLog();
   const deleteAllFailedLogs = useDeleteAllFailedLogs();
 
@@ -42,6 +43,18 @@ const DataCollectionPanel: React.FC<DataCollectionPanelProps> = ({ marches = [] 
       
       // Afficher la modal avec état de lancement IMMÉDIATEMENT
       setShowProgressModal(true);
+      
+      // Mode client-orchestré pour immobilier uniquement
+      const isRealEstateOnly = types.length === 1 && types[0] === 'real_estate';
+      
+      if (isRealEstateOnly) {
+        console.log('🎯 Mode client-orchestré pour immobilier');
+        await handleForegroundRealEstateCollection();
+        return;
+      }
+      
+      // Mode classique (arrière-plan) pour les autres types
+      console.log('🌐 Mode arrière-plan pour:', types);
       
       // Pré-lancer la recherche du logId pour commencer le polling le plus tôt possible
       let logId: string | null = null;
@@ -111,6 +124,123 @@ const DataCollectionPanel: React.FC<DataCollectionPanelProps> = ({ marches = [] 
       setIsCollecting(false);
       setIsLaunching(false);
       setShowProgressModal(false);
+    }
+  };
+
+  // Nouvelle fonction pour la collecte immobilière en mode client-orchestré
+  const handleForegroundRealEstateCollection = async () => {
+    try {
+      console.log('🎯 Démarrage collecte immobilière client-orchestrée');
+      
+      // 1. Initialiser la collecte en mode foreground
+      const result = await triggerCollection({
+        collectionTypes: ['real_estate'],
+        mode: 'manual',
+        foreground: true
+      });
+      
+      if (!result?.success || !result?.logId || !result?.marches) {
+        throw new Error('Erreur lors de l\'initialisation de la collecte');
+      }
+      
+      const { logId, marches } = result;
+      console.log(`📋 Collecte initialisée: ${marches.length} marchés à traiter`);
+      
+      setCurrentLogId(logId);
+      setIsLaunching(false);
+      
+      // 2. Traiter chaque marché séquentiellement
+      let processed = 0;
+      let errors = 0;
+      
+      for (let i = 0; i < marches.length; i++) {
+        const marche = marches[i];
+        console.log(`🏠 Processing ${i + 1}/${marches.length}: ${marche.nom_marche || marche.ville}`);
+        
+        let success = false;
+        let attempt = 0;
+        const maxAttempts = 2;
+        
+        // Retry logic au niveau client
+        while (!success && attempt < maxAttempts) {
+          try {
+            const stepResult = await realEstateStepCollection({
+              logId,
+              marcheId: marche.id,
+              latitude: marche.latitude,
+              longitude: marche.longitude,
+              marcheName: marche.nom_marche || marche.ville
+            });
+            
+            if (stepResult?.success) {
+              success = true;
+              processed++;
+              console.log(`✅ Marché traité: ${marche.nom_marche || marche.ville}`);
+            } else {
+              throw new Error(stepResult?.error || 'Erreur inconnue');
+            }
+          } catch (error) {
+            attempt++;
+            console.warn(`⚠️ Tentative ${attempt}/${maxAttempts} échouée pour ${marche.nom_marche}:`, error);
+            
+            if (attempt < maxAttempts) {
+              await new Promise(resolve => setTimeout(resolve, 500)); // Backoff 500ms
+            }
+          }
+        }
+        
+        if (!success) {
+          errors++;
+          console.error(`❌ Échec définitif pour ${marche.nom_marche || marche.ville}`);
+        }
+        
+        // Délai entre les marchés (250-400ms)
+        if (i < marches.length - 1) {
+          await new Promise(resolve => setTimeout(resolve, 300));
+        }
+      }
+      
+      // 3. Finaliser le log de collecte
+      const startTime = new Date(logId); // This is wrong, need to get actual start time
+      const completedAt = new Date();
+      
+      // Get actual start time from the log
+      const { data: logData } = await supabase
+        .from('data_collection_logs')
+        .select('started_at')
+        .eq('id', logId)
+        .single();
+        
+      const startedAt = logData?.started_at ? new Date(logData.started_at) : completedAt;
+      const durationSeconds = Math.floor((completedAt.getTime() - startedAt.getTime()) / 1000);
+      
+      await supabase
+        .from('data_collection_logs')
+        .update({
+          status: 'completed',
+          completed_at: completedAt.toISOString(),
+          duration_seconds: durationSeconds,
+          marches_processed: processed,
+          errors_count: errors,
+          summary_stats: {
+            processed,
+            total_marches: marches.length,
+            errors,
+            success_rate: Math.round((processed / marches.length) * 100),
+            current_data_type: 'Collection terminée ✅',
+            current_marche_name: 'Tous les marchés traités'
+          }
+        })
+        .eq('id', logId);
+      
+      toast.success(`Collecte terminée: ${processed}/${marches.length} marchés traités`);
+      console.log(`✅ Collecte terminée: ${processed} succès, ${errors} erreurs`);
+      
+      refetchLogs();
+    } catch (error) {
+      console.error('❌ Erreur collecte client-orchestrée:', error);
+      toast.error('Erreur lors de la collecte immobilière');
+      throw error;
     }
   };
 

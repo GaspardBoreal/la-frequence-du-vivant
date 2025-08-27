@@ -15,6 +15,7 @@ interface BatchCollectionRequest {
     departement?: string;
   };
   batchMode?: boolean; // New: enable batch optimizations
+  foreground?: boolean; // New: client-orchestrated mode
 }
 
 serve(async (req) => {
@@ -32,7 +33,7 @@ serve(async (req) => {
     console.log('🚀 Batch data collection initiated');
 
     const request: BatchCollectionRequest = await req.json();
-    const { collectionTypes, mode, marchesFilter, batchMode = true } = request;
+    const { collectionTypes, mode, marchesFilter, batchMode = true, foreground = false } = request;
     
     if (batchMode) {
       console.log('⚡ BATCH MODE ENABLED - Using performance optimizations');
@@ -96,6 +97,26 @@ serve(async (req) => {
 
     // 🚀 RETOUR IMMÉDIAT DU LOGID POUR POLLING TEMPS RÉEL
     console.log(`⚡ Returning logId immediately for real-time tracking: ${logEntry.id}`);
+    
+    // If foreground mode, return marches list for client orchestration
+    if (foreground) {
+      console.log(`🎯 Foreground mode: returning marches list for client orchestration`);
+      return new Response(JSON.stringify({
+        success: true,
+        logId: logEntry.id,
+        message: 'Collection ready for foreground orchestration',
+        total_marches: validMarches.length,
+        marches: validMarches.map(m => ({
+          id: m.id,
+          nom_marche: m.nom_marche,
+          ville: m.ville,
+          latitude: m.latitude,
+          longitude: m.longitude
+        }))
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
     
     // Start background collection task
     EdgeRuntime.waitUntil(

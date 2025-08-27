@@ -19,6 +19,9 @@ verify_jwt = false
 [functions.cadastre-proxy]
 verify_jwt = false
 
+[functions.collect-real-estate-step]
+verify_jwt = false
+
 [functions.test-function]
 verify_jwt = false
 
