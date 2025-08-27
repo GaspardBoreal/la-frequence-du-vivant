@@ -154,7 +154,7 @@ async function fetchGBIFData(lat: number, lon: number, radius: number, dateFilte
       scientificName: item.scientificName || 'Unknown',
       commonName: item.vernacularName || item.scientificName || 'Unknown',
       family: item.family || 'Unknown',
-      kingdom: mapKingdom(item.kingdom),
+      kingdom: mapKingdom(item, item.family, item.scientificName),
       observations: 1,
       lastSeen: item.eventDate || item.dateIdentified || new Date().toISOString().split('T')[0],
       photos: item.media?.filter((m: any) => m.type === 'StillImage')?.map((m: any) => m.identifier) || [],
@@ -257,7 +257,7 @@ async function fetchINaturalistData(lat: number, lon: number, radius: number, da
       scientificName: item.taxon?.name || 'Unknown',
       commonName: item.taxon?.preferred_common_name || item.taxon?.name || 'Unknown',
       family: item.taxon?.ancestry?.split('/').slice(-2, -1)[0] || 'Unknown',
-      kingdom: mapKingdom(item.taxon?.iconic_taxon_name),
+      kingdom: mapKingdom(item.taxon, item.taxon?.iconic_taxon_name, item.taxon?.name),
       observations: 1,
       lastSeen: item.observed_on || item.created_at?.split('T')[0] || new Date().toISOString().split('T')[0],
       photos: item.photos?.map((p: any) => p.url) || [],
@@ -750,43 +750,72 @@ function calculateDistance(lat1: number, lon1: number, lat2: number, lon2: numbe
   return R * c;
 }
 
-// Helper function to map kingdom names
-function mapKingdom(kingdom: string): 'Plantae' | 'Animalia' | 'Fungi' | 'Other' {
-  if (!kingdom) return 'Other';
-  const k = kingdom.toLowerCase();
-  
-  // Plants
-  if (k.includes('plantae') || k.includes('plant')) return 'Plantae';
-  
-  // Fungi
-  if (k.includes('fungi') || k.includes('fungus')) return 'Fungi';
-  
-  // Animals - include all animal groups
-  if (k.includes('animalia') || k.includes('animal') || 
-      k.includes('aves') || k.includes('bird') ||
-      k.includes('mammalia') || k.includes('mammal') ||
-      k.includes('reptilia') || k.includes('reptile') ||
-      k.includes('amphibia') || k.includes('amphibian') ||
-      k.includes('insecta') || k.includes('insect') ||
-      k.includes('arachnida') || k.includes('spider') ||
-      k.includes('crustacea') || k.includes('crustacean') ||
-      k.includes('mollusca') || k.includes('mollusk') ||
-      k.includes('cnidaria') || k.includes('actinopterygii') ||
-      k.includes('fish') || k.includes('poisson')) {
-    return 'Animalia';
+// Helper function to map kingdom names with enhanced fallbacks
+function mapKingdom(taxon: any, family?: string, scientificName?: string): 'Plantae' | 'Animalia' | 'Fungi' | 'Other' {
+  // Check iNaturalist taxon ancestors first (most reliable)
+  if (taxon?.ancestors && Array.isArray(taxon.ancestors)) {
+    for (const ancestor of taxon.ancestors) {
+      const ancestorName = ancestor.name?.toLowerCase();
+      if (ancestorName === 'plantae') return 'Plantae';
+      if (ancestorName === 'animalia') return 'Animalia';
+      if (ancestorName === 'fungi') return 'Fungi';
+    }
   }
   
-  // For iNaturalist iconic taxon names
-  if (k === 'lepidoptera' || k === 'hymenoptera' || k === 'diptera' || 
-      k === 'coleoptera' || k === 'hemiptera' || k === 'orthoptera' ||
-      k === 'odonata' || k === 'neuroptera' || k === 'mantodea' ||
-      k === 'phasmatodea' || k === 'dermaptera' || k === 'psocoptera' ||
-      k === 'thysanoptera' || k === 'siphonaptera' || k === 'mecoptera' ||
-      k === 'strepsiptera' || k === 'notoptera' || k === 'zoraptera' ||
-      k === 'embioptera' || k === 'grylloblattodea' || k === 'mantophasmatodea') {
-    return 'Animalia';
+  // Check direct taxon kingdom  
+  const kingdomValue = taxon?.kingdom || taxon?.rank_kingdom || family;
+  if (kingdomValue) {
+    const normalizedKingdom = kingdomValue.toLowerCase();
+    if (normalizedKingdom.includes('plantae') || normalizedKingdom.includes('plant')) {
+      return 'Plantae';
+    }
+    if (normalizedKingdom.includes('animalia') || normalizedKingdom.includes('animal')) {
+      return 'Animalia';
+    }
+    if (normalizedKingdom.includes('fungi') || normalizedKingdom.includes('fungus')) {
+      return 'Fungi';
+    }
   }
   
+  // Scientific name-based fallbacks for common groups
+  if (scientificName) {
+    const name = scientificName.toLowerCase();
+    // Butterflies and moths (Lepidoptera)
+    if (name.includes('vanessa') || name.includes('maniola') || name.includes('iphiclides') || 
+        name.includes('macroglossum') || name.includes('pieris') || name.includes('aglais') ||
+        name.includes('inachis') || name.includes('polygonia') || name.includes('papilio') ||
+        name.includes('gonepteryx') || name.includes('anthocharis') || name.includes('lycaena') ||
+        name.includes('polyommatus') || name.includes('erebia')) {
+      return 'Animalia';
+    }
+    // Dragonflies (Odonata)
+    if (name.includes('calopteryx') || name.includes('libellula') || name.includes('sympetrum') ||
+        name.includes('aeshna') || name.includes('anax') || name.includes('ischnura') ||
+        name.includes('coenagrion')) {
+      return 'Animalia';
+    }
+    // Birds (common genera)
+    if (name.includes('turdus') || name.includes('parus') || name.includes('falco') ||
+        name.includes('buteo') || name.includes('hirundo') || name.includes('phoenicurus') ||
+        name.includes('anthus') || name.includes('emberiza') || name.includes('oenanthe') ||
+        name.includes('linaria') || name.includes('rana') || name.includes('rupicapra')) {
+      return 'Animalia';
+    }
+  }
+  
+  // Fallback based on family/order hints
+  if (family) {
+    const normalizedFamily = family.toLowerCase();
+    if (normalizedFamily.includes('aves') || normalizedFamily.includes('bird') ||
+        normalizedFamily.includes('lepidoptera') || normalizedFamily.includes('butterfly') ||
+        normalizedFamily.includes('odonata') || normalizedFamily.includes('dragonfly') ||
+        normalizedFamily.includes('idae') || normalizedFamily.includes('mammalia') ||
+        normalizedFamily.includes('amphibia') || normalizedFamily.includes('reptilia')) {
+      return 'Animalia';
+    }
+  }
+  
+  console.log(`⚠️ mapKingdom fallback to 'Other' for:`, { taxon, family, scientificName });
   return 'Other';
 }
 

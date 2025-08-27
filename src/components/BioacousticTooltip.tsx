@@ -193,7 +193,7 @@ const BioacousticTooltip: React.FC<BioacousticTooltipProps> = ({
                       <div className="bio-item">
                         <span className="bio-label">FAUNE</span>
                         <span className="bio-value">
-                          {biodiversityData?.summary.birds || snapshots?.biodiversity?.birds_count || 0}
+                          {biodiversityData?.species?.filter(s => s.kingdom === 'Animalia').length || snapshots?.biodiversity?.birds_count || 0}
                         </span>
                       </div>
                       <div className="bio-item">

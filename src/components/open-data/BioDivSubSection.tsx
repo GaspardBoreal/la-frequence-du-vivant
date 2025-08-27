@@ -40,7 +40,7 @@ const isBirdSpecies = (species: BiodiversitySpecies): boolean => {
 const BioDivSubSection: React.FC<BioDivSubSectionProps> = ({ marche, theme }) => {
   const [dateFilter, setDateFilter] = useState<'recent' | 'medium'>('recent');
   const [selectedContributor, setSelectedContributor] = useState<string>('all');
-  const [selectedCategory, setSelectedCategory] = useState<'all' | 'birds' | 'plants' | 'fungi' | 'others'>('all');
+  const [selectedCategory, setSelectedCategory] = useState<'all' | 'faune' | 'plants' | 'fungi' | 'others'>('all');
   const [selectedSource, setSelectedSource] = useState<'all' | 'gbif' | 'inaturalist' | 'ebird'>('all');
   const [selectedConfidence, setSelectedConfidence] = useState<'all' | 'high' | 'medium' | 'low'>('all');
   const [selectedTimeRange, setSelectedTimeRange] = useState<'all' | 'recent' | 'month' | 'year'>('all');
@@ -109,17 +109,17 @@ const BioDivSubSection: React.FC<BioDivSubSectionProps> = ({ marche, theme }) =>
 
   // Calcul des catégories d'espèces
   const categoryStats = useMemo(() => {
-    if (!biodiversityData?.species) return { all: 0, birds: 0, plants: 0, fungi: 0, others: 0 };
+    if (!biodiversityData?.species) return { all: 0, faune: 0, plants: 0, fungi: 0, others: 0 };
     
     const stats = {
       all: biodiversityData.species.length,
-      birds: biodiversityData.species.filter(isBirdSpecies).length,
+      faune: biodiversityData.species.filter(s => s.kingdom === 'Animalia').length,
       plants: biodiversityData.species.filter(s => s.kingdom === 'Plantae').length,
       fungi: biodiversityData.species.filter(s => s.kingdom === 'Fungi').length,
       others: 0
     };
     
-    stats.others = stats.all - stats.birds - stats.plants - stats.fungi;
+    stats.others = stats.all - stats.faune - stats.plants - stats.fungi;
     
     return stats;
   }, [biodiversityData?.species]);
@@ -177,8 +177,8 @@ const BioDivSubSection: React.FC<BioDivSubSectionProps> = ({ marche, theme }) =>
         switch (selectedCategory) {
           case 'plants':
             return species.kingdom === 'Plantae';
-          case 'birds':
-            return isBirdSpecies(species);
+          case 'faune':
+            return species.kingdom === 'Animalia';
           case 'fungi':
             return species.kingdom === 'Fungi';
           case 'others':
@@ -527,7 +527,7 @@ const BioDivSubSection: React.FC<BioDivSubSectionProps> = ({ marche, theme }) =>
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Toutes ({categoryStats.all})</SelectItem>
-                  <SelectItem value="birds">Oiseaux ({categoryStats.birds})</SelectItem>
+                  <SelectItem value="faune">Faune ({categoryStats.faune})</SelectItem>
                   <SelectItem value="plants">Plantes ({categoryStats.plants})</SelectItem>
                   <SelectItem value="fungi">Champignons ({categoryStats.fungi})</SelectItem>
                   <SelectItem value="others">Autres ({categoryStats.others})</SelectItem>
@@ -653,10 +653,10 @@ const BioDivSubSection: React.FC<BioDivSubSectionProps> = ({ marche, theme }) =>
             <MapPin className="h-4 w-4" />
             Carte
           </TabsTrigger>
-          <TabsTrigger value="birds" className="flex items-center gap-2">
-            <Bird className="h-4 w-4" />
-            Faune ({categoryStats.birds})
-          </TabsTrigger>
+           <TabsTrigger value="faune" className="flex items-center gap-2">
+             <Bird className="h-4 w-4" />
+             Faune ({categoryStats.faune})
+           </TabsTrigger>
           <TabsTrigger value="plants" className="flex items-center gap-2">
             <TreePine className="h-4 w-4" />
             Flore ({categoryStats.plants})
@@ -695,7 +695,7 @@ const BioDivSubSection: React.FC<BioDivSubSectionProps> = ({ marche, theme }) =>
           </div>
         </TabsContent>
 
-        <TabsContent value="birds" className="space-y-4">
+        <TabsContent value="faune" className="space-y-4">
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
             {filteredSpecies
               .filter(species => species.kingdom === 'Animalia')

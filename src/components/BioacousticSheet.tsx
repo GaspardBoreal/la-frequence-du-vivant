@@ -65,17 +65,17 @@ export const BioacousticSheet: React.FC<BioacousticSheetProps> = ({
 
   // Calcul des catégories côté client (identique à BioDivSubSection)
   const categoryStats = useMemo(() => {
-    if (!biodiversityData?.species) return { all: 0, birds: 0, plants: 0, fungi: 0, others: 0 };
+    if (!biodiversityData?.species) return { all: 0, faune: 0, plants: 0, fungi: 0, others: 0 };
     
     const stats = {
       all: biodiversityData.species.length,
-      birds: biodiversityData.species.filter(isBirdSpecies).length,
+      faune: biodiversityData.species.filter(s => s.kingdom === 'Animalia').length,
       plants: biodiversityData.species.filter(s => s.kingdom === 'Plantae').length,
       fungi: biodiversityData.species.filter(s => s.kingdom === 'Fungi').length,
       others: 0
     };
     
-    stats.others = stats.all - stats.birds - stats.plants - stats.fungi;
+    stats.others = stats.all - stats.faune - stats.plants - stats.fungi;
     
     return stats;
   }, [biodiversityData?.species]);
@@ -208,7 +208,7 @@ export const BioacousticSheet: React.FC<BioacousticSheetProps> = ({
                 <div className="grid grid-cols-2 gap-4 text-sm">
                   <div className="flex justify-between">
                     <span>Oiseaux:</span>
-                    <span className="font-medium">{categoryStats.birds}</span>
+                    <span className="font-medium">{categoryStats.faune}</span>
                   </div>
                   <div className="flex justify-between">
                     <span>Plantes:</span>
