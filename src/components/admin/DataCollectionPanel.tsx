@@ -44,27 +44,29 @@ const DataCollectionPanel: React.FC<DataCollectionPanelProps> = ({ marches = [] 
       // Afficher la modal avec état de lancement IMMÉDIATEMENT
       setShowProgressModal(true);
       
-      // Mode client-orchestré pour immobilier uniquement
-      const isRealEstateOnly = types.length === 1 && types[0] === 'real_estate';
+      // Check if this is foreground collection (single type: real_estate or biodiversity)
+      const isForegroundCollection = types.length === 1 && 
+        (types.includes('real_estate') || types.includes('biodiversity'));
       
-      if (isRealEstateOnly) {
-        console.log('🎯 Mode client-orchestré pour immobilier');
-        await handleForegroundRealEstateCollection();
-        return;
-      }
-      
-      // Mode classique (arrière-plan) pour les autres types
-      console.log('🌐 Mode arrière-plan pour:', types);
-      
-      // Pré-lancer la recherche du logId pour commencer le polling le plus tôt possible
-      let logId: string | null = null;
-      
-      // Déclencher la collecte avec le mode batch pour les performances
-      const collectionPromise = triggerCollection({
+      const response = await triggerCollection({
         collectionTypes: types,
         mode: 'manual',
-        batchMode: true // Enable batch optimizations for robustness
+        batchMode: true
       });
+      
+      if (isForegroundCollection && response.logId && response.marches) {
+        console.log(`🎯 Starting foreground ${types[0]} collection`)
+        setCurrentLogId(response.logId)
+        setCurrentCollectionTypes(types)
+        setIsLaunching(false)
+        
+        // Start foreground collection (non-blocking for UI)
+        handleForegroundCollection(types, response.logId, response.marches)
+        return
+      }
+      
+      // Background collection logic for other cases
+      console.log('🌐 Mode arrière-plan pour:', types);
       
       // En parallèle, chercher le logId dès que possible
       const logIdSearchPromise = (async () => {
@@ -97,16 +99,11 @@ const DataCollectionPanel: React.FC<DataCollectionPanelProps> = ({ marches = [] 
         return null;
       })();
       
-      // Attendre les deux opérations
-      const [result, searchedLogId] = await Promise.all([
-        collectionPromise,
-        logIdSearchPromise
-      ]);
+      // Pour le mode background, utiliser le logId de recherche ou de réponse
+      const searchedLogId = await logIdSearchPromise;
+      const logId = response?.logId || searchedLogId;
       
-      console.log('📋 Résultat de la collecte:', result);
-      
-      // Utiliser le logId de la réponse ou celui trouvé par recherche
-      logId = result?.logId || searchedLogId;
+      console.log('📋 Résultat de la collecte:', response);
       
       if (logId) {
         console.log('✅ LogId trouvé, démarrage du polling temps réel:', logId);
@@ -127,122 +124,95 @@ const DataCollectionPanel: React.FC<DataCollectionPanelProps> = ({ marches = [] 
     }
   };
 
-  // Nouvelle fonction pour la collecte immobilière en mode client-orchestré
-  const handleForegroundRealEstateCollection = async () => {
+  const handleForegroundCollection = async (collectionTypes: string[], logId: string, marches: any[]) => {
+    const collectionType = collectionTypes[0] // Single type only
+    console.log(`🎯 Starting foreground ${collectionType} collection for`, marches.length, 'marches')
+    
+    // Determine which step function to use
+    const stepFunction = collectionType === 'real_estate' ? 'collect-real-estate-step' : 'collect-biodiversity-step'
+    
     try {
-      console.log('🎯 Démarrage collecte immobilière client-orchestrée');
-      
-      // 1. Initialiser la collecte en mode foreground
-      const result = await triggerCollection({
-        collectionTypes: ['real_estate'],
-        mode: 'manual',
-        foreground: true
-      });
-      
-      if (!result?.success || !result?.logId || !result?.marches) {
-        throw new Error('Erreur lors de l\'initialisation de la collecte');
-      }
-      
-      const { logId, marches } = result;
-      console.log(`📋 Collecte initialisée: ${marches.length} marchés à traiter`);
-      
-      setCurrentLogId(logId);
-      setIsLaunching(false);
-      
-      // 2. Traiter chaque marché séquentiellement
-      let processed = 0;
-      let errors = 0;
-      
       for (let i = 0; i < marches.length; i++) {
-        const marche = marches[i];
-        console.log(`🏠 Processing ${i + 1}/${marches.length}: ${marche.nom_marche || marche.ville}`);
+        const marche = marches[i]
+        console.log(`Processing marche ${i + 1}/${marches.length}:`, marche.nom_marche)
         
-        let success = false;
-        let attempt = 0;
-        const maxAttempts = 2;
+        let success = false
+        let attempt = 0
+        const maxAttempts = 2 // Local retry on top of server retries
         
-        // Retry logic au niveau client
         while (!success && attempt < maxAttempts) {
+          attempt++
           try {
-            const stepResult = await realEstateStepCollection({
-              logId,
-              marcheId: marche.id,
-              latitude: marche.latitude,
-              longitude: marche.longitude,
-              marcheName: marche.nom_marche || marche.ville
-            });
+            const { data, error } = await supabase.functions.invoke(stepFunction, {
+              body: {
+                logId,
+                marcheId: marche.id,
+                latitude: marche.latitude,
+                longitude: marche.longitude,
+                marcheName: marche.nom_marche
+              }
+            })
             
-            if (stepResult?.success) {
-              success = true;
-              processed++;
-              console.log(`✅ Marché traité: ${marche.nom_marche || marche.ville}`);
+            if (error) throw error
+            if (data?.success) {
+              success = true
+              console.log(`✅ Marche ${marche.nom_marche} processed successfully`)
             } else {
-              throw new Error(stepResult?.error || 'Erreur inconnue');
+              throw new Error(data?.error || 'Unknown error')
             }
-          } catch (error) {
-            attempt++;
-            console.warn(`⚠️ Tentative ${attempt}/${maxAttempts} échouée pour ${marche.nom_marche}:`, error);
-            
+          } catch (err) {
+            console.error(`❌ Attempt ${attempt} failed for ${marche.nom_marche}:`, err)
             if (attempt < maxAttempts) {
-              await new Promise(resolve => setTimeout(resolve, 500)); // Backoff 500ms
+              await new Promise(resolve => setTimeout(resolve, 1000)) // 1s retry delay
             }
           }
         }
         
         if (!success) {
-          errors++;
-          console.error(`❌ Échec définitif pour ${marche.nom_marche || marche.ville}`);
+          console.error(`❌ Failed to process ${marche.nom_marche} after ${maxAttempts} attempts`)
         }
         
-        // Délai entre les marchés (250-400ms)
+        // Small delay between marches
         if (i < marches.length - 1) {
-          await new Promise(resolve => setTimeout(resolve, 300));
+          await new Promise(resolve => setTimeout(resolve, collectionType === 'biodiversity' ? 500 : 300))
         }
       }
       
-      // 3. Finaliser le log de collecte
-      const startTime = new Date(logId); // This is wrong, need to get actual start time
-      const completedAt = new Date();
-      
-      // Get actual start time from the log
+      // Mark collection as completed
+      const endTime = new Date()
       const { data: logData } = await supabase
         .from('data_collection_logs')
         .select('started_at')
         .eq('id', logId)
-        .single();
+        .single()
         
-      const startedAt = logData?.started_at ? new Date(logData.started_at) : completedAt;
-      const durationSeconds = Math.floor((completedAt.getTime() - startedAt.getTime()) / 1000);
+      const startedAt = logData?.started_at ? new Date(logData.started_at) : endTime
+      const durationSeconds = Math.floor((endTime.getTime() - startedAt.getTime()) / 1000)
       
       await supabase
         .from('data_collection_logs')
         .update({
           status: 'completed',
-          completed_at: completedAt.toISOString(),
-          duration_seconds: durationSeconds,
-          marches_processed: processed,
-          errors_count: errors,
-          summary_stats: {
-            processed,
-            total_marches: marches.length,
-            errors,
-            success_rate: Math.round((processed / marches.length) * 100),
-            current_data_type: 'Collection terminée ✅',
-            current_marche_name: 'Tous les marchés traités'
-          }
+          completed_at: endTime.toISOString(),
+          duration_seconds: durationSeconds
         })
-        .eq('id', logId);
+        .eq('id', logId)
       
-      toast.success(`Collecte terminée: ${processed}/${marches.length} marchés traités`);
-      console.log(`✅ Collecte terminée: ${processed} succès, ${errors} erreurs`);
+      console.log(`🎉 Foreground ${collectionType} collection completed!`)
       
-      refetchLogs();
     } catch (error) {
-      console.error('❌ Erreur collecte client-orchestrée:', error);
-      toast.error('Erreur lors de la collecte immobilière');
-      throw error;
+      console.error('❌ Foreground collection failed:', error)
+      
+      // Mark as failed
+      await supabase
+        .from('data_collection_logs')
+        .update({
+          status: 'failed',
+          error_details: { message: error.message }
+        })
+        .eq('id', logId)
     }
-  };
+  }
 
   const handleProgressModalClose = () => {
     setShowProgressModal(false);

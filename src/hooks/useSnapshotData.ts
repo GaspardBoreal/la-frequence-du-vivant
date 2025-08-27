@@ -131,14 +131,27 @@ export const useTriggerBatchCollection = () => {
     batchMode?: boolean;
     foreground?: boolean;
   }) => {
+    console.log('🚀 Triggering batch collection:', request)
+    
+    // Force foreground mode for single type collections (real_estate or biodiversity)
+    const actualRequest = {
+      ...request,
+      foreground: (request.collectionTypes.length === 1 && 
+        (request.collectionTypes.includes('real_estate') || request.collectionTypes.includes('biodiversity'))) 
+        ? true 
+        : request.foreground
+    }
+    
     const { data, error } = await supabase.functions.invoke('batch-data-collector', {
-      body: request
+      body: actualRequest
     });
 
     if (error) {
+      console.error('❌ Batch collection error:', error)
       throw new Error(`Failed to trigger batch collection: ${error.message}`);
     }
 
+    console.log('✅ Batch collection response:', data)
     return data;
   };
 };
