@@ -135,6 +135,12 @@ const BioDivSubSection: React.FC<BioDivSubSectionProps> = ({ marche, theme }) =>
 
   // Batch translation hook
   const { data: translations } = useSpeciesTranslationBatch(speciesForTranslation);
+  
+  // Create translation map for efficient lookup
+  const translationMap = useMemo(() => {
+    if (!translations) return new Map();
+    return new Map(translations.map(t => [t.scientificName, t]));
+  }, [translations]);
 
   // Filtrage des espèces par catégorie et contributeur
   const filteredSpecies = useMemo(() => {
@@ -678,13 +684,14 @@ const BioDivSubSection: React.FC<BioDivSubSectionProps> = ({ marche, theme }) =>
 
         <TabsContent value="all" className="space-y-4">
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {filteredSpecies.map((species, index) => (
-              <EnhancedSpeciesCard 
-                key={`${species.id}-${index}`} 
-                species={species} 
-                onSpeciesClick={setSelectedSpecies}
-              />
-            ))}
+             {filteredSpecies.map((species, index) => (
+               <EnhancedSpeciesCard 
+                 key={`${species.id}-${index}`} 
+                 species={species} 
+                 onSpeciesClick={setSelectedSpecies}
+                 translation={translationMap.get(species.scientificName)}
+               />
+             ))}
           </div>
         </TabsContent>
 
@@ -692,13 +699,14 @@ const BioDivSubSection: React.FC<BioDivSubSectionProps> = ({ marche, theme }) =>
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
             {filteredSpecies
               .filter(isBirdSpecies)
-              .map((species, index) => (
-                <EnhancedSpeciesCard 
-                  key={`${species.id}-${index}`} 
-                  species={species} 
-                  onSpeciesClick={setSelectedSpecies}
-                />
-              ))}
+               .map((species, index) => (
+                 <EnhancedSpeciesCard 
+                   key={`${species.id}-${index}`} 
+                   species={species} 
+                   onSpeciesClick={setSelectedSpecies}
+                   translation={translationMap.get(species.scientificName)}
+                 />
+               ))}
           </div>
         </TabsContent>
 
@@ -706,13 +714,14 @@ const BioDivSubSection: React.FC<BioDivSubSectionProps> = ({ marche, theme }) =>
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
             {filteredSpecies
               .filter(species => species.kingdom === 'Plantae')
-              .map((species, index) => (
-                <EnhancedSpeciesCard 
-                  key={`${species.id}-${index}`} 
-                  species={species} 
-                  onSpeciesClick={setSelectedSpecies}
-                />
-              ))}
+               .map((species, index) => (
+                 <EnhancedSpeciesCard 
+                   key={`${species.id}-${index}`} 
+                   species={species} 
+                   onSpeciesClick={setSelectedSpecies}
+                   translation={translationMap.get(species.scientificName)}
+                 />
+               ))}
           </div>
         </TabsContent>
 
@@ -720,13 +729,14 @@ const BioDivSubSection: React.FC<BioDivSubSectionProps> = ({ marche, theme }) =>
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
             {filteredSpecies
               .filter(species => species.kingdom === 'Fungi')
-              .map((species, index) => (
-                <EnhancedSpeciesCard 
-                  key={`${species.id}-${index}`} 
-                  species={species} 
-                  onSpeciesClick={setSelectedSpecies}
-                />
-              ))}
+               .map((species, index) => (
+                 <EnhancedSpeciesCard 
+                   key={`${species.id}-${index}`} 
+                   species={species} 
+                   onSpeciesClick={setSelectedSpecies}
+                   translation={translationMap.get(species.scientificName)}
+                 />
+               ))}
           </div>
         </TabsContent>
 
@@ -738,13 +748,14 @@ const BioDivSubSection: React.FC<BioDivSubSectionProps> = ({ marche, theme }) =>
                 species.kingdom !== 'Fungi' && 
                 !isBirdSpecies(species)
               )
-              .map((species, index) => (
-                <EnhancedSpeciesCard 
-                  key={`${species.id}-${index}`} 
-                  species={species} 
-                  onSpeciesClick={setSelectedSpecies}
-                />
-              ))}
+               .map((species, index) => (
+                 <EnhancedSpeciesCard 
+                   key={`${species.id}-${index}`} 
+                   species={species} 
+                   onSpeciesClick={setSelectedSpecies}
+                   translation={translationMap.get(species.scientificName)}
+                 />
+               ))}
           </div>
         </TabsContent>
       </Tabs>

@@ -6,18 +6,30 @@ import { Button } from '@/components/ui/button';
 import { BiodiversitySpecies } from '@/types/biodiversity';
 import { useGlobalAudioPlayer } from '@/contexts/AudioContext';
 import { MiniSpectrogramPreview } from './MiniSpectrogramPreview';
-import { useSpeciesTranslation } from '@/hooks/useSpeciesTranslation';
+import { useSpeciesTranslation, SpeciesTranslation } from '@/hooks/useSpeciesTranslation';
 
 interface EnhancedSpeciesCardProps {
   species: BiodiversitySpecies;
   onSpeciesClick: (species: BiodiversitySpecies) => void;
+  translation?: SpeciesTranslation; // Optional pre-fetched translation
 }
 
-export const EnhancedSpeciesCard = ({ species, onSpeciesClick }: EnhancedSpeciesCardProps) => {
+export const EnhancedSpeciesCard: React.FC<EnhancedSpeciesCardProps> = ({ 
+  species, 
+  onSpeciesClick, 
+  translation: propTranslation 
+}) => {
   const [showSpectrogram, setShowSpectrogram] = useState(false);
   const [imageError, setImageError] = useState(false);
   const { playRecording, pause, currentRecording, isPlaying } = useGlobalAudioPlayer();
-  const { data: translation } = useSpeciesTranslation(species.scientificName, species.commonName);
+  
+  // Use prop translation if available, otherwise fetch individually (fallback)
+  const { data: fetchedTranslation } = useSpeciesTranslation(
+    propTranslation ? '' : species.scientificName, 
+    propTranslation ? '' : species.commonName
+  );
+  
+  const translation = propTranslation || fetchedTranslation;
 
   const hasAudio = species.xenoCantoRecordings && species.xenoCantoRecordings.length > 0;
   const hasPhoto = species.photoData && species.photoData.source !== 'placeholder';
