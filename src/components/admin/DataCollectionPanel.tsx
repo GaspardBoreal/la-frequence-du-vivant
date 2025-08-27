@@ -46,10 +46,11 @@ const DataCollectionPanel: React.FC<DataCollectionPanelProps> = ({ marches = [] 
       // Pré-lancer la recherche du logId pour commencer le polling le plus tôt possible
       let logId: string | null = null;
       
-      // Déclencher la collecte
+      // Déclencher la collecte avec le mode batch pour les performances
       const collectionPromise = triggerCollection({
         collectionTypes: types,
-        mode: 'manual'
+        mode: 'manual',
+        batchMode: true // Enable batch optimizations for robustness
       });
       
       // En parallèle, chercher le logId dès que possible

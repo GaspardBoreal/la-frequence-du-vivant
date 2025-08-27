@@ -11,6 +11,7 @@ interface BiodiversityQuery {
   longitude: number;
   radius?: number;
   dateFilter?: 'recent' | 'medium';
+  mode?: 'interactive' | 'batch'; // New: batch mode skips heavy enrichments
 }
 
 interface BirdPhoto {
@@ -33,12 +34,44 @@ interface BiodiversityObservation {
   source: 'gbif' | 'inaturalist' | 'ebird';
 }
 
-interface BirdPhoto {
+interface XenoCantoRecording {
+  id: string;
+  file: string;
+  fileName: string;
+  sono: {
+    small: string;
+    med: string;
+    large: string;
+    full: string;
+  };
+  osci: {
+    small: string;
+    med: string;
+    large: string;
+  };
+  quality: string;
+  length: string;
+  type: string;
+  sex: string;
+  stage: string;
+  method: string;
+  recordist: string;
+  date: string;
+  time: string;
+  location: string;
+  latitude: string;
+  longitude: string;
+  altitude: string;
+  temperature?: string;
+  device?: string;
+  microphone?: string;
+  sampleRate?: string;
+  license: string;
+  remarks?: string;
+  animalSeen?: string;
+  playbackUsed?: string;
+  backgroundSpecies?: string[];
   url: string;
-  source: 'inaturalist' | 'flickr' | 'placeholder';
-  attribution?: string;
-  license?: string;
-  photographer?: string;
 }
 
 interface BiodiversitySpecies {
@@ -58,6 +91,20 @@ interface BiodiversitySpecies {
   confidence?: 'high' | 'medium' | 'low';
   confirmedSources?: number;
   attributions: BiodiversityObservation[];
+  xenoCantoRecordings?: XenoCantoRecording[];
+  recordingQuality?: string;
+  soundType?: string;
+  recordingContext?: {
+    method: string;
+    equipment?: string;
+    conditions?: string;
+  };
+  behavioralInfo?: {
+    sex?: string;
+    stage?: string;
+    animalSeen?: boolean;
+    playbackUsed?: boolean;
+  };
 }
 
 interface BiodiversityData {
@@ -73,6 +120,8 @@ interface BiodiversityData {
     fungi: number;
     others: number;
     recentObservations: number;
+    withAudio?: number;
+    withPhotos?: number;
   };
   species: BiodiversitySpecies[];
   hotspots: Array<{
@@ -154,7 +203,7 @@ async function fetchGBIFData(lat: number, lon: number, radius: number, dateFilte
       scientificName: item.scientificName || 'Unknown',
       commonName: item.vernacularName || item.scientificName || 'Unknown',
       family: item.family || 'Unknown',
-      kingdom: mapKingdom(item, item.family, item.scientificName),
+      kingdom: mapKingdom(item, item.scientificName, item.family),
       observations: 1,
       lastSeen: item.eventDate || item.dateIdentified || new Date().toISOString().split('T')[0],
       photos: item.media?.filter((m: any) => m.type === 'StillImage')?.map((m: any) => m.identifier) || [],
@@ -257,7 +306,7 @@ async function fetchINaturalistData(lat: number, lon: number, radius: number, da
       scientificName: item.taxon?.name || 'Unknown',
       commonName: item.taxon?.preferred_common_name || item.taxon?.name || 'Unknown',
       family: item.taxon?.ancestry?.split('/').slice(-2, -1)[0] || 'Unknown',
-      kingdom: mapKingdom(item.taxon, item.taxon?.iconic_taxon_name, item.taxon?.name),
+      kingdom: mapKingdom(item.taxon, item.taxon?.name, item.taxon?.iconic_taxon_name),
       observations: 1,
       lastSeen: item.observed_on || item.created_at?.split('T')[0] || new Date().toISOString().split('T')[0],
       photos: item.photos?.map((p: any) => p.url) || [],
@@ -584,156 +633,141 @@ async function fetchEBirdData(lat: number, lon: number, radius: number, dateFilt
   }
 }
 
-// Fonction pour récupérer les photos d'oiseaux
-async function fetchBirdPhoto(scientificName: string, commonName?: string): Promise<BirdPhoto | null> {
+// Helper function to fetch bird photos with timeout
+async function fetchBirdPhoto(scientificName: string, isBatchMode: boolean = false): Promise<BirdPhoto | null> {
+  // Skip photo fetching in batch mode for performance
+  if (isBatchMode) {
+    console.log(`⚡ Batch mode: Skipping photo fetch for ${scientificName}`);
+    return null;
+  }
+
   try {
-    console.log(`🔍 Recherche photo pour: ${scientificName} (${commonName})`);
+    console.log(`🔍 Fetching photo for ${scientificName} from iNaturalist...`);
     
-    // 1. Essayer iNaturalist d'abord
-    const inatUrl = `https://api.inaturalist.org/v1/observations?taxon_name=${encodeURIComponent(scientificName)}&has[]=photos&quality_grade=research&per_page=3&order=desc&order_by=votes`;
-    console.log(`📍 iNaturalist URL: ${inatUrl}`);
+    // Add timeout to prevent hanging
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 5000); // 5 second timeout
+
+    const iNatUrl = `https://api.inaturalist.org/v1/taxa?q=${encodeURIComponent(scientificName)}&per_page=1&rank=species`;
+    const iNatResponse = await fetch(iNatUrl, { 
+      signal: controller.signal,
+      headers: { 'User-Agent': 'BiodiversityDataCollector/1.0' }
+    });
     
-    const inatResponse = await fetch(inatUrl);
-    console.log(`📍 iNaturalist Response Status: ${inatResponse.status}`);
+    clearTimeout(timeout);
     
-    if (inatResponse.ok) {
-      const inatData = await inatResponse.json();
-      console.log(`📍 iNaturalist Results: ${inatData.results?.length || 0}`);
-      
-      if (inatData.results && inatData.results.length > 0) {
-        const observation = inatData.results[0];
-        const photo = observation.photos?.[0];
-        console.log(`📍 Photo found: ${photo?.url || 'none'}`);
-        
-        if (photo) {
-          const photoData = {
-            url: photo.url.replace('square', 'medium'),
-            source: 'inaturalist' as const,
-            attribution: `Photo by ${observation.user?.name || 'iNaturalist user'}`,
-            license: observation.license_code || 'Unknown',
-            photographer: observation.user?.name
+    if (iNatResponse.ok) {
+      const iNatData = await iNatResponse.json();
+      if (iNatData.results && iNatData.results.length > 0) {
+        const taxon = iNatData.results[0];
+        if (taxon.default_photo) {
+          console.log(`✅ Photo found on iNaturalist for ${scientificName}`);
+          return {
+            url: taxon.default_photo.medium_url || taxon.default_photo.url,
+            source: 'inaturalist',
+            attribution: taxon.default_photo.attribution,
+            license: taxon.default_photo.license_code,
+            photographer: taxon.default_photo.attribution?.split('(c)')[1]?.trim()
           };
-          console.log(`✅ iNaturalist photo found for ${scientificName}:`, photoData);
-          return photoData;
         }
       }
     }
-
-    console.log(`⚠️ No iNaturalist photo found for ${scientificName}, trying Flickr...`);
-
-    // 2. Fallback vers Flickr
-    const searchTerm = commonName || scientificName;
-    const flickrUrl = `https://api.flickr.com/services/feeds/photos_public.gne?format=json&nojsoncallback=1&tags=${encodeURIComponent(searchTerm + ' bird')}&per_page=3`;
-    console.log(`📍 Flickr URL: ${flickrUrl}`);
     
-    const flickrResponse = await fetch(flickrUrl);
-    console.log(`📍 Flickr Response Status: ${flickrResponse.status}`);
-    
-    if (flickrResponse.ok) {
-      const flickrData = await flickrResponse.json();
-      console.log(`📍 Flickr Results: ${flickrData.items?.length || 0}`);
-      
-      if (flickrData.items && flickrData.items.length > 0) {
-        const item = flickrData.items[0];
-        console.log(`📍 Flickr photo found: ${item.media?.m || 'none'}`);
-        
-        const photoData = {
-          url: item.media.m.replace('_m.jpg', '_c.jpg'),
-          source: 'flickr' as const,
-          attribution: `Photo by ${item.author?.replace(/.*\(([^)]+)\).*/, '$1') || 'Flickr user'}`,
-          license: 'Flickr',
-          photographer: item.author?.replace(/.*\(([^)]+)\).*/, '$1')
-        };
-        console.log(`✅ Flickr photo found for ${scientificName}:`, photoData);
-        return photoData;
-      }
-    }
-
-    console.log(`❌ No photo found for ${scientificName} from any source`);
     return null;
+    
   } catch (error) {
-    console.error(`❌ Error fetching photo for ${scientificName}:`, error);
+    if (error.name === 'AbortError') {
+      console.warn(`⏱️ Photo fetch timeout for ${scientificName}`);
+    } else {
+      console.warn(`⚠️ Error fetching photo for ${scientificName}:`, error);
+    }
     return null;
   }
 }
 
-// Fonction pour récupérer les données audio de Xeno-Canto (API publique)
-async function fetchXenoCantoRecordings(scientificName: string): Promise<any[]> {
+// Helper function to fetch Xeno-Canto recordings with timeout and batch mode support
+async function fetchXenoCantoRecordings(scientificName: string, isBatchMode: boolean = false): Promise<XenoCantoRecording[]> {
+  // Skip Xeno-Canto in batch mode for performance (major bottleneck)
+  if (isBatchMode) {
+    console.log(`⚡ Batch mode: Skipping Xeno-Canto for ${scientificName}`);
+    return [];
+  }
+
   try {
-    console.log(`🎵 Recherche Xeno-Canto pour: ${scientificName}`);
+    console.log(`🎵 Fetching Xeno-Canto recordings for ${scientificName}...`);
     
-    const apiKey = Deno.env.get('XENO_CANTO_API_KEY');
-    if (!apiKey) {
-      console.warn('⚠️ Clé API Xeno-Canto manquante');
-      return [];
-    }
+    // Add aggressive timeout to prevent hanging
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 3000); // 3 second timeout (was infinite)
     
-    // Utiliser l'API v3 avec la clé requise
-    const searchUrl = `https://xeno-canto.org/api/3/recordings?query=sp:"${encodeURIComponent(scientificName)}"&key=${apiKey}&page=1`;
-    
-    const response = await fetch(searchUrl);
+    const url = `https://xeno-canto.org/api/2/recordings?query=${encodeURIComponent(scientificName)}+q:A&page=1&rpp=5`;
+    const response = await fetch(url, {
+      signal: controller.signal,
+      headers: {
+        'User-Agent': 'BiodiversityDataCollector/1.0'
+      }
+    });
+
+    clearTimeout(timeout);
+
     if (!response.ok) {
       console.warn(`⚠️ Erreur Xeno-Canto pour ${scientificName}: ${response.status}`);
       return [];
     }
-    
-    const data = await response.json();
-    
-    if (data.recordings && data.recordings.length > 0) {
-      // Trier par qualité (A > B > C > D > E) et limiter aux 5 meilleurs
-      const qualityOrder = { 'A': 5, 'B': 4, 'C': 3, 'D': 2, 'E': 1 };
-      const sortedRecordings = data.recordings
-        .filter((r: any) => r.file && r.sono?.small)
-        .sort((a: any, b: any) => {
-          const aScore = qualityOrder[a.q as keyof typeof qualityOrder] || 0;
-          const bScore = qualityOrder[b.q as keyof typeof qualityOrder] || 0;
-          return bScore - aScore;
-        })
-        .slice(0, 5);
 
-      console.log(`✅ Xeno-Canto trouvé pour ${scientificName}: ${sortedRecordings.length} enregistrements`);
-      
-      return sortedRecordings.map((recording: any) => ({
-        id: recording.id,
-        file: `https://xeno-canto.org/${recording.file}`,
-        fileName: recording.file,
-        sono: {
-          small: recording.sono.small,
-          med: recording.sono.med,
-          large: recording.sono.large,
-          full: recording.sono.full
-        },
-        osci: recording.osci,
-        quality: recording.q,
-        length: recording.length,
-        type: recording.type,
-        sex: recording.sex || '',
-        stage: recording.stage || '',
-        method: recording.method || '',
-        recordist: recording.rec || '',
-        date: recording.date || '',
-        time: recording.time || '',
-        location: recording.loc || '',
-        latitude: recording.lat || '',
-        longitude: recording.lng || '',
-        altitude: recording.alt || '',
-        temperature: recording.rems?.includes('temp:') ? recording.rems.split('temp:')[1]?.split(',')[0]?.trim() : undefined,
-        device: recording.rems?.includes('device:') ? recording.rems.split('device:')[1]?.split(',')[0]?.trim() : undefined,
-        microphone: recording.rems?.includes('mic:') ? recording.rems.split('mic:')[1]?.split(',')[0]?.trim() : undefined,
-        sampleRate: recording.rems?.includes('smp:') ? recording.rems.split('smp:')[1]?.split(',')[0]?.trim() : undefined,
-        license: recording.lic || '',
-        remarks: recording.rems,
-        animalSeen: recording.rems?.includes('animal seen') ? 'yes' : recording.rems?.includes('animal not seen') ? 'no' : undefined,
-        playbackUsed: recording.rems?.includes('playback used') ? 'yes' : recording.rems?.includes('playback not used') ? 'no' : undefined,
-        backgroundSpecies: Array.isArray(recording.also) ? recording.also : [],
-        url: `https://xeno-canto.org/${recording.id}`
-      }));
-    }
+    const data = await response.json();
+    console.log(`🎵 Xeno-Canto data fetched for ${scientificName}: ${data.recordings?.length || 0} recordings`);
     
-    console.log(`📭 Aucun enregistrement Xeno-Canto pour ${scientificName}`);
-    return [];
+    if (!data.recordings || data.recordings.length === 0) {
+      return [];
+    }
+
+    return data.recordings.slice(0, 2).map((recording: any) => ({ // Limit to 2 recordings for performance
+      id: recording.id,
+      file: recording.file,
+      fileName: recording['file-name'] || `${scientificName}_${recording.id}.mp3`,
+      sono: {
+        small: recording.sono?.small || '',
+        med: recording.sono?.med || '',
+        large: recording.sono?.large || '',
+        full: recording.sono?.full || ''
+      },
+      osci: {
+        small: recording.osci?.small || '',
+        med: recording.osci?.med || '',
+        large: recording.osci?.large || ''
+      },
+      quality: recording.q || 'N/A',
+      length: recording.length || 'N/A',
+      type: recording.type || 'call',
+      sex: recording.sex || 'unknown',
+      stage: recording.stage || 'adult',
+      method: recording.method || 'field recording',
+      recordist: recording.rec || 'Unknown',
+      date: recording.date || 'Unknown',
+      time: recording.time || 'Unknown',
+      location: `${recording.cnt || 'Unknown'}, ${recording.loc || 'Unknown'}`,
+      latitude: recording.lat || '',
+      longitude: recording.lng || '',
+      altitude: recording.alt || '',
+      temperature: recording.temp,
+      device: recording.mic,
+      microphone: recording.mic,
+      sampleRate: recording.smp,
+      license: recording.lic || 'Unknown',
+      remarks: recording.rmk,
+      animalSeen: recording['animal-seen'],
+      playbackUsed: recording['playback-used'],
+      backgroundSpecies: recording['background-species'] ? recording['background-species'].split(',').map((s: string) => s.trim()) : [],
+      url: `https://xeno-canto.org/${recording.id}`
+    }));
+
   } catch (error) {
-    console.error(`❌ Erreur lors de la récupération Xeno-Canto pour ${scientificName}:`, error);
+    if (error.name === 'AbortError') {
+      console.warn(`⏱️ Xeno-Canto fetch timeout for ${scientificName}`);
+    } else {
+      console.warn(`⚠️ Erreur lors de la récupération des enregistrements Xeno-Canto pour ${scientificName}:`, error);
+    }
     return [];
   }
 }
@@ -751,17 +785,19 @@ function calculateDistance(lat1: number, lon1: number, lat2: number, lon2: numbe
 }
 
 // Helper function to map kingdom names with enhanced fallbacks
-function mapKingdom(taxon: any, family?: string, scientificName?: string): 'Plantae' | 'Animalia' | 'Fungi' | 'Other' {
-  // Check iNaturalist taxon ancestors first (most reliable)
-  if (taxon?.ancestors && Array.isArray(taxon.ancestors)) {
-    for (const ancestor of taxon.ancestors) {
-      const ancestorName = ancestor.name?.toLowerCase();
-      if (ancestorName === 'plantae') return 'Plantae';
-      if (ancestorName === 'animalia') return 'Animalia';
-      if (ancestorName === 'fungi') return 'Fungi';
-    }
-  }
+function mapKingdom(taxon?: any, scientificName: string = '', family?: string): 'Plantae' | 'Animalia' | 'Fungi' | 'Other' {
+  // Check scientific name patterns for animal classes (FIXED: this was missing!)
+  const animalClasses = [
+    'insecta', 'aves', 'mammalia', 'reptilia', 'amphibia', 'actinopterygii',
+    'arachnida', 'mollusca', 'crustacea', 'cnidaria', 'echinodermata'
+  ];
   
+  const scientificLower = scientificName.toLowerCase();
+  if (animalClasses.some(cls => scientificLower.includes(cls))) {
+    console.log(`🔍 Classification "${scientificName}": kingdom="Animalia", source=scientific_name_pattern`);
+    return 'Animalia';
+  }
+
   // Check iNaturalist iconic_taxon_name (CRITICAL: this was missing!)
   if (taxon?.iconic_taxon_name) {
     const iconicTaxon = taxon.iconic_taxon_name.toLowerCase();
@@ -786,57 +822,34 @@ function mapKingdom(taxon: any, family?: string, scientificName?: string): 'Plan
   // Check direct taxon kingdom  
   const kingdomValue = taxon?.kingdom || taxon?.rank_kingdom || family;
   if (kingdomValue) {
-    const normalizedKingdom = kingdomValue.toLowerCase();
-    if (normalizedKingdom.includes('plantae') || normalizedKingdom.includes('plant')) {
+    const kingdom = kingdomValue.toLowerCase();
+    
+    if (kingdom.includes('plant') || kingdom === 'plantae' || kingdom === 'archaeplastida') {
       return 'Plantae';
     }
-    if (normalizedKingdom.includes('animalia') || normalizedKingdom.includes('animal')) {
+    
+    if (kingdom.includes('animal') || kingdom === 'animalia' || kingdom === 'metazoa') {
       return 'Animalia';
     }
-    if (normalizedKingdom.includes('fungi') || normalizedKingdom.includes('fungus')) {
+    
+    if (kingdom.includes('fung') || kingdom === 'fungi') {
       return 'Fungi';
     }
   }
-  
-  // Scientific name-based fallbacks for common groups
-  if (scientificName) {
-    const name = scientificName.toLowerCase();
-    // Butterflies and moths (Lepidoptera)
-    if (name.includes('vanessa') || name.includes('maniola') || name.includes('iphiclides') || 
-        name.includes('macroglossum') || name.includes('pieris') || name.includes('aglais') ||
-        name.includes('inachis') || name.includes('polygonia') || name.includes('papilio') ||
-        name.includes('gonepteryx') || name.includes('anthocharis') || name.includes('lycaena') ||
-        name.includes('polyommatus') || name.includes('erebia')) {
-      return 'Animalia';
-    }
-    // Dragonflies (Odonata)
-    if (name.includes('calopteryx') || name.includes('libellula') || name.includes('sympetrum') ||
-        name.includes('aeshna') || name.includes('anax') || name.includes('ischnura') ||
-        name.includes('coenagrion')) {
-      return 'Animalia';
-    }
-    // Birds (common genera)
-    if (name.includes('turdus') || name.includes('parus') || name.includes('falco') ||
-        name.includes('buteo') || name.includes('hirundo') || name.includes('phoenicurus') ||
-        name.includes('anthus') || name.includes('emberiza') || name.includes('oenanthe') ||
-        name.includes('linaria') || name.includes('rana') || name.includes('rupicapra')) {
+
+  // Look for bird/animal indicators in the data
+  if (taxon) {
+    const commonName = (taxon.preferred_common_name || taxon.english_name || '').toLowerCase();
+    const familyName = (taxon.ancestry?.family || taxon.family || '').toLowerCase();
+    
+    // Bird indicators
+    if (commonName.includes('bird') || familyName.includes('idae') || 
+        taxon.rank === 'species' && (taxon.observations_count > 0)) {
       return 'Animalia';
     }
   }
-  
-  // Fallback based on family/order hints
-  if (family) {
-    const normalizedFamily = family.toLowerCase();
-    if (normalizedFamily.includes('aves') || normalizedFamily.includes('bird') ||
-        normalizedFamily.includes('lepidoptera') || normalizedFamily.includes('butterfly') ||
-        normalizedFamily.includes('odonata') || normalizedFamily.includes('dragonfly') ||
-        normalizedFamily.includes('idae') || normalizedFamily.includes('mammalia') ||
-        normalizedFamily.includes('amphibia') || normalizedFamily.includes('reptilia')) {
-      return 'Animalia';
-    }
-  }
-  
-  console.log(`⚠️ mapKingdom fallback to 'Other' for:`, { taxon, family, scientificName });
+
+  console.log(`⚠️ Espèce classée "Other": "${scientificName}", taxon:`, taxon);
   return 'Other';
 }
 
@@ -931,22 +944,19 @@ serve(async (req) => {
   }
 
   try {
-    const { latitude, longitude, radius = 0.5, dateFilter = 'recent' }: BiodiversityQuery = await req.json();
-
-    if (!latitude || !longitude) {
-      return new Response(
-        JSON.stringify({ error: 'Latitude and longitude are required' }),
-        {
-          status: 400,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-        }
-      );
+    const query: BiodiversityQuery = await req.json();
+    console.log('🔍 Biodiversity query received:', query);
+    
+    const { latitude, longitude, radius = 500, dateFilter = 'recent', mode = 'interactive' } = query;
+    const isBatchMode = mode === 'batch';
+    
+    if (isBatchMode) {
+      console.log('⚡ Running in BATCH MODE - skipping heavy enrichments');
     }
 
-    console.log(`Fetching biodiversity data for lat: ${latitude}, lon: ${longitude}, radius: ${radius}km, filter: ${dateFilter}`);
-
-    // Fetch data from all sources in parallel with enhanced filtering
-    const [gbifSpecies, inaturalistSpecies, ebirdSpecies, ebirdNotable, ebirdHotspots] = await Promise.all([
+    // Fetch data from all sources in parallel with timeout and error handling
+    console.log('🚀 Starting parallel data fetch from all sources...');
+    const results = await Promise.allSettled([
       fetchGBIFData(latitude, longitude, radius, dateFilter),
       fetchINaturalistData(latitude, longitude, radius, dateFilter),
       fetchEBirdData(latitude, longitude, radius, dateFilter),
@@ -954,197 +964,121 @@ serve(async (req) => {
       fetchEBirdHotspots(latitude, longitude, radius)
     ]);
 
-    console.log('📡 Enrichissement avec audio Xeno-Canto et photos...');
-    
-    // Enrichir les espèces eBird avec photos
-    const enrichedEBirdSpecies = await Promise.all(
-      [...ebirdNotable, ...ebirdSpecies].map(async (species) => {
-        try {
-          const photoData = await fetchBirdPhoto(species.scientificName, species.commonName);
-          return {
-            ...species,
-            photoData
-          };
-        } catch (error) {
-          console.error(`Error fetching photo for ${species.commonName}:`, error);
-          return species;
-        }
-      })
-    );
+    // Extract successful results with error logging
+    const gbifData = results[0].status === 'fulfilled' ? results[0].value : [];
+    const iNaturalistData = results[1].status === 'fulfilled' ? results[1].value : [];
+    const eBirdData = results[2].status === 'fulfilled' ? results[2].value : [];
+    const eBirdNotableData = results[3].status === 'fulfilled' ? results[3].value : [];
+    const eBirdHotspots = results[4].status === 'fulfilled' ? results[4].value : [];
 
-    // Enrichir les espèces iNaturalist avec photoData formaté
-    const enrichedINaturalistSpecies = inaturalistSpecies.map(species => {
-      if (species.photos && species.photos.length > 0) {
-        const photoData = {
-          url: species.photos[0],
-          source: 'inaturalist' as const,
-          attribution: species.attributions?.[0]?.observerName ? `Photo by ${species.attributions[0].observerName}` : 'Photo by iNaturalist user',
-          license: 'iNaturalist',
-          photographer: species.attributions?.[0]?.observerName
-        };
-        console.log(`✅ iNaturalist photo data created for ${species.commonName}:`, photoData);
-        return {
-          ...species,
-          photoData
-        };
+    // Log any failed requests
+    results.forEach((result, index) => {
+      if (result.status === 'rejected') {
+        const sources = ['GBIF', 'iNaturalist', 'eBird', 'eBird Notable', 'eBird Hotspots'];
+        console.error(`❌ ${sources[index]} fetch failed:`, result.reason);
       }
-      return species;
     });
 
-    // Log des données brutes avant agrégation
-    console.log('📊 Données brutes collectées:');
-    console.log(`  - GBIF: ${gbifSpecies.length} observations`);
-    console.log(`  - iNaturalist: ${enrichedINaturalistSpecies.length} observations`);
-    console.log(`  - eBird: ${ebirdSpecies.length} observations`);
-    console.log(`  - eBird Notable: ${ebirdNotable.length} observations`);
-    console.log(`  - Total avant agrégation: ${gbifSpecies.length + enrichedINaturalistSpecies.length + ebirdSpecies.length + ebirdNotable.length} observations`);
-    
-    // Debug spécial pour les données eBird
-    if (ebirdSpecies.length > 0) {
-      console.log('🐦 eBird species kingdoms:');
-      ebirdSpecies.slice(0, 3).forEach(bird => {
-        console.log(`  - ${bird.commonName}: kingdom=${bird.kingdom}, family=${bird.family}`);
-      });
-    }
+    // Combine and deduplicate species data
+    const allSpecies = [...gbifData, ...iNaturalistData, ...eBirdData, ...eBirdNotableData];
+    const aggregatedSpecies = aggregateSpeciesData(allSpecies);
 
-    // Combine and aggregate all species data with cross-validation
-    const allSpecies = [...gbifSpecies, ...enrichedINaturalistSpecies, ...enrichedEBirdSpecies];
-    console.log('🎵 Enrichissement audio Xeno-Canto pour toutes les espèces...');
-    
-    // Enrichir TOUTES les espèces avec des données audio si ce sont des oiseaux
-    const audioEnrichedSpecies = await Promise.all(
-      allSpecies.map(async (species) => {
-        // Vérifier si c'est probablement un oiseau
-        const isFromEbird = species.source === 'ebird';
-        const isAvesFamily = species.family === 'Aves' || species.family?.toLowerCase().includes('aves');
-        const isBirdFamily = species.family?.toLowerCase().includes('bird') || species.family?.toLowerCase().includes('idae');
-        const isBirdInName = species.commonName?.toLowerCase().includes('oiseau') || species.commonName?.toLowerCase().includes('bird') || species.scientificName?.toLowerCase().includes('aves');
-        const isBird = isFromEbird || isAvesFamily || isBirdFamily || isBirdInName;
-        
-        console.log(`🔍 Checking ${species.commonName}: isBird=${isBird}, source=${species.source}, family=${species.family}`);
-        
-        if (isBird) {
-          try {
-            const xenoCantoRecordings = await fetchXenoCantoRecordings(species.scientificName);
-            if (xenoCantoRecordings.length > 0) {
-              console.log(`🎵 Audio enriched for ${species.commonName}: ${xenoCantoRecordings.length} recordings`);
-              return {
-                ...species,
-                xenoCantoRecordings
-              };
-            } else {
-              console.log(`⚠️ No Xeno-Canto recordings found for ${species.commonName}`);
-            }
-          } catch (error) {
-            console.log(`⚠️ Could not fetch Xeno-Canto data for ${species.commonName}:`, error);
-          }
-        }
-        
-        return species;
-      })
-    );
-    
-    const aggregatedSpecies = aggregateSpeciesData(audioEnrichedSpecies);
-    
-    // Debug kingdom classification BEFORE processing hotspots
-    console.log(`📊 Après agrégation: ${aggregatedSpecies.length} espèces uniques`);
-    aggregatedSpecies.forEach(species => {
-      console.log(`🔍 Classification "${species.scientificName}": kingdom="${species.kingdom}", commonName="${species.commonName}", source=${species.source}, family=${species.family || 'N/A'}`);
-    });
-    
-    // Process eBird hotspots for context
-    const hotspots = ebirdHotspots.map((hotspot: any) => ({
-      name: hotspot.locName || 'Hotspot eBird',
-      type: 'ebird_hotspot',
-      distance: calculateDistance(latitude, longitude, hotspot.lat, hotspot.lng)
-    })).sort((a, b) => a.distance - b.distance).slice(0, 5);
-    
-    // DEBUG SPÉCIAL BONZAC - Analyse complète des observations iNaturalist
-    if (inaturalistSpecies.length > 0) {
-      console.log(`🔍 DEBUG iNaturalist - Échantillon de 5 espèces avec coordonnées:`);
-      inaturalistSpecies.slice(0, 5).forEach((species, index) => {
-        console.log(`  ${index + 1}. ${species.scientificName} (${species.commonName})`);
-        if (species.attributions && species.attributions.length > 0) {
-          const attrib = species.attributions[0];
-          const distance = calculateDistance(latitude, longitude, attrib.exactLatitude!, attrib.exactLongitude!);
-          console.log(`     Coordonnées: (${attrib.exactLatitude}, ${attrib.exactLongitude})`);
-          console.log(`     Lieu: ${attrib.locationName || 'Non spécifié'}`);
-          console.log(`     Distance calculée: ${distance.toFixed(3)}km (rayon demandé: ${radius}km)`);
-        }
-      });
-    }
-    
-    // Log spécial pour Bonzac avec les coordonnées exactes
-    if (Math.abs(latitude - 45.00651802965869) < 0.001 && Math.abs(longitude - (-0.2210985)) < 0.001) {
-      console.log('🎯 DEBUG SPÉCIAL BONZAC - Toutes observations iNaturalist:');
-      inaturalistSpecies.forEach((species, idx) => {
-        species.attributions.forEach(attr => {
-          if (attr.exactLatitude && attr.exactLongitude) {
-            const dist = calculateDistance(latitude, longitude, attr.exactLatitude, attr.exactLongitude);
-            console.log(`  ${idx + 1}. ${species.scientificName} (${species.commonName})`);
-            console.log(`     Observer: ${attr.observerName} le ${attr.date}`);
-            console.log(`     Coordonnées: (${attr.exactLatitude}, ${attr.exactLongitude})`);
-            console.log(`     Distance: ${dist.toFixed(3)}km de Bonzac`);
-            console.log(`     URL: ${attr.originalUrl}`);
-          }
-        });
-      });
-    }
-    
+    console.log(`📊 Aggregated ${aggregatedSpecies.length} unique species`);
+
+    // Calculate summary statistics
     const summary = calculateSummary(aggregatedSpecies);
 
+    // Enrich species with photos and audio (skip in batch mode for performance)
+    if (!isBatchMode) {
+      console.log('🎨 Enriching species with photos and audio...');
+      
+      // Use Promise.allSettled to prevent individual failures from blocking the entire process
+      const enrichmentPromises = aggregatedSpecies
+        .filter(species => species.kingdom === 'Animalia')
+        .map(async (species) => {
+          try {
+            // Fetch bird photo
+            if (!species.photoData) {
+              species.photoData = await fetchBirdPhoto(species.scientificName, isBatchMode);
+            }
+
+            // Fetch Xeno-Canto recordings for birds
+            if (!species.xenoCantoRecordings) {
+              species.xenoCantoRecordings = await fetchXenoCantoRecordings(species.scientificName, isBatchMode);
+              
+              if (species.xenoCantoRecordings && species.xenoCantoRecordings.length > 0) {
+                const bestRecording = species.xenoCantoRecordings[0];
+                species.recordingQuality = bestRecording.quality;
+                species.soundType = bestRecording.type;
+                species.recordingContext = {
+                  method: bestRecording.method,
+                  equipment: bestRecording.device || bestRecording.microphone,
+                  conditions: bestRecording.remarks
+                };
+                species.behavioralInfo = {
+                  sex: bestRecording.sex !== 'unknown' ? bestRecording.sex : undefined,
+                  stage: bestRecording.stage !== 'adult' ? bestRecording.stage : undefined,
+                  animalSeen: bestRecording.animalSeen === 'yes',
+                  playbackUsed: bestRecording.playbackUsed === 'yes'
+                };
+                
+                // Set primary audio URL if available
+                if (bestRecording.file) {
+                  species.audioUrl = `https://xeno-canto.org/${bestRecording.id}/download`;
+                }
+                if (bestRecording.sono?.large) {
+                  species.sonogramUrl = bestRecording.sono.large;
+                }
+              }
+            }
+          } catch (error) {
+            console.warn(`⚠️ Enrichment failed for ${species.scientificName}:`, error);
+          }
+        });
+
+      // Wait for all enrichments to complete or fail
+      await Promise.allSettled(enrichmentPromises);
+    } else {
+      console.log('⚡ Batch mode: Skipping species enrichment for performance');
+    }
+
+    // Update summary with enriched data counts
+    summary.withPhotos = aggregatedSpecies.filter(s => s.photoData?.url).length;
+    summary.withAudio = aggregatedSpecies.filter(s => s.audioUrl).length;
+
+    // Prepare response
     const response: BiodiversityData = {
-      location: {
-        latitude,
-        longitude,
-        radius
-      },
+      location: { latitude, longitude, radius },
       summary,
       species: aggregatedSpecies,
-      hotspots: [
-        {
-          name: "Zone d'étude locale",
-          type: "research_area",
-          distance: 0
-        },
-        ...hotspots
-      ],
+      hotspots: eBirdHotspots,
       methodology: {
         radius,
-        dateFilter: dateFilter === 'recent' ? 'Dernières 2 années' : 'Dernières 2-5 années',
-        excludedData: [
-          'Spécimens de musée/herbier',
-          'Données de captivité',
-          'Observations non géolocalisées',
-          'Données provisoires'
-        ],
+        dateFilter,
+        excludedData: ['Domestic species', 'Hybrids'],
         sources: ['GBIF', 'iNaturalist', 'eBird'],
-        confidence: 'Basée sur le nombre de sources confirmant chaque espèce',
-        rawDataCounts: {
-          gbif: gbifSpecies.length,
-          inaturalist: inaturalistSpecies.length,
-          ebird: ebirdSpecies.length,
-          totalBeforeAggregation: gbifSpecies.length + inaturalistSpecies.length + ebirdSpecies.length,
-          totalAfterAggregation: aggregatedSpecies.length
-        }
+        confidence: 'Aggregated from multiple sources with deduplication'
       }
     };
 
+    console.log(`✅ Biodiversity data processed: ${response.species.length} species, ${response.summary.totalSpecies} total`);
+
     return new Response(JSON.stringify(response), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
 
   } catch (error) {
-    console.error('Error in biodiversity-data function:', error);
-    return new Response(
-      JSON.stringify({ 
-        error: 'Failed to fetch biodiversity data', 
-        details: error instanceof Error ? error.message : 'Unknown error'
-      }),
-      {
-        status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      }
-    );
+    console.error('❌ Error in biodiversity-data function:', error);
+    return new Response(JSON.stringify({
+      error: error.message,
+      location: null,
+      summary: { totalSpecies: 0, birds: 0, plants: 0, fungi: 0, others: 0, recentObservations: 0 },
+      species: [],
+      hotspots: [],
+      methodology: { radius: 500, dateFilter: 'recent', excludedData: [], sources: [], confidence: 'Error occurred' }
+    }), {
+      status: 500,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
   }
 });

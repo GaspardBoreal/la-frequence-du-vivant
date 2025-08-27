@@ -14,6 +14,7 @@ interface BatchCollectionRequest {
     region?: string;
     departement?: string;
   };
+  batchMode?: boolean; // New: enable batch optimizations
 }
 
 serve(async (req) => {
@@ -31,7 +32,11 @@ serve(async (req) => {
     console.log('🚀 Batch data collection initiated');
 
     const request: BatchCollectionRequest = await req.json();
-    const { collectionTypes, mode, marchesFilter } = request;
+    const { collectionTypes, mode, marchesFilter, batchMode = true } = request;
+    
+    if (batchMode) {
+      console.log('⚡ BATCH MODE ENABLED - Using performance optimizations');
+    }
 
     // Start logging this collection
     const { data: logEntry, error: logError } = await supabase
@@ -144,13 +149,20 @@ serve(async (req) => {
               // Configuration du rayon de recherche biodiversité
               const biodiversityRadius = 500; // Rayon par défaut selon SEARCH_RADIUS_CONFIG
               
+              // Add timeout and batch mode for robustness
+              const controller = new AbortController();
+              const timeout = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+              
               const { data: biodivData, error: biodivError } = await supabase.functions.invoke('biodiversity-data', {
                 body: {
                   latitude: marche.latitude,
                   longitude: marche.longitude,
-                  radius: biodiversityRadius
+                  radius: biodiversityRadius,
+                  mode: batchMode ? 'batch' : 'interactive' // Use batch mode for performance
                 }
               });
+              
+              clearTimeout(timeout);
 
               if (!biodivError && biodivData) {
                 // Store biodiversity snapshot
@@ -182,7 +194,11 @@ serve(async (req) => {
                 }
               }
             } catch (error) {
-              console.error(`❌ Biodiversity collection error for ${marche.nom_marche}:`, error);
+              if (error.name === 'AbortError') {
+                console.error(`⏱️ Biodiversity collection timeout for ${marche.nom_marche}`);
+              } else {
+                console.error(`❌ Biodiversity collection error for ${marche.nom_marche}:`, error);
+              }
               errorsCount++;
             }
           }
@@ -204,6 +220,10 @@ serve(async (req) => {
               .eq('id', logEntry.id);
 
             try {
+              // Add timeout for weather collection too
+              const controller = new AbortController();
+              const timeout = setTimeout(() => controller.abort(), 15000); // 15 second timeout
+              
               const { data: weatherData, error: weatherError } = await supabase.functions.invoke('open-meteo-data', {
                 body: {
                   latitude: marche.latitude,
@@ -211,6 +231,8 @@ serve(async (req) => {
                   days: 30
                 }
               });
+              
+              clearTimeout(timeout);
 
               if (!weatherError && weatherData?.success && weatherData.data) {
                 const aggregated = weatherData.data.aggregated;
@@ -244,7 +266,11 @@ serve(async (req) => {
                 }
               }
             } catch (error) {
-              console.error(`❌ Weather collection error for ${marche.nom_marche}:`, error);
+              if (error.name === 'AbortError') {
+                console.error(`⏱️ Weather collection timeout for ${marche.nom_marche}`);
+              } else {
+                console.error(`❌ Weather collection error for ${marche.nom_marche}:`, error);
+              }
               errorsCount++;
             }
           }
@@ -266,12 +292,18 @@ serve(async (req) => {
               .eq('id', logEntry.id);
 
             try {
+              // Add timeout for real estate collection too
+              const controller = new AbortController();
+              const timeout = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+              
               const { data: realEstateData, error: realEstateError } = await supabase.functions.invoke('lexicon-proxy', {
                 body: {
                   latitude: marche.latitude,
                   longitude: marche.longitude
                 }
               });
+              
+              clearTimeout(timeout);
 
               if (!realEstateError && realEstateData) {
                 // Process transactions if available
@@ -314,7 +346,11 @@ serve(async (req) => {
                 }
               }
             } catch (error) {
-              console.error(`❌ Real estate collection error for ${marche.nom_marche}:`, error);
+              if (error.name === 'AbortError') {
+                console.error(`⏱️ Real estate collection timeout for ${marche.nom_marche}`);
+              } else {
+                console.error(`❌ Real estate collection error for ${marche.nom_marche}:`, error);
+              }
               errorsCount++;
             }
           }

@@ -125,7 +125,11 @@ export const useDataCollectionLogs = (limit: number = 20) => {
 };
 
 export const useTriggerBatchCollection = () => {
-  return async (request: { collectionTypes: ('biodiversity' | 'weather' | 'real_estate')[], mode: 'manual' | 'scheduled' }) => {
+  return async (request: { 
+    collectionTypes: ('biodiversity' | 'weather' | 'real_estate')[]; 
+    mode: 'manual' | 'scheduled';
+    batchMode?: boolean;
+  }) => {
     const { data, error } = await supabase.functions.invoke('batch-data-collector', {
       body: request
     });
