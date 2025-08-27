@@ -996,13 +996,18 @@ serve(async (req) => {
     
     const aggregatedSpecies = aggregateSpeciesData(audioEnrichedSpecies);
     
+    // Debug kingdom classification BEFORE processing hotspots
+    console.log(`📊 Après agrégation: ${aggregatedSpecies.length} espèces uniques`);
+    aggregatedSpecies.forEach(species => {
+      console.log(`🔍 Classification "${species.scientificName}": kingdom="${species.kingdom}", commonName="${species.commonName}", source=${species.source}, family=${species.family || 'N/A'}`);
+    });
+    
     // Process eBird hotspots for context
     const hotspots = ebirdHotspots.map((hotspot: any) => ({
       name: hotspot.locName || 'Hotspot eBird',
       type: 'ebird_hotspot',
       distance: calculateDistance(latitude, longitude, hotspot.lat, hotspot.lng)
     })).sort((a, b) => a.distance - b.distance).slice(0, 5);
-    console.log(`📊 Après agrégation: ${aggregatedSpecies.length} espèces uniques`);
     
     // DEBUG SPÉCIAL BONZAC - Analyse complète des observations iNaturalist
     if (inaturalistSpecies.length > 0) {
