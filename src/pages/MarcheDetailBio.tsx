@@ -13,7 +13,7 @@ import BioacousticHeroSection from '../components/BioacousticHeroSection';
 import SimplifiedMultiSensoryNavigation from '../components/SimplifiedMultiSensoryNavigation';
 import ImmersiveVisualSection from '../components/ImmersiveVisualSection';
 import AudioExperienceSection from '../components/AudioExperienceSection';
-import PoeticSection from '../components/PoeticSection';
+import TextualExplorationSection from '@/components/textual/TextualExplorationSection';
 import OpenDataSection from '../components/OpenDataSection';
 import HaikuSection from '../components/HaikuSection';
 import { Button } from '../components/ui/button';
@@ -159,7 +159,7 @@ const MarcheDetailBio = () => {
 
     if (activeSection === 'creative') {
       if (activeSubSection === 'poeme') {
-        return <PoeticSection marche={marche} theme={theme} />;
+        return <TextualExplorationSection marche={marche} theme={theme} />;
       } else if (activeSubSection === 'haiku') {
         return <HaikuSection marche={marche} theme={theme} />;
       }

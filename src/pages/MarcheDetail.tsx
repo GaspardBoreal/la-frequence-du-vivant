@@ -14,7 +14,7 @@ import ImmersiveVisualSection from '../components/ImmersiveVisualSection';
 import AudioExperienceSection from '../components/AudioExperienceSection';
 import PoeticMarkerCard from '../components/PoeticMarkerCard';
 import { Button } from '../components/ui/button';
-import PoeticSection from '../components/PoeticSection';
+import TextualExplorationSection from '@/components/textual/TextualExplorationSection';
 import Footer from '../components/Footer';
 
 import { MarcheTechnoSensible } from '../utils/googleSheetsApi';
@@ -215,9 +215,9 @@ const MarcheDetail = () => {
             {activeSection === 'audio' && (
               <AudioExperienceSection marche={marche} theme={theme} />
             )}
-            {activeSection === 'poeme' && (
-              <PoeticSection marche={marche} theme={theme} />
-            )}
+{activeSection === 'poeme' && (
+  <TextualExplorationSection marche={marche} theme={theme} />
+)}
           </motion.div>
         </div>
 
