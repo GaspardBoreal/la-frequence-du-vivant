@@ -17,6 +17,20 @@ interface TextualExplorationSectionProps {
 export default function TextualExplorationSection({ marche, theme }: TextualExplorationSectionProps) {
   const { data: texts = [], isLoading } = useMarcheTextes(marche.id);
   
+  // DEBUG LOGS
+  console.log('🔍 TextualExplorationSection DEBUG:', {
+    marcheId: marche.id,
+    marcheName: marche.ville,
+    isLoading,
+    textsCount: texts.length,
+    texts: texts.map(t => ({ id: t.id, titre: t.titre, type: t.type_texte })),
+    fallbackContent: {
+      poeme: !!marche.poeme,
+      descriptifLong: !!marche.descriptifLong,
+      descriptifCourt: !!marche.descriptifCourt
+    }
+  });
+  
   const {
     currentIndex,
     currentText,
@@ -30,6 +44,8 @@ export default function TextualExplorationSection({ marche, theme }: TextualExpl
   // Fallback to legacy content if no texts
   const hasTexts = texts.length > 0;
   const fallbackContent = marche.poeme || marche.descriptifLong || marche.descriptifCourt;
+  
+  console.log('🎯 Rendering decision:', { hasTexts, hasFallback: !!fallbackContent });
 
   if (isLoading) {
     return (

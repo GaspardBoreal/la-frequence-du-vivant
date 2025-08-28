@@ -30,12 +30,16 @@ export function useMarcheTextes(marcheId: string) {
   return useQuery({
     queryKey: ['marche-textes', marcheId],
     queryFn: async () => {
+      console.log('🔍 useMarcheTextes fetching for ID:', marcheId);
+      
       const { data, error } = await supabase
         .from('marche_textes')
         .select('*')
         .eq('marche_id', marcheId)
         .order('ordre', { ascending: true });
 
+      console.log('📊 useMarcheTextes result:', { marcheId, data, error });
+      
       if (error) throw error;
       return data as MarcheTexte[];
     },
