@@ -17,35 +17,44 @@ interface TextualExplorationSectionProps {
 export default function TextualExplorationSection({ marche, theme }: TextualExplorationSectionProps) {
   const { data: texts = [], isLoading } = useMarcheTextes(marche.id);
   
-  // DEBUG LOGS
-  console.log('🔍 TextualExplorationSection DEBUG:', {
-    marcheId: marche.id,
-    marcheName: marche.ville,
-    isLoading,
-    textsCount: texts.length,
-    texts: texts.map(t => ({ id: t.id, titre: t.titre, type: t.type_texte })),
-    fallbackContent: {
-      poeme: !!marche.poeme,
-      descriptifLong: !!marche.descriptifLong,
-      descriptifCourt: !!marche.descriptifCourt
-    }
-  });
-  
-  const {
-    currentIndex,
-    currentText,
-    selectedFamily,
-    filteredTexts,
-    navigateToIndex,
-    handleFamilyChange,
-    stats
-  } = useTextNavigation(texts);
+// Prepare fallback and effective list
+const fallbackContent = marche.poeme || marche.descriptifLong || marche.descriptifCourt;
+const effectiveTexts = texts.length > 0 ? texts : (
+  fallbackContent
+    ? [{
+        id: `legacy-${marche.id}`,
+        marche_id: marche.id,
+        titre: 'Texte',
+        contenu: fallbackContent,
+        type_texte: 'texte-libre',
+        ordre: 1,
+        metadata: { source: 'legacy-fallback' },
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      }] as any
+    : []
+);
 
-  // Fallback to legacy content if no texts
-  const hasTexts = texts.length > 0;
-  const fallbackContent = marche.poeme || marche.descriptifLong || marche.descriptifCourt;
-  
-  console.log('🎯 Rendering decision:', { hasTexts, hasFallback: !!fallbackContent });
+console.log('🧭 Texts effective:', {
+  originalCount: texts.length,
+  effectiveCount: effectiveTexts.length,
+  usedFallback: texts.length === 0 && !!fallbackContent,
+});
+
+const {
+  currentIndex,
+  currentText,
+  selectedFamily,
+  filteredTexts,
+  navigateToIndex,
+  handleFamilyChange,
+  stats
+} = useTextNavigation(effectiveTexts);
+
+// Fallback to legacy content if no texts
+const hasTexts = effectiveTexts.length > 0;
+
+console.log('🎯 Rendering decision:', { hasTexts, hasFallback: !!fallbackContent });
 
   if (isLoading) {
     return (
@@ -124,11 +133,11 @@ export default function TextualExplorationSection({ marche, theme }: TextualExpl
       </motion.div>
 
       {/* Type Navigator - 30px */}
-      <TextTypeNavigator
-        texts={texts}
-        selectedFamily={selectedFamily}
-        onFamilyChange={handleFamilyChange}
-      />
+<TextTypeNavigator
+  texts={effectiveTexts}
+  selectedFamily={selectedFamily}
+  onFamilyChange={handleFamilyChange}
+/>
 
       {/* Text Display - flexible height */}
       <div className="flex-1 min-h-0">

@@ -107,9 +107,11 @@ const ExperienceMarcheElabore: React.FC<Props> = ({
     } else if (nextMarche && targetMarche.id === nextMarche.marche?.id) {
       onNavigateToNext?.();
     }
-  };
+};
 
-  return (
+console.log('🧭 ExperienceMarcheElabore:', { marcheId: legacyMarche.id, ville: legacyMarche.ville });
+
+return (
     <div className={`relative bg-background rounded-lg overflow-hidden ${isModal ? 'h-auto' : 'h-[650px]'}`}>
       {/* Use BioacousticHeroSection for the élaboré model */}
       <BioacousticHeroSection
