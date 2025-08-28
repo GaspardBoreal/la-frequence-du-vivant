@@ -4,7 +4,7 @@ import type { ExplorationMarcheComplete } from '@/hooks/useExplorations';
 import { REGIONAL_THEMES, RegionalTheme } from '@/utils/regionalThemes';
 import { MarcheTechnoSensible } from '@/utils/googleSheetsApi';
 import MultiSensoryNavigation from '@/components/MultiSensoryNavigation';
-import PoeticSection from '@/components/PoeticSection';
+import TextualExplorationSection from '@/components/textual/TextualExplorationSection';
 import ImmersiveVisualSection from '@/components/ImmersiveVisualSection';
 import AudioExperienceSection from '@/components/AudioExperienceSection';
 import MarcheHeroSection from '@/components/MarcheHeroSection';
@@ -188,9 +188,9 @@ const ExperienceMarcheSimple: React.FC<Props> = ({
             transition={{ duration: 0.3 }}
             className="h-full"
           >
-            {activeSection === 'poeme' && (
-              <PoeticSection marche={legacyMarche} theme={theme} />
-            )}
+{activeSection === 'poeme' && (
+  <TextualExplorationSection marche={legacyMarche} theme={theme} />
+)}
             {activeSection === 'visual' && (
               <ImmersiveVisualSection marche={legacyMarche} theme={theme} />
             )}
