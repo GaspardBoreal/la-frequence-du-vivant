@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { getTextTypeInfo } from '@/types/textTypes';
 import type { MarcheTexte } from '@/hooks/useMarcheTextes';
 import { cn } from '@/lib/utils';
+import DOMPurify from 'dompurify';
 
 interface AdaptiveTextRendererProps {
   text: MarcheTexte;
@@ -15,10 +16,19 @@ export default function AdaptiveTextRenderer({ text, isActive }: AdaptiveTextRen
 
   // Format content based on text type
   const formatContent = (content: string, type: string) => {
+    // Sanitize HTML content first
+    const sanitizedContent = DOMPurify.sanitize(content, {
+      ALLOWED_TAGS: ['div', 'p', 'br', 'strong', 'em', 'u', 'i', 'b', 'span'],
+      ALLOWED_ATTR: []
+    });
+
     switch (type) {
       case 'haiku':
-        // Split haiku into 3 lines
-        const lines = content.split('\n').filter(line => line.trim());
+        // For haiku, extract plain text and split into lines
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = sanitizedContent;
+        const plainText = tempDiv.textContent || tempDiv.innerText || '';
+        const lines = plainText.split('\n').filter(line => line.trim());
         return lines.map((line, i) => (
           <div key={i} className="text-center">
             {line.trim()}
@@ -26,8 +36,11 @@ export default function AdaptiveTextRenderer({ text, isActive }: AdaptiveTextRen
         ));
       
       case 'dialogue-polyphonique':
-        // Format dialogue with speakers
-        return content.split('\n').map((line, i) => {
+        // For dialogue, extract plain text and format
+        const tempDiv2 = document.createElement('div');
+        tempDiv2.innerHTML = sanitizedContent;
+        const dialogueText = tempDiv2.textContent || tempDiv2.innerText || '';
+        return dialogueText.split('\n').map((line, i) => {
           if (line.startsWith('—') || line.startsWith('-')) {
             return (
               <div key={i} className="ml-4 italic">
@@ -39,18 +52,24 @@ export default function AdaptiveTextRenderer({ text, isActive }: AdaptiveTextRen
         });
       
       case 'fragment':
+        // For fragment, extract plain text and center
+        const tempDiv3 = document.createElement('div');
+        tempDiv3.innerHTML = sanitizedContent;
+        const fragmentText = tempDiv3.textContent || tempDiv3.innerText || '';
         return (
           <div className="text-center text-xl font-medium">
-            "{content}"
+            "{fragmentText}"
           </div>
         );
       
       default:
-        return content.split('\n').map((line, i) => (
-          <div key={i} className={line.trim() ? '' : 'h-2'}>
-            {line}
-          </div>
-        ));
+        // For other types, render HTML directly
+        return (
+          <div 
+            dangerouslySetInnerHTML={{ __html: sanitizedContent }}
+            className="prose prose-sm max-w-none"
+          />
+        );
     }
   };
 
