@@ -24,14 +24,21 @@ export default function AdaptiveTextRenderer({ text, isActive }: AdaptiveTextRen
 
     switch (type) {
       case 'haiku':
-        // For haiku, extract plain text and split into lines
+        // Convert HTML blocks and <br> to line breaks, then split
+        const htmlWithBreaks = sanitizedContent
+          .replace(/<br\s*\/?\>/gi, '\n')
+          .replace(/<\/(div|p|li|h[1-6])>/gi, '\n');
         const tempDiv = document.createElement('div');
-        tempDiv.innerHTML = sanitizedContent;
-        const plainText = tempDiv.textContent || tempDiv.innerText || '';
-        const lines = plainText.split('\n').filter(line => line.trim());
+        tempDiv.innerHTML = htmlWithBreaks;
+        const plainText = (tempDiv.textContent || tempDiv.innerText || '')
+          .replace(/\u00A0/g, ' ') // nbsp to space
+          .replace(/\s+/g, ' ')    // collapse spaces
+          .replace(/\n{2,}/g, '\n')
+          .trim();
+        const lines = plainText.split('\n').map(l => l.trim()).filter(Boolean);
         return lines.map((line, i) => (
           <div key={i} className="text-center">
-            {line.trim()}
+            {line}
           </div>
         ));
       
