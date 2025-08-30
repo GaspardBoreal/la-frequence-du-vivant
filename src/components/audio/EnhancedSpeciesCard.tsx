@@ -26,6 +26,9 @@ export const EnhancedSpeciesCard: React.FC<EnhancedSpeciesCardProps> = ({
   // Debug logs
   console.log('🔧 EnhancedSpeciesCard debug:', {
     scientificName: species.scientificName,
+    commonName: species.commonName,
+    photoData: species.photoData,
+    hasPhoto: species.photoData && species.photoData.source !== 'placeholder',
     propTranslation: propTranslation,
     propSource: propTranslation?.source,
     propConfidence: propTranslation?.confidence
