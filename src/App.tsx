@@ -39,6 +39,7 @@ import ExplorationHistorique from './pages/ExplorationHistorique';
 import ExplorationEssais from './pages/ExplorationEssais';
 import ExperienceAudioContinue from './components/experience/ExperienceAudioContinue';
 import ExperienceLectureOptimisee from './components/reading/ExperienceLectureOptimisee';
+import OpusAdmin from './pages/OpusAdmin';
 
 function App() {
   return (
@@ -116,6 +117,11 @@ function App() {
             <Route path="/admin/explorations/:slug/animer" element={
               <AdminAuth>
                 <ExplorationAnimatorRefactored />
+              </AdminAuth>
+            } />
+            <Route path="/admin/opus/:slug" element={
+              <AdminAuth>
+                <OpusAdmin />
               </AdminAuth>
             } />
             <Route path="/admin" element={
