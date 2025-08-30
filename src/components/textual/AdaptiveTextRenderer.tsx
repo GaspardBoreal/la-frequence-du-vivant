@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import { getTextTypeInfo } from '@/types/textTypes';
 import type { MarcheTexte } from '@/hooks/useMarcheTextes';
 import { cn } from '@/lib/utils';
-import { sanitizeHtml } from '@/utils/htmlSanitizer';
+import DOMPurify from 'dompurify';
 
 interface AdaptiveTextRendererProps {
   text: MarcheTexte;
@@ -17,7 +17,10 @@ export default function AdaptiveTextRenderer({ text, isActive }: AdaptiveTextRen
   // Format content based on text type
   const formatContent = (content: string, type: string) => {
     // Sanitize HTML content first
-    const sanitizedContent = sanitizeHtml(content);
+    const sanitizedContent = DOMPurify.sanitize(content, {
+      ALLOWED_TAGS: ['div', 'p', 'br', 'strong', 'em', 'u', 'i', 'b', 'span'],
+      ALLOWED_ATTR: []
+    });
 
     switch (type) {
       case 'haiku':
@@ -90,11 +93,11 @@ export default function AdaptiveTextRenderer({ text, isActive }: AdaptiveTextRen
       )}
     >
       {/* Header */}
-      <div className="flex items-center gap-2 mb-3 pb-2 border-b border-border/50">
+      <div className="flex items-center gap-2 mb-3 pb-2 border-b border-ink/20">
         <span className="text-lg">{typeInfo.icon}</span>
         <div className="flex-1">
-          <h3 className="font-medium text-sm text-foreground">{text.titre}</h3>
-          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+          <h3 className="font-medium text-sm text-ink">{text.titre}</h3>
+          <div className="flex items-center gap-2 text-xs text-ink/60">
             <span>{typeInfo.label}</span>
             <span>•</span>
             <span>#{text.ordre}</span>
@@ -116,8 +119,8 @@ export default function AdaptiveTextRenderer({ text, isActive }: AdaptiveTextRen
 
       {/* Metadata */}
       {text.metadata && Object.keys(text.metadata).length > 0 && (
-        <div className="mt-3 pt-2 border-t border-border/30">
-          <div className="text-xs text-muted-foreground space-y-1">
+        <div className="mt-3 pt-2 border-t border-ink/20">
+          <div className="text-xs text-ink/60 space-y-1">
             {Object.entries(text.metadata).map(([key, value]) => (
               <div key={key} className="flex gap-2">
                 <span className="font-medium">{key}:</span>
