@@ -204,7 +204,7 @@ const OpusAdmin: React.FC = () => {
                                   {marche.marche?.nom_marche || marche.marche?.ville}
                                 </CardTitle>
                                 <p className="text-sm text-muted-foreground">
-                                  {marche.ville} • {marche.region}
+                                  {marche.marche?.ville} • {marche.marche?.region}
                                 </p>
                               </div>
                             </div>
@@ -212,7 +212,7 @@ const OpusAdmin: React.FC = () => {
                           <CardContent>
                             <div className="flex items-center justify-between">
                               <div className="text-sm text-muted-foreground">
-                                {marche.photos} photos • {marche.audio} audio
+                                {(marche.marche?.photos?.length || 0)} photos • {(marche.marche?.audio?.length || 0)} audio
                               </div>
                               <Badge variant="outline">
                                 Configurer
@@ -225,7 +225,7 @@ const OpusAdmin: React.FC = () => {
                   ) : (
                     <OpusContexteEditor
                       marcheId={selectedMarche}
-                      marcheName={marches?.find(m => m.id === selectedMarche)?.nom_marche || 'Marche'}
+                      marcheName={marches?.find(m => m.id === selectedMarche)?.marche?.nom_marche || 'Marche'}
                       onClose={() => setSelectedMarche(null)}
                     />
                   )}
@@ -249,10 +249,10 @@ const OpusAdmin: React.FC = () => {
                               <BookOpen className="h-5 w-5 text-orange-600 mt-1" />
                               <div className="flex-1">
                                 <CardTitle className="text-lg line-clamp-2">
-                                  {marche.nom_marche || marche.ville}
+                                  {marche.marche?.nom_marche || marche.marche?.ville}
                                 </CardTitle>
                                 <p className="text-sm text-muted-foreground">
-                                  {marche.ville} • {marche.region}
+                                  {marche.marche?.ville} • {marche.marche?.region}
                                 </p>
                               </div>
                             </div>
@@ -260,7 +260,7 @@ const OpusAdmin: React.FC = () => {
                           <CardContent>
                             <div className="flex items-center justify-between">
                               <div className="text-sm text-muted-foreground">
-                                {marche.fables?.length || 0} fables
+                                {(marche as any)?.fables?.length || 0} fables
                               </div>
                               <Badge variant="outline">
                                 Créer / Éditer
@@ -273,7 +273,7 @@ const OpusAdmin: React.FC = () => {
                   ) : (
                     <FableWorkshop
                       marcheId={selectedMarche}
-                      marcheName={marches?.find(m => m.id === selectedMarche)?.nom_marche || 'Marche'}
+                      marcheName={marches?.find(m => m.id === selectedMarche)?.marche?.nom_marche || 'Marche'}
                       opusId={opus.id}
                     />
                   )}
