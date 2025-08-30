@@ -75,6 +75,11 @@ const GalerieFleuveWelcome: React.FC<GalerieFluveWelcomeProps> = ({
       if (explorationSlug) {
         window.location.href = `/galerie-fleuve/exploration/${explorationSlug}/lire`;
       }
+    } else if (modeLabel === 'Préfigurer') {
+      // Navigate to immersive prefiguration experience
+      if (explorationSlug) {
+        window.location.href = `/galerie-fleuve/exploration/${explorationSlug}/prefigurer`;
+      }
     }
   };
 
@@ -128,7 +133,8 @@ const GalerieFleuveWelcome: React.FC<GalerieFluveWelcomeProps> = ({
   const immersionModes = theme?.immersionModes?.filter(mode => mode.label !== 'Suivre') || [
     { icon: 'Eye', label: 'Voir', desc: 'Navigation spatiale des souvenirs' },
     { icon: 'Heart', label: 'Ecouter', desc: 'Paysages sonores' },
-    { icon: 'Stars', label: 'Lire', desc: 'Récits poétiques' }
+    { icon: 'Stars', label: 'Lire', desc: 'Récits poétiques' },
+    { icon: 'Palette', label: 'Préfigurer', desc: 'Explorations immersives' }
   ];
 
   const gradientClass = theme?.colors.gradient 

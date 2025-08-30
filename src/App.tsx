@@ -40,6 +40,7 @@ import ExplorationEssais from './pages/ExplorationEssais';
 import ExperienceAudioContinue from './components/experience/ExperienceAudioContinue';
 import ExperienceLectureOptimisee from './components/reading/ExperienceLectureOptimisee';
 import OpusAdmin from './pages/OpusAdmin';
+import ExplorationPrefigurer from './pages/ExplorationPrefigurer';
 
 function App() {
   return (
@@ -63,6 +64,7 @@ function App() {
             <Route path="/galerie-fleuve/exploration/:slug/ecouter" element={<ExperienceAudioContinue />} />
             <Route path="/galerie-fleuve/exploration/:slug/lire" element={<ExperienceLectureOptimisee />} />
             <Route path="/galerie-fleuve/exploration/:slug/lire/:textId" element={<ExperienceLectureOptimisee />} />
+            <Route path="/galerie-fleuve/exploration/:slug/prefigurer" element={<ExplorationPrefigurer />} />
             <Route path="/galerie-fleuve/exploration/:slug/historique" element={<ExplorationHistorique />} />
             <Route path="/galerie-fleuve/exploration/:slug/essais" element={<ExplorationEssais />} />
             <Route path="/explorations/:slug" element={<ExplorationDetail />} />
