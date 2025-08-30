@@ -102,7 +102,7 @@ export default function AdaptiveTextRenderer({ text, isActive }: AdaptiveTextRen
       transition={{ duration: 0.3 }}
       className={cn(
         "p-4 rounded-lg transition-all duration-300 border shadow-sm",
-        "bg-white text-black",
+        "bg-paper text-ink",
         style.spacing
       )}
     >

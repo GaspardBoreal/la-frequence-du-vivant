@@ -399,12 +399,31 @@ export default function ExplorationAnimatorRefactored() {
               <DialogTitle>Prévisualisation - {marcheModels.find(m => m.id === previewModel)?.name}</DialogTitle>
             </DialogHeader>
             <div className="mt-4">
-              <div className="p-4 bg-muted/30 rounded-lg">
-                <p>Prévisualisation du modèle {previewModel} avec la marche : {currentMarche?.marche?.nom_marche}</p>
-                <p className="text-sm text-muted-foreground mt-2">
-                  {previewModel === 'simple' ? 'Modèle Simple - Affichage épuré' : 'Modèle Élaboré - Affichage enrichi'}
-                </p>
-              </div>
+              {previewModel === 'simple' ? (
+                <ExperienceMarcheSimple
+                  marche={currentMarche}
+                  isModal
+                  previousMarche={getPreviousMarche}
+                  nextMarche={getNextMarche}
+                  canNavigatePrev={!!getPreviousMarche}
+                  canNavigateNext={!!getNextMarche}
+                  onNavigateToPrevious={handleNavigateToPrevious}
+                  onNavigateToNext={handleNavigateToNext}
+                  onBack={handleBack}
+                />
+              ) : (
+                <ExperienceMarcheElabore
+                  marche={currentMarche}
+                  isModal
+                  previousMarche={getPreviousMarche}
+                  nextMarche={getNextMarche}
+                  canNavigatePrev={!!getPreviousMarche}
+                  canNavigateNext={!!getNextMarche}
+                  onNavigateToPrevious={handleNavigateToPrevious}
+                  onNavigateToNext={handleNavigateToNext}
+                  onBack={handleBack}
+                />
+              )}
             </div>
             <DialogFooter>
               <Button onClick={handleBack}>Retour</Button>
