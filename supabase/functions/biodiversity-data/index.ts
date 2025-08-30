@@ -16,7 +16,7 @@ interface BiodiversityQuery {
 
 interface BirdPhoto {
   url: string;
-  source: 'inaturalist' | 'flickr' | 'placeholder';
+  source: 'inaturalist' | 'flickr' | 'wikimedia' | 'placeholder';
   attribution?: string;
   license?: string;
   photographer?: string;
@@ -633,53 +633,197 @@ async function fetchEBirdData(lat: number, lon: number, radius: number, dateFilt
   }
 }
 
-// Helper function to fetch bird photos with timeout
-async function fetchBirdPhoto(scientificName: string, isBatchMode: boolean = false): Promise<BirdPhoto | null> {
-  // Skip photo fetching in batch mode for performance
-  if (isBatchMode) {
-    console.log(`⚡ Batch mode: Skipping photo fetch for ${scientificName}`);
-    return null;
+// Photo cache to avoid repeated API calls
+const photoCache = new Map<string, BirdPhoto | null>();
+
+// Helper function to get species-appropriate placeholder
+function getSpeciesPlaceholder(kingdom: string, commonName: string): BirdPhoto {
+  const baseUrl = '/placeholder.svg';
+  return {
+    url: baseUrl,
+    source: 'placeholder',
+    attribution: `Placeholder for ${commonName}`,
+    license: 'Public Domain',
+    photographer: 'Generated placeholder'
+  };
+}
+
+// Enhanced photo fetching with multiple sources and robust fallbacks
+async function fetchBirdPhoto(scientificName: string, commonName: string, kingdom: string, isBatchMode: boolean = false): Promise<BirdPhoto | null> {
+  // Don't skip in batch mode anymore - we need photos for the list view
+  const cacheKey = scientificName.toLowerCase();
+  
+  // Check cache first
+  if (photoCache.has(cacheKey)) {
+    const cached = photoCache.get(cacheKey);
+    console.log(`💾 Using cached photo for ${scientificName}`);
+    return cached;
   }
 
   try {
-    console.log(`🔍 Fetching photo for ${scientificName} from iNaturalist...`);
+    console.log(`🔍 Fetching photo for ${scientificName} (${commonName}) from multiple sources...`);
     
-    // Add timeout to prevent hanging
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 5000); // 5 second timeout
+    // Try multiple sources in parallel with increased timeout
+    const photoPromises = [
+      fetchFromINaturalistTaxa(scientificName),
+      fetchFromINaturalistObservations(scientificName),
+      fetchFromWikimedia(scientificName, commonName)
+    ];
 
-    const iNatUrl = `https://api.inaturalist.org/v1/taxa?q=${encodeURIComponent(scientificName)}&per_page=1&rank=species`;
-    const iNatResponse = await fetch(iNatUrl, { 
+    // Use Promise.allSettled to try all sources
+    const results = await Promise.allSettled(photoPromises);
+    const photos = results
+      .filter(result => result.status === 'fulfilled' && result.value)
+      .map(result => (result as PromiseFulfilledResult<BirdPhoto | null>).value!)
+      .filter(Boolean);
+
+    let bestPhoto: BirdPhoto | null = null;
+    
+    if (photos.length > 0) {
+      // Select best photo based on source priority
+      bestPhoto = selectBestPhoto(photos);
+      console.log(`✅ Photo found for ${scientificName} from ${bestPhoto.source}`);
+    } else {
+      console.log(`❌ No photo found for ${scientificName}, using placeholder`);
+      bestPhoto = getSpeciesPlaceholder(kingdom, commonName);
+    }
+    
+    // Cache the result (including null/placeholder)
+    photoCache.set(cacheKey, bestPhoto);
+    return bestPhoto;
+    
+  } catch (error) {
+    console.warn(`⚠️ Error fetching photo for ${scientificName}:`, error);
+    const placeholder = getSpeciesPlaceholder(kingdom, commonName);
+    photoCache.set(cacheKey, placeholder);
+    return placeholder;
+  }
+}
+
+// Select best photo based on source quality
+function selectBestPhoto(photos: BirdPhoto[]): BirdPhoto {
+  if (photos.length === 1) return photos[0];
+  
+  // Priority: wikimedia (highest quality) > inaturalist taxa > inaturalist observations
+  const priority = { 'wikimedia': 3, 'inaturalist': 2, 'flickr': 1, 'placeholder': 0 };
+  
+  return photos.sort((a, b) => (priority[b.source] || 0) - (priority[a.source] || 0))[0];
+}
+
+// Fetch from iNaturalist taxa endpoint (most reliable)
+async function fetchFromINaturalistTaxa(scientificName: string): Promise<BirdPhoto | null> {
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 10000); // Increased to 10s
+
+    const url = `https://api.inaturalist.org/v1/taxa?q=${encodeURIComponent(scientificName)}&per_page=1&rank=species`;
+    const response = await fetch(url, { 
       signal: controller.signal,
       headers: { 'User-Agent': 'BiodiversityDataCollector/1.0' }
     });
     
     clearTimeout(timeout);
     
-    if (iNatResponse.ok) {
-      const iNatData = await iNatResponse.json();
-      if (iNatData.results && iNatData.results.length > 0) {
-        const taxon = iNatData.results[0];
-        if (taxon.default_photo) {
-          console.log(`✅ Photo found on iNaturalist for ${scientificName}`);
+    if (response.ok) {
+      const data = await response.json();
+      if (data.results?.[0]?.default_photo) {
+        const photo = data.results[0].default_photo;
+        return {
+          url: photo.medium_url || photo.url,
+          source: 'inaturalist',
+          attribution: photo.attribution || `iNaturalist community photo`,
+          license: photo.license_code || 'CC BY-NC',
+          photographer: photo.attribution?.split('(c)')[1]?.trim() || 'iNaturalist user'
+        };
+      }
+    }
+    return null;
+  } catch (error) {
+    if (error.name !== 'AbortError') {
+      console.warn(`⚠️ iNaturalist taxa error for ${scientificName}:`, error);
+    }
+    return null;
+  }
+}
+
+// Fetch from iNaturalist observations (fallback)
+async function fetchFromINaturalistObservations(scientificName: string): Promise<BirdPhoto | null> {
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 10000);
+
+    const url = `https://api.inaturalist.org/v1/observations?taxon_name=${encodeURIComponent(scientificName)}&has[]=photos&quality_grade=research&per_page=1&order=desc&order_by=votes`;
+    const response = await fetch(url, { 
+      signal: controller.signal,
+      headers: { 'User-Agent': 'BiodiversityDataCollector/1.0' }
+    });
+    
+    clearTimeout(timeout);
+    
+    if (response.ok) {
+      const data = await response.json();
+      if (data.results?.[0]?.photos?.[0]) {
+        const photo = data.results[0].photos[0];
+        return {
+          url: photo.url.replace('square', 'medium'),
+          source: 'inaturalist',
+          attribution: `Photo by ${data.results[0].user?.name || 'iNaturalist user'}`,
+          license: data.results[0].license_code || 'CC BY-NC',
+          photographer: data.results[0].user?.name || 'iNaturalist user'
+        };
+      }
+    }
+    return null;
+  } catch (error) {
+    if (error.name !== 'AbortError') {
+      console.warn(`⚠️ iNaturalist observations error for ${scientificName}:`, error);
+    }
+    return null;
+  }
+}
+
+// Fetch from Wikimedia Commons (highest quality when available)
+async function fetchFromWikimedia(scientificName: string, commonName: string): Promise<BirdPhoto | null> {
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 10000);
+
+    // Try scientific name first, then common name
+    const searchTerms = [scientificName];
+    if (commonName && commonName !== scientificName) {
+      searchTerms.push(commonName);
+    }
+    
+    for (const searchTerm of searchTerms) {
+      const url = `https://commons.wikimedia.org/w/api.php?action=query&format=json&origin=*&list=search&srsearch=${encodeURIComponent(searchTerm)}&srnamespace=6&srlimit=3`;
+      const response = await fetch(url, { 
+        signal: controller.signal,
+        headers: { 'User-Agent': 'BiodiversityDataCollector/1.0' }
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        if (data.query?.search?.length > 0) {
+          const firstResult = data.query.search[0];
+          const filename = firstResult.title.replace('File:', '');
+          
+          clearTimeout(timeout);
           return {
-            url: taxon.default_photo.medium_url || taxon.default_photo.url,
-            source: 'inaturalist',
-            attribution: taxon.default_photo.attribution,
-            license: taxon.default_photo.license_code,
-            photographer: taxon.default_photo.attribution?.split('(c)')[1]?.trim()
+            url: `https://commons.wikimedia.org/wiki/Special:FilePath/${encodeURIComponent(filename)}?width=400`,
+            source: 'wikimedia',
+            attribution: 'Wikimedia Commons',
+            license: 'Creative Commons',
+            photographer: 'Wikimedia contributor'
           };
         }
       }
     }
     
+    clearTimeout(timeout);
     return null;
-    
   } catch (error) {
-    if (error.name === 'AbortError') {
-      console.warn(`⏱️ Photo fetch timeout for ${scientificName}`);
-    } else {
-      console.warn(`⚠️ Error fetching photo for ${scientificName}:`, error);
+    if (error.name !== 'AbortError') {
+      console.warn(`⚠️ Wikimedia error for ${scientificName}:`, error);
     }
     return null;
   }
@@ -988,59 +1132,76 @@ serve(async (req) => {
     // Calculate summary statistics
     const summary = calculateSummary(aggregatedSpecies);
 
-    // Enrich species with photos and audio (skip in batch mode for performance)
-    if (!isBatchMode) {
-      console.log('🎨 Enriching species with photos and audio...');
-      
-      // Use Promise.allSettled to prevent individual failures from blocking the entire process
-      const enrichmentPromises = aggregatedSpecies
-        .filter(species => species.kingdom === 'Animalia')
-        .map(async (species) => {
-          try {
-            // Fetch bird photo
-            if (!species.photoData) {
-              species.photoData = await fetchBirdPhoto(species.scientificName, isBatchMode);
-            }
+    // Enrich ALL species with photos (no longer skip in batch mode or limit to Animalia)
+    console.log('🎨 Enriching species with photos and audio...');
+    
+    // Split enrichment: photos for all species, audio only for animals  
+    const photoPromises = aggregatedSpecies.map(async (species) => {
+      try {
+        if (!species.photoData) {
+          console.log(`📸 Fetching photo for ${species.scientificName} (${species.kingdom})`);
+          species.photoData = await fetchBirdPhoto(
+            species.scientificName, 
+            species.commonName, 
+            species.kingdom, 
+            false // Never skip photos now
+          );
+        }
+      } catch (error) {
+        console.warn(`⚠️ Photo enrichment failed for ${species.scientificName}:`, error);
+        // Ensure placeholder is set even on error
+        species.photoData = getSpeciesPlaceholder(species.kingdom, species.commonName);
+      }
+    });
 
-            // Fetch Xeno-Canto recordings for birds
-            if (!species.xenoCantoRecordings) {
-              species.xenoCantoRecordings = await fetchXenoCantoRecordings(species.scientificName, isBatchMode);
+    // Audio enrichment only for animals (and only in interactive mode for performance)
+    const audioPromises = !isBatchMode ? aggregatedSpecies
+      .filter(species => species.kingdom === 'Animalia')
+      .map(async (species) => {
+        try {
+          if (!species.xenoCantoRecordings) {
+            species.xenoCantoRecordings = await fetchXenoCantoRecordings(species.scientificName, isBatchMode);
+            
+            if (species.xenoCantoRecordings && species.xenoCantoRecordings.length > 0) {
+              const bestRecording = species.xenoCantoRecordings[0];
+              species.recordingQuality = bestRecording.quality;
+              species.soundType = bestRecording.type;
+              species.recordingContext = {
+                method: bestRecording.method,
+                equipment: bestRecording.device || bestRecording.microphone,
+                conditions: bestRecording.remarks
+              };
+              species.behavioralInfo = {
+                sex: bestRecording.sex !== 'unknown' ? bestRecording.sex : undefined,
+                stage: bestRecording.stage !== 'adult' ? bestRecording.stage : undefined,
+                animalSeen: bestRecording.animalSeen === 'yes',
+                playbackUsed: bestRecording.playbackUsed === 'yes'
+              };
               
-              if (species.xenoCantoRecordings && species.xenoCantoRecordings.length > 0) {
-                const bestRecording = species.xenoCantoRecordings[0];
-                species.recordingQuality = bestRecording.quality;
-                species.soundType = bestRecording.type;
-                species.recordingContext = {
-                  method: bestRecording.method,
-                  equipment: bestRecording.device || bestRecording.microphone,
-                  conditions: bestRecording.remarks
-                };
-                species.behavioralInfo = {
-                  sex: bestRecording.sex !== 'unknown' ? bestRecording.sex : undefined,
-                  stage: bestRecording.stage !== 'adult' ? bestRecording.stage : undefined,
-                  animalSeen: bestRecording.animalSeen === 'yes',
-                  playbackUsed: bestRecording.playbackUsed === 'yes'
-                };
-                
-                // Set primary audio URL if available
-                if (bestRecording.file) {
-                  species.audioUrl = `https://xeno-canto.org/${bestRecording.id}/download`;
-                }
-                if (bestRecording.sono?.large) {
-                  species.sonogramUrl = bestRecording.sono.large;
-                }
+              // Set primary audio URL if available
+              if (bestRecording.file) {
+                species.audioUrl = `https://xeno-canto.org/${bestRecording.id}/download`;
+              }
+              if (bestRecording.sono?.large) {
+                species.sonogramUrl = bestRecording.sono.large;
               }
             }
-          } catch (error) {
-            console.warn(`⚠️ Enrichment failed for ${species.scientificName}:`, error);
           }
-        });
+        } catch (error) {
+          console.warn(`⚠️ Audio enrichment failed for ${species.scientificName}:`, error);
+        }
+      }) : [];
 
-      // Wait for all enrichments to complete or fail
-      await Promise.allSettled(enrichmentPromises);
-    } else {
-      console.log('⚡ Batch mode: Skipping species enrichment for performance');
-    }
+    // Wait for all enrichments to complete
+    console.log(`📸 Processing ${photoPromises.length} photo requests...`);
+    console.log(`🎵 Processing ${audioPromises.length} audio requests...`);
+    
+    await Promise.allSettled([
+      Promise.allSettled(photoPromises),
+      Promise.allSettled(audioPromises)
+    ]);
+    
+    console.log('✅ Species enrichment completed');
 
     // Update summary with enriched data counts
     summary.withPhotos = aggregatedSpecies.filter(s => s.photoData?.url).length;
