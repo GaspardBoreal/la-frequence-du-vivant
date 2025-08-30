@@ -13,6 +13,13 @@ interface AdaptiveTextRendererProps {
 export default function AdaptiveTextRenderer({ text, isActive }: AdaptiveTextRendererProps) {
   const typeInfo = getTextTypeInfo(text.type_texte);
   const style = typeInfo.adaptiveStyle;
+  
+  // Debug logs
+  console.log("AdaptiveTextRenderer:", {
+    type: text.type_texte,
+    family: typeInfo.family,
+    title: text.titre
+  });
 
   // Format content based on text type
   const formatContent = (content: string, type: string) => {
@@ -70,11 +77,11 @@ export default function AdaptiveTextRenderer({ text, isActive }: AdaptiveTextRen
         );
       
       default:
-        // For other types, render HTML directly
+        // For other types, render HTML directly with rich text support
         return (
           <div 
             dangerouslySetInnerHTML={{ __html: sanitizedContent }}
-            className="prose prose-sm max-w-none"
+            className="prose prose-sm max-w-none text-black [&_strong]:font-bold [&_em]:italic [&_p]:mb-2"
           />
         );
     }
@@ -88,16 +95,16 @@ export default function AdaptiveTextRenderer({ text, isActive }: AdaptiveTextRen
       transition={{ duration: 0.3 }}
       className={cn(
         "p-4 rounded-lg transition-all duration-300 border shadow-sm",
-        "bg-paper text-ink",
+        "bg-white text-black",
         style.spacing
       )}
     >
       {/* Header */}
-      <div className="flex items-center gap-2 mb-3 pb-2 border-b border-ink/20">
+      <div className="flex items-center gap-2 mb-3 pb-2 border-b border-gray-200">
         <span className="text-lg">{typeInfo.icon}</span>
         <div className="flex-1">
-          <h3 className="font-medium text-sm text-ink">{text.titre}</h3>
-          <div className="flex items-center gap-2 text-xs text-ink/60">
+          <h3 className="font-medium text-sm text-black">{text.titre}</h3>
+          <div className="flex items-center gap-2 text-xs text-gray-600">
             <span>{typeInfo.label}</span>
             <span>•</span>
             <span>#{text.ordre}</span>
@@ -111,16 +118,18 @@ export default function AdaptiveTextRenderer({ text, isActive }: AdaptiveTextRen
         style.fontFamily === 'serif' ? 'font-serif' : style.fontFamily === 'monospace' ? 'font-mono' : 'font-sans',
         style.fontSize,
         style.lineHeight,
-        (typeInfo.family === 'poetique' || text.type_texte === 'haiku' || text.type_texte === 'fragment') ? 'text-center' : 'text-left',
-        typeInfo.family === 'narrative' ? 'ml-8 md:ml-16 indent-8 md:indent-12' : ''
+        // Center poetic texts (haiku, fragment, poeme)
+        (typeInfo.family === 'poetique' || text.type_texte === 'haiku' || text.type_texte === 'fragment' || text.type_texte === 'poeme') ? 'text-center' : 'text-left',
+        // Indent narrative texts
+        (typeInfo.family === 'narrative' || text.type_texte === 'texte-libre') ? 'ml-8 pl-8 md:ml-16 md:pl-16' : ''
       )}>
         {formatContent(text.contenu, text.type_texte)}
       </div>
 
       {/* Metadata */}
       {text.metadata && Object.keys(text.metadata).length > 0 && (
-        <div className="mt-3 pt-2 border-t border-ink/20">
-          <div className="text-xs text-ink/60 space-y-1">
+        <div className="mt-3 pt-2 border-t border-gray-200">
+          <div className="text-xs text-gray-600 space-y-1">
             {Object.entries(text.metadata).map(([key, value]) => (
               <div key={key} className="flex gap-2">
                 <span className="font-medium">{key}:</span>
