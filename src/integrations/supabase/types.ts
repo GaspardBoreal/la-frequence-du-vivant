@@ -450,6 +450,63 @@ export type Database = {
         }
         Relationships: []
       }
+      fables_narratives: {
+        Row: {
+          contenu_principal: string
+          created_at: string
+          dimensions_associees: string[] | null
+          id: string
+          inspiration_sources: Json | null
+          marche_id: string
+          notes_creative: Json | null
+          opus_id: string | null
+          ordre: number | null
+          resume: string | null
+          statut: string
+          tags: Json | null
+          titre: string
+          updated_at: string
+          variations: Json
+          version: string
+        }
+        Insert: {
+          contenu_principal: string
+          created_at?: string
+          dimensions_associees?: string[] | null
+          id?: string
+          inspiration_sources?: Json | null
+          marche_id: string
+          notes_creative?: Json | null
+          opus_id?: string | null
+          ordre?: number | null
+          resume?: string | null
+          statut?: string
+          tags?: Json | null
+          titre: string
+          updated_at?: string
+          variations?: Json
+          version?: string
+        }
+        Update: {
+          contenu_principal?: string
+          created_at?: string
+          dimensions_associees?: string[] | null
+          id?: string
+          inspiration_sources?: Json | null
+          marche_id?: string
+          notes_creative?: Json | null
+          opus_id?: string | null
+          ordre?: number | null
+          resume?: string | null
+          statut?: string
+          tags?: Json | null
+          titre?: string
+          updated_at?: string
+          variations?: Json
+          version?: string
+        }
+        Relationships: []
+      }
       marche_audio: {
         Row: {
           created_at: string
@@ -505,6 +562,63 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      marche_contextes_hybrids: {
+        Row: {
+          completude_score: number | null
+          contexte_hydrologique: Json | null
+          created_at: string
+          empreintes_humaines: Json | null
+          especes_caracteristiques: Json | null
+          id: string
+          last_validation: string | null
+          leviers_agroecologiques: Json | null
+          marche_id: string
+          nouvelles_activites: Json | null
+          opus_id: string | null
+          projection_2035_2045: Json | null
+          sources: Json | null
+          technodiversite: Json | null
+          updated_at: string
+          vocabulaire_local: Json | null
+        }
+        Insert: {
+          completude_score?: number | null
+          contexte_hydrologique?: Json | null
+          created_at?: string
+          empreintes_humaines?: Json | null
+          especes_caracteristiques?: Json | null
+          id?: string
+          last_validation?: string | null
+          leviers_agroecologiques?: Json | null
+          marche_id: string
+          nouvelles_activites?: Json | null
+          opus_id?: string | null
+          projection_2035_2045?: Json | null
+          sources?: Json | null
+          technodiversite?: Json | null
+          updated_at?: string
+          vocabulaire_local?: Json | null
+        }
+        Update: {
+          completude_score?: number | null
+          contexte_hydrologique?: Json | null
+          created_at?: string
+          empreintes_humaines?: Json | null
+          especes_caracteristiques?: Json | null
+          id?: string
+          last_validation?: string | null
+          leviers_agroecologiques?: Json | null
+          marche_id?: string
+          nouvelles_activites?: Json | null
+          opus_id?: string | null
+          projection_2035_2045?: Json | null
+          sources?: Json | null
+          technodiversite?: Json | null
+          updated_at?: string
+          vocabulaire_local?: Json | null
+        }
+        Relationships: []
       }
       marche_documents: {
         Row: {
@@ -1099,6 +1213,108 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      opus_explorations: {
+        Row: {
+          cover_image_url: string | null
+          created_at: string
+          description: string | null
+          id: string
+          language: string
+          meta_description: string | null
+          meta_keywords: string[]
+          meta_title: string | null
+          nom: string
+          ordre: number | null
+          published: boolean
+          slug: string
+          theme_principal: string
+          updated_at: string
+        }
+        Insert: {
+          cover_image_url?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          language?: string
+          meta_description?: string | null
+          meta_keywords?: string[]
+          meta_title?: string | null
+          nom: string
+          ordre?: number | null
+          published?: boolean
+          slug: string
+          theme_principal: string
+          updated_at?: string
+        }
+        Update: {
+          cover_image_url?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          language?: string
+          meta_description?: string | null
+          meta_keywords?: string[]
+          meta_title?: string | null
+          nom?: string
+          ordre?: number | null
+          published?: boolean
+          slug?: string
+          theme_principal?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      préfigurations_interactives: {
+        Row: {
+          config_interaction: Json | null
+          config_navigation: Json
+          config_sonore: Json | null
+          config_visuelle: Json
+          created_at: string
+          fleuve_metadata: Json | null
+          id: string
+          nom_prefiguration: string
+          opus_id: string
+          ordre: number | null
+          published: boolean
+          temporal_layers: Json | null
+          type_experience: string
+          updated_at: string
+        }
+        Insert: {
+          config_interaction?: Json | null
+          config_navigation?: Json
+          config_sonore?: Json | null
+          config_visuelle?: Json
+          created_at?: string
+          fleuve_metadata?: Json | null
+          id?: string
+          nom_prefiguration: string
+          opus_id: string
+          ordre?: number | null
+          published?: boolean
+          temporal_layers?: Json | null
+          type_experience: string
+          updated_at?: string
+        }
+        Update: {
+          config_interaction?: Json | null
+          config_navigation?: Json
+          config_sonore?: Json | null
+          config_visuelle?: Json
+          created_at?: string
+          fleuve_metadata?: Json | null
+          id?: string
+          nom_prefiguration?: string
+          opus_id?: string
+          ordre?: number | null
+          published?: boolean
+          temporal_layers?: Json | null
+          type_experience?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       real_estate_snapshots: {
         Row: {
