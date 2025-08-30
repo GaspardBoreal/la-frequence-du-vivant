@@ -39,6 +39,7 @@ console.log('🧭 Texts effective:', {
   originalCount: texts.length,
   effectiveCount: effectiveTexts.length,
   usedFallback: texts.length === 0 && !!fallbackContent,
+  textsDetail: effectiveTexts.map(t => ({ type: t.type_texte, title: t.titre, content: t.contenu?.substring(0, 50) }))
 });
 
 const {
@@ -54,7 +55,15 @@ const {
 // Fallback to legacy content if no texts
 const hasTexts = effectiveTexts.length > 0;
 
-console.log('🎯 Rendering decision:', { hasTexts, hasFallback: !!fallbackContent });
+console.log('🎯 Rendering decision:', { 
+  hasTexts, 
+  hasFallback: !!fallbackContent,
+  currentText: currentText ? { 
+    type: currentText.type_texte, 
+    title: currentText.titre,
+    content: currentText.contenu?.substring(0, 100) + '...'
+  } : null
+});
 
   if (isLoading) {
     return (

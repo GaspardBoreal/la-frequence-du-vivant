@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import { getTextTypeInfo } from '@/types/textTypes';
 import type { MarcheTexte } from '@/hooks/useMarcheTextes';
 import { cn } from '@/lib/utils';
-import DOMPurify from 'dompurify';
+import { sanitizeHtml } from '@/utils/htmlSanitizer';
 
 interface AdaptiveTextRendererProps {
   text: MarcheTexte;
@@ -15,38 +15,45 @@ export default function AdaptiveTextRenderer({ text, isActive }: AdaptiveTextRen
   const style = typeInfo.adaptiveStyle;
   
   // Debug logs
-  console.log("AdaptiveTextRenderer:", {
+  console.log("🎨 AdaptiveTextRenderer:", {
     type: text.type_texte,
     family: typeInfo.family,
-    title: text.titre
+    title: text.titre,
+    contentPreview: text.contenu?.substring(0, 100) + '...',
+    style: typeInfo.adaptiveStyle
   });
 
   // Format content based on text type
   const formatContent = (content: string, type: string) => {
-    // Sanitize HTML content first
-    const sanitizedContent = DOMPurify.sanitize(content, {
-      ALLOWED_TAGS: ['div', 'p', 'br', 'strong', 'em', 'u', 'i', 'b', 'span'],
-      ALLOWED_ATTR: []
+    // Sanitize HTML content first but preserve formatting tags
+    const sanitizedContent = sanitizeHtml(content);
+
+    console.log("🔧 Format content:", { 
+      type, 
+      originalLength: content.length,
+      sanitizedLength: sanitizedContent.length,
+      hasHtml: content !== sanitizedContent
     });
 
     switch (type) {
       case 'haiku':
-        // Convert HTML blocks and <br> to line breaks, then split
-        const htmlWithBreaks = sanitizedContent
+        // For haiku, preserve rich text formatting but handle line breaks
+        const haikuWithBreaks = sanitizedContent
           .replace(/<br\s*\/?\>/gi, '\n')
-          .replace(/<\/(div|p|li|h[1-6])>/gi, '\n');
-        const tempDiv = document.createElement('div');
-        tempDiv.innerHTML = htmlWithBreaks;
-        const plainText = (tempDiv.textContent || tempDiv.innerText || '')
-          .replace(/\u00A0/g, ' ') // nbsp to space
-          .replace(/\s+/g, ' ')    // collapse spaces
-          .replace(/\n{2,}/g, '\n')
-          .trim();
-        const lines = plainText.split('\n').map(l => l.trim()).filter(Boolean);
-        return lines.map((line, i) => (
-          <div key={i} className="text-center">
-            {line}
-          </div>
+          .replace(/<\/(div|p)>/gi, '\n')
+          .replace(/\n{2,}/g, '\n');
+        
+        // Split by lines while preserving HTML in each line
+        const haikuLines = haikuWithBreaks.split('\n')
+          .map(line => line.trim())
+          .filter(Boolean);
+        
+        return haikuLines.map((line, i) => (
+          <div 
+            key={i} 
+            className="text-center mb-2 last:mb-0"
+            dangerouslySetInnerHTML={{ __html: sanitizeHtml(line) }}
+          />
         ));
       
       case 'dialogue-polyphonique':
@@ -120,8 +127,8 @@ export default function AdaptiveTextRenderer({ text, isActive }: AdaptiveTextRen
         style.lineHeight,
         // Center poetic texts (haiku, fragment, poeme)
         (typeInfo.family === 'poetique' || text.type_texte === 'haiku' || text.type_texte === 'fragment' || text.type_texte === 'poeme') ? 'text-center' : 'text-left',
-        // Indent narrative texts
-        (typeInfo.family === 'narrative' || text.type_texte === 'texte-libre') ? 'ml-8 pl-8 md:ml-16 md:pl-16' : ''
+        // Strong indentation for narrative texts
+        (typeInfo.family === 'narrative' || text.type_texte === 'texte-libre') ? 'ml-12 pl-12 md:ml-24 md:pl-24' : ''
       )}>
         {formatContent(text.contenu, text.type_texte)}
       </div>
