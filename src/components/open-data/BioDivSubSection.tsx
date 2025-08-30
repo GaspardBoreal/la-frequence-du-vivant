@@ -68,7 +68,8 @@ const BioDivSubSection: React.FC<BioDivSubSectionProps> = ({ marche, theme }) =>
     latitude: marche.latitude,
     longitude: marche.longitude,
     radius: debouncedRadius,
-    dateFilter
+    dateFilter,
+    mode: 'interactive' // Force le mode interactif pour récupérer les photos
   });
 
   // Extraction et agrégation des contributeurs groupés par source API

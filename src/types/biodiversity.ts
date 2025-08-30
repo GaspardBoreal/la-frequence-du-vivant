@@ -132,4 +132,5 @@ export interface BiodiversityQuery {
   longitude: number;
   radius?: number;
   dateFilter?: 'recent' | 'medium';
+  mode?: 'interactive' | 'batch';
 }
