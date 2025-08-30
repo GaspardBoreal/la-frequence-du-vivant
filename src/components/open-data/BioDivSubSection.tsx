@@ -136,6 +136,14 @@ const BioDivSubSection: React.FC<BioDivSubSectionProps> = ({ marche, theme }) =>
   // Batch translation hook
   const { data: translations } = useSpeciesTranslationBatch(speciesForTranslation);
   
+  // Debug batch translations
+  console.log('🔧 BioDivSubSection batch translations:', {
+    total: translations?.length || 0,
+    fallbacks: translations?.filter(t => t.source === 'fallback').length || 0,
+    locals: translations?.filter(t => t.source === 'local').length || 0,
+    samples: translations?.slice(0, 3)
+  });
+  
   // Create translation map for efficient lookup
   const translationMap = useMemo(() => {
     if (!translations) return new Map();

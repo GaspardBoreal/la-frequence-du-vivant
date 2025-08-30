@@ -23,13 +23,34 @@ export const EnhancedSpeciesCard: React.FC<EnhancedSpeciesCardProps> = ({
   const [imageError, setImageError] = useState(false);
   const { playRecording, pause, currentRecording, isPlaying } = useGlobalAudioPlayer();
   
-  // Use prop translation if available, otherwise fetch individually (fallback)
-  const { data: fetchedTranslation } = useSpeciesTranslation(
-    propTranslation ? '' : species.scientificName, 
-    propTranslation ? '' : species.commonName
+  // Debug logs
+  console.log('🔧 EnhancedSpeciesCard debug:', {
+    scientificName: species.scientificName,
+    propTranslation: propTranslation,
+    propSource: propTranslation?.source,
+    propConfidence: propTranslation?.confidence
+  });
+
+  // Call edge function if we don't have a good French translation
+  const shouldCallEdgeFunction = !propTranslation || 
+    (propTranslation.source === 'fallback' && propTranslation.confidence === 'low');
+  
+  const { data: fetchedTranslation, isLoading: isTranslating } = useSpeciesTranslation(
+    shouldCallEdgeFunction ? species.scientificName : '', 
+    shouldCallEdgeFunction ? species.commonName : ''
   );
   
-  const translation = propTranslation || fetchedTranslation;
+  // Use fetched translation if available and better than prop, otherwise use prop
+  const translation = (fetchedTranslation && fetchedTranslation.source !== 'fallback') 
+    ? fetchedTranslation 
+    : (propTranslation || fetchedTranslation);
+
+  console.log('🔧 Translation result:', {
+    final: translation,
+    fetched: fetchedTranslation,
+    isTranslating,
+    shouldCallEdgeFunction
+  });
 
   const hasAudio = species.xenoCantoRecordings && species.xenoCantoRecordings.length > 0;
   const hasPhoto = species.photoData && species.photoData.source !== 'placeholder';
