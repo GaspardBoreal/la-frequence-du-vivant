@@ -32,6 +32,10 @@
     --input: 140 30% 15%;          /* Inputs moins foncés */
     --ring: 45 85% 75%;            /* Ring beige doré */
 
+    /* Paper/Ink tokens for readable white surface */
+    --paper: 0 0% 100%;
+    --ink: 0 0% 0%;
+
     --radius: 0.5rem;
   }
 
@@ -55,6 +59,10 @@
     --border: 140 30% 18%;
     --input: 140 30% 15%;
     --ring: 45 85% 75%;
+
+    /* Keep paper/ink consistent in dark mode for white cards */
+    --paper: 0 0% 100%;
+    --ink: 0 0% 0%;
   }
 }
 

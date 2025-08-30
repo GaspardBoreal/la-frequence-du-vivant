@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import { getTextTypeInfo } from '@/types/textTypes';
 import type { MarcheTexte } from '@/hooks/useMarcheTextes';
 import { cn } from '@/lib/utils';
-import DOMPurify from 'dompurify';
+import { sanitizeHtml } from '@/utils/htmlSanitizer';
 
 interface AdaptiveTextRendererProps {
   text: MarcheTexte;
@@ -17,10 +17,7 @@ export default function AdaptiveTextRenderer({ text, isActive }: AdaptiveTextRen
   // Format content based on text type
   const formatContent = (content: string, type: string) => {
     // Sanitize HTML content first
-    const sanitizedContent = DOMPurify.sanitize(content, {
-      ALLOWED_TAGS: ['div', 'p', 'br', 'strong', 'em', 'u', 'i', 'b', 'span'],
-      ALLOWED_ATTR: []
-    });
+    const sanitizedContent = sanitizeHtml(content);
 
     switch (type) {
       case 'haiku':
@@ -87,8 +84,8 @@ export default function AdaptiveTextRenderer({ text, isActive }: AdaptiveTextRen
       animate={{ opacity: isActive ? 1 : 0.7, y: 0 }}
       transition={{ duration: 0.3 }}
       className={cn(
-        "p-4 rounded-lg transition-all duration-300",
-        isActive ? "bg-background shadow-sm border" : "bg-muted/20",
+        "p-4 rounded-lg transition-all duration-300 border shadow-sm",
+        "bg-paper text-ink",
         style.spacing
       )}
     >
@@ -111,8 +108,8 @@ export default function AdaptiveTextRenderer({ text, isActive }: AdaptiveTextRen
         style.fontFamily === 'serif' ? 'font-serif' : style.fontFamily === 'monospace' ? 'font-mono' : 'font-sans',
         style.fontSize,
         style.lineHeight,
-        text.type_texte === 'haiku' ? 'text-center' : 
-        text.type_texte === 'fragment' ? 'text-center' : 'text-left'
+        (typeInfo.family === 'poetique' || text.type_texte === 'haiku' || text.type_texte === 'fragment') ? 'text-center' : 'text-left',
+        typeInfo.family === 'narrative' ? 'ml-8 md:ml-16 indent-8 md:indent-12' : ''
       )}>
         {formatContent(text.contenu, text.type_texte)}
       </div>
