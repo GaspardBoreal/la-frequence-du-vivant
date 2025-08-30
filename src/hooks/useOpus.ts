@@ -54,7 +54,7 @@ export const useMarcheContextes = (marcheId: string) => {
         .single();
       
       if (error) throw error;
-      return data as MarcheContexteHybrid;
+      return data as unknown as MarcheContexteHybrid;
     },
     enabled: !!marcheId
   });
@@ -144,7 +144,7 @@ export const usePrefigurations = (opusId: string) => {
         .order('ordre');
       
       if (error) throw error;
-      return data as PrefigurationInteractive[];
+      return data as unknown as PrefigurationInteractive[];
     },
     enabled: !!opusId
   });
@@ -158,7 +158,7 @@ export const useCreateMarcheContexte = () => {
     mutationFn: async (contexte: Omit<MarcheContexteHybrid, 'id' | 'created_at' | 'updated_at'>) => {
       const { data, error } = await supabase
         .from('marche_contextes_hybrids')
-        .insert(contexte)
+        .insert(contexte as any)
         .select()
         .single();
       
@@ -179,7 +179,7 @@ export const useUpdateMarcheContexte = () => {
     mutationFn: async ({ id, ...updates }: Partial<MarcheContexteHybrid> & { id: string }) => {
       const { data, error } = await supabase
         .from('marche_contextes_hybrids')
-        .update(updates)
+        .update(updates as any)
         .eq('id', id)
         .select()
         .single();
@@ -201,7 +201,7 @@ export const useCreateFable = () => {
     mutationFn: async (fable: Omit<FableNarrative, 'id' | 'created_at' | 'updated_at'>) => {
       const { data, error } = await supabase
         .from('fables_narratives')
-        .insert(fable)
+        .insert(fable as any)
         .select()
         .single();
       
@@ -222,7 +222,7 @@ export const useUpdateFable = () => {
     mutationFn: async ({ id, ...updates }: Partial<FableNarrative> & { id: string }) => {
       const { data, error } = await supabase
         .from('fables_narratives')
-        .update(updates)
+        .update(updates as any)
         .eq('id', id)
         .select()
         .single();
@@ -244,7 +244,7 @@ export const useCreatePrefiguration = () => {
     mutationFn: async (prefiguration: Omit<PrefigurationInteractive, 'id' | 'created_at' | 'updated_at'>) => {
       const { data, error } = await supabase
         .from('préfigurations_interactives')
-        .insert(prefiguration)
+        .insert(prefiguration as any)
         .select()
         .single();
       

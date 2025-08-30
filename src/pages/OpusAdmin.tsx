@@ -4,8 +4,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { SEOHead } from '@/components/SEOHead';
-import { DecorativeParticles } from '@/components/DecorativeParticles';
+import SEOHead from '@/components/SEOHead';
+import DecorativeParticles from '@/components/DecorativeParticles';
 import { OpusContexteEditor } from '@/components/opus/OpusContexteEditor';
 import { FableWorkshop } from '@/components/opus/FableWorkshop';
 import { PrefigurerInterface } from '@/components/opus/PrefigurerInterface';
@@ -143,7 +143,7 @@ const OpusAdmin: React.FC = () => {
               <CardContent>
                 <div className="text-center">
                   <div className="text-2xl font-bold text-orange-600">
-                    {marches?.reduce((acc, m) => acc + (m.fables?.length || 0), 0) || 0}
+                    {marches?.reduce((acc, m) => acc + (((m as any)?.fables?.length) || 0), 0) || 0}
                   </div>
                   <div className="text-sm text-muted-foreground">
                     Fables créées
@@ -154,7 +154,7 @@ const OpusAdmin: React.FC = () => {
 
             <Card 
               className={`cursor-pointer transition-all duration-300 hover:scale-105 ${
-                activeMode === 'prefigurer' ? 'ring-2 ring-purple-500 bg-purple-50' : 'hover:bg-slate-50'
+                (activeMode as string) === 'prefigurer' ? 'ring-2 ring-purple-500 bg-purple-50' : 'hover:bg-slate-50'
               }`}
               onClick={() => setActiveMode('prefigurer')}
             >
@@ -201,7 +201,7 @@ const OpusAdmin: React.FC = () => {
                               <MapPin className="h-5 w-5 text-blue-600 mt-1" />
                               <div className="flex-1">
                                 <CardTitle className="text-lg line-clamp-2">
-                                  {marche.nom_marche || marche.ville}
+                                  {marche.marche?.nom_marche || marche.marche?.ville}
                                 </CardTitle>
                                 <p className="text-sm text-muted-foreground">
                                   {marche.ville} • {marche.region}
