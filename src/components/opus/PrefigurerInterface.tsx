@@ -182,7 +182,7 @@ export const PrefigurerInterface: React.FC<PrefigurerInterfaceProps> = ({
             </div>
 
             {/* Navigation des dimensions */}
-            <div className="p-4 border-b bg-muted/20">
+            <div className="p-4 border-b bg-card/50 backdrop-blur-sm">
               <div className="flex flex-wrap gap-2">
                 {DIMENSION_CONFIG.map(dimension => {
                   const status = getDimensionStatus(selectedContexte, dimension.key);
@@ -194,15 +194,33 @@ export const PrefigurerInterface: React.FC<PrefigurerInterfaceProps> = ({
                       key={dimension.key}
                       variant={isSelected ? 'default' : 'outline'}
                       size="sm"
-                      className={`h-auto px-3 py-2 ${
-                        status === 'complete' && !isSelected ? 'border-green-500 bg-green-50 hover:bg-green-100' : ''
+                      className={`h-auto px-3 py-2 transition-all duration-200 ${
+                        isSelected 
+                          ? 'bg-primary text-primary-foreground shadow-md' 
+                          : status === 'complete' 
+                            ? 'border-green-500 bg-green-50 hover:bg-green-100 text-green-800 shadow-sm' 
+                            : 'bg-background/80 backdrop-blur-sm border-border hover:bg-accent hover:text-accent-foreground text-foreground'
                       }`}
                       onClick={() => setSelectedDimension(dimension.key)}
                     >
-                      <Icon className={`h-4 w-4 mr-2 ${dimension.color}`} />
-                      <span className="text-xs">{dimension.label}</span>
-                      {status === 'complete' && (
-                        <div className="ml-2 w-2 h-2 bg-green-500 rounded-full" />
+                      <Icon className={`h-4 w-4 mr-2 ${
+                        isSelected 
+                          ? 'text-primary-foreground' 
+                          : status === 'complete' 
+                            ? 'text-green-600' 
+                            : 'text-muted-foreground'
+                      }`} />
+                      <span className={`text-xs font-medium ${
+                        isSelected 
+                          ? 'text-primary-foreground' 
+                          : status === 'complete' 
+                            ? 'text-green-800' 
+                            : 'text-foreground'
+                      }`}>
+                        {dimension.label}
+                      </span>
+                      {status === 'complete' && !isSelected && (
+                        <div className="ml-2 w-2 h-2 bg-green-500 rounded-full shadow-sm" />
                       )}
                     </Button>
                   );
