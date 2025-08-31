@@ -637,9 +637,30 @@ export const OpusImportInterface: React.FC<OpusImportInterfaceProps> = ({
         </div>
       )}
 
-      {step === 'preview' && validation && preview && (
-        <div className="space-y-4">
-          {/* Validation */}
+      {step === 'preview' && validation && preview && (() => {
+        // DEBUG LOGS pour diagnostiquer le bouton manquant
+        console.log('🔍 DEBUG - État de la preview:', {
+          step,
+          validation: validation ? {
+            isValid: validation.isValid,
+            score: validation.score,
+            errorsCount: validation.errors?.length || 0,
+            warningsCount: validation.warnings?.length || 0
+          } : 'null',
+          preview: preview ? {
+            dimensions_count: preview.dimensions_count,
+            fables_count: preview.fables_count,
+            sources_count: preview.sources_count,
+            completude_score: preview.completude_score
+          } : 'null',
+          isProcessing,
+          currentMarcheId,
+          importData: !!importData
+        });
+        
+        return (
+          <div className="space-y-4">
+            {/* Validation */}
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -681,6 +702,17 @@ export const OpusImportInterface: React.FC<OpusImportInterfaceProps> = ({
                   </AlertDescription>
                 </Alert>
               )}
+
+              {/* Message informatif sur l'état du bouton */}
+              {!validation.isValid && (
+                <Alert className="mt-4 bg-yellow-50 border-yellow-200">
+                  <Info className="h-4 w-4 text-yellow-600" />
+                  <AlertDescription className="text-yellow-800">
+                    <strong>📋 Note importante:</strong> Malgré les erreurs de validation, vous pouvez toujours procéder à l'import. 
+                    Les données seront traitées et les erreurs pourront être corrigées manuellement après import.
+                  </AlertDescription>
+                </Alert>
+              )}
             </CardContent>
           </Card>
 
@@ -719,22 +751,41 @@ export const OpusImportInterface: React.FC<OpusImportInterfaceProps> = ({
             </Card>
           </div>
 
-          {/* Actions */}
+          {/* Actions - BOUTON TOUJOURS VISIBLE avec tooltip explicatif */}
           <div className="flex gap-2 justify-end">
             <Button variant="outline" onClick={reset}>
               Annuler
             </Button>
-            <Button 
-              onClick={executeImport}
-              disabled={!validation.isValid || isProcessing}
-              className="flex items-center gap-2"
-            >
-              <Upload className="h-4 w-4" />
-              {isProcessing ? 'Import...' : 'Valider l\'Import'}
-            </Button>
+            
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div>
+                    <Button 
+                      onClick={executeImport}
+                      disabled={isProcessing}
+                      className={`flex items-center gap-2 ${!validation.isValid ? 'bg-yellow-600 hover:bg-yellow-700 text-white' : ''}`}
+                      variant={!validation.isValid ? "default" : "default"}
+                    >
+                      <Upload className="h-4 w-4" />
+                      {isProcessing ? 'Import...' : !validation.isValid ? 'Forcer l\'Import' : 'Valider l\'Import'}
+                    </Button>
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent>
+                  {isProcessing ? (
+                    "Import en cours..."
+                  ) : !validation.isValid ? (
+                    "⚠️ Forcer l'import malgré les erreurs de validation. Les données seront importées et vous pourrez les corriger manuellement."
+                  ) : (
+                    "✅ Données validées - Procéder à l'import"
+                  )}
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           </div>
         </div>
-      )}
+      )})()}
 
       {step === 'importing' && (
         <Card>
