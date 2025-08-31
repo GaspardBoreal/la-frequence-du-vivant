@@ -427,7 +427,7 @@ const ExplorationImports: React.FC = () => {
                         <CardContent>
                           <div className="grid grid-cols-4 gap-4 mb-4 text-center">
                             <div>
-                              <div className="text-xl font-bold text-primary">
+                              <div className="text-xl font-bold text-white">
                                 {importRecord.completude_score}%
                               </div>
                               <div className="text-xs text-muted-foreground">
