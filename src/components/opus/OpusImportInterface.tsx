@@ -6,6 +6,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Progress } from '@/components/ui/progress';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import { useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -85,7 +86,7 @@ export const OpusImportInterface: React.FC<OpusImportInterfaceProps> = ({
   const [selectedMarcheName, setSelectedMarcheName] = useState<string>(marcheName);
 
   // Get exploration marches when no specific marche is selected
-  const { data: explorationMarches = [] } = useExplorationMarches(explorationId || '');
+  const { data: explorationMarches = [], isLoading: marchesLoading } = useExplorationMarches(explorationId || '');
   
   // Determine current marche values
   const currentMarcheId = selectedMarcheId || marcheId;
@@ -419,7 +420,7 @@ export const OpusImportInterface: React.FC<OpusImportInterfaceProps> = ({
       {step === 'input' && (
         <div className="space-y-6">
           {/* Sélecteur de marche si pas de marche spécifique fournie */}
-          {!marcheId && explorationId && explorationMarches.length > 0 && (
+          {!marcheId && explorationId && (marchesLoading || explorationMarches.length > 0) && (
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
@@ -428,38 +429,45 @@ export const OpusImportInterface: React.FC<OpusImportInterfaceProps> = ({
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <Select 
-                  value={selectedMarcheId} 
-                  onValueChange={(value) => {
-                    setSelectedMarcheId(value);
-                    const selectedMarche = explorationMarches.find(em => em.marche?.id === value);
-                    setSelectedMarcheName(selectedMarche?.marche?.nom_marche || selectedMarche?.marche?.ville || 'Marche sélectionnée');
-                    // Reset et pré-remplit quand on change de marche
-                    setImportData(null);
-                    setValidation(null);
-                    setPreview(null);
-                    setValidationErrors([]);
-                    // Le useEffect se chargera du pré-remplissage automatique
-                  }}
-                >
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Choisissez une marche pour l'import..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {explorationMarches.map((explorationMarche) => (
-                      <SelectItem key={explorationMarche.marche?.id} value={explorationMarche.marche?.id || ''}>
-                        <div className="flex flex-col">
-                          <span className="font-medium">
-                            {explorationMarche.marche?.nom_marche || explorationMarche.marche?.ville}
-                          </span>
-                          <span className="text-sm text-muted-foreground">
-                            {explorationMarche.marche?.descriptif_court}
-                          </span>
-                        </div>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                {marchesLoading ? (
+                  <div className="space-y-2">
+                    <Skeleton className="h-10 w-full" />
+                    <div className="text-sm text-muted-foreground">Chargement des marches disponibles...</div>
+                  </div>
+                ) : (
+                  <Select 
+                    value={selectedMarcheId} 
+                    onValueChange={(value) => {
+                      setSelectedMarcheId(value);
+                      const selectedMarche = explorationMarches.find(em => em.marche?.id === value);
+                      setSelectedMarcheName(selectedMarche?.marche?.nom_marche || selectedMarche?.marche?.ville || 'Marche sélectionnée');
+                      // Reset et pré-remplit quand on change de marche
+                      setImportData(null);
+                      setValidation(null);
+                      setPreview(null);
+                      setValidationErrors([]);
+                      // Le useEffect se chargera du pré-remplissage automatique
+                    }}
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Choisissez une marche pour l'import..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {explorationMarches.map((explorationMarche) => (
+                        <SelectItem key={explorationMarche.marche?.id} value={explorationMarche.marche?.id || ''}>
+                          <div className="flex flex-col">
+                            <span className="font-medium">
+                              {explorationMarche.marche?.nom_marche || explorationMarche.marche?.ville}
+                            </span>
+                            <span className="text-sm text-muted-foreground">
+                              {explorationMarche.marche?.descriptif_court}
+                            </span>
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
               </CardContent>
             </Card>
           )}
