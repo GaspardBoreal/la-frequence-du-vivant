@@ -294,19 +294,31 @@ export const OpusImportInterface: React.FC<OpusImportInterfaceProps> = ({
 
       if (result.success) {
         setStep('success');
+        
+        // SUCCESS LOGS pour debugging
+        console.log('🎉 Import réussi - Callback onSuccess va être appelé');
+        console.log('📊 Données importées:', result);
+        
         toast({
-          title: "Import réussi",
-          description: `Données IA importées pour ${currentMarcheName}`
+          title: "✅ Import réussi",
+          description: `Données IA importées pour ${currentMarcheName}. Rechargement automatique...`,
+          variant: "default"
         });
-        onSuccess?.();
-
-        // Invalidate all relevant queries
+        
+        // Invalidate all relevant queries AVANT d'appeler onSuccess
         await queryClient.invalidateQueries({
           queryKey: ['marche-contextes'],
         });
         await queryClient.invalidateQueries({
           queryKey: ['opus-contextes'],
         });
+        await queryClient.invalidateQueries({
+          queryKey: ['imports-data'],
+        });
+        
+        // Appeler le callback après invalidation des caches
+        console.log('🔄 Appel du callback onSuccess pour recharger le dashboard');
+        onSuccess?.();
       } else {
         throw new Error(result.error || 'Erreur d\'import');
       }

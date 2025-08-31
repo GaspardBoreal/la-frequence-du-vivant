@@ -27,6 +27,7 @@ import { useSupabaseMarches } from '@/hooks/useSupabaseMarches';
 import { useExplorations } from '@/hooks/useExplorations';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { useQueryClient } from '@tanstack/react-query';
 import { ModernImportCard } from './ModernImportCard';
 import { ModernImportFilters } from './ModernImportFilters';
 import { ModernImportDetailModal } from './ModernImportDetailModal';
@@ -52,6 +53,7 @@ export const ModernImportDashboard: React.FC = () => {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   
   const [imports, setImports] = useState<ImportRecord[]>([]);
   const [filteredImports, setFilteredImports] = useState<ImportRecord[]>([]);
@@ -92,8 +94,18 @@ export const ModernImportDashboard: React.FC = () => {
   const loadImports = async () => {
     if (!exploration) return;
     
+    console.log('🔄 loadImports appelé pour exploration:', exploration.id);
     setLoading(true);
+    
     try {
+      // Invalider les caches React Query AVANT de recharger
+      await queryClient.invalidateQueries({ 
+        queryKey: ['marche-contextes'] 
+      });
+      await queryClient.invalidateQueries({ 
+        queryKey: ['opus-contextes'] 
+      });
+      
       // Récupérer les contextes
       const { data: contextes, error: contextError } = await supabase
         .from('marche_contextes_hybrids')
@@ -496,8 +508,20 @@ export const ModernImportDashboard: React.FC = () => {
               marcheName=""
               explorationId={exploration.id}
               onSuccess={() => {
+                console.log('🎉 Import terminé - Fermeture modal et rechargement');
                 setImportModalOpen(false);
-                loadImports();
+                
+                // Toast informatif pour l'utilisateur
+                toast({
+                  title: "✅ Import terminé !",
+                  description: "Actualisation des données...",
+                  variant: "default"
+                });
+                
+                // Recharger les données avec un léger délai pour laisser le temps à la DB de se mettre à jour
+                setTimeout(() => {
+                  loadImports();
+                }, 500);
               }}
               onClose={() => setImportModalOpen(false)}
             />
