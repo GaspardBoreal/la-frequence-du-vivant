@@ -5,7 +5,7 @@ import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from '@/components/ui/drawer';
 import { Badge } from '@/components/ui/badge';
-import { useOpusContextes } from '@/hooks/useOpus';
+import { useOpusContextes, useOpusExplorations } from '@/hooks/useOpus';
 import { useExplorations } from '@/hooks/useExplorations';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { OpusDimensionEditor } from './OpusDimensionEditor';
@@ -31,9 +31,21 @@ export const PrefigurerInterface: React.FC<PrefigurerInterfaceProps> = ({
   opusSlug,
   onClose
 }) => {
+  console.log('PrefigurerInterface - opusSlug:', opusSlug);
+  
+  // Try to get OPUS exploration first, then fallback to regular exploration
+  const { data: opusExplorations } = useOpusExplorations();
   const { data: explorations } = useExplorations();
+  
+  const opusExploration = opusExplorations?.find(exp => exp.slug === opusSlug);
   const exploration = explorations?.find(exp => exp.slug === opusSlug);
-  const { data: opusContextes = [], isLoading } = useOpusContextes(exploration?.id || '');
+  
+  // Use OPUS exploration ID if available, otherwise fallback to exploration ID
+  const targetId = opusExploration?.id || exploration?.id || '';
+  
+  console.log('Target ID resolved:', { opusExploration: opusExploration?.id, exploration: exploration?.id, targetId });
+  
+  const { data: opusContextes = [], isLoading, error } = useOpusContextes(targetId);
   const isMobile = useIsMobile();
   
   const [selectedMarche, setSelectedMarche] = useState<string | null>(null);
@@ -179,8 +191,55 @@ export const PrefigurerInterface: React.FC<PrefigurerInterfaceProps> = ({
       
       <main className="container mx-auto px-4 py-8">
         {isLoading ? (
-          <div className="text-center py-12">
+          <div className="flex items-center justify-center py-12">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mr-3"></div>
             <p className="text-muted-foreground">Chargement des contextes OPUS...</p>
+          </div>
+        ) : error ? (
+          <div className="space-y-6">
+            <OpusDebugInterface opusSlug={opusSlug} />
+            
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <AlertTriangle className="w-5 h-5 text-red-500" />
+                  Erreur de chargement
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-muted-foreground mb-4">
+                  Impossible de charger les contextes OPUS.
+                </p>
+                <p className="text-sm text-red-600 font-mono bg-red-50 p-2 rounded">
+                  {error.message || 'Erreur inconnue'}
+                </p>
+                <Button onClick={() => window.location.reload()} className="mt-4">
+                  Actualiser la page
+                </Button>
+              </CardContent>
+            </Card>
+          </div>
+        ) : !targetId ? (
+          <div className="space-y-6">
+            <OpusDebugInterface opusSlug={opusSlug} />
+            
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <AlertTriangle className="w-5 h-5 text-orange-500" />
+                  Exploration non trouvée
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-muted-foreground mb-4">
+                  L'exploration avec le slug "{opusSlug}" n'a pas été trouvée.
+                </p>
+                <Button onClick={onClose} variant="outline">
+                  <ArrowLeft className="w-4 h-4 mr-2" />
+                  Retourner
+                </Button>
+              </CardContent>
+            </Card>
           </div>
         ) : opusContextes.length === 0 ? (
           <div className="space-y-6">

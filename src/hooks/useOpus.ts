@@ -68,26 +68,59 @@ export const useOpusContextes = (opusId: string) => {
   return useQuery({
     queryKey: ['opus-contextes', opusId],
     queryFn: async (): Promise<Array<MarcheContexteHybrid & { marches: { nom_marche: string; ville: string; } }>> => {
-      const { data, error } = await supabase
+      console.log('Fetching OPUS contextes for opusId:', opusId);
+      
+      // First, get the contextes
+      const { data: contextes, error: contextesError } = await supabase
         .from('marche_contextes_hybrids')
-        .select(`
-          *,
-          marches!inner (
-            nom_marche,
-            ville
-          )
-        `)
+        .select('*')
         .eq('opus_id', opusId)
         .not('opus_id', 'is', null);
 
-      if (error) {
-        console.error('Error fetching opus contextes:', error);
-        throw error;
+      if (contextesError) {
+        console.error('Error fetching opus contextes:', contextesError);
+        throw contextesError;
       }
+
+      if (!contextes || contextes.length === 0) {
+        console.log('No contextes found for opusId:', opusId);
+        return [];
+      }
+
+      // Get marche IDs from contextes
+      const marcheIds = contextes.map(c => c.marche_id).filter(Boolean);
       
-      return data as unknown as Array<MarcheContexteHybrid & { marches: { nom_marche: string; ville: string; } }>;
+      if (marcheIds.length === 0) {
+        console.log('No marche IDs found in contextes');
+        return contextes.map(c => ({ ...c, marches: { nom_marche: 'Marche inconnue', ville: '' } })) as any;
+      }
+
+      // Then, get the marches data separately
+      const { data: marches, error: marchesError } = await supabase
+        .from('marches')
+        .select('id, nom_marche, ville')
+        .in('id', marcheIds);
+
+      if (marchesError) {
+        console.error('Error fetching marches:', marchesError);
+        // Don't throw here, just use empty marches data
+      }
+
+      // Merge the data
+      const result = contextes.map(contexte => {
+        const marche = marches?.find(m => m.id === contexte.marche_id);
+        return {
+          ...contexte,
+          marches: marche ? { nom_marche: marche.nom_marche, ville: marche.ville } : { nom_marche: 'Marche inconnue', ville: '' }
+        };
+      }) as any;
+
+      console.log('Successfully fetched OPUS contextes:', result.length);
+      return result;
     },
     enabled: !!opusId,
+    retry: 2, // Limit retries to prevent infinite loading
+    staleTime: 5 * 60 * 1000, // 5 minutes
   });
 };
 
