@@ -40,6 +40,7 @@ interface MarcheContextData {
   contexte?: any;
   photos: any[];
   audio: any[];
+  textes: any[];
 }
 
 const EXPERIENCE_CONFIGS = {
@@ -204,7 +205,8 @@ export const PrefigurerInterface: React.FC<PrefigurerInterfaceProps> = ({
         nom_marche: em.marche?.nom_marche,
         ville: em.marche?.ville || '',
         photos: em.marche?.photos || [],
-        audio: em.marche?.audio || []
+        audio: em.marche?.audio || [],
+        textes: [...(em.marche?.textes || []), ...(em.marche?.etudes || [])]
       }));
     }
     
@@ -216,7 +218,8 @@ export const PrefigurerInterface: React.FC<PrefigurerInterfaceProps> = ({
       nom_marche: marche.marche.nom_marche,
       ville: marche.marche.ville,
       photos: marche.marche.photos || [],
-      audio: marche.marche.audio || []
+      audio: marche.marche.audio || [],
+      textes: [...(marche.marche.textes || []), ...(marche.marche.etudes || [])]
     }];
   };
 
@@ -476,6 +479,8 @@ export const PrefigurerInterface: React.FC<PrefigurerInterfaceProps> = ({
                                 <span>{contexte.photos.length} photos</span>
                                 <span>•</span>
                                 <span>{contexte.audio.length} audio</span>
+                                <span>•</span>
+                                <span>{contexte.textes.length} textes</span>
                               </div>
                             </CardContent>
                           </Card>

@@ -92,6 +92,13 @@ export interface ExplorationMarcheComplete extends ExplorationMarche {
       resume?: string;
       ordre: number;
     }>;
+    textes: Array<{
+      id: string;
+      titre: string;
+      contenu: string;
+      type_texte: string;
+      ordre?: number;
+    }>;
     tags: Array<{
       id: string;
       tag: string;
@@ -211,12 +218,13 @@ export const useExplorationMarches = (explorationId: string) => {
           const marcheId = explorationMarche.marche.id;
           
           // Récupérer tous les médias en parallèle
-          const [photosResult, audioResult, videosResult, documentsResult, etudesResult, tagsResult] = await Promise.all([
+          const [photosResult, audioResult, videosResult, documentsResult, etudesResult, textesResult, tagsResult] = await Promise.all([
             supabase.from('marche_photos').select('*').eq('marche_id', marcheId).order('ordre'),
             supabase.from('marche_audio').select('*').eq('marche_id', marcheId).order('ordre'),
             supabase.from('marche_videos').select('*').eq('marche_id', marcheId).order('ordre'),
             supabase.from('marche_documents').select('*').eq('marche_id', marcheId).order('ordre'),
             supabase.from('marche_etudes').select('*').eq('marche_id', marcheId).order('ordre'),
+            supabase.from('marche_textes').select('*').eq('marche_id', marcheId).order('ordre'),
             supabase.from('marche_tags').select('*').eq('marche_id', marcheId)
           ]);
           
@@ -229,6 +237,7 @@ export const useExplorationMarches = (explorationId: string) => {
               videos: videosResult.data || [],
               documents: documentsResult.data || [],
               etudes: etudesResult.data || [],
+              textes: textesResult.data || [],
               tags: tagsResult.data || []
             }
           };
