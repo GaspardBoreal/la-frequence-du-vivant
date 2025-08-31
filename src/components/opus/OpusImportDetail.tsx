@@ -287,22 +287,22 @@ export const OpusImportDetail: React.FC<OpusImportDetailProps> = ({
                             <span className="text-muted-foreground">{source.auteur}</span>
                           </div>
                         )}
-                        {source.date && (
+                        {(source.date || source.date_publication) && (
                           <div className="flex justify-between">
                             <span className="font-medium">Date:</span>
-                            <span className="text-muted-foreground">{source.date}</span>
+                            <span className="text-muted-foreground">{source.date || source.date_publication}</span>
                           </div>
                         )}
-                        {source.url && (
+                        {(source.url || source.lien || source.link) && (
                           <div className="flex justify-between">
                             <span className="font-medium">URL:</span>
                             <a 
-                              href={source.url} 
+                              href={source.url || source.lien || source.link} 
                               target="_blank" 
                               rel="noopener noreferrer"
-                              className="text-primary hover:underline text-sm"
+                              className="text-white underline break-all text-sm hover:text-white/80"
                             >
-                              {source.url}
+                              {source.url || source.lien || source.link}
                             </a>
                           </div>
                         )}
