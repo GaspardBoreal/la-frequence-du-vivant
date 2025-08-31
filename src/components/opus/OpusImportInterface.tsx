@@ -100,31 +100,64 @@ export const OpusImportInterface: React.FC<OpusImportInterfaceProps> = ({
   }, [jsonContent, marcheId, explorationId, toast]);
 
   const previewImport = async () => {
+    console.log('🚀 Starting preview import...');
+    
     const data = parseAndValidateJson();
-    if (!data) return;
+    if (!data) {
+      console.log('❌ No valid data to preview');
+      return;
+    }
+
+    console.log('📊 Data to preview:', {
+      exploration_id: data.exploration_id,
+      marche_id: data.marche_id,
+      has_dimensions: !!data.dimensions,
+      dimensions_keys: data.dimensions ? Object.keys(data.dimensions) : []
+    });
 
     setIsProcessing(true);
     try {
+      console.log('🔄 Calling opus-import-ai function...');
+      
       const { data: result, error } = await supabase.functions.invoke('opus-import-ai', {
         body: { data, preview: true }
       });
 
-      if (error) throw error;
+      console.log('📥 Function response:', { result, error });
+
+      if (error) {
+        console.error('❌ Function error:', error);
+        throw error;
+      }
+
+      if (!result) {
+        throw new Error('Aucune réponse de la fonction');
+      }
+
+      if (!result.validation) {
+        console.error('❌ No validation in result:', result);
+        throw new Error('Réponse invalide: validation manquante');
+      }
 
       setValidation(result.validation);
       setPreview(result.preview);
       setStep('preview');
 
+      console.log('✅ Preview successful:', {
+        dimensions_count: result.preview?.dimensions_count,
+        validation_score: result.validation?.score
+      });
+
       toast({
         title: "Prévisualisation générée",
-        description: `${result.preview.dimensions_count} dimensions détectées`
+        description: `${result.preview?.dimensions_count || 0} dimensions détectées`
       });
 
     } catch (error) {
-      console.error('Preview error:', error);
+      console.error('💥 Preview error:', error);
       toast({
         title: "Erreur de prévisualisation",
-        description: error.message,
+        description: error.message || "Erreur inconnue",
         variant: "destructive"
       });
     } finally {
@@ -232,11 +265,26 @@ export const OpusImportInterface: React.FC<OpusImportInterfaceProps> = ({
         <div>
           <h2 className="text-2xl font-bold flex items-center gap-2">
             <Bot className="h-6 w-6 text-blue-600" />
-            Import IA - {marcheName}
+            Import IA - Données OPUS
           </h2>
           <p className="text-muted-foreground">
             Importez les données sourcées par votre IA pour enrichir automatiquement toutes les dimensions
           </p>
+          
+          {/* Indicateurs contexte */}
+          <div className="flex gap-4 mt-3 text-sm">
+            <Badge variant="outline" className="font-mono">
+              Marche: {marcheName}
+            </Badge>
+            <Badge variant="outline" className="font-mono">
+              ID: {marcheId}
+            </Badge>
+            {explorationId && (
+              <Badge variant="outline" className="font-mono">
+                Exploration: {explorationId}
+              </Badge>
+            )}
+          </div>
         </div>
         {onClose && (
           <Button variant="outline" size="sm" onClick={onClose}>
@@ -256,33 +304,90 @@ export const OpusImportInterface: React.FC<OpusImportInterfaceProps> = ({
           <CardContent className="space-y-4">
             <Textarea
               placeholder={`{
+  "exploration_id": "${explorationId || 'uuid-de-lexploration'}",
+  "marche_id": "${marcheId}",
   "dimensions": {
-    "contexte_hydrologique": { ... },
-    "especes_caracteristiques": { ... },
-    ...
+    "contexte_hydrologique": {
+      "description": "Contexte hydrologique du site",
+      "données": { ... }
+    },
+    "especes_caracteristiques": {
+      "description": "Espèces caractéristiques de la zone",
+      "données": { ... }
+    }
   },
-  "fables": [ ... ],
-  "sources": [ ... ],
-  "metadata": { ... }
+  "fables": [
+    {
+      "titre": "Titre de la fable",
+      "contenu": "Contenu narratif...",
+      "ordre": 1
+    }
+  ],
+  "sources": [
+    {
+      "nom": "Source des données",
+      "url": "https://...",
+      "type": "web"
+    }
+  ],
+  "metadata": {
+    "ai_model": "gpt-4",
+    "sourcing_date": "${new Date().toISOString().split('T')[0]}",
+    "validation_level": "automatique",
+    "quality_score": 85,
+    "completeness_score": 90
+  }
 }`}
               value={jsonContent}
               onChange={(e) => setJsonContent(e.target.value)}
-              className="min-h-[200px] font-mono text-sm"
+              className="min-h-[300px] font-mono text-sm"
             />
             
-            <div className="flex gap-2">
+            <div className="flex gap-2 justify-between">
               <Button 
-                onClick={previewImport}
-                disabled={!jsonContent.trim() || isProcessing}
+                variant="outline"
+                onClick={() => {
+                  const template = `{
+  "exploration_id": "${explorationId || 'uuid-de-lexploration'}",
+  "marche_id": "${marcheId}",
+  "dimensions": {
+    "contexte_hydrologique": {
+      "description": "Contexte hydrologique du site",
+      "données": {}
+    }
+  },
+  "fables": [],
+  "sources": [],
+  "metadata": {
+    "ai_model": "gpt-4",
+    "sourcing_date": "${new Date().toISOString().split('T')[0]}",
+    "validation_level": "automatique",
+    "quality_score": 85,
+    "completeness_score": 90
+  }
+}`;
+                  setJsonContent(template);
+                }}
                 className="flex items-center gap-2"
               >
-                <Eye className="h-4 w-4" />
-                {isProcessing ? 'Analyse...' : 'Prévisualiser'}
+                <FileJson className="h-4 w-4" />
+                Template
               </Button>
               
-              <Button variant="outline" onClick={reset} disabled={isProcessing}>
-                Effacer
-              </Button>
+              <div className="flex gap-2">
+                <Button 
+                  onClick={previewImport}
+                  disabled={!jsonContent.trim() || isProcessing}
+                  className="flex items-center gap-2"
+                >
+                  <Eye className="h-4 w-4" />
+                  {isProcessing ? 'Analyse...' : 'Prévisualiser'}
+                </Button>
+                
+                <Button variant="outline" onClick={reset} disabled={isProcessing}>
+                  Effacer
+                </Button>
+              </div>
             </div>
           </CardContent>
         </Card>

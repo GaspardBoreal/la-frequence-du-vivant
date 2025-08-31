@@ -135,18 +135,28 @@ serve(async (req) => {
 
     // Mode preview - retourne seulement la validation
     if (preview) {
+      console.log('[OPUS Import] Preview mode - calculating completude...');
+      
       const completude = await calculateCompletude(importData.dimensions);
+      
+      console.log('[OPUS Import] Preview response:', {
+        validation_score: validation.score,
+        completude_score: completude,
+        dimensions_count: Object.keys(importData.dimensions || {}).length,
+        fables_count: importData.fables?.length || 0,
+        sources_count: importData.sources?.length || 0
+      });
       
       return new Response(
         JSON.stringify({
           success: true,
           validation,
           preview: {
-            dimensions_count: Object.keys(importData.dimensions).length,
+            dimensions_count: Object.keys(importData.dimensions || {}).length,
             fables_count: importData.fables?.length || 0,
-            sources_count: importData.sources.length,
-            completude_score: completude,
-            quality_score: importData.metadata.quality_score
+            sources_count: importData.sources?.length || 0,
+            completude_score: Math.round(completude),
+            quality_score: importData.metadata?.quality_score || 0
           }
         }),
         { 
