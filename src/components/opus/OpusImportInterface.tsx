@@ -5,9 +5,11 @@ import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Progress } from '@/components/ui/progress';
 import { Textarea } from '@/components/ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { useExplorationMarches } from '@/hooks/useExplorations';
 import { 
   Upload, 
   FileJson, 
@@ -79,6 +81,15 @@ export const OpusImportInterface: React.FC<OpusImportInterfaceProps> = ({
   const [isProcessing, setIsProcessing] = useState(false);
   const [step, setStep] = useState<'input' | 'preview' | 'importing' | 'success'>('input');
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
+  const [selectedMarcheId, setSelectedMarcheId] = useState<string>(marcheId);
+  const [selectedMarcheName, setSelectedMarcheName] = useState<string>(marcheName);
+
+  // Get exploration marches when no specific marche is selected
+  const { data: explorationMarches = [] } = useExplorationMarches(explorationId || '');
+  
+  // Determine current marche values
+  const currentMarcheId = selectedMarcheId || marcheId;
+  const currentMarcheName = selectedMarcheName || marcheName;
 
   const parseAndValidateJson = useCallback(() => {
     const errors: string[] = [];
@@ -106,7 +117,7 @@ export const OpusImportInterface: React.FC<OpusImportInterfaceProps> = ({
       // Compléter avec les IDs requis
       const completeData: ImportData = {
         ...parsed,
-        marche_id: marcheId,
+        marche_id: currentMarcheId,
         exploration_id: explorationId || parsed.exploration_id
       };
       
@@ -118,7 +129,7 @@ export const OpusImportInterface: React.FC<OpusImportInterfaceProps> = ({
       setValidationErrors(errors);
       return null;
     }
-  }, [jsonContent, marcheId, explorationId]);
+  }, [jsonContent, currentMarcheId, explorationId]);
 
   const previewImport = async () => {
     console.log('🚀 Starting preview import...');
@@ -203,7 +214,7 @@ export const OpusImportInterface: React.FC<OpusImportInterfaceProps> = ({
         setStep('success');
         toast({
           title: "Import réussi",
-          description: `Données IA importées pour ${marcheName}`
+          description: `Données IA importées pour ${currentMarcheName}`
         });
         onSuccess?.();
 
@@ -257,7 +268,7 @@ export const OpusImportInterface: React.FC<OpusImportInterfaceProps> = ({
           <CardTitle className="text-2xl text-green-600">Import Réussi !</CardTitle>
         </CardHeader>
         <CardContent className="text-center space-y-4">
-          <p>Les données IA ont été importées avec succès pour <strong>{marcheName}</strong></p>
+          <p>Les données IA ont été importées avec succès pour <strong>{currentMarcheName}</strong></p>
           
           {preview && (
             <div className="grid grid-cols-2 gap-4 mt-6">
@@ -306,10 +317,10 @@ export const OpusImportInterface: React.FC<OpusImportInterfaceProps> = ({
           {/* Indicateurs contexte */}
           <div className="flex gap-4 mt-3 text-sm">
             <Badge variant="outline" className="font-mono">
-              Marche: {marcheName}
+              Marche: {currentMarcheName || 'Non sélectionnée'}
             </Badge>
             <Badge variant="outline" className="font-mono">
-              ID: {marcheId}
+              ID: {currentMarcheId || 'N/A'}
             </Badge>
             {explorationId && (
               <Badge variant="outline" className="font-mono">
@@ -326,18 +337,65 @@ export const OpusImportInterface: React.FC<OpusImportInterfaceProps> = ({
       </div>
 
       {step === 'input' && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <FileJson className="h-5 w-5" />
-              Données JSON IA
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
+        <div className="space-y-6">
+          {/* Sélecteur de marche si pas de marche spécifique fournie */}
+          {!marcheId && explorationId && explorationMarches.length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Database className="h-5 w-5" />
+                  Sélection de la marche
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <Select 
+                  value={selectedMarcheId} 
+                  onValueChange={(value) => {
+                    setSelectedMarcheId(value);
+                    const selectedMarche = explorationMarches.find(em => em.marche?.id === value);
+                    setSelectedMarcheName(selectedMarche?.marche?.nom_marche || selectedMarche?.marche?.ville || 'Marche sélectionnée');
+                    // Reset les données quand on change de marche
+                    setJsonContent('');
+                    setImportData(null);
+                    setValidation(null);
+                    setPreview(null);
+                    setValidationErrors([]);
+                  }}
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Choisissez une marche pour l'import..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {explorationMarches.map((explorationMarche) => (
+                      <SelectItem key={explorationMarche.marche?.id} value={explorationMarche.marche?.id || ''}>
+                        <div className="flex flex-col">
+                          <span className="font-medium">
+                            {explorationMarche.marche?.nom_marche || explorationMarche.marche?.ville}
+                          </span>
+                          <span className="text-sm text-muted-foreground">
+                            {explorationMarche.marche?.descriptif_court}
+                          </span>
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </CardContent>
+            </Card>
+          )}
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <FileJson className="h-5 w-5" />
+                Données JSON IA
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
             <Textarea
               placeholder={`{
   "exploration_id": "${explorationId || 'uuid-de-lexploration'}",
-  "marche_id": "${marcheId}",
+  "marche_id": "${currentMarcheId || 'uuid-de-la-marche'}",
   "dimensions": {
     "contexte_hydrologique": {
       "description": "Contexte hydrologique du site",
@@ -396,7 +454,7 @@ export const OpusImportInterface: React.FC<OpusImportInterfaceProps> = ({
                 onClick={() => {
                   const template = `{
   "exploration_id": "${explorationId || 'uuid-de-lexploration'}",
-  "marche_id": "${marcheId}",
+  "marche_id": "${currentMarcheId || 'uuid-de-la-marche'}",
   "dimensions": {
     "contexte_hydrologique": {
       "description": "Contexte hydrologique du site d'étude",
@@ -457,7 +515,7 @@ export const OpusImportInterface: React.FC<OpusImportInterfaceProps> = ({
               <div className="flex gap-2">
                 <Button 
                   onClick={previewImport}
-                  disabled={!jsonContent.trim() || isProcessing}
+                  disabled={!jsonContent.trim() || isProcessing || (!marcheId && !currentMarcheId)}
                   className="flex items-center gap-2"
                 >
                   <Eye className="h-4 w-4" />
@@ -484,7 +542,7 @@ export const OpusImportInterface: React.FC<OpusImportInterfaceProps> = ({
                               executeImport();
                             }
                           }}
-                          disabled={validationErrors.length > 0 || !jsonContent.trim() || isProcessing}
+                          disabled={validationErrors.length > 0 || !jsonContent.trim() || isProcessing || (!marcheId && !currentMarcheId)}
                           className="flex items-center gap-2"
                         >
                           <Upload className="h-4 w-4" />
@@ -495,6 +553,8 @@ export const OpusImportInterface: React.FC<OpusImportInterfaceProps> = ({
                     <TooltipContent>
                       {!jsonContent.trim() ? (
                         "Ajoutez des données JSON pour activer l'import"
+                      ) : (!marcheId && !currentMarcheId) ? (
+                        "Sélectionnez une marche avant d'importer"
                       ) : validationErrors.length > 0 ? (
                         "Corrigez les erreurs avant d'importer"
                       ) : (
@@ -507,6 +567,7 @@ export const OpusImportInterface: React.FC<OpusImportInterfaceProps> = ({
             </div>
           </CardContent>
         </Card>
+        </div>
       )}
 
       {step === 'preview' && validation && preview && (
@@ -614,7 +675,7 @@ export const OpusImportInterface: React.FC<OpusImportInterfaceProps> = ({
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
             <h3 className="text-lg font-semibold mb-2">Import en cours...</h3>
             <p className="text-muted-foreground">
-              Traitement des données IA pour {marcheName}
+              Traitement des données IA pour {currentMarcheName}
             </p>
           </CardContent>
         </Card>
