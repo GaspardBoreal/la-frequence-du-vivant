@@ -19,8 +19,10 @@ import {
   Bot,
   Link,
   BookOpen,
-  BarChart3
+  BarChart3,
+  Info
 } from 'lucide-react';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface ImportData {
   exploration_id: string;
@@ -75,11 +77,31 @@ export const OpusImportInterface: React.FC<OpusImportInterfaceProps> = ({
   const [preview, setPreview] = useState<PreviewData | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [step, setStep] = useState<'input' | 'preview' | 'importing' | 'success'>('input');
+  const [validationErrors, setValidationErrors] = useState<string[]>([]);
 
   const parseAndValidateJson = useCallback(() => {
+    const errors: string[] = [];
+    
     try {
+      if (!jsonContent.trim()) {
+        errors.push("Aucune donnée JSON saisie");
+        setValidationErrors(errors);
+        return null;
+      }
+
       const parsed = JSON.parse(jsonContent);
       
+      // Validation basique
+      if (!parsed.dimensions || Object.keys(parsed.dimensions).length === 0) {
+        errors.push("Au moins une dimension est requise");
+      }
+      if (!parsed.sources || !Array.isArray(parsed.sources)) {
+        errors.push("Le champ 'sources' est requis et doit être un tableau");
+      }
+      if (!parsed.metadata) {
+        errors.push("Les métadonnées sont requises");
+      }
+
       // Compléter avec les IDs requis
       const completeData: ImportData = {
         ...parsed,
@@ -87,17 +109,15 @@ export const OpusImportInterface: React.FC<OpusImportInterfaceProps> = ({
         exploration_id: explorationId || parsed.exploration_id
       };
       
+      setValidationErrors(errors);
       setImportData(completeData);
-      return completeData;
+      return errors.length === 0 ? completeData : null;
     } catch (error) {
-      toast({
-        title: "Erreur JSON",
-        description: "Format JSON invalide",
-        variant: "destructive"
-      });
+      errors.push("Format JSON invalide - vérifiez la syntaxe");
+      setValidationErrors(errors);
       return null;
     }
-  }, [jsonContent, marcheId, explorationId, toast]);
+  }, [jsonContent, marcheId, explorationId]);
 
   const previewImport = async () => {
     console.log('🚀 Starting preview import...');
@@ -258,6 +278,15 @@ export const OpusImportInterface: React.FC<OpusImportInterfaceProps> = ({
     );
   }
 
+  // Valider JSON en temps réel
+  React.useEffect(() => {
+    if (jsonContent.trim()) {
+      parseAndValidateJson();
+    } else {
+      setValidationErrors([]);
+    }
+  }, [jsonContent, parseAndValidateJson]);
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -343,6 +372,21 @@ export const OpusImportInterface: React.FC<OpusImportInterfaceProps> = ({
               className="min-h-[300px] font-mono text-sm"
             />
             
+            {/* Affichage des erreurs de validation */}
+            {validationErrors.length > 0 && (
+              <Alert variant="destructive">
+                <AlertTriangle className="h-4 w-4" />
+                <AlertDescription>
+                  <strong>Erreurs détectées:</strong>
+                  <ul className="list-disc list-inside mt-1">
+                    {validationErrors.map((error, i) => (
+                      <li key={i}>{error}</li>
+                    ))}
+                  </ul>
+                </AlertDescription>
+              </Alert>
+            )}
+
             <div className="flex gap-2 justify-between">
               <Button 
                 variant="outline"
@@ -352,12 +396,44 @@ export const OpusImportInterface: React.FC<OpusImportInterfaceProps> = ({
   "marche_id": "${marcheId}",
   "dimensions": {
     "contexte_hydrologique": {
-      "description": "Contexte hydrologique du site",
-      "données": {}
+      "description": "Contexte hydrologique du site d'étude",
+      "donnees": {
+        "bassin_versant": "Dordogne",
+        "debit_moyen": "40 m³/s",
+        "regime": "pluvio-océanique"
+      }
+    },
+    "especes_caracteristiques": {
+      "description": "Espèces indicatrices de la qualité écologique",
+      "donnees": {
+        "poissons": ["Truite fario", "Chabot", "Lamproie de Planer"],
+        "invertebres": ["Ephémères", "Plécoptères"],
+        "vegetation": ["Renoncule aquatique", "Callitriches"]
+      }
     }
   },
-  "fables": [],
-  "sources": [],
+  "fables": [
+    {
+      "titre": "L'eau qui murmure",
+      "contenu": "Dans le courant de la Dordogne, les truites racontent l'histoire de leur territoire...",
+      "ordre": 1,
+      "dimension": "contexte_hydrologique"
+    }
+  ],
+  "sources": [
+    {
+      "nom": "Agence de l'eau Adour-Garonne",
+      "url": "https://www.eau-adour-garonne.fr",
+      "type": "institutionnel",
+      "fiabilite": "haute"
+    },
+    {
+      "nom": "INPN - Inventaire National du Patrimoine Naturel",
+      "url": "https://inpn.mnhn.fr",
+      "type": "scientifique",
+      "fiabilite": "haute"
+    }
+  ],
   "metadata": {
     "ai_model": "gpt-4",
     "sourcing_date": "${new Date().toISOString().split('T')[0]}",
@@ -367,11 +443,12 @@ export const OpusImportInterface: React.FC<OpusImportInterfaceProps> = ({
   }
 }`;
                   setJsonContent(template);
+                  parseAndValidateJson();
                 }}
                 className="flex items-center gap-2"
               >
                 <FileJson className="h-4 w-4" />
-                Template
+                Template Complet
               </Button>
               
               <div className="flex gap-2">
@@ -388,6 +465,42 @@ export const OpusImportInterface: React.FC<OpusImportInterfaceProps> = ({
                   Effacer
                 </Button>
               </div>
+            </div>
+
+            {/* Bouton de validation toujours visible avec tooltip */}
+            <div className="border-t pt-4">
+              <TooltipProvider>
+                <div className="flex justify-end">
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <div>
+                        <Button 
+                          onClick={() => {
+                            const data = parseAndValidateJson();
+                            if (data) {
+                              executeImport();
+                            }
+                          }}
+                          disabled={validationErrors.length > 0 || !jsonContent.trim() || isProcessing}
+                          className="flex items-center gap-2"
+                        >
+                          <Upload className="h-4 w-4" />
+                          Valider l'Import
+                        </Button>
+                      </div>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      {!jsonContent.trim() ? (
+                        "Ajoutez des données JSON pour activer l'import"
+                      ) : validationErrors.length > 0 ? (
+                        "Corrigez les erreurs avant d'importer"
+                      ) : (
+                        "Importer directement (sans prévisualisation)"
+                      )}
+                    </TooltipContent>
+                  </Tooltip>
+                </div>
+              </TooltipProvider>
             </div>
           </CardContent>
         </Card>
@@ -486,7 +599,7 @@ export const OpusImportInterface: React.FC<OpusImportInterfaceProps> = ({
               className="flex items-center gap-2"
             >
               <Upload className="h-4 w-4" />
-              {isProcessing ? 'Import...' : 'Importer'}
+              {isProcessing ? 'Import...' : 'Valider l\'Import'}
             </Button>
           </div>
         </div>
