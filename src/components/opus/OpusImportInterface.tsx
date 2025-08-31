@@ -117,17 +117,17 @@ export const OpusImportInterface: React.FC<OpusImportInterfaceProps> = ({
   "fables": [
     {
       "titre": "Titre de votre fable",
-      "contenu": "Contenu narratif à développer...",
+      "contenu_principal": "Contenu narratif à développer...",
       "ordre": 1,
       "dimension": "contexte_hydrologique"
     }
   ],
   "sources": [
     {
-      "nom": "Source des données",
-      "url": "https://...",
+      "titre": "Source des données",
+      "url": "https://exemple.com",
       "type": "web",
-      "fiabilite": "haute"
+      "fiabilite": 80
     }
   ],
   "metadata": {
@@ -243,6 +243,23 @@ export const OpusImportInterface: React.FC<OpusImportInterfaceProps> = ({
 
     } catch (error) {
       console.error('💥 Preview error:', error);
+      
+      // Afficher les erreurs détaillées si disponibles
+      if (error.message && error.message.includes('400')) {
+        try {
+          const errorBody = JSON.parse(error.message.split('\n').pop() || '{}');
+          if (errorBody.errors && Array.isArray(errorBody.errors)) {
+            setValidationErrors(errorBody.errors);
+            toast({
+              title: "Erreurs de validation",
+              description: `${errorBody.errors.length} erreur(s) détectée(s)`,
+              variant: "destructive"
+            });
+            return;
+          }
+        } catch {}
+      }
+      
       toast({
         title: "Erreur de prévisualisation",
         description: error.message || "Erreur inconnue",
@@ -350,6 +367,13 @@ export const OpusImportInterface: React.FC<OpusImportInterfaceProps> = ({
           <div className="flex gap-2 justify-center pt-4">
             <Button onClick={reset}>Nouvel Import</Button>
             <Button variant="outline" onClick={onClose}>Fermer</Button>
+            <Button 
+              variant="secondary" 
+              onClick={() => window.open(`/admin/marches/${currentMarcheId}`, '_blank')}
+            >
+              <Link className="h-4 w-4 mr-2" />
+              Voir le contexte
+            </Button>
           </div>
         </CardContent>
       </Card>
@@ -456,34 +480,39 @@ export const OpusImportInterface: React.FC<OpusImportInterfaceProps> = ({
       "donnees": { ... }
     },
     "especes_caracteristiques": {
-      "description": "Espèces caractéristiques",
+      "description": "Espèces caractéristiques", 
       "donnees": { ... }
     }
   },
   "fables": [
     {
-      "titre": "Titre de la fable",
-      "contenu": "Contenu narratif...",
-      "ordre": 1
+      "titre": "Titre de votre fable",
+      "contenu_principal": "Contenu narratif à développer...",
+      "ordre": 1,
+      "dimension": "contexte_hydrologique"
     }
   ],
   "sources": [
     {
-      "nom": "Source des données",
-      "url": "https://...",
-      "type": "web"
+      "titre": "Source des données",
+      "url": "https://exemple.com",
+      "type": "web",
+      "fiabilite": 80
     }
   ],
   "metadata": {
     "ai_model": "gpt-4",
     "sourcing_date": "${new Date().toISOString().split('T')[0]}",
-    "validation_level": "automatique",
+    "validation_level": "automatique", 
     "quality_score": 85,
     "completeness_score": 90
   }
 }
 
-Note: Les IDs marche/exploration sont ajoutés automatiquement.`}
+⚠️ IMPORTANT:
+- exploration_id et marche_id sont ajoutés automatiquement
+- sources: utilisez "titre" (pas "nom"), "type" requis ("web", "pdf", "article"), "fiabilite" en nombre (0-100)
+- fables: utilisez "contenu_principal" pour le contenu principal`}
               value={jsonContent}
               onChange={(e) => setJsonContent(e.target.value)}
               className="min-h-[300px] font-mono text-sm"

@@ -64,6 +64,14 @@ function validateImportData(data: ImportData): ValidationResult {
   if (!data.sources || data.sources.length === 0) errors.push("sources manquantes");
   if (!data.metadata) errors.push("metadata manquantes");
 
+  // Auto-correction: déplacer fables hors de dimensions si nécessaire
+  if (data.dimensions?.fables && Array.isArray(data.dimensions.fables)) {
+    console.log('[OPUS Import] Auto-correction: déplacement des fables hors de dimensions');
+    data.fables = data.dimensions.fables;
+    delete data.dimensions.fables;
+    warnings.push("Fables déplacées automatiquement du niveau dimensions vers le niveau racine");
+  }
+
   // Calcul du score de qualité
   const dimensionCount = Object.keys(data.dimensions || {}).length;
   score += Math.min(dimensionCount * 10, 80); // Max 80 points pour les dimensions
@@ -71,12 +79,30 @@ function validateImportData(data: ImportData): ValidationResult {
   if (data.fables && data.fables.length > 0) score += 10;
   if (data.sources.length >= 3) score += 10;
 
-  // Validation des sources
+  // Auto-correction et validation des sources
   data.sources?.forEach((source, index) => {
     if (!source.titre) errors.push(`Source ${index + 1}: titre manquant`);
-    if (!source.type) errors.push(`Source ${index + 1}: type manquant`);
+    
+    // Auto-correction du type manquant
+    if (!source.type) {
+      source.type = "web";
+      warnings.push(`Source ${index + 1}: type manquant, défini automatiquement à "web"`);
+    }
+    
+    // Auto-correction de la fiabilité
+    if (typeof source.fiabilite === 'string') {
+      // Conversion des valeurs textuelles en nombres
+      const fiabiliteMap: { [key: string]: number } = {
+        'très haute': 90, 'haute': 80, 'moyenne': 60, 'faible': 40, 'très faible': 20
+      };
+      const newFiabilite = fiabiliteMap[source.fiabilite.toLowerCase()] || 70;
+      source.fiabilite = newFiabilite;
+      warnings.push(`Source ${index + 1}: fiabilité convertie de "${source.fiabilite}" vers ${newFiabilite}`);
+    }
+    
     if (source.fiabilite < 0 || source.fiabilite > 100) {
-      warnings.push(`Source ${index + 1}: fiabilité invalide (${source.fiabilite})`);
+      source.fiabilite = Math.max(0, Math.min(100, source.fiabilite || 70));
+      warnings.push(`Source ${index + 1}: fiabilité corrigée à ${source.fiabilite}`);
     }
   });
 
