@@ -83,6 +83,14 @@ const EXPERIENCE_CONFIGS = {
     color: 'text-green-400',
     bgColor: 'bg-gradient-to-br from-green-500/10 to-emerald-500/10',
     particles: '⚡'
+  },
+  fables: {
+    icon: BookOpen,
+    title: 'Fables',
+    description: 'Narratives poétiques et récits territoriaux',
+    color: 'text-indigo-400',
+    bgColor: 'bg-gradient-to-br from-indigo-500/10 to-violet-500/10',
+    particles: '📖'
   }
 };
 
