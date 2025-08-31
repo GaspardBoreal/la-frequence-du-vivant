@@ -24,7 +24,8 @@ import {
   Zap,
   Sparkles,
   Filter,
-  ChevronDown
+  ChevronDown,
+  Home
 } from 'lucide-react';
 
 interface PrefigurerInterfaceProps {
@@ -50,9 +51,25 @@ const EXPERIENCE_CONFIGS = {
     bgColor: 'bg-gradient-to-br from-blue-500/10 to-cyan-500/10',
     particles: '🌊'
   },
+  especes_caracteristiques: {
+    icon: BookOpen,
+    title: 'Espèces Caractéristiques',
+    description: 'Biodiversité locale et conservation',
+    color: 'text-orange-400',
+    bgColor: 'bg-gradient-to-br from-orange-500/10 to-amber-500/10',
+    particles: '🦋'
+  },
+  vocabulaire_local: {
+    icon: BookOpen,
+    title: 'Vocabulaire local',
+    description: 'Lexique territorial et expressions locales',
+    color: 'text-amber-400',
+    bgColor: 'bg-gradient-to-br from-amber-500/10 to-yellow-500/10',
+    particles: '📚'
+  },
   projection_2035_2045: {
     icon: Calendar,
-    title: 'Projection 2035-2045',
+    title: 'Projections 2035-2045',
     description: 'Exploration temporelle des futurs possibles',
     color: 'text-purple-400',
     bgColor: 'bg-gradient-to-br from-purple-500/10 to-pink-500/10',
@@ -65,14 +82,6 @@ const EXPERIENCE_CONFIGS = {
     color: 'text-green-400',
     bgColor: 'bg-gradient-to-br from-green-500/10 to-emerald-500/10',
     particles: '⚡'
-  },
-  especes_caracteristiques: {
-    icon: BookOpen,
-    title: 'Espèces Caractéristiques',
-    description: 'Biodiversité locale et conservation',
-    color: 'text-orange-400',
-    bgColor: 'bg-gradient-to-br from-orange-500/10 to-amber-500/10',
-    particles: '🦋'
   }
 };
 
@@ -223,11 +232,23 @@ export const PrefigurerInterface: React.FC<PrefigurerInterfaceProps> = ({
     <div className="h-screen flex flex-col bg-background text-foreground overflow-hidden">
       {/* Header - Mobile First */}
       <div className={`flex items-center justify-between p-4 ${isMobile ? 'flex-col gap-4' : 'flex-row'} border-b border-border`}>
-        <div className={`${isMobile ? 'text-center' : ''}`}>
-          <h1 className="text-xl md:text-2xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-            Préfigurer
-          </h1>
-          <p className="text-muted-foreground text-sm md:text-base">{exploration?.name || 'Chargement...'}</p>
+        <div className={`flex items-center gap-3 ${isMobile ? 'justify-center' : ''}`}>
+          {onClose && (
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              onClick={onClose}
+              className="text-muted-foreground hover:text-foreground"
+            >
+              <Home className="h-5 w-5" />
+            </Button>
+          )}
+          <div className={`${isMobile ? 'text-center' : ''}`}>
+            <h1 className="text-xl md:text-2xl font-bold text-foreground drop-shadow-sm">
+              Préfigurer
+            </h1>
+            <p className="text-muted-foreground text-sm md:text-base">{exploration?.name || 'Chargement...'}</p>
+          </div>
         </div>
         
         <div className={`flex items-center gap-2 md:gap-4 ${isMobile ? 'flex-wrap justify-center' : ''}`}>
@@ -292,11 +313,6 @@ export const PrefigurerInterface: React.FC<PrefigurerInterfaceProps> = ({
             </Button>
           )}
           
-          {onClose && (
-            <Button variant="outline" size={isMobile ? 'sm' : 'default'} onClick={onClose}>
-              Fermer
-            </Button>
-          )}
         </div>
       </div>
 
