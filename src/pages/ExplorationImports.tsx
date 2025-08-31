@@ -191,14 +191,76 @@ const ExplorationImports: React.FC = () => {
     return { status: 'empty', label: 'Vide', color: 'bg-red-500' };
   };
 
-  // Filtrage des imports
-  const filteredImports = imports.filter(importRecord => {
-    const matchesSearch = !searchTerm || 
-      importRecord.marche_nom?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      importRecord.marche_ville?.toLowerCase().includes(searchTerm.toLowerCase());
+  // Fonction de recherche récursive dans les objets et tableaux
+  const searchInObject = (obj: any, searchTerms: string[]): boolean => {
+    if (!obj || typeof obj === 'function') return false;
     
+    // Recherche dans les chaînes de caractères
+    if (typeof obj === 'string') {
+      const normalizedText = obj.toLowerCase()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, ''); // Supprime les accents
+      
+      return searchTerms.some(term => {
+        const normalizedTerm = term.toLowerCase()
+          .normalize('NFD')
+          .replace(/[\u0300-\u036f]/g, '');
+        return normalizedText.includes(normalizedTerm);
+      });
+    }
+    
+    // Recherche dans les nombres convertis en chaîne
+    if (typeof obj === 'number') {
+      return searchTerms.some(term => 
+        obj.toString().toLowerCase().includes(term.toLowerCase())
+      );
+    }
+    
+    // Recherche récursive dans les tableaux
+    if (Array.isArray(obj)) {
+      return obj.some(item => searchInObject(item, searchTerms));
+    }
+    
+    // Recherche récursive dans les objets
+    if (typeof obj === 'object') {
+      return Object.values(obj).some(value => searchInObject(value, searchTerms));
+    }
+    
+    return false;
+  };
+
+  // Filtrage des imports avec recherche approfondie
+  const filteredImports = imports.filter(importRecord => {
+    // Filtrage par date
     const matchesDate = !dateFilter || 
       importRecord.import_date.startsWith(dateFilter);
+    
+    // Si pas de terme de recherche, on filtre seulement par date
+    if (!searchTerm.trim()) {
+      return matchesDate;
+    }
+    
+    // Découpage du terme de recherche en mots individuels
+    const searchTerms = searchTerm.trim().split(/\s+/).filter(term => term.length > 0);
+    
+    // Recherche dans les informations de base du marché
+    const matchesBasicInfo = 
+      importRecord.marche_nom && searchInObject(importRecord.marche_nom, searchTerms) ||
+      importRecord.marche_ville && searchInObject(importRecord.marche_ville, searchTerms);
+    
+    // Recherche dans les données de contexte
+    const matchesContexte = importRecord.contexte_data && 
+      searchInObject(importRecord.contexte_data, searchTerms);
+    
+    // Recherche dans les fables
+    const matchesFables = importRecord.fables_data?.length > 0 && 
+      searchInObject(importRecord.fables_data, searchTerms);
+    
+    // Recherche dans les sources
+    const matchesSources = importRecord.sources?.length > 0 && 
+      searchInObject(importRecord.sources, searchTerms);
+    
+    const matchesSearch = matchesBasicInfo || matchesContexte || matchesFables || matchesSources;
     
     return matchesSearch && matchesDate;
   });
@@ -258,7 +320,7 @@ const ExplorationImports: React.FC = () => {
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   <Input
                     type="search"
-                    placeholder="Rechercher par marché ou ville..."
+                    placeholder="Rechercher dans tous les contenus (marché, contexte, fables, sources)..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                     className="pl-10"
