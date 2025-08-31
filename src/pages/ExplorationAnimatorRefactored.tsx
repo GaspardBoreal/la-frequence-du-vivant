@@ -15,6 +15,7 @@ import ExperienceMarcheElabore from '@/components/experience/ExperienceMarcheEla
 import SpecificPagesManager from '@/components/admin/SpecificPagesManager';
 import { OpusImportInterface } from '@/components/opus/OpusImportInterface';
 import { OpusDataDashboard } from '@/components/opus/OpusDataDashboard';
+import { OpusImportsAdmin } from '@/components/opus/OpusImportsAdmin';
 
 export default function ExplorationAnimatorRefactored() {
   const { slug } = useParams<{ slug: string }>();
