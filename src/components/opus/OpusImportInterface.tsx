@@ -69,6 +69,7 @@ export const OpusImportInterface: React.FC<OpusImportInterfaceProps> = ({
   onSuccess,
   onClose
 }) => {
+  // ALL HOOKS MUST BE CALLED FIRST - BEFORE ANY CONDITIONAL LOGIC
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [jsonContent, setJsonContent] = useState('');
@@ -238,6 +239,16 @@ export const OpusImportInterface: React.FC<OpusImportInterfaceProps> = ({
     setStep('input');
   };
 
+  // Real-time JSON validation - useEffect MUST come before any conditional returns
+  React.useEffect(() => {
+    if (jsonContent.trim()) {
+      parseAndValidateJson();
+    } else {
+      setValidationErrors([]);
+    }
+  }, [jsonContent, parseAndValidateJson]);
+
+  // SUCCESS STEP - Conditional rendering instead of early return
   if (step === 'success') {
     return (
       <Card className="max-w-2xl mx-auto">
@@ -278,15 +289,7 @@ export const OpusImportInterface: React.FC<OpusImportInterfaceProps> = ({
     );
   }
 
-  // Valider JSON en temps réel
-  React.useEffect(() => {
-    if (jsonContent.trim()) {
-      parseAndValidateJson();
-    } else {
-      setValidationErrors([]);
-    }
-  }, [jsonContent, parseAndValidateJson]);
-
+  // MAIN COMPONENT RENDERING
   return (
     <div className="space-y-6">
       {/* Header */}
