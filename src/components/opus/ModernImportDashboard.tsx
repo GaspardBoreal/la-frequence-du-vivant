@@ -492,12 +492,14 @@ export const ModernImportDashboard: React.FC = () => {
         <Dialog open={importModalOpen} onOpenChange={setImportModalOpen}>
           <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden bg-background/95 backdrop-blur-xl border-border/50">
             <OpusImportInterface
+              marcheId=""
+              marcheName=""
               explorationId={exploration.id}
-              onImportComplete={() => {
+              onSuccess={() => {
                 setImportModalOpen(false);
                 loadImports();
               }}
-              onCancel={() => setImportModalOpen(false)}
+              onClose={() => setImportModalOpen(false)}
             />
           </DialogContent>
         </Dialog>
