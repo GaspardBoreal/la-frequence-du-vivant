@@ -88,6 +88,14 @@ export const OpusImportInterface: React.FC<OpusImportInterfaceProps> = ({
   // Get exploration marches when no specific marche is selected
   const { data: explorationMarches = [], isLoading: marchesLoading } = useExplorationMarches(explorationId || '');
   
+  console.debug('🔍 OpusImportInterface loading states:', {
+    marchesLoading,
+    explorationMarchesLength: explorationMarches.length,
+    marcheId,
+    explorationId,
+    hasExplorationMarches: explorationMarches.length > 0
+  });
+  
   // Determine current marche values
   const currentMarcheId = selectedMarcheId || marcheId;
   const currentMarcheName = selectedMarcheName || marcheName;
@@ -420,7 +428,7 @@ export const OpusImportInterface: React.FC<OpusImportInterfaceProps> = ({
       {step === 'input' && (
         <div className="space-y-6">
           {/* Sélecteur de marche si pas de marche spécifique fournie */}
-          {!marcheId && explorationId && (marchesLoading || explorationMarches.length > 0) && (
+          {!marcheId && explorationId && (
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
