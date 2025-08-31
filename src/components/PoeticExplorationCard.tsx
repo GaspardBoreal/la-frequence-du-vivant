@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
-import { Eye, Edit, Settings, Trash2, Sparkles, Footprints } from 'lucide-react';
+import { Eye, Edit, Settings, Trash2, Sparkles, Footprints, Database } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
@@ -172,6 +172,17 @@ const PoeticExplorationCard: React.FC<PoeticExplorationCardProps> = ({ explorati
           <Button 
             variant="ghost" 
             size="sm" 
+            className="rounded-full bg-blue-600/30 text-gaspard-cream border border-blue-500/50 hover:bg-gradient-to-r hover:from-blue-600 hover:to-blue-500 hover:text-white hover:border-blue-300 hover:scale-110 hover:shadow-xl hover:shadow-blue-500/40 transition-all duration-500 transform hover:-translate-y-1"
+            title="Importer des données IA"
+            onClick={(e) => { e.stopPropagation(); navigate(`/admin/explorations/${exploration.slug}/imports`); }}
+          >
+            <Database className="h-4 w-4 mr-2" />
+            📥 Importer
+          </Button>
+          
+          <Button 
+            variant="ghost" 
+            size="sm" 
             className="rounded-full bg-gaspard-forest/30 text-gaspard-cream border border-gaspard-forest/50 hover:bg-gradient-to-r hover:from-purple-600 hover:to-indigo-600 hover:text-white hover:border-purple-300 hover:scale-110 hover:shadow-xl hover:shadow-purple-500/40 transition-all duration-500 transform hover:-translate-y-1"
             title="Orchestrer les paysages"
             onClick={(e) => { e.stopPropagation(); navigate(`/admin/explorations/${exploration.id}/marches`); }}
@@ -179,7 +190,6 @@ const PoeticExplorationCard: React.FC<PoeticExplorationCardProps> = ({ explorati
             <Settings className="h-4 w-4 mr-2" />
             🎼 Orchestrer
           </Button>
-          
           
           <Button 
             variant="ghost" 
