@@ -1265,6 +1265,48 @@ export type Database = {
         }
         Relationships: []
       }
+      opus_import_runs: {
+        Row: {
+          completude_score: number | null
+          created_at: string
+          error_message: string | null
+          id: string
+          marche_id: string
+          mode: string
+          opus_id: string
+          request_payload: Json | null
+          source: string | null
+          status: string
+          validation: Json | null
+        }
+        Insert: {
+          completude_score?: number | null
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          marche_id: string
+          mode: string
+          opus_id: string
+          request_payload?: Json | null
+          source?: string | null
+          status: string
+          validation?: Json | null
+        }
+        Update: {
+          completude_score?: number | null
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          marche_id?: string
+          mode?: string
+          opus_id?: string
+          request_payload?: Json | null
+          source?: string | null
+          status?: string
+          validation?: Json | null
+        }
+        Relationships: []
+      }
       préfigurations_interactives: {
         Row: {
           config_interaction: Json | null

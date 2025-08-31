@@ -145,7 +145,28 @@ serve(async (req) => {
     // Validation des données
     const validation = validateImportData(importData);
     
+    // Log de l'import dans opus_import_runs pour historique
+    const logImportRun = async (status: 'success' | 'error', errorMessage?: string, completudeScore?: number) => {
+      try {
+        await supabase.from('opus_import_runs').insert({
+          mode: preview ? 'preview' : 'import',
+          status,
+          opus_id: importData.exploration_id,
+          marche_id: importData.marche_id,
+          completude_score: completudeScore,
+          validation,
+          request_payload: { data: importData, preview },
+          source: 'opus-import-ai',
+          error_message: errorMessage
+        });
+      } catch (logError) {
+        console.warn('[OPUS Import] Failed to log import run:', logError);
+      }
+    };
+    
     if (!validation.isValid) {
+      await logImportRun('error', `Validation failed: ${validation.errors.join(', ')}`);
+      
       return new Response(
         JSON.stringify({
           success: false,
@@ -172,6 +193,8 @@ serve(async (req) => {
         fables_count: importData.fables?.length || 0,
         sources_count: importData.sources?.length || 0
       });
+      
+      await logImportRun('success', undefined, completude);
       
       return new Response(
         JSON.stringify({
@@ -245,6 +268,9 @@ serve(async (req) => {
         }
 
         console.log(`[OPUS Import] Success: Context=${contextCreated}, Fables=${fablesCreated}`);
+        
+        const finalCompletude = await calculateCompletude(importData.dimensions);
+        await logImportRun('success', undefined, finalCompletude);
 
         return new Response(
           JSON.stringify({
@@ -255,7 +281,7 @@ serve(async (req) => {
               sources: importData.sources.length
             },
             validation,
-            completude_score: await calculateCompletude(importData.dimensions)
+            completude_score: finalCompletude
           }),
           { 
             headers: { ...corsHeaders, 'Content-Type': 'application/json' }
@@ -264,6 +290,7 @@ serve(async (req) => {
 
       } catch (fallbackError) {
         console.error('[OPUS Import] Fallback Error:', fallbackError);
+        await logImportRun('error', `Fallback error: ${fallbackError.message}`);
         
         return new Response(
           JSON.stringify({
@@ -284,12 +311,15 @@ serve(async (req) => {
     }
 
     // Transaction réussie
+    const finalCompletude = await calculateCompletude(importData.dimensions);
+    await logImportRun('success', undefined, finalCompletude);
+    
     return new Response(
       JSON.stringify({
         success: true,
         message: 'Import IA réalisé avec succès',
         validation,
-        completude_score: await calculateCompletude(importData.dimensions)
+        completude_score: finalCompletude
       }),
       { 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
@@ -298,6 +328,14 @@ serve(async (req) => {
 
   } catch (error) {
     console.error('[OPUS Import] Error:', error);
+    
+    // Log l'erreur globale si possible (si on a les données importData)
+    try {
+      const { data: importData } = await req.json() as { data: ImportData };
+      await logImportRun('error', `Server error: ${error.message}`);
+    } catch (logError) {
+      console.warn('[OPUS Import] Could not log global error:', logError);
+    }
     
     return new Response(
       JSON.stringify({

@@ -49,6 +49,20 @@ interface ImportRecord {
   marche_ville?: string;
 }
 
+interface ImportRunRecord {
+  id: string;
+  created_at: string;
+  mode: 'preview' | 'import';
+  status: 'success' | 'error';
+  opus_id: string;
+  marche_id: string;
+  completude_score?: number;
+  validation?: any;
+  error_message?: string;
+  marche_nom?: string;
+  marche_ville?: string;
+}
+
 export const ModernImportDashboard: React.FC = () => {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
@@ -57,10 +71,12 @@ export const ModernImportDashboard: React.FC = () => {
   
   const [imports, setImports] = useState<ImportRecord[]>([]);
   const [filteredImports, setFilteredImports] = useState<ImportRecord[]>([]);
+  const [importRuns, setImportRuns] = useState<ImportRunRecord[]>([]);
   const [selectedImport, setSelectedImport] = useState<ImportRecord | null>(null);
   const [importModalOpen, setImportModalOpen] = useState(false);
   const [detailModalOpen, setDetailModalOpen] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [historyLoading, setHistoryLoading] = useState(false);
   const [activeTab, setActiveTab] = useState('dashboard');
   
   const { data: explorations } = useExplorations();
@@ -104,6 +120,9 @@ export const ModernImportDashboard: React.FC = () => {
       });
       await queryClient.invalidateQueries({ 
         queryKey: ['opus-contextes'] 
+      });
+      await queryClient.invalidateQueries({ 
+        queryKey: ['opus-import-runs'] 
       });
       
       // Récupérer les contextes
@@ -209,9 +228,61 @@ export const ModernImportDashboard: React.FC = () => {
     window.open(`/galerie-fleuve/exploration/${slug}/prefigurer`, '_blank');
   };
 
+  const loadImportHistory = async () => {
+    if (!exploration) return;
+    
+    console.log('🔄 loadImportHistory appelé pour exploration:', exploration.id);
+    setHistoryLoading(true);
+    
+    try {
+      const { data: runs, error } = await supabase
+        .from('opus_import_runs')
+        .select('*')
+        .eq('opus_id', exploration.id)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+
+      // Enrichir avec les infos marché
+      const enrichedRuns: ImportRunRecord[] = runs?.map(run => {
+        const marcheInfo = marches?.find(m => m.id === run.marche_id);
+        return {
+          id: run.id,
+          created_at: run.created_at,
+          mode: run.mode as 'preview' | 'import',
+          status: run.status as 'success' | 'error', 
+          opus_id: run.opus_id,
+          marche_id: run.marche_id,
+          completude_score: run.completude_score || undefined,
+          validation: run.validation || undefined,
+          error_message: run.error_message || undefined,
+          marche_nom: marcheInfo?.nomMarche || 'Marché inconnu',
+          marche_ville: marcheInfo?.ville || ''
+        };
+      }) || [];
+
+      setImportRuns(enrichedRuns);
+    } catch (error) {
+      console.error('Erreur lors du chargement de l\'historique:', error);
+      toast({
+        title: "Erreur",
+        description: "Impossible de charger l'historique des imports",
+        variant: "destructive"
+      });
+    } finally {
+      setHistoryLoading(false);
+    }
+  };
+
   useEffect(() => {
     loadImports();
   }, [exploration?.id, marches]);
+
+  useEffect(() => {
+    if (activeTab === 'history' && exploration?.id && marches) {
+      loadImportHistory();
+    }
+  }, [activeTab, exploration?.id, marches]);
 
   if (!exploration) {
     return (
@@ -291,10 +362,10 @@ export const ModernImportDashboard: React.FC = () => {
           </div>
         </div>
 
-        {/* Navigation Tabs */}
+            {/* Navigation Tabs */}
         <div className="container mx-auto max-w-7xl px-6 py-6">
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="grid w-full grid-cols-3 mb-8 bg-background/50 backdrop-blur-sm border border-border/30">
+            <TabsList className="grid w-full grid-cols-4 mb-8 bg-background/50 backdrop-blur-sm border border-border/30">
               <TabsTrigger 
                 value="dashboard" 
                 className="flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground transition-all duration-300"
@@ -307,7 +378,14 @@ export const ModernImportDashboard: React.FC = () => {
                 className="flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground transition-all duration-300"
               >
                 <Activity className="w-4 h-4" />
-                Imports ({filteredImports.length})
+                Par marché ({filteredImports.length})
+              </TabsTrigger>
+              <TabsTrigger 
+                value="history" 
+                className="flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground transition-all duration-300"
+              >
+                <Calendar className="w-4 h-4" />
+                Historique
               </TabsTrigger>
               <TabsTrigger 
                 value="insights" 
@@ -482,6 +560,148 @@ export const ModernImportDashboard: React.FC = () => {
               )}
             </TabsContent>
 
+            {/* Import History */}
+            <TabsContent value="history" className="space-y-6">
+              <Card className="bg-background/50 backdrop-blur-sm border-border/30">
+                <CardHeader>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <CardTitle className="flex items-center gap-2">
+                        <Calendar className="w-5 h-5" />
+                        Historique complet des imports
+                      </CardTitle>
+                      <CardDescription>
+                        Tous les imports et previews exécutés pour cette exploration
+                      </CardDescription>
+                    </div>
+                    <Button 
+                      onClick={loadImportHistory} 
+                      disabled={historyLoading} 
+                      variant="outline"
+                      size="sm"
+                      className="hover:bg-secondary/50 transition-all duration-300"
+                    >
+                      <RefreshCw className={`w-4 h-4 mr-2 ${historyLoading ? 'animate-spin' : ''}`} />
+                      Actualiser
+                    </Button>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  {historyLoading ? (
+                    <div className="space-y-4">
+                      {[...Array(5)].map((_, i) => (
+                        <div key={i} className="flex items-center space-x-4 p-4 border rounded-lg animate-pulse">
+                          <div className="w-12 h-12 bg-muted rounded-full"></div>
+                          <div className="flex-1 space-y-2">
+                            <div className="h-4 bg-muted rounded w-3/4"></div>
+                            <div className="h-3 bg-muted rounded w-1/2"></div>
+                          </div>
+                          <div className="w-20 h-6 bg-muted rounded"></div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : importRuns.length === 0 ? (
+                    <div className="text-center py-12">
+                      <Database className="w-16 h-16 mx-auto mb-4 text-muted-foreground opacity-50" />
+                      <h3 className="text-xl font-medium mb-2">
+                        Aucun historique
+                      </h3>
+                      <p className="text-muted-foreground mb-6">
+                        Effectuez un import pour voir l'historique s'afficher ici
+                      </p>
+                      <Button 
+                        onClick={() => setImportModalOpen(true)}
+                        className="bg-gradient-to-r from-primary to-primary/80"
+                      >
+                        <Plus className="w-4 h-4 mr-2" />
+                        Premier import
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      {importRuns.map((run) => (
+                        <div 
+                          key={run.id} 
+                          className="flex items-center justify-between p-4 border rounded-lg hover:bg-secondary/20 transition-all duration-200"
+                        >
+                          <div className="flex items-center gap-4">
+                            <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                              run.status === 'success' 
+                                ? run.mode === 'preview' 
+                                  ? 'bg-blue-100 text-blue-600' 
+                                  : 'bg-green-100 text-green-600'
+                                : 'bg-red-100 text-red-600'
+                            }`}>
+                              {run.status === 'success' ? (
+                                run.mode === 'preview' ? (
+                                  <Search className="w-4 h-4" />
+                                ) : (
+                                  <Database className="w-4 h-4" />
+                                )
+                              ) : (
+                                <Zap className="w-4 h-4" />
+                              )}
+                            </div>
+                            <div>
+                              <div className="flex items-center gap-2">
+                                <p className="font-medium">
+                                  {run.marche_nom} {run.marche_ville && `(${run.marche_ville})`}
+                                </p>
+                                <Badge 
+                                  variant={run.mode === 'preview' ? 'secondary' : 'default'}
+                                  className="text-xs"
+                                >
+                                  {run.mode === 'preview' ? 'Preview' : 'Import'}
+                                </Badge>
+                                <Badge 
+                                  variant={run.status === 'success' ? 'default' : 'destructive'}
+                                  className="text-xs"
+                                >
+                                  {run.status === 'success' ? 'Succès' : 'Erreur'}
+                                </Badge>
+                              </div>
+                              <p className="text-sm text-muted-foreground">
+                                {new Date(run.created_at).toLocaleString('fr-FR', {
+                                  day: 'numeric',
+                                  month: 'short',
+                                  year: 'numeric',
+                                  hour: '2-digit',
+                                  minute: '2-digit'
+                                })}
+                                {run.status === 'error' && run.error_message && (
+                                  <span className="ml-2 text-destructive">
+                                    • {run.error_message}
+                                  </span>
+                                )}
+                              </p>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            {run.completude_score !== null && run.completude_score !== undefined && (
+                              <Badge variant="outline" className="font-mono">
+                                {Math.round(run.completude_score)}%
+                              </Badge>
+                            )}
+                            {run.validation && (
+                              <Badge 
+                                variant="outline" 
+                                className={`font-mono ${
+                                  run.validation.score >= 80 ? 'text-green-600' :
+                                  run.validation.score >= 60 ? 'text-orange-600' : 'text-red-600'
+                                }`}
+                              >
+                                Q: {run.validation.score}/100
+                              </Badge>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </TabsContent>
+
             {/* Data Insights */}
             <TabsContent value="insights" className="space-y-6">
               <DataInsightsDashboard imports={filteredImports} />
@@ -521,6 +741,10 @@ export const ModernImportDashboard: React.FC = () => {
                 // Recharger les données avec un léger délai pour laisser le temps à la DB de se mettre à jour
                 setTimeout(() => {
                   loadImports();
+                  // Recharger aussi l'historique si on est sur cet onglet
+                  if (activeTab === 'history') {
+                    loadImportHistory();
+                  }
                 }, 500);
               }}
               onClose={() => setImportModalOpen(false)}
