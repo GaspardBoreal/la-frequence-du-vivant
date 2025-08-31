@@ -328,60 +328,62 @@ export const PrefigurerInterface: React.FC<PrefigurerInterfaceProps> = ({
       </div>
 
       <div className={`flex-1 flex ${isMobile ? 'flex-col' : 'flex-row'}`}>
-        {/* Panneau de sélection des expériences - Mobile First */}
+        {/* Panneau de sélection des expériences - Mobile First avec hauteur optimisée */}
         <div className={`
           ${isMobile 
-            ? sidebarOpen ? 'h-auto' : 'h-0 overflow-hidden'
-            : 'w-80'
+            ? sidebarOpen ? 'h-auto max-h-[450px]' : 'h-0 overflow-hidden'
+            : 'w-64'
           } 
-          border-r border-border p-4 md:p-6 space-y-4 overflow-y-auto
+          border-r border-border p-2 md:p-4 overflow-y-auto
           ${isMobile ? 'transition-all duration-300' : ''}
         `}>
-          <div className="flex items-center justify-between">
-            <h2 className="text-lg font-semibold">Dimensions d'Exploration</h2>
-            <Badge variant="outline">{getContextData().length} marche(s)</Badge>
+          <div className="flex items-center justify-between mb-2">
+            <h2 className="text-base font-semibold">Dimensions d'Exploration</h2>
+            <Badge variant="outline" className="text-xs">{getContextData().length}</Badge>
           </div>
           
-          {Object.entries(EXPERIENCE_CONFIGS).map(([key, config]) => {
-            const Icon = config.icon;
-            const isActive = activeExperience === key;
-            
-            return (
-              <Card 
-                key={key}
-                className={`cursor-pointer transition-all duration-300 hover:scale-105 ${
-                  isActive ? 'ring-2 ring-primary bg-card' : 'bg-card/50 hover:bg-card'
-                }`}
-                onClick={() => handleExperienceSelect(key)}
-              >
-                <CardHeader className={`pb-3 ${isMobile ? 'p-4' : 'p-6'}`}>
-                  <div className="flex items-center gap-3">
-                    <div className={`p-2 rounded-lg border ${config.bgColor}`}>
-                      <Icon className={`h-4 w-4 md:h-5 md:w-5 ${config.color}`} />
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <CardTitle className="text-sm md:text-base">{config.title}</CardTitle>
-                      <p className="text-muted-foreground text-xs md:text-sm line-clamp-2">{config.description}</p>
-                    </div>
-                  </div>
-                </CardHeader>
-                
-                {isActive && (
-                  <CardContent className={`pt-0 ${isMobile ? 'px-4 pb-4' : 'p-6 pt-0'}`}>
+          <div className="space-y-1.5 max-h-[calc(100vh-300px)] md:max-h-[calc(100vh-250px)] overflow-y-auto pr-1 scrollbar-thin scrollbar-thumb-muted scrollbar-track-transparent">
+            {Object.entries(EXPERIENCE_CONFIGS).map(([key, config]) => {
+              const Icon = config.icon;
+              const isActive = activeExperience === key;
+              
+              return (
+                <Card 
+                  key={key}
+                  className={`cursor-pointer transition-all duration-200 hover:shadow-md ${
+                    isActive ? 'ring-1 ring-primary bg-card shadow-sm' : 'bg-card/50 hover:bg-card'
+                  }`}
+                  onClick={() => handleExperienceSelect(key)}
+                >
+                  <CardHeader className="p-2 md:p-3 pb-1">
                     <div className="flex items-center gap-2">
-                      <Badge variant="secondary" className="bg-primary text-primary-foreground">
-                        Actif
-                      </Badge>
-                      <span className="text-lg">{config.particles}</span>
-                      <span className="text-xs text-muted-foreground ml-auto">
-                        {getContextData().length} contexte(s)
-                      </span>
+                      <div className={`p-1 rounded border ${config.bgColor}`}>
+                        <Icon className={`h-3 w-3 md:h-4 md:w-4 ${config.color}`} />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <CardTitle className="text-xs md:text-sm leading-tight">{config.title}</CardTitle>
+                        <p className="text-muted-foreground text-xs leading-snug line-clamp-1 md:line-clamp-2">{config.description}</p>
+                      </div>
                     </div>
-                  </CardContent>
-                )}
-              </Card>
-            );
-          })}
+                  </CardHeader>
+                  
+                  {isActive && (
+                    <CardContent className="p-2 md:p-3 pt-0">
+                      <div className="flex items-center gap-1.5">
+                        <Badge variant="secondary" className="bg-primary text-primary-foreground text-xs px-1.5 py-0.5">
+                          Actif
+                        </Badge>
+                        <span className="text-sm">{config.particles}</span>
+                        <span className="text-xs text-muted-foreground ml-auto">
+                          {getContextData().length}
+                        </span>
+                      </div>
+                    </CardContent>
+                  )}
+                </Card>
+              );
+            })}
+          </div>
         </div>
 
         {/* Zone d'expérience principale - Mobile First */}
