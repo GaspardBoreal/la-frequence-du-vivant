@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Trash2, Eye, Calendar, Database, AlertTriangle } from 'lucide-react';
 import { useSupabaseMarches } from '@/hooks/useSupabaseMarches';
 import { supabase } from '@/integrations/supabase/client';
-import { toast } from 'sonner';
+import { useToast } from '@/hooks/use-toast';
 import { OpusImportDetail } from './OpusImportDetail';
 
 interface ImportRecord {
@@ -30,7 +30,7 @@ export const OpusImportsAdmin: React.FC<OpusImportsAdminProps> = ({
   explorationId,
   explorationName
 }) => {
-  // Removed useToast hook
+  const { toast } = useToast();
   const [imports, setImports] = useState<ImportRecord[]>([]);
   const [selectedImport, setSelectedImport] = useState<ImportRecord | null>(null);
   const [loading, setLoading] = useState(false);
@@ -112,9 +112,9 @@ export const OpusImportsAdmin: React.FC<OpusImportsAdminProps> = ({
     } catch (error) {
       console.error('Erreur lors du chargement des imports:', error);
       toast({
-        variant: "destructive",
         title: "Erreur",
-        description: "Impossible de charger les imports IA"
+        description: "Impossible de charger les imports IA",
+        variant: "destructive"
       });
     } finally {
       setLoading(false);
@@ -154,9 +154,9 @@ export const OpusImportsAdmin: React.FC<OpusImportsAdminProps> = ({
     } catch (error) {
       console.error('Erreur lors de la suppression:', error);
       toast({
-        variant: "destructive",
         title: "Erreur",
-        description: "Impossible de supprimer l'import"
+        description: "Impossible de supprimer l'import",
+        variant: "destructive"
       });
     }
   };

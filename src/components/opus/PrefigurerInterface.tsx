@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, FileText, Brain, MapPin, Leaf, Users, Zap, Factory } from 'lucide-react';
+import { X, FileText, Brain, MapPin, Leaf, Users, Zap, Factory, ArrowLeft, AlertTriangle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
@@ -9,6 +9,7 @@ import { useOpusContextes } from '@/hooks/useOpus';
 import { useExplorations } from '@/hooks/useExplorations';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { OpusDimensionEditor } from './OpusDimensionEditor';
+import { OpusDebugInterface } from './OpusDebugInterface';
 
 interface PrefigurerInterfaceProps {
   opusSlug: string;
@@ -182,19 +183,26 @@ export const PrefigurerInterface: React.FC<PrefigurerInterfaceProps> = ({
             <p className="text-muted-foreground">Chargement des contextes OPUS...</p>
           </div>
         ) : opusContextes.length === 0 ? (
-          <Card>
-            <CardHeader>
-              <CardTitle>Aucun contexte OPUS trouvé</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-muted-foreground mb-4">
-                Aucune donnée OPUS n'a été importée pour cette exploration.
-              </p>
-              <p className="text-sm text-muted-foreground">
-                Utilisez l'interface d'animation pour importer des données IA avant de préfigurer.
-              </p>
-            </CardContent>
-          </Card>
+          <div className="space-y-6">
+            <OpusDebugInterface opusSlug={opusSlug} />
+            
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <AlertTriangle className="w-5 h-5 text-orange-500" />
+                  Aucun contexte OPUS trouvé
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-muted-foreground mb-4">
+                  Aucune donnée OPUS n'a été importée pour cette exploration.
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  Utilisez l'interface d'animation pour importer des données IA avant de préfigurer.
+                </p>
+              </CardContent>
+            </Card>
+          </div>
         ) : (
           <>
             <div className="mb-6">
