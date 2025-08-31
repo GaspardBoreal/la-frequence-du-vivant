@@ -14,6 +14,7 @@ import ExperienceMarcheSimple from '@/components/experience/ExperienceMarcheSimp
 import ExperienceMarcheElabore from '@/components/experience/ExperienceMarcheElabore';
 import SpecificPagesManager from '@/components/admin/SpecificPagesManager';
 import { OpusImportInterface } from '@/components/opus/OpusImportInterface';
+import { OpusDataDashboard } from '@/components/opus/OpusDataDashboard';
 
 export default function ExplorationAnimatorRefactored() {
   const { slug } = useParams<{ slug: string }>();
@@ -147,20 +148,29 @@ export default function ExplorationAnimatorRefactored() {
           {exploration?.id && <SpecificPagesManager explorationId={exploration.id} />}
         </section>
 
-        {/* Import IA Section */}
+        {/* Import IA & Dashboard Section */}
         <section className="mt-10">
           <div className="flex items-center justify-between mb-6">
             <div>
-              <h2 className="text-2xl font-semibold mb-2">Import IA</h2>
-              <p className="text-sm text-muted-foreground">Importez des données générées par votre IA de sourcing pour enrichir cette exploration</p>
+              <h2 className="text-2xl font-semibold mb-2">Données OPUS Hybrides</h2>
+              <p className="text-sm text-muted-foreground">Importez et gérez les données contextuelles générées par votre IA de sourcing</p>
             </div>
-            <Button 
-              onClick={() => setImportModalOpen(true)}
-              className="bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-700 hover:to-green-700"
-            >
-              <Upload className="h-4 w-4 mr-2" />
-              Importer les données IA
-            </Button>
+            <div className="flex gap-2">
+              <Button 
+                onClick={() => setImportModalOpen(true)}
+                variant="outline"
+                className="bg-gradient-to-r from-emerald-600/10 to-green-600/10 hover:from-emerald-600/20 hover:to-green-600/20"
+              >
+                <Upload className="h-4 w-4 mr-2" />
+                Import IA
+              </Button>
+              {currentMarche && (
+                <OpusDataDashboard
+                  marcheId={currentMarche.marche_id}
+                  marcheName={currentMarche.marche?.nom_marche || 'Marche sans nom'}
+                />
+              )}
+            </div>
           </div>
         </section>
 
