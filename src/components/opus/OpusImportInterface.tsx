@@ -91,6 +91,62 @@ export const OpusImportInterface: React.FC<OpusImportInterfaceProps> = ({
   const currentMarcheId = selectedMarcheId || marcheId;
   const currentMarcheName = selectedMarcheName || marcheName;
 
+  // Auto-fill template when marche is selected
+  const generateTemplate = useCallback(() => {
+    if (!currentMarcheId || !explorationId) return '';
+    
+    return `{
+  "dimensions": {
+    "contexte_hydrologique": {
+      "description": "Contexte hydrologique du site d'étude",
+      "donnees": {
+        "bassin_versant": "À renseigner",
+        "debit_moyen": "À renseigner",
+        "regime": "À renseigner"
+      }
+    },
+    "especes_caracteristiques": {
+      "description": "Espèces indicatrices de la qualité écologique",
+      "donnees": {
+        "poissons": [],
+        "invertebres": [],
+        "vegetation": []
+      }
+    }
+  },
+  "fables": [
+    {
+      "titre": "Titre de votre fable",
+      "contenu": "Contenu narratif à développer...",
+      "ordre": 1,
+      "dimension": "contexte_hydrologique"
+    }
+  ],
+  "sources": [
+    {
+      "nom": "Source des données",
+      "url": "https://...",
+      "type": "web",
+      "fiabilite": "haute"
+    }
+  ],
+  "metadata": {
+    "ai_model": "gpt-4",
+    "sourcing_date": "${new Date().toISOString().split('T')[0]}",
+    "validation_level": "automatique",
+    "quality_score": 85,
+    "completeness_score": 90
+  }
+}`;
+  }, [currentMarcheId, explorationId]);
+
+  // Auto-fill when marche changes
+  React.useEffect(() => {
+    if (currentMarcheId && explorationId && !jsonContent.trim()) {
+      setJsonContent(generateTemplate());
+    }
+  }, [currentMarcheId, explorationId, generateTemplate, jsonContent]);
+
   const parseAndValidateJson = useCallback(() => {
     const errors: string[] = [];
     
@@ -354,12 +410,12 @@ export const OpusImportInterface: React.FC<OpusImportInterfaceProps> = ({
                     setSelectedMarcheId(value);
                     const selectedMarche = explorationMarches.find(em => em.marche?.id === value);
                     setSelectedMarcheName(selectedMarche?.marche?.nom_marche || selectedMarche?.marche?.ville || 'Marche sélectionnée');
-                    // Reset les données quand on change de marche
-                    setJsonContent('');
+                    // Reset et pré-remplit quand on change de marche
                     setImportData(null);
                     setValidation(null);
                     setPreview(null);
                     setValidationErrors([]);
+                    // Le useEffect se chargera du pré-remplissage automatique
                   }}
                 >
                   <SelectTrigger className="w-full">
@@ -394,16 +450,14 @@ export const OpusImportInterface: React.FC<OpusImportInterfaceProps> = ({
             <CardContent className="space-y-4">
             <Textarea
               placeholder={`{
-  "exploration_id": "${explorationId || 'uuid-de-lexploration'}",
-  "marche_id": "${currentMarcheId || 'uuid-de-la-marche'}",
   "dimensions": {
     "contexte_hydrologique": {
       "description": "Contexte hydrologique du site",
-      "données": { ... }
+      "donnees": { ... }
     },
     "especes_caracteristiques": {
-      "description": "Espèces caractéristiques de la zone",
-      "données": { ... }
+      "description": "Espèces caractéristiques",
+      "donnees": { ... }
     }
   },
   "fables": [
@@ -427,7 +481,9 @@ export const OpusImportInterface: React.FC<OpusImportInterfaceProps> = ({
     "quality_score": 85,
     "completeness_score": 90
   }
-}`}
+}
+
+Note: Les IDs marche/exploration sont ajoutés automatiquement.`}
               value={jsonContent}
               onChange={(e) => setJsonContent(e.target.value)}
               className="min-h-[300px] font-mono text-sm"
@@ -452,57 +508,7 @@ export const OpusImportInterface: React.FC<OpusImportInterfaceProps> = ({
               <Button 
                 variant="outline"
                 onClick={() => {
-                  const template = `{
-  "exploration_id": "${explorationId || 'uuid-de-lexploration'}",
-  "marche_id": "${currentMarcheId || 'uuid-de-la-marche'}",
-  "dimensions": {
-    "contexte_hydrologique": {
-      "description": "Contexte hydrologique du site d'étude",
-      "donnees": {
-        "bassin_versant": "Dordogne",
-        "debit_moyen": "40 m³/s",
-        "regime": "pluvio-océanique"
-      }
-    },
-    "especes_caracteristiques": {
-      "description": "Espèces indicatrices de la qualité écologique",
-      "donnees": {
-        "poissons": ["Truite fario", "Chabot", "Lamproie de Planer"],
-        "invertebres": ["Ephémères", "Plécoptères"],
-        "vegetation": ["Renoncule aquatique", "Callitriches"]
-      }
-    }
-  },
-  "fables": [
-    {
-      "titre": "L'eau qui murmure",
-      "contenu": "Dans le courant de la Dordogne, les truites racontent l'histoire de leur territoire...",
-      "ordre": 1,
-      "dimension": "contexte_hydrologique"
-    }
-  ],
-  "sources": [
-    {
-      "nom": "Agence de l'eau Adour-Garonne",
-      "url": "https://www.eau-adour-garonne.fr",
-      "type": "institutionnel",
-      "fiabilite": "haute"
-    },
-    {
-      "nom": "INPN - Inventaire National du Patrimoine Naturel",
-      "url": "https://inpn.mnhn.fr",
-      "type": "scientifique",
-      "fiabilite": "haute"
-    }
-  ],
-  "metadata": {
-    "ai_model": "gpt-4",
-    "sourcing_date": "${new Date().toISOString().split('T')[0]}",
-    "validation_level": "automatique",
-    "quality_score": 85,
-    "completeness_score": 90
-  }
-}`;
+                  const template = generateTemplate();
                   setJsonContent(template);
                   parseAndValidateJson();
                 }}
@@ -527,6 +533,22 @@ export const OpusImportInterface: React.FC<OpusImportInterfaceProps> = ({
                 </Button>
               </div>
             </div>
+
+            {/* Message d'aide dynamique */}
+            <Alert className="mt-4">
+              <Info className="h-4 w-4" />
+              <AlertDescription>
+                {!currentMarcheId ? (
+                  <span className="text-amber-600 font-medium">⚠️ Sélectionnez une marche pour activer l'import</span>
+                ) : !jsonContent.trim() ? (
+                  <span className="text-blue-600">💡 Le JSON a été pré-rempli automatiquement. Vous pouvez le modifier puis prévisualiser ou valider directement.</span>
+                ) : validationErrors.length > 0 ? (
+                  <span className="text-red-600 font-medium">❌ Corrigez les erreurs JSON avant de continuer</span>
+                ) : (
+                  <span className="text-green-600 font-medium">✅ JSON valide - Vous pouvez maintenant prévisualiser ou valider l'import</span>
+                )}
+              </AlertDescription>
+            </Alert>
 
             {/* Bouton de validation toujours visible avec tooltip */}
             <div className="border-t pt-4">
