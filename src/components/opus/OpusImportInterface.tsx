@@ -6,6 +6,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Progress } from '@/components/ui/progress';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
+import { useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { 
   Upload, 
@@ -67,6 +68,7 @@ export const OpusImportInterface: React.FC<OpusImportInterfaceProps> = ({
   onClose
 }) => {
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   const [jsonContent, setJsonContent] = useState('');
   const [importData, setImportData] = useState<ImportData | null>(null);
   const [validation, setValidation] = useState<ValidationResult | null>(null);
@@ -150,6 +152,14 @@ export const OpusImportInterface: React.FC<OpusImportInterfaceProps> = ({
           description: `Données IA importées pour ${marcheName}`
         });
         onSuccess?.();
+
+        // Invalidate all relevant queries
+        await queryClient.invalidateQueries({
+          queryKey: ['marche-contextes'],
+        });
+        await queryClient.invalidateQueries({
+          queryKey: ['opus-contextes'],
+        });
       } else {
         throw new Error(result.error || 'Erreur d\'import');
       }

@@ -46,43 +46,48 @@ export const useOpusExploration = (slug: string) => {
 export const useMarcheContextes = (marcheId: string) => {
   return useQuery({
     queryKey: ['marche-contextes', marcheId],
-    queryFn: async () => {
+    queryFn: async (): Promise<MarcheContexteHybrid | null> => {
       const { data, error } = await supabase
         .from('marche_contextes_hybrids')
         .select('*')
         .eq('marche_id', marcheId)
-        .single();
+        .maybeSingle();
+
+      if (error) {
+        console.error('Error fetching marche contextes:', error);
+        return null;
+      }
       
-      if (error) throw error;
       return data as unknown as MarcheContexteHybrid;
     },
-    enabled: !!marcheId
+    enabled: !!marcheId,
   });
 };
 
 export const useOpusContextes = (opusId: string) => {
   return useQuery({
     queryKey: ['opus-contextes', opusId],
-    queryFn: async () => {
+    queryFn: async (): Promise<Array<MarcheContexteHybrid & { marches: { nom_marche: string; ville: string; } }>> => {
       const { data, error } = await supabase
         .from('marche_contextes_hybrids')
         .select(`
           *,
-          marches (
-            id,
+          marches!inner (
             nom_marche,
-            ville,
-            latitude,
-            longitude
+            ville
           )
         `)
         .eq('opus_id', opusId)
-        .order('created_at');
+        .not('opus_id', 'is', null);
+
+      if (error) {
+        console.error('Error fetching opus contextes:', error);
+        throw error;
+      }
       
-      if (error) throw error;
-      return data;
+      return data as unknown as Array<MarcheContexteHybrid & { marches: { nom_marche: string; ville: string; } }>;
     },
-    enabled: !!opusId
+    enabled: !!opusId,
   });
 };
 

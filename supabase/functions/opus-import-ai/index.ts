@@ -180,6 +180,8 @@ serve(async (req) => {
             completude_score: completude,
             sources: importData.sources,
             last_validation: new Date().toISOString()
+          }, {
+            onConflict: 'marche_id,opus_id'
           });
 
         if (contextError) throw contextError;
