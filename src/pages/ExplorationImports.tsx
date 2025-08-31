@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { 
   ArrowLeft, 
   Search, 
@@ -15,13 +16,15 @@ import {
   AlertTriangle, 
   Filter,
   Download,
-  RefreshCw 
+  RefreshCw,
+  Plus 
 } from 'lucide-react';
 import { useSupabaseMarches } from '@/hooks/useSupabaseMarches';
 import { useExplorations } from '@/hooks/useExplorations';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { OpusImportDetail } from '@/components/opus/OpusImportDetail';
+import { OpusImportInterface } from '@/components/opus/OpusImportInterface';
 import SEOHead from '@/components/SEOHead';
 
 interface ImportRecord {
@@ -44,6 +47,7 @@ const ExplorationImports: React.FC = () => {
   
   const [imports, setImports] = useState<ImportRecord[]>([]);
   const [selectedImport, setSelectedImport] = useState<ImportRecord | null>(null);
+  const [importModalOpen, setImportModalOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [dateFilter, setDateFilter] = useState('');
@@ -306,10 +310,19 @@ const ExplorationImports: React.FC = () => {
               </div>
             </div>
             
-            <Button onClick={loadImports} disabled={loading}>
-              <RefreshCw className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
-              {loading ? 'Chargement...' : 'Actualiser'}
-            </Button>
+            <div className="flex gap-2">
+              <Button 
+                onClick={() => setImportModalOpen(true)}
+                className="bg-gradient-to-r from-primary to-primary-foreground hover:from-primary/90 hover:to-primary-foreground/90"
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                Nouveau Import
+              </Button>
+              <Button onClick={loadImports} disabled={loading} variant="outline">
+                <RefreshCw className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
+                {loading ? 'Chargement...' : 'Actualiser'}
+              </Button>
+            </div>
           </div>
 
           {/* Filtres */}
@@ -569,6 +582,31 @@ const ExplorationImports: React.FC = () => {
               onClose={() => setSelectedImport(null)}
             />
           )}
+
+          {/* Modal Import IA */}
+          <Dialog open={importModalOpen} onOpenChange={setImportModalOpen}>
+            <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle>Import des données IA</DialogTitle>
+              </DialogHeader>
+              {exploration && (
+                <OpusImportInterface 
+                  marcheId=""
+                  marcheName=""
+                  explorationId={exploration.id}
+                  onSuccess={() => {
+                    setImportModalOpen(false);
+                    toast({
+                      title: "Données importées avec succès",
+                      description: "Les nouvelles données IA ont été importées"
+                    });
+                    loadImports(); // Recharger la liste
+                  }}
+                  onClose={() => setImportModalOpen(false)}
+                />
+              )}
+            </DialogContent>
+          </Dialog>
         </div>
       </div>
     </>
