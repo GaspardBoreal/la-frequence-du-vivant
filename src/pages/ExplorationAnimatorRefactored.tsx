@@ -9,10 +9,11 @@ import { supabase } from '@/integrations/supabase/client';
 import { useExploration, useExplorationMarches } from '@/hooks/useExplorations';
 import { toast } from 'sonner';
 import { marcheModels } from '@/marche-models/registry';
-import { Eye, ArrowLeft } from 'lucide-react';
+import { Eye, ArrowLeft, Upload } from 'lucide-react';
 import ExperienceMarcheSimple from '@/components/experience/ExperienceMarcheSimple';
 import ExperienceMarcheElabore from '@/components/experience/ExperienceMarcheElabore';
 import SpecificPagesManager from '@/components/admin/SpecificPagesManager';
+import { OpusImportInterface } from '@/components/opus/OpusImportInterface';
 
 export default function ExplorationAnimatorRefactored() {
   const { slug } = useParams<{ slug: string }>();
@@ -24,6 +25,7 @@ export default function ExplorationAnimatorRefactored() {
   const [previewOpen, setPreviewOpen] = useState(false);
   const [previewModel, setPreviewModel] = useState<string>('');
   const [currentMarcheIndex, setCurrentMarcheIndex] = useState(0);
+  const [importModalOpen, setImportModalOpen] = useState(false);
 
   const [marcheViewModel, setMarcheViewModel] = useState<string>('elabore');
   
@@ -143,6 +145,23 @@ export default function ExplorationAnimatorRefactored() {
         {/* P1 - Pages spécifiques */}
         <section className="mt-8">
           {exploration?.id && <SpecificPagesManager explorationId={exploration.id} />}
+        </section>
+
+        {/* Import IA Section */}
+        <section className="mt-10">
+          <div className="flex items-center justify-between mb-6">
+            <div>
+              <h2 className="text-2xl font-semibold mb-2">Import IA</h2>
+              <p className="text-sm text-muted-foreground">Importez des données générées par votre IA de sourcing pour enrichir cette exploration</p>
+            </div>
+            <Button 
+              onClick={() => setImportModalOpen(true)}
+              className="bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-700 hover:to-green-700"
+            >
+              <Upload className="h-4 w-4 mr-2" />
+              Importer les données IA
+            </Button>
+          </div>
         </section>
 
         {/* P2 - Modèle de visualisation des marches */}
@@ -390,6 +409,27 @@ export default function ExplorationAnimatorRefactored() {
       </main>
 
       {/* Fixed Generate Button removed - session creation now handled in experience */}
+
+      {/* Import IA Dialog */}
+      <Dialog open={importModalOpen} onOpenChange={setImportModalOpen}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Import des données IA</DialogTitle>
+          </DialogHeader>
+          {currentMarche && (
+            <OpusImportInterface 
+              marcheId={currentMarche.marche_id}
+              marcheName={currentMarche.marche?.nom_marche || 'Marche sans nom'}
+              explorationId={exploration?.id || ''}
+              onSuccess={() => {
+                setImportModalOpen(false);
+                toast.success('Données importées avec succès');
+              }}
+              onClose={() => setImportModalOpen(false)}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
 
       {/* Preview Dialog */}
       {previewOpen && currentMarche && (
