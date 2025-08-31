@@ -1,11 +1,12 @@
-import React from 'react';
+import React, { useMemo, useState } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
-import { Calendar, Database, FileText, MapPin, Droplets, Leaf, Users, Zap, Target } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Calendar, Database, FileText, MapPin, Droplets, Leaf, Users, Zap, Target, ExternalLink } from 'lucide-react';
 
 interface ImportRecord {
   id: string;
@@ -28,6 +29,32 @@ export const OpusImportDetail: React.FC<OpusImportDetailProps> = ({
   importRecord,
   onClose
 }) => {
+  const [selectedYear, setSelectedYear] = useState<string | null>(null);
+
+  // Extract years from sources and create filter
+  const sourcesByYear = useMemo(() => {
+    const yearMap = new Map<string, any[]>();
+    
+    importRecord.sources.forEach(source => {
+      const dateStr = source.date || source.date_publication;
+      if (dateStr) {
+        const year = new Date(dateStr).getFullYear().toString();
+        if (!yearMap.has(year)) {
+          yearMap.set(year, []);
+        }
+        yearMap.get(year)!.push(source);
+      }
+    });
+    
+    // Sort by year descending
+    return new Map([...yearMap.entries()].sort((a, b) => parseInt(b[0]) - parseInt(a[0])));
+  }, [importRecord.sources]);
+
+  const filteredSources = selectedYear ? sourcesByYear.get(selectedYear) || [] : importRecord.sources;
+
+  const handleExternalNavigation = () => {
+    window.open(`/galerie-fleuve/exploration/remontee-dordogne-atlas-eaux-vivantes-2025-2045/prefigurer`, '_blank');
+  };
   const renderContexteSection = (title: string, data: any, icon: React.ReactNode) => {
     if (!data) return null;
 
@@ -71,9 +98,20 @@ export const OpusImportDetail: React.FC<OpusImportDetailProps> = ({
     <Dialog open={true} onOpenChange={onClose}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Database className="w-5 h-5" />
-            Détails de l'import - {importRecord.marche_nom}
+          <DialogTitle className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Database className="w-5 h-5" />
+              Détails de l'import - {importRecord.marche_nom}
+            </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleExternalNavigation}
+              className="flex items-center gap-2"
+            >
+              <ExternalLink className="w-4 h-4" />
+              Ouvrir dans Préfigurer
+            </Button>
           </DialogTitle>
           <DialogDescription>
             Import effectué le {formatDate(importRecord.import_date)}
@@ -96,7 +134,7 @@ export const OpusImportDetail: React.FC<OpusImportDetailProps> = ({
                     <CardTitle className="text-sm">Complétude</CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <div className="text-2xl font-bold text-primary">
+                    <div className="text-2xl font-bold text-white">
                       {importRecord.completude_score}%
                     </div>
                   </CardContent>
@@ -216,45 +254,52 @@ export const OpusImportDetail: React.FC<OpusImportDetailProps> = ({
                       </CardDescription>
                     </CardHeader>
                     <CardContent>
-                      <div className="space-y-3">
-                        {fable.resume && (
+                      <ScrollArea className="h-48">
+                        <div className="space-y-3 pr-4">
+                          {fable.resume && (
+                            <div>
+                              <h4 className="font-medium mb-1">Résumé</h4>
+                              <p className="text-sm text-muted-foreground">{fable.resume}</p>
+                            </div>
+                          )}
+                          
                           <div>
-                            <h4 className="font-medium mb-1">Résumé</h4>
-                            <p className="text-sm text-muted-foreground">{fable.resume}</p>
+                            <h4 className="font-medium mb-1">Contenu principal</h4>
+                            <p className="text-sm text-muted-foreground">
+                              {fable.contenu_principal}
+                            </p>
                           </div>
-                        )}
-                        
-                        <div>
-                          <h4 className="font-medium mb-1">Contenu principal</h4>
-                          <p className="text-sm text-muted-foreground line-clamp-3">
-                            {fable.contenu_principal}
-                          </p>
+
+                          {fable.variations && (
+                            <div>
+                              <h4 className="font-medium mb-1">Variations</h4>
+                              <div className="space-y-2">
+                                {Object.entries(fable.variations).map(([type, content]) => (
+                                  <div key={type} className="border rounded-lg p-2">
+                                    <Badge variant="secondary" className="mb-2">{type}</Badge>
+                                    <p className="text-xs text-muted-foreground whitespace-pre-wrap">
+                                      {typeof content === 'string' ? content : JSON.stringify(content, null, 2)}
+                                    </p>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+
+                          {fable.dimensions_associees?.length > 0 && (
+                            <div>
+                              <h4 className="font-medium mb-1">Dimensions associées</h4>
+                              <div className="flex flex-wrap gap-1">
+                                {fable.dimensions_associees.map((dim: string) => (
+                                  <Badge key={dim} variant="outline" className="text-xs">
+                                    {dim}
+                                  </Badge>
+                                ))}
+                              </div>
+                            </div>
+                          )}
                         </div>
-
-                        {fable.variations && (
-                          <div>
-                            <h4 className="font-medium mb-1">Variations</h4>
-                            <div className="flex gap-2">
-                              {Object.keys(fable.variations).map(type => (
-                                <Badge key={type} variant="secondary">{type}</Badge>
-                              ))}
-                            </div>
-                          </div>
-                        )}
-
-                        {fable.dimensions_associees?.length > 0 && (
-                          <div>
-                            <h4 className="font-medium mb-1">Dimensions associées</h4>
-                            <div className="flex flex-wrap gap-1">
-                              {fable.dimensions_associees.map((dim: string) => (
-                                <Badge key={dim} variant="outline" className="text-xs">
-                                  {dim}
-                                </Badge>
-                              ))}
-                            </div>
-                          </div>
-                        )}
-                      </div>
+                      </ScrollArea>
                     </CardContent>
                   </Card>
                 ))
@@ -268,8 +313,33 @@ export const OpusImportDetail: React.FC<OpusImportDetailProps> = ({
             </TabsContent>
 
             <TabsContent value="sources" className="space-y-4">
-              {importRecord.sources.length > 0 ? (
-                importRecord.sources.map((source, index) => (
+              {sourcesByYear.size > 0 && (
+                <div className="mb-4">
+                  <h4 className="font-medium mb-2">Filtrer par année</h4>
+                  <div className="flex flex-wrap gap-2">
+                    <Button
+                      variant={selectedYear === null ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setSelectedYear(null)}
+                    >
+                      Toutes ({importRecord.sources.length})
+                    </Button>
+                    {[...sourcesByYear.entries()].map(([year, sources]) => (
+                      <Button
+                        key={year}
+                        variant={selectedYear === year ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => setSelectedYear(year)}
+                      >
+                        {year} ({sources.length} source{sources.length > 1 ? 's' : ''})
+                      </Button>
+                    ))}
+                  </div>
+                </div>
+              )}
+              
+              {filteredSources.length > 0 ? (
+                filteredSources.map((source, index) => (
                   <Card key={index}>
                     <CardHeader>
                       <CardTitle className="text-lg">{source.titre || `Source ${index + 1}`}</CardTitle>
@@ -313,7 +383,9 @@ export const OpusImportDetail: React.FC<OpusImportDetailProps> = ({
               ) : (
                 <Card>
                   <CardContent className="p-8 text-center">
-                    <p className="text-muted-foreground">Aucune source référencée</p>
+                    <p className="text-muted-foreground">
+                      {selectedYear ? `Aucune source pour l'année ${selectedYear}` : "Aucune source référencée"}
+                    </p>
                   </CardContent>
                 </Card>
               )}
