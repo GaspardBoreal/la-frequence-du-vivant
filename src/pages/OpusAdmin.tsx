@@ -9,6 +9,7 @@ import DecorativeParticles from '@/components/DecorativeParticles';
 import { OpusContexteEditor } from '@/components/opus/OpusContexteEditor';
 import { FableWorkshop } from '@/components/opus/FableWorkshop';
 import { PrefigurerInterface } from '@/components/opus/PrefigurerInterface';
+import { OpusImportInterface } from '@/components/opus/OpusImportInterface';
 import { useOpusExploration, useOpusContextes } from '@/hooks/useOpus';
 import { useExplorationMarches } from '@/hooks/useExplorations';
 import { 
@@ -18,14 +19,17 @@ import {
   Sparkles, 
   MapPin,
   BarChart3,
-  Settings
+  Settings,
+  Bot,
+  Upload
 } from 'lucide-react';
 
 const OpusAdmin: React.FC = () => {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
   const [selectedMarche, setSelectedMarche] = useState<string | null>(null);
-  const [activeMode, setActiveMode] = useState<'contextes' | 'fables' | 'prefigurer'>('contextes');
+  const [activeMode, setActiveMode] = useState<'contextes' | 'fables' | 'prefigurer' | 'import'>('contextes');
+  const [showImport, setShowImport] = useState(false);
   
   const { data: opus, isLoading: opusLoading } = useOpusExploration(slug || '');
   const { data: contextes, isLoading: contextesLoading } = useOpusContextes(opus?.id || '');
@@ -101,7 +105,7 @@ const OpusAdmin: React.FC = () => {
           </div>
 
           {/* Navigation principale */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
             <Card 
               className={`cursor-pointer transition-all duration-300 hover:scale-105 ${
                 activeMode === 'contextes' ? 'ring-2 ring-blue-500 bg-blue-50' : 'hover:bg-slate-50'
@@ -170,6 +174,29 @@ const OpusAdmin: React.FC = () => {
                   <div className="text-2xl font-bold text-purple-600">4</div>
                   <div className="text-sm text-muted-foreground">
                     Modes d'expérience
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card 
+              className={`cursor-pointer transition-all duration-300 hover:scale-105 ${
+                activeMode === 'import' ? 'ring-2 ring-green-500 bg-green-50' : 'hover:bg-slate-50'
+              }`}
+              onClick={() => setActiveMode('import')}
+            >
+              <CardHeader className="text-center">
+                <Bot className="h-12 w-12 mx-auto text-green-600 mb-2" />
+                <CardTitle>Import IA</CardTitle>
+                <p className="text-sm text-muted-foreground">
+                  Import automatique de données sourcées
+                </p>
+              </CardHeader>
+              <CardContent>
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-green-600">1 clic</div>
+                  <div className="text-sm text-muted-foreground">
+                    Import enrichi
                   </div>
                 </div>
               </CardContent>
@@ -275,6 +302,66 @@ const OpusAdmin: React.FC = () => {
                       marcheId={selectedMarche}
                       marcheName={marches?.find(m => m.id === selectedMarche)?.marche?.nom_marche || 'Marche'}
                       opusId={opus.id}
+                    />
+                  )}
+                </div>
+              )}
+
+              {activeMode === 'import' && (
+                <div className="space-y-6">
+                  <div className="flex items-center justify-between">
+                    <h2 className="text-2xl font-bold">Import IA pour les Marches</h2>
+                    <div className="text-sm text-muted-foreground">
+                      Importez automatiquement des données sourcées par IA
+                    </div>
+                  </div>
+                  
+                  {!selectedMarche ? (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                      {marches?.map((marche) => (
+                        <Card 
+                          key={marche.id}
+                          className="cursor-pointer hover:shadow-lg transition-all duration-300"
+                          onClick={() => setSelectedMarche(marche.id)}
+                        >
+                          <CardHeader>
+                            <div className="flex items-start gap-3">
+                              <Bot className="h-5 w-5 text-green-600 mt-1" />
+                              <div className="flex-1">
+                                <CardTitle className="text-lg line-clamp-2">
+                                  {marche.marche?.nom_marche || marche.marche?.ville}
+                                </CardTitle>
+                                <p className="text-sm text-muted-foreground">
+                                  {marche.marche?.ville} • {marche.marche?.region}
+                                </p>
+                              </div>
+                            </div>
+                          </CardHeader>
+                          <CardContent>
+                            <div className="flex items-center justify-between">
+                              <div className="text-sm text-muted-foreground">
+                                Import données IA
+                              </div>
+                              <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+                                <Upload className="h-3 w-3 mr-1" />
+                                Importer
+                              </Badge>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      ))}
+                    </div>
+                  ) : (
+                    <OpusImportInterface
+                      marcheId={selectedMarche}
+                      marcheName={marches?.find(m => m.id === selectedMarche)?.marche?.nom_marche || 'Marche'}
+                      explorationId={opus.id}
+                      onSuccess={() => {
+                        setSelectedMarche(null);
+                        // Refresh data
+                        window.location.reload();
+                      }}
+                      onClose={() => setSelectedMarche(null)}
                     />
                   )}
                 </div>
