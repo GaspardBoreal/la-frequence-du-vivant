@@ -42,6 +42,7 @@ import ExperienceLectureOptimisee from './components/reading/ExperienceLectureOp
 import OpusAdmin from './pages/OpusAdmin';
 import ExplorationPrefigurer from './pages/ExplorationPrefigurer';
 import ExplorationImports from './pages/ExplorationImports';
+import AtlasClimatique from './pages/AtlasClimatique';
 
 function App() {
   return (
@@ -154,6 +155,7 @@ function App() {
             } />
             <Route path="/favicon-test" element={<FaviconTest />} />
             <Route path="/meteo-historique" element={<WeatherCalendar />} />
+            <Route path="/atlas-climatique" element={<AtlasClimatique />} />
             <Route path="/presentation" element={<ProjectPresentation />} />
             
             <Route path="*" element={<NotFound />} />
