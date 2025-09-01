@@ -16,7 +16,7 @@ import { Badge } from '@/components/ui/badge';
 import { useNavigate } from 'react-router-dom';
 import { useClimateAtlas } from '@/hooks/useClimateAtlas';
 import { ThermoNavigator } from '@/components/climate/ThermoNavigator';
-import { FranceClimateMap } from '@/components/climate/FranceClimateMap';
+import { OSMFranceClimateMap } from '@/components/climate/OSMFranceClimateMap';
 import ClimateTimeMachine from '@/components/climate/ClimateTimeMachine';
 import SEOHead from '@/components/SEOHead';
 
@@ -236,7 +236,7 @@ const AtlasClimatique: React.FC = () => {
               )}
 
               {thermoState.viewMode === 'map' && (
-                <FranceClimateMap
+                <OSMFranceClimateMap
                   cities={cities}
                   selectedCity={thermoState.selectedCity}
                   year={thermoState.year}
