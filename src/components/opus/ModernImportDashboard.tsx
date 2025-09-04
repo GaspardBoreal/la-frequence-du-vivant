@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
-import { Dialog, DialogContent } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { 
   Home, 
   Database, 
@@ -723,6 +723,10 @@ export const ModernImportDashboard: React.FC = () => {
 
         <Dialog open={importModalOpen} onOpenChange={setImportModalOpen}>
           <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden bg-background/95 backdrop-blur-xl border-border/50">
+            <DialogHeader className="sr-only">
+              <DialogTitle>Interface d'import</DialogTitle>
+              <DialogDescription>Interface pour importer des données dans l'exploration</DialogDescription>
+            </DialogHeader>
             <OpusImportInterface
               marcheId=""
               marcheName=""
