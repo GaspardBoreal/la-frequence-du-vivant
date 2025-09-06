@@ -320,11 +320,13 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes,
   // Preparation function - Gating navigation with image preloading
   const prepareNavigation = useCallback(async (newIndex: number) => {
     if (isPreparing || newIndex === committedIndex || newIndex < 0 || newIndex >= filteredPhotos.length) {
+      console.log('[GalerieFleuve] prepareNavigation: ignored', { isPreparing, newIndex, committedIndex, total: filteredPhotos.length });
       return false;
     }
 
     const isCross = detectCrossMarche(committedIndex, newIndex);
     const prepType = isCross ? 'cross-marche' : 'intra-marche';
+    console.log('[GalerieFleuve] prepareNavigation: start', { from: committedIndex, to: newIndex, type: prepType });
     
     setIsPreparing(true);
     setPrepareProgress(0);
@@ -379,20 +381,22 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes,
         });
       }
 
+      console.log('[GalerieFleuve] prepareNavigation: images to preload', { count: imagesToPreload.length });
+
       // Phase 2: Start preloading (40% progress)
       setPrepareProgress(40);
       
       // Preload images with progress tracking
-      const preloadPromises = imagesToPreload.map((url, index) => 
-        new Promise<void>((resolve, reject) => {
+      const preloadPromises = imagesToPreload.map((url) => 
+        new Promise<void>((resolve) => {
           const img = new Image();
           img.onload = () => {
-            const progressIncrement = 50 / imagesToPreload.length;
+            const progressIncrement = 50 / Math.max(1, imagesToPreload.length);
             setPrepareProgress(prev => Math.min(90, prev + progressIncrement));
             resolve();
           };
           img.onerror = () => {
-            console.warn(`Failed to preload image: ${url}`);
+            console.warn('[GalerieFleuve] Failed to preload image', { url });
             resolve(); // Continue even if some images fail
           };
           img.src = url;
@@ -411,10 +415,11 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes,
       // Small delay to ensure smooth experience
       await new Promise(resolve => setTimeout(resolve, isCross ? 300 : 100));
       
+      console.log('[GalerieFleuve] prepareNavigation: ready');
       return true;
       
     } catch (error) {
-      console.error('Navigation preparation failed:', error);
+      console.error('[GalerieFleuve] Navigation preparation failed', error);
       return false;
     }
   }, [isPreparing, committedIndex, filteredPhotos, detectCrossMarche]);
@@ -422,6 +427,7 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes,
   // Complete navigation after preparation
   const completeNavigation = useCallback(() => {
     if (targetIndex === null) return;
+    console.log('[GalerieFleuve] completeNavigation: committing', { targetIndex });
     
     setIsTransitioning(true);
     
@@ -434,6 +440,7 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes,
       setPrepareProgress(0);
       setTargetIndex(null);
       setPrepareLabel('');
+      console.log('[GalerieFleuve] completeNavigation: committed');
     }, reduceMotion ? 100 : 300);
   }, [targetIndex, reduceMotion]);
 
@@ -611,7 +618,7 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes,
           <AnimatePresence>
             {isPreparing && (
               <motion.div 
-                className="absolute inset-0 bg-black/90 backdrop-blur-lg z-[60] flex items-center justify-center"
+                className="fixed inset-0 bg-black/90 backdrop-blur-lg z-[90] flex items-center justify-center"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
@@ -808,16 +815,18 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes,
             onClose={() => setIsMarcheSelectorOpen(false)}
             photos={filteredPhotos}
             onMarcheSelect={(marcheId) => {
-              // Trouver l'index de la première photo de cette marche
               const firstPhotoIndex = filteredPhotos.findIndex(photo => 
                 `${photo.ville}-${photo.nomMarche}` === marcheId
               );
-              
+              console.log('[GalerieFleuve] MarcheSelector: select', { marcheId, firstPhotoIndex });
               if (firstPhotoIndex !== -1) {
-                setCommittedIndex(firstPhotoIndex);
-                setIsTransitioning(false);
+                void (async () => {
+                  const success = await prepareNavigation(firstPhotoIndex);
+                  if (success) {
+                    completeNavigation();
+                  }
+                })();
               }
-              
               setSelectedMarcheId(marcheId);
               setIsMarcheSelectorOpen(false);
             }}
