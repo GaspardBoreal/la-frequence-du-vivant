@@ -123,7 +123,7 @@ export const OptimizedImage = memo<OptimizedImageProps>(({
 
         {loaded && imageSrc && (
           <motion.img
-            key={`image-${src}`}
+            key={instant ? 'instant' : `image-${src}`}
             ref={imgRef}
             src={imageSrc}
             alt={alt}

@@ -545,7 +545,11 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes,
     setIsTransitioning(true);
     
     // Smooth transition delay
-    const transitionDelay = reduceMotion ? 100 : 200;
+    const isIntra = lastPrepTypeRef.current === 'intra-marche';
+    const noOverlay = !showOverlay;
+    const isMobileDevice = deviceType !== 'desktop';
+    const instantMobile = isMobileDevice && isIntra && (instantNextCommit || noOverlay);
+    const transitionDelay = instantMobile ? 0 : (reduceMotion ? 100 : 200);
     
     setTimeout(() => {
       setCommittedIndex(indexToCommit);
@@ -742,7 +746,7 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes,
           
 
           {/* Main photo display */}
-          <AnimatePresence mode="wait">
+          <AnimatePresence mode={deviceType === 'desktop' ? 'wait' : 'sync'}>
             <div className={`absolute inset-0 ${
               deviceType === 'desktop' 
                 ? 'flex items-center justify-center gap-4 px-8' 
@@ -754,7 +758,7 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes,
                 
                 return (
                   <motion.div
-                    key={`photo-${photo.id}-${position}-${committedIndex}`}
+                    key={deviceType === 'desktop' ? `photo-${photo.id}-${position}-${committedIndex}` : 'mobile-current'}
                     className={`
                       relative overflow-hidden rounded-2xl shadow-2xl
                       ${deviceType === 'desktop' ? (
