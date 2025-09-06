@@ -61,6 +61,12 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes,
   // Smart image preloader
   const { preloadImageSet, getPreloadedImage, getCacheStats } = useSmartImagePreloader(15);
 
+  // Debug mode
+  const [debugMode] = useState(() => {
+    return new URLSearchParams(window.location.search).get('debug') === '1' || 
+           localStorage.getItem('galerie-debug') === '1';
+  });
+
   // Navigation states - Nouvelle approche avec gating
   const [currentPhotoIndex, setCurrentPhotoIndex] = useState(0);
   const [committedIndex, setCommittedIndex] = useState(0);
@@ -338,6 +344,62 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes,
     setCommittedIndex(0);
   }, [filterMode]);
 
+  // Dynamic neighbor preloading utility
+  const preloadNeighbors = useCallback(async (centerIndex: number, depth: number = 1) => {
+    if (!filteredPhotos || filteredPhotos.length === 0) return [];
+
+    const promises: Promise<any>[] = [];
+    
+    // High priority for current image
+    const currentPhoto = filteredPhotos[centerIndex];
+    if (currentPhoto?.url) {
+      promises.push(
+        new Promise(resolve => {
+          const img = new Image();
+          img.fetchPriority = 'high';
+          img.onload = resolve;
+          img.onerror = resolve;
+          img.src = currentPhoto.url;
+        })
+      );
+    }
+
+    // Medium priority for neighbors
+    for (let offset = -depth; offset <= depth; offset++) {
+      if (offset === 0) continue; // Skip center (already handled)
+      
+      const targetIndex = centerIndex + offset;
+      if (targetIndex >= 0 && targetIndex < filteredPhotos.length) {
+        const photo = filteredPhotos[targetIndex];
+        if (photo?.url) {
+          promises.push(
+            new Promise(resolve => {
+              const img = new Image();
+              img.fetchPriority = 'low';
+              img.onload = resolve;
+              img.onerror = resolve;
+              img.src = photo.url;
+            })
+          );
+        }
+      }
+    }
+
+    if (debugMode) {
+      console.log(`🖼️ Preloading neighbors: center=${centerIndex}, depth=${depth}, total=${promises.length}`);
+    }
+
+    return promises;
+  }, [filteredPhotos, debugMode]);
+
+  // Proactive neighbor preloading on index changes
+  useEffect(() => {
+    if (!filteredPhotos || filteredPhotos.length === 0) return;
+
+    const depth = deviceType === 'desktop' ? 3 : 1;
+    preloadNeighbors(committedIndex, depth);
+  }, [committedIndex, filteredPhotos, deviceType, preloadNeighbors]);
+
   // Helper: Détection cross-marche
   const detectCrossMarche = useCallback((fromIndex: number, toIndex: number) => {
     if (!filteredPhotos[fromIndex] || !filteredPhotos[toIndex]) return false;
@@ -346,25 +408,28 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes,
     return fromKey !== toKey;
   }, [filteredPhotos]);
 
-  // Preparation function - Gating navigation with image preloading
+  // Enhanced preparation function with dynamic neighbor preloading
   const prepareNavigation = useCallback(async (newIndex: number) => {
     if (isPreparing || newIndex === committedIndex || newIndex < 0 || newIndex >= filteredPhotos.length) {
-      console.log('[GalerieFleuve] prepareNavigation: ignored', { isPreparing, newIndex, committedIndex, total: filteredPhotos.length });
+      if (debugMode) {
+        console.log('[GalerieFleuve] prepareNavigation: ignored', { isPreparing, newIndex, committedIndex, total: filteredPhotos.length });
+      }
       return false;
     }
 
+    const startTime = Date.now();
     const isCross = detectCrossMarche(committedIndex, newIndex);
     const prepType = isCross ? 'cross-marche' : 'intra-marche';
-    console.log('[GalerieFleuve] prepareNavigation: start', { from: committedIndex, to: newIndex, type: prepType });
+    
+    if (debugMode) {
+      console.log(`🚀 Starting navigation: ${committedIndex} → ${newIndex} (${prepType})`);
+    }
     
     setIsPreparing(true);
     setPrepareProgress(0);
     setTargetIndex(newIndex);
     setPreparationType(prepType);
-
-    // Record timing and control overlay visibility
-    lastPrepTypeRef.current = prepType;
-    prepStartAtRef.current = Date.now();
+    setShowOverlay(true); // Always show overlay immediately
 
     // Clear any pending overlay timers
     if (overlayTimeoutRef.current) {
@@ -372,20 +437,10 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes,
       overlayTimeoutRef.current = null;
     }
 
-    if (isCross) {
-      // Cross-marche: show overlay immediately
-      setShowOverlay(true);
-      overlayShownAtRef.current = Date.now();
-    } else {
-      // Intra-marche: show overlay only if preparation lasts > 120ms
-      setShowOverlay(false);
-      overlayTimeoutRef.current = window.setTimeout(() => {
-        if (isPreparingRef.current && lastPrepTypeRef.current === 'intra-marche') {
-          setShowOverlay(true);
-          overlayShownAtRef.current = Date.now();
-        }
-      }, 120);
-    }
+    // Record timing
+    prepStartAtRef.current = startTime;
+    overlayShownAtRef.current = startTime;
+    lastPrepTypeRef.current = prepType;
     
     // Set preparation label based on type
     if (isCross) {
@@ -396,112 +451,84 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes,
     }
 
     try {
-      // Phase 1: Prepare images to preload (20% progress)
-      setPrepareProgress(20);
-      
-      // Determine which images to preload based on navigation type
-      const imagesToPreload: string[] = [];
-      
-      if (isCross) {
-        // Cross-marche: preload entire marche segment
-        const targetPhoto = filteredPhotos[newIndex];
-        const targetKey = `${targetPhoto.ville}-${targetPhoto.nomMarche}`;
-        
-        // Find marche boundaries
-        let segStart = newIndex;
-        while (segStart > 0) {
-          const key = `${filteredPhotos[segStart - 1].ville}-${filteredPhotos[segStart - 1].nomMarche}`;
-          if (key !== targetKey) break;
-          segStart--;
-        }
-        let segEnd = newIndex;
-        while (segEnd < filteredPhotos.length - 1) {
-          const key = `${filteredPhotos[segEnd + 1].ville}-${filteredPhotos[segEnd + 1].nomMarche}`;
-          if (key !== targetKey) break;
-          segEnd++;
-        }
-        
-        // Add all images in the target marche
-        for (let i = segStart; i <= segEnd; i++) {
-          imagesToPreload.push(filteredPhotos[i].url);
-        }
-      } else {
-        // Intra-marche: just preload target + neighbors
-        const range = [newIndex - 1, newIndex, newIndex + 1]
-          .filter(i => i >= 0 && i < filteredPhotos.length);
-        
-        range.forEach(i => {
-          imagesToPreload.push(filteredPhotos[i].url);
-        });
+      // Use dynamic neighbor preloading with device-appropriate depth
+      const depth = deviceType === 'desktop' ? 3 : 1;
+      const loadPromises = await preloadNeighbors(newIndex, depth);
+
+      let loadedCount = 0;
+      const totalImages = loadPromises.length;
+
+      if (debugMode) {
+        console.log(`📦 Preloading ${totalImages} images with depth ${depth}`);
       }
 
-      console.log('[GalerieFleuve] prepareNavigation: images to preload', { count: imagesToPreload.length });
+      // Track progress as images load
+      const trackedPromises = loadPromises.map(async (promise) => {
+        try {
+          await promise;
+          loadedCount++;
+          const progress = Math.round((loadedCount / totalImages) * 100);
+          setPrepareProgress(progress);
+          if (debugMode && loadedCount % 2 === 0) {
+            console.log(`📈 Progress: ${loadedCount}/${totalImages} (${progress}%)`);
+          }
+          return true;
+        } catch (error) {
+          loadedCount++;
+          setPrepareProgress(Math.round((loadedCount / totalImages) * 100));
+          return false;
+        }
+      });
 
-      // Phase 2: Start preloading (40% progress)
-      setPrepareProgress(40);
-      
-      // Preload images with progress tracking
-      const preloadPromises = imagesToPreload.map((url) => 
-        new Promise<void>((resolve) => {
-          const img = new Image();
-          img.onload = () => {
-            const progressIncrement = 50 / Math.max(1, imagesToPreload.length);
-            setPrepareProgress(prev => Math.min(90, prev + progressIncrement));
-            resolve();
-          };
-          img.onerror = () => {
-            console.warn('[GalerieFleuve] Failed to preload image', { url });
-            resolve(); // Continue even if some images fail
-          };
-          img.src = url;
-        })
-      );
-
-      // Wait for all images to preload or timeout after 2 seconds
+      // Wait for all images with timeout
       await Promise.race([
-        Promise.all(preloadPromises),
-        new Promise(resolve => setTimeout(resolve, 2000))
+        Promise.allSettled(trackedPromises),
+        new Promise((resolve) => setTimeout(resolve, 2000)) // 2s timeout
       ]);
 
-      // Phase 3: Final preparation (100% progress)
-      setPrepareProgress(100);
+      const elapsed = Date.now() - startTime;
+      if (debugMode) {
+        console.log(`✅ Preparation completed in ${elapsed}ms`);
+      }
       
-      // Small delay to ensure smooth experience
-      await new Promise(resolve => setTimeout(resolve, isCross ? 300 : 100));
-      
-      console.log('[GalerieFleuve] prepareNavigation: ready');
       return true;
-      
     } catch (error) {
-      console.error('[GalerieFleuve] Navigation preparation failed', error);
+      console.error('❌ Navigation preparation failed:', error);
       return false;
     }
-  }, [isPreparing, committedIndex, filteredPhotos, detectCrossMarche]);
+  }, [isPreparing, committedIndex, filteredPhotos, detectCrossMarche, deviceType, preloadNeighbors, debugMode]);
 
-  // Complete navigation after preparation
-  const completeNavigation = useCallback(() => {
+  // Enhanced navigation completion with minimum overlay visibility
+  const completeNavigation = useCallback(async () => {
     if (targetIndex === null) return;
-    console.log('[GalerieFleuve] completeNavigation: committing', { targetIndex });
     
-    setIsTransitioning(true);
+    if (debugMode) {
+      console.log(`🎯 Completing navigation to index ${targetIndex}`);
+    }
     
-    // Smooth transition to new image with overlay minimum visibility
-    const baseDelay = reduceMotion ? 100 : 300;
-    // If an intra-marche delayed overlay timer is pending, clear it
+    const startTime = Date.now();
+    const minVisibleDuration = lastPrepTypeRef.current === 'cross-marche' ? 400 : 300;
+    
+    // Calculate elapsed time since overlay was shown
+    const elapsed = Date.now() - overlayShownAtRef.current;
+    const remainingTime = Math.max(0, minVisibleDuration - elapsed);
+    
+    // Ensure minimum overlay visibility
+    if (remainingTime > 0) {
+      await new Promise(resolve => setTimeout(resolve, remainingTime));
+    }
+
+    // Clear any pending overlay timers
     if (overlayTimeoutRef.current) {
       clearTimeout(overlayTimeoutRef.current);
       overlayTimeoutRef.current = null;
     }
-
-    let extraDelay = 0;
-    if (showOverlay && lastPrepTypeRef.current === 'cross-marche') {
-      const elapsed = Date.now() - overlayShownAtRef.current;
-      const minVisible = 350; // ms
-      extraDelay = Math.max(0, minVisible - elapsed - baseDelay);
-    }
-
-    const totalDelay = baseDelay + Math.max(0, extraDelay);
-
+    
+    setIsTransitioning(true);
+    
+    // Smooth transition delay
+    const transitionDelay = reduceMotion ? 100 : 200;
+    
     setTimeout(() => {
       setCommittedIndex(targetIndex);
       setCurrentPhotoIndex(targetIndex);
@@ -511,9 +538,12 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes,
       setTargetIndex(null);
       setPrepareLabel('');
       setShowOverlay(false);
-      console.log('[GalerieFleuve] completeNavigation: committed');
-    }, totalDelay);
-  }, [targetIndex, reduceMotion]);
+      
+      if (debugMode) {
+        console.log(`✅ Navigation completed to index ${targetIndex}`);
+      }
+    }, transitionDelay);
+  }, [targetIndex, reduceMotion, debugMode]);
 
   // New navigation system with gating
   const navigateNext = useCallback(async () => {
@@ -857,6 +887,21 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes,
         )}
 
         <PortalOverlay visible={showOverlay} label={prepareLabel} progress={prepareProgress} subtype={preparationType} />
+        
+        {/* Debug UI */}
+        {debugMode && (
+          <div className="fixed top-4 left-4 z-50 bg-black/80 text-white text-xs p-3 rounded-lg font-mono max-w-xs">
+            <div className="font-bold mb-2">🐛 Debug Info</div>
+            <div>Device: {deviceType}</div>
+            <div>Index: {committedIndex}/{filteredPhotos?.length || 0}</div>
+            <div>Target: {targetIndex ?? 'none'}</div>
+            <div>Preparing: {isPreparing ? '✅' : '❌'}</div>
+            <div>Overlay: {showOverlay ? '👁️' : '🚫'}</div>
+            <div>Progress: {prepareProgress}%</div>
+            <div>Cache: {getCacheStats().size}/15</div>
+            <div>Type: {preparationType}</div>
+          </div>
+        )}
       </div>
   );
 });
