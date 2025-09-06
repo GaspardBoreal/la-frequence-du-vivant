@@ -466,7 +466,7 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes,
       // Wait for all images with timeout
       await Promise.race([
         Promise.allSettled(trackedPromises),
-        new Promise((resolve) => setTimeout(resolve, 2000)) // 2s timeout
+        new Promise((resolve) => setTimeout(resolve, 1000)) // 1s timeout
       ]);
 
       const elapsed = Date.now() - startTime;
@@ -491,7 +491,7 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes,
     }
     
     const startTime = Date.now();
-    const minVisibleDuration = lastPrepTypeRef.current === 'cross-marche' ? 400 : 300;
+    const minVisibleDuration = lastPrepTypeRef.current === 'cross-marche' ? 200 : 150;
     
     // Calculate elapsed time since overlay was shown
     const elapsed = Date.now() - overlayShownAtRef.current;
