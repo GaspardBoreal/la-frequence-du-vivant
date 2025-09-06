@@ -1,40 +1,20 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback, memo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
-  Camera, 
-  Map as MapIcon, 
-  Palette, 
-  Heart, 
-  Eye, 
-  Wind, 
-  Sun, 
-  Droplets,
-  TreePine,
-  Sparkles,
-  Compass,
-  Grid3X3,
-  Search,
-  Filter,
-  Share2,
-  Download,
-  ZoomIn,
-  X,
-  Waves,
-  Star,
   Home,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  ZoomIn
 } from 'lucide-react';
 import { MarcheTechnoSensible } from '../utils/googleSheetsApi';
 import { RegionalTheme } from '../utils/regionalThemes';
-import { Button } from './ui/button';
 import { Badge } from './ui/badge';
-import { Card } from './ui/card';
-import { Dialog, DialogContent, DialogClose } from './ui/dialog';
 import { useIsMobile } from '../hooks/use-mobile';
 import { ExplorationMarcheComplete } from '../hooks/useExplorations';
 import FleuveTemporel from './FleuveTemporel';
 import MarcheSelector from './MarcheSelector';
+import { OptimizedImage } from './OptimizedImage';
+import { useSmartImagePreloader } from '../hooks/useSmartImagePreloader';
 
 interface GalerieFluveProps {
   explorations: any[];
@@ -76,6 +56,9 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes,
   const [selectedMarcheId, setSelectedMarcheId] = useState<string | null>(null);
   const [isMarcheSelectorOpen, setIsMarcheSelectorOpen] = useState(false);
   const isMobile = useIsMobile();
+  
+  // Smart image preloader
+  const { preloadImageSet, getPreloadedImage, getCacheStats } = useSmartImagePreloader(15);
 
   // Navigation par marche - nouvelle logique
   const [currentMarcheIndex, setCurrentMarcheIndex] = useState(0);
@@ -253,8 +236,6 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes,
     }
   }, [explorations, generateMetadata]);
 
-  // Auto-navigation removed - only galerie mode supported
-
   // Groupement des photos par marche avec filtres thématiques
   const marcheGroups = useMemo(() => {
     const filteredPhotos = filterMode === 'all' ? allPhotos : (() => {
@@ -369,6 +350,24 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes,
     return { currentPosition: currentPosition + 1, totalPhotos };
   }, [marcheGroups, currentMarcheIndex, currentPhotoInMarche]);
 
+  // Preload images when photos change
+  useEffect(() => {
+    if (allPhotos.length > 0) {
+      const urls = allPhotos.map(photo => photo.url).filter(Boolean);
+      if (urls.length > 0) {
+        preloadImageSet(urls, globalPosition.currentPosition - 1);
+      }
+    }
+  }, [allPhotos, globalPosition.currentPosition, preloadImageSet]);
+
+  // Preload adjacent images when navigation changes
+  useEffect(() => {
+    if (currentMarchePhotos.length > 0) {
+      const currentUrls = currentMarchePhotos.map(photo => photo.url).filter(Boolean);
+      preloadImageSet(currentUrls, currentPhotoInMarche);
+    }
+  }, [currentMarchePhotos, currentPhotoInMarche, preloadImageSet]);
+
   // Keyboard navigation
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -456,58 +455,152 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes,
     );
   };
 
-  const GalerieView = () => (
-    <div className="min-h-screen bg-gradient-to-b from-blue-50 via-green-50 to-blue-100">
-      <div className="relative h-screen overflow-hidden">
-        {currentDisplayPhoto && (
-          <motion.div 
-            className="absolute inset-0 flex items-center justify-center"
-            key={`${currentMarcheIndex}-${currentPhotoInMarche}`}
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 1.05 }}
-            transition={{ 
-              type: "spring",
-              stiffness: 300,
-              damping: 30,
-              duration: 0.4
-            }}
-          >
-            <motion.div
-              className="w-full h-full relative"
-              transition={{ type: "spring", stiffness: 300 }}
+  const GalerieView = () => {
+    const displayPhotos = useMemo(() => {
+      if (!currentMarchePhotos.length) return [];
+      
+      if (deviceType === 'desktop') {
+        // Desktop: Show 3 photos (current + previous/next if available)
+        const photos = [];
+        const prevPhoto = currentPhotoInMarche > 0 ? currentMarchePhotos[currentPhotoInMarche - 1] : null;
+        const currentPhoto = currentMarchePhotos[currentPhotoInMarche];
+        const nextPhoto = currentPhotoInMarche < currentMarchePhotos.length - 1 ? currentMarchePhotos[currentPhotoInMarche + 1] : null;
+        
+        if (prevPhoto) photos.push({ photo: prevPhoto, position: 'previous' });
+        photos.push({ photo: currentPhoto, position: 'current' });
+        if (nextPhoto) photos.push({ photo: nextPhoto, position: 'next' });
+        
+        return photos;
+      } else {
+        // Mobile: Show only current photo
+        return [{ photo: currentMarchePhotos[currentPhotoInMarche], position: 'current' }];
+      }
+    }, [currentMarchePhotos, currentPhotoInMarche, deviceType]);
+
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-slate-50 via-blue-50 to-emerald-50">
+        <div className="relative h-screen overflow-hidden">
+          <AnimatePresence mode="wait">
+            <motion.div 
+              key={`${currentMarcheIndex}-${currentPhotoInMarche}-${deviceType}`}
+              className={`absolute inset-0 ${
+                deviceType === 'desktop' 
+                  ? 'flex items-center justify-center gap-4 px-8' 
+                  : 'flex items-center justify-center'
+              }`}
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -20 }}
+              transition={{ 
+                type: "spring",
+                stiffness: 400,
+                damping: 30,
+                duration: 0.4
+              }}
             >
-              <img
-                src={currentDisplayPhoto.url}
-                alt={currentDisplayPhoto.titre || 'Photo exploration'}
-                className="w-full h-full object-cover"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
-              
-              {/* Métadonnées géopoétiques */}
-              <div className={`absolute bottom-6 left-4 text-white ${deviceType !== 'desktop' ? 'right-20' : 'right-4'}`}>
-                <motion.div
-                  initial={{ y: 20, opacity: 0 }}
-                  animate={{ y: 0, opacity: 1 }}
-                  transition={{ delay: 0.3 }}
-                >
-                  <Badge className="mb-2 bg-emerald-600/80 text-white border-emerald-400/30 backdrop-blur-sm">
-                    {currentDisplayPhoto.ville}
-                  </Badge>
-                  <h3 className="text-lg font-bold mb-1">
-                    {currentDisplayPhoto.nomMarche}
-                  </h3>
-                  <p className="text-sm opacity-90">
-                    Photo {currentPhotoInMarche + 1} / {currentMarchePhotos.length}
-                  </p>
-                </motion.div>
-              </div>
+              {displayPhotos.map(({ photo, position }, index) => {
+                const preloadedImage = getPreloadedImage(photo.url);
+                
+                return (
+                  <motion.div
+                    key={`${photo.id}-${position}`}
+                    className={`
+                      relative overflow-hidden rounded-2xl shadow-2xl
+                      ${deviceType === 'desktop' ? (
+                        position === 'current' 
+                          ? 'w-[45%] h-[80%] z-10' 
+                          : 'w-[25%] h-[60%] z-0 opacity-70 hover:opacity-90 cursor-pointer'
+                      ) : 'w-[95%] h-[85%]'}
+                    `}
+                    initial={{ 
+                      scale: position === 'current' ? 0.95 : 0.9,
+                      opacity: position === 'current' ? 0 : 0.6
+                    }}
+                    animate={{ 
+                      scale: position === 'current' ? 1 : 0.9,
+                      opacity: position === 'current' ? 1 : 0.7
+                    }}
+                    transition={{ 
+                      delay: index * 0.1,
+                      type: "spring",
+                      stiffness: 300,
+                      damping: 25
+                    }}
+                    onClick={() => {
+                      if (position === 'previous') navigatePrevious();
+                      if (position === 'next') navigateNext();
+                    }}
+                    whileHover={position !== 'current' ? { scale: 0.95, opacity: 0.9 } : {}}
+                  >
+                    <OptimizedImage
+                      src={photo.url}
+                      alt={photo.titre || 'Photo exploration'}
+                      className="w-full h-full"
+                      priority={position === 'current' ? 'high' : 'medium'}
+                      preloadedImage={preloadedImage?.element}
+                      transition={{ 
+                        duration: 0.6,
+                        ease: [0.25, 0.1, 0.25, 1]
+                      }}
+                    />
+                    
+                    {/* Gradient overlay */}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent" />
+                    
+                    {/* Photo metadata - only show on current photo */}
+                    {position === 'current' && (
+                      <div className="absolute bottom-6 left-6 right-6 text-white">
+                        <motion.div
+                          initial={{ y: 20, opacity: 0 }}
+                          animate={{ y: 0, opacity: 1 }}
+                          transition={{ delay: 0.4 }}
+                        >
+                          <Badge className="mb-3 bg-emerald-500/80 text-white border-emerald-400/30 backdrop-blur-sm">
+                            {photo.ville}
+                          </Badge>
+                          <h3 className="text-xl font-bold mb-2 leading-tight">
+                            {photo.nomMarche}
+                          </h3>
+                          <div className="flex items-center justify-between">
+                            <p className="text-sm opacity-90">
+                              Photo {currentPhotoInMarche + 1} / {currentMarchePhotos.length}
+                            </p>
+                            {photo.emotionalTags.length > 0 && (
+                              <div className="flex gap-1">
+                                {photo.thematicIcons.slice(0, 3).map((icon, i) => (
+                                  <span key={i} className="text-lg">{icon}</span>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        </motion.div>
+                      </div>
+                    )}
+
+                    {/* Navigation hints for side photos */}
+                    {deviceType === 'desktop' && position !== 'current' && (
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <motion.div
+                          className="w-12 h-12 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center"
+                          whileHover={{ scale: 1.1, backgroundColor: 'rgba(255,255,255,0.3)' }}
+                        >
+                          {position === 'previous' ? (
+                            <ChevronLeft className="h-6 w-6 text-white" />
+                          ) : (
+                            <ChevronRight className="h-6 w-6 text-white" />
+                          )}
+                        </motion.div>
+                      </div>
+                    )}
+                  </motion.div>
+                );
+              })}
             </motion.div>
-          </motion.div>
-        )}
+          </AnimatePresence>
+        </div>
       </div>
-    </div>
-  );
+    );
+  };
 
   return (
     <div className="relative">
