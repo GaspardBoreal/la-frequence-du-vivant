@@ -249,9 +249,9 @@ export const SecureRichTextEditor: React.FC<SecureRichTextEditorProps> = ({
   }, [value, isTyping]);
 
   return (
-    <div className={`border border-input rounded-md ${className}`}>
-      {/* Toolbar */}
-      <div className="flex flex-wrap items-center gap-1 p-2 border-b border-border bg-muted/50">
+    <div className={`border border-input rounded-md flex flex-col ${className}`}>
+      {/* Sticky Toolbar */}
+      <div className="sticky top-0 z-10 flex flex-wrap items-center gap-1 p-2 border-b border-border bg-background/95 backdrop-blur-sm">
         <Button
           type="button"
           variant="ghost"
@@ -347,22 +347,24 @@ export const SecureRichTextEditor: React.FC<SecureRichTextEditorProps> = ({
         </Button>
       </div>
       
-      {/* Editor */}
-      <div
-        ref={editorRef}
-        contentEditable
-        className="min-h-[200px] p-3 focus:outline-none"
-        onInput={handleInput}
-        onKeyDown={handleKeyDown}
-        onMouseUp={saveSelection}
-        onKeyUp={saveSelection}
-        data-placeholder={placeholder}
-        style={{
-          // Show placeholder when empty
-          position: 'relative'
-        }}
-        suppressContentEditableWarning={true}
-      />
+      {/* Editor - scrollable content area */}
+      <div className="flex-1 overflow-y-auto">
+        <div
+          ref={editorRef}
+          contentEditable
+          className="min-h-[200px] p-3 focus:outline-none"
+          onInput={handleInput}
+          onKeyDown={handleKeyDown}
+          onMouseUp={saveSelection}
+          onKeyUp={saveSelection}
+          data-placeholder={placeholder}
+          style={{
+            // Show placeholder when empty
+            position: 'relative'
+          }}
+          suppressContentEditableWarning={true}
+        />
+      </div>
       
       <style>{`
         [contenteditable]:empty:before {
