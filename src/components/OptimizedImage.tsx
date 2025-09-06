@@ -38,6 +38,15 @@ export const OptimizedImage = memo<OptimizedImageProps>(({
   const [imageSrc, setImageSrc] = useState<string>(preloadedImage?.src || '');
   const imgRef = useRef<HTMLImageElement>(null);
 
+  const prefersReducedMotion = typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  // Double-buffer state for instant mode on mobile to avoid flicker
+  const [currentSrc, setCurrentSrc] = useState<string>(preloadedImage?.src || src || '');
+  const prevSrcRef = useRef<string>('');
+  const [topReady, setTopReady] = useState(false);
+  const [showTop, setShowTop] = useState(false);
+  const topImgRef = useRef<HTMLImageElement>(null);
+
   useEffect(() => {
     if (preloadedImage) {
       setImageSrc(preloadedImage.src);
@@ -85,6 +94,108 @@ export const OptimizedImage = memo<OptimizedImageProps>(({
       img.onerror = null;
     };
   }, [src, priority, onLoad, onError, preloadedImage]);
+
+  // Instant mode: double-buffer crossfade to avoid flicker on mobile (iOS Safari)
+  useEffect(() => {
+    if (!instant) return;
+
+    // Initialize current source on first mount
+    if (!currentSrc) {
+      const initial = preloadedImage?.src || src;
+      setCurrentSrc(initial);
+      prevSrcRef.current = initial;
+      return;
+    }
+
+    // If the target is already displayed, nothing to do
+    if (src === currentSrc) return;
+
+    let cancelled = false;
+    const img = new Image();
+
+    if ('fetchPriority' in img) {
+      (img as any).fetchPriority = priority;
+    }
+    img.crossOrigin = 'anonymous';
+    img.loading = priority === 'high' ? 'eager' : 'lazy';
+
+    img.onload = async () => {
+      try {
+        if ('decode' in img && typeof (img as any).decode === 'function') {
+          await (img as any).decode();
+        }
+      } catch {}
+      if (cancelled) return;
+      setTopReady(true);
+      if (prefersReducedMotion) {
+        setShowTop(true);
+      } else {
+        requestAnimationFrame(() => {
+          requestAnimationFrame(() => setShowTop(true));
+        });
+      }
+    };
+
+    img.onerror = () => {
+      if (cancelled) return;
+      setTopReady(false);
+      setShowTop(false);
+      // Fallback: swap immediately
+      setCurrentSrc(src);
+      prevSrcRef.current = src;
+    };
+
+    img.src = src;
+
+    return () => {
+      cancelled = true;
+      img.onload = null;
+      img.onerror = null;
+    };
+  }, [instant, src, priority, currentSrc, preloadedImage, prefersReducedMotion]);
+
+  // Instant branch: double-buffer crossfade to avoid flicker
+  if (instant) {
+    return (
+      <div className={`relative overflow-hidden ${className}`}>
+        {/* Base image (current) */}
+        <img
+          src={currentSrc || src}
+          alt={alt}
+          className="w-full h-full object-cover absolute inset-0"
+          style={{
+            transform: 'translateZ(0)',
+            backfaceVisibility: 'hidden',
+            willChange: 'opacity, transform'
+          }}
+        />
+        {/* Top image (incoming) */}
+        {topReady && (
+          <img
+            ref={topImgRef}
+            src={src}
+            alt={alt}
+            className="w-full h-full object-cover absolute inset-0"
+            style={{
+              opacity: showTop ? 1 : 0,
+              transition: prefersReducedMotion ? 'none' : 'opacity 0.12s ease',
+              transform: 'translateZ(0)',
+              backfaceVisibility: 'hidden',
+              willChange: 'opacity'
+            }}
+            onTransitionEnd={() => {
+              if (!showTop) return;
+              setCurrentSrc(src);
+              prevSrcRef.current = src;
+              setShowTop(false);
+              setTopReady(false);
+              onLoad?.();
+            }}
+          />
+        )}
+      </div>
+    );
+  }
 
   return (
     <div className={`relative overflow-hidden ${className}`}>

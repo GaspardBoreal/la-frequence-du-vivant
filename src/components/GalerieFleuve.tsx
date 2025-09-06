@@ -542,15 +542,32 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes,
       overlayTimeoutRef.current = null;
     }
     
-    setIsTransitioning(true);
-    
-    // Smooth transition delay
+    // Decide instant mobile commit (no overlay and intra-marche)
     const isIntra = lastPrepTypeRef.current === 'intra-marche';
     const noOverlay = !showOverlay;
     const isMobileDevice = deviceType !== 'desktop';
     const instantMobile = isMobileDevice && isIntra && (instantNextCommit || noOverlay);
-    const transitionDelay = instantMobile ? 0 : (reduceMotion ? 100 : 200);
-    
+
+    if (instantMobile) {
+      // Commit synchronously without toggling transition state to avoid flicker
+      setCommittedIndex(indexToCommit);
+      setCurrentPhotoIndex(indexToCommit);
+      setIsPreparing(false);
+      setPrepareProgress(0);
+      setTargetIndex(null);
+      setPrepareLabel('');
+      setShowOverlay(false);
+      setInstantNextCommit(false);
+      if (debugMode) {
+        console.log(`✅ Navigation completed instantly to index ${indexToCommit}`);
+      }
+      return;
+    }
+
+    setIsTransitioning(true);
+
+    // Smooth transition delay for non-instant paths
+    const transitionDelay = reduceMotion ? 100 : 200;
     setTimeout(() => {
       setCommittedIndex(indexToCommit);
       setCurrentPhotoIndex(indexToCommit);
@@ -567,7 +584,7 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes,
         console.log(`✅ Navigation completed to index ${indexToCommit}`);
       }
     }, transitionDelay);
-  }, [targetIndex, reduceMotion, debugMode]);
+  }, [targetIndex, reduceMotion, debugMode, deviceType, showOverlay, instantNextCommit]);
 
   // New navigation system with gating
   const navigateNext = useCallback(async () => {
@@ -809,9 +826,9 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes,
                     {position === 'current' && !isPreparing && (
                       <motion.div 
                         className="absolute bottom-6 left-6 right-6 text-white"
-                        initial={{ y: 20, opacity: 0 }}
+                        initial={deviceType !== 'desktop' && position === 'current' && instantNextCommit && !showOverlay ? false : { y: 20, opacity: 0 }}
                         animate={{ y: 0, opacity: 1 }}
-                        transition={{ delay: 0.3 }}
+                        transition={deviceType !== 'desktop' && position === 'current' && instantNextCommit && !showOverlay ? { duration: 0 } : { delay: 0.3 }}
                       >
                         <Badge className="mb-3 bg-emerald-500/80 text-white border-emerald-400/30 backdrop-blur-sm">
                           {photo.ville}
