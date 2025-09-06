@@ -482,11 +482,12 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes,
   }, [isPreparing, committedIndex, filteredPhotos, detectCrossMarche, deviceType, preloadNeighbors, debugMode]);
 
   // Enhanced navigation completion with minimum overlay visibility
-  const completeNavigation = useCallback(async () => {
-    if (targetIndex === null) return;
+  const completeNavigation = useCallback(async (toIndex?: number) => {
+    const indexToCommit = (typeof toIndex === 'number') ? toIndex : targetIndex;
+    if (indexToCommit === null || indexToCommit === undefined) return;
     
     if (debugMode) {
-      console.log(`🎯 Completing navigation to index ${targetIndex}`);
+      console.log(`🎯 Completing navigation to index ${indexToCommit}`);
     }
     
     const startTime = Date.now();
@@ -500,7 +501,7 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes,
     if (remainingTime > 0) {
       await new Promise(resolve => setTimeout(resolve, remainingTime));
     }
-
+  
     // Clear any pending overlay timers
     if (overlayTimeoutRef.current) {
       clearTimeout(overlayTimeoutRef.current);
@@ -513,8 +514,8 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes,
     const transitionDelay = reduceMotion ? 100 : 200;
     
     setTimeout(() => {
-      setCommittedIndex(targetIndex);
-      setCurrentPhotoIndex(targetIndex);
+      setCommittedIndex(indexToCommit);
+      setCurrentPhotoIndex(indexToCommit);
       setIsTransitioning(false);
       setIsPreparing(false);
       setPrepareProgress(0);
@@ -523,7 +524,7 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes,
       setShowOverlay(false);
       
       if (debugMode) {
-        console.log(`✅ Navigation completed to index ${targetIndex}`);
+        console.log(`✅ Navigation completed to index ${indexToCommit}`);
       }
     }, transitionDelay);
   }, [targetIndex, reduceMotion, debugMode]);
@@ -538,7 +539,7 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes,
     // Prepare navigation with gating
     const success = await prepareNavigation(target);
     if (success) {
-      completeNavigation();
+      completeNavigation(target);
     }
   }, [committedIndex, filteredPhotos, isPreparing, isTransitioning, prepareNavigation, completeNavigation]);
 
@@ -551,7 +552,7 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes,
     // Prepare navigation with gating
     const success = await prepareNavigation(target);
     if (success) {
-      completeNavigation();
+      completeNavigation(target);
     }
   }, [committedIndex, filteredPhotos, isPreparing, isTransitioning, prepareNavigation, completeNavigation]);
 
@@ -845,7 +846,7 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes,
                 void (async () => {
                   const success = await prepareNavigation(firstPhotoIndex);
                   if (success) {
-                    completeNavigation();
+                    completeNavigation(firstPhotoIndex);
                   }
                 })();
               }
