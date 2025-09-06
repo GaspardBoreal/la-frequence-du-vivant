@@ -412,7 +412,30 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes,
     setPrepareProgress(0);
     setTargetIndex(newIndex);
     setPreparationType(prepType);
-    setShowOverlay(true); // Always show overlay immediately
+
+    const targetPhoto = filteredPhotos[newIndex];
+    
+    // Mobile intelligent overlay logic
+    const shouldShowOverlay = isMobile ? (
+      // Always show for cross-marche transitions
+      isCross || 
+      // Check if target image is not already cached/loaded
+      !getPreloadedImage(targetPhoto.url)?.loaded
+    ) : true; // Desktop always shows overlay
+
+    let overlayTimer: NodeJS.Timeout | null = null;
+    let overlayShown = false;
+
+    if (shouldShowOverlay) {
+      // On mobile, delay overlay by 100ms to avoid showing it for fast loads
+      const overlayDelay = isMobile && !isCross ? 100 : 0;
+      
+      overlayTimer = setTimeout(() => {
+        overlayShownAtRef.current = Date.now();
+        setShowOverlay(true);
+        overlayShown = true;
+      }, overlayDelay);
+    }
 
     // Clear any pending overlay timers
     if (overlayTimeoutRef.current) {
@@ -422,12 +445,10 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes,
 
     // Record timing
     prepStartAtRef.current = startTime;
-    overlayShownAtRef.current = startTime;
     lastPrepTypeRef.current = prepType;
     
     // Set preparation label based on type
     if (isCross) {
-      const targetPhoto = filteredPhotos[newIndex];
       setPrepareLabel(`Vers ${targetPhoto.ville} - ${targetPhoto.nomMarche}`);
     } else {
       setPrepareLabel('Poursuite de l\'exploration');
@@ -469,9 +490,14 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes,
         new Promise((resolve) => setTimeout(resolve, 1000)) // 1s timeout
       ]);
 
+      // Cancel overlay timer if loading finished quickly and overlay hasn't been shown yet
+      if (overlayTimer && !overlayShown) {
+        clearTimeout(overlayTimer);
+      }
+
       const elapsed = Date.now() - startTime;
       if (debugMode) {
-        console.log(`✅ Preparation completed in ${elapsed}ms`);
+        console.log(`✅ Preparation completed in ${elapsed}ms, overlay shown: ${overlayShown}`);
       }
       
       return true;
