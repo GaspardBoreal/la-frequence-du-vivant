@@ -348,22 +348,20 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes,
   const imagesPerPage = getImagesPerPage();
   const totalPages = Math.ceil(basePhotos.length / imagesPerPage);
 
-  // Simple navigation functions
+  // Optimized navigation with unified state
   const navigateNext = useCallback(() => {
-    if (currentPage < totalPages - 1) {
-      const nextPage = currentPage + 1;
-      setCurrentPage(nextPage);
-      setCurrentPhoto(nextPage * imagesPerPage);
+    const nextPhoto = currentPhoto + imagesPerPage;
+    if (nextPhoto < basePhotos.length) {
+      setCurrentPhoto(nextPhoto);
+      setCurrentPage(Math.floor(nextPhoto / imagesPerPage));
     }
-  }, [currentPage, totalPages, imagesPerPage]);
+  }, [currentPhoto, imagesPerPage, basePhotos.length]);
 
   const navigatePrevious = useCallback(() => {
-    if (currentPage > 0) {
-      const prevPage = currentPage - 1;
-      setCurrentPage(prevPage);
-      setCurrentPhoto(prevPage * imagesPerPage);
-    }
-  }, [currentPage, imagesPerPage]);
+    const prevPhoto = Math.max(0, currentPhoto - imagesPerPage);
+    setCurrentPhoto(prevPhoto);
+    setCurrentPage(Math.floor(prevPhoto / imagesPerPage));
+  }, [currentPhoto, imagesPerPage]);
 
   // Keyboard navigation
   useEffect(() => {
@@ -457,11 +455,11 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes,
       <div className="relative h-screen overflow-hidden">
         <motion.div 
           className="absolute inset-0 flex items-center"
-          animate={{ x: `-${currentPage * 100}%` }}
+          animate={{ x: `-${currentPhoto * (100 / imagesPerPage)}%` }}
           transition={{ 
             type: "tween",
-            duration: 0.4,
-            ease: "easeInOut"
+            duration: 0.3,
+            ease: "easeOut"
           }}
         >
           {basePhotos.map((photo, index) => (
@@ -527,10 +525,9 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes,
               });
               
               if (marchePhotoIndex !== -1) {
-                // Calculer la page correspondante
-                const targetPage = Math.floor(marchePhotoIndex / imagesPerPage);
-                setCurrentPage(targetPage);
+                // Navigation directe vers la photo
                 setCurrentPhoto(marchePhotoIndex);
+                setCurrentPage(Math.floor(marchePhotoIndex / imagesPerPage));
               }
               
               setSelectedMarcheId(marcheId);
