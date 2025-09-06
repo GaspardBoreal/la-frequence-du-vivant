@@ -712,8 +712,8 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes,
     }, [filteredPhotos, committedIndex, deviceType]);
 
     return (
-      <div className="min-h-screen bg-gradient-to-b from-slate-50 via-blue-50 to-emerald-50">
-        <div className="relative h-screen overflow-hidden">
+      <div className="min-h-[100dvh] bg-gradient-to-b from-slate-50 via-blue-50 to-emerald-50">
+        <div className="relative h-[100dvh] overflow-hidden">
           
 
           {/* Main photo display */}
@@ -721,8 +721,9 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes,
             <div className={`absolute inset-0 ${
               deviceType === 'desktop' 
                 ? 'flex items-center justify-center gap-4 px-8' 
-                : 'flex items-center justify-center'
+                : 'block'
             }`}>
+
               {displayPhotos.map(({ photo, position }, index) => {
                 const preloadedImage = getPreloadedImage(photo.url);
                 
@@ -735,7 +736,7 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes,
                         position === 'current' 
                           ? 'w-[45%] h-[80%] z-10' 
                           : 'w-[25%] h-[60%] z-0 opacity-70 hover:opacity-90 cursor-pointer'
-                      ) : 'w-[95%] h-[85%]'}
+                      ) : 'w-full h-full rounded-none'}
                     `}
                     initial={{ 
                       scale: position === 'current' ? 0.95 : 0.9,
@@ -769,7 +770,7 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes,
                       className="w-full h-full"
                       priority={position === 'current' ? 'high' : 'medium'}
                       preloadedImage={preloadedImage?.element}
-                      enableCinematicTransitions={true}
+                      enableCinematicTransitions={deviceType === 'desktop'}
                     />
                     
                     <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent" />
