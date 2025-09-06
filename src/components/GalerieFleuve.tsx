@@ -71,6 +71,22 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes,
   const [frozenMarcheKey, setFrozenMarcheKey] = useState<string | null>(null);
   const [frozenBasePhotos, setFrozenBasePhotos] = useState<EnrichedPhoto[]>([]);
   const [isCrossMarche, setIsCrossMarche] = useState(false);
+  
+  // Micro-finitions : Interactions et accessibilité
+  const [interactionsDisabled, setInteractionsDisabled] = useState(false);
+  const [reduceMotion, setReduceMotion] = useState(false);
+  const [instantCrossMarcheMask, setInstantCrossMarcheMask] = useState(false);
+
+  // Détection préférences utilisateur pour les animations
+  useEffect(() => {
+    const mediaQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
+    setReduceMotion(mediaQuery.matches);
+    
+    const handleChange = (e: MediaQueryListEvent) => setReduceMotion(e.matches);
+    mediaQuery.addEventListener('change', handleChange);
+    
+    return () => mediaQuery.removeEventListener('change', handleChange);
+  }, []);
 
   // Device detection
   const [deviceType, setDeviceType] = useState<'mobile-portrait' | 'mobile-landscape' | 'desktop'>('desktop');
@@ -309,7 +325,7 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes,
 
   // Navigation globale avec détection cross-marche et gel atomique
   const navigateNext = useCallback(() => {
-    if (isTransitioning || !filteredPhotos.length) return;
+    if (isTransitioning || interactionsDisabled || !filteredPhotos.length) return;
 
     // Navigation photo par photo (ultra-stable)
     const target = Math.min(committedIndex + 1, filteredPhotos.length - 1);
@@ -317,6 +333,12 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes,
 
     // Détecter si c'est une transition cross-marche
     const isCross = detectCrossMarche(committedIndex, target);
+    
+    // Micro-finition : Masque instantané pour cross-marche
+    if (isCross) {
+      setInstantCrossMarcheMask(true);
+      setInteractionsDisabled(true);
+    }
     
     // Figer l'état actuel avant toute transition
     setFrozenCommittedIndex(committedIndex);
@@ -332,7 +354,7 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes,
   }, [committedIndex, filteredPhotos, isTransitioning, detectCrossMarche]);
 
   const navigatePrevious = useCallback(() => {
-    if (isTransitioning || !filteredPhotos.length) return;
+    if (isTransitioning || interactionsDisabled || !filteredPhotos.length) return;
 
     // Navigation photo par photo (ultra-stable)
     const target = Math.max(committedIndex - 1, 0);
@@ -340,6 +362,12 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes,
 
     // Détecter si c'est une transition cross-marche
     const isCross = detectCrossMarche(committedIndex, target);
+    
+    // Micro-finition : Masque instantané pour cross-marche
+    if (isCross) {
+      setInstantCrossMarcheMask(true);
+      setInteractionsDisabled(true);
+    }
     
     // Figer l'état actuel avant toute transition
     setFrozenCommittedIndex(committedIndex);
@@ -405,19 +433,23 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes,
     setCurrentPhotoIndex(idx);
   }, [filteredPhotos, committedIndex, stagedIndex, isTransitioning]);
 
-  // Keyboard navigation avec direction
+  // Keyboard navigation avec direction et protection interactions
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      if (interactionsDisabled || isTransitioning) return;
+      
       if (e.key === 'ArrowRight') {
+        e.preventDefault();
         navigateNextWithDirection();
       } else if (e.key === 'ArrowLeft') {
+        e.preventDefault();
         navigatePreviousWithDirection();
       }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [navigateNextWithDirection, navigatePreviousWithDirection]);
+  }, [navigateNextWithDirection, navigatePreviousWithDirection, interactionsDisabled, isTransitioning]);
 
   // Contextual Navigation Controls
   const NavigationControls = () => {
@@ -447,13 +479,13 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes,
               {/* Previous Button */}
               <motion.button
                 onClick={navigatePreviousWithDirection}
-                disabled={!canNavigatePrevious}
+                disabled={!canNavigatePrevious || interactionsDisabled}
                 className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-300 touch-manipulation ${
-                  !canNavigatePrevious 
-                    ? 'bg-white/10 text-white/30' 
+                  !canNavigatePrevious || interactionsDisabled 
+                    ? 'bg-white/10 text-white/30 cursor-not-allowed' 
                     : 'bg-white/20 text-white active:bg-white/30'
                 }`}
-                whileTap={canNavigatePrevious ? { scale: 0.9 } : {}}
+                whileTap={canNavigatePrevious && !interactionsDisabled ? { scale: 0.9 } : {}}
               >
                 <ChevronLeft className="h-4 w-4" />
               </motion.button>
@@ -472,13 +504,13 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes,
               {/* Next Button */}
               <motion.button
                 onClick={navigateNextWithDirection}
-                disabled={!canNavigateNext}
+                disabled={!canNavigateNext || interactionsDisabled}
                 className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-300 touch-manipulation ${
-                  !canNavigateNext 
-                    ? 'bg-white/10 text-white/30' 
+                  !canNavigateNext || interactionsDisabled
+                    ? 'bg-white/10 text-white/30 cursor-not-allowed' 
                     : 'bg-white/20 text-white active:bg-white/30'
                 }`}
-                whileTap={canNavigateNext ? { scale: 0.9 } : {}}
+                whileTap={canNavigateNext && !interactionsDisabled ? { scale: 0.9 } : {}}
               >
                 <ChevronRight className="h-4 w-4" />
               </motion.button>
@@ -541,14 +573,16 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes,
       <div className="min-h-screen bg-gradient-to-b from-slate-50 via-blue-50 to-emerald-50">
         <div className="relative h-screen overflow-hidden">
           
-          {/* MASQUE CROSS-MARCHE - Isolation complète */}
-          {isTransitioning && isCrossMarche && (
+          {/* MASQUE CROSS-MARCHE INSTANTANÉ - Isolation complète */}
+          {(instantCrossMarcheMask || (isTransitioning && isCrossMarche)) && (
             <motion.div 
-              className="absolute inset-0 bg-black/60 backdrop-blur-md z-[45]"
-              initial={{ opacity: 0 }}
+              className="absolute inset-0 bg-black/80 backdrop-blur-lg z-[45]"
+              initial={{ opacity: instantCrossMarcheMask ? 1 : 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              transition={{ duration: 0.3 }}
+              transition={{ 
+                duration: reduceMotion ? 0.1 : (instantCrossMarcheMask ? 0 : 0.3)
+              }}
             />
           )}
 
@@ -583,9 +617,11 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes,
                     damping: 25
                   }}
                   onClick={() => {
+                    if (interactionsDisabled) return;
                     if (position === 'previous') navigatePreviousWithDirection();
                     if (position === 'next') navigateNextWithDirection();
                   }}
+                  style={{ cursor: interactionsDisabled ? 'not-allowed' : 'pointer' }}
                   whileHover={position !== 'current' ? { scale: 0.95, opacity: 0.9 } : {}}
                 >
                   <OptimizedImage
@@ -672,20 +708,22 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes,
                   scale: 0.95
                 }}
                 transition={{ 
-                  type: "spring",
-                  stiffness: 400,
-                  damping: 30,
-                  duration: 0.6
+                  type: reduceMotion ? "tween" : "spring",
+                  stiffness: reduceMotion ? undefined : 400,
+                  damping: reduceMotion ? undefined : 30,
+                  duration: reduceMotion ? 0.2 : 0.6
                 }}
                 onAnimationComplete={() => {
                   if (!transitionCommittedRef.current) {
-                    // Commit atomique avec réinitialisation des états figés
+                    // Commit atomique avec réinitialisation complète des états
                     setCommittedIndex(stagedIndex);
                     setIsTransitioning(false);
                     setIsCrossMarche(false);
                     setFrozenCommittedIndex(0);
                     setFrozenMarcheKey(null);
                     setFrozenBasePhotos([]);
+                    setInstantCrossMarcheMask(false);
+                    setInteractionsDisabled(false);
                     transitionCommittedRef.current = true;
                   }
                 }}
