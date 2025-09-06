@@ -21,6 +21,7 @@ interface MarcheHeroSectionProps {
   isModal?: boolean;
   canNavigatePrev?: boolean;
   canNavigateNext?: boolean;
+  preloadedImage?: HTMLImageElement;
 }
 
 const MarcheHeroSection: React.FC<MarcheHeroSectionProps> = ({
@@ -33,21 +34,19 @@ const MarcheHeroSection: React.FC<MarcheHeroSectionProps> = ({
   onNavigateToNext,
   isModal = false,
   canNavigatePrev = false,
-  canNavigateNext = false
+  canNavigateNext = false,
+  preloadedImage
 }) => {
   const isMobile = useIsMobile();
   const firstPhoto = marche.photos?.[0];
   const { preloadImage, getPreloadedImage } = useSmartImagePreloader(6);
 
-  React.useEffect(() => {
-    if (firstPhoto) preloadImage(firstPhoto, { priority: 'high' });
-    const prev = previousMarche?.photos?.[0];
-    if (prev) preloadImage(prev, { priority: 'medium' });
-    const next = nextMarche?.photos?.[0];
-    if (next) preloadImage(next, { priority: 'medium' });
-  }, [firstPhoto, previousMarche, nextMarche, preloadImage]);
-
-  const preloadedCurrent = firstPhoto ? getPreloadedImage(firstPhoto)?.element : undefined;
+  console.log('🖼️ [MarcheHeroSection] Render:', { 
+    marcheId: marche.id, 
+    ville: marche.ville,
+    hasPreloadedImage: !!preloadedImage,
+    firstPhoto 
+  });
 
   return (
     <div className={`relative overflow-hidden ${isModal ? 'h-[80vh]' : 'h-[400px]'}`}>
@@ -65,7 +64,7 @@ const MarcheHeroSection: React.FC<MarcheHeroSectionProps> = ({
               alt={marche.nomMarche || marche.ville}
               className="absolute inset-0 w-full h-full"
               priority="high"
-              preloadedImage={preloadedCurrent}
+              preloadedImage={preloadedImage}
               instant={isMobile}
               enableCinematicTransitions={!isMobile}
             />

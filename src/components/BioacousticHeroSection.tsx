@@ -17,6 +17,7 @@ interface BioacousticHeroSectionProps {
   previousMarche?: MarcheTechnoSensible | null;
   nextMarche?: MarcheTechnoSensible | null;
   onNavigateToMarche?: (marche: MarcheTechnoSensible) => void;
+  preloadedImage?: HTMLImageElement;
 }
 
 const BioacousticHeroSection: React.FC<BioacousticHeroSectionProps> = ({
@@ -25,21 +26,19 @@ const BioacousticHeroSection: React.FC<BioacousticHeroSectionProps> = ({
   onBack,
   previousMarche,
   nextMarche,
-  onNavigateToMarche
+  onNavigateToMarche,
+  preloadedImage
 }) => {
   const isMobile = useIsMobile();
   const firstPhoto = marche.photos?.[0];
   const { preloadImage, getPreloadedImage } = useSmartImagePreloader(6);
 
-  React.useEffect(() => {
-    if (firstPhoto) preloadImage(firstPhoto, { priority: 'high' });
-    const prev = previousMarche?.photos?.[0];
-    if (prev) preloadImage(prev, { priority: 'medium' });
-    const next = nextMarche?.photos?.[0];
-    if (next) preloadImage(next, { priority: 'medium' });
-  }, [firstPhoto, previousMarche, nextMarche, preloadImage]);
-
-  const preloadedCurrent = firstPhoto ? getPreloadedImage(firstPhoto)?.element : undefined;
+  console.log('🖼️ [BioacousticHeroSection] Render:', { 
+    marcheId: marche.id, 
+    ville: marche.ville,
+    hasPreloadedImage: !!preloadedImage,
+    firstPhoto 
+  });
 
   const handleCopyCoordinate = async (coordinate: string, type: 'latitude' | 'longitude') => {
     try {
@@ -78,7 +77,7 @@ const BioacousticHeroSection: React.FC<BioacousticHeroSectionProps> = ({
               alt={marche.nomMarche || marche.ville}
               className="absolute inset-0 w-full h-full"
               priority="high"
-              preloadedImage={preloadedCurrent}
+              preloadedImage={preloadedImage}
               instant={isMobile}
               enableCinematicTransitions={!isMobile}
             />

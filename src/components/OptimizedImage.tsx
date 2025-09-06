@@ -99,6 +99,10 @@ export const OptimizedImage = memo<OptimizedImageProps>(({
   useEffect(() => {
     if (!instant) return;
 
+    console.log('🖼️ [OptimizedImage] Instant mode useEffect:', { 
+      src, currentSrc, hasPreloaded: !!preloadedImage 
+    });
+
     // Initialize current source on first mount
     if (!currentSrc) {
       const initial = preloadedImage?.src || src;
@@ -109,6 +113,16 @@ export const OptimizedImage = memo<OptimizedImageProps>(({
 
     // If the target is already displayed, nothing to do
     if (src === currentSrc) return;
+
+    // Skip transition if the image is already preloaded and ready
+    if (preloadedImage && preloadedImage.src === src && preloadedImage.complete) {
+      console.log('⚡ [OptimizedImage] Using preloaded image, instant transition');
+      setCurrentSrc(src);
+      prevSrcRef.current = src;
+      setTopReady(false);
+      setShowTop(false);
+      return;
+    }
 
     let cancelled = false;
     const img = new Image();

@@ -8,6 +8,7 @@ import TextualExplorationSection from '@/components/textual/TextualExplorationSe
 import ImmersiveVisualSection from '@/components/ImmersiveVisualSection';
 import AudioExperienceSection from '@/components/AudioExperienceSection';
 import BioacousticHeroSection from '@/components/BioacousticHeroSection';
+import { useSmartImagePreloader } from '@/hooks/useSmartImagePreloader';
 
 interface Props {
   marche: ExplorationMarcheComplete;
@@ -34,6 +35,12 @@ const ExperienceMarcheElabore: React.FC<Props> = ({
 }) => {
   const [activeSection, setActiveSection] = useState<'visual' | 'audio' | 'poeme'>('poeme');
   const [theme, setTheme] = useState<RegionalTheme>(REGIONAL_THEMES['nouvelle-aquitaine']);
+  const { preloadImage, getPreloadedImage } = useSmartImagePreloader(6);
+
+  console.log('🔄 [ExperienceMarcheElabore] Render:', { 
+    marcheId: marche.marche?.id, 
+    ville: marche.marche?.ville 
+  });
 
   // Transform marche data to legacy format for compatibility  
   const legacyMarche: MarcheTechnoSensible | null = marche.marche ? {
@@ -87,6 +94,21 @@ const ExperienceMarcheElabore: React.FC<Props> = ({
     }
   }, [theme]);
 
+  // Preload hero images
+  useEffect(() => {
+    const currentPhoto = legacyMarche?.photos?.[0];
+    const prevPhoto = previousMarche?.marche?.photos?.[0]?.url_supabase;
+    const nextPhoto = nextMarche?.marche?.photos?.[0]?.url_supabase;
+
+    console.log('🖼️ [ExperienceMarcheElabore] Preloading images:', { 
+      currentPhoto, prevPhoto, nextPhoto 
+    });
+
+    if (currentPhoto) preloadImage(currentPhoto, { priority: 'high' });
+    if (prevPhoto) preloadImage(prevPhoto, { priority: 'medium' });
+    if (nextPhoto) preloadImage(nextPhoto, { priority: 'medium' });
+  }, [legacyMarche?.photos, previousMarche?.marche?.photos, nextMarche?.marche?.photos, preloadImage]);
+
   if (!legacyMarche) {
     return (
       <div className="text-center py-8">
@@ -115,10 +137,12 @@ return (
     <div className={`relative bg-background rounded-lg overflow-hidden ${isModal ? 'h-auto' : 'h-[650px]'}`}>
       {/* Use BioacousticHeroSection for the élaboré model */}
       <BioacousticHeroSection
+        key={`bioacoustic-hero-${legacyMarche.id}`}
         marche={legacyMarche}
         theme={theme}
         onBack={onBack || (() => {})}
         onNavigateToMarche={handleNavigateToMarche}
+        preloadedImage={legacyMarche.photos?.[0] ? getPreloadedImage(legacyMarche.photos[0])?.element : undefined}
         previousMarche={previousMarche?.marche ? {
           id: previousMarche.marche.id,
           ville: previousMarche.marche.ville,
