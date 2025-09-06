@@ -97,6 +97,7 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes,
   }, []);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const metadataCache = useRef<Map<string, { emotionalTags: string[], thematicIcons: string[] }>>(new Map());
+  const transitionCommittedRef = useRef(false);
 
   // Menu visibility: always show except on welcome page
   const shouldShowMenu = !showWelcome;
@@ -291,34 +292,104 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes,
 
   // Navigation globale avec orchestration pour éviter les flashs
   const navigateNext = useCallback(() => {
-    if (isTransitioning || currentPhotoIndex >= filteredPhotos.length - 1) return;
-    
+    if (isTransitioning || !filteredPhotos.length) return;
+
+    // Déterminer le segment (marche) courant à partir de committedIndex
+    const currentIdx = committedIndex;
+    const currentPhoto = filteredPhotos[currentIdx];
+    if (!currentPhoto) return;
+    const currentKey = `${currentPhoto.ville}-${currentPhoto.nomMarche}`;
+
+    // Bornes du segment courant
+    let segStart = currentIdx;
+    while (segStart > 0) {
+      const key = `${filteredPhotos[segStart - 1].ville}-${filteredPhotos[segStart - 1].nomMarche}`;
+      if (key !== currentKey) break;
+      segStart--;
+    }
+    let segEnd = currentIdx;
+    while (segEnd < filteredPhotos.length - 1) {
+      const key = `${filteredPhotos[segEnd + 1].ville}-${filteredPhotos[segEnd + 1].nomMarche}`;
+      if (key !== currentKey) break;
+      segEnd++;
+    }
+
+    // Avancer la fenêtre de 3 images (vue desktop)
+    const nextStartWithin = currentIdx + 3;
+    let targetStart = nextStartWithin;
+
+    // Si le segment comporte au moins 3 images, on borne start à segEnd - 2
+    const minStartWithinSeg = Math.max(segStart, segEnd - 2);
+
+    if (nextStartWithin <= minStartWithinSeg) {
+      targetStart = nextStartWithin;
+    } else {
+      // Passage au segment suivant
+      let nextSegStart = segEnd + 1;
+      if (nextSegStart >= filteredPhotos.length) return; // pas de suivant
+
+      const nextKey = `${filteredPhotos[nextSegStart].ville}-${filteredPhotos[nextSegStart].nomMarche}`;
+      let nextSegEnd = nextSegStart;
+      while (nextSegEnd < filteredPhotos.length - 1) {
+        const key = `${filteredPhotos[nextSegEnd + 1].ville}-${filteredPhotos[nextSegEnd + 1].nomMarche}`;
+        if (key !== nextKey) break;
+        nextSegEnd++;
+      }
+      targetStart = nextSegStart; // première fenêtre du prochain segment
+    }
+
+    setNavigationDirection('right');
     setIsTransitioning(true);
-    const newIndex = currentPhotoIndex + 1;
-    setStagedIndex(newIndex);
-    setCurrentPhotoIndex(newIndex);
-    
-    // Commit la transition après animation
-    setTimeout(() => {
-      setCommittedIndex(newIndex);
-      setIsTransitioning(false);
-    }, 600);
-  }, [currentPhotoIndex, filteredPhotos.length, isTransitioning]);
+    transitionCommittedRef.current = false;
+    setStagedIndex(targetStart);
+  }, [committedIndex, filteredPhotos, isTransitioning]);
 
   const navigatePrevious = useCallback(() => {
-    if (isTransitioning || currentPhotoIndex <= 0) return;
-    
+    if (isTransitioning || !filteredPhotos.length) return;
+
+    const currentIdx = committedIndex;
+    const currentPhoto = filteredPhotos[currentIdx];
+    if (!currentPhoto) return;
+    const currentKey = `${currentPhoto.ville}-${currentPhoto.nomMarche}`;
+
+    // Bornes du segment courant
+    let segStart = currentIdx;
+    while (segStart > 0) {
+      const key = `${filteredPhotos[segStart - 1].ville}-${filteredPhotos[segStart - 1].nomMarche}`;
+      if (key !== currentKey) break;
+      segStart--;
+    }
+    let segEnd = currentIdx;
+    while (segEnd < filteredPhotos.length - 1) {
+      const key = `${filteredPhotos[segEnd + 1].ville}-${filteredPhotos[segEnd + 1].nomMarche}`;
+      if (key !== currentKey) break;
+      segEnd++;
+    }
+
+    // Reculer la fenêtre de 3 images
+    const prevStartWithin = currentIdx - 3;
+    let targetStart = prevStartWithin;
+    if (prevStartWithin >= segStart) {
+      targetStart = prevStartWithin;
+    } else {
+      // Passage au segment précédent: dernière fenêtre complète de ce segment
+      if (segStart === 0) return; // pas de précédent
+      let prevSegEnd = segStart - 1;
+      const prevKey = `${filteredPhotos[prevSegEnd].ville}-${filteredPhotos[prevSegEnd].nomMarche}`;
+      let prevSegStart = prevSegEnd;
+      while (prevSegStart > 0) {
+        const key = `${filteredPhotos[prevSegStart - 1].ville}-${filteredPhotos[prevSegStart - 1].nomMarche}`;
+        if (key !== prevKey) break;
+        prevSegStart--;
+      }
+      targetStart = Math.max(prevSegEnd - 2, prevSegStart);
+    }
+
+    setNavigationDirection('left');
     setIsTransitioning(true);
-    const newIndex = currentPhotoIndex - 1;
-    setStagedIndex(newIndex);
-    setCurrentPhotoIndex(newIndex);
-    
-    // Commit la transition après animation
-    setTimeout(() => {
-      setCommittedIndex(newIndex);
-      setIsTransitioning(false);
-    }, 600);
-  }, [currentPhotoIndex, isTransitioning]);
+    transitionCommittedRef.current = false;
+    setStagedIndex(targetStart);
+  }, [committedIndex, filteredPhotos, isTransitioning]);
 
   // States de navigation
   const canNavigatePrevious = currentPhotoIndex > 0;
@@ -361,6 +432,23 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes,
       return () => clearTimeout(timer);
     }
   }, [navigationDirection]);
+
+  // Synchroniser l'index central (pour compteur & préchargement)
+  useEffect(() => {
+    if (!filteredPhotos.length) return;
+    let idx = isTransitioning ? stagedIndex : committedIndex;
+    const basePhoto = filteredPhotos[idx];
+    if (!basePhoto) return;
+    const key = `${basePhoto.ville}-${basePhoto.nomMarche}`;
+    let segEnd = idx;
+    while (segEnd < filteredPhotos.length - 1) {
+      const k = `${filteredPhotos[segEnd + 1].ville}-${filteredPhotos[segEnd + 1].nomMarche}`;
+      if (k !== key) break;
+      segEnd++;
+    }
+    const center = Math.min(idx + 1, segEnd);
+    setCurrentPhotoIndex(center);
+  }, [filteredPhotos, committedIndex, stagedIndex, isTransitioning]);
 
   // Keyboard navigation avec direction
   useEffect(() => {
@@ -450,30 +538,61 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes,
   };
 
   const GalerieView = () => {
-    // Base layer: photos stables basées sur committedIndex
+    // Base layer: fenêtre de 3 images verrouillée par marche (committedIndex = début de fenêtre)
     const basePhotos = useMemo(() => {
       if (!filteredPhotos.length) return [];
-      
-      if (deviceType === 'desktop') {
-        const photos = [];
-        const prevPhoto = committedIndex > 0 ? filteredPhotos[committedIndex - 1] : null;
-        const currentPhoto = filteredPhotos[committedIndex];
-        const nextPhoto = committedIndex < filteredPhotos.length - 1 ? filteredPhotos[committedIndex + 1] : null;
-        
-        if (prevPhoto) photos.push({ photo: prevPhoto, position: 'previous' });
-        photos.push({ photo: currentPhoto, position: 'current' });
-        if (nextPhoto) photos.push({ photo: nextPhoto, position: 'next' });
-        
-        return photos;
+
+      // Trouver les bornes du segment courant à partir de committedIndex
+      const currentPhoto = filteredPhotos[committedIndex];
+      if (!currentPhoto) return [];
+      const currentKey = `${currentPhoto.ville}-${currentPhoto.nomMarche}`;
+      let segStart = committedIndex;
+      while (segStart > 0) {
+        const key = `${filteredPhotos[segStart - 1].ville}-${filteredPhotos[segStart - 1].nomMarche}`;
+        if (key !== currentKey) break;
+        segStart--;
+      }
+      let segEnd = committedIndex;
+      while (segEnd < filteredPhotos.length - 1) {
+        const key = `${filteredPhotos[segEnd + 1].ville}-${filteredPhotos[segEnd + 1].nomMarche}`;
+        if (key !== currentKey) break;
+        segEnd++;
+      }
+
+      // Caler le début de fenêtre pour rester dans le segment
+      let start = committedIndex;
+      const segLength = segEnd - segStart + 1;
+      if (segLength >= 3) {
+        start = Math.min(committedIndex, Math.max(segEnd - 2, segStart));
       } else {
-        return [{ photo: filteredPhotos[committedIndex], position: 'current' }];
+        start = segStart; // segments < 3: on affiche ce qui est dispo
+      }
+
+      if (deviceType === 'desktop') {
+        const indices = [start, start + 1, start + 2].filter(i => i <= segEnd);
+        const positions: Array<'previous' | 'current' | 'next'> = ['previous', 'current', 'next'];
+        return indices.map((i, idx) => ({ photo: filteredPhotos[i], position: positions[idx] }));
+      } else {
+        // mobile: image centrale (start+1) si possible
+        const centerIndex = Math.min(start + 1, segEnd);
+        return [{ photo: filteredPhotos[centerIndex], position: 'current' }];
       }
     }, [filteredPhotos, committedIndex, deviceType]);
 
-    // Transition layer: photo en transition basée sur stagedIndex
+    // Transition layer: photo centrale de la fenêtre staged
     const transitionPhoto = useMemo(() => {
       if (!isTransitioning || !filteredPhotos.length) return null;
-      return filteredPhotos[stagedIndex];
+      const stagedPhoto = filteredPhotos[stagedIndex];
+      if (!stagedPhoto) return null;
+      const stagedKey = `${stagedPhoto.ville}-${stagedPhoto.nomMarche}`;
+      let segEnd = stagedIndex;
+      while (segEnd < filteredPhotos.length - 1) {
+        const key = `${filteredPhotos[segEnd + 1].ville}-${filteredPhotos[segEnd + 1].nomMarche}`;
+        if (key !== stagedKey) break;
+        segEnd++;
+      }
+      const centerIndex = Math.min(stagedIndex + 1, segEnd);
+      return filteredPhotos[centerIndex];
     }, [isTransitioning, filteredPhotos, stagedIndex]);
 
     return (
@@ -604,6 +723,13 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes,
                   damping: 30,
                   duration: 0.6
                 }}
+                onAnimationComplete={() => {
+                  if (!transitionCommittedRef.current) {
+                    setCommittedIndex(stagedIndex);
+                    setIsTransitioning(false);
+                    transitionCommittedRef.current = true;
+                  }
+                }}
               >
                 <div className={`
                   relative overflow-hidden rounded-2xl shadow-2xl
@@ -685,7 +811,9 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes,
               );
               
               if (firstPhotoIndex !== -1) {
-                setCurrentPhotoIndex(firstPhotoIndex);
+                setCommittedIndex(firstPhotoIndex);
+                setStagedIndex(firstPhotoIndex);
+                setIsTransitioning(false);
               }
               
               setSelectedMarcheId(marcheId);

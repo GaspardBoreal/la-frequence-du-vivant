@@ -55,7 +55,15 @@ export const OptimizedImage = memo<OptimizedImageProps>(({
     img.crossOrigin = 'anonymous';
     img.loading = priority === 'high' ? 'eager' : 'lazy';
 
-    img.onload = () => {
+    img.onload = async () => {
+      try {
+        // Attendre le décodage pour éviter les flashs lors de l'affichage
+        if ('decode' in img && typeof (img as any).decode === 'function') {
+          await (img as any).decode();
+        }
+      } catch (e) {
+        // ignore decode errors, fallback to onload
+      }
       setImageSrc(src);
       setLoaded(true);
       setError(false);
