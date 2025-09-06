@@ -15,6 +15,7 @@ import FleuveTemporel from './FleuveTemporel';
 import MarcheSelector from './MarcheSelector';
 import { OptimizedImage } from './OptimizedImage';
 import { useSmartImagePreloader } from '../hooks/useSmartImagePreloader';
+import PortalOverlay from './ui/PortalOverlay';
 
 interface GalerieFluveProps {
   explorations: any[];
@@ -71,6 +72,34 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes,
   const [prepareLabel, setPrepareLabel] = useState('');
   const [targetIndex, setTargetIndex] = useState<number | null>(null);
   const [preparationType, setPreparationType] = useState<'intra-marche' | 'cross-marche'>('intra-marche');
+  
+  // Global overlay control (via portal) + timing refs
+  const [showOverlay, setShowOverlay] = useState(false);
+  const isPreparingRef = useRef(false);
+  const prepStartAtRef = useRef<number>(0);
+  const overlayShownAtRef = useRef<number>(0);
+  const lastPrepTypeRef = useRef<'intra-marche' | 'cross-marche'>('intra-marche');
+  const overlayTimeoutRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    isPreparingRef.current = isPreparing;
+  }, [isPreparing]);
+
+  // Block page interactions while overlay is visible
+  useEffect(() => {
+    const root = document.getElementById('root');
+    if (showOverlay) {
+      document.body.style.overflow = 'hidden';
+      root?.classList.add('pointer-events-none');
+    } else {
+      document.body.style.overflow = '';
+      root?.classList.remove('pointer-events-none');
+    }
+    return () => {
+      document.body.style.overflow = '';
+      root?.classList.remove('pointer-events-none');
+    };
+  }, [showOverlay]);
   
   // Accessibility and user preferences
   const [reduceMotion, setReduceMotion] = useState(false);
@@ -332,6 +361,31 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes,
     setPrepareProgress(0);
     setTargetIndex(newIndex);
     setPreparationType(prepType);
+
+    // Record timing and control overlay visibility
+    lastPrepTypeRef.current = prepType;
+    prepStartAtRef.current = Date.now();
+
+    // Clear any pending overlay timers
+    if (overlayTimeoutRef.current) {
+      clearTimeout(overlayTimeoutRef.current);
+      overlayTimeoutRef.current = null;
+    }
+
+    if (isCross) {
+      // Cross-marche: show overlay immediately
+      setShowOverlay(true);
+      overlayShownAtRef.current = Date.now();
+    } else {
+      // Intra-marche: show overlay only if preparation lasts > 120ms
+      setShowOverlay(false);
+      overlayTimeoutRef.current = window.setTimeout(() => {
+        if (isPreparingRef.current && lastPrepTypeRef.current === 'intra-marche') {
+          setShowOverlay(true);
+          overlayShownAtRef.current = Date.now();
+        }
+      }, 120);
+    }
     
     // Set preparation label based on type
     if (isCross) {
@@ -431,7 +485,23 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes,
     
     setIsTransitioning(true);
     
-    // Smooth transition to new image
+    // Smooth transition to new image with overlay minimum visibility
+    const baseDelay = reduceMotion ? 100 : 300;
+    // If an intra-marche delayed overlay timer is pending, clear it
+    if (overlayTimeoutRef.current) {
+      clearTimeout(overlayTimeoutRef.current);
+      overlayTimeoutRef.current = null;
+    }
+
+    let extraDelay = 0;
+    if (showOverlay && lastPrepTypeRef.current === 'cross-marche') {
+      const elapsed = Date.now() - overlayShownAtRef.current;
+      const minVisible = 350; // ms
+      extraDelay = Math.max(0, minVisible - elapsed - baseDelay);
+    }
+
+    const totalDelay = baseDelay + Math.max(0, extraDelay);
+
     setTimeout(() => {
       setCommittedIndex(targetIndex);
       setCurrentPhotoIndex(targetIndex);
@@ -440,8 +510,9 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes,
       setPrepareProgress(0);
       setTargetIndex(null);
       setPrepareLabel('');
+      setShowOverlay(false);
       console.log('[GalerieFleuve] completeNavigation: committed');
-    }, reduceMotion ? 100 : 300);
+    }, totalDelay);
   }, [targetIndex, reduceMotion]);
 
   // New navigation system with gating
