@@ -129,12 +129,11 @@ const GalerieFleuveWelcome: React.FC<GalerieFluveWelcomeProps> = ({
     ));
   };
 
-  // Modes d'immersion harmonisés - suppression du mode "Suivre"
-  const immersionModes = theme?.immersionModes?.filter(mode => mode.label !== 'Suivre') || [
+  // Modes d'immersion principaux - retrait de "Préfigurer" 
+  const immersionModes = theme?.immersionModes?.filter(mode => mode.label !== 'Suivre' && mode.label !== 'Préfigurer') || [
     { icon: 'Eye', label: 'Voir', desc: 'Navigation spatiale des souvenirs' },
     { icon: 'Heart', label: 'Ecouter', desc: 'Paysages sonores' },
-    { icon: 'Stars', label: 'Lire', desc: 'Récits poétiques' },
-    { icon: 'Palette', label: 'Préfigurer', desc: 'Explorations immersives' }
+    { icon: 'Stars', label: 'Lire', desc: 'Récits poétiques' }
   ];
 
   const gradientClass = theme?.colors.gradient 
@@ -235,7 +234,7 @@ const GalerieFleuveWelcome: React.FC<GalerieFluveWelcomeProps> = ({
             </div>
           </motion.div>
 
-          {/* Modes d'immersion - disposition mobile 2x2 */}
+          {/* Modes d'immersion - disposition horizontale 3 boutons */}
           <motion.div 
             className={`${isMobile ? 'mt-6' : 'mt-6'}`}
             initial={{ y: 30, opacity: 0 }}
@@ -245,7 +244,7 @@ const GalerieFleuveWelcome: React.FC<GalerieFluveWelcomeProps> = ({
             {!isMobile && (
               <h3 className={`text-lg font-semibold mb-4 opacity-90`}>Modes d'immersion disponibles</h3>
             )}
-            <div className={`${isMobile ? 'grid grid-cols-2 gap-2' : 'flex flex-wrap gap-4'}`}>
+            <div className={`${isMobile ? 'flex flex-col gap-2' : 'flex flex-wrap gap-4'}`}>
               {immersionModes.map((mode, index) => {
                 const IconComponent = iconMap[mode.icon as keyof typeof iconMap] || Heart;
                 return (
@@ -298,24 +297,30 @@ const GalerieFleuveWelcome: React.FC<GalerieFluveWelcomeProps> = ({
               <div className={`${isMobile ? 'text-xs' : 'text-sm'} opacity-80`}>Poète des Mondes Hybrides</div>
             </div>
             
-            <div className={`${isMobile ? 'flex flex-col space-y-1' : 'flex items-center space-x-6'}`}>
-              <a 
-                href="https://www.gaspardboreal.com/" 
-                target="_blank" 
-                rel="noopener noreferrer"
-                className={`text-white/80 hover:text-white transition-colors ${isMobile ? 'text-sm' : 'text-base'} hover:underline`}
-              >
-                Découvrir l'auteur
-              </a>
-              <a 
-                href="https://www.gaspardboreal.com/conferences" 
-                target="_blank" 
-                rel="noopener noreferrer"
-                className={`text-white/80 hover:text-white transition-colors ${isMobile ? 'text-sm' : 'text-base'} hover:underline`}
-              >
-                Conférences et formation IA
-              </a>
-            </div>
+             <div className={`${isMobile ? 'flex flex-col space-y-1' : 'flex items-center space-x-6'}`}>
+               <a 
+                 onClick={() => explorationSlug && (window.location.href = `/galerie-fleuve/exploration/${explorationSlug}/prefigurer`)}
+                 className={`text-white/80 hover:text-white transition-colors ${isMobile ? 'text-sm' : 'text-base'} hover:underline cursor-pointer`}
+               >
+                 Préfigurer
+               </a>
+               <a 
+                 href="https://www.gaspardboreal.com/" 
+                 target="_blank" 
+                 rel="noopener noreferrer"
+                 className={`text-white/80 hover:text-white transition-colors ${isMobile ? 'text-sm' : 'text-base'} hover:underline`}
+               >
+                 Découvrir l'auteur
+               </a>
+               <a 
+                 href="https://www.gaspardboreal.com/conferences" 
+                 target="_blank" 
+                 rel="noopener noreferrer"
+                 className={`text-white/80 hover:text-white transition-colors ${isMobile ? 'text-sm' : 'text-base'} hover:underline`}
+               >
+                 Conférences et formation IA
+               </a>
+             </div>
           </motion.div>
         </div>
         </motion.div>
