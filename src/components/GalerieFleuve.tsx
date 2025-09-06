@@ -68,7 +68,6 @@ type FilterMode = 'all' | 'biodiversite' | 'bioacoustique' | 'botanique' | 'coul
 const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes, showWelcome = false, viewMode: initialViewMode = 'galerie', explorationName }) => {
   const [allPhotos, setAllPhotos] = useState<EnrichedPhoto[]>([]);
   const [visiblePhotos, setVisiblePhotos] = useState<EnrichedPhoto[]>([]);
-  const [currentPhoto, setCurrentPhoto] = useState<number>(0);
   const [viewMode, setViewMode] = useState<ViewMode>(initialViewMode);
   const [filterMode, setFilterMode] = useState<FilterMode>('all');
   const [isLoading, setIsLoading] = useState(true);
@@ -78,12 +77,12 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes,
   const [isMarcheSelectorOpen, setIsMarcheSelectorOpen] = useState(false);
   const isMobile = useIsMobile();
 
+  // Navigation par marche - nouvelle logique
+  const [currentMarcheIndex, setCurrentMarcheIndex] = useState(0);
+  const [currentPhotoInMarche, setCurrentPhotoInMarche] = useState(0);
+
   // Device detection
   const [deviceType, setDeviceType] = useState<'mobile-portrait' | 'mobile-landscape' | 'desktop'>('desktop');
-  
-  const [currentPage, setCurrentPage] = useState(0);
-  const prevDeviceTypeRef = useRef<'mobile-portrait' | 'mobile-landscape' | 'desktop'>('desktop');
-  
   useEffect(() => {
     const updateDeviceType = () => {
       const width = window.innerWidth;
@@ -111,54 +110,6 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes,
       window.removeEventListener('resize', updateDeviceType);
     };
   }, []);
-  
-  // Preserve position when device type changes (orientation rotation)
-  useEffect(() => {
-    const prev = prevDeviceTypeRef.current;
-    if (prev === deviceType) return;
-
-    // Determine count according to current filter
-    const getFilteredCount = () => {
-      if (filterMode === 'all') return allPhotos.length;
-      switch (filterMode) {
-        case 'biodiversite':
-          return allPhotos.filter(p => p.thematicIcons.includes('🦋') || p.emotionalTags.includes('Éclat')).length;
-        case 'bioacoustique':
-          return allPhotos.filter(p => p.thematicIcons.includes('🎵') || p.emotionalTags.includes('Mélodie')).length;
-        case 'botanique':
-          return allPhotos.filter(p => p.thematicIcons.includes('🌿') || p.titre?.toLowerCase().includes('plante')).length;
-        case 'couleur':
-          return allPhotos.filter(p => p.titre?.toLowerCase().includes('couleur') || p.titre?.toLowerCase().includes('fleur')).length;
-        case 'saison':
-          return allPhotos.filter(p => p.titre?.toLowerCase().includes('printemps') || p.titre?.toLowerCase().includes('automne')).length;
-        default:
-          return allPhotos.length;
-      }
-    };
-
-    const count = getFilteredCount();
-    if (count === 0) {
-      prevDeviceTypeRef.current = deviceType;
-      return;
-    }
-
-    const ipp = (t: 'mobile-portrait' | 'mobile-landscape' | 'desktop') => (t === 'mobile-portrait' ? 1 : 3);
-    const prevIPP = ipp(prev);
-    const newIPP = ipp(deviceType);
-
-    const currentFirstIndex = currentPage * prevIPP;
-    const newPage = Math.floor(currentFirstIndex / newIPP);
-
-    const maxPages = Math.max(0, Math.ceil(count / newIPP) - 1);
-    const targetPage = Math.min(Math.max(0, newPage), maxPages);
-
-    if (targetPage !== currentPage) {
-      setCurrentPage(targetPage);
-      setCurrentPhoto(targetPage * newIPP);
-    }
-
-    prevDeviceTypeRef.current = deviceType;
-  }, [deviceType, allPhotos.length, filterMode]);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const metadataCache = useRef<Map<string, { emotionalTags: string[], thematicIcons: string[] }>>(new Map());
 
@@ -304,64 +255,119 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes,
 
   // Auto-navigation removed - only galerie mode supported
 
-  // Base photos avec seulement les filtres thématiques (pour navigation globale)
-  const basePhotos = useMemo(() => {
-    if (filterMode === 'all') return allPhotos;
+  // Groupement des photos par marche avec filtres thématiques
+  const marcheGroups = useMemo(() => {
+    const filteredPhotos = filterMode === 'all' ? allPhotos : (() => {
+      switch (filterMode) {
+        case 'biodiversite':
+          return allPhotos.filter(p => p.thematicIcons.includes('🦋') || p.emotionalTags.includes('Éclat'));
+        case 'bioacoustique':
+          return allPhotos.filter(p => p.thematicIcons.includes('🎵') || p.emotionalTags.includes('Mélodie'));
+        case 'botanique':
+          return allPhotos.filter(p => p.thematicIcons.includes('🌿') || p.titre?.toLowerCase().includes('plante'));
+        case 'couleur':
+          return allPhotos.filter(p => p.titre?.toLowerCase().includes('couleur') || p.titre?.toLowerCase().includes('fleur'));
+        case 'saison':
+          return allPhotos.filter(p => p.titre?.toLowerCase().includes('printemps') || p.titre?.toLowerCase().includes('automne'));
+        default:
+          return allPhotos;
+      }
+    })();
+
+    const groups = new Map<string, EnrichedPhoto[]>();
     
-    switch (filterMode) {
-      case 'biodiversite':
-        return allPhotos.filter(p => p.thematicIcons.includes('🦋') || p.emotionalTags.includes('Éclat'));
-      case 'bioacoustique':
-        return allPhotos.filter(p => p.thematicIcons.includes('🎵') || p.emotionalTags.includes('Mélodie'));
-      case 'botanique':
-        return allPhotos.filter(p => p.thematicIcons.includes('🌿') || p.titre?.toLowerCase().includes('plante'));
-      case 'couleur':
-        return allPhotos.filter(p => p.titre?.toLowerCase().includes('couleur') || p.titre?.toLowerCase().includes('fleur'));
-      case 'saison':
-        return allPhotos.filter(p => p.titre?.toLowerCase().includes('printemps') || p.titre?.toLowerCase().includes('automne'));
-      default:
-        return allPhotos;
-    }
+    filteredPhotos.forEach(photo => {
+      const marcheKey = `${photo.ville}-${photo.nomMarche}`;
+      if (!groups.has(marcheKey)) {
+        groups.set(marcheKey, []);
+      }
+      groups.get(marcheKey)!.push(photo);
+    });
+
+    // Convertir en array et trier chaque groupe par ordre
+    return Array.from(groups.entries()).map(([marcheKey, photos]) => ({
+      marcheKey,
+      photos: photos.sort((a, b) => (a.ordre || 0) - (b.ordre || 0))
+    }));
   }, [allPhotos, filterMode]);
 
-  // Photos filtrées pour l'affichage (avec filtre marche)
-  const filteredPhotos = useMemo(() => {
-    if (!selectedMarcheId) return basePhotos;
-    
-    return basePhotos.filter(photo => {
-      const marcheId = `${photo.ville}-${photo.nomMarche}`;
-      return marcheId === selectedMarcheId;
-    });
-  }, [basePhotos, selectedMarcheId]);
+  // Photos actuelles basées sur la marche sélectionnée
+  const currentMarchePhotos = useMemo(() => {
+    if (marcheGroups.length === 0) return [];
+    return marcheGroups[currentMarcheIndex]?.photos || [];
+  }, [marcheGroups, currentMarcheIndex]);
 
-  // Reset currentPage when thematic filters change
+  // Photo actuelle pour l'affichage
+  const currentDisplayPhoto = useMemo(() => {
+    if (currentMarchePhotos.length === 0) return null;
+    return currentMarchePhotos[currentPhotoInMarche] || null;
+  }, [currentMarchePhotos, currentPhotoInMarche]);
+
+  // Reset navigation when filters change
   useEffect(() => {
-    setCurrentPage(0);
-    setCurrentPhoto(0);
-  }, [basePhotos.length, filterMode]);
+    setCurrentMarcheIndex(0);
+    setCurrentPhotoInMarche(0);
+  }, [filterMode]);
 
-  // Navigation logic based on device type
-  const getImagesPerPage = useCallback(() => {
-    return deviceType === 'mobile-portrait' ? 1 : 3;
-  }, [deviceType]);
+  // Reset photo index when marche changes
+  useEffect(() => {
+    setCurrentPhotoInMarche(0);
+  }, [currentMarcheIndex]);
 
-  const imagesPerPage = getImagesPerPage();
-  const totalPages = Math.ceil(basePhotos.length / imagesPerPage);
-
-  // Optimized navigation with unified state
+  // Navigation par marche
   const navigateNext = useCallback(() => {
-    const nextPhoto = currentPhoto + imagesPerPage;
-    if (nextPhoto < basePhotos.length) {
-      setCurrentPhoto(nextPhoto);
-      setCurrentPage(Math.floor(nextPhoto / imagesPerPage));
+    if (currentPhotoInMarche < currentMarchePhotos.length - 1) {
+      // Photo suivante dans la même marche
+      setCurrentPhotoInMarche(prev => prev + 1);
+    } else if (currentMarcheIndex < marcheGroups.length - 1) {
+      // Marche suivante
+      setCurrentMarcheIndex(prev => prev + 1);
+      setCurrentPhotoInMarche(0);
     }
-  }, [currentPhoto, imagesPerPage, basePhotos.length]);
+  }, [currentPhotoInMarche, currentMarchePhotos.length, currentMarcheIndex, marcheGroups.length]);
 
   const navigatePrevious = useCallback(() => {
-    const prevPhoto = Math.max(0, currentPhoto - imagesPerPage);
-    setCurrentPhoto(prevPhoto);
-    setCurrentPage(Math.floor(prevPhoto / imagesPerPage));
-  }, [currentPhoto, imagesPerPage]);
+    if (currentPhotoInMarche > 0) {
+      // Photo précédente dans la même marche
+      setCurrentPhotoInMarche(prev => prev - 1);
+    } else if (currentMarcheIndex > 0) {
+      // Marche précédente, aller à la dernière photo
+      const prevMarcheIndex = currentMarcheIndex - 1;
+      const prevMarchePhotos = marcheGroups[prevMarcheIndex]?.photos || [];
+      setCurrentMarcheIndex(prevMarcheIndex);
+      setCurrentPhotoInMarche(Math.max(0, prevMarchePhotos.length - 1));
+    }
+  }, [currentPhotoInMarche, currentMarcheIndex, marcheGroups]);
+
+  // Helper functions pour les états de navigation
+  const canNavigatePrevious = useMemo(() => {
+    return currentMarcheIndex > 0 || currentPhotoInMarche > 0;
+  }, [currentMarcheIndex, currentPhotoInMarche]);
+
+  const canNavigateNext = useMemo(() => {
+    return currentMarcheIndex < marcheGroups.length - 1 || 
+           currentPhotoInMarche < currentMarchePhotos.length - 1;
+  }, [currentMarcheIndex, marcheGroups.length, currentPhotoInMarche, currentMarchePhotos.length]);
+
+  // Position globale pour l'affichage
+  const globalPosition = useMemo(() => {
+    let totalPhotos = 0;
+    let currentPosition = 0;
+    
+    for (let i = 0; i < marcheGroups.length; i++) {
+      if (i < currentMarcheIndex) {
+        totalPhotos += marcheGroups[i].photos.length;
+        currentPosition += marcheGroups[i].photos.length;
+      } else if (i === currentMarcheIndex) {
+        totalPhotos += marcheGroups[i].photos.length;
+        currentPosition += currentPhotoInMarche;
+      } else {
+        totalPhotos += marcheGroups[i].photos.length;
+      }
+    }
+    
+    return { currentPosition: currentPosition + 1, totalPhotos };
+  }, [marcheGroups, currentMarcheIndex, currentPhotoInMarche]);
 
   // Keyboard navigation
   useEffect(() => {
@@ -405,13 +411,13 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes,
               {/* Previous Button */}
               <motion.button
                 onClick={navigatePrevious}
-                disabled={currentPage === 0}
+                disabled={!canNavigatePrevious}
                 className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-300 touch-manipulation ${
-                  currentPage === 0 
+                  !canNavigatePrevious 
                     ? 'bg-white/10 text-white/30' 
                     : 'bg-white/20 text-white active:bg-white/30'
                 }`}
-                whileTap={currentPage > 0 ? { scale: 0.9 } : {}}
+                whileTap={canNavigatePrevious ? { scale: 0.9 } : {}}
               >
                 <ChevronLeft className="h-4 w-4" />
               </motion.button>
@@ -423,20 +429,20 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes,
                 whileTap={{ scale: 0.95 }}
               >
                  <span className="text-white text-sm font-medium">
-                   {currentPhoto + 1}/{basePhotos.length}
+                   {globalPosition.currentPosition}/{globalPosition.totalPhotos}
                  </span>
               </motion.button>
 
               {/* Next Button */}
               <motion.button
                 onClick={navigateNext}
-                disabled={currentPage >= totalPages - 1}
+                disabled={!canNavigateNext}
                 className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-300 touch-manipulation ${
-                  currentPage >= totalPages - 1
+                  !canNavigateNext
                     ? 'bg-white/10 text-white/30' 
                     : 'bg-white/20 text-white active:bg-white/30'
                 }`}
-                whileTap={currentPage < totalPages - 1 ? { scale: 0.9 } : {}}
+                whileTap={canNavigateNext ? { scale: 0.9 } : {}}
               >
                 <ChevronRight className="h-4 w-4" />
               </motion.button>
@@ -453,26 +459,27 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes,
   const GalerieView = () => (
     <div className="min-h-screen bg-gradient-to-b from-blue-50 via-green-50 to-blue-100">
       <div className="relative h-screen overflow-hidden">
-        <motion.div 
-          className="absolute inset-0 flex items-center"
-          animate={{ x: `-${currentPhoto * (100 / imagesPerPage)}%` }}
-          transition={{ 
-            type: "tween",
-            duration: 0.3,
-            ease: "easeOut"
-          }}
-        >
-          {basePhotos.map((photo, index) => (
+        {currentDisplayPhoto && (
+          <motion.div 
+            className="absolute inset-0 flex items-center justify-center"
+            key={`${currentMarcheIndex}-${currentPhotoInMarche}`}
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 1.05 }}
+            transition={{ 
+              type: "spring",
+              stiffness: 300,
+              damping: 30,
+              duration: 0.4
+            }}
+          >
             <motion.div
-              key={`${photo.id}-${index}`}
-              className={`flex-shrink-0 ${deviceType === 'mobile-portrait' ? 'w-full' : 'w-1/3'} h-full relative`}
-              // No click action on any device
-              // No hover effect
+              className="w-full h-full relative"
               transition={{ type: "spring", stiffness: 300 }}
             >
               <img
-                src={photo.url}
-                alt={photo.titre || 'Photo exploration'}
+                src={currentDisplayPhoto.url}
+                alt={currentDisplayPhoto.titre || 'Photo exploration'}
                 className="w-full h-full object-cover"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
@@ -485,16 +492,19 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes,
                   transition={{ delay: 0.3 }}
                 >
                   <Badge className="mb-2 bg-emerald-600/80 text-white border-emerald-400/30 backdrop-blur-sm">
-                    {photo.ville}
+                    {currentDisplayPhoto.ville}
                   </Badge>
                   <h3 className="text-lg font-bold mb-1">
-                    {photo.nomMarche}
+                    {currentDisplayPhoto.nomMarche}
                   </h3>
+                  <p className="text-sm opacity-90">
+                    Photo {currentPhotoInMarche + 1} / {currentMarchePhotos.length}
+                  </p>
                 </motion.div>
               </div>
             </motion.div>
-          ))}
-        </motion.div>
+          </motion.div>
+        )}
       </div>
     </div>
   );
@@ -516,25 +526,21 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes,
           <MarcheSelector
             isOpen={isMarcheSelectorOpen}
             onClose={() => setIsMarcheSelectorOpen(false)}
-            photos={basePhotos}
+            photos={marcheGroups.flatMap(group => group.photos)}
             onMarcheSelect={(marcheId) => {
-              // Trouver l'index global de la première photo de cette marche
-              const marchePhotoIndex = basePhotos.findIndex(photo => {
-                const photoMarcheId = `${photo.ville}-${photo.nomMarche}`;
-                return photoMarcheId === marcheId;
-              });
+              // Trouver l'index de cette marche
+              const marcheIndex = marcheGroups.findIndex(group => group.marcheKey === marcheId);
               
-              if (marchePhotoIndex !== -1) {
-                // Navigation directe vers la photo
-                setCurrentPhoto(marchePhotoIndex);
-                setCurrentPage(Math.floor(marchePhotoIndex / imagesPerPage));
+              if (marcheIndex !== -1) {
+                setCurrentMarcheIndex(marcheIndex);
+                setCurrentPhotoInMarche(0);
               }
               
               setSelectedMarcheId(marcheId);
               setIsMarcheSelectorOpen(false);
             }}
-            selectedMarcheId={selectedMarcheId}
-            currentIndex={currentPhoto}
+            selectedMarcheId={marcheGroups[currentMarcheIndex]?.marcheKey || null}
+            currentIndex={globalPosition.currentPosition - 1}
           />
 
           {/* Photo detail modal - DISABLED */}
