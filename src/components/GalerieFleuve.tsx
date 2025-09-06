@@ -685,74 +685,6 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes,
       <div className="min-h-screen bg-gradient-to-b from-slate-50 via-blue-50 to-emerald-50">
         <div className="relative h-screen overflow-hidden">
           
-          {/* PREPARATION OVERLAY - Navigation Gating */}
-          <AnimatePresence>
-            {isPreparing && (
-              <motion.div 
-                className="fixed inset-0 bg-black/90 backdrop-blur-lg z-[90] flex items-center justify-center"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.2 }}
-              >
-                <div className="text-center text-white px-8">
-                  <motion.div
-                    className="mb-6"
-                    initial={{ scale: 0.8, opacity: 0 }}
-                    animate={{ scale: 1, opacity: 1 }}
-                    transition={{ delay: 0.1 }}
-                  >
-                    <div className="w-16 h-16 mx-auto mb-4 relative">
-                      <div className="absolute inset-0 border-4 border-white/20 rounded-full"></div>
-                      <motion.div 
-                        className="absolute inset-0 border-4 border-emerald-400 rounded-full border-t-transparent"
-                        animate={{ rotate: 360 }}
-                        transition={{ 
-                          duration: 1,
-                          repeat: Infinity,
-                          ease: "linear"
-                        }}
-                      />
-                    </div>
-                    
-                    <motion.h3 
-                      className="text-xl font-bold mb-2"
-                      initial={{ y: 10, opacity: 0 }}
-                      animate={{ y: 0, opacity: 1 }}
-                      transition={{ delay: 0.2 }}
-                    >
-                      {prepareLabel}
-                    </motion.h3>
-                    
-                    <motion.div 
-                      className="w-48 h-2 mx-auto bg-white/20 rounded-full overflow-hidden"
-                      initial={{ width: 0, opacity: 0 }}
-                      animate={{ width: 192, opacity: 1 }}
-                      transition={{ delay: 0.3 }}
-                    >
-                      <motion.div 
-                        className="h-full bg-gradient-to-r from-emerald-400 to-emerald-300 rounded-full"
-                        initial={{ width: 0 }}
-                        animate={{ width: `${prepareProgress}%` }}
-                        transition={{ duration: 0.3, ease: "easeOut" }}
-                      />
-                    </motion.div>
-                    
-                    <motion.p 
-                      className="text-sm text-white/70 mt-3"
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      transition={{ delay: 0.4 }}
-                    >
-                      {preparationType === 'cross-marche' 
-                        ? 'Préparation de la nouvelle marche...' 
-                        : 'Chargement en cours...'}
-                    </motion.p>
-                  </motion.div>
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
 
           {/* Main photo display */}
           <AnimatePresence mode="wait">
@@ -922,8 +854,10 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes,
             </motion.div>
           )}
         </>
-      )}
-    </div>
+        )}
+
+        <PortalOverlay visible={showOverlay} label={prepareLabel} progress={prepareProgress} subtype={preparationType} />
+      </div>
   );
 });
 
