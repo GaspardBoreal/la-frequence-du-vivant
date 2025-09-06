@@ -59,7 +59,7 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes,
   const isMobile = useIsMobile();
   
   // Smart image preloader
-  const { preloadImageSet, getPreloadedImage, getCacheStats } = useSmartImagePreloader(15);
+  const { preloadImage, preloadImageSet, getPreloadedImage, getCacheStats } = useSmartImagePreloader(15);
 
   // Debug mode
   const [debugMode] = useState(() => {
@@ -348,49 +348,32 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes,
   const preloadNeighbors = useCallback(async (centerIndex: number, depth: number = 1) => {
     if (!filteredPhotos || filteredPhotos.length === 0) return [];
 
-    const promises: Promise<any>[] = [];
-    
-    // High priority for current image
+    const tasks: Promise<any>[] = [];
+
+    // High priority for current image via shared cache
     const currentPhoto = filteredPhotos[centerIndex];
     if (currentPhoto?.url) {
-      promises.push(
-        new Promise(resolve => {
-          const img = new Image();
-          img.fetchPriority = 'high';
-          img.onload = resolve;
-          img.onerror = resolve;
-          img.src = currentPhoto.url;
-        })
-      );
+      tasks.push(preloadImage(currentPhoto.url, { priority: 'high' }).catch(() => null));
     }
 
-    // Medium priority for neighbors
+    // Medium priority for neighbors via shared cache
     for (let offset = -depth; offset <= depth; offset++) {
-      if (offset === 0) continue; // Skip center (already handled)
-      
-      const targetIndex = centerIndex + offset;
-      if (targetIndex >= 0 && targetIndex < filteredPhotos.length) {
-        const photo = filteredPhotos[targetIndex];
-        if (photo?.url) {
-          promises.push(
-            new Promise(resolve => {
-              const img = new Image();
-              img.fetchPriority = 'low';
-              img.onload = resolve;
-              img.onerror = resolve;
-              img.src = photo.url;
-            })
-          );
+      if (offset === 0) continue;
+      const idx = centerIndex + offset;
+      if (idx >= 0 && idx < filteredPhotos.length) {
+        const p = filteredPhotos[idx];
+        if (p?.url) {
+          tasks.push(preloadImage(p.url, { priority: 'medium' }).catch(() => null));
         }
       }
     }
 
     if (debugMode) {
-      console.log(`🖼️ Preloading neighbors: center=${centerIndex}, depth=${depth}, total=${promises.length}`);
+      console.log(`🖼️ Smart preload (cache): center=${centerIndex}, depth=${depth}, tasks=${tasks.length}`);
     }
 
-    return promises;
-  }, [filteredPhotos, debugMode]);
+    return tasks;
+  }, [filteredPhotos, preloadImage, debugMode]);
 
   // Proactive neighbor preloading on index changes
   useEffect(() => {
@@ -581,16 +564,21 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes,
     setCommittedIndex(currentPhotoIndex);
   }, [filteredPhotos.length]);  // Sync when photos load
 
-  // Preload intelligent - seulement 3-5 images autour de la position actuelle
+  // Preload only current and close neighbors using shared cache (lighter on mobile)
   useEffect(() => {
-    if (filteredPhotos.length > 0) {
-      const urls = filteredPhotos.map(photo => photo.url).filter(Boolean);
-      if (urls.length > 0) {
-        // Précharger 2 images avant et 2 après l'actuelle
-        preloadImageSet(urls, committedIndex);
-      }
+    if (!filteredPhotos.length) return;
+    const depth = deviceType === 'desktop' ? 3 : 1;
+    const currentUrl = filteredPhotos[committedIndex]?.url;
+    if (currentUrl) {
+      void preloadImage(currentUrl, { priority: 'high' });
     }
-  }, [filteredPhotos, committedIndex, preloadImageSet]);
+    for (let o = 1; o <= depth; o++) {
+      const prevUrl = filteredPhotos[committedIndex - o]?.url;
+      const nextUrl = filteredPhotos[committedIndex + o]?.url;
+      if (prevUrl) void preloadImage(prevUrl, { priority: 'medium' });
+      if (nextUrl) void preloadImage(nextUrl, { priority: 'medium' });
+    }
+  }, [filteredPhotos, committedIndex, deviceType, preloadImage]);
 
   // Synchroniser l'index central (pour compteur & préchargement)
   useEffect(() => {
@@ -738,31 +726,31 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes,
                           : 'w-[25%] h-[60%] z-0 opacity-70 hover:opacity-90 cursor-pointer'
                       ) : 'w-full h-full rounded-none'}
                     `}
-                    initial={{ 
+                    initial={ deviceType === 'desktop' ? { 
                       scale: position === 'current' ? 0.95 : 0.9,
                       opacity: 0 
-                    }}
-                    animate={{ 
+                    } : { opacity: 1, scale: 1 } }
+                    animate={ deviceType === 'desktop' ? { 
                       scale: position === 'current' ? 1 : 0.9,
                       opacity: position === 'current' ? 1 : 0.7
-                    }}
-                    exit={{ 
+                    } : { opacity: 1, scale: 1 } }
+                    exit={ deviceType === 'desktop' ? { 
                       scale: 0.95,
                       opacity: 0 
-                    }}
-                    transition={{ 
+                    } : { opacity: 1 } }
+                    transition={ deviceType === 'desktop' ? { 
                       type: reduceMotion ? "tween" : "spring",
                       stiffness: reduceMotion ? undefined : 300,
                       damping: reduceMotion ? undefined : 25,
                       duration: reduceMotion ? 0.2 : undefined
-                    }}
+                    } : { duration: 0.12 } }
                     onClick={() => {
                       if (isPreparing) return;
                       if (position === 'previous') navigatePrevious();
                       if (position === 'next') navigateNext();
                     }}
                     style={{ cursor: isPreparing ? 'not-allowed' : 'pointer' }}
-                    whileHover={position !== 'current' && !isPreparing ? { scale: 0.95, opacity: 0.9 } : {}}
+                    whileHover={deviceType === 'desktop' && position !== 'current' && !isPreparing ? { scale: 0.95, opacity: 0.9 } : {}}
                   >
                     <OptimizedImage
                       src={photo.url}

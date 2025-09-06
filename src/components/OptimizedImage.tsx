@@ -31,9 +31,9 @@ export const OptimizedImage = memo<OptimizedImageProps>(({
   direction = null,
   enableCinematicTransitions = true
 }) => {
-  const [loaded, setLoaded] = useState(false);
+  const [loaded, setLoaded] = useState<boolean>(!!preloadedImage);
   const [error, setError] = useState(false);
-  const [imageSrc, setImageSrc] = useState<string>('');
+  const [imageSrc, setImageSrc] = useState<string>(preloadedImage?.src || '');
   const imgRef = useRef<HTMLImageElement>(null);
 
   useEffect(() => {
