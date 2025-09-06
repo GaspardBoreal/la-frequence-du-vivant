@@ -12,6 +12,7 @@ import { Label } from '@/components/ui/label';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { SecureRichTextEditor } from '@/components/ui/secure-rich-text-editor';
+import { sanitizeHtml } from '@/utils/htmlSanitizer';
 import {
   useMarcheTextes,
   useCreateMarcheTexte,
@@ -323,7 +324,10 @@ function TextePreviewDialog({
               typeInfo.adaptiveStyle.fontFamily === 'monospace' ? 'font-mono' : 'font-sans'
             }`}
           >
-            <div className="whitespace-pre-wrap">{texte.contenu}</div>
+            <div 
+              className="whitespace-pre-wrap" 
+              dangerouslySetInnerHTML={{ __html: sanitizeHtml(texte.contenu) }}
+            />
           </div>
         </ScrollArea>
       </DialogContent>
