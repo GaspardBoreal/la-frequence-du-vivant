@@ -60,8 +60,11 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes,
   // Smart image preloader
   const { preloadImageSet, getPreloadedImage, getCacheStats } = useSmartImagePreloader(15);
 
-  // Navigation globale - index simple sur toutes les photos
+  // Navigation globale avec orchestration de transition
   const [currentPhotoIndex, setCurrentPhotoIndex] = useState(0);
+  const [committedIndex, setCommittedIndex] = useState(0);
+  const [stagedIndex, setStagedIndex] = useState(0);
+  const [isTransitioning, setIsTransitioning] = useState(false);
 
   // Device detection
   const [deviceType, setDeviceType] = useState<'mobile-portrait' | 'mobile-landscape' | 'desktop'>('desktop');
@@ -282,20 +285,40 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes,
   // Reset navigation when filters change
   useEffect(() => {
     setCurrentPhotoIndex(0);
+    setCommittedIndex(0);
+    setStagedIndex(0);
   }, [filterMode]);
 
-  // Navigation globale simple
+  // Navigation globale avec orchestration pour éviter les flashs
   const navigateNext = useCallback(() => {
-    if (currentPhotoIndex < filteredPhotos.length - 1) {
-      setCurrentPhotoIndex(prev => prev + 1);
-    }
-  }, [currentPhotoIndex, filteredPhotos.length]);
+    if (isTransitioning || currentPhotoIndex >= filteredPhotos.length - 1) return;
+    
+    setIsTransitioning(true);
+    const newIndex = currentPhotoIndex + 1;
+    setStagedIndex(newIndex);
+    setCurrentPhotoIndex(newIndex);
+    
+    // Commit la transition après animation
+    setTimeout(() => {
+      setCommittedIndex(newIndex);
+      setIsTransitioning(false);
+    }, 600);
+  }, [currentPhotoIndex, filteredPhotos.length, isTransitioning]);
 
   const navigatePrevious = useCallback(() => {
-    if (currentPhotoIndex > 0) {
-      setCurrentPhotoIndex(prev => prev - 1);
-    }
-  }, [currentPhotoIndex]);
+    if (isTransitioning || currentPhotoIndex <= 0) return;
+    
+    setIsTransitioning(true);
+    const newIndex = currentPhotoIndex - 1;
+    setStagedIndex(newIndex);
+    setCurrentPhotoIndex(newIndex);
+    
+    // Commit la transition après animation
+    setTimeout(() => {
+      setCommittedIndex(newIndex);
+      setIsTransitioning(false);
+    }, 600);
+  }, [currentPhotoIndex, isTransitioning]);
 
   // States de navigation
   const canNavigatePrevious = currentPhotoIndex > 0;
@@ -313,6 +336,12 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes,
     setNavigationDirection('left');
     navigatePrevious();
   }, [navigatePrevious]);
+
+  // Synchronisation des indices à l'initialisation
+  useEffect(() => {
+    setCommittedIndex(currentPhotoIndex);
+    setStagedIndex(currentPhotoIndex);
+  }, [filteredPhotos.length]);  // Sync when photos load
 
   // Preload intelligent - seulement 3-5 images autour de la position actuelle
   useEffect(() => {
@@ -421,15 +450,15 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes,
   };
 
   const GalerieView = () => {
-    const displayPhotos = useMemo(() => {
+    // Base layer: photos stables basées sur committedIndex
+    const basePhotos = useMemo(() => {
       if (!filteredPhotos.length) return [];
       
       if (deviceType === 'desktop') {
-        // Desktop: Show 3 photos (current + previous/next if available)
         const photos = [];
-        const prevPhoto = currentPhotoIndex > 0 ? filteredPhotos[currentPhotoIndex - 1] : null;
-        const currentPhoto = filteredPhotos[currentPhotoIndex];
-        const nextPhoto = currentPhotoIndex < filteredPhotos.length - 1 ? filteredPhotos[currentPhotoIndex + 1] : null;
+        const prevPhoto = committedIndex > 0 ? filteredPhotos[committedIndex - 1] : null;
+        const currentPhoto = filteredPhotos[committedIndex];
+        const nextPhoto = committedIndex < filteredPhotos.length - 1 ? filteredPhotos[committedIndex + 1] : null;
         
         if (prevPhoto) photos.push({ photo: prevPhoto, position: 'previous' });
         photos.push({ photo: currentPhoto, position: 'current' });
@@ -437,132 +466,194 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes,
         
         return photos;
       } else {
-        // Mobile: Show only current photo
-        return [{ photo: filteredPhotos[currentPhotoIndex], position: 'current' }];
+        return [{ photo: filteredPhotos[committedIndex], position: 'current' }];
       }
-    }, [filteredPhotos, currentPhotoIndex, deviceType]);
+    }, [filteredPhotos, committedIndex, deviceType]);
+
+    // Transition layer: photo en transition basée sur stagedIndex
+    const transitionPhoto = useMemo(() => {
+      if (!isTransitioning || !filteredPhotos.length) return null;
+      return filteredPhotos[stagedIndex];
+    }, [isTransitioning, filteredPhotos, stagedIndex]);
 
     return (
       <div className="min-h-screen bg-gradient-to-b from-slate-50 via-blue-50 to-emerald-50">
         <div className="relative h-screen overflow-hidden">
-          <AnimatePresence mode="wait">
-            <motion.div 
-              key={`${currentPhotoIndex}-${deviceType}`}
-              className={`absolute inset-0 ${
-                deviceType === 'desktop' 
-                  ? 'flex items-center justify-center gap-4 px-8' 
-                  : 'flex items-center justify-center'
-              }`}
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -20 }}
-              transition={{ 
-                type: "spring",
-                stiffness: 400,
-                damping: 30,
-                duration: 0.4
-              }}
-            >
-              {displayPhotos.map(({ photo, position }, index) => {
-                const preloadedImage = getPreloadedImage(photo.url);
-                
-                return (
-                  <motion.div
-                    key={`${photo.id}-${position}`}
-                    className={`
-                      relative overflow-hidden rounded-2xl shadow-2xl
-                      ${deviceType === 'desktop' ? (
-                        position === 'current' 
-                          ? 'w-[45%] h-[80%] z-10' 
-                          : 'w-[25%] h-[60%] z-0 opacity-70 hover:opacity-90 cursor-pointer'
-                      ) : 'w-[95%] h-[85%]'}
-                    `}
-                    initial={{ 
-                      scale: position === 'current' ? 0.95 : 0.9,
-                      opacity: position === 'current' ? 0 : 0.6
-                    }}
-                    animate={{ 
-                      scale: position === 'current' ? 1 : 0.9,
-                      opacity: position === 'current' ? 1 : 0.7
-                    }}
-                    transition={{ 
-                      delay: index * 0.1,
-                      type: "spring",
-                      stiffness: 300,
-                      damping: 25
-                    }}
-                    onClick={() => {
-                      if (position === 'previous') navigatePreviousWithDirection();
-                      if (position === 'next') navigateNextWithDirection();
-                    }}
-                    whileHover={position !== 'current' ? { scale: 0.95, opacity: 0.9 } : {}}
-                  >
-                    <OptimizedImage
-                      src={photo.url}
-                      alt={photo.titre || 'Photo exploration'}
-                      className="w-full h-full"
-                      priority={position === 'current' ? 'high' : 'medium'}
-                      preloadedImage={preloadedImage?.element}
-                      direction={navigationDirection}
-                      enableCinematicTransitions={true}
-                      transition={{ 
-                        duration: 0.6,
-                        ease: [0.25, 0.1, 0.25, 1]
-                      }}
-                    />
-                    
-                    {/* Gradient overlay */}
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent" />
-                    
-                    {/* Photo metadata - only show on current photo */}
-                    {position === 'current' && (
-                      <div className="absolute bottom-6 left-6 right-6 text-white">
-                        <motion.div
-                          initial={{ y: 20, opacity: 0 }}
-                          animate={{ y: 0, opacity: 1 }}
-                          transition={{ delay: 0.4 }}
-                        >
-                          <Badge className="mb-3 bg-emerald-500/80 text-white border-emerald-400/30 backdrop-blur-sm">
-                            {photo.ville}
-                          </Badge>
-                          <h3 className="text-xl font-bold mb-2 leading-tight">
-                            {photo.nomMarche}
-                          </h3>
-                          <div className="flex items-center justify-between">
-                            <p className="text-sm opacity-90">
-                              Photo {currentPhotoIndex + 1} / {filteredPhotos.length}
-                            </p>
-                            {photo.emotionalTags.length > 0 && (
-                              <div className="flex gap-1">
-                                {photo.thematicIcons.slice(0, 3).map((icon, i) => (
-                                  <span key={i} className="text-lg">{icon}</span>
-                                ))}
-                              </div>
-                            )}
+          {/* Base layer - photos stables */}
+          <div className={`absolute inset-0 ${
+            deviceType === 'desktop' 
+              ? 'flex items-center justify-center gap-4 px-8' 
+              : 'flex items-center justify-center'
+          }`}>
+            {basePhotos.map(({ photo, position }, index) => {
+              const preloadedImage = getPreloadedImage(photo.url);
+              
+              return (
+                <motion.div
+                  key={`base-${photo.id}-${position}`}
+                  className={`
+                    relative overflow-hidden rounded-2xl shadow-2xl
+                    ${deviceType === 'desktop' ? (
+                      position === 'current' 
+                        ? 'w-[45%] h-[80%] z-10' 
+                        : 'w-[25%] h-[60%] z-0 opacity-70 hover:opacity-90 cursor-pointer'
+                    ) : 'w-[95%] h-[85%]'}
+                  `}
+                  initial={{ scale: 1, opacity: position === 'current' ? 1 : 0.7 }}
+                  animate={{ 
+                    scale: position === 'current' ? 1 : 0.9,
+                    opacity: isTransitioning && position === 'current' ? 0.3 : (position === 'current' ? 1 : 0.7)
+                  }}
+                  transition={{ 
+                    type: "spring",
+                    stiffness: 300,
+                    damping: 25
+                  }}
+                  onClick={() => {
+                    if (position === 'previous') navigatePreviousWithDirection();
+                    if (position === 'next') navigateNextWithDirection();
+                  }}
+                  whileHover={position !== 'current' ? { scale: 0.95, opacity: 0.9 } : {}}
+                >
+                  <OptimizedImage
+                    src={photo.url}
+                    alt={photo.titre || 'Photo exploration'}
+                    className="w-full h-full"
+                    priority={position === 'current' ? 'high' : 'medium'}
+                    preloadedImage={preloadedImage?.element}
+                    enableCinematicTransitions={false}
+                  />
+                  
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent" />
+                  
+                  {/* Metadata only on current photo when not transitioning */}
+                  {position === 'current' && !isTransitioning && (
+                    <motion.div 
+                      className="absolute bottom-6 left-6 right-6 text-white"
+                      initial={{ y: 20, opacity: 0 }}
+                      animate={{ y: 0, opacity: 1 }}
+                      transition={{ delay: 0.3 }}
+                    >
+                      <Badge className="mb-3 bg-emerald-500/80 text-white border-emerald-400/30 backdrop-blur-sm">
+                        {photo.ville}
+                      </Badge>
+                      <h3 className="text-xl font-bold mb-2 leading-tight">
+                        {photo.nomMarche}
+                      </h3>
+                      <div className="flex items-center justify-between">
+                        <p className="text-sm opacity-90">
+                          Photo {currentPhotoIndex + 1} / {filteredPhotos.length}
+                        </p>
+                        {photo.emotionalTags.length > 0 && (
+                          <div className="flex gap-1">
+                            {photo.thematicIcons.slice(0, 3).map((icon, i) => (
+                              <span key={i} className="text-lg">{icon}</span>
+                            ))}
                           </div>
-                        </motion.div>
+                        )}
                       </div>
-                    )}
+                    </motion.div>
+                  )}
 
-                    {/* Navigation hints for side photos */}
-                    {deviceType === 'desktop' && position !== 'current' && (
-                      <div className="absolute inset-0 flex items-center justify-center">
-                        <motion.div
-                          className="w-12 h-12 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center"
-                          whileHover={{ scale: 1.1, backgroundColor: 'rgba(255,255,255,0.3)' }}
-                        >
-                          {position === 'previous' ? (
-                            <ChevronLeft className="h-6 w-6 text-white" />
-                          ) : (
-                            <ChevronRight className="h-6 w-6 text-white" />
-                          )}
-                        </motion.div>
-                      </div>
-                    )}
+                  {/* Navigation hints for side photos */}
+                  {deviceType === 'desktop' && position !== 'current' && (
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <motion.div
+                        className="w-12 h-12 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center"
+                        whileHover={{ scale: 1.1, backgroundColor: 'rgba(255,255,255,0.3)' }}
+                      >
+                        {position === 'previous' ? (
+                          <ChevronLeft className="h-6 w-6 text-white" />
+                        ) : (
+                          <ChevronRight className="h-6 w-6 text-white" />
+                        )}
+                      </motion.div>
+                    </div>
+                  )}
+                </motion.div>
+              );
+            })}
+          </div>
+
+          {/* Transition layer - photo en mouvement */}
+          <AnimatePresence>
+            {isTransitioning && transitionPhoto && (
+              <motion.div 
+                className={`absolute inset-0 z-20 ${
+                  deviceType === 'desktop' 
+                    ? 'flex items-center justify-center px-8' 
+                    : 'flex items-center justify-center'
+                }`}
+                initial={{ 
+                  opacity: 0,
+                  x: navigationDirection === 'right' ? 100 : -100,
+                  scale: 0.9
+                }}
+                animate={{ 
+                  opacity: 1,
+                  x: 0,
+                  scale: 1
+                }}
+                exit={{ 
+                  opacity: 0,
+                  scale: 0.95
+                }}
+                transition={{ 
+                  type: "spring",
+                  stiffness: 400,
+                  damping: 30,
+                  duration: 0.6
+                }}
+              >
+                <div className={`
+                  relative overflow-hidden rounded-2xl shadow-2xl
+                  ${deviceType === 'desktop' ? 'w-[45%] h-[80%]' : 'w-[95%] h-[85%]'}
+                `}>
+                  <OptimizedImage
+                    src={transitionPhoto.url}
+                    alt={transitionPhoto.titre || 'Photo exploration'}
+                    className="w-full h-full"
+                    priority="high"
+                    preloadedImage={getPreloadedImage(transitionPhoto.url)?.element}
+                    direction={navigationDirection}
+                    enableCinematicTransitions={true}
+                    transition={{ 
+                      duration: 0.6,
+                      ease: [0.25, 0.1, 0.25, 1]
+                    }}
+                  />
+                  
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent" />
+                  
+                  {/* Metadata for transition photo */}
+                  <motion.div 
+                    className="absolute bottom-6 left-6 right-6 text-white"
+                    initial={{ y: 20, opacity: 0 }}
+                    animate={{ y: 0, opacity: 1 }}
+                    transition={{ delay: 0.4 }}
+                  >
+                    <Badge className="mb-3 bg-emerald-500/80 text-white border-emerald-400/30 backdrop-blur-sm">
+                      {transitionPhoto.ville}
+                    </Badge>
+                    <h3 className="text-xl font-bold mb-2 leading-tight">
+                      {transitionPhoto.nomMarche}
+                    </h3>
+                    <div className="flex items-center justify-between">
+                      <p className="text-sm opacity-90">
+                        Photo {currentPhotoIndex + 1} / {filteredPhotos.length}
+                      </p>
+                      {transitionPhoto.emotionalTags.length > 0 && (
+                        <div className="flex gap-1">
+                          {transitionPhoto.thematicIcons.slice(0, 3).map((icon, i) => (
+                            <span key={i} className="text-lg">{icon}</span>
+                          ))}
+                        </div>
+                      )}
+                    </div>
                   </motion.div>
-                );
-              })}
-            </motion.div>
+                </div>
+              </motion.div>
+            )}
           </AnimatePresence>
         </div>
       </div>
