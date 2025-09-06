@@ -7,6 +7,8 @@ import { Badge } from './ui/badge';
 import { MarcheTechnoSensible } from '../utils/googleSheetsApi';
 import { RegionalTheme } from '../utils/regionalThemes';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { OptimizedImage } from './OptimizedImage';
+import { useSmartImagePreloader } from '@/hooks/useSmartImagePreloader';
 
 interface MarcheHeroSectionProps {
   marche: MarcheTechnoSensible;
@@ -35,6 +37,17 @@ const MarcheHeroSection: React.FC<MarcheHeroSectionProps> = ({
 }) => {
   const isMobile = useIsMobile();
   const firstPhoto = marche.photos?.[0];
+  const { preloadImage, getPreloadedImage } = useSmartImagePreloader(6);
+
+  React.useEffect(() => {
+    if (firstPhoto) preloadImage(firstPhoto, { priority: 'high' });
+    const prev = previousMarche?.photos?.[0];
+    if (prev) preloadImage(prev, { priority: 'medium' });
+    const next = nextMarche?.photos?.[0];
+    if (next) preloadImage(next, { priority: 'medium' });
+  }, [firstPhoto, previousMarche, nextMarche, preloadImage]);
+
+  const preloadedCurrent = firstPhoto ? getPreloadedImage(firstPhoto)?.element : undefined;
 
   return (
     <div className={`relative overflow-hidden ${isModal ? 'h-[80vh]' : 'h-[400px]'}`}>
@@ -47,11 +60,14 @@ const MarcheHeroSection: React.FC<MarcheHeroSectionProps> = ({
       >
         {firstPhoto ? (
           <div className="absolute inset-0">
-            <img 
-              src={firstPhoto} 
-              alt={marche.nomMarche || marche.ville} 
-              className="w-full h-full object-cover" 
-              crossOrigin="anonymous" 
+            <OptimizedImage
+              src={firstPhoto}
+              alt={marche.nomMarche || marche.ville}
+              className="absolute inset-0 w-full h-full"
+              priority="high"
+              preloadedImage={preloadedCurrent}
+              instant={isMobile}
+              enableCinematicTransitions={!isMobile}
             />
             <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-black/30 to-black/70" />
           </div>

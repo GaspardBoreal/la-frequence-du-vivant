@@ -7,6 +7,8 @@ import { Badge } from './ui/badge';
 import { MarcheTechnoSensible } from '../utils/googleSheetsApi';
 import { RegionalTheme } from '../utils/regionalThemes';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { OptimizedImage } from './OptimizedImage';
+import { useSmartImagePreloader } from '@/hooks/useSmartImagePreloader';
 
 interface BioacousticHeroSectionProps {
   marche: MarcheTechnoSensible;
@@ -27,6 +29,17 @@ const BioacousticHeroSection: React.FC<BioacousticHeroSectionProps> = ({
 }) => {
   const isMobile = useIsMobile();
   const firstPhoto = marche.photos?.[0];
+  const { preloadImage, getPreloadedImage } = useSmartImagePreloader(6);
+
+  React.useEffect(() => {
+    if (firstPhoto) preloadImage(firstPhoto, { priority: 'high' });
+    const prev = previousMarche?.photos?.[0];
+    if (prev) preloadImage(prev, { priority: 'medium' });
+    const next = nextMarche?.photos?.[0];
+    if (next) preloadImage(next, { priority: 'medium' });
+  }, [firstPhoto, previousMarche, nextMarche, preloadImage]);
+
+  const preloadedCurrent = firstPhoto ? getPreloadedImage(firstPhoto)?.element : undefined;
 
   const handleCopyCoordinate = async (coordinate: string, type: 'latitude' | 'longitude') => {
     try {
@@ -54,17 +67,20 @@ const BioacousticHeroSection: React.FC<BioacousticHeroSectionProps> = ({
       {/* Background Image with Subtle Overlay */}
       <motion.div 
         className="absolute inset-0 z-0"
-        initial={{ scale: 1.05, opacity: 0 }}
+        initial={{ scale: 1.05, opacity: isMobile ? 1 : 0 }}
         animate={{ scale: 1, opacity: 1 }}
         transition={{ duration: 1.2, ease: "easeOut" }}
       >
         {firstPhoto ? (
           <div className="absolute inset-0">
-            <img 
-              src={firstPhoto} 
-              alt={marche.nomMarche || marche.ville} 
-              className="w-full h-full object-cover" 
-              crossOrigin="anonymous" 
+            <OptimizedImage
+              src={firstPhoto}
+              alt={marche.nomMarche || marche.ville}
+              className="absolute inset-0 w-full h-full"
+              priority="high"
+              preloadedImage={preloadedCurrent}
+              instant={isMobile}
+              enableCinematicTransitions={!isMobile}
             />
             <div className="absolute inset-0 bg-gradient-to-br from-emerald-900/60 via-teal-800/50 to-green-700/60" />
           </div>
