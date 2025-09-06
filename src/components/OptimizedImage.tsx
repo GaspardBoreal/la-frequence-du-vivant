@@ -124,6 +124,22 @@ export const OptimizedImage = memo<OptimizedImageProps>(({
       return;
     }
 
+    // Also skip transition if image is already cached in browser for even smoother experience
+    const isAlreadyCached = (() => {
+      const testImg = new Image();
+      testImg.src = src;
+      return testImg.complete && testImg.naturalWidth > 0;
+    })();
+
+    if (isAlreadyCached) {
+      console.log('⚡ [OptimizedImage] Image already cached in browser, instant transition');
+      setCurrentSrc(src);
+      prevSrcRef.current = src;
+      setTopReady(false);
+      setShowTop(false);
+      return;
+    }
+
     let cancelled = false;
     const img = new Image();
 
