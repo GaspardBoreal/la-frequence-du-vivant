@@ -108,13 +108,62 @@ export const SecureRichTextEditor: React.FC<SecureRichTextEditorProps> = ({
     if (!selection || selection.rangeCount === 0) return;
 
     const range = selection.getRangeAt(0);
-    const selectedText = range.toString();
     
-    if (selectedText) {
-      const element = document.createElement(tagName);
-      element.textContent = selectedText;
-      range.deleteContents();
-      range.insertNode(element);
+    // Check if we're inside an existing tag of this type
+    let currentElement = range.commonAncestorContainer;
+    if (currentElement.nodeType === Node.TEXT_NODE) {
+      currentElement = currentElement.parentNode;
+    }
+    
+    // Look for existing tag
+    let existingTag: Element | null = null;
+    let temp = currentElement;
+    while (temp && temp !== editorRef.current) {
+      if (temp.nodeType === Node.ELEMENT_NODE && (temp as Element).tagName?.toLowerCase() === tagName.toLowerCase()) {
+        existingTag = temp as Element;
+        break;
+      }
+      temp = temp.parentNode;
+    }
+    
+    if (existingTag) {
+      // Remove existing formatting
+      const parent = existingTag.parentNode;
+      const textContent = existingTag.textContent;
+      const textNode = document.createTextNode(textContent || '');
+      parent?.replaceChild(textNode, existingTag);
+      
+      // Set selection after the text
+      const newRange = document.createRange();
+      newRange.setStartAfter(textNode);
+      newRange.setEndAfter(textNode);
+      selection.removeAllRanges();
+      selection.addRange(newRange);
+    } else {
+      // Apply new formatting
+      const selectedText = range.toString();
+      if (selectedText) {
+        const element = document.createElement(tagName);
+        element.textContent = selectedText;
+        range.deleteContents();
+        range.insertNode(element);
+        
+        // Set selection after the new element
+        const newRange = document.createRange();
+        newRange.setStartAfter(element);
+        newRange.setEndAfter(element);
+        selection.removeAllRanges();
+        selection.addRange(newRange);
+      } else {
+        // No text selected, insert an empty tag and place cursor inside
+        const element = document.createElement(tagName);
+        range.insertNode(element);
+        
+        const newRange = document.createRange();
+        newRange.selectNodeContents(element);
+        selection.removeAllRanges();
+        selection.addRange(newRange);
+      }
     }
   };
 
