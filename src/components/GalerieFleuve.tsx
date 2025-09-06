@@ -86,6 +86,7 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes,
   const overlayShownAtRef = useRef<number>(0);
   const lastPrepTypeRef = useRef<'intra-marche' | 'cross-marche'>('intra-marche');
   const overlayTimeoutRef = useRef<number | null>(null);
+  const [instantNextCommit, setInstantNextCommit] = useState(false);
 
   useEffect(() => {
     isPreparingRef.current = isPreparing;
@@ -498,9 +499,13 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes,
         clearTimeout(overlayTimer);
       }
 
+      // If no overlay was shown and we're on mobile intra-marche with image cached, render instantly to avoid flicker
+      const cachedAndNoOverlay = !overlayShown && isMobile && !isCross && !!getPreloadedImage(targetPhoto.url)?.loaded;
+      setInstantNextCommit(cachedAndNoOverlay);
+
       const elapsed = Date.now() - startTime;
       if (debugMode) {
-        console.log(`✅ Preparation completed in ${elapsed}ms, overlay shown: ${overlayShown}`);
+        console.log(`✅ Preparation completed in ${elapsed}ms, overlay shown: ${overlayShown}, instantNextCommit: ${cachedAndNoOverlay}`);
       }
       
       return true;
@@ -551,6 +556,8 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes,
       setTargetIndex(null);
       setPrepareLabel('');
       setShowOverlay(false);
+      // Reset instant flag after commit
+      setInstantNextCommit(false);
       
       if (debugMode) {
         console.log(`✅ Navigation completed to index ${indexToCommit}`);
@@ -789,6 +796,7 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes,
                       priority={position === 'current' ? 'high' : 'medium'}
                       preloadedImage={preloadedImage?.element}
                       enableCinematicTransitions={deviceType === 'desktop'}
+                      instant={deviceType !== 'desktop' && position === 'current' && instantNextCommit && !showOverlay}
                     />
                     
                     <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent" />

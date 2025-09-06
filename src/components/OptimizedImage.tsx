@@ -16,6 +16,7 @@ interface OptimizedImageProps {
   };
   direction?: 'left' | 'right' | null;
   enableCinematicTransitions?: boolean;
+  instant?: boolean;
 }
 
 export const OptimizedImage = memo<OptimizedImageProps>(({ 
@@ -29,7 +30,8 @@ export const OptimizedImage = memo<OptimizedImageProps>(({
   preloadedImage,
   transition = { duration: 0.6, ease: [0.25, 0.46, 0.45, 0.94] },
   direction = null,
-  enableCinematicTransitions = true
+  enableCinematicTransitions = true,
+  instant = false
 }) => {
   const [loaded, setLoaded] = useState<boolean>(!!preloadedImage);
   const [error, setError] = useState(false);
@@ -126,7 +128,12 @@ export const OptimizedImage = memo<OptimizedImageProps>(({
             src={imageSrc}
             alt={alt}
             className="w-full h-full object-cover"
-            initial={enableCinematicTransitions ? {
+            initial={instant ? {
+              opacity: 1,
+              scale: 1,
+              x: 0,
+              filter: 'blur(0px)'
+            } : enableCinematicTransitions ? {
               opacity: 0,
               scale: 1.08,
               x: direction === 'right' ? 30 : direction === 'left' ? -30 : 0,
@@ -136,7 +143,12 @@ export const OptimizedImage = memo<OptimizedImageProps>(({
               scale: blur ? 1.05 : 1,
               filter: blur ? 'blur(2px)' : 'blur(0px)'
             }}
-            animate={enableCinematicTransitions ? {
+            animate={instant ? {
+              opacity: 1,
+              scale: 1,
+              x: 0,
+              filter: 'blur(0px)'
+            } : enableCinematicTransitions ? {
               opacity: 1,
               scale: 1,
               x: 0,
@@ -146,22 +158,22 @@ export const OptimizedImage = memo<OptimizedImageProps>(({
               scale: 1,
               filter: 'blur(0px)'
             }}
-            exit={enableCinematicTransitions ? {
+            exit={enableCinematicTransitions && !instant ? {
               opacity: 0,
               scale: 0.95,
               x: direction === 'right' ? -20 : direction === 'left' ? 20 : 0,
               filter: 'blur(1px) brightness(1.05)'
             } : {
-              opacity: 0,
-              scale: 0.95
+              opacity: 1,
+              scale: 1
             }}
             transition={{ 
-              duration: transition.duration,
+              duration: instant ? 0.01 : transition.duration,
               ease: transition.ease,
-              opacity: { duration: transition.duration * 0.7 },
-              scale: { duration: transition.duration * 0.8 },
-              x: { duration: transition.duration * 0.9 },
-              filter: { duration: transition.duration * 0.6 }
+              opacity: { duration: (instant ? 0.01 : transition.duration) * 0.7 },
+              scale: { duration: (instant ? 0.01 : transition.duration) * 0.8 },
+              x: { duration: (instant ? 0.01 : transition.duration) * 0.9 },
+              filter: { duration: (instant ? 0.01 : transition.duration) * 0.6 }
             }}
             style={{
               willChange: 'transform, opacity, filter'
