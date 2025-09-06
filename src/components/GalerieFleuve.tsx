@@ -431,9 +431,12 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes,
       const overlayDelay = isMobile && !isCross ? 100 : 0;
       
       overlayTimer = setTimeout(() => {
-        overlayShownAtRef.current = Date.now();
-        setShowOverlay(true);
-        overlayShown = true;
+        // Only show overlay if we're still preparing (prevents double flashing)
+        if (isPreparingRef.current) {
+          overlayShownAtRef.current = Date.now();
+          setShowOverlay(true);
+          overlayShown = true;
+        }
       }, overlayDelay);
     }
 
