@@ -65,6 +65,12 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes,
   const [committedIndex, setCommittedIndex] = useState(0);
   const [stagedIndex, setStagedIndex] = useState(0);
   const [isTransitioning, setIsTransitioning] = useState(false);
+  
+  // États figés pendant transition (Anti-Flash Définitif)
+  const [frozenCommittedIndex, setFrozenCommittedIndex] = useState(0);
+  const [frozenMarcheKey, setFrozenMarcheKey] = useState<string | null>(null);
+  const [frozenBasePhotos, setFrozenBasePhotos] = useState<EnrichedPhoto[]>([]);
+  const [isCrossMarche, setIsCrossMarche] = useState(false);
 
   // Device detection
   const [deviceType, setDeviceType] = useState<'mobile-portrait' | 'mobile-landscape' | 'desktop'>('desktop');
@@ -288,9 +294,20 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes,
     setCurrentPhotoIndex(0);
     setCommittedIndex(0);
     setStagedIndex(0);
+    setFrozenCommittedIndex(0);
+    setFrozenMarcheKey(null);
+    setFrozenBasePhotos([]);
   }, [filterMode]);
 
-  // Navigation globale avec orchestration pour éviter les flashs
+  // Helper: Détection cross-marche
+  const detectCrossMarche = useCallback((fromIndex: number, toIndex: number) => {
+    if (!filteredPhotos[fromIndex] || !filteredPhotos[toIndex]) return false;
+    const fromKey = `${filteredPhotos[fromIndex].ville}-${filteredPhotos[fromIndex].nomMarche}`;
+    const toKey = `${filteredPhotos[toIndex].ville}-${filteredPhotos[toIndex].nomMarche}`;
+    return fromKey !== toKey;
+  }, [filteredPhotos]);
+
+  // Navigation globale avec détection cross-marche et gel atomique
   const navigateNext = useCallback(() => {
     if (isTransitioning || !filteredPhotos.length) return;
 
@@ -298,11 +315,21 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes,
     const target = Math.min(committedIndex + 1, filteredPhotos.length - 1);
     if (target === committedIndex) return;
 
+    // Détecter si c'est une transition cross-marche
+    const isCross = detectCrossMarche(committedIndex, target);
+    
+    // Figer l'état actuel avant toute transition
+    setFrozenCommittedIndex(committedIndex);
+    if (filteredPhotos[committedIndex]) {
+      setFrozenMarcheKey(`${filteredPhotos[committedIndex].ville}-${filteredPhotos[committedIndex].nomMarche}`);
+    }
+
     setNavigationDirection('right');
     setIsTransitioning(true);
+    setIsCrossMarche(isCross);
     transitionCommittedRef.current = false;
     setStagedIndex(target);
-  }, [committedIndex, filteredPhotos, isTransitioning]);
+  }, [committedIndex, filteredPhotos, isTransitioning, detectCrossMarche]);
 
   const navigatePrevious = useCallback(() => {
     if (isTransitioning || !filteredPhotos.length) return;
@@ -311,11 +338,21 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes,
     const target = Math.max(committedIndex - 1, 0);
     if (target === committedIndex) return;
 
+    // Détecter si c'est une transition cross-marche
+    const isCross = detectCrossMarche(committedIndex, target);
+    
+    // Figer l'état actuel avant toute transition
+    setFrozenCommittedIndex(committedIndex);
+    if (filteredPhotos[committedIndex]) {
+      setFrozenMarcheKey(`${filteredPhotos[committedIndex].ville}-${filteredPhotos[committedIndex].nomMarche}`);
+    }
+
     setNavigationDirection('left');
     setIsTransitioning(true);
+    setIsCrossMarche(isCross);
     transitionCommittedRef.current = false;
     setStagedIndex(target);
-  }, [committedIndex, filteredPhotos, isTransitioning]);
+  }, [committedIndex, filteredPhotos, isTransitioning, detectCrossMarche]);
 
   // States de navigation
   const centralIndex = isTransitioning ? stagedIndex : committedIndex;
@@ -456,21 +493,25 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes,
   };
 
   const GalerieView = () => {
-    // Base layer: fenêtre de 3 images verrouillée par marche (committedIndex = photo centrale)
+    // Base layer: FROZEN pendant transition (Anti-Flash Définitif)
     const basePhotos = useMemo(() => {
       if (!filteredPhotos.length) return [];
 
-      // Trouver les bornes du segment courant à partir de committedIndex
-      const currentPhoto = filteredPhotos[committedIndex];
-      if (!currentPhoto) return [];
-      const currentKey = `${currentPhoto.ville}-${currentPhoto.nomMarche}`;
-      let segStart = committedIndex;
+      // CRITICAL: Pendant transition, utiliser UNIQUEMENT les données figées
+      const workingIndex = isTransitioning ? frozenCommittedIndex : committedIndex;
+      const workingPhoto = filteredPhotos[workingIndex];
+      
+      if (!workingPhoto) return [];
+      
+      // Calculer les bornes de marche
+      const currentKey = `${workingPhoto.ville}-${workingPhoto.nomMarche}`;
+      let segStart = workingIndex;
       while (segStart > 0) {
         const key = `${filteredPhotos[segStart - 1].ville}-${filteredPhotos[segStart - 1].nomMarche}`;
         if (key !== currentKey) break;
         segStart--;
       }
-      let segEnd = committedIndex;
+      let segEnd = workingIndex;
       while (segEnd < filteredPhotos.length - 1) {
         const key = `${filteredPhotos[segEnd + 1].ville}-${filteredPhotos[segEnd + 1].nomMarche}`;
         if (key !== currentKey) break;
@@ -478,17 +519,17 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes,
       }
 
       if (deviceType === 'desktop') {
-        const indices = [committedIndex - 1, committedIndex, committedIndex + 1]
+        const indices = [workingIndex - 1, workingIndex, workingIndex + 1]
           .filter(i => i >= segStart && i <= segEnd);
         return indices.map((i) => ({
           photo: filteredPhotos[i],
-          position: i < committedIndex ? 'previous' : i > committedIndex ? 'next' : 'current' as 'previous' | 'current' | 'next'
+          position: i < workingIndex ? 'previous' : i > workingIndex ? 'next' : 'current' as 'previous' | 'current' | 'next'
         }));
       } else {
         // mobile: uniquement la photo centrale
-        return [{ photo: filteredPhotos[committedIndex], position: 'current' }];
+        return [{ photo: filteredPhotos[workingIndex], position: 'current' }];
       }
-    }, [filteredPhotos, committedIndex, deviceType]);
+    }, [filteredPhotos, committedIndex, frozenCommittedIndex, isTransitioning, deviceType]);
 
     // Transition layer: photo staged (pleine couverture)
     const transitionPhoto = useMemo(() => {
@@ -499,7 +540,19 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes,
     return (
       <div className="min-h-screen bg-gradient-to-b from-slate-50 via-blue-50 to-emerald-50">
         <div className="relative h-screen overflow-hidden">
-          {/* Base layer - photos stables */}
+          
+          {/* MASQUE CROSS-MARCHE - Isolation complète */}
+          {isTransitioning && isCrossMarche && (
+            <motion.div 
+              className="absolute inset-0 bg-black/60 backdrop-blur-md z-[45]"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.3 }}
+            />
+          )}
+
+          {/* Base layer - photos stables FIGÉES pendant transition */}
           <div className={`absolute inset-0 ${
             deviceType === 'desktop' 
               ? 'flex items-center justify-center gap-4 px-8' 
@@ -510,7 +563,7 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes,
               
               return (
                 <motion.div
-                  key={`base-${photo.id}-${position}`}
+                  key={`base-${photo.id}-${position}-${frozenCommittedIndex}`}
                   className={`
                     relative overflow-hidden rounded-2xl shadow-2xl
                     ${deviceType === 'desktop' ? (
@@ -595,11 +648,11 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes,
             })}
           </div>
 
-          {/* Transition layer - photo en mouvement */}
+          {/* Transition layer - MASQUE COMPLET pendant cross-marche */}
           <AnimatePresence>
             {isTransitioning && transitionPhoto && (
               <motion.div 
-                className={`absolute inset-0 z-20 ${
+                className={`absolute inset-0 ${isCrossMarche ? 'z-50 bg-black/80' : 'z-20'} ${
                   deviceType === 'desktop' 
                     ? 'flex items-center justify-center px-8' 
                     : 'flex items-center justify-center'
@@ -626,13 +679,23 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes,
                 }}
                 onAnimationComplete={() => {
                   if (!transitionCommittedRef.current) {
+                    // Commit atomique avec réinitialisation des états figés
                     setCommittedIndex(stagedIndex);
                     setIsTransitioning(false);
+                    setIsCrossMarche(false);
+                    setFrozenCommittedIndex(0);
+                    setFrozenMarcheKey(null);
+                    setFrozenBasePhotos([]);
                     transitionCommittedRef.current = true;
                   }
                 }}
               >
-                <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
+                {/* Fond masquant pour cross-marche */}
+                {isCrossMarche && (
+                  <div className="absolute inset-0 bg-gradient-to-b from-black/90 via-black/70 to-black/90 backdrop-blur-lg" />
+                )}
+                
+                {/* Photo de transition */}
                 <div className={`
                   relative overflow-hidden rounded-2xl shadow-2xl
                   ${deviceType === 'desktop' ? 'w-[45%] h-[80%]' : 'w-[95%] h-[85%]'}
