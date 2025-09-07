@@ -217,6 +217,51 @@ export const ContexteMetricCard: React.FC<ContexteMetricProps> = ({
               </div>
             </div>
 
+            {/* Affichage spécialisé pour les sources */}
+            {metricType === 'source_ids' && Array.isArray(data) && data.length > 0 && (
+              <div className="space-y-3">
+                <h3 className="text-lg font-semibold text-white flex items-center gap-2">
+                  <Database className="w-5 h-5 text-white" />
+                  Sources détaillées
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  {data.map((source, index) => (
+                    <div key={source.id || index} className="p-4 bg-slate-800 rounded-lg border border-slate-600 shadow-sm">
+                      <div className="flex items-start justify-between mb-2">
+                        <div className="text-sm font-bold text-white">
+                          {source.nom || source.id || `Source ${index + 1}`}
+                        </div>
+                        <Badge variant="outline" className="text-xs bg-slate-700 text-slate-300 border-slate-600">
+                          {source.id || `src${index + 1}`}
+                        </Badge>
+                      </div>
+                      {source.url && source.url !== 'URL non disponible' && (
+                        <div className="text-xs text-slate-400 mb-2">
+                          <span className="font-medium">URL:</span>
+                          <br />
+                          <a 
+                            href={source.url} 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            className="text-blue-400 hover:text-blue-300 underline break-all"
+                          >
+                            {source.url}
+                          </a>
+                        </div>
+                      )}
+                      {source.description && source.description !== 'Détails non disponibles' && (
+                        <div className="text-xs text-slate-300">
+                          <span className="font-medium">Description:</span>
+                          <br />
+                          {source.description}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {/* Contenu de la donnée si c'est du texte long */}
             {typeof data === 'string' && data.length > 50 && (
               <div className="space-y-3">
@@ -230,8 +275,8 @@ export const ContexteMetricCard: React.FC<ContexteMetricProps> = ({
               </div>
             )}
 
-            {/* Données structurées pour les objets */}
-            {typeof data === 'object' && data && (
+            {/* Données structurées pour les objets (sauf pour source_ids qui a son propre affichage) */}
+            {typeof data === 'object' && data && metricType !== 'source_ids' && (
               <div className="space-y-3">
                 <h3 className="text-lg font-semibold text-slate-800 flex items-center gap-2">
                   <Database className="w-5 h-5" />

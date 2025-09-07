@@ -23,6 +23,36 @@ export const mapContexteData = (contexteData: any): ContexteMetricData[] => {
   const hydrologique = contexteData.contexte_hydrologique || {};
   const especes = contexteData.especes_caracteristiques || {};
   
+  // Extraire les vraies sources avec nom et URL depuis les sources_data
+  const extractSourcesWithDetails = () => {
+    // Chercher les vraies sources dans plusieurs emplacements possibles
+    const sourcesData = contexteData.sources_data || contexteData.sources || hydrologique.sources_data || [];
+    const sourceIds = hydrologique.source_ids || hydrologique.sources_ids || [];
+    
+    console.log('Sources extraction debug:', {
+      sourcesData,
+      sourceIds,
+      contexteDataKeys: Object.keys(contexteData)
+    });
+    
+    // Si on a des sources détaillées, les retourner
+    if (sourcesData && Array.isArray(sourcesData) && sourcesData.length > 0) {
+      return sourcesData;
+    }
+    
+    // Sinon, créer un objet structuré à partir des IDs
+    if (sourceIds && Array.isArray(sourceIds) && sourceIds.length > 0) {
+      return sourceIds.map(id => ({
+        id,
+        nom: `Source ${id}`,
+        url: 'URL non disponible',
+        description: 'Détails non disponibles'
+      }));
+    }
+    
+    return [];
+  };
+
   return [
     {
       title: 'Description',
@@ -63,15 +93,16 @@ export const mapContexteData = (contexteData: any): ContexteMetricData[] => {
       metricType: 'ph'
     },
     {
-      title: 'Source IDs',
-      data: hydrologique.source_ids || hydrologique.sources_ids || contexteData.sources || [],
-      metricType: 'source_ids'
-    },
-    {
       title: 'Débit moyen',
       data: hydrologique.debit_moyen || hydrologique.debit || 'Non mesuré',
       unit: 'm³/s',
       metricType: 'flow'
+    },
+    // Placer les Sources en dernière position
+    {
+      title: 'Source IDs',
+      data: extractSourcesWithDetails(),
+      metricType: 'source_ids'
     }
   ];
 };
@@ -81,6 +112,13 @@ export const formatComplexData = (data: any): string => {
   
   if (Array.isArray(data)) {
     if (data.length === 0) return 'Aucune donnée';
+    
+    // Traitement spécial pour les sources avec nom
+    if (data.length > 0 && data[0] && typeof data[0] === 'object' && data[0].nom) {
+      if (data.length <= 2) return data.map(s => s.nom || s.id).join(', ');
+      return `${data.slice(0, 2).map(s => s.nom || s.id).join(', ')} + ${data.length - 2} autres`;
+    }
+    
     if (data.length <= 3) return data.join(', ');
     return `${data.slice(0, 2).join(', ')} + ${data.length - 2} autres`;
   }
