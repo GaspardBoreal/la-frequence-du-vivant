@@ -41,6 +41,7 @@ import SEOHead from '@/components/SEOHead';
 import { useAnimatedCounter } from '@/hooks/useAnimatedCounter';
 import { getProcessedSpeciesCount } from '@/utils/speciesDataUtils';
 import { getVocabularyTermsCount } from '@/utils/vocabularyDataUtils';
+import { processTechnodiversiteData } from '@/utils/technodiversiteDataUtils';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -140,6 +141,19 @@ export const ModernImportDashboard: React.FC = () => {
       return acc + getVocabularyTermsCount(imp.contexte_data?.vocabulaire_local);
     }, 0), 
     1200
+  );
+  const totalTechnology = useAnimatedCounter(
+    filteredImports.reduce((acc, imp) => {
+      if (imp.contexte_data?.technodiversite) {
+        try {
+          return acc + processTechnodiversiteData(imp.contexte_data.technodiversite).totalCount;
+        } catch {
+          return acc;
+        }
+      }
+      return acc;
+    }, 0), 
+    1400
   );
   const avgCompleteness = useAnimatedCounter(
     filteredImports.length > 0 
@@ -544,7 +558,7 @@ export const ModernImportDashboard: React.FC = () => {
             {/* Statistics Dashboard */}
             <TabsContent value="dashboard" className="space-y-8">
               {/* Key Metrics */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
                 <Card className="bg-gradient-to-br from-primary/10 to-primary/5 border-primary/20 hover:shadow-lg hover:shadow-primary/10 transition-all duration-300">
                   <CardHeader className="pb-3">
                     <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
@@ -598,6 +612,25 @@ export const ModernImportDashboard: React.FC = () => {
                      </div>
                      <p className="text-xs text-muted-foreground mt-1">
                        éléments de vocabulaire
+                     </p>
+                  </CardContent>
+                </Card>
+
+                <Card 
+                  className="bg-gradient-to-br from-purple-500/10 to-purple-500/5 border-purple-500/20 hover:shadow-lg hover:shadow-purple-500/10 transition-all duration-300"
+                >
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+                      <Zap className="w-4 h-4" />
+                      Technodiversité
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                     <div className="text-3xl font-bold text-purple-500">
+                       {totalTechnology}
+                     </div>
+                     <p className="text-xs text-muted-foreground mt-1">
+                       technologies
                      </p>
                   </CardContent>
                 </Card>
