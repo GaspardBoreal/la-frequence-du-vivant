@@ -76,19 +76,19 @@ export const InteractiveVignette: React.FC<InteractiveVignetteProps> = ({
             {/* Nom scientifique et statut de conservation */}
             <div className="space-y-1">
               {data.nom_scientifique && (
-                <p className="text-sm font-normal text-slate-800 italic">
+                <p className="text-sm font-normal text-slate-900 italic font-medium">
                   {data.nom_scientifique}
                 </p>
               )}
               {data.statut_conservation && (
-                <p className="text-sm font-normal text-emerald-700 font-medium">
+                <p className="text-sm font-semibold text-slate-900">
                   {data.statut_conservation}
                 </p>
               )}
             </div>
             
             {data.type && (
-              <Badge variant="outline" className="w-fit text-xs mt-2">
+              <Badge variant="secondary" className="w-fit text-xs mt-2 bg-slate-200 text-slate-900 border-slate-300 font-semibold">
                 {data.type}
               </Badge>
             )}
@@ -100,7 +100,7 @@ export const InteractiveVignette: React.FC<InteractiveVignetteProps> = ({
               {data.titre}
             </CardTitle>
             {data.type && (
-              <Badge variant="outline" className="w-fit text-xs">
+              <Badge variant="secondary" className="w-fit text-xs bg-slate-200 text-slate-900 border-slate-300 font-semibold">
                 {data.type}
               </Badge>
             )}
