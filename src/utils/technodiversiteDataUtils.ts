@@ -25,6 +25,7 @@ export interface ProcessedTechnodiversiteData {
   numerique?: TechnodiversiteItem[];
   recherche_developpement?: TechnodiversiteItem[];
   totalCount: number;
+  innovationsDerived?: boolean; // Indique si "innovations" est une synthèse des sous-catégories
 }
 
 /**
@@ -114,17 +115,34 @@ export const processTechnodiversiteData = (data: any): ProcessedTechnodiversiteD
   const altRecherche = processItems((data?.recherche_developpement || data?.donnees?.recherche_developpement || []), 'Recherche & Développement');
 
   if (altInnovationsLocales.length || altTechnologiesVertes.length || altNumerique.length || altRecherche.length) {
-    const total = altInnovationsLocales.length + altTechnologiesVertes.length + altNumerique.length + altRecherche.length;
-    console.log('Debug - Alternative categories processed:', { altInnovationsLocales, altTechnologiesVertes, altNumerique, altRecherche });
+    // Créer un Set pour identifier les éléments uniques par titre
+    const allItems = [...altInnovationsLocales, ...altTechnologiesVertes, ...altNumerique, ...altRecherche];
+    const uniqueTitles = new Set(allItems.map(item => item.titre));
+    const totalUnique = uniqueTitles.size;
+    const totalAll = altInnovationsLocales.length + altTechnologiesVertes.length + altNumerique.length + altRecherche.length;
+    
+    console.log('Debug - Alternative categories processed:', { 
+      counts: {
+        altInnovationsLocales: altInnovationsLocales.length, 
+        altTechnologiesVertes: altTechnologiesVertes.length, 
+        altNumerique: altNumerique.length, 
+        altRecherche: altRecherche.length
+      },
+      totalAll,
+      totalUnique,
+      uniqueTitles: Array.from(uniqueTitles)
+    });
+    
     return {
-      innovations: [...altInnovationsLocales, ...altTechnologiesVertes, ...altNumerique, ...altRecherche],
+      innovations: allItems, // Toutes les technologies pour la section "synthèse"
       fabrication_locale: [],
       projets_open_source: [],
       innovations_locales: altInnovationsLocales,
       technologies_vertes: altTechnologiesVertes,
       numerique: altNumerique,
       recherche_developpement: altRecherche,
-      totalCount: total
+      totalCount: totalAll, // Compter tous les éléments, même les doublons potentiels
+      innovationsDerived: true // Indique que la section "innovations" est une synthèse
     };
   }
 
