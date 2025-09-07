@@ -117,16 +117,20 @@ export const ContexteMetricCard: React.FC<ContexteMetricProps> = ({
           </CardHeader>
 
           <CardContent className="space-y-3">
-            {/* Affichage de la donnée - Contrast-Force Hierarchy */}
-            <div className="p-3 rounded-lg bg-white/70 backdrop-blur-sm border border-white/30">
+            {/* Affichage de la donnée - Contrast-Force Hierarchy amélioré */}
+            <div className="p-4 rounded-lg bg-slate-900/90 backdrop-blur-sm border border-white/10 shadow-lg">
               <div className="space-y-2">
-                <div className={`text-lg font-semibold group-hover:opacity-90 transition-colors ${styles.secondary}`}>
+                <div className="text-base font-medium text-white leading-relaxed">
                   {formattedData}
-                  {unit && <span className={`text-sm font-normal ml-1 ${styles.status}`}>{unit}</span>}
                 </div>
+                {unit && (
+                  <div className="text-sm font-medium text-slate-300">
+                    {unit}
+                  </div>
+                )}
                 
                 {/* Indicateur de qualité - adapté au variant */}
-                <div className="w-full bg-white/40 rounded-full h-1 overflow-hidden">
+                <div className="w-full bg-slate-700/40 rounded-full h-1.5 overflow-hidden mt-3">
                   <div 
                     className={`h-full transition-all duration-1000 group-hover:opacity-90 ${
                       availability === 'available' ? 'bg-gradient-to-r from-success to-success-light' :
@@ -143,9 +147,9 @@ export const ContexteMetricCard: React.FC<ContexteMetricProps> = ({
             </div>
 
             {/* Indicateur d'action */}
-            <div className="flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-all duration-300">
+            <div className="flex items-center justify-center text-xs text-white/70 opacity-0 group-hover:opacity-100 transition-all duration-300">
               <Eye className="w-3 h-3 mr-1" />
-              <span className={styles.secondary}>Cliquer pour les détails</span>
+              <span>Cliquer pour les détails</span>
             </div>
           </CardContent>
         </Card>
