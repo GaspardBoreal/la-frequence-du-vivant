@@ -1,102 +1,120 @@
-import type { Technodiversite, InnovationTech } from '@/types/opus';
+import type { VignetteData } from '@/components/opus/InteractiveVignette';
 
-export interface ProcessedTechnologyItem {
-  titre: string;
-  type: string;
-  contenu?: string;
-  description?: string;
-  metadata: {
-    type_innovation: string;
-    autonomie_energetique: boolean;
-    cout_fabrication?: string;
-    documentation_ouverte: boolean;
-    source_ids: string[];
-  };
-}
+export const processTechnologyData = (contextData: any, importSources: any[] = []): VignetteData[] => {
+  const result: VignetteData[] = [];
+  
+  if (!contextData || !contextData.technodiversite) {
+    return result;
+  }
 
-export interface ProcessedTechnologyData {
-  innovations: ProcessedTechnologyItem[];
-  sources: string[];
-}
+  // Collect all innovations from different categories
+  const allInnovations: VignetteData[] = [];
+  const allSourceIds: string[] = [];
 
-/**
- * Traite les données de technodiversité pour les convertir en format standard des vignettes
- */
-export function processTechnologyData(data: Technodiversite): ProcessedTechnologyData {
-  const processedInnovations: ProcessedTechnologyItem[] = [];
-  const allSourceIds: string[] = [...(data.sources || [])];
+  const techData = contextData.technodiversite;
 
-  // Traiter chaque innovation
-  (data.innovations || []).forEach((innovation: InnovationTech) => {
-    // Filtrer les innovations vides ou invalides
-    if (!innovation.nom || innovation.nom.trim() === '') {
-      return;
-    }
+  // Process innovations
+  if (techData.innovations && Array.isArray(techData.innovations)) {
+    techData.innovations.forEach((innovation: any) => {
+      allInnovations.push({
+        titre: innovation.nom || innovation.title || 'Innovation sans nom',
+        description_courte: innovation.description_courte || innovation.description || '',
+        definition: innovation.description || innovation.definition || '',
+        type: innovation.type || 'innovation',
+        category: 'technodiversite',
+        metadata: innovation
+      });
+    });
+  }
 
-    processedInnovations.push({
-      titre: innovation.nom,
-      type: 'innovation',
-      contenu: innovation.description || '',
-      description: innovation.description || '',
+  // Process fabrication_locale
+  if (techData.fabrication_locale && Array.isArray(techData.fabrication_locale)) {
+    techData.fabrication_locale.forEach((fab: any) => {
+      allInnovations.push({
+        titre: fab.nom || fab.title || 'Fabrication locale',
+        description_courte: fab.description_courte || fab.description || '',
+        definition: fab.description || fab.definition || '',
+        type: fab.type || 'fabrication',
+        category: 'technodiversite',
+        metadata: fab
+      });
+    });
+  }
+
+  // Process impact_territorial
+  if (techData.impact_territorial && Array.isArray(techData.impact_territorial)) {
+    techData.impact_territorial.forEach((impact: any) => {
+      allInnovations.push({
+        titre: impact.nom || impact.title || 'Impact territorial',
+        description_courte: impact.description_courte || impact.description || '',
+        definition: impact.description || impact.definition || '',
+        type: impact.type || 'impact',
+        category: 'technodiversite',
+        metadata: impact
+      });
+    });
+  }
+
+  // Process open_source_projects
+  if (techData.open_source_projects && Array.isArray(techData.open_source_projects)) {
+    techData.open_source_projects.forEach((project: any) => {
+      allInnovations.push({
+        titre: project.nom || project.name || project.title || 'Projet open source',
+        description_courte: project.description_courte || project.description || '',
+        definition: project.description || project.definition || '',
+        type: project.type || 'open_source',
+        category: 'technodiversite',
+        metadata: project,
+        url: project.url || project.repository
+      });
+    });
+  }
+
+  // Collect source_ids
+  if (techData.source_ids && Array.isArray(techData.source_ids)) {
+    allSourceIds.push(...techData.source_ids);
+  }
+
+  // Sort innovations alphabetically by title
+  allInnovations.sort((a, b) => a.titre.localeCompare(b.titre));
+
+  // Create section header for innovations
+  if (allInnovations.length > 0) {
+    result.push({
+      titre: `Technodiversité locale`,
+      description_courte: `${allInnovations.length} innovations documentées`,
+      type: 'section_header',
+      category: 'technodiversite',
+      metadata: { 
+        sectionType: 'innovations',
+        count: allInnovations.length
+      }
+    });
+
+    // Add all innovations
+    result.push(...allInnovations);
+  }
+
+  // Create horizontal banner for sources if we have source_ids
+  if (allSourceIds.length > 0) {
+    result.push({
+      titre: 'Sources bibliographiques',
+      description_courte: `Documentation et références de la technodiversité locale`,
+      type: 'sources_banner',
+      category: 'technodiversite',
       metadata: {
-        type_innovation: innovation.type,
-        autonomie_energetique: innovation.autonomie_energetique,
-        cout_fabrication: innovation.cout_fabrication,
-        documentation_ouverte: innovation.documentation_ouverte,
-        source_ids: [...allSourceIds] // Toutes les innovations partagent les mêmes sources
-      }
-    });
-  });
-
-  // Ajouter les projets open source comme innovations séparées si présents
-  if (data.open_source_projects?.length) {
-    data.open_source_projects.forEach(project => {
-      if (project && project.trim() !== '') {
-        processedInnovations.push({
-          titre: project,
-          type: 'open_source',
-          contenu: `Projet open source: ${project}`,
-          description: `Projet open source: ${project}`,
-          metadata: {
-            type_innovation: 'open-source',
-            autonomie_energetique: false,
-            documentation_ouverte: true,
-            source_ids: [...allSourceIds]
-          }
-        });
+        sectionType: 'sources',
+        sourceIds: [...new Set(allSourceIds)], // Remove duplicates
+        count: [...new Set(allSourceIds)].length,
+        importSources
       }
     });
   }
 
-  // Ajouter les éléments de fabrication locale si présents
-  if (data.fabrication_locale?.length) {
-    data.fabrication_locale.forEach(item => {
-      if (item && item.trim() !== '') {
-        processedInnovations.push({
-          titre: item,
-          type: 'fabrication_locale',
-          contenu: `Initiative de fabrication locale: ${item}`,
-          description: `Initiative de fabrication locale: ${item}`,
-          metadata: {
-            type_innovation: 'fabrication-locale',
-            autonomie_energetique: false,
-            documentation_ouverte: false,
-            source_ids: [...allSourceIds]
-          }
-        });
-      }
-    });
-  }
+  return result;
+};
 
-  return {
-    innovations: processedInnovations,
-    sources: allSourceIds
-  };
-}
-
-/**
- * Collecte tous les IDs de sources référencées dans les données technodiversité
- */
-export function collectTechnologySourceIds(data: Technodiversite): string[] {
-  return [...(data.sources || [])];
-}
+export const collectTechnologySourceIds = (data: any): string[] => {
+  if (!data || !data.technodiversite) return [];
+  return [...(data.technodiversite.source_ids || [])];
+};
