@@ -107,7 +107,7 @@ export const ContexteMetricCard: React.FC<ContexteMetricProps> = ({
             <CardTitle className="flex items-center justify-between">
               <div className="flex items-center space-x-2">
                 {getMetricIcon()}
-                <span className={`text-sm leading-tight ${styles.title}`}>{title}</span>
+                <span className={`text-sm leading-tight font-bold text-white`}>{title}</span>
               </div>
               <div className="flex items-center space-x-2">
                 {getStatusIndicator()}
