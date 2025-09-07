@@ -34,14 +34,11 @@ interface ImportData {
     auteur?: string;
     date_publication?: string;
     fiabilite: number;
-    references: any;
+    references?: any;
   }>;
-  metadata: {
-    ai_model: string;
-    sourcing_date: string;
-    validation_level: string;
-    quality_score: number;
-    completeness_score: number;
+  metadata?: {
+    // Métadonnées optionnelles - seront générées automatiquement
+    [key: string]: any;
   };
 }
 
@@ -52,7 +49,7 @@ interface ValidationResult {
   score: number;
 }
 
-function validateImportData(data: ImportData): ValidationResult {
+async function validateImportData(data: ImportData): Promise<ValidationResult> {
   const errors: string[] = [];
   const warnings: string[] = [];
   let score = 0;
@@ -62,7 +59,19 @@ function validateImportData(data: ImportData): ValidationResult {
   if (!data.marche_id) errors.push("marche_id manquant");
   if (!data.dimensions) errors.push("dimensions manquantes");
   if (!data.sources || data.sources.length === 0) errors.push("sources manquantes");
-  if (!data.metadata) errors.push("metadata manquantes");
+  
+  // Auto-génération des métadonnées si manquantes
+  if (!data.metadata) {
+    console.log('[OPUS Import] Auto-génération des métadonnées');
+    data.metadata = {};
+  }
+  
+  // Injection automatique des métadonnées système
+  const currentDate = new Date().toISOString().split('T')[0];
+  data.metadata.sourcing_date = currentDate;
+  data.metadata.import_date = new Date().toISOString();
+  data.metadata.ai_model = 'system-managed';
+  data.metadata.validation_level = 'automatique';
 
   // Auto-correction: déplacer fables hors de dimensions si nécessaire
   if (data.dimensions?.fables && Array.isArray(data.dimensions.fables)) {
@@ -72,12 +81,23 @@ function validateImportData(data: ImportData): ValidationResult {
     warnings.push("Fables déplacées automatiquement du niveau dimensions vers le niveau racine");
   }
 
-  // Calcul du score de qualité
+  // Calcul automatique du score de qualité basé sur le contenu
   const dimensionCount = Object.keys(data.dimensions || {}).length;
   score += Math.min(dimensionCount * 10, 80); // Max 80 points pour les dimensions
 
   if (data.fables && data.fables.length > 0) score += 10;
   if (data.sources.length >= 3) score += 10;
+
+  // Injection automatique des scores calculés
+  data.metadata.quality_score = Math.min(score, 100);
+  const completudeScore = await calculateCompletude(data.dimensions);
+  data.metadata.completeness_score = completudeScore;
+  
+  console.log('[OPUS Import] Métadonnées auto-générées:', {
+    sourcing_date: data.metadata.sourcing_date,
+    quality_score: data.metadata.quality_score,
+    completeness_score: data.metadata.completeness_score
+  });
 
   // Auto-correction et validation des sources
   data.sources?.forEach((source, index) => {
@@ -143,7 +163,7 @@ serve(async (req) => {
     console.log(`[OPUS Import] Mode: ${preview ? 'Preview' : 'Import'}, Marche: ${importData.marche_id}`);
 
     // Validation des données
-    const validation = validateImportData(importData);
+    const validation = await validateImportData(importData);
     
     // Log de l'import dans opus_import_runs pour historique
     const logImportRun = async (status: 'success' | 'error', errorMessage?: string, completudeScore?: number) => {
@@ -182,19 +202,18 @@ serve(async (req) => {
 
     // Mode preview - retourne seulement la validation
     if (preview) {
-      console.log('[OPUS Import] Preview mode - calculating completude...');
-      
-      const completude = await calculateCompletude(importData.dimensions);
+      console.log('[OPUS Import] Preview mode - using calculated metadata...');
       
       console.log('[OPUS Import] Preview response:', {
         validation_score: validation.score,
-        completude_score: completude,
+        completude_score: importData.metadata?.completeness_score,
+        quality_score: importData.metadata?.quality_score,
         dimensions_count: Object.keys(importData.dimensions || {}).length,
         fables_count: importData.fables?.length || 0,
         sources_count: importData.sources?.length || 0
       });
       
-      await logImportRun('success', undefined, completude);
+      await logImportRun('success', undefined, importData.metadata?.completeness_score);
       
       return new Response(
         JSON.stringify({
@@ -204,7 +223,7 @@ serve(async (req) => {
             dimensions_count: Object.keys(importData.dimensions || {}).length,
             fables_count: importData.fables?.length || 0,
             sources_count: importData.sources?.length || 0,
-            completude_score: Math.round(completude),
+            completude_score: Math.round(importData.metadata?.completeness_score || 0),
             quality_score: importData.metadata?.quality_score || 0
           }
         }),

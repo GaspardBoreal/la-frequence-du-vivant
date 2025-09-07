@@ -34,12 +34,9 @@ interface ImportData {
   dimensions: Record<string, any>;
   fables?: Array<any>;
   sources: Array<any>;
-  metadata: {
-    ai_model: string;
-    sourcing_date: string;
-    validation_level: string;
-    quality_score: number;
-    completeness_score: number;
+  metadata?: {
+    // Métadonnées optionnelles - seront générées automatiquement si manquantes
+    [key: string]: any;
   };
 }
 
@@ -243,14 +240,8 @@ export const OpusImportInterface: React.FC<OpusImportInterfaceProps> = ({
       "date_acces": "${new Date().toISOString().split('T')[0]}",
       "fiabilite": 98
     }
-  ],
-  "metadata": {
-    "ai_model": "gpt-4",
-    "sourcing_date": "${new Date().toISOString().split('T')[0]}",
-    "validation_level": "automatique",
-    "quality_score": 85,
-    "completeness_score": 90
-  }
+  ]
+}
 }`;
   }, [currentMarcheId, explorationId]);
 
@@ -301,17 +292,7 @@ export const OpusImportInterface: React.FC<OpusImportInterfaceProps> = ({
       if (!parsed.sources || !Array.isArray(parsed.sources)) {
         errors.push("Le champ 'sources' est requis et doit être un tableau");
       }
-      if (!parsed.metadata) {
-        errors.push("Les métadonnées 'metadata' sont requises");
-      } else {
-        // Validation des scores dans metadata
-        if (parsed.metadata.quality_score === null || parsed.metadata.quality_score === undefined) {
-          errors.push("metadata.quality_score doit être un nombre (pas null)");
-        }
-        if (parsed.metadata.completeness_score === null || parsed.metadata.completeness_score === undefined) {
-          errors.push("metadata.completeness_score doit être un nombre (pas null)");
-        }
-      }
+      // Les métadonnées ne sont plus obligatoires - elles seront générées automatiquement
 
       // Injection automatique des IDs (ces champs sont automatiquement ajoutés)
       const completeData: ImportData = {
