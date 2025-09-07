@@ -799,7 +799,14 @@ const GalerieView = memo<{
   }, [filteredPhotos, committedIndex, deviceType]);
 
   return (
-    <div className="min-h-[100dvh] bg-gradient-to-b from-slate-50 via-blue-50 to-emerald-50">
+    <div className="min-h-[100dvh] bg-gradient-to-br from-slate-900 via-blue-950/60 to-emerald-950/40 relative">
+      {/* Aquatic depth effect with floating particles */}
+      <div className="absolute inset-0 pointer-events-none">
+        <div className="absolute top-20 left-1/4 w-1 h-1 bg-cyan-400/50 rounded-full animate-pulse"></div>
+        <div className="absolute bottom-1/3 right-1/4 w-2 h-2 bg-emerald-400/30 rounded-full animate-ping"></div>
+        <div className="absolute top-1/2 left-10 w-1 h-1 bg-blue-300/40 rounded-full animate-bounce"></div>
+      </div>
+      
       <div className="relative h-[100dvh] overflow-hidden">
         
 
@@ -821,14 +828,14 @@ const GalerieView = memo<{
                                      !showOverlay;
               
               return (
-                <motion.div
+                  <motion.div
                   key={deviceType === 'desktop' ? `photo-${photo.id}-${position}-${committedIndex}` : 'mobile-current'}
                   className={`
-                    relative overflow-hidden rounded-2xl shadow-2xl
+                    relative overflow-hidden rounded-2xl shadow-2xl shadow-cyan-500/10
                     ${deviceType === 'desktop' ? (
                       position === 'current' 
-                        ? 'w-[45%] h-[80%] z-10' 
-                        : 'w-[25%] h-[60%] z-0 opacity-70 hover:opacity-90 cursor-pointer'
+                        ? 'w-[45%] h-[80%] z-10 border border-cyan-400/20' 
+                        : 'w-[25%] h-[60%] z-0 opacity-70 hover:opacity-90 cursor-pointer border border-cyan-400/10'
                     ) : 'w-full h-full rounded-none'}
                   `}
                   initial={ deviceType === 'desktop' ? { 
@@ -854,7 +861,12 @@ const GalerieView = memo<{
                     if (position === 'previous') navigatePrevious();
                     if (position === 'next') navigateNext();
                   }}
-                  style={{ cursor: isPreparing ? 'not-allowed' : 'pointer' }}
+                  style={{ 
+                    cursor: isPreparing ? 'not-allowed' : 'pointer',
+                    boxShadow: position === 'current' 
+                      ? '0 25px 50px -12px rgba(34, 211, 238, 0.25), 0 0 40px rgba(16, 185, 129, 0.15)' 
+                      : '0 10px 25px -5px rgba(34, 211, 238, 0.1)'
+                  }}
                   whileHover={deviceType === 'desktop' && position !== 'current' && !isPreparing ? { scale: 0.95, opacity: 0.9 } : {}}
                 >
                   <OptimizedImage
@@ -871,44 +883,44 @@ const GalerieView = memo<{
                   
                   {/* Metadata only on current photo */}
                   {position === 'current' && !isPreparing && (
-                    <motion.div 
-                      className="absolute bottom-6 left-6 right-6 text-white"
-                      initial={shouldUseInstant ? false : { y: 20, opacity: 0 }}
-                      animate={{ y: 0, opacity: 1 }}
-                      transition={shouldUseInstant ? { duration: 0 } : { delay: 0.3 }}
-                    >
-                      <Badge className="mb-3 bg-emerald-500/80 text-white border-emerald-400/30 backdrop-blur-sm">
-                        {photo.ville}
-                      </Badge>
-                      <h3 className="text-xl font-bold mb-2 leading-tight">
-                        {photo.nomMarche}
-                      </h3>
-                      <div className="flex items-center justify-between">
-                        <p className="text-sm opacity-90">
-                          Photo {committedIndex + 1} / {filteredPhotos.length}
-                        </p>
-                        {photo.emotionalTags.length > 0 && (
-                          <div className="flex gap-1">
-                            {photo.thematicIcons.slice(0, 3).map((icon, i) => (
-                              <span key={i} className="text-lg">{icon}</span>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    </motion.div>
+                     <motion.div 
+                       className="absolute bottom-6 left-6 right-6 text-white"
+                       initial={shouldUseInstant ? false : { y: 20, opacity: 0 }}
+                       animate={{ y: 0, opacity: 1 }}
+                       transition={shouldUseInstant ? { duration: 0 } : { delay: 0.3 }}
+                     >
+                       <Badge className="mb-3 bg-cyan-500/80 text-cyan-100 border-cyan-400/30 backdrop-blur-xl shadow-lg shadow-cyan-500/20">
+                         {photo.ville}
+                       </Badge>
+                       <h3 className="text-xl font-bold mb-2 leading-tight text-cyan-50 drop-shadow-lg">
+                         {photo.nomMarche}
+                       </h3>
+                       <div className="flex items-center justify-between">
+                         <p className="text-sm opacity-90 text-cyan-100">
+                           Photo {committedIndex + 1} / {filteredPhotos.length}
+                         </p>
+                         {photo.emotionalTags.length > 0 && (
+                           <div className="flex gap-1">
+                             {photo.thematicIcons.slice(0, 3).map((icon, i) => (
+                               <span key={i} className="text-lg drop-shadow-sm">{icon}</span>
+                             ))}
+                           </div>
+                         )}
+                       </div>
+                     </motion.div>
                   )}
 
                   {/* Navigation hints for side photos */}
                   {deviceType === 'desktop' && position !== 'current' && !isPreparing && (
                     <div className="absolute inset-0 flex items-center justify-center">
-                      <motion.div
-                        className="w-12 h-12 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center"
-                        whileHover={{ scale: 1.1, backgroundColor: 'rgba(255,255,255,0.3)' }}
-                      >
+                       <motion.div
+                         className="w-12 h-12 rounded-full bg-slate-900/30 backdrop-blur-xl border border-cyan-400/30 shadow-xl shadow-cyan-500/20 flex items-center justify-center"
+                         whileHover={{ scale: 1.1, backgroundColor: 'rgba(34, 211, 238, 0.2)', boxShadow: '0 0 30px rgba(34, 211, 238, 0.4)' }}
+                       >
                         {position === 'previous' ? (
-                          <ChevronLeft className="h-6 w-6 text-white" />
-                        ) : (
-                          <ChevronRight className="h-6 w-6 text-white" />
+                           <ChevronLeft className="h-6 w-6 text-cyan-100" />
+                         ) : (
+                           <ChevronRight className="h-6 w-6 text-cyan-100" />
                         )}
                       </motion.div>
                     </div>
