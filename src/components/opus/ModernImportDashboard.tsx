@@ -816,6 +816,16 @@ export const ModernImportDashboard: React.FC = () => {
                       {filteredImports.map((importRecord) => {
                         const speciesCount = getProcessedSpeciesCount(importRecord.contexte_data?.especes_caracteristiques);
                         const vocabularyCount = getVocabularyTermsCount(importRecord.contexte_data?.vocabulaire_local);
+                        const technologyCount = importRecord.contexte_data?.technodiversite 
+                          ? (() => {
+                              try {
+                                return processTechnodiversiteData(importRecord.contexte_data.technodiversite).totalCount;
+                              } catch {
+                                return 0;
+                              }
+                            })()
+                          : 0;
+                        const sourcesCount = importRecord.sources?.length || 0;
                         const completudeScore = importRecord.completude_score || 0;
                         
                         // Déterminer le statut basé sur le score de complétude
@@ -863,7 +873,19 @@ export const ModernImportDashboard: React.FC = () => {
                                       • {vocabularyCount} terme{vocabularyCount > 1 ? 's' : ''}
                                     </span>
                                   )}
+                                  {technologyCount > 0 && (
+                                    <span className="ml-2 text-purple-500">
+                                      • {technologyCount} technodiversité{technologyCount > 1 ? 's' : ''}
+                                    </span>
+                                  )}
                                 </p>
+                                {sourcesCount > 0 && (
+                                  <p className="text-sm text-muted-foreground">
+                                    <span className="text-blue-500">
+                                      {sourcesCount} source{sourcesCount > 1 ? 's' : ''}
+                                    </span>
+                                  </p>
+                                )}
                               </div>
                             </div>
                             <div className="flex items-center gap-2">
