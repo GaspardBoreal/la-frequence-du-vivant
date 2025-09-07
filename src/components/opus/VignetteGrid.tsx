@@ -169,7 +169,7 @@ export const VignetteGrid: React.FC<VignetteGridProps> = ({
 
   if (!data || (specialProcessing === 'vocabulary' ? 
     (typeof processedData === 'object' && 'termes' in processedData ? 
-      (!processedData.termes?.length && !processedData.sources?.length) : true) : 
+      (!processedData.termes?.length && !processedData.sources?.length && !importSources?.length) : true) : 
     (Array.isArray(processedData) ? !processedData.length : true))) {
     return (
       <Card className="bg-background/50 backdrop-blur-sm border-border/30">
@@ -252,7 +252,7 @@ export const VignetteGrid: React.FC<VignetteGridProps> = ({
           )}
 
           {/* Section Sources - Nouveau composant unifié */}
-          {processedData.sources && processedData.sources.length > 0 && (
+          {((processedData.sources && processedData.sources.length > 0) || (importSources && importSources.length > 0)) && (
             <div className="space-y-4">
               <div className={`flex items-center gap-3 ${getVariantColor()}`}>
                 <ExternalLink className="w-5 h-5" />
@@ -260,6 +260,11 @@ export const VignetteGrid: React.FC<VignetteGridProps> = ({
                   Sources bibliographiques
                 </h3>
               </div>
+              {(!processedData.termes || processedData.termes.length === 0) && importSources && importSources.length > 0 && (
+                <p className="text-sm text-muted-foreground mb-4">
+                  Aucun terme local. Sources disponibles ci‑dessous.
+                </p>
+              )}
               {/* Conteneur avec contraintes de largeur */}
               <div className="w-full max-w-full overflow-hidden">
                 <VocabularySourcesCard 
