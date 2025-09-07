@@ -643,18 +643,29 @@ export const OpusImportInterface: React.FC<OpusImportInterfaceProps> = ({
             )}
 
             <div className="flex gap-2 justify-between">
-              <Button 
-                variant="outline"
-                onClick={() => {
-                  const template = generateCompleteTemplate();
-                  setJsonContent(template);
-                  parseAndValidateJson();
-                }}
-                className="flex items-center gap-2"
-              >
-                <FileJson className="h-4 w-4" />
-                Template Complet
-              </Button>
+              <div className="flex gap-2">
+                <Button 
+                  variant="outline"
+                  onClick={copyJsonFormat}
+                  className="flex items-center gap-2"
+                >
+                  <Copy className="h-4 w-4" />
+                  Copier le format JSON
+                </Button>
+                
+                <Button 
+                  variant="outline"
+                  onClick={() => {
+                    const template = generateCompleteTemplate();
+                    setJsonContent(template);
+                    parseAndValidateJson();
+                  }}
+                  className="flex items-center gap-2"
+                >
+                  <FileJson className="h-4 w-4" />
+                  Charger le modèle
+                </Button>
+              </div>
               
               <div className="flex gap-2">
                 <Button 
