@@ -23,7 +23,8 @@ import {
   Link,
   BookOpen,
   BarChart3,
-  Info
+  Info,
+  Copy
 } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
@@ -100,43 +101,149 @@ export const OpusImportInterface: React.FC<OpusImportInterfaceProps> = ({
   const currentMarcheId = selectedMarcheId || marcheId;
   const currentMarcheName = selectedMarcheName || marcheName;
 
-  // Auto-fill template when marche is selected
-  const generateTemplate = useCallback(() => {
+  // Generate complete JSON template for all OPUS dimensions
+  const generateCompleteTemplate = useCallback(() => {
     if (!currentMarcheId || !explorationId) return '';
     
     return `{
   "dimensions": {
     "contexte_hydrologique": {
-      "description": "Contexte hydrologique du site d'étude",
+      "description": "Contexte hydrologique et caractéristiques du site d'étude",
       "donnees": {
-        "bassin_versant": "À renseigner",
-        "debit_moyen": "À renseigner",
-        "regime": "À renseigner"
+        "bassin_versant": "Nom du bassin versant",
+        "debit_moyen": "Débit moyen en m³/s",
+        "regime_hydrologique": "Type de régime (pluvial, nival, mixte)",
+        "qualite_eau": "Indices de qualité physicochimique et biologique",
+        "sources": [
+          {
+            "titre": "Données hydrologiques officielles",
+            "url": "https://www.hydro.eaufrance.fr",
+            "type": "web",
+            "date_acces": "${new Date().toISOString().split('T')[0]}",
+            "fiabilite": 95
+          }
+        ]
       }
     },
     "especes_caracteristiques": {
-      "description": "Espèces indicatrices de la qualité écologique",
+      "description": "Espèces indicatrices de la biodiversité et qualité écologique",
       "donnees": {
-        "poissons": [],
-        "invertebres": [],
-        "vegetation": []
+        "poissons": ["Truite fario", "Chabot", "Lamproie de Planer"],
+        "invertebres": ["Ephéméroptères", "Plécoptères", "Trichoptères"],
+        "vegetation_aquatique": ["Renoncule flottante", "Potamot crépu"],
+        "oiseaux_aquatiques": ["Martin-pêcheur", "Bergeronnette des ruisseaux"],
+        "sources": [
+          {
+            "titre": "Inventaire biodiversité INPN",
+            "url": "https://inpn.mnhn.fr",
+            "type": "base_donnees",
+            "date_acces": "${new Date().toISOString().split('T')[0]}",
+            "fiabilite": 90
+          }
+        ]
+      }
+    },
+    "vocabulaire_local": {
+      "description": "Terminologie locale, dialectes et savoirs traditionnels",
+      "donnees": {
+        "termes_locaux": {
+          "cours_eau": "Nom local du cours d'eau",
+          "phenomenes": ["Crue locale", "Étiage saisonnier"],
+          "pratiques": ["Techniques traditionnelles", "Usages ancestraux"]
+        },
+        "sources": [
+          {
+            "titre": "Lexique patrimonial local",
+            "url": "https://patrimoine-local.fr",
+            "type": "documentation",
+            "date_acces": "${new Date().toISOString().split('T')[0]}",
+            "fiabilite": 75
+          }
+        ]
+      }
+    },
+    "infrastructures_techniques": {
+      "description": "Infrastructures humaines et aménagements techniques",
+      "donnees": {
+        "ouvrages_hydrauliques": ["Barrage", "Seuil", "Écluse"],
+        "reseaux": ["Assainissement", "AEP", "Pluvial"],
+        "equipements": ["Station épuration", "Pompage", "Traitement"],
+        "sources": [
+          {
+            "titre": "Base nationale des ouvrages",
+            "url": "https://www.sandre.eaufrance.fr",
+            "type": "base_donnees",
+            "date_acces": "${new Date().toISOString().split('T')[0]}",
+            "fiabilite": 95
+          }
+        ]
+      }
+    },
+    "agroecologie": {
+      "description": "Pratiques agricoles et écosystémiques du territoire",
+      "donnees": {
+        "pratiques_agricoles": ["Agriculture biologique", "Agroforesterie"],
+        "cultures": ["Céréales", "Légumineuses", "Prairies permanentes"],
+        "elevage": ["Bovin extensif", "Ovin transhumant"],
+        "biodiversite_cultivee": ["Variétés locales", "Semences paysannes"],
+        "sources": [
+          {
+            "titre": "Registre Parcellaire Graphique",
+            "url": "https://www.telepac.agriculture.gouv.fr",
+            "type": "base_donnees",
+            "date_acces": "${new Date().toISOString().split('T')[0]}",
+            "fiabilite": 85
+          }
+        ]
+      }
+    },
+    "technodiversite": {
+      "description": "Technologies émergentes et innovations territoriales",
+      "donnees": {
+        "technologies_vertes": ["Énergies renouvelables", "Efficacité énergétique"],
+        "innovations_locales": ["Solutions techniques locales", "Brevets"],
+        "numerique": ["IoT environnemental", "Capteurs intelligents"],
+        "recherche_developpement": ["Projets R&D", "Partenariats académiques"],
+        "sources": [
+          {
+            "titre": "Base brevets INPI",
+            "url": "https://bases-brevets.inpi.fr",
+            "type": "base_donnees",
+            "date_acces": "${new Date().toISOString().split('T')[0]}",
+            "fiabilite": 80
+          }
+        ]
       }
     }
   },
   "fables": [
     {
-      "titre": "Titre de votre fable",
-      "contenu_principal": "Contenu narratif à développer...",
+      "titre": "L'eau qui murmure les secrets du territoire",
+      "contenu_principal": "Narration poétique intégrant les données scientifiques et les savoirs locaux...",
       "ordre": 1,
       "dimension": "contexte_hydrologique"
+    },
+    {
+      "titre": "La danse des espèces au fil de l'eau",
+      "contenu_principal": "Récit des interactions écosystémiques et de la biodiversité...",
+      "ordre": 2,
+      "dimension": "especes_caracteristiques"
     }
   ],
   "sources": [
     {
-      "titre": "Source des données",
-      "url": "https://exemple.com",
+      "titre": "Portail technique de l'Office Français de la Biodiversité",
+      "url": "https://professionnels.ofb.fr",
       "type": "web",
-      "fiabilite": 80
+      "date_acces": "${new Date().toISOString().split('T')[0]}",
+      "fiabilite": 95
+    },
+    {
+      "titre": "Données ouvertes Eaufrance",
+      "url": "https://www.eaufrance.fr",
+      "type": "base_donnees", 
+      "date_acces": "${new Date().toISOString().split('T')[0]}",
+      "fiabilite": 98
     }
   ],
   "metadata": {
@@ -149,12 +256,25 @@ export const OpusImportInterface: React.FC<OpusImportInterfaceProps> = ({
 }`;
   }, [currentMarcheId, explorationId]);
 
-  // Auto-fill when marche changes
-  React.useEffect(() => {
-    if (currentMarcheId && explorationId && !jsonContent.trim()) {
-      setJsonContent(generateTemplate());
+  // Copy JSON format to clipboard
+  const copyJsonFormat = useCallback(async () => {
+    const jsonFormat = generateCompleteTemplate();
+    try {
+      await navigator.clipboard.writeText(jsonFormat);
+      toast({
+        title: "Format JSON copié",
+        description: "Le format JSON complet a été copié dans le presse-papiers"
+      });
+    } catch (error) {
+      toast({
+        title: "Erreur de copie",
+        description: "Impossible de copier dans le presse-papiers",
+        variant: "destructive"
+      });
     }
-  }, [currentMarcheId, explorationId, generateTemplate, jsonContent]);
+  }, [generateCompleteTemplate, toast]);
+
+  // NO auto-fill - only manual template generation
 
   const parseAndValidateJson = useCallback(() => {
     const errors: string[] = [];
@@ -501,49 +621,10 @@ export const OpusImportInterface: React.FC<OpusImportInterfaceProps> = ({
             </CardHeader>
             <CardContent className="space-y-4">
             <Textarea
-              placeholder={`{
-  "dimensions": {
-    "contexte_hydrologique": {
-      "description": "Contexte hydrologique du site",
-      "donnees": { ... }
-    },
-    "especes_caracteristiques": {
-      "description": "Espèces caractéristiques", 
-      "donnees": { ... }
-    }
-  },
-  "fables": [
-    {
-      "titre": "Titre de votre fable",
-      "contenu_principal": "Contenu narratif à développer...",
-      "ordre": 1,
-      "dimension": "contexte_hydrologique"
-    }
-  ],
-  "sources": [
-    {
-      "titre": "Source des données",
-      "url": "https://exemple.com",
-      "type": "web",
-      "fiabilite": 80
-    }
-  ],
-  "metadata": {
-    "ai_model": "gpt-4",
-    "sourcing_date": "${new Date().toISOString().split('T')[0]}",
-    "validation_level": "automatique", 
-    "quality_score": 85,
-    "completeness_score": 90
-  }
-}
-
-⚠️ IMPORTANT:
-- exploration_id et marche_id sont ajoutés automatiquement
-- sources: utilisez "titre" (pas "nom"), "type" requis ("web", "pdf", "article"), "fiabilite" en nombre (0-100)
-- fables: utilisez "contenu_principal" pour le contenu principal`}
+              placeholder="Collez ici votre JSON d'import IA ou utilisez le bouton 'Copier le format JSON' pour obtenir le modèle complet..."
               value={jsonContent}
               onChange={(e) => setJsonContent(e.target.value)}
-              className="min-h-[300px] font-mono text-sm"
+              className="min-h-[400px] font-mono text-sm"
             />
             
             {/* Affichage des erreurs de validation */}
@@ -565,7 +646,7 @@ export const OpusImportInterface: React.FC<OpusImportInterfaceProps> = ({
               <Button 
                 variant="outline"
                 onClick={() => {
-                  const template = generateTemplate();
+                  const template = generateCompleteTemplate();
                   setJsonContent(template);
                   parseAndValidateJson();
                 }}
@@ -598,7 +679,7 @@ export const OpusImportInterface: React.FC<OpusImportInterfaceProps> = ({
                 {!currentMarcheId ? (
                   <span className="text-amber-600 font-medium">⚠️ Sélectionnez une marche pour activer l'import</span>
                 ) : !jsonContent.trim() ? (
-                  <span className="text-blue-600">💡 Le JSON a été pré-rempli automatiquement. Vous pouvez le modifier puis prévisualiser ou valider directement.</span>
+                  <span className="text-blue-600">💡 Utilisez "Copier le format JSON" pour obtenir le modèle complet couvrant tous les onglets (Contexte, Espèces, Vocabulaire, Infrastructures, Agroécologie, Technodiversité).</span>
                 ) : validationErrors.length > 0 ? (
                   <span className="text-red-600 font-medium">❌ Corrigez les erreurs JSON avant de continuer</span>
                 ) : (
