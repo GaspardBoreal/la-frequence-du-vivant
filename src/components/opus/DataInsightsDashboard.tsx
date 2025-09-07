@@ -18,6 +18,7 @@ import {
   Brain,
   PieChart
 } from 'lucide-react';
+import { getProcessedSpeciesCount, processSpeciesData } from '@/utils/speciesDataUtils';
 
 interface ImportRecord {
   id: string;
@@ -49,20 +50,20 @@ export const DataInsightsDashboard: React.FC<DataInsightsDashboardProps> = ({ im
     ).length;
     const emptyImports = totalImports - completeImports - partialImports;
 
-    // Biodiversity metrics
+    // Biodiversity metrics (use normalized processing for strict consistency)
     const totalSpecies = imports.reduce((acc, imp) => {
-      const species = imp.contexte_data?.especes_caracteristiques;
-      return acc + (Array.isArray(species) ? species.length : Object.keys(species || {}).length);
+      return acc + getProcessedSpeciesCount(imp.contexte_data?.especes_caracteristiques);
     }, 0);
 
-    const uniqueSpecies = new Set();
+    const uniqueSpecies = new Set<string>();
     imports.forEach(imp => {
-      const species = imp.contexte_data?.especes_caracteristiques;
-      if (Array.isArray(species)) {
-        species.forEach(s => uniqueSpecies.add(typeof s === 'string' ? s : s.nom || s.name));
-      } else if (species && typeof species === 'object') {
-        Object.keys(species).forEach(key => uniqueSpecies.add(key));
-      }
+      const processed = processSpeciesData(imp.contexte_data?.especes_caracteristiques);
+      const addKey = (s: any) => {
+        const key = `${(s.nom_commun || s.titre || '').toLowerCase()}|${(s.nom_scientifique || '').toLowerCase()}`;
+        uniqueSpecies.add(key);
+      };
+      processed.flore.forEach(addKey);
+      Object.values(processed.faune).forEach((list) => list.forEach(addKey));
     });
 
     // Vocabulary metrics

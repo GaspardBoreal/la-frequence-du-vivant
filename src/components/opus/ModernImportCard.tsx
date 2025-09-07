@@ -21,6 +21,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger 
 } from '@/components/ui/dropdown-menu';
+import { getProcessedSpeciesCount } from '@/utils/speciesDataUtils';
 
 interface ImportRecord {
   id: string;
@@ -91,8 +92,7 @@ export const ModernImportCard: React.FC<ModernImportCardProps> = ({
     };
 
     if (importRecord.contexte_data) {
-      const species = importRecord.contexte_data.especes_caracteristiques;
-      metrics.species = Array.isArray(species) ? species.length : Object.keys(species || {}).length;
+      metrics.species = getProcessedSpeciesCount(importRecord.contexte_data?.especes_caracteristiques);
       
       const vocab = importRecord.contexte_data.vocabulaire_local;
       metrics.vocabulary = Array.isArray(vocab) ? vocab.length : Object.keys(vocab || {}).length;
