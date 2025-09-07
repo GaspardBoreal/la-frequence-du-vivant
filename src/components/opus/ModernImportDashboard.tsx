@@ -36,6 +36,7 @@ import { ModernImportDetailModal } from './ModernImportDetailModal';
 import { DataInsightsDashboard } from './DataInsightsDashboard';
 import { OpusImportInterface } from './OpusImportInterface';
 import { ExplorationSpeciesView } from './ExplorationSpeciesView';
+import { ExplorationVocabularyView } from './ExplorationVocabularyView';
 import SEOHead from '@/components/SEOHead';
 import { useAnimatedCounter } from '@/hooks/useAnimatedCounter';
 import { getProcessedSpeciesCount } from '@/utils/speciesDataUtils';
@@ -285,6 +286,10 @@ export const ModernImportDashboard: React.FC = () => {
     setActiveTab('species');
   };
 
+  const handleVocabularyClick = () => {
+    setActiveTab('vocabulary');
+  };
+
   const handleHomeClick = () => {
     navigate('/galerie-fleuve');
   };
@@ -507,6 +512,13 @@ export const ModernImportDashboard: React.FC = () => {
                 Espèces ({totalSpecies})
               </TabsTrigger>
               <TabsTrigger 
+                value="vocabulary" 
+                className="flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground transition-all duration-300"
+              >
+                <Users className="w-4 h-4" />
+                Vocabulaire local ({totalVocabulary})
+              </TabsTrigger>
+              <TabsTrigger 
                 value="imports" 
                 className="flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground transition-all duration-300"
               >
@@ -570,7 +582,10 @@ export const ModernImportDashboard: React.FC = () => {
                   </CardContent>
                 </Card>
 
-                <Card className="bg-gradient-to-br from-secondary/10 to-secondary/5 border-secondary/20 hover:shadow-lg hover:shadow-secondary/10 transition-all duration-300">
+                <Card 
+                  className="bg-gradient-to-br from-secondary/10 to-secondary/5 border-secondary/20 hover:shadow-lg hover:shadow-secondary/10 transition-all duration-300 cursor-pointer"
+                  onClick={handleVocabularyClick}
+                >
                   <CardHeader className="pb-3">
                     <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
                       <Users className="w-4 h-4" />
@@ -645,6 +660,11 @@ export const ModernImportDashboard: React.FC = () => {
             {/* Species View */}
             <TabsContent value="species" className="space-y-6">
               <ExplorationSpeciesView imports={filteredImports} />
+            </TabsContent>
+
+            {/* Vocabulary View */}
+            <TabsContent value="vocabulary" className="space-y-6">
+              <ExplorationVocabularyView imports={filteredImports} />
             </TabsContent>
 
             {/* Imports List */}
