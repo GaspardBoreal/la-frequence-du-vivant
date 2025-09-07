@@ -252,18 +252,20 @@ export const ModernImportDetailModal: React.FC<ModernImportDetailModalProps> = (
                   </CardHeader>
                   <CardContent>
                      <div className="text-2xl font-bold text-warning mb-1">
-                       {(() => {
-                         // Essayer différents chemins pour trouver les données d'infrastructure
-                         const contextData = importRecord.contexte_data as any;
-                         const infra = contextData?.dimensions?.infrastructures_techniques
-                           || contextData?.infrastructures_techniques
-                           || contextData?.empreintes_humaines 
-                           || contextData?.infrastructures 
-                           || contextData?.donnees?.empreintes_humaines 
-                           || contextData?.empreintesHumaines 
-                           || null;
-                         return infra ? processEmpreintesHumainesData(infra).totalCount : 0;
-                       })()}
+                         {(() => {
+                           // Essayer différents chemins pour trouver les données d'infrastructure
+                           const contextData = importRecord.contexte_data as any;
+                           const infra = contextData?.dimensions?.infrastructures_techniques
+                             || contextData?.infrastructures_techniques
+                             || contextData?.empreintes_humaines?.dimensions?.infrastructures_techniques
+                             || contextData?.empreintes_humaines?.infrastructures_techniques
+                             || contextData?.empreintes_humaines 
+                             || contextData?.infrastructures 
+                             || contextData?.donnees?.empreintes_humaines 
+                             || contextData?.empreintesHumaines 
+                             || null;
+                           return infra ? processEmpreintesHumainesData(infra).totalCount : 0;
+                         })()}
                      </div>
                     <p className="text-xs text-muted-foreground">caractéristiques</p>
                   </CardContent>
@@ -415,9 +417,14 @@ export const ModernImportDetailModal: React.FC<ModernImportDetailModalProps> = (
               <InfrastructureVignetteGrid 
                 empreintesHumainesData={(() => {
                   const contextData = importRecord.contexte_data as any;
-                  return contextData?.dimensions?.infrastructures_techniques ||
-                         contextData?.infrastructures_techniques || 
-                         contextData?.empreintes_humaines;
+                  const infra = contextData?.dimensions?.infrastructures_techniques 
+                    || contextData?.infrastructures_techniques 
+                    || contextData?.empreintes_humaines?.dimensions?.infrastructures_techniques 
+                    || contextData?.empreintes_humaines?.infrastructures_techniques 
+                    || contextData?.empreintes_humaines 
+                    || null;
+                  console.info('Infra debug (modal): keys=', contextData ? Object.keys(contextData) : null, 'resolved=', infra ? Object.keys(infra) : infra);
+                  return infra;
                 })()}
                 importSources={importRecord.sources}
               />

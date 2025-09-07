@@ -167,6 +167,8 @@ export const ModernImportDashboard: React.FC = () => {
       const contextData = imp.contexte_data as any;
       const infrastructures = contextData?.dimensions?.infrastructures_techniques ||
                             contextData?.infrastructures_techniques || 
+                            contextData?.empreintes_humaines?.dimensions?.infrastructures_techniques ||
+                            contextData?.empreintes_humaines?.infrastructures_techniques ||
                             contextData?.empreintes_humaines;
       if (infrastructures) {
         try {
