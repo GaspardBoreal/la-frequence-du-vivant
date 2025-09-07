@@ -4,7 +4,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { ChevronRight, Info, ExternalLink, BookOpen, Globe, Calendar, Wrench } from 'lucide-react';
+import { ChevronRight, Info, ExternalLink, BookOpen, Globe, Calendar } from 'lucide-react';
 import { getVignetteStyles, getDialogHeaderStyles, type VignetteVariant } from '@/utils/vignetteStyleUtils';
 
 interface VignetteData {
@@ -21,8 +21,6 @@ interface VignetteData {
   nom_scientifique?: string;
   statut_conservation?: string;
 }
-
-export type { VignetteData };
 
 interface InteractiveVignetteProps {
   data: VignetteData;
@@ -148,27 +146,6 @@ export const InteractiveVignette: React.FC<InteractiveVignetteProps> = ({
                         </div>
                       )}
                     </div>
-                  ) : variant === 'technology' ? (
-                    <div className="space-y-2">
-                      <div className="text-xl font-bold text-success">
-                        {data.titre}
-                      </div>
-                      <div className="flex items-center gap-2 mt-1">
-                        <Badge variant="secondary" className="text-xs">
-                          {data.metadata?.type_innovation || 'innovation'}
-                        </Badge>
-                        {data.metadata?.autonomie_energetique && (
-                          <Badge variant="outline" className="text-xs text-success border-success/30">
-                            ⚡ Autonome
-                          </Badge>
-                        )}
-                        {data.metadata?.documentation_ouverte && (
-                          <Badge variant="outline" className="text-xs text-success border-success/30">
-                            📖 Open Source
-                          </Badge>
-                        )}
-                      </div>
-                    </div>
                   ) : (
                     <div className="flex items-center gap-3">
                       <h2 className="text-xl font-bold">{data.titre}</h2>
@@ -215,25 +192,7 @@ export const InteractiveVignette: React.FC<InteractiveVignetteProps> = ({
                             {data.metadata.origine || data.metadata.etymologie}
                           </p>
                         </div>
-                    )}
-
-                    {/* Technology-specific details */}
-                    {variant as string === 'technology' && (
-                      <div className="space-y-3">
-                        <div className="p-4 rounded-lg bg-success/5 border border-success/10">
-                          <div className="flex items-center gap-2 mb-2">
-                            <Wrench className="w-4 h-4 text-success" />
-                            <h4 className="font-medium text-sm text-success">Innovation technologique</h4>
-                          </div>
-                          <div className="space-y-2 text-sm">
-                            <p><strong>Type:</strong> {data.metadata?.type_innovation || 'N/A'}</p>
-                            {data.metadata?.cout_fabrication && (
-                              <p><strong>Coût:</strong> {data.metadata.cout_fabrication}</p>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    )}
+                      )}
 
                       {/* Contexte d'usage */}
                       {data.metadata.usage_context && (

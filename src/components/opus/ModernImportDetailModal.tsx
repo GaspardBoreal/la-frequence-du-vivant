@@ -420,8 +420,6 @@ export const ModernImportDetailModal: React.FC<ModernImportDetailModalProps> = (
                 variant="technology"
                 icon={<Wrench className="w-5 h-5" />}
                 emptyMessage="Aucune technologie n'a été identifiée"
-                specialProcessing="technology"
-                importSources={importRecord.sources}
               />
             </TabsContent>
           </ScrollArea>

@@ -2,11 +2,9 @@ import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { InteractiveVignette } from './InteractiveVignette';
-import { Database, ExternalLink, Wrench } from 'lucide-react';
+import { Database, ExternalLink } from 'lucide-react';
 import { processVocabularyData } from '@/utils/vocabularyDataUtils';
-import { processTechnologyData, collectTechnologySourceIds } from '@/utils/processTechnologyData';
 import { VocabularySourcesCard } from './VocabularySourcesCard';
-import { TechnologySourcesCard } from './TechnologySourcesCard';
 import { useToast } from '@/components/ui/use-toast';
 
 interface VignetteGridProps {
@@ -16,7 +14,7 @@ interface VignetteGridProps {
   icon: React.ReactNode;
   className?: string;
   emptyMessage?: string;
-  specialProcessing?: 'vocabulary' | 'technology';
+  specialProcessing?: 'vocabulary';
   importSources?: any[]; // Import sources to enrich vocabulary sources
 }
 
@@ -32,16 +30,11 @@ export const VignetteGrid: React.FC<VignetteGridProps> = ({
 }) => {
   // Process data into vignette format
   const processedData = React.useMemo(() => {
-    // Toujours traiter le vocabulaire même si data est falsy (retourne une structure vide)
-    if (specialProcessing === 'vocabulary') {
-      return processVocabularyData(data || {});
-    }
-
     if (!data) return [];
     
-    // Traitement spécial pour la technodiversité
-    if (specialProcessing === 'technology') {
-      return processTechnologyData(data);
+    // Traitement spécial pour le vocabulaire
+    if (specialProcessing === 'vocabulary') {
+      return processVocabularyData(data);
     }
     
     const items: any[] = [];
@@ -131,50 +124,27 @@ export const VignetteGrid: React.FC<VignetteGridProps> = ({
     });
   }, [specialProcessing, processedData, sourceIndex]);
 
-  // Technology processing - removed, handled directly in processData
-
-  // Collect all referenced source IDs from vocabulary terms only
+  // Collect all referenced source IDs from vocabulary terms
   const referencedSourceIds = React.useMemo(() => {
-    if (specialProcessing === 'vocabulary' && termsWithResolved.length) {
-      const allIds = new Set<string>();
-      termsWithResolved.forEach((term: any) => {
-        const ids = term.metadata?.resolved_source_ids || [];
-        ids.forEach((id: string) => allIds.add(id));
-      });
-      return Array.from(allIds);
-    }
-    return [];
+    if (specialProcessing !== 'vocabulary' || !termsWithResolved.length) return [];
+    
+    const allIds = new Set<string>();
+    termsWithResolved.forEach((term: any) => {
+      const ids = term.metadata?.resolved_source_ids || [];
+      ids.forEach((id: string) => allIds.add(id));
+    });
+    
+    return Array.from(allIds);
   }, [specialProcessing, termsWithResolved]);
 
-  // Fallback: si aucun terme ne référence de sources, utiliser les IDs détectés dans la section sources
-  const fallbackReferencedSourceIds = React.useMemo(() => {
-    if (
-      specialProcessing === 'vocabulary' &&
-      processedData &&
-      typeof processedData === 'object' &&
-      'sources' in (processedData as any)
-    ) {
-      const sources = (processedData as any).sources || [];
-      const ids: string[] = [];
-      sources.forEach((s: any) => {
-        const meta = s?.metadata || s || {};
-        const id = meta.id || meta.key || meta.source_id || meta.source || meta.slug || (meta.url ? String(meta.url).split('/').pop() : undefined);
-        if (id) ids.push(String(id));
-      });
-      return Array.from(new Set(ids));
-    }
-    return [];
-  }, [specialProcessing, processedData]);
-
-  // Alerte qualité: termes sans sources (vocabulaire et technodiversité)
+  // Alerte qualité: termes sans sources
   React.useEffect(() => {
-    if (specialProcessing === 'vocabulary' && termsWithResolved.length) {
-      const missingCount = termsWithResolved.filter((t: any) => !(t.metadata?.resolved_sources?.length)).length;
-      if (missingCount > 0) {
-        toast('Sources manquantes', {
-          description: `${missingCount} terme${missingCount > 1 ? 's' : ''} sans source. Cliquez pour compléter.`,
-        });
-      }
+    if (specialProcessing !== 'vocabulary' || !termsWithResolved.length) return;
+    const missingCount = termsWithResolved.filter((t: any) => !(t.metadata?.resolved_sources?.length)).length;
+    if (missingCount > 0) {
+      toast('Sources manquantes', {
+        description: `${missingCount} terme${missingCount > 1 ? 's' : ''} sans source. Cliquez pour compléter.`,
+      });
     }
   }, [specialProcessing, termsWithResolved, toast]);
   const getVariantColor = () => {
@@ -182,7 +152,7 @@ export const VignetteGrid: React.FC<VignetteGridProps> = ({
       case 'vocabulary': return 'text-info';
       case 'infrastructure': return 'text-warning';
       case 'agro': return 'text-accent';
-      case 'technology': return 'text-success';
+      case 'technology': return 'text-primary';
       default: return 'text-foreground';
     }
   };
@@ -192,7 +162,7 @@ export const VignetteGrid: React.FC<VignetteGridProps> = ({
       case 'vocabulary': return 'border-info/20 bg-gradient-to-br from-info/10 to-info/5';
       case 'infrastructure': return 'border-warning/20 bg-gradient-to-br from-warning/10 to-warning/5';
       case 'agro': return 'border-accent/20 bg-gradient-to-br from-accent/10 to-accent/5';
-      case 'technology': return 'border-success/20 bg-gradient-to-br from-success/10 to-success/5';
+      case 'technology': return 'border-primary/20 bg-gradient-to-br from-primary/10 to-primary/5';
       default: return 'border-border/30 bg-background/50';
     }
   };
@@ -200,8 +170,6 @@ export const VignetteGrid: React.FC<VignetteGridProps> = ({
   if (!data || (specialProcessing === 'vocabulary' ? 
     (typeof processedData === 'object' && 'termes' in processedData ? 
       (!processedData.termes?.length && !processedData.sources?.length) : true) : 
-    specialProcessing === 'technology' ? 
-    (Array.isArray(processedData) ? !processedData.length : true) :
     (Array.isArray(processedData) ? !processedData.length : true))) {
     return (
       <Card className="bg-background/50 backdrop-blur-sm border-border/30">
@@ -230,13 +198,9 @@ export const VignetteGrid: React.FC<VignetteGridProps> = ({
               <Badge variant="secondary" className="ml-2">
                 {specialProcessing === 'vocabulary' && typeof processedData === 'object' && 'termes' in processedData ? 
                   (processedData.termes?.length || 0) + (processedData.sources?.length || 0) :
-                specialProcessing === 'technology' && Array.isArray(processedData) ?
-                  processedData.length :
                   Array.isArray(processedData) ? processedData.length : 0
                 } élément{(specialProcessing === 'vocabulary' && typeof processedData === 'object' && 'termes' in processedData ? 
                   (processedData.termes?.length || 0) + (processedData.sources?.length || 0) :
-                specialProcessing === 'technology' && Array.isArray(processedData) ?
-                  processedData.length :
                   Array.isArray(processedData) ? processedData.length : 0) > 1 ? 's' : ''}
               </Badge>
             </div>
@@ -250,8 +214,8 @@ export const VignetteGrid: React.FC<VignetteGridProps> = ({
         </CardContent>
       </Card>
 
-      {/* Grille de vignettes - Masquée pour le vocabulaire et technodiversité qui ont un affichage spécialisé */}
-      {!specialProcessing && Array.isArray(processedData) && (
+      {/* Grille de vignettes - Masquée pour le vocabulaire qui a un affichage spécialisé */}
+      {specialProcessing !== 'vocabulary' && Array.isArray(processedData) && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
           {processedData.map((item, index) => (
             <InteractiveVignette
@@ -261,50 +225,6 @@ export const VignetteGrid: React.FC<VignetteGridProps> = ({
             />
           ))}
         </div>
-      )}
-
-      {/* Affichage spécialisé pour les technologies */}
-      {specialProcessing === 'technology' && Array.isArray(processedData) && (
-        (() => {
-          const headerItem = processedData.find((i: any) => i.type === 'section_header');
-          const sourcesBanner = processedData.find((i: any) => i.type === 'sources_banner');
-          const innovationItems = processedData.filter((i: any) => i.type !== 'section_header' && i.type !== 'sources_banner');
-          return (
-            <div className="space-y-6">
-              {headerItem && (
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="flex items-center gap-2 text-success">
-                    <Wrench className="h-5 w-5" />
-                    <h2 className="text-lg font-semibold">{headerItem.titre}</h2>
-                    <Badge variant="outline" className="border-success/30 text-success bg-success/5">
-                      {headerItem.metadata?.count}
-                    </Badge>
-                  </div>
-                  <div className="flex-1 h-px bg-gradient-to-r from-success/30 to-transparent"></div>
-                </div>
-              )}
-
-              {/* Grille 4 colonnes responsive */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                {innovationItems.map((item: any, index: number) => (
-                  <InteractiveVignette
-                    key={index}
-                    data={item}
-                    variant="technology"
-                  />
-                ))}
-              </div>
-
-              {sourcesBanner && (
-                <TechnologySourcesCard
-                  referencedSourceIds={sourcesBanner.metadata?.sourceIds || []}
-                  importSources={importSources}
-                  className="w-full"
-                />
-              )}
-            </div>
-          );
-        })()
       )}
 
       {/* Affichage spécialisé pour le vocabulaire */}
@@ -343,15 +263,13 @@ export const VignetteGrid: React.FC<VignetteGridProps> = ({
               {/* Conteneur avec contraintes de largeur */}
               <div className="w-full max-w-full overflow-hidden">
                 <VocabularySourcesCard 
-                  referencedSourceIds={referencedSourceIds.length ? referencedSourceIds : fallbackReferencedSourceIds}
+                  referencedSourceIds={referencedSourceIds}
                   importSources={importSources}
                   className="w-full max-w-full"
                 />
               </div>
-        </div>
-      )}
-
-      {/* Affichage spécialisé pour la technodiversité - Section supprimée, remplacée par le nouveau système */}
+            </div>
+          )}
         </div>
       )}
 
