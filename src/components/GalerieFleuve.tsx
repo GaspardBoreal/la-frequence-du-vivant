@@ -153,6 +153,8 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes,
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const metadataCache = useRef<Map<string, { emotionalTags: string[], thematicIcons: string[] }>>(new Map());
   const transitionCommittedRef = useRef(false);
+  const lastNavAtRef = useRef(0);
+  const MIN_NAV_INTERVAL = 180;
 
   // Menu visibility: always show except on welcome page
   const shouldShowMenu = !showWelcome;
@@ -541,6 +543,10 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes,
   const navigateNext = useCallback(async () => {
     if (isPreparing || isTransitioning || !filteredPhotos.length) return;
 
+    const now = Date.now();
+    if (now - lastNavAtRef.current < MIN_NAV_INTERVAL) return;
+    lastNavAtRef.current = now;
+
     const target = Math.min(committedIndex + 1, filteredPhotos.length - 1);
     if (target === committedIndex) return;
 
@@ -553,6 +559,10 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes,
 
   const navigatePrevious = useCallback(async () => {
     if (isPreparing || isTransitioning || !filteredPhotos.length) return;
+
+    const now = Date.now();
+    if (now - lastNavAtRef.current < MIN_NAV_INTERVAL) return;
+    lastNavAtRef.current = now;
 
     const target = Math.max(committedIndex - 1, 0);
     if (target === committedIndex) return;
@@ -760,7 +770,7 @@ const GalerieView = memo<{
         
 
         {/* Main photo display */}
-        <AnimatePresence mode={deviceType === 'desktop' ? 'wait' : 'sync'}>
+        <AnimatePresence mode={deviceType === 'desktop' ? 'sync' : 'sync'}>
           <div className={`absolute inset-0 ${
             deviceType === 'desktop' 
               ? 'flex items-center justify-center gap-4 px-8' 
@@ -777,7 +787,7 @@ const GalerieView = memo<{
               
               return (
                   <motion.div
-                  key={deviceType === 'desktop' ? `photo-${photo.id}-${position}-${committedIndex}` : 'mobile-current'}
+                  key={deviceType === 'desktop' ? `photo-${photo.id}-${position}` : 'mobile-current'}
                   className={`
                     relative overflow-hidden rounded-2xl shadow-2xl shadow-cyan-500/10
                     ${deviceType === 'desktop' ? (

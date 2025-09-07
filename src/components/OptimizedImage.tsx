@@ -49,9 +49,16 @@ export const OptimizedImage = memo<OptimizedImageProps>(({
 
   useEffect(() => {
     if (preloadedImage) {
-      setImageSrc(preloadedImage.src);
-      setLoaded(true);
-      onLoad?.();
+      (async () => {
+        try {
+          if ('decode' in preloadedImage && typeof (preloadedImage as any).decode === 'function') {
+            await (preloadedImage as any).decode();
+          }
+        } catch {}
+        setImageSrc(preloadedImage.src);
+        setLoaded(true);
+        onLoad?.();
+      })();
       return;
     }
 
