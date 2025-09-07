@@ -22,8 +22,18 @@
     --muted: 140 25% 20%;          /* Vert émeraude muted moins foncé */
     --muted-foreground: 45 15% 75%;
 
-    --accent: 45 85% 75%;          /* Beige doré plus lumineux */
+    --accent: 45 85% 85%;          /* Beige doré plus lumineux pour meilleur contraste */
     --accent-foreground: 140 25% 8%;
+
+    /* Couleurs spéciales pour les indicateurs */
+    --success: 120 100% 85%;       /* Vert clair très lumineux pour les indicateurs de succès */
+    --success-foreground: 140 25% 8%;
+    
+    --warning: 45 100% 80%;        /* Jaune/orange clair lumineux */
+    --warning-foreground: 140 25% 8%;
+
+    --info: 200 100% 85%;          /* Bleu clair lumineux */  
+    --info-foreground: 140 25% 8%;
 
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
@@ -52,8 +62,19 @@
     --secondary-foreground: 45 20% 95%;
     --muted: 140 25% 20%;
     --muted-foreground: 45 15% 75%;
-    --accent: 45 85% 75%;
+    --accent: 45 85% 85%;          /* Beige doré plus lumineux pour meilleur contraste */
     --accent-foreground: 140 25% 8%;
+
+    /* Couleurs spéciales pour les indicateurs */
+    --success: 120 100% 85%;       /* Vert clair très lumineux pour les indicateurs de succès */
+    --success-foreground: 140 25% 8%;
+    
+    --warning: 45 100% 80%;        /* Jaune/orange clair lumineux */
+    --warning-foreground: 140 25% 8%;
+
+    --info: 200 100% 85%;          /* Bleu clair lumineux */  
+    --info-foreground: 140 25% 8%;
+
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 210 40% 98%;
     --border: 140 30% 18%;

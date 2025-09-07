@@ -409,9 +409,9 @@ export const ModernImportDashboard: React.FC = () => {
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <div className="text-3xl font-bold text-white">
-                      {totalImports}
-                    </div>
+                     <div className="text-3xl font-bold text-success">
+                       {totalImports}
+                     </div>
                     <p className="text-xs text-muted-foreground mt-1">
                       imports collectés
                     </p>
@@ -426,9 +426,9 @@ export const ModernImportDashboard: React.FC = () => {
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <div className="text-3xl font-bold text-white">
-                      {totalSpecies}
-                    </div>
+                     <div className="text-3xl font-bold text-info">
+                       {totalSpecies}
+                     </div>
                     <p className="text-xs text-muted-foreground mt-1">
                       espèces référencées
                     </p>
@@ -443,9 +443,9 @@ export const ModernImportDashboard: React.FC = () => {
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <div className="text-3xl font-bold text-secondary-foreground">
-                      {totalVocabulary}
-                    </div>
+                     <div className="text-3xl font-bold text-warning">
+                       {totalVocabulary}
+                     </div>
                     <p className="text-xs text-muted-foreground mt-1">
                       termes locaux
                     </p>
@@ -460,9 +460,9 @@ export const ModernImportDashboard: React.FC = () => {
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <div className="text-3xl font-bold text-green-600">
-                      {avgCompleteness}%
-                    </div>
+                     <div className="text-3xl font-bold text-success">
+                       {avgCompleteness}%
+                     </div>
                     <p className="text-xs text-muted-foreground mt-1">
                       moyenne générale
                     </p>
