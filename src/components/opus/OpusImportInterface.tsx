@@ -103,8 +103,6 @@ export const OpusImportInterface: React.FC<OpusImportInterfaceProps> = ({
 
   // Generate complete JSON template for all OPUS dimensions
   const generateCompleteTemplate = useCallback(() => {
-    if (!currentMarcheId || !explorationId) return '';
-    
     return `{
   "dimensions": {
     "contexte_hydrologique": {
