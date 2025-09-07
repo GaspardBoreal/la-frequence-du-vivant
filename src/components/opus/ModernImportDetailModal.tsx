@@ -11,6 +11,7 @@ import { VignetteGrid } from './VignetteGrid';
 import { ContexteMetricCard } from './ContexteMetricCard';
 import { mapContexteData } from '@/utils/contexteDataMapper';
 import { getVocabularyTermsCount } from '@/utils/vocabularyDataUtils';
+import { getProcessedSpeciesCount } from '@/utils/speciesDataUtils';
 import { 
   Calendar, 
   Database, 
@@ -212,8 +213,7 @@ export const ModernImportDetailModal: React.FC<ModernImportDetailModalProps> = (
                   </CardHeader>
                   <CardContent>
                     <div className="text-2xl font-bold text-success mb-1">
-                      {importRecord.contexte_data?.especes_caracteristiques ? 
-                        Object.keys(importRecord.contexte_data.especes_caracteristiques).length : 0}
+                      {getProcessedSpeciesCount(importRecord.contexte_data?.especes_caracteristiques)}
                     </div>
                     <p className="text-xs text-muted-foreground">identifiées</p>
                   </CardContent>
