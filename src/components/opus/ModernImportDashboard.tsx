@@ -378,7 +378,7 @@ export const ModernImportDashboard: React.FC = () => {
                 className="flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground transition-all duration-300"
               >
                 <Activity className="w-4 h-4" />
-                Par marché ({filteredImports.length})
+                Par marche ({filteredImports.length})
               </TabsTrigger>
               <TabsTrigger 
                 value="history" 
@@ -408,7 +408,7 @@ export const ModernImportDashboard: React.FC = () => {
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <div className="text-3xl font-bold text-primary">
+                    <div className="text-3xl font-bold text-white">
                       {totalImports}
                     </div>
                     <p className="text-xs text-muted-foreground mt-1">
@@ -425,7 +425,7 @@ export const ModernImportDashboard: React.FC = () => {
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <div className="text-3xl font-bold text-accent-foreground">
+                    <div className="text-3xl font-bold text-white">
                       {totalSpecies}
                     </div>
                     <p className="text-xs text-muted-foreground mt-1">
