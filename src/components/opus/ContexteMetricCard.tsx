@@ -22,6 +22,13 @@ import {
   Filter
 } from 'lucide-react';
 import { formatComplexData, getDataAvailability, ContexteMetricData } from '@/utils/contexteDataMapper';
+import { 
+  normalizeYearFromSource, 
+  collectAvailableYears, 
+  generateShortName, 
+  formatSourcesSummary,
+  type SourceWithYear 
+} from '@/utils/sourceDateUtils';
 import { getVignetteStyles } from '@/utils/vignetteStyleUtils';
 
 interface ContexteMetricProps extends ContexteMetricData {
@@ -48,100 +55,30 @@ export const ContexteMetricCard: React.FC<ContexteMetricProps> = ({
   // Console log for debugging
   console.log(`ContexteMetricCard ${title}:`, { data, formattedData, availability });
 
-  // Fonction pour extraire la date d'une URL ou source
-  const extractDateFromSource = (source: any): string | null => {
-    if (!source) return null;
-    
-    // Chercher une date dans l'URL
-    const url = source.url || '';
-    const dateRegex = /(\d{4})/g;
-    const matches = url.match(dateRegex);
-    
-    // Prendre la première année trouvée (souvent la plus récente)
-    if (matches && matches.length > 0) {
-      const year = matches[matches.length - 1]; // Prendre la dernière année trouvée
-      return year;
-    }
-    
-    // Chercher dans la description ou nom
-    const text = `${source.nom || ''} ${source.description || ''}`;
-    const textMatches = text.match(dateRegex);
-    if (textMatches && textMatches.length > 0) {
-      return textMatches[0];
-    }
-    
-    return null;
-  };
-
-  // Fonction pour générer un nom court intelligent
-  const generateShortName = (source: any, index: number): string => {
-    if (!source) return `Source ${index + 1}`;
-    
-    const url = source.url || '';
-    
-    // Extraire le domaine et créer un nom court basé sur celui-ci
-    try {
-      const urlObj = new URL(url);
-      const hostname = urlObj.hostname.replace('www.', '');
-      
-      // Mapping des domaines connus vers des noms courts
-      const domainMapping: { [key: string]: string } = {
-        'wikipedia.org': 'Wikipédia',
-        'patrimoine-nouvelle-aquitaine.fr': 'Patrimoine NA',
-        'terresdoiseaux.fr': 'Terres Oiseaux',
-        'smiddest.fr': 'SMIDDEST',
-        'oasu.fr': 'OASU',
-        'gironde-tourisme.com': 'Tourisme Gironde',
-        'persee.fr': 'Persée',
-        'bbte.fr': 'BBTE'
-      };
-      
-      // Vérifier si on a un mapping pour ce domaine
-      for (const [domain, shortName] of Object.entries(domainMapping)) {
-        if (hostname.includes(domain)) {
-          return shortName;
-        }
-      }
-      
-      // Sinon, créer un nom à partir du domaine
-      return hostname.split('.')[0].charAt(0).toUpperCase() + hostname.split('.')[0].slice(1);
-      
-    } catch (e) {
-      // Si l'URL n'est pas valide, utiliser le nom fourni ou un nom par défaut
-      return source.nom || source.id || `Source ${index + 1}`;
-    }
-  };
-
-  // Filtrage et traitement des sources pour le type source_ids
+  // Process sources for source_ids metric type using scientific utility
   const processedSources = useMemo(() => {
-    if (metricType !== 'source_ids' || !Array.isArray(data)) return [];
-    
-    const sources = data.map((source, index) => ({
-      ...source,
-      shortName: generateShortName(source, index),
-      extractedDate: extractDateFromSource(source),
-      index
-    }));
-    
-    // Filtrer par année si sélectionné
-    if (selectedYear !== 'all') {
-      return sources.filter(source => source.extractedDate === selectedYear);
+    if (metricType !== 'source_ids' || !Array.isArray(data)) {
+      return [];
     }
     
-    return sources;
+    const normalizedSources = data.map(source => normalizeYearFromSource(source));
+    
+    // Filter by selected year
+    if (selectedYear === 'all') {
+      return normalizedSources;
+    } else if (selectedYear === 'inconnue') {
+      return normalizedSources.filter(source => !source.year);
+    } else {
+      return normalizedSources.filter(source => source.year && source.year.toString() === selectedYear);
+    }
   }, [data, selectedYear, metricType]);
 
-  // Extraire les années disponibles pour les filtres
+  // Extract available years for filtering using scientific utility
   const availableYears = useMemo(() => {
-    if (metricType !== 'source_ids' || !Array.isArray(data)) return [];
+    if (metricType !== 'source_ids') return [];
     
-    const years = data
-      .map((source, index) => extractDateFromSource(source))
-      .filter(Boolean)
-      .filter((year, index, arr) => arr.indexOf(year) === index) // Supprimer les doublons
-      .sort((a, b) => parseInt(b!) - parseInt(a!)); // Trier par année décroissante
-    
-    return years;
+    const normalizedSources = Array.isArray(data) ? data.map(source => normalizeYearFromSource(source)) : [];
+    return collectAvailableYears(normalizedSources);
   }, [data, metricType]);
 
   // Map availability to vignette variant for Contrast-Force Hierarchy
@@ -222,7 +159,7 @@ export const ContexteMetricCard: React.FC<ContexteMetricProps> = ({
             <div className="p-4 rounded-lg bg-slate-900/90 backdrop-blur-sm border border-white/10 shadow-lg">
               <div className="space-y-2">
                 <div className="text-base font-medium text-white leading-relaxed">
-                  {formattedData}
+                  {metricType === 'source_ids' ? formatSourcesSummary(processedSources) : formattedData}
                 </div>
                 {unit && (
                   <div className="text-sm font-medium text-slate-300">
@@ -295,7 +232,7 @@ export const ContexteMetricCard: React.FC<ContexteMetricProps> = ({
                   availability === 'partial' ? 'text-amber-800' :
                   'text-red-800'
                 }`}>
-                  {formattedData}
+                  {metricType === 'source_ids' ? formatSourcesSummary(processedSources) : formattedData}
                   {unit && <span className="text-lg text-slate-600 ml-2">{unit}</span>}
                 </div>
 
@@ -338,8 +275,8 @@ export const ContexteMetricCard: React.FC<ContexteMetricProps> = ({
                         <SelectContent>
                           <SelectItem value="all">Toutes</SelectItem>
                           {availableYears.map((year) => (
-                            <SelectItem key={year} value={year!}>
-                              {year}
+                            <SelectItem key={year} value={year}>
+                              {year === 'inconnue' ? 'Année inconnue' : year}
                             </SelectItem>
                           ))}
                         </SelectContent>
@@ -351,26 +288,24 @@ export const ContexteMetricCard: React.FC<ContexteMetricProps> = ({
                 {/* Zone scrollable pour les sources */}
                 <ScrollArea className="h-96 w-full rounded-lg border border-slate-600 bg-slate-800/50 p-2">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pr-4">
-                    {processedSources.map((source) => (
-                      <div key={source.id || source.index} className="p-4 bg-slate-800 rounded-lg border border-slate-600 shadow-sm hover:bg-slate-750 transition-colors">
+                    {processedSources.map((source, index) => (
+                      <div key={source.id || index} className="p-4 bg-slate-800 rounded-lg border border-slate-600 shadow-sm hover:bg-slate-750 transition-colors">
                         <div className="space-y-3">
                           {/* En-tête avec nom court et badge ID */}
                           <div className="flex items-start justify-between">
                             <div className="text-sm font-bold text-white">
-                              {source.shortName}
+                              {generateShortName(source)}
                             </div>
                             <Badge variant="outline" className="text-xs bg-slate-700 text-slate-300 border-slate-600">
-                              {source.id || `src${source.index + 1}`}
+                              {source.id}
                             </Badge>
                           </div>
 
                           {/* Date de la source */}
-                          {source.extractedDate && (
-                            <div className="flex items-center gap-1 text-xs text-slate-400">
-                              <Calendar className="w-3 h-3" />
-                              <span>Année: {source.extractedDate}</span>
-                            </div>
-                          )}
+                          <div className="flex items-center gap-1 text-xs text-slate-400">
+                            <Calendar className="w-3 h-3" />
+                            <span>Année: {source.yearDisplay}</span>
+                          </div>
 
                           {/* URL cliquable */}
                           {source.url && source.url !== 'URL non disponible' && (
@@ -405,7 +340,7 @@ export const ContexteMetricCard: React.FC<ContexteMetricProps> = ({
                   {processedSources.length === 0 && selectedYear !== 'all' && (
                     <div className="text-center py-8 text-slate-400">
                       <Filter className="w-8 h-8 mx-auto mb-2 opacity-50" />
-                      <p>Aucune source trouvée pour l'année {selectedYear}</p>
+                      <p>Aucune source trouvée pour {selectedYear === 'inconnue' ? 'les années inconnues' : `l'année ${selectedYear}`}</p>
                     </div>
                   )}
                 </ScrollArea>
