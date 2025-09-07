@@ -3,7 +3,13 @@ import type { VignetteData } from '@/components/opus/InteractiveVignette';
 export const processTechnologyData = (contextData: any, importSources: any[] = []): VignetteData[] => {
   const result: VignetteData[] = [];
   
-  if (!contextData || !contextData.technodiversite) {
+  if (!contextData) {
+    return result;
+  }
+
+  // Accept both full contexte_data and direct technodiversite object
+  const techData = (contextData.technodiversite ?? contextData) as any;
+  if (!techData || typeof techData !== 'object') {
     return result;
   }
 
@@ -11,7 +17,15 @@ export const processTechnologyData = (contextData: any, importSources: any[] = [
   const allInnovations: VignetteData[] = [];
   const allSourceIds: string[] = [];
 
-  const techData = contextData.technodiversite;
+  // Helper to collect source ids from an item
+  const collectIds = (item: any) => {
+    const raw = item?.source_ids || item?.sources || [];
+    const arr = Array.isArray(raw) ? raw : [];
+    for (const v of arr) {
+      const id = typeof v === 'string' ? v : (v?.id || v?.key || v?.source_id);
+      if (id) allSourceIds.push(String(id));
+    }
+  };
 
   // Process innovations
   if (techData.innovations && Array.isArray(techData.innovations)) {
@@ -24,6 +38,7 @@ export const processTechnologyData = (contextData: any, importSources: any[] = [
         category: 'technodiversite',
         metadata: innovation
       });
+      collectIds(innovation);
     });
   }
 
@@ -38,6 +53,7 @@ export const processTechnologyData = (contextData: any, importSources: any[] = [
         category: 'technodiversite',
         metadata: fab
       });
+      collectIds(fab);
     });
   }
 
@@ -52,6 +68,7 @@ export const processTechnologyData = (contextData: any, importSources: any[] = [
         category: 'technodiversite',
         metadata: impact
       });
+      collectIds(impact);
     });
   }
 
@@ -67,6 +84,7 @@ export const processTechnologyData = (contextData: any, importSources: any[] = [
         metadata: project,
         url: project.url || project.repository
       });
+      collectIds(project);
     });
   }
 
@@ -115,6 +133,22 @@ export const processTechnologyData = (contextData: any, importSources: any[] = [
 };
 
 export const collectTechnologySourceIds = (data: any): string[] => {
-  if (!data || !data.technodiversite) return [];
-  return [...(data.technodiversite.source_ids || [])];
+  if (!data) return [];
+  const tech: any = (data.technodiversite ?? data);
+  if (!tech || typeof tech !== 'object') return [];
+  const ids: string[] = [];
+  const collect = (item: any) => {
+    const raw = item?.source_ids || item?.sources || [];
+    const arr = Array.isArray(raw) ? raw : [];
+    for (const v of arr) {
+      const id = typeof v === 'string' ? v : (v?.id || v?.key || v?.source_id);
+      if (id) ids.push(String(id));
+    }
+  };
+  if (Array.isArray(tech.innovations)) tech.innovations.forEach(collect);
+  if (Array.isArray(tech.fabrication_locale)) tech.fabrication_locale.forEach(collect);
+  if (Array.isArray(tech.impact_territorial)) tech.impact_territorial.forEach(collect);
+  if (Array.isArray(tech.open_source_projects)) tech.open_source_projects.forEach(collect);
+  if (Array.isArray(tech.source_ids)) ids.push(...tech.source_ids.map(String));
+  return Array.from(new Set(ids));
 };
