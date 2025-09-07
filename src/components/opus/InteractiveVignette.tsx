@@ -76,12 +76,12 @@ export const InteractiveVignette: React.FC<InteractiveVignetteProps> = ({
             {/* Nom scientifique et statut de conservation */}
             <div className="space-y-1">
               {data.nom_scientifique && (
-                <p className="text-sm font-normal text-slate-900 italic font-medium">
+                <p className="text-sm font-normal text-white italic">
                   {data.nom_scientifique}
                 </p>
               )}
               {data.statut_conservation && (
-                <p className="text-sm font-semibold text-slate-900">
+                <p className="text-sm font-bold text-gray-800">
                   {data.statut_conservation}
                 </p>
               )}
