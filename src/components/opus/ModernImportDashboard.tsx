@@ -34,6 +34,7 @@ import { ModernImportFilters } from './ModernImportFilters';
 import { ModernImportDetailModal } from './ModernImportDetailModal';
 import { DataInsightsDashboard } from './DataInsightsDashboard';
 import { OpusImportInterface } from './OpusImportInterface';
+import { ExplorationSpeciesView } from './ExplorationSpeciesView';
 import SEOHead from '@/components/SEOHead';
 import { useAnimatedCounter } from '@/hooks/useAnimatedCounter';
 import { getProcessedSpeciesCount } from '@/utils/speciesDataUtils';
@@ -225,16 +226,7 @@ export const ModernImportDashboard: React.FC = () => {
   };
 
   const handleSpeciesClick = () => {
-    // Prendre le premier import avec des espèces pour l'exemple
-    const importWithSpecies = filteredImports.find(imp => 
-      getProcessedSpeciesCount(imp.contexte_data?.especes_caracteristiques) > 0
-    );
-    
-    if (importWithSpecies) {
-      setSelectedImportForSpecies(importWithSpecies);
-      setDetailModalDefaultTab("species");
-      setDetailModalOpen(true);
-    }
+    setActiveTab('species');
   };
 
   const handleHomeClick = () => {
@@ -382,13 +374,20 @@ export const ModernImportDashboard: React.FC = () => {
             {/* Navigation Tabs */}
         <div className="container mx-auto max-w-7xl px-6 py-6">
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="grid w-full grid-cols-4 mb-8 bg-background/50 backdrop-blur-sm border border-border/30">
+            <TabsList className="grid w-full grid-cols-5 mb-8 bg-background/50 backdrop-blur-sm border border-border/30">
               <TabsTrigger 
                 value="dashboard" 
                 className="flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground transition-all duration-300"
               >
                 <Database className="w-4 h-4" />
                 Dashboard
+              </TabsTrigger>
+              <TabsTrigger 
+                value="species" 
+                className="flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground transition-all duration-300"
+              >
+                <Leaf className="w-4 h-4" />
+                Espèces ({totalSpecies})
               </TabsTrigger>
               <TabsTrigger 
                 value="imports" 
@@ -524,6 +523,11 @@ export const ModernImportDashboard: React.FC = () => {
                   )}
                 </CardContent>
               </Card>
+            </TabsContent>
+
+            {/* Species View */}
+            <TabsContent value="species" className="space-y-6">
+              <ExplorationSpeciesView imports={filteredImports} />
             </TabsContent>
 
             {/* Imports List */}
