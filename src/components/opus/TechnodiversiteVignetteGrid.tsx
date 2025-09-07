@@ -45,35 +45,43 @@ export const TechnodiversiteVignetteGrid: React.FC<TechnodiversiteVignetteGridPr
       {/* Innovations - Version adaptative selon le type de données */}
       {processedData.innovations.length > 0 && (
         <div className="space-y-6">
-          <div className="p-4 rounded-xl bg-gradient-to-r from-slate/8 to-white border border-slate/15 shadow-sm">
-            <div className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-slate/20 to-slate/10 border border-slate/30 flex items-center justify-center shadow-sm">
-                <span className="text-2xl">🚀</span>
-              </div>
-              <div className="flex-1">
-                <h3 className="font-bold text-xl text-white tracking-wide">
-                  {processedData.innovationsDerived ? 'Synthèse des Technologies' : 'Innovations Technologiques'}
-                </h3>
-                <Badge variant="secondary" className="mt-1 bg-slate/10 text-white italic border-slate/30 font-bold px-3 py-1">
-                  {processedData.innovationsDerived 
-                    ? `${processedData.totalCount} au total — inclut les catégories ci‑dessous`
-                    : `${processedData.innovations.length} innovation${processedData.innovations.length > 1 ? 's' : ''}`
-                  }
-                </Badge>
-              </div>
+          {processedData.innovationsDerived ? (
+            // Synthèse technodiversité - sans bandeau
+            <div className="mb-6">
+              <h3 className="font-bold text-xl text-foreground tracking-wide mb-2">
+                Synthèse technodiversité
+              </h3>
+              <p className="text-sm text-muted-foreground">
+                {processedData.totalCount} technologie{processedData.totalCount > 1 ? 's' : ''} au total — inclut les catégories ci‑dessous
+              </p>
             </div>
-          </div>
-          {!processedData.innovationsDerived && (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {processedData.innovations.map((item, index) => (
-                <InteractiveVignette
-                  key={`innovation-${index}`}
-                  data={item}
-                  variant="technology"
-                  importSources={importSources}
-                />
-              ))}
-            </div>
+          ) : (
+            // Innovations classiques - avec bandeau
+            <>
+              <div className="p-4 rounded-xl bg-gradient-to-r from-slate/8 to-white border border-slate/15 shadow-sm">
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-slate/20 to-slate/10 border border-slate/30 flex items-center justify-center shadow-sm">
+                    <span className="text-2xl">🚀</span>
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="font-bold text-xl text-white tracking-wide">Innovations Technologiques</h3>
+                    <Badge variant="secondary" className="mt-1 bg-slate/10 text-white italic border-slate/30 font-bold px-3 py-1">
+                      {processedData.innovations.length} innovation{processedData.innovations.length > 1 ? 's' : ''}
+                    </Badge>
+                  </div>
+                </div>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {processedData.innovations.map((item, index) => (
+                  <InteractiveVignette
+                    key={`innovation-${index}`}
+                    data={item}
+                    variant="technology"
+                    importSources={importSources}
+                  />
+                ))}
+              </div>
+            </>
           )}
         </div>
       )}
