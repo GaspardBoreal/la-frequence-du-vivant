@@ -25,59 +25,71 @@ export function processSpeciesData(speciesData: SpeciesData | null | undefined):
     insectes: [],
     reptiles: [],
     mammiferes: [],
+    invertebres: [],
     autres: []
   };
 
+  // Fonction helper pour mapper les clés AI aux catégories d'affichage
+  const mapKeyToCategory = (key: string): { category: string; fauneType?: string } => {
+    const keyLower = key.toLowerCase();
+    
+    // Mapping direct pour les structures AI DEEPSEARCH
+    if (keyLower.includes('poisson')) return { category: 'Poissons', fauneType: 'poissons' };
+    if (keyLower.includes('oiseau')) return { category: 'Oiseaux', fauneType: 'oiseaux' };
+    if (keyLower.includes('vegetation') || keyLower.includes('plante') || keyLower.includes('flore')) return { category: 'Flore' };
+    if (keyLower.includes('invertebr') || keyLower.includes('crustac') || keyLower.includes('mollusque')) return { category: 'Invertébrés', fauneType: 'invertebres' };
+    if (keyLower.includes('insecte') || keyLower.includes('arthropode')) return { category: 'Insectes', fauneType: 'insectes' };
+    if (keyLower.includes('reptile') || keyLower.includes('serpent')) return { category: 'Reptiles', fauneType: 'reptiles' };
+    if (keyLower.includes('mammifère') || keyLower.includes('mammifere')) return { category: 'Mammifères', fauneType: 'mammiferes' };
+    
+    return { category: 'Autres', fauneType: 'autres' };
+  };
+
+  // Fonction helper pour créer un objet espèce standardisé
+  const createSpeciesObject = (item: any, key: string, category: string) => ({
+    titre: item.nom_commun || item.nom || item.espece || item.titre || key,
+    nom_commun: item.nom_commun || item.nom || item.espece || item.titre || key,
+    nom_scientifique: item.nom_scientifique || item.nom_latin || item.scientific_name || '',
+    statut_conservation: item.statut_conservation || item.statut || item.conservation_status || item.protection || 'Non renseigné',
+    description_courte: item.description || item.caracteristiques || '',
+    type: item.type || category,
+    category,
+    source_ids: item.source_ids || [],
+    metadata: item
+  });
+
+  // Gérer la structure nested avec "donnees"
+  const dataToProcess = speciesData.donnees || speciesData;
+
   // Extract species from various data structures
-  Object.entries(speciesData).forEach(([key, value]) => {
+  Object.entries(dataToProcess).forEach(([key, value]) => {
+    const categoryInfo = mapKeyToCategory(key);
+    
     if (Array.isArray(value)) {
       value.forEach(item => {
         if (typeof item === 'object' && item !== null) {
-          const species = {
-            titre: item.nom || item.espece || item.titre || key,
-            nom_commun: item.nom_commun || item.nom || item.espece || item.titre || key,
-            nom_scientifique: item.nom_scientifique || item.nom_latin || item.scientific_name || '',
-            statut_conservation: item.statut_conservation || item.statut || item.conservation_status || item.protection || 'Non renseigné',
-            description_courte: item.description || item.caracteristiques || '',
-            type: item.type || 'Non classé',
-            category: key,
-            metadata: item
-          };
+          const species = createSpeciesObject(item, key, categoryInfo.category);
 
-          // Categorization logic based on type or characteristics
-          const type = (item.type || '').toLowerCase();
-          const description = (item.description || '').toLowerCase();
-          
-          if (type.includes('plante') || type.includes('flore') || key.toLowerCase().includes('flore')) {
-            flore.push({ ...species, category: 'Flore' });
-          } else if (type.includes('poisson') || description.includes('poisson')) {
-            faune.poissons.push({ ...species, category: 'Poissons' });
-          } else if (type.includes('oiseau') || description.includes('oiseau') || description.includes('volatile')) {
-            faune.oiseaux.push({ ...species, category: 'Oiseaux' });
-          } else if (type.includes('insecte') || description.includes('insecte') || description.includes('arthropode')) {
-            faune.insectes.push({ ...species, category: 'Insectes' });
-          } else if (type.includes('reptile') || description.includes('reptile') || description.includes('serpent')) {
-            faune.reptiles.push({ ...species, category: 'Reptiles' });
-          } else if (type.includes('mammifère') || description.includes('mammifère') || type.includes('mammifere')) {
-            faune.mammiferes.push({ ...species, category: 'Mammifères' });
+          // Catégoriser selon la structure
+          if (categoryInfo.category === 'Flore') {
+            flore.push(species);
+          } else if (categoryInfo.fauneType) {
+            faune[categoryInfo.fauneType].push(species);
           } else {
-            faune.autres.push({ ...species, category: 'Autres' });
+            faune.autres.push(species);
           }
         }
       });
     } else if (typeof value === 'object' && value !== null) {
-      const species = {
-        titre: value.nom || value.espece || key,
-        nom_commun: value.nom_commun || value.nom || value.espece || key,
-        nom_scientifique: value.nom_scientifique || value.nom_latin || value.scientific_name || '',
-        statut_conservation: value.statut_conservation || value.statut || value.conservation_status || value.protection || 'Non renseigné',
-        description_courte: value.description || value.caracteristiques || '',
-        type: value.type || 'Non classé',
-        category: key,
-        metadata: value
-      };
+      const species = createSpeciesObject(value, key, categoryInfo.category);
       
-      flore.push({ ...species, category: 'Flore' });
+      if (categoryInfo.category === 'Flore') {
+        flore.push(species);
+      } else if (categoryInfo.fauneType) {
+        faune[categoryInfo.fauneType].push(species);
+      } else {
+        faune.autres.push(species);
+      }
     }
   });
 

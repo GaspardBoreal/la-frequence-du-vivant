@@ -144,13 +144,13 @@ export const ExplorationSpeciesView: React.FC<ExplorationSpeciesViewProps> = ({ 
           case 'flore':
             return species.category === 'Flore';
           case 'faune':
-            return ['Poissons', 'Oiseaux', 'Insectes', 'Reptiles', 'Mammifères', 'Autres'].includes(species.category);
+            return ['Poissons', 'Oiseaux', 'Insectes', 'Reptiles', 'Mammifères', 'Invertébrés', 'Autres'].includes(species.category);
           case 'fonge':
             return species.type.toLowerCase().includes('champignon') || species.type.toLowerCase().includes('fonge');
           case 'microbiote':
             return species.type.toLowerCase().includes('micro') || species.type.toLowerCase().includes('bactérie');
           case 'autres':
-            return !['Flore', 'Poissons', 'Oiseaux', 'Insectes', 'Reptiles', 'Mammifères'].includes(species.category) &&
+            return !['Flore', 'Poissons', 'Oiseaux', 'Insectes', 'Reptiles', 'Mammifères', 'Invertébrés'].includes(species.category) &&
                    !species.type.toLowerCase().includes('champignon') &&
                    !species.type.toLowerCase().includes('micro');
           default:
@@ -196,6 +196,8 @@ export const ExplorationSpeciesView: React.FC<ExplorationSpeciesViewProps> = ({ 
       case 'Poissons':
         return <Fish className="w-4 h-4" />;
       case 'Insectes':
+        return <Bug className="w-4 h-4" />;
+      case 'Invertébrés':
         return <Bug className="w-4 h-4" />;
       case 'Mammifères':
         return <Rabbit className="w-4 h-4" />;

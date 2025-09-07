@@ -56,7 +56,17 @@ interface ImportRecord {
   opus_id: string;
   marche_id: string;
   import_date: string;
-  contexte_data: any;
+  contexte_data: {
+    especes_caracteristiques?: any;
+    vocabulaire_local?: any;
+    contexte_hydrologique?: any;
+    empreintes_humaines?: any;
+    leviers_agroecologiques?: any;
+    nouvelles_activites?: any;
+    technodiversite?: any;
+    projection_2035_2045?: any;
+    sources?: any[];
+  };
   fables_data: any[];
   sources: any[];
   completude_score: number;
@@ -76,6 +86,20 @@ interface ImportRunRecord {
   error_message?: string;
   marche_nom?: string;
   marche_ville?: string;
+  contexte_data: {
+    especes_caracteristiques?: any;
+    vocabulaire_local?: any;
+    contexte_hydrologique?: any;
+    empreintes_humaines?: any;
+    leviers_agroecologiques?: any;
+    nouvelles_activites?: any;
+    technodiversite?: any;
+    projection_2035_2045?: any;
+    sources?: any[];
+  };
+  sources: any[];
+  fables_data: any[];
+  import_date: string;
 }
 
 export const ModernImportDashboard: React.FC = () => {
@@ -171,7 +195,17 @@ export const ModernImportDashboard: React.FC = () => {
             opus_id: exploration.id,
             marche_id: marcheId,
             import_date: contexte.created_at,
-            contexte_data: contexte,
+            contexte_data: {
+              especes_caracteristiques: contexte.especes_caracteristiques,
+              vocabulaire_local: contexte.vocabulaire_local,
+              contexte_hydrologique: contexte.contexte_hydrologique,
+              empreintes_humaines: contexte.empreintes_humaines,
+              leviers_agroecologiques: contexte.leviers_agroecologiques,
+              nouvelles_activites: contexte.nouvelles_activites,
+              technodiversite: contexte.technodiversite,
+              projection_2035_2045: contexte.projection_2035_2045,
+              sources: Array.isArray(contexte.sources) ? contexte.sources : []
+            },
             fables_data: [],
             sources: Array.isArray(contexte.sources) ? contexte.sources : [],
             completude_score: contexte.completude_score || 0,
@@ -180,7 +214,17 @@ export const ModernImportDashboard: React.FC = () => {
           });
         } else {
           const existing = importsByMarche.get(marcheId)!;
-          existing.contexte_data = contexte;
+          existing.contexte_data = {
+            especes_caracteristiques: contexte.especes_caracteristiques,
+            vocabulaire_local: contexte.vocabulaire_local,
+            contexte_hydrologique: contexte.contexte_hydrologique,
+            empreintes_humaines: contexte.empreintes_humaines,
+            leviers_agroecologiques: contexte.leviers_agroecologiques,
+            nouvelles_activites: contexte.nouvelles_activites,
+            technodiversite: contexte.technodiversite,
+            projection_2035_2045: contexte.projection_2035_2045,
+            sources: Array.isArray(contexte.sources) ? contexte.sources : []
+          };
           const existingSources = Array.isArray(existing.sources) ? existing.sources : [];
           const newSources = Array.isArray(contexte.sources) ? contexte.sources : [];
           existing.sources = [...existingSources, ...newSources];
@@ -256,31 +300,55 @@ export const ModernImportDashboard: React.FC = () => {
     setHistoryLoading(true);
     
     try {
-      const { data: runs, error } = await supabase
+      // Récupérer les runs
+      const { data: runs, error: runsError } = await supabase
         .from('opus_import_runs')
         .select('*')
         .eq('opus_id', exploration.id)
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
+      if (runsError) throw runsError;
 
-      // Enrichir avec les infos marché
-      const enrichedRuns: ImportRunRecord[] = runs?.map(run => {
+      // Récupérer les données contextuelles pour chaque run
+      const enrichedRuns: ImportRunRecord[] = [];
+      
+      for (const run of runs || []) {
         const marcheInfo = marches?.find(m => m.id === run.marche_id);
-        return {
+        
+        // Récupérer les données contextuelles
+        const { data: contexteData } = await supabase
+          .from('marche_contextes_hybrids')
+          .select('*')
+          .eq('marche_id', run.marche_id)
+          .eq('opus_id', run.opus_id)
+          .single();
+        
+        enrichedRuns.push({
           id: run.id,
           created_at: run.created_at,
           mode: run.mode as 'preview' | 'import',
-          status: run.status as 'success' | 'error', 
+          status: run.status as 'success' | 'error',
           opus_id: run.opus_id,
           marche_id: run.marche_id,
-          completude_score: run.completude_score || undefined,
-          validation: run.validation || undefined,
-          error_message: run.error_message || undefined,
+          import_date: run.created_at,
+          completude_score: run.completude_score || 0,
           marche_nom: marcheInfo?.nomMarche || 'Marché inconnu',
-          marche_ville: marcheInfo?.ville || ''
-        };
-      }) || [];
+          marche_ville: marcheInfo?.ville || '',
+          contexte_data: {
+            especes_caracteristiques: contexteData?.especes_caracteristiques,
+            vocabulaire_local: contexteData?.vocabulaire_local,
+            contexte_hydrologique: contexteData?.contexte_hydrologique,
+            empreintes_humaines: contexteData?.empreintes_humaines,
+            leviers_agroecologiques: contexteData?.leviers_agroecologiques,
+            nouvelles_activites: contexteData?.nouvelles_activites,
+            technodiversite: contexteData?.technodiversite,
+            projection_2035_2045: contexteData?.projection_2035_2045,
+            sources: contexteData?.sources as any[]
+          },
+          sources: contexteData?.sources as any[] || [],
+          fables_data: []
+        });
+      }
 
       setImportRuns(enrichedRuns);
     } catch (error) {
