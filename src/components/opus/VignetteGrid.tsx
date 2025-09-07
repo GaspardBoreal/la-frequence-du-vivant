@@ -4,6 +4,8 @@ import { Badge } from '@/components/ui/badge';
 import { InteractiveVignette } from './InteractiveVignette';
 import { Database, ExternalLink } from 'lucide-react';
 import { processVocabularyData } from '@/utils/vocabularyDataUtils';
+import { processTechnodiversiteData } from '@/utils/technodiversiteDataUtils';
+import { TechnodiversiteVignetteGrid } from './TechnodiversiteVignetteGrid';
 import { VocabularySourcesCard } from './VocabularySourcesCard';
 import VocabularyVignetteGrid from './VocabularyVignetteGrid';
 import { useToast } from '@/components/ui/use-toast';
@@ -15,7 +17,7 @@ interface VignetteGridProps {
   icon: React.ReactNode;
   className?: string;
   emptyMessage?: string;
-  specialProcessing?: 'vocabulary';
+  specialProcessing?: 'vocabulary' | 'technodiversite';
   importSources?: any[]; // Import sources to enrich vocabulary sources
 }
 
@@ -36,6 +38,11 @@ export const VignetteGrid: React.FC<VignetteGridProps> = ({
     // Traitement spécial pour le vocabulaire
     if (specialProcessing === 'vocabulary') {
       return processVocabularyData(data);
+    }
+    
+    // Traitement spécial pour la technodiversité
+    if (specialProcessing === 'technodiversite') {
+      return processTechnodiversiteData(data);
     }
     
     const items: any[] = [];
@@ -171,6 +178,8 @@ export const VignetteGrid: React.FC<VignetteGridProps> = ({
   if (!data || (specialProcessing === 'vocabulary' ? 
     (typeof processedData === 'object' && 'termes' in processedData ? 
       (!processedData.termes?.length && !processedData.sources?.length && !importSources?.length) : true) : 
+    specialProcessing === 'technodiversite' ?
+      (typeof processedData === 'object' && 'totalCount' in processedData ? processedData.totalCount === 0 : true) :
     (Array.isArray(processedData) ? !processedData.length : true))) {
     return (
       <Card className="bg-background/50 backdrop-blur-sm border-border/30">
@@ -187,8 +196,8 @@ export const VignetteGrid: React.FC<VignetteGridProps> = ({
 
   return (
     <div className={`space-y-6 ${className}`}>
-      {/* En-tête avec statistiques - Masqué pour le vocabulaire */}
-      {specialProcessing !== 'vocabulary' && (
+      {/* En-tête avec statistiques - Masqué pour le vocabulaire et technodiversité */}
+      {specialProcessing !== 'vocabulary' && specialProcessing !== 'technodiversite' && (
         <Card className={getVariantBorder()}>
           <CardHeader>
             <CardTitle className="flex items-center gap-3">
@@ -212,8 +221,8 @@ export const VignetteGrid: React.FC<VignetteGridProps> = ({
         </Card>
       )}
 
-      {/* Grille de vignettes - Masquée pour le vocabulaire qui a un affichage spécialisé */}
-      {specialProcessing !== 'vocabulary' && Array.isArray(processedData) && (
+      {/* Grille de vignettes - Masquée pour le vocabulaire et technodiversité qui ont un affichage spécialisé */}
+      {specialProcessing !== 'vocabulary' && specialProcessing !== 'technodiversite' && Array.isArray(processedData) && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
           {processedData.map((item, index) => (
             <InteractiveVignette
@@ -230,6 +239,14 @@ export const VignetteGrid: React.FC<VignetteGridProps> = ({
         <VocabularyVignetteGrid
           vocabularyData={data}
           importSources={importSources}
+          className="w-full"
+        />
+      )}
+
+      {/* Affichage spécialisé pour la technodiversité */}
+      {specialProcessing === 'technodiversite' && typeof processedData === 'object' && 'totalCount' in processedData && (
+        <TechnodiversiteVignetteGrid
+          technodiversiteData={data}
           className="w-full"
         />
       )}

@@ -4,8 +4,9 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { ChevronRight, Info, ExternalLink, BookOpen, Globe, Calendar } from 'lucide-react';
+import { ChevronRight, Info, ExternalLink, BookOpen, Globe, Calendar, Zap, DollarSign, MapPin } from 'lucide-react';
 import { getVignetteStyles, getDialogHeaderStyles, type VignetteVariant } from '@/utils/vignetteStyleUtils';
+import { getTechTypeIcon, getTechTypeBadgeColor, getTechMetadata, type TechnodiversiteItem } from '@/utils/technodiversiteDataUtils';
 
 interface VignetteData {
   titre: string;
@@ -46,47 +47,36 @@ export const InteractiveVignette: React.FC<InteractiveVignetteProps> = ({
       ? data.metadata.source_ids 
       : [data.metadata.source_ids];
     
-    console.log('Debug - Source resolution for species:', {
-      speciesName: data.nom_commun || data.titre,
-      sourceIds,
-      availableSources: importSources.map(s => ({ 
-        id: s.id, 
-        titre: s.titre, 
-        url: s.url 
-      }))
-    });
-    
     const resolved = sourceIds
       .map(sourceId => {
-        // Les source_ids sont des strings comme "S00", "S01" qui correspondent au champ "id" des sources
         const found = importSources.find(source => source.id === sourceId);
-        
-        if (!found) {
-          console.log(`Debug - No source found for ID: ${sourceId}`);
-        } else {
-          console.log(`Debug - Found source for ID ${sourceId}:`, found);
-        }
-        
         return found;
       })
       .filter(Boolean);
     
-    console.log('Debug - Resolved sources:', resolved);
     return resolved;
   }, [data.metadata?.source_ids, importSources]);
+
+  // Données spécialisées pour la technodiversité
+  const techMetadata = React.useMemo(() => {
+    if (variant === 'technology' && data.metadata) {
+      return getTechMetadata(data as TechnodiversiteItem);
+    }
+    return [];
+  }, [variant, data.metadata]);
+
+  const TechIcon = variant === 'technology' && data.type ? getTechTypeIcon(data.type) : null;
 
   return (
     <Card className={`group cursor-pointer ${styles.container} ${className}`}>
       <CardHeader className="pb-3">
         {variant === 'species' ? (
-          // Affichage spécial pour les espèces - Contrast-Force Hierarchy
+          // Affichage spécial pour les espèces
           <div className="space-y-2">
-            {/* Nom commun - Thematic color + bold */}
             <CardTitle className={`text-base leading-tight ${styles.title}`}>
               {data.nom_commun || data.titre}
             </CardTitle>
             
-            {/* Nom scientifique et statut de conservation */}
             <div className="space-y-1">
               {data.nom_scientifique && (
                 <p className={`text-sm ${styles.secondary}`}>
@@ -106,15 +96,43 @@ export const InteractiveVignette: React.FC<InteractiveVignetteProps> = ({
               </Badge>
             )}
             
-            {/* Indicateur de sources pour les espèces */}
             {resolvedSources.length > 0 && (
               <Badge variant="outline" className="text-[10px] mt-1">
                 {resolvedSources.length} source{resolvedSources.length > 1 ? 's' : ''}
               </Badge>
             )}
           </div>
+        ) : variant === 'technology' ? (
+          // Affichage spécialisé pour les technologies
+          <div className="space-y-3">
+            <CardTitle className={`text-base leading-tight flex items-center gap-2 ${styles.title}`}>
+              {TechIcon && <TechIcon className="w-5 h-5" />}
+              {data.titre}
+            </CardTitle>
+            
+            {data.type && (
+              <Badge 
+                variant="secondary" 
+                className={`w-fit text-xs font-semibold ${getTechTypeBadgeColor(data.type)}`}
+              >
+                {data.type}
+              </Badge>
+            )}
+            
+            {techMetadata.length > 0 && (
+              <div className="flex flex-wrap gap-2 mt-2">
+                {techMetadata.slice(0, 2).map((meta, index) => (
+                  <div key={index} className="flex items-center gap-1 text-xs text-muted-foreground bg-background/50 rounded-full px-2 py-1">
+                    <meta.icon className={`w-3 h-3 ${meta.color}`} />
+                    <span className="font-medium">{meta.label}:</span>
+                    <span>{meta.value}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         ) : (
-          // Affichage standard pour les autres variants - Contrast-Force Hierarchy
+          // Affichage standard pour les autres variants
           <>
             <CardTitle className={`text-base leading-tight ${styles.title}`}>
               {data.titre}
@@ -192,6 +210,32 @@ export const InteractiveVignette: React.FC<InteractiveVignetteProps> = ({
                         </div>
                       )}
                     </div>
+                  ) : variant === 'technology' ? (
+                    <div className="flex items-center gap-3 w-full">
+                      <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary/20 to-primary/10 border border-primary/20 flex items-center justify-center flex-shrink-0">
+                        {TechIcon ? <TechIcon className="w-6 h-6 text-primary" /> : <BookOpen className="w-6 h-6 text-primary" />}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <h2 className="text-xl font-bold text-foreground leading-tight">
+                          {data.titre}
+                        </h2>
+                        <div className="flex items-center gap-2 mt-1 flex-wrap">
+                          {data.type && (
+                            <Badge 
+                              variant="secondary" 
+                              className={`text-xs font-semibold ${getTechTypeBadgeColor(data.type)}`}
+                            >
+                              {data.type}
+                            </Badge>
+                          )}
+                          {data.category && (
+                            <Badge variant="outline" className="text-xs">
+                              {data.category}
+                            </Badge>
+                          )}
+                        </div>
+                      </div>
+                    </div>
                   ) : (
                     <div className="flex items-center gap-3">
                       <h2 className="text-xl font-bold">{data.titre}</h2>
@@ -204,7 +248,7 @@ export const InteractiveVignette: React.FC<InteractiveVignetteProps> = ({
                   )}
                 </DialogTitle>
               </DialogHeader>
-              
+               
               <ScrollArea className="flex-1 pr-4">
                 <div className="space-y-6 py-4">
                   {/* Section principale - Description */}
@@ -224,10 +268,106 @@ export const InteractiveVignette: React.FC<InteractiveVignetteProps> = ({
                     </div>
                   )}
 
+                  {/* Informations spécifiques à la technodiversité */}
+                  {variant === 'technology' && (
+                    <div className="space-y-4">
+                      {/* Caractéristiques techniques */}
+                      {techMetadata.length > 0 && (
+                        <div className="p-6 rounded-xl bg-gradient-to-br from-primary/5 to-primary/5 border border-primary/20">
+                          <div className="flex items-center gap-2 mb-4">
+                            <Zap className="w-5 h-5 text-primary" />
+                            <h3 className="font-semibold text-base text-primary">
+                              Caractéristiques Techniques
+                            </h3>
+                          </div>
+                          <div className="grid gap-3">
+                            {techMetadata.map((meta, index) => (
+                              <div key={index} className="flex items-center gap-3 p-3 rounded-lg bg-background/50 border border-border/30">
+                                <div className={`w-8 h-8 rounded-full bg-background flex items-center justify-center flex-shrink-0`}>
+                                  <meta.icon className={`w-4 h-4 ${meta.color}`} />
+                                </div>
+                                <div className="min-w-0 flex-1">
+                                  <div className="flex items-center gap-2">
+                                    <h5 className="font-medium text-sm text-foreground">
+                                      {meta.label}
+                                    </h5>
+                                    <span className={`text-sm font-bold ${meta.color}`}>
+                                      {meta.value}
+                                    </span>
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Impact territorial pour les technologies */}
+                      {data.metadata?.impact_territorial && (
+                        <div className="p-4 rounded-lg bg-success/5 border border-success/10">
+                          <div className="flex items-center gap-2 mb-2">
+                            <MapPin className="w-4 h-4 text-success" />
+                            <h4 className="font-medium text-sm text-success">Impact Territorial</h4>
+                          </div>
+                          <p className="text-sm text-muted-foreground">
+                            {data.metadata.impact_territorial}
+                          </p>
+                        </div>
+                      )}
+
+                      {/* Liens de documentation */}
+                      {data.metadata?.liens && Array.isArray(data.metadata.liens) && data.metadata.liens.length > 0 && (
+                        <div className="p-6 rounded-xl bg-gradient-to-br from-info/5 to-info/5 border border-info/20">
+                          <div className="flex items-center gap-2 mb-4">
+                            <ExternalLink className="w-5 h-5 text-info" />
+                            <h3 className="font-semibold text-base text-info">
+                              Documentation & Ressources
+                            </h3>
+                          </div>
+                          <div className="grid gap-3">
+                            {data.metadata.liens.map((lien: string, index: number) => (
+                              <div key={index} className="flex items-center gap-3 p-3 rounded-lg bg-background/50 border border-border/30 hover:bg-background/80 transition-colors">
+                                <div className="w-8 h-8 rounded-full bg-info/10 flex items-center justify-center flex-shrink-0">
+                                  <span className="text-xs font-bold text-info">{index + 1}</span>
+                                </div>
+                                <div className="min-w-0 flex-1">
+                                  {lien.startsWith('http') ? (
+                                    <a 
+                                      href={lien} 
+                                      target="_blank" 
+                                      rel="noopener noreferrer"
+                                      className="text-sm text-info hover:text-info/80 underline truncate block"
+                                      title={lien}
+                                    >
+                                      {lien.length > 60 ? `${lien.substring(0, 60)}...` : lien}
+                                    </a>
+                                  ) : (
+                                    <p className="text-sm text-muted-foreground">
+                                      {lien}
+                                    </p>
+                                  )}
+                                </div>
+                                {lien.startsWith('http') && (
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => window.open(lien, '_blank')}
+                                    className="w-8 h-8 p-0 text-info hover:text-info hover:bg-info/10"
+                                  >
+                                    <ExternalLink className="w-4 h-4" />
+                                  </Button>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
                   {/* Informations spécifiques au vocabulaire */}
                   {variant === 'vocabulary' && data.metadata && (
                     <div className="grid gap-4">
-                      {/* Origine/Étymologie */}
                       {(data.metadata.origine || data.metadata.etymologie) && (
                         <div className="p-4 rounded-lg bg-info/5 border border-info/10">
                           <div className="flex items-center gap-2 mb-2">
@@ -240,7 +380,6 @@ export const InteractiveVignette: React.FC<InteractiveVignetteProps> = ({
                         </div>
                       )}
 
-                      {/* Contexte d'usage */}
                       {data.metadata.usage_context && (
                         <div className="p-4 rounded-lg bg-accent/5 border border-accent/10">
                           <div className="flex items-center gap-2 mb-2">
@@ -258,7 +397,6 @@ export const InteractiveVignette: React.FC<InteractiveVignetteProps> = ({
                   {/* Informations spécifiques aux espèces */}
                   {variant === 'species' && (
                     <div className="space-y-4">
-                      {/* Informations biologiques */}
                       <div className="space-y-4 p-5 bg-emerald-50/80 rounded-xl border border-emerald-200/60">
                         {data.nom_commun && (
                           <div>
@@ -282,7 +420,6 @@ export const InteractiveVignette: React.FC<InteractiveVignetteProps> = ({
                         )}
                       </div>
 
-                      {/* Sources d'identification de l'espèce */}
                       {resolvedSources.length > 0 && (
                         <div className="p-6 rounded-xl bg-gradient-to-br from-success/5 to-success/5 border border-success/20">
                           <div className="flex items-center gap-2 mb-4">
@@ -300,8 +437,6 @@ export const InteractiveVignette: React.FC<InteractiveVignetteProps> = ({
                                 : 'Source';
                               const displayTitle = title || shortName || `Source ${index + 1}`;
                               const date = source?.date_acces;
-
-                              console.log('Debug - Rendering source:', { source, href, title, displayTitle, date });
 
                               return (
                                 <div key={source?.id || index} className="flex items-center gap-3 p-3 rounded-lg bg-background/50 border border-border/30 hover:bg-background/80 transition-colors">
@@ -365,51 +500,56 @@ export const InteractiveVignette: React.FC<InteractiveVignetteProps> = ({
                     </div>
                   )}
 
-                  {/* Section Sources - Redesignée */}
+                  {/* Section Sources pour le vocabulaire */}
                   {Array.isArray(data.metadata?.resolved_sources) && data.metadata.resolved_sources.length > 0 && (
-                    <div className="p-6 rounded-xl bg-gradient-to-br from-success/5 to-success/5 border border-success/20">
+                    <div className="p-6 rounded-xl bg-gradient-to-br from-info/5 to-info/5 border border-info/20">
                       <div className="flex items-center gap-2 mb-4">
-                        <ExternalLink className="w-5 h-5 text-success" />
-                        <h3 className="font-semibold text-base text-success">
-                          Sources documentaires ({data.metadata.resolved_sources.length})
+                        <ExternalLink className="w-5 h-5 text-info" />
+                        <h3 className="font-semibold text-base text-info">
+                          Sources ({data.metadata.resolved_sources.length})
                         </h3>
                       </div>
                       <div className="grid gap-3">
                         {data.metadata.resolved_sources.map((source: any, index: number) => {
                           const href = source?.url || source?.lien || source?.link;
-                          const title = source?.nom || source?.name || source?.titre;
+                          const title = source?.titre || source?.nom;
                           const shortName = href && /^https?:\/\//i.test(href) 
                             ? new URL(href).hostname.replace('www.', '').split('.')[0] 
                             : 'Source';
-                          const displayTitle = title || shortName;
+                          const displayTitle = title || shortName || `Source ${index + 1}`;
+                          const date = source?.date_acces;
 
                           return (
                             <div key={source?.id || index} className="flex items-center gap-3 p-3 rounded-lg bg-background/50 border border-border/30 hover:bg-background/80 transition-colors">
-                              <div className="w-8 h-8 rounded-full bg-success/10 flex items-center justify-center flex-shrink-0">
-                                <span className="text-xs font-bold text-success">{index + 1}</span>
+                              <div className="w-8 h-8 rounded-full bg-info/10 flex items-center justify-center flex-shrink-0">
+                                <span className="text-xs font-bold text-info">{index + 1}</span>
                               </div>
                               <div className="min-w-0 flex-1">
                                 <div className="flex items-center gap-2">
                                   <h5 className="font-medium text-sm text-foreground truncate">
                                     {displayTitle}
                                   </h5>
-                                  {source?.annee && (
+                                  {date && (
                                     <div className="flex items-center gap-1 text-xs text-muted-foreground">
                                       <Calendar className="w-3 h-3" />
-                                      {source.annee}
+                                      {date}
                                     </div>
                                   )}
                                 </div>
-                                {href && /^https?:\/\//i.test(href) && (
+                                {href && /^https?:\/\//i.test(href) ? (
                                   <a 
                                     href={href} 
                                     target="_blank" 
                                     rel="noopener noreferrer"
-                                    className="text-xs text-success hover:text-success/80 underline truncate block mt-1"
+                                    className="text-xs text-info hover:text-info/80 underline truncate block mt-1"
                                     title={href}
                                   >
                                     {href.length > 50 ? `${href.substring(0, 50)}...` : href}
                                   </a>
+                                ) : (
+                                  <p className="text-xs text-muted-foreground mt-1">
+                                    URL non disponible
+                                  </p>
                                 )}
                               </div>
                               {href && /^https?:\/\//i.test(href) && (
@@ -417,7 +557,7 @@ export const InteractiveVignette: React.FC<InteractiveVignetteProps> = ({
                                   variant="ghost"
                                   size="sm"
                                   onClick={() => window.open(href, '_blank')}
-                                  className="w-8 h-8 p-0 text-success hover:text-success hover:bg-success/10"
+                                  className="w-8 h-8 p-0 text-info hover:text-info hover:bg-info/10"
                                 >
                                   <ExternalLink className="w-4 h-4" />
                                 </Button>
@@ -428,30 +568,22 @@ export const InteractiveVignette: React.FC<InteractiveVignetteProps> = ({
                       </div>
                     </div>
                   )}
-                  
-                  {/* URL principal du terme */}
-                  {data.url && (
-                    <div className="pt-4 border-t border-border/20">
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
-                        onClick={() => window.open(data.url, '_blank')} 
-                        className="w-full bg-primary/5 hover:bg-primary/10 border-primary/20 text-primary hover:text-primary"
-                      >
-                        <ExternalLink className="w-4 h-4 mr-2" />
-                        Consulter la source principale
-                      </Button>
-                    </div>
-                  )}
                 </div>
               </ScrollArea>
             </DialogContent>
           </Dialog>
-
-          {data.category && (
-            <Badge variant="outline" className="text-xs opacity-70">
-              {data.category}
-            </Badge>
+          
+          {/* Lien externe si disponible */}
+          {data.url && /^https?:\/\//i.test(data.url) && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => window.open(data.url, '_blank')}
+              className="text-xs hover:bg-background/50"
+            >
+              <ExternalLink className="w-3 h-3 mr-1" />
+              Lien
+            </Button>
           )}
         </div>
       </CardContent>
