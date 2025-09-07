@@ -286,29 +286,51 @@ export const OpusImportInterface: React.FC<OpusImportInterfaceProps> = ({
 
       const parsed = JSON.parse(jsonContent);
       
-      // Validation basique
+      // Validation automatique des IDs
+      if (!currentMarcheId) {
+        errors.push("⚠️ Marche non sélectionnée - impossible d'importer");
+      }
+      if (!explorationId) {
+        errors.push("⚠️ Exploration non trouvée - impossible d'importer");
+      }
+      
+      // Validation basique du contenu
       if (!parsed.dimensions || Object.keys(parsed.dimensions).length === 0) {
-        errors.push("Au moins une dimension est requise");
+        errors.push("Au moins une dimension est requise dans 'dimensions'");
       }
       if (!parsed.sources || !Array.isArray(parsed.sources)) {
         errors.push("Le champ 'sources' est requis et doit être un tableau");
       }
       if (!parsed.metadata) {
-        errors.push("Les métadonnées sont requises");
+        errors.push("Les métadonnées 'metadata' sont requises");
+      } else {
+        // Validation des scores dans metadata
+        if (parsed.metadata.quality_score === null || parsed.metadata.quality_score === undefined) {
+          errors.push("metadata.quality_score doit être un nombre (pas null)");
+        }
+        if (parsed.metadata.completeness_score === null || parsed.metadata.completeness_score === undefined) {
+          errors.push("metadata.completeness_score doit être un nombre (pas null)");
+        }
       }
 
-      // Compléter avec les IDs requis
+      // Injection automatique des IDs (ces champs sont automatiquement ajoutés)
       const completeData: ImportData = {
         ...parsed,
-        marche_id: currentMarcheId,
-        exploration_id: explorationId || parsed.exploration_id
+        exploration_id: explorationId || parsed.exploration_id,
+        marche_id: currentMarcheId || parsed.marche_id
       };
+      
+      console.log('🔍 IDs injectés automatiquement:', {
+        exploration_id: completeData.exploration_id,
+        marche_id: completeData.marche_id,
+        originalJson: !!parsed.exploration_id || !!parsed.marche_id
+      });
       
       setValidationErrors(errors);
       setImportData(completeData);
       return errors.length === 0 ? completeData : null;
     } catch (error) {
-      errors.push("Format JSON invalide - vérifiez la syntaxe");
+      errors.push(`Format JSON invalide: ${error.message}`);
       setValidationErrors(errors);
       return null;
     }
@@ -618,6 +640,17 @@ export const OpusImportInterface: React.FC<OpusImportInterfaceProps> = ({
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
+              {/* Information IDs auto-injectés */}
+              <Alert className="border-blue-200 bg-blue-50">
+                <Info className="w-4 h-4" />
+                <AlertDescription>
+                  <strong>IDs automatiquement ajoutés :</strong>
+                  <br />• Exploration: <code>{explorationId || 'Non trouvée'}</code>
+                  <br />• Marche: <code>{currentMarcheName} ({currentMarcheId || 'Non sélectionnée'})</code>
+                  <br />Vous n'avez pas besoin d'inclure exploration_id et marche_id dans votre JSON.
+                </AlertDescription>
+              </Alert>
+              
             <Textarea
               placeholder="Collez ici votre JSON d'import IA ou utilisez le bouton 'Copier le format JSON' pour obtenir le modèle complet..."
               value={jsonContent}
