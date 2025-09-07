@@ -18,6 +18,7 @@ import {
   Gauge
 } from 'lucide-react';
 import { formatComplexData, getDataAvailability, ContexteMetricData } from '@/utils/contexteDataMapper';
+import { getVignetteStyles } from '@/utils/vignetteStyleUtils';
 
 interface ContexteMetricProps extends ContexteMetricData {
   icon?: React.ComponentType<{ className?: string }>;
@@ -39,73 +40,74 @@ export const ContexteMetricCard: React.FC<ContexteMetricProps> = ({
   const availability = getDataAvailability(data);
   const formattedData = formatComplexData(data);
   
-  // Debug log
+  // Console log for debugging
   console.log(`ContexteMetricCard ${title}:`, { data, formattedData, availability });
 
-  // Styles dynamiques avec meilleur contraste
-  const getVariantStyles = () => {
-    const baseStyles = "relative overflow-hidden transition-all duration-300 hover:scale-[1.01] hover:shadow-lg group cursor-pointer border-2";
-    
+  // Map availability to vignette variant for Contrast-Force Hierarchy
+  const getVariantFromAvailability = () => {
     switch (availability) {
       case 'available':
-        return `${baseStyles} border-emerald-600/60 bg-gradient-to-br from-emerald-50/80 to-emerald-100/40 hover:bg-emerald-50/90 shadow-emerald-200/30`;
+        return 'species'; // Green variant for available data
       case 'partial':
-        return `${baseStyles} border-amber-600/60 bg-gradient-to-br from-amber-50/80 to-amber-100/40 hover:bg-amber-50/90 shadow-amber-200/30`;
+        return 'infrastructure'; // Orange variant for partial data  
       case 'missing':
-        return `${baseStyles} border-red-600/60 bg-gradient-to-br from-red-50/80 to-red-100/40 hover:bg-red-50/90 shadow-red-200/30`;
+        return 'technology'; // Purple variant for missing data
       default:
-        return `${baseStyles} border-slate-300/60 bg-gradient-to-br from-slate-50/80 to-slate-100/40 hover:bg-slate-50/90 shadow-slate-200/30`;
+        return 'default';
     }
   };
+
+  const vignetteVariant = getVariantFromAvailability();
+  const styles = getVignetteStyles(vignetteVariant);
 
   const getQualityBadge = () => {
     switch (availability) {
       case 'available':
-        return <Badge className="bg-emerald-100 text-emerald-800 border-emerald-300 font-medium text-xs">LIVE DATA</Badge>;
+        return <Badge className={`font-semibold text-xs ${styles.badge}`}>LIVE DATA</Badge>;
       case 'partial':
-        return <Badge className="bg-amber-100 text-amber-800 border-amber-300 font-medium text-xs">PARTIEL</Badge>;
+        return <Badge className="bg-warning/10 text-warning border-warning/30 font-semibold text-xs">PARTIEL</Badge>;
       case 'missing':
-        return <Badge className="bg-red-100 text-red-800 border-red-300 font-medium text-xs">MANQUANT</Badge>;
+        return <Badge className="bg-primary/10 text-primary border-primary/30 font-semibold text-xs">MANQUANT</Badge>;
     }
   };
 
   const getMetricIcon = () => {
-    if (Icon) return <Icon className="w-4 h-4 text-slate-700" />;
+    if (Icon) return <Icon className="w-4 h-4" />;
     
     switch (metricType) {
       case 'temperature':
-        return <Thermometer className="w-4 h-4 text-slate-700" />;
+        return <Thermometer className="w-4 h-4" />;
       case 'ph':
-        return <Beaker className="w-4 h-4 text-slate-700" />;
+        return <Beaker className="w-4 h-4" />;
       case 'flow':
-        return <Waves className="w-4 h-4 text-slate-700" />;
+        return <Waves className="w-4 h-4" />;
       case 'quality':
-        return <Activity className="w-4 h-4 text-slate-700" />;
+        return <Activity className="w-4 h-4" />;
       default:
-        return <Info className="w-4 h-4 text-slate-700" />;
+        return <Info className="w-4 h-4" />;
     }
   };
 
   const getStatusIndicator = () => {
     switch (availability) {
       case 'available':
-        return <CheckCircle2 className="w-4 h-4 text-emerald-700" />;
+        return <CheckCircle2 className="w-4 h-4 text-success" />;
       case 'partial':
-        return <AlertTriangle className="w-4 h-4 text-amber-700" />;
+        return <AlertTriangle className="w-4 h-4 text-warning" />;
       case 'missing':
-        return <AlertCircle className="w-4 h-4 text-red-700" />;
+        return <AlertCircle className="w-4 h-4 text-primary" />;
     }
   };
 
   return (
     <Dialog open={isDetailOpen} onOpenChange={setIsDetailOpen}>
       <DialogTrigger asChild>
-        <Card className={`${getVariantStyles()} ${className} hover:cursor-pointer`}>
+        <Card className={`group cursor-pointer ${styles.container} ${className}`}>
           <CardHeader className="pb-3">
             <CardTitle className="flex items-center justify-between">
               <div className="flex items-center space-x-2">
                 {getMetricIcon()}
-                <span className="text-sm font-semibold text-slate-800">{title}</span>
+                <span className={`text-sm leading-tight ${styles.title}`}>{title}</span>
               </div>
               <div className="flex items-center space-x-2">
                 {getStatusIndicator()}
@@ -115,22 +117,21 @@ export const ContexteMetricCard: React.FC<ContexteMetricProps> = ({
           </CardHeader>
 
           <CardContent className="space-y-3">
-            {/* Affichage immédiat de la donnée - VERSION COMPACTE */}
-            <div className="p-3 rounded-lg bg-white/70 backdrop-blur-sm border border-slate-200/60">
-              {/* Valeur principale - TAILLE RÉDUITE */}
+            {/* Affichage de la donnée - Contrast-Force Hierarchy */}
+            <div className="p-3 rounded-lg bg-white/70 backdrop-blur-sm border border-white/30">
               <div className="space-y-2">
-                <div className="text-lg font-semibold text-slate-900 group-hover:text-slate-700 transition-colors">
+                <div className={`text-lg font-semibold group-hover:opacity-90 transition-colors ${styles.secondary}`}>
                   {formattedData}
-                  {unit && <span className="text-sm font-normal text-slate-600 ml-1">{unit}</span>}
+                  {unit && <span className={`text-sm font-normal ml-1 ${styles.status}`}>{unit}</span>}
                 </div>
                 
-                {/* Indicateur de qualité visuel - PLUS SUBTIL */}
-                <div className="w-full bg-slate-200/40 rounded-full h-1 overflow-hidden">
+                {/* Indicateur de qualité - adapté au variant */}
+                <div className="w-full bg-white/40 rounded-full h-1 overflow-hidden">
                   <div 
                     className={`h-full transition-all duration-1000 group-hover:opacity-90 ${
-                      availability === 'available' ? 'bg-gradient-to-r from-emerald-400 to-emerald-600' :
-                      availability === 'partial' ? 'bg-gradient-to-r from-amber-400 to-amber-600' :
-                      'bg-gradient-to-r from-red-400 to-red-600'
+                      availability === 'available' ? 'bg-gradient-to-r from-success to-success-light' :
+                      availability === 'partial' ? 'bg-gradient-to-r from-warning to-orange-200' :
+                      'bg-gradient-to-r from-primary to-violet-200'
                     }`}
                     style={{ 
                       width: availability === 'available' ? '100%' : 
@@ -141,10 +142,10 @@ export const ContexteMetricCard: React.FC<ContexteMetricProps> = ({
               </div>
             </div>
 
-            {/* Indicateur d'action subtil */}
-            <div className="flex items-center justify-center text-xs text-slate-600 opacity-0 group-hover:opacity-100 transition-all duration-300">
+            {/* Indicateur d'action */}
+            <div className="flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-all duration-300">
               <Eye className="w-3 h-3 mr-1" />
-              Cliquer pour les détails
+              <span className={styles.secondary}>Cliquer pour les détails</span>
             </div>
           </CardContent>
         </Card>
