@@ -245,6 +245,53 @@ export const OpusImportInterface: React.FC<OpusImportInterfaceProps> = ({
 }`;
   }, [currentMarcheId, explorationId]);
 
+  // Sanitize JSON by removing invalid escape sequences
+  const sanitizeJson = useCallback((jsonString: string): string => {
+    if (!jsonString) return jsonString;
+    
+    // Remove invalid escape sequences that are causing parsing errors
+    let sanitized = jsonString
+      // Remove backslashes before brackets and parentheses
+      .replace(/\\(\[|\]|\(|\)|~)/g, '$1')
+      // Remove backslashes before underscores (common in field names)
+      .replace(/\\(_)/g, '$1')
+      // Fix double backslashes that might have been created
+      .replace(/\\\\/g, '\\');
+    
+    return sanitized;
+  }, []);
+
+  // Auto-correct common JSON issues
+  const autoCorrectJson = useCallback(() => {
+    if (!jsonContent.trim()) {
+      toast({
+        title: "Rien à corriger",
+        description: "Ajoutez d'abord du contenu JSON",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    try {
+      const sanitized = sanitizeJson(jsonContent);
+      setJsonContent(sanitized);
+      
+      // Try to parse the sanitized JSON to verify it's valid
+      JSON.parse(sanitized);
+      
+      toast({
+        title: "JSON corrigé",
+        description: "Les erreurs de formatage communes ont été automatiquement corrigées"
+      });
+    } catch (error) {
+      toast({
+        title: "Correction partielle",
+        description: "Quelques corrections appliquées, mais des erreurs persistent. Vérifiez manuellement.",
+        variant: "destructive"
+      });
+    }
+  }, [jsonContent, sanitizeJson, toast]);
+
   // Copy JSON format to clipboard
   const copyJsonFormat = useCallback(async () => {
     const jsonFormat = generateCompleteTemplate();
@@ -275,7 +322,9 @@ export const OpusImportInterface: React.FC<OpusImportInterfaceProps> = ({
         return null;
       }
 
-      const parsed = JSON.parse(jsonContent);
+      // Auto-sanitize the JSON before parsing
+      const sanitizedJson = sanitizeJson(jsonContent);
+      const parsed = JSON.parse(sanitizedJson);
       
       // Validation automatique des IDs
       if (!currentMarcheId) {
@@ -311,11 +360,22 @@ export const OpusImportInterface: React.FC<OpusImportInterfaceProps> = ({
       setImportData(completeData);
       return errors.length === 0 ? completeData : null;
     } catch (error) {
-      errors.push(`Format JSON invalide: ${error.message}`);
+      // Provide more specific error messages
+      let errorMessage = error.message;
+      if (errorMessage.includes('Unexpected token')) {
+        if (errorMessage.includes('\\')) {
+          errorMessage += ' - Utilisez le bouton "Auto-corriger" pour résoudre les problèmes d\'échappement';
+        } else if (errorMessage.includes('[') || errorMessage.includes(']')) {
+          errorMessage += ' - Vérifiez la syntaxe des tableaux (crochets)';
+        } else if (errorMessage.includes('{') || errorMessage.includes('}')) {
+          errorMessage += ' - Vérifiez la syntaxe des objets (accolades)';
+        }
+      }
+      errors.push(`Format JSON invalide: ${errorMessage}`);
       setValidationErrors(errors);
       return null;
     }
-  }, [jsonContent, currentMarcheId, explorationId]);
+  }, [jsonContent, currentMarcheId, explorationId, sanitizeJson]);
 
   const previewImport = async () => {
     console.log('🚀 Starting preview import...');
@@ -650,6 +710,14 @@ export const OpusImportInterface: React.FC<OpusImportInterfaceProps> = ({
                       <li key={i}>{error}</li>
                     ))}
                   </ul>
+                  {validationErrors.some(error => error.includes('Unexpected token') && error.includes('\\')) && (
+                    <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded">
+                      <p className="text-sm text-blue-800 font-medium">💡 Solution rapide:</p>
+                      <p className="text-xs text-blue-700 mt-1">
+                        Utilisez le bouton "Auto-corriger" ci-dessous pour résoudre automatiquement les problèmes d'échappement JSON.
+                      </p>
+                    </div>
+                  )}
                 </AlertDescription>
               </Alert>
             )}
@@ -676,6 +744,16 @@ export const OpusImportInterface: React.FC<OpusImportInterfaceProps> = ({
                 >
                   <FileJson className="h-4 w-4" />
                   Charger le modèle
+                </Button>
+
+                <Button 
+                  variant="secondary"
+                  onClick={autoCorrectJson}
+                  disabled={!jsonContent.trim()}
+                  className="flex items-center gap-2"
+                >
+                  <CheckCircle className="h-4 w-4" />
+                  Auto-corriger
                 </Button>
               </div>
               
