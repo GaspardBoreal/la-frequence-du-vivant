@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -8,7 +8,9 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { InteractiveVignette } from './InteractiveVignette';
 import { SpeciesVignetteGrid } from './SpeciesVignetteGrid';
 import { VignetteGrid } from './VignetteGrid';
+import { InfrastructureVignetteGrid } from './InfrastructureVignetteGrid';
 import { processTechnodiversiteData } from '@/utils/technodiversiteDataUtils';
+import { processEmpreintesHumainesData } from '@/utils/empreintesHumainesDataUtils';
 import { ContexteMetricCard } from './ContexteMetricCard';
 import { mapContexteData } from '@/utils/contexteDataMapper';
 import { getVocabularyTermsCount } from '@/utils/vocabularyDataUtils';
@@ -171,6 +173,9 @@ export const ModernImportDetailModal: React.FC<ModernImportDetailModalProps> = (
               </Button>
             </div>
           </DialogTitle>
+          <DialogDescription className="sr-only">
+            Détails de l’import IA et des dimensions analysées pour {importRecord.marche_nom}
+          </DialogDescription>
         </DialogHeader>
 
         <Tabs defaultValue={defaultTab} className="flex-1">
@@ -247,8 +252,15 @@ export const ModernImportDetailModal: React.FC<ModernImportDetailModalProps> = (
                   </CardHeader>
                   <CardContent>
                     <div className="text-2xl font-bold text-warning mb-1">
-                      {importRecord.contexte_data?.empreintes_humaines ? 
-                        Object.keys(importRecord.contexte_data.empreintes_humaines).length : 0}
+                      {(() => {
+                        const infra = importRecord.contexte_data?.empreintes_humaines 
+                          || importRecord.contexte_data?.infrastructures 
+                          || importRecord.contexte_data?.infrastructures_techniques 
+                          || importRecord.contexte_data?.donnees?.empreintes_humaines 
+                          || importRecord.contexte_data?.empreintesHumaines 
+                          || null;
+                        return infra ? processEmpreintesHumainesData(infra).totalCount : 0;
+                      })()}
                     </div>
                     <p className="text-xs text-muted-foreground">caractéristiques</p>
                   </CardContent>
@@ -397,12 +409,13 @@ export const ModernImportDetailModal: React.FC<ModernImportDetailModalProps> = (
 
             {/* Infrastructures Tab */}
             <TabsContent value="infrastructure" className="space-y-6">
-              <VignetteGrid
-                title="Infrastructures Caractéristiques"
-                data={importRecord.contexte_data?.empreintes_humaines}
-                variant="infrastructure"
-                icon={<Building className="w-5 h-5" />}
-                emptyMessage="Aucune infrastructure caractéristique n'a été identifiée"
+              <InfrastructureVignetteGrid
+                empreintesHumainesData={importRecord.contexte_data?.empreintes_humaines 
+                  || importRecord.contexte_data?.infrastructures 
+                  || importRecord.contexte_data?.infrastructures_techniques 
+                  || importRecord.contexte_data?.donnees?.empreintes_humaines 
+                  || importRecord.contexte_data?.empreintesHumaines}
+                importSources={importRecord.sources}
               />
             </TabsContent>
 

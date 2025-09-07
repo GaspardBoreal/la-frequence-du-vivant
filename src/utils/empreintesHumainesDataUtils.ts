@@ -42,20 +42,34 @@ export const processEmpreintesHumainesData = (data: any): ProcessedEmpreintesHum
   const processItems = (items: any[], category: string) => {
     if (!Array.isArray(items)) return [];
     
-    return items.map((item, index) => ({
-      titre: item.nom || item.titre || item.name || `${category} ${index + 1}`,
-      description: item.description || item.explication || item.details || '',
-      type: item.type || determineInfrastructureType(item),
-      category,
-      metadata: {
-        impact: item.impact || determineImpact(item),
-        periode_historique: item.periode || item.date || item.epoque,
-        coordonnees: item.coordonnees || item.localisation,
-        sources: item.sources || [],
-        etat_actuel: item.etat || item.statut,
-        ...item
+    return items.map((item, index) => {
+      if (typeof item === 'string') {
+        const text = item;
+        return {
+          titre: text,
+          description: '',
+          type: determineInfrastructureType({ titre: text, description: text }),
+          category,
+          metadata: {
+            impact: determineImpact({ titre: text, description: text }),
+          }
+        } as EmpreinteHumaineItem;
       }
-    }));
+      return {
+        titre: item.nom || item.titre || item.name || `${category} ${index + 1}`,
+        description: item.description || item.explication || item.details || '',
+        type: item.type || determineInfrastructureType(item),
+        category,
+        metadata: {
+          impact: item.impact || determineImpact(item),
+          periode_historique: item.periode || item.date || item.epoque,
+          coordonnees: item.coordonnees || item.localisation,
+          sources: item.sources || [],
+          etat_actuel: item.etat || item.statut,
+          ...item
+        }
+      } as EmpreinteHumaineItem;
+    });
   };
 
   // Structure avec catégories explicites
