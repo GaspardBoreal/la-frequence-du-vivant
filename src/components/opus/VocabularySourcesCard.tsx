@@ -66,14 +66,14 @@ export const VocabularySourcesCard: React.FC<VocabularySourcesCardProps> = ({
   return (
     <Dialog open={isDetailOpen} onOpenChange={setIsDetailOpen}>
       <DialogTrigger asChild>
-        <Card className={`group cursor-pointer transition-all duration-300 hover:scale-[1.02] hover:shadow-xl ${styles.container} ${className}`}>
+        <Card className={`group cursor-pointer transition-all duration-300 hover:scale-[1.01] hover:shadow-xl w-full max-w-full ${styles.container} ${className}`}>
           <CardHeader className="pb-3">
             <CardTitle className="flex items-center justify-between">
-              <div className="flex items-center space-x-2">
-                <BookOpen className="w-4 h-4" />
-                <span className="text-sm leading-tight font-bold text-white">Sources bibliographiques</span>
+              <div className="flex items-center space-x-2 min-w-0 flex-1">
+                <BookOpen className="w-4 h-4 flex-shrink-0" />
+                <span className="text-sm leading-tight font-bold text-white truncate">Sources bibliographiques</span>
               </div>
-              <Badge className={`font-semibold text-xs ${styles.badge}`}>
+              <Badge className={`font-semibold text-xs ml-2 flex-shrink-0 ${styles.badge}`}>
                 {normalizedSources.length}
               </Badge>
             </CardTitle>
@@ -83,7 +83,7 @@ export const VocabularySourcesCard: React.FC<VocabularySourcesCardProps> = ({
             {/* Affichage compact des sources avec hover amélioré */}
             <div className="p-4 rounded-lg bg-slate-900/90 backdrop-blur-sm border border-white/10 shadow-lg group-hover:bg-slate-800/95 group-hover:border-vocabulary/30 transition-all duration-300">
               <div className="space-y-2">
-                <div className="text-base font-medium text-white leading-relaxed group-hover:text-vocabulary-light transition-colors duration-300">
+                <div className="text-base font-medium text-white leading-relaxed group-hover:text-vocabulary-light transition-colors duration-300 break-words">
                   {sourcesSummary}
                 </div>
                 <div className="text-sm font-medium text-slate-300 group-hover:text-slate-200 transition-colors duration-300">
@@ -102,7 +102,7 @@ export const VocabularySourcesCard: React.FC<VocabularySourcesCardProps> = ({
 
             {/* Indicateur d'action avec animation améliorée */}
             <div className="flex items-center justify-center text-xs text-white/70 opacity-0 group-hover:opacity-100 group-hover:text-vocabulary-light transition-all duration-300 transform group-hover:translate-y-[-2px]">
-              <Eye className="w-3 h-3 mr-1 group-hover:scale-110 transition-transform duration-300" />
+              <Eye className="w-3 h-3 mr-1 group-hover:scale-110 transition-transform duration-300 flex-shrink-0" />
               <span className="font-medium">Cliquer pour voir les détails</span>
             </div>
           </CardContent>

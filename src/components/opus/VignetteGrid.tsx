@@ -194,9 +194,13 @@ export const VignetteGrid: React.FC<VignetteGridProps> = ({
                   Sources bibliographiques
                 </h3>
               </div>
-              <VocabularySourcesCard 
-                sources={processedData.sources.map(source => source.metadata).filter(Boolean)}
-              />
+              {/* Conteneur avec contraintes de largeur */}
+              <div className="w-full max-w-full overflow-hidden">
+                <VocabularySourcesCard 
+                  sources={processedData.sources.map(source => source.metadata).filter(Boolean)}
+                  className="w-full max-w-full"
+                />
+              </div>
             </div>
           )}
         </div>
