@@ -63,11 +63,11 @@ export const getVignetteStyles = (variant: VignetteVariant): VignetteStyleClasse
       
     case 'technology':
       return {
-        container: `${baseContainer} border-primary/30 bg-gradient-to-br from-primary/10 to-primary/5 hover:from-primary/20 hover:to-primary/10`,
-        title: 'text-primary font-bold',
-        secondary: '!text-white italic',
-        status: 'text-violet-200 font-bold',
-        badge: 'bg-primary/10 text-primary border-primary/30'
+        container: 'bg-paper/95 hover:bg-paper border-border/20 shadow-md hover:shadow-lg transition-all duration-300 backdrop-blur-sm',
+        title: 'text-ink font-bold tracking-wide text-lg',
+        secondary: 'text-slate-600 italic font-medium',
+        status: 'text-slate-700 font-bold tracking-wide',
+        badge: 'bg-primary/10 text-primary border-primary/20 font-bold'
       };
       
     default:

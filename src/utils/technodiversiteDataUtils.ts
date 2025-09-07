@@ -199,18 +199,26 @@ export const getTechTypeIcon = (type: string) => {
  * Obtient la couleur du badge pour le type de technologie
  */
 export const getTechTypeBadgeColor = (type: string): string => {
-  switch (type.toLowerCase()) {
-    case 'low-tech':
-      return 'bg-amber-100 text-amber-800 border-amber-300';
-    case 'open-hardware':
-    case 'open-source':
-      return 'bg-blue-100 text-blue-800 border-blue-300';
-    case 'biomimétisme':
-      return 'bg-green-100 text-green-800 border-green-300';
-    case 'numérique-sobre':
-      return 'bg-violet-100 text-violet-800 border-violet-300';
+  const typeKey = type?.toLowerCase()?.replace(/[^a-z0-9]/g, '');
+  
+  switch (typeKey) {
+    case 'biomimicry':
+    case 'biomimetisme':
+      return 'bg-tech-biomimicry-bg text-tech-biomimicry border-tech-biomimicry/30 font-bold text-sm px-3 py-1.5';
+    case 'lowtech':
+    case 'lowtechnologie':
+    case 'technologielow':
+      return 'bg-tech-lowtech-bg text-tech-lowtech border-tech-lowtech/30 font-bold text-sm px-3 py-1.5';
+    case 'openhardware':
+    case 'opensourcehardware':
+    case 'hardwareopen':
+      return 'bg-tech-openhardware-bg text-tech-openhardware border-tech-openhardware/30 font-bold text-sm px-3 py-1.5';
+    case 'technologiegenerique':
+    case 'technologie':
+    case 'tech':
+      return 'bg-tech-generic-bg text-tech-generic border-tech-generic/30 font-bold text-sm px-3 py-1.5';
     default:
-      return 'bg-gray-100 text-gray-800 border-gray-300';
+      return 'bg-slate-100 text-slate-800 border-slate-300 font-bold text-sm px-3 py-1.5';
   }
 };
 

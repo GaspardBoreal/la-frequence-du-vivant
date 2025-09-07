@@ -24,8 +24,24 @@ export default {
 					ring: 'hsl(var(--ring))',
 					background: 'hsl(var(--background))',
 					foreground: 'hsl(var(--foreground))',
-					paper: 'hsl(var(--paper))',
-					ink: 'hsl(var(--ink))',
+				paper: 'hsl(var(--paper))',
+				ink: 'hsl(var(--ink))',
+				'tech-biomimicry': {
+					DEFAULT: 'hsl(var(--tech-biomimicry))',
+					bg: 'hsl(var(--tech-biomimicry-bg))'
+				},
+				'tech-lowtech': {
+					DEFAULT: 'hsl(var(--tech-lowtech))',
+					bg: 'hsl(var(--tech-lowtech-bg))'
+				},
+				'tech-openhardware': {
+					DEFAULT: 'hsl(var(--tech-openhardware))',
+					bg: 'hsl(var(--tech-openhardware-bg))'
+				},
+				'tech-generic': {
+					DEFAULT: 'hsl(var(--tech-generic))',
+					bg: 'hsl(var(--tech-generic-bg))'
+				},
 				primary: {
 					DEFAULT: 'hsl(var(--primary))',
 					foreground: 'hsl(var(--primary-foreground))'

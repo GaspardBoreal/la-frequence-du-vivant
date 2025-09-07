@@ -45,6 +45,16 @@
     /* Paper/Ink tokens for readable white surface */
     --paper: 0 0% 100%;
     --ink: 0 0% 0%;
+    
+    /* Technology type colors - high contrast for badges */
+    --tech-biomimicry: 140 70% 45%;     /* Emerald green */
+    --tech-biomimicry-bg: 140 70% 95%;  /* Very light emerald */
+    --tech-lowtech: 25 85% 50%;         /* Warm orange */
+    --tech-lowtech-bg: 25 85% 95%;      /* Very light orange */
+    --tech-openhardware: 200 85% 50%;   /* Electric blue */
+    --tech-openhardware-bg: 200 85% 95%; /* Very light blue */
+    --tech-generic: 270 60% 55%;        /* Modern purple */
+    --tech-generic-bg: 270 60% 95%;     /* Very light purple */
 
     --radius: 0.5rem;
   }
@@ -84,6 +94,16 @@
     /* Keep paper/ink consistent in dark mode for white cards */
     --paper: 0 0% 100%;
     --ink: 0 0% 0%;
+    
+    /* Technology type colors - same in dark mode for consistent badges */
+    --tech-biomimicry: 140 70% 45%;
+    --tech-biomimicry-bg: 140 70% 95%;
+    --tech-lowtech: 25 85% 50%;
+    --tech-lowtech-bg: 25 85% 95%;
+    --tech-openhardware: 200 85% 50%;
+    --tech-openhardware-bg: 200 85% 95%;
+    --tech-generic: 270 60% 55%;
+    --tech-generic-bg: 270 60% 95%;
   }
 }
 

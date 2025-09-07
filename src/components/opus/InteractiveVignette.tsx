@@ -122,20 +122,20 @@ export const InteractiveVignette: React.FC<InteractiveVignetteProps> = ({
             
             {data.type && (
               <Badge 
-                variant="secondary" 
-                className={`w-fit text-xs font-semibold ${getTechTypeBadgeColor(data.type)}`}
+                variant="outline" 
+                className={`w-fit rounded-full border ${getTechTypeBadgeColor(data.type)}`}
               >
                 {data.type}
               </Badge>
             )}
             
             {techMetadata.length > 0 && (
-              <div className="flex flex-wrap gap-2 mt-2">
+              <div className="flex flex-wrap gap-2 mt-3">
                 {techMetadata.slice(0, 2).map((meta, index) => (
-                  <div key={index} className="flex items-center gap-1 text-xs text-muted-foreground bg-background/50 rounded-full px-2 py-1">
-                    <meta.icon className={`w-3 h-3 ${meta.color}`} />
-                    <span className="font-medium">{meta.label}:</span>
-                    <span>{meta.value}</span>
+                  <div key={index} className="flex items-center gap-1.5 text-sm bg-slate-100 text-slate-700 rounded-full px-3 py-1.5 border border-slate-200">
+                    <meta.icon className={`w-4 h-4 ${meta.color}`} />
+                    <span className="font-semibold">{meta.label}:</span>
+                    <span className="font-medium">{meta.value}</span>
                   </div>
                 ))}
               </div>
@@ -163,9 +163,9 @@ export const InteractiveVignette: React.FC<InteractiveVignetteProps> = ({
         )}
       </CardHeader>
       
-      <CardContent className="space-y-3">
+      <CardContent className="space-y-4">
         {(data.description_courte || data.definition) && (
-          <CardDescription className="text-sm line-clamp-3">
+          <CardDescription className="text-sm line-clamp-3 text-slate-600 leading-relaxed font-medium">
             {data.description_courte || data.definition}
           </CardDescription>
         )}
@@ -173,10 +173,10 @@ export const InteractiveVignette: React.FC<InteractiveVignetteProps> = ({
         <div className="flex items-center justify-between">
           <Dialog open={showDetails} onOpenChange={setShowDetails}>
             <DialogTrigger asChild>
-              <Button variant="ghost" size="sm" className="text-xs hover:bg-background/50 group-hover:translate-x-1 transition-transform">
-                <Info className="w-3 h-3 mr-1" />
-                Détails
-                <ChevronRight className="w-3 h-3 ml-1" />
+              <Button variant="outline" size="sm" className="text-sm font-semibold bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100 hover:text-slate-900 group-hover:translate-x-1 transition-all px-4 py-2">
+                <Info className="w-4 h-4 mr-1.5" />
+                Voir les détails
+                <ChevronRight className="w-4 h-4 ml-1.5" />
               </Button>
             </DialogTrigger>
             
