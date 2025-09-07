@@ -247,6 +247,7 @@ export const VignetteGrid: React.FC<VignetteGridProps> = ({
       {specialProcessing === 'technodiversite' && typeof processedData === 'object' && 'totalCount' in processedData && (
         <TechnodiversiteVignetteGrid
           technodiversiteData={data}
+          importSources={importSources}
           className="w-full"
         />
       )}

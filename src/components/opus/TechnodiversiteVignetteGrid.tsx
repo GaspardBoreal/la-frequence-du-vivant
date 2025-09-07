@@ -7,15 +7,24 @@ import { processTechnodiversiteData } from '@/utils/technodiversiteDataUtils';
 interface TechnodiversiteVignetteGridProps {
   technodiversiteData: any;
   className?: string;
+  importSources?: any[];
 }
 
 export const TechnodiversiteVignetteGrid: React.FC<TechnodiversiteVignetteGridProps> = ({ 
   technodiversiteData, 
-  className = '' 
+  className = '',
+  importSources = [] 
 }) => {
   const processedData = React.useMemo(() => {
     return processTechnodiversiteData(technodiversiteData);
   }, [technodiversiteData]);
+
+  const extraSections: { key: keyof typeof processedData; title: string; bgClasses: string; textClass: string; emoji: string }[] = [
+    { key: 'innovations_locales' as any, title: 'Innovations Locales', bgClasses: 'from-primary/20 to-primary/10 border-primary/20', textClass: 'text-primary', emoji: '🛠️' },
+    { key: 'technologies_vertes' as any, title: 'Technologies Vertes', bgClasses: 'from-success/20 to-success/10 border-success/20', textClass: 'text-success', emoji: '🌿' },
+    { key: 'numerique' as any, title: 'Numérique sobre', bgClasses: 'from-info/20 to-info/10 border-info/20', textClass: 'text-info', emoji: '💾' },
+    { key: 'recherche_developpement' as any, title: 'R&D', bgClasses: 'from-warning/20 to-warning/10 border-warning/20', textClass: 'text-warning', emoji: '🧪' },
+  ];
 
   if (processedData.totalCount === 0) {
     return (
@@ -53,6 +62,7 @@ export const TechnodiversiteVignetteGrid: React.FC<TechnodiversiteVignetteGridPr
                 key={`innovation-${index}`}
                 data={item}
                 variant="technology"
+                importSources={importSources}
               />
             ))}
           </div>
@@ -79,6 +89,7 @@ export const TechnodiversiteVignetteGrid: React.FC<TechnodiversiteVignetteGridPr
                 key={`fabrication-${index}`}
                 data={item}
                 variant="technology"
+                importSources={importSources}
               />
             ))}
           </div>
@@ -105,11 +116,42 @@ export const TechnodiversiteVignetteGrid: React.FC<TechnodiversiteVignetteGridPr
                 key={`opensource-${index}`}
                 data={item}
                 variant="technology"
+                importSources={importSources}
               />
             ))}
           </div>
         </div>
       )}
+      {/* Sections supplémentaires détectées dynamiquement */}
+      {extraSections.map(({ key, title, bgClasses, textClass, emoji }) => {
+        const arr = (processedData as any)[key] as any[] | undefined;
+        if (!arr || !arr.length) return null;
+        return (
+          <div key={String(key)} className="space-y-4">
+            <div className="flex items-center gap-3 pb-2 border-b border-border/30">
+              <div className={`w-10 h-10 rounded-lg bg-gradient-to-br ${bgClasses} border flex items-center justify-center`}>
+                <span className={`${textClass} font-bold`}>{emoji}</span>
+              </div>
+              <div>
+                <h3 className={`font-semibold text-lg ${textClass}`}>{title}</h3>
+                <Badge variant="secondary" className="ml-2 text-xs">
+                  {arr.length} élément{arr.length > 1 ? 's' : ''}
+                </Badge>
+              </div>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {arr.map((item, index) => (
+                <InteractiveVignette
+                  key={`${String(key)}-${index}`}
+                  data={item}
+                  variant="technology"
+                  importSources={importSources}
+                />
+              ))}
+            </div>
+          </div>
+        );
+      })}
     </div>
   );
 };

@@ -39,23 +39,33 @@ export const InteractiveVignette: React.FC<InteractiveVignetteProps> = ({
   const [showDetails, setShowDetails] = useState(false);
   const styles = getVignetteStyles(variant);
 
-  // Résolution des sources pour les espèces
+  // Résolution des sources pour toutes vignettes (espèces, vocabulaire, techno)
+  const sourceIndex = React.useMemo(() => {
+    const map = new Map<string, any>();
+    (importSources || []).forEach((s: any) => {
+      const possible = [s?.id, s?.source_id, s?.key, s?.nom, s?.name, s?.url?.split('/')?.pop?.()]
+        .filter(Boolean)
+        .map((x: any) => String(x).toLowerCase());
+      possible.forEach(id => map.set(id, s));
+    });
+    return map;
+  }, [importSources]);
+
   const resolvedSources = React.useMemo(() => {
-    if (!data.metadata?.source_ids || !importSources.length) return [];
-    
-    const sourceIds = Array.isArray(data.metadata.source_ids) 
-      ? data.metadata.source_ids 
-      : [data.metadata.source_ids];
-    
-    const resolved = sourceIds
-      .map(sourceId => {
-        const found = importSources.find(source => source.id === sourceId);
-        return found;
-      })
+    const meta = data.metadata || {};
+    const idsRaw = meta.source_ids || meta.sources || meta.sources_ids || [];
+    const ids: string[] = Array.isArray(idsRaw) ? idsRaw : [idsRaw];
+    const normalized = ids
+      .map((x: any) => (typeof x === 'string' ? x : (x?.id || x?.key || x)))
+      .filter(Boolean)
+      .map((x: any) => String(x).toLowerCase());
+
+    const resolved = normalized
+      .map((id: string) => sourceIndex.get(id))
       .filter(Boolean);
-    
+
     return resolved;
-  }, [data.metadata?.source_ids, importSources]);
+  }, [data.metadata, sourceIndex]);
 
   // Données spécialisées pour la technodiversité
   const techMetadata = React.useMemo(() => {

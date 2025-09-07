@@ -19,6 +19,11 @@ export interface ProcessedTechnodiversiteData {
   innovations: TechnodiversiteItem[];
   fabrication_locale: TechnodiversiteItem[];
   projets_open_source: TechnodiversiteItem[];
+  // Catégories supplémentaires (optionnelles)
+  innovations_locales?: TechnodiversiteItem[];
+  technologies_vertes?: TechnodiversiteItem[];
+  numerique?: TechnodiversiteItem[];
+  recherche_developpement?: TechnodiversiteItem[];
   totalCount: number;
 }
 
@@ -69,6 +74,27 @@ export const processTechnodiversiteData = (data: any): ProcessedTechnodiversiteD
       fabrication_locale,
       projets_open_source,
       totalCount: innovations.length + fabrication_locale.length + projets_open_source.length
+    };
+  }
+
+  // Schémas alternatifs: détection des catégories spécifiques (avec ou sans data.donnees)
+  const altInnovationsLocales = processItems((data?.innovations_locales || data?.donnees?.innovations_locales || []), 'Innovations locales');
+  const altTechnologiesVertes = processItems((data?.technologies_vertes || data?.donnees?.technologies_vertes || []), 'Technologies vertes');
+  const altNumerique = processItems((data?.numerique || data?.donnees?.numerique || []), 'Numérique sobre');
+  const altRecherche = processItems((data?.recherche_developpement || data?.donnees?.recherche_developpement || []), 'Recherche & Développement');
+
+  if (altInnovationsLocales.length || altTechnologiesVertes.length || altNumerique.length || altRecherche.length) {
+    const total = altInnovationsLocales.length + altTechnologiesVertes.length + altNumerique.length + altRecherche.length;
+    console.log('Debug - Alternative categories processed:', { altInnovationsLocales, altTechnologiesVertes, altNumerique, altRecherche });
+    return {
+      innovations: [...altInnovationsLocales, ...altTechnologiesVertes, ...altNumerique, ...altRecherche],
+      fabrication_locale: [],
+      projets_open_source: [],
+      innovations_locales: altInnovationsLocales,
+      technologies_vertes: altTechnologiesVertes,
+      numerique: altNumerique,
+      recherche_developpement: altRecherche,
+      totalCount: total
     };
   }
 
