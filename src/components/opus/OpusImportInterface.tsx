@@ -624,7 +624,7 @@ export const OpusImportInterface: React.FC<OpusImportInterfaceProps> = ({
               placeholder="Collez ici votre JSON d'import IA ou utilisez le bouton 'Copier le format JSON' pour obtenir le modèle complet..."
               value={jsonContent}
               onChange={(e) => setJsonContent(e.target.value)}
-              className="min-h-[400px] font-mono text-sm"
+              className="min-h-[200px] max-h-[300px] font-mono text-sm resize-y"
             />
             
             {/* Affichage des erreurs de validation */}
