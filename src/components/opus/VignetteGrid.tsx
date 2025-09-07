@@ -187,33 +187,30 @@ export const VignetteGrid: React.FC<VignetteGridProps> = ({
 
   return (
     <div className={`space-y-6 ${className}`}>
-      {/* En-tête avec statistiques */}
-      <Card className={getVariantBorder()}>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-3">
-            <div className={`${getVariantColor()}`}>
-              {icon}
-            </div>
-            <div>
-              <span>{title}</span>
-              <Badge variant="secondary" className="ml-2">
-                {specialProcessing === 'vocabulary' && typeof processedData === 'object' && 'termes' in processedData ? 
-                  (processedData.termes?.length || 0) + (processedData.sources?.length || 0) :
-                  Array.isArray(processedData) ? processedData.length : 0
-                } élément{(specialProcessing === 'vocabulary' && typeof processedData === 'object' && 'termes' in processedData ? 
-                  (processedData.termes?.length || 0) + (processedData.sources?.length || 0) :
-                  Array.isArray(processedData) ? processedData.length : 0) > 1 ? 's' : ''}
-              </Badge>
-            </div>
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="text-sm text-muted-foreground leading-relaxed">
-            Exploration interactive des éléments de {title.toLowerCase()} identifiés lors de l'analyse du marché. 
-            Cliquez sur chaque vignette pour découvrir les détails et définitions.
-          </p>
-        </CardContent>
-      </Card>
+      {/* En-tête avec statistiques - Masqué pour le vocabulaire */}
+      {specialProcessing !== 'vocabulary' && (
+        <Card className={getVariantBorder()}>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-3">
+              <div className={`${getVariantColor()}`}>
+                {icon}
+              </div>
+              <div>
+                <span>{title}</span>
+                <Badge variant="secondary" className="ml-2">
+                  {Array.isArray(processedData) ? processedData.length : 0} élément{Array.isArray(processedData) && processedData.length > 1 ? 's' : ''}
+                </Badge>
+              </div>
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm text-muted-foreground leading-relaxed">
+              Exploration interactive des éléments de {title.toLowerCase()} identifiés lors de l'analyse du marché. 
+              Cliquez sur chaque vignette pour découvrir les détails et définitions.
+            </p>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Grille de vignettes - Masquée pour le vocabulaire qui a un affichage spécialisé */}
       {specialProcessing !== 'vocabulary' && Array.isArray(processedData) && (
