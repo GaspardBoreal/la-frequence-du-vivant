@@ -278,7 +278,7 @@ const FleuveTemporel: React.FC<FleuveTemporelProps> = ({ explorations, explorati
       <div className="container mx-auto px-4 py-6">
         <div className="flex items-center justify-between mb-8">
           <Button
-            onClick={() => window.location.href = `/galerie-fleuve/exploration/${window.location.pathname.split('/')[3]}`}
+            onClick={() => window.location.href = '/galerie-fleuve'}
             variant="ghost"
             size="sm"
             className="text-primary-foreground hover:bg-white/10"

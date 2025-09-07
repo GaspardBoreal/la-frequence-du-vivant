@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from 'sonner';
 import { queryClient } from './lib/queryClient';
@@ -34,7 +34,7 @@ import ExplorationPodcastDordogne from './pages/ExplorationPodcastDordogne';
 import WeatherCalendar from './pages/WeatherCalendar';
 import ProjectPresentation from './pages/ProjectPresentation';
 import GalerieFleuvePage from './pages/GalerieFleuvePage';
-import GalerieFluveExploration from './pages/GalerieFluveExploration';
+
 import ExplorationHistorique from './pages/ExplorationHistorique';
 import ExplorationEssais from './pages/ExplorationEssais';
 import ExperienceAudioContinue from './components/experience/ExperienceAudioContinue';
@@ -62,7 +62,7 @@ function App() {
             {/* Routes explorations */}
             <Route path="/explorations" element={<ExplorationsList />} />
             <Route path="/galerie-fleuve" element={<GalerieFleuvePage />} />
-            <Route path="/galerie-fleuve/exploration/:slug" element={<GalerieFluveExploration />} />
+            <Route path="/galerie-fleuve/exploration/:slug" element={<Navigate to="/galerie-fleuve" replace />} />
             <Route path="/galerie-fleuve/exploration/:slug/ecouter" element={<ExperienceAudioContinue />} />
             <Route path="/galerie-fleuve/exploration/:slug/lire" element={<ExperienceLectureOptimisee />} />
             <Route path="/galerie-fleuve/exploration/:slug/lire/:textId" element={<ExperienceLectureOptimisee />} />
