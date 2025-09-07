@@ -76,12 +76,12 @@ export const InteractiveVignette: React.FC<InteractiveVignetteProps> = ({
             {/* Nom scientifique et statut de conservation */}
             <div className="space-y-1">
               {data.nom_scientifique && (
-                <p className="text-sm font-normal text-slate-600 italic">
+                <p className="text-sm font-normal text-slate-800 italic">
                   {data.nom_scientifique}
                 </p>
               )}
               {data.statut_conservation && (
-                <p className="text-sm font-normal text-slate-700">
+                <p className="text-sm font-normal text-emerald-700 font-medium">
                   {data.statut_conservation}
                 </p>
               )}
@@ -138,12 +138,12 @@ export const InteractiveVignette: React.FC<InteractiveVignetteProps> = ({
                         {data.nom_commun || data.titre}
                       </div>
                       {data.nom_scientifique && (
-                        <div className="text-base font-normal italic text-slate-600">
+                        <div className="text-base font-normal italic text-slate-800">
                           {data.nom_scientifique}
                         </div>
                       )}
                       {data.statut_conservation && (
-                        <div className="text-sm font-normal text-slate-700">
+                        <div className="text-sm font-medium text-emerald-700">
                           {data.statut_conservation}
                         </div>
                       )}
@@ -165,23 +165,25 @@ export const InteractiveVignette: React.FC<InteractiveVignetteProps> = ({
                   
                   {/* Informations spécifiques aux espèces */}
                   {variant === 'species' && (
-                    <div className="space-y-3 p-4 bg-success/5 rounded-lg border border-success/20">
+                    <div className="space-y-4 p-5 bg-emerald-50/80 rounded-xl border border-emerald-200/60">
                       {data.nom_commun && (
                         <div>
-                          <h4 className="font-medium text-sm text-muted-foreground mb-1">Nom commun</h4>
-                          <p className="font-bold text-success">{data.nom_commun}</p>
+                          <h4 className="font-semibold text-sm text-slate-600 mb-2">Nom commun</h4>
+                          <p className="font-bold text-lg text-emerald-800">{data.nom_commun}</p>
                         </div>
                       )}
                       {data.nom_scientifique && (
                         <div>
-                          <h4 className="font-medium text-sm text-muted-foreground mb-1">Nom scientifique</h4>
-                          <p className="italic text-slate-700">{data.nom_scientifique}</p>
+                          <h4 className="font-semibold text-sm text-slate-600 mb-2">Nom scientifique</h4>
+                          <p className="italic text-base text-slate-800 font-medium">{data.nom_scientifique}</p>
                         </div>
                       )}
                       {data.statut_conservation && (
                         <div>
-                          <h4 className="font-medium text-sm text-muted-foreground mb-1">Statut de conservation</h4>
-                          <p className="text-slate-700">{data.statut_conservation}</p>
+                          <h4 className="font-semibold text-sm text-slate-600 mb-2">Statut de conservation</h4>
+                          <div className="inline-flex items-center px-3 py-2 rounded-lg bg-emerald-100 border border-emerald-300">
+                            <p className="text-emerald-800 font-semibold">{data.statut_conservation}</p>
+                          </div>
                         </div>
                       )}
                     </div>
