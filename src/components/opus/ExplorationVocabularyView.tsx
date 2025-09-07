@@ -138,27 +138,31 @@ export const ExplorationVocabularyView: React.FC<ExplorationVocabularyViewProps>
         processVocabularyCategory(vocabularyData.pratiques, 'pratiques');
       }
 
-      // Aussi traiter l'ancien format si présent
-      const processed = processVocabularyData(vocabularyData);
-      processed.termes.forEach(term => {
-        const titre = term.titre;
-        const key = `${titre}_legacy_${importRecord.marche_id}`.toLowerCase().replace(/\s+/g, '_');
-        
-        if (!vocabularyMap.has(key)) {
-          vocabularyMap.set(key, {
-            titre,
-            description_courte: term.description_courte,
-            type: term.type,
-            details: term.details,
-            category: term.category === 'termes' ? 'Termes locaux' : term.category,
-            metadata: term.metadata,
-            marchesCount: 1,
-            marches: [importRecord.marche_nom || 'Marché inconnu'],
-            lastImportDate: importRecord.import_date,
-            importId: importRecord.id
-          });
-        }
-      });
+      // Traiter l'ancien format uniquement s'il n'y a pas de nouveau format
+      const hasNewFormat = vocabularyData.termes_locaux || vocabularyData.phenomenes || vocabularyData.pratiques;
+      
+      if (!hasNewFormat) {
+        const processed = processVocabularyData(vocabularyData);
+        processed.termes.forEach(term => {
+          const titre = term.titre;
+          const key = `${titre}_legacy_${importRecord.marche_id}`.toLowerCase().replace(/\s+/g, '_');
+          
+          if (!vocabularyMap.has(key)) {
+            vocabularyMap.set(key, {
+              titre,
+              description_courte: term.description_courte,
+              type: term.type,
+              details: term.details,
+              category: term.category === 'termes' ? 'Termes locaux' : term.category,
+              metadata: term.metadata,
+              marchesCount: 1,
+              marches: [importRecord.marche_nom || 'Marché inconnu'],
+              lastImportDate: importRecord.import_date,
+              importId: importRecord.id
+            });
+          }
+        });
+      }
     });
 
     return Array.from(vocabularyMap.values());
