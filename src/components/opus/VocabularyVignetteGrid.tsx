@@ -162,6 +162,49 @@ const VocabularyVignetteGrid: React.FC<VocabularyVignetteGridProps> = ({
       });
     }
 
+    // FALLBACKS: si phénomènes/pratiques absents au niveau racine, tenter extraction depuis des structures imbriquées
+    if (result.phenomenes.length === 0) {
+      try {
+        const termsArray = Array.isArray(vocabularyData?.termes_locaux) ? vocabularyData.termes_locaux : [];
+        termsArray.forEach((item: any) => {
+          const nested = item?.metadata?.termes_locaux?.phenomenes || item?.metadata?.phenomenes;
+          if (Array.isArray(nested)) {
+            nested.forEach((p: any) => {
+              const titre = typeof p === 'string' ? p : (p?.nom || p?.titre);
+              if (!titre) return;
+              result.phenomenes.push({
+                titre,
+                description: typeof p === 'object' ? (p?.description || p?.definition || '') : '',
+                source_ids: typeof p === 'object' ? (p?.source_ids || []) : [],
+                metadata: typeof p === 'object' ? { ...p, source_ids: p?.source_ids } : { nom: p }
+              });
+            });
+          }
+        });
+      } catch {}
+    }
+
+    if (result.pratiques.length === 0) {
+      try {
+        const termsArray = Array.isArray(vocabularyData?.termes_locaux) ? vocabularyData.termes_locaux : [];
+        termsArray.forEach((item: any) => {
+          const nested = item?.metadata?.termes_locaux?.pratiques || item?.metadata?.pratiques;
+          if (Array.isArray(nested)) {
+            nested.forEach((p: any) => {
+              const titre = typeof p === 'string' ? p : (p?.nom || p?.titre);
+              if (!titre) return;
+              result.pratiques.push({
+                titre,
+                description: typeof p === 'object' ? (p?.description || p?.definition || '') : '',
+                source_ids: typeof p === 'object' ? (p?.source_ids || []) : [],
+                metadata: typeof p === 'object' ? { ...p, source_ids: p?.source_ids } : { nom: p }
+              });
+            });
+          }
+        });
+      } catch {}
+    }
+
     // Trier alphabétiquement chaque catégorie
     result.termesLocaux.sort((a, b) => a.titre.localeCompare(b.titre, 'fr', { sensitivity: 'base' }));
     result.phenomenes.sort((a, b) => a.titre.localeCompare(b.titre, 'fr', { sensitivity: 'base' }));
