@@ -113,13 +113,15 @@ export const collectAvailableYears = (sources: SourceWithYear[]): string[] => {
 };
 
 /**
- * Generate short name for source display
+ * Generate short name for source display with better fallbacks
  */
 export const generateShortName = (source: SourceWithYear): string => {
-  if (source.nom && source.nom !== `Source ${source.id}`) {
+  // Priority 1: Use nom if available and valid
+  if (source.nom && source.nom !== `Source ${source.id}` && source.nom.trim() !== '') {
     return source.nom;
   }
   
+  // Priority 2: Extract domain from URL
   if (source.url && source.url !== 'URL non disponible') {
     try {
       const hostname = new URL(source.url).hostname.replace('www.', '');
@@ -134,16 +136,37 @@ export const generateShortName = (source: SourceWithYear): string => {
         'ign.fr': 'IGN',
         'insee.fr': 'INSEE',
         'inpn.mnhn.fr': 'INPN',
-        'gbif.org': 'GBIF'
+        'gbif.org': 'GBIF',
+        'openstreetmap.org': 'OpenStreetMap',
+        'geoportail.gouv.fr': 'Géoportail'
       };
       
-      return domainMap[hostname] || hostname.split('.')[0];
-    } catch {
-      return source.id;
+      const mappedName = domainMap[hostname];
+      if (mappedName) return mappedName;
+      
+      // Extract first part of domain if no mapping
+      const domainParts = hostname.split('.');
+      if (domainParts.length > 0) {
+        const firstPart = domainParts[0];
+        return firstPart.charAt(0).toUpperCase() + firstPart.slice(1);
+      }
+    } catch (error) {
+      console.warn('Error parsing URL:', source.url, error);
     }
   }
   
-  return source.id;
+  // Priority 3: Use description if available
+  if (source.description && source.description !== 'Détails non disponibles' && source.description.trim() !== '') {
+    // Take first 20 characters of description
+    return source.description.slice(0, 20) + (source.description.length > 20 ? '...' : '');
+  }
+  
+  // Final fallback: Use ID with proper formatting
+  if (source.id && source.id !== 'unknown') {
+    return `Source ${source.id}`;
+  }
+  
+  return 'Source inconnue';
 };
 
 /**

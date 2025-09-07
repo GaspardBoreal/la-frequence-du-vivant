@@ -58,13 +58,15 @@ export const VocabularySourcesCard: React.FC<VocabularySourcesCardProps> = ({
   const variant = 'vocabulary';
   const styles = getVignetteStyles(variant);
   
-  // Generate compact summary for card display
-  const sourcesSummary = formatSourcesSummary(normalizedSources, 2);
+  // Generate compact summary for card display with better fallback
+  const sourcesSummary = normalizedSources.length > 0 
+    ? formatSourcesSummary(normalizedSources, 2)
+    : "Aucune source disponible";
 
   return (
     <Dialog open={isDetailOpen} onOpenChange={setIsDetailOpen}>
       <DialogTrigger asChild>
-        <Card className={`group cursor-pointer ${styles.container} ${className}`}>
+        <Card className={`group cursor-pointer transition-all duration-300 hover:scale-[1.02] hover:shadow-xl ${styles.container} ${className}`}>
           <CardHeader className="pb-3">
             <CardTitle className="flex items-center justify-between">
               <div className="flex items-center space-x-2">
@@ -78,30 +80,30 @@ export const VocabularySourcesCard: React.FC<VocabularySourcesCardProps> = ({
           </CardHeader>
 
           <CardContent className="space-y-3">
-            {/* Affichage compact des sources */}
-            <div className="p-4 rounded-lg bg-slate-900/90 backdrop-blur-sm border border-white/10 shadow-lg">
+            {/* Affichage compact des sources avec hover amélioré */}
+            <div className="p-4 rounded-lg bg-slate-900/90 backdrop-blur-sm border border-white/10 shadow-lg group-hover:bg-slate-800/95 group-hover:border-vocabulary/30 transition-all duration-300">
               <div className="space-y-2">
-                <div className="text-base font-medium text-white leading-relaxed">
+                <div className="text-base font-medium text-white leading-relaxed group-hover:text-vocabulary-light transition-colors duration-300">
                   {sourcesSummary}
                 </div>
-                <div className="text-sm font-medium text-slate-300">
+                <div className="text-sm font-medium text-slate-300 group-hover:text-slate-200 transition-colors duration-300">
                   {normalizedSources.length} source{normalizedSources.length > 1 ? 's' : ''} référencée{normalizedSources.length > 1 ? 's' : ''}
                 </div>
                 
-                {/* Indicateur de progression */}
-                <div className="w-full bg-slate-700/40 rounded-full h-1.5 overflow-hidden mt-3">
+                {/* Indicateur de progression avec animation hover */}
+                <div className="w-full bg-slate-700/40 rounded-full h-1.5 overflow-hidden mt-3 group-hover:bg-slate-600/50 transition-all duration-300">
                   <div 
-                    className="h-full transition-all duration-1000 group-hover:opacity-90 bg-gradient-to-r from-vocabulary to-vocabulary-light"
+                    className="h-full transition-all duration-1000 bg-gradient-to-r from-vocabulary to-vocabulary-light group-hover:from-vocabulary-light group-hover:to-vocabulary group-hover:shadow-lg"
                     style={{ width: '100%' }}
                   />
                 </div>
               </div>
             </div>
 
-            {/* Indicateur d'action */}
-            <div className="flex items-center justify-center text-xs text-white/70 opacity-0 group-hover:opacity-100 transition-all duration-300">
-              <Eye className="w-3 h-3 mr-1" />
-              <span>Cliquer pour voir les détails</span>
+            {/* Indicateur d'action avec animation améliorée */}
+            <div className="flex items-center justify-center text-xs text-white/70 opacity-0 group-hover:opacity-100 group-hover:text-vocabulary-light transition-all duration-300 transform group-hover:translate-y-[-2px]">
+              <Eye className="w-3 h-3 mr-1 group-hover:scale-110 transition-transform duration-300" />
+              <span className="font-medium">Cliquer pour voir les détails</span>
             </div>
           </CardContent>
         </Card>
