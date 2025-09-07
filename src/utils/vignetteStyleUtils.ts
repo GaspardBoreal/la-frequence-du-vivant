@@ -63,11 +63,11 @@ export const getVignetteStyles = (variant: VignetteVariant): VignetteStyleClasse
       
     case 'technology':
       return {
-        container: 'bg-paper/95 hover:bg-paper border-border/20 shadow-md hover:shadow-lg transition-all duration-300 backdrop-blur-sm',
-        title: 'text-ink font-bold tracking-wide text-lg',
-        secondary: 'text-slate-600 italic font-medium',
-        status: 'text-slate-700 font-bold tracking-wide',
-        badge: 'bg-primary/10 text-primary border-primary/20 font-bold'
+        container: "border-slate/20 bg-gradient-to-br from-slate/5 to-white/95 hover:from-slate/8 hover:to-white shadow-sm hover:shadow-slate/20",
+        title: "text-slate-700 font-semibold",
+        secondary: "text-slate-600",
+        status: "text-slate-500",
+        badge: "bg-slate/10 text-slate-700 border-slate/20"
       };
       
     default:
@@ -95,7 +95,7 @@ export const getDialogHeaderStyles = (variant: VignetteVariant) => {
     case 'agro':
       return 'text-accent';
     case 'technology':
-      return 'text-primary';
+      return 'text-slate-700';
     default:
       return 'text-foreground';
   }

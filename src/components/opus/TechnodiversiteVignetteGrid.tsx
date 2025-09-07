@@ -20,10 +20,10 @@ export const TechnodiversiteVignetteGrid: React.FC<TechnodiversiteVignetteGridPr
   }, [technodiversiteData]);
 
   const extraSections: { key: keyof typeof processedData; title: string; bgClasses: string; textClass: string; emoji: string }[] = [
-    { key: 'innovations_locales' as any, title: 'Innovations Locales', bgClasses: 'from-tech-biomimicry-bg to-paper border-tech-biomimicry/20', textClass: 'text-tech-biomimicry', emoji: '🛠️' },
-    { key: 'technologies_vertes' as any, title: 'Technologies Vertes', bgClasses: 'from-success/10 to-paper border-success/20', textClass: 'text-success', emoji: '🌿' },
-    { key: 'numerique' as any, title: 'Numérique sobre', bgClasses: 'from-tech-openhardware-bg to-paper border-tech-openhardware/20', textClass: 'text-tech-openhardware', emoji: '💾' },
-    { key: 'recherche_developpement' as any, title: 'R&D', bgClasses: 'from-tech-lowtech-bg to-paper border-tech-lowtech/20', textClass: 'text-tech-lowtech', emoji: '🧪' },
+    { key: 'innovations_locales' as any, title: 'Innovations Locales', bgClasses: 'from-stone/8 to-white border-stone/15', textClass: 'text-stone-700', emoji: '🛠️' },
+    { key: 'technologies_vertes' as any, title: 'Technologies Vertes', bgClasses: 'from-neutral/8 to-white border-neutral/15', textClass: 'text-neutral-700', emoji: '🌿' },
+    { key: 'numerique' as any, title: 'Numérique sobre', bgClasses: 'from-zinc/8 to-white border-zinc/15', textClass: 'text-zinc-700', emoji: '💾' },
+    { key: 'recherche_developpement' as any, title: 'R&D', bgClasses: 'from-gray/8 to-white border-gray/15', textClass: 'text-gray-700', emoji: '🧪' },
   ];
 
   if (processedData.totalCount === 0) {
@@ -45,14 +45,14 @@ export const TechnodiversiteVignetteGrid: React.FC<TechnodiversiteVignetteGridPr
       {/* Innovations */}
       {processedData.innovations.length > 0 && (
         <div className="space-y-6">
-          <div className="p-4 rounded-xl bg-gradient-to-r from-tech-generic-bg to-paper border border-tech-generic/20 shadow-sm">
+          <div className="p-4 rounded-xl bg-gradient-to-r from-slate/8 to-white border border-slate/15 shadow-sm">
             <div className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-tech-generic/20 to-tech-generic/10 border border-tech-generic/30 flex items-center justify-center shadow-sm">
+              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-slate/20 to-slate/10 border border-slate/30 flex items-center justify-center shadow-sm">
                 <span className="text-2xl">🚀</span>
               </div>
               <div className="flex-1">
-                <h3 className="font-bold text-xl text-tech-generic tracking-wide">Innovations Technologiques</h3>
-                <Badge variant="secondary" className="mt-1 bg-tech-generic-bg text-tech-generic border-tech-generic/30 font-bold px-3 py-1">
+                <h3 className="font-bold text-xl text-slate-700 tracking-wide">Innovations Technologiques</h3>
+                <Badge variant="secondary" className="mt-1 bg-slate/10 text-slate-700 border-slate/30 font-bold px-3 py-1">
                   {processedData.innovations.length} innovation{processedData.innovations.length > 1 ? 's' : ''}
                 </Badge>
               </div>
@@ -74,14 +74,14 @@ export const TechnodiversiteVignetteGrid: React.FC<TechnodiversiteVignetteGridPr
       {/* Fabrication locale */}
       {processedData.fabrication_locale.length > 0 && (
         <div className="space-y-6">
-          <div className="p-4 rounded-xl bg-gradient-to-r from-tech-lowtech-bg to-paper border border-tech-lowtech/20 shadow-sm">
+          <div className="p-4 rounded-xl bg-gradient-to-r from-gray/8 to-white border border-gray/15 shadow-sm">
             <div className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-tech-lowtech/20 to-tech-lowtech/10 border border-tech-lowtech/30 flex items-center justify-center shadow-sm">
+              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-gray/20 to-gray/10 border border-gray/30 flex items-center justify-center shadow-sm">
                 <span className="text-2xl">🔧</span>
               </div>
               <div className="flex-1">
-                <h3 className="font-bold text-xl text-tech-lowtech tracking-wide">Fabrication Locale</h3>
-                <Badge variant="secondary" className="mt-1 bg-tech-lowtech-bg text-tech-lowtech border-tech-lowtech/30 font-bold px-3 py-1">
+                <h3 className="font-bold text-xl text-gray-700 tracking-wide">Fabrication Locale</h3>
+                <Badge variant="secondary" className="mt-1 bg-gray/10 text-gray-700 border-gray/30 font-bold px-3 py-1">
                   {processedData.fabrication_locale.length} pratique{processedData.fabrication_locale.length > 1 ? 's' : ''}
                 </Badge>
               </div>
@@ -103,14 +103,14 @@ export const TechnodiversiteVignetteGrid: React.FC<TechnodiversiteVignetteGridPr
       {/* Projets Open Source */}
       {processedData.projets_open_source.length > 0 && (
         <div className="space-y-6">
-          <div className="p-4 rounded-xl bg-gradient-to-r from-success/10 to-paper border border-success/20 shadow-sm">
+          <div className="p-4 rounded-xl bg-gradient-to-r from-zinc/8 to-white border border-zinc/15 shadow-sm">
             <div className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-success/20 to-success/10 border border-success/30 flex items-center justify-center shadow-sm">
+              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-zinc/20 to-zinc/10 border border-zinc/30 flex items-center justify-center shadow-sm">
                 <span className="text-2xl">🔓</span>
               </div>
               <div className="flex-1">
-                <h3 className="font-bold text-xl text-success tracking-wide">Projets Open Source</h3>
-                <Badge variant="secondary" className="mt-1 bg-success/10 text-success border-success/30 font-bold px-3 py-1">
+                <h3 className="font-bold text-xl text-zinc-700 tracking-wide">Projets Open Source</h3>
+                <Badge variant="secondary" className="mt-1 bg-zinc/10 text-zinc-700 border-zinc/30 font-bold px-3 py-1">
                   {processedData.projets_open_source.length} projet{processedData.projets_open_source.length > 1 ? 's' : ''}
                 </Badge>
               </div>
@@ -141,7 +141,7 @@ export const TechnodiversiteVignetteGrid: React.FC<TechnodiversiteVignetteGridPr
                 </div>
                 <div className="flex-1">
                   <h3 className={`font-bold text-xl ${textClass} tracking-wide`}>{title}</h3>
-                  <Badge variant="secondary" className={`mt-1 font-bold px-3 py-1 ${textClass.replace('text-', 'bg-').replace('-', '-')}/10 ${textClass} border-current/30`}>
+                  <Badge variant="secondary" className={`mt-1 font-bold px-3 py-1 bg-slate/10 text-slate-700 border-slate/20`}>
                     {arr.length} élément{arr.length > 1 ? 's' : ''}
                   </Badge>
                 </div>

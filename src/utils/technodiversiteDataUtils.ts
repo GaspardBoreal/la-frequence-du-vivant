@@ -199,27 +199,8 @@ export const getTechTypeIcon = (type: string) => {
  * Obtient la couleur du badge pour le type de technologie
  */
 export const getTechTypeBadgeColor = (type: string): string => {
-  const typeKey = type?.toLowerCase()?.replace(/[^a-z0-9]/g, '');
-  
-  switch (typeKey) {
-    case 'biomimicry':
-    case 'biomimetisme':
-      return 'bg-tech-biomimicry-bg text-tech-biomimicry border-tech-biomimicry/30 font-bold text-sm px-3 py-1.5';
-    case 'lowtech':
-    case 'lowtechnologie':
-    case 'technologielow':
-      return 'bg-tech-lowtech-bg text-tech-lowtech border-tech-lowtech/30 font-bold text-sm px-3 py-1.5';
-    case 'openhardware':
-    case 'opensourcehardware':
-    case 'hardwareopen':
-      return 'bg-tech-openhardware-bg text-tech-openhardware border-tech-openhardware/30 font-bold text-sm px-3 py-1.5';
-    case 'technologiegenerique':
-    case 'technologie':
-    case 'tech':
-      return 'bg-tech-generic-bg text-tech-generic border-tech-generic/30 font-bold text-sm px-3 py-1.5';
-    default:
-      return 'bg-slate-100 text-slate-800 border-slate-300 font-bold text-sm px-3 py-1.5';
-  }
+  // Utiliser une palette monochrome subtile pour tous les types
+  return 'bg-slate/10 text-slate-700 border-slate/20';
 };
 
 /**
