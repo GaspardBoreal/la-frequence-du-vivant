@@ -51,7 +51,7 @@ export const TechnodiversiteVignetteGrid: React.FC<TechnodiversiteVignetteGridPr
                 <span className="text-2xl">🚀</span>
               </div>
               <div className="flex-1">
-                <h3 className="font-bold text-xl text-slate-700 tracking-wide">Innovations Technologiques</h3>
+                <h3 className="font-bold text-xl text-white tracking-wide">Innovations Technologiques</h3>
                 <Badge variant="secondary" className="mt-1 bg-slate/10 text-slate-700 border-slate/30 font-bold px-3 py-1">
                   {processedData.innovations.length} innovation{processedData.innovations.length > 1 ? 's' : ''}
                 </Badge>
