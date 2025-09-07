@@ -117,7 +117,8 @@ const VocabularyVignetteGrid: React.FC<VocabularyVignetteGridProps> = ({
     } else {
       // Logique de classification automatique basée sur les noms/types existants (ancien format)
       Object.entries(vocabularyData).forEach(([key, value]: [string, any]) => {
-        if (key === 'source_ids' || key === 'sources') return;
+        // Exclure les clés techniques et métadonnées
+        if (key === 'source_ids' || key === 'sources' || key === 'description' || key === 'donnees' || key === 'metadata') return;
 
         const item: VocabularyItem = {
           titre: value?.nom || value?.titre || key,
@@ -130,6 +131,11 @@ const VocabularyVignetteGrid: React.FC<VocabularyVignetteGridProps> = ({
         const itemName = item.titre.toLowerCase();
         const itemType = value?.type?.toLowerCase() || '';
 
+        // Ne traiter que les vraies entrées de vocabulaire (pas les clés techniques)
+        if (itemName === 'description' || itemName === 'donnees' || itemName === 'metadata') {
+          return; // Ignorer complètement
+        }
+
         if (['boucs', 'créa', 'gatte', 'palus', 'pibale'].some(term => itemName.includes(term)) ||
             itemType.includes('terme') || itemType.includes('local')) {
           result.termesLocaux.push(item);
@@ -141,8 +147,10 @@ const VocabularyVignetteGrid: React.FC<VocabularyVignetteGridProps> = ({
                   itemName.includes('navigation') || itemType.includes('pratique') || itemType.includes('activité')) {
           result.pratiques.push(item);
         } else {
-          // Par défaut, classer comme terme local
-          result.termesLocaux.push(item);
+          // Pour les autres, vérifier si c'est vraiment du vocabulaire avant de classer
+          if (typeof value === 'object' && value !== null && (value.terme || value.definition || value.description)) {
+            result.termesLocaux.push(item);
+          }
         }
       });
     }
