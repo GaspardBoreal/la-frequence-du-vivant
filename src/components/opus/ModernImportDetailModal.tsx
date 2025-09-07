@@ -10,6 +10,7 @@ import { SpeciesVignetteGrid } from './SpeciesVignetteGrid';
 import { VignetteGrid } from './VignetteGrid';
 import { ContexteMetricCard } from './ContexteMetricCard';
 import { mapContexteData } from '@/utils/contexteDataMapper';
+import { getVocabularyTermsCount } from '@/utils/vocabularyDataUtils';
 import { 
   Calendar, 
   Database, 
@@ -229,7 +230,7 @@ export const ModernImportDetailModal: React.FC<ModernImportDetailModalProps> = (
                   <CardContent>
                     <div className="text-2xl font-bold text-info mb-1">
                       {importRecord.contexte_data?.vocabulaire_local ? 
-                        Object.keys(importRecord.contexte_data.vocabulaire_local).length : 0}
+                        getVocabularyTermsCount(importRecord.contexte_data.vocabulaire_local) : 0}
                     </div>
                     <p className="text-xs text-muted-foreground">termes locaux</p>
                   </CardContent>
@@ -384,6 +385,7 @@ export const ModernImportDetailModal: React.FC<ModernImportDetailModalProps> = (
                 variant="vocabulary"
                 icon={<BookOpen className="w-5 h-5" />}
                 emptyMessage="Aucun terme de vocabulaire local n'a été identifié"
+                specialProcessing="vocabulary"
               />
             </TabsContent>
 

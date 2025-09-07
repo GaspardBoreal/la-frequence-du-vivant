@@ -38,6 +38,7 @@ import { ExplorationSpeciesView } from './ExplorationSpeciesView';
 import SEOHead from '@/components/SEOHead';
 import { useAnimatedCounter } from '@/hooks/useAnimatedCounter';
 import { getProcessedSpeciesCount } from '@/utils/speciesDataUtils';
+import { getVocabularyTermsCount } from '@/utils/vocabularyDataUtils';
 
 interface ImportRecord {
   id: string;
@@ -99,8 +100,7 @@ export const ModernImportDashboard: React.FC = () => {
   );
   const totalVocabulary = useAnimatedCounter(
     filteredImports.reduce((acc, imp) => {
-      const vocab = imp.contexte_data?.vocabulaire_local;
-      return acc + (Array.isArray(vocab) ? vocab.length : Object.keys(vocab || {}).length);
+      return acc + getVocabularyTermsCount(imp.contexte_data?.vocabulaire_local);
     }, 0), 
     1200
   );
@@ -645,7 +645,7 @@ export const ModernImportDashboard: React.FC = () => {
                     <div className="space-y-3">
                       {filteredImports.map((importRecord) => {
                         const speciesCount = getProcessedSpeciesCount(importRecord.contexte_data?.especes_caracteristiques);
-                        const vocabularyCount = importRecord.contexte_data?.vocabulaire_local?.length || 0;
+                        const vocabularyCount = getVocabularyTermsCount(importRecord.contexte_data?.vocabulaire_local);
                         const completudeScore = importRecord.completude_score || 0;
                         
                         // Déterminer le statut basé sur le score de complétude

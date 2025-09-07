@@ -19,6 +19,7 @@ import {
   PieChart
 } from 'lucide-react';
 import { getProcessedSpeciesCount, processSpeciesData } from '@/utils/speciesDataUtils';
+import { getVocabularyTermsCount } from '@/utils/vocabularyDataUtils';
 
 interface ImportRecord {
   id: string;
@@ -68,8 +69,7 @@ export const DataInsightsDashboard: React.FC<DataInsightsDashboardProps> = ({ im
 
     // Vocabulary metrics
     const totalVocabulary = imports.reduce((acc, imp) => {
-      const vocab = imp.contexte_data?.vocabulaire_local;
-      return acc + (Array.isArray(vocab) ? vocab.length : Object.keys(vocab || {}).length);
+      return acc + getVocabularyTermsCount(imp.contexte_data?.vocabulaire_local);
     }, 0);
 
     // Technology metrics
