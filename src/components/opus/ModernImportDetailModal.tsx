@@ -55,12 +55,14 @@ interface ModernImportDetailModalProps {
   importRecord: ImportRecord;
   open: boolean;
   onClose: () => void;
+  defaultTab?: string; // Nouvel prop pour spécifier l'onglet par défaut
 }
 
 export const ModernImportDetailModal: React.FC<ModernImportDetailModalProps> = ({
   importRecord,
   open,
-  onClose
+  onClose,
+  defaultTab = "overview" // Par défaut sur "Vue d'ensemble"
 }) => {
   const [selectedYear, setSelectedYear] = useState<string | null>(null);
   const [showJsonView, setShowJsonView] = useState(false);
@@ -168,7 +170,7 @@ export const ModernImportDetailModal: React.FC<ModernImportDetailModalProps> = (
           </DialogTitle>
         </DialogHeader>
 
-        <Tabs defaultValue="overview" className="flex-1">
+        <Tabs defaultValue={defaultTab} className="flex-1">
           <div className="hidden md:block">
             <TabsList className="grid w-full grid-cols-7 mb-6 bg-background/50 backdrop-blur-sm border border-border/30">
               <TabsTrigger value="overview" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground text-xs">

@@ -36,6 +36,7 @@ import { DataInsightsDashboard } from './DataInsightsDashboard';
 import { OpusImportInterface } from './OpusImportInterface';
 import SEOHead from '@/components/SEOHead';
 import { useAnimatedCounter } from '@/hooks/useAnimatedCounter';
+import { getProcessedSpeciesCount } from '@/utils/speciesDataUtils';
 
 interface ImportRecord {
   id: string;
@@ -74,8 +75,10 @@ export const ModernImportDashboard: React.FC = () => {
   const [filteredImports, setFilteredImports] = useState<ImportRecord[]>([]);
   const [importRuns, setImportRuns] = useState<ImportRunRecord[]>([]);
   const [selectedImport, setSelectedImport] = useState<ImportRecord | null>(null);
+  const [selectedImportForSpecies, setSelectedImportForSpecies] = useState<ImportRecord | null>(null);
   const [importModalOpen, setImportModalOpen] = useState(false);
   const [detailModalOpen, setDetailModalOpen] = useState(false);
+  const [detailModalDefaultTab, setDetailModalDefaultTab] = useState<string>("overview");
   const [loading, setLoading] = useState(true);
   const [historyLoading, setHistoryLoading] = useState(false);
   const [activeTab, setActiveTab] = useState('dashboard');
@@ -89,8 +92,7 @@ export const ModernImportDashboard: React.FC = () => {
   const totalImports = useAnimatedCounter(filteredImports.length, 1000);
   const totalSpecies = useAnimatedCounter(
     filteredImports.reduce((acc, imp) => {
-      const species = imp.contexte_data?.especes_caracteristiques;
-      return acc + (Array.isArray(species) ? species.length : Object.keys(species || {}).length);
+      return acc + getProcessedSpeciesCount(imp.contexte_data?.especes_caracteristiques);
     }, 0), 
     1500
   );
@@ -218,7 +220,21 @@ export const ModernImportDashboard: React.FC = () => {
 
   const handleImportClick = (importRecord: ImportRecord) => {
     setSelectedImport(importRecord);
+    setDetailModalDefaultTab("overview");
     setDetailModalOpen(true);
+  };
+
+  const handleSpeciesClick = () => {
+    // Prendre le premier import avec des espèces pour l'exemple
+    const importWithSpecies = filteredImports.find(imp => 
+      getProcessedSpeciesCount(imp.contexte_data?.especes_caracteristiques) > 0
+    );
+    
+    if (importWithSpecies) {
+      setSelectedImportForSpecies(importWithSpecies);
+      setDetailModalDefaultTab("species");
+      setDetailModalOpen(true);
+    }
   };
 
   const handleHomeClick = () => {
@@ -418,7 +434,10 @@ export const ModernImportDashboard: React.FC = () => {
                   </CardContent>
                 </Card>
 
-                <Card className="bg-gradient-to-br from-accent/10 to-accent/5 border-accent/20 hover:shadow-lg hover:shadow-accent/10 transition-all duration-300">
+                <Card 
+                  className="bg-gradient-to-br from-accent/10 to-accent/5 border-accent/20 hover:shadow-lg hover:shadow-accent/10 transition-all duration-300 cursor-pointer"
+                  onClick={handleSpeciesClick}
+                >
                   <CardHeader className="pb-3">
                     <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
                       <Leaf className="w-4 h-4" />
@@ -621,7 +640,7 @@ export const ModernImportDashboard: React.FC = () => {
                   ) : (
                     <div className="space-y-3">
                       {filteredImports.map((importRecord) => {
-                        const speciesCount = importRecord.contexte_data?.especes_caracteristiques?.length || 0;
+                        const speciesCount = getProcessedSpeciesCount(importRecord.contexte_data?.especes_caracteristiques);
                         const vocabularyCount = importRecord.contexte_data?.vocabulaire_local?.length || 0;
                         const completudeScore = importRecord.completude_score || 0;
                         
@@ -706,14 +725,16 @@ export const ModernImportDashboard: React.FC = () => {
         </div>
 
         {/* Modals */}
-        {selectedImport && (
+        {(selectedImport || selectedImportForSpecies) && (
           <ModernImportDetailModal
-            importRecord={selectedImport}
+            importRecord={(selectedImportForSpecies || selectedImport)!}
             open={detailModalOpen}
             onClose={() => {
               setDetailModalOpen(false);
               setSelectedImport(null);
+              setSelectedImportForSpecies(null);
             }}
+            defaultTab={detailModalDefaultTab}
           />
         )}
 

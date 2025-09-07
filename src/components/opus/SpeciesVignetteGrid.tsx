@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { InteractiveVignette } from './InteractiveVignette';
+import { processSpeciesData, getProcessedSpeciesCount } from '@/utils/speciesDataUtils';
 import { 
   Leaf, 
   Fish, 
@@ -33,72 +34,7 @@ export const SpeciesVignetteGrid: React.FC<SpeciesVignetteGridProps> = ({
 
   // Process and categorize species data
   const processedSpecies = useMemo(() => {
-    if (!speciesData) return { flore: [], faune: {} };
-
-    const flore: any[] = [];
-    const faune: { [key: string]: any[] } = {
-      poissons: [],
-      oiseaux: [],
-      insectes: [],
-      reptiles: [],
-      mammiferes: [],
-      autres: []
-    };
-
-    // Extract species from various data structures
-    Object.entries(speciesData).forEach(([key, value]) => {
-      if (Array.isArray(value)) {
-        value.forEach(item => {
-          if (typeof item === 'object' && item !== null) {
-        const species = {
-          titre: item.nom || item.espece || item.titre || key,
-          nom_commun: item.nom_commun || item.nom || item.espece || item.titre || key,
-          nom_scientifique: item.nom_scientifique || item.nom_latin || item.scientific_name || '',
-          statut_conservation: item.statut_conservation || item.statut || item.conservation_status || item.protection || 'Non renseigné',
-          description_courte: item.description || item.caracteristiques || '',
-          type: item.type || 'Non classé',
-          category: key,
-          metadata: item
-        };
-
-            // Categorization logic based on type or characteristics
-            const type = (item.type || '').toLowerCase();
-            const description = (item.description || '').toLowerCase();
-            
-            if (type.includes('plante') || type.includes('flore') || key.toLowerCase().includes('flore')) {
-              flore.push({ ...species, category: 'Flore' });
-            } else if (type.includes('poisson') || description.includes('poisson')) {
-              faune.poissons.push({ ...species, category: 'Poissons' });
-            } else if (type.includes('oiseau') || description.includes('oiseau') || description.includes('volatile')) {
-              faune.oiseaux.push({ ...species, category: 'Oiseaux' });
-            } else if (type.includes('insecte') || description.includes('insecte') || description.includes('arthropode')) {
-              faune.insectes.push({ ...species, category: 'Insectes' });
-            } else if (type.includes('reptile') || description.includes('reptile') || description.includes('serpent')) {
-              faune.reptiles.push({ ...species, category: 'Reptiles' });
-            } else if (type.includes('mammifère') || description.includes('mammifère') || type.includes('mammifere')) {
-              faune.mammiferes.push({ ...species, category: 'Mammifères' });
-            } else {
-              faune.autres.push({ ...species, category: 'Autres' });
-            }
-          }
-        });
-      } else if (typeof value === 'object' && value !== null) {
-        const species = {
-          titre: value.nom || value.espece || key,
-          nom_commun: value.nom_commun || value.nom || value.espece || key,
-          nom_scientifique: value.nom_scientifique || value.nom_latin || value.scientific_name || '',
-          statut_conservation: value.statut_conservation || value.statut || value.conservation_status || value.protection || 'Non renseigné',
-          description_courte: value.description || value.caracteristiques || '',
-          type: value.type || 'Non classé',
-          category: key,
-          metadata: value
-        };
-        
-        flore.push({ ...species, category: 'Flore' });
-      }
-    });
-
-    return { flore, faune };
+    return processSpeciesData(speciesData);
   }, [speciesData]);
 
   const getCategoryIcon = (category: string) => {
@@ -112,8 +48,7 @@ export const SpeciesVignetteGrid: React.FC<SpeciesVignetteGridProps> = ({
   };
 
   const getTotalCount = () => {
-    return processedSpecies.flore.length + 
-           Object.values(processedSpecies.faune).reduce((sum, arr) => sum + arr.length, 0);
+    return getProcessedSpeciesCount(speciesData);
   };
 
   if (!speciesData) {
