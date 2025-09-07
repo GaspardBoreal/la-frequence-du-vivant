@@ -45,6 +45,44 @@ export function processSpeciesData(speciesData: SpeciesData | null | undefined):
     return { category: 'Autres', fauneType: 'autres' };
   };
 
+  // Fonction pour identifier si c'est une source et non une espèce
+  const isSource = (item: any, key: string): boolean => {
+    const title = (item.nom_commun || item.nom || item.espece || item.titre || key).toLowerCase();
+    
+    // Patterns pour identifier les sources
+    const sourcePatterns = [
+      'observatoire', 'association', 'société', 'fondation', 'institut',
+      'centre', 'laboratoire', 'université', 'museum', 'parc naturel',
+      'réserve naturelle', 'conservatoire', 'fédération', 'syndicat',
+      'collectif', 'réseau', 'club', 'ligue', 'comité'
+    ];
+    
+    // Types d'organismes qui ne sont pas des espèces
+    const organisationTypes = [
+      'organisme', 'structure', 'service', 'bureau', 'agence',
+      'site web', 'portail', 'plateforme', 'base de données'
+    ];
+    
+    // Vérifier si le titre contient des mots-clés d'organisation
+    const containsSourcePattern = sourcePatterns.some(pattern => 
+      title.includes(pattern.toLowerCase())
+    );
+    
+    const containsOrgType = organisationTypes.some(type => 
+      title.includes(type.toLowerCase())
+    );
+    
+    // Vérifier les tags/types dans l'item
+    const hasSourceTags = item.type && (
+      item.type.toLowerCase().includes('observatoire') ||
+      item.type.toLowerCase().includes('web') ||
+      item.type.toLowerCase().includes('association') ||
+      item.type.toLowerCase().includes('organisme')
+    );
+    
+    return containsSourcePattern || containsOrgType || hasSourceTags;
+  };
+
   // Fonction helper pour créer un objet espèce standardisé
   const createSpeciesObject = (item: any, key: string, category: string) => ({
     titre: item.nom_commun || item.nom || item.espece || item.titre || key,
@@ -68,6 +106,12 @@ export function processSpeciesData(speciesData: SpeciesData | null | undefined):
     if (Array.isArray(value)) {
       value.forEach(item => {
         if (typeof item === 'object' && item !== null) {
+          // Vérifier si c'est une source avant de la traiter comme une espèce
+          if (isSource(item, key)) {
+            console.log(`Filtrage source détectée: ${item.nom_commun || item.nom || item.titre || key}`);
+            return; // Skip les sources
+          }
+          
           const species = createSpeciesObject(item, key, categoryInfo.category);
 
           // Catégoriser selon la structure
@@ -81,6 +125,13 @@ export function processSpeciesData(speciesData: SpeciesData | null | undefined):
         }
       });
     } else if (typeof value === 'object' && value !== null) {
+      // Vérifier si c'est une source avant de la traiter comme une espèce
+      if (isSource(value, key)) {
+        const itemAny = value as any;
+        console.log(`Filtrage source détectée: ${itemAny.nom_commun || itemAny.nom || itemAny.titre || key}`);
+        return; // Skip les sources
+      }
+      
       const species = createSpeciesObject(value, key, categoryInfo.category);
       
       if (categoryInfo.category === 'Flore') {
