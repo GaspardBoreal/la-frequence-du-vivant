@@ -140,16 +140,18 @@ export const VignetteGrid: React.FC<VignetteGridProps> = ({
         </CardContent>
       </Card>
 
-      {/* Grille de vignettes */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-        {processedData.map((item, index) => (
-          <InteractiveVignette
-            key={`${variant}-${index}`}
-            data={item}
-            variant={variant}
-          />
-        ))}
-      </div>
+      {/* Grille de vignettes - Masquée pour le vocabulaire qui a un affichage spécialisé */}
+      {specialProcessing !== 'vocabulary' && (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+          {processedData.map((item, index) => (
+            <InteractiveVignette
+              key={`${variant}-${index}`}
+              data={item}
+              variant={variant}
+            />
+          ))}
+        </div>
+      )}
 
       {/* Groupement par catégorie si applicable */}
       {processedData.some(item => item.category && item.category !== 'Général') && (

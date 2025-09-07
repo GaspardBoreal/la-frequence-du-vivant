@@ -13,7 +13,38 @@ export interface ProcessedVocabularyTerm {
 }
 
 /**
- * Compte le nombre de termes de vocabulaire local (uniquement les termes, pas les sources)
+ * Termes à exclure du vocabulaire local (termes non-locaux, génériques, etc.)
+ */
+const EXCLUDED_VOCABULARY_TERMS = [
+  'etymologie',
+  'etymologia',
+  'etymology',
+  'definition',
+  'general',
+  'generique',
+  'commun',
+  'standard'
+];
+
+/**
+ * Vérifie si un terme doit être inclus dans le vocabulaire local
+ */
+const isLocalVocabularyTerm = (key: string, value: any): boolean => {
+  // Exclure les termes de la liste d'exclusion
+  if (EXCLUDED_VOCABULARY_TERMS.includes(key.toLowerCase())) {
+    return false;
+  }
+  
+  // Exclure source_ids
+  if (key === 'source_ids') {
+    return false;
+  }
+  
+  return true;
+};
+
+/**
+ * Compte le nombre de termes de vocabulaire local (uniquement les termes valides, pas les sources)
  */
 export const getVocabularyTermsCount = (vocabularyData: any): number => {
   if (!vocabularyData) return 0;
@@ -28,8 +59,8 @@ export const getVocabularyTermsCount = (vocabularyData: any): number => {
       return vocabularyData.termes.length;
     }
     
-    // Sinon, compter toutes les clés sauf 'source_ids'
-    return Object.keys(vocabularyData).filter(key => key !== 'source_ids').length;
+    // Sinon, compter toutes les clés valides (exclure source_ids et termes non-locaux)
+    return Object.keys(vocabularyData).filter(key => isLocalVocabularyTerm(key, vocabularyData[key])).length;
   }
   
   return 0;
@@ -88,8 +119,8 @@ export const processVocabularyData = (vocabularyData: any): {
           category: 'termes',
           metadata: item
         }));
-      } else if (Array.isArray(value) && key !== 'source_ids') {
-        // Autres tableaux traités comme des termes
+      } else if (Array.isArray(value) && isLocalVocabularyTerm(key, value)) {
+        // Autres tableaux traités comme des termes (uniquement les valides)
         result.termes.push(...value.map((item: any, index) => ({
           titre: item?.nom || item?.terme || item?.titre || item?.name || key,
           description_courte: item?.description || item?.definition || item?.explication || '',
@@ -98,8 +129,8 @@ export const processVocabularyData = (vocabularyData: any): {
           category: 'termes',
           metadata: item
         })));
-      } else if (typeof value === 'object' && value !== null && key !== 'source_ids') {
-        // Objets traités comme des termes individuels
+      } else if (typeof value === 'object' && value !== null && isLocalVocabularyTerm(key, value)) {
+        // Objets traités comme des termes individuels (uniquement les valides)
         const objValue = value as any;
         result.termes.push({
           titre: objValue?.nom || objValue?.terme || objValue?.titre || key,
@@ -109,8 +140,8 @@ export const processVocabularyData = (vocabularyData: any): {
           category: 'termes',
           metadata: objValue
         });
-      } else if (typeof value === 'string' && key !== 'source_ids') {
-        // Chaînes traitées comme des termes simples
+      } else if (typeof value === 'string' && isLocalVocabularyTerm(key, value)) {
+        // Chaînes traitées comme des termes simples (uniquement les valides)
         result.termes.push({
           titre: key,
           description_courte: value,
