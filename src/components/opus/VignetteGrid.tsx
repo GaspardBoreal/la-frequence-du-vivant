@@ -4,6 +4,7 @@ import { Badge } from '@/components/ui/badge';
 import { InteractiveVignette } from './InteractiveVignette';
 import { Database, ExternalLink } from 'lucide-react';
 import { processVocabularyData } from '@/utils/vocabularyDataUtils';
+import { VocabularySourcesCard } from './VocabularySourcesCard';
 
 interface VignetteGridProps {
   title: string;
@@ -30,8 +31,7 @@ export const VignetteGrid: React.FC<VignetteGridProps> = ({
     
     // Traitement spécial pour le vocabulaire
     if (specialProcessing === 'vocabulary') {
-      const processed = processVocabularyData(data);
-      return [...processed.termes, ...processed.sources];
+      return processVocabularyData(data);
     }
     
     const items: any[] = [];
@@ -101,7 +101,10 @@ export const VignetteGrid: React.FC<VignetteGridProps> = ({
     }
   };
 
-  if (!data || processedData.length === 0) {
+  if (!data || (specialProcessing === 'vocabulary' ? 
+    (typeof processedData === 'object' && 'termes' in processedData ? 
+      (!processedData.termes?.length && !processedData.sources?.length) : true) : 
+    (Array.isArray(processedData) ? !processedData.length : true))) {
     return (
       <Card className="bg-background/50 backdrop-blur-sm border-border/30">
         <CardContent className="p-12 text-center">
@@ -127,7 +130,12 @@ export const VignetteGrid: React.FC<VignetteGridProps> = ({
             <div>
               <span>{title}</span>
               <Badge variant="secondary" className="ml-2">
-                {processedData.length} élément{processedData.length > 1 ? 's' : ''}
+                {specialProcessing === 'vocabulary' && typeof processedData === 'object' && 'termes' in processedData ? 
+                  (processedData.termes?.length || 0) + (processedData.sources?.length || 0) :
+                  Array.isArray(processedData) ? processedData.length : 0
+                } élément{(specialProcessing === 'vocabulary' && typeof processedData === 'object' && 'termes' in processedData ? 
+                  (processedData.termes?.length || 0) + (processedData.sources?.length || 0) :
+                  Array.isArray(processedData) ? processedData.length : 0) > 1 ? 's' : ''}
               </Badge>
             </div>
           </CardTitle>
@@ -141,7 +149,7 @@ export const VignetteGrid: React.FC<VignetteGridProps> = ({
       </Card>
 
       {/* Grille de vignettes - Masquée pour le vocabulaire qui a un affichage spécialisé */}
-      {specialProcessing !== 'vocabulary' && (
+      {specialProcessing !== 'vocabulary' && Array.isArray(processedData) && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
           {processedData.map((item, index) => (
             <InteractiveVignette
@@ -153,132 +161,77 @@ export const VignetteGrid: React.FC<VignetteGridProps> = ({
         </div>
       )}
 
-      {/* Groupement par catégorie si applicable */}
-      {processedData.some(item => item.category && item.category !== 'Général') && (
+      {/* Affichage spécialisé pour le vocabulaire */}
+      {specialProcessing === 'vocabulary' && typeof processedData === 'object' && 'termes' in processedData && (
         <div className="space-y-6">
-          {specialProcessing === 'vocabulary' ? (
-            // Affichage spécial pour le vocabulaire avec sections ordonnées
-            <>
-              {/* Section Termes */}
-              {processedData.filter(item => item.category === 'termes').length > 0 && (
-                <div className="space-y-3">
-                  <div className="flex items-center gap-3 pb-2 border-b border-border/30">
-                    <h4 className="font-medium text-lg">termes</h4>
-                    <Badge variant="outline" className="text-xs">
-                      {processedData.filter(item => item.category === 'termes').length} élément{processedData.filter(item => item.category === 'termes').length > 1 ? 's' : ''}
-                    </Badge>
-                  </div>
-                  
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                    {processedData
-                      .filter(item => item.category === 'termes')
-                      .map((item, index) => (
-                        <InteractiveVignette
-                          key={`termes-${index}`}
-                          data={item}
-                          variant={variant}
-                        />
-                      ))
-                    }
-                  </div>
-                </div>
-              )}
-              
-              {/* Section Sources */}
-              {processedData.filter(item => item.category === 'source_ids').length > 0 && (
-                <div className="space-y-3">
-                  <div className="flex items-center gap-3 pb-2 border-b border-border/30">
-                    <h4 className="font-medium text-lg flex items-center gap-2">
-                      <ExternalLink className="w-4 h-4" />
-                      source_ids
-                    </h4>
-                    <Badge variant="outline" className="text-xs">
-                      {processedData.filter(item => item.category === 'source_ids').length} source{processedData.filter(item => item.category === 'source_ids').length > 1 ? 's' : ''}
-                    </Badge>
-                  </div>
-                  
-                  {/* Affichage groupé des sources comme Source IDs */}
-                  <Card className="bg-gradient-to-br from-accent/10 to-accent/5 border-accent/20">
-                    <CardHeader>
-                      <CardTitle className="text-lg flex items-center gap-2">
-                        <ExternalLink className="w-5 h-5 text-accent" />
-                        Sources détaillées ({processedData.filter(item => item.category === 'source_ids').length})
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {processedData
-                          .filter(item => item.category === 'source_ids')
-                          .map((source, index) => (
-                            <div key={`source-${index}`} className="bg-background/50 rounded-lg p-4 border border-border/30">
-                              <div className="flex items-start justify-between mb-2">
-                                <h5 className="font-medium text-sm">{source.titre}</h5>
-                                <Badge variant="secondary" className="text-xs">
-                                  {source.metadata?.type || 'source'}
-                                </Badge>
-                              </div>
-                              
-                              {source.description_courte && (
-                                <p className="text-xs text-muted-foreground mb-2">
-                                  {source.description_courte}
-                                </p>
-                              )}
-                              
-                              {source.details && (
-                                <p className="text-xs text-muted-foreground">
-                                  {source.details}
-                                </p>
-                              )}
-                              
-                              {source.metadata?.url && (
-                                <a 
-                                  href={source.metadata.url}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="text-xs text-accent hover:underline flex items-center gap-1 mt-2"
-                                >
-                                  <ExternalLink className="w-3 h-3" />
-                                  Consulter la source
-                                </a>
-                              )}
-                            </div>
-                          ))
-                        }
-                      </div>
-                    </CardContent>
-                  </Card>
-                </div>
-              )}
-            </>
-          ) : (
-            // Affichage standard pour les autres types
-            Array.from(new Set(processedData.map(item => item.category))).map(category => {
-              const categoryItems = processedData.filter(item => item.category === category);
-              
-              if (categoryItems.length === 0 || !category || category === 'Général') return null;
-              
-              return (
-                <div key={category} className="space-y-3">
-                  <div className="flex items-center gap-3 pb-2 border-b border-border/30">
-                    <h4 className="font-medium text-lg">{category}</h4>
-                    <Badge variant="outline" className="text-xs">
-                      {categoryItems.length} élément{categoryItems.length > 1 ? 's' : ''}
-                    </Badge>
-                  </div>
-                  
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                    {categoryItems.map((item, index) => (
-                      <InteractiveVignette
-                        key={`${category}-${index}`}
-                        data={item}
-                        variant={variant}
-                      />
-                    ))}
-                  </div>
-                </div>
-              );
-            })
+          {/* Section Termes */}
+          {processedData.termes && processedData.termes.length > 0 && (
+            <div className="space-y-4">
+              <div className={`flex items-center gap-3 ${getVariantColor()}`}>
+                <Database className="w-5 h-5" />
+                <h3 className="text-lg font-bold">
+                  Vocabulaire local ({processedData.termes.length})
+                </h3>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                {processedData.termes.map((terme, index) => (
+                  <InteractiveVignette
+                    key={`terme-${index}`}
+                    data={terme}
+                    variant={variant}
+                  />
+                ))}
+              </div>
+            </div>
           )}
+
+          {/* Section Sources - Nouveau composant unifié */}
+          {processedData.sources && processedData.sources.length > 0 && (
+            <div className="space-y-4">
+              <div className={`flex items-center gap-3 ${getVariantColor()}`}>
+                <ExternalLink className="w-5 h-5" />
+                <h3 className="text-lg font-bold">
+                  Sources bibliographiques
+                </h3>
+              </div>
+              <VocabularySourcesCard 
+                sources={processedData.sources.map(source => source.metadata).filter(Boolean)}
+              />
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Groupement par catégorie pour les autres types */}
+      {!specialProcessing && Array.isArray(processedData) && processedData.some(item => item.category && item.category !== 'Général') && (
+        <div className="space-y-6">
+          {/* Affichage standard pour les autres types */}
+          {Array.from(new Set(processedData.map(item => item.category))).map(category => {
+            const categoryItems = processedData.filter(item => item.category === category);
+            
+            if (categoryItems.length === 0 || !category || category === 'Général') return null;
+            
+            return (
+              <div key={category} className="space-y-3">
+                <div className="flex items-center gap-3 pb-2 border-b border-border/30">
+                  <h4 className="font-medium text-lg">{category}</h4>
+                  <Badge variant="outline" className="text-xs">
+                    {categoryItems.length} élément{categoryItems.length > 1 ? 's' : ''}
+                  </Badge>
+                </div>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                  {categoryItems.map((item, index) => (
+                    <InteractiveVignette
+                      key={`${category}-${index}`}
+                      data={item}
+                      variant={variant}
+                    />
+                  ))}
+                </div>
+              </div>
+            );
+          })}
         </div>
       )}
     </div>
