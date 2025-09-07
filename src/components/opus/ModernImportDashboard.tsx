@@ -66,6 +66,7 @@ interface ImportRecord {
     vocabulaire_local?: any;
     contexte_hydrologique?: any;
     empreintes_humaines?: any;
+    infrastructures_techniques?: any;
     leviers_agroecologiques?: any;
     nouvelles_activites?: any;
     technodiversite?: any;
@@ -96,6 +97,7 @@ interface ImportRunRecord {
     vocabulaire_local?: any;
     contexte_hydrologique?: any;
     empreintes_humaines?: any;
+    infrastructures_techniques?: any;
     leviers_agroecologiques?: any;
     nouvelles_activites?: any;
     technodiversite?: any;
@@ -250,6 +252,7 @@ export const ModernImportDashboard: React.FC = () => {
               vocabulaire_local: contexte.vocabulaire_local,
               contexte_hydrologique: contexte.contexte_hydrologique,
               empreintes_humaines: contexte.empreintes_humaines,
+              infrastructures_techniques: (contexte as any)?.infrastructures_techniques,
               leviers_agroecologiques: contexte.leviers_agroecologiques,
               nouvelles_activites: contexte.nouvelles_activites,
               technodiversite: contexte.technodiversite,
@@ -269,6 +272,7 @@ export const ModernImportDashboard: React.FC = () => {
             vocabulaire_local: contexte.vocabulaire_local,
             contexte_hydrologique: contexte.contexte_hydrologique,
             empreintes_humaines: contexte.empreintes_humaines,
+            infrastructures_techniques: (contexte as any)?.infrastructures_techniques,
             leviers_agroecologiques: contexte.leviers_agroecologiques,
             nouvelles_activites: contexte.nouvelles_activites,
             technodiversite: contexte.technodiversite,
@@ -393,6 +397,7 @@ export const ModernImportDashboard: React.FC = () => {
             vocabulaire_local: contexteData?.vocabulaire_local,
             contexte_hydrologique: contexteData?.contexte_hydrologique,
             empreintes_humaines: contexteData?.empreintes_humaines,
+            infrastructures_techniques: (contexteData as any)?.infrastructures_techniques,
             leviers_agroecologiques: contexteData?.leviers_agroecologiques,
             nouvelles_activites: contexteData?.nouvelles_activites,
             technodiversite: contexteData?.technodiversite,
@@ -787,8 +792,14 @@ export const ModernImportDashboard: React.FC = () => {
             <TabsContent value="infrastructure" className="space-y-6">
               <div className="space-y-6">
                 {filteredImports.length > 0 ? (
-                  filteredImports.map((importRecord) => (
-                    importRecord.contexte_data?.empreintes_humaines && (
+                  filteredImports.map((importRecord) => {
+                    const contextData = importRecord.contexte_data as any;
+                    const infra = contextData?.dimensions?.infrastructures_techniques 
+                      || contextData?.infrastructures_techniques 
+                      || contextData?.empreintes_humaines 
+                      || null;
+                    if (!infra) return null;
+                    return (
                       <div key={importRecord.id} className="space-y-4">
                         <div className="flex items-center justify-between">
                           <div>
@@ -797,12 +808,12 @@ export const ModernImportDashboard: React.FC = () => {
                           </div>
                         </div>
                         <InfrastructureVignetteGrid
-                          empreintesHumainesData={importRecord.contexte_data.empreintes_humaines}
+                          empreintesHumainesData={infra}
                           importSources={importRecord.sources}
                         />
                       </div>
-                    )
-                  ))
+                    );
+                  })
                 ) : (
                   <Card className="bg-background/50 backdrop-blur-sm border-border/30">
                     <CardContent className="p-12 text-center">
