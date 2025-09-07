@@ -1,28 +1,31 @@
 # Prompt DEEPSEARCH OPUS – JSON Strict + Auto‑validation (Sortie unique JSON)
 
-Objectif: Produire un JSON parfaitement valide, auto‑corrigé et conforme au schéma d’import OPUS. Aucune vérification humaine. Aucune section « metadata ».
+Objectif: Produire un JSON parfaitement valide, auto‑corrigé et conforme au schéma d'import OPUS. Aucune vérification humaine. Aucune section « metadata ».
 
-INSTRUCTIONS CRITIQUES (à exécuter AVANT d’émettre la sortie):
+INSTRUCTIONS CRITIQUES (à exécuter AVANT d'émettre la sortie):
 1) Normalisation des caractères
 - Remplacer toute séquence échappée issue de Markdown par le caractère brut:
   \_ → _  |  \[ → [  |  \] → ]  |  \( → (  |  \) → )  |  \~ → ~
-- Ne pas échapper les ponctuations ou symboles Unicode (– — « » ≈ ≥ ≤ ° …). JSON supporte l’Unicode.
+- Ne pas échapper les ponctuations ou symboles Unicode (– — « » ≈ ≥ ≤ ° …). JSON supporte l'Unicode.
 
 2) URLs – Conversion obligatoire
-- Si une URL est fournie en format Markdown [texte](url), garder uniquement l’URL simple: "https://…".
-- Si aucune URL n’est disponible, mettre null.
+- Si une URL est fournie en format Markdown [texte](url), garder uniquement l'URL simple: "https://…".
+- Si aucune URL n'est disponible, mettre null.
 - Interdit: crochets, parenthèses ou backslashes dans les URLs.
 
 3) Clés et structure – Canonique et sans accents
 - Utiliser strictement ces clés snake_case (sans backslashes):
   dimensions.contexte_hydrologique, dimensions.especes_caracteristiques, dimensions.vocabulaire_local,
-  dimensions.infrastructures_techniques, dimensions.agroecologie, dimensions.technodiversite,
+  dimensions.empreintes_humaines, dimensions.leviers_agroecologiques, dimensions.nouvelles_activites,
+  dimensions.technodiversite, dimensions.projection_2035_2045 (optionnel),
   fables, sources
-- Les sous‑clés attendues sont définies ci‑dessous dans le schéma. N’ajoutez aucune autre clé.
+- Les sous‑clés attendues sont définies ci‑dessous dans le schéma. N'ajoutez aucune autre clé.
+- MAPPING AUTOMATIQUE: Si vous avez du contenu "infrastructures_techniques", utilisez la clé "empreintes_humaines"
+- MAPPING AUTOMATIQUE: Si vous avez du contenu "agroecologie", répartissez-le entre "leviers_agroecologiques" (pratiques, cultures, élevage, biodiversité) et "nouvelles_activites" (activités à développer)
 
 4) Sources et références
 - Chaque source_ids doit référencer un id présent dans sources (ex: "S00", "S01", …, pattern ^S\d+$).
-- Si une source est référencée mais absente, l’AJOUTER dans sources avec valeurs minimales sûres:
+- Si une source est référencée mais absente, l'AJOUTER dans sources avec valeurs minimales sûres:
   {"id":"Sxx","titre":"Source à compléter","url":null,"type":"web","date_acces":"YYYY-MM-DD","fiabilite":null}
 - Dédupliquer toutes les occurrences dans source_ids et dans sources par id.
 - Vérifier que date_acces est au format ISO AAAA-MM-JJ, sinon corriger.
@@ -33,14 +36,14 @@ INSTRUCTIONS CRITIQUES (à exécuter AVANT d’émettre la sortie):
 - Interdit: valeurs NaN/Infinity, commentaires, trailing commas.
 
 6) Métadonnées
-- NE PAS inclure de bloc metadata. Il sera géré côté serveur. Pas d’ai_model, validation_level, scores, etc.
+- NE PAS inclure de bloc metadata. Il sera géré côté serveur. Pas d'ai_model, validation_level, scores, etc.
 
 7) Exhaustivité minimale et auto‑réparation
 - Si une section requise manque, la CRÉER avec une structure vide/valide.
 - Si un élément individuel est invalide et non corrigeable, le SUPPRIMER plutôt que produire un JSON invalide.
 
 8) Sortie
-- Sortie UNIQUE: le JSON final seulement, sans texte d’intro, sans balises de code, sans commentaires.
+- Sortie UNIQUE: le JSON final seulement, sans texte d'intro, sans balises de code, sans commentaires.
 - Le JSON doit passer JSON.parse strictement.
 
 SCHÉMA CONTRACTUEL (JSON Schema simplifié – à respecter et valider en interne, ne pas inclure dans la sortie):
@@ -57,8 +60,9 @@ SCHÉMA CONTRACTUEL (JSON Schema simplifié – à respecter et valider en inter
         "contexte_hydrologique",
         "especes_caracteristiques",
         "vocabulaire_local",
-        "infrastructures_techniques",
-        "agroecologie",
+        "empreintes_humaines",
+        "leviers_agroecologiques",
+        "nouvelles_activites",
         "technodiversite"
       ],
       "properties": {
@@ -237,7 +241,7 @@ SCHÉMA CONTRACTUEL (JSON Schema simplifié – à respecter et valider en inter
             }
           }
         },
-        "infrastructures_techniques": {
+        "empreintes_humaines": {
           "type": "object",
           "additionalProperties": false,
           "required": ["description","donnees"],
@@ -257,7 +261,7 @@ SCHÉMA CONTRACTUEL (JSON Schema simplifié – à respecter et valider en inter
             }
           }
         },
-        "agroecologie": {
+        "leviers_agroecologiques": {
           "type": "object",
           "additionalProperties": false,
           "required": ["description","donnees"],
@@ -268,7 +272,7 @@ SCHÉMA CONTRACTUEL (JSON Schema simplifié – à respecter et valider en inter
               "additionalProperties": false,
               "required": [
                 "pratiques_agricoles","cultures","elevage","biodiversite_cultivee",
-                "leviers_agroecologiques","activites_a_developper","sources"
+                "leviers_agroecologiques","sources"
               ],
               "properties": {
                 "pratiques_agricoles": {"type": "array", "items": {"$ref": "#/definitions/elementDesc"}},
@@ -287,6 +291,22 @@ SCHÉMA CONTRACTUEL (JSON Schema simplifié – à respecter et valider en inter
                 "elevage": {"type": "array", "items": {"$ref": "#/definitions/elementDesc"}},
                 "biodiversite_cultivee": {"type": "array", "items": {"$ref": "#/definitions/elementDesc"}},
                 "leviers_agroecologiques": {"type": "array", "items": {"$ref": "#/definitions/elementNameOnly"}},
+                "sources": {"type": "array", "items": {"$ref": "#/definitions/sourceObj"}}
+              }
+            }
+          }
+        },
+        "nouvelles_activites": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["description","donnees"],
+          "properties": {
+            "description": {"type": "string"},
+            "donnees": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["activites_a_developper","sources"],
+              "properties": {
                 "activites_a_developper": {"type": "array", "items": {"$ref": "#/definitions/elementNameOnly"}},
                 "sources": {"type": "array", "items": {"$ref": "#/definitions/sourceObj"}}
               }
@@ -396,17 +416,18 @@ EXEMPLE DE GÉNÉRATION (structure seulement – À ADAPTER AU CONTENU, NE PAS I
     },
     "especes_caracteristiques": {"description": "…", "donnees": {"poissons": [], "invertebres": [], "vegetation_aquatique": [], "oiseaux_aquatiques": [], "sources": []}},
     "vocabulaire_local": {"description": "…", "donnees": {"termes": [], "termes_locaux": {"cours_eau": null, "phenomenes": [], "pratiques": []}, "sources": []}},
-    "infrastructures_techniques": {"description": "…", "donnees": {"ouvrages_hydrauliques": [], "reseaux": [], "equipements": [], "complexes_industriels": [], "sources": []}},
-    "agroecologie": {"description": "…", "donnees": {"pratiques_agricoles": [], "cultures": [], "elevage": [], "biodiversite_cultivee": [], "leviers_agroecologiques": [], "activites_a_developper": [], "sources": []}},
+    "empreintes_humaines": {"description": "…", "donnees": {"ouvrages_hydrauliques": [], "reseaux": [], "equipements": [], "complexes_industriels": [], "sources": []}},
+    "leviers_agroecologiques": {"description": "…", "donnees": {"pratiques_agricoles": [], "cultures": [], "elevage": [], "biodiversite_cultivee": [], "leviers_agroecologiques": [], "sources": []}},
+    "nouvelles_activites": {"description": "…", "donnees": {"activites_a_developper": [], "sources": []}},
     "technodiversite": {"description": "…", "donnees": {"technologies_vertes": [], "innovations_locales": [], "numerique": [], "recherche_developpement": [], "sources": []}}
   },
   "fables": [],
   "sources": [
-    {"id":"S00","titre":"…","url":null,"type":"web","date_acces":"2025-09-07","fiabilite":null}
+    {"id":"S00","titre":"…","url":"https://…","type":"web","date_acces":"2025-01-07","fiabilite":80}
   ]
 }
 
-RÉSUMÉ D’EXÉCUTION POUR DEEPSEARCH
-- Appliquer les 8 règles de normalisation/validation/auto‑correction ci‑dessus.
-- Vérifier en interne le JSON contre le schéma; corriger/compléter si nécessaire.
+GÉNÉRATION FINALE :
+- Appliquer les 8 règles de normalisation/validation ci-dessus.
+- Valider en interne le JSON contre le schéma; corriger/compléter si nécessaire.
 - Émettre UNIQUEMENT le JSON final conforme (aucun texte, aucune métadonnée, aucun code fence).

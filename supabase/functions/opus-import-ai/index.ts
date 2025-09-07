@@ -14,9 +14,11 @@ interface ImportData {
     especes_caracteristiques?: any;
     vocabulaire_local?: any;
     empreintes_humaines?: any;
+    infrastructures_techniques?: any; // Will be mapped to empreintes_humaines
     projection_2035_2045?: any;
     leviers_agroecologiques?: any;
     nouvelles_activites?: any;
+    agroecologie?: any; // Will be split into leviers + nouvelles_activites
     technodiversite?: any;
   };
   fables?: Array<{
@@ -49,10 +51,109 @@ interface ValidationResult {
   score: number;
 }
 
+// Fonction de normalisation des dimensions
+function normalizeDimensions(dimensions: any): any {
+  const normalized = { ...dimensions };
+  
+  // 1. infrastructures_techniques → empreintes_humaines
+  if (normalized.infrastructures_techniques) {
+    console.log('[OPUS Import] Mapping infrastructures_techniques → empreintes_humaines');
+    normalized.empreintes_humaines = normalized.infrastructures_techniques;
+    delete normalized.infrastructures_techniques;
+  }
+  
+  // 2. agroecologie → split entre leviers_agroecologiques et nouvelles_activites
+  if (normalized.agroecologie) {
+    console.log('[OPUS Import] Splitting agroecologie into leviers_agroecologiques + nouvelles_activites');
+    const agro = normalized.agroecologie;
+    
+    // Extraire les leviers agroécologiques
+    if (agro.donnees) {
+      const leviers = {
+        description: agro.description || "Leviers agroécologiques disponibles",
+        donnees: {
+          pratiques_agricoles: agro.donnees.pratiques_agricoles || [],
+          cultures: agro.donnees.cultures || [],
+          elevage: agro.donnees.elevage || [],
+          biodiversite_cultivee: agro.donnees.biodiversite_cultivee || [],
+          leviers_agroecologiques: agro.donnees.leviers_agroecologiques || [],
+          sources: agro.donnees.sources || []
+        }
+      };
+      
+      // Extraire les nouvelles activités
+      const nouvelles = {
+        description: "Activités à développer identifiées",
+        donnees: {
+          activites_a_developper: agro.donnees.activites_a_developper || [],
+          sources: agro.donnees.sources || []
+        }
+      };
+      
+      normalized.leviers_agroecologiques = leviers;
+      normalized.nouvelles_activites = nouvelles;
+    }
+    
+    delete normalized.agroecologie;
+  }
+  
+  return normalized;
+}
+
+// Fonction de sanitisation des données
+function sanitizeData(data: ImportData): ImportData {
+  const sanitized = { ...data };
+  
+  // Sanitiser les sources
+  if (sanitized.sources) {
+    sanitized.sources = sanitized.sources.map(source => {
+      const clean = { ...source };
+      
+      // Convertir URLs Markdown en URLs brutes
+      if (clean.url && typeof clean.url === 'string') {
+        const markdownMatch = clean.url.match(/\[.*?\]\((https?:\/\/[^)]+)\)/);
+        if (markdownMatch) {
+          clean.url = markdownMatch[1];
+        }
+      }
+      
+      // Normaliser fiabilite
+      if (clean.fiabilite !== null && clean.fiabilite !== undefined) {
+        if (typeof clean.fiabilite === 'string') {
+          const fiabiliteMap: { [key: string]: number } = {
+            'très haute': 90, 'haute': 80, 'moyenne': 60, 'faible': 40, 'très faible': 20
+          };
+          clean.fiabilite = fiabiliteMap[clean.fiabilite.toLowerCase()] || 70;
+        }
+        clean.fiabilite = Math.max(0, Math.min(100, Number(clean.fiabilite) || 70));
+      }
+      
+      // Normaliser date_acces
+      if (clean.date_acces && typeof clean.date_acces === 'string') {
+        const isoMatch = clean.date_acces.match(/^\d{4}-\d{2}-\d{2}$/);
+        if (!isoMatch) {
+          const today = new Date();
+          clean.date_acces = today.toISOString().split('T')[0];
+        }
+      }
+      
+      return clean;
+    });
+  }
+  
+  return sanitized;
+}
+
 async function validateImportData(data: ImportData): Promise<ValidationResult> {
   const errors: string[] = [];
   const warnings: string[] = [];
   let score = 0;
+
+  // Sanitisation automatique des données
+  data = sanitizeData(data);
+
+  // Normalisation des dimensions
+  data.dimensions = normalizeDimensions(data.dimensions);
 
   // Validation obligatoire
   if (!data.exploration_id) errors.push("exploration_id manquant");
@@ -246,15 +347,31 @@ serve(async (req) => {
       let fablesCreated = 0;
 
       try {
-        // 1. Créer/Mettre à jour le contexte hybride
+        // 1. Créer/Mettre à jour le contexte hybride avec whitelist des colonnes
         const completude = await calculateCompletude(importData.dimensions);
+        
+        // Whitelist des colonnes connues dans marche_contextes_hybrids
+        const allowedColumns = [
+          'contexte_hydrologique', 'especes_caracteristiques', 'vocabulaire_local',
+          'empreintes_humaines', 'leviers_agroecologiques', 'nouvelles_activites',
+          'projection_2035_2045', 'technodiversite'
+        ];
+        
+        const cleanDimensions: any = {};
+        Object.keys(importData.dimensions).forEach(key => {
+          if (allowedColumns.includes(key)) {
+            cleanDimensions[key] = importData.dimensions[key];
+          } else {
+            console.warn(`[OPUS Import] Dimension ignorée (non supportée): ${key}`);
+          }
+        });
         
         const { error: contextError } = await supabase
           .from('marche_contextes_hybrids')
           .upsert({
             marche_id: importData.marche_id,
             opus_id: importData.exploration_id,
-            ...importData.dimensions,
+            ...cleanDimensions,
             completude_score: completude,
             sources: importData.sources,
             last_validation: new Date().toISOString()
@@ -316,6 +433,9 @@ serve(async (req) => {
             success: false,
             error: 'Erreur lors de l\'import',
             details: fallbackError.message,
+            hint: fallbackError.message.includes('column') ? 
+              'Certaines dimensions ne sont pas supportées. Utilisez: contexte_hydrologique, especes_caracteristiques, vocabulaire_local, empreintes_humaines, leviers_agroecologiques, nouvelles_activites, technodiversite' : 
+              'Erreur technique lors de l\'import',
             partial_import: {
               context: contextCreated,
               fables: fablesCreated
