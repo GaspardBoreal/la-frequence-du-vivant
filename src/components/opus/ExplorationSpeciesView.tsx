@@ -246,7 +246,7 @@ export const ExplorationSpeciesView: React.FC<ExplorationSpeciesViewProps> = ({ 
               <Calendar className="w-5 h-5 text-secondary" />
               <div>
                 <div className="text-2xl font-bold">{uniqueMarches.length}</div>
-                <div className="text-sm text-muted-foreground">Marchés sources</div>
+                <div className="text-sm text-muted-foreground">Marches sources</div>
               </div>
             </div>
           </CardContent>
@@ -274,13 +274,13 @@ export const ExplorationSpeciesView: React.FC<ExplorationSpeciesViewProps> = ({ 
               />
             </div>
 
-            {/* Filtre marché */}
+            {/* Filtre marche */}
             <Select value={selectedMarche} onValueChange={setSelectedMarche}>
               <SelectTrigger>
-                <SelectValue placeholder="Tous les marchés" />
+                <SelectValue placeholder="Toutes les marches" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">Tous les marchés</SelectItem>
+                <SelectItem value="all">Toutes les marches</SelectItem>
                 {uniqueMarches.map(marche => (
                   <SelectItem key={marche} value={marche}>{marche}</SelectItem>
                 ))}
@@ -380,7 +380,7 @@ export const ExplorationSpeciesView: React.FC<ExplorationSpeciesViewProps> = ({ 
 
               <div className="flex items-center justify-between text-xs text-muted-foreground">
                 <span>
-                  {species.marchesCount} marché{species.marchesCount > 1 ? 's' : ''}
+                  {species.marchesCount} marche{species.marchesCount > 1 ? 's' : ''}
                 </span>
                 <span>
                   {new Date(species.lastImportDate).toLocaleDateString('fr-FR')}
@@ -389,7 +389,7 @@ export const ExplorationSpeciesView: React.FC<ExplorationSpeciesViewProps> = ({ 
 
               {species.marches.length > 1 && (
                 <div className="text-xs">
-                  <span className="font-medium">Marchés : </span>
+                  <span className="font-medium">Marches : </span>
                   <span className="text-muted-foreground">
                     {species.marches.slice(0, 2).join(', ')}
                     {species.marches.length > 2 && ` +${species.marches.length - 2} autres`}
