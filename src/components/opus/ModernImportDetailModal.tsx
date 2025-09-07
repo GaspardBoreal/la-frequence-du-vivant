@@ -9,6 +9,7 @@ import { InteractiveVignette } from './InteractiveVignette';
 import { SpeciesVignetteGrid } from './SpeciesVignetteGrid';
 import { VignetteGrid } from './VignetteGrid';
 import { ContexteMetricCard } from './ContexteMetricCard';
+import { mapContexteData } from '@/utils/contexteDataMapper';
 import { 
   Calendar, 
   Database, 
@@ -330,153 +331,40 @@ export const ModernImportDetailModal: React.FC<ModernImportDetailModalProps> = (
               </Card>
             </TabsContent>
 
-            {/* Contexte Tab - Ordre exact respecté avec affichage des données */}
-            <TabsContent value="contexte" className="space-y-8">
-              {importRecord.contexte_data ? (
-                <>
-                  {/* Section Hero avec statistiques globales */}
-                  <Card className="bg-gradient-to-br from-background/90 to-background/40 backdrop-blur-xl border-border/30 overflow-hidden">
-                    <div className="absolute inset-0 bg-gradient-to-r from-primary/5 via-transparent to-accent/5" />
-                    <CardHeader className="relative">
-                      <CardTitle className="flex items-center justify-between">
-                        <div className="flex items-center gap-4">
-                          <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-primary to-accent flex items-center justify-center">
-                            <Droplets className="w-6 h-6 text-primary-foreground" />
-                          </div>
-                          <div>
-                            <h3 className="text-2xl font-bold">Contexte Environnemental</h3>
-                            <p className="text-sm text-muted-foreground mt-1">
-                              Paramètres dans l'ordre d'analyse prioritaire
-                            </p>
-                          </div>
-                        </div>
-                        <Badge className="bg-success/20 text-success border-success/30 px-3 py-1">
-                          9 paramètres analysés
-                        </Badge>
-                      </CardTitle>
-                    </CardHeader>
-                  </Card>
+          {/* Contexte Tab */}
+          <TabsContent value="contexte" className="space-y-6">
+            <div className="space-y-6">
+              {/* En-tête de section */}
+              <div className="text-center space-y-2">
+                <h3 className="text-xl font-semibold bg-gradient-to-r from-blue-600 to-cyan-500 bg-clip-text text-transparent">
+                  Données Contextuelles Hydrologiques
+                </h3>
+                <p className="text-sm text-muted-foreground">
+                  Métriques environnementales et caractéristiques du site
+                </p>
+              </div>
 
-                  {/* Métriques dans l'ORDRE EXACT demandé avec données visibles */}
-                  <div className="space-y-6">
-                    {/* 1. Description */}
-                    <ContexteMetricCard
-                      title="1. Description"
-                      data={importRecord.contexte_data.description}
-                      icon={<FileText className="w-4 h-4" />}
-                      variant="primary"
-                      metricType="text"
-                    />
+              {/* Debug info */}
+              <div className="p-3 bg-muted/20 rounded-lg text-xs text-muted-foreground">
+                <strong>Debug:</strong> {importRecord.contexte_data ? 'Données disponibles' : 'Aucune donnée contexte'}
+                {importRecord.contexte_data && (
+                  <div>Clés: {Object.keys(importRecord.contexte_data).join(', ')}</div>
+                )}
+              </div>
 
-                    {/* 2. Qualité eau */}
-                    <ContexteMetricCard
-                      title="2. Qualité eau"
-                      data={importRecord.contexte_data.qualite_eau}
-                      icon={<Droplets className="w-4 h-4" />}
-                      variant="info"
-                      metricType="quality"
-                    />
-
-                    {/* 3. Sources note */}
-                    <ContexteMetricCard
-                      title="3. Sources note"
-                      data={importRecord.contexte_data.sources_note}
-                      icon={<Database className="w-4 h-4" />}
-                      variant="success"
-                      metricType="text"
-                    />
-
-                    {/* 4. Température eau */}
-                    <ContexteMetricCard
-                      title="4. Température eau"
-                      data={importRecord.contexte_data.temperature_eau}
-                      icon={<Thermometer className="w-4 h-4" />}
-                      variant="warning"
-                      metricType="temperature"
-                    />
-
-                    {/* 5. Profondeur moyenne */}
-                    <ContexteMetricCard
-                      title="5. Profondeur moyenne"
-                      data={importRecord.contexte_data.profondeur_moyenne}
-                      icon={<Target className="w-4 h-4" />}
-                      variant="info"
-                      metricType="numeric"
-                      unit=" m"
-                    />
-
-                    {/* 6. Phénomènes particuliers */}
-                    <ContexteMetricCard
-                      title="6. Phénomènes particuliers"
-                      data={importRecord.contexte_data.phenomenes_particuliers}
-                      icon={<AlertTriangle className="w-4 h-4" />}
-                      variant="warning"
-                      metricType="text"
-                    />
-
-                    {/* 7. pH */}
-                    <ContexteMetricCard
-                      title="7. pH"
-                      data={importRecord.contexte_data.ph}
-                      icon={<Beaker className="w-4 h-4" />}
-                      variant="success"
-                      metricType="ph"
-                    />
-
-                    {/* 8. Source ids */}
-                    <ContexteMetricCard
-                      title="8. Source ids"
-                      data={importRecord.contexte_data.source_ids}
-                      icon={<Users className="w-4 h-4" />}
-                      variant="primary"
-                      metricType="text"
-                    />
-
-                    {/* 9. Débit moyen */}
-                    <ContexteMetricCard
-                      title="9. Débit moyen"
-                      data={importRecord.contexte_data.debit_moyen}
-                      icon={<Waves className="w-4 h-4" />}
-                      variant="info"
-                      metricType="flow"
-                    />
-                  </div>
-
-                  {/* Synthèse avec vue d'ensemble des données */}
-                  <Card className="bg-gradient-to-br from-success/10 to-success/5 border-success/20 overflow-hidden">
-                    <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-bl from-success/10 to-transparent rounded-bl-full" />
-                    <CardContent className="p-6 relative">
-                      <div className="flex items-center justify-between">
-                        <div className="space-y-2">
-                          <h4 className="text-lg font-semibold text-success">Analyse Complète</h4>
-                          <p className="text-sm text-muted-foreground max-w-2xl">
-                            Tous les paramètres contextuels ont été analysés dans l'ordre de priorité environnementale.
-                            Cliquez sur chaque carte pour voir les détails complets des données.
-                          </p>
-                        </div>
-                        <Button 
-                          variant="outline" 
-                          size="sm"
-                          className="bg-success/10 border-success/30 text-success hover:bg-success/20"
-                        >
-                          <BarChart3 className="w-4 h-4 mr-2" />
-                          Vue synthétique
-                        </Button>
-                      </div>
-                    </CardContent>
-                  </Card>
-                </>
-              ) : (
-                <Card className="bg-background/50 backdrop-blur-sm border-border/30">
-                  <CardContent className="p-12 text-center">
-                    <Database className="w-16 h-16 mx-auto mb-4 text-muted-foreground/50" />
-                    <h3 className="text-lg font-medium mb-2">Aucune donnée de contexte</h3>
-                    <p className="text-muted-foreground">
-                      Les données contextuelles n'ont pas encore été importées pour ce marché.
-                    </p>
-                  </CardContent>
-                </Card>
-              )}
+              {/* Métriques contextuelles dans l'ordre demandé */}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {mapContexteData(importRecord.contexte_data).map((metric, index) => (
+                  <ContexteMetricCard
+                    key={index}
+                    title={metric.title}
+                    data={metric.data}
+                    unit={metric.unit}
+                    metricType={metric.metricType}
+                  />
+                ))}
+              </div>
+            </div>
             </TabsContent>
 
             {/* Espèces Caractéristiques Tab */}

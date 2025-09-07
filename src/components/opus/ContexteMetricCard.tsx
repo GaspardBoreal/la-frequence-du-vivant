@@ -1,127 +1,80 @@
 import React, { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { Separator } from '@/components/ui/separator';
-import { Progress } from '@/components/ui/progress';
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
 import { 
-  ChevronRight, 
-  Info, 
-  TrendingUp, 
-  AlertTriangle,
-  CheckCircle,
-  XCircle,
-  BarChart3,
+  Droplets, 
+  Thermometer, 
+  Activity, 
+  Eye, 
+  AlertTriangle, 
+  CheckCircle2,
+  Info,
+  TrendingUp,
   Waves,
-  Thermometer,
   Beaker,
-  Clock
+  Ruler,
+  AlertCircle,
+  Database,
+  Gauge
 } from 'lucide-react';
+import { formatComplexData, getDataAvailability, ContexteMetricData } from '@/utils/contexteDataMapper';
 
-interface ContexteMetricProps {
-  title: string;
-  data: any;
-  icon: React.ReactNode;
-  variant: 'primary' | 'success' | 'warning' | 'info' | 'neutral';
-  metricType: 'text' | 'numeric' | 'quality' | 'temperature' | 'ph' | 'flow';
-  unit?: string;
+interface ContexteMetricProps extends ContexteMetricData {
+  icon?: React.ComponentType<{ className?: string }>;
+  variant?: 'default' | 'success' | 'warning' | 'error';
   className?: string;
 }
 
 export const ContexteMetricCard: React.FC<ContexteMetricProps> = ({
   title,
   data,
-  icon,
-  variant,
-  metricType,
-  unit = '',
+  icon: Icon,
+  variant = 'default',
+  metricType = 'description',
+  unit,
   className = ''
 }) => {
-  const [showDetail, setShowDetail] = useState(false);
-  const [isHovered, setIsHovered] = useState(false);
+  const [isDetailOpen, setIsDetailOpen] = useState(false);
+  
+  const availability = getDataAvailability(data);
+  const formattedData = formatComplexData(data);
+  
+  // Debug log
+  console.log(`ContexteMetricCard ${title}:`, { data, formattedData, availability });
 
+  // Styles dynamiques basés sur la disponibilité des données
   const getVariantStyles = () => {
-    switch (variant) {
-      case 'primary':
-        return {
-          bg: 'bg-gradient-to-br from-primary/20 to-primary/5 border-primary/30',
-          text: 'text-primary',
-          hover: 'hover:from-primary/30 hover:to-primary/10',
-          badge: 'bg-primary/10 text-primary'
-        };
-      case 'success':
-        return {
-          bg: 'bg-gradient-to-br from-success/20 to-success/5 border-success/30',
-          text: 'text-success',
-          hover: 'hover:from-success/30 hover:to-success/10',
-          badge: 'bg-success/10 text-success'
-        };
-      case 'warning':
-        return {
-          bg: 'bg-gradient-to-br from-warning/20 to-warning/5 border-warning/30',
-          text: 'text-warning',
-          hover: 'hover:from-warning/30 hover:to-warning/10',
-          badge: 'bg-warning/10 text-warning'
-        };
-      case 'info':
-        return {
-          bg: 'bg-gradient-to-br from-info/20 to-info/5 border-info/30',
-          text: 'text-info',
-          hover: 'hover:from-info/30 hover:to-info/10',
-          badge: 'bg-info/10 text-info'
-        };
-      default:
-        return {
-          bg: 'bg-gradient-to-br from-muted/20 to-muted/5 border-border/30',
-          text: 'text-muted-foreground',
-          hover: 'hover:from-muted/30 hover:to-muted/10',
-          badge: 'bg-muted/10 text-muted-foreground'
-        };
-    }
-  };
-
-  const styles = getVariantStyles();
-
-  const formatValue = (value: any) => {
-    if (value === null || value === undefined) return 'N/A';
+    const baseStyles = "relative overflow-hidden transition-all duration-300 hover:scale-[1.02] hover:shadow-xl group cursor-pointer";
     
-    switch (metricType) {
-      case 'numeric':
-        return `${parseFloat(value).toFixed(1)}${unit}`;
-      case 'temperature':
-        return `${parseFloat(value).toFixed(1)}°C`;
-      case 'ph':
-        const phVal = parseFloat(value);
-        return `pH ${phVal.toFixed(2)}`;
-      case 'quality':
-        return getQualityBadge(value);
-      case 'flow':
-        return `${parseFloat(value).toFixed(2)} m³/s`;
+    switch (availability) {
+      case 'available':
+        return `${baseStyles} border-emerald-500/40 bg-gradient-to-br from-emerald-500/20 to-emerald-600/10 shadow-emerald-500/20`;
+      case 'partial':
+        return `${baseStyles} border-amber-500/40 bg-gradient-to-br from-amber-500/20 to-amber-600/10 shadow-amber-500/20`;
+      case 'missing':
+        return `${baseStyles} border-red-500/40 bg-gradient-to-br from-red-500/20 to-red-600/10 shadow-red-500/20`;
       default:
-        return String(value);
+        return `${baseStyles} border-primary/30 bg-gradient-to-br from-primary/15 to-primary/5 shadow-primary/10`;
     }
   };
 
-  const getQualityBadge = (quality: string) => {
-    const qualityLower = String(quality).toLowerCase();
-    if (qualityLower.includes('excellent') || qualityLower.includes('très bon')) {
-      return <Badge className="bg-success/20 text-success border-success/30">Excellent</Badge>;
+  const getQualityBadge = () => {
+    switch (availability) {
+      case 'available':
+        return <Badge className="bg-success/20 text-success border-success/30">LIVE DATA</Badge>;
+      case 'partial':
+        return <Badge className="bg-warning/20 text-warning border-warning/30">PARTIEL</Badge>;
+      case 'missing':
+        return <Badge className="bg-destructive/20 text-destructive border-destructive/30">MANQUANT</Badge>;
     }
-    if (qualityLower.includes('bon') || qualityLower.includes('satisfaisant')) {
-      return <Badge className="bg-info/20 text-info border-info/30">Bon</Badge>;
-    }
-    if (qualityLower.includes('moyen') || qualityLower.includes('passable')) {
-      return <Badge className="bg-warning/20 text-warning border-warning/30">Moyen</Badge>;
-    }
-    if (qualityLower.includes('mauvais') || qualityLower.includes('dégradé')) {
-      return <Badge className="bg-destructive/20 text-destructive border-destructive/30">Mauvais</Badge>;
-    }
-    return <Badge variant="outline">{quality}</Badge>;
   };
 
   const getMetricIcon = () => {
+    if (Icon) return <Icon className="w-4 h-4" />;
+    
     switch (metricType) {
       case 'temperature':
         return <Thermometer className="w-4 h-4" />;
@@ -130,223 +83,145 @@ export const ContexteMetricCard: React.FC<ContexteMetricProps> = ({
       case 'flow':
         return <Waves className="w-4 h-4" />;
       case 'quality':
-        return <BarChart3 className="w-4 h-4" />;
+        return <Activity className="w-4 h-4" />;
       default:
-        return icon;
+        return <Info className="w-4 h-4" />;
     }
   };
 
   const getStatusIndicator = () => {
-    if (!data) return <XCircle className="w-5 h-5 text-muted-foreground" />;
-    
-    if (metricType === 'quality') {
-      const qualityLower = String(data).toLowerCase();
-      if (qualityLower.includes('excellent') || qualityLower.includes('très bon')) {
-        return <CheckCircle className="w-5 h-5 text-success" />;
-      }
-      if (qualityLower.includes('bon')) {
-        return <CheckCircle className="w-5 h-5 text-info" />;
-      }
-      if (qualityLower.includes('moyen')) {
-        return <AlertTriangle className="w-5 h-5 text-warning" />;
-      }
-      return <XCircle className="w-5 h-5 text-destructive" />;
+    switch (availability) {
+      case 'available':
+        return <CheckCircle2 className="w-4 h-4 text-emerald-500" />;
+      case 'partial':
+        return <AlertTriangle className="w-4 h-4 text-amber-500" />;
+      case 'missing':
+        return <AlertCircle className="w-4 h-4 text-red-500" />;
     }
-    
-    return <CheckCircle className="w-5 h-5 text-success" />;
   };
-
-  const getProgressValue = () => {
-    if (metricType === 'ph' && data) {
-      const phVal = parseFloat(data);
-      return Math.min(100, Math.max(0, ((phVal - 6) / 2) * 100)); // pH 6-8 = 0-100%
-    }
-    if (metricType === 'temperature' && data) {
-      const tempVal = parseFloat(data);
-      return Math.min(100, Math.max(0, (tempVal / 30) * 100)); // 0-30°C = 0-100%
-    }
-    return data ? 75 : 0; // Default progress for available data
-  };
-
-  if (!data) {
-    return (
-      <Card className={`${styles.bg} ${styles.hover} border-dashed opacity-50 transition-all duration-300 ${className}`}>
-        <CardContent className="p-6 text-center">
-          <div className="flex flex-col items-center gap-3">
-            <div className={`p-3 rounded-full bg-muted/20 ${styles.text}`}>
-              {getMetricIcon()}
-            </div>
-            <div>
-              <h4 className="font-medium text-sm">{title}</h4>
-              <p className="text-xs text-muted-foreground mt-1">Donnée non disponible</p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-    );
-  }
 
   return (
-    <Card 
-      className={`${styles.bg} ${styles.hover} border transition-all duration-500 hover:shadow-xl hover:shadow-primary/5 hover:scale-105 cursor-pointer group ${className}`}
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
-    >
+    <Card className={`${getVariantStyles()} ${className}`}>
       <CardHeader className="pb-3">
         <CardTitle className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className={`p-2.5 rounded-xl ${styles.text} bg-background/50 backdrop-blur-sm transition-transform duration-300 ${isHovered ? 'rotate-6 scale-110' : ''}`}>
-              {getMetricIcon()}
-            </div>
-            <div>
-              <span className="text-sm font-medium">{title}</span>
-              <div className="flex items-center gap-2 mt-1">
-                {getStatusIndicator()}
-                {metricType === 'quality' ? (
-                  formatValue(data)
-                ) : (
-                  <Badge variant="outline" className={`text-xs ${styles.badge}`}>
-                    {formatValue(data)}
-                  </Badge>
-                )}
-              </div>
-            </div>
+          <div className="flex items-center space-x-2">
+            {getMetricIcon()}
+            <span className="text-sm font-semibold">{title}</span>
           </div>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setShowDetail(true)}
-            className={`opacity-0 group-hover:opacity-100 transition-all duration-300 ${styles.text} hover:bg-background/20`}
-          >
-            <Info className="w-4 h-4" />
-          </Button>
+          <div className="flex items-center space-x-2">
+            {getStatusIndicator()}
+            {getQualityBadge()}
+          </div>
         </CardTitle>
       </CardHeader>
 
       <CardContent className="space-y-4">
-        {/* Aperçu immédiat des données */}
-        <div className="space-y-4">
-          {/* Valeur principale mise en évidence */}
-          <div className={`p-6 rounded-xl ${styles.bg} ${styles.hover} border-2 transition-all duration-300`}>
-            <div className="flex items-center justify-between mb-4">
-              <h3 className={`text-lg font-semibold ${styles.text}`}>{title}</h3>
-              <div className="flex items-center gap-2">
-                {getStatusIndicator()}
-                <Badge className={`${styles.badge} font-mono`}>
-                  LIVE DATA
-                </Badge>
+        <div className="space-y-3">
+          {/* Affichage immédiat de la donnée */}
+          <div className="p-4 rounded-lg bg-background/50 backdrop-blur-sm border border-border/30">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center space-x-2">
+                {Icon && <Icon className="w-4 h-4 text-primary/70" />}
+                <h3 className="font-semibold text-sm text-foreground/90">{title}</h3>
               </div>
+              {getQualityBadge()}
             </div>
             
-            {/* Donnée visible immédiatement */}
-            <div className="space-y-3">
-              <div className={`text-2xl font-bold ${styles.text} bg-background/50 backdrop-blur-sm p-4 rounded-lg border`}>
-                {data ? (
-                  <div className="font-mono">
-                    {typeof data === 'object' ? (
-                      <div className="text-sm space-y-2">
-                        {Object.entries(data).slice(0, 3).map(([key, value]) => (
-                          <div key={key} className="flex justify-between border-b border-border/30 pb-1">
-                            <span className="text-muted-foreground capitalize">{key.replace(/_/g, ' ')}:</span>
-                            <span className={styles.text}>{String(value).slice(0, 30)}{String(value).length > 30 ? '...' : ''}</span>
-                          </div>
-                        ))}
-                        {Object.keys(data).length > 3 && (
-                          <div className="text-xs text-muted-foreground text-center pt-2">
-                            +{Object.keys(data).length - 3} autres propriétés
-                          </div>
-                        )}
-                      </div>
-                    ) : (
-                      <div className="text-center">
-                        {formatValue(data)}
-                      </div>
-                    )}
-                  </div>
-                ) : (
-                  <div className="text-center text-muted-foreground italic">
-                    Aucune donnée disponible
-                  </div>
-                )}
+            {/* Valeur principale avec animation */}
+            <div className="space-y-2">
+              <div className="text-2xl font-bold text-primary/90 group-hover:text-primary transition-colors">
+                {formattedData}
+                {unit && <span className="text-sm font-normal text-muted-foreground ml-1">{unit}</span>}
               </div>
-
-              {/* Métadonnées rapides */}
-              <div className="flex items-center justify-between text-sm">
-                <div className="flex items-center gap-2 text-muted-foreground">
-                  <Clock className="w-3 h-3" />
-                  <span>Dernière mise à jour</span>
-                </div>
-                <Badge variant="outline" className="text-xs">
-                  {data ? 'Disponible' : 'En attente'}
-                </Badge>
+              
+              {/* Indicateur de qualité visuel */}
+              <div className="w-full bg-muted/30 rounded-full h-1 overflow-hidden">
+                <div 
+                  className={`h-full transition-all duration-1000 group-hover:opacity-80 ${
+                    availability === 'available' ? 'bg-gradient-to-r from-emerald-500 to-green-400' :
+                    availability === 'partial' ? 'bg-gradient-to-r from-amber-500 to-yellow-400' :
+                    'bg-gradient-to-r from-red-500 to-red-400'
+                  }`}
+                  style={{ 
+                    width: availability === 'available' ? '100%' : 
+                           availability === 'partial' ? '60%' : '20%'
+                  }}
+                />
               </div>
             </div>
           </div>
-        </div>
 
-        {/* Action rapide */}
-        <Dialog open={showDetail} onOpenChange={setShowDetail}>
-          <DialogTrigger asChild>
-            <Button
-              variant="ghost"
-              size="sm"
-              className={`w-full justify-between text-xs ${styles.text} hover:bg-background/20 transition-all duration-300`}
-            >
-              Voir les détails
-              <ChevronRight className="w-3 h-3 transition-transform duration-300 group-hover:translate-x-1" />
-            </Button>
-          </DialogTrigger>
+          {/* Bouton pour voir les détails */}
+          <Dialog open={isDetailOpen} onOpenChange={setIsDetailOpen}>
+            <DialogTrigger asChild>
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className="w-full justify-between opacity-0 group-hover:opacity-100 transition-all duration-300"
+              >
+                <span className="flex items-center gap-2">
+                  <Eye className="w-4 h-4" />
+                  Voir les détails
+                </span>
+                <TrendingUp className="w-4 h-4" />
+              </Button>
+            </DialogTrigger>
 
-          <DialogContent className="max-w-2xl">
-            <DialogHeader>
-              <DialogTitle className={`flex items-center gap-3 ${styles.text}`}>
-                {getMetricIcon()}
-                {title}
-              </DialogTitle>
-            </DialogHeader>
+            <DialogContent className="max-w-2xl">
+              <DialogHeader>
+                <DialogTitle className="flex items-center gap-3">
+                  {getMetricIcon()}
+                  {title}
+                  {getQualityBadge()}
+                </DialogTitle>
+              </DialogHeader>
 
-            <ScrollArea className="max-h-96 pr-4">
               <div className="space-y-6">
                 {/* Valeur principale */}
-                <div className={`text-center p-6 rounded-lg ${styles.bg}`}>
-                  <div className={`text-3xl font-bold ${styles.text} mb-2`}>
-                    {formatValue(data)}
+                <div className="text-center p-6 rounded-lg bg-primary/5 border">
+                  <div className="text-3xl font-bold text-primary mb-2">
+                    {formattedData}
+                    {unit && <span className="text-lg text-muted-foreground ml-2">{unit}</span>}
                   </div>
-                  <p className="text-sm text-muted-foreground">Valeur mesurée</p>
+                  <p className="text-sm text-muted-foreground">Valeur actuelle</p>
                 </div>
 
-                {/* Détails techniques */}
+                {/* Détails bruts */}
                 <div className="space-y-4">
-                  <h4 className="font-medium">Informations détaillées</h4>
-                  <div className="bg-muted/20 p-4 rounded-lg">
-                    <pre className="text-xs font-mono whitespace-pre-wrap">
+                  <h4 className="font-semibold">Données brutes</h4>
+                  <div className="bg-muted/20 p-4 rounded-lg border">
+                    <pre className="text-xs font-mono whitespace-pre-wrap overflow-auto max-h-40">
                       {typeof data === 'object' ? JSON.stringify(data, null, 2) : String(data)}
                     </pre>
                   </div>
                 </div>
 
-                {/* Interprétation */}
-                {metricType === 'ph' && (
-                  <div className="space-y-2">
-                    <h4 className="font-medium">Interprétation</h4>
-                    <p className="text-sm text-muted-foreground">
-                      {parseFloat(data) < 7 ? 'Eau acide' : parseFloat(data) > 7 ? 'Eau basique' : 'Eau neutre'}
+                {/* Interprétation contextuelle */}
+                {metricType === 'ph' && data && (
+                  <div className="space-y-2 p-4 bg-info/5 border border-info/20 rounded-lg">
+                    <h4 className="font-semibold text-info">Interprétation pH</h4>
+                    <p className="text-sm">
+                      {parseFloat(data) < 6.5 ? '🔴 Eau acide - peut affecter la biodiversité' : 
+                       parseFloat(data) > 8.5 ? '🔴 Eau basique - surveillance recommandée' : 
+                       '🟢 pH optimal pour la vie aquatique'}
                     </p>
                   </div>
                 )}
 
-                {metricType === 'temperature' && (
-                  <div className="space-y-2">
-                    <h4 className="font-medium">Contexte thermique</h4>
-                    <p className="text-sm text-muted-foreground">
-                      {parseFloat(data) < 15 ? 'Eau froide' : parseFloat(data) < 25 ? 'Température modérée' : 'Eau chaude'}
+                {metricType === 'temperature' && data && (
+                  <div className="space-y-2 p-4 bg-info/5 border border-info/20 rounded-lg">
+                    <h4 className="font-semibold text-info">Contexte thermique</h4>
+                    <p className="text-sm">
+                      {parseFloat(data) < 10 ? '🔵 Eau froide - typique des sources de montagne' : 
+                       parseFloat(data) > 25 ? '🔴 Eau chaude - possible pollution thermique' : 
+                       '🟢 Température modérée et favorable'}
                     </p>
                   </div>
                 )}
               </div>
-            </ScrollArea>
-          </DialogContent>
-        </Dialog>
+            </DialogContent>
+          </Dialog>
+        </div>
       </CardContent>
     </Card>
   );
