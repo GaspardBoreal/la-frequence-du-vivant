@@ -32,12 +32,12 @@ export const VignetteGrid: React.FC<VignetteGridProps> = ({
 }) => {
   // Process data into vignette format
   const processedData = React.useMemo(() => {
-    if (!data) return [];
-    
-    // Traitement spécial pour le vocabulaire
+    // Toujours traiter le vocabulaire même si data est falsy (retourne une structure vide)
     if (specialProcessing === 'vocabulary') {
-      return processVocabularyData(data);
+      return processVocabularyData(data || {});
     }
+
+    if (!data) return [];
     
     // Traitement spécial pour la technodiversité
     if (specialProcessing === 'technology') {
@@ -146,6 +146,26 @@ export const VignetteGrid: React.FC<VignetteGridProps> = ({
     return [];
   }, [specialProcessing, termsWithResolved]);
 
+  // Fallback: si aucun terme ne référence de sources, utiliser les IDs détectés dans la section sources
+  const fallbackReferencedSourceIds = React.useMemo(() => {
+    if (
+      specialProcessing === 'vocabulary' &&
+      processedData &&
+      typeof processedData === 'object' &&
+      'sources' in (processedData as any)
+    ) {
+      const sources = (processedData as any).sources || [];
+      const ids: string[] = [];
+      sources.forEach((s: any) => {
+        const meta = s?.metadata || s || {};
+        const id = meta.id || meta.key || meta.source_id || meta.source || meta.slug || (meta.url ? String(meta.url).split('/').pop() : undefined);
+        if (id) ids.push(String(id));
+      });
+      return Array.from(new Set(ids));
+    }
+    return [];
+  }, [specialProcessing, processedData]);
+
   // Alerte qualité: termes sans sources (vocabulaire et technodiversité)
   React.useEffect(() => {
     if (specialProcessing === 'vocabulary' && termsWithResolved.length) {
@@ -245,44 +265,46 @@ export const VignetteGrid: React.FC<VignetteGridProps> = ({
 
       {/* Affichage spécialisé pour les technologies */}
       {specialProcessing === 'technology' && Array.isArray(processedData) && (
-        <div className="space-y-8">
-          {processedData.map((item, index) => {
-            if (item.type === 'section_header') {
-              return (
-                <div key={index} className="flex items-center gap-3 mb-6">
+        (() => {
+          const headerItem = processedData.find((i: any) => i.type === 'section_header');
+          const sourcesBanner = processedData.find((i: any) => i.type === 'sources_banner');
+          const innovationItems = processedData.filter((i: any) => i.type !== 'section_header' && i.type !== 'sources_banner');
+          return (
+            <div className="space-y-6">
+              {headerItem && (
+                <div className="flex items-center gap-3 mb-4">
                   <div className="flex items-center gap-2 text-success">
                     <Wrench className="h-5 w-5" />
-                    <h2 className="text-lg font-semibold">{item.titre}</h2>
+                    <h2 className="text-lg font-semibold">{headerItem.titre}</h2>
                     <Badge variant="outline" className="border-success/30 text-success bg-success/5">
-                      {item.metadata?.count}
+                      {headerItem.metadata?.count}
                     </Badge>
                   </div>
                   <div className="flex-1 h-px bg-gradient-to-r from-success/30 to-transparent"></div>
                 </div>
-              );
-            }
-            
-            if (item.type === 'sources_banner') {
-              return (
+              )}
+
+              {/* Grille 4 colonnes responsive */}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                {innovationItems.map((item: any, index: number) => (
+                  <InteractiveVignette
+                    key={index}
+                    data={item}
+                    variant="technology"
+                  />
+                ))}
+              </div>
+
+              {sourcesBanner && (
                 <TechnologySourcesCard
-                  key={index}
-                  referencedSourceIds={item.metadata?.sourceIds || []}
+                  referencedSourceIds={sourcesBanner.metadata?.sourceIds || []}
                   importSources={importSources}
                   className="w-full"
                 />
-              );
-            }
-
-            return (
-              <InteractiveVignette
-                key={index}
-                data={item}
-                variant="technology"
-                className="w-full"
-              />
-            );
-          })}
-        </div>
+              )}
+            </div>
+          );
+        })()
       )}
 
       {/* Affichage spécialisé pour le vocabulaire */}
@@ -321,7 +343,7 @@ export const VignetteGrid: React.FC<VignetteGridProps> = ({
               {/* Conteneur avec contraintes de largeur */}
               <div className="w-full max-w-full overflow-hidden">
                 <VocabularySourcesCard 
-                  referencedSourceIds={referencedSourceIds}
+                  referencedSourceIds={referencedSourceIds.length ? referencedSourceIds : fallbackReferencedSourceIds}
                   importSources={importSources}
                   className="w-full max-w-full"
                 />
