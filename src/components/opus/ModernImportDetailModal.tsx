@@ -8,6 +8,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { InteractiveVignette } from './InteractiveVignette';
 import { SpeciesVignetteGrid } from './SpeciesVignetteGrid';
 import { VignetteGrid } from './VignetteGrid';
+import { processTechnodiversiteData } from '@/utils/technodiversiteDataUtils';
 import { ContexteMetricCard } from './ContexteMetricCard';
 import { mapContexteData } from '@/utils/contexteDataMapper';
 import { getVocabularyTermsCount } from '@/utils/vocabularyDataUtils';
@@ -298,7 +299,10 @@ export const ModernImportDetailModal: React.FC<ModernImportDetailModalProps> = (
                   <CardContent>
                     <div className="text-2xl font-bold text-purple-500 mb-1">
                       {importRecord.contexte_data?.technodiversite ? 
-                        Object.keys(importRecord.contexte_data.technodiversite).length : 0}
+                        (() => {
+                          const processed = processTechnodiversiteData(importRecord.contexte_data.technodiversite);
+                          return processed.totalCount;
+                        })() : 0}
                     </div>
                     <p className="text-xs text-muted-foreground">technologies</p>
                   </CardContent>
