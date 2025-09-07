@@ -206,9 +206,9 @@ export const DataInsightsDashboard: React.FC<DataInsightsDashboardProps> = ({ im
             <div className="text-3xl font-bold text-warning mb-1">
               {analytics.totalVocabulary}
             </div>
-            <p className="text-xs text-muted-foreground">
-              termes de vocabulaire local collectés
-            </p>
+             <p className="text-xs text-muted-foreground">
+               éléments de vocabulaire collectés
+             </p>
             <div className="mt-2">
               <Badge variant="secondary" className="text-xs">
                 Patrimoine vivant
@@ -506,10 +506,10 @@ export const DataInsightsDashboard: React.FC<DataInsightsDashboardProps> = ({ im
                     <Users className="w-4 h-4" />
                     Patrimoine Linguistique Riche
                   </h4>
-                  <p className="text-sm text-muted-foreground">
-                    {analytics.totalVocabulary} termes locaux collectés. 
-                    Excellent potentiel pour préservation culturelle.
-                  </p>
+                   <p className="text-sm text-muted-foreground">
+                     {analytics.totalVocabulary} éléments de vocabulaire collectés. 
+                     Excellent potentiel pour préservation culturelle.
+                   </p>
                 </div>
               )}
             </div>

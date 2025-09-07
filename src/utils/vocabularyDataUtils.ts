@@ -46,7 +46,7 @@ const isLocalVocabularyTerm = (key: string, value: any): boolean => {
 };
 
 /**
- * Compte le nombre de termes de vocabulaire local (uniquement les termes valides, pas les sources)
+ * Compte le nombre total d'éléments de vocabulaire (termes locaux + phénomènes + pratiques)
  */
 export const getVocabularyTermsCount = (vocabularyData: any): number => {
   if (!vocabularyData) return 0;
@@ -56,7 +56,47 @@ export const getVocabularyTermsCount = (vocabularyData: any): number => {
   }
   
   if (typeof vocabularyData === 'object') {
-    // Si c'est un objet avec une propriété 'termes', compter uniquement les termes
+    let totalCount = 0;
+    
+    // Nouveau format avec catégories séparées
+    if (vocabularyData.termes_locaux || vocabularyData.phenomenes || vocabularyData.pratiques) {
+      // Compter les termes locaux
+      if (Array.isArray(vocabularyData.termes_locaux)) {
+        vocabularyData.termes_locaux.forEach((item: any) => {
+          if (item.metadata?.termes && Array.isArray(item.metadata.termes)) {
+            totalCount += item.metadata.termes.length;
+          } else {
+            totalCount += 1;
+          }
+        });
+      }
+      
+      // Compter les phénomènes
+      if (Array.isArray(vocabularyData.phenomenes)) {
+        vocabularyData.phenomenes.forEach((item: any) => {
+          if (item.metadata?.phenomenes && Array.isArray(item.metadata.phenomenes)) {
+            totalCount += item.metadata.phenomenes.length;
+          } else {
+            totalCount += 1;
+          }
+        });
+      }
+      
+      // Compter les pratiques
+      if (Array.isArray(vocabularyData.pratiques)) {
+        vocabularyData.pratiques.forEach((item: any) => {
+          if (item.metadata?.pratiques && Array.isArray(item.metadata.pratiques)) {
+            totalCount += item.metadata.pratiques.length;
+          } else {
+            totalCount += 1;
+          }
+        });
+      }
+      
+      return totalCount;
+    }
+    
+    // Ancien format - Si c'est un objet avec une propriété 'termes', compter uniquement les termes
     if (vocabularyData.termes && Array.isArray(vocabularyData.termes)) {
       return vocabularyData.termes.length;
     }

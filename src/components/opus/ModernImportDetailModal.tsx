@@ -232,7 +232,7 @@ export const ModernImportDetailModal: React.FC<ModernImportDetailModalProps> = (
                       {importRecord.contexte_data?.vocabulaire_local ? 
                         getVocabularyTermsCount(importRecord.contexte_data.vocabulaire_local) : 0}
                     </div>
-                    <p className="text-xs text-muted-foreground">termes locaux</p>
+                    <p className="text-xs text-muted-foreground">éléments de vocabulaire</p>
                   </CardContent>
                 </Card>
 

@@ -581,9 +581,9 @@ export const ModernImportDashboard: React.FC = () => {
                      <div className="text-3xl font-bold text-warning">
                        {totalVocabulary}
                      </div>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      termes locaux
-                    </p>
+                     <p className="text-xs text-muted-foreground mt-1">
+                       éléments de vocabulaire
+                     </p>
                   </CardContent>
                 </Card>
 
