@@ -23,9 +23,6 @@ export interface ProcessedEmpreintesHumainesData {
   totalCount: number;
 }
 
-/**
- * Traite les données d'empreintes humaines pour l'affichage en vignettes
- */
 export const processEmpreintesHumainesData = (data: any): ProcessedEmpreintesHumainesData => {
   console.log('Debug - processEmpreintesHumainesData input:', data);
   
@@ -39,6 +36,100 @@ export const processEmpreintesHumainesData = (data: any): ProcessedEmpreintesHum
     };
   }
 
+  const result: ProcessedEmpreintesHumainesData = {
+    industrielles: [],
+    patrimoniales: [],
+    transport: [],
+    urbaines: [],
+    totalCount: 0
+  };
+
+  // Si les données suivent la nouvelle structure JSON avec "donnees" (infrastructures_techniques)
+  if (data.donnees) {
+    const donnees = data.donnees;
+    
+    // Traiter chaque catégorie de la structure infrastructures_techniques
+    if (donnees.ouvrages_hydrauliques) {
+      donnees.ouvrages_hydrauliques.forEach((item: any) => {
+        const processedItem = {
+          titre: item.nom,
+          description: item.description,
+          type: 'ouvrage_hydraulique',
+          category: categorizeInfrastructureItem(item.nom, item.description),
+          metadata: {
+            impact: determineImpact(item),
+            source_ids: item.source_ids || []
+          }
+        } as EmpreinteHumaineItem;
+        addToCategory(result, processedItem);
+      });
+    }
+    
+    if (donnees.reseaux) {
+      donnees.reseaux.forEach((item: any) => {
+        const processedItem = {
+          titre: item.nom,
+          description: item.description,
+          type: 'reseau',
+          category: 'transport', // Les réseaux sont généralement du transport
+          metadata: {
+            impact: determineImpact(item),
+            source_ids: item.source_ids || []
+          }
+        } as EmpreinteHumaineItem;
+        addToCategory(result, processedItem);
+      });
+    }
+    
+    if (donnees.equipements) {
+      donnees.equipements.forEach((item: any) => {
+        const processedItem = {
+          titre: item.nom,
+          description: item.description,
+          type: 'equipement',
+          category: 'industrielles', // Les équipements sont généralement industriels
+          metadata: {
+            impact: 'négatif', // Les équipements industriels ont généralement un impact négatif
+            source_ids: item.source_ids || []
+          }
+        } as EmpreinteHumaineItem;
+        addToCategory(result, processedItem);
+      });
+    }
+    
+    if (donnees.complexes_industriels) {
+      donnees.complexes_industriels.forEach((item: any) => {
+        const processedItem = {
+          titre: item.nom,
+          description: item.description,
+          type: 'complexe_industriel',
+          category: 'industrielles',
+          metadata: {
+            impact: 'négatif', // Les complexes industriels ont généralement un impact négatif
+            source_ids: item.source_ids || []
+          }
+        } as EmpreinteHumaineItem;
+        addToCategory(result, processedItem);
+      });
+    }
+    
+    result.totalCount = result.industrielles.length + result.patrimoniales.length + 
+                     result.transport.length + result.urbaines.length;
+    
+    console.log('Debug - New JSON format processed:', {
+      counts: {
+        industrielles: result.industrielles.length,
+        patrimoniales: result.patrimoniales.length,
+        transport: result.transport.length,
+        urbaines: result.urbaines.length,
+      },
+      total: result.totalCount,
+    });
+
+    return result;
+  }
+
+  // Ancien code pour d'autres formats...
   const processItems = (items: any[], category: string) => {
     if (!Array.isArray(items)) return [];
     
@@ -186,6 +277,48 @@ export const processEmpreintesHumainesData = (data: any): ProcessedEmpreintesHum
     urbaines,
     totalCount: allItems.length
   };
+};
+
+// Fonction helper pour ajouter un item à la bonne catégorie
+const addToCategory = (result: ProcessedEmpreintesHumainesData, item: EmpreinteHumaineItem) => {
+  const category = item.category;
+  if (category === 'industrielles') {
+    result.industrielles.push(item);
+  } else if (category === 'patrimoniales') {
+    result.patrimoniales.push(item);
+  } else if (category === 'transport') {
+    result.transport.push(item);
+  } else {
+    result.urbaines.push(item);
+  }
+};
+
+// Fonction pour catégoriser selon le type d'infrastructure
+const categorizeInfrastructureItem = (nom: string, description: string): string => {
+  const text = (nom + ' ' + description).toLowerCase();
+  
+  if (text.includes('carrelet') || text.includes('escalier') || text.includes('patrimoine') || 
+      text.includes('monument') || text.includes('historique')) {
+    return 'patrimoniales';
+  }
+  
+  if (text.includes('route') || text.includes('sentier') || text.includes('transport') || 
+      text.includes('navigation') || text.includes('quai')) {
+    return 'transport';
+  }
+  
+  if (text.includes('industriel') || text.includes('cuves') || text.includes('pétrole') || 
+      text.includes('drague') || text.includes('appontement')) {
+    return 'industrielles';
+  }
+  
+  if (text.includes('eau') || text.includes('captage') || text.includes('prise') || 
+      text.includes('digues') || text.includes('urbain')) {
+    return 'urbaines';
+  }
+  
+  // Par défaut, considérer comme patrimonial si c'est un ouvrage hydraulique traditionnel
+  return 'patrimoniales';
 };
 
 /**

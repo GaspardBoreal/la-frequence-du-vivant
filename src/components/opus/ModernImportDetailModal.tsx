@@ -251,17 +251,20 @@ export const ModernImportDetailModal: React.FC<ModernImportDetailModalProps> = (
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <div className="text-2xl font-bold text-warning mb-1">
-                      {(() => {
-                        const infra = importRecord.contexte_data?.empreintes_humaines 
-                          || importRecord.contexte_data?.infrastructures 
-                          || importRecord.contexte_data?.infrastructures_techniques 
-                          || importRecord.contexte_data?.donnees?.empreintes_humaines 
-                          || importRecord.contexte_data?.empreintesHumaines 
-                          || null;
-                        return infra ? processEmpreintesHumainesData(infra).totalCount : 0;
-                      })()}
-                    </div>
+                     <div className="text-2xl font-bold text-warning mb-1">
+                       {(() => {
+                         // Essayer différents chemins pour trouver les données d'infrastructure
+                         const contextData = importRecord.contexte_data as any;
+                         const infra = contextData?.dimensions?.infrastructures_techniques
+                           || contextData?.infrastructures_techniques
+                           || contextData?.empreintes_humaines 
+                           || contextData?.infrastructures 
+                           || contextData?.donnees?.empreintes_humaines 
+                           || contextData?.empreintesHumaines 
+                           || null;
+                         return infra ? processEmpreintesHumainesData(infra).totalCount : 0;
+                       })()}
+                     </div>
                     <p className="text-xs text-muted-foreground">caractéristiques</p>
                   </CardContent>
                 </Card>
@@ -409,12 +412,13 @@ export const ModernImportDetailModal: React.FC<ModernImportDetailModalProps> = (
 
             {/* Infrastructures Tab */}
             <TabsContent value="infrastructure" className="space-y-6">
-              <InfrastructureVignetteGrid
-                empreintesHumainesData={importRecord.contexte_data?.empreintes_humaines 
-                  || importRecord.contexte_data?.infrastructures 
-                  || importRecord.contexte_data?.infrastructures_techniques 
-                  || importRecord.contexte_data?.donnees?.empreintes_humaines 
-                  || importRecord.contexte_data?.empreintesHumaines}
+              <InfrastructureVignetteGrid 
+                empreintesHumainesData={(() => {
+                  const contextData = importRecord.contexte_data as any;
+                  return contextData?.dimensions?.infrastructures_techniques ||
+                         contextData?.infrastructures_techniques || 
+                         contextData?.empreintes_humaines;
+                })()}
                 importSources={importRecord.sources}
               />
             </TabsContent>

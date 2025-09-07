@@ -161,10 +161,14 @@ export const ModernImportDashboard: React.FC = () => {
   );
   const totalInfrastructure = useAnimatedCounter(
     filteredImports.reduce((acc, imp) => {
-      const empreintes = imp.contexte_data?.empreintes_humaines;
-      if (empreintes) {
+      // Essayer différents chemins pour trouver les données d'infrastructure
+      const contextData = imp.contexte_data as any;
+      const infrastructures = contextData?.dimensions?.infrastructures_techniques ||
+                            contextData?.infrastructures_techniques || 
+                            contextData?.empreintes_humaines;
+      if (infrastructures) {
         try {
-          return acc + processEmpreintesHumainesData(empreintes).totalCount;
+          return acc + processEmpreintesHumainesData(infrastructures).totalCount;
         } catch {
           return acc;
         }
