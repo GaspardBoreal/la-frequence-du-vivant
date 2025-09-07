@@ -46,13 +46,33 @@ export const InteractiveVignette: React.FC<InteractiveVignetteProps> = ({
       ? data.metadata.source_ids 
       : [data.metadata.source_ids];
     
-    return sourceIds
-      .map(id => importSources.find(source => 
-        source.id === id || 
-        source.key === id || 
-        String(source.id) === String(id)
-      ))
+    console.log('Debug - Source resolution for species:', {
+      speciesName: data.nom_commun || data.titre,
+      sourceIds,
+      availableSources: importSources.map(s => ({ 
+        id: s.id, 
+        titre: s.titre, 
+        url: s.url 
+      }))
+    });
+    
+    const resolved = sourceIds
+      .map(sourceId => {
+        // Les source_ids sont des strings comme "S00", "S01" qui correspondent au champ "id" des sources
+        const found = importSources.find(source => source.id === sourceId);
+        
+        if (!found) {
+          console.log(`Debug - No source found for ID: ${sourceId}`);
+        } else {
+          console.log(`Debug - Found source for ID ${sourceId}:`, found);
+        }
+        
+        return found;
+      })
       .filter(Boolean);
+    
+    console.log('Debug - Resolved sources:', resolved);
+    return resolved;
   }, [data.metadata?.source_ids, importSources]);
 
   return (
@@ -273,13 +293,15 @@ export const InteractiveVignette: React.FC<InteractiveVignetteProps> = ({
                           </div>
                           <div className="grid gap-3">
                             {resolvedSources.map((source: any, index: number) => {
-                              const href = source?.url || source?.lien || source?.link;
-                              const title = source?.nom || source?.name || source?.titre;
+                              const href = source?.url;
+                              const title = source?.titre;
                               const shortName = href && /^https?:\/\//i.test(href) 
                                 ? new URL(href).hostname.replace('www.', '').split('.')[0] 
                                 : 'Source';
-                              const displayTitle = title || shortName;
-                              const date = source?.date || source?.date_publication || source?.annee;
+                              const displayTitle = title || shortName || `Source ${index + 1}`;
+                              const date = source?.date_acces;
+
+                              console.log('Debug - Rendering source:', { source, href, title, displayTitle, date });
 
                               return (
                                 <div key={source?.id || index} className="flex items-center gap-3 p-3 rounded-lg bg-background/50 border border-border/30 hover:bg-background/80 transition-colors">
@@ -298,7 +320,7 @@ export const InteractiveVignette: React.FC<InteractiveVignetteProps> = ({
                                         </div>
                                       )}
                                     </div>
-                                    {href && /^https?:\/\//i.test(href) && (
+                                    {href && /^https?:\/\//i.test(href) ? (
                                       <a 
                                         href={href} 
                                         target="_blank" 
@@ -308,6 +330,10 @@ export const InteractiveVignette: React.FC<InteractiveVignetteProps> = ({
                                       >
                                         {href.length > 50 ? `${href.substring(0, 50)}...` : href}
                                       </a>
+                                    ) : (
+                                      <p className="text-xs text-muted-foreground mt-1">
+                                        URL non disponible
+                                      </p>
                                     )}
                                   </div>
                                   {href && /^https?:\/\//i.test(href) && (
