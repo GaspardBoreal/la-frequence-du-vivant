@@ -26,15 +26,34 @@ interface InteractiveVignetteProps {
   data: VignetteData;
   variant?: VignetteVariant;
   className?: string;
+  importSources?: any[]; // Sources de l'import pour résoudre les source_ids
 }
 
 export const InteractiveVignette: React.FC<InteractiveVignetteProps> = ({
   data,
   variant = 'default',
-  className = ''
+  className = '',
+  importSources = []
 }) => {
   const [showDetails, setShowDetails] = useState(false);
   const styles = getVignetteStyles(variant);
+
+  // Résolution des sources pour les espèces
+  const resolvedSources = React.useMemo(() => {
+    if (!data.metadata?.source_ids || !importSources.length) return [];
+    
+    const sourceIds = Array.isArray(data.metadata.source_ids) 
+      ? data.metadata.source_ids 
+      : [data.metadata.source_ids];
+    
+    return sourceIds
+      .map(id => importSources.find(source => 
+        source.id === id || 
+        source.key === id || 
+        String(source.id) === String(id)
+      ))
+      .filter(Boolean);
+  }, [data.metadata?.source_ids, importSources]);
 
   return (
     <Card className={`group cursor-pointer ${styles.container} ${className}`}>
@@ -64,6 +83,13 @@ export const InteractiveVignette: React.FC<InteractiveVignetteProps> = ({
             {data.type && (
               <Badge variant="secondary" className={`w-fit text-xs mt-2 font-semibold ${styles.badge}`}>
                 {data.type}
+              </Badge>
+            )}
+            
+            {/* Indicateur de sources pour les espèces */}
+            {resolvedSources.length > 0 && (
+              <Badge variant="outline" className="text-[10px] mt-1">
+                {resolvedSources.length} source{resolvedSources.length > 1 ? 's' : ''}
               </Badge>
             )}
           </div>
@@ -211,24 +237,92 @@ export const InteractiveVignette: React.FC<InteractiveVignetteProps> = ({
 
                   {/* Informations spécifiques aux espèces */}
                   {variant === 'species' && (
-                    <div className="space-y-4 p-5 bg-emerald-50/80 rounded-xl border border-emerald-200/60">
-                      {data.nom_commun && (
-                        <div>
-                          <h4 className="font-semibold text-sm text-slate-600 mb-2">Nom commun</h4>
-                          <p className="font-bold text-lg text-emerald-800">{data.nom_commun}</p>
-                        </div>
-                      )}
-                      {data.nom_scientifique && (
-                        <div>
-                          <h4 className="font-semibold text-sm text-slate-600 mb-2">Nom scientifique</h4>
-                          <p className="italic text-base text-slate-800 font-medium">{data.nom_scientifique}</p>
-                        </div>
-                      )}
-                      {data.statut_conservation && (
-                        <div>
-                          <h4 className="font-semibold text-sm text-slate-600 mb-2">Statut de conservation</h4>
-                          <div className="inline-flex items-center px-3 py-2 rounded-lg bg-emerald-100 border border-emerald-300">
-                            <p className="text-emerald-800 font-semibold">{data.statut_conservation}</p>
+                    <div className="space-y-4">
+                      {/* Informations biologiques */}
+                      <div className="space-y-4 p-5 bg-emerald-50/80 rounded-xl border border-emerald-200/60">
+                        {data.nom_commun && (
+                          <div>
+                            <h4 className="font-semibold text-sm text-slate-600 mb-2">Nom commun</h4>
+                            <p className="font-bold text-lg text-emerald-800">{data.nom_commun}</p>
+                          </div>
+                        )}
+                        {data.nom_scientifique && (
+                          <div>
+                            <h4 className="font-semibold text-sm text-slate-600 mb-2">Nom scientifique</h4>
+                            <p className="italic text-base text-slate-800 font-medium">{data.nom_scientifique}</p>
+                          </div>
+                        )}
+                        {data.statut_conservation && (
+                          <div>
+                            <h4 className="font-semibold text-sm text-slate-600 mb-2">Statut de conservation</h4>
+                            <div className="inline-flex items-center px-3 py-2 rounded-lg bg-emerald-100 border border-emerald-300">
+                              <p className="text-emerald-800 font-semibold">{data.statut_conservation}</p>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Sources d'identification de l'espèce */}
+                      {resolvedSources.length > 0 && (
+                        <div className="p-6 rounded-xl bg-gradient-to-br from-success/5 to-success/5 border border-success/20">
+                          <div className="flex items-center gap-2 mb-4">
+                            <ExternalLink className="w-5 h-5 text-success" />
+                            <h3 className="font-semibold text-base text-success">
+                              Sources d'identification ({resolvedSources.length})
+                            </h3>
+                          </div>
+                          <div className="grid gap-3">
+                            {resolvedSources.map((source: any, index: number) => {
+                              const href = source?.url || source?.lien || source?.link;
+                              const title = source?.nom || source?.name || source?.titre;
+                              const shortName = href && /^https?:\/\//i.test(href) 
+                                ? new URL(href).hostname.replace('www.', '').split('.')[0] 
+                                : 'Source';
+                              const displayTitle = title || shortName;
+                              const date = source?.date || source?.date_publication || source?.annee;
+
+                              return (
+                                <div key={source?.id || index} className="flex items-center gap-3 p-3 rounded-lg bg-background/50 border border-border/30 hover:bg-background/80 transition-colors">
+                                  <div className="w-8 h-8 rounded-full bg-success/10 flex items-center justify-center flex-shrink-0">
+                                    <span className="text-xs font-bold text-success">{index + 1}</span>
+                                  </div>
+                                  <div className="min-w-0 flex-1">
+                                    <div className="flex items-center gap-2">
+                                      <h5 className="font-medium text-sm text-foreground truncate">
+                                        {displayTitle}
+                                      </h5>
+                                      {date && (
+                                        <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                                          <Calendar className="w-3 h-3" />
+                                          {date}
+                                        </div>
+                                      )}
+                                    </div>
+                                    {href && /^https?:\/\//i.test(href) && (
+                                      <a 
+                                        href={href} 
+                                        target="_blank" 
+                                        rel="noopener noreferrer"
+                                        className="text-xs text-success hover:text-success/80 underline truncate block mt-1"
+                                        title={href}
+                                      >
+                                        {href.length > 50 ? `${href.substring(0, 50)}...` : href}
+                                      </a>
+                                    )}
+                                  </div>
+                                  {href && /^https?:\/\//i.test(href) && (
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() => window.open(href, '_blank')}
+                                      className="w-8 h-8 p-0 text-success hover:text-success hover:bg-success/10"
+                                    >
+                                      <ExternalLink className="w-4 h-4" />
+                                    </Button>
+                                  )}
+                                </div>
+                              );
+                            })}
                           </div>
                         </div>
                       )}

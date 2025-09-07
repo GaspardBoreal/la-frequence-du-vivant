@@ -24,11 +24,13 @@ interface SpeciesData {
 interface SpeciesVignetteGridProps {
   speciesData: SpeciesData;
   className?: string;
+  importSources?: any[]; // Sources de l'import pour résoudre les source_ids des espèces
 }
 
 export const SpeciesVignetteGrid: React.FC<SpeciesVignetteGridProps> = ({ 
   speciesData, 
-  className = '' 
+  className = '',
+  importSources = []
 }) => {
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
 
@@ -121,6 +123,7 @@ export const SpeciesVignetteGrid: React.FC<SpeciesVignetteGridProps> = ({
                   key={`flore-${index}`}
                   data={species}
                   variant="species"
+                  importSources={importSources}
                 />
               ))}
             </div>
@@ -155,6 +158,7 @@ export const SpeciesVignetteGrid: React.FC<SpeciesVignetteGridProps> = ({
                       key={`${category}-${index}`}
                       data={animal}
                       variant="species"
+                      importSources={importSources}
                     />
                   ))}
                 </div>

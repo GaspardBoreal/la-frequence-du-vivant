@@ -374,6 +374,7 @@ export const ModernImportDetailModal: React.FC<ModernImportDetailModalProps> = (
             <TabsContent value="species" className="space-y-6">
               <SpeciesVignetteGrid 
                 speciesData={importRecord.contexte_data?.especes_caracteristiques}
+                importSources={importRecord.sources}
               />
             </TabsContent>
 
