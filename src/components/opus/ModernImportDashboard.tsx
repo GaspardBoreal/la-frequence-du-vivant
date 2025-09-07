@@ -22,7 +22,8 @@ import {
   Plus,
   Search,
   Filter,
-  Eye
+  Eye,
+  Trash2
 } from 'lucide-react';
 import { useSupabaseMarches } from '@/hooks/useSupabaseMarches';
 import { useExplorations } from '@/hooks/useExplorations';
@@ -39,6 +40,16 @@ import SEOHead from '@/components/SEOHead';
 import { useAnimatedCounter } from '@/hooks/useAnimatedCounter';
 import { getProcessedSpeciesCount } from '@/utils/speciesDataUtils';
 import { getVocabularyTermsCount } from '@/utils/vocabularyDataUtils';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
 interface ImportRecord {
   id: string;
@@ -84,6 +95,7 @@ export const ModernImportDashboard: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [historyLoading, setHistoryLoading] = useState(false);
   const [activeTab, setActiveTab] = useState('dashboard');
+  const [importToDelete, setImportToDelete] = useState<ImportRecord | null>(null);
   
   const { data: explorations } = useExplorations();
   const { data: marches } = useSupabaseMarches();
@@ -283,6 +295,43 @@ export const ModernImportDashboard: React.FC = () => {
     }
   };
 
+  const confirmDeleteImport = async () => {
+    if (!importToDelete || !exploration) return;
+
+    try {
+      if (importToDelete.contexte_data) {
+        await supabase
+          .from('marche_contextes_hybrids')
+          .delete()
+          .eq('marche_id', importToDelete.marche_id)
+          .eq('opus_id', exploration.id);
+      }
+
+      if (importToDelete.fables_data?.length > 0) {
+        await supabase
+          .from('fables_narratives')
+          .delete()
+          .eq('marche_id', importToDelete.marche_id)
+          .eq('opus_id', exploration.id);
+      }
+
+      toast({
+        title: 'Import supprimé',
+        description: `L'import pour ${importToDelete.marche_nom} a été supprimé`
+      });
+
+      setImportToDelete(null);
+      await loadImports();
+      if (activeTab === 'history') await loadImportHistory();
+    } catch (error) {
+      console.error('Erreur lors de la suppression:', error);
+      toast({
+        title: 'Erreur',
+        description: "Impossible de supprimer l'import",
+        variant: 'destructive'
+      });
+    }
+  };
   useEffect(() => {
     loadImports();
   }, [exploration?.id, marches]);
@@ -707,9 +756,17 @@ export const ModernImportDashboard: React.FC = () => {
                                   setSelectedImport(importRecord);
                                   setDetailModalOpen(true);
                                 }}
-                                className="opacity-0 group-hover:opacity-100 transition-opacity"
+                                className="transition-opacity"
                               >
                                 <Eye className="w-4 h-4" />
+                              </Button>
+                              <Button
+                                variant="destructive"
+                                size="sm"
+                                onClick={() => setImportToDelete(importRecord)}
+                              >
+                                <Trash2 className="w-4 h-4 mr-2" />
+                                Supprimer
                               </Button>
                             </div>
                           </div>
@@ -776,6 +833,35 @@ export const ModernImportDashboard: React.FC = () => {
             />
           </DialogContent>
         </Dialog>
+
+        <AlertDialog open={!!importToDelete} onOpenChange={() => setImportToDelete(null)}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Confirmer la suppression</AlertDialogTitle>
+              <AlertDialogDescription>
+                Êtes-vous sûr de vouloir supprimer l'import pour <strong>{importToDelete?.marche_nom}</strong> ?
+                <br />
+                Cette action supprimera définitivement :
+                <ul className="list-disc list-inside mt-2">
+                  <li>Les données de contexte associées</li>
+                  <li>Les fables narratives ({importToDelete?.fables_data?.length || 0})</li>
+                  <li>Les sources référencées ({importToDelete?.sources?.length || 0})</li>
+                </ul>
+                <br />
+                <strong>Cette action est irréversible.</strong>
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Annuler</AlertDialogCancel>
+              <AlertDialogAction 
+                onClick={confirmDeleteImport}
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              >
+                Supprimer définitivement
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     </>
   );
