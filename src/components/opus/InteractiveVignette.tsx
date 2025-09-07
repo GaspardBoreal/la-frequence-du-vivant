@@ -115,7 +115,7 @@ export const InteractiveVignette: React.FC<InteractiveVignetteProps> = ({
         ) : variant === 'technology' ? (
           // Affichage spécialisé pour les technologies
           <div className="space-y-3">
-            <CardTitle className={`text-base leading-tight flex items-center gap-2 ${styles.title}`}>
+            <CardTitle className={`text-base leading-tight flex items-center gap-2 text-emerald-400 font-semibold`}>
               {TechIcon && <TechIcon className="w-5 h-5" />}
               {data.titre}
             </CardTitle>
