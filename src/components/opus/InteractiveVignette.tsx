@@ -123,7 +123,7 @@ export const InteractiveVignette: React.FC<InteractiveVignetteProps> = ({
             {data.type && (
               <Badge 
                 variant="outline" 
-                className={`w-fit rounded-full border ${getTechTypeBadgeColor(data.type)}`}
+                className="w-fit rounded-full border bg-white text-emerald-600 border-emerald-200"
               >
                 {data.type}
               </Badge>
