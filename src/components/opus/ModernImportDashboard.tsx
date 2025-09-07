@@ -37,11 +37,14 @@ import { DataInsightsDashboard } from './DataInsightsDashboard';
 import { OpusImportInterface } from './OpusImportInterface';
 import { ExplorationSpeciesView } from './ExplorationSpeciesView';
 import { ExplorationVocabularyView } from './ExplorationVocabularyView';
+import { TechnodiversiteVignetteGrid } from './TechnodiversiteVignetteGrid';
+import { InfrastructureVignetteGrid } from './InfrastructureVignetteGrid';
 import SEOHead from '@/components/SEOHead';
 import { useAnimatedCounter } from '@/hooks/useAnimatedCounter';
 import { getProcessedSpeciesCount } from '@/utils/speciesDataUtils';
 import { getVocabularyTermsCount } from '@/utils/vocabularyDataUtils';
 import { processTechnodiversiteData } from '@/utils/technodiversiteDataUtils';
+import { processEmpreintesHumainesData } from '@/utils/empreintesHumainesDataUtils';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -140,7 +143,35 @@ export const ModernImportDashboard: React.FC = () => {
     filteredImports.reduce((acc, imp) => {
       return acc + getVocabularyTermsCount(imp.contexte_data?.vocabulaire_local);
     }, 0), 
-    1200
+    1500
+  );
+  const totalTechnodiversity = useAnimatedCounter(
+    filteredImports.reduce((acc, imp) => {
+      const techno = imp.contexte_data?.technodiversite;
+      if (techno) {
+        try {
+          return acc + processTechnodiversiteData(techno).totalCount;
+        } catch {
+          return acc;
+        }
+      }
+      return acc;
+    }, 0), 
+    2000
+  );
+  const totalInfrastructure = useAnimatedCounter(
+    filteredImports.reduce((acc, imp) => {
+      const empreintes = imp.contexte_data?.empreintes_humaines;
+      if (empreintes) {
+        try {
+          return acc + processEmpreintesHumainesData(empreintes).totalCount;
+        } catch {
+          return acc;
+        }
+      }
+      return acc;
+    }, 0), 
+    2500
   );
   const totalTechnology = useAnimatedCounter(
     filteredImports.reduce((acc, imp) => {
@@ -510,7 +541,7 @@ export const ModernImportDashboard: React.FC = () => {
             {/* Navigation Tabs */}
         <div className="container mx-auto max-w-7xl px-6 py-6">
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="grid w-full grid-cols-5 mb-8 bg-background/50 backdrop-blur-sm border border-border/30">
+            <TabsList className="grid w-full grid-cols-8 mb-8 bg-background/50 backdrop-blur-sm border border-border/30">
               <TabsTrigger 
                 value="dashboard" 
                 className="flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground transition-all duration-300"
@@ -530,14 +561,28 @@ export const ModernImportDashboard: React.FC = () => {
                 className="flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground transition-all duration-300"
               >
                 <Users className="w-4 h-4" />
-                Vocabulaire local ({totalVocabulary})
+                Vocabulaire ({totalVocabulary})
+              </TabsTrigger>
+              <TabsTrigger 
+                value="technodiversity" 
+                className="flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground transition-all duration-300"
+              >
+                <Zap className="w-4 h-4" />
+                Technodiversité ({totalTechnodiversity})
+              </TabsTrigger>
+              <TabsTrigger 
+                value="infrastructure" 
+                className="flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground transition-all duration-300"
+              >
+                <MapPin className="w-4 h-4" />
+                Infrastructure ({totalInfrastructure})
               </TabsTrigger>
               <TabsTrigger 
                 value="imports" 
                 className="flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground transition-all duration-300"
               >
                 <Activity className="w-4 h-4" />
-                Par marche ({filteredImports.length})
+                Imports ({filteredImports.length})
               </TabsTrigger>
               <TabsTrigger 
                 value="history" 
@@ -551,7 +596,7 @@ export const ModernImportDashboard: React.FC = () => {
                 className="flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground transition-all duration-300"
               >
                 <BarChart3 className="w-4 h-4" />
-                Data Insights
+                Insights
               </TabsTrigger>
             </TabsList>
 
@@ -700,6 +745,74 @@ export const ModernImportDashboard: React.FC = () => {
               <ExplorationVocabularyView imports={filteredImports} />
             </TabsContent>
 
+            {/* Technodiversity View */}
+            <TabsContent value="technodiversity" className="space-y-6">
+              <div className="space-y-6">
+                {filteredImports.length > 0 ? (
+                  filteredImports.map((importRecord) => (
+                    importRecord.contexte_data?.technodiversite && (
+                      <div key={importRecord.id} className="space-y-4">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <h3 className="text-lg font-semibold">{importRecord.marche_nom}</h3>
+                            <p className="text-sm text-muted-foreground">{importRecord.marche_ville}</p>
+                          </div>
+                        </div>
+                        <TechnodiversiteVignetteGrid
+                          technodiversiteData={importRecord.contexte_data.technodiversite}
+                          importSources={importRecord.sources}
+                        />
+                      </div>
+                    )
+                  ))
+                ) : (
+                  <Card className="bg-background/50 backdrop-blur-sm border-border/30">
+                    <CardContent className="p-12 text-center">
+                      <div className="w-16 h-16 mx-auto mb-4 text-muted-foreground/50">🔧</div>
+                      <h3 className="text-lg font-medium mb-2">Aucune technodiversité disponible</h3>
+                      <p className="text-muted-foreground">
+                        Aucune technologie n'a été identifiée dans les imports de cette exploration.
+                      </p>
+                    </CardContent>
+                  </Card>
+                )}
+              </div>
+            </TabsContent>
+
+            {/* Infrastructure View */}
+            <TabsContent value="infrastructure" className="space-y-6">
+              <div className="space-y-6">
+                {filteredImports.length > 0 ? (
+                  filteredImports.map((importRecord) => (
+                    importRecord.contexte_data?.empreintes_humaines && (
+                      <div key={importRecord.id} className="space-y-4">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <h3 className="text-lg font-semibold">{importRecord.marche_nom}</h3>
+                            <p className="text-sm text-muted-foreground">{importRecord.marche_ville}</p>
+                          </div>
+                        </div>
+                        <InfrastructureVignetteGrid
+                          empreintesHumainesData={importRecord.contexte_data.empreintes_humaines}
+                          importSources={importRecord.sources}
+                        />
+                      </div>
+                    )
+                  ))
+                ) : (
+                  <Card className="bg-background/50 backdrop-blur-sm border-border/30">
+                    <CardContent className="p-12 text-center">
+                      <div className="w-16 h-16 mx-auto mb-4 text-muted-foreground/50">🏗️</div>
+                      <h3 className="text-lg font-medium mb-2">Aucune infrastructure identifiée</h3>
+                      <p className="text-muted-foreground">
+                        Aucune empreinte humaine n'a été recensée dans les imports de cette exploration.
+                      </p>
+                    </CardContent>
+                  </Card>
+                )}
+              </div>
+            </TabsContent>
+
             {/* Imports List */}
             <TabsContent value="imports" className="space-y-6">
               <ModernImportFilters
@@ -825,6 +938,15 @@ export const ModernImportDashboard: React.FC = () => {
                               }
                             })()
                           : 0;
+                        const infrastructureCount = importRecord.contexte_data?.empreintes_humaines 
+                          ? (() => {
+                              try {
+                                return processEmpreintesHumainesData(importRecord.contexte_data.empreintes_humaines).totalCount;
+                              } catch {
+                                return 0;
+                              }
+                            })()
+                          : 0;
                         const sourcesCount = importRecord.sources?.length || 0;
                         const completudeScore = importRecord.completude_score || 0;
                         
@@ -876,6 +998,11 @@ export const ModernImportDashboard: React.FC = () => {
                                   {technologyCount > 0 && (
                                     <span className="ml-2 text-purple-500">
                                       • {technologyCount} technodiversité{technologyCount > 1 ? 's' : ''}
+                                    </span>
+                                  )}
+                                  {infrastructureCount > 0 && (
+                                    <span className="ml-2 text-amber-500">
+                                      • {infrastructureCount} infrastructure{infrastructureCount > 1 ? 's' : ''}
                                     </span>
                                   )}
                                 </p>
