@@ -18,6 +18,8 @@ interface VocabularyItem {
   metadata?: any;
 }
 
+const EXCLUDED_TECH_KEYS = new Set(['description', 'donnees', 'metadata', 'source_ids', 'sources']);
+
 const VocabularyVignetteGrid: React.FC<VocabularyVignetteGridProps> = ({
   vocabularyData,
   className = '',
@@ -53,9 +55,14 @@ const VocabularyVignetteGrid: React.FC<VocabularyVignetteGridProps> = ({
                 });
               });
             } else {
-              // Structure simple
+              // Structure simple (exclure les clés techniques comme "description")
+              const title = item.nom || item.titre || item.terme || '';
+              const titleKey = String(title).toLowerCase();
+              if (EXCLUDED_TECH_KEYS.has(titleKey)) {
+                return; // ignorer cet item technique
+              }
               result.termesLocaux.push({
-                titre: item.nom || item.titre || item.terme,
+                titre: title,
                 description: item.description || item.definition || '',
                 source_ids: item.source_ids || [],
                 metadata: { ...item, source_ids: item.source_ids }
