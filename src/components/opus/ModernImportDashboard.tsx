@@ -21,7 +21,8 @@ import {
   RefreshCw,
   Plus,
   Search,
-  Filter
+  Filter,
+  Eye
 } from 'lucide-react';
 import { useSupabaseMarches } from '@/hooks/useSupabaseMarches';
 import { useExplorations } from '@/hooks/useExplorations';
@@ -600,7 +601,7 @@ export const ModernImportDashboard: React.FC = () => {
                         </div>
                       ))}
                     </div>
-                  ) : importRuns.length === 0 ? (
+                  ) : filteredImports.length === 0 ? (
                     <div className="text-center py-12">
                       <Database className="w-16 h-16 mx-auto mb-4 text-muted-foreground opacity-50" />
                       <h3 className="text-xl font-medium mb-2">
@@ -619,83 +620,78 @@ export const ModernImportDashboard: React.FC = () => {
                     </div>
                   ) : (
                     <div className="space-y-3">
-                      {importRuns.map((run) => (
-                        <div 
-                          key={run.id} 
-                          className="flex items-center justify-between p-4 border rounded-lg hover:bg-secondary/20 transition-all duration-200"
-                        >
-                          <div className="flex items-center gap-4">
-                            <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                              run.status === 'success' 
-                                ? run.mode === 'preview' 
-                                  ? 'bg-blue-100 text-blue-600' 
-                                  : 'bg-green-100 text-green-600'
-                                : 'bg-red-100 text-red-600'
-                            }`}>
-                              {run.status === 'success' ? (
-                                run.mode === 'preview' ? (
-                                  <Search className="w-4 h-4" />
-                                ) : (
-                                  <Database className="w-4 h-4" />
-                                )
-                              ) : (
-                                <Zap className="w-4 h-4" />
-                              )}
-                            </div>
-                            <div>
-                              <div className="flex items-center gap-2">
-                                <p className="font-medium">
-                                  {run.marche_nom} {run.marche_ville && `(${run.marche_ville})`}
-                                </p>
-                                <Badge 
-                                  variant={run.mode === 'preview' ? 'secondary' : 'default'}
-                                  className="text-xs"
-                                >
-                                  {run.mode === 'preview' ? 'Preview' : 'Import'}
-                                </Badge>
-                                <Badge 
-                                  variant={run.status === 'success' ? 'default' : 'destructive'}
-                                  className="text-xs"
-                                >
-                                  {run.status === 'success' ? 'Succès' : 'Erreur'}
-                                </Badge>
+                      {filteredImports.map((importRecord) => {
+                        const speciesCount = importRecord.contexte_data?.especes_caracteristiques?.length || 0;
+                        const vocabularyCount = importRecord.contexte_data?.vocabulaire_local?.length || 0;
+                        const completudeScore = importRecord.completude_score || 0;
+                        
+                        // Déterminer le statut basé sur le score de complétude
+                        const getStatus = (score: number) => {
+                          if (score >= 80) return { label: 'Complet', variant: 'default' as const, color: 'bg-green-100 text-green-600' };
+                          if (score >= 40) return { label: 'Partiel', variant: 'secondary' as const, color: 'bg-orange-100 text-orange-600' };
+                          return { label: 'Vide', variant: 'outline' as const, color: 'bg-gray-100 text-gray-600' };
+                        };
+                        
+                        const status = getStatus(completudeScore);
+                        
+                        return (
+                          <div 
+                            key={importRecord.id} 
+                            className="flex items-center justify-between p-4 border rounded-lg hover:bg-secondary/20 transition-all duration-200"
+                          >
+                            <div className="flex items-center gap-4">
+                              <div className={`w-10 h-10 rounded-full flex items-center justify-center ${status.color}`}>
+                                <Database className="w-4 h-4" />
                               </div>
-                              <p className="text-sm text-muted-foreground">
-                                {new Date(run.created_at).toLocaleString('fr-FR', {
-                                  day: 'numeric',
-                                  month: 'short',
-                                  year: 'numeric',
-                                  hour: '2-digit',
-                                  minute: '2-digit'
-                                })}
-                                {run.status === 'error' && run.error_message && (
-                                  <span className="ml-2 text-destructive">
-                                    • {run.error_message}
-                                  </span>
-                                )}
-                              </p>
+                              <div>
+                                <div className="flex items-center gap-2">
+                                  <p className="font-medium">
+                                    {importRecord.marche_nom} ({importRecord.marche_ville})
+                                  </p>
+                                  <Badge variant={status.variant} className="text-xs">
+                                    {status.label}
+                                  </Badge>
+                                </div>
+                                <p className="text-sm text-muted-foreground">
+                                  {new Date(importRecord.import_date).toLocaleString('fr-FR', {
+                                    day: 'numeric',
+                                    month: 'short', 
+                                    year: 'numeric',
+                                    hour: '2-digit',
+                                    minute: '2-digit'
+                                  })}
+                                  {speciesCount > 0 && (
+                                    <span className="ml-2 text-accent">
+                                      • {speciesCount} espèce{speciesCount > 1 ? 's' : ''}
+                                    </span>
+                                  )}
+                                  {vocabularyCount > 0 && (
+                                    <span className="ml-2 text-secondary-foreground">
+                                      • {vocabularyCount} terme{vocabularyCount > 1 ? 's' : ''}
+                                    </span>
+                                  )}
+                                </p>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <Badge variant="outline" className="font-mono">
+                                {Math.round(completudeScore)}%
+                              </Badge>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => {
+                                  setSelectedImport(importRecord);
+                                  setDetailModalOpen(true);
+                                }}
+                                className="opacity-0 group-hover:opacity-100 transition-opacity"
+                              >
+                                <Eye className="w-4 h-4" />
+                              </Button>
                             </div>
                           </div>
-                          <div className="flex items-center gap-2">
-                            {run.completude_score !== null && run.completude_score !== undefined && (
-                              <Badge variant="outline" className="font-mono">
-                                {Math.round(run.completude_score)}%
-                              </Badge>
-                            )}
-                            {run.validation && (
-                              <Badge 
-                                variant="outline" 
-                                className={`font-mono ${
-                                  run.validation.score >= 80 ? 'text-green-600' :
-                                  run.validation.score >= 60 ? 'text-orange-600' : 'text-red-600'
-                                }`}
-                              >
-                                Q: {run.validation.score}/100
-                              </Badge>
-                            )}
-                          </div>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   )}
                 </CardContent>
