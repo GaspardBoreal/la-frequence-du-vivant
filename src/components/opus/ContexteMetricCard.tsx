@@ -16,7 +16,8 @@ import {
   BarChart3,
   Waves,
   Thermometer,
-  Beaker
+  Beaker,
+  Clock
 } from 'lucide-react';
 
 interface ContexteMetricProps {
@@ -223,26 +224,64 @@ export const ContexteMetricCard: React.FC<ContexteMetricProps> = ({
       </CardHeader>
 
       <CardContent className="space-y-4">
-        {/* Barre de progression animée */}
-        {(metricType === 'ph' || metricType === 'temperature' || metricType === 'numeric') && (
-          <div className="space-y-2">
-            <div className="flex items-center justify-between text-xs">
-              <span className="text-muted-foreground">Niveau</span>
-              <span className={styles.text}>{getProgressValue().toFixed(0)}%</span>
+        {/* Aperçu immédiat des données */}
+        <div className="space-y-4">
+          {/* Valeur principale mise en évidence */}
+          <div className={`p-6 rounded-xl ${styles.bg} ${styles.hover} border-2 transition-all duration-300`}>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className={`text-lg font-semibold ${styles.text}`}>{title}</h3>
+              <div className="flex items-center gap-2">
+                {getStatusIndicator()}
+                <Badge className={`${styles.badge} font-mono`}>
+                  LIVE DATA
+                </Badge>
+              </div>
             </div>
-            <Progress 
-              value={isHovered ? getProgressValue() : 0}
-              className="h-2 bg-background/50"
-            />
-          </div>
-        )}
+            
+            {/* Donnée visible immédiatement */}
+            <div className="space-y-3">
+              <div className={`text-2xl font-bold ${styles.text} bg-background/50 backdrop-blur-sm p-4 rounded-lg border`}>
+                {data ? (
+                  <div className="font-mono">
+                    {typeof data === 'object' ? (
+                      <div className="text-sm space-y-2">
+                        {Object.entries(data).slice(0, 3).map(([key, value]) => (
+                          <div key={key} className="flex justify-between border-b border-border/30 pb-1">
+                            <span className="text-muted-foreground capitalize">{key.replace(/_/g, ' ')}:</span>
+                            <span className={styles.text}>{String(value).slice(0, 30)}{String(value).length > 30 ? '...' : ''}</span>
+                          </div>
+                        ))}
+                        {Object.keys(data).length > 3 && (
+                          <div className="text-xs text-muted-foreground text-center pt-2">
+                            +{Object.keys(data).length - 3} autres propriétés
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="text-center">
+                        {formatValue(data)}
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div className="text-center text-muted-foreground italic">
+                    Aucune donnée disponible
+                  </div>
+                )}
+              </div>
 
-        {/* Indicateur de tendance */}
-        <div className="flex items-center gap-2 text-xs">
-          <TrendingUp className={`w-3 h-3 ${styles.text}`} />
-          <span className="text-muted-foreground">
-            {data ? 'Données disponibles' : 'Collecte en cours'}
-          </span>
+              {/* Métadonnées rapides */}
+              <div className="flex items-center justify-between text-sm">
+                <div className="flex items-center gap-2 text-muted-foreground">
+                  <Clock className="w-3 h-3" />
+                  <span>Dernière mise à jour</span>
+                </div>
+                <Badge variant="outline" className="text-xs">
+                  {data ? 'Disponible' : 'En attente'}
+                </Badge>
+              </div>
+            </div>
+          </div>
         </div>
 
         {/* Action rapide */}
