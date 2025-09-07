@@ -141,7 +141,7 @@ export const TechnodiversiteVignetteGrid: React.FC<TechnodiversiteVignetteGridPr
                 </div>
                 <div className="flex-1">
                   <h3 className="font-bold text-xl text-white tracking-wide">{title}</h3>
-                  <Badge variant="secondary" className={`mt-1 font-bold px-3 py-1 bg-slate/10 text-slate-700 border-slate/20`}>
+                  <Badge variant="secondary" className="mt-1 font-bold px-3 py-1 bg-slate/10 text-white italic border-slate/20">
                     {arr.length} élément{arr.length > 1 ? 's' : ''}
                   </Badge>
                 </div>
