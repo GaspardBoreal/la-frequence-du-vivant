@@ -73,11 +73,18 @@ export const InteractiveVignette: React.FC<InteractiveVignetteProps> = ({
             <CardTitle className={`text-base leading-tight ${styles.title}`}>
               {data.titre}
             </CardTitle>
-            {data.type && (
-              <Badge variant="secondary" className={`w-fit text-xs font-semibold ${styles.badge}`}>
-                {data.type}
-              </Badge>
-            )}
+            <div className="flex items-center gap-2 flex-wrap">
+              {data.type && (
+                <Badge variant="secondary" className={`w-fit text-xs font-semibold ${styles.badge}`}>
+                  {data.type}
+                </Badge>
+              )}
+              {variant === 'vocabulary' && (
+                <Badge variant="outline" className="text-[10px]">
+                  {(data.metadata?.resolved_sources?.length || 0)} source{(data.metadata?.resolved_sources?.length || 0) > 1 ? 's' : ''}
+                </Badge>
+              )}
+            </div>
           </>
         )}
       </CardHeader>
@@ -185,6 +192,35 @@ export const InteractiveVignette: React.FC<InteractiveVignetteProps> = ({
                           {JSON.stringify(data.metadata, null, 2)}
                         </pre>
                       </div>
+                    </div>
+                  )}
+                  
+
+                  {/* Section Sources */}
+                  {variant !== 'species' && (
+                    <div>
+                      <h4 className="font-medium text-sm text-muted-foreground mb-2">Sources</h4>
+                      {Array.isArray(data.metadata?.resolved_sources) && data.metadata.resolved_sources.length > 0 ? (
+                        <ul className="space-y-2">
+                          {data.metadata.resolved_sources.map((s: any, i: number) => {
+                            const href = s?.url || s?.lien || s?.link;
+                            const label = s?.nom || s?.name || (href && /^https?:\/\//i.test(href) ? new URL(href).hostname.replace('www.', '') : 'Source');
+                            return (
+                              <li key={s?.id || i} className="text-sm">
+                                {href && /^https?:\/\//i.test(href) ? (
+                                  <a href={href} target="_blank" rel="noopener noreferrer" className="underline inline-flex items-center">
+                                    <ExternalLink className="w-3 h-3 mr-1" /> {label}
+                                  </a>
+                                ) : (
+                                  <span>{label}</span>
+                                )}
+                              </li>
+                            );
+                          })}
+                        </ul>
+                      ) : (
+                        <p className="text-sm text-muted-foreground">Aucune source fournie.</p>
+                      )}
                     </div>
                   )}
                   

@@ -5,6 +5,7 @@ import { InteractiveVignette } from './InteractiveVignette';
 import { Database, ExternalLink } from 'lucide-react';
 import { processVocabularyData } from '@/utils/vocabularyDataUtils';
 import { VocabularySourcesCard } from './VocabularySourcesCard';
+import { useToast } from '@/components/ui/use-toast';
 
 interface VignetteGridProps {
   title: string;
@@ -83,6 +84,46 @@ export const VignetteGrid: React.FC<VignetteGridProps> = ({
     return items.filter(item => item.titre && item.titre.trim() !== '');
   }, [data, specialProcessing]);
 
+  // Résolution des sources par terme (mode vocabulaire)
+  const { toast } = useToast();
+  const sourceIndex = React.useMemo(() => {
+    const map = new Map<string, any>();
+    (importSources || []).forEach((s: any) => {
+      const key = s?.id || s?.key || s?.source_id;
+      if (key) map.set(String(key), s);
+    });
+    return map;
+  }, [importSources]);
+
+  const termsWithResolved = React.useMemo(() => {
+    if (specialProcessing !== 'vocabulary' || !processedData || !('termes' in processedData)) return [] as any[];
+    const terms = (processedData as any).termes || [];
+    return terms.map((t: any) => {
+      const meta = t.metadata || {};
+      const ids: any[] = meta.source_ids || meta.sources || meta.sources_ids || [];
+      const normalizedIds: string[] = Array.isArray(ids)
+        ? ids.map((x: any) => typeof x === 'string' ? x : (x?.id || x?.key)).filter(Boolean)
+        : [];
+      const resolved = normalizedIds.map((id: string) => sourceIndex.get(String(id))).filter(Boolean);
+      const firstUrlSource = resolved.find((s: any) => s?.url || s?.lien || s?.link);
+      return {
+        ...t,
+        url: firstUrlSource?.url || firstUrlSource?.lien || firstUrlSource?.link || t.url,
+        metadata: { ...meta, resolved_sources: resolved, resolved_source_ids: normalizedIds }
+      };
+    });
+  }, [specialProcessing, processedData, sourceIndex]);
+
+  // Alerte qualité: termes sans sources
+  React.useEffect(() => {
+    if (specialProcessing !== 'vocabulary' || !termsWithResolved.length) return;
+    const missingCount = termsWithResolved.filter((t: any) => !(t.metadata?.resolved_sources?.length)).length;
+    if (missingCount > 0) {
+      toast('Sources manquantes', {
+        description: `${missingCount} terme${missingCount > 1 ? 's' : ''} sans source. Cliquez pour compléter.`,
+      });
+    }
+  }, [specialProcessing, termsWithResolved, toast]);
   const getVariantColor = () => {
     switch (variant) {
       case 'vocabulary': return 'text-info';
@@ -176,7 +217,7 @@ export const VignetteGrid: React.FC<VignetteGridProps> = ({
                 </h3>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                {processedData.termes.map((terme, index) => (
+                {termsWithResolved.map((terme, index) => (
                   <InteractiveVignette
                     key={`terme-${index}`}
                     data={terme}
