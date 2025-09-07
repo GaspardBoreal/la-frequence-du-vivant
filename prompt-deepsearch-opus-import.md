@@ -1,6 +1,80 @@
-# Prompt DEEPSEARCH OPUS – JSON Strict + Auto‑validation (Sortie unique JSON)
+# PROMPT DEEPSEARCH OPUS — EXTRACTION EXHAUSTIVE & ULTRA-PROFESSIONNELLE
 
-Objectif: Produire un JSON parfaitement valide, auto‑corrigé et conforme au schéma d'import OPUS. Aucune vérification humaine. Aucune section « metadata ».
+**MISSION CRITIQUE** : Produire un JSON exhaustif et ultra-précis avec extraction systématique et vérification méthodique de CHAQUE élément mentionné dans le document DEEPSEARCH.
+
+## 🎯 PROTOCOLE D'EXTRACTION EXHAUSTIVE — OBLIGATOIRE
+
+### ⚠️ RÈGLE ABSOLUE : TRIPLE LECTURE SYSTÉMATIQUE
+1. **LECTURE 1 - BALAYAGE** : Identifier TOUS les éléments par dimension (faire une liste mentale)
+2. **LECTURE 2 - EXTRACTION** : Extraire chaque élément avec sources précises  
+3. **LECTURE 3 - VÉRIFICATION** : Contrôler exhaustivité et compter les éléments extraits
+
+### 🔍 ESPÈCES CARACTÉRISTIQUES — EXTRACTION ULTRA-RIGOUREUSE
+**PROTOCOLE OBLIGATOIRE :**
+- **Scanner méthodiquement** : noms scientifiques, noms communs, mentions indirectes, références croisées
+- **Catégories à vérifier** : poissons, invertébrés, végétation aquatique, oiseaux, mammifères, amphibiens, autres
+- **Vérifier contextes** : présence/absence, abondance, statut de conservation, habitats, migrations
+- **Sources obligatoires** : Pour CHAQUE espèce → source(s) précise(s) avec référence exacte
+- **CONTRÔLE QUALITÉ** : Si moins de 5 espèces extraites → RELIRE impérativement le document
+
+### 🏗️ EMPREINTES HUMAINES — INVENTAIRE SYSTÉMATIQUE  
+**BALAYER EXHAUSTIVEMENT :**
+- **Infrastructures hydrauliques** : barrages, seuils, écluses, digues, canaux, retenues
+- **Réseaux techniques** : assainissement, AEP, pluvial, irrigation, drainage
+- **Équipements industriels** : stations d'épuration, pompages, usines de traitement
+- **Activités anthropiques** : extractions, industries, rejets, aménagements
+- **Urbanisation** : ports, quais, ponts, routes, zones artificialisées
+- **Quantifier si possible** : surfaces, débits, populations concernées
+
+### 🗣️ VOCABULAIRE LOCAL — FOUILLE LINGUISTIQUE COMPLÈTE
+**EXTRAIRE SYSTÉMATIQUEMENT :**
+- **Toponymie** : noms locaux de lieux-dits, cours d'eau, zones remarquables  
+- **Dialecte territorial** : expressions, termes techniques locaux, patois
+- **Savoirs empiriques** : dictons météo, observations traditionnelles
+- **Unités traditionnelles** : mesures anciennes, références temporelles locales
+- **Pratiques nommées** : techniques artisanales, usages patrimoniaux
+
+### 🌱 LEVIERS AGROÉCOLOGIQUES — ANALYSE TECHNIQUE FINE
+**IDENTIFIER PRÉCISÉMENT :**
+- **Systèmes de culture** : rotations, associations, couverts végétaux
+- **Pratiques innovantes** : agroforesterie, permaculture, agriculture de conservation
+- **Races et variétés** : espèces locales, semences paysannes, matériel génétique
+- **Infrastructures agroécologiques** : haies, mares, bandes enherbées, corridors
+- **Certifications** : bio, labels, démarches qualité territoriales
+
+### 🚀 NOUVELLES ACTIVITÉS — INNOVATION & PROSPECTIVE
+**SCANNER POUR :**
+- **Économie verte émergente** : écotourisme, circuits courts, services écosystémiques
+- **Projets pilotes** : expérimentations, démonstrateurs, projets de recherche
+- **Économie circulaire** : recyclage, valorisation, symbioses industrielles
+- **Formations/métiers** : nouvelles compétences, emplois verts, reconversions
+- **Initiatives locales** : coopératives, associations, entreprises innovantes
+
+### 🔧 TECHNODIVERSITÉ — VEILLE TECHNOLOGIQUE COMPLÈTE
+**RÉPERTORIER :**
+- **EnR et efficacité** : solaire, éolien, hydraulique, biomasse, géothermie
+- **Innovations territoriales** : brevets locaux, solutions adaptées, R&D
+- **Technologies numériques** : IoT environnemental, capteurs, modélisation, IA
+- **Équipements spécialisés** : matériel de mesure, outils de gestion innovants
+- **Partenariats R&D** : universités, centres techniques, collaborations
+
+## ✅ CONTRÔLES QUALITÉ OBLIGATOIRES
+
+### 🚨 SEUILS D'ALERTE (RELIRE SI NON ATTEINTS)
+- **Espèces** : < 5 espèces → Document sous-exploité, RELIRE
+- **Infrastructures** : < 3 éléments → Aménagements oubliés, RELIRE  
+- **Vocabulaire** : < 3 termes → Patrimoine linguistique manqué, RELIRE
+- **Activités nouvelles** : 0 élément → Innovation sous-détectée, RELIRE
+- **Technologies** : < 2 éléments → Veille technologique incomplète, RELIRE
+
+### 🔄 VALIDATION CROISÉE
+1. **Cohérence géographique** : Couvrir tout le territoire d'étude
+2. **Exhaustivité temporelle** : Intégrer toute la période 2022-2025  
+3. **Sources complètes** : Chaque élément → minimum 1 source valide
+4. **Déduplication** : Éviter doublons entre dimensions
+5. **Traçabilité** : Chaque donnée → référence précise dans le document
+
+---
 
 INSTRUCTIONS CRITIQUES (à exécuter AVANT d'émettre la sortie):
 1) Normalisation des caractères
