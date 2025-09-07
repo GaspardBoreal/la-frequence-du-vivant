@@ -261,15 +261,15 @@ export const ModernImportDetailModal: React.FC<ModernImportDetailModalProps> = (
                 </Card>
 
                 {/* 5. Nouvelles Activités */}
-                <Card className="bg-gradient-to-br from-primary/20 to-primary/10 border-primary/30 hover:shadow-lg transition-all">
+                <Card className="bg-gradient-to-br from-orange-500/20 to-orange-500/10 border-orange-500/30 hover:shadow-lg transition-all">
                   <CardHeader className="pb-2">
                     <CardTitle className="text-sm flex items-center gap-2">
-                      <Target className="w-4 h-4 text-primary" />
+                      <Target className="w-4 h-4 text-orange-500" />
                       Activités
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <div className="text-2xl font-bold text-primary mb-1">
+                    <div className="text-2xl font-bold text-orange-500 mb-1">
                       {importRecord.contexte_data?.projection_2035_2045?.nouvelles_activites ? 
                         Object.keys(importRecord.contexte_data.projection_2035_2045.nouvelles_activites).length : 0}
                     </div>
