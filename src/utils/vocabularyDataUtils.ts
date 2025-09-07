@@ -23,7 +23,9 @@ const EXCLUDED_VOCABULARY_TERMS = [
   'general',
   'generique',
   'commun',
-  'standard'
+  'standard',
+  // Banned terms (no valid source)
+  'estey'
 ];
 
 /**
@@ -90,6 +92,9 @@ export const processVocabularyData = (vocabularyData: any): {
       category: 'termes',
       metadata: item
     }));
+
+    // Exclure les termes bannis comme "Estey"
+    result.termes = result.termes.filter(t => !EXCLUDED_VOCABULARY_TERMS.includes((t.titre || '').toLowerCase()));
     
     // Trier par ordre alphabétique
     result.termes.sort((a, b) => a.titre.localeCompare(b.titre, 'fr', { sensitivity: 'base' }));
@@ -153,6 +158,9 @@ export const processVocabularyData = (vocabularyData: any): {
         });
       }
     });
+    
+    // Exclure les termes bannis comme "Estey"
+    result.termes = result.termes.filter(t => !EXCLUDED_VOCABULARY_TERMS.includes((t.titre || '').toLowerCase()));
     
     // Trier les termes par ordre alphabétique
     result.termes.sort((a, b) => a.titre.localeCompare(b.titre, 'fr', { sensitivity: 'base' }));

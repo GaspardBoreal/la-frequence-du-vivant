@@ -137,6 +137,10 @@ export const normalizeYearFromSource = (source: any): SourceWithYear => {
  * Generate short name from URL (helper function)
  */
 const generateShortNameFromUrl = (url: string): string => {
+  // Basic validation to avoid constructing URL on invalid strings
+  if (!url || !/^https?:\/\//i.test(url)) {
+    return 'Source Web';
+  }
   try {
     const hostname = new URL(url).hostname.replace('www.', '');
     
