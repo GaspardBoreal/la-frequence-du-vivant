@@ -386,6 +386,7 @@ export const ModernImportDetailModal: React.FC<ModernImportDetailModalProps> = (
                 icon={<BookOpen className="w-5 h-5" />}
                 emptyMessage="Aucun terme de vocabulaire local n'a été identifié"
                 specialProcessing="vocabulary"
+                importSources={importRecord.sources}
               />
             </TabsContent>
 

@@ -51,6 +51,44 @@ export const extractYearFromUrl = (url: string): number | null => {
  * Normalize year from source data with hierarchical extraction
  */
 export const normalizeYearFromSource = (source: any): SourceWithYear => {
+  // Handle different input types robustly
+  if (!source) {
+    return {
+      id: 'unknown',
+      nom: 'Source inconnue',
+      url: 'URL non disponible',
+      description: 'Détails non disponibles',
+      year: undefined,
+      yearDisplay: 'inconnue'
+    };
+  }
+
+  // Handle string sources (URLs)
+  if (typeof source === 'string') {
+    const year = extractYearFromUrl(source);
+    return {
+      id: `url-${source.slice(-8)}`,
+      nom: generateShortNameFromUrl(source),
+      url: source,
+      description: 'Source URL',
+      year: year || undefined,
+      yearDisplay: year ? year.toString() : 'inconnue'
+    };
+  }
+
+  // Handle number sources (years)
+  if (typeof source === 'number' && isPlausibleYear(source)) {
+    return {
+      id: `year-${source}`,
+      nom: `Source ${source}`,
+      url: 'URL non disponible',
+      description: `Source datée de ${source}`,
+      year: source,
+      yearDisplay: source.toString()
+    };
+  }
+
+  // Handle object sources (the main case)
   let year: number | null = null;
   
   // 1. Priority: explicit date fields
@@ -79,14 +117,59 @@ export const normalizeYearFromSource = (source: any): SourceWithYear => {
     year = extractYearFromUrl(source.url);
   }
   
+  // Generate proper ID and name with robust fallbacks
+  const sourceId = source.id || source.source_id || source.key || `src-${Date.now()}`;
+  const sourceName = source.nom || source.name || source.titre || source.title || 
+                    (source.url ? generateShortNameFromUrl(source.url) : null) ||
+                    `Source ${sourceId}`;
+  
   return {
-    id: source.id || 'unknown',
-    nom: source.nom || source.name || `Source ${source.id}`,
-    url: source.url || 'URL non disponible',
-    description: source.description || 'Détails non disponibles',
+    id: sourceId.toString(),
+    nom: sourceName,
+    url: source.url || source.lien || source.link || 'URL non disponible',
+    description: source.description || source.desc || source.details || 'Détails non disponibles',
     year: year || undefined,
     yearDisplay: year ? year.toString() : 'inconnue'
   };
+};
+
+/**
+ * Generate short name from URL (helper function)
+ */
+const generateShortNameFromUrl = (url: string): string => {
+  try {
+    const hostname = new URL(url).hostname.replace('www.', '');
+    
+    // Common mapping for better display names
+    const domainMap: Record<string, string> = {
+      'wikipedia.org': 'Wikipédia',
+      'fr.wikipedia.org': 'Wikipédia',
+      'en.wikipedia.org': 'Wikipedia EN',
+      'patrimoine-nouvelle-aquitaine.fr': 'Patrimoine NA',
+      'data.gouv.fr': 'Data.gouv',
+      'ign.fr': 'IGN',
+      'insee.fr': 'INSEE',
+      'inpn.mnhn.fr': 'INPN',
+      'gbif.org': 'GBIF',
+      'openstreetmap.org': 'OpenStreetMap',
+      'geoportail.gouv.fr': 'Géoportail',
+      'grand-cubzaguais.fr': 'Grand Cubzaguais'
+    };
+    
+    const mappedName = domainMap[hostname];
+    if (mappedName) return mappedName;
+    
+    // Extract first part of domain if no mapping
+    const domainParts = hostname.split('.');
+    if (domainParts.length > 0) {
+      const firstPart = domainParts[0];
+      return firstPart.charAt(0).toUpperCase() + firstPart.slice(1);
+    }
+  } catch (error) {
+    console.warn('Error parsing URL:', url, error);
+  }
+  
+  return 'Source Web';
 };
 
 /**

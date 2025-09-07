@@ -14,6 +14,7 @@ interface VignetteGridProps {
   className?: string;
   emptyMessage?: string;
   specialProcessing?: 'vocabulary';
+  importSources?: any[]; // Import sources to enrich vocabulary sources
 }
 
 export const VignetteGrid: React.FC<VignetteGridProps> = ({ 
@@ -23,7 +24,8 @@ export const VignetteGrid: React.FC<VignetteGridProps> = ({
   icon, 
   className = '',
   emptyMessage = `Aucune donnée de ${title.toLowerCase()} disponible`,
-  specialProcessing
+  specialProcessing,
+  importSources = []
 }) => {
   // Process data into vignette format
   const processedData = React.useMemo(() => {
@@ -198,6 +200,7 @@ export const VignetteGrid: React.FC<VignetteGridProps> = ({
               <div className="w-full max-w-full overflow-hidden">
                 <VocabularySourcesCard 
                   sources={processedData.sources.map(source => source.metadata).filter(Boolean)}
+                  importSources={importSources}
                   className="w-full max-w-full"
                 />
               </div>

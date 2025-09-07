@@ -35,8 +35,8 @@ const isLocalVocabularyTerm = (key: string, value: any): boolean => {
     return false;
   }
   
-  // Exclure source_ids
-  if (key === 'source_ids') {
+  // Exclure toutes les variantes de sources
+  if (key === 'source_ids' || key === 'sources' || key === 'sources_data') {
     return false;
   }
   
@@ -99,14 +99,15 @@ export const processVocabularyData = (vocabularyData: any): {
   // Si c'est un objet, traiter les différentes sections
   if (typeof vocabularyData === 'object') {
     Object.entries(vocabularyData).forEach(([key, value]) => {
-      if (key === 'source_ids' && Array.isArray(value)) {
+      // Handle multiple source key variants
+      if ((key === 'source_ids' || key === 'sources' || key === 'sources_data') && Array.isArray(value)) {
         // Traiter les sources
         result.sources = value.map((source: any, index) => ({
-          titre: source.nom || source.name || source.source || `Source ${index + 1}`,
-          description_courte: source.description || source.url || source.lien || '',
+          titre: source.nom || source.name || source.source || source.titre || `Source ${index + 1}`,
+          description_courte: source.description || source.url || source.lien || source.link || '',
           type: 'source',
-          details: source.details || source.annee || source.type || '',
-          category: 'source_ids',
+          details: source.details || source.annee || source.year || source.type || '',
+          category: key,
           metadata: source
         }));
       } else if (key === 'termes' && Array.isArray(value)) {

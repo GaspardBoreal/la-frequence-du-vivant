@@ -23,20 +23,51 @@ import { getVignetteStyles } from '@/utils/vignetteStyleUtils';
 
 interface VocabularySourcesCardProps {
   sources: any[];
+  importSources?: any[]; // Sources from the import to enrich local sources
   className?: string;
 }
 
-export const VocabularySourcesCard: React.FC<VocabularySourcesCardProps> = ({
-  sources,
-  className = ''
+export const VocabularySourcesCard: React.FC<VocabularySourcesCardProps> = ({ 
+  sources, 
+  importSources = [],
+  className 
 }) => {
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const [selectedYear, setSelectedYear] = useState<string>('all');
-  
-  // Process sources using the same scientific utility as ContexteMetricCard
+
+  // Enrich local sources with import sources data when possible
+  const enrichedSources = useMemo(() => {
+    return sources.map(localSource => {
+      // Try to find matching import source by URL or name
+      const matchingImportSource = importSources.find(importSource => {
+        if (typeof localSource === 'string' && typeof importSource === 'object') {
+          return localSource === importSource.url || localSource === importSource.lien;
+        }
+        if (typeof localSource === 'object' && typeof importSource === 'object') {
+          return localSource.url === importSource.url ||
+                 localSource.lien === importSource.url ||
+                 localSource.nom === importSource.nom ||
+                 localSource.name === importSource.name;
+        }
+        return false;
+      });
+
+      // If we found a match, merge the data
+      if (matchingImportSource) {
+        const merged = typeof localSource === 'string' 
+          ? { url: localSource, ...matchingImportSource }
+          : { ...localSource, ...matchingImportSource };
+        return merged;
+      }
+      
+      return localSource;
+    });
+  }, [sources, importSources]);
+
+  // Normalisation et filtrage des sources enrichies
   const normalizedSources = useMemo(() => {
-    return sources.map(source => normalizeYearFromSource(source));
-  }, [sources]);
+    return enrichedSources.map(source => normalizeYearFromSource(source));
+  }, [enrichedSources]);
 
   // Filter sources by selected year
   const filteredSources = useMemo(() => {
@@ -109,16 +140,20 @@ export const VocabularySourcesCard: React.FC<VocabularySourcesCardProps> = ({
         </Card>
       </DialogTrigger>
 
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden bg-slate-900 text-white border-slate-700">
+      <DialogContent 
+        className="max-w-4xl max-h-[90vh] overflow-hidden bg-slate-900 text-white border-slate-700"
+        aria-labelledby="vocabulary-sources-title"
+        aria-describedby="vocabulary-sources-description"
+      >
         <DialogHeader className="border-b border-slate-700/50 pb-4">
-          <DialogTitle className="flex items-center gap-3">
+          <DialogTitle id="vocabulary-sources-title" className="flex items-center gap-3">
             <div className="flex items-center gap-3">
               <div className="p-2 rounded-lg bg-vocabulary/20 text-vocabulary">
                 <BookOpen className="w-5 h-5" />
               </div>
               <div>
                 <h2 className="text-xl font-bold text-white">Sources bibliographiques</h2>
-                <p className="text-sm text-white">Documentation et références du vocabulaire local</p>
+                <p id="vocabulary-sources-description" className="text-sm text-white">Documentation et références du vocabulaire local</p>
               </div>
             </div>
             <Badge className={`font-semibold text-xs ${styles.badge}`}>
