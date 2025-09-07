@@ -174,7 +174,7 @@ export default function ExperienceLecture() {
           transition={{ duration: 0.5 }}
         >
           <div className="flex items-center justify-between mb-4">
-            <Link to={`/galerie-fleuve`}>
+            <Link to={`/galerie-fleuve/exploration/${slug}`}>
               <Button variant="outline" size="sm">
                 <ArrowLeft className="h-4 w-4 mr-2" />
                 Retour à l'exploration

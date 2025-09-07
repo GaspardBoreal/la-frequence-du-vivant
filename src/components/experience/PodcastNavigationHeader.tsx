@@ -81,7 +81,7 @@ const PodcastNavigationHeader: React.FC<PodcastNavigationHeaderProps> = ({
   }, [appearanceMode]);
 
   const handleBackClick = () => {
-    navigate(`/galerie-fleuve`);
+    navigate(`/galerie-fleuve/exploration/${slug}`);
   };
 
   const handleShare = async () => {
@@ -132,7 +132,7 @@ const PodcastNavigationHeader: React.FC<PodcastNavigationHeaderProps> = ({
         <div className="flex md:hidden items-center justify-between">
           {/* Mobile Left: Return button */}
           <Button variant="ghost" size="sm" asChild className="text-slate-800 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-emerald-800/20 hover:text-slate-900 dark:hover:text-emerald-100">
-            <Link to={`/galerie-fleuve`}>
+            <Link to={`/galerie-fleuve/exploration/${slug}`}>
               <ArrowLeft className="h-4 w-4" />
             </Link>
           </Button>
@@ -223,7 +223,7 @@ const PodcastNavigationHeader: React.FC<PodcastNavigationHeaderProps> = ({
           {/* Center: Navigation + Type Selector */}
           <div className="flex items-center gap-6">
             <Button variant="ghost" size="sm" asChild className="text-slate-800 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-emerald-800/20 hover:text-slate-900 dark:hover:text-emerald-100">
-              <Link to={`/galerie-fleuve`}>
+              <Link to={`/galerie-fleuve/exploration/${slug}`}>
                 <ArrowLeft className="h-4 w-4 mr-2" />
                 Retour
               </Link>

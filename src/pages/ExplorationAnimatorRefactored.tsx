@@ -341,14 +341,14 @@ export default function ExplorationAnimatorRefactored() {
                     <div className="space-y-4">
                       <div className="p-4 bg-muted/30 rounded-xl border border-border/30">
                         <code className="text-sm text-foreground/80 break-all">
-                          {window.location.origin}/galerie-fleuve
+                          {window.location.origin}/galerie-fleuve/exploration/{exploration.slug}
                         </code>
                       </div>
                       
                       {/* Actions */}
                       <div className="flex gap-3">
                         <Button
-                          onClick={() => window.open(`/galerie-fleuve`, '_blank')}
+                          onClick={() => window.open(`/galerie-fleuve/exploration/${exploration.slug}`, '_blank')}
                           className="flex-1 bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 text-white"
                           size="sm"
                         >
@@ -356,7 +356,7 @@ export default function ExplorationAnimatorRefactored() {
                         </Button>
                         <Button
                           onClick={() => {
-                            const url = `${window.location.origin}/galerie-fleuve`;
+                            const url = `${window.location.origin}/galerie-fleuve/exploration/${exploration.slug}`;
                             navigator.clipboard.writeText(url);
                             toast.success('URL copiée dans le presse-papiers');
                           }}

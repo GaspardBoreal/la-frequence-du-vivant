@@ -201,7 +201,7 @@ export default function ExperienceLectureOptimisee() {
         <div className="text-center space-y-4">
           <p className="text-slate-600 dark:text-slate-400">Aucun texte trouvé pour cette exploration</p>
           <Button asChild variant="outline">
-            <Link to={`/galerie-fleuve`}>
+            <Link to={`/galerie-fleuve/exploration/${slug}`}>
               <ArrowLeft className="h-4 w-4 mr-2" />
               Retour à l'exploration
             </Link>
@@ -240,7 +240,7 @@ export default function ExperienceLectureOptimisee() {
             <div className="flex md:hidden items-center justify-between">
               {/* Mobile Left: Return button */}
               <Button variant="ghost" size="sm" asChild className="text-slate-800 dark:text-slate-300 hover:text-slate-900 dark:hover:text-slate-100">
-                <Link to={`/galerie-fleuve`}>
+                <Link to={`/galerie-fleuve/exploration/${slug}`}>
                   <ArrowLeft className="h-4 w-4" />
                 </Link>
               </Button>
@@ -330,7 +330,7 @@ export default function ExperienceLectureOptimisee() {
               {/* Center: Navigation + Type Selector */}
               <div className="flex items-center gap-6">
                 <Button variant="ghost" size="sm" asChild className="text-slate-800 dark:text-slate-300 hover:text-slate-900 dark:hover:text-slate-100">
-                  <Link to={`/galerie-fleuve`}>
+                  <Link to={`/galerie-fleuve/exploration/${slug}`}>
                     <ArrowLeft className="h-4 w-4 mr-2" />
                     Retour
                   </Link>

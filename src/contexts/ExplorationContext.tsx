@@ -251,7 +251,7 @@ export const ExplorationProvider: React.FC<{ children: React.ReactNode }> = ({ c
   const buildRoute = useCallback((mode?: 'voir' | 'suivre' | 'ecouter' | 'lire') => {
     if (!slug) return '/';
     
-    const baseRoute = `/galerie-fleuve`;
+    const baseRoute = `/galerie-fleuve/exploration/${slug}`;
     
     if (!mode || mode === 'voir') {
       return baseRoute;
