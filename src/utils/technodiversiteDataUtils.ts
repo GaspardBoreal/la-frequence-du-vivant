@@ -67,13 +67,43 @@ export const processTechnodiversiteData = (data: any): ProcessedTechnodiversiteD
     const fabrication_locale = processItems(data.fabrication_locale || [], 'Fabrication locale');
     const projets_open_source = processItems(data.open_source_projects || [], 'Open Source');
 
-    console.log('Debug - Structured format processed:', { innovations, fabrication_locale, projets_open_source });
+    // Inclure également les catégories alternatives si elles existent (au même niveau ou sous data.donnees)
+    const innovations_locales = processItems((data?.innovations_locales || data?.donnees?.innovations_locales || []), 'Innovations locales');
+    const technologies_vertes = processItems((data?.technologies_vertes || data?.donnees?.technologies_vertes || []), 'Technologies vertes');
+    const numerique = processItems((data?.numerique || data?.donnees?.numerique || []), 'Numérique sobre');
+    const recherche_developpement = processItems((data?.recherche_developpement || data?.donnees?.recherche_developpement || []), 'Recherche & Développement');
+
+    const total =
+      innovations.length +
+      fabrication_locale.length +
+      projets_open_source.length +
+      innovations_locales.length +
+      technologies_vertes.length +
+      numerique.length +
+      recherche_developpement.length;
+
+    console.log('Debug - Structured format processed (with extra categories):', {
+      counts: {
+        innovations: innovations.length,
+        fabrication_locale: fabrication_locale.length,
+        projets_open_source: projets_open_source.length,
+        innovations_locales: innovations_locales.length,
+        technologies_vertes: technologies_vertes.length,
+        numerique: numerique.length,
+        recherche_developpement: recherche_developpement.length,
+      },
+      total,
+    });
 
     return {
       innovations,
       fabrication_locale,
       projets_open_source,
-      totalCount: innovations.length + fabrication_locale.length + projets_open_source.length
+      innovations_locales,
+      technologies_vertes,
+      numerique,
+      recherche_developpement,
+      totalCount: total,
     };
   }
 
