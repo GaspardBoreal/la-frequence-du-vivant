@@ -50,13 +50,16 @@ export const SpeciesVignetteGrid: React.FC<SpeciesVignetteGridProps> = ({
       if (Array.isArray(value)) {
         value.forEach(item => {
           if (typeof item === 'object' && item !== null) {
-            const species = {
-              titre: item.nom || item.espece || item.titre || key,
-              description_courte: item.description || item.caracteristiques || '',
-              type: item.type || 'Non classé',
-              category: key,
-              metadata: item
-            };
+        const species = {
+          titre: item.nom || item.espece || item.titre || key,
+          nom_commun: item.nom_commun || item.nom || item.espece || item.titre || key,
+          nom_scientifique: item.nom_scientifique || item.nom_latin || item.scientific_name || '',
+          statut_conservation: item.statut_conservation || item.statut || item.conservation_status || item.protection || 'Non renseigné',
+          description_courte: item.description || item.caracteristiques || '',
+          type: item.type || 'Non classé',
+          category: key,
+          metadata: item
+        };
 
             // Categorization logic based on type or characteristics
             const type = (item.type || '').toLowerCase();
@@ -82,6 +85,9 @@ export const SpeciesVignetteGrid: React.FC<SpeciesVignetteGridProps> = ({
       } else if (typeof value === 'object' && value !== null) {
         const species = {
           titre: value.nom || value.espece || key,
+          nom_commun: value.nom_commun || value.nom || value.espece || key,
+          nom_scientifique: value.nom_scientifique || value.nom_latin || value.scientific_name || '',
+          statut_conservation: value.statut_conservation || value.statut || value.conservation_status || value.protection || 'Non renseigné',
           description_courte: value.description || value.caracteristiques || '',
           type: value.type || 'Non classé',
           category: key,

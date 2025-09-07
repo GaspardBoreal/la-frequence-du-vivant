@@ -15,6 +15,10 @@ interface VignetteData {
   category?: string;
   url?: string;
   metadata?: any;
+  // Propriétés spécifiques aux espèces
+  nom_commun?: string;
+  nom_scientifique?: string;
+  statut_conservation?: string;
 }
 
 interface InteractiveVignetteProps {
@@ -61,13 +65,46 @@ export const InteractiveVignette: React.FC<InteractiveVignetteProps> = ({
   return (
     <Card className={`group cursor-pointer transition-all duration-300 hover:shadow-lg hover:scale-105 ${getVariantStyles()} ${className}`}>
       <CardHeader className="pb-3">
-        <CardTitle className={`text-base leading-tight ${getVariantColor()}`}>
-          {data.titre}
-        </CardTitle>
-        {data.type && (
-          <Badge variant="outline" className="w-fit text-xs">
-            {data.type}
-          </Badge>
+        {variant === 'species' ? (
+          // Affichage spécial pour les espèces
+          <div className="space-y-2">
+            {/* Nom commun en gras */}
+            <CardTitle className={`text-base font-bold leading-tight ${getVariantColor()}`}>
+              {data.nom_commun || data.titre}
+            </CardTitle>
+            
+            {/* Nom scientifique et statut de conservation */}
+            <div className="space-y-1">
+              {data.nom_scientifique && (
+                <p className="text-sm font-normal text-slate-600 italic">
+                  {data.nom_scientifique}
+                </p>
+              )}
+              {data.statut_conservation && (
+                <p className="text-sm font-normal text-slate-700">
+                  {data.statut_conservation}
+                </p>
+              )}
+            </div>
+            
+            {data.type && (
+              <Badge variant="outline" className="w-fit text-xs mt-2">
+                {data.type}
+              </Badge>
+            )}
+          </div>
+        ) : (
+          // Affichage standard pour les autres variants
+          <>
+            <CardTitle className={`text-base leading-tight ${getVariantColor()}`}>
+              {data.titre}
+            </CardTitle>
+            {data.type && (
+              <Badge variant="outline" className="w-fit text-xs">
+                {data.type}
+              </Badge>
+            )}
+          </>
         )}
       </CardHeader>
       
@@ -95,7 +132,25 @@ export const InteractiveVignette: React.FC<InteractiveVignetteProps> = ({
             <DialogContent className="max-w-2xl">
               <DialogHeader>
                 <DialogTitle className={`text-xl ${getVariantColor()}`}>
-                  {data.titre}
+                  {variant === 'species' ? (
+                    <div className="space-y-2">
+                      <div className="text-xl font-bold">
+                        {data.nom_commun || data.titre}
+                      </div>
+                      {data.nom_scientifique && (
+                        <div className="text-base font-normal italic text-slate-600">
+                          {data.nom_scientifique}
+                        </div>
+                      )}
+                      {data.statut_conservation && (
+                        <div className="text-sm font-normal text-slate-700">
+                          {data.statut_conservation}
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    data.titre
+                  )}
                 </DialogTitle>
               </DialogHeader>
               
@@ -105,6 +160,30 @@ export const InteractiveVignette: React.FC<InteractiveVignetteProps> = ({
                     <div>
                       <h4 className="font-medium text-sm text-muted-foreground mb-1">Type</h4>
                       <Badge variant="secondary">{data.type}</Badge>
+                    </div>
+                  )}
+                  
+                  {/* Informations spécifiques aux espèces */}
+                  {variant === 'species' && (
+                    <div className="space-y-3 p-4 bg-success/5 rounded-lg border border-success/20">
+                      {data.nom_commun && (
+                        <div>
+                          <h4 className="font-medium text-sm text-muted-foreground mb-1">Nom commun</h4>
+                          <p className="font-bold text-success">{data.nom_commun}</p>
+                        </div>
+                      )}
+                      {data.nom_scientifique && (
+                        <div>
+                          <h4 className="font-medium text-sm text-muted-foreground mb-1">Nom scientifique</h4>
+                          <p className="italic text-slate-700">{data.nom_scientifique}</p>
+                        </div>
+                      )}
+                      {data.statut_conservation && (
+                        <div>
+                          <h4 className="font-medium text-sm text-muted-foreground mb-1">Statut de conservation</h4>
+                          <p className="text-slate-700">{data.statut_conservation}</p>
+                        </div>
+                      )}
                     </div>
                   )}
                   
