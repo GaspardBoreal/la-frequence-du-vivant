@@ -4,7 +4,8 @@ import {
   Home,
   ChevronLeft,
   ChevronRight,
-  ZoomIn
+  ZoomIn,
+  Eye
 } from 'lucide-react';
 import { MarcheTechnoSensible } from '../utils/googleSheetsApi';
 import { RegionalTheme } from '../utils/regionalThemes';
@@ -155,6 +156,12 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes,
   const transitionCommittedRef = useRef(false);
   const lastNavAtRef = useRef(0);
   const MIN_NAV_INTERVAL = 180;
+
+  // Velvet Smooth: Enhanced state for ultra-smooth transitions
+  const [imageFullyLoaded, setImageFullyLoaded] = useState(false);
+  const [phantomFadeActive, setPhantomFadeActive] = useState(false);
+  const [visualComfortMode, setVisualComfortMode] = useState(false);
+  const prefersReducedMotion = typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   // Menu visibility: always show except on welcome page
   const shouldShowMenu = !showWelcome;
@@ -550,12 +557,22 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes,
     const target = Math.min(committedIndex + 1, filteredPhotos.length - 1);
     if (target === committedIndex) return;
 
+    // Velvet Smooth: Activate phantom fade during navigation
+    setPhantomFadeActive(true);
+    setImageFullyLoaded(false);
+
     // Prepare navigation with gating
     const success = await prepareNavigation(target);
     if (success) {
-      completeNavigation(target);
+      // Delay completion for ultra-smooth transition
+      setTimeout(() => {
+        completeNavigation(target);
+        setTimeout(() => setPhantomFadeActive(false), visualComfortMode ? 100 : 50);
+      }, visualComfortMode ? 100 : 50);
+    } else {
+      setPhantomFadeActive(false);
     }
-  }, [committedIndex, filteredPhotos, isPreparing, isTransitioning, prepareNavigation, completeNavigation]);
+  }, [committedIndex, filteredPhotos, isPreparing, isTransitioning, prepareNavigation, completeNavigation, visualComfortMode]);
 
   const navigatePrevious = useCallback(async () => {
     if (isPreparing || isTransitioning || !filteredPhotos.length) return;
@@ -567,12 +584,22 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes,
     const target = Math.max(committedIndex - 1, 0);
     if (target === committedIndex) return;
 
+    // Velvet Smooth: Activate phantom fade during navigation
+    setPhantomFadeActive(true);
+    setImageFullyLoaded(false);
+
     // Prepare navigation with gating
     const success = await prepareNavigation(target);
     if (success) {
-      completeNavigation(target);
+      // Delay completion for ultra-smooth transition
+      setTimeout(() => {
+        completeNavigation(target);
+        setTimeout(() => setPhantomFadeActive(false), visualComfortMode ? 100 : 50);
+      }, visualComfortMode ? 100 : 50);
+    } else {
+      setPhantomFadeActive(false);
     }
-  }, [committedIndex, filteredPhotos, isPreparing, isTransitioning, prepareNavigation, completeNavigation]);
+  }, [committedIndex, filteredPhotos, isPreparing, isTransitioning, prepareNavigation, completeNavigation, visualComfortMode]);
 
   // Navigation states
   const canNavigatePrevious = committedIndex > 0 && !isPreparing && !isTransitioning;
@@ -633,6 +660,8 @@ const NavigationControls = memo<{
   committedIndex: number;
   totalPhotos: number;
   setIsMarcheSelectorOpen: (open: boolean) => void;
+  visualComfortMode: boolean;
+  setVisualComfortMode: (mode: boolean) => void;
 }>(({ 
   shouldShowMenu, 
   canNavigatePrevious, 
@@ -641,7 +670,9 @@ const NavigationControls = memo<{
   navigateNext, 
   committedIndex, 
   totalPhotos, 
-  setIsMarcheSelectorOpen 
+  setIsMarcheSelectorOpen,
+  visualComfortMode,
+  setVisualComfortMode
 }) => {
   if (!shouldShowMenu) return null;
   
@@ -707,8 +738,19 @@ const NavigationControls = memo<{
            </div>
         </div>
         
-        {/* Spacer to balance centering */}
-        <div className="w-10"></div>
+        {/* Spacer replaced with Visual Comfort toggle */}
+        <motion.button
+          onClick={() => setVisualComfortMode(!visualComfortMode)}
+          className={`w-10 h-10 rounded-xl flex items-center justify-center backdrop-blur-md transition-all duration-300 touch-manipulation border border-white/10 shadow-xl ${
+            visualComfortMode 
+              ? 'bg-cyan-500/60 text-cyan-100' 
+              : 'bg-black/40 text-white/70 hover:text-white'
+          }`}
+          whileTap={{ scale: 0.9 }}
+          title="Confort visuel"
+        >
+          <Eye className="h-5 w-5" />
+        </motion.button>
       </div>
     </motion.div>
   );
@@ -769,8 +811,23 @@ const GalerieView = memo<{
       <div className="relative h-[100dvh] overflow-hidden">
         
 
+        {/* Velvet Smooth: Phantom Fade Overlay */}
+        {phantomFadeActive && (
+          <div 
+            className="absolute inset-0 z-50 pointer-events-none"
+            style={{
+              background: `linear-gradient(45deg, 
+                rgba(15, 23, 42, ${visualComfortMode ? 0.15 : 0.1}) 0%, 
+                rgba(15, 23, 42, ${visualComfortMode ? 0.05 : 0.03}) 50%, 
+                rgba(15, 23, 42, ${visualComfortMode ? 0.15 : 0.1}) 100%)`,
+              opacity: phantomFadeActive ? 1 : 0,
+              transition: `opacity ${visualComfortMode ? 400 : 200}ms cubic-bezier(0.25, 0.1, 0.25, 1)`
+            }}
+          />
+        )}
+
         {/* Main photo display */}
-        <AnimatePresence mode={deviceType === 'desktop' ? 'sync' : 'sync'}>
+        <AnimatePresence mode="popLayout">
           <div className={`absolute inset-0 ${
             deviceType === 'desktop' 
               ? 'flex items-center justify-center gap-4 px-8' 
@@ -796,24 +853,16 @@ const GalerieView = memo<{
                         : 'w-[25%] h-[60%] z-0 opacity-70 hover:opacity-90 cursor-pointer border border-cyan-400/10'
                     ) : 'w-full h-full rounded-none'}
                   `}
-                  initial={ deviceType === 'desktop' ? { 
-                    scale: position === 'current' ? 0.95 : 0.9,
-                    opacity: 0 
-                  } : { opacity: 1, scale: 1 } }
+                  initial={false}
                   animate={ deviceType === 'desktop' ? { 
                     scale: position === 'current' ? 1 : 0.9,
-                    opacity: position === 'current' ? 1 : 0.7
+                    opacity: position === 'current' ? 1 : (visualComfortMode ? 0.8 : 0.7)
                   } : { opacity: 1, scale: 1 } }
-                  exit={ deviceType === 'desktop' ? { 
-                    scale: 0.95,
-                    opacity: 0 
-                  } : { opacity: 1 } }
                   transition={ deviceType === 'desktop' ? { 
-                    type: reduceMotion ? "tween" : "spring",
-                    stiffness: reduceMotion ? undefined : 300,
-                    damping: reduceMotion ? undefined : 25,
-                    duration: reduceMotion ? 0.2 : undefined
-                  } : { duration: 0.12 } }
+                    type: "tween",
+                    duration: (prefersReducedMotion || visualComfortMode) ? 0.4 : 0.2,
+                    ease: [0.25, 0.1, 0.25, 1] // Ultra-smooth cubic-bezier
+                  } : { duration: 0 } }
                   onClick={() => {
                     if (isPreparing) return;
                     if (position === 'previous') navigatePrevious();
@@ -833,19 +882,33 @@ const GalerieView = memo<{
                     className="w-full h-full"
                     priority={position === 'current' ? 'high' : 'medium'}
                     preloadedImage={preloadedImage?.element}
-                    enableCinematicTransitions={deviceType === 'desktop'}
+                    enableCinematicTransitions={false} // Velvet Smooth: Disable concurrent animations
                     instant={shouldUseInstant}
+                    transition={{
+                      duration: (prefersReducedMotion || visualComfortMode) ? 0.4 : 0.2,
+                      ease: [0.25, 0.1, 0.25, 1]
+                    }}
+                    onLoad={() => {
+                      if (position === 'current') {
+                        // Delay metadata animation until image is fully rendered
+                        setTimeout(() => setImageFullyLoaded(true), visualComfortMode ? 100 : 50);
+                      }
+                    }}
                   />
                   
                   <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent" />
                   
-                  {/* Metadata only on current photo */}
-                  {position === 'current' && !isPreparing && (
+                  {/* Velvet Smooth: Metadata synchronized with image loading */}
+                  {position === 'current' && !isPreparing && imageFullyLoaded && (
                      <motion.div 
                        className="absolute bottom-6 left-6 right-6 text-white"
-                       initial={shouldUseInstant ? false : { y: 20, opacity: 0 }}
-                       animate={{ y: 0, opacity: 1 }}
-                       transition={shouldUseInstant ? { duration: 0 } : { delay: 0.3 }}
+                       initial={shouldUseInstant ? false : { y: 15, opacity: 0 }}
+                       animate={{ y: 0, opacity: visualComfortMode ? 0.9 : 1 }}
+                       transition={shouldUseInstant ? { duration: 0 } : { 
+                         delay: visualComfortMode ? 0.15 : 0.1,
+                         duration: (prefersReducedMotion || visualComfortMode) ? 0.6 : 0.3,
+                         ease: [0.25, 0.1, 0.25, 1]
+                       }}
                      >
                        <Badge className="mb-3 bg-cyan-500/80 text-cyan-100 border-cyan-400/30 backdrop-blur-xl shadow-lg shadow-cyan-500/20">
                          {photo.ville}
@@ -924,6 +987,8 @@ const GalerieView = memo<{
             committedIndex={committedIndex}
             totalPhotos={filteredPhotos.length}
             setIsMarcheSelectorOpen={setIsMarcheSelectorOpen}
+            visualComfortMode={visualComfortMode}
+            setVisualComfortMode={setVisualComfortMode}
           />
 
           {/* Marche Selector */}
