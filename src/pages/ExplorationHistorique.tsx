@@ -120,7 +120,7 @@ export default function ExplorationHistorique() {
           <div className="container mx-auto px-4 py-6">
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-4">
-                <Link to="/galerie-fleuve">
+                <Link to={`/galerie-fleuve/exploration/${exploration.slug}`}>
                   <Button variant="ghost" size="sm" className="text-white hover:bg-white/10">
                     <ArrowLeft className="h-4 w-4 mr-2" />
                     Retour à l'exploration

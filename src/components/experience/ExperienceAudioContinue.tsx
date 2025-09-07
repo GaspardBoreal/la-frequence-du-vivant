@@ -259,7 +259,7 @@ export default function ExperienceAudioContinue() {
             Cette exploration ne contient pas encore de contenu audio. 
             Les enregistrements seront bientôt disponibles.
           </p>
-          <Link to="/galerie-fleuve">
+          <Link to={`/galerie-fleuve/exploration/${slug}`}>
             <Button variant="outline" size="lg" className="btn-nature">
               <ArrowLeft className="h-5 w-5 mr-2" />
               Retour à l'exploration

@@ -251,7 +251,7 @@ export default function SymphonieTextuelle() {
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
           >
-            <Link to="/galerie-fleuve">
+            <Link to={`/galerie-fleuve/exploration/${slug}`}>
               <Button variant="ghost" size="sm">
                 <ArrowLeft className="h-4 w-4 mr-2" />
                 Retour à l'exploration
@@ -399,7 +399,7 @@ export default function SymphonieTextuelle() {
                 <Sparkles className="h-4 w-4" />
               </Button>
 
-              <Link to="/galerie-fleuve">
+              <Link to={`/galerie-fleuve/exploration/${slug}`}>
                 <Button variant="outline" size="sm">
                   Quitter la lecture
                 </Button>

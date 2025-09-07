@@ -216,7 +216,7 @@ const LectureImmersive: React.FC = () => {
                 <Volume2 className={`h-4 w-4 ${preferences.ambientSounds ? 'text-primary' : 'text-muted-foreground'}`} />
               </Button>
               
-              <Link to="/galerie-fleuve">
+              <Link to={`/galerie-fleuve/exploration/${slug}`}>
                 <Button variant="outline" size="sm">
                   Quitter la lecture
                 </Button>
