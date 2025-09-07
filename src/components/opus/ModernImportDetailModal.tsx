@@ -1,11 +1,13 @@
 import React, { useState, useMemo } from 'react';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Separator } from '@/components/ui/separator';
+import { InteractiveVignette } from './InteractiveVignette';
+import { SpeciesVignetteGrid } from './SpeciesVignetteGrid';
+import { VignetteGrid } from './VignetteGrid';
 import { 
   Calendar, 
   Database, 
@@ -18,13 +20,15 @@ import {
   Target, 
   ExternalLink,
   Code,
-  Eye,
   EyeOff,
   TrendingUp,
   Activity,
-  Clock,
   Globe,
-  ChevronRight
+  ChevronRight,
+  Building,
+  Wheat,
+  Wrench,
+  BookOpen
 } from 'lucide-react';
 
 interface ImportRecord {
@@ -54,7 +58,6 @@ export const ModernImportDetailModal: React.FC<ModernImportDetailModalProps> = (
   const [selectedYear, setSelectedYear] = useState<string | null>(null);
   const [showJsonView, setShowJsonView] = useState(false);
 
-  // Extract years from sources for filtering
   const sourcesByYear = useMemo(() => {
     const yearMap = new Map<string, any[]>();
     
@@ -88,70 +91,27 @@ export const ModernImportDetailModal: React.FC<ModernImportDetailModalProps> = (
     });
   };
 
-  const getStatusColor = () => {
-    const hasContexte = !!importRecord.contexte_data;
-    const hasFables = !!importRecord.fables_data?.length;
-    
-    if (hasContexte && hasFables) return 'text-green-500';
-    if (hasContexte || hasFables) return 'text-yellow-500';
-    return 'text-red-500';
-  };
-
-  const renderContexteSection = (title: string, data: any, icon: React.ReactNode, color: string) => {
+  const renderContexteMetric = (title: string, data: any, icon: React.ReactNode) => {
     if (!data) return null;
-
-    const dataCount = Array.isArray(data) ? data.length : Object.keys(data || {}).length;
-
+    
     return (
       <Card className="bg-gradient-to-br from-background/80 to-background/40 backdrop-blur-sm border-border/50 hover:shadow-lg transition-all duration-300">
         <CardHeader className="pb-3">
-          <CardTitle className="flex items-center gap-3 text-lg">
-            <div className={`p-2 rounded-lg ${color}`}>
+          <CardTitle className="flex items-center gap-2 text-sm">
+            <div className="text-success">
               {icon}
             </div>
-            <div>
-              <span>{title}</span>
-              <Badge variant="secondary" className="ml-2">
-                {dataCount} {dataCount === 1 ? 'élément' : 'éléments'}
-              </Badge>
-            </div>
+            <span className="text-success">{title}</span>
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className={`space-y-3 ${showJsonView ? 'font-mono text-xs' : ''}`}>
-            {showJsonView ? (
-              <pre className="bg-muted/20 p-4 rounded-lg overflow-x-auto">
+          <div className="text-sm text-muted-foreground">
+            {typeof data === 'object' ? (
+              <pre className="bg-muted/20 p-2 rounded text-xs font-mono whitespace-pre-wrap">
                 {JSON.stringify(data, null, 2)}
               </pre>
             ) : (
-              typeof data === 'object' ? (
-                Object.entries(data).map(([key, value]) => (
-                  <div key={key} className="flex flex-col space-y-1">
-                    <div className="text-sm font-medium text-success capitalize">
-                      {key.replace(/_/g, ' ')}
-                    </div>
-                    <div className="text-sm text-muted-foreground pl-4 border-l-2 border-border/30">
-                      {Array.isArray(value) ? (
-                        <ul className="list-disc list-inside space-y-1">
-                          {value.map((item, idx) => (
-                            <li key={idx} className="text-xs">
-                              {typeof item === 'object' ? JSON.stringify(item) : String(item)}
-                            </li>
-                          ))}
-                        </ul>
-                      ) : typeof value === 'object' ? (
-                        <div className="bg-muted/10 p-2 rounded text-xs">
-                          {JSON.stringify(value, null, 2)}
-                        </div>
-                      ) : (
-                        <span className="text-sm">{String(value)}</span>
-                      )}
-                    </div>
-                  </div>
-                ))
-              ) : (
-                <p className="text-sm text-muted-foreground">{String(data)}</p>
-              )
+              <span>{String(data)}</span>
             )}
           </div>
         </CardContent>
@@ -161,7 +121,7 @@ export const ModernImportDetailModal: React.FC<ModernImportDetailModalProps> = (
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-w-5xl max-h-[90vh] overflow-hidden bg-background/95 backdrop-blur-xl border-border/50">
+      <DialogContent className="max-w-7xl max-h-[95vh] overflow-hidden bg-background/95 backdrop-blur-xl border-border/50">
         <DialogHeader>
           <DialogTitle className="flex items-center justify-between">
             <div className="flex items-center gap-3">
@@ -202,185 +162,182 @@ export const ModernImportDetailModal: React.FC<ModernImportDetailModalProps> = (
         </DialogHeader>
 
         <Tabs defaultValue="overview" className="flex-1">
-          <TabsList className="grid w-full grid-cols-4 mb-6 bg-background/50 backdrop-blur-sm border border-border/30">
-            <TabsTrigger value="overview" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
-              Vue d'ensemble
-            </TabsTrigger>
-            <TabsTrigger value="contexte" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
-              Contexte
-            </TabsTrigger>
-            <TabsTrigger value="fables" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
-              Fables
-            </TabsTrigger>
-            <TabsTrigger value="sources" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
-              Sources
-            </TabsTrigger>
-          </TabsList>
+          <div className="hidden md:block">
+            <TabsList className="grid w-full grid-cols-7 mb-6 bg-background/50 backdrop-blur-sm border border-border/30">
+              <TabsTrigger value="overview" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground text-xs">
+                Vue d'ensemble
+              </TabsTrigger>
+              <TabsTrigger value="contexte" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground text-xs">
+                Contexte
+              </TabsTrigger>
+              <TabsTrigger value="species" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground text-xs">
+                Espèces
+              </TabsTrigger>
+              <TabsTrigger value="vocabulary" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground text-xs">
+                Vocabulaire
+              </TabsTrigger>
+              <TabsTrigger value="infrastructure" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground text-xs">
+                Infrastructures
+              </TabsTrigger>
+              <TabsTrigger value="agro" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground text-xs">
+                Agroécologie
+              </TabsTrigger>
+              <TabsTrigger value="technology" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground text-xs">
+                Technodiversité
+              </TabsTrigger>
+            </TabsList>
+          </div>
 
-          <ScrollArea className="h-[60vh] pr-4">
-            {/* Overview Tab */}
+          <ScrollArea className="h-[75vh] pr-4">
+            {/* Vue d'ensemble Tab - Refonte avec les 6 métriques */}
             <TabsContent value="overview" className="space-y-6">
-              {/* Key Metrics */}
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <Card className="bg-gradient-to-br from-primary/10 to-primary/5 border-primary/20">
+              <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-4">
+                {/* 1. Nb Espèces */}
+                <Card className="bg-gradient-to-br from-success/20 to-success/10 border-success/30 hover:shadow-lg transition-all">
                   <CardHeader className="pb-2">
                     <CardTitle className="text-sm flex items-center gap-2">
-                      <TrendingUp className="w-4 h-4" />
-                      Complétude
+                      <Leaf className="w-4 h-4 text-success" />
+                      Espèces
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <div className="text-3xl font-bold text-success">
-                      {importRecord.completude_score}%
+                    <div className="text-2xl font-bold text-success mb-1">
+                      {importRecord.contexte_data?.especes_caracteristiques ? 
+                        Object.keys(importRecord.contexte_data.especes_caracteristiques).length : 0}
                     </div>
-                    <div className="w-full bg-muted rounded-full h-2 mt-2">
-                      <div 
-                        className="bg-gradient-to-r from-primary to-accent h-2 rounded-full transition-all duration-1000"
-                        style={{ width: `${importRecord.completude_score}%` }}
-                      />
-                    </div>
+                    <p className="text-xs text-muted-foreground">identifiées</p>
                   </CardContent>
                 </Card>
 
-                <Card className="bg-gradient-to-br from-green-500/10 to-green-500/5 border-green-500/20">
+                {/* 2. Vocabulaire Local */}
+                <Card className="bg-gradient-to-br from-info/20 to-info/10 border-info/30 hover:shadow-lg transition-all">
                   <CardHeader className="pb-2">
                     <CardTitle className="text-sm flex items-center gap-2">
-                      <Database className="w-4 h-4" />
-                      Contexte
+                      <BookOpen className="w-4 h-4 text-info" />
+                      Vocabulaire
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <div className={`text-3xl font-bold ${getStatusColor()}`}>
-                      {importRecord.contexte_data ? '✓' : '✗'}
+                    <div className="text-2xl font-bold text-info mb-1">
+                      {importRecord.contexte_data?.vocabulaire_local ? 
+                        Object.keys(importRecord.contexte_data.vocabulaire_local).length : 0}
                     </div>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      {importRecord.contexte_data ? 'Disponible' : 'Manquant'}
-                    </p>
+                    <p className="text-xs text-muted-foreground">termes locaux</p>
                   </CardContent>
                 </Card>
 
-                <Card className="bg-gradient-to-br from-orange-500/10 to-orange-500/5 border-orange-500/20">
+                {/* 3. Infrastructures */}
+                <Card className="bg-gradient-to-br from-warning/20 to-warning/10 border-warning/30 hover:shadow-lg transition-all">
                   <CardHeader className="pb-2">
                     <CardTitle className="text-sm flex items-center gap-2">
-                      <FileText className="w-4 h-4" />
-                      Fables
+                      <Building className="w-4 h-4 text-warning" />
+                      Infrastructures
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <div className="text-3xl font-bold text-warning">
-                      {importRecord.fables_data?.length || 0}
+                    <div className="text-2xl font-bold text-warning mb-1">
+                      {importRecord.contexte_data?.empreintes_humaines ? 
+                        Object.keys(importRecord.contexte_data.empreintes_humaines).length : 0}
                     </div>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      narratives créées
-                    </p>
+                    <p className="text-xs text-muted-foreground">caractéristiques</p>
                   </CardContent>
                 </Card>
 
-                <Card className="bg-gradient-to-br from-blue-500/10 to-blue-500/5 border-blue-500/20">
+                {/* 4. Leviers Agroécologiques */}
+                <Card className="bg-gradient-to-br from-accent/20 to-accent/10 border-accent/30 hover:shadow-lg transition-all">
                   <CardHeader className="pb-2">
                     <CardTitle className="text-sm flex items-center gap-2">
-                      <Globe className="w-4 h-4" />
-                      Sources
+                      <Wheat className="w-4 h-4 text-accent" />
+                      Agroécologie
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <div className="text-3xl font-bold text-info">
-                      {importRecord.sources.length}
+                    <div className="text-2xl font-bold text-accent mb-1">
+                      {importRecord.contexte_data?.projection_2035_2045?.leviers_agroecologiques ? 
+                        Object.keys(importRecord.contexte_data.projection_2035_2045.leviers_agroecologiques).length : 0}
                     </div>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      références collectées
-                    </p>
+                    <p className="text-xs text-muted-foreground">leviers</p>
+                  </CardContent>
+                </Card>
+
+                {/* 5. Nouvelles Activités */}
+                <Card className="bg-gradient-to-br from-primary/20 to-primary/10 border-primary/30 hover:shadow-lg transition-all">
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm flex items-center gap-2">
+                      <Target className="w-4 h-4 text-primary" />
+                      Activités
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold text-primary mb-1">
+                      {importRecord.contexte_data?.projection_2035_2045?.nouvelles_activites ? 
+                        Object.keys(importRecord.contexte_data.projection_2035_2045.nouvelles_activites).length : 0}
+                    </div>
+                    <p className="text-xs text-muted-foreground">à développer</p>
+                  </CardContent>
+                </Card>
+
+                {/* 6. Technodiversité */}
+                <Card className="bg-gradient-to-br from-purple-500/20 to-purple-500/10 border-purple-500/30 hover:shadow-lg transition-all">
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm flex items-center gap-2">
+                      <Wrench className="w-4 h-4 text-purple-500" />
+                      Technodiversité
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold text-purple-500 mb-1">
+                      {importRecord.contexte_data?.technodiversite ? 
+                        Object.keys(importRecord.contexte_data.technodiversite).length : 0}
+                    </div>
+                    <p className="text-xs text-muted-foreground">technologies</p>
                   </CardContent>
                 </Card>
               </div>
 
-              {/* General Information */}
+              {/* Informations générales compactes */}
               <Card className="bg-background/50 backdrop-blur-sm border-border/30">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Activity className="w-5 h-5" />
-                    Informations générales
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <div className="flex justify-between">
-                        <span className="font-medium">Marché:</span>
-                        <span className="text-muted-foreground">
-                          {importRecord.marche_nom}
-                        </span>
-                      </div>
-                      {importRecord.marche_ville && (
-                        <div className="flex justify-between">
-                          <span className="font-medium">Ville:</span>
-                          <span className="text-muted-foreground flex items-center gap-1">
-                            <MapPin className="w-3 h-3" />
-                            {importRecord.marche_ville}
-                          </span>
-                        </div>
-                      )}
+                <CardContent className="p-4">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                    <div className="space-y-1">
+                      <span className="font-medium text-muted-foreground">Marché:</span>
+                      <p>{importRecord.marche_nom}</p>
                     </div>
-                    <div className="space-y-2">
-                      <div className="flex justify-between">
-                        <span className="font-medium">ID Marché:</span>
-                        <span className="text-muted-foreground font-mono text-sm">
-                          {importRecord.marche_id}
-                        </span>
+                    <div className="space-y-1">
+                      <span className="font-medium text-muted-foreground">Complétude:</span>
+                      <div className="flex items-center gap-2">
+                        <div className="text-lg font-bold text-success">{importRecord.completude_score}%</div>
+                        <div className="flex-1 bg-muted rounded-full h-1.5">
+                          <div 
+                            className="bg-gradient-to-r from-primary to-accent h-1.5 rounded-full transition-all duration-1000"
+                            style={{ width: `${importRecord.completude_score}%` }}
+                          />
+                        </div>
                       </div>
-                      <div className="flex justify-between">
-                        <span className="font-medium">ID OPUS:</span>
-                        <span className="text-muted-foreground font-mono text-sm">
-                          {importRecord.opus_id}
-                        </span>
-                      </div>
+                    </div>
+                    <div className="space-y-1">
+                      <span className="font-medium text-muted-foreground">Sources:</span>
+                      <p className="text-info font-medium">{importRecord.sources.length} références</p>
                     </div>
                   </div>
                 </CardContent>
               </Card>
             </TabsContent>
 
-            {/* Contexte Tab */}
-            <TabsContent value="contexte" className="space-y-6">
+            {/* Contexte Tab - Réorganisé selon l'ordre demandé */}
+            <TabsContent value="contexte" className="space-y-4">
               {importRecord.contexte_data ? (
-                <>
-                  {renderContexteSection(
-                    "Contexte Hydrologique", 
-                    importRecord.contexte_data.contexte_hydrologique,
-                    <Droplets className="w-5 h-5 text-white" />,
-                    "bg-blue-500/20"
-                  )}
-                  {renderContexteSection(
-                    "Espèces Caractéristiques", 
-                    importRecord.contexte_data.especes_caracteristiques,
-                    <Leaf className="w-5 h-5 text-white" />,
-                    "bg-green-500/20"
-                  )}
-                  {renderContexteSection(
-                    "Vocabulaire Local", 
-                    importRecord.contexte_data.vocabulaire_local,
-                    <Users className="w-5 h-5 text-white" />,
-                    "bg-purple-500/20"
-                  )}
-                  {renderContexteSection(
-                    "Empreintes Humaines", 
-                    importRecord.contexte_data.empreintes_humaines,
-                    <Users className="w-5 h-5 text-white" />,
-                    "bg-orange-500/20"
-                  )}
-                  {renderContexteSection(
-                    "Technodiversité", 
-                    importRecord.contexte_data.technodiversite,
-                    <Zap className="w-5 h-5 text-white" />,
-                    "bg-yellow-500/20"
-                  )}
-                  {renderContexteSection(
-                    "Projections 2035-2045", 
-                    importRecord.contexte_data.projection_2035_2045,
-                    <Target className="w-5 h-5 text-white" />,
-                    "bg-red-500/20"
-                  )}
-                </>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {renderContexteMetric("Description", importRecord.contexte_data.description, <FileText className="w-4 h-4" />)}
+                  {renderContexteMetric("Qualité eau", importRecord.contexte_data.qualite_eau, <Droplets className="w-4 h-4" />)}
+                  {renderContexteMetric("Sources note", importRecord.contexte_data.sources_note, <Database className="w-4 h-4" />)}
+                  {renderContexteMetric("Température eau", importRecord.contexte_data.temperature_eau, <Activity className="w-4 h-4" />)}
+                  {renderContexteMetric("Profondeur moyenne", importRecord.contexte_data.profondeur_moyenne, <Target className="w-4 h-4" />)}
+                  {renderContexteMetric("Phénomènes particuliers", importRecord.contexte_data.phenomenes_particuliers, <Globe className="w-4 h-4" />)}
+                  {renderContexteMetric("pH", importRecord.contexte_data.ph, <Zap className="w-4 h-4" />)}
+                  {renderContexteMetric("Source ids", importRecord.contexte_data.source_ids, <Users className="w-4 h-4" />)}
+                  {renderContexteMetric("Débit moyen", importRecord.contexte_data.debit_moyen, <Droplets className="w-4 h-4" />)}
+                </div>
               ) : (
                 <Card className="bg-background/50 backdrop-blur-sm border-border/30">
                   <CardContent className="p-12 text-center">
@@ -394,203 +351,55 @@ export const ModernImportDetailModal: React.FC<ModernImportDetailModalProps> = (
               )}
             </TabsContent>
 
-            {/* Fables Tab */}
-            <TabsContent value="fables" className="space-y-6">
-              {importRecord.fables_data?.length > 0 ? (
-                importRecord.fables_data.map((fable, index) => (
-                  <Card key={index} className="bg-background/50 backdrop-blur-sm border-border/30">
-                    <CardHeader>
-                      <CardTitle className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-orange-500 to-red-500 flex items-center justify-center">
-                          <FileText className="w-4 h-4 text-white" />
-                        </div>
-                        <div>
-                          <span>{fable.titre}</span>
-                          <div className="flex items-center gap-2 mt-1">
-                            <Badge variant="outline">{fable.statut}</Badge>
-                            {fable.version && (
-                              <Badge variant="secondary">v{fable.version}</Badge>
-                            )}
-                          </div>
-                        </div>
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <ScrollArea className="h-64">
-                        <div className="space-y-4 pr-4">
-                          {fable.resume && (
-                            <div>
-                              <h4 className="font-medium mb-2 flex items-center gap-2">
-                                <ChevronRight className="w-4 h-4" />
-                                Résumé
-                              </h4>
-                              <p className="text-sm text-muted-foreground bg-muted/20 p-3 rounded-lg">
-                                {fable.resume}
-                              </p>
-                            </div>
-                          )}
-                          
-                          <div>
-                            <h4 className="font-medium mb-2 flex items-center gap-2">
-                              <ChevronRight className="w-4 h-4" />
-                              Contenu principal
-                            </h4>
-                            <p className="text-sm text-muted-foreground bg-muted/20 p-3 rounded-lg leading-relaxed">
-                              {fable.contenu_principal}
-                            </p>
-                          </div>
-
-                          {fable.variations && Object.keys(fable.variations).length > 0 && (
-                            <div>
-                              <h4 className="font-medium mb-2 flex items-center gap-2">
-                                <ChevronRight className="w-4 h-4" />
-                                Variations
-                              </h4>
-                              <div className="space-y-3">
-                                {Object.entries(fable.variations).map(([type, content]) => (
-                                  <div key={type} className="bg-muted/10 border border-border/30 rounded-lg p-3">
-                                    <Badge variant="secondary" className="mb-3">{type}</Badge>
-                                    <p className="text-xs text-muted-foreground whitespace-pre-wrap leading-relaxed">
-                                      {typeof content === 'string' ? content : JSON.stringify(content, null, 2)}
-                                    </p>
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-                          )}
-
-                          {fable.dimensions_associees?.length > 0 && (
-                            <div>
-                              <h4 className="font-medium mb-2 flex items-center gap-2">
-                                <ChevronRight className="w-4 h-4" />
-                                Dimensions associées
-                              </h4>
-                              <div className="flex flex-wrap gap-2">
-                                {fable.dimensions_associees.map((dim: string) => (
-                                  <Badge key={dim} variant="outline" className="text-xs">
-                                    {dim}
-                                  </Badge>
-                                ))}
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                      </ScrollArea>
-                    </CardContent>
-                  </Card>
-                ))
-              ) : (
-                <Card className="bg-background/50 backdrop-blur-sm border-border/30">
-                  <CardContent className="p-12 text-center">
-                    <FileText className="w-16 h-16 mx-auto mb-4 text-muted-foreground/50" />
-                    <h3 className="text-lg font-medium mb-2">Aucune fable disponible</h3>
-                    <p className="text-muted-foreground">
-                      Les narratives n'ont pas encore été générées pour ce marché.
-                    </p>
-                  </CardContent>
-                </Card>
-              )}
+            {/* Espèces Caractéristiques Tab */}
+            <TabsContent value="species" className="space-y-6">
+              <SpeciesVignetteGrid 
+                speciesData={importRecord.contexte_data?.especes_caracteristiques}
+              />
             </TabsContent>
 
-            {/* Sources Tab */}
-            <TabsContent value="sources" className="space-y-6">
-              {sourcesByYear.size > 0 && (
-                <Card className="bg-background/50 backdrop-blur-sm border-border/30">
-                  <CardHeader>
-                    <CardTitle className="text-sm">Filtrer par année</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="flex flex-wrap gap-2">
-                      <Button
-                        variant={selectedYear === null ? "default" : "outline"}
-                        size="sm"
-                        onClick={() => setSelectedYear(null)}
-                        className="bg-background/50 border-border/50"
-                      >
-                        Toutes ({importRecord.sources.length})
-                      </Button>
-                      {[...sourcesByYear.entries()].map(([year, sources]) => (
-                        <Button
-                          key={year}
-                          variant={selectedYear === year ? "default" : "outline"}
-                          size="sm"
-                          onClick={() => setSelectedYear(year)}
-                          className="bg-background/50 border-border/50"
-                        >
-                          {year} ({sources.length})
-                        </Button>
-                      ))}
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
-              
-              {filteredSources.length > 0 ? (
-                <div className="space-y-4">
-                  {filteredSources.map((source, index) => (
-                    <Card key={index} className="bg-background/50 backdrop-blur-sm border-border/30">
-                      <CardHeader>
-                        <CardTitle className="flex items-center gap-3 text-lg">
-                          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center">
-                            <Globe className="w-4 h-4 text-white" />
-                          </div>
-                          <span>{source.titre || `Source ${index + 1}`}</span>
-                          {source.type && (
-                            <Badge variant="outline">{source.type}</Badge>
-                          )}
-                        </CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          {source.auteur && (
-                            <div>
-                              <span className="font-medium text-sm">Auteur:</span>
-                              <p className="text-sm text-muted-foreground mt-1">{source.auteur}</p>
-                            </div>
-                          )}
-                          {(source.date || source.date_publication) && (
-                            <div>
-                              <span className="font-medium text-sm">Date:</span>
-                              <p className="text-sm text-muted-foreground mt-1 flex items-center gap-1">
-                                <Clock className="w-3 h-3" />
-                                {source.date || source.date_publication}
-                              </p>
-                            </div>
-                          )}
-                          {(source.url || source.lien || source.link) && (
-                            <div className="md:col-span-2">
-                              <span className="font-medium text-sm">URL:</span>
-                              <a 
-                                href={source.url || source.lien || source.link} 
-                                target="_blank" 
-                                rel="noopener noreferrer"
-                                className="block text-sm text-accent hover:text-accent/80 underline mt-1 break-all"
-                              >
-                                {source.url || source.lien || source.link}
-                              </a>
-                            </div>
-                          )}
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
-              ) : (
-                <Card className="bg-background/50 backdrop-blur-sm border-border/30">
-                  <CardContent className="p-12 text-center">
-                    <Globe className="w-16 h-16 mx-auto mb-4 text-muted-foreground/50" />
-                    <h3 className="text-lg font-medium mb-2">
-                      {selectedYear ? `Aucune source pour ${selectedYear}` : "Aucune source disponible"}
-                    </h3>
-                    <p className="text-muted-foreground">
-                      {selectedYear 
-                        ? "Aucune source n'a été référencée pour cette année."
-                        : "Aucune source n'a été référencée pour cet import."
-                      }
-                    </p>
-                  </CardContent>
-                </Card>
-              )}
+            {/* Vocabulaire Local Tab */}
+            <TabsContent value="vocabulary" className="space-y-6">
+              <VignetteGrid
+                title="Vocabulaire Local"
+                data={importRecord.contexte_data?.vocabulaire_local}
+                variant="vocabulary"
+                icon={<BookOpen className="w-5 h-5" />}
+                emptyMessage="Aucun terme de vocabulaire local n'a été identifié"
+              />
+            </TabsContent>
+
+            {/* Infrastructures Tab */}
+            <TabsContent value="infrastructure" className="space-y-6">
+              <VignetteGrid
+                title="Infrastructures Caractéristiques"
+                data={importRecord.contexte_data?.empreintes_humaines}
+                variant="infrastructure"
+                icon={<Building className="w-5 h-5" />}
+                emptyMessage="Aucune infrastructure caractéristique n'a été identifiée"
+              />
+            </TabsContent>
+
+            {/* Leviers Agroécologiques Tab */}
+            <TabsContent value="agro" className="space-y-6">
+              <VignetteGrid
+                title="Leviers Agroécologiques"
+                data={importRecord.contexte_data?.projection_2035_2045?.leviers_agroecologiques}
+                variant="agro"
+                icon={<Wheat className="w-5 h-5" />}
+                emptyMessage="Aucun levier agroécologique n'a été identifié"
+              />
+            </TabsContent>
+
+            {/* Technodiversité Tab */}
+            <TabsContent value="technology" className="space-y-6">
+              <VignetteGrid
+                title="Technodiversité"
+                data={importRecord.contexte_data?.technodiversite}
+                variant="technology"
+                icon={<Wrench className="w-5 h-5" />}
+                emptyMessage="Aucune technologie n'a été identifiée"
+              />
             </TabsContent>
           </ScrollArea>
         </Tabs>
