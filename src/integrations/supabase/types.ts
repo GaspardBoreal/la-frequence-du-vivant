@@ -1574,6 +1574,15 @@ export type Database = {
           updated_at: string
         }[]
       }
+      get_structured_vocabulary_data: {
+        Args: { marche_id_param: string }
+        Returns: {
+          phenomenes: Json
+          pratiques: Json
+          sources: Json
+          termes_locaux: Json
+        }[]
+      }
       get_top_species_optimized: {
         Args: { limit_count?: number }
         Returns: {

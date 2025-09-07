@@ -5,6 +5,7 @@ import { InteractiveVignette } from './InteractiveVignette';
 import { Database, ExternalLink } from 'lucide-react';
 import { processVocabularyData } from '@/utils/vocabularyDataUtils';
 import { VocabularySourcesCard } from './VocabularySourcesCard';
+import VocabularyVignetteGrid from './VocabularyVignetteGrid';
 import { useToast } from '@/components/ui/use-toast';
 
 interface VignetteGridProps {
@@ -228,54 +229,12 @@ export const VignetteGrid: React.FC<VignetteGridProps> = ({
       )}
 
       {/* Affichage spécialisé pour le vocabulaire */}
-      {specialProcessing === 'vocabulary' && typeof processedData === 'object' && 'termes' in processedData && (
-        <div className="space-y-6">
-          {/* Section Termes */}
-          {processedData.termes && processedData.termes.length > 0 && (
-            <div className="space-y-4">
-              <div className={`flex items-center gap-3 ${getVariantColor()}`}>
-                <Database className="w-5 h-5" />
-                <h3 className="text-lg font-bold">
-                  Vocabulaire local ({processedData.termes.length})
-                </h3>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                {termsWithResolved.map((terme, index) => (
-                  <InteractiveVignette
-                    key={`terme-${index}`}
-                    data={terme}
-                    variant={variant}
-                  />
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Section Sources - Nouveau composant unifié */}
-          {((processedData.sources && processedData.sources.length > 0) || (importSources && importSources.length > 0)) && (
-            <div className="space-y-4">
-              <div className={`flex items-center gap-3 ${getVariantColor()}`}>
-                <ExternalLink className="w-5 h-5" />
-                <h3 className="text-lg font-bold">
-                  Sources bibliographiques
-                </h3>
-              </div>
-              {(!processedData.termes || processedData.termes.length === 0) && importSources && importSources.length > 0 && (
-                <p className="text-sm text-muted-foreground mb-4">
-                  Aucun terme local. Sources disponibles ci‑dessous.
-                </p>
-              )}
-              {/* Conteneur avec contraintes de largeur */}
-              <div className="w-full max-w-full overflow-hidden">
-                <VocabularySourcesCard 
-                  referencedSourceIds={referencedSourceIds}
-                  importSources={importSources}
-                  className="w-full max-w-full"
-                />
-              </div>
-            </div>
-          )}
-        </div>
+      {specialProcessing === 'vocabulary' && (
+        <VocabularyVignetteGrid
+          vocabularyData={data}
+          importSources={importSources}
+          className="w-full"
+        />
       )}
 
       {/* Groupement par catégorie pour les autres types */}
