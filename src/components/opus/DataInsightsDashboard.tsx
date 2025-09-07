@@ -162,7 +162,7 @@ export const DataInsightsDashboard: React.FC<DataInsightsDashboardProps> = ({ im
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold text-blue-600 mb-2">
+            <div className="text-3xl font-bold text-info mb-2">
               {completionRate}%
             </div>
             <Progress value={completionRate} className="h-2" />
@@ -180,7 +180,7 @@ export const DataInsightsDashboard: React.FC<DataInsightsDashboardProps> = ({ im
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold text-green-600 mb-1">
+            <div className="text-3xl font-bold text-success mb-1">
               {analytics.uniqueSpeciesCount}
             </div>
             <p className="text-xs text-muted-foreground">
@@ -202,7 +202,7 @@ export const DataInsightsDashboard: React.FC<DataInsightsDashboardProps> = ({ im
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold text-purple-600 mb-1">
+            <div className="text-3xl font-bold text-warning mb-1">
               {analytics.totalVocabulary}
             </div>
             <p className="text-xs text-muted-foreground">
@@ -224,7 +224,7 @@ export const DataInsightsDashboard: React.FC<DataInsightsDashboardProps> = ({ im
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold text-orange-600 mb-1">
+            <div className="text-3xl font-bold text-accent mb-1">
               {analytics.totalTechnology}
             </div>
             <p className="text-xs text-muted-foreground">
@@ -374,7 +374,7 @@ export const DataInsightsDashboard: React.FC<DataInsightsDashboardProps> = ({ im
           </CardHeader>
           <CardContent>
             <div className="text-center space-y-2">
-              <div className="text-3xl font-bold text-indigo-600">
+              <div className="text-3xl font-bold text-info">
                 {analytics.totalSources}
               </div>
               <p className="text-xs text-muted-foreground">
@@ -427,7 +427,7 @@ export const DataInsightsDashboard: React.FC<DataInsightsDashboardProps> = ({ im
           </CardHeader>
           <CardContent>
             <div className="text-center space-y-2">
-              <div className="text-3xl font-bold text-cyan-600">
+              <div className="text-3xl font-bold text-accent">
                 {analytics.avgCompleteness}%
               </div>
               <p className="text-xs text-muted-foreground">

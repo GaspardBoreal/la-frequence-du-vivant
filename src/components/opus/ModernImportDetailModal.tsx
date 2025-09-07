@@ -127,7 +127,7 @@ export const ModernImportDetailModal: React.FC<ModernImportDetailModalProps> = (
               typeof data === 'object' ? (
                 Object.entries(data).map(([key, value]) => (
                   <div key={key} className="flex flex-col space-y-1">
-                    <div className="text-sm font-medium text-primary capitalize">
+                    <div className="text-sm font-medium text-success capitalize">
                       {key.replace(/_/g, ' ')}
                     </div>
                     <div className="text-sm text-muted-foreground pl-4 border-l-2 border-border/30">
@@ -230,7 +230,7 @@ export const ModernImportDetailModal: React.FC<ModernImportDetailModalProps> = (
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <div className="text-3xl font-bold text-primary">
+                    <div className="text-3xl font-bold text-success">
                       {importRecord.completude_score}%
                     </div>
                     <div className="w-full bg-muted rounded-full h-2 mt-2">
@@ -267,7 +267,7 @@ export const ModernImportDetailModal: React.FC<ModernImportDetailModalProps> = (
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <div className="text-3xl font-bold text-orange-600">
+                    <div className="text-3xl font-bold text-warning">
                       {importRecord.fables_data?.length || 0}
                     </div>
                     <p className="text-xs text-muted-foreground mt-1">
@@ -284,7 +284,7 @@ export const ModernImportDetailModal: React.FC<ModernImportDetailModalProps> = (
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <div className="text-3xl font-bold text-blue-600">
+                    <div className="text-3xl font-bold text-info">
                       {importRecord.sources.length}
                     </div>
                     <p className="text-xs text-muted-foreground mt-1">
@@ -564,7 +564,7 @@ export const ModernImportDetailModal: React.FC<ModernImportDetailModalProps> = (
                                 href={source.url || source.lien || source.link} 
                                 target="_blank" 
                                 rel="noopener noreferrer"
-                                className="block text-sm text-primary hover:text-primary/80 underline mt-1 break-all"
+                                className="block text-sm text-accent hover:text-accent/80 underline mt-1 break-all"
                               >
                                 {source.url || source.lien || source.link}
                               </a>
