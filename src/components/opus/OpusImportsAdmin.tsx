@@ -8,6 +8,16 @@ import { useSupabaseMarches } from '@/hooks/useSupabaseMarches';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { OpusImportDetail } from './OpusImportDetail';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
 interface ImportRecord {
   id: string;
@@ -34,6 +44,7 @@ export const OpusImportsAdmin: React.FC<OpusImportsAdminProps> = ({
   const [imports, setImports] = useState<ImportRecord[]>([]);
   const [selectedImport, setSelectedImport] = useState<ImportRecord | null>(null);
   const [loading, setLoading] = useState(false);
+  const [importToDelete, setImportToDelete] = useState<ImportRecord | null>(null);
   const { data: marches } = useSupabaseMarches();
 
   const loadImports = async () => {
@@ -121,36 +132,35 @@ export const OpusImportsAdmin: React.FC<OpusImportsAdminProps> = ({
     }
   };
 
-  const deleteImport = async (importRecord: ImportRecord) => {
-    if (!confirm(`Confirmer la suppression de l'import pour ${importRecord.marche_nom} ?`)) {
-      return;
-    }
+  const confirmDeleteImport = async () => {
+    if (!importToDelete) return;
 
     try {
       // Supprimer les contextes
-      if (importRecord.contexte_data) {
+      if (importToDelete.contexte_data) {
         await supabase
           .from('marche_contextes_hybrids')
           .delete()
-          .eq('marche_id', importRecord.marche_id)
+          .eq('marche_id', importToDelete.marche_id)
           .eq('opus_id', explorationId);
       }
 
       // Supprimer les fables
-      if (importRecord.fables_data?.length > 0) {
+      if (importToDelete.fables_data?.length > 0) {
         await supabase
           .from('fables_narratives')
           .delete()
-          .eq('marche_id', importRecord.marche_id)
+          .eq('marche_id', importToDelete.marche_id)
           .eq('opus_id', explorationId);
       }
 
       toast({
         title: "Import supprimé",
-        description: `L'import pour ${importRecord.marche_nom} a été supprimé`
+        description: `L'import pour ${importToDelete.marche_nom} a été supprimé`
       });
 
-      loadImports(); // Recharger la liste
+      setImportToDelete(null);
+      loadImports(); // Recalculer les indicateurs totaux
     } catch (error) {
       console.error('Erreur lors de la suppression:', error);
       toast({
@@ -281,7 +291,7 @@ export const OpusImportsAdmin: React.FC<OpusImportsAdminProps> = ({
                         <Button
                           variant="destructive"
                           size="sm"
-                          onClick={() => deleteImport(importRecord)}
+                          onClick={() => setImportToDelete(importRecord)}
                         >
                           <Trash2 className="w-4 h-4 mr-2" />
                           Supprimer
@@ -342,6 +352,35 @@ export const OpusImportsAdmin: React.FC<OpusImportsAdminProps> = ({
           onClose={() => setSelectedImport(null)}
         />
       )}
+
+      <AlertDialog open={!!importToDelete} onOpenChange={() => setImportToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirmer la suppression</AlertDialogTitle>
+            <AlertDialogDescription>
+              Êtes-vous sûr de vouloir supprimer l'import pour <strong>{importToDelete?.marche_nom}</strong> ?
+              <br />
+              Cette action supprimera définitivement :
+              <ul className="list-disc list-inside mt-2">
+                <li>Les données de contexte associées</li>
+                <li>Les fables narratives ({importToDelete?.fables_data?.length || 0})</li>
+                <li>Les sources référencées ({importToDelete?.sources?.length || 0})</li>
+              </ul>
+              <br />
+              <strong>Cette action est irréversible.</strong>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Annuler</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={confirmDeleteImport}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Supprimer définitivement
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
