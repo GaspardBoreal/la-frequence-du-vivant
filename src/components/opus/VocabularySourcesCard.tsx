@@ -4,6 +4,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { useToast } from "@/components/ui/use-toast";
 import { 
   Database, 
   Eye, 
@@ -22,52 +23,57 @@ import {
 import { getVignetteStyles } from '@/utils/vignetteStyleUtils';
 
 interface VocabularySourcesCardProps {
-  sources: any[];
-  importSources?: any[]; // Sources from the import to enrich local sources
+  referencedSourceIds: string[]; // Source IDs referenced by vocabulary terms
+  importSources?: any[]; // All import sources to resolve from
   className?: string;
 }
 
 export const VocabularySourcesCard: React.FC<VocabularySourcesCardProps> = ({ 
-  sources, 
+  referencedSourceIds, 
   importSources = [],
   className 
 }) => {
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const [selectedYear, setSelectedYear] = useState<string>('all');
 
-  // Enrich local sources with import sources data when possible
-  const enrichedSources = useMemo(() => {
-    return sources.map(localSource => {
-      // Try to find matching import source by URL or name
-      const matchingImportSource = importSources.find(importSource => {
-        if (typeof localSource === 'string' && typeof importSource === 'object') {
-          return localSource === importSource.url || localSource === importSource.lien;
-        }
-        if (typeof localSource === 'object' && typeof importSource === 'object') {
-          return localSource.url === importSource.url ||
-                 localSource.lien === importSource.url ||
-                 localSource.nom === importSource.nom ||
-                 localSource.name === importSource.name;
-        }
-        return false;
-      });
+  // Resolve referenced source IDs to actual sources from importSources
+  const resolvedSources = useMemo(() => {
+    if (!referencedSourceIds.length || !importSources.length) {
+      return [];
+    }
 
-      // If we found a match, merge the data
-      if (matchingImportSource) {
-        const merged = typeof localSource === 'string' 
-          ? { url: localSource, ...matchingImportSource }
-          : { ...localSource, ...matchingImportSource };
-        return merged;
-      }
+    // Create a map of importSources by various possible ID fields
+    const sourceMap = new Map<string, any>();
+    importSources.forEach(source => {
+      // Try multiple possible ID fields
+      const possibleIds = [
+        source.id,
+        source.source_id, 
+        source.key,
+        source.nom,
+        source.name,
+        source.url?.split('/').pop(), // Last part of URL as potential ID
+      ].filter(Boolean);
       
-      return localSource;
+      possibleIds.forEach(id => {
+        if (id) {
+          sourceMap.set(String(id), source);
+        }
+      });
     });
-  }, [sources, importSources]);
 
-  // Normalisation et filtrage des sources enrichies
+    // Resolve the referenced IDs to actual sources
+    const resolved = referencedSourceIds
+      .map(id => sourceMap.get(String(id)))
+      .filter(Boolean);
+
+    return resolved;
+  }, [referencedSourceIds, importSources]);
+
+  // Normalize resolved sources with year information
   const normalizedSources = useMemo(() => {
-    return enrichedSources.map(source => normalizeYearFromSource(source));
-  }, [enrichedSources]);
+    return resolvedSources.map(source => normalizeYearFromSource(source));
+  }, [resolvedSources]);
 
   // Filter sources by selected year
   const filteredSources = useMemo(() => {

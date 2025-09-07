@@ -84,13 +84,23 @@ export const VignetteGrid: React.FC<VignetteGridProps> = ({
     return items.filter(item => item.titre && item.titre.trim() !== '');
   }, [data, specialProcessing]);
 
-  // Résolution des sources par terme (mode vocabulaire)
+  // Source resolution and quality check for vocabulary terms
   const { toast } = useToast();
   const sourceIndex = React.useMemo(() => {
     const map = new Map<string, any>();
     (importSources || []).forEach((s: any) => {
-      const key = s?.id || s?.key || s?.source_id;
-      if (key) map.set(String(key), s);
+      const possibleIds = [
+        s?.id,
+        s?.source_id, 
+        s?.key,
+        s?.nom,
+        s?.name,
+        s?.url?.split('/').pop(), // Last part of URL as potential ID
+      ].filter(Boolean);
+      
+      possibleIds.forEach(id => {
+        if (id) map.set(String(id), s);
+      });
     });
     return map;
   }, [importSources]);
@@ -113,6 +123,19 @@ export const VignetteGrid: React.FC<VignetteGridProps> = ({
       };
     });
   }, [specialProcessing, processedData, sourceIndex]);
+
+  // Collect all referenced source IDs from vocabulary terms
+  const referencedSourceIds = React.useMemo(() => {
+    if (specialProcessing !== 'vocabulary' || !termsWithResolved.length) return [];
+    
+    const allIds = new Set<string>();
+    termsWithResolved.forEach((term: any) => {
+      const ids = term.metadata?.resolved_source_ids || [];
+      ids.forEach((id: string) => allIds.add(id));
+    });
+    
+    return Array.from(allIds);
+  }, [specialProcessing, termsWithResolved]);
 
   // Alerte qualité: termes sans sources
   React.useEffect(() => {
@@ -240,7 +263,7 @@ export const VignetteGrid: React.FC<VignetteGridProps> = ({
               {/* Conteneur avec contraintes de largeur */}
               <div className="w-full max-w-full overflow-hidden">
                 <VocabularySourcesCard 
-                  sources={processedData.sources.map(source => source.metadata).filter(Boolean)}
+                  referencedSourceIds={referencedSourceIds}
                   importSources={importSources}
                   className="w-full max-w-full"
                 />
