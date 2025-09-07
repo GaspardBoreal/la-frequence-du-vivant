@@ -23,6 +23,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { getProcessedSpeciesCount } from '@/utils/speciesDataUtils';
 import { getVocabularyTermsCount } from '@/utils/vocabularyDataUtils';
+import { processTechnodiversiteData } from '@/utils/technodiversiteDataUtils';
 
 interface ImportRecord {
   id: string;
@@ -97,10 +98,12 @@ export const ModernImportCard: React.FC<ModernImportCardProps> = ({
       metrics.vocabulary = getVocabularyTermsCount(importRecord.contexte_data?.vocabulaire_local);
       
       const tech = importRecord.contexte_data.technodiversite;
-      if (tech?.nouvelles_activites) {
-        metrics.technology = Array.isArray(tech.nouvelles_activites) 
-          ? tech.nouvelles_activites.length 
-          : Object.keys(tech.nouvelles_activites || {}).length;
+      if (tech) {
+        try {
+          metrics.technology = processTechnodiversiteData(tech).totalCount;
+        } catch {
+          metrics.technology = 0;
+        }
       }
     }
 
@@ -234,7 +237,7 @@ export const ModernImportCard: React.FC<ModernImportCardProps> = ({
               {metrics.technology}
             </div>
             <div className="text-muted-foreground text-xs">
-              Technologie
+              Technodiversité
             </div>
           </div>
           
