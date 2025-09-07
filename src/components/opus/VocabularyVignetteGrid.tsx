@@ -33,42 +33,89 @@ const VocabularyVignetteGrid: React.FC<VocabularyVignetteGridProps> = ({
       pratiques: [] as VocabularyItem[]
     };
 
-    // Si les données sont déjà structurées par catégories
+    console.log('🔍 VocabularyVignetteGrid - Data received:', vocabularyData);
+
+    // Si les données sont déjà structurées par catégories (nouveau format)
     if (vocabularyData.termes_locaux || vocabularyData.phenomenes || vocabularyData.pratiques) {
+      
+      // Traiter les termes locaux
       if (vocabularyData.termes_locaux) {
-        result.termesLocaux = Array.isArray(vocabularyData.termes_locaux) 
-          ? vocabularyData.termes_locaux 
-          : Object.entries(vocabularyData.termes_locaux).map(([key, value]: [string, any]) => ({
-              titre: value?.nom || value?.titre || key,
-              description: value?.description || value?.definition || '',
-              source_ids: value?.source_ids || [],
-              metadata: { ...value, source_ids: value?.source_ids }
-            }));
+        if (Array.isArray(vocabularyData.termes_locaux)) {
+          vocabularyData.termes_locaux.forEach((item: any) => {
+            // Si l'item a des "termes" imbriqués (structure complexe)
+            if (item.metadata?.termes && Array.isArray(item.metadata.termes)) {
+              item.metadata.termes.forEach((terme: any) => {
+                result.termesLocaux.push({
+                  titre: terme.terme || terme.nom || terme.titre,
+                  description: terme.definition || terme.description || '',
+                  source_ids: terme.source_ids || [],
+                  metadata: { ...terme, source_ids: terme.source_ids }
+                });
+              });
+            } else {
+              // Structure simple
+              result.termesLocaux.push({
+                titre: item.nom || item.titre || item.terme,
+                description: item.description || item.definition || '',
+                source_ids: item.source_ids || [],
+                metadata: { ...item, source_ids: item.source_ids }
+              });
+            }
+          });
+        }
       }
 
+      // Traiter les phénomènes
       if (vocabularyData.phenomenes) {
-        result.phenomenes = Array.isArray(vocabularyData.phenomenes) 
-          ? vocabularyData.phenomenes 
-          : Object.entries(vocabularyData.phenomenes).map(([key, value]: [string, any]) => ({
-              titre: value?.nom || value?.titre || key,
-              description: value?.description || value?.definition || '',
-              source_ids: value?.source_ids || [],
-              metadata: { ...value, source_ids: value?.source_ids }
-            }));
+        if (Array.isArray(vocabularyData.phenomenes)) {
+          vocabularyData.phenomenes.forEach((item: any) => {
+            if (item.metadata?.phenomenes && Array.isArray(item.metadata.phenomenes)) {
+              item.metadata.phenomenes.forEach((phenomene: any) => {
+                result.phenomenes.push({
+                  titre: typeof phenomene === 'string' ? phenomene : (phenomene.nom || phenomene.titre),
+                  description: typeof phenomene === 'object' ? (phenomene.description || phenomene.definition || '') : '',
+                  source_ids: typeof phenomene === 'object' ? (phenomene.source_ids || []) : [],
+                  metadata: typeof phenomene === 'object' ? { ...phenomene, source_ids: phenomene.source_ids } : { nom: phenomene }
+                });
+              });
+            } else {
+              result.phenomenes.push({
+                titre: item.nom || item.titre,
+                description: item.description || item.definition || '',
+                source_ids: item.source_ids || [],
+                metadata: { ...item, source_ids: item.source_ids }
+              });
+            }
+          });
+        }
       }
 
+      // Traiter les pratiques
       if (vocabularyData.pratiques) {
-        result.pratiques = Array.isArray(vocabularyData.pratiques) 
-          ? vocabularyData.pratiques 
-          : Object.entries(vocabularyData.pratiques).map(([key, value]: [string, any]) => ({
-              titre: value?.nom || value?.titre || key,
-              description: value?.description || value?.definition || '',
-              source_ids: value?.source_ids || [],
-              metadata: { ...value, source_ids: value?.source_ids }
-            }));
+        if (Array.isArray(vocabularyData.pratiques)) {
+          vocabularyData.pratiques.forEach((item: any) => {
+            if (item.metadata?.pratiques && Array.isArray(item.metadata.pratiques)) {
+              item.metadata.pratiques.forEach((pratique: any) => {
+                result.pratiques.push({
+                  titre: typeof pratique === 'string' ? pratique : (pratique.nom || pratique.titre),
+                  description: typeof pratique === 'object' ? (pratique.description || pratique.definition || '') : '',
+                  source_ids: typeof pratique === 'object' ? (pratique.source_ids || []) : [],
+                  metadata: typeof pratique === 'object' ? { ...pratique, source_ids: pratique.source_ids } : { nom: pratique }
+                });
+              });
+            } else {
+              result.pratiques.push({
+                titre: item.nom || item.titre,
+                description: item.description || item.definition || '',
+                source_ids: item.source_ids || [],
+                metadata: { ...item, source_ids: item.source_ids }
+              });
+            }
+          });
+        }
       }
     } else {
-      // Logique de classification automatique basée sur les noms/types existants
+      // Logique de classification automatique basée sur les noms/types existants (ancien format)
       Object.entries(vocabularyData).forEach(([key, value]: [string, any]) => {
         if (key === 'source_ids' || key === 'sources') return;
 
@@ -104,6 +151,12 @@ const VocabularyVignetteGrid: React.FC<VocabularyVignetteGridProps> = ({
     result.termesLocaux.sort((a, b) => a.titre.localeCompare(b.titre, 'fr', { sensitivity: 'base' }));
     result.phenomenes.sort((a, b) => a.titre.localeCompare(b.titre, 'fr', { sensitivity: 'base' }));
     result.pratiques.sort((a, b) => a.titre.localeCompare(b.titre, 'fr', { sensitivity: 'base' }));
+
+    console.log('🔍 VocabularyVignetteGrid - Processed categories:', {
+      termesLocaux: result.termesLocaux.length,
+      phenomenes: result.phenomenes.length,
+      pratiques: result.pratiques.length
+    });
 
     return result;
   }, [vocabularyData]);
