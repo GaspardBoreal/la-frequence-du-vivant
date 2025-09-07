@@ -26,6 +26,8 @@ export interface ProcessedTechnodiversiteData {
  * Traite les données de technodiversité pour l'affichage en vignettes
  */
 export const processTechnodiversiteData = (data: any): ProcessedTechnodiversiteData => {
+  console.log('Debug - processTechnodiversiteData input:', data);
+  
   if (!data) {
     return {
       innovations: [],
@@ -54,15 +56,70 @@ export const processTechnodiversiteData = (data: any): ProcessedTechnodiversiteD
     }));
   };
 
-  const innovations = processItems(data.innovations || [], 'Innovation');
-  const fabrication_locale = processItems(data.fabrication_locale || [], 'Fabrication locale');
-  const projets_open_source = processItems(data.open_source_projects || [], 'Open Source');
+  // Traitement de la nouvelle structure structurée
+  if (data.innovations || data.fabrication_locale || data.open_source_projects) {
+    const innovations = processItems(data.innovations || [], 'Innovation');
+    const fabrication_locale = processItems(data.fabrication_locale || [], 'Fabrication locale');
+    const projets_open_source = processItems(data.open_source_projects || [], 'Open Source');
+
+    console.log('Debug - Structured format processed:', { innovations, fabrication_locale, projets_open_source });
+
+    return {
+      innovations,
+      fabrication_locale,
+      projets_open_source,
+      totalCount: innovations.length + fabrication_locale.length + projets_open_source.length
+    };
+  }
+
+  // Fallback pour l'ancien format (données directes ou autres structures)
+  console.log('Debug - Using fallback processing for:', data);
+  
+  // Si c'est un tableau direct, on le traite comme innovations
+  if (Array.isArray(data)) {
+    const innovations = processItems(data, 'Innovation');
+    console.log('Debug - Array format processed as innovations:', innovations);
+    
+    return {
+      innovations,
+      fabrication_locale: [],
+      projets_open_source: [],
+      totalCount: innovations.length
+    };
+  }
+
+  // Si c'est un objet avec des propriétés, on traite chaque propriété
+  const innovations: TechnodiversiteItem[] = [];
+  
+  Object.entries(data).forEach(([key, value]) => {
+    if (Array.isArray(value)) {
+      innovations.push(...processItems(value, key));
+    } else if (typeof value === 'object' && value !== null) {
+      innovations.push({
+        titre: key,
+        description_courte: (value as any).description || (value as any).explication || '',
+        type: (value as any).type || 'technologie',
+        category: 'Innovation',
+        metadata: value
+      });
+    } else if (typeof value === 'string') {
+      innovations.push({
+        titre: key,
+        description_courte: value,
+        type: 'Information',
+        category: 'Innovation', 
+        metadata: { [key]: value }
+      });
+    }
+  });
+
+  console.log('Debug - Object format processed as innovations:', innovations);
 
   return {
     innovations,
-    fabrication_locale,
-    projets_open_source,
-    totalCount: innovations.length + fabrication_locale.length + projets_open_source.length
+    fabrication_locale: [],
+    projets_open_source: [],
+    totalCount: innovations.length
   };
 };
 
