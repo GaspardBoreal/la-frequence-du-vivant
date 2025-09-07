@@ -4,7 +4,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { ChevronRight, Info, ExternalLink } from 'lucide-react';
+import { ChevronRight, Info, ExternalLink, BookOpen, Globe, Calendar } from 'lucide-react';
 import { getVignetteStyles, getDialogHeaderStyles, type VignetteVariant } from '@/utils/vignetteStyleUtils';
 
 interface VignetteData {
@@ -106,10 +106,31 @@ export const InteractiveVignette: React.FC<InteractiveVignetteProps> = ({
               </Button>
             </DialogTrigger>
             
-            <DialogContent className="max-w-2xl">
-              <DialogHeader>
-                <DialogTitle className={`text-xl ${getDialogHeaderStyles(variant)}`}>
-                  {variant === 'species' ? (
+            <DialogContent className="max-w-3xl max-h-[90vh] overflow-hidden bg-gradient-to-br from-background via-background/95 to-background/90 backdrop-blur-xl border-border/30">
+              <DialogHeader className="border-b border-border/20 pb-4">
+                <DialogTitle className="flex items-center gap-3">
+                  {variant === 'vocabulary' ? (
+                    <div className="flex items-center gap-3 w-full">
+                      <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-info/20 to-info/10 border border-info/20 flex items-center justify-center flex-shrink-0">
+                        <BookOpen className="w-5 h-5 text-info" />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <h2 className="text-xl font-bold text-foreground leading-tight">
+                          {data.titre}
+                        </h2>
+                        <div className="flex items-center gap-2 mt-1">
+                          <Badge variant="secondary" className="text-xs">
+                            {data.type || 'terme'}
+                          </Badge>
+                          {data.metadata?.resolved_sources?.length && (
+                            <Badge variant="outline" className="text-xs text-info border-info/30">
+                              {data.metadata.resolved_sources.length} source{data.metadata.resolved_sources.length > 1 ? 's' : ''}
+                            </Badge>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ) : variant === 'species' ? (
                     <div className="space-y-2">
                       <div className="text-xl font-bold">
                         {data.nom_commun || data.titre}
@@ -126,20 +147,68 @@ export const InteractiveVignette: React.FC<InteractiveVignetteProps> = ({
                       )}
                     </div>
                   ) : (
-                    data.titre
+                    <div className="flex items-center gap-3">
+                      <h2 className="text-xl font-bold">{data.titre}</h2>
+                      {data.type && (
+                        <Badge variant="secondary" className="text-xs">
+                          {data.type}
+                        </Badge>
+                      )}
+                    </div>
                   )}
                 </DialogTitle>
               </DialogHeader>
               
-              <ScrollArea className="max-h-[60vh] pr-4">
-                <div className="space-y-4">
-                  {data.type && (
-                    <div>
-                      <h4 className="font-medium text-sm text-muted-foreground mb-1">Type</h4>
-                      <Badge variant="secondary">{data.type}</Badge>
+              <ScrollArea className="flex-1 pr-4">
+                <div className="space-y-6 py-4">
+                  {/* Section principale - Description */}
+                  {(data.description_courte || data.definition) && (
+                    <div className="p-6 rounded-xl bg-gradient-to-br from-muted/30 to-muted/10 border border-border/20">
+                      <div className="flex items-start gap-3">
+                        <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0 mt-1">
+                          <Info className="w-4 h-4 text-primary" />
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <h3 className="font-semibold text-base mb-2 text-foreground">Définition</h3>
+                          <p className="text-sm leading-relaxed text-muted-foreground">
+                            {data.description_courte || data.definition}
+                          </p>
+                        </div>
+                      </div>
                     </div>
                   )}
-                  
+
+                  {/* Informations spécifiques au vocabulaire */}
+                  {variant === 'vocabulary' && data.metadata && (
+                    <div className="grid gap-4">
+                      {/* Origine/Étymologie */}
+                      {(data.metadata.origine || data.metadata.etymologie) && (
+                        <div className="p-4 rounded-lg bg-info/5 border border-info/10">
+                          <div className="flex items-center gap-2 mb-2">
+                            <Globe className="w-4 h-4 text-info" />
+                            <h4 className="font-medium text-sm text-info">Origine</h4>
+                          </div>
+                          <p className="text-sm text-muted-foreground">
+                            {data.metadata.origine || data.metadata.etymologie}
+                          </p>
+                        </div>
+                      )}
+
+                      {/* Contexte d'usage */}
+                      {data.metadata.usage_context && (
+                        <div className="p-4 rounded-lg bg-accent/5 border border-accent/10">
+                          <div className="flex items-center gap-2 mb-2">
+                            <BookOpen className="w-4 h-4 text-accent" />
+                            <h4 className="font-medium text-sm text-accent">Contexte d'usage</h4>
+                          </div>
+                          <p className="text-sm text-muted-foreground">
+                            {data.metadata.usage_context}
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
                   {/* Informations spécifiques aux espèces */}
                   {variant === 'species' && (
                     <div className="space-y-4 p-5 bg-emerald-50/80 rounded-xl border border-emerald-200/60">
@@ -166,69 +235,91 @@ export const InteractiveVignette: React.FC<InteractiveVignetteProps> = ({
                     </div>
                   )}
                   
-                  {(data.description_courte || data.definition) && (
-                    <div>
-                      <h4 className="font-medium text-sm text-muted-foreground mb-2">Description</h4>
-                      <p className="text-sm leading-relaxed">
-                        {data.description_courte || data.definition}
-                      </p>
-                    </div>
-                  )}
-                  
+                  {/* Détails supplémentaires */}
                   {data.details && (
-                    <div>
-                      <h4 className="font-medium text-sm text-muted-foreground mb-2">Détails</h4>
+                    <div className="p-4 rounded-lg bg-muted/20 border border-border/20">
+                      <h4 className="font-medium text-sm text-muted-foreground mb-2">Détails complémentaires</h4>
                       <p className="text-sm leading-relaxed text-muted-foreground">
                         {data.details}
                       </p>
                     </div>
                   )}
-                  
-                  {data.metadata && (
-                    <div>
-                      <h4 className="font-medium text-sm text-muted-foreground mb-2">Informations supplémentaires</h4>
-                      <div className="bg-muted/20 p-3 rounded-lg">
-                        <pre className="text-xs font-mono whitespace-pre-wrap">
-                          {JSON.stringify(data.metadata, null, 2)}
-                        </pre>
+
+                  {/* Section Sources - Redesignée */}
+                  {Array.isArray(data.metadata?.resolved_sources) && data.metadata.resolved_sources.length > 0 && (
+                    <div className="p-6 rounded-xl bg-gradient-to-br from-success/5 to-success/5 border border-success/20">
+                      <div className="flex items-center gap-2 mb-4">
+                        <ExternalLink className="w-5 h-5 text-success" />
+                        <h3 className="font-semibold text-base text-success">
+                          Sources documentaires ({data.metadata.resolved_sources.length})
+                        </h3>
+                      </div>
+                      <div className="grid gap-3">
+                        {data.metadata.resolved_sources.map((source: any, index: number) => {
+                          const href = source?.url || source?.lien || source?.link;
+                          const title = source?.nom || source?.name || source?.titre;
+                          const shortName = href && /^https?:\/\//i.test(href) 
+                            ? new URL(href).hostname.replace('www.', '').split('.')[0] 
+                            : 'Source';
+                          const displayTitle = title || shortName;
+
+                          return (
+                            <div key={source?.id || index} className="flex items-center gap-3 p-3 rounded-lg bg-background/50 border border-border/30 hover:bg-background/80 transition-colors">
+                              <div className="w-8 h-8 rounded-full bg-success/10 flex items-center justify-center flex-shrink-0">
+                                <span className="text-xs font-bold text-success">{index + 1}</span>
+                              </div>
+                              <div className="min-w-0 flex-1">
+                                <div className="flex items-center gap-2">
+                                  <h5 className="font-medium text-sm text-foreground truncate">
+                                    {displayTitle}
+                                  </h5>
+                                  {source?.annee && (
+                                    <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                                      <Calendar className="w-3 h-3" />
+                                      {source.annee}
+                                    </div>
+                                  )}
+                                </div>
+                                {href && /^https?:\/\//i.test(href) && (
+                                  <a 
+                                    href={href} 
+                                    target="_blank" 
+                                    rel="noopener noreferrer"
+                                    className="text-xs text-success hover:text-success/80 underline truncate block mt-1"
+                                    title={href}
+                                  >
+                                    {href.length > 50 ? `${href.substring(0, 50)}...` : href}
+                                  </a>
+                                )}
+                              </div>
+                              {href && /^https?:\/\//i.test(href) && (
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => window.open(href, '_blank')}
+                                  className="w-8 h-8 p-0 text-success hover:text-success hover:bg-success/10"
+                                >
+                                  <ExternalLink className="w-4 h-4" />
+                                </Button>
+                              )}
+                            </div>
+                          );
+                        })}
                       </div>
                     </div>
                   )}
                   
-
-                  {/* Section Sources */}
-                  {variant !== 'species' && (
-                    <div>
-                      <h4 className="font-medium text-sm text-muted-foreground mb-2">Sources</h4>
-                      {Array.isArray(data.metadata?.resolved_sources) && data.metadata.resolved_sources.length > 0 ? (
-                        <ul className="space-y-2">
-                          {data.metadata.resolved_sources.map((s: any, i: number) => {
-                            const href = s?.url || s?.lien || s?.link;
-                            const label = s?.nom || s?.name || (href && /^https?:\/\//i.test(href) ? new URL(href).hostname.replace('www.', '') : 'Source');
-                            return (
-                              <li key={s?.id || i} className="text-sm">
-                                {href && /^https?:\/\//i.test(href) ? (
-                                  <a href={href} target="_blank" rel="noopener noreferrer" className="underline inline-flex items-center">
-                                    <ExternalLink className="w-3 h-3 mr-1" /> {label}
-                                  </a>
-                                ) : (
-                                  <span>{label}</span>
-                                )}
-                              </li>
-                            );
-                          })}
-                        </ul>
-                      ) : (
-                        <p className="text-sm text-muted-foreground">Aucune source fournie.</p>
-                      )}
-                    </div>
-                  )}
-                  
+                  {/* URL principal du terme */}
                   {data.url && (
-                    <div className="pt-4 border-t border-border/30">
-                      <Button variant="outline" size="sm" onClick={() => window.open(data.url, '_blank')} className="w-full">
+                    <div className="pt-4 border-t border-border/20">
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        onClick={() => window.open(data.url, '_blank')} 
+                        className="w-full bg-primary/5 hover:bg-primary/10 border-primary/20 text-primary hover:text-primary"
+                      >
                         <ExternalLink className="w-4 h-4 mr-2" />
-                        Voir la source
+                        Consulter la source principale
                       </Button>
                     </div>
                   )}
