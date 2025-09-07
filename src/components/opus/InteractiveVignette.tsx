@@ -81,7 +81,7 @@ export const InteractiveVignette: React.FC<InteractiveVignetteProps> = ({
                 </p>
               )}
               {data.statut_conservation && (
-                <p className="text-sm font-bold text-gray-800">
+                <p className="text-sm font-bold text-slate-900">
                   {data.statut_conservation}
                 </p>
               )}
