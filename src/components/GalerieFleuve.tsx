@@ -67,35 +67,34 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes,
            localStorage.getItem('galerie-debug') === '1';
   });
 
-  // Navigation states - Nouvelle approche avec gating
+  // Navigation states - Fluid Navigation System
   const [currentPhotoIndex, setCurrentPhotoIndex] = useState(0);
   const [committedIndex, setCommittedIndex] = useState(0);
   const [isTransitioning, setIsTransitioning] = useState(false);
   
-  // Preparation states - Gating system
+  // Simplified preparation states
   const [isPreparing, setIsPreparing] = useState(false);
   const [prepareProgress, setPrepareProgress] = useState(0);
-  const [prepareLabel, setPrepareLabel] = useState('');
   const [targetIndex, setTargetIndex] = useState<number | null>(null);
-  const [preparationType, setPreparationType] = useState<'intra-marche' | 'cross-marche'>('intra-marche');
   
-  // Global overlay control (via portal) + timing refs
-  const [showOverlay, setShowOverlay] = useState(false);
+  // Smart overlay system - only for cross-march or slow loads
+  const [showCrossMarche, setShowCrossMarche] = useState(false);
+  const [crossMarcheInfo, setCrossMarcheInfo] = useState<{from: string, to: string} | null>(null);
+  const [showProgressBar, setShowProgressBar] = useState(false);
+  
+  // Timing refs for intelligent overlays
   const isPreparingRef = useRef(false);
   const prepStartAtRef = useRef<number>(0);
-  const overlayShownAtRef = useRef<number>(0);
-  const lastPrepTypeRef = useRef<'intra-marche' | 'cross-marche'>('intra-marche');
   const overlayTimeoutRef = useRef<number | null>(null);
-  const [instantNextCommit, setInstantNextCommit] = useState(false);
 
   useEffect(() => {
     isPreparingRef.current = isPreparing;
   }, [isPreparing]);
 
-  // Block page interactions while overlay is visible
+  // Block page interactions while cross-march overlay is visible
   useEffect(() => {
     const root = document.getElementById('root');
-    if (showOverlay) {
+    if (showCrossMarche) {
       document.body.style.overflow = 'hidden';
       root?.classList.add('pointer-events-none');
     } else {
@@ -106,7 +105,7 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes,
       document.body.style.overflow = '';
       root?.classList.remove('pointer-events-none');
     };
-  }, [showOverlay]);
+  }, [showCrossMarche]);
   
   // Accessibility and user preferences
   const [reduceMotion, setReduceMotion] = useState(false);
@@ -392,7 +391,7 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes,
     return fromKey !== toKey;
   }, [filteredPhotos]);
 
-  // Enhanced preparation function with dynamic neighbor preloading
+  // Fluid Navigation System - Enhanced preparation function
   const prepareNavigation = useCallback(async (newIndex: number) => {
     if (isPreparing || newIndex === committedIndex || newIndex < 0 || newIndex >= filteredPhotos.length) {
       if (debugMode) {
@@ -403,62 +402,43 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes,
 
     const startTime = Date.now();
     const isCross = detectCrossMarche(committedIndex, newIndex);
-    const prepType = isCross ? 'cross-marche' : 'intra-marche';
+    const targetPhoto = filteredPhotos[newIndex];
     
     if (debugMode) {
-      console.log(`🚀 Starting navigation: ${committedIndex} → ${newIndex} (${prepType})`);
+      console.log(`🚀 Starting navigation: ${committedIndex} → ${newIndex} (${isCross ? 'cross-marche' : 'intra-marche'})`);
     }
     
     setIsPreparing(true);
     setPrepareProgress(0);
     setTargetIndex(newIndex);
-    setPreparationType(prepType);
 
-    const targetPhoto = filteredPhotos[newIndex];
-    
-    // Enhanced mobile overlay logic - only show for cross-marche or uncached images
-    const shouldShowOverlay = isMobile ? (
-      // Only show overlay for cross-marche transitions on mobile
-      isCross
-    ) : true; // Desktop always shows overlay
-
+    // Smart overlay logic - only show for cross-march or if loading > 300ms
+    let showingOverlay = false;
     let overlayTimer: NodeJS.Timeout | null = null;
-    let overlayShown = false;
 
-    if (shouldShowOverlay) {
-      // On mobile, delay overlay by 100ms to avoid showing it for fast loads
-      const overlayDelay = isMobile && !isCross ? 100 : 0;
-      
-      overlayTimer = setTimeout(() => {
-        // Only show overlay if we're still preparing (prevents double flashing)
-        if (isPreparingRef.current) {
-          overlayShownAtRef.current = Date.now();
-          setShowOverlay(true);
-          overlayShown = true;
-        }
-      }, overlayDelay);
-    }
-
-    // Clear any pending overlay timers
-    if (overlayTimeoutRef.current) {
-      clearTimeout(overlayTimeoutRef.current);
-      overlayTimeoutRef.current = null;
-    }
-
-    // Record timing
-    prepStartAtRef.current = startTime;
-    lastPrepTypeRef.current = prepType;
-    
-    // Set preparation label based on type
     if (isCross) {
-      setPrepareLabel(`Vers ${targetPhoto.ville} - ${targetPhoto.nomMarche}`);
+      // Cross-march: immediate cross-march display
+      setShowCrossMarche(true);
+      setCrossMarcheInfo({
+        from: `${filteredPhotos[committedIndex].ville} - ${filteredPhotos[committedIndex].nomMarche}`,
+        to: `${targetPhoto.ville} - ${targetPhoto.nomMarche}`
+      });
+      showingOverlay = true;
     } else {
-      setPrepareLabel('Poursuite de l\'exploration');
+      // Intra-march: delayed progress bar only if loading > 300ms
+      overlayTimer = setTimeout(() => {
+        if (isPreparingRef.current) {
+          setShowProgressBar(true);
+          showingOverlay = true;
+        }
+      }, 300);
     }
+
+    prepStartAtRef.current = startTime;
 
     try {
-      // Use dynamic neighbor preloading with device-appropriate depth
-      const depth = deviceType === 'desktop' ? 3 : 1;
+      // Aggressive preloading based on device
+      const depth = deviceType === 'desktop' ? 3 : 2;
       const loadPromises = await preloadNeighbors(newIndex, depth);
 
       let loadedCount = 0;
@@ -489,21 +469,17 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes,
       // Wait for all images with timeout
       await Promise.race([
         Promise.allSettled(trackedPromises),
-        new Promise((resolve) => setTimeout(resolve, 1000)) // 1s timeout
+        new Promise((resolve) => setTimeout(resolve, 800)) // 800ms timeout
       ]);
 
-      // Cancel overlay timer if loading finished quickly and overlay hasn't been shown yet
-      if (overlayTimer && !overlayShown) {
+      // Cancel overlay timer if loading finished quickly
+      if (overlayTimer && !showingOverlay) {
         clearTimeout(overlayTimer);
       }
 
-      // If no overlay was shown and we're on mobile intra-marche with image cached, render instantly to avoid flicker
-      const cachedAndNoOverlay = !overlayShown && isMobile && !isCross && !!getPreloadedImage(targetPhoto.url)?.loaded;
-      setInstantNextCommit(cachedAndNoOverlay);
-
       const elapsed = Date.now() - startTime;
       if (debugMode) {
-        console.log(`✅ Preparation completed in ${elapsed}ms, overlay shown: ${overlayShown}, instantNextCommit: ${cachedAndNoOverlay}`);
+        console.log(`✅ Preparation completed in ${elapsed}ms, overlay shown: ${showingOverlay}`);
       }
       
       return true;
@@ -513,7 +489,7 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes,
     }
   }, [isPreparing, committedIndex, filteredPhotos, detectCrossMarche, deviceType, preloadNeighbors, debugMode]);
 
-  // Enhanced navigation completion with minimum overlay visibility
+  // Seamless navigation completion with smart timing
   const completeNavigation = useCallback(async (toIndex?: number) => {
     const indexToCommit = (typeof toIndex === 'number') ? toIndex : targetIndex;
     if (indexToCommit === null || indexToCommit === undefined) return;
@@ -522,50 +498,26 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes,
       console.log(`🎯 Completing navigation to index ${indexToCommit}`);
     }
     
-    const startTime = Date.now();
-    const minVisibleDuration = lastPrepTypeRef.current === 'cross-marche' ? 200 : 150;
+    const isCross = detectCrossMarche(committedIndex, indexToCommit);
+    const elapsed = Date.now() - prepStartAtRef.current;
     
-    // Calculate elapsed time since overlay was shown
-    const elapsed = Date.now() - overlayShownAtRef.current;
-    const remainingTime = Math.max(0, minVisibleDuration - elapsed);
-    
-    // Ensure minimum overlay visibility
-    if (remainingTime > 0) {
-      await new Promise(resolve => setTimeout(resolve, remainingTime));
+    // Minimum visibility for cross-march overlays (200ms)
+    if (isCross && showCrossMarche && elapsed < 200) {
+      await new Promise(resolve => setTimeout(resolve, 200 - elapsed));
     }
-  
+    
     // Clear any pending overlay timers
     if (overlayTimeoutRef.current) {
       clearTimeout(overlayTimeoutRef.current);
       overlayTimeoutRef.current = null;
     }
     
-    // Decide instant mobile commit (no overlay and intra-marche)
-    const isIntra = lastPrepTypeRef.current === 'intra-marche';
-    const noOverlay = !showOverlay;
-    const isMobileDevice = deviceType !== 'desktop';
-    const instantMobile = isMobileDevice && isIntra && (instantNextCommit || noOverlay);
-
-    if (instantMobile) {
-      // Commit synchronously without toggling transition state to avoid flicker
-      setCommittedIndex(indexToCommit);
-      setCurrentPhotoIndex(indexToCommit);
-      setIsPreparing(false);
-      setPrepareProgress(0);
-      setTargetIndex(null);
-      setPrepareLabel('');
-      setShowOverlay(false);
-      setInstantNextCommit(false);
-      if (debugMode) {
-        console.log(`✅ Navigation completed instantly to index ${indexToCommit}`);
-      }
-      return;
-    }
-
+    // Use seamless transition with AnimatePresence
     setIsTransitioning(true);
 
-    // Smooth transition delay for non-instant paths
-    const transitionDelay = reduceMotion ? 100 : 200;
+    // Brief transition for smooth visual feedback
+    const transitionDelay = reduceMotion ? 50 : 100;
+    
     setTimeout(() => {
       setCommittedIndex(indexToCommit);
       setCurrentPhotoIndex(indexToCommit);
@@ -573,16 +525,17 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes,
       setIsPreparing(false);
       setPrepareProgress(0);
       setTargetIndex(null);
-      setPrepareLabel('');
-      setShowOverlay(false);
-      // Reset instant flag after commit
-      setInstantNextCommit(false);
+      
+      // Hide overlays
+      setShowCrossMarche(false);
+      setCrossMarcheInfo(null);
+      setShowProgressBar(false);
       
       if (debugMode) {
         console.log(`✅ Navigation completed to index ${indexToCommit}`);
       }
     }, transitionDelay);
-  }, [targetIndex, reduceMotion, debugMode, deviceType, showOverlay, instantNextCommit]);
+  }, [targetIndex, reduceMotion, debugMode, detectCrossMarche, committedIndex, showCrossMarche]);
 
   // New navigation system with gating
   const navigateNext = useCallback(async () => {
@@ -760,10 +713,8 @@ const GalerieView = memo<{
   isPreparing: boolean;
   navigatePrevious: () => void;
   navigateNext: () => void;
-  instantNextCommit: boolean;
-  showOverlay: boolean;
   reduceMotion: boolean;
-  preparationType: 'intra-marche' | 'cross-marche';
+  isTransitioning: boolean;
 }>(({ 
   filteredPhotos, 
   committedIndex, 
@@ -772,10 +723,8 @@ const GalerieView = memo<{
   isPreparing, 
   navigatePrevious, 
   navigateNext, 
-  instantNextCommit, 
-  showOverlay,
   reduceMotion,
-  preparationType
+  isTransitioning
 }) => {
   // Current photos to display
   const displayPhotos = useMemo(() => {
@@ -821,11 +770,10 @@ const GalerieView = memo<{
             {displayPhotos.map(({ photo, position }, index) => {
               const preloadedImage = getPreloadedImage(photo.url);
               
-              // Enhanced instant mode for mobile: always enable for intra-marche transitions
+              // Enhanced instant mode for mobile: smooth transitions
               const shouldUseInstant = deviceType !== 'desktop' && 
                                      position === 'current' && 
-                                     (instantNextCommit || preparationType === 'intra-marche') && 
-                                     !showOverlay;
+                                     !isTransitioning;
               
               return (
                   <motion.div
@@ -952,10 +900,8 @@ const GalerieView = memo<{
             isPreparing={isPreparing}
             navigatePrevious={navigatePrevious}
             navigateNext={navigateNext}
-            instantNextCommit={instantNextCommit}
-            showOverlay={showOverlay}
             reduceMotion={reduceMotion}
-            preparationType={preparationType}
+            isTransitioning={isTransitioning}
           />
 
           {/* Global navigation controls */}
@@ -1014,7 +960,24 @@ const GalerieView = memo<{
         </>
         )}
 
-        <PortalOverlay visible={showOverlay} label={prepareLabel} progress={prepareProgress} subtype={preparationType} />
+        {/* Smart Overlays - Cross March & Progress Bar */}
+        {showCrossMarche && crossMarcheInfo && (
+          <PortalOverlay 
+            visible={true} 
+            label={`${crossMarcheInfo.to}`}
+            progress={prepareProgress} 
+            subtype="cross-marche" 
+          />
+        )}
+        
+        {showProgressBar && (
+          <div className="fixed top-0 left-0 right-0 h-0.5 bg-cyan-400/20 z-50">
+            <div 
+              className="h-full bg-gradient-to-r from-cyan-400 to-emerald-400 transition-all duration-150 ease-out"
+              style={{ width: `${prepareProgress}%` }}
+            />
+          </div>
+        )}
         
         {/* Debug UI */}
         {debugMode && (
@@ -1024,10 +987,10 @@ const GalerieView = memo<{
             <div>Index: {committedIndex}/{filteredPhotos?.length || 0}</div>
             <div>Target: {targetIndex ?? 'none'}</div>
             <div>Preparing: {isPreparing ? '✅' : '❌'}</div>
-            <div>Overlay: {showOverlay ? '👁️' : '🚫'}</div>
+            <div>Cross-March: {showCrossMarche ? '👁️' : '🚫'}</div>
+            <div>Progress Bar: {showProgressBar ? '📊' : '🚫'}</div>
             <div>Progress: {prepareProgress}%</div>
             <div>Cache: {getCacheStats().size}/15</div>
-            <div>Type: {preparationType}</div>
           </div>
         )}
       </div>
