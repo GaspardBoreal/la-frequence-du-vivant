@@ -350,7 +350,7 @@ export class OpusImportNormalizer {
     }
 
     // Vérifications de qualité des sources
-    const lowReliabilitySources = data.sources.filter(s => s.fiabilite < 50).length;
+    const lowReliabilitySources = data.sources.filter(s => Number(s.fiabilite) < 50).length;
     if (lowReliabilitySources > 0) {
       warnings.push(`${lowReliabilitySources} source(s) avec fiabilité faible (< 50)`);
     }
