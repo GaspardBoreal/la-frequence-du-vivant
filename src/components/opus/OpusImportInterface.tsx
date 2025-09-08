@@ -11,6 +11,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useExplorationMarches } from '@/hooks/useExplorations';
+import { OpusImportValidationPanel } from './OpusImportValidationPanel';
 import { 
   Upload, 
   FileJson, 
@@ -98,23 +99,25 @@ export const OpusImportInterface: React.FC<OpusImportInterfaceProps> = ({
   const currentMarcheId = selectedMarcheId || marcheId;
   const currentMarcheName = selectedMarcheName || marcheName;
 
-  // Generate complete JSON template for all OPUS dimensions
+  // Phase 1 - Template JSON optimisé avec format strict
   const generateCompleteTemplate = useCallback(() => {
+    const currentDate = new Date().toISOString().split('T')[0];
     return `{
   "dimensions": {
     "contexte_hydrologique": {
       "description": "Contexte hydrologique et caractéristiques du site d'étude",
       "donnees": {
-        "bassin_versant": "Nom du bassin versant",
-        "debit_moyen": "Débit moyen en m³/s",
-        "regime_hydrologique": "Type de régime (pluvial, nival, mixte)",
+        "bassin_versant": "Nom du bassin versant principal",
+        "debit_moyen": "Débit moyen annuel en m³/s",
+        "regime_hydrologique": "Type de régime (pluvial, nival, mixte, océanique)",
         "qualite_eau": "Indices de qualité physicochimique et biologique",
+        "phenomenes_particuliers": ["Crues saisonnières", "Étiages sévères"],
         "sources": [
           {
             "titre": "Données hydrologiques officielles",
             "url": "https://www.hydro.eaufrance.fr",
-            "type": "web",
-            "date_acces": "${new Date().toISOString().split('T')[0]}",
+            "type": "base_donnees",
+            "date_acces": "${currentDate}",
             "fiabilite": 95
           }
         ]
@@ -158,17 +161,20 @@ export const OpusImportInterface: React.FC<OpusImportInterfaceProps> = ({
       }
     },
     "infrastructures_techniques": {
-      "description": "Infrastructures humaines et aménagements techniques",
+      "description": "Infrastructures techniques et empreintes humaines sur le territoire",
       "donnees": {
-        "ouvrages_hydrauliques": ["Barrage", "Seuil", "Écluse"],
-        "reseaux": ["Assainissement", "AEP", "Pluvial"],
-        "equipements": ["Station épuration", "Pompage", "Traitement"],
+        "ouvrages_hydrauliques": ["Barrage mobile", "Seuil de navigation", "Écluse"],
+        "reseaux_techniques": ["Réseau assainissement", "AEP communal", "Gestion pluvial"],
+        "equipements_traitement": ["STEP intercommunale", "Station de pompage", "Traitement tertiaire"],
+        "patrimoine_industriel": ["Ancienne papeterie", "Moulin réhabilité"],
+        "amenagements_recents": ["Passe à poissons", "Berges naturalisées"],
+        "impact_environnemental": "Fragmentation écologique modérée avec mesures compensatoires",
         "sources": [
           {
-            "titre": "Base nationale des ouvrages",
-            "url": "https://www.sandre.eaufrance.fr",
+            "titre": "Base nationale des ouvrages sur l'eau",
+            "url": "https://www.sandre.eaufrance.fr/atlas",
             "type": "base_donnees",
-            "date_acces": "${new Date().toISOString().split('T')[0]}",
+            "date_acces": "${currentDate}",
             "fiabilite": 95
           }
         ]

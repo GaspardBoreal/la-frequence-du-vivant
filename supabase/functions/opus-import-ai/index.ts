@@ -6,6 +6,9 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
+// Phase 1 améliorations : Import robuste et fiable
+console.log('[OPUS Import AI] Phase 1 - Import Engine v2.0 loaded');
+
 interface ImportData {
   exploration_id: string;
   marche_id: string;
@@ -51,51 +54,110 @@ interface ValidationResult {
   score: number;
 }
 
-// Fonction de normalisation des dimensions
+// Phase 1 - Normalisateur intelligent avancé
 function normalizeDimensions(dimensions: any): any {
   const normalized = { ...dimensions };
+  const corrections: string[] = [];
   
-  // 1. infrastructures_techniques → empreintes_humaines
+  console.log('[OPUS Import] Phase 1 - Advanced normalization starting...', {
+    inputKeys: Object.keys(dimensions)
+  });
+  
+  // 1. infrastructures_techniques → empreintes_humaines (robuste)
   if (normalized.infrastructures_techniques) {
     console.log('[OPUS Import] Mapping infrastructures_techniques → empreintes_humaines');
     normalized.empreintes_humaines = normalized.infrastructures_techniques;
     delete normalized.infrastructures_techniques;
+    corrections.push('infrastructures_techniques → empreintes_humaines');
   }
   
-  // 2. agroecologie → split entre leviers_agroecologiques et nouvelles_activites
+  // 2. agroecologie → split intelligent avec fallbacks
   if (normalized.agroecologie) {
-    console.log('[OPUS Import] Splitting agroecologie into leviers_agroecologiques + nouvelles_activites');
+    console.log('[OPUS Import] Smart splitting agroecologie...');
     const agro = normalized.agroecologie;
     
-    // Extraire les leviers agroécologiques
-    if (agro.donnees) {
-      const leviers = {
-        description: agro.description || "Leviers agroécologiques disponibles",
+    if (agro.donnees || typeof agro === 'object') {
+      const donnees = agro.donnees || agro;
+      
+      // Leviers agroécologiques avec structure garantie
+      normalized.leviers_agroecologiques = {
+        description: agro.description || "Leviers agroécologiques disponibles sur le territoire",
         donnees: {
-          pratiques_agricoles: agro.donnees.pratiques_agricoles || [],
-          cultures: agro.donnees.cultures || [],
-          elevage: agro.donnees.elevage || [],
-          biodiversite_cultivee: agro.donnees.biodiversite_cultivee || [],
-          leviers_agroecologiques: agro.donnees.leviers_agroecologiques || [],
-          sources: agro.donnees.sources || []
+          pratiques_agricoles: donnees.pratiques_agricoles || donnees.pratiques || [],
+          cultures: donnees.cultures || donnees.types_cultures || [],
+          elevage: donnees.elevage || donnees.systemes_elevage || [],
+          biodiversite_cultivee: donnees.biodiversite_cultivee || donnees.varietes_locales || [],
+          leviers_agroecologiques: donnees.leviers_agroecologiques || donnees.leviers || [],
+          sources: donnees.sources || []
         }
       };
       
-      // Extraire les nouvelles activités
-      const nouvelles = {
-        description: "Activités à développer identifiées",
+      // Nouvelles activités avec extraction intelligente
+      normalized.nouvelles_activites = {
+        description: "Activités économiques à développer dans une perspective agroécologique",
         donnees: {
-          activites_a_developper: agro.donnees.activites_a_developper || [],
-          sources: agro.donnees.sources || []
+          activites_a_developper: donnees.activites_a_developper || donnees.nouvelles_activites || donnees.projets || [],
+          partenariats_possibles: donnees.partenariats_possibles || donnees.partenaires || [],
+          financement_potentiel: donnees.financement_potentiel || donnees.financements || [],
+          sources: donnees.sources || []
         }
       };
       
-      normalized.leviers_agroecologiques = leviers;
-      normalized.nouvelles_activites = nouvelles;
+      corrections.push('agroecologie → leviers_agroecologiques + nouvelles_activites');
     }
     
     delete normalized.agroecologie;
   }
+  
+  // 3. Détection et correction de noms alternatifs courants
+  const alternativeNames: { [key: string]: string } = {
+    'contexte': 'contexte_hydrologique',
+    'especes': 'especes_caracteristiques',
+    'vocabulaire': 'vocabulaire_local',
+    'infrastructures': 'empreintes_humaines',
+    'projection': 'projection_2035_2045',
+    'leviers': 'leviers_agroecologiques',
+    'activites': 'nouvelles_activites',
+    'techno': 'technodiversite',
+    'technodiversité': 'technodiversite'
+  };
+  
+  for (const [alt, canonical] of Object.entries(alternativeNames)) {
+    if (normalized[alt] && !normalized[canonical]) {
+      normalized[canonical] = normalized[alt];
+      delete normalized[alt];
+      corrections.push(`${alt} → ${canonical}`);
+    }
+  }
+  
+  // 4. Validation et structure garantie pour chaque dimension
+  for (const [key, value] of Object.entries(normalized)) {
+    if (value && typeof value === 'object') {
+      // Assurer structure {description, donnees}
+      if (!value.description && !value.donnees) {
+        // Données directement dans la racine
+        normalized[key] = {
+          description: `Données contextuelles pour ${key}`,
+          donnees: value
+        };
+        corrections.push(`Structure normalisée pour ${key}`);
+      } else if (value.description && !value.donnees) {
+        // Description présente mais données manquantes
+        const { description, ...rest } = value;
+        normalized[key] = {
+          description,
+          donnees: rest
+        };
+        corrections.push(`Données extraites pour ${key}`);
+      }
+    }
+  }
+  
+  console.log('[OPUS Import] Phase 1 normalization complete:', {
+    corrections: corrections.length,
+    outputKeys: Object.keys(normalized),
+    correctionDetails: corrections
+  });
   
   return normalized;
 }
@@ -144,94 +206,188 @@ function sanitizeData(data: ImportData): ImportData {
   return sanitized;
 }
 
+// Phase 1 - Validation multi-niveaux robuste
 async function validateImportData(data: ImportData): Promise<ValidationResult> {
   const errors: string[] = [];
   const warnings: string[] = [];
-  let score = 0;
+  let score = 100; // Commencer à 100 et décrémenter
 
-  // Sanitisation automatique des données
-  data = sanitizeData(data);
+  console.log('[OPUS Import] Phase 1 - Multi-level validation starting...', {
+    hasData: !!data,
+    dimensionsCount: data.dimensions ? Object.keys(data.dimensions).length : 0,
+    sourcesCount: data.sources ? data.sources.length : 0
+  });
 
-  // Normalisation des dimensions
-  data.dimensions = normalizeDimensions(data.dimensions);
+  // 1. Sanitisation automatique avancée
+  try {
+    data = sanitizeData(data);
+    console.log('[OPUS Import] Data sanitization complete');
+  } catch (sanitizeError) {
+    errors.push(`Erreur de sanitisation: ${sanitizeError.message}`);
+    score -= 20;
+  }
 
-  // Validation obligatoire
-  if (!data.exploration_id) errors.push("exploration_id manquant");
-  if (!data.marche_id) errors.push("marche_id manquant");
-  if (!data.dimensions) errors.push("dimensions manquantes");
-  if (!data.sources || data.sources.length === 0) errors.push("sources manquantes");
-  
-  // Auto-génération des métadonnées si manquantes
+  // 2. Normalisation intelligente des dimensions
+  try {
+    data.dimensions = normalizeDimensions(data.dimensions);
+    console.log('[OPUS Import] Dimension normalization complete');
+  } catch (normalizeError) {
+    errors.push(`Erreur de normalisation: ${normalizeError.message}`);
+    score -= 25;
+  }
+
+  // 3. Validation obligatoire stricte
+  if (!data.exploration_id || typeof data.exploration_id !== 'string') {
+    errors.push("exploration_id manquant ou invalide");
+    score -= 30;
+  }
+  if (!data.marche_id || typeof data.marche_id !== 'string') {
+    errors.push("marche_id manquant ou invalide");
+    score -= 30;
+  }
+  if (!data.dimensions || Object.keys(data.dimensions).length === 0) {
+    errors.push("Aucune dimension fournie");
+    score -= 40;
+  }
+  if (!data.sources || !Array.isArray(data.sources) || data.sources.length === 0) {
+    errors.push("Au moins une source est requise");
+    score -= 20;
+  }
+
+  // 4. Auto-génération intelligente des métadonnées
   if (!data.metadata) {
-    console.log('[OPUS Import] Auto-génération des métadonnées');
+    console.log('[OPUS Import] Auto-génération des métadonnées complètes');
     data.metadata = {};
   }
   
-  // Injection automatique des métadonnées système
   const currentDate = new Date().toISOString().split('T')[0];
-  data.metadata.sourcing_date = currentDate;
-  data.metadata.import_date = new Date().toISOString();
-  data.metadata.ai_model = 'system-managed';
-  data.metadata.validation_level = 'automatique';
+  const currentDateTime = new Date().toISOString();
+  
+  // Métadonnées système avec horodatage précis
+  data.metadata.sourcing_date = data.metadata.sourcing_date || currentDate;
+  data.metadata.import_date = currentDateTime;
+  data.metadata.ai_model = 'opus-import-ai-v2';
+  data.metadata.validation_level = 'automatique-phase1';
+  data.metadata.import_engine_version = '2.0';
 
-  // Auto-correction: déplacer fables hors de dimensions si nécessaire
-  if (data.dimensions?.fables && Array.isArray(data.dimensions.fables)) {
-    console.log('[OPUS Import] Auto-correction: déplacement des fables hors de dimensions');
-    data.fables = data.dimensions.fables;
-    delete data.dimensions.fables;
-    warnings.push("Fables déplacées automatiquement du niveau dimensions vers le niveau racine");
+  // 5. Auto-correction avancée des structures
+  if (data.dimensions) {
+    // Déplacement intelligent des fables mal placées
+    Object.keys(data.dimensions).forEach(key => {
+      const dimension = data.dimensions[key];
+      if (dimension?.fables && Array.isArray(dimension.fables)) {
+        console.log(`[OPUS Import] Auto-correction: fables trouvées dans dimension "${key}"`);
+        data.fables = [...(data.fables || []), ...dimension.fables];
+        delete dimension.fables;
+        warnings.push(`Fables déplacées automatiquement de la dimension "${key}" vers le niveau racine`);
+      }
+    });
+
+    // Validation de cohérence des dimensions
+    const dimensionKeys = Object.keys(data.dimensions);
+    const validDomains = ['contexte_hydrologique', 'especes_caracteristiques', 'vocabulaire_local', 
+                         'empreintes_humaines', 'projection_2035_2045', 'leviers_agroecologiques', 
+                         'nouvelles_activites', 'technodiversite'];
+    
+    const invalidDimensions = dimensionKeys.filter(key => !validDomains.includes(key));
+    if (invalidDimensions.length > 0) {
+      warnings.push(`Dimensions non standard détectées: ${invalidDimensions.join(', ')}`);
+      score -= invalidDimensions.length * 5;
+    }
   }
 
-  // Calcul automatique du score de qualité basé sur le contenu
-  const dimensionCount = Object.keys(data.dimensions || {}).length;
-  score += Math.min(dimensionCount * 10, 80); // Max 80 points pour les dimensions
+  // 6. Validation et auto-correction des sources
+  if (Array.isArray(data.sources)) {
+    data.sources.forEach((source, index) => {
+      if (!source.titre || source.titre.length < 5) {
+        errors.push(`Source ${index + 1}: titre requis (minimum 5 caractères)`);
+        score -= 10;
+      }
+      
+      // Auto-correction du type avec intelligence
+      if (!source.type) {
+        source.type = source.url ? "web" : "documentation";
+        warnings.push(`Source ${index + 1}: type auto-détecté à "${source.type}"`);
+      }
+      
+      // Normalisation avancée de la fiabilité
+      if (source.fiabilite !== null && source.fiabilite !== undefined) {
+        if (typeof source.fiabilite === 'string') {
+          const fiabiliteMap: { [key: string]: number } = {
+            'très haute': 95, 'haute': 85, 'élevée': 85, 'moyenne': 70, 
+            'modérée': 60, 'faible': 45, 'très faible': 25, 'basse': 30
+          };
+          const normalized = fiabiliteMap[source.fiabilite.toLowerCase()];
+          if (normalized) {
+            source.fiabilite = normalized;
+            warnings.push(`Source ${index + 1}: fiabilité convertie vers ${normalized}`);
+          } else {
+            source.fiabilite = 70; // Valeur par défaut
+            warnings.push(`Source ${index + 1}: fiabilité non reconnue, définie à 70`);
+          }
+        }
+        source.fiabilite = Math.max(0, Math.min(100, Number(source.fiabilite) || 70));
+      } else {
+        source.fiabilite = 70;
+        warnings.push(`Source ${index + 1}: fiabilité manquante, définie à 70`);
+      }
 
-  if (data.fables && data.fables.length > 0) score += 10;
-  if (data.sources.length >= 3) score += 10;
+      // Auto-correction date d'accès
+      if (!source.date_acces) {
+        source.date_acces = currentDate;
+        warnings.push(`Source ${index + 1}: date d'accès auto-générée`);
+      }
+    });
+  }
 
-  // Injection automatique des scores calculés
-  data.metadata.quality_score = Math.min(score, 100);
-  const completudeScore = await calculateCompletude(data.dimensions);
-  data.metadata.completeness_score = completudeScore;
+  // 7. Calcul intelligent des scores de qualité
+  const dimensionCount = data.dimensions ? Object.keys(data.dimensions).length : 0;
   
-  console.log('[OPUS Import] Métadonnées auto-générées:', {
-    sourcing_date: data.metadata.sourcing_date,
-    quality_score: data.metadata.quality_score,
-    completeness_score: data.metadata.completeness_score
-  });
+  // Bonus pour complétude des dimensions
+  if (dimensionCount >= 6) score += 10;
+  else if (dimensionCount >= 4) score += 5;
+  else if (dimensionCount < 2) score -= 15;
 
-  // Auto-correction et validation des sources
-  data.sources?.forEach((source, index) => {
-    if (!source.titre) errors.push(`Source ${index + 1}: titre manquant`);
-    
-    // Auto-correction du type manquant
-    if (!source.type) {
-      source.type = "web";
-      warnings.push(`Source ${index + 1}: type manquant, défini automatiquement à "web"`);
-    }
-    
-    // Auto-correction de la fiabilité
-    if (typeof source.fiabilite === 'string') {
-      // Conversion des valeurs textuelles en nombres
-      const fiabiliteMap: { [key: string]: number } = {
-        'très haute': 90, 'haute': 80, 'moyenne': 60, 'faible': 40, 'très faible': 20
-      };
-      const newFiabilite = fiabiliteMap[source.fiabilite.toLowerCase()] || 70;
-      source.fiabilite = newFiabilite;
-      warnings.push(`Source ${index + 1}: fiabilité convertie de "${source.fiabilite}" vers ${newFiabilite}`);
-    }
-    
-    if (source.fiabilite < 0 || source.fiabilite > 100) {
-      source.fiabilite = Math.max(0, Math.min(100, source.fiabilite || 70));
-      warnings.push(`Source ${index + 1}: fiabilité corrigée à ${source.fiabilite}`);
-    }
+  // Bonus pour fables narratives
+  if (data.fables && data.fables.length > 0) {
+    score += Math.min(data.fables.length * 3, 15);
+  } else {
+    warnings.push("Aucune fable narrative fournie - contenu littéraire manquant");
+    score -= 10;
+  }
+
+  // Bonus pour qualité des sources
+  if (data.sources && data.sources.length >= 3) {
+    const avgReliability = data.sources.reduce((sum, s) => sum + (Number(s.fiabilite) || 0), 0) / data.sources.length;
+    if (avgReliability >= 80) score += 5;
+    else if (avgReliability < 50) score -= 10;
+  }
+
+  // 8. Calcul final des scores
+  const completudeScore = await calculateCompletude(data.dimensions);
+  const finalScore = Math.max(0, Math.min(score, 100));
+  
+  // Injection des scores dans les métadonnées
+  data.metadata.quality_score = finalScore;
+  data.metadata.completeness_score = completudeScore;
+  data.metadata.dimension_count = dimensionCount;
+  data.metadata.source_count = data.sources ? data.sources.length : 0;
+  data.metadata.fable_count = data.fables ? data.fables.length : 0;
+  
+  console.log('[OPUS Import] Phase 1 validation complete:', {
+    isValid: errors.length === 0,
+    errors: errors.length,
+    warnings: warnings.length,
+    quality_score: finalScore,
+    completeness_score: completudeScore,
+    dimensions: dimensionCount
   });
 
   return {
     isValid: errors.length === 0,
     errors,
     warnings,
-    score: Math.min(score, 100)
+    score: finalScore
   };
 }
 
