@@ -1087,7 +1087,7 @@ export const ModernImportDashboard: React.FC = () => {
         )}
 
         <Dialog open={importModalOpen} onOpenChange={setImportModalOpen}>
-          <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden bg-background/95 backdrop-blur-xl border-border/50">
+          <DialogContent className="max-w-7xl w-[95vw] max-h-[95vh] overflow-hidden bg-background/95 backdrop-blur-xl border-border/50">
             <DialogHeader className="sr-only">
               <DialogTitle>Interface d'import</DialogTitle>
               <DialogDescription>Interface pour importer des données dans l'exploration</DialogDescription>
