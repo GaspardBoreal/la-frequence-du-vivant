@@ -99,6 +99,127 @@ export const OpusImportInterface: React.FC<OpusImportInterfaceProps> = ({
   const currentMarcheId = selectedMarcheId || marcheId;
   const currentMarcheName = selectedMarcheName || marcheName;
 
+  // Données d'exemple pour test Dordogne
+  const loadDordogneTestData = useCallback(() => {
+    const testData = {
+      "dimensions": {
+        "hydrologie": {
+          "description": "Caractéristiques hydrologiques de l'estuaire de la Gironde et de la confluence Dordogne-Garonne",
+          "donnees": {
+            "regime_hydrologique": {
+              "intitule": "Estuaire hypersynchrone avec marées semi-diurnes",
+              "source_ids": ["S01"]
+            },
+            "debit_moyen": "450 m³/s (étiage critique < 200 m³/s)",
+            "qualite_eau": {
+              "resume": "Intrusion saline accrue lors d'étiages, hypoxies estivales récurrentes",
+              "source_ids": ["S01", "S02"]
+            },
+            "indicateurs_quantitatifs": [
+              {
+                "nom": "Marnage à Bordeaux",
+                "valeur": "2-6 m selon coefficients",
+                "source_ids": ["S01"]
+              }
+            ]
+          }
+        },
+        "biodiversite": {
+          "description": "Espèces aquatiques et terrestres caractéristiques de l'estuaire gironder",
+          "donnees": {
+            "especes_aquatiques": [
+              {
+                "nom_scientifique": "Alosa alosa",
+                "nom_commun": "Grande alose",
+                "statut": "Vulnérable",
+                "source_ids": ["S03"]
+              }
+            ]
+          }
+        },
+        "vocabulaire": {
+          "description": "Terminologie technique et locale liée aux milieux estuariens",
+          "donnees": {
+            "termes_techniques": [
+              {
+                "terme": "Hypersynchronisme",
+                "definition": "Amplification du marnage vers l'amont dans un estuaire en entonnoir",
+                "contexte": "Caractéristique marquée de l'estuaire de la Gironde",
+                "source_ids": ["S01"]
+              }
+            ]
+          }
+        },
+        "technodiversite": {
+          "description": "Technologies et innovations pour la gestion estuarienne",
+          "donnees": {
+            "technologies_observation": [
+              {
+                "nom": "Réseau MAGEST",
+                "description": "Mesures automatisées qualité eau estuaire", 
+                "operateur": "EP Garonne",
+                "source_ids": ["S07"]
+              }
+            ]
+          }
+        },
+        "empreintes_humaines": {
+          "description": "Infrastructures et aménagements anthropiques sur l'estuaire",
+          "donnees": {
+            "industrielles": [
+              {
+                "nom": "Terminal conteneurs Bassens",
+                "type": "Infrastructure portuaire",
+                "impact": "Dragage permanent, trafic maritime",
+                "source_ids": ["S10"]
+              }
+            ]
+          }
+        }
+      },
+      "fables": [
+        {
+          "titre": "Le Dialogue des Marées",
+          "contenu_principal": "Dans l'estuaire de la Gironde, deux voix se répondent éternellement : celle du Flot qui remonte fièrement vers les terres, porteur de sel et de mystères océaniques, et celle du Jusant qui redescend, chargé de terres et d'histoires continentales.",
+          "ordre": 1,
+          "dimension": "hydrologie",
+          "tags": ["marées", "estuaire", "dialogue"]
+        }
+      ],
+      "sources": [
+        {
+          "titre": "Marées estuaire Gironde - Traversée Bordeaux",
+          "url": "https://traverseedebordeaux.com/spip.php?article9",
+          "type": "web",
+          "auteur": "Association Traversée de Bordeaux",
+          "date_publication": "2023-05-15",
+          "date_acces": "2025-09-08",
+          "fiabilite": 85,
+          "references": ["S01"]
+        },
+        {
+          "titre": "Qualité eau estuaire - Réseau MAGEST",
+          "url": "https://www.ep-garonne.fr/mesure-de-la-qualite-de-leau-de-lestuaire.html", 
+          "type": "institutionnel",
+          "auteur": "EP Garonne",
+          "fiabilite": 95,
+          "references": ["S02", "S07"]
+        }
+      ],
+      "metadata": {
+        "sourcing_date": "2025-09-08",
+        "ai_model": "Claude-3.5-Sonnet",
+        "notes": "Données d'exemple pour test système d'import - 5 dimensions"
+      }
+    };
+    
+    setJsonContent(JSON.stringify(testData, null, 2));
+    toast({
+      title: "🧪 Données de test chargées",
+      description: "Exemple Dordogne avec 5 dimensions + fables + sources",
+    });
+  }, [toast]);
+
   // Phase 1 - Template JSON optimisé avec format strict
   const generateCompleteTemplate = useCallback(() => {
     const currentDate = new Date().toISOString().split('T')[0];
@@ -750,6 +871,15 @@ export const OpusImportInterface: React.FC<OpusImportInterfaceProps> = ({
                 >
                   <FileJson className="h-4 w-4" />
                   Charger le modèle
+                </Button>
+
+                <Button 
+                  variant="outline"
+                  onClick={loadDordogneTestData}
+                  className="flex items-center gap-2 bg-gradient-to-r from-blue-50 to-green-50 border-blue-200 hover:from-blue-100 hover:to-green-100"
+                >
+                  <Bot className="h-4 w-4 text-blue-600" />
+                  Test Dordogne
                 </Button>
 
                 <Button 
