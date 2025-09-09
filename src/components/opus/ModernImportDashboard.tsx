@@ -39,6 +39,7 @@ import { ExplorationSpeciesView } from './ExplorationSpeciesView';
 import { ExplorationVocabularyView } from './ExplorationVocabularyView';
 import { TechnodiversiteVignetteGrid } from './TechnodiversiteVignetteGrid';
 import { InfrastructureVignetteGrid } from './InfrastructureVignetteGrid';
+import { ImportMonitoringPanel } from './ImportMonitoringPanel';
 import SEOHead from '@/components/SEOHead';
 import { useAnimatedCounter } from '@/hooks/useAnimatedCounter';
 import { getProcessedSpeciesCount } from '@/utils/speciesDataUtils';
@@ -127,6 +128,7 @@ export const ModernImportDashboard: React.FC = () => {
   const [historyLoading, setHistoryLoading] = useState(false);
   const [activeTab, setActiveTab] = useState('dashboard');
   const [importToDelete, setImportToDelete] = useState<ImportRecord | null>(null);
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
   
   const { data: explorations } = useExplorations();
   const { data: marches } = useSupabaseMarches();
@@ -596,6 +598,13 @@ export const ModernImportDashboard: React.FC = () => {
                 Imports ({filteredImports.length})
               </TabsTrigger>
               <TabsTrigger 
+                value="monitoring" 
+                className="flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground transition-all duration-300"
+              >
+                <Activity className="w-4 h-4" />
+                Monitoring
+              </TabsTrigger>
+              <TabsTrigger 
                 value="history" 
                 className="flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground transition-all duration-300"
               >
@@ -885,7 +894,14 @@ export const ModernImportDashboard: React.FC = () => {
             </TabsContent>
 
             {/* Import History */}
-            <TabsContent value="history" className="space-y-6">
+              <TabsContent value="monitoring" className="space-y-6">
+                <ImportMonitoringPanel 
+                  explorationId={exploration.id}
+                  refreshTrigger={refreshTrigger}
+                />
+              </TabsContent>
+
+              <TabsContent value="history" className="space-y-6">
               <Card className="bg-background/50 backdrop-blur-sm border-border/30">
                 <CardHeader>
                   <div className="flex items-center justify-between">
@@ -1092,7 +1108,7 @@ export const ModernImportDashboard: React.FC = () => {
               <DialogTitle>Interface d'import</DialogTitle>
               <DialogDescription>Interface pour importer des données dans l'exploration</DialogDescription>
             </DialogHeader>
-            <OpusImportInterface
+              <OpusImportInterface
               marcheId=""
               marcheName=""
               explorationId={exploration.id}
