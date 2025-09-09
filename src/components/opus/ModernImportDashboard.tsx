@@ -531,6 +531,16 @@ export const ModernImportDashboard: React.FC = () => {
                   Préfigurer
                 </Button>
                 <Button 
+                  onClick={() => {
+                    // Ouverture directe de l'interface d'import avec le premier marché disponible
+                    setImportModalOpen(true);
+                  }}
+                  className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white shadow-lg hover:shadow-green/25 transition-all duration-300"
+                >
+                  <Zap className="w-4 h-4 mr-2" />
+                  Test Dordogne
+                </Button>
+                <Button 
                   onClick={() => setImportModalOpen(true)}
                   className="bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 shadow-lg hover:shadow-primary/25 transition-all duration-300"
                 >
