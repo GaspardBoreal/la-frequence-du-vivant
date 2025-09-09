@@ -13,6 +13,7 @@ export interface OpusImportSchema {
     nouvelles_activites?: DimensionData;
     agroecologie?: DimensionData; // Sera divisé en leviers + nouvelles_activites
     technodiversite?: DimensionData;
+    ia_fonctionnalites?: DimensionData;
   };
   fables?: FableData[];
   sources: SourceData[];
@@ -138,7 +139,8 @@ export const DOMAINES_ETUDE = [
   'projection_2035_2045',
   'leviers_agroecologiques',
   'nouvelles_activites',
-  'technodiversite'
+  'technodiversite',
+  'ia_fonctionnalites'
 ] as const;
 
 export const DIMENSION_MAPPINGS = {
@@ -162,7 +164,17 @@ export const DIMENSION_MAPPINGS = {
   'techno-diversite': 'technodiversite',
   'innovations_locales': 'technodiversite',
   'technologies_vertes': 'technodiversite',
-  'numerique': 'technodiversite'
+  'numerique': 'technodiversite',
+  // Mappings IA fonctionnalités
+  'ia': 'ia_fonctionnalites',
+  'intelligence_artificielle': 'ia_fonctionnalites',
+  'fonctionnalites': 'ia_fonctionnalites',
+  'fonctionnalités': 'ia_fonctionnalites',
+  'ia_riviere': 'ia_fonctionnalites',
+  'ia_dordogne': 'ia_fonctionnalites',
+  'outils_numeriques': 'ia_fonctionnalites',
+  'applications': 'ia_fonctionnalites',
+  'services_numeriques': 'ia_fonctionnalites'
 } as const;
 
 // Templates pour auto-completion
@@ -241,6 +253,17 @@ export const generateDimensionTemplate = (dimension: string): DimensionData => {
         innovations_locales: [],
         numerique: [],
         recherche_developpement: [],
+        sources: []
+      }
+    },
+    ia_fonctionnalites: {
+      description: "Fonctionnalités IA Rivière Dordogne pour atteindre les intentions de l'Opus",
+      donnees: {
+        fonctionnalites_collectif: [],
+        outils_decision: [],
+        interfaces_participatives: [],
+        algorithmes_vivant: [],
+        services_predictifs: [],
         sources: []
       }
     }
