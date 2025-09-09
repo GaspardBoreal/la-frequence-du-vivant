@@ -220,157 +220,602 @@ export const OpusImportInterface: React.FC<OpusImportInterfaceProps> = ({
     });
   }, [toast]);
 
-  // Phase 1 - Template JSON optimisé avec format strict
+  // Phase 1 - Template JSON optimisé avec protocole DEEPSEARCH renforcé
   const generateCompleteTemplate = useCallback(() => {
     const currentDate = new Date().toISOString().split('T')[0];
     return `{
+  "_instructions": {
+    "protocole": "DEEPSEARCH OPTIMISÉ - Recherche approfondie 2022-2025",
+    "rayon_recherche": "5 km maximum autour point GPS",
+    "sources_prioritaires": "Niveau 1-2 (fiabilité 4-5/5) minimum",
+    "quantifications_strictes": "Respecter exactement les nombres demandés par dimension",
+    "methodologie": "Triple lecture systématique + validation croisée obligatoire"
+  },
   "dimensions": {
     "contexte_hydrologique": {
-      "description": "Contexte hydrologique et caractéristiques du site d'étude",
+      "description": "État et dynamique hydrologique du point d'exploration - données quantifiées 2022-2025",
       "donnees": {
-        "bassin_versant": "Nom du bassin versant principal",
-        "debit_moyen": "Débit moyen annuel en m³/s",
-        "regime_hydrologique": "Type de régime (pluvial, nival, mixte, océanique)",
-        "qualite_eau": "Indices de qualité physicochimique et biologique",
-        "phenomenes_particuliers": ["Crues saisonnières", "Étiages sévères"],
+        "niveau_eau": [
+          {
+            "valeur": "X.X mètres NGF (ou hauteur relative)",
+            "periode": "Moyenne 2022-2025",
+            "tendance": "stable/hausse/baisse avec variations saisonnières",
+            "source_mesure": "Station Banque Hydro la plus proche + code station"
+          }
+        ],
+        "debit": [
+          {
+            "valeur": "X.X m³/s (ou estimation qualitative argumentée)",
+            "periode": "Moyenne annuelle 2022-2025", 
+            "variabilite_saisonniere": "Coefficient variation ou description",
+            "evenements_extremes": "Crues/étiages remarquables 2022-2025"
+          }
+        ],
+        "qualite_eau": [
+          {
+            "indice_biologique": "IBD, IBGN ou autre indice officiel",
+            "parametres_chimiques": "3 paramètres récents (nitrates, phosphore, oxygène...)",
+            "annee_reference": "2024 ou année la plus récente",
+            "station_mesure": "Point de mesure Agence de l'Eau"
+          }
+        ],
         "sources": [
           {
-            "titre": "Données hydrologiques officielles",
-            "url": "https://www.hydro.eaufrance.fr",
-            "type": "base_donnees",
-            "date_acces": "${currentDate}",
-            "fiabilite": 95
+            "url": "https://www.hydro.eaufrance.fr/stationhydro/[CODE_STATION]",
+            "type": "institutionnel",
+            "auteur": "Ministère Transition Écologique - Banque Hydro",
+            "titre": "Données hydrométriques station [NOM]",
+            "date_publication": "2024-XX-XX",
+            "date_consultation": "${currentDate}",
+            "fiabilite": 5,
+            "domaine_expertise": "Hydrologie quantitative"
           }
         ]
       }
     },
     "especes_caracteristiques": {
-      "description": "Espèces indicatrices de la biodiversité et qualité écologique",
+      "description": "EXACTEMENT 5 espèces typiques : 2 végétales + 2 animales (dont 1 aquatique) + 1 indicatrice",
       "donnees": {
-        "poissons": ["Truite fario", "Chabot", "Lamproie de Planer"],
-        "invertebres": ["Ephéméroptères", "Plécoptères", "Trichoptères"],
-        "vegetation_aquatique": ["Renoncule flottante", "Potamot crépu"],
-        "oiseaux_aquatiques": ["Martin-pêcheur", "Bergeronnette des ruisseaux"],
+        "especes_vegetales": [
+          {
+            "nom_vernaculaire": "Nom français exact",
+            "nom_scientifique": "Genus species (obligatoire)",
+            "statut_conservation": "LC/NT/VU/EN/CR (Liste Rouge UICN)",
+            "abondance_locale": "rare/occasionnel/commun/dominant",
+            "role_ecologique": "Fonction spécifique au point d'exploration",
+            "habitat_prefere": "Description micro-habitat",
+            "source_identification": "Atlas régional/INPN/expertise terrain"
+          },
+          {
+            "nom_vernaculaire": "Deuxième espèce végétale",
+            "nom_scientifique": "Genus species",
+            "statut_conservation": "Statut conservation",
+            "abondance_locale": "Fréquence observée",
+            "role_ecologique": "Rôle dans l'écosystème local",
+            "habitat_prefere": "Conditions écologiques",
+            "source_identification": "Source identification"
+          }
+        ],
+        "especes_animales": [
+          {
+            "nom_vernaculaire": "Espèce animale terrestre",
+            "nom_scientifique": "Genus species",
+            "statut_conservation": "Statut Liste Rouge",
+            "abondance_locale": "Densité/fréquence",
+            "role_ecologique": "Position trophique/fonction",
+            "periode_observation": "Saisonnalité/reproduction",
+            "source_identification": "Atlas faune/ornithologique"
+          }
+        ],
+        "especes_aquatiques": [
+          {
+            "nom_vernaculaire": "Espèce aquatique indicatrice",
+            "nom_scientifique": "Genus species", 
+            "statut_conservation": "Statut conservation",
+            "abondance_locale": "Densité population",
+            "role_ecologique": "Indicateur qualité eau/biologique",
+            "exigences_habitat": "Qualité eau, substrat, courant",
+            "source_identification": "Inventaire piscicole/ONEMA"
+          }
+        ],
+        "espece_indicatrice": [
+          {
+            "nom_vernaculaire": "Espèce bio-indicatrice majeure",
+            "nom_scientifique": "Genus species",
+            "statut_conservation": "Statut officiel",
+            "valeur_indicatrice": "Qualité écologique indiquée",
+            "seuils_tolerance": "Conditions limites survie",
+            "evolution_2022_2025": "Tendance population récente",
+            "source_identification": "Étude scientifique/monitoring"
+          }
+        ],
         "sources": [
           {
-            "titre": "Inventaire biodiversité INPN",
-            "url": "https://inpn.mnhn.fr",
-            "type": "base_donnees",
-            "date_acces": "${new Date().toISOString().split('T')[0]}",
-            "fiabilite": 90
+            "url": "https://inpn.mnhn.fr/espece/cd_nom/[CODE_TAXON]",
+            "type": "scientifique",
+            "auteur": "MNHN - Inventaire National Patrimoine Naturel",
+            "titre": "Fiche espèce [NOM_SCIENTIFIQUE]",
+            "date_publication": "2024-XX-XX",
+            "date_consultation": "${currentDate}",
+            "fiabilite": 5,
+            "domaine_expertise": "Taxonomie et écologie"
           }
         ]
       }
     },
     "vocabulaire_local": {
-      "description": "Terminologie locale, dialectes et savoirs traditionnels",
+      "description": "Minimum 3 catégories : termes hydrologiques + phénomènes naturels + pratiques traditionnelles",
       "donnees": {
-        "termes_locaux": {
-          "cours_eau": "Nom local du cours d'eau",
-          "phenomenes": ["Crue locale", "Étiage saisonnier"],
-          "pratiques": ["Techniques traditionnelles", "Usages ancestraux"]
-        },
+        "termes_hydrologiques": [
+          {
+            "terme": "Mot local exact (ex: gour, rissole, bief)",
+            "definition": "Sens précis du terme hydrologique",
+            "contexte_usage": "Situation d'emploi traditionnelle",
+            "geolocalisation": "Commune/canton d'usage documenté",
+            "source_etymologique": "Origine linguistique si connue"
+          },
+          {
+            "terme": "Deuxième terme hydrologique local",
+            "definition": "Définition technique locale",
+            "contexte_usage": "Usage dans pratiques riveraines",
+            "geolocalisation": "Zone géographique d'emploi",
+            "source_etymologique": "Références linguistiques"
+          }
+        ],
+        "phenomenes_naturels": [
+          {
+            "expression": "Expression locale pour phénomène saisonnier",
+            "phenomene_designe": "Événement naturel correspondant",
+            "periode_occurrence": "Moment dans l'année",
+            "contexte_cultural": "Usage dans traditions locales",
+            "evolution_semantique": "Changement sens dans le temps"
+          },
+          {
+            "expression": "Deuxième expression phénomène naturel", 
+            "phenomene_designe": "Événement météo/hydrologique",
+            "periode_occurrence": "Saisonnalité",
+            "contexte_cultural": "Intégration culture locale",
+            "evolution_semantique": "Évolution usage moderne"
+          }
+        ],
+        "pratiques_traditionnelles": [
+          {
+            "terme": "Nom pratique ancestrale rivière",
+            "description": "Technique/usage traditionnel détaillé",
+            "periode_historique": "Époque d'usage principal",
+            "savoir_faire": "Compétences/gestes techniques",
+            "transmission": "Mode apprentissage/héritage",
+            "statut_actuel": "Pratique encore vivante/abandonnée"
+          },
+          {
+            "terme": "Deuxième pratique traditionnelle",
+            "description": "Usage ancestral cours d'eau",
+            "periode_historique": "Contexte temporel",
+            "savoir_faire": "Techniques spécifiques",
+            "transmission": "Transmission générationnelle",
+            "statut_actuel": "État conservation pratique"
+          }
+        ],
         "sources": [
           {
-            "titre": "Lexique patrimonial local",
-            "url": "https://patrimoine-local.fr",
-            "type": "documentation",
-            "date_acces": "${new Date().toISOString().split('T')[0]}",
-            "fiabilite": 75
+            "url": "https://atlas-linguistique-regional.fr ou archive-municipale.fr",
+            "type": "institutionnel",
+            "auteur": "Atlas linguistique/Archives départementales",
+            "titre": "Lexique patrimonial [RÉGION/COMMUNE]",
+            "date_publication": "YYYY-MM-DD",
+            "date_consultation": "${currentDate}",
+            "fiabilite": 4,
+            "domaine_expertise": "Linguistique régionale/ethnobotanique"
           }
         ]
       }
     },
-    "infrastructures_techniques": {
-      "description": "Infrastructures techniques et empreintes humaines sur le territoire",
+    "empreintes_humaines": {
+      "description": "EXACTEMENT 3 éléments majeurs : 1 infrastructure hydraulique + 1 aménagement récent + 1 vestige historique",
       "donnees": {
-        "ouvrages_hydrauliques": ["Barrage mobile", "Seuil de navigation", "Écluse"],
-        "reseaux_techniques": ["Réseau assainissement", "AEP communal", "Gestion pluvial"],
-        "equipements_traitement": ["STEP intercommunale", "Station de pompage", "Traitement tertiaire"],
-        "patrimoine_industriel": ["Ancienne papeterie", "Moulin réhabilité"],
-        "amenagements_recents": ["Passe à poissons", "Berges naturalisées"],
-        "impact_environnemental": "Fragmentation écologique modérée avec mesures compensatoires",
+        "infrastructures_hydrauliques": [
+          {
+            "nom": "Nom officiel ouvrage (barrage/pont/écluse)",
+            "type": "Catégorie technique précise",
+            "description_technique": "Dimensions, matériaux, fonction hydraulique",
+            "date_construction": "Année précise construction",
+            "gestionnaire": "Organisme responsable maintenance",
+            "impact_ecologique": "Fragmentation/continuité écologique quantifiée",
+            "enjeux_gestion": "Problématiques actuelles (sédiments, poissons...)",
+            "mesures_compensatoires": "Passes à poissons, aménagements...",
+            "source_technique": "Gestionnaire/SANDRE/étude d'impact"
+          }
+        ],
+        "amenagements_recents": [
+          {
+            "nom": "Aménagement <10 ans modifiant écosystème",
+            "date_realisation": "Année réalisation (2015-2025)",
+            "objectif": "Finalité aménagement (protection, production...)",
+            "emprise": "Surface/linéaire concerné",
+            "impact_ecosystemique": "Modification habitats/espèces",
+            "suivi_environnemental": "Monitoring effets écologiques",
+            "retour_experience": "Bilan efficacité si disponible",
+            "source_technique": "Maître ouvrage/bureau études/DREAL"
+          }
+        ],
+        "vestiges_historiques": [
+          {
+            "nom": "Vestige structurant paysage (moulin, forge...)",
+            "periode_historique": "Époque construction/activité",
+            "fonction_originale": "Usage historique détaillé",
+            "etat_conservation": "État actuel/restaurations",
+            "integration_paysage": "Rôle dans organisation territoriale",
+            "valeur_patrimoniale": "Classement/protection éventuelle",
+            "source_historique": "Archives/service patrimoine/inventaire"
+          }
+        ],
         "sources": [
           {
-            "titre": "Base nationale des ouvrages sur l'eau",
-            "url": "https://www.sandre.eaufrance.fr/atlas",
-            "type": "base_donnees",
-            "date_acces": "${currentDate}",
-            "fiabilite": 95
+            "url": "https://www.sandre.eaufrance.fr/atlas/srv/fre/catalog.search",
+            "type": "institutionnel", 
+            "auteur": "SANDRE - Service d'Administration Nationale Données Référentielles",
+            "titre": "Atlas des ouvrages sur l'eau",
+            "date_publication": "2024-XX-XX",
+            "date_consultation": "${currentDate}",
+            "fiabilite": 5,
+            "domaine_expertise": "Ouvrages hydrauliques"
           }
         ]
       }
     },
-    "agroecologie": {
-      "description": "Pratiques agricoles et écosystémiques du territoire",
+    "projection_2035_2045": {
+      "description": "Prospective territoriale : 3 drivers climatiques + 3 leviers agroécologiques + 3 nouvelles activités",
       "donnees": {
-        "pratiques_agricoles": ["Agriculture biologique", "Agroforesterie"],
-        "cultures": ["Céréales", "Légumineuses", "Prairies permanentes"],
-        "elevage": ["Bovin extensif", "Ovin transhumant"],
-        "biodiversite_cultivee": ["Variétés locales", "Semences paysannes"],
+        "drivers_climatiques": [
+          {
+            "driver": "Hausse températures moyennes",
+            "evolution_quantifiee": "+X.X°C selon scénario RCP4.5/RCP8.5",
+            "impacts_hydrologiques": "Conséquences débit/évaporation/qualité",
+            "vulnerabilites": "Écosystèmes/espèces les plus exposés",
+            "source_climatique": "Météo-France/DRIAS/GIEC local",
+            "incertitudes": "Marges erreur/variabilité scénarios"
+          },
+          {
+            "driver": "Évolution régime précipitations", 
+            "evolution_quantifiee": "±X% précipitations annuelles",
+            "impacts_hydrologiques": "Modification crues/étiages/recharge",
+            "saisonnalite": "Redistribution temporelle pluies",
+            "source_climatique": "Projections régionales climatiques",
+            "incertitudes": "Fourchettes projections"
+          },
+          {
+            "driver": "Fréquence événements extrêmes",
+            "evolution_quantifiee": "Probabilité crues/sécheresses",
+            "impacts_hydrologiques": "Stress écosystèmes aquatiques",
+            "adaptation_requise": "Mesures gestion risques",
+            "source_climatique": "Études prospectives bassins",
+            "incertitudes": "Limites modélisation extrêmes"
+          }
+        ],
+        "leviers_agroecologiques": [
+          {
+            "levier": "Agroforesterie parcours/cultures",
+            "potentiel_deploiement": "X hectares mobilisables, Y exploitations candidates",
+            "impact_environnemental": "Réduction érosion/nitrates quantifiée",
+            "contraintes_mise_en_oeuvre": "Investissement, formation, foncier",
+            "exemples_regionaux": "Références expérimentations réussies",
+            "horizon_deployement": "2025-2030/2030-2035",
+            "source_technique": "INRAE/Chambre Agriculture/CIVAM"
+          },
+          {
+            "levier": "Couverture végétale permanente",
+            "potentiel_deploiement": "Surface cultures concernées",
+            "impact_environnemental": "Réduction X% lessivage azote",
+            "contraintes_mise_en_oeuvre": "Techniques, coûts, débouchés",
+            "exemples_regionaux": "GIEE/groupes agriculteurs pionniers",
+            "horizon_deployement": "Calendrier déploiement réaliste",
+            "source_technique": "Références techniques agricoles"
+          },
+          {
+            "levier": "Restauration prairies humides",
+            "potentiel_deploiement": "Y hectares restaurables, Z km linéaires",
+            "impact_environnemental": "Biodiversité +Z espèces, épuration",
+            "contraintes_mise_en_oeuvre": "Foncier, hydraulique, gestion",
+            "exemples_regionaux": "CEN/LIFE+ projets similaires",
+            "horizon_deployement": "Planning restauration écologique",
+            "source_technique": "Conservatoires/Agence Eau"
+          }
+        ],
+        "nouvelles_activites": [
+          {
+            "activite": "POTENTIEL FORT - Écotourisme fluvial",
+            "potentiel_marche": "X emplois créés, Y k€ CA potentiel",
+            "conditions_emergence": "Infrastructure, formation, promotion",
+            "horizon_deployement": "2025-2030 (déployable <5 ans)",
+            "exemples_inspiration": "Dordogne amont, Lot, autres rivières",
+            "contraintes": "Réglementation, saisonnalité, investissement",
+            "source_economique": "Étude marché tourisme/CRT/CCI"
+          },
+          {
+            "activité": "POTENTIEL MOYEN - Aquaculture extensive",
+            "potentiel_marche": "Production piscicole circuits courts",
+            "conditions_emergence": "Qualité eau, réglementation, débouchés",
+            "horizon_deployement": "2030-2035 (expérimentation régionale)",
+            "exemples_inspiration": "Piscicultures durables françaises",
+            "contraintes": "Autorisations, techniques, marchés",
+            "source_economique": "FranceAgriMer/CIPA/études sectorielles"
+          },
+          {
+            "activite": "POTENTIEL DISRUPTIF - Bioremédiation innovante",
+            "potentiel_marche": "Services dépollution/biotechnologies",
+            "conditions_emergence": "R&D, brevets, partenariats industriels", 
+            "horizon_deployement": "2035-2045 (innovation rupture)",
+            "exemples_inspiration": "Projets recherche phytoremédiation",
+            "contraintes": "Maturité technologique, réglementation",
+            "source_economique": "Prospective sectorielle/ADEME/ANR"
+          }
+        ],
         "sources": [
           {
-            "titre": "Registre Parcellaire Graphique",
-            "url": "https://www.telepac.agriculture.gouv.fr",
-            "type": "base_donnees",
-            "date_acces": "${new Date().toISOString().split('T')[0]}",
-            "fiabilite": 85
+            "url": "http://www.drias-climat.fr/accompagnement/sections/506",
+            "type": "institutionnel",
+            "auteur": "Météo-France - DRIAS Climat",
+            "titre": "Projections climatiques régionalisées",
+            "date_publication": "2024-XX-XX", 
+            "date_consultation": "${currentDate}",
+            "fiabilite": 5,
+            "domaine_expertise": "Climatologie prospective"
+          }
+        ]
+      }
+    },
+    "ia_fonctionnalites": {
+      "description": "EXACTEMENT 5 fonctionnalités IA Rivière Dordogne alignées sur intentions Opus géopoétique",
+      "donnees": {
+        "fonctionnalites_collectives": [
+          {
+            "nom": "Plateforme décision participative territoriale",
+            "objectif_opus": "Gouvernance collective transformation écologique",
+            "utilisateurs_cibles": "Élus, citoyens, agriculteurs, associations",
+            "donnees_entree": "Indicateurs écologiques, avis citoyens, projets",
+            "output_attendu": "Aide décision consensus/arbitrage participatif",
+            "impact_mesurable": "Nb décisions co-construites, satisfaction usagers",
+            "faisabilite_technique": "TRL 6-7, adaptation outils existants",
+            "source_inspiration": "Decidim, Cap Collectif, démocratie participative"
+          }
+        ],
+        "outils_decision": [
+          {
+            "nom": "Système alerte qualité écologique prédictive",
+            "objectif_opus": "Anticipation urgence écologique transformation",
+            "utilisateurs_cibles": "Gestionnaires, agriculteurs, collectivités",
+            "donnees_entree": "Capteurs eau, météo, activités anthropiques",
+            "output_attendu": "Alertes précoces/scénarios dégradation",
+            "impact_mesurable": "Réduction incidents, temps réaction",
+            "faisabilite_technique": "TRL 7-8, ML sur données environnementales",
+            "source_inspiration": "Vigicrue, systèmes alerte environnementale"
+          }
+        ],
+        "interfaces_poetiques": [
+          {
+            "nom": "Médiateur géopoétique science-territoire",
+            "objectif_opus": "Redonner poésie portée artistique/sociale/politique",
+            "utilisateurs_cibles": "Grand public, scolaires, artistes, poètes",
+            "donnees_entree": "Données scientifiques, témoignages, créations",
+            "output_attendu": "Traductions poétiques données techniques",
+            "impact_mesurable": "Appropriation citoyenne, créations artistiques",
+            "faisabilité_technique": "TRL 4-5, IA générative + corpus local",
+            "source_inspiration": "GPT littéraire, projets art-science"
+          }
+        ],
+        "services_predictifs": [
+          {
+            "nom": "Optimiseur pratiques agroécologiques contextualisé",
+            "objectif_opus": "Moteur transformation agroécologique sociale",
+            "utilisateurs_cibles": "Agriculteurs, conseillers, techniciens",
+            "donnees_entree": "Sols, climat, parcelles, objectifs exploitation",
+            "output_attendu": "Recommandations techniques personnalisées",
+            "impact_mesurable": "Adoption pratiques, résultats environnementaux",
+            "faisabilite_technique": "TRL 6-7, modèles agronomiques + IA",
+            "source_inspiration": "Mes Parcelles, Datagri, OAD existants"
+          }
+        ],
+        "plateformes_partage": [
+          {
+            "nom": "Réseau technodiversité collaborative territoriale",
+            "objectif_opus": "Urgence technodiversité vivre-ensemble",
+            "utilisateurs_cibles": "Innovateurs, artisans, entrepreneurs, FabLabs",
+            "donnees_entree": "Innovations locales, besoins, ressources",
+            "output_attendu": "Mise en relation, diffusion solutions",
+            "impact_mesurable": "Innovations déployées, collaborations créées",
+            "faisabilite_technique": "TRL 8-9, plateforme collaborative existante",
+            "source_inspiration": "Wikifab, Makery, réseaux innovation ouverte"
+          }
+        ],
+        "sources": [
+          {
+            "url": "https://www.decidim.org ou https://www.cap-collectif.com",
+            "type": "technique",
+            "auteur": "Plateforme démocratie participative",
+            "titre": "Solutions participation citoyenne numérique",
+            "date_publication": "2024-XX-XX",
+            "date_consultation": "${currentDate}",
+            "fiabilite": 4,
+            "domaine_expertise": "Technologies participation citoyenne"
           }
         ]
       }
     },
     "technodiversite": {
-      "description": "Technologies émergentes et innovations territoriales",
+      "description": "9 solutions structurées par maturité TRL : 3 professionnelles (7-9) + 3 innovantes (4-6) + 3 disruptives (1-3)",
       "donnees": {
-        "technologies_vertes": ["Énergies renouvelables", "Efficacité énergétique"],
-        "innovations_locales": ["Solutions techniques locales", "Brevets"],
-        "numerique": ["IoT environnemental", "Capteurs intelligents"],
-        "recherche_developpement": ["Projets R&D", "Partenariats académiques"],
+        "niveau_professionnel_trl_7_9": [
+          {
+            "nom": "Capteurs qualité eau low-cost déployables",
+            "description_technique": "Sondes multi-paramètres autonomes solaires",
+            "maturite_trl": "8 - Système qualifié, déploiements pilotes",
+            "adaptabilite_locale": "Installation simple, maintenance locale",
+            "cout_implementation": "500-2000€/sonde, ROI 2-3 ans",
+            "maintenance_requise": "Étalonnage semestriel, formation 1 jour",
+            "impact_attendu": "Monitoring continu, alertes automatiques",
+            "exemples_deployement": "Réseaux citoyens, collectivités pilotes",
+            "source_technique": "Fabricants spécialisés, retours d'expérience"
+          },
+          {
+            "nom": "Méthodologie gestion participative ressource eau",
+            "description_technique": "Protocole animation concertation locale",
+            "maturité_trl": "9 - Système opérationnel éprouvé",
+            "adaptabilité_locale": "Formation animateurs, adaptation contexte",
+            "cout_implementation": "Formation 5-10k€, animation 2k€/an",
+            "maintenance_requise": "Animateur formé, suivi annuel",
+            "impact_attendu": "Consensus local, appropriation citoyenne",
+            "exemples_deployement": "Contrats rivière, SAGE, Parcs Naturels",
+            "source_technique": "Agence Eau, CGET, guides méthodologiques"
+          },
+          {
+            "nom": "Plateforme SIG participatif open-source",
+            "description_technique": "Cartographie collaborative web observations",
+            "maturite_trl": "9 - Solutions matures disponibles",
+            "adaptabilite_locale": "Hébergement local, formation utilisateurs",
+            "cout_implementation": "Développement 10-20k€, hébergement 1k€/an",
+            "maintenance_requise": "Administrateur technique, modération",
+            "impact_attendu": "Base données participative, aide décision",
+            "exemples_deployement": "OpenStreetMap, Ushahidi, collectivités",
+            "source_technique": "Communautés open-source, intégrateurs"
+          }
+        ],
+        "niveau_innovant_trl_4_6": [
+          {
+            "nom": "Biomonitoring ADN environnemental automatisé",
+            "description_technique": "Prélèvement/analyse ADNe biodiversité",
+            "maturite_trl": "6 - Technologie démontrée environnement pertinent",
+            "adaptabilite_locale": "Formation technique, partenariat labo",
+            "cout_implementation": "Équipement 50-100k€, analyses 100€/échantillon",
+            "maintenance_requise": "Technicien qualifié, étalonnage régulier",
+            "impact_attendu": "Inventaire biodiversité haute résolution",
+            "exemples_deployement": "Projets recherche INRAE, OFB, universités",
+            "source_technique": "Publications scientifiques, brevets"
+          },
+          {
+            "nom": "Intelligence collective décision territoriale",
+            "description_technique": "IA facilitation consensus multi-acteurs",
+            "maturite_trl": "5 - Technologie validée laboratoire",
+            "adaptabilite_locale": "Formation facilitateurs, données locales",
+            "cout_implementation": "Développement 30-50k€, formation 5k€",
+            "maintenance_requise": "Data scientist, modération éthique",
+            "impact_attendu": "Décisions collectives optimisées, moins conflits",
+            "exemples_deployement": "Recherche démocratie participative, pilots",
+            "source_technique": "Laboratoires IA, start-ups gov-tech"
+          },
+          {
+            "nom": "Système prédiction couplée hydro-écologique",
+            "description_technique": "Modélisation intégrée eau-biodiversité",
+            "maturite_trl": "6 - Démonstrateurs bassins pilotes",
+            "adaptabilite_locale": "Calibration données locales, expertise",
+            "cout_implementation": "Modélisation 20-40k€, calcul cloud 2k€/an",
+            "maintenance_requise": "Hydrologue-écologue, mise à jour modèles",
+            "impact_attendu": "Scénarios prospectifs, aide gestion adaptive",
+            "exemples_deployement": "Projets ANR, thèses, agences eau",
+            "source_technique": "Équipes recherche, bureaux études spécialisés"
+          }
+        ],
+        "niveau_disruptif_trl_1_3": [
+          {
+            "nom": "Biomimétisme auto-épuration systèmes artificiels",
+            "description_technique": "Réacteurs biologiques inspirés écosystèmes",
+            "maturite_trl": "3 - Preuve concept expérimentale",
+            "adaptabilite_locale": "Recherche locale, partenariats universités",
+            "cout_implementation": "Recherche 100-500k€, développement incertain",
+            "maintenance_requise": "Chercheurs, ingénieurs spécialisés",
+            "impact_attendu": "Révolution traitement eau, efficacité naturelle",
+            "exemples_deployement": "Laboratoires biomimétisme, projets exploratoires",
+            "source_technique": "Publications recherche fondamentale"
+          },
+          {
+            "nom": "IA collective hybride humain-algorithme-nature",
+            "description_technique": "Intelligence augmentée intégrant signaux naturels",
+            "maturite_trl": "2 - Technologie formulée conceptuellement",
+            "adaptabilite_locale": "Écosystème recherche, living lab",
+            "cout_implementation": "R&D 500k-1M€, horizon >10 ans",
+            "maintenance_requise": "Équipe pluridisciplinaire recherche",
+            "impact_attendu": "Nouveau paradigme gouvernance écologique",
+            "exemples_deployement": "Projets prospectifs, fiction spéculative",
+            "source_technique": "Recherche théorique, prospective technologique"
+          },
+          {
+            "nom": "Réseau sentient territoire auto-régulé",
+            "description_technique": "IoT biotechnologique communication écosystème",
+            "maturite_trl": "1 - Principes de base observés/formulés",
+            "adaptabilite_locale": "Écosystème innovation, recherche fondamentale",
+            "cout_implementation": "Recherche fondamentale >1M€, horizon 2035-2045",
+            "maintenance_requise": "Chercheurs multidisciplinaires, éthique",
+            "impact_attendu": "Territoire auto-conscient, régulation autonome",
+            "exemples_deployement": "Recherche prospective, science-fiction",
+            "source_technique": "Littérature spéculative, recherche émergente"
+          }
+        ],
         "sources": [
           {
-            "titre": "Base brevets INPI",
-            "url": "https://bases-brevets.inpi.fr",
-            "type": "base_donnees",
-            "date_acces": "${new Date().toISOString().split('T')[0]}",
-            "fiabilite": 80
+            "url": "https://www.ademe.fr/expertises/economie-circulaire/innovation",
+            "type": "institutionnel",
+            "auteur": "ADEME - Agence Transition Écologique",
+            "titre": "Innovations technologiques transition écologique",
+            "date_publication": "2024-XX-XX",
+            "date_consultation": "${currentDate}",
+            "fiabilite": 5,
+            "domaine_expertise": "Technologies vertes et innovation"
           }
         ]
-      }
+       }
     }
   },
   "fables": [
     {
-      "titre": "L'eau qui murmure les secrets du territoire",
-      "contenu_principal": "Narration poétique intégrant les données scientifiques et les savoirs locaux...",
+      "titre": "L'eau qui murmure les algorithmes du vivant",
+      "contenu_principal": "Narration géopoétique intégrant données scientifiques quantifiées, savoirs locaux et visions prospectives. Le récit tisse ensemble les mesures hydrologiques, la mémoire des espèces caractéristiques et les rêves technodiverses du territoire...",
       "ordre": 1,
-      "dimension": "contexte_hydrologique"
+      "dimensions_associees": ["contexte_hydrologique", "especes_caracteristiques", "ia_fonctionnalites"],
+      "statut": "draft"
     },
     {
-      "titre": "La danse des espèces au fil de l'eau",
-      "contenu_principal": "Récit des interactions écosystémiques et de la biodiversité...",
-      "ordre": 2,
-      "dimension": "especes_caracteristiques"
+      "titre": "La symphonie des innovations collectives",
+      "contenu_principal": "Récit des métamorphoses territoriales 2035-2045, où les leviers agroécologiques dansent avec les fonctionnalités IA, orchestrés par les savoirs vernaculaires et les gestes technodiverses. Une fable de transformation où chaque acteur trouve sa partition dans l'harmonie du changement...",
+      "ordre": 2, 
+      "dimensions_associees": ["projection_2035_2045", "technodiversite", "vocabulaire_local"],
+      "statut": "draft"
     }
   ],
   "sources": [
     {
-      "titre": "Portail technique de l'Office Français de la Biodiversité",
-      "url": "https://professionnels.ofb.fr",
-      "type": "web",
-      "date_acces": "${new Date().toISOString().split('T')[0]}",
-      "fiabilite": 95
+      "url": "https://www.hydro.eaufrance.fr",
+      "type": "institutionnel",
+      "auteur": "Ministère Transition Écologique - Service Central Hydrométéorologique",
+      "titre": "Banque Hydro - Données temps réel et historiques",
+      "date_publication": "${currentDate}",
+      "date_consultation": "${currentDate}",
+      "fiabilite": 5,
+      "pertinence_geographique": "Nationale",
+      "domaine_expertise": "Hydrologie quantitative"
     },
     {
-      "titre": "Données ouvertes Eaufrance",
-      "url": "https://www.eaufrance.fr",
-      "type": "base_donnees", 
-      "date_acces": "${new Date().toISOString().split('T')[0]}",
-      "fiabilite": 98
+      "url": "https://inpn.mnhn.fr",
+      "type": "scientifique", 
+      "auteur": "MNHN - Muséum National Histoire Naturelle",
+      "titre": "Inventaire National Patrimoine Naturel",
+      "date_publication": "${currentDate}",
+      "date_consultation": "${currentDate}",
+      "fiabilite": 5,
+      "pertinence_geographique": "Nationale",
+      "domaine_expertise": "Biodiversité et taxonomie"
+    },
+    {
+      "url": "https://www.sandre.eaufrance.fr",
+      "type": "institutionnel",
+      "auteur": "SANDRE - Service Administration Données Référentielles Eau",
+      "titre": "Référentiel national données sur l'eau",
+      "date_publication": "${currentDate}",
+      "date_consultation": "${currentDate}",
+      "fiabilite": 5,
+      "pertinence_geographique": "Nationale", 
+      "domaine_expertise": "Gestion eau et ouvrages hydrauliques"
     }
   ]
-}
-}`;
-  }, [currentMarcheId, explorationId]);
+   }, []);
 
   // Sanitize JSON by removing invalid escape sequences
   const sanitizeJson = useCallback((jsonString: string): string => {
