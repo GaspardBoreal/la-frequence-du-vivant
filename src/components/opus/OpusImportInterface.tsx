@@ -814,8 +814,9 @@ export const OpusImportInterface: React.FC<OpusImportInterfaceProps> = ({
       "pertinence_geographique": "Nationale", 
       "domaine_expertise": "Gestion eau et ouvrages hydrauliques"
     }
-  ]
-   }, []);
+   ]
+}`;
+  }, []);
 
   // Sanitize JSON by removing invalid escape sequences
   const sanitizeJson = useCallback((jsonString: string): string => {
