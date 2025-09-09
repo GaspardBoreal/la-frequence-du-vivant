@@ -1,507 +1,200 @@
-# PROMPT DEEPSEARCH OPUS — EXTRACTION EXHAUSTIVE & ULTRA-PROFESSIONNELLE
+# PROTOCOLE DE RECHERCHE APPROFONDIE - DEEPSEARCH OPTIMISÉ
 
-**MISSION CRITIQUE** : Produire un JSON exhaustif et ultra-précis avec extraction systématique et vérification méthodique de CHAQUE élément mentionné dans le document DEEPSEARCH.
+## CONTEXTE OPÉRATIONNEL
 
-## 🎯 PROTOCOLE D'EXTRACTION EXHAUSTIVE — OBLIGATOIRE
-
-### ⚠️ RÈGLE ABSOLUE : TRIPLE LECTURE SYSTÉMATIQUE
-1. **LECTURE 1 - BALAYAGE** : Identifier TOUS les éléments par dimension (faire une liste mentale)
-2. **LECTURE 2 - EXTRACTION** : Extraire chaque élément avec sources précises  
-3. **LECTURE 3 - VÉRIFICATION** : Contrôler exhaustivité et compter les éléments extraits
-
-### 🔍 ESPÈCES CARACTÉRISTIQUES — EXTRACTION ULTRA-RIGOUREUSE
-**PROTOCOLE OBLIGATOIRE :**
-- **Scanner méthodiquement** : noms scientifiques, noms communs, mentions indirectes, références croisées
-- **Catégories à vérifier** : poissons, invertébrés, végétation aquatique, oiseaux, mammifères, amphibiens, autres
-- **Vérifier contextes** : présence/absence, abondance, statut de conservation, habitats, migrations
-- **Sources obligatoires** : Pour CHAQUE espèce → source(s) précise(s) avec référence exacte
-- **CONTRÔLE QUALITÉ** : Si moins de 5 espèces extraites → RELIRE impérativement le document
-
-### 🏗️ EMPREINTES HUMAINES — INVENTAIRE SYSTÉMATIQUE  
-**BALAYER EXHAUSTIVEMENT :**
-- **Infrastructures hydrauliques** : barrages, seuils, écluses, digues, canaux, retenues
-- **Réseaux techniques** : assainissement, AEP, pluvial, irrigation, drainage
-- **Équipements industriels** : stations d'épuration, pompages, usines de traitement
-- **Activités anthropiques** : extractions, industries, rejets, aménagements
-- **Urbanisation** : ports, quais, ponts, routes, zones artificialisées
-- **Quantifier si possible** : surfaces, débits, populations concernées
-
-### 🗣️ VOCABULAIRE LOCAL — FOUILLE LINGUISTIQUE COMPLÈTE
-**EXTRAIRE SYSTÉMATIQUEMENT :**
-- **Toponymie** : noms locaux de lieux-dits, cours d'eau, zones remarquables  
-- **Dialecte territorial** : expressions, termes techniques locaux, patois
-- **Savoirs empiriques** : dictons météo, observations traditionnelles
-- **Unités traditionnelles** : mesures anciennes, références temporelles locales
-- **Pratiques nommées** : techniques artisanales, usages patrimoniaux
-
-### 🌱 LEVIERS AGROÉCOLOGIQUES — ANALYSE TECHNIQUE FINE
-**IDENTIFIER PRÉCISÉMENT :**
-- **Systèmes de culture** : rotations, associations, couverts végétaux
-- **Pratiques innovantes** : agroforesterie, permaculture, agriculture de conservation
-- **Races et variétés** : espèces locales, semences paysannes, matériel génétique
-- **Infrastructures agroécologiques** : haies, mares, bandes enherbées, corridors
-- **Certifications** : bio, labels, démarches qualité territoriales
-
-### 🚀 NOUVELLES ACTIVITÉS — INNOVATION & PROSPECTIVE
-**SCANNER POUR :**
-- **Économie verte émergente** : écotourisme, circuits courts, services écosystémiques
-- **Projets pilotes** : expérimentations, démonstrateurs, projets de recherche
-- **Économie circulaire** : recyclage, valorisation, symbioses industrielles
-- **Formations/métiers** : nouvelles compétences, emplois verts, reconversions
-- **Initiatives locales** : coopératives, associations, entreprises innovantes
-
-### 🔧 TECHNODIVERSITÉ — VEILLE TECHNOLOGIQUE COMPLÈTE
-**RÉPERTORIER :**
-- **EnR et efficacité** : solaire, éolien, hydraulique, biomasse, géothermie
-- **Innovations territoriales** : brevets locaux, solutions adaptées, R&D
-- **Technologies numériques** : IoT environnemental, capteurs, modélisation, IA
-- **Équipements spécialisés** : matériel de mesure, outils de gestion innovants
-- **Partenariats R&D** : universités, centres techniques, collaborations
-
-## ✅ CONTRÔLES QUALITÉ OBLIGATOIRES
-
-### 🚨 SEUILS D'ALERTE (RELIRE SI NON ATTEINTS)
-- **Espèces** : < 5 espèces → Document sous-exploité, RELIRE
-- **Infrastructures** : < 3 éléments → Aménagements oubliés, RELIRE  
-- **Vocabulaire** : < 3 termes → Patrimoine linguistique manqué, RELIRE
-- **Activités nouvelles** : 0 élément → Innovation sous-détectée, RELIRE
-- **Technologies** : < 2 éléments → Veille technologique incomplète, RELIRE
-
-### 🔄 VALIDATION CROISÉE
-1. **Cohérence géographique** : Couvrir tout le territoire d'étude
-2. **Exhaustivité temporelle** : Intégrer toute la période 2022-2025  
-3. **Sources complètes** : Chaque élément → minimum 1 source valide
-4. **Déduplication** : Éviter doublons entre dimensions
-5. **Traçabilité** : Chaque donnée → référence précise dans le document
+**INTENTIONS DE LA FRÉQUENCE DU VIVANT :**
+- Parcourir un chemin de transformation d'un élément naturel (rivière Dordogne)
+- Prendre le temps de découvrir passé/présent pour imaginer un avenir porteur de sens
+- Redonner à la poésie sa portée artistique, sociale et politique
+- Participer au mouvement géopoétique par l'expérience physique
+- Confronter les intuitions sur "La Comédie des Mondes Hybrides" 
+- Explorer l'urgence agroécologique comme moteur de transformation sociale
+- Montrer l'urgence de la technodiversité pour le vivre-ensemble territorial
+- Définir progressivement le contour d'une IA Rivière Dordogne
 
 ---
 
-INSTRUCTIONS CRITIQUES (à exécuter AVANT d'émettre la sortie):
-1) Normalisation des caractères
-- Remplacer toute séquence échappée issue de Markdown par le caractère brut:
-  \_ → _  |  \[ → [  |  \] → ]  |  \( → (  |  \) → )  |  \~ → ~
-- Ne pas échapper les ponctuations ou symboles Unicode (– — « » ≈ ≥ ≤ ° …). JSON supporte l'Unicode.
+## PÉRIMÈTRE DE RECHERCHE
 
-2) URLs – Conversion obligatoire
-- Si une URL est fournie en format Markdown [texte](url), garder uniquement l'URL simple: "https://…".
-- Si aucune URL n'est disponible, mettre null.
-- Interdit: crochets, parenthèses ou backslashes dans les URLs.
+**CONTRAINTES SPATIALES :**
+- Rayon maximum : 5 km autour du point GPS d'exploration
+- Priorité données locales sur données régionales
+- Distinction claire entre impacts directs et indirects
 
-3) Clés et structure – Canonique et sans accents
-- Utiliser strictement ces clés snake_case (sans backslashes):
-  dimensions.contexte_hydrologique, dimensions.especes_caracteristiques, dimensions.vocabulaire_local,
-  dimensions.empreintes_humaines, dimensions.leviers_agroecologiques, dimensions.nouvelles_activites,
-  dimensions.technodiversite, dimensions.projection_2035_2045 (optionnel),
-  fables, sources
-- Les sous‑clés attendues sont définies ci‑dessous dans le schéma. N'ajoutez aucune autre clé.
-- MAPPING AUTOMATIQUE: Si vous avez du contenu "infrastructures_techniques", utilisez la clé "empreintes_humaines"
-- MAPPING AUTOMATIQUE: Si vous avez du contenu "agroecologie", répartissez-le entre "leviers_agroecologiques" (pratiques, cultures, élevage, biodiversité) et "nouvelles_activites" (activités à développer)
+**CONTRAINTES TEMPORELLES :**
+- Période de référence : 2022-2025 (données récentes prioritaires)
+- Projections : horizon 2035-2045
+- Sources datées obligatoirement
 
-4) Sources et références
-- Chaque source_ids doit référencer un id présent dans sources (ex: "S00", "S01", …, pattern ^S\d+$).
-- Si une source est référencée mais absente, l'AJOUTER dans sources avec valeurs minimales sûres:
-  {"id":"Sxx","titre":"Source à compléter","url":null,"type":"web","date_acces":"YYYY-MM-DD","fiabilite":null}
-- Dédupliquer toutes les occurrences dans source_ids et dans sources par id.
-- Vérifier que date_acces est au format ISO AAAA-MM-JJ, sinon corriger.
+---
 
-5) Valeurs manquantes et types
-- Utiliser null pour une valeur absente (ex: debit_moyen), [] pour une liste vide; pas de chaînes vides "".
-- Conserver les champs textuels avec accents et unités dans des chaînes (ex: "2–6 m").
-- Interdit: valeurs NaN/Infinity, commentaires, trailing commas.
+## DIMENSIONS À COLLECTER (QUANTIFICATIONS PRÉCISES)
 
-6) Métadonnées
-- NE PAS inclure de bloc metadata. Il sera géré côté serveur. Pas d'ai_model, validation_level, scores, etc.
+### 1. CONTEXTE HYDROLOGIQUE
+**Données quantifiées requises :**
+- Niveau d'eau : mesures précises (cm/m) sur 3 dernières années
+- Débit : données m³/s si disponibles, sinon estimation qualitative argumentée
+- Vitesse courant : mesures ou estimation selon protocole standardisé
+- Qualité : indices officiels (IQE, IBD) + 3 paramètres chimiques récents
 
-7) Exhaustivité minimale et auto‑réparation
-- Si une section requise manque, la CRÉER avec une structure vide/valide.
-- Si un élément individuel est invalide et non corrigeable, le SUPPRIMER plutôt que produire un JSON invalide.
+**Sources prioritaires :** Banque Hydro, ADES, Agence de l'Eau, DREAL
 
-8) Sortie
-- Sortie UNIQUE: le JSON final seulement, sans texte d'intro, sans balises de code, sans commentaires.
-- Le JSON doit passer JSON.parse strictement.
+### 2. ESPÈCES CARACTÉRISTIQUES (exactement 5 espèces)
+**Critères de sélection :**
+- 2 espèces végétales dominantes/caractéristiques
+- 2 espèces animales (dont 1 aquatique si possible)
+- 1 espèce indicatrice de qualité écologique
 
-SCHÉMA CONTRACTUEL (JSON Schema simplifié – à respecter et valider en interne, ne pas inclure dans la sortie):
-{
-  "$schema": "http://json-schema.org/draft-07/schema#",
-  "type": "object",
-  "additionalProperties": false,
-  "required": ["dimensions", "fables", "sources"],
-  "properties": {
-    "dimensions": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": [
-        "contexte_hydrologique",
-        "especes_caracteristiques",
-        "vocabulaire_local",
-        "empreintes_humaines",
-        "leviers_agroecologiques",
-        "nouvelles_activites",
-        "technodiversite"
-      ],
-      "properties": {
-        "contexte_hydrologique": {
-          "type": "object",
-          "additionalProperties": false,
-          "required": ["description", "donnees"],
-          "properties": {
-            "description": {"type": "string"},
-            "donnees": {
-              "type": "object",
-              "additionalProperties": false,
-              "required": [
-                "bassin_versant","debit_moyen","regime_hydrologique","qualite_eau",
-                "indicateurs_quantitatifs","observations_2022_2025",
-                "drivers_prospectifs_2035_2045","impacts_anticipes","sources"
-              ],
-              "properties": {
-                "bassin_versant": {
-                  "type": "object",
-                  "additionalProperties": false,
-                  "required": ["intitule", "source_ids"],
-                  "properties": {
-                    "intitule": {"type": "string"},
-                    "source_ids": {"type": "array", "items": {"type": "string", "pattern": "^S\\d+$"}}
-                  }
-                },
-                "debit_moyen": {"type": ["string", "null"]},
-                "regime_hydrologique": {
-                  "type": "object",
-                  "additionalProperties": false,
-                  "required": ["intitule", "source_ids"],
-                  "properties": {
-                    "intitule": {"type": "string"},
-                    "source_ids": {"type": "array", "items": {"type": "string", "pattern": "^S\\d+$"}}
-                  }
-                },
-                "qualite_eau": {
-                  "type": "object",
-                  "additionalProperties": false,
-                  "required": ["resume", "source_ids"],
-                  "properties": {
-                    "resume": {"type": "string"},
-                    "source_ids": {"type": "array", "items": {"type": "string", "pattern": "^S\\d+$"}}
-                  }
-                },
-                "indicateurs_quantitatifs": {
-                  "type": "array",
-                  "items": {
-                    "type": "object",
-                    "additionalProperties": false,
-                    "required": ["nom", "valeur", "source_ids"],
-                    "properties": {
-                      "nom": {"type": "string"},
-                      "valeur": {"type": "string"},
-                      "source_ids": {"type": "array", "items": {"type": "string", "pattern": "^S\\d+$"}}
-                    }
-                  }
-                },
-                "observations_2022_2025": {
-                  "type": "array",
-                  "items": {
-                    "type": "object",
-                    "additionalProperties": false,
-                    "required": ["fait", "source_ids"],
-                    "properties": {
-                      "fait": {"type": "string"},
-                      "source_ids": {"type": "array", "items": {"type": "string", "pattern": "^S\\d+$"}}
-                    }
-                  }
-                },
-                "drivers_prospectifs_2035_2045": {
-                  "type": "array",
-                  "items": {
-                    "type": "object",
-                    "additionalProperties": false,
-                    "required": ["nom", "description", "source_ids"],
-                    "properties": {
-                      "nom": {"type": "string"},
-                      "description": {"type": "string"},
-                      "source_ids": {"type": "array", "items": {"type": "string", "pattern": "^S\\d+$"}}
-                    }
-                  }
-                },
-                "impacts_anticipes": {
-                  "type": "array",
-                  "items": {
-                    "type": "object",
-                    "additionalProperties": false,
-                    "required": ["nom", "description", "source_ids"],
-                    "properties": {
-                      "nom": {"type": "string"},
-                      "description": {"type": "string"},
-                      "source_ids": {"type": "array", "items": {"type": "string", "pattern": "^S\\d+$"}}
-                    }
-                  }
-                },
-                "sources": {
-                  "type": "array",
-                  "items": {
-                    "type": "object",
-                    "additionalProperties": false,
-                    "required": ["titre", "url", "type", "date_acces", "fiabilite", "id"],
-                    "properties": {
-                      "titre": {"type": "string"},
-                      "url": {"type": ["string", "null"], "pattern": "^https?://.*$"},
-                      "type": {"type": "string", "enum": ["web","document_interne","institutionnel","presse","association","entreprise","projet","evenement"]},
-                      "date_acces": {"type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}$"},
-                      "fiabilite": {"type": ["number","null"]},
-                      "id": {"type": "string", "pattern": "^S\\d+$"},
-                      "note": {"type": ["string","null"]}
-                    }
-                  }
-                }
-              }
-            }
-          }
-        },
-        "especes_caracteristiques": {
-          "type": "object",
-          "additionalProperties": false,
-          "required": ["description", "donnees"],
-          "properties": {
-            "description": {"type": "string"},
-            "donnees": {
-              "type": "object",
-              "additionalProperties": false,
-              "required": ["poissons","invertebres","vegetation_aquatique","oiseaux_aquatiques","sources"],
-              "properties": {
-                "poissons": {"type": "array", "items": {"$ref": "#/definitions/especeItem"}},
-                "invertebres": {"type": "array", "items": {"$ref": "#/definitions/especeItem"}},
-                "vegetation_aquatique": {"type": "array", "items": {"$ref": "#/definitions/especeItem"}},
-                "oiseaux_aquatiques": {"type": "array", "items": {"$ref": "#/definitions/especeItem"}},
-                "sources": {"type": "array", "items": {"$ref": "#/definitions/sourceObj"}}
-              }
-            }
-          }
-        },
-        "vocabulaire_local": {
-          "type": "object",
-          "additionalProperties": false,
-          "required": ["description", "donnees"],
-          "properties": {
-            "description": {"type": "string"},
-            "donnees": {
-              "type": "object",
-              "additionalProperties": false,
-              "required": ["termes", "termes_locaux", "sources"],
-              "properties": {
-                "termes": {
-                  "type": "array",
-                  "items": {
-                    "type": "object",
-                    "additionalProperties": false,
-                    "required": ["terme","definition","exemple","source_ids"],
-                    "properties": {
-                      "terme": {"type": "string"},
-                      "definition": {"type": "string"},
-                      "exemple": {"type": "string"},
-                      "source_ids": {"type": "array", "items": {"type": "string", "pattern": "^S\\d+$"}}
-                    }
-                  }
-                },
-                "termes_locaux": {
-                  "type": "object",
-                  "additionalProperties": false,
-                  "required": ["cours_eau","phenomenes","pratiques"],
-                  "properties": {
-                    "cours_eau": {"type": ["string","null"]},
-                    "phenomenes": {"type": "array", "items": {"type": "string"}},
-                    "pratiques": {"type": "array", "items": {"type": "string"}}
-                  }
-                },
-                "sources": {"type": "array", "items": {"$ref": "#/definitions/sourceObj"}}
-              }
-            }
-          }
-        },
-        "empreintes_humaines": {
-          "type": "object",
-          "additionalProperties": false,
-          "required": ["description","donnees"],
-          "properties": {
-            "description": {"type": "string"},
-            "donnees": {
-              "type": "object",
-              "additionalProperties": false,
-              "required": ["ouvrages_hydrauliques","reseaux","equipements","complexes_industriels","sources"],
-              "properties": {
-                "ouvrages_hydrauliques": {"type": "array", "items": {"$ref": "#/definitions/elementDesc"}},
-                "reseaux": {"type": "array", "items": {"$ref": "#/definitions/elementDesc"}},
-                "equipements": {"type": "array", "items": {"$ref": "#/definitions/elementDesc"}},
-                "complexes_industriels": {"type": "array", "items": {"$ref": "#/definitions/elementDesc"}},
-                "sources": {"type": "array", "items": {"$ref": "#/definitions/sourceObj"}}
-              }
-            }
-          }
-        },
-        "leviers_agroecologiques": {
-          "type": "object",
-          "additionalProperties": false,
-          "required": ["description","donnees"],
-          "properties": {
-            "description": {"type": "string"},
-            "donnees": {
-              "type": "object",
-              "additionalProperties": false,
-              "required": [
-                "pratiques_agricoles","cultures","elevage","biodiversite_cultivee",
-                "leviers_agroecologiques","sources"
-              ],
-              "properties": {
-                "pratiques_agricoles": {"type": "array", "items": {"$ref": "#/definitions/elementDesc"}},
-                "cultures": {
-                  "type": "array",
-                  "items": {
-                    "type": "object",
-                    "additionalProperties": false,
-                    "required": ["nom","source_ids"],
-                    "properties": {
-                      "nom": {"type": "string"},
-                      "source_ids": {"type": "array", "items": {"type": "string", "pattern": "^S\\d+$"}}
-                    }
-                  }
-                },
-                "elevage": {"type": "array", "items": {"$ref": "#/definitions/elementDesc"}},
-                "biodiversite_cultivee": {"type": "array", "items": {"$ref": "#/definitions/elementDesc"}},
-                "leviers_agroecologiques": {"type": "array", "items": {"$ref": "#/definitions/elementNameOnly"}},
-                "sources": {"type": "array", "items": {"$ref": "#/definitions/sourceObj"}}
-              }
-            }
-          }
-        },
-        "nouvelles_activites": {
-          "type": "object",
-          "additionalProperties": false,
-          "required": ["description","donnees"],
-          "properties": {
-            "description": {"type": "string"},
-            "donnees": {
-              "type": "object",
-              "additionalProperties": false,
-              "required": ["activites_a_developper","sources"],
-              "properties": {
-                "activites_a_developper": {"type": "array", "items": {"$ref": "#/definitions/elementNameOnly"}},
-                "sources": {"type": "array", "items": {"$ref": "#/definitions/sourceObj"}}
-              }
-            }
-          }
-        },
-        "technodiversite": {
-          "type": "object",
-          "additionalProperties": false,
-          "required": ["description","donnees"],
-          "properties": {
-            "description": {"type": "string"},
-            "donnees": {
-              "type": "object",
-              "additionalProperties": false,
-              "required": ["technologies_vertes","innovations_locales","numerique","recherche_developpement","sources"],
-              "properties": {
-                "technologies_vertes": {"type": "array", "items": {"$ref": "#/definitions/elementNameOnly"}},
-                "innovations_locales": {"type": "array", "items": {"$ref": "#/definitions/elementNameOnly"}},
-                "numerique": {"type": "array", "items": {"$ref": "#/definitions/elementNameOnly"}},
-                "recherche_developpement": {"type": "array", "items": {"$ref": "#/definitions/elementNameOnly"}},
-                "sources": {"type": "array", "items": {"$ref": "#/definitions/sourceObj"}}
-              }
-            }
-          }
-        }
-      }
-    },
-    "fables": {"type": "array", "items": {"type": "object"}},
-    "sources": {
-      "type": "array",
-      "items": {"$ref": "#/definitions/sourceObj"}
-    }
-  },
-  "definitions": {
-    "sourceObj": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": ["id","titre","url","type","date_acces","fiabilite"],
-      "properties": {
-        "id": {"type": "string", "pattern": "^S\\d+$"},
-        "titre": {"type": "string"},
-        "url": {"type": ["string","null"], "pattern": "^https?://.*$"},
-        "type": {"type": "string", "enum": ["web","document_interne","institutionnel","presse","association","entreprise","projet","evenement"]},
-        "date_acces": {"type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}$"},
-        "fiabilite": {"type": ["number","null"]},
-        "note": {"type": ["string","null"]}
-      }
-    },
-    "especeItem": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": ["nom_commun","nom_scientifique","statut","source_ids"],
-      "properties": {
-        "nom_commun": {"type": "string"},
-        "nom_scientifique": {"type": ["string","null"]},
-        "statut": {"type": ["string","null"]},
-        "source_ids": {"type": "array", "items": {"type": "string", "pattern": "^S\\d+$"}}
-      }
-    },
-    "elementDesc": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": ["nom","description","source_ids"],
-      "properties": {
-        "nom": {"type": "string"},
-        "description": {"type": "string"},
-        "source_ids": {"type": "array", "items": {"type": "string", "pattern": "^S\\d+$"}}
-      }
-    },
-    "elementNameOnly": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": ["nom","source_ids"],
-      "properties": {
-        "nom": {"type": "string"},
-        "source_ids": {"type": "array", "items": {"type": "string", "pattern": "^S\\d+$"}}
-      }
-    }
-  }
-}
+**Pour chaque espèce :**
+- Nom vernaculaire + nom scientifique obligatoires
+- Statut conservation (UICN/Liste Rouge) 
+- Abondance locale (rare/occasionnel/commun/dominant)
+- Rôle écologique spécifique au point d'exploration
 
-EXEMPLE DE GÉNÉRATION (structure seulement – À ADAPTER AU CONTENU, NE PAS INCLURE CETTE SECTION DANS LA SORTIE):
-{
-  "dimensions": {
-    "contexte_hydrologique": {
-      "description": "…",
-      "donnees": {
-        "bassin_versant": {"intitule": "…", "source_ids": ["S00","S02"]},
-        "debit_moyen": null,
-        "regime_hydrologique": {"intitule": "…", "source_ids": ["S00"]},
-        "qualite_eau": {"resume": "…", "source_ids": ["S00","S04"]},
-        "indicateurs_quantitatifs": [
-          {"nom": "…", "valeur": "…", "source_ids": ["S00"]}
-        ],
-        "observations_2022_2025": [
-          {"fait": "…", "source_ids": ["S00"]}
-        ],
-        "drivers_prospectifs_2035_2045": [
-          {"nom": "…", "description": "…", "source_ids": ["S00"]}
-        ],
-        "impacts_anticipes": [
-          {"nom": "…", "description": "…", "source_ids": ["S00"]}
-        ],
-        "sources": []
-      }
-    },
-    "especes_caracteristiques": {"description": "…", "donnees": {"poissons": [], "invertebres": [], "vegetation_aquatique": [], "oiseaux_aquatiques": [], "sources": []}},
-    "vocabulaire_local": {"description": "…", "donnees": {"termes": [], "termes_locaux": {"cours_eau": null, "phenomenes": [], "pratiques": []}, "sources": []}},
-    "empreintes_humaines": {"description": "…", "donnees": {"ouvrages_hydrauliques": [], "reseaux": [], "equipements": [], "complexes_industriels": [], "sources": []}},
-    "leviers_agroecologiques": {"description": "…", "donnees": {"pratiques_agricoles": [], "cultures": [], "elevage": [], "biodiversite_cultivee": [], "leviers_agroecologiques": [], "sources": []}},
-    "nouvelles_activites": {"description": "…", "donnees": {"activites_a_developper": [], "sources": []}},
-    "technodiversite": {"description": "…", "donnees": {"technologies_vertes": [], "innovations_locales": [], "numerique": [], "recherche_developpement": [], "sources": []}}
-  },
-  "fables": [],
-  "sources": [
-    {"id":"S00","titre":"…","url":"https://…","type":"web","date_acces":"2025-01-07","fiabilite":80}
-  ]
-}
+**Sources prioritaires :** INPN, GBIF, Tela Botanica, Atlas régionaux
 
-GÉNÉRATION FINALE :
-- Appliquer les 8 règles de normalisation/validation ci-dessus.
-- Valider en interne le JSON contre le schéma; corriger/compléter si nécessaire.
-- Émettre UNIQUEMENT le JSON final conforme (aucun texte, aucune métadonnée, aucun code fence).
+### 3. VOCABULAIRE LOCAL (minimum 3 catégories)
+**Structure obligatoire :**
+- **Termes hydrologiques** : 2-3 mots spécifiques aux eaux (ex: "gour", "rissole")
+- **Phénomènes naturels** : 2-3 expressions locales pour événements saisonniers
+- **Pratiques traditionnelles** : 2-3 termes liés aux usages ancestraux de la rivière
+
+**Pour chaque terme :**
+- Orthographe locale précise
+- Contexte d'usage traditionnel
+- Évolution sémantique si pertinente
+- Géolocalisation de l'usage (commune/canton)
+
+**Sources prioritaires :** Atlas linguistiques, études ethnobotaniques, archives municipales
+
+### 4. EMPREINTES HUMAINES (exactement 3 éléments majeurs)
+**Sélection par impact décroissant :**
+- 1 infrastructure hydraulique majeure (barrage/pont/écluse)
+- 1 aménagement récent (<10 ans) modifiant l'écosystème
+- 1 vestige historique structurant le paysage
+
+**Pour chaque élément :**
+- Description technique précise (dimensions, matériaux, fonction)
+- Date construction/rénovation
+- Impact écologique quantifié si données disponibles
+- Enjeux de gestion actuels
+
+### 5. PROJECTION 2035-2045 (structure 3x3x3)
+
+#### 5.1 Drivers climatiques (exactement 3)
+- **Changement n°1** : température (hausse °C projetée + impacts hydrologiques)
+- **Changement n°2** : régime précipitations (évolution % + conséquences débit)
+- **Changement n°3** : événements extrêmes (fréquence crues/étiages + vulnérabilités)
+
+#### 5.2 Leviers agroécologiques (exactement 3)
+**Critères de sélection :**
+- Adaptabilité aux conditions pédo-climatiques locales
+- Potentiel de déploiement territorial (surface disponible)
+- Impact positif mesurable sur qualité des eaux
+
+**Exemples structurés :**
+- **Levier 1** : Agroforesterie (X hectares mobilisables, Y exploitations candidates)
+- **Levier 2** : Couverts végétaux (réduction X% nitrates, Z km linéaires concernés)
+- **Levier 3** : Prairies humides (restauration Y hectares, biodiversité + Z espèces)
+
+#### 5.3 Nouvelles activités économiques (exactement 3)
+**Hiérarchisation par potentiel :**
+- **Potentiel FORT** : activité déployable <5 ans, marché identifié, emplois quantifiés
+- **Potentiel MOYEN** : activité émergente, expérimentations en cours régionalement
+- **Potentiel DISRUPTIF** : innovation de rupture, horizon 2035-2045, impact transformationnel
+
+### 6. FONCTIONNALITÉS IA RIVIÈRE DORDOGNE (exactement 5)
+**Alignement sur intentions de l'Opus :**
+- **Fonctionnalité 1** : Aide à la décision collective (gouvernance participative)
+- **Fonctionnalité 2** : Prédiction/alerte écologique (qualité eaux, biodiversité)
+- **Fonctionnalité 3** : Interface poétique-scientifique (médiation géopoétique)
+- **Fonctionnalité 4** : Optimisation agroécologique (conseil agriculteurs)
+- **Fonctionnalité 5** : Plateforme technodiversité (partage innovations locales)
+
+**Pour chaque fonctionnalité :**
+- Objectif précis aligné sur intentions Opus
+- Utilisateurs cibles identifiés
+- Données d'entrée requises
+- Impact attendu mesurable
+
+### 7. TECHNODIVERSITÉ (structure 3x3 par niveau TRL)
+
+#### 7.1 Niveau PROFESSIONNEL (TRL 7-9 : déployable immédiatement)
+- **Dispositif 1** : Solution low-tech opérationnelle pour monitoring qualité eau
+- **Dispositif 2** : Approche collective éprouvée pour gestion participative ressource
+- **Dispositif 3** : Outil numérique existant adaptable au contexte local
+
+#### 7.2 Niveau INNOVANT (TRL 4-6 : expérimentation avancée)
+- **Innovation 1** : Prototype prometteur en test sur territoire similaire
+- **Innovation 2** : Méthodologie collaborative en cours de validation
+- **Innovation 3** : Application technologique en phase pilote régionale
+
+#### 7.3 Niveau DISRUPTIF (TRL 1-3 : recherche prospective)
+- **Rupture 1** : Concept révolutionnaire basé sur biomimétisme/intelligence collective
+- **Rupture 2** : Technologie émergente applicable contexte rivière (IA, biotech...)
+- **Rupture 3** : Vision systémique transformationnelle horizon 2035-2045
+
+---
+
+## HIÉRARCHISATION DES SOURCES
+
+### NIVEAU 1 - SOURCES PRIORITAIRES (fiabilité 5/5)
+- Publications scientifiques peer-reviewed (revues indexées)
+- Données institutionnelles officielles (INRAE, CNRS, Universités)
+- Bases de données publiques certifiées (SANDRE, INPN, Banque Hydro)
+
+### NIVEAU 2 - SOURCES VALIDÉES (fiabilité 4/5)
+- Rapports organismes publics (Agences de l'eau, DREAL, Régions)
+- Études bureaux d'études spécialisés reconnus
+- Thèses et mémoires universitaires récents
+
+### NIVEAU 3 - SOURCES COMPLÉMENTAIRES (fiabilité 3/5)
+- Articles journalisme spécialisé (Actu-Environnement, etc.)
+- Sites associations scientifiques (Tela Botanica, LPO)
+- Rapports collectivités territoriales
+
+### NIVEAU 4 - SOURCES CONTEXTUELLES (fiabilité 2/5)
+- Presse locale/régionale documentée
+- Blogs experts reconnus dans leur domaine
+- Forums spécialisés avec modération scientifique
+
+---
+
+## CONTRÔLE QUALITÉ RENFORCÉ
+
+### SEUILS MINIMAUX OBLIGATOIRES
+- **Complétude** : 6 dimensions renseignées sur 8 minimum
+- **Quantification** : Respect strict des quantités demandées par dimension
+- **Sources** : Minimum 2 sources niveau 1-2 par dimension
+- **Géolocalisation** : 80% des données dans rayon 5km du point GPS
+- **Temporalité** : 70% des sources période 2023-2025
+
+### VALIDATION CROISÉE SYSTÉMATIQUE
+- Cohérence inter-dimensions (ex: espèces/habitat/qualité eau)
+- Concordance données locales/régionales
+- Vérification expertise sources sur domaine traité
+- Contrôle actualité des URLs et accessibilité
+
+### TRAÇABILITÉ EXHAUSTIVE
+**Pour chaque source :**
+- URL complète et fonctionnelle
+- Auteur/organisme (complet, pas d'acronymes non explicités)
+- Date publication précise (jour/mois/année)
+- Date dernière consultation
+- Type de source selon hiérarchisation ci-dessus
+- Score fiabilité justifié
+
+---
+
+## INSTRUCTIONS FINALES D'EXÉCUTION
+
+1. **LECTURE SYSTÉMATIQUE** : Appliquer la méthode triple lecture sur document source
+2. **RESPECT QUANTITATIF** : Stricte conformité aux nombres demandés par dimension
+3. **HIÉRARCHISATION SOURCES** : Privilégier niveaux 1-2, documenter si utilisation niveau 3-4
+4. **GÉOLOCALISATION** : Vérifier périmètre 5km pour 80% minimum des données
+5. **VALIDATION CROISÉE** : Contrôler cohérence inter-dimensions
+6. **TRAÇABILITÉ EXHAUSTIVE** : Tous les éléments sourcés et datés
+7. **JSON STRICT** : Aucun texte additionnel, structure parfaitement conforme au schéma
+8. **CONTRÔLE FINAL** : Validation des seuils minimaux avant livraison
+
+**RÈGLE ABSOLUE :** En cas de données insuffisantes sur une dimension, le mentionner explicitement dans les sources avec justification des contraintes rencontrées, plutôt que d'inventer ou d'extrapoler.
