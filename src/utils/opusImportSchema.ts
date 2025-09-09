@@ -151,7 +151,18 @@ export const DIMENSION_MAPPINGS = {
   'projection': 'projection_2035_2045',
   'leviers': 'leviers_agroecologiques',
   'activites': 'nouvelles_activites',
-  'techno': 'technodiversite'
+  'techno': 'technodiversite',
+  // Mappings technodiversité (toutes les variantes)
+  'technodiversité': 'technodiversite',
+  'technologies': 'technodiversite',
+  'technologie': 'technodiversite',
+  'innovations': 'technodiversite',
+  'innovation': 'technodiversite',
+  'techno_diversite': 'technodiversite',
+  'techno-diversite': 'technodiversite',
+  'innovations_locales': 'technodiversite',
+  'technologies_vertes': 'technodiversite',
+  'numerique': 'technodiversite'
 } as const;
 
 // Templates pour auto-completion

@@ -157,19 +157,36 @@ export class OpusImportNormalizer {
       'technodiversite'
     ];
 
-    const inputLower = input.toLowerCase().replace(/[_\s-]/g, '');
+    // Normalisation améliorée avec gestion des accents
+    const inputNormalized = input.toLowerCase()
+      .replace(/[àáâãäå]/g, 'a')
+      .replace(/[èéêë]/g, 'e')
+      .replace(/[ìíîï]/g, 'i')
+      .replace(/[òóôõö]/g, 'o')
+      .replace(/[ùúûü]/g, 'u')
+      .replace(/[ýÿ]/g, 'y')
+      .replace(/[ç]/g, 'c')
+      .replace(/[_\s-]/g, '');
     
     for (const candidate of candidates) {
       const candidateLower = candidate.toLowerCase().replace(/[_\s-]/g, '');
       
+      // Correspondance directe pour technodiversité
+      if (candidate === 'technodiversite') {
+        const techKeywords = ['techno', 'technologie', 'technologies', 'innovation', 'numerique'];
+        if (techKeywords.some(keyword => inputNormalized.includes(keyword))) {
+          return candidate;
+        }
+      }
+      
       // Correspondance partielle (contient)
-      if (inputLower.includes(candidateLower.slice(0, 6)) || 
-          candidateLower.includes(inputLower.slice(0, 6))) {
+      if (inputNormalized.includes(candidateLower.slice(0, 6)) || 
+          candidateLower.includes(inputNormalized.slice(0, 6))) {
         return candidate;
       }
       
       // Similarité de Levenshtein simple
-      const similarity = this.calculateSimilarity(inputLower, candidateLower);
+      const similarity = this.calculateSimilarity(inputNormalized, candidateLower);
       if (similarity > 0.7) {
         return candidate;
       }
