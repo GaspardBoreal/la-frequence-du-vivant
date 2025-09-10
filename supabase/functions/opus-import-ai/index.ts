@@ -510,7 +510,7 @@ serve(async (req) => {
         const allowedColumns = [
           'contexte_hydrologique', 'especes_caracteristiques', 'vocabulaire_local',
           'empreintes_humaines', 'leviers_agroecologiques', 'nouvelles_activites',
-          'projection_2035_2045', 'technodiversite'
+          'projection_2035_2045', 'technodiversite', 'ia_fonctionnalites'
         ];
         
         const cleanDimensions: any = {};

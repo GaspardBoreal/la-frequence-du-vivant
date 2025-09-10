@@ -570,6 +570,7 @@ export type Database = {
           created_at: string
           empreintes_humaines: Json | null
           especes_caracteristiques: Json | null
+          ia_fonctionnalites: Json | null
           id: string
           last_validation: string | null
           leviers_agroecologiques: Json | null
@@ -588,6 +589,7 @@ export type Database = {
           created_at?: string
           empreintes_humaines?: Json | null
           especes_caracteristiques?: Json | null
+          ia_fonctionnalites?: Json | null
           id?: string
           last_validation?: string | null
           leviers_agroecologiques?: Json | null
@@ -606,6 +608,7 @@ export type Database = {
           created_at?: string
           empreintes_humaines?: Json | null
           especes_caracteristiques?: Json | null
+          ia_fonctionnalites?: Json | null
           id?: string
           last_validation?: string | null
           leviers_agroecologiques?: Json | null

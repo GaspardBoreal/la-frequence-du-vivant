@@ -8,7 +8,7 @@
  * 3. Status info: Light complementary color + bold
  */
 
-export type VignetteVariant = 'default' | 'species' | 'vocabulary' | 'infrastructure' | 'agro' | 'technology';
+export type VignetteVariant = 'default' | 'species' | 'vocabulary' | 'infrastructure' | 'agro' | 'technology' | 'ia';
 
 export interface VignetteStyleClasses {
   container: string;
@@ -70,6 +70,15 @@ export const getVignetteStyles = (variant: VignetteVariant): VignetteStyleClasse
         badge: "bg-slate/10 text-slate-700 border-slate/20"
       };
       
+    case 'ia':
+      return {
+        container: `${baseContainer} border-purple-500/30 bg-gradient-to-br from-purple-500/10 to-purple-500/5 hover:from-purple-500/20 hover:to-purple-500/10`,
+        title: 'text-purple-500 font-bold',
+        secondary: '!text-white italic',
+        status: 'text-purple-200 font-bold',
+        badge: 'bg-purple-500/10 text-purple-500 border-purple-500/30'
+      };
+      
     default:
       return {
         container: `${baseContainer} border-border/50 bg-gradient-to-br from-background/80 to-background/40 hover:from-background/90 hover:to-background/50`,
@@ -96,6 +105,8 @@ export const getDialogHeaderStyles = (variant: VignetteVariant) => {
       return 'text-accent';
     case 'technology':
       return 'text-slate-700';
+    case 'ia':
+      return 'text-purple-500';
     default:
       return 'text-foreground';
   }

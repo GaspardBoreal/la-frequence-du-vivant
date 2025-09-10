@@ -89,7 +89,7 @@ export function processSpeciesData(speciesData: SpeciesData | null | undefined):
     nom_commun: item.nom_commun || item.nom || item.espece || item.titre || key,
     nom_scientifique: item.nom_scientifique || item.nom_latin || item.scientific_name || '',
     statut_conservation: item.statut_conservation || item.statut || item.conservation_status || item.protection || 'Non renseigné',
-    description_courte: item.description || item.caracteristiques || '',
+    description_courte: item.description_courte || item.description || item.details || item.caracteristiques || item.commentaires || '',
     type: item.type || category,
     category,
     source_ids: item.source_ids || [],

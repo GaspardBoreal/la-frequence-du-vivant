@@ -180,7 +180,7 @@ export const ModernImportDetailModal: React.FC<ModernImportDetailModalProps> = (
 
         <Tabs defaultValue={defaultTab} className="flex-1">
           <div className="hidden md:block">
-            <TabsList className="grid w-full grid-cols-7 mb-6 bg-background/50 backdrop-blur-sm border border-border/30">
+            <TabsList className="grid w-full grid-cols-8 mb-6 bg-background/50 backdrop-blur-sm border border-border/30">
               <TabsTrigger value="overview" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground text-xs">
                 Vue d'ensemble
               </TabsTrigger>
@@ -201,6 +201,9 @@ export const ModernImportDetailModal: React.FC<ModernImportDetailModalProps> = (
               </TabsTrigger>
               <TabsTrigger value="technology" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground text-xs">
                 Technodiversité
+              </TabsTrigger>
+              <TabsTrigger value="ia" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground text-xs">
+                IA
               </TabsTrigger>
             </TabsList>
           </div>
@@ -236,7 +239,7 @@ export const ModernImportDetailModal: React.FC<ModernImportDetailModalProps> = (
                   <CardContent>
                     <div className="text-2xl font-bold text-info mb-1">
                       {importRecord.contexte_data?.vocabulaire_local ? 
-                        getVocabularyTermsCount(importRecord.contexte_data.vocabulaire_local) : 0}
+                        getVocabularyTermsCount(importRecord.contexte_data.vocabulaire_local.donnees || importRecord.contexte_data.vocabulaire_local) : 0}
                     </div>
                     <p className="text-xs text-muted-foreground">éléments de vocabulaire</p>
                   </CardContent>
@@ -281,8 +284,12 @@ export const ModernImportDetailModal: React.FC<ModernImportDetailModalProps> = (
                   </CardHeader>
                   <CardContent>
                     <div className="text-2xl font-bold text-accent mb-1">
-                      {importRecord.contexte_data?.projection_2035_2045?.leviers_agroecologiques ? 
-                        Object.keys(importRecord.contexte_data.projection_2035_2045.leviers_agroecologiques).length : 0}
+                      {(() => {
+                        const agro = importRecord.contexte_data?.leviers_agroecologiques?.donnees 
+                          || importRecord.contexte_data?.leviers_agroecologiques
+                          || importRecord.contexte_data?.projection_2035_2045?.leviers_agroecologiques;
+                        return agro ? Object.keys(agro).length : 0;
+                      })()}
                     </div>
                     <p className="text-xs text-muted-foreground">leviers</p>
                   </CardContent>
@@ -298,8 +305,12 @@ export const ModernImportDetailModal: React.FC<ModernImportDetailModalProps> = (
                   </CardHeader>
                   <CardContent>
                     <div className="text-2xl font-bold text-orange-500 mb-1">
-                      {importRecord.contexte_data?.projection_2035_2045?.nouvelles_activites ? 
-                        Object.keys(importRecord.contexte_data.projection_2035_2045.nouvelles_activites).length : 0}
+                      {(() => {
+                        const activites = importRecord.contexte_data?.nouvelles_activites?.donnees 
+                          || importRecord.contexte_data?.nouvelles_activites
+                          || importRecord.contexte_data?.projection_2035_2045?.nouvelles_activites;
+                        return activites ? Object.keys(activites).length : 0;
+                      })()}
                     </div>
                     <p className="text-xs text-muted-foreground">à développer</p>
                   </CardContent>
@@ -317,7 +328,8 @@ export const ModernImportDetailModal: React.FC<ModernImportDetailModalProps> = (
                     <div className="text-2xl font-bold text-purple-500 mb-1">
                       {importRecord.contexte_data?.technodiversite ? 
                         (() => {
-                          const processed = processTechnodiversiteData(importRecord.contexte_data.technodiversite);
+                          const technoData = importRecord.contexte_data.technodiversite.donnees || importRecord.contexte_data.technodiversite;
+                          const processed = processTechnodiversiteData(technoData);
                           return processed.totalCount;
                         })() : 0}
                     </div>
@@ -394,7 +406,7 @@ export const ModernImportDetailModal: React.FC<ModernImportDetailModalProps> = (
             {/* Espèces Caractéristiques Tab */}
             <TabsContent value="species" className="space-y-6">
               <SpeciesVignetteGrid 
-                speciesData={importRecord.contexte_data?.especes_caracteristiques}
+                speciesData={importRecord.contexte_data?.especes_caracteristiques?.donnees || importRecord.contexte_data?.especes_caracteristiques}
                 importSources={importRecord.sources}
               />
             </TabsContent>
@@ -403,7 +415,7 @@ export const ModernImportDetailModal: React.FC<ModernImportDetailModalProps> = (
             <TabsContent value="vocabulary" className="space-y-6">
               <VignetteGrid
                 title="Vocabulaire Local"
-                data={importRecord.contexte_data?.vocabulaire_local}
+                data={importRecord.contexte_data?.vocabulaire_local?.donnees || importRecord.contexte_data?.vocabulaire_local}
                 variant="vocabulary"
                 icon={<BookOpen className="w-5 h-5" />}
                 emptyMessage="Aucun terme de vocabulaire local n'a été identifié"
@@ -415,17 +427,7 @@ export const ModernImportDetailModal: React.FC<ModernImportDetailModalProps> = (
             {/* Infrastructures Tab */}
             <TabsContent value="infrastructure" className="space-y-6">
               <InfrastructureVignetteGrid 
-                empreintesHumainesData={(() => {
-                  const contextData = importRecord.contexte_data as any;
-                  const infra = contextData?.dimensions?.infrastructures_techniques 
-                    || contextData?.infrastructures_techniques 
-                    || contextData?.empreintes_humaines?.dimensions?.infrastructures_techniques 
-                    || contextData?.empreintes_humaines?.infrastructures_techniques 
-                    || contextData?.empreintes_humaines 
-                    || null;
-                  console.info('Infra debug (modal): keys=', contextData ? Object.keys(contextData) : null, 'resolved=', infra ? Object.keys(infra) : infra);
-                  return infra;
-                })()}
+                empreintesHumainesData={importRecord.contexte_data?.empreintes_humaines?.donnees || importRecord.contexte_data?.empreintes_humaines}
                 importSources={importRecord.sources}
               />
             </TabsContent>
@@ -434,7 +436,7 @@ export const ModernImportDetailModal: React.FC<ModernImportDetailModalProps> = (
             <TabsContent value="agro" className="space-y-6">
               <VignetteGrid
                 title="Leviers Agroécologiques"
-                data={importRecord.contexte_data?.projection_2035_2045?.leviers_agroecologiques}
+                data={importRecord.contexte_data?.leviers_agroecologiques?.donnees || importRecord.contexte_data?.leviers_agroecologiques}
                 variant="agro"
                 icon={<Wheat className="w-5 h-5" />}
                 emptyMessage="Aucun levier agroécologique n'a été identifié"
@@ -445,11 +447,23 @@ export const ModernImportDetailModal: React.FC<ModernImportDetailModalProps> = (
             <TabsContent value="technology" className="space-y-6">
               <VignetteGrid
                 title="Technodiversité"
-                data={importRecord.contexte_data?.technodiversite}
+                data={importRecord.contexte_data?.technodiversite?.donnees || importRecord.contexte_data?.technodiversite}
                 variant="technology"
                 icon={<Wrench className="w-5 h-5" />}
                 emptyMessage="Aucune technologie n'a été identifiée"
                 specialProcessing="technodiversite"
+                importSources={importRecord.sources}
+              />
+            </TabsContent>
+
+            {/* IA Tab - Nouvel onglet pour ia_fonctionnalites */}
+            <TabsContent value="ia" className="space-y-6">
+              <VignetteGrid
+                title="Fonctionnalités IA"
+                data={importRecord.contexte_data?.ia_fonctionnalites?.donnees || importRecord.contexte_data?.ia_fonctionnalites}
+                variant="ia"
+                icon={<Beaker className="w-5 h-5" />}
+                emptyMessage="Aucune fonctionnalité IA n'a été identifiée"
                 importSources={importRecord.sources}
               />
             </TabsContent>

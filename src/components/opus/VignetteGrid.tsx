@@ -13,7 +13,7 @@ import { useToast } from '@/components/ui/use-toast';
 interface VignetteGridProps {
   title: string;
   data: any;
-  variant: 'vocabulary' | 'infrastructure' | 'agro' | 'technology';
+  variant: 'vocabulary' | 'infrastructure' | 'agro' | 'technology' | 'ia';
   icon: React.ReactNode;
   className?: string;
   emptyMessage?: string;

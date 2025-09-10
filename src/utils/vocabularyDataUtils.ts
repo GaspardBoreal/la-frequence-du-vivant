@@ -51,18 +51,21 @@ const isLocalVocabularyTerm = (key: string, value: any): boolean => {
 export const getVocabularyTermsCount = (vocabularyData: any): number => {
   if (!vocabularyData) return 0;
   
-  if (Array.isArray(vocabularyData)) {
-    return vocabularyData.length;
+  // Gestion du format avec wrapper {description, donnees}
+  const dataToProcess = vocabularyData.donnees || vocabularyData;
+  
+  if (Array.isArray(dataToProcess)) {
+    return dataToProcess.length;
   }
   
-  if (typeof vocabularyData === 'object') {
+  if (typeof dataToProcess === 'object') {
     let totalCount = 0;
     
     // Nouveau format avec catégories séparées
-    if (vocabularyData.termes_locaux || vocabularyData.phenomenes || vocabularyData.pratiques) {
+    if (dataToProcess.termes_locaux || dataToProcess.phenomenes || dataToProcess.pratiques) {
       // Compter les termes locaux
-      if (Array.isArray(vocabularyData.termes_locaux)) {
-        vocabularyData.termes_locaux.forEach((item: any) => {
+      if (Array.isArray(dataToProcess.termes_locaux)) {
+        dataToProcess.termes_locaux.forEach((item: any) => {
           if (item.metadata?.termes && Array.isArray(item.metadata.termes)) {
             totalCount += item.metadata.termes.length;
           } else {
@@ -72,8 +75,8 @@ export const getVocabularyTermsCount = (vocabularyData: any): number => {
       }
       
       // Compter les phénomènes
-      if (Array.isArray(vocabularyData.phenomenes)) {
-        vocabularyData.phenomenes.forEach((item: any) => {
+      if (Array.isArray(dataToProcess.phenomenes)) {
+        dataToProcess.phenomenes.forEach((item: any) => {
           if (item.metadata?.phenomenes && Array.isArray(item.metadata.phenomenes)) {
             totalCount += item.metadata.phenomenes.length;
           } else {
@@ -83,8 +86,8 @@ export const getVocabularyTermsCount = (vocabularyData: any): number => {
       }
       
       // Compter les pratiques
-      if (Array.isArray(vocabularyData.pratiques)) {
-        vocabularyData.pratiques.forEach((item: any) => {
+      if (Array.isArray(dataToProcess.pratiques)) {
+        dataToProcess.pratiques.forEach((item: any) => {
           if (item.metadata?.pratiques && Array.isArray(item.metadata.pratiques)) {
             totalCount += item.metadata.pratiques.length;
           } else {
@@ -97,12 +100,12 @@ export const getVocabularyTermsCount = (vocabularyData: any): number => {
     }
     
     // Ancien format - Si c'est un objet avec une propriété 'termes', compter uniquement les termes
-    if (vocabularyData.termes && Array.isArray(vocabularyData.termes)) {
-      return vocabularyData.termes.length;
+    if (dataToProcess.termes && Array.isArray(dataToProcess.termes)) {
+      return dataToProcess.termes.length;
     }
     
     // Sinon, compter toutes les clés valides (exclure source_ids et termes non-locaux)
-    return Object.keys(vocabularyData).filter(key => isLocalVocabularyTerm(key, vocabularyData[key])).length;
+    return Object.keys(dataToProcess).filter(key => isLocalVocabularyTerm(key, dataToProcess[key])).length;
   }
   
   return 0;
