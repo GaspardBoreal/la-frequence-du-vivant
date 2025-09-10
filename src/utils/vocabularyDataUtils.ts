@@ -45,6 +45,27 @@ const isLocalVocabularyTerm = (key: string, value: any): boolean => {
   return true;
 };
 
+// Déduction de catégorie à partir de la clé
+const inferCategoryFromKey = (key: string): 'termes' | 'phenomenes' | 'pratiques' => {
+  const k = key.toLowerCase();
+  if (k.includes('phenomen') || k.includes('phénom') || k.includes('meteo') || k.includes('météo') || k.includes('climat')) {
+    return 'phenomenes';
+  }
+  if (k.includes('pratique') || k.includes('activit') || k.includes('usage') || k.includes('agro')) {
+    return 'pratiques';
+  }
+  if (k.includes('terme')) {
+    return 'termes';
+  }
+  return 'termes';
+};
+
+// Normalisation du titre d'un item de vocabulaire
+const normalizeTitleFromItem = (item: any, fallback: string): string => {
+  if (typeof item === 'string') return item;
+  return item?.nom || item?.terme || item?.titre || item?.name || fallback;
+};
+
 /**
  * Compte le nombre total d'éléments de vocabulaire (termes locaux + phénomènes + pratiques)
  */
@@ -147,63 +168,81 @@ export const processVocabularyData = (vocabularyData: any): {
   // Si c'est un objet, traiter les différentes sections
   if (typeof vocabularyData === 'object') {
     Object.entries(vocabularyData).forEach(([key, value]) => {
-      // Handle multiple source key variants
-      if ((key === 'source_ids' || key === 'sources' || key === 'sources_data') && Array.isArray(value)) {
-        // Traiter les sources
-        result.sources = value.map((source: any, index) => ({
-          titre: source.nom || source.name || source.source || source.titre || `Source ${index + 1}`,
-          description_courte: source.description || source.url || source.lien || source.link || '',
-          type: 'source',
-          details: source.details || source.annee || source.year || source.type || '',
-          category: key,
-          metadata: source
-        }));
-      } else if (key === 'termes' && Array.isArray(value)) {
-        // Traiter les termes
+      // Ignorer les clés techniques et variantes de sources
+      if (['source_ids', 'sources', 'sources_data', 'description', 'donnees', 'metadata'].includes(key)) {
+        // Gestion spéciale des sources si tableau
+        if ((key === 'source_ids' || key === 'sources' || key === 'sources_data') && Array.isArray(value)) {
+          result.sources = value.map((source: any, index) => ({
+            titre: source.nom || source.name || source.source || source.titre || `Source ${index + 1}`,
+            description_courte: source.description || source.url || source.lien || source.link || '',
+            type: 'source',
+            details: source.details || source.annee || source.year || source.type || '',
+            category: key,
+            metadata: source
+          }));
+        }
+        return;
+      }
+
+      const inferred = inferCategoryFromKey(key);
+
+      if (key === 'termes' && Array.isArray(value)) {
+        // Section explicite des termes
         result.termes = value.map((item: any, index) => ({
-          titre: item.nom || item.terme || item.titre || item.name || `Terme ${index + 1}`,
-          description_courte: item.description || item.definition || item.explication || '',
-          type: item.type || item.categorie || 'terme',
-          details: item.details || item.usage || item.application || '',
+          titre: normalizeTitleFromItem(item, `Terme ${index + 1}`),
+          description_courte: (typeof item === 'object') ? (item.description || item.definition || item.explication || '') : '',
+          type: (typeof item === 'object') ? (item.type || item.categorie || 'terme') : 'terme',
+          details: (typeof item === 'object') ? (item.details || item.usage || item.application || '') : '',
           category: 'termes',
           metadata: item
         }));
       } else if (Array.isArray(value) && isLocalVocabularyTerm(key, value)) {
-        // Autres tableaux traités comme des termes (uniquement les valides)
-        result.termes.push(...value.map((item: any, index) => ({
-          titre: item?.nom || item?.terme || item?.titre || item?.name || key,
-          description_courte: item?.description || item?.definition || item?.explication || '',
-          type: item?.type || item?.categorie || 'terme',
-          details: item?.details || item?.usage || item?.application || '',
-          category: 'termes',
-          metadata: item
-        })));
+        // Autres tableaux: distinguer string vs objet, et déduire la catégorie à partir de la clé
+        value.forEach((item: any, index: number) => {
+          const titre = normalizeTitleFromItem(item, key);
+          const description_courte = typeof item === 'object' ? (item.description || item.definition || item.explication || '') : '';
+          const details = typeof item === 'object' ? (item.details || item.usage || item.application || '') : '';
+          const type = typeof item === 'object' ? (item.type || item.categorie || (inferred === 'phenomenes' ? 'phenomene' : inferred === 'pratiques' ? 'pratique' : 'terme'))
+                                               : (inferred === 'phenomenes' ? 'phenomene' : inferred === 'pratiques' ? 'pratique' : 'terme');
+          const category = inferred === 'termes' ? key : inferred;
+
+          result.termes.push({
+            titre,
+            description_courte,
+            type,
+            details,
+            category,
+            metadata: typeof item === 'object' ? { ...item, originalKey: key } : { originalKey: key, raw: item }
+          });
+        });
       } else if (typeof value === 'object' && value !== null && isLocalVocabularyTerm(key, value)) {
-        // Objets traités comme des termes individuels (uniquement les valides)
+        // Objets: déduire la catégorie à partir de la clé
         const objValue = value as any;
+        const titre = normalizeTitleFromItem(objValue, key);
+        const type = objValue?.type || objValue?.categorie || (inferred === 'phenomenes' ? 'phenomene' : inferred === 'pratiques' ? 'pratique' : 'terme');
         result.termes.push({
-          titre: objValue?.nom || objValue?.terme || objValue?.titre || key,
+          titre,
           description_courte: objValue?.description || objValue?.definition || objValue?.explication || '',
-          type: objValue?.type || objValue?.categorie || 'terme',
+          type,
           details: objValue?.details || objValue?.usage || objValue?.application || '',
-          category: 'termes',
-          metadata: objValue
+          category: inferred === 'termes' ? key : inferred,
+          metadata: { ...objValue, originalKey: key }
         });
       } else if (typeof value === 'string' && isLocalVocabularyTerm(key, value)) {
-        // Chaînes traitées comme des termes simples (uniquement les valides)
+        // Chaînes: titre = clé, description = valeur, catégorie déduite
         result.termes.push({
           titre: key,
           description_courte: value,
-          type: 'terme',
+          type: inferred === 'phenomenes' ? 'phenomene' : inferred === 'pratiques' ? 'pratique' : 'terme',
           details: '',
-          category: 'termes',
-          metadata: { [key]: value }
+          category: inferred === 'termes' ? 'termes' : inferred,
+          metadata: { [key]: value, originalKey: key }
         });
       }
     });
     
     // Exclure les termes bannis comme "Estey"
-    result.termes = result.termes.filter(t => !EXCLUDED_VOCABULARY_TERMS.includes((t.titre || '').toLowerCase()));
+    result.termes = result.termes.filter(t => t.titre && !EXCLUDED_VOCABULARY_TERMS.includes((t.titre || '').toLowerCase()));
     
     // Trier les termes par ordre alphabétique
     result.termes.sort((a, b) => a.titre.localeCompare(b.titre, 'fr', { sensitivity: 'base' }));
