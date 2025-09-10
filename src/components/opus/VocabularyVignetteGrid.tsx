@@ -1,6 +1,7 @@
 import React from 'react';
 import { InteractiveVignette } from './InteractiveVignette';
 import { Book, Waves, Wrench } from 'lucide-react';
+import { processVocabularyData } from '@/utils/vocabularyDataUtils';
 
 interface VocabularyVignetteGridProps {
   vocabularyData: any;
@@ -27,7 +28,10 @@ const VocabularyVignetteGrid: React.FC<VocabularyVignetteGridProps> = ({
 }) => {
   // Traiter et catégoriser les données
   const processVocabularyByCategory = React.useMemo(() => {
-    if (!vocabularyData) return { termesLocaux: [], phenomenes: [], pratiques: [] };
+    const dataToProcess = vocabularyData?.donnees || vocabularyData;
+    if (!dataToProcess) return { termesLocaux: [], phenomenes: [], pratiques: [] };
+
+    const normalized = processVocabularyData(dataToProcess);
 
     const result = {
       termesLocaux: [] as VocabularyItem[],
@@ -35,186 +39,47 @@ const VocabularyVignetteGrid: React.FC<VocabularyVignetteGridProps> = ({
       pratiques: [] as VocabularyItem[]
     };
 
-    console.log('🔍 VocabularyVignetteGrid - Data received:', vocabularyData);
+    const terms = (normalized as any)?.termes || [];
 
-    // Si les données sont déjà structurées par catégories (nouveau format)
-    if (vocabularyData.termes_locaux || vocabularyData.phenomenes || vocabularyData.pratiques) {
-      
-      // Traiter les termes locaux
-      if (vocabularyData.termes_locaux) {
-        if (Array.isArray(vocabularyData.termes_locaux)) {
-          vocabularyData.termes_locaux.forEach((item: any) => {
-            // Si l'item a des "termes" imbriqués (structure complexe)
-            if (item.metadata?.termes && Array.isArray(item.metadata.termes)) {
-              item.metadata.termes.forEach((terme: any) => {
-                result.termesLocaux.push({
-                  titre: terme.terme || terme.nom || terme.titre,
-                  description: terme.definition || terme.description || '',
-                  source_ids: terme.source_ids || [],
-                  metadata: { ...terme, source_ids: terme.source_ids }
-                });
-              });
-            } else {
-              // Structure simple (exclure les clés techniques comme "description")
-              const title = item.nom || item.titre || item.terme || '';
-              const titleKey = String(title).toLowerCase();
-              if (EXCLUDED_TECH_KEYS.has(titleKey)) {
-                return; // ignorer cet item technique
-              }
-              result.termesLocaux.push({
-                titre: title,
-                description: item.description || item.definition || '',
-                source_ids: item.source_ids || [],
-                metadata: { ...item, source_ids: item.source_ids }
-              });
-            }
-          });
-        }
+    terms.forEach((t: any) => {
+      const type = (t.type || '').toLowerCase();
+      const category = (t.category || '').toLowerCase();
+      const meta = t.metadata || {};
+      const item: VocabularyItem = {
+        titre: t.titre,
+        description: t.description_courte || t.details || '',
+        source_ids: meta.source_ids || meta.sources || meta.sources_ids || [],
+        metadata: meta
+      };
+
+      const typecat = `${type} ${category}`;
+      if (typecat.includes('phenomen') || typecat.includes('phénom') || typecat.includes('meteo') || typecat.includes('climat')) {
+        result.phenomenes.push(item);
+      } else if (
+        typecat.includes('pratique') || typecat.includes('activité') || typecat.includes('agri') ||
+        typecat.includes('pêche') || typecat.includes('navigation') || typecat.includes('usage')
+      ) {
+        result.pratiques.push(item);
+      } else {
+        result.termesLocaux.push(item);
       }
+    });
 
-      // Traiter les phénomènes
-      if (vocabularyData.phenomenes) {
-        if (Array.isArray(vocabularyData.phenomenes)) {
-          vocabularyData.phenomenes.forEach((item: any) => {
-            if (item.metadata?.phenomenes && Array.isArray(item.metadata.phenomenes)) {
-              item.metadata.phenomenes.forEach((phenomene: any) => {
-                result.phenomenes.push({
-                  titre: typeof phenomene === 'string' ? phenomene : (phenomene.nom || phenomene.titre),
-                  description: typeof phenomene === 'object' ? (phenomene.description || phenomene.definition || '') : '',
-                  source_ids: typeof phenomene === 'object' ? (phenomene.source_ids || []) : [],
-                  metadata: typeof phenomene === 'object' ? { ...phenomene, source_ids: phenomene.source_ids } : { nom: phenomene }
-                });
-              });
-            } else {
-              result.phenomenes.push({
-                titre: item.nom || item.titre,
-                description: item.description || item.definition || '',
-                source_ids: item.source_ids || [],
-                metadata: { ...item, source_ids: item.source_ids }
-              });
-            }
-          });
-        }
-      }
-
-      // Traiter les pratiques
-      if (vocabularyData.pratiques) {
-        if (Array.isArray(vocabularyData.pratiques)) {
-          vocabularyData.pratiques.forEach((item: any) => {
-            if (item.metadata?.pratiques && Array.isArray(item.metadata.pratiques)) {
-              item.metadata.pratiques.forEach((pratique: any) => {
-                result.pratiques.push({
-                  titre: typeof pratique === 'string' ? pratique : (pratique.nom || pratique.titre),
-                  description: typeof pratique === 'object' ? (pratique.description || pratique.definition || '') : '',
-                  source_ids: typeof pratique === 'object' ? (pratique.source_ids || []) : [],
-                  metadata: typeof pratique === 'object' ? { ...pratique, source_ids: pratique.source_ids } : { nom: pratique }
-                });
-              });
-            } else {
-              result.pratiques.push({
-                titre: item.nom || item.titre,
-                description: item.description || item.definition || '',
-                source_ids: item.source_ids || [],
-                metadata: { ...item, source_ids: item.source_ids }
-              });
-            }
-          });
-        }
-      }
-    } else {
-      // Logique de classification automatique basée sur les noms/types existants (ancien format)
-      Object.entries(vocabularyData).forEach(([key, value]: [string, any]) => {
-        // Exclure les clés techniques et métadonnées
-        if (key === 'source_ids' || key === 'sources' || key === 'description' || key === 'donnees' || key === 'metadata') return;
-
-        const item: VocabularyItem = {
-          titre: value?.nom || value?.titre || key,
-          description: value?.description || value?.definition || (typeof value === 'string' ? value : ''),
-          source_ids: value?.source_ids || [],
-          metadata: { ...value, source_ids: value?.source_ids }
-        };
-
-        // Classification par nom/type
-        const itemName = item.titre.toLowerCase();
-        const itemType = value?.type?.toLowerCase() || '';
-
-        // Ne traiter que les vraies entrées de vocabulaire (pas les clés techniques)
-        if (itemName === 'description' || itemName === 'donnees' || itemName === 'metadata') {
-          return; // Ignorer complètement
-        }
-
-        if (['boucs', 'créa', 'gatte', 'palus', 'pibale'].some(term => itemName.includes(term)) ||
-            itemType.includes('terme') || itemType.includes('local')) {
-          result.termesLocaux.push(item);
-        } else if (itemName.includes('crue') || itemName.includes('étiage') || itemName.includes('sécheresse') ||
-                  itemName.includes('inondation') || itemName.includes('marée') || itemName.includes('tempête') ||
-                  itemType.includes('phénomène') || itemType.includes('météo')) {
-          result.phenomenes.push(item);
-        } else if (itemName.includes('pêche') || itemName.includes('agriculture') || itemName.includes('élevage') ||
-                  itemName.includes('navigation') || itemType.includes('pratique') || itemType.includes('activité')) {
-          result.pratiques.push(item);
-        } else {
-          // Pour les autres, vérifier si c'est vraiment du vocabulaire avant de classer
-          if (typeof value === 'object' && value !== null && (value.terme || value.definition || value.description)) {
-            result.termesLocaux.push(item);
-          }
-        }
-      });
+    // Fallback: si aucune catégorie secondaire n'a été détectée, tout afficher en termes locaux
+    const total = result.termesLocaux.length + result.phenomenes.length + result.pratiques.length;
+    if (total === 0 && terms.length > 0) {
+      result.termesLocaux = terms.map((t: any) => ({
+        titre: t.titre,
+        description: t.description_courte || t.details || '',
+        source_ids: (t.metadata?.source_ids || t.metadata?.sources || t.metadata?.sources_ids || []),
+        metadata: t.metadata || {}
+      }));
     }
 
-    // FALLBACKS: si phénomènes/pratiques absents au niveau racine, tenter extraction depuis des structures imbriquées
-    if (result.phenomenes.length === 0) {
-      try {
-        const termsArray = Array.isArray(vocabularyData?.termes_locaux) ? vocabularyData.termes_locaux : [];
-        termsArray.forEach((item: any) => {
-          const nested = item?.metadata?.termes_locaux?.phenomenes || item?.metadata?.phenomenes;
-          if (Array.isArray(nested)) {
-            nested.forEach((p: any) => {
-              const titre = typeof p === 'string' ? p : (p?.nom || p?.titre);
-              if (!titre) return;
-              result.phenomenes.push({
-                titre,
-                description: typeof p === 'object' ? (p?.description || p?.definition || '') : '',
-                source_ids: typeof p === 'object' ? (p?.source_ids || []) : [],
-                metadata: typeof p === 'object' ? { ...p, source_ids: p?.source_ids } : { nom: p }
-              });
-            });
-          }
-        });
-      } catch {}
-    }
-
-    if (result.pratiques.length === 0) {
-      try {
-        const termsArray = Array.isArray(vocabularyData?.termes_locaux) ? vocabularyData.termes_locaux : [];
-        termsArray.forEach((item: any) => {
-          const nested = item?.metadata?.termes_locaux?.pratiques || item?.metadata?.pratiques;
-          if (Array.isArray(nested)) {
-            nested.forEach((p: any) => {
-              const titre = typeof p === 'string' ? p : (p?.nom || p?.titre);
-              if (!titre) return;
-              result.pratiques.push({
-                titre,
-                description: typeof p === 'object' ? (p?.description || p?.definition || '') : '',
-                source_ids: typeof p === 'object' ? (p?.source_ids || []) : [],
-                metadata: typeof p === 'object' ? { ...p, source_ids: p?.source_ids } : { nom: p }
-              });
-            });
-          }
-        });
-      } catch {}
-    }
-
-    // Trier alphabétiquement chaque catégorie
+    // Trier alphabétiquement
     result.termesLocaux.sort((a, b) => a.titre.localeCompare(b.titre, 'fr', { sensitivity: 'base' }));
     result.phenomenes.sort((a, b) => a.titre.localeCompare(b.titre, 'fr', { sensitivity: 'base' }));
     result.pratiques.sort((a, b) => a.titre.localeCompare(b.titre, 'fr', { sensitivity: 'base' }));
-
-    console.log('🔍 VocabularyVignetteGrid - Processed categories:', {
-      termesLocaux: result.termesLocaux.length,
-      phenomenes: result.phenomenes.length,
-      pratiques: result.pratiques.length
-    });
 
     return result;
   }, [vocabularyData]);
