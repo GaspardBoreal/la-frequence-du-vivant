@@ -1233,7 +1233,7 @@ export const OpusImportInterface: React.FC<OpusImportInterfaceProps> = ({
                             <span className="font-medium">
                               {explorationMarche.marche?.nom_marche || 'Marche sans nom'}
                             </span>
-                            <span className="text-sm text-muted-foreground">
+                            <span className="text-sm text-slate-700 dark:text-slate-300">
                               {explorationMarche.marche?.ville}
                               {explorationMarche.marche?.region && ` (${explorationMarche.marche?.region})`}
                             </span>
