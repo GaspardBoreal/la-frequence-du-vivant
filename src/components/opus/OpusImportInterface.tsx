@@ -1273,14 +1273,6 @@ export const OpusImportInterface: React.FC<OpusImportInterfaceProps> = ({
                       <li key={i}>{error}</li>
                     ))}
                   </ul>
-                  {validationErrors.some(error => error.includes('Unexpected token') && error.includes('\\')) && (
-                    <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded">
-                      <p className="text-sm text-blue-800 font-medium">💡 Solution rapide:</p>
-                      <p className="text-xs text-blue-700 mt-1">
-                        Utilisez le bouton "Auto-corriger" ci-dessous pour résoudre automatiquement les problèmes d'échappement JSON.
-                      </p>
-                    </div>
-                  )}
                 </AlertDescription>
               </Alert>
             )}
@@ -1296,37 +1288,6 @@ export const OpusImportInterface: React.FC<OpusImportInterfaceProps> = ({
                   Copier le format JSON
                 </Button>
                 
-                <Button 
-                  variant="outline"
-                  onClick={() => {
-                    const template = generateCompleteTemplate();
-                    setJsonContent(template);
-                    parseAndValidateJson();
-                  }}
-                  className="flex items-center gap-2"
-                >
-                  <FileJson className="h-4 w-4" />
-                  Charger le modèle
-                </Button>
-
-                <Button 
-                  variant="outline"
-                  onClick={loadDordogneTestData}
-                  className="flex items-center gap-2 bg-gradient-to-r from-blue-50 to-green-50 border-blue-200 hover:from-blue-100 hover:to-green-100"
-                >
-                  <Bot className="h-4 w-4 text-blue-600" />
-                  Test Dordogne
-                </Button>
-
-                <Button 
-                  variant="secondary"
-                  onClick={autoCorrectJson}
-                  disabled={!jsonContent.trim()}
-                  className="flex items-center gap-2"
-                >
-                  <CheckCircle className="h-4 w-4" />
-                  Auto-corriger
-                </Button>
               </div>
               
               <div className="flex gap-2">
