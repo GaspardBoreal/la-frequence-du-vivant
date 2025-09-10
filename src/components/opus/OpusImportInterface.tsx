@@ -1255,17 +1255,6 @@ export const OpusImportInterface: React.FC<OpusImportInterfaceProps> = ({
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              {/* Information IDs auto-injectés */}
-              <Alert className="border-blue-200 bg-blue-50">
-                <Info className="w-4 h-4" />
-                <AlertDescription>
-                  <strong>IDs automatiquement ajoutés :</strong>
-                  <br />• Exploration: <code>{explorationId || 'Non trouvée'}</code>
-                  <br />• Marche: <code>{currentMarcheName} ({currentMarcheId || 'Non sélectionnée'})</code>
-                  <br />Vous n'avez pas besoin d'inclure exploration_id et marche_id dans votre JSON.
-                </AlertDescription>
-              </Alert>
-              
             <Textarea
               placeholder="Collez ici votre JSON d'import IA ou utilisez le bouton 'Copier le format JSON' pour obtenir le modèle complet..."
               value={jsonContent}
