@@ -1231,10 +1231,11 @@ export const OpusImportInterface: React.FC<OpusImportInterfaceProps> = ({
                         <SelectItem key={explorationMarche.marche?.id} value={explorationMarche.marche?.id || ''}>
                           <div className="flex flex-col">
                             <span className="font-medium">
-                              {explorationMarche.marche?.nom_marche || explorationMarche.marche?.ville}
+                              {explorationMarche.marche?.nom_marche || 'Marche sans nom'}
                             </span>
                             <span className="text-sm text-muted-foreground">
-                              {explorationMarche.marche?.descriptif_court}
+                              {explorationMarche.marche?.ville}
+                              {explorationMarche.marche?.region && ` (${explorationMarche.marche?.region})`}
                             </span>
                           </div>
                         </SelectItem>
