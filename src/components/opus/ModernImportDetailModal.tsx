@@ -71,6 +71,7 @@ export const ModernImportDetailModal: React.FC<ModernImportDetailModalProps> = (
 }) => {
   const [selectedYear, setSelectedYear] = useState<string | null>(null);
   const [showJsonView, setShowJsonView] = useState(false);
+  const [activeTab, setActiveTab] = useState(defaultTab);
 
   const sourcesByYear = useMemo(() => {
     const yearMap = new Map<string, any[]>();
@@ -178,7 +179,7 @@ export const ModernImportDetailModal: React.FC<ModernImportDetailModalProps> = (
           </DialogDescription>
         </DialogHeader>
 
-        <Tabs defaultValue={defaultTab} className="flex-1">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1">
           <div className="hidden md:block">
             <TabsList className="grid w-full grid-cols-8 mb-6 bg-background/50 backdrop-blur-sm border border-border/30">
               <TabsTrigger value="overview" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground text-xs">
@@ -213,7 +214,10 @@ export const ModernImportDetailModal: React.FC<ModernImportDetailModalProps> = (
             <TabsContent value="overview" className="space-y-6">
               <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-4">
                 {/* 1. Nb Espèces */}
-                <Card className="bg-gradient-to-br from-success/20 to-success/10 border-success/30 hover:shadow-lg transition-all">
+                <Card 
+                  className="bg-gradient-to-br from-success/20 to-success/10 border-success/30 hover:shadow-lg transition-all cursor-pointer hover:scale-105"
+                  onClick={() => setActiveTab('species')}
+                >
                   <CardHeader className="pb-2">
                     <CardTitle className="text-sm flex items-center gap-2">
                       <Leaf className="w-4 h-4 text-success" />
@@ -229,7 +233,10 @@ export const ModernImportDetailModal: React.FC<ModernImportDetailModalProps> = (
                 </Card>
 
                 {/* 2. Vocabulaire Local */}
-                <Card className="bg-gradient-to-br from-info/20 to-info/10 border-info/30 hover:shadow-lg transition-all">
+                <Card 
+                  className="bg-gradient-to-br from-info/20 to-info/10 border-info/30 hover:shadow-lg transition-all cursor-pointer hover:scale-105"
+                  onClick={() => setActiveTab('vocabulary')}
+                >
                   <CardHeader className="pb-2">
                     <CardTitle className="text-sm flex items-center gap-2">
                       <BookOpen className="w-4 h-4 text-info" />
@@ -246,7 +253,10 @@ export const ModernImportDetailModal: React.FC<ModernImportDetailModalProps> = (
                 </Card>
 
                 {/* 3. Infrastructures */}
-                <Card className="bg-gradient-to-br from-warning/20 to-warning/10 border-warning/30 hover:shadow-lg transition-all">
+                <Card 
+                  className="bg-gradient-to-br from-warning/20 to-warning/10 border-warning/30 hover:shadow-lg transition-all cursor-pointer hover:scale-105"
+                  onClick={() => setActiveTab('infrastructure')}
+                >
                   <CardHeader className="pb-2">
                     <CardTitle className="text-sm flex items-center gap-2">
                       <Building className="w-4 h-4 text-warning" />
@@ -275,7 +285,10 @@ export const ModernImportDetailModal: React.FC<ModernImportDetailModalProps> = (
                 </Card>
 
                 {/* 4. Leviers Agroécologiques */}
-                <Card className="bg-gradient-to-br from-accent/20 to-accent/10 border-accent/30 hover:shadow-lg transition-all">
+                <Card 
+                  className="bg-gradient-to-br from-accent/20 to-accent/10 border-accent/30 hover:shadow-lg transition-all cursor-pointer hover:scale-105"
+                  onClick={() => setActiveTab('agro')}
+                >
                   <CardHeader className="pb-2">
                     <CardTitle className="text-sm flex items-center gap-2">
                       <Wheat className="w-4 h-4 text-accent" />
@@ -317,7 +330,10 @@ export const ModernImportDetailModal: React.FC<ModernImportDetailModalProps> = (
                 </Card>
 
                 {/* 6. Technodiversité */}
-                <Card className="bg-gradient-to-br from-purple-500/20 to-purple-500/10 border-purple-500/30 hover:shadow-lg transition-all">
+                <Card 
+                  className="bg-gradient-to-br from-purple-500/20 to-purple-500/10 border-purple-500/30 hover:shadow-lg transition-all cursor-pointer hover:scale-105"
+                  onClick={() => setActiveTab('technology')}
+                >
                   <CardHeader className="pb-2">
                     <CardTitle className="text-sm flex items-center gap-2">
                       <Wrench className="w-4 h-4 text-purple-500" />
