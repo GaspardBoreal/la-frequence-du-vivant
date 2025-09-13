@@ -1632,6 +1632,14 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: boolean
       }
+      migrate_vocabulary_categorization: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          changes_count: number
+          migration_log: string
+          opus_id: string
+        }[]
+      }
       remove_admin_user: {
         Args: { target_user_id: string }
         Returns: boolean
