@@ -48,136 +48,91 @@ export const processEmpreintesHumainesData = (data: any): ProcessedEmpreintesHum
   // Si les données suivent la nouvelle structure JSON avec "donnees" (infrastructures_techniques)
   if (data.donnees) {
     const donnees = data.donnees;
-    
-    // Traiter chaque catégorie de la structure infrastructures_techniques
-    if (donnees.ouvrages_hydrauliques) {
-      donnees.ouvrages_hydrauliques.forEach((item: any) => {
-        const processedItem = {
-          titre: item.nom,
-          description: item.description,
-          type: 'ouvrage_hydraulique',
-          category: categorizeInfrastructureItem(item.nom, item.description),
-          metadata: {
-            impact: determineImpact(item),
-            source_ids: item.source_ids || []
-          }
-        } as EmpreinteHumaineItem;
-        addToCategory(result, processedItem);
-      });
-    }
-    
-    if (donnees.reseaux) {
-      donnees.reseaux.forEach((item: any) => {
-        const processedItem = {
-          titre: item.nom,
-          description: item.description,
-          type: 'reseau',
-          category: 'transport', // Les réseaux sont généralement du transport
-          metadata: {
-            impact: determineImpact(item),
-            source_ids: item.source_ids || []
-          }
-        } as EmpreinteHumaineItem;
-        addToCategory(result, processedItem);
-      });
-    }
-    
-    if (donnees.equipements) {
-      donnees.equipements.forEach((item: any) => {
-        const processedItem = {
-          titre: item.nom,
-          description: item.description,
-          type: 'equipement',
-          category: 'industrielles', // Les équipements sont généralement industriels
-          metadata: {
-            impact: 'négatif', // Les équipements industriels ont généralement un impact négatif
-            source_ids: item.source_ids || []
-          }
-        } as EmpreinteHumaineItem;
-        addToCategory(result, processedItem);
-      });
-    }
-    
-    if (donnees.complexes_industriels) {
-      donnees.complexes_industriels.forEach((item: any) => {
-        const processedItem = {
-          titre: item.nom,
-          description: item.description,
-          type: 'complexe_industriel',
-          category: 'industrielles',
-          metadata: {
-            impact: 'négatif', // Les complexes industriels ont généralement un impact négatif
-            source_ids: item.source_ids || []
-          }
-        } as EmpreinteHumaineItem;
-        addToCategory(result, processedItem);
-      });
-    }
-    
-    // Nouveau format (rapport PDF) : clés différentes et valeurs parfois en objet unique
-    const pushEntry = (raw: any, type: string, defaultCategory: string) => {
-      if (!raw) return;
-      const titre = raw.nom_ouvrage || raw.nom || raw.titre || 'Ouvrage';
-      const description = raw.description_technique || raw.description || raw.explication || '';
-      const impactHint = raw.impact_ecologique || raw.impact || '';
-      const processedItem: EmpreinteHumaineItem = {
-        titre,
-        description,
-        type,
-        category: categorizeInfrastructureItem(titre, description) || (defaultCategory as any),
-        metadata: {
-          impact: determineImpact({ titre, description, impact_ecologique: impactHint }) as any,
-          source_pdf: raw.source_pdf,
-          date_construction: raw.date_construction || raw.date_construction_renovation,
-          etat: raw.etat || raw.etat_conservation,
-          gestionnaire: raw.gestionnaire,
-          ...raw,
-        },
-      } as EmpreinteHumaineItem;
-      addToCategory(result, processedItem);
+
+    // Collecte récursive et robuste de TOUTES les entrées potentielles sous "donnees"
+    const rawItems: any[] = [];
+
+    const looksLikeItem = (node: any) => {
+      if (!node || typeof node !== 'object') return false;
+      // Heuristiques: présence d'un nom/titre et éventuellement d'une description
+      const hasName = !!(node.nom || node.titre || node.name);
+      const hasDesc = !!(node.description || node.explication || node.details || node.description_technique);
+      const hasTypeHints = !!(node.type || node.categorie || node.catégorie || node.impact || node.impact_ecologique);
+      // Exclure les conteneurs évidents
+      const isContainer = Array.isArray((node as any).donnees) || typeof (node as any).donnees === 'object';
+      return hasName && (hasDesc || hasTypeHints) && !isContainer;
     };
 
-    const handleSingleOrArray = (node: any, type: string, defaultCategory: string) => {
+    const collect = (node: any) => {
       if (!node) return;
-      if (Array.isArray(node)) node.forEach((item) => pushEntry(item, type, defaultCategory));
-      else pushEntry(node, type, defaultCategory);
+      if (Array.isArray(node)) {
+        for (const el of node) {
+          if (looksLikeItem(el)) rawItems.push(el);
+          else if (el && typeof el === 'object') collect(el);
+        }
+        return;
+      }
+      if (typeof node === 'object') {
+        if ((node as any).donnees) {
+          collect((node as any).donnees);
+          // continuer pour attraper d'autres clés au même niveau
+        }
+        if (looksLikeItem(node)) rawItems.push(node);
+        for (const value of Object.values(node)) {
+          if (value && typeof value === 'object') collect(value);
+          else if (Array.isArray(value)) collect(value);
+        }
+      }
     };
 
-    // Clés observées dans les logs
-    console.log('Debug - donnees keys:', Object.keys(donnees));
-    handleSingleOrArray(donnees.infrastructures_hydrauliques, 'infrastructure_hydraulique', 'industrielles');
-    handleSingleOrArray(donnees.amenagements_recents, 'amenagement', 'industrielles');
-    handleSingleOrArray(donnees.vestiges_historiques, 'vestige_historique', 'patrimoniales');
+    collect(donnees);
 
-    // Passe générique: traiter toutes les autres clés présentes sous "donnees"
-    const knownKeys = new Set([
-      'infrastructures_hydrauliques',
-      'amenagements_recents',
-      'vestiges_historiques',
-      'ouvrages_hydrauliques',
-      'reseaux',
-      'equipements',
-      'complexes_industriels'
-    ]);
-    Object.entries(donnees).forEach(([key, value]) => {
-      if (!value || knownKeys.has(key)) return;
-      // Par défaut, on laisse la catégorisation se faire par mots-clés
-      handleSingleOrArray(value, key, 'industrielles');
+    // Normalisation + dédoublonnage
+    const seen = new Set<string>();
+    const toKey = (titre: string, meta: any) => {
+      const loc = meta?.commune || meta?.ville || `${meta?.coordonnees?.lat || ''},${meta?.coordonnees?.lng || ''}`;
+      return `${(titre || '').toLowerCase().trim()}|${(loc || '').toLowerCase().trim()}`;
+    };
+
+    rawItems.forEach((raw) => {
+      const titre = raw.nom || raw.titre || raw.name || 'Infrastructure';
+      const description = raw.description_technique || raw.description || raw.explication || raw.details || '';
+      const type = raw.type || determineInfrastructureType({ titre, description });
+      const category = (categorizeInfrastructureItem(titre, description) as any) || 'patrimoniales';
+      const metadata = {
+        impact: determineImpact({ titre, description, impact_ecologique: raw.impact_ecologique }),
+        periode_historique: raw.periode || raw.date || raw.epoque || raw.date_construction || raw.date_construction_renovation,
+        coordonnees: raw.coordonnees || raw.localisation,
+        sources: raw.sources || raw.source_ids || [],
+        etat_actuel: raw.etat || raw.statut,
+        ...raw,
+      } as EmpreinteHumaineItem['metadata'];
+
+      const key = toKey(titre, metadata);
+      if (seen.has(key)) return;
+      seen.add(key);
+
+      addToCategory(result, { titre, description, type, category, metadata });
     });
-    
-    result.totalCount = result.industrielles.length + result.patrimoniales.length + 
-                     result.transport.length + result.urbaines.length;
-    
-    console.log('Debug - New JSON format processed:', {
-      keys: Object.keys(donnees),
-      counts: {
-        industrielles: result.industrielles.length,
-        patrimoniales: result.patrimoniales.length,
-        transport: result.transport.length,
-        urbaines: result.urbaines.length,
-      },
-      total: result.totalCount,
-    });
+
+    result.totalCount = result.industrielles.length + result.patrimoniales.length + result.transport.length + result.urbaines.length;
+
+    // Logs concis (désactivables)
+    try {
+      // @ts-ignore
+      if ((window && (window as any).__DEBUG_INFRA__) || false) {
+        console.debug('Infra (donnees) – counts', {
+          keys: Object.keys(donnees || {}),
+          counts: {
+            industrielles: result.industrielles.length,
+            patrimoniales: result.patrimoniales.length,
+            transport: result.transport.length,
+            urbaines: result.urbaines.length,
+          },
+          total: result.totalCount,
+        });
+      }
+    } catch {}
 
     return result;
   }

@@ -197,9 +197,13 @@ export const ModernImportDashboard: React.FC = () => {
             dataToProcess = empreintesHumaines;
           }
           
-          console.log('🏗️ Infra data for', imp.marche_nom, 'keys:', dataToProcess ? Object.keys(dataToProcess) : null, 'donnees keys:', dataToProcess?.donnees ? Object.keys(dataToProcess.donnees) : null);
+          if ((window as any).__DEBUG_INFRA__) {
+            console.debug('🏗️ Infra data for', imp.marche_nom, 'keys:', dataToProcess ? Object.keys(dataToProcess) : null, 'donnees keys:', dataToProcess?.donnees ? Object.keys(dataToProcess.donnees) : null);
+          }
           const processed = processEmpreintesHumainesData(dataToProcess);
-          console.log('✅ Infra processed count for', imp.marche_nom, processed.totalCount);
+          if ((window as any).__DEBUG_INFRA__) {
+            console.debug('✅ Infra processed count for', imp.marche_nom, processed.totalCount);
+          }
           return acc + processed.totalCount;
         } catch (error) {
           console.error('Erreur lors du traitement des infrastructures:', error);
@@ -370,7 +374,7 @@ export const ModernImportDashboard: React.FC = () => {
             donneesKeys: foundDonnees ? Object.keys(foundDonnees) : null,
           };
         });
-        console.table(debugRows);
+        if ((window as any).__DEBUG_INFRA__) { console.table(debugRows); }
       } catch (e) {
         console.warn('Infra debug failed:', e);
       }
@@ -885,12 +889,14 @@ export const ModernImportDashboard: React.FC = () => {
                     const foundDonnees = findDonnees(baseInfra);
                     const infra = foundDonnees ? { donnees: foundDonnees } : baseInfra;
                     
-                    console.log('Debug - Infrastructure final payload for grid', {
-                      marche: importRecord.marche_nom,
-                      hasFoundDonnees: !!foundDonnees,
-                      baseKeys: baseInfra ? Object.keys(baseInfra) : null,
-                      donneesKeys: foundDonnees ? Object.keys(foundDonnees) : null,
-                    });
+                    if ((window as any).__DEBUG_INFRA__) {
+                      console.debug('Debug - Infrastructure final payload for grid', {
+                        marche: importRecord.marche_nom,
+                        hasFoundDonnees: !!foundDonnees,
+                        baseKeys: baseInfra ? Object.keys(baseInfra) : null,
+                        donneesKeys: foundDonnees ? Object.keys(foundDonnees) : null,
+                      });
+                    }
                     
                     if (!infra) return null;
                     return (
