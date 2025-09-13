@@ -1637,7 +1637,7 @@ export type Database = {
         Returns: {
           changes_count: number
           migration_log: string
-          opus_id: string
+          rec_opus_id: string
         }[]
       }
       remove_admin_user: {
