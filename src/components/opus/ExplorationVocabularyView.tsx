@@ -58,13 +58,15 @@ export const ExplorationVocabularyView: React.FC<ExplorationVocabularyViewProps>
     const vocabularyMap = new Map<string, ProcessedVocabularyWithMeta>();
     
     imports.forEach(importRecord => {
-      if (!importRecord.contexte_data?.vocabulary) return;
+      const cd = importRecord.contexte_data;
+      const rawVocabularyData = cd?.vocabulaire_local ?? cd?.vocabulary;
+      if (!rawVocabularyData) return;
       
       // Normalize vocabulary data - handle wrapped data under 'donnees' key
-      const rawVocabularyData = importRecord.contexte_data.vocabulary;
       const vocabularyData = rawVocabularyData?.donnees ?? rawVocabularyData;
       
       console.debug(`[${importRecord.marche_nom}] Processing vocabulary:`, {
+        usedKey: cd?.vocabulaire_local ? 'vocabulaire_local' : cd?.vocabulary ? 'vocabulary' : 'none',
         hasWrappedData: !!rawVocabularyData?.donnees,
         termes_locaux: vocabularyData?.termes_locaux ? (Array.isArray(vocabularyData.termes_locaux) ? vocabularyData.termes_locaux.length : Object.keys(vocabularyData.termes_locaux).length) : 0,
         phenomenes: vocabularyData?.phenomenes ? (Array.isArray(vocabularyData.phenomenes) ? vocabularyData.phenomenes.length : Object.keys(vocabularyData.phenomenes).length) : 0,
