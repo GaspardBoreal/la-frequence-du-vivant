@@ -167,19 +167,10 @@ export const ModernImportDashboard: React.FC = () => {
   );
   const totalInfrastructure = useAnimatedCounter(
     filteredImports.reduce((acc, imp) => {
-      // Essayer d'abord dans request_payload (nouvelles données harmonisées)
-      let infrastructures = imp.request_payload?.data?.dimensions?.empreintes_humaines?.donnees ||
-                           imp.request_payload?.data?.dimensions?.empreintes_humaines;
-      
-      // Fallback sur contexte_data
-      if (!infrastructures) {
-        const contextData = imp.contexte_data as any;
-        infrastructures = contextData?.dimensions?.infrastructures_techniques ||
-                         contextData?.infrastructures_techniques || 
-                         contextData?.empreintes_humaines?.dimensions?.infrastructures_techniques ||
-                         contextData?.empreintes_humaines?.infrastructures_techniques ||
-                         contextData?.empreintes_humaines;
-      }
+      // Lire directement depuis contexte_data (source de vérité unifiée)
+      const contextData = imp.contexte_data as any;
+      const infrastructures = contextData?.empreintes_humaines?.donnees || 
+                             contextData?.empreintes_humaines;
       
       if (infrastructures) {
         try {

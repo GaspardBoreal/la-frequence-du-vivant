@@ -445,8 +445,6 @@ export const ModernImportDetailModal: React.FC<ModernImportDetailModalProps> = (
             <TabsContent value="infrastructure" className="space-y-6">
               <InfrastructureVignetteGrid 
                 empreintesHumainesData={
-                  importRecord.request_payload?.data?.dimensions?.empreintes_humaines?.donnees ||
-                  importRecord.request_payload?.data?.dimensions?.empreintes_humaines ||
                   importRecord.contexte_data?.empreintes_humaines?.donnees || 
                   importRecord.contexte_data?.empreintes_humaines
                 }
