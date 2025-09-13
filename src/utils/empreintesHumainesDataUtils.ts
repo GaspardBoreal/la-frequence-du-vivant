@@ -144,14 +144,32 @@ export const processEmpreintesHumainesData = (data: any): ProcessedEmpreintesHum
     };
 
     // Clés observées dans les logs
+    console.log('Debug - donnees keys:', Object.keys(donnees));
     handleSingleOrArray(donnees.infrastructures_hydrauliques, 'infrastructure_hydraulique', 'industrielles');
     handleSingleOrArray(donnees.amenagements_recents, 'amenagement', 'industrielles');
     handleSingleOrArray(donnees.vestiges_historiques, 'vestige_historique', 'patrimoniales');
+
+    // Passe générique: traiter toutes les autres clés présentes sous "donnees"
+    const knownKeys = new Set([
+      'infrastructures_hydrauliques',
+      'amenagements_recents',
+      'vestiges_historiques',
+      'ouvrages_hydrauliques',
+      'reseaux',
+      'equipements',
+      'complexes_industriels'
+    ]);
+    Object.entries(donnees).forEach(([key, value]) => {
+      if (!value || knownKeys.has(key)) return;
+      // Par défaut, on laisse la catégorisation se faire par mots-clés
+      handleSingleOrArray(value, key, 'industrielles');
+    });
     
     result.totalCount = result.industrielles.length + result.patrimoniales.length + 
                      result.transport.length + result.urbaines.length;
     
     console.log('Debug - New JSON format processed:', {
+      keys: Object.keys(donnees),
       counts: {
         industrielles: result.industrielles.length,
         patrimoniales: result.patrimoniales.length,

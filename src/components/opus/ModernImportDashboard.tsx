@@ -169,28 +169,37 @@ export const ModernImportDashboard: React.FC = () => {
     filteredImports.reduce((acc, imp) => {
       // Lire directement depuis contexte_data (source de vérité unifiée)
       const contextData = imp.contexte_data as any;
-      const empreintesHumaines = contextData?.empreintes_humaines;
+      const empreintesHumaines = contextData?.empreintes_humaines || contextData?.infrastructures_techniques;
       
       if (empreintesHumaines) {
         try {
           // Gérer les différentes structures de données possibles
-          let dataToProcess = null;
+          let dataToProcess: any = null;
           
-          // Structure nouvelle: empreintes_humaines.infrastructures_hydrauliques
-          if (empreintesHumaines.infrastructures_hydrauliques?.donnees) {
-            dataToProcess = { donnees: empreintesHumaines.infrastructures_hydrauliques.donnees };
-          }
-          // Structure directe: empreintes_humaines.donnees  
-          else if (empreintesHumaines.donnees) {
+          // Recherche récursive d'un noeud "donnees"
+          const findDonnees = (node: any): any => {
+            if (!node || typeof node !== 'object') return null;
+            if (node.donnees) return node.donnees;
+            for (const value of Object.values(node)) {
+              const found = findDonnees(value);
+              if (found) return found;
+            }
+            return null;
+          };
+
+          const foundDonnees = findDonnees(empreintesHumaines);
+
+          if (foundDonnees) {
+            dataToProcess = { donnees: foundDonnees };
+          } else if (empreintesHumaines.donnees) {
+            dataToProcess = empreintesHumaines;
+          } else {
             dataToProcess = empreintesHumaines;
           }
-          // Structure legacy: empreintes_humaines direct
-          else {
-            dataToProcess = empreintesHumaines;
-          }
           
-          console.log('🏗️ Infrastructure data structure for:', imp.marche_nom, dataToProcess);
+          console.log('🏗️ Infra data for', imp.marche_nom, 'keys:', dataToProcess ? Object.keys(dataToProcess) : null, 'donnees keys:', dataToProcess?.donnees ? Object.keys(dataToProcess.donnees) : null);
           const processed = processEmpreintesHumainesData(dataToProcess);
+          console.log('✅ Infra processed count for', imp.marche_nom, processed.totalCount);
           return acc + processed.totalCount;
         } catch (error) {
           console.error('Erreur lors du traitement des infrastructures:', error);

@@ -445,12 +445,23 @@ export const ModernImportDetailModal: React.FC<ModernImportDetailModalProps> = (
             <TabsContent value="infrastructure" className="space-y-6">
               <InfrastructureVignetteGrid 
                 empreintesHumainesData={(() => {
-                  const empreintesHumaines = importRecord.contexte_data?.empreintes_humaines;
+                  const empreintesHumaines = importRecord.contexte_data?.empreintes_humaines || importRecord.contexte_data?.infrastructures_techniques;
                   if (!empreintesHumaines) return null;
                   
-                  // Structure nouvelle: empreintes_humaines.infrastructures_hydrauliques
-                  if (empreintesHumaines.infrastructures_hydrauliques?.donnees) {
-                    return { donnees: empreintesHumaines.infrastructures_hydrauliques.donnees };
+                  // Recherche récursive d'un noeud "donnees"
+                  const findDonnees = (node: any): any => {
+                    if (!node || typeof node !== 'object') return null;
+                    if ((node as any).donnees) return (node as any).donnees;
+                    for (const value of Object.values(node)) {
+                      const found = findDonnees(value);
+                      if (found) return found;
+                    }
+                    return null;
+                  };
+
+                  const foundDonnees = findDonnees(empreintesHumaines);
+                  if (foundDonnees) {
+                    return { donnees: foundDonnees };
                   }
                   // Structure directe: empreintes_humaines.donnees
                   else if (empreintesHumaines.donnees) {
