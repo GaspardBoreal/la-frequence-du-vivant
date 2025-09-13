@@ -199,7 +199,7 @@ export const InteractiveVignette: React.FC<InteractiveVignetteProps> = ({
                   {/* Section principale - Description */}
                   {(data.description_courte || data.definition) && <div className="p-6 rounded-xl bg-gradient-to-br from-muted/30 to-muted/10 border border-border/20">
                       <div className="flex items-start gap-3">
-                        <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0 mt-1">
+                        <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 mt-1 bg-slate-300">
                           <Info className="w-4 h-4 text-primary" />
                         </div>
                         <div className="min-w-0 flex-1">
