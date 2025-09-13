@@ -17,6 +17,7 @@ import {
   Hash
 } from 'lucide-react';
 import { processVocabularyData } from '@/utils/vocabularyDataUtils';
+import { InteractiveVignette } from '@/components/opus/InteractiveVignette';
 
 interface ImportRecord {
   id: string;
@@ -214,7 +215,6 @@ export const ExplorationVocabularyView: React.FC<ExplorationVocabularyViewProps>
     return filtered;
   }, [allVocabulary, searchTerm, selectedMarche, selectedCategory, sortBy]);
 
-  // Listes pour les selects
   const uniqueMarches = useMemo(() => {
     const marches = new Set<string>();
     imports.forEach(imp => {
@@ -222,32 +222,6 @@ export const ExplorationVocabularyView: React.FC<ExplorationVocabularyViewProps>
     });
     return Array.from(marches).sort();
   }, [imports]);
-
-  const getCategoryIcon = (category: string) => {
-    switch (category) {
-      case 'Termes locaux':
-        return <BookOpen className="w-4 h-4" />;
-      case 'Phénomènes':
-        return <Lightbulb className="w-4 h-4" />;
-      case 'Pratiques':
-        return <Cog className="w-4 h-4" />;
-      default:
-        return <Users className="w-4 h-4" />;
-    }
-  };
-
-  const getCategoryColor = (category: string) => {
-    switch (category) {
-      case 'Termes locaux':
-        return 'default';
-      case 'Phénomènes':
-        return 'secondary';
-      case 'Pratiques':
-        return 'outline';
-      default:
-        return 'default';
-    }
-  };
 
   // Statistiques par catégorie
   const categoryStats = useMemo(() => {
@@ -403,58 +377,43 @@ export const ExplorationVocabularyView: React.FC<ExplorationVocabularyViewProps>
       {/* Liste du vocabulaire */}
       <div className="grid gap-4 lg:grid-cols-2">
         {filteredAndSortedVocabulary.map((vocab, index) => (
-          <Card key={`${vocab.importId}-${index}`} className="bg-background/50 backdrop-blur-sm border-border/30 hover:shadow-md transition-all duration-300">
-            <CardHeader className="pb-3">
-              <div className="flex items-start justify-between">
-                <div className="flex items-center gap-2">
-                  {getCategoryIcon(vocab.category)}
-                  <div>
-                    <CardTitle className="text-lg">{vocab.titre}</CardTitle>
-                    {vocab.type && vocab.type !== vocab.category && (
-                      <CardDescription className="text-sm">
-                        {vocab.type}
-                      </CardDescription>
-                    )}
-                  </div>
-                </div>
-                <Badge variant={getCategoryColor(vocab.category)} className="text-xs">
-                  {vocab.category}
-                </Badge>
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              {vocab.description_courte && (
-                <p className="text-sm text-muted-foreground">
-                  {vocab.description_courte}
-                </p>
-              )}
-
-              {vocab.details && (
-                <p className="text-sm">
-                  {vocab.details}
-                </p>
-              )}
-
+          <div key={`${vocab.importId}-${index}`} className="space-y-2">
+            <InteractiveVignette
+              data={{
+                titre: vocab.titre,
+                description_courte: vocab.description_courte,
+                details: vocab.details,
+                type: vocab.type !== vocab.category ? vocab.type : undefined,
+                category: vocab.category,
+                metadata: vocab.metadata
+              }}
+              variant="vocabulary"
+            />
+            
+            {/* Métadonnées spécifiques au dashboard */}
+            <div className="px-4 pb-2 space-y-2">
               <div className="flex items-center justify-between text-xs text-muted-foreground">
-                <span>
+                <span className="flex items-center gap-1">
+                  <Users className="w-3 h-3" />
                   {vocab.marchesCount} marche{vocab.marchesCount > 1 ? 's' : ''}
                 </span>
-                <span>
+                <span className="flex items-center gap-1">
+                  <Calendar className="w-3 h-3" />
                   {new Date(vocab.lastImportDate).toLocaleDateString('fr-FR')}
                 </span>
               </div>
 
               {vocab.marches.length > 1 && (
                 <div className="text-xs">
-                  <span className="font-medium">Marches : </span>
+                  <span className="font-medium text-foreground">Marches : </span>
                   <span className="text-muted-foreground">
                     {vocab.marches.slice(0, 2).join(', ')}
                     {vocab.marches.length > 2 && ` +${vocab.marches.length - 2} autres`}
                   </span>
                 </div>
               )}
-            </CardContent>
-          </Card>
+            </div>
+          </div>
         ))}
       </div>
 
