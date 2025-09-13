@@ -113,6 +113,40 @@ export const processEmpreintesHumainesData = (data: any): ProcessedEmpreintesHum
       });
     }
     
+    // Nouveau format (rapport PDF) : clés différentes et valeurs parfois en objet unique
+    const pushEntry = (raw: any, type: string, defaultCategory: string) => {
+      if (!raw) return;
+      const titre = raw.nom_ouvrage || raw.nom || raw.titre || 'Ouvrage';
+      const description = raw.description_technique || raw.description || raw.explication || '';
+      const impactHint = raw.impact_ecologique || raw.impact || '';
+      const processedItem: EmpreinteHumaineItem = {
+        titre,
+        description,
+        type,
+        category: categorizeInfrastructureItem(titre, description) || (defaultCategory as any),
+        metadata: {
+          impact: determineImpact({ titre, description, impact_ecologique: impactHint }) as any,
+          source_pdf: raw.source_pdf,
+          date_construction: raw.date_construction || raw.date_construction_renovation,
+          etat: raw.etat || raw.etat_conservation,
+          gestionnaire: raw.gestionnaire,
+          ...raw,
+        },
+      } as EmpreinteHumaineItem;
+      addToCategory(result, processedItem);
+    };
+
+    const handleSingleOrArray = (node: any, type: string, defaultCategory: string) => {
+      if (!node) return;
+      if (Array.isArray(node)) node.forEach((item) => pushEntry(item, type, defaultCategory));
+      else pushEntry(node, type, defaultCategory);
+    };
+
+    // Clés observées dans les logs
+    handleSingleOrArray(donnees.infrastructures_hydrauliques, 'infrastructure_hydraulique', 'industrielles');
+    handleSingleOrArray(donnees.amenagements_recents, 'amenagement', 'industrielles');
+    handleSingleOrArray(donnees.vestiges_historiques, 'vestige_historique', 'patrimoniales');
+    
     result.totalCount = result.industrielles.length + result.patrimoniales.length + 
                      result.transport.length + result.urbaines.length;
     
