@@ -99,51 +99,22 @@ export const ExplorationVocabularyView: React.FC<ExplorationVocabularyViewProps>
           } else {
             // Traiter l'item directement
             const titre = item.nom || item.terme || item.titre || item.name || 'Terme sans nom';
-            const description = item.description || item.definition || item.explication || '';
-            const details = item.details || item.usage || item.application || '';
+            const key = `${titre}_${categoryName}_${importRecord.marche_id}`.toLowerCase().replace(/\s+/g, '_');
             
-            // Clé globale pour déduplication basée sur le contenu, pas la marche
-            const globalKey = `${titre}_${categoryName}`.toLowerCase().replace(/\s+/g, '_');
-            
-            if (vocabularyMap.has(globalKey)) {
-              const existing = vocabularyMap.get(globalKey)!;
-              
-              // Vérifier si c'est vraiment le même terme (même description/détails)
-              const isSameTerm = existing.description_courte === description && existing.details === details;
-              
-              if (isSameTerm) {
-                // Même terme, incrémenter le compteur de marches
-                if (!existing.marches.includes(importRecord.marche_nom || 'Marché inconnu')) {
-                  existing.marchesCount += 1;
-                  existing.marches.push(importRecord.marche_nom || 'Marché inconnu');
-                }
-                if (importRecord.import_date > existing.lastImportDate) {
-                  existing.lastImportDate = importRecord.import_date;
-                  existing.importId = importRecord.id;
-                }
-              } else {
-                // Même titre mais contenu différent, créer une entrée séparée avec identifiant marche
-                const marcheSpecificKey = `${titre}_${categoryName}_${importRecord.marche_id}`.toLowerCase().replace(/\s+/g, '_');
-                vocabularyMap.set(marcheSpecificKey, {
-                  titre,
-                  description_courte: description,
-                  type: item.type || item.categorie || categoryName,
-                  details,
-                  category: categoryName === 'termes_locaux' ? 'Termes locaux' : 
-                           categoryName === 'phenomenes' ? 'Phénomènes' : 'Pratiques',
-                  metadata: item,
-                  marchesCount: 1,
-                  marches: [importRecord.marche_nom || 'Marché inconnu'],
-                  lastImportDate: importRecord.import_date,
-                  importId: importRecord.id
-                });
+            if (vocabularyMap.has(key)) {
+              const existing = vocabularyMap.get(key)!;
+              existing.marchesCount += 1;
+              existing.marches.push(importRecord.marche_nom || 'Marché inconnu');
+              if (importRecord.import_date > existing.lastImportDate) {
+                existing.lastImportDate = importRecord.import_date;
+                existing.importId = importRecord.id;
               }
             } else {
-              vocabularyMap.set(globalKey, {
+              vocabularyMap.set(key, {
                 titre,
-                description_courte: description,
+                description_courte: item.description || item.definition || item.explication || '',
                 type: item.type || item.categorie || categoryName,
-                details,
+                details: item.details || item.usage || item.application || '',
                 category: categoryName === 'termes_locaux' ? 'Termes locaux' : 
                          categoryName === 'phenomenes' ? 'Phénomènes' : 'Pratiques',
                 metadata: item,
@@ -168,10 +139,15 @@ export const ExplorationVocabularyView: React.FC<ExplorationVocabularyViewProps>
         processVocabularyCategory(vocabularyData.pratiques, 'pratiques');
       }
 
-      // Traiter l'ancien format uniquement s'il n'y a pas de nouveau format
-      const hasNewFormat = vocabularyData.termes_locaux || vocabularyData.phenomenes || vocabularyData.pratiques;
+      // Traiter l'ancien format uniquement s'il n'y a PAS de contenu dans le nouveau format
+      const hasNewFormatContent = (['termes_locaux','phenomenes','pratiques'] as const).some((key) => {
+        const val = (vocabularyData as any)?.[key];
+        if (Array.isArray(val)) return val.length > 0;
+        if (val && typeof val === 'object') return Object.keys(val).length > 0;
+        return false;
+      });
       
-      if (!hasNewFormat) {
+      if (!hasNewFormatContent) {
         const processed = processVocabularyData(vocabularyData);
         processed.termes.forEach(term => {
           const titre = term.titre;
