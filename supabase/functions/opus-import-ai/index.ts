@@ -66,7 +66,14 @@ function normalizeDimensions(dimensions: any): any {
   // 1. infrastructures_techniques → empreintes_humaines (robuste)
   if (normalized.infrastructures_techniques) {
     console.log('[OPUS Import] Mapping infrastructures_techniques → empreintes_humaines');
-    normalized.empreintes_humaines = normalized.infrastructures_techniques;
+    const tech = normalized.infrastructures_techniques;
+    // Encapsuler proprement sous empreintes_humaines.donnees.infrastructures_hydrauliques
+    normalized.empreintes_humaines = {
+      description: 'Empreintes humaines et infrastructures (normalisées)',
+      donnees: {
+        infrastructures_hydrauliques: tech
+      }
+    };
     delete normalized.infrastructures_techniques;
     corrections.push('infrastructures_techniques → empreintes_humaines');
   }
@@ -149,6 +156,28 @@ function normalizeDimensions(dimensions: any): any {
           donnees: rest
         };
         corrections.push(`Données extraites pour ${key}`);
+      }
+    }
+  }
+
+  // 5. Garanties spécifiques pour empreintes_humaines
+  const eh = normalized.empreintes_humaines;
+  if (eh) {
+    // Si c'est un tableau, l'encapsuler sous donnees.infrastructures_hydrauliques
+    if (Array.isArray(eh)) {
+      normalized.empreintes_humaines = {
+        description: 'Empreintes humaines et infrastructures (normalisées)',
+        donnees: { infrastructures_hydrauliques: eh }
+      };
+      corrections.push('Encapsulation des empreintes_humaines (array) → donnees.infrastructures_hydrauliques');
+    } else if (eh && typeof eh === 'object') {
+      // Si donnees est un tableau, même encapsulation
+      if (Array.isArray(eh.donnees)) {
+        normalized.empreintes_humaines = {
+          description: eh.description || 'Empreintes humaines et infrastructures (normalisées)',
+          donnees: { infrastructures_hydrauliques: eh.donnees }
+        };
+        corrections.push('Encapsulation des empreintes_humaines.donnees (array) → donnees.infrastructures_hydrauliques');
       }
     }
   }
@@ -417,10 +446,20 @@ serve(async (req) => {
       preview?: boolean; 
     };
 
-    console.log(`[OPUS Import] Mode: ${preview ? 'Preview' : 'Import'}, Marche: ${importData.marche_id}`);
+    // Sanitize + normalize early so we use consistent data everywhere
+    let normalizedData: ImportData;
+    try {
+      normalizedData = sanitizeData(importData);
+      normalizedData.dimensions = normalizeDimensions(normalizedData.dimensions || {});
+    } catch (e) {
+      console.warn('[OPUS Import] Early sanitize/normalize failed, fallback to raw data', e);
+      normalizedData = importData;
+    }
 
-    // Validation des données
-    const validation = await validateImportData(importData);
+    console.log(`[OPUS Import] Mode: ${preview ? 'Preview' : 'Import'}, Marche: ${normalizedData.marche_id}`);
+
+    // Validation des données (sur données normalisées)
+    const validation = await validateImportData(normalizedData);
     
     // Log de l'import dans opus_import_runs pour historique
     const logImportRun = async (status: 'success' | 'error', errorMessage?: string, completudeScore?: number) => {
@@ -428,11 +467,11 @@ serve(async (req) => {
         await supabase.from('opus_import_runs').insert({
           mode: preview ? 'preview' : 'import',
           status,
-          opus_id: importData.exploration_id,
-          marche_id: importData.marche_id,
+          opus_id: normalizedData.exploration_id,
+          marche_id: normalizedData.marche_id,
           completude_score: completudeScore,
           validation,
-          request_payload: { data: importData, preview },
+          request_payload: { data: normalizedData, preview },
           source: 'opus-import-ai',
           error_message: errorMessage
         });
@@ -463,25 +502,25 @@ serve(async (req) => {
       
       console.log('[OPUS Import] Preview response:', {
         validation_score: validation.score,
-        completude_score: importData.metadata?.completeness_score,
-        quality_score: importData.metadata?.quality_score,
-        dimensions_count: Object.keys(importData.dimensions || {}).length,
-        fables_count: importData.fables?.length || 0,
-        sources_count: importData.sources?.length || 0
+        completude_score: normalizedData.metadata?.completeness_score,
+        quality_score: normalizedData.metadata?.quality_score,
+        dimensions_count: Object.keys(normalizedData.dimensions || {}).length,
+        fables_count: normalizedData.fables?.length || 0,
+        sources_count: normalizedData.sources?.length || 0
       });
       
-      await logImportRun('success', undefined, importData.metadata?.completeness_score);
+      await logImportRun('success', undefined, normalizedData.metadata?.completeness_score);
       
       return new Response(
         JSON.stringify({
           success: true,
           validation,
           preview: {
-            dimensions_count: Object.keys(importData.dimensions || {}).length,
-            fables_count: importData.fables?.length || 0,
-            sources_count: importData.sources?.length || 0,
-            completude_score: Math.round(importData.metadata?.completeness_score || 0),
-            quality_score: importData.metadata?.quality_score || 0
+            dimensions_count: Object.keys(normalizedData.dimensions || {}).length,
+            fables_count: normalizedData.fables?.length || 0,
+            sources_count: normalizedData.sources?.length || 0,
+            completude_score: Math.round(normalizedData.metadata?.completeness_score || 0),
+            quality_score: normalizedData.metadata?.quality_score || 0
           }
         }),
         { 
@@ -492,7 +531,7 @@ serve(async (req) => {
 
     // Import réel - transaction atomique
     const { error: transactionError } = await supabase.rpc('import_ai_data_transaction', {
-      import_data: importData
+      import_data: normalizedData
     });
 
     if (transactionError) {
@@ -504,7 +543,7 @@ serve(async (req) => {
 
       try {
         // 1. Créer/Mettre à jour le contexte hybride avec whitelist des colonnes
-        const completude = await calculateCompletude(importData.dimensions);
+        const completude = await calculateCompletude(normalizedData.dimensions);
         
         // Whitelist des colonnes connues dans marche_contextes_hybrids
         const allowedColumns = [
@@ -514,9 +553,9 @@ serve(async (req) => {
         ];
         
         const cleanDimensions: any = {};
-        Object.keys(importData.dimensions).forEach(key => {
+        Object.keys(normalizedData.dimensions).forEach(key => {
           if (allowedColumns.includes(key)) {
-            cleanDimensions[key] = importData.dimensions[key];
+            cleanDimensions[key] = normalizedData.dimensions[key];
           } else {
             console.warn(`[OPUS Import] Dimension ignorée (non supportée): ${key}`);
           }
@@ -525,11 +564,11 @@ serve(async (req) => {
         const { error: contextError } = await supabase
           .from('marche_contextes_hybrids')
           .upsert({
-            marche_id: importData.marche_id,
-            opus_id: importData.exploration_id,
+            marche_id: normalizedData.marche_id,
+            opus_id: normalizedData.exploration_id,
             ...cleanDimensions,
             completude_score: completude,
-            sources: importData.sources,
+            sources: normalizedData.sources,
             last_validation: new Date().toISOString()
           }, {
             onConflict: 'marche_id,opus_id'
@@ -539,13 +578,13 @@ serve(async (req) => {
         contextCreated = true;
 
         // 2. Créer les fables si présentes
-        if (importData.fables && importData.fables.length > 0) {
-          for (const fable of importData.fables) {
+        if (normalizedData.fables && normalizedData.fables.length > 0) {
+          for (const fable of normalizedData.fables) {
             const { error: fableError } = await supabase
               .from('fables_narratives')
               .insert({
-                marche_id: importData.marche_id,
-                opus_id: importData.exploration_id,
+                marche_id: normalizedData.marche_id,
+                opus_id: normalizedData.exploration_id,
                 titre: fable.titre,
                 contenu_principal: fable.contenu_principal,
                 variations: fable.variations,
@@ -561,7 +600,7 @@ serve(async (req) => {
 
         console.log(`[OPUS Import] Success: Context=${contextCreated}, Fables=${fablesCreated}`);
         
-        const finalCompletude = await calculateCompletude(importData.dimensions);
+        const finalCompletude = await calculateCompletude(normalizedData.dimensions);
         await logImportRun('success', undefined, finalCompletude);
 
         return new Response(
@@ -570,7 +609,7 @@ serve(async (req) => {
             imported: {
               context: contextCreated,
               fables: fablesCreated,
-              sources: importData.sources.length
+              sources: normalizedData.sources.length
             },
             validation,
             completude_score: finalCompletude
@@ -606,7 +645,7 @@ serve(async (req) => {
     }
 
     // Transaction réussie
-    const finalCompletude = await calculateCompletude(importData.dimensions);
+    const finalCompletude = await calculateCompletude(normalizedData.dimensions);
     await logImportRun('success', undefined, finalCompletude);
     
     return new Response(
