@@ -805,10 +805,24 @@ export const ModernImportDashboard: React.FC = () => {
                 {filteredImports.length > 0 ? (
                   filteredImports.map((importRecord) => {
                     const contextData = importRecord.contexte_data as any;
-                    const infra = contextData?.dimensions?.infrastructures_techniques 
+                    
+                    // Priorité à la nouvelle structure dimensions.empreintes_humaines
+                    let infra = contextData?.dimensions?.empreintes_humaines?.donnees
+                      || contextData?.dimensions?.empreintes_humaines
+                      || contextData?.dimensions?.infrastructures_techniques 
                       || contextData?.infrastructures_techniques 
                       || contextData?.empreintes_humaines 
                       || null;
+                    
+                    console.log('Debug - Infrastructure data access:', {
+                      importId: importRecord.id,
+                      hasContextData: !!contextData,
+                      hasDimensions: !!contextData?.dimensions,
+                      hasEmpreintesHumaines: !!contextData?.dimensions?.empreintes_humaines,
+                      hasEmpreintesHumainesDonnees: !!contextData?.dimensions?.empreintes_humaines?.donnees,
+                      infraData: infra
+                    });
+                    
                     if (!infra) return null;
                     return (
                       <div key={importRecord.id} className="space-y-4">
