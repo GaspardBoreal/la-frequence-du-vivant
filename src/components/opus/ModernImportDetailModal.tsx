@@ -444,10 +444,23 @@ export const ModernImportDetailModal: React.FC<ModernImportDetailModalProps> = (
             {/* Infrastructures Tab */}
             <TabsContent value="infrastructure" className="space-y-6">
               <InfrastructureVignetteGrid 
-                empreintesHumainesData={
-                  importRecord.contexte_data?.empreintes_humaines?.donnees || 
-                  importRecord.contexte_data?.empreintes_humaines
-                }
+                empreintesHumainesData={(() => {
+                  const empreintesHumaines = importRecord.contexte_data?.empreintes_humaines;
+                  if (!empreintesHumaines) return null;
+                  
+                  // Structure nouvelle: empreintes_humaines.infrastructures_hydrauliques
+                  if (empreintesHumaines.infrastructures_hydrauliques?.donnees) {
+                    return { donnees: empreintesHumaines.infrastructures_hydrauliques.donnees };
+                  }
+                  // Structure directe: empreintes_humaines.donnees
+                  else if (empreintesHumaines.donnees) {
+                    return empreintesHumaines;
+                  }
+                  // Structure legacy: empreintes_humaines direct
+                  else {
+                    return empreintesHumaines;
+                  }
+                })()}
                 importSources={importRecord.sources}
               />
             </TabsContent>

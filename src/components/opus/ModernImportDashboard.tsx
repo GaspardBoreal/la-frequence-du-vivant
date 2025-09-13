@@ -169,13 +169,31 @@ export const ModernImportDashboard: React.FC = () => {
     filteredImports.reduce((acc, imp) => {
       // Lire directement depuis contexte_data (source de vérité unifiée)
       const contextData = imp.contexte_data as any;
-      const infrastructures = contextData?.empreintes_humaines?.donnees || 
-                             contextData?.empreintes_humaines;
+      const empreintesHumaines = contextData?.empreintes_humaines;
       
-      if (infrastructures) {
+      if (empreintesHumaines) {
         try {
-          return acc + processEmpreintesHumainesData(infrastructures).totalCount;
-        } catch {
+          // Gérer les différentes structures de données possibles
+          let dataToProcess = null;
+          
+          // Structure nouvelle: empreintes_humaines.infrastructures_hydrauliques
+          if (empreintesHumaines.infrastructures_hydrauliques?.donnees) {
+            dataToProcess = { donnees: empreintesHumaines.infrastructures_hydrauliques.donnees };
+          }
+          // Structure directe: empreintes_humaines.donnees  
+          else if (empreintesHumaines.donnees) {
+            dataToProcess = empreintesHumaines;
+          }
+          // Structure legacy: empreintes_humaines direct
+          else {
+            dataToProcess = empreintesHumaines;
+          }
+          
+          console.log('🏗️ Infrastructure data structure for:', imp.marche_nom, dataToProcess);
+          const processed = processEmpreintesHumainesData(dataToProcess);
+          return acc + processed.totalCount;
+        } catch (error) {
+          console.error('Erreur lors du traitement des infrastructures:', error);
           return acc;
         }
       }
