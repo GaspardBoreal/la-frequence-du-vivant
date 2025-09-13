@@ -13,6 +13,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { SecureRichTextEditor } from '@/components/ui/secure-rich-text-editor';
 import { sanitizeHtml } from '@/utils/htmlSanitizer';
+import { stripHtml } from '@/utils/textUtils';
 import {
   useMarcheTextes,
   useCreateMarcheTexte,
@@ -105,7 +106,7 @@ function SortableTexteCard({ texte, onEdit, onDelete, onPreview }: {
           </div>
           
           <p className="text-sm text-muted-foreground line-clamp-2">
-            {texte.contenu}
+            {stripHtml(texte.contenu)}
           </p>
           
           {texte.metadata && Object.keys(texte.metadata).length > 0 && (
