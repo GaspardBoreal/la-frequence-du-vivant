@@ -99,22 +99,51 @@ export const ExplorationVocabularyView: React.FC<ExplorationVocabularyViewProps>
           } else {
             // Traiter l'item directement
             const titre = item.nom || item.terme || item.titre || item.name || 'Terme sans nom';
-            const key = `${titre}_${categoryName}_${importRecord.marche_id}`.toLowerCase().replace(/\s+/g, '_');
+            const description = item.description || item.definition || item.explication || '';
+            const details = item.details || item.usage || item.application || '';
             
-            if (vocabularyMap.has(key)) {
-              const existing = vocabularyMap.get(key)!;
-              existing.marchesCount += 1;
-              existing.marches.push(importRecord.marche_nom || 'Marché inconnu');
-              if (importRecord.import_date > existing.lastImportDate) {
-                existing.lastImportDate = importRecord.import_date;
-                existing.importId = importRecord.id;
+            // Clé globale pour déduplication basée sur le contenu, pas la marche
+            const globalKey = `${titre}_${categoryName}`.toLowerCase().replace(/\s+/g, '_');
+            
+            if (vocabularyMap.has(globalKey)) {
+              const existing = vocabularyMap.get(globalKey)!;
+              
+              // Vérifier si c'est vraiment le même terme (même description/détails)
+              const isSameTerm = existing.description_courte === description && existing.details === details;
+              
+              if (isSameTerm) {
+                // Même terme, incrémenter le compteur de marches
+                if (!existing.marches.includes(importRecord.marche_nom || 'Marché inconnu')) {
+                  existing.marchesCount += 1;
+                  existing.marches.push(importRecord.marche_nom || 'Marché inconnu');
+                }
+                if (importRecord.import_date > existing.lastImportDate) {
+                  existing.lastImportDate = importRecord.import_date;
+                  existing.importId = importRecord.id;
+                }
+              } else {
+                // Même titre mais contenu différent, créer une entrée séparée avec identifiant marche
+                const marcheSpecificKey = `${titre}_${categoryName}_${importRecord.marche_id}`.toLowerCase().replace(/\s+/g, '_');
+                vocabularyMap.set(marcheSpecificKey, {
+                  titre,
+                  description_courte: description,
+                  type: item.type || item.categorie || categoryName,
+                  details,
+                  category: categoryName === 'termes_locaux' ? 'Termes locaux' : 
+                           categoryName === 'phenomenes' ? 'Phénomènes' : 'Pratiques',
+                  metadata: item,
+                  marchesCount: 1,
+                  marches: [importRecord.marche_nom || 'Marché inconnu'],
+                  lastImportDate: importRecord.import_date,
+                  importId: importRecord.id
+                });
               }
             } else {
-              vocabularyMap.set(key, {
+              vocabularyMap.set(globalKey, {
                 titre,
-                description_courte: item.description || item.definition || item.explication || '',
+                description_courte: description,
                 type: item.type || item.categorie || categoryName,
-                details: item.details || item.usage || item.application || '',
+                details,
                 category: categoryName === 'termes_locaux' ? 'Termes locaux' : 
                          categoryName === 'phenomenes' ? 'Phénomènes' : 'Pratiques',
                 metadata: item,
