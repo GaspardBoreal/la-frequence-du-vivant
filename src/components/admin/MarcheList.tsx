@@ -12,6 +12,7 @@ import { FRENCH_DEPARTMENTS } from '../../utils/frenchDepartments';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '../ui/alert-dialog';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '../ui/dropdown-menu';
 import { useIsMobile } from '../../hooks/use-mobile';
+import { stripHtml, truncateWords } from '../../utils/textUtils';
 
 interface MarcheListProps {
   marches: MarcheTechnoSensible[];
@@ -29,12 +30,6 @@ const MarcheList: React.FC<MarcheListProps> = ({
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const isMobile = useIsMobile();
 
-  const truncateWords = (text: string, wordLimit: number = 30): string => {
-    if (!text) return '';
-    const words = text.trim().split(/\s+/);
-    if (words.length <= wordLimit) return text;
-    return words.slice(0, wordLimit).join(' ') + '...';
-  };
 
   const handleDelete = async (marcheId: string, ville: string) => {
     if (deletingId) return;
@@ -213,7 +208,7 @@ const MarcheList: React.FC<MarcheListProps> = ({
                   <div className="mb-3">
                     <div className="flex items-start space-x-4">
                       <span className="text-accent font-medium whitespace-nowrap">Descriptif :</span>
-                      <p className="text-sm text-foreground leading-relaxed">{truncateWords(marche.descriptifCourt, 40)}</p>
+                      <p className="text-sm text-foreground leading-relaxed">{truncateWords(stripHtml(marche.descriptifCourt), 40)}</p>
                     </div>
                   </div>
                 )}
