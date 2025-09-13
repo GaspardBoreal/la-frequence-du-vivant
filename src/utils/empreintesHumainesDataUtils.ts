@@ -52,10 +52,12 @@ export const processEmpreintesHumainesData = (data: any): ProcessedEmpreintesHum
     // Collecte récursive et robuste de TOUTES les entrées potentielles sous "donnees"
     const rawItems: any[] = [];
 
+    const getStr = (v: any) => typeof v === 'string' ? v : (v && typeof v === 'object' && typeof (v as any).value === 'string' ? (v as any).value : '');
+
     const looksLikeItem = (node: any) => {
       if (!node || typeof node !== 'object') return false;
       // Heuristiques: présence d'un nom/titre et éventuellement d'une description
-      const hasName = !!(node.nom || node.titre || node.name);
+      const hasName = !!(node.nom || node.titre || node.name || node.nom_ouvrage);
       const hasDesc = !!(node.description || node.explication || node.details || node.description_technique);
       const hasTypeHints = !!(node.type || node.categorie || node.catégorie || node.impact || node.impact_ecologique);
       // Exclure les conteneurs évidents
@@ -95,16 +97,16 @@ export const processEmpreintesHumainesData = (data: any): ProcessedEmpreintesHum
     };
 
     rawItems.forEach((raw) => {
-      const titre = raw.nom || raw.titre || raw.name || 'Infrastructure';
-      const description = raw.description_technique || raw.description || raw.explication || raw.details || '';
+      const titre = getStr(raw.nom_ouvrage) || getStr(raw.nom) || getStr(raw.titre) || getStr(raw.name) || 'Infrastructure';
+      const description = getStr(raw.description_technique) || getStr(raw.description) || getStr(raw.explication) || getStr(raw.details) || '';
       const type = raw.type || determineInfrastructureType({ titre, description });
       const category = (categorizeInfrastructureItem(titre, description) as any) || 'patrimoniales';
       const metadata = {
-        impact: determineImpact({ titre, description, impact_ecologique: raw.impact_ecologique }),
-        periode_historique: raw.periode || raw.date || raw.epoque || raw.date_construction || raw.date_construction_renovation,
+        impact: determineImpact({ titre, description, impact_ecologique: getStr(raw.impact_ecologique) }),
+        periode_historique: getStr(raw.periode) || getStr(raw.date) || getStr(raw.epoque) || getStr(raw.date_construction) || getStr(raw.date_construction_renovation),
         coordonnees: raw.coordonnees || raw.localisation,
         sources: raw.sources || raw.source_ids || [],
-        etat_actuel: raw.etat || raw.statut,
+        etat_actuel: getStr(raw.etat) || getStr(raw.statut),
         ...raw,
       } as EmpreinteHumaineItem['metadata'];
 
