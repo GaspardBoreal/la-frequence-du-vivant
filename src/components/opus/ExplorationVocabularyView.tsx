@@ -53,6 +53,15 @@ export const ExplorationVocabularyView: React.FC<ExplorationVocabularyViewProps>
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [sortBy, setSortBy] = useState<'name-asc' | 'name-desc' | 'count-desc' | 'date-desc'>('name-asc');
 
+  // Validation function to check if a vocabulary term is valid
+  const isValidVocabularyTerm = (item: any): boolean => {
+    const titre = item?.nom || item?.terme || item?.titre || item?.name;
+    return titre && 
+           typeof titre === 'string' && 
+           titre.trim().length > 0 && 
+           titre.trim() !== 'Terme sans nom';
+  };
+
   // Extraire tout le vocabulaire de tous les imports
   const allVocabulary = useMemo(() => {
     const vocabularyMap = new Map<string, ProcessedVocabularyWithMeta>();
@@ -81,7 +90,13 @@ export const ExplorationVocabularyView: React.FC<ExplorationVocabularyViewProps>
           // Si l'item a des metadata avec des sous-éléments
           if (item.metadata && item.metadata[categoryName] && Array.isArray(item.metadata[categoryName])) {
             item.metadata[categoryName].forEach((subItem: any) => {
-              const titre = subItem.nom || subItem.terme || subItem.titre || subItem.name || 'Terme sans nom';
+              // Valider le terme avant de l'ajouter
+              if (!isValidVocabularyTerm(subItem)) {
+                console.warn(`[${importRecord.marche_nom}] Rejected invalid vocabulary term in ${categoryName}:`, subItem);
+                return; // Skip invalid terms
+              }
+
+              const titre = subItem.nom || subItem.terme || subItem.titre || subItem.name;
               const key = `${titre}_${categoryName}_${importRecord.marche_id}`.toLowerCase().replace(/\s+/g, '_');
               
               if (vocabularyMap.has(key)) {
@@ -109,8 +124,14 @@ export const ExplorationVocabularyView: React.FC<ExplorationVocabularyViewProps>
               }
             });
           } else {
+            // Valider le terme avant de l'ajouter
+            if (!isValidVocabularyTerm(item)) {
+              console.warn(`[${importRecord.marche_nom}] Rejected invalid vocabulary term in ${categoryName}:`, item);
+              return; // Skip invalid terms
+            }
+
             // Traiter l'item directement
-            const titre = item.nom || item.terme || item.titre || item.name || 'Terme sans nom';
+            const titre = item.nom || item.terme || item.titre || item.name;
             const key = `${titre}_${categoryName}_${importRecord.marche_id}`.toLowerCase().replace(/\s+/g, '_');
             
             if (vocabularyMap.has(key)) {
