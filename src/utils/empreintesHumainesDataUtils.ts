@@ -25,6 +25,7 @@ export interface ProcessedEmpreintesHumainesData {
 
 export const processEmpreintesHumainesData = (data: any): ProcessedEmpreintesHumainesData => {
   console.log('Debug - processEmpreintesHumainesData input:', data);
+  console.log('Debug - data type:', typeof data, 'keys:', data ? Object.keys(data) : 'null');
   
   if (!data) {
     return {

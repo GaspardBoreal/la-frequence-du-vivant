@@ -54,6 +54,7 @@ interface ImportRecord {
   completude_score: number;
   marche_nom?: string;
   marche_ville?: string;
+  request_payload?: any; // Add request_payload for accessing import data directly
 }
 
 interface ModernImportDetailModalProps {
@@ -443,7 +444,12 @@ export const ModernImportDetailModal: React.FC<ModernImportDetailModalProps> = (
             {/* Infrastructures Tab */}
             <TabsContent value="infrastructure" className="space-y-6">
               <InfrastructureVignetteGrid 
-                empreintesHumainesData={importRecord.contexte_data?.empreintes_humaines?.donnees || importRecord.contexte_data?.empreintes_humaines}
+                empreintesHumainesData={
+                  importRecord.request_payload?.data?.dimensions?.empreintes_humaines?.donnees ||
+                  importRecord.request_payload?.data?.dimensions?.empreintes_humaines ||
+                  importRecord.contexte_data?.empreintes_humaines?.donnees || 
+                  importRecord.contexte_data?.empreintes_humaines
+                }
                 importSources={importRecord.sources}
               />
             </TabsContent>

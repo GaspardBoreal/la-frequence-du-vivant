@@ -79,6 +79,7 @@ interface ImportRecord {
   completude_score: number;
   marche_nom?: string;
   marche_ville?: string;
+  request_payload?: any; // Add request_payload for accessing import data directly
 }
 
 interface ImportRunRecord {
@@ -93,6 +94,7 @@ interface ImportRunRecord {
   error_message?: string;
   marche_nom?: string;
   marche_ville?: string;
+  request_payload?: any; // Add request_payload for accessing import data directly
   contexte_data: {
     especes_caracteristiques?: any;
     vocabulaire_local?: any;
@@ -165,13 +167,20 @@ export const ModernImportDashboard: React.FC = () => {
   );
   const totalInfrastructure = useAnimatedCounter(
     filteredImports.reduce((acc, imp) => {
-      // Essayer différents chemins pour trouver les données d'infrastructure
-      const contextData = imp.contexte_data as any;
-      const infrastructures = contextData?.dimensions?.infrastructures_techniques ||
-                            contextData?.infrastructures_techniques || 
-                            contextData?.empreintes_humaines?.dimensions?.infrastructures_techniques ||
-                            contextData?.empreintes_humaines?.infrastructures_techniques ||
-                            contextData?.empreintes_humaines;
+      // Essayer d'abord dans request_payload (nouvelles données harmonisées)
+      let infrastructures = imp.request_payload?.data?.dimensions?.empreintes_humaines?.donnees ||
+                           imp.request_payload?.data?.dimensions?.empreintes_humaines;
+      
+      // Fallback sur contexte_data
+      if (!infrastructures) {
+        const contextData = imp.contexte_data as any;
+        infrastructures = contextData?.dimensions?.infrastructures_techniques ||
+                         contextData?.infrastructures_techniques || 
+                         contextData?.empreintes_humaines?.dimensions?.infrastructures_techniques ||
+                         contextData?.empreintes_humaines?.infrastructures_techniques ||
+                         contextData?.empreintes_humaines;
+      }
+      
       if (infrastructures) {
         try {
           return acc + processEmpreintesHumainesData(infrastructures).totalCount;
@@ -396,6 +405,7 @@ export const ModernImportDashboard: React.FC = () => {
           completude_score: run.completude_score || 0,
           marche_nom: marcheInfo?.nomMarche || 'Marché inconnu',
           marche_ville: marcheInfo?.ville || '',
+          request_payload: run.request_payload, // Include request_payload for accessing import data directly
           contexte_data: {
             especes_caracteristiques: contexteData?.especes_caracteristiques,
             vocabulaire_local: contexteData?.vocabulaire_local,
