@@ -344,6 +344,36 @@ export const ModernImportDashboard: React.FC = () => {
       const importsList = Array.from(importsByMarche.values());
       setImports(importsList);
       setFilteredImports(importsList);
+
+      // Debug: log per-marche infrastructure counts
+      try {
+        const debugRows = importsList.map((imp) => {
+          const contextData = imp.contexte_data as any;
+          const empreintesHumaines = contextData?.empreintes_humaines || contextData?.infrastructures_techniques;
+          const findDonnees = (node: any): any => {
+            if (!node || typeof node !== 'object') return null;
+            if ((node as any).donnees) return (node as any).donnees;
+            for (const value of Object.values(node)) {
+              const found = findDonnees(value);
+              if (found) return found;
+            }
+            return null;
+          };
+          const foundDonnees = findDonnees(empreintesHumaines);
+          const dataToProcess = foundDonnees ? { donnees: foundDonnees } : empreintesHumaines;
+          const processed = dataToProcess ? processEmpreintesHumainesData(dataToProcess) : { totalCount: 0 } as any;
+          return {
+            marche: imp.marche_nom,
+            count: processed.totalCount,
+            hasEmpreintesHumaines: !!empreintesHumaines,
+            rootKeys: empreintesHumaines ? Object.keys(empreintesHumaines) : null,
+            donneesKeys: foundDonnees ? Object.keys(foundDonnees) : null,
+          };
+        });
+        console.table(debugRows);
+      } catch (e) {
+        console.warn('Infra debug failed:', e);
+      }
     } catch (error) {
       console.error('Erreur lors du chargement des imports:', error);
       toast({
@@ -834,21 +864,32 @@ export const ModernImportDashboard: React.FC = () => {
                   filteredImports.map((importRecord) => {
                     const contextData = importRecord.contexte_data as any;
                     
-                    // Priorité à la nouvelle structure dimensions.empreintes_humaines
-                    let infra = contextData?.dimensions?.empreintes_humaines?.donnees
-                      || contextData?.dimensions?.empreintes_humaines
+                    // Récupération de la structure la plus plausible
+                    const baseInfra = contextData?.dimensions?.empreintes_humaines
                       || contextData?.dimensions?.infrastructures_techniques 
                       || contextData?.infrastructures_techniques 
                       || contextData?.empreintes_humaines 
                       || null;
                     
-                    console.log('Debug - Infrastructure data access:', {
-                      importId: importRecord.id,
-                      hasContextData: !!contextData,
-                      hasDimensions: !!contextData?.dimensions,
-                      hasEmpreintesHumaines: !!contextData?.dimensions?.empreintes_humaines,
-                      hasEmpreintesHumainesDonnees: !!contextData?.dimensions?.empreintes_humaines?.donnees,
-                      infraData: infra
+                    // Recherche récursive d'un noeud "donnees"
+                    const findDonnees = (node: any): any => {
+                      if (!node || typeof node !== 'object') return null;
+                      if ((node as any).donnees) return (node as any).donnees;
+                      for (const value of Object.values(node)) {
+                        const found = findDonnees(value);
+                        if (found) return found;
+                      }
+                      return null;
+                    };
+
+                    const foundDonnees = findDonnees(baseInfra);
+                    const infra = foundDonnees ? { donnees: foundDonnees } : baseInfra;
+                    
+                    console.log('Debug - Infrastructure final payload for grid', {
+                      marche: importRecord.marche_nom,
+                      hasFoundDonnees: !!foundDonnees,
+                      baseKeys: baseInfra ? Object.keys(baseInfra) : null,
+                      donneesKeys: foundDonnees ? Object.keys(foundDonnees) : null,
                     });
                     
                     if (!infra) return null;

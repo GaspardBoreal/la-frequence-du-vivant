@@ -288,10 +288,21 @@ export const processEmpreintesHumainesData = (data: any): ProcessedEmpreintesHum
               etat_actuel: item.etat,
               ...item
             }
-          };
+          } as EmpreinteHumaineItem;
           allItems.push(processedItem);
         });
       } else if (typeof value === 'object' && value !== null) {
+        // Si on trouve un noeud imbriqué avec "donnees", traiter récursivement
+        if ((value as any).donnees) {
+          const nested = processEmpreintesHumainesData({ donnees: (value as any).donnees });
+          allItems.push(
+            ...nested.industrielles,
+            ...nested.patrimoniales,
+            ...nested.transport,
+            ...nested.urbaines
+          );
+          return; // passer à la clé suivante
+        }
         const processedItem = {
           titre: key,
           description: (value as any).description || (value as any).explication || '',
@@ -301,7 +312,7 @@ export const processEmpreintesHumainesData = (data: any): ProcessedEmpreintesHum
             impact: (value as any).impact || 'neutre' as const,
             ...value
           }
-        };
+        } as EmpreinteHumaineItem;
         allItems.push(processedItem);
       }
     });
