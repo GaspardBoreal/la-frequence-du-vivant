@@ -48,13 +48,15 @@ const isLocalVocabularyTerm = (key: string, value: any): boolean => {
 // Déduction de catégorie à partir de la clé
 const inferCategoryFromKey = (key: string): 'termes' | 'phenomenes' | 'pratiques' => {
   const k = key.toLowerCase();
-  if (k.includes('phenomen') || k.includes('phénom') || k.includes('meteo') || k.includes('météo') || k.includes('climat')) {
+  if (k.includes('phenomen') || k.includes('phénom') || k.includes('meteo') || k.includes('météo') || 
+      k.includes('climat') || k.includes('naturel') || k.includes('saisonn')) {
     return 'phenomenes';
   }
-  if (k.includes('pratique') || k.includes('activit') || k.includes('usage') || k.includes('agro')) {
+  if (k.includes('pratique') || k.includes('activit') || k.includes('usage') || k.includes('agro') || 
+      k.includes('tradition') || k.includes('technique') || k.includes('pêche') || k.includes('navigation')) {
     return 'pratiques';
   }
-  if (k.includes('terme')) {
+  if (k.includes('terme') || k.includes('hydrologique') || k.includes('vocabulaire') || k.includes('local')) {
     return 'termes';
   }
   return 'termes';
