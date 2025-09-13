@@ -58,8 +58,18 @@ export const ExplorationVocabularyView: React.FC<ExplorationVocabularyViewProps>
     const vocabularyMap = new Map<string, ProcessedVocabularyWithMeta>();
     
     imports.forEach(importRecord => {
-      const vocabularyData = importRecord.contexte_data?.vocabulaire_local;
-      if (!vocabularyData) return;
+      if (!importRecord.contexte_data?.vocabulary) return;
+      
+      // Normalize vocabulary data - handle wrapped data under 'donnees' key
+      const rawVocabularyData = importRecord.contexte_data.vocabulary;
+      const vocabularyData = rawVocabularyData?.donnees ?? rawVocabularyData;
+      
+      console.debug(`[${importRecord.marche_nom}] Processing vocabulary:`, {
+        hasWrappedData: !!rawVocabularyData?.donnees,
+        termes_locaux: vocabularyData?.termes_locaux ? (Array.isArray(vocabularyData.termes_locaux) ? vocabularyData.termes_locaux.length : Object.keys(vocabularyData.termes_locaux).length) : 0,
+        phenomenes: vocabularyData?.phenomenes ? (Array.isArray(vocabularyData.phenomenes) ? vocabularyData.phenomenes.length : Object.keys(vocabularyData.phenomenes).length) : 0,
+        pratiques: vocabularyData?.pratiques ? (Array.isArray(vocabularyData.pratiques) ? vocabularyData.pratiques.length : Object.keys(vocabularyData.pratiques).length) : 0
+      });
 
       // Traiter les différentes catégories du vocabulaire
       const processVocabularyCategory = (items: any[], categoryName: string) => {
@@ -168,6 +178,15 @@ export const ExplorationVocabularyView: React.FC<ExplorationVocabularyViewProps>
             });
           }
         });
+      }
+    });
+
+    console.debug('Total vocabulary processed:', {
+      totalItems: Array.from(vocabularyMap.values()).length,
+      byCategory: {
+        termesLocaux: Array.from(vocabularyMap.values()).filter(v => v.category === 'Termes locaux').length,
+        phenomenes: Array.from(vocabularyMap.values()).filter(v => v.category === 'Phénomènes').length,
+        pratiques: Array.from(vocabularyMap.values()).filter(v => v.category === 'Pratiques').length
       }
     });
 

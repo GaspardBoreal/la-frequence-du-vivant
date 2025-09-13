@@ -148,9 +148,12 @@ export const processVocabularyData = (vocabularyData: any): {
   
   if (!vocabularyData) return result;
   
+  // Normalize vocabulary data - handle wrapped data under 'donnees' key
+  const dataToProcess = vocabularyData?.donnees ?? vocabularyData;
+  
   // Si c'est un tableau, traiter comme des termes
-  if (Array.isArray(vocabularyData)) {
-    result.termes = vocabularyData.map((item, index) => ({
+  if (Array.isArray(dataToProcess)) {
+    result.termes = dataToProcess.map((item, index) => ({
       titre: item.nom || item.terme || item.titre || item.name || `Terme ${index + 1}`,
       description_courte: item.description || item.definition || item.explication || '',
       type: item.type || item.categorie || 'terme',
@@ -168,8 +171,8 @@ export const processVocabularyData = (vocabularyData: any): {
   }
   
   // Si c'est un objet, traiter les différentes sections
-  if (typeof vocabularyData === 'object') {
-    Object.entries(vocabularyData).forEach(([key, value]) => {
+  if (typeof dataToProcess === 'object') {
+    Object.entries(dataToProcess).forEach(([key, value]) => {
       // Ignorer les clés techniques et variantes de sources
       if (['source_ids', 'sources', 'sources_data', 'description', 'donnees', 'metadata'].includes(key)) {
         // Gestion spéciale des sources si tableau
