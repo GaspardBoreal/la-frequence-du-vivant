@@ -19,6 +19,7 @@ import {
   Hash
 } from 'lucide-react';
 import { processSpeciesData } from '@/utils/speciesDataUtils';
+import { InteractiveVignette } from './InteractiveVignette';
 
 interface ImportRecord {
   id: string;
@@ -341,66 +342,33 @@ export const ExplorationSpeciesView: React.FC<ExplorationSpeciesViewProps> = ({ 
       </Card>
 
       {/* Liste des espèces */}
-      <div className="grid gap-4 lg:grid-cols-2">
-        {filteredAndSortedSpecies.map((species, index) => (
-          <Card key={`${species.importId}-${index}`} className="bg-background/50 backdrop-blur-sm border-border/30 hover:shadow-md transition-all duration-300">
-            <CardHeader className="pb-3">
-              <div className="flex items-start justify-between">
-                <div className="flex items-center gap-2">
-                  {getSpeciesIcon(species.category)}
-                  <div>
-                    <CardTitle className="text-lg">{species.nom_commun}</CardTitle>
-                    {species.nom_scientifique && (
-                      <CardDescription className="italic text-sm">
-                        {species.nom_scientifique}
-                      </CardDescription>
-                    )}
-                  </div>
-                </div>
-                <Badge variant={getConservationColor(species.statut_conservation)} className="text-xs">
-                  {species.statut_conservation}
-                </Badge>
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              {species.description_courte && (
-                <p className="text-sm text-muted-foreground">
-                  {species.description_courte}
-                </p>
-              )}
-              
-              <div className="flex flex-wrap gap-2">
-                <Badge variant="outline" className="text-xs">
-                  {species.category}
-                </Badge>
-                {species.type && species.type !== species.category && (
-                  <Badge variant="secondary" className="text-xs">
-                    {species.type}
-                  </Badge>
-                )}
-              </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+        {filteredAndSortedSpecies.map((species, index) => {
+          // Conversion vers le format VignetteData
+          const vignetteData = {
+            titre: species.nom_commun,
+            nom_commun: species.nom_commun,
+            nom_scientifique: species.nom_scientifique,
+            statut_conservation: species.statut_conservation,
+            description_courte: species.description_courte,
+            type: species.category,
+            category: species.category,
+            metadata: {
+              marchesCount: species.marchesCount,
+              marches: species.marches,
+              lastImportDate: species.lastImportDate,
+              importId: species.importId
+            }
+          };
 
-              <div className="flex items-center justify-between text-xs text-muted-foreground">
-                <span>
-                  {species.marchesCount} marche{species.marchesCount > 1 ? 's' : ''}
-                </span>
-                <span>
-                  {new Date(species.lastImportDate).toLocaleDateString('fr-FR')}
-                </span>
-              </div>
-
-              {species.marches.length > 1 && (
-                <div className="text-xs">
-                  <span className="font-medium">Marches : </span>
-                  <span className="text-muted-foreground">
-                    {species.marches.slice(0, 2).join(', ')}
-                    {species.marches.length > 2 && ` +${species.marches.length - 2} autres`}
-                  </span>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        ))}
+          return (
+            <InteractiveVignette
+              key={`${species.importId}-${index}`}
+              data={vignetteData}
+              variant="species"
+            />
+          );
+        })}
       </div>
 
       {/* Message si aucun résultat */}
