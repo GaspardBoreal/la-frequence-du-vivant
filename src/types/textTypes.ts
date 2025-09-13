@@ -4,6 +4,7 @@
 export type TextType = 
   // Literary forms for marches and explorations
   | 'haiku'                   // Haïku → Concentration extrême, condensation de l'instant sensible
+  | 'senryu'                  // Senryū → Poésie de la nature humaine, observation ironique ou humoristique
   | 'haibun'                  // Haïbun → Prose poétique + haïku : récit de marche, introspection
   | 'poeme'                   // Poème → Élan sensible, souffle, intensité émotionnelle
   | 'texte-libre'             // Texte libre → Exploration narrative libre, sans contrainte
@@ -49,6 +50,19 @@ export const TEXT_TYPES_REGISTRY: Record<TextType, TextTypeInfo> = {
       fontFamily: 'serif',
       fontSize: 'text-xl',
       lineHeight: 'leading-loose',
+      spacing: 'space-y-3',
+    },
+  },
+  senryu: {
+    id: 'senryu',
+    label: 'Senryū',
+    description: 'Poésie de la nature humaine, observation ironique ou humoristique',
+    icon: '😊',
+    family: 'poetique',
+    adaptiveStyle: {
+      fontFamily: 'serif',
+      fontSize: 'text-lg',
+      lineHeight: 'leading-relaxed',
       spacing: 'space-y-3',
     },
   },
