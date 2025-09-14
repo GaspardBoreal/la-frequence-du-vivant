@@ -79,7 +79,7 @@ const PoeticTextDisplay: React.FC<PoeticTextDisplayProps> = ({
             transition={{ duration: 0.6 }}
           >
             <div 
-              className="text-lg text-gray-800 font-serif prose prose-sm max-w-none"
+              className="text-lg text-gray-800 font-serif prose prose-sm max-w-none reading-content"
               style={{ 
                 whiteSpace: 'pre-wrap',
                 wordSpacing: '0.1em'

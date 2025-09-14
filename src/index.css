@@ -505,3 +505,17 @@
 .hover\\:bg-slate-750:hover {
   background-color: rgb(42, 50, 65);
 }
+
+/* Mobile: hide list markers inside reading-content */
+@media (max-width: 767px) {
+  .reading-content ul,
+  .reading-content ol {
+    list-style: none;
+    padding-left: 0;
+    margin-left: 0;
+  }
+  .reading-content li::marker {
+    content: "";
+    color: transparent;
+  }
+}

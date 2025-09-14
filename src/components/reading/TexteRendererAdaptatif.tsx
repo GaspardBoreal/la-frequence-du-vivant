@@ -9,7 +9,7 @@ import { ReadingMode } from '@/types/readingTypes';
 import { sanitizeHtml } from '@/utils/htmlSanitizer';
 import { createSlug } from '@/utils/slugGenerator';
 import { useParams } from 'react-router-dom';
-import { useIsMobile } from '@/hooks/use-mobile';
+
 
 interface Props {
   texte: ExplorationTextOptimized;
@@ -19,7 +19,7 @@ interface Props {
 export default function TexteRendererAdaptatif({ texte, readingMode = 'rich' }: Props) {
   const { slug: explorationSlug } = useParams<{ slug: string }>();
   const typeInfo = getTextTypeInfo(texte.type_texte);
-  const isMobile = useIsMobile();
+  
   
   // Generate march slug for navigation
   const marcheSlug = createSlug(texte.marcheNomMarche, texte.marcheVille);
@@ -90,7 +90,7 @@ export default function TexteRendererAdaptatif({ texte, readingMode = 'rich' }: 
                 <Quote className="absolute -top-4 -left-8 h-8 w-8 text-emerald-200 dark:text-emerald-700" />
               )}
               <div 
-                className="text-xl md:text-2xl leading-loose text-slate-800 dark:text-slate-100 font-serif font-light italic text-center"
+                className="text-xl md:text-2xl leading-loose text-slate-800 dark:text-slate-100 font-serif font-light italic text-center reading-content"
                 style={{ 
                   lineHeight: '2.8rem',
                   letterSpacing: '0.03em',
@@ -111,7 +111,7 @@ export default function TexteRendererAdaptatif({ texte, readingMode = 'rich' }: 
             >
               <div className="inline-flex items-center gap-3 px-4 py-2 bg-slate-100 dark:bg-slate-800 rounded-full">
                 <MarcheBadge />
-                {!isMobile && <div className="w-1 h-1 bg-slate-300 dark:bg-slate-600 rounded-full"></div>}
+                <div className="hidden md:block w-1 h-1 bg-slate-300 dark:bg-slate-600 rounded-full"></div>
                 <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">
                   {typeInfo.label}
                 </span>
@@ -159,7 +159,7 @@ export default function TexteRendererAdaptatif({ texte, readingMode = 'rich' }: 
                     <span className="mr-2">{typeInfo.icon}</span>
                     {typeInfo.label}
                   </Badge>
-                  {!isMobile && <div className="w-1 h-1 bg-slate-300 dark:bg-slate-600 rounded-full"></div>}
+                  <div className="hidden md:block w-1 h-1 bg-slate-300 dark:bg-slate-600 rounded-full"></div>
                   <MarcheBadge />
                 </div>
               )}
@@ -170,7 +170,7 @@ export default function TexteRendererAdaptatif({ texte, readingMode = 'rich' }: 
             </div>
 
             <div 
-              className={`prose prose-lg max-w-none font-normal ${
+              className={`prose prose-lg max-w-none font-normal reading-content ${
                 readingMode === 'focus' 
                   ? 'prose-slate dark:prose-invert text-lg leading-relaxed text-slate-800 dark:text-slate-100' 
                   : 'prose-slate dark:prose-invert text-slate-800 dark:text-slate-100'
