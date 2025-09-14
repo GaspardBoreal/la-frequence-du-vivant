@@ -1,7 +1,9 @@
 import React, { useState, useRef } from 'react';
 import { Button } from '../../ui/button';
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from '../../ui/sheet';
-import { Camera, Image, Upload, X } from 'lucide-react';
+import { Camera, Image, Upload, X, Loader2 } from 'lucide-react';
+import { Badge } from '../../ui/badge';
+import { Progress } from '../../ui/progress';
 import { toast } from 'sonner';
 import { processPhoto, ProcessedPhoto } from '../../../utils/photoUtils';
 
@@ -9,15 +11,19 @@ interface PhotoCaptureFloatProps {
   marcheId: string;
   onPhotoCaptured: (photo: ProcessedPhoto) => void;
   disabled?: boolean;
+  pendingCount?: number;
 }
 
 const PhotoCaptureFloat: React.FC<PhotoCaptureFloatProps> = ({
   marcheId,
   onPhotoCaptured,
-  disabled = false
+  disabled = false,
+  pendingCount = 0
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [isCapturing, setIsCapturing] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [processingProgress, setProcessingProgress] = useState(0);
   const [stream, setStream] = useState<MediaStream | null>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -54,6 +60,20 @@ const PhotoCaptureFloat: React.FC<PhotoCaptureFloatProps> = ({
     setIsCapturing(false);
   };
 
+  const simulateProgress = (callback: () => void) => {
+    setProcessingProgress(0);
+    const interval = setInterval(() => {
+      setProcessingProgress(prev => {
+        if (prev >= 90) {
+          clearInterval(interval);
+          callback();
+          return 100;
+        }
+        return prev + 10;
+      });
+    }, 100);
+  };
+
   const capturePhoto = async () => {
     if (!videoRef.current || !canvasRef.current) return;
 
@@ -69,19 +89,25 @@ const PhotoCaptureFloat: React.FC<PhotoCaptureFloatProps> = ({
       
       canvas.toBlob(async (blob) => {
         if (blob) {
+          setIsProcessing(true);
           const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
           const file = new File([blob], `photo-marche-${timestamp}.jpg`, { type: 'image/jpeg' });
           
-          try {
-            const processedPhoto = await processPhoto(file);
-            onPhotoCaptured(processedPhoto);
-            toast.success('📷 Photo capturée !');
-            stopCamera();
-            setIsOpen(false);
-          } catch (error) {
-            console.error('Erreur traitement photo:', error);
-            toast.error('Erreur lors du traitement de la photo');
-          }
+          simulateProgress(async () => {
+            try {
+              const processedPhoto = await processPhoto(file);
+              onPhotoCaptured(processedPhoto);
+              toast.success('📷 Photo capturée et ajoutée !');
+              stopCamera();
+              setIsOpen(false);
+            } catch (error) {
+              console.error('Erreur traitement photo:', error);
+              toast.error('Erreur lors du traitement de la photo');
+            } finally {
+              setIsProcessing(false);
+              setProcessingProgress(0);
+            }
+          });
         }
       }, 'image/jpeg', 0.9);
     }
@@ -91,27 +117,42 @@ const PhotoCaptureFloat: React.FC<PhotoCaptureFloatProps> = ({
     const file = event.target.files?.[0];
     if (!file) return;
 
-    try {
-      const processedPhoto = await processPhoto(file);
-      onPhotoCaptured(processedPhoto);
-      toast.success('🖼️ Photo importée !');
-      setIsOpen(false);
-    } catch (error) {
-      console.error('Erreur import photo:', error);
-      toast.error('Erreur lors de l\'import de la photo');
-    }
+    setIsProcessing(true);
+    simulateProgress(async () => {
+      try {
+        const processedPhoto = await processPhoto(file);
+        onPhotoCaptured(processedPhoto);
+        toast.success('🖼️ Photo importée et ajoutée !');
+        setIsOpen(false);
+      } catch (error) {
+        console.error('Erreur import photo:', error);
+        toast.error('Erreur lors de l\'import de la photo');
+      } finally {
+        setIsProcessing(false);
+        setProcessingProgress(0);
+      }
+    });
   };
 
   return (
     <>
       <Sheet open={isOpen} onOpenChange={setIsOpen}>
         <SheetTrigger asChild>
-          <Button 
-            className="fixed bottom-6 right-6 w-16 h-16 rounded-full shadow-xl animate-pulse hover:animate-none bg-primary hover:bg-primary/90"
-            disabled={disabled}
-          >
-            <Camera className="w-8 h-8" />
-          </Button>
+          <div className="relative">
+            <Button 
+              className="fixed bottom-6 right-6 w-16 h-16 rounded-full shadow-xl animate-pulse hover:animate-none bg-primary hover:bg-primary/90"
+              disabled={disabled}
+            >
+              <Camera className="w-8 h-8" />
+            </Button>
+            {pendingCount > 0 && (
+              <Badge 
+                className="absolute -top-2 -right-2 min-w-6 h-6 rounded-full bg-accent text-accent-foreground animate-bounce"
+              >
+                {pendingCount}
+              </Badge>
+            )}
+          </div>
         </SheetTrigger>
         
         <SheetContent side="bottom" className="h-[90vh]">
@@ -123,12 +164,30 @@ const PhotoCaptureFloat: React.FC<PhotoCaptureFloatProps> = ({
           </SheetHeader>
 
           <div className="flex flex-col h-full mt-6">
-            {!isCapturing ? (
+            {isProcessing ? (
+              <div className="space-y-6 py-8">
+                <div className="text-center">
+                  <Loader2 className="w-12 h-12 animate-spin mx-auto mb-4 text-primary" />
+                  <h4 className="text-lg font-semibold">📸 Traitement en cours...</h4>
+                  <p className="text-sm text-muted-foreground mt-2">
+                    Compression et optimisation de la photo
+                  </p>
+                </div>
+                <div className="space-y-2">
+                  <div className="flex justify-between text-sm">
+                    <span>Progression</span>
+                    <span>{processingProgress}%</span>
+                  </div>
+                  <Progress value={processingProgress} className="h-2" />
+                </div>
+              </div>
+            ) : !isCapturing ? (
               <div className="grid grid-cols-1 gap-4">
                 <Button
                   onClick={startCamera}
                   className="h-16 text-lg"
                   variant="default"
+                  disabled={isProcessing}
                 >
                   <Camera className="w-6 h-6 mr-2" />
                   Prendre une photo
@@ -138,6 +197,7 @@ const PhotoCaptureFloat: React.FC<PhotoCaptureFloatProps> = ({
                   onClick={() => fileInputRef.current?.click()}
                   className="h-16 text-lg"
                   variant="outline"
+                  disabled={isProcessing}
                 >
                   <Image className="w-6 h-6 mr-2" />
                   Choisir dans la galerie

@@ -502,6 +502,7 @@ const MarcheFormMobile: React.FC<MarcheFormMobileProps> = ({
           marcheId={marcheId}
           onPhotoCaptured={handlePhotoCaptured}
           disabled={isSubmitting}
+          pendingCount={pendingPhotos.length}
         />
       )}
     </div>
