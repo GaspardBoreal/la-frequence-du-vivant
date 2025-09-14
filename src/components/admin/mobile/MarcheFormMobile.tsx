@@ -17,6 +17,7 @@ import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTr
 import PhotoCaptureFloat from './PhotoCaptureFloat';
 import AudioCaptureFloat from './AudioCaptureFloat';
 import PhotoGalleryMobile from './PhotoGalleryMobile';
+import AudioGalleryMobile from './AudioGalleryMobile';
 import { ProcessedPhoto } from '../../../utils/photoUtils';
 
 interface MarcheFormMobileProps {
@@ -480,6 +481,28 @@ const MarcheFormMobile: React.FC<MarcheFormMobileProps> = ({
               pendingPhotos={pendingPhotos}
               onPhotoUploaded={handlePhotoUploaded}
               onPhotoRemoved={handlePhotoRemoved}
+            />
+          </div>
+        )}
+
+        {/* Audio */}
+        {marcheId && (
+          <div className="space-y-4">
+            <div className="flex items-center space-x-2">
+              <div className="h-px bg-border flex-1" />
+              <span className="text-sm text-muted-foreground px-3">Audio</span>
+              <div className="h-px bg-border flex-1" />
+            </div>
+            
+            <AudioGalleryMobile
+              marcheId={marcheId}
+              pendingAudios={[]}
+              onAudioUploaded={() => {
+                toast.success('Audio uploadé avec succès !');
+              }}
+              onAudioRemoved={() => {
+                toast.success('Audio supprimé');
+              }}
             />
           </div>
         )}
