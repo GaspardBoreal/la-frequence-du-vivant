@@ -338,45 +338,48 @@ const AudioGalleryMobile: React.FC<AudioGalleryMobileProps> = ({
           <h4 className="font-medium text-sm text-muted-foreground">Audio uploadés</h4>
           <div className="space-y-2">
             {allAudios.map((audio) => (
-              <div key={audio.id} className="relative group">
-                <div className="rounded-lg bg-muted border-2 border-green-200 dark:border-green-800 p-3">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-3">
-                      <button
-                        onClick={() => togglePlayAudio(audio.id)}
-                        className="w-10 h-10 rounded-full bg-green-500/20 flex items-center justify-center hover:bg-green-500/30 transition-colors"
-                      >
-                        {playingAudioId === audio.id ? (
-                          <Pause className="w-5 h-5 text-green-600" />
-                        ) : (
-                          <Play className="w-5 h-5 text-green-600 ml-0.5" />
-                        )}
-                      </button>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium truncate">
-                          {audio.titre || audio.nom_fichier}
-                        </p>
-                        <p className="text-xs text-muted-foreground">
-                          {formatDuration(audio.duree_secondes)}
-                          {audio.taille_octets && ` • ${formatFileSize(audio.taille_octets)}`}
-                          {audio.format_audio && ` • ${audio.format_audio.toUpperCase()}`}
-                        </p>
-                      </div>
+              <div key={audio.id} className="relative">
+                <div className="rounded-lg bg-card border border-border p-4">
+                  <div className="flex items-center gap-3">
+                    {/* Play button */}
+                    <button
+                      onClick={() => togglePlayAudio(audio.id)}
+                      className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center hover:bg-primary/20 transition-colors flex-shrink-0"
+                    >
+                      {playingAudioId === audio.id ? (
+                        <Pause className="w-4 h-4 text-primary" />
+                      ) : (
+                        <Play className="w-4 h-4 text-primary ml-0.5" />
+                      )}
+                    </button>
+                    
+                    {/* Content */}
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium text-sm truncate mb-1">
+                        {audio.titre || audio.nom_fichier}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {formatDuration(audio.duree_secondes)}
+                        {audio.taille_octets && ` • ${formatFileSize(audio.taille_octets)}`}
+                      </p>
                     </div>
                     
-                    <div className="flex items-center space-x-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                    {/* Actions - always visible */}
+                    <div className="flex items-center gap-1 flex-shrink-0">
                       <Button
                         size="sm"
-                        variant="secondary"
+                        variant="ghost"
                         onClick={() => openEditModal(audio)}
+                        className="h-8 w-8 p-0"
                       >
                         <Edit3 className="w-4 h-4" />
                       </Button>
                       
                       <Button
                         size="sm"
-                        variant="destructive"
+                        variant="ghost"
                         onClick={() => handleDeleteAudio(audio.id)}
+                        className="h-8 w-8 p-0 text-destructive hover:text-destructive"
                       >
                         <Trash2 className="w-4 h-4" />
                       </Button>
@@ -385,7 +388,7 @@ const AudioGalleryMobile: React.FC<AudioGalleryMobileProps> = ({
                   
                   {/* Audio element for playback */}
                   {playingAudioId === audio.id && (
-                    <div className="mt-3">
+                    <div className="mt-3 pt-3 border-t">
                       <audio 
                         controls 
                         autoPlay
@@ -397,10 +400,6 @@ const AudioGalleryMobile: React.FC<AudioGalleryMobileProps> = ({
                       </audio>
                     </div>
                   )}
-
-                  <div className="absolute top-2 right-2">
-                    <Badge className="text-xs bg-green-500 text-white">✅</Badge>
-                  </div>
                 </div>
               </div>
             ))}
