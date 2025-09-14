@@ -20,6 +20,7 @@ import PhotoGalleryMobile from './PhotoGalleryMobile';
 import AudioGalleryMobile from './AudioGalleryMobile';
 import MarcheTextesAdminMobile from './MarcheTextesAdminMobile';
 import TexteCaptureFloat from './TexteCaptureFloat';
+import MediaCaptureFloat from './MediaCaptureFloat';
 import { ProcessedPhoto } from '../../../utils/photoUtils';
 
 interface MarcheFormMobileProps {
@@ -538,19 +539,15 @@ const MarcheFormMobile: React.FC<MarcheFormMobileProps> = ({
       {/* Photo Capture Float - Only show when we have a marcheId */}
       {marcheId && (
         <>
-          <PhotoCaptureFloat
+          <MediaCaptureFloat
             marcheId={marcheId}
             onPhotoCaptured={handlePhotoCaptured}
-            disabled={isSubmitting}
-            pendingCount={pendingPhotos.length}
-          />
-          <AudioCaptureFloat 
-            marcheId={marcheId} 
             onAudioUploaded={() => {
               toast.success('Audio ajouté avec succès !');
             }}
+            pendingPhotosCount={pendingPhotos.length}
+            disabled={isSubmitting}
           />
-          <TexteCaptureFloat marcheId={marcheId} />
         </>
       )}
     </div>
