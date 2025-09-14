@@ -153,7 +153,10 @@ export const IaFonctionnalitesVignetteGrid: React.FC<IaFonctionnalitesVignetteGr
   importSources = [],
   className = ''
 }) => {
+  console.log('🤖 DEBUG IaFonctionnalitesVignetteGrid received data:', data);
   const processedData = processIaFonctionnalitesData(data);
+  console.log('🤖 DEBUG IaFonctionnalitesVignetteGrid processed data:', processedData);
+  
   if (processedData.totalCount === 0) {
     return <Card className="bg-background/50 backdrop-blur-sm border-border/30">
         <CardContent className="p-12 text-center">

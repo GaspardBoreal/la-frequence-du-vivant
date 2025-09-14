@@ -552,15 +552,21 @@ export const ModernImportDetailModal: React.FC<ModernImportDetailModalProps> = (
 
             {/* IA Tab */}
             <TabsContent value="ia" className="space-y-6">
-              <VignetteGrid
-                title="Intelligence Artificielle Territoriale"
-                data={importRecord.contexte_data?.ia_fonctionnalites?.donnees || importRecord.contexte_data?.ia_fonctionnalites}
-                variant="ia"
-                icon={<Bot className="w-5 h-5" />}
-                emptyMessage="Aucune fonctionnalité IA n'a été identifiée"
-                specialProcessing="ia_fonctionnalites"
-                importSources={importRecord.sources}
-              />
+              {(() => {
+                const iaData = importRecord.contexte_data?.ia_fonctionnalites?.donnees || importRecord.contexte_data?.ia_fonctionnalites || null;
+                console.log('🤖 DEBUG IA Tab Data for', importRecord.marche_nom, ':', iaData);
+                return (
+                  <VignetteGrid
+                    title="Intelligence Artificielle Territoriale"
+                    data={iaData}
+                    variant="ia"
+                    icon={<Bot className="w-5 h-5" />}
+                    emptyMessage="Aucune fonctionnalité IA n'a été identifiée"
+                    specialProcessing="ia_fonctionnalites"
+                    importSources={importRecord.sources}
+                  />
+                );
+              })()}
             </TabsContent>
 
           </ScrollArea>

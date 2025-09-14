@@ -262,7 +262,7 @@ export const VignetteGrid: React.FC<VignetteGridProps> = ({
       )}
 
       {/* Affichage spécialisé pour les fonctionnalités IA */}
-      {specialProcessing === 'ia_fonctionnalites' && typeof processedData === 'object' && 'totalCount' in processedData && (
+      {specialProcessing === 'ia_fonctionnalites' && (
         <IaFonctionnalitesVignetteGrid
           data={data}
           importSources={importSources}
