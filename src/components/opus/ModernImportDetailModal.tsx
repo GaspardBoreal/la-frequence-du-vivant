@@ -16,6 +16,7 @@ import { mapContexteData } from '@/utils/contexteDataMapper';
 import { getVocabularyTermsCount } from '@/utils/vocabularyDataUtils';
 import { getProcessedSpeciesCount } from '@/utils/speciesDataUtils';
 import { getIaFonctionnalitesCount } from '@/utils/iaFonctionnalitesDataUtils';
+import { processAgroecologieData } from '@/utils/agroecologieDataUtils';
 import { 
   Calendar, 
   Database, 
@@ -328,14 +329,16 @@ export const ModernImportDetailModal: React.FC<ModernImportDetailModalProps> = (
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <div className="text-2xl font-bold text-accent mb-1">
-                      {(() => {
-                        const agro = importRecord.contexte_data?.leviers_agroecologiques?.donnees 
-                          || importRecord.contexte_data?.leviers_agroecologiques
-                          || importRecord.contexte_data?.projection_2035_2045?.leviers_agroecologiques;
-                        return agro ? Object.keys(agro).length : 0;
-                      })()}
-                    </div>
+                     <div className="text-2xl font-bold text-accent mb-1">
+                       {(() => {
+                         const agro = importRecord.contexte_data?.leviers_agroecologiques?.donnees 
+                           || importRecord.contexte_data?.leviers_agroecologiques
+                           || importRecord.contexte_data?.projection_2035_2045?.leviers_agroecologiques;
+                         if (!agro) return 0;
+                         const processed = processAgroecologieData(agro);
+                         return processed.totalCount;
+                       })()}
+                     </div>
                     <p className="text-xs text-muted-foreground">leviers</p>
                   </CardContent>
                 </Card>
