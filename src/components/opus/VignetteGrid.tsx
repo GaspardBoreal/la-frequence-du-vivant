@@ -188,7 +188,7 @@ export const VignetteGrid: React.FC<VignetteGridProps> = ({
     specialProcessing === 'technodiversite' ?
       (typeof processedData === 'object' && 'totalCount' in processedData ? processedData.totalCount === 0 : true) :
     specialProcessing === 'ia_fonctionnalites' ?
-      (typeof processedData === 'object' && 'totalCount' in processedData ? processedData.totalCount === 0 : true) :
+      false :
     (Array.isArray(processedData) ? !processedData.length : true))) {
     return (
       <Card className="bg-background/50 backdrop-blur-sm border-border/30">

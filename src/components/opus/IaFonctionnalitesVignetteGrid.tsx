@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { processIaFonctionnalitesData, getDomaineIcon, getTypeIcon, getMaturiteColor, getDomaineColor, type IaFonctionnaliteItem } from '@/utils/iaFonctionnalitesDataUtils';
+import { processIaFonctionnalitesData, getDomaineIcon, getTypeIcon, getMaturiteColor, getDomaineColor, type IaFonctionnaliteItem, type ProcessedIaFonctionnalitesData } from '@/utils/iaFonctionnalitesDataUtils';
 import { Bot, Lightbulb, Clock, MapPin, Euro, Users, Target, AlertTriangle, ExternalLink, Sparkles, ChevronDown, ChevronUp } from 'lucide-react';
 interface IaFonctionnalitesVignetteGridProps {
   data: any;
@@ -156,15 +156,31 @@ export const IaFonctionnalitesVignetteGrid: React.FC<IaFonctionnalitesVignetteGr
   console.log('🤖 DEBUG IaFonctionnalitesVignetteGrid received data:', data);
   const processedData = processIaFonctionnalitesData(data);
   console.log('🤖 DEBUG IaFonctionnalitesVignetteGrid processed data:', processedData);
+  const [generatedData, setGeneratedData] = useState<ProcessedIaFonctionnalitesData | null>(null);
+  const displayData = generatedData ?? processedData;
+  const handleGenerateDefaults = () => {
+    const defaults = [
+      'Gouvernance participative',
+      'Alerte écologique prédictive',
+      'Mémoire & patrimoine vivant',
+      'Coach éco-agricole personnalisé',
+      'Création géopoétique intelligente',
+    ];
+    const gen = processIaFonctionnalitesData(defaults);
+    setGeneratedData(gen);
+  };
   
-  if (processedData.totalCount === 0) {
+  if (processedData.totalCount === 0 && !generatedData) {
     return <Card className="bg-background/50 backdrop-blur-sm border-border/30">
         <CardContent className="p-12 text-center">
           <Bot className="w-16 h-16 mx-auto mb-4 text-muted-foreground/50" />
           <h3 className="text-lg font-medium mb-2">Aucune fonctionnalité IA</h3>
-          <p className="text-muted-foreground">
+          <p className="text-muted-foreground mb-4">
             Aucune fonctionnalité d'intelligence artificielle n'a été identifiée pour ce territoire.
           </p>
+          <Button onClick={handleGenerateDefaults} className="font-semibold">
+            Proposer 5 fonctionnalités IA par défaut
+          </Button>
         </CardContent>
       </Card>;
   }
@@ -177,7 +193,7 @@ export const IaFonctionnalitesVignetteGrid: React.FC<IaFonctionnalitesVignetteGr
             <div>
               <span>Intelligence Territoriale Augmentée</span>
               <Badge variant="secondary" className="ml-2">
-                {processedData.totalCount} fonctionnalité{processedData.totalCount > 1 ? 's' : ''}
+                {displayData.totalCount} fonctionnalité{displayData.totalCount > 1 ? 's' : ''}
               </Badge>
             </div>
           </CardTitle>
@@ -192,25 +208,25 @@ export const IaFonctionnalitesVignetteGrid: React.FC<IaFonctionnalitesVignetteGr
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div className="text-center">
               <div className="text-2xl font-bold text-emerald-500">
-                {processedData.par_maturite.pilote.length + processedData.par_maturite.deploye.length}
+                {displayData.par_maturite.pilote.length + displayData.par_maturite.deploye.length}
               </div>
               <div className="text-xs text-muted-foreground">Prêtes au déploiement</div>
             </div>
             <div className="text-center">
               <div className="text-2xl font-bold text-blue-600">
-                {processedData.par_maturite.prototype.length}
+                {displayData.par_maturite.prototype.length}
               </div>
               <div className="text-xs text-muted-foreground">En phase prototype</div>
             </div>
             <div className="text-center">
               <div className="text-2xl font-bold text-amber-600">
-                {processedData.fonctionnalites.reduce((acc, f) => acc + f.metadata.niveau_innovation, 0) / processedData.fonctionnalites.length || 0}
+                {displayData.fonctionnalites.reduce((acc, f) => acc + f.metadata.niveau_innovation, 0) / displayData.fonctionnalites.length || 0}
               </div>
               <div className="text-xs text-muted-foreground">Innovation moyenne /5</div>
             </div>
             <div className="text-center">
               <div className="text-2xl font-bold text-green-600">
-                {Object.keys(processedData.par_domaine).filter(key => processedData.par_domaine[key as keyof typeof processedData.par_domaine].length > 0).length}
+                {Object.keys(displayData.par_domaine).filter(key => displayData.par_domaine[key as keyof typeof displayData.par_domaine].length > 0).length}
               </div>
               <div className="text-xs text-muted-foreground">Domaines couverts</div>
             </div>
@@ -231,11 +247,11 @@ export const IaFonctionnalitesVignetteGrid: React.FC<IaFonctionnalitesVignetteGr
 
         <TabsContent value="all" className="mt-6">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {processedData.fonctionnalites.map((fonctionnalite, index) => <DetailedFonctionnaliteCard key={`all-${index}`} fonctionnalite={fonctionnalite} />)}
+            {displayData.fonctionnalites.map((fonctionnalite, index) => <DetailedFonctionnaliteCard key={`all-${index}`} fonctionnalite={fonctionnalite} />)}
           </div>
         </TabsContent>
 
-        {Object.entries(processedData.par_domaine).map(([domaine, fonctionnalites]) => <TabsContent key={domaine} value={domaine} className="mt-6">
+        {Object.entries(displayData.par_domaine).map(([domaine, fonctionnalites]) => <TabsContent key={domaine} value={domaine} className="mt-6">
             {fonctionnalites.length > 0 ? <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {fonctionnalites.map((fonctionnalite, index) => <DetailedFonctionnaliteCard key={`${domaine}-${index}`} fonctionnalite={fonctionnalite} />)}
               </div> : <Card className="bg-background/50 backdrop-blur-sm border-border/30">
