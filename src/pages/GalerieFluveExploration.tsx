@@ -195,6 +195,7 @@ export default function GalerieFluveExploration() {
             showWelcome={false}
             viewMode={viewMode || 'galerie'}
             explorationName={exploration.name}
+            explorationSlug={exploration.slug}
           />
         </motion.div>
       </div>

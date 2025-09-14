@@ -51,8 +51,8 @@ export default function ExperienceLectureOptimisee() {
     if (marcheParam && texts.length > 0) {
       // Find first text that belongs to the specified marche
       const marcheTexts = texts.filter(text => {
-        if (!text.marcheName || !text.marcheVille) return false;
-        const textMarcheSlug = createSlug(text.marcheName, text.marcheVille);
+        if (!text.marcheNomMarche || !text.marcheVille) return false;
+        const textMarcheSlug = createSlug(text.marcheNomMarche, text.marcheVille);
         return textMarcheSlug === marcheParam;
       });
       

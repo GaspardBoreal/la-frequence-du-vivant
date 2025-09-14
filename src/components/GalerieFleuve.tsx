@@ -66,6 +66,7 @@ interface GalerieFluveProps {
   showWelcome?: boolean;
   viewMode?: ViewMode;
   explorationName?: string;
+  explorationSlug?: string;
 }
 
 interface EnrichedPhoto {
@@ -89,7 +90,7 @@ interface EnrichedPhoto {
 type ViewMode = 'galerie' | 'fleuve-temporel';
 type FilterMode = 'all' | 'biodiversite' | 'bioacoustique' | 'botanique' | 'couleur' | 'saison';
 
-const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes, showWelcome = false, viewMode: initialViewMode = 'galerie', explorationName }) => {
+const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes, showWelcome = false, viewMode: initialViewMode = 'galerie', explorationName, explorationSlug }) => {
   const [allPhotos, setAllPhotos] = useState<EnrichedPhoto[]>([]);
   const [visiblePhotos, setVisiblePhotos] = useState<EnrichedPhoto[]>([]);
   const [viewMode, setViewMode] = useState<ViewMode>(initialViewMode);
@@ -1002,7 +1003,7 @@ const GalerieView = memo<{
                               </div>
                             )}
                             <ReadTextButton 
-                              explorationSlug={explorations[0]?.slug} 
+                              explorationSlug={explorationSlug} 
                               photo={photo} 
                             />
                           </div>
