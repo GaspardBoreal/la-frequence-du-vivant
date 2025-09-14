@@ -252,12 +252,31 @@ export const uploadAudio = async (file: File, marcheId: string, onProgress?: Upl
     console.log('🔍 [uploadAudio] ÉTAPE 4 - Upload Storage');
     console.log('📤 [uploadAudio] Tentative upload vers bucket marche-audio...');
     
-    const { data, error } = await supabase.storage
+    // Upload with contentType and retry for WEBM if needed
+    const isWebm = fileName.toLowerCase().endsWith('.webm') || file.type === 'audio/webm';
+    let attemptedContentType = file.type || 'application/octet-stream';
+    if (isWebm && attemptedContentType !== 'audio/webm') {
+      attemptedContentType = 'audio/webm';
+    }
+    console.log('📤 [uploadAudio] Upload attempt with contentType:', attemptedContentType);
+    let data: any, error: any;
+    ({ data, error } = await supabase.storage
       .from('marche-audio')
       .upload(fileName, file, {
         cacheControl: '3600',
-        upsert: true
-      });
+        upsert: true,
+        contentType: attemptedContentType
+      }));
+    if (error && isWebm && attemptedContentType !== 'application/octet-stream') {
+      console.warn('⚠️ [uploadAudio] Upload failed with audio/webm, retrying with application/octet-stream');
+      ({ data, error } = await supabase.storage
+        .from('marche-audio')
+        .upload(fileName, file, {
+          cacheControl: '3600',
+          upsert: true,
+          contentType: 'application/octet-stream'
+        }));
+    }
 
     // Arrêter la progression simulée
     if (progressInterval) {

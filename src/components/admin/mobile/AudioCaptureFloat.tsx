@@ -40,7 +40,22 @@ const AudioCaptureFloat: React.FC<AudioCaptureFloatProps> = ({
   const [description, setDescription] = useState('');
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
+  const [debugEnabled, setDebugEnabled] = useState(false);
+  const [debugLogs, setDebugLogs] = useState<string[]>([]);
+  const [lastError, setLastError] = useState<string | null>(null);
 
+  const addDebug = (msg: string, data?: any) => {
+    try {
+      const line = data ? `${msg} ${JSON.stringify(data)}` : msg;
+      setDebugLogs((prev) => {
+        const next = [...prev, line];
+        return next.slice(-100);
+      });
+      if (debugEnabled) {
+        console.debug('[AudioCaptureFloat][debug]', line);
+      }
+    } catch {}
+  };
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
   const analyserRef = useRef<AnalyserNode | null>(null);
@@ -243,18 +258,22 @@ const AudioCaptureFloat: React.FC<AudioCaptureFloatProps> = ({
 
     setIsUploading(true);
     setUploadProgress(0);
+    setLastError(null);
+    addDebug('🎬 Démarrage upload', { marcheId, hasRecorded: !!recordedAudio });
 
     try {
       const file = new File([recordedAudio.blob], `${title || recordedAudio.name}.webm`, {
-        type: recordedAudio.blob.type
+        type: (recordedAudio.blob as any).type || 'audio/webm'
       });
+
+      addDebug('📄 Fichier prêt', { name: file.name, type: file.type, size: file.size });
 
       const audioData = {
         id: recordedAudio.id,
         file,
         url: recordedAudio.url,
         name: title || recordedAudio.name,
-        size: recordedAudio.blob.size,
+        size: (recordedAudio.blob as any).size,
         duration: recordedAudio.duration,
         uploaded: false,
         titre: title,
@@ -262,11 +281,15 @@ const AudioCaptureFloat: React.FC<AudioCaptureFloatProps> = ({
       };
 
       const onProgress = (progress: AudioUploadProgress) => {
-        setUploadProgress(progress.progress);
+        const p = Math.round(progress.progress);
+        setUploadProgress(p);
+        addDebug('↗️ Progression', { p, status: progress.status });
       };
 
       const audioId = await saveAudio(marcheId, audioData, onProgress);
       
+      addDebug('✅ Upload terminé', { audioId });
+
       toast.success('Audio uploadé avec succès !');
       onAudioUploaded?.(audioId);
       
@@ -277,6 +300,9 @@ const AudioCaptureFloat: React.FC<AudioCaptureFloatProps> = ({
       
     } catch (error) {
       console.error('Erreur upload:', error);
+      const message = error instanceof Error ? error.message : 'Erreur inconnue';
+      setLastError(message);
+      addDebug('❌ Erreur upload', { message });
       toast.error('Erreur lors de l\'upload');
     } finally {
       setIsUploading(false);
@@ -472,16 +498,44 @@ const AudioCaptureFloat: React.FC<AudioCaptureFloatProps> = ({
                     </div>
                   </div>
 
-                  {/* Upload progress */}
-                  {isUploading && (
-                    <div className="space-y-2">
-                      <div className="flex justify-between text-sm">
-                        <span>Upload en cours...</span>
-                        <span>{uploadProgress}%</span>
+                  {/* Upload progress + Debug */}
+                  <div className="space-y-2">
+                    {isUploading && (
+                      <div className="space-y-2">
+                        <div className="flex justify-between text-sm">
+                          <span>Upload en cours...</span>
+                          <span>{uploadProgress}%</span>
+                        </div>
+                        <Progress value={uploadProgress} />
                       </div>
-                      <Progress value={uploadProgress} />
+                    )}
+
+                    <div className="flex items-center justify-between text-xs text-muted-foreground">
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={debugEnabled}
+                          onChange={(e) => setDebugEnabled(e.target.checked)}
+                        />
+                        Mode debug
+                      </label>
+                      {lastError && (
+                        <span className="text-destructive">Erreur: {lastError}</span>
+                      )}
                     </div>
-                  )}
+
+                    {debugEnabled && (
+                      <div className="rounded-md bg-muted/40 p-2 max-h-40 overflow-auto font-mono text-xs space-y-1">
+                        <div>
+                          Fichier: {recordedAudio?.name} • {(recordedAudio?.blob as any)?.type || 'inconnu'} • {Math.round(((recordedAudio?.blob as any)?.size || 0) / 1024)}KB
+                        </div>
+                        <div>Marche: {marcheId}</div>
+                        {debugLogs.map((l, i) => (
+                          <div key={i} className="truncate">• {l}</div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 </div>
               )}
             </div>

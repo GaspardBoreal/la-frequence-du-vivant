@@ -193,12 +193,14 @@ export const saveAudio = async (
 
   // Callback de progression avec protection contre les erreurs
   const updateProgress = (progress: number, status: AudioUploadProgress['status'], error?: string) => {
-    console.log(`📊 [saveAudio] Progression: ${progress}% - Status: ${status}${error ? ` - Erreur: ${error}` : ''}`);
+    const clamped = Math.min(Math.max(progress, 0), 100);
+    const rounded = Math.round(clamped);
+    console.log(`📊 [saveAudio] Progression: ${rounded}% - Status: ${status}${error ? ` - Erreur: ${error}` : ''}`);
     
     try {
       onProgress?.({
         fileName,
-        progress: Math.min(Math.max(progress, 0), 100),
+        progress: rounded,
         status,
         error
       });
