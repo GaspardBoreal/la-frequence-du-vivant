@@ -553,7 +553,7 @@ export const ModernImportDetailModal: React.FC<ModernImportDetailModalProps> = (
             {/* IA Tab */}
             <TabsContent value="ia" className="space-y-6">
               {(() => {
-                const iaData = importRecord.contexte_data?.ia_fonctionnalites?.donnees || importRecord.contexte_data?.ia_fonctionnalites || null;
+                const iaData = importRecord.contexte_data?.ia_fonctionnalites?.donnees || importRecord.contexte_data?.ia_fonctionnalites || [];
                 console.log('🤖 DEBUG IA Tab Data for', importRecord.marche_nom, ':', iaData);
                 return (
                   <VignetteGrid

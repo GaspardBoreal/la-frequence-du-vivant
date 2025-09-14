@@ -182,14 +182,10 @@ export const VignetteGrid: React.FC<VignetteGridProps> = ({
     }
   };
 
-  if (!data || (specialProcessing === 'vocabulary' ? 
-    (typeof processedData === 'object' && 'termes' in processedData ? 
-      (!processedData.termes?.length && !processedData.sources?.length && !importSources?.length) : true) : 
-    specialProcessing === 'technodiversite' ?
-      (typeof processedData === 'object' && 'totalCount' in processedData ? processedData.totalCount === 0 : true) :
-    specialProcessing === 'ia_fonctionnalites' ?
-      false :
-    (Array.isArray(processedData) ? !processedData.length : true))) {
+  // Always render specialized components, they handle empty states internally
+  if (specialProcessing === 'vocabulary' || specialProcessing === 'technodiversite' || specialProcessing === 'ia_fonctionnalites') {
+    // Let specialized components handle their own empty states
+  } else if (!data || (Array.isArray(processedData) ? !processedData.length : true)) {
     return (
       <Card className="bg-background/50 backdrop-blur-sm border-border/30">
         <CardContent className="p-12 text-center">
