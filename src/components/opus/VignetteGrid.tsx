@@ -202,8 +202,8 @@ export const VignetteGrid: React.FC<VignetteGridProps> = ({
 
   return (
     <div className={`space-y-6 ${className}`}>
-      {/* En-tête avec statistiques - Masqué pour le vocabulaire, technodiversité et IA */}
-      {specialProcessing !== 'vocabulary' && specialProcessing !== 'technodiversite' && specialProcessing !== 'ia_fonctionnalites' && (
+      {/* En-tête avec statistiques - Masqué pour le vocabulaire, technodiversité, IA et agroécologie */}
+      {specialProcessing !== 'vocabulary' && specialProcessing !== 'technodiversite' && specialProcessing !== 'ia_fonctionnalites' && specialProcessing !== 'agroecologie' && (
         <Card className={getVariantBorder()}>
           <CardHeader>
             <CardTitle className="flex items-center gap-3">
@@ -227,8 +227,8 @@ export const VignetteGrid: React.FC<VignetteGridProps> = ({
         </Card>
       )}
 
-      {/* Grille de vignettes - Masquée pour le vocabulaire, technodiversité et IA qui ont un affichage spécialisé */}
-      {specialProcessing !== 'vocabulary' && specialProcessing !== 'technodiversite' && specialProcessing !== 'ia_fonctionnalites' && Array.isArray(processedData) && (
+      {/* Grille de vignettes - Masquée pour le vocabulaire, technodiversité, IA et agroécologie qui ont un affichage spécialisé */}
+      {specialProcessing !== 'vocabulary' && specialProcessing !== 'technodiversite' && specialProcessing !== 'ia_fonctionnalites' && specialProcessing !== 'agroecologie' && Array.isArray(processedData) && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
           {processedData.map((item, index) => (
             <InteractiveVignette
