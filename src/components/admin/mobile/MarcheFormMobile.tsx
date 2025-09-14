@@ -15,6 +15,7 @@ import { toast } from 'sonner';
 import { geocodeAddress } from '../../../utils/geocoding';
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from '../../ui/sheet';
 import PhotoCaptureFloat from './PhotoCaptureFloat';
+import AudioCaptureFloat from './AudioCaptureFloat';
 import PhotoGalleryMobile from './PhotoGalleryMobile';
 import { ProcessedPhoto } from '../../../utils/photoUtils';
 
@@ -498,12 +499,20 @@ const MarcheFormMobile: React.FC<MarcheFormMobileProps> = ({
 
       {/* Photo Capture Float - Only show when we have a marcheId */}
       {marcheId && (
-        <PhotoCaptureFloat
-          marcheId={marcheId}
-          onPhotoCaptured={handlePhotoCaptured}
-          disabled={isSubmitting}
-          pendingCount={pendingPhotos.length}
-        />
+        <>
+          <PhotoCaptureFloat
+            marcheId={marcheId}
+            onPhotoCaptured={handlePhotoCaptured}
+            disabled={isSubmitting}
+            pendingCount={pendingPhotos.length}
+          />
+          <AudioCaptureFloat 
+            marcheId={marcheId} 
+            onAudioUploaded={() => {
+              toast.success('Audio ajouté avec succès !');
+            }}
+          />
+        </>
       )}
     </div>
   );
