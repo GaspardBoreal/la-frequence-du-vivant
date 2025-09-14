@@ -39,8 +39,8 @@ import { OpusReaderModeInterface } from './OpusReaderModeInterface';
 import { OpusTemplateLibrary } from './OpusTemplateLibrary';
 import { ExplorationSpeciesView } from './ExplorationSpeciesView';
 import { ExplorationVocabularyView } from './ExplorationVocabularyView';
-import { TechnodiversiteVignetteGrid } from './TechnodiversiteVignetteGrid';
-import { InfrastructureVignetteGrid } from './InfrastructureVignetteGrid';
+import { ExplorationTechnodiversityView } from './ExplorationTechnodiversityView';
+import { ExplorationInfrastructureView } from './ExplorationInfrastructureView';
 import { ImportMonitoringPanel } from './ImportMonitoringPanel';
 import SEOHead from '@/components/SEOHead';
 import { useAnimatedCounter } from '@/hooks/useAnimatedCounter';
@@ -851,103 +851,12 @@ export const ModernImportDashboard: React.FC = () => {
 
             {/* Technodiversity View */}
             <TabsContent value="technodiversity" className="space-y-6">
-              <div className="space-y-6">
-                {filteredImports.length > 0 ? (
-                  filteredImports.map((importRecord) => (
-                    importRecord.contexte_data?.technodiversite && (
-                      <div key={importRecord.id} className="space-y-4">
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <h3 className="text-lg font-semibold">{importRecord.marche_nom}</h3>
-                            <p className="text-sm text-muted-foreground">{importRecord.marche_ville}</p>
-                          </div>
-                        </div>
-                        <TechnodiversiteVignetteGrid
-                          technodiversiteData={importRecord.contexte_data.technodiversite}
-                          importSources={importRecord.sources}
-                        />
-                      </div>
-                    )
-                  ))
-                ) : (
-                  <Card className="bg-background/50 backdrop-blur-sm border-border/30">
-                    <CardContent className="p-12 text-center">
-                      <div className="w-16 h-16 mx-auto mb-4 text-muted-foreground/50">🔧</div>
-                      <h3 className="text-lg font-medium mb-2">Aucune technodiversité disponible</h3>
-                      <p className="text-muted-foreground">
-                        Aucune technologie n'a été identifiée dans les imports de cette exploration.
-                      </p>
-                    </CardContent>
-                  </Card>
-                )}
-              </div>
+              <ExplorationTechnodiversityView imports={filteredImports} />
             </TabsContent>
 
             {/* Infrastructure View */}
             <TabsContent value="infrastructure" className="space-y-6">
-              <div className="space-y-6">
-                {filteredImports.length > 0 ? (
-                  filteredImports.map((importRecord) => {
-                    const contextData = importRecord.contexte_data as any;
-                    
-                    // Récupération de la structure la plus plausible
-                    const baseInfra = contextData?.dimensions?.empreintes_humaines
-                      || contextData?.dimensions?.infrastructures_techniques 
-                      || contextData?.infrastructures_techniques 
-                      || contextData?.empreintes_humaines 
-                      || null;
-                    
-                    // Recherche récursive d'un noeud "donnees"
-                    const findDonnees = (node: any): any => {
-                      if (!node || typeof node !== 'object') return null;
-                      if ((node as any).donnees) return (node as any).donnees;
-                      for (const value of Object.values(node)) {
-                        const found = findDonnees(value);
-                        if (found) return found;
-                      }
-                      return null;
-                    };
-
-                    const foundDonnees = findDonnees(baseInfra);
-                    const infra = foundDonnees ? { donnees: foundDonnees } : baseInfra;
-                    
-                    if ((window as any).__DEBUG_INFRA__) {
-                      console.debug('Debug - Infrastructure final payload for grid', {
-                        marche: importRecord.marche_nom,
-                        hasFoundDonnees: !!foundDonnees,
-                        baseKeys: baseInfra ? Object.keys(baseInfra) : null,
-                        donneesKeys: foundDonnees ? Object.keys(foundDonnees) : null,
-                      });
-                    }
-                    
-                    if (!infra) return null;
-                    return (
-                      <div key={importRecord.id} className="space-y-4">
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <h3 className="text-lg font-semibold">{importRecord.marche_nom}</h3>
-                            <p className="text-sm text-muted-foreground">{importRecord.marche_ville}</p>
-                          </div>
-                        </div>
-                        <InfrastructureVignetteGrid
-                          empreintesHumainesData={infra}
-                          importSources={importRecord.sources}
-                        />
-                      </div>
-                    );
-                  })
-                ) : (
-                  <Card className="bg-background/50 backdrop-blur-sm border-border/30">
-                    <CardContent className="p-12 text-center">
-                      <div className="w-16 h-16 mx-auto mb-4 text-muted-foreground/50">🏗️</div>
-                      <h3 className="text-lg font-medium mb-2">Aucune infrastructure identifiée</h3>
-                      <p className="text-muted-foreground">
-                        Aucune empreinte humaine n'a été recensée dans les imports de cette exploration.
-                      </p>
-                    </CardContent>
-                  </Card>
-                )}
-              </div>
+              <ExplorationInfrastructureView imports={filteredImports} />
             </TabsContent>
 
             {/* Imports List */}
