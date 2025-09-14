@@ -44,13 +44,6 @@ export type Database = {
             referencedRelation: "admin_users"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "admin_audit_log_admin_user_id_fkey"
-            columns: ["admin_user_id"]
-            isOneToOne: false
-            referencedRelation: "admin_users_safe"
-            referencedColumns: ["id"]
-          },
         ]
       }
       admin_initialization: {
@@ -1558,33 +1551,7 @@ export type Database = {
       }
     }
     Views: {
-      admin_users_safe: {
-        Row: {
-          created_at: string | null
-          email: string | null
-          id: string | null
-          role: string | null
-          updated_at: string | null
-          user_id: string | null
-        }
-        Insert: {
-          created_at?: string | null
-          email?: never
-          id?: string | null
-          role?: string | null
-          updated_at?: string | null
-          user_id?: string | null
-        }
-        Update: {
-          created_at?: string | null
-          email?: never
-          id?: string | null
-          role?: string | null
-          updated_at?: string | null
-          user_id?: string | null
-        }
-        Relationships: []
-      }
+      [_ in never]: never
     }
     Functions: {
       check_is_admin_user: {
@@ -1616,6 +1583,16 @@ export type Database = {
           user_id: string
         }[]
       }
+      get_admin_users_list: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          created_at: string
+          id: string
+          role: string
+          updated_at: string
+          user_id: string
+        }[]
+      }
       get_current_admin_email: {
         Args: Record<PropertyKey, never>
         Returns: string
@@ -1623,6 +1600,17 @@ export type Database = {
       get_current_admin_email_secure: {
         Args: Record<PropertyKey, never>
         Returns: string
+      }
+      get_current_admin_info: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          created_at: string
+          email: string
+          id: string
+          role: string
+          updated_at: string
+          user_id: string
+        }[]
       }
       get_current_admin_user: {
         Args: Record<PropertyKey, never>
