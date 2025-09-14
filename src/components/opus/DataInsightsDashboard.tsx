@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import { getProcessedSpeciesCount, processSpeciesData } from '@/utils/speciesDataUtils';
 import { getVocabularyTermsCount } from '@/utils/vocabularyDataUtils';
+import { processTechnodiversiteData } from '@/utils/technodiversiteDataUtils';
 
 interface ImportRecord {
   id: string;
@@ -75,12 +76,7 @@ export const DataInsightsDashboard: React.FC<DataInsightsDashboardProps> = ({ im
     // Technology metrics
     const totalTechnology = imports.reduce((acc, imp) => {
       const tech = imp.contexte_data?.technodiversite;
-      if (tech?.nouvelles_activites) {
-        return acc + (Array.isArray(tech.nouvelles_activites) 
-          ? tech.nouvelles_activites.length 
-          : Object.keys(tech.nouvelles_activites || {}).length);
-      }
-      return acc;
+      return acc + processTechnodiversiteData(tech).totalCount;
     }, 0);
 
     // Temporal analysis

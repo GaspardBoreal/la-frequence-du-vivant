@@ -146,6 +146,56 @@ export const processTechnodiversiteData = (data: any): ProcessedTechnodiversiteD
     };
   }
 
+  // Traitement spécialisé pour les formats TRL (Technology Readiness Level)
+  const trlKeys = Object.keys(data).filter(key => key.match(/^niveau_.*trl_/i));
+  if (trlKeys.length > 0) {
+    console.log('Debug - TRL format detected, keys:', trlKeys);
+    
+    const processTrlItems = (items: any[], levelName: string) => {
+      if (!Array.isArray(items)) return [];
+      return items.map((item, index) => ({
+        titre: item.nom || item.titre || item.name || `${levelName} ${index + 1}`,
+        description_courte: item.description || item.explication || '',
+        type: item.type || determineTechType(item) || levelName.toLowerCase(),
+        category: levelName,
+        metadata: {
+          autonomie_energetique: item.autonomie_energetique,
+          cout_fabrication: item.cout_fabrication || item.cout,
+          documentation_ouverte: item.documentation_ouverte || false,
+          impact_territorial: item.impact_territorial || item.impact,
+          liens: item.liens || [],
+          trl_level: levelName,
+          ...item
+        }
+      }));
+    };
+
+    const innovations_locales = processTrlItems(data.niveau_professionnel_trl_7_9 || [], 'Innovations locales');
+    const technologies_vertes = processTrlItems(data.niveau_innovant_trl_4_6 || [], 'Technologies vertes');  
+    const numerique = processTrlItems(data.niveau_disruptif_trl_1_3 || [], 'Numérique sobre');
+
+    const total = innovations_locales.length + technologies_vertes.length + numerique.length;
+    
+    console.log('Debug - TRL format processed:', {
+      counts: {
+        innovations_locales: innovations_locales.length,
+        technologies_vertes: technologies_vertes.length,
+        numerique: numerique.length
+      },
+      total
+    });
+
+    return {
+      innovations: [...innovations_locales, ...technologies_vertes, ...numerique],
+      fabrication_locale: [],
+      projets_open_source: [],
+      innovations_locales,
+      technologies_vertes,
+      numerique,
+      totalCount: total
+    };
+  }
+
   // Fallback pour l'ancien format (données directes ou autres structures)
   console.log('Debug - Using fallback processing for:', data);
   
