@@ -1611,10 +1611,28 @@ const sanitizeJson = useCallback((jsonString: string): string => {
       <Dialog open={showFullPromptModal} onOpenChange={setShowFullPromptModal}>
         <DialogContent className="max-w-4xl max-h-[80vh] overflow-hidden">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <BookOpen className="h-5 w-5" />
-              Prompt COMPLET - Phase B DeepSearch
-            </DialogTitle>
+            <div className="flex items-center justify-between">
+              <DialogTitle className="flex items-center gap-2">
+                <BookOpen className="h-5 w-5" />
+                Prompt COMPLET - Phase B DeepSearch
+              </DialogTitle>
+              <Button
+                size="sm"
+                variant="outline"
+                className="gap-2"
+                onClick={async () => {
+                  try {
+                    const text = fullPromptContent || (await (await fetch('/prompt-deepsearch-phase-b-complet.md')).text());
+                    await navigator.clipboard.writeText(text);
+                    toast({ title: 'Copié !', description: 'Prompt copié dans le presse-papiers' });
+                  } catch (e) {
+                    toast({ title: 'Erreur', description: 'Impossible de copier le prompt', variant: 'destructive' });
+                  }
+                }}
+              >
+                <Copy className="h-4 w-4" /> Copier
+              </Button>
+            </div>
           </DialogHeader>
           <ScrollArea className="max-h-[60vh] w-full">
             <div className="p-4">
