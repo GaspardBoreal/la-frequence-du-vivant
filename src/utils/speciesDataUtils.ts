@@ -33,14 +33,14 @@ export function processSpeciesData(speciesData: SpeciesData | null | undefined):
   const mapKeyToCategory = (key: string): { category: string; fauneType?: string } => {
     const keyLower = key.toLowerCase();
     
-    // Mapping direct pour les structures AI DEEPSEARCH
-    if (keyLower.includes('poisson')) return { category: 'Poissons', fauneType: 'poissons' };
-    if (keyLower.includes('oiseau')) return { category: 'Oiseaux', fauneType: 'oiseaux' };
-    if (keyLower.includes('vegetation') || keyLower.includes('plante') || keyLower.includes('flore')) return { category: 'Flore' };
-    if (keyLower.includes('invertebr') || keyLower.includes('crustac') || keyLower.includes('mollusque')) return { category: 'Invertébrés', fauneType: 'invertebres' };
-    if (keyLower.includes('insecte') || keyLower.includes('arthropode')) return { category: 'Insectes', fauneType: 'insectes' };
-    if (keyLower.includes('reptile') || keyLower.includes('serpent')) return { category: 'Reptiles', fauneType: 'reptiles' };
-    if (keyLower.includes('mammifère') || keyLower.includes('mammifere')) return { category: 'Mammifères', fauneType: 'mammiferes' };
+  // Mapping direct pour les structures AI DEEPSEARCH
+  if (keyLower.includes('poisson')) return { category: 'Poissons', fauneType: 'poissons' };
+  if (keyLower.includes('oiseau')) return { category: 'Oiseaux', fauneType: 'oiseaux' };
+  if (keyLower.includes('vegetation') || keyLower.includes('plante') || keyLower.includes('flore') || keyLower.includes('aulne') || keyLower.includes('saule')) return { category: 'Flore' };
+  if (keyLower.includes('invertebr') || keyLower.includes('crustac') || keyLower.includes('mollusque')) return { category: 'Invertébrés', fauneType: 'invertebres' };
+  if (keyLower.includes('insecte') || keyLower.includes('arthropode') || keyLower.includes('ephemere') || keyLower.includes('manne')) return { category: 'Insectes', fauneType: 'insectes' };
+  if (keyLower.includes('reptile') || keyLower.includes('serpent')) return { category: 'Reptiles', fauneType: 'reptiles' };
+  if (keyLower.includes('mammifère') || keyLower.includes('mammifere') || keyLower.includes('loutre')) return { category: 'Mammifères', fauneType: 'mammiferes' };
     
     return { category: 'Autres', fauneType: 'autres' };
   };
@@ -96,6 +96,38 @@ export function processSpeciesData(speciesData: SpeciesData | null | undefined):
     metadata: item
   });
 
+  // Fonction pour extraire les espèces depuis les descriptions textuelles
+  const extractSpeciesFromDescription = (description: string, context: string): any[] => {
+    const species: any[] = [];
+    const descriptionLower = description.toLowerCase();
+    
+    // Patterns pour identifier les espèces dans les descriptions
+    const speciesPatterns = [
+      { name: 'Aulne glutineux', scientific: 'Alnus glutinosa', category: 'Flore' },
+      { name: 'Saule blanc', scientific: 'Salix alba', category: 'Flore' },
+      { name: 'Saumon atlantique', scientific: 'Salmo salar', category: 'Poissons' },
+      { name: 'Loutre d\'Europe', scientific: 'Lutra lutra', category: 'Mammifères' },
+      { name: 'Manne blanche', scientific: 'Ephoron virgo', category: 'Insectes' },
+      { name: 'Éphémère', scientific: 'Ephoron virgo', category: 'Insectes' }
+    ];
+    
+    speciesPatterns.forEach(pattern => {
+      if (descriptionLower.includes(pattern.name.toLowerCase()) || 
+          descriptionLower.includes(pattern.scientific.toLowerCase())) {
+        species.push({
+          nom_commun: pattern.name,
+          nom_scientifique: pattern.scientific,
+          statut_conservation: 'À déterminer',
+          description_courte: `Espèce extraite depuis: ${context}`,
+          type: pattern.category,
+          source_context: context
+        });
+      }
+    });
+    
+    return species;
+  };
+
   // Gérer la structure nested avec "donnees"
   const dataToProcess = speciesData.donnees || speciesData;
 
@@ -141,6 +173,21 @@ export function processSpeciesData(speciesData: SpeciesData | null | undefined):
       } else {
         faune.autres.push(species);
       }
+    } else if (typeof value === 'string') {
+      // Extraire les espèces depuis les descriptions textuelles
+      const extractedSpecies = extractSpeciesFromDescription(value, key);
+      extractedSpecies.forEach(species => {
+        const speciesCategoryInfo = mapKeyToCategory(species.nom_commun || species.titre);
+        const speciesObj = createSpeciesObject(species, species.nom_commun || species.titre, speciesCategoryInfo.category);
+        
+        if (speciesCategoryInfo.category === 'Flore') {
+          flore.push(speciesObj);
+        } else if (speciesCategoryInfo.fauneType) {
+          faune[speciesCategoryInfo.fauneType].push(speciesObj);
+        } else {
+          faune.autres.push(speciesObj);
+        }
+      });
     }
   });
 
