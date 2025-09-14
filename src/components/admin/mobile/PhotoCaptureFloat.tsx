@@ -213,7 +213,7 @@ const PhotoCaptureFloat: React.FC<PhotoCaptureFloatProps> = ({
               </div>
             ) : (
               <div className="flex flex-col h-full">
-                <div className="relative flex-1 bg-black rounded-lg overflow-hidden pb-[calc(env(safe-area-inset-bottom,0px)+4.5rem)]">
+                <div className="relative flex-1 bg-black rounded-lg overflow-hidden pb-20">
                   <video
                     ref={videoRef}
                     autoPlay
@@ -221,24 +221,32 @@ const PhotoCaptureFloat: React.FC<PhotoCaptureFloatProps> = ({
                     className="w-full h-full object-cover"
                   />
                   
-                    <div className="absolute left-1/2 transform -translate-x-1/2 flex gap-4 z-10" style={{ bottom: 'calc(env(safe-area-inset-bottom, 0px) + 24px)' }}>
-                      <Button
-                        onClick={capturePhoto}
-                        className="w-16 h-16 rounded-full bg-white text-black hover:bg-gray-200"
-                        aria-label="Prendre la photo"
-                      >
-                        <div className="w-8 h-8 rounded-full border-2 border-black" />
-                      </Button>
+                  {/* Zone de contrôle fixe avec fond semi-transparent */}
+                  <div className="absolute bottom-0 left-0 right-0 bg-black/50 backdrop-blur-sm p-4">
+                    <div className="flex justify-center gap-6">
+                      <div className="flex flex-col items-center gap-2">
+                        <Button
+                          onClick={capturePhoto}
+                          className="w-16 h-16 rounded-full bg-white text-black hover:bg-gray-100 shadow-lg border-2 border-white"
+                          aria-label="Prendre la photo"
+                        >
+                          <div className="w-8 h-8 rounded-full border-2 border-black" />
+                        </Button>
+                        <span className="text-xs text-white font-medium">Capturer</span>
+                      </div>
                       
-                      <Button
-                        onClick={stopCamera}
-                        variant="outline"
-                        className="w-16 h-16 rounded-full bg-red-500 text-white hover:bg-red-600"
-                        aria-label="Annuler la capture"
-                      >
-                        <X className="w-6 h-6" />
-                      </Button>
+                      <div className="flex flex-col items-center gap-2">
+                        <Button
+                          onClick={stopCamera}
+                          className="w-16 h-16 rounded-full bg-red-500 text-white hover:bg-red-600 shadow-lg border-2 border-red-300"
+                          aria-label="Annuler la capture"
+                        >
+                          <X className="w-6 h-6" />
+                        </Button>
+                        <span className="text-xs text-white font-medium">Annuler</span>
+                      </div>
                     </div>
+                  </div>
                 </div>
               </div>
             )}
