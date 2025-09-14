@@ -54,12 +54,12 @@ export const DataInsightsDashboard: React.FC<DataInsightsDashboardProps> = ({ im
 
     // Biodiversity metrics (use normalized processing for strict consistency)
     const totalSpecies = imports.reduce((acc, imp) => {
-      return acc + getProcessedSpeciesCount(imp.contexte_data?.especes_caracteristiques);
+      return acc + getProcessedSpeciesCount(imp.contexte_data?.especes_caracteristiques?.donnees || imp.contexte_data?.especes_caracteristiques);
     }, 0);
 
     const uniqueSpecies = new Set<string>();
     imports.forEach(imp => {
-      const processed = processSpeciesData(imp.contexte_data?.especes_caracteristiques);
+      const processed = processSpeciesData(imp.contexte_data?.especes_caracteristiques?.donnees || imp.contexte_data?.especes_caracteristiques);
       const addKey = (s: any) => {
         const key = `${(s.nom_commun || s.titre || '').toLowerCase()}|${(s.nom_scientifique || '').toLowerCase()}`;
         uniqueSpecies.add(key);

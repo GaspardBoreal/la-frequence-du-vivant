@@ -146,7 +146,7 @@ export const ModernImportDashboard: React.FC = () => {
   const totalImports = useAnimatedCounter(filteredImports.length, 1000);
   const totalSpecies = useAnimatedCounter(
     filteredImports.reduce((acc, imp) => {
-      return acc + getProcessedSpeciesCount(imp.contexte_data?.especes_caracteristiques);
+      return acc + getProcessedSpeciesCount(imp.contexte_data?.especes_caracteristiques?.donnees || imp.contexte_data?.especes_caracteristiques);
     }, 0), 
     1500
   );
@@ -980,7 +980,7 @@ export const ModernImportDashboard: React.FC = () => {
                   ) : (
                     <div className="space-y-3">
                       {filteredImports.map((importRecord) => {
-                        const speciesCount = getProcessedSpeciesCount(importRecord.contexte_data?.especes_caracteristiques);
+                        const speciesCount = getProcessedSpeciesCount(importRecord.contexte_data?.especes_caracteristiques?.donnees || importRecord.contexte_data?.especes_caracteristiques);
                         const vocabularyCount = getVocabularyTermsCount(importRecord.contexte_data?.vocabulaire_local);
                         const technologyCount = importRecord.contexte_data?.technodiversite 
                           ? (() => {

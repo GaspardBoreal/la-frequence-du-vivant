@@ -227,7 +227,7 @@ export const ModernImportDetailModal: React.FC<ModernImportDetailModalProps> = (
                   </CardHeader>
                   <CardContent>
                     <div className="text-2xl font-bold text-success mb-1">
-                      {getProcessedSpeciesCount(importRecord.contexte_data?.especes_caracteristiques)}
+                      {getProcessedSpeciesCount(importRecord.contexte_data?.especes_caracteristiques?.donnees || importRecord.contexte_data?.especes_caracteristiques)}
                     </div>
                     <p className="text-xs text-muted-foreground">identifiées</p>
                   </CardContent>

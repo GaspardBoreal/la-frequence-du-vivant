@@ -94,7 +94,7 @@ export const ModernImportCard: React.FC<ModernImportCardProps> = ({
     };
 
     if (importRecord.contexte_data) {
-      metrics.species = getProcessedSpeciesCount(importRecord.contexte_data?.especes_caracteristiques);
+      metrics.species = getProcessedSpeciesCount(importRecord.contexte_data?.especes_caracteristiques?.donnees || importRecord.contexte_data?.especes_caracteristiques);
       metrics.vocabulary = getVocabularyTermsCount(importRecord.contexte_data?.vocabulaire_local);
       
       const tech = importRecord.contexte_data.technodiversite;
