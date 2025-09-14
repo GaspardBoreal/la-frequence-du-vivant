@@ -23,6 +23,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { getProcessedSpeciesCount } from '@/utils/speciesDataUtils';
 import { getVocabularyTermsCount } from '@/utils/vocabularyDataUtils';
+import { getIaFonctionnalitesCount } from '@/utils/iaFonctionnalitesDataUtils';
 import { processTechnodiversiteData } from '@/utils/technodiversiteDataUtils';
 
 interface ImportRecord {
@@ -90,12 +91,14 @@ export const ModernImportCard: React.FC<ModernImportCardProps> = ({
       species: 0,
       vocabulary: 0,
       technology: 0,
+      ia: 0,
       fables: importRecord.fables_data?.length || 0
     };
 
     if (importRecord.contexte_data) {
       metrics.species = getProcessedSpeciesCount(importRecord.contexte_data?.especes_caracteristiques?.donnees || importRecord.contexte_data?.especes_caracteristiques);
       metrics.vocabulary = getVocabularyTermsCount(importRecord.contexte_data?.vocabulaire_local);
+      metrics.ia = getIaFonctionnalitesCount(importRecord.contexte_data?.ia_fonctionnalites);
       
       const tech = importRecord.contexte_data.technodiversite;
       if (tech) {

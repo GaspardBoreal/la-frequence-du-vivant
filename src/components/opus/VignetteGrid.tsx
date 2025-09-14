@@ -5,9 +5,11 @@ import { InteractiveVignette } from './InteractiveVignette';
 import { Database, ExternalLink } from 'lucide-react';
 import { processVocabularyData } from '@/utils/vocabularyDataUtils';
 import { processTechnodiversiteData } from '@/utils/technodiversiteDataUtils';
+import { processIaFonctionnalitesData } from '@/utils/iaFonctionnalitesDataUtils';
 import { TechnodiversiteVignetteGrid } from './TechnodiversiteVignetteGrid';
 import { VocabularySourcesCard } from './VocabularySourcesCard';
 import VocabularyVignetteGrid from './VocabularyVignetteGrid';
+import { IaFonctionnalitesVignetteGrid } from './IaFonctionnalitesVignetteGrid';
 import { useToast } from '@/components/ui/use-toast';
 
 interface VignetteGridProps {
@@ -17,7 +19,7 @@ interface VignetteGridProps {
   icon: React.ReactNode;
   className?: string;
   emptyMessage?: string;
-  specialProcessing?: 'vocabulary' | 'technodiversite';
+  specialProcessing?: 'vocabulary' | 'technodiversite' | 'ia_fonctionnalites';
   importSources?: any[]; // Import sources to enrich vocabulary sources
 }
 
@@ -43,6 +45,11 @@ export const VignetteGrid: React.FC<VignetteGridProps> = ({
     // Traitement spécial pour la technodiversité
     if (specialProcessing === 'technodiversite') {
       return processTechnodiversiteData(data);
+    }
+    
+    // Traitement spécial pour les fonctionnalités IA
+    if (specialProcessing === 'ia_fonctionnalites') {
+      return processIaFonctionnalitesData(data);
     }
     
     const items: any[] = [];
@@ -180,6 +187,8 @@ export const VignetteGrid: React.FC<VignetteGridProps> = ({
       (!processedData.termes?.length && !processedData.sources?.length && !importSources?.length) : true) : 
     specialProcessing === 'technodiversite' ?
       (typeof processedData === 'object' && 'totalCount' in processedData ? processedData.totalCount === 0 : true) :
+    specialProcessing === 'ia_fonctionnalites' ?
+      (typeof processedData === 'object' && 'totalCount' in processedData ? processedData.totalCount === 0 : true) :
     (Array.isArray(processedData) ? !processedData.length : true))) {
     return (
       <Card className="bg-background/50 backdrop-blur-sm border-border/30">
@@ -196,8 +205,8 @@ export const VignetteGrid: React.FC<VignetteGridProps> = ({
 
   return (
     <div className={`space-y-6 ${className}`}>
-      {/* En-tête avec statistiques - Masqué pour le vocabulaire et technodiversité */}
-      {specialProcessing !== 'vocabulary' && specialProcessing !== 'technodiversite' && (
+      {/* En-tête avec statistiques - Masqué pour le vocabulaire, technodiversité et IA */}
+      {specialProcessing !== 'vocabulary' && specialProcessing !== 'technodiversite' && specialProcessing !== 'ia_fonctionnalites' && (
         <Card className={getVariantBorder()}>
           <CardHeader>
             <CardTitle className="flex items-center gap-3">
@@ -221,8 +230,8 @@ export const VignetteGrid: React.FC<VignetteGridProps> = ({
         </Card>
       )}
 
-      {/* Grille de vignettes - Masquée pour le vocabulaire et technodiversité qui ont un affichage spécialisé */}
-      {specialProcessing !== 'vocabulary' && specialProcessing !== 'technodiversite' && Array.isArray(processedData) && (
+      {/* Grille de vignettes - Masquée pour le vocabulaire, technodiversité et IA qui ont un affichage spécialisé */}
+      {specialProcessing !== 'vocabulary' && specialProcessing !== 'technodiversite' && specialProcessing !== 'ia_fonctionnalites' && Array.isArray(processedData) && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
           {processedData.map((item, index) => (
             <InteractiveVignette
@@ -247,6 +256,15 @@ export const VignetteGrid: React.FC<VignetteGridProps> = ({
       {specialProcessing === 'technodiversite' && typeof processedData === 'object' && 'totalCount' in processedData && (
         <TechnodiversiteVignetteGrid
           technodiversiteData={data}
+          importSources={importSources}
+          className="w-full"
+        />
+      )}
+
+      {/* Affichage spécialisé pour les fonctionnalités IA */}
+      {specialProcessing === 'ia_fonctionnalites' && typeof processedData === 'object' && 'totalCount' in processedData && (
+        <IaFonctionnalitesVignetteGrid
+          data={data}
           importSources={importSources}
           className="w-full"
         />

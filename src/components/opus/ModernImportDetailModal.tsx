@@ -15,6 +15,7 @@ import { ContexteMetricCard } from './ContexteMetricCard';
 import { mapContexteData } from '@/utils/contexteDataMapper';
 import { getVocabularyTermsCount } from '@/utils/vocabularyDataUtils';
 import { getProcessedSpeciesCount } from '@/utils/speciesDataUtils';
+import { getIaFonctionnalitesCount } from '@/utils/iaFonctionnalitesDataUtils';
 import { 
   Calendar, 
   Database, 
@@ -40,7 +41,8 @@ import {
   Waves,
   Thermometer,
   AlertTriangle,
-  BarChart3
+  BarChart3,
+  Bot
 } from 'lucide-react';
 
 interface ImportRecord {
@@ -353,6 +355,25 @@ export const ModernImportDetailModal: React.FC<ModernImportDetailModalProps> = (
                     <p className="text-xs text-muted-foreground">technologies</p>
                   </CardContent>
                 </Card>
+
+                {/* 7. Fonctionnalités IA */}
+                <Card 
+                  className="bg-gradient-to-br from-blue-500/20 to-blue-500/10 border-blue-500/30 hover:shadow-lg transition-all cursor-pointer hover:scale-105"
+                  onClick={() => setActiveTab('ia')}
+                >
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm flex items-center gap-2">
+                      <Bot className="w-4 h-4 text-blue-500" />
+                      IA Territoriale
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold text-blue-500 mb-1">
+                      {getIaFonctionnalitesCount(importRecord.contexte_data?.ia_fonctionnalites)}
+                    </div>
+                    <p className="text-xs text-muted-foreground">fonctionnalités</p>
+                  </CardContent>
+                </Card>
               </div>
 
               {/* Informations générales compactes */}
@@ -496,6 +517,19 @@ export const ModernImportDetailModal: React.FC<ModernImportDetailModalProps> = (
                 icon={<Wrench className="w-5 h-5" />}
                 emptyMessage="Aucune technologie n'a été identifiée"
                 specialProcessing="technodiversite"
+                importSources={importRecord.sources}
+              />
+            </TabsContent>
+
+            {/* IA Tab */}
+            <TabsContent value="ia" className="space-y-6">
+              <VignetteGrid
+                title="Intelligence Artificielle Territoriale"
+                data={importRecord.contexte_data?.ia_fonctionnalites?.donnees || importRecord.contexte_data?.ia_fonctionnalites}
+                variant="ia"
+                icon={<Bot className="w-5 h-5" />}
+                emptyMessage="Aucune fonctionnalité IA n'a été identifiée"
+                specialProcessing="ia_fonctionnalites"
                 importSources={importRecord.sources}
               />
             </TabsContent>
