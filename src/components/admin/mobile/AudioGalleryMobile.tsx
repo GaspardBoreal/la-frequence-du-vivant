@@ -383,7 +383,7 @@ const AudioGalleryMobile: React.FC<AudioGalleryMobileProps> = ({
                         className="w-full h-8"
                         onEnded={() => setPlayingAudioId(null)}
                       >
-                        <source src={audio.url_supabase} type={`audio/${audio.format_audio || 'mpeg'}`} />
+                        <source src={audio.url_supabase} type={audio.format_audio || 'audio/mpeg'} />
                         Votre navigateur ne supporte pas l'élément audio.
                       </audio>
                     </div>

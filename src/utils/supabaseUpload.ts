@@ -21,7 +21,7 @@ const cleanFileName = (fileName: string): string => {
 
 // Fonction utilitaire pour valider les formats audio
 const validateAudioFormat = (file: File): { valid: boolean; error?: string } => {
-  const supportedFormats = ['.mp3', '.wav', '.ogg', '.m4a', '.aac', '.flac'];
+  const supportedFormats = ['.mp3', '.wav', '.ogg', '.m4a', '.aac', '.flac', '.webm'];
   const supportedMimeTypes = [
     'audio/mpeg',
     'audio/wav', 
@@ -30,7 +30,8 @@ const validateAudioFormat = (file: File): { valid: boolean; error?: string } => 
     'audio/mp4',
     'audio/x-m4a',
     'audio/aac',
-    'audio/flac'
+    'audio/flac',
+    'audio/webm'
   ];
   
   const fileExtension = file.name.toLowerCase().substring(file.name.lastIndexOf('.'));
@@ -51,7 +52,7 @@ const validateAudioFormat = (file: File): { valid: boolean; error?: string } => 
     };
   }
   
-  if (!mimeType.startsWith('audio/') && !supportedMimeTypes.includes(mimeType)) {
+  if (!(mimeType.startsWith('audio/') || supportedMimeTypes.includes(mimeType))) {
     return {
       valid: false,
       error: `Type MIME non supporté: ${mimeType}. Types acceptés: ${supportedMimeTypes.join(', ')}`
@@ -60,6 +61,7 @@ const validateAudioFormat = (file: File): { valid: boolean; error?: string } => 
   
   return { valid: true };
 };
+  
 
 // Upload d'une photo vers Supabase Storage
 export const uploadPhoto = async (file: File, marcheId: string): Promise<UploadResult> => {
