@@ -1641,12 +1641,18 @@ const sanitizeJson = useCallback((jsonString: string): string => {
               </pre>
               
               {/* Info pratique en bas */}
-              <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-950/50 rounded-lg border border-blue-200 dark:border-blue-800">
+              <div className="mt-4 p-3 bg-green-50 dark:bg-green-950/50 rounded-lg border border-green-200 dark:border-green-800">
                 <div className="flex items-start gap-2">
-                  <Info className="h-4 w-4 text-blue-600 mt-0.5 flex-shrink-0" />
-                  <div className="text-sm text-blue-700 dark:text-blue-300">
-                    <p className="font-medium mb-1">✅ Prompt optimisé DEEPSEARCH v3</p>
-                    <p>Version corrigée sans dates hardcodées, structure JSON simplifiée, gestion d'erreurs renforcée.</p>
+                  <Info className="h-4 w-4 text-green-600 mt-0.5 flex-shrink-0" />
+                  <div className="text-sm text-green-700 dark:text-green-300">
+                    <p className="font-medium mb-1">✅ Prompt DEEPSEARCH v4 - CORRIGÉ</p>
+                    <ul className="text-xs space-y-1 mt-2">
+                      <li>• Structure technodiversité OPUS : solution/innovation/rupture ✓</li>
+                      <li>• 9 dimensions complètes (vs 6 précédentes) ✓</li>
+                      <li>• Metadata étendues : GPS, territory, scores ✓</li>
+                      <li>• Types sources complets : 7 types validés ✓</li>
+                      <li>• Fables structure complète : tags, variations ✓</li>
+                    </ul>
                   </div>
                 </div>
               </div>

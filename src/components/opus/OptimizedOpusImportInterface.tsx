@@ -315,11 +315,196 @@ const sanitizeJson = useCallback((jsonString: string): { sanitized: string; corr
     } catch (e) {
       toast({ 
         title: 'Nettoyage partiel', 
-        description: 'Certaines erreurs persistent. Vérifiez manuellement.', 
+        description: 'Certaines erreurs persistent. Vérifiez structure technodiversité (solution/innovation/rupture requis).', 
         variant: 'destructive' 
       });
     }
   }, [jsonContent, sanitizeJson, toast]);
+
+  const generateCompleteTemplate = useCallback(() => {
+    const currentDate = new Date().toISOString().split('T')[0];
+    const currentDateTime = new Date().toISOString();
+    
+    return JSON.stringify({
+      dimensions: {
+        contexte_hydrologique: {
+          description: "Description du contexte hydrologique extrait du PDF",
+          donnees: {
+            bassin_versant: "Nom du bassin versant",
+            regime_hydrologique: "Type de régime hydrologique",
+            debit_moyen: "Débit moyen en m³/s",
+            qualite_eau: "État de la qualité de l'eau",
+            sources: ["S01", "S02"]
+          }
+        },
+        especes_caracteristiques: {
+          description: "Espèces caractéristiques du territoire",
+          donnees: {
+            poissons: [
+              {
+                nom_commun: "Nom commun de l'espèce",
+                nom_scientifique: "Nom scientifique",
+                statut_conservation: "Statut de conservation"
+              }
+            ],
+            invertebres: ["Espèce invertébrée"],
+            vegetation_aquatique: ["Espèce végétale"],
+            sources: ["S03"]
+          }
+        },
+        vocabulaire_local: {
+          description: "Vocabulaire et mémoire territoriale locale",
+          donnees: {
+            termes_locaux: [
+              {
+                terme: "Terme local",
+                definition: "Définition du terme",
+                contexte: "Contexte d'usage"
+              }
+            ],
+            phenomenes: ["Phénomène naturel local"],
+            sources: ["S04"]
+          }
+        },
+        empreintes_humaines: {
+          description: "Infrastructures et aménagements humains",
+          donnees: {
+            infrastructures: [
+              {
+                nom: "Nom infrastructure",
+                type: "Type d'infrastructure",
+                impact_ecologique: "Description impact",
+                annee_construction: "Année"
+              }
+            ],
+            activites_economiques: ["Activité économique"],
+            sources: ["S05"]
+          }
+        },
+        projection_2035_2045: {
+          description: "Projections et prospective territoriale",
+          donnees: {
+            scenarios: [
+              {
+                nom: "Nom du scénario",
+                description: "Description détaillée",
+                probabilite: "Élevée/Modérée/Faible"
+              }
+            ],
+            impacts_anticipes: ["Impact anticipé"],
+            sources: ["S06"]
+          }
+        },
+        leviers_agroecologiques: {
+          description: "Leviers et techniques agroécologiques",
+          donnees: {
+            techniques: [
+              {
+                nom: "Nom technique",
+                description: "Description technique",
+                impact_environnemental: "Impact positif"
+              }
+            ],
+            benefices_attendus: ["Bénéfice attendu"],
+            sources: ["S07"]
+          }
+        },
+        nouvelles_activites: {
+          description: "Nouvelles activités proposées",
+          donnees: {
+            activites: [
+              {
+                nom: "Nom activité",
+                description: "Description activité",
+                objectifs: ["Objectif 1", "Objectif 2"]
+              }
+            ],
+            partenariats_possibles: ["Partenaire potentiel"],
+            sources: ["S08"]
+          }
+        },
+        ia_fonctionnalites: {
+          description: "Fonctionnalités IA pour le territoire",
+          donnees: {
+            fonctionnalites_collectif: ["Fonctionnalité collective"],
+            outils_decision: ["Outil d'aide à la décision"],
+            services_predictifs: ["Service prédictif"],
+            sources: ["S09"]
+          }
+        },
+        technodiversite: {
+          description: "Technologies et innovations par niveau TRL",
+          donnees: {
+            solution: [
+              {
+                nom: "Solution mature TRL 7-9",
+                description: "Description solution",
+                type: "low-tech",
+                trl: "7-9",
+                autonomie_energetique: true
+              }
+            ],
+            innovation: [
+              {
+                nom: "Innovation TRL 4-6",
+                description: "Description innovation",
+                type: "open-hardware", 
+                trl: "4-6"
+              }
+            ],
+            rupture: [
+              {
+                nom: "Rupture technologique TRL 1-3",
+                description: "Description rupture",
+                type: "biomimetisme",
+                trl: "1-3"
+              }
+            ],
+            sources: ["S10"]
+          }
+        }
+      },
+      sources: [
+        {
+          titre: "Titre exact de la source PDF",
+          type: "scientifique",
+          auteur: "Auteur complet",
+          date_publication: currentDate,
+          date_acces: currentDate,
+          url: "https://example.com/source",
+          fiabilite: 85,
+          references: {
+            section: "Section PDF",
+            page: "Page PDF"
+          }
+        }
+      ],
+      fables: [
+        {
+          titre: "Titre de la fable narrative",
+          contenu_principal: "Contenu narratif principal extrait du PDF (minimum 50 caractères)",
+          dimension: "contexte_hydrologique",
+          ordre: 1,
+          tags: ["territoire", "eau", "dordogne"],
+          variations: {
+            courte: "Version courte si disponible",
+            longue: "Version longue si disponible"
+          }
+        }
+      ],
+      metadata: {
+        sourcing_date: currentDate,
+        import_date: currentDateTime,
+        ai_model: "deepsearch-phase-b-v4",
+        pdf_source: "nom-fichier-pdf.pdf",
+        gps_point: "44.8378,-0.5792",
+        territory_name: "Nom du territoire étudié",
+        quality_score: 85,
+        completeness_score: 90,
+        transformation_notes: "Notes spécifiques à la transformation"
+      }
+    }, null, 2);
+  }, []);
 
   const parseAndValidateJson = useCallback(() => {
     const errors: string[] = [];
@@ -593,15 +778,18 @@ const sanitizeJson = useCallback((jsonString: string): { sanitized: string; corr
               <Button
                 size="sm"
                 variant="outline"
-                onClick={() => navigator.clipboard.writeText(JSON.stringify({
-                  dimensions: {},
-                  fables: [],
-                  sources: []
-                }, null, 2))}
+                onClick={() => {
+                  const template = generateCompleteTemplate();
+                  navigator.clipboard.writeText(template);
+                  toast({
+                    title: "Template copié",
+                    description: "Template JSON complet v4 avec 9 dimensions OPUS"
+                  });
+                }}
                 className="gap-2"
               >
                 <FileJson className="h-4 w-4" />
-                Template vide
+                Template OPUS v4
               </Button>
               <Button
                 size="sm"
