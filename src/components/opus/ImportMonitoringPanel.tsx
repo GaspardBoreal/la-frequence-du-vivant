@@ -89,14 +89,14 @@ export const ImportMonitoringPanel: React.FC<ImportMonitoringPanelProps> = ({
         const successfulImports = importRuns.filter(r => r.status === 'success').length;
         const failedImports = importRuns.filter(r => r.status === 'error').length;
         
-        const completenessScores = contexts?.map(c => c.completude_score || 0) || [];
+        const completenessScores = contexts?.map(c => Math.min(c.completude_score || 0, 100)) || [];
         const avgCompleteness = completenessScores.length > 0 
-          ? Math.round(completenessScores.reduce((a, b) => a + b, 0) / completenessScores.length)
+          ? Math.min(Math.round(completenessScores.reduce((a, b) => a + b, 0) / completenessScores.length), 100)
           : 0;
 
         const qualityScores = importRuns
           .filter(r => r.completude_score)
-          .map(r => r.completude_score || 0);
+          .map(r => Math.min(r.completude_score || 0, 100));
         const avgQuality = qualityScores.length > 0
           ? Math.round(qualityScores.reduce((a, b) => a + b, 0) / qualityScores.length)
           : 0;
@@ -109,7 +109,7 @@ export const ImportMonitoringPanel: React.FC<ImportMonitoringPanelProps> = ({
             timestamp: run.created_at,
             status: run.status as 'success' | 'error' | 'warning',
             marcheName: marche?.nom_marche || 'Marché inconnu',
-            completenessScore: run.completude_score || 0,
+            completenessScore: Math.min(run.completude_score || 0, 100),
             message: run.error_message || (run.status === 'success' ? 'Import réussi' : 'Import traité')
           };
         });

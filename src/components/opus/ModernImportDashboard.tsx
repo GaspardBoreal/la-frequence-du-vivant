@@ -234,8 +234,8 @@ export const ModernImportDashboard: React.FC = () => {
   );
   const avgCompleteness = useAnimatedCounter(
     filteredImports.length > 0 
-      ? Math.round(filteredImports.reduce((acc, imp) => acc + imp.completude_score, 0) / filteredImports.length)
-      : 0, 
+      ? Math.min(Math.round(filteredImports.reduce((acc, imp) => acc + Math.min(imp.completude_score || 0, 100), 0) / filteredImports.length), 100)
+      : 0,
     1800
   );
 
@@ -1001,7 +1001,7 @@ export const ModernImportDashboard: React.FC = () => {
                             })()
                           : 0;
                         const sourcesCount = importRecord.sources?.length || 0;
-                        const completudeScore = importRecord.completude_score || 0;
+                        const completudeScore = Math.min(importRecord.completude_score || 0, 100);
                         
                         // Déterminer le statut basé sur le score de complétude
                         const getStatus = (score: number) => {

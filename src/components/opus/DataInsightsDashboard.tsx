@@ -98,14 +98,14 @@ export const DataInsightsDashboard: React.FC<DataInsightsDashboardProps> = ({ im
 
     // Completeness analysis
     const avgCompleteness = totalImports > 0 
-      ? Math.round(imports.reduce((acc, imp) => acc + imp.completude_score, 0) / totalImports)
+      ? Math.min(Math.round(imports.reduce((acc, imp) => acc + Math.min(imp.completude_score || 0, 100), 0) / totalImports), 100)
       : 0;
 
     const completenessDistribution = {
-      excellent: imports.filter(imp => imp.completude_score >= 80).length,
-      good: imports.filter(imp => imp.completude_score >= 60 && imp.completude_score < 80).length,
-      average: imports.filter(imp => imp.completude_score >= 40 && imp.completude_score < 60).length,
-      poor: imports.filter(imp => imp.completude_score < 40).length,
+      excellent: imports.filter(imp => Math.min(imp.completude_score || 0, 100) >= 80).length,
+      good: imports.filter(imp => Math.min(imp.completude_score || 0, 100) >= 60 && Math.min(imp.completude_score || 0, 100) < 80).length,
+      average: imports.filter(imp => Math.min(imp.completude_score || 0, 100) >= 40 && Math.min(imp.completude_score || 0, 100) < 60).length,
+      poor: imports.filter(imp => Math.min(imp.completude_score || 0, 100) < 40).length,
     };
 
     // Sources analysis

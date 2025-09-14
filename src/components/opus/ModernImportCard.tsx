@@ -193,12 +193,12 @@ export const ModernImportCard: React.FC<ModernImportCardProps> = ({
         <div className="mb-4">
           <div className="flex justify-between items-center mb-2">
             <span className="text-xs text-muted-foreground">Complétude</span>
-            <span className="text-xs font-medium">{importRecord.completude_score}%</span>
+            <span className="text-xs font-medium">{Math.min(importRecord.completude_score || 0, 100)}%</span>
           </div>
           <div className="w-full bg-muted rounded-full h-2">
             <div 
               className="bg-gradient-to-r from-primary to-accent h-2 rounded-full transition-all duration-1000 ease-out"
-              style={{ width: `${importRecord.completude_score}%` }}
+              style={{ width: `${Math.min(importRecord.completude_score || 0, 100)}%` }}
             />
           </div>
         </div>

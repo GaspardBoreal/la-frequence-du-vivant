@@ -265,7 +265,9 @@ export class OpusImportValidator {
       }
     }
 
-    return Math.round(weightedScore / totalDomains);
+    // Plafonner le score final à 100%
+    const finalScore = Math.round(weightedScore / totalDomains);
+    return Math.min(finalScore, 100);
   }
 
   /**

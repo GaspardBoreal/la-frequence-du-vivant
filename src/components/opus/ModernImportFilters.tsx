@@ -148,14 +148,14 @@ export const ModernImportFilters: React.FC<ModernImportFiltersProps> = ({
       // Creative mode filter (assuming this is based on some criteria)
       if (creativeModeOnly) {
         // Define creative mode criteria - could be based on completeness, fables, etc.
-        const hasRichContent = importRecord.completude_score > 70 && 
+        const hasRichContent = Math.min(importRecord.completude_score || 0, 100) > 70 && 
           importRecord.fables_data?.length > 0 &&
           importRecord.contexte_data;
         if (!hasRichContent) return false;
       }
 
       // Completeness filter
-      if (importRecord.completude_score < minCompleteness) {
+      if (Math.min(importRecord.completude_score || 0, 100) < minCompleteness) {
         return false;
       }
 

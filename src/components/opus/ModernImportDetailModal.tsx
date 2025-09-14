@@ -366,11 +366,11 @@ export const ModernImportDetailModal: React.FC<ModernImportDetailModalProps> = (
                     <div className="space-y-1">
                       <span className="font-medium text-muted-foreground">Complétude:</span>
                       <div className="flex items-center gap-2">
-                        <div className="text-lg font-bold text-success">{importRecord.completude_score}%</div>
+                        <div className="text-lg font-bold text-success">{Math.min(importRecord.completude_score || 0, 100)}%</div>
                         <div className="flex-1 bg-muted rounded-full h-1.5">
                           <div 
                             className="bg-gradient-to-r from-primary to-accent h-1.5 rounded-full transition-all duration-1000"
-                            style={{ width: `${importRecord.completude_score}%` }}
+                            style={{ width: `${Math.min(importRecord.completude_score || 0, 100)}%` }}
                           />
                         </div>
                       </div>
