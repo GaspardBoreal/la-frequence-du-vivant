@@ -18,6 +18,8 @@ interface ProcessedSpecies {
 export function processSpeciesData(speciesData: SpeciesData | null | undefined): ProcessedSpecies {
   if (!speciesData) return { flore: [], faune: {} };
 
+  console.log('🔍 DEBUG processSpeciesData - Input:', JSON.stringify(speciesData, null, 2));
+
   const flore: any[] = [];
   const faune: { [key: string]: any[] } = {
     poissons: [],
@@ -133,6 +135,7 @@ export function processSpeciesData(speciesData: SpeciesData | null | undefined):
 
   // Extract species from various data structures
   Object.entries(dataToProcess).forEach(([key, value]) => {
+    console.log(`🔍 DEBUG Processing key: "${key}", value type: ${typeof value}`, value);
     const categoryInfo = mapKeyToCategory(key);
     
     if (Array.isArray(value)) {
@@ -175,7 +178,9 @@ export function processSpeciesData(speciesData: SpeciesData | null | undefined):
       }
     } else if (typeof value === 'string') {
       // Extraire les espèces depuis les descriptions textuelles (valeur string dans donnees)
+      console.log(`🔍 DEBUG Extracting from string key="${key}":`, value);
       const extractedSpecies = extractSpeciesFromDescription(value, key);
+      console.log(`🔍 DEBUG Extracted ${extractedSpecies.length} species from "${key}":`, extractedSpecies);
       extractedSpecies.forEach(s => {
         const typeMap: Record<string, string> = {
           'poissons': 'poissons', 'oiseaux': 'oiseaux', 'insectes': 'insectes', 'mammifères': 'mammiferes', 'mammiferes': 'mammiferes', 'invertébrés': 'invertebres', 'invertebres': 'invertebres', 'reptiles': 'reptiles'
@@ -198,7 +203,9 @@ export function processSpeciesData(speciesData: SpeciesData | null | undefined):
 
   // Extraire aussi depuis la description générale si présente (hors donnees)
   if (typeof (speciesData as any).description === 'string' && (speciesData as any).description.trim()) {
+    console.log(`🔍 DEBUG Extracting from main description:`, (speciesData as any).description);
     const extractedFromDesc = extractSpeciesFromDescription((speciesData as any).description, 'description');
+    console.log(`🔍 DEBUG Extracted ${extractedFromDesc.length} species from main description:`, extractedFromDesc);
     extractedFromDesc.forEach(s => {
       const typeMap: Record<string, string> = {
         'poissons': 'poissons', 'oiseaux': 'oiseaux', 'insectes': 'insectes', 'mammifères': 'mammiferes', 'mammiferes': 'mammiferes', 'invertébrés': 'invertebres', 'invertebres': 'invertebres', 'reptiles': 'reptiles'
@@ -217,6 +224,10 @@ export function processSpeciesData(speciesData: SpeciesData | null | undefined):
       }
     });
   }
+
+  console.log('🔍 DEBUG Final result - Flore:', flore.length, flore);
+  console.log('🔍 DEBUG Final result - Faune:', Object.entries(faune).map(([k,v]) => `${k}: ${v.length}`));
+  console.log('🔍 DEBUG Total species count:', flore.length + Object.values(faune).reduce((sum, arr) => sum + arr.length, 0));
 
   return { flore, faune };
 }
