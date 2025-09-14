@@ -153,21 +153,37 @@ export const processTechnodiversiteData = (data: any): ProcessedTechnodiversiteD
     
     const processTrlItems = (items: any[], levelName: string) => {
       if (!Array.isArray(items)) return [];
-      return items.map((item, index) => ({
-        titre: item.nom || item.titre || item.name || `${levelName} ${index + 1}`,
-        description_courte: item.description || item.explication || '',
-        type: item.type || determineTechType(item) || levelName.toLowerCase(),
-        category: levelName,
-        metadata: {
-          autonomie_energetique: item.autonomie_energetique,
-          cout_fabrication: item.cout_fabrication || item.cout,
-          documentation_ouverte: item.documentation_ouverte || false,
-          impact_territorial: item.impact_territorial || item.impact,
-          liens: item.liens || [],
-          trl_level: levelName,
-          ...item
-        }
-      }));
+      return items.map((item, index) => {
+        // Mapping spécifique pour les données TRL avec les champs corrects
+        const titre = item.solution || item.innovation || item.rupture || 
+                     item.nom || item.titre || item.name || `${levelName} ${index + 1}`;
+        
+        const description = item.description_solution || item.description_innovation || item.description_rupture ||
+                          item.description || item.explication || item.details || '';
+        
+        const type = determineTechType(item) || levelName.toLowerCase().replace(/\s+/g, '-');
+        
+        return {
+          titre,
+          description_courte: description,
+          type,
+          category: levelName,
+          metadata: {
+            autonomie_energetique: item.autonomie_energetique,
+            cout_fabrication: item.cout_fabrication || item.cout,
+            documentation_ouverte: item.documentation_ouverte || false,
+            impact_territorial: item.impact_territorial || item.impact,
+            liens: item.liens || [],
+            trl_level: levelName,
+            original_fields: {
+              solution: item.solution,
+              innovation: item.innovation, 
+              rupture: item.rupture
+            },
+            ...item
+          }
+        };
+      });
     };
 
     const innovations_locales = processTrlItems(data.niveau_professionnel_trl_7_9 || [], 'Innovations locales');
@@ -182,7 +198,12 @@ export const processTechnodiversiteData = (data: any): ProcessedTechnodiversiteD
         technologies_vertes: technologies_vertes.length,
         numerique: numerique.length
       },
-      total
+      total,
+      sampleTitles: {
+        innovations_locales: innovations_locales.slice(0, 2).map(item => item.titre),
+        technologies_vertes: technologies_vertes.slice(0, 2).map(item => item.titre),
+        numerique: numerique.slice(0, 2).map(item => item.titre)
+      }
     });
 
     return {
@@ -273,22 +294,32 @@ export const processTechnodiversiteData = (data: any): ProcessedTechnodiversiteD
 const determineTechType = (item: any): string => {
   if (item.type) return item.type;
   
-  // Analyse des mots-clés pour déterminer le type
-  const description = (item.description || '').toLowerCase();
+  // Analyse des mots-clés pour déterminer le type à partir des différents champs
+  const solution = (item.solution || '').toLowerCase();
+  const innovation = (item.innovation || '').toLowerCase();
+  const rupture = (item.rupture || '').toLowerCase();
+  const description = (item.description || item.description_solution || item.description_innovation || item.description_rupture || '').toLowerCase();
   const nom = (item.nom || item.titre || '').toLowerCase();
-  const text = `${nom} ${description}`;
+  const text = `${nom} ${description} ${solution} ${innovation} ${rupture}`;
   
-  if (text.includes('biomimétisme') || text.includes('bio') || text.includes('nature')) {
+  // Types spécifiques selon le contenu
+  if (text.includes('biomimétisme') || text.includes('bio-') || text.includes('nature') || text.includes('écosystème')) {
     return 'biomimétisme';
   }
-  if (text.includes('open') || text.includes('source') || text.includes('collaborative')) {
+  if (text.includes('open') || text.includes('source') || text.includes('collaborative') || text.includes('commun')) {
     return 'open-hardware';
   }
-  if (text.includes('numérique') || text.includes('digital') || text.includes('sobre')) {
+  if (text.includes('numérique') || text.includes('digital') || text.includes('sobre') || text.includes('ia') || text.includes('intelligence artificielle')) {
     return 'numérique-sobre';
   }
-  if (text.includes('low') || text.includes('tech') || text.includes('simple') || text.includes('frugal')) {
+  if (text.includes('low') || text.includes('tech') || text.includes('simple') || text.includes('frugal') || text.includes('artisanal')) {
     return 'low-tech';
+  }
+  if (text.includes('énergie') || text.includes('solaire') || text.includes('éolien') || text.includes('renouvelable')) {
+    return 'énergies-renouvelables';
+  }
+  if (text.includes('agriculture') || text.includes('permaculture') || text.includes('agroécologie')) {
+    return 'agroécologie';
   }
   
   return 'technologie';
