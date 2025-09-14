@@ -16,6 +16,7 @@ import {
   Calendar,
   Hash
 } from 'lucide-react';
+import { processEmpreintesHumainesData } from '@/utils/empreintesHumainesDataUtils';
 import { InteractiveVignette } from '@/components/opus/InteractiveVignette';
 
 interface ImportRecord {
@@ -70,30 +71,21 @@ export const ExplorationInfrastructureView: React.FC<ExplorationInfrastructureVi
       const rawInfraData = cd?.empreintes_humaines ?? cd?.human_footprints;
       if (!rawInfraData) return;
       
-      // Normalize infrastructure data - handle wrapped data under 'donnees' key
-      const infraData = rawInfraData?.donnees ?? rawInfraData;
-      
-      console.debug(`[${importRecord.marche_nom}] Processing infrastructures:`, {
-        usedKey: cd?.empreintes_humaines ? 'empreintes_humaines' : cd?.human_footprints ? 'human_footprints' : 'none',
-        hasWrappedData: !!rawInfraData?.donnees,
-        patrimoniales: infraData?.patrimoniales?.length || 0,
-        industrielles: infraData?.industrielles?.length || 0,
-        transport: infraData?.transport?.length || 0,
-        urbaines: infraData?.urbaines?.length || 0
-      });
+      console.debug(`[${importRecord.marche_nom}] Processing infrastructures with processEmpreintesHumainesData`);
 
-      // Traiter les différentes catégories d'infrastructures
-      const processInfraCategory = (items: any[], categoryName: string, displayCategory: string) => {
-        if (!Array.isArray(items)) return;
-        
+      // Utiliser la même logique que le comptage
+      const processedData = processEmpreintesHumainesData(rawInfraData);
+      
+      // Traiter toutes les catégories de la structure processée
+      const processCategory = (items: any[], displayCategory: string) => {
         items.forEach(item => {
           if (!isValidInfrastructureItem(item)) {
-            console.warn(`[${importRecord.marche_nom}] Rejected invalid infrastructure item in ${categoryName}:`, item);
+            console.warn(`[${importRecord.marche_nom}] Rejected invalid infrastructure item:`, item);
             return;
           }
 
-          const titre = item.nom || item.titre || item.name;
-          const key = `${titre}_${categoryName}_${importRecord.marche_id}`.toLowerCase().replace(/\s+/g, '_');
+          const titre = item.titre;
+          const key = `${titre}_${displayCategory}_${importRecord.marche_id}`.toLowerCase().replace(/\s+/g, '_');
           
           if (infraMap.has(key)) {
             const existing = infraMap.get(key)!;
@@ -106,11 +98,11 @@ export const ExplorationInfrastructureView: React.FC<ExplorationInfrastructureVi
           } else {
             infraMap.set(key, {
               titre,
-              description_courte: item.description || item.explication || '',
-              type: item.type || item.categorie || categoryName,
-              details: item.details || item.usage || item.impact || '',
+              description_courte: item.description || '',
+              type: item.type || 'infrastructure',
+              details: item.metadata?.details || '',
               category: displayCategory,
-              metadata: item,
+              metadata: item.metadata || {},
               marchesCount: 1,
               marches: [importRecord.marche_nom || 'Marché inconnu'],
               lastImportDate: importRecord.import_date,
@@ -120,45 +112,11 @@ export const ExplorationInfrastructureView: React.FC<ExplorationInfrastructureVi
         });
       };
 
-      // Traiter chaque catégorie avec mapping vers les catégories demandées
-      if (infraData.patrimoniales) {
-        processInfraCategory(infraData.patrimoniales, 'patrimoniales', 'Patrimoines et architectures');
-      }
-      if (infraData.industrielles) {
-        processInfraCategory(infraData.industrielles, 'industrielles', 'Infrastructures industrielles');
-      }
-      if (infraData.transport) {
-        processInfraCategory(infraData.transport, 'transport', 'Infrastructures de transport');
-      }
-      if (infraData.urbaines) {
-        processInfraCategory(infraData.urbaines, 'urbaines', 'Développements urbains');
-      }
-
-      // Traiter l'ancien format si nécessaire (fallback)
-      const hasNewFormatContent = ['patrimoniales', 'industrielles', 'transport', 'urbaines'].some((key) => {
-        const val = (infraData as any)?.[key];
-        return Array.isArray(val) && val.length > 0;
-      });
-      
-      if (!hasNewFormatContent && infraData) {
-        // Fallback pour traiter d'autres formats possibles
-        Object.entries(infraData).forEach(([key, value]) => {
-          if (Array.isArray(value)) {
-            let displayCategory = 'Développements urbains'; // Catégorie par défaut
-            
-            // Essayer de deviner la catégorie basée sur le nom de la clé
-            if (key.toLowerCase().includes('patrimoin') || key.toLowerCase().includes('architect')) {
-              displayCategory = 'Patrimoines et architectures';
-            } else if (key.toLowerCase().includes('industrie') || key.toLowerCase().includes('usine')) {
-              displayCategory = 'Infrastructures industrielles';
-            } else if (key.toLowerCase().includes('transport') || key.toLowerCase().includes('route') || key.toLowerCase().includes('rail')) {
-              displayCategory = 'Infrastructures de transport';
-            }
-            
-            processInfraCategory(value, key, displayCategory);
-          }
-        });
-      }
+      // Traiter chaque catégorie avec les nouveaux noms demandés
+      processCategory(processedData.patrimoniales, 'Patrimoines et architectures');
+      processCategory(processedData.industrielles, 'Infrastructures industrielles');
+      processCategory(processedData.transport, 'Infrastructures de transport');
+      processCategory(processedData.urbaines, 'Développements urbains');
     });
 
     console.debug('Total infrastructures processed:', {
