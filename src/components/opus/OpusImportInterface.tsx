@@ -828,6 +828,12 @@ export const OpusImportInterface: React.FC<OpusImportInterfaceProps> = ({
       // Remove parentheses around string values: "key": ("value") → "key": "value"
       .replace(/:\s*\(\s*"/g, ': "')
       .replace(/"\s*\)/g, '"')
+      // Merge adjacent string values on separate lines: "text1"\n"text2" → "text1 text2"
+      .replace(/"([^"]*?)"\s*[\r\n]+\s*"([^"]*?)"/g, '"$1 $2"')
+      // Handle multiple adjacent strings (repeat the pattern for up to 5 strings)
+      .replace(/"([^"]*?)"\s*[\r\n]+\s*"([^"]*?)"/g, '"$1 $2"')
+      .replace(/"([^"]*?)"\s*[\r\n]+\s*"([^"]*?)"/g, '"$1 $2"')
+      .replace(/"([^"]*?)"\s*[\r\n]+\s*"([^"]*?)"/g, '"$1 $2"')
       // Replace smart quotes with regular quotes
       .replace(/[""]/g, '"')
       .replace(/['']/g, "'")
