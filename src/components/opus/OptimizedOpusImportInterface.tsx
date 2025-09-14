@@ -94,6 +94,8 @@ export const OptimizedOpusImportInterface: React.FC<OptimizedOpusImportInterface
   const [sanitizationCorrections, setSanitizationCorrections] = useState<SanitizationCorrection[]>([]);
   const [showCorrections, setShowCorrections] = useState(false);
   const [promptModalOpen, setPromptModalOpen] = useState(false);
+  const [fullPromptContent, setFullPromptContent] = useState<string>('');
+  const [showFullPromptModal, setShowFullPromptModal] = useState(false);
 
   const { data: explorationMarches = [] } = useExplorationMarches(explorationId || '');
   
@@ -213,7 +215,26 @@ export const OptimizedOpusImportInterface: React.FC<OptimizedOpusImportInterface
     });
   }, [toast]);
 
-const sanitizeJson = useCallback((jsonString: string): { sanitized: string; corrections: SanitizationCorrection[] } => {
+  const handleShowFullPrompt = useCallback(async () => {
+    try {
+      const response = await fetch('/prompt-deepsearch-phase-b-complet.md');
+      if (!response.ok) {
+        throw new Error('Prompt file not found');
+      }
+      const promptContent = await response.text();
+      setFullPromptContent(promptContent);
+      setShowFullPromptModal(true);
+    } catch (error) {
+      console.error('Error loading full prompt:', error);
+      toast({
+        title: "Erreur",
+        description: "Impossible de charger le prompt complet",
+        variant: "destructive",
+      });
+    }
+  }, [toast]);
+
+const sanitizeJson = useCallback((jsonString: string): { sanitized: string; corrections: SanitizationCorrection[] }  => {
     if (!jsonString) return { sanitized: jsonString, corrections: [] };
 
     const corrections: SanitizationCorrection[] = [];
@@ -592,6 +613,15 @@ const sanitizeJson = useCallback((jsonString: string): { sanitized: string; corr
                 <Wand2 className="h-4 w-4" />
                 Nettoyer Python → JSON
               </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={handleShowFullPrompt}
+                className="gap-2"
+              >
+                <BookOpen className="h-4 w-4" />
+                Prompt COMPLET
+              </Button>
               
               <Dialog open={promptModalOpen} onOpenChange={setPromptModalOpen}>
                 <DialogTrigger asChild>
@@ -801,6 +831,25 @@ const sanitizeJson = useCallback((jsonString: string): { sanitized: string; corr
           showDetailed={step === 'input'}
         />
       </div>
+
+      {/* Modal pour afficher le prompt complet */}
+      <Dialog open={showFullPromptModal} onOpenChange={setShowFullPromptModal}>
+        <DialogContent className="max-w-4xl max-h-[80vh] overflow-hidden">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <BookOpen className="h-5 w-5" />
+              Prompt COMPLET - Phase B DeepSearch
+            </DialogTitle>
+          </DialogHeader>
+          <ScrollArea className="max-h-[60vh] w-full">
+            <div className="p-4">
+              <pre className="whitespace-pre-wrap text-sm font-mono bg-muted p-4 rounded-lg">
+                {fullPromptContent}
+              </pre>
+            </div>
+          </ScrollArea>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
