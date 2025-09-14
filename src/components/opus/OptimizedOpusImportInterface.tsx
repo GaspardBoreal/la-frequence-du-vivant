@@ -326,6 +326,8 @@ const sanitizeJson = useCallback((jsonString: string): { sanitized: string; corr
     const currentDateTime = new Date().toISOString();
     
     return JSON.stringify({
+      exploration_id: "[UUID exploration]",
+      marche_id: "[UUID marche]",
       dimensions: {
         contexte_hydrologique: {
           description: "Description du contexte hydrologique extrait du PDF",
@@ -473,10 +475,28 @@ const sanitizeJson = useCallback((jsonString: string): { sanitized: string; corr
           date_acces: currentDate,
           url: "https://example.com/source",
           fiabilite: 85,
-          references: {
-            section: "Section PDF",
-            page: "Page PDF"
-          }
+          references: ["S01"]
+        },
+        {
+          titre: "Source institutionnelle",
+          type: "institutionnel", 
+          auteur: "Organisation publique",
+          fiabilite: 90,
+          references: ["S02"]
+        },
+        {
+          titre: "Source web spécialisée",
+          type: "web",
+          url: "https://example.com/web-source",
+          fiabilite: 75,
+          references: ["S03"]
+        },
+        {
+          titre: "Documentation technique",
+          type: "documentation",
+          auteur: "Organisme technique",
+          fiabilite: 80,
+          references: ["S04"]
         }
       ],
       fables: [

@@ -38,56 +38,56 @@ Transformer un rapport PDF DEEPSEARCH Phase A en JSON 100% conforme au schéma O
       "donnees": {
         "bassin_versant": "[Extrait PDF]",
         "regime_hydrologique": "[Extrait PDF]",
-        "sources": ["[Référence PDF]"]
+        "sources": ["S01", "S02"]
       }
     },
     "especes_caracteristiques": {
       "description": "[Synthèse biodiversité PDF]", 
       "donnees": {
         "poissons": [{"nom_commun": "[PDF]", "statut": "[PDF]"}],
-        "sources": ["[Référence PDF]"]
+        "sources": ["S03"]
       }
     },
     "vocabulaire_local": {
       "description": "[Synthèse vocabulaire PDF]",
       "donnees": {
         "termes_locaux": [{"terme": "[PDF]", "definition": "[PDF]"}],
-        "sources": ["[Référence PDF]"]
+        "sources": ["S04"]
       }
     },
     "empreintes_humaines": {
       "description": "[Synthèse infrastructures PDF]",
       "donnees": {
         "infrastructures": [{"nom": "[PDF]", "type": "[PDF]", "impact": "[PDF]"}],
-        "sources": ["[Référence PDF]"]
+        "sources": ["S05"]
       }
     },
     "projection_2035_2045": {
       "description": "[Synthèse prospective PDF]",
       "donnees": {
         "scenarios": [{"nom": "[PDF]", "description": "[PDF]"}],
-        "sources": ["[Référence PDF]"]
+        "sources": ["S06"]
       }
     },
     "leviers_agroecologiques": {
       "description": "[Synthèse agroécologie PDF]",
       "donnees": {
         "techniques": [{"nom": "[PDF]", "impact": "[PDF]"}],
-        "sources": ["[Référence PDF]"]
+        "sources": ["S07"]
       }
     },
     "nouvelles_activites": {
       "description": "[Synthèse nouvelles activités PDF]",
       "donnees": {
         "activites": [{"nom": "[PDF]", "objectifs": ["[PDF]"]}],
-        "sources": ["[Référence PDF]"]
+        "sources": ["S08"]
       }
     },
     "ia_fonctionnalites": {
       "description": "[Synthèse IA PDF]",
       "donnees": {
         "fonctionnalites_collectif": ["[PDF]"],
-        "sources": ["[Référence PDF]"]
+        "sources": ["S09"]
       }
     },
     "technodiversite": {
@@ -96,7 +96,7 @@ Transformer un rapport PDF DEEPSEARCH Phase A en JSON 100% conforme au schéma O
         "solution": [{"nom": "[PDF]", "trl": "7-9", "type": "low-tech"}],
         "innovation": [{"nom": "[PDF]", "trl": "4-6", "type": "open-hardware"}], 
         "rupture": [{"nom": "[PDF]", "trl": "1-3", "type": "biomimetisme"}],
-        "sources": ["[Référence PDF]"]
+        "sources": ["S10"]
       }
     }
   },
@@ -105,11 +105,25 @@ Transformer un rapport PDF DEEPSEARCH Phase A en JSON 100% conforme au schéma O
       "titre": "[Titre exact PDF]",
       "type": "scientifique",
       "auteur": "[Auteur PDF]",
-      "date_publication": "2024-12-15",
-      "date_acces": "2024-12-15", 
+      "date_publication": "[Date publication]",
+      "date_acces": "[Date accès]", 
       "url": "[URL si disponible]",
       "fiabilite": 85,
-      "references": {"section": "[Section PDF]", "page": "[Page PDF]"}
+      "references": ["S01"]
+    },
+    {
+      "titre": "[Source institutionnelle]",
+      "type": "institutionnel",
+      "auteur": "[Organisation]",
+      "fiabilite": 90,
+      "references": ["S02"]
+    },
+    {
+      "titre": "[Source web locale]",
+      "type": "web",
+      "url": "[URL source web]",
+      "fiabilite": 70,
+      "references": ["S03"]
     }
   ],
   "fables": [
@@ -126,9 +140,9 @@ Transformer un rapport PDF DEEPSEARCH Phase A en JSON 100% conforme au schéma O
     }
   ],
   "metadata": {
-    "sourcing_date": "2024-12-15",
-    "import_date": "2024-12-15T10:00:00.000Z",
-    "ai_model": "deepsearch-phase-b-v3",
+    "sourcing_date": "[Date du jour ISO]",
+    "import_date": "[DateTime du jour ISO]",
+    "ai_model": "deepsearch-phase-b-v4",
     "pdf_source": "[Nom fichier PDF]",
     "gps_point": "[Coordonnées GPS territoire]",
     "territory_name": "[Nom territoire]",
@@ -182,4 +196,4 @@ JSON valide, structure OPUS respectée, 9 dimensions complètes, importable dire
 **OBJECTIF** : Zéro erreur d'import, zéro correction manuelle post-traitement.
 
 ---
-✅ **Version corrigée v4** - Structure technodiversité OPUS + 9 dimensions + metadata complètes
+✅ **Version FINALE v4** - Structure technodiversité OPUS + 9 dimensions + références cohérentes + types sources variés
