@@ -53,7 +53,8 @@ export const validateAudioFile = (file: File): { valid: boolean; errors: string[
     'audio/mp4',
     'audio/x-m4a',
     'audio/aac',
-    'audio/flac'
+    'audio/flac',
+    'audio/webm'
   ];
 
   if (!file.type.startsWith('audio/') && !supportedMimeTypes.includes(file.type)) {
@@ -67,7 +68,7 @@ export const validateAudioFile = (file: File): { valid: boolean; errors: string[
   }
 
   // Vérifier l'extension avec plus de formats
-  const allowedExtensions = ['.mp3', '.wav', '.ogg', '.m4a', '.aac', '.flac'];
+  const allowedExtensions = ['.mp3', '.wav', '.ogg', '.m4a', '.aac', '.flac', '.webm'];
   const fileExtension = file.name.toLowerCase().substring(file.name.lastIndexOf('.'));
   if (!allowedExtensions.includes(fileExtension)) {
     errors.push(`Extension non supportée: ${fileExtension}. Extensions autorisées: ${allowedExtensions.join(', ')}`);
