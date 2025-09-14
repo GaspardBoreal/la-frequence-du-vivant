@@ -5,6 +5,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs'
 import { ArrowLeft, Plus, Sparkles } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useSupabaseMarches } from '../hooks/useSupabaseMarches';
+import { useIsMobile } from '../hooks/use-mobile';
 import MarcheList from '../components/admin/MarcheList';
 import MarcheForm from '../components/admin/MarcheForm';
 import DataCollectionPanel from '../components/admin/DataCollectionPanel';
@@ -15,6 +16,7 @@ import AudioGalleryAdmin from '../components/admin/AudioGalleryAdmin';
 import MarcheTextesAdmin from '../components/admin/MarcheTextesAdmin';
 import TextesLitterairesGalleryAdmin from '../components/admin/TextesLitterairesGalleryAdmin';
 import ExportPanel from '../components/admin/ExportPanel';
+import MarcheAdminMobile from '../components/admin/mobile/MarcheAdminMobile';
 import { toast } from 'sonner';
 import { MarcheTechnoSensible } from '../utils/googleSheetsApi';
 
@@ -22,12 +24,18 @@ type ViewMode = 'list' | 'create' | 'edit';
 
 const MarcheAdmin = () => {
   const navigate = useNavigate();
+  const isMobile = useIsMobile();
   const [activeTab, setActiveTab] = useState('list');
   const [viewMode, setViewMode] = useState<ViewMode>('list');
   const [editingMarcheId, setEditingMarcheId] = useState<string | null>(null);
   const [filteredMarches, setFilteredMarches] = useState<MarcheTechnoSensible[]>([]);
 
   const { data: marches = [], isLoading, error, refetch } = useSupabaseMarches();
+
+  // Rediriger vers la version mobile si l'utilisateur est sur mobile
+  if (isMobile) {
+    return <MarcheAdminMobile />;
+  }
 
   useEffect(() => {
     if (marches && marches.length > 0) {
