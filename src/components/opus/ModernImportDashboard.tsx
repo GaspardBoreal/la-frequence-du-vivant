@@ -439,7 +439,7 @@ export const ModernImportDashboard: React.FC = () => {
   };
 
   const handleHomeClick = () => {
-    navigate('/galerie-fleuve');
+    navigate('/access-admin-gb2025');
   };
 
   const handlePrefigurerClick = () => {
