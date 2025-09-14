@@ -544,25 +544,30 @@ export default function ExperienceLectureOptimisee() {
               </>
             )}
             
-            <Button
-              onClick={handleChronologicalNext}
-              variant="default"
-              size="sm"
-              className="rounded-xl px-4 py-2 text-xs font-medium h-auto bg-emerald-600 hover:bg-emerald-700"
-            >
-              <Clock className="h-3.5 w-3.5 mr-2" />
-              Poursuivre
-            </Button>
-            
-            <Button
-              onClick={handleRandomText}
-              variant="outline"
-              size="sm"
-              className="rounded-xl px-4 py-2 text-xs font-medium h-auto border-slate-200 dark:border-slate-700"
-            >
-              <Shuffle className="h-3.5 w-3.5 mr-2" />
-              Hasard
-            </Button>
+            {/* Navigation buttons - Hidden on mobile */}
+            {!isMobile && (
+              <>
+                <Button
+                  onClick={handleChronologicalNext}
+                  variant="default"
+                  size="sm"
+                  className="rounded-xl px-4 py-2 text-xs font-medium h-auto bg-emerald-600 hover:bg-emerald-700"
+                >
+                  <Clock className="h-3.5 w-3.5 mr-2" />
+                  Poursuivre
+                </Button>
+                
+                <Button
+                  onClick={handleRandomText}
+                  variant="outline"
+                  size="sm"
+                  className="rounded-xl px-4 py-2 text-xs font-medium h-auto border-slate-200 dark:border-slate-700"
+                >
+                  <Shuffle className="h-3.5 w-3.5 mr-2" />
+                  Hasard
+                </Button>
+              </>
+            )}
           </div>
         </motion.div>
       )}
