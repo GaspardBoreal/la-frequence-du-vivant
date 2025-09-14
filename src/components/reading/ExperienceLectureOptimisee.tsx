@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { 
   ArrowLeft, 
   Palette, 
@@ -32,6 +33,7 @@ export default function ExperienceLectureOptimisee() {
   const { slug, textId } = useParams<{ slug: string; textId?: string }>();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const isMobile = useIsMobile();
   
   // Load exploration and texts
   const { data, isLoading, error } = useExplorationTextsOptimized(slug || '');
@@ -184,16 +186,38 @@ export default function ExperienceLectureOptimisee() {
     handleNext();
   }, [handleNext]);
 
-  const handleShare = useCallback(() => {
+  const handleShare = useCallback(async () => {
     if (currentText) {
       const url = `${window.location.origin}/explorations/${slug}/lire/${currentText.id}`;
-      navigator.clipboard.writeText(url);
-      toast({
-        title: "Lien copié",
-        description: "Le lien vers ce texte a été copié dans le presse-papiers",
-      });
+      
+      // Check if we're on mobile and native sharing is available
+      if (isMobile && navigator.share) {
+        try {
+          await navigator.share({
+            title: `${currentText.marcheNomMarche} - Gaspard Boréal`,
+            text: currentText.titre || 'Texte littéraire',
+            url: url,
+          });
+        } catch (error) {
+          // If sharing fails or is cancelled, fall back to clipboard
+          if (error instanceof Error && error.name !== 'AbortError') {
+            navigator.clipboard.writeText(url);
+            toast({
+              title: "Lien copié",
+              description: "Le lien vers ce texte a été copié dans le presse-papiers",
+            });
+          }
+        }
+      } else {
+        // Desktop or no native sharing: copy to clipboard
+        navigator.clipboard.writeText(url);
+        toast({
+          title: "Lien copié",
+          description: "Le lien vers ce texte a été copié dans le presse-papiers",
+        });
+      }
     }
-  }, [currentText, slug, toast]);
+  }, [currentText, slug, toast, isMobile]);
 
   // Keyboard navigation
   useEffect(() => {
@@ -486,35 +510,39 @@ export default function ExperienceLectureOptimisee() {
           className="fixed bottom-6 left-1/2 -translate-x-1/2 z-30"
         >
           <div className="flex gap-3 p-3 bg-white/90 dark:bg-slate-950/90 backdrop-blur-xl border border-slate-200/60 dark:border-slate-800/60 rounded-2xl shadow-lg">
-            {/* Reading Mode Toggle */}
-            <div className="flex bg-slate-100 dark:bg-slate-800 rounded-xl p-1">
-              <Button
-                onClick={() => setReadingMode('standard')}
-                variant={getButtonVariant('standard')}
-                size="sm"
-                className={getButtonStyles('standard')}
-              >
-                Simple
-              </Button>
-              <Button
-                onClick={() => setReadingMode('rich')}
-                variant={getButtonVariant('rich')}
-                size="sm"
-                className={getButtonStyles('rich')}
-              >
-                Enrichi
-              </Button>
-              <Button
-                onClick={() => setReadingMode('focus')}
-                variant={getButtonVariant('focus')}
-                size="sm"
-                className={getButtonStyles('focus')}
-              >
-                Focus
-              </Button>
-            </div>
-            
-            <div className="w-px bg-slate-200 dark:bg-slate-700"></div>
+            {/* Reading Mode Toggle - Hidden on mobile */}
+            {!isMobile && (
+              <>
+                <div className="flex bg-slate-100 dark:bg-slate-800 rounded-xl p-1">
+                  <Button
+                    onClick={() => setReadingMode('standard')}
+                    variant={getButtonVariant('standard')}
+                    size="sm"
+                    className={getButtonStyles('standard')}
+                  >
+                    Simple
+                  </Button>
+                  <Button
+                    onClick={() => setReadingMode('rich')}
+                    variant={getButtonVariant('rich')}
+                    size="sm"
+                    className={getButtonStyles('rich')}
+                  >
+                    Enrichi
+                  </Button>
+                  <Button
+                    onClick={() => setReadingMode('focus')}
+                    variant={getButtonVariant('focus')}
+                    size="sm"
+                    className={getButtonStyles('focus')}
+                  >
+                    Focus
+                  </Button>
+                </div>
+                
+                <div className="w-px bg-slate-200 dark:bg-slate-700"></div>
+              </>
+            )}
             
             <Button
               onClick={handleChronologicalNext}
