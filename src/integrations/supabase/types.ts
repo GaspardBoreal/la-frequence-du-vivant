@@ -1554,6 +1554,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      admin_operation_wrapper: {
+        Args: { operation_type: string }
+        Returns: boolean
+      }
       can_initialize_admin_system: {
         Args: Record<PropertyKey, never>
         Returns: boolean
@@ -1582,11 +1586,25 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: number
       }
+      get_admin_count_secure: {
+        Args: Record<PropertyKey, never>
+        Returns: number
+      }
       get_admin_list_safe: {
         Args: Record<PropertyKey, never>
         Returns: {
           created_at: string
           id: string
+          role: string
+          user_id: string
+        }[]
+      }
+      get_admin_list_secure_no_emails: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          created_at: string
+          id: string
+          is_current_user: boolean
           role: string
           user_id: string
         }[]
@@ -1641,6 +1659,10 @@ export type Database = {
           type: string
           updated_at: string
         }[]
+      }
+      get_my_admin_email_only: {
+        Args: Record<PropertyKey, never>
+        Returns: string
       }
       get_structured_vocabulary_data: {
         Args: { marche_id_param: string }
@@ -1729,6 +1751,10 @@ export type Database = {
       update_pages_order: {
         Args: { new_orders: number[]; page_ids: string[] }
         Returns: undefined
+      }
+      validate_admin_email_access: {
+        Args: Record<PropertyKey, never>
+        Returns: boolean
       }
     }
     Enums: {
