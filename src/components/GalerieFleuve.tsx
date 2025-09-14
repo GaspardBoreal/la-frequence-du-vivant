@@ -23,6 +23,56 @@ import { useSmartImagePreloader } from '../hooks/useSmartImagePreloader';
 import PortalOverlay from './ui/PortalOverlay';
 import { createSlug } from '@/utils/slugGenerator';
 
+// Component for mobile sparkles navigation button
+const MobileSparklesButton = memo(({ explorationSlug, photo, isMobile }: { explorationSlug?: string, photo: EnrichedPhoto, isMobile: boolean }) => {
+  const navigate = useNavigate();
+  
+  const handleReadText = useCallback(() => {
+    if (!explorationSlug) return;
+    
+    const marcheSlug = createSlug(photo.nomMarche || '', photo.ville || '');
+    const readUrl = `/galerie-fleuve/exploration/${explorationSlug}/lire?marche=${marcheSlug}`;
+    navigate(readUrl);
+  }, [explorationSlug, photo, navigate]);
+
+  if (!explorationSlug || photo.emotionalTags.length === 0) {
+    // Show non-clickable sparkles if no explorationSlug or no icons
+    return (
+      <div className="flex gap-1">
+        {photo.thematicIcons.slice(0, 3).map((icon, i) => (
+          <span key={i} className="text-lg drop-shadow-sm">{icon}</span>
+        ))}
+      </div>
+    );
+  }
+
+  if (isMobile) {
+    // Mobile: Make sparkles clickable with larger touch target
+    return (
+      <button 
+        onClick={handleReadText}
+        className="flex gap-1 p-2 -m-2 rounded-lg active:bg-white/10 transition-colors touch-manipulation"
+        aria-label={`Lire les textes de ${photo.nomMarche}`}
+      >
+        {photo.thematicIcons.slice(0, 3).map((icon, i) => (
+          <span key={i} className="text-lg drop-shadow-sm">{icon}</span>
+        ))}
+      </button>
+    );
+  }
+
+  // Desktop: Non-clickable sparkles (ReadTextButton handles navigation)
+  return (
+    <div className="flex gap-1">
+      {photo.thematicIcons.slice(0, 3).map((icon, i) => (
+        <span key={i} className="text-lg drop-shadow-sm">{icon}</span>
+      ))}
+    </div>
+  );
+});
+
+MobileSparklesButton.displayName = 'MobileSparklesButton';
+
 // Component for the read text navigation button
 const ReadTextButton = memo(({ explorationSlug, photo }: { explorationSlug?: string, photo: EnrichedPhoto }) => {
   const navigate = useNavigate();
@@ -990,24 +1040,27 @@ const GalerieView = memo<{
                        <h3 className="text-xl font-bold mb-2 leading-tight text-cyan-50 drop-shadow-lg">
                          {photo.nomMarche}
                        </h3>
-                        <div className="flex items-center justify-between">
-                          <p className="text-sm opacity-90 text-cyan-100">
-                            Photo {committedIndex + 1} / {filteredPhotos.length}
-                          </p>
-                          <div className="flex items-center gap-2">
-                            {photo.emotionalTags.length > 0 && (
-                              <div className="flex gap-1">
-                                {photo.thematicIcons.slice(0, 3).map((icon, i) => (
-                                  <span key={i} className="text-lg drop-shadow-sm">{icon}</span>
-                                ))}
-                              </div>
-                            )}
-                            <ReadTextButton 
-                              explorationSlug={explorationSlug} 
-                              photo={photo} 
-                            />
-                          </div>
-                        </div>
+                         <div className="flex items-center justify-between">
+                           <p className="text-sm opacity-90 text-cyan-100">
+                             Photo {committedIndex + 1} / {filteredPhotos.length}
+                           </p>
+                           <div className="flex items-center gap-2">
+                             {photo.emotionalTags.length > 0 && (
+                               <MobileSparklesButton 
+                                 explorationSlug={explorationSlug} 
+                                 photo={photo} 
+                                 isMobile={isMobile}
+                               />
+                             )}
+                             {/* Desktop only: Show ReadTextButton */}
+                             {!isMobile && (
+                               <ReadTextButton 
+                                 explorationSlug={explorationSlug} 
+                                 photo={photo} 
+                               />
+                             )}
+                           </div>
+                         </div>
                      </motion.div>
                   )}
 
