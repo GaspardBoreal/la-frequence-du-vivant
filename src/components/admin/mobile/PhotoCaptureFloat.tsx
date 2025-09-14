@@ -7,6 +7,9 @@ import { Progress } from '../../ui/progress';
 import { toast } from 'sonner';
 import { processPhoto, ProcessedPhoto } from '../../../utils/photoUtils';
 
+// Offset constant pour éviter les barres système mobiles
+const CONTROL_OFFSET = 'clamp(96px, 14vh, 180px)';
+
 interface PhotoCaptureFloatProps {
   marcheId: string;
   onPhotoCaptured: (photo: ProcessedPhoto) => void;
@@ -213,7 +216,12 @@ const PhotoCaptureFloat: React.FC<PhotoCaptureFloatProps> = ({
               </div>
             ) : (
               <div className="flex flex-col h-full">
-                <div className="relative flex-1 bg-black rounded-lg overflow-hidden pb-20">
+                <div 
+                  className="relative flex-1 bg-black rounded-lg overflow-hidden"
+                  style={{ 
+                    paddingBottom: `calc(env(safe-area-inset-bottom, 0px) + ${CONTROL_OFFSET} + 16px)` 
+                  }}
+                >
                   <video
                     ref={videoRef}
                     autoPlay
@@ -221,8 +229,13 @@ const PhotoCaptureFloat: React.FC<PhotoCaptureFloatProps> = ({
                     className="w-full h-full object-cover"
                   />
                   
-                  {/* Zone de contrôle fixe avec fond semi-transparent */}
-                  <div className="absolute bottom-0 left-0 right-0 bg-black/50 backdrop-blur-sm p-4">
+                  {/* Zone de contrôle repositionnée plus haut */}
+                  <div 
+                    className="absolute left-0 right-0 bg-black/50 backdrop-blur-sm p-4 rounded-t-xl z-20"
+                    style={{ 
+                      bottom: `calc(env(safe-area-inset-bottom, 0px) + ${CONTROL_OFFSET})` 
+                    }}
+                  >
                     <div className="flex justify-center gap-6">
                       <div className="flex flex-col items-center gap-2">
                         <Button
