@@ -56,10 +56,21 @@ export const ExplorationTechnodiversityView: React.FC<ExplorationTechnodiversity
   // Validation function to check if a tech item is valid
   const isValidTechItem = (item: any): boolean => {
     const titre = item?.nom || item?.titre || item?.name;
-    return titre && 
-           typeof titre === 'string' && 
-           titre.trim().length > 0 && 
-           titre.trim() !== 'Élément sans nom';
+    if (!titre || typeof titre !== 'string' || titre.trim().length === 0 || titre.trim() === 'Élément sans nom') {
+      return false;
+    }
+    
+    // Exclure les éléments auto-générés du type "niveau_XXX N" ou similaires
+    const trimmedTitle = titre.trim();
+    const invalidPatterns = [
+      /^niveau_\w+\s+\d+$/i,           // "niveau_disruptif_trl_1_3 1"
+      /^niveau_\w+_\w+_\d+_\d+\s+\d+$/i, // "niveau_disruptif_trl_1_3 1"
+      /^\w+_\w+_\w+_\d+_\d+\s+\d+$/i,   // Patterns génériques avec underscore + nombre
+      /^trl_\d+\s+\d+$/i,              // "trl_3 1"
+      /^disruptif_\d+\s+\d+$/i         // "disruptif_3 1" 
+    ];
+    
+    return !invalidPatterns.some(pattern => pattern.test(trimmedTitle));
   };
 
   // Extraire toute la technodiversité de tous les imports

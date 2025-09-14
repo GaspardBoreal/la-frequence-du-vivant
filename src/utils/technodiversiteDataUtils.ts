@@ -165,7 +165,27 @@ export const processTechnodiversiteData = (data: any): ProcessedTechnodiversiteD
   // Si c'est un objet avec des propriétés, on traite chaque propriété
   const innovations: TechnodiversiteItem[] = [];
   
+  // Fonction pour valider les clés avant de les traiter
+  const isValidTechKey = (key: string): boolean => {
+    const invalidPatterns = [
+      /^niveau_\w+/i,                    // Exclure toutes les clés commençant par "niveau_"
+      /^trl_\d+$/i,                      // Exclure les clés TRL (Technology Readiness Level)
+      /^disruptif_\d+$/i,                // Exclure les clés de disruption
+      /^\w+_\w+_\d+_\d+$/i,              // Exclure les patterns de configuration
+      /^metadata$/i,                     // Exclure les métadonnées
+      /^config$/i,                       // Exclure les configurations
+      /^_/,                              // Exclure les clés privées (commençant par _)
+    ];
+    
+    return !invalidPatterns.some(pattern => pattern.test(key)) && key.length > 2;
+  };
+  
   Object.entries(data).forEach(([key, value]) => {
+    if (!isValidTechKey(key)) {
+      console.debug(`[technodiversiteDataUtils] Skipping invalid key: ${key}`);
+      return;
+    }
+    
     if (Array.isArray(value)) {
       innovations.push(...processItems(value, key));
     } else if (typeof value === 'object' && value !== null) {
@@ -176,7 +196,7 @@ export const processTechnodiversiteData = (data: any): ProcessedTechnodiversiteD
         category: 'Innovation',
         metadata: value
       });
-    } else if (typeof value === 'string') {
+    } else if (typeof value === 'string' && value.length > 3) {
       innovations.push({
         titre: key,
         description_courte: value,
