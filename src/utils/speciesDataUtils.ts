@@ -174,22 +174,49 @@ export function processSpeciesData(speciesData: SpeciesData | null | undefined):
         faune.autres.push(species);
       }
     } else if (typeof value === 'string') {
-      // Extraire les espèces depuis les descriptions textuelles
+      // Extraire les espèces depuis les descriptions textuelles (valeur string dans donnees)
       const extractedSpecies = extractSpeciesFromDescription(value, key);
-      extractedSpecies.forEach(species => {
-        const speciesCategoryInfo = mapKeyToCategory(species.nom_commun || species.titre);
-        const speciesObj = createSpeciesObject(species, species.nom_commun || species.titre, speciesCategoryInfo.category);
-        
-        if (speciesCategoryInfo.category === 'Flore') {
+      extractedSpecies.forEach(s => {
+        const typeMap: Record<string, string> = {
+          'poissons': 'poissons', 'oiseaux': 'oiseaux', 'insectes': 'insectes', 'mammifères': 'mammiferes', 'mammiferes': 'mammiferes', 'invertébrés': 'invertebres', 'invertebres': 'invertebres', 'reptiles': 'reptiles'
+        };
+        const explicitType = (s.type || '').toString().toLowerCase();
+        const fauneType = typeMap[explicitType];
+        const category = s.type || (fauneType ? 'Faune' : mapKeyToCategory(s.nom_commun || s.titre).category);
+        const speciesObj = createSpeciesObject(s, s.nom_commun || s.titre, category);
+        if (category === 'Flore') {
           flore.push(speciesObj);
-        } else if (speciesCategoryInfo.fauneType) {
-          faune[speciesCategoryInfo.fauneType].push(speciesObj);
+        } else if (fauneType) {
+          faune[fauneType].push(speciesObj);
         } else {
-          faune.autres.push(speciesObj);
+          const infer = mapKeyToCategory(s.nom_commun || s.titre);
+          if (infer.fauneType) faune[infer.fauneType].push(speciesObj); else faune.autres.push(speciesObj);
         }
       });
     }
   });
+
+  // Extraire aussi depuis la description générale si présente (hors donnees)
+  if (typeof (speciesData as any).description === 'string' && (speciesData as any).description.trim()) {
+    const extractedFromDesc = extractSpeciesFromDescription((speciesData as any).description, 'description');
+    extractedFromDesc.forEach(s => {
+      const typeMap: Record<string, string> = {
+        'poissons': 'poissons', 'oiseaux': 'oiseaux', 'insectes': 'insectes', 'mammifères': 'mammiferes', 'mammiferes': 'mammiferes', 'invertébrés': 'invertebres', 'invertebres': 'invertebres', 'reptiles': 'reptiles'
+      };
+      const explicitType = (s.type || '').toString().toLowerCase();
+      const fauneType = typeMap[explicitType];
+      const category = s.type || (fauneType ? 'Faune' : mapKeyToCategory(s.nom_commun || s.titre).category);
+      const speciesObj = createSpeciesObject(s, s.nom_commun || s.titre, category);
+      if (category === 'Flore') {
+        flore.push(speciesObj);
+      } else if (fauneType) {
+        faune[fauneType].push(speciesObj);
+      } else {
+        const infer = mapKeyToCategory(s.nom_commun || s.titre);
+        if (infer.fauneType) faune[infer.fauneType].push(speciesObj); else faune.autres.push(speciesObj);
+      }
+    });
+  }
 
   return { flore, faune };
 }
