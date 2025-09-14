@@ -426,18 +426,18 @@ export const InteractiveVignette: React.FC<InteractiveVignetteProps> = ({
             </Button>}
         </div>
         
-        {/* Métadonnées d'occurrence pour les onglets Infrastructure et Technodiversité */}
-        {(data.metadata?.marchesCount || data.metadata?.lastImportDate) && (
+        {/* Métadonnées d'occurrence pour toutes les vignettes */}
+        {(data.metadata?.marchesCount || data.metadata?.lastImportDate || data.metadata?.occurrenceCount || data.metadata?.lastOccurrence) && (
           <div className="pt-3 border-t border-border/20">
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              {data.metadata?.marchesCount && (
+              {(data.metadata?.marchesCount || data.metadata?.occurrenceCount) && (
                 <Badge variant="outline" className="text-xs">
-                  {data.metadata.marchesCount} marche{data.metadata.marchesCount > 1 ? 's' : ''}
+                  {data.metadata?.marchesCount || data.metadata?.occurrenceCount} marche{(data.metadata?.marchesCount || data.metadata?.occurrenceCount) > 1 ? 's' : ''}
                 </Badge>
               )}
-              {data.metadata?.marchesCount && data.metadata?.lastImportDate && <span>•</span>}
-              {data.metadata?.lastImportDate && (
-                <span>Dernière maj: {new Date(data.metadata.lastImportDate).toLocaleDateString('fr-FR')}</span>
+              {((data.metadata?.marchesCount || data.metadata?.occurrenceCount) && (data.metadata?.lastImportDate || data.metadata?.lastOccurrence)) && <span>•</span>}
+              {(data.metadata?.lastImportDate || data.metadata?.lastOccurrence) && (
+                <span>Dernière maj: {new Date(data.metadata?.lastImportDate || data.metadata?.lastOccurrence).toLocaleDateString('fr-FR')}</span>
               )}
             </div>
           </div>
