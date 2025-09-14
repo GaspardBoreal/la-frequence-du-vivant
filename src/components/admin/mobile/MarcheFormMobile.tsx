@@ -14,6 +14,9 @@ import { FRENCH_DEPARTMENTS } from '../../../utils/frenchDepartments';
 import { toast } from 'sonner';
 import { geocodeAddress } from '../../../utils/geocoding';
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from '../../ui/sheet';
+import PhotoCaptureFloat from './PhotoCaptureFloat';
+import PhotoGalleryMobile from './PhotoGalleryMobile';
+import { ProcessedPhoto } from '../../../utils/photoUtils';
 
 interface MarcheFormMobileProps {
   mode: 'create' | 'edit';
@@ -48,6 +51,7 @@ const MarcheFormMobile: React.FC<MarcheFormMobileProps> = ({
   } = useSupabaseMarche(marcheId || undefined);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isGeolocating, setIsGeolocating] = useState(false);
+  const [pendingPhotos, setPendingPhotos] = useState<ProcessedPhoto[]>([]);
   const [mapSheetOpen, setMapSheetOpen] = useState(false);
   
   const {
@@ -66,6 +70,21 @@ const MarcheFormMobile: React.FC<MarcheFormMobileProps> = ({
   
   const hasCoordinates = currentLatitude !== null && currentLongitude !== null && 
                         currentLatitude !== undefined && currentLongitude !== undefined;
+
+  // Fonction pour gérer la capture/import de photos
+  const handlePhotoCaptured = (photo: ProcessedPhoto) => {
+    setPendingPhotos(prev => [...prev, photo]);
+    toast.success('📸 Photo ajoutée ! Elle sera uploadée à la sauvegarde.');
+  };
+
+  const handlePhotoUploaded = (photoId: string) => {
+    // Retirer la photo des pending une fois uploadée
+    setPendingPhotos(prev => prev.filter((_, index) => index > 0));
+  };
+
+  const handlePhotoRemoved = (photoId: string) => {
+    toast.info('🗑️ Photo supprimée');
+  };
 
   const handleGeolocation = async () => {
     if (!navigator.geolocation) {
@@ -446,6 +465,24 @@ const MarcheFormMobile: React.FC<MarcheFormMobileProps> = ({
           </div>
         </div>
 
+        {/* Photos */}
+        {marcheId && (
+          <div className="space-y-4">
+            <div className="flex items-center space-x-2">
+              <div className="h-px bg-border flex-1" />
+              <span className="text-sm text-muted-foreground px-3">Photos</span>
+              <div className="h-px bg-border flex-1" />
+            </div>
+            
+            <PhotoGalleryMobile
+              marcheId={marcheId}
+              pendingPhotos={pendingPhotos}
+              onPhotoUploaded={handlePhotoUploaded}
+              onPhotoRemoved={handlePhotoRemoved}
+            />
+          </div>
+        )}
+
         {/* Actions */}
         <div className="flex flex-col space-y-3 pt-6">
           <Button type="submit" disabled={isSubmitting} className="w-full">
@@ -458,6 +495,15 @@ const MarcheFormMobile: React.FC<MarcheFormMobileProps> = ({
           </Button>
         </div>
       </form>
+
+      {/* Photo Capture Float - Only show when we have a marcheId */}
+      {marcheId && (
+        <PhotoCaptureFloat
+          marcheId={marcheId}
+          onPhotoCaptured={handlePhotoCaptured}
+          disabled={isSubmitting}
+        />
+      )}
     </div>
   );
 };
