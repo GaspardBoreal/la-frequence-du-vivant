@@ -31,7 +31,7 @@ export const ImportNavigationControls: React.FC<ImportNavigationControlsProps> =
       </Button>
       
       <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
-        <span className="text-primary font-semibold">{currentIndex + 1}</span>
+        <span className="text-white font-bold">{currentIndex + 1}</span>
         <span>/</span>
         <span>{totalImports}</span>
       </div>
