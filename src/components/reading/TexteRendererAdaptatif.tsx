@@ -4,9 +4,11 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { getTextTypeInfo } from '@/types/textTypes';
 import type { ExplorationTextOptimized } from '@/hooks/useExplorationTextsOptimized';
-import { BookOpen, Quote, Feather } from 'lucide-react';
+import { BookOpen, Quote, Feather, ExternalLink } from 'lucide-react';
 import { ReadingMode } from '@/types/readingTypes';
 import { sanitizeHtml } from '@/utils/htmlSanitizer';
+import { createSlug } from '@/utils/slugGenerator';
+import { useParams } from 'react-router-dom';
 
 interface Props {
   texte: ExplorationTextOptimized;
@@ -14,7 +16,26 @@ interface Props {
 }
 
 export default function TexteRendererAdaptatif({ texte, readingMode = 'rich' }: Props) {
+  const { slug: explorationSlug } = useParams<{ slug: string }>();
   const typeInfo = getTextTypeInfo(texte.type_texte);
+  
+  // Generate march slug for navigation
+  const marcheSlug = createSlug(texte.marcheNomMarche, texte.marcheVille);
+  const navigationUrl = `/galerie-fleuve/exploration/${explorationSlug}?marche=${marcheSlug}`;
+  
+  // Clickable march badge component
+  const MarcheBadge = ({ className }: { className?: string }) => (
+    <a 
+      href={navigationUrl}
+      className={`inline-flex items-center gap-1 hover:scale-105 transition-transform cursor-pointer group ${className}`}
+      title={`Voir la marche "${texte.marcheName}"`}
+    >
+      <Badge variant="secondary" className="bg-emerald-100 text-emerald-700 dark:bg-emerald-900 dark:text-emerald-300 group-hover:bg-emerald-200 dark:group-hover:bg-emerald-800 transition-colors">
+        {texte.marcheName}
+        <ExternalLink className="w-3 h-3 ml-1 opacity-0 group-hover:opacity-100 transition-opacity" />
+      </Badge>
+    </a>
+  );
   
   const renderHaiku = () => (
     <div className={`min-h-screen flex flex-col justify-center px-4 py-8 ${
@@ -87,9 +108,7 @@ export default function TexteRendererAdaptatif({ texte, readingMode = 'rich' }: 
               className="text-center mt-12"
             >
               <div className="inline-flex items-center gap-3 px-4 py-2 bg-slate-100 dark:bg-slate-800 rounded-full">
-                <Badge variant="secondary" className="text-xs font-medium bg-emerald-100 text-emerald-700 dark:bg-emerald-900 dark:text-emerald-300">
-                  {texte.marcheName}
-                </Badge>
+                <MarcheBadge />
                 <div className="w-1 h-1 bg-slate-300 dark:bg-slate-600 rounded-full"></div>
                 <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">
                   {typeInfo.label}
@@ -139,9 +158,7 @@ export default function TexteRendererAdaptatif({ texte, readingMode = 'rich' }: 
                     {typeInfo.label}
                   </Badge>
                   <div className="w-1 h-1 bg-slate-300 dark:bg-slate-600 rounded-full"></div>
-                  <Badge variant="secondary" className="bg-emerald-100 text-emerald-700 dark:bg-emerald-900 dark:text-emerald-300">
-                    {texte.marcheName}
-                  </Badge>
+                  <MarcheBadge />
                 </div>
               )}
               

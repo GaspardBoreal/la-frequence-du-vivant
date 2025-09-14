@@ -15,6 +15,8 @@ export interface ExplorationTextOptimized {
   marcheName: string;
   marcheOrdre: number;
   tags?: string[];
+  marcheNomMarche: string;  // For slug generation
+  marcheVille: string;      // For slug generation
 }
 
 export const useExplorationTextsOptimized = (explorationSlug: string) => {
@@ -109,6 +111,8 @@ export const useExplorationTextsOptimized = (explorationSlug: string) => {
           updated_at: texte.updated_at,
           marcheName: marche?.nom_marche || marche?.ville || 'Marche',
           marcheOrdre: explorationMarche?.ordre || 0,
+          marcheNomMarche: marche?.nom_marche || '',
+          marcheVille: marche?.ville || '',
         };
       });
 

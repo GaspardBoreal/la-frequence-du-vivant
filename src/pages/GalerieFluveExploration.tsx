@@ -18,8 +18,9 @@ export default function GalerieFluveExploration() {
   const { data: exploration, isLoading: explorationLoading } = useExploration(slug || '');
   const { data: explorationMarches, isLoading: marchesLoading } = useExplorationMarches(exploration?.id || '');
   
-  // Get view mode from URL parameters
+  // Get view mode and march from URL parameters
   const viewMode = searchParams.get('view') as 'galerie' | 'fleuve-temporel' | null;
+  const selectedMarcheSlug = searchParams.get('marche');
   
   const [marchesTechnoSensibles, setMarchesTechnoSensibles] = useState<MarcheTechnoSensible[]>([]);
   const [themes, setThemes] = useState<RegionalTheme[]>([]);
