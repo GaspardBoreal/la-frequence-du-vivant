@@ -6,6 +6,8 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Progress } from '@/components/ui/progress';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { useToast } from '@/hooks/use-toast';
 import { useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -23,7 +25,9 @@ import {
   Copy,
   Zap,
   Target,
-  Wand2
+  Wand2,
+  BookOpen,
+  Info
 } from 'lucide-react';
 
 interface ImportData {
@@ -56,6 +60,13 @@ interface PreviewData {
   quality_score: number;
 }
 
+interface SanitizationCorrection {
+  type: 'python_token' | 'unquoted_placeholder' | 'single_quotes' | 'trailing_comma' | 'unquoted_date' | 'smart_quotes';
+  before: string;
+  after: string;
+  position: string;
+}
+
 interface OptimizedOpusImportInterfaceProps {
   marcheId: string;
   marcheName: string;
@@ -80,6 +91,9 @@ export const OptimizedOpusImportInterface: React.FC<OptimizedOpusImportInterface
   const [step, setStep] = useState<'input' | 'preview' | 'importing' | 'success'>('input');
   const [selectedMarcheId, setSelectedMarcheId] = useState<string>(marcheId);
   const [selectedMarcheName, setSelectedMarcheName] = useState<string>(marcheName);
+  const [sanitizationCorrections, setSanitizationCorrections] = useState<SanitizationCorrection[]>([]);
+  const [showCorrections, setShowCorrections] = useState(false);
+  const [promptModalOpen, setPromptModalOpen] = useState(false);
 
   const { data: explorationMarches = [] } = useExplorationMarches(explorationId || '');
   
@@ -199,7 +213,7 @@ export const OptimizedOpusImportInterface: React.FC<OptimizedOpusImportInterface
     });
   }, [toast]);
 
-const sanitizeJson = useCallback((jsonString: string): string => {
+const sanitizeJson = useCallback((jsonString: string): { sanitized: string; corrections: SanitizationCorrection[] } => {
     if (!jsonString) return jsonString;
 
     const replacePythonTokensOutsideStrings = (input: string) => {
@@ -257,12 +271,30 @@ const sanitizeJson = useCallback((jsonString: string): string => {
       return;
     }
     try {
-      const sanitized = sanitizeJson(jsonContent);
-      setJsonContent(sanitized);
-      JSON.parse(sanitized);
-      toast({ title: 'Nettoyage effectué', description: 'Conversions Python → JSON et corrections appliquées' });
+      const result = sanitizeJson(jsonContent);
+      setJsonContent(result.sanitized);
+      setSanitizationCorrections(result.corrections);
+      
+      if (result.corrections.length > 0) {
+        setShowCorrections(true);
+        toast({ 
+          title: 'Nettoyage effectué', 
+          description: `${result.corrections.length} correction(s) automatique(s) appliquée(s)` 
+        });
+      } else {
+        toast({ 
+          title: 'JSON déjà propre', 
+          description: 'Aucune correction nécessaire' 
+        });
+      }
+      
+      JSON.parse(result.sanitized);
     } catch (e) {
-      toast({ title: 'Nettoyage partiel', description: 'Certaines erreurs persistent. Vérifiez manuellement.', variant: 'destructive' });
+      toast({ 
+        title: 'Nettoyage partiel', 
+        description: 'Certaines erreurs persistent. Vérifiez manuellement.', 
+        variant: 'destructive' 
+      });
     }
   }, [jsonContent, sanitizeJson, toast]);
 
@@ -275,8 +307,8 @@ const sanitizeJson = useCallback((jsonString: string): string => {
         return { errors, data: null };
       }
 
-      const sanitizedJson = sanitizeJson(jsonContent);
-      const parsed = JSON.parse(sanitizedJson);
+      const sanitizedResult = sanitizeJson(jsonContent);
+      const parsed = JSON.parse(sanitizedResult.sanitized);
       
       if (!currentMarcheId) {
         errors.push("⚠️ Marché non sélectionné");
@@ -548,7 +580,113 @@ const sanitizeJson = useCallback((jsonString: string): string => {
                 <FileJson className="h-4 w-4" />
                 Template vide
               </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={handleCleanPythonJson}
+                disabled={!jsonContent.trim() || isProcessing}
+                className="gap-2"
+              >
+                <Wand2 className="h-4 w-4" />
+                Nettoyer Python → JSON
+              </Button>
+              
+              <Dialog open={promptModalOpen} onOpenChange={setPromptModalOpen}>
+                <DialogTrigger asChild>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="gap-2"
+                  >
+                    <BookOpen className="h-4 w-4" />
+                    Prompt COMPLET
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="max-w-4xl max-h-[80vh]">
+                  <DialogHeader>
+                    <DialogTitle className="flex items-center gap-2">
+                      <BookOpen className="h-5 w-5" />
+                      Prompt DeepSearch Phase B - Complet
+                    </DialogTitle>
+                  </DialogHeader>
+                  <ScrollArea className="h-[60vh] w-full">
+                    <div className="space-y-4 pr-4">
+                      <div className="flex items-center justify-between">
+                        <p className="text-sm text-muted-foreground">
+                          Prompt complet pour les équipes DeepSearch (transformation PDF → JSON OPUS)
+                        </p>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={async () => {
+                            try {
+                              const response = await fetch('/prompt-deepsearch-phase-b-complet.md');
+                              const content = await response.text();
+                              await navigator.clipboard.writeText(content);
+                              toast({
+                                title: "Copié !",
+                                description: "Prompt copié dans le presse-papiers",
+                              });
+                            } catch (error) {
+                              toast({
+                                title: "Erreur",
+                                description: "Impossible de copier le prompt",
+                                variant: "destructive"
+                              });
+                            }
+                          }}
+                          className="flex items-center gap-2"
+                        >
+                          <Copy className="h-4 w-4" />
+                          Copier
+                        </Button>
+                      </div>
+                      <iframe
+                        src="/prompt-deepsearch-phase-b-complet.md"
+                        className="w-full h-96 border rounded-md"
+                        title="Prompt DeepSearch Complet"
+                      />
+                    </div>
+                  </ScrollArea>
+                </DialogContent>
+              </Dialog>
             </div>
+
+            {/* Alert pour les corrections automatiques */}
+            {showCorrections && sanitizationCorrections.length > 0 && (
+              <Alert className="mb-4">
+                <Info className="h-4 w-4" />
+                <AlertDescription className="flex items-center justify-between">
+                  <span>
+                    {sanitizationCorrections.length} correction(s) automatique(s) appliquée(s)
+                  </span>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => {
+                        const correctionsList = sanitizationCorrections
+                          .map(c => `${c.type}: ${c.before} → ${c.after}`)
+                          .join('\n');
+                        toast({
+                          title: "Corrections appliquées",
+                          description: correctionsList
+                        });
+                      }}
+                    >
+                      Voir corrections
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => setShowCorrections(false)}
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </AlertDescription>
+              </Alert>
+            )}
 
             {/* Zone d'édition JSON optimisée */}
             <div className="flex-1 flex flex-col min-h-0">
@@ -568,15 +706,6 @@ const sanitizeJson = useCallback((jsonString: string): string => {
 
             <div className="flex gap-2 mt-4">
               <Button
-                variant="outline"
-                onClick={handleCleanPythonJson}
-                disabled={!jsonContent.trim() || isProcessing}
-                className="gap-2"
-              >
-                <Wand2 className="h-4 w-4" />
-                Nettoyer Python → JSON
-              </Button>
-              <Button
                 onClick={handlePreview}
                 disabled={!jsonContent.trim() || isProcessing}
                 className="gap-2"
@@ -589,7 +718,7 @@ const sanitizeJson = useCallback((jsonString: string): string => {
                 ) : (
                   <>
                     <Target className="h-4 w-4" />
-                    Valider
+                    Prévisualiser/Valider
                   </>
                 )}
               </Button>
