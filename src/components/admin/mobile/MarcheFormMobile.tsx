@@ -5,13 +5,14 @@ import { Input } from '../../ui/input';
 import { Textarea } from '../../ui/textarea';
 import { Label } from '../../ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../ui/select';
-import { Save } from 'lucide-react';
+import { Save, MapPin, Loader2 } from 'lucide-react';
 import { useSupabaseMarche } from '../../../hooks/useSupabaseMarches';
 import { createMarche, updateMarche, MarcheFormData } from '../../../utils/supabaseMarcheOperations';
 import { queryClient } from '../../../lib/queryClient';
 import { FRENCH_REGIONS } from '../../../utils/frenchRegions';
 import { FRENCH_DEPARTMENTS } from '../../../utils/frenchDepartments';
 import { toast } from 'sonner';
+import { geocodeAddress } from '../../../utils/geocoding';
 
 interface MarcheFormMobileProps {
   mode: 'create' | 'edit';
@@ -45,6 +46,7 @@ const MarcheFormMobile: React.FC<MarcheFormMobileProps> = ({
     isLoading
   } = useSupabaseMarche(marcheId || undefined);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isGeolocating, setIsGeolocating] = useState(false);
   
   const {
     register,
@@ -57,6 +59,67 @@ const MarcheFormMobile: React.FC<MarcheFormMobileProps> = ({
   
   const selectedRegion = watch('region');
   const selectedDepartement = watch('departement');
+
+  const handleGeolocation = async () => {
+    if (!navigator.geolocation) {
+      toast.error('La géolocalisation n\'est pas supportée par votre navigateur');
+      return;
+    }
+
+    setIsGeolocating(true);
+    
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        try {
+          const { latitude, longitude } = position.coords;
+          
+          // Mise à jour des coordonnées
+          setValue('latitude', latitude);
+          setValue('longitude', longitude);
+          
+          // Géocodage inverse pour récupérer l'adresse
+          try {
+            const result = await geocodeAddress(`${latitude}, ${longitude}`);
+            if (result.address) {
+              setValue('adresse', result.address);
+            }
+          } catch (geocodeError) {
+            console.warn('Erreur géocodage inverse:', geocodeError);
+          }
+          
+          toast.success('Position récupérée avec succès !');
+        } catch (error) {
+          console.error('Erreur lors du traitement de la position:', error);
+          toast.error('Erreur lors du traitement de la position');
+        } finally {
+          setIsGeolocating(false);
+        }
+      },
+      (error) => {
+        setIsGeolocating(false);
+        let errorMessage = 'Erreur de géolocalisation';
+        
+        switch (error.code) {
+          case error.PERMISSION_DENIED:
+            errorMessage = 'Accès à la géolocalisation refusé. Activez-la dans les paramètres de votre navigateur.';
+            break;
+          case error.POSITION_UNAVAILABLE:
+            errorMessage = 'Position non disponible. Vérifiez votre connexion.';
+            break;
+          case error.TIMEOUT:
+            errorMessage = 'Délai d\'attente dépassé pour la géolocalisation.';
+            break;
+        }
+        
+        toast.error(errorMessage);
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 60000
+      }
+    );
+  };
   
   useEffect(() => {
     if (mode === 'edit' && marche) {
@@ -216,31 +279,52 @@ const MarcheFormMobile: React.FC<MarcheFormMobileProps> = ({
             <Input id="adresse" {...register('adresse')} />
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <Label htmlFor="latitude">Latitude</Label>
-              <Input 
-                id="latitude" 
-                type="number" 
-                step="any" 
-                placeholder="46.603354"
-                {...register('latitude', {
-                  setValueAs: value => value === '' ? null : Number(value)
-                })} 
-              />
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <Label>Coordonnées GPS</Label>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={handleGeolocation}
+                disabled={isGeolocating}
+                className="flex items-center gap-2"
+              >
+                {isGeolocating ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <MapPin className="h-4 w-4" />
+                )}
+                {isGeolocating ? 'Localisation...' : 'Ma position'}
+              </Button>
             </div>
+            
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label htmlFor="latitude">Latitude</Label>
+                <Input 
+                  id="latitude" 
+                  type="number" 
+                  step="any" 
+                  placeholder="46.603354"
+                  {...register('latitude', {
+                    setValueAs: value => value === '' ? null : Number(value)
+                  })} 
+                />
+              </div>
 
-            <div>
-              <Label htmlFor="longitude">Longitude</Label>
-              <Input 
-                id="longitude" 
-                type="number" 
-                step="any" 
-                placeholder="1.888334"
-                {...register('longitude', {
-                  setValueAs: value => value === '' ? null : Number(value)
-                })} 
-              />
+              <div>
+                <Label htmlFor="longitude">Longitude</Label>
+                <Input 
+                  id="longitude" 
+                  type="number" 
+                  step="any" 
+                  placeholder="1.888334"
+                  {...register('longitude', {
+                    setValueAs: value => value === '' ? null : Number(value)
+                  })} 
+                />
+              </div>
             </div>
           </div>
         </div>
