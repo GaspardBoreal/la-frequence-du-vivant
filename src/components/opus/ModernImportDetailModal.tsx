@@ -528,13 +528,20 @@ export const ModernImportDetailModal: React.FC<ModernImportDetailModalProps> = (
 
             {/* Leviers Agroécologiques Tab */}
             <TabsContent value="agro" className="space-y-6">
-              <VignetteGrid
-                title="Leviers Agroécologiques"
-                data={importRecord.contexte_data?.leviers_agroecologiques?.donnees || importRecord.contexte_data?.leviers_agroecologiques}
-                variant="agro"
-                icon={<Wheat className="w-5 h-5" />}
-                emptyMessage="Aucun levier agroécologique n'a été identifié"
-              />
+              {(() => {
+                const agroData = importRecord.contexte_data?.leviers_agroecologiques?.donnees || importRecord.contexte_data?.leviers_agroecologiques || [];
+                console.log('🌱 DEBUG Agro Tab Data for', importRecord.marche_nom, ':', agroData);
+                return (
+                  <VignetteGrid
+                    title="Leviers Agroécologiques"
+                    data={agroData}
+                    variant="agro"
+                    icon={<Wheat className="w-5 h-5" />}
+                    emptyMessage="Aucun levier agroécologique n'a été identifié"
+                    specialProcessing="agroecologie"
+                  />
+                );
+              })()}
             </TabsContent>
 
             {/* Technodiversité Tab */}

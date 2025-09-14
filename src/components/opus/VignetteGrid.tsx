@@ -10,6 +10,7 @@ import { TechnodiversiteVignetteGrid } from './TechnodiversiteVignetteGrid';
 import { VocabularySourcesCard } from './VocabularySourcesCard';
 import VocabularyVignetteGrid from './VocabularyVignetteGrid';
 import { IaFonctionnalitesVignetteGrid } from './IaFonctionnalitesVignetteGrid';
+import { AgroecologieVignetteGrid } from './AgroecologieVignetteGrid';
 import { useToast } from '@/components/ui/use-toast';
 
 interface VignetteGridProps {
@@ -19,7 +20,7 @@ interface VignetteGridProps {
   icon: React.ReactNode;
   className?: string;
   emptyMessage?: string;
-  specialProcessing?: 'vocabulary' | 'technodiversite' | 'ia_fonctionnalites';
+  specialProcessing?: 'vocabulary' | 'technodiversite' | 'ia_fonctionnalites' | 'agroecologie';
   importSources?: any[]; // Import sources to enrich vocabulary sources
 }
 
@@ -183,7 +184,7 @@ export const VignetteGrid: React.FC<VignetteGridProps> = ({
   };
 
   // Always render specialized components, they handle empty states internally
-  if (specialProcessing === 'vocabulary' || specialProcessing === 'technodiversite' || specialProcessing === 'ia_fonctionnalites') {
+  if (specialProcessing === 'vocabulary' || specialProcessing === 'technodiversite' || specialProcessing === 'ia_fonctionnalites' || specialProcessing === 'agroecologie') {
     // Let specialized components handle their own empty states
   } else if (!data || (Array.isArray(processedData) ? !processedData.length : true)) {
     return (
@@ -260,6 +261,15 @@ export const VignetteGrid: React.FC<VignetteGridProps> = ({
       {/* Affichage spécialisé pour les fonctionnalités IA */}
       {specialProcessing === 'ia_fonctionnalites' && (
         <IaFonctionnalitesVignetteGrid
+          data={data}
+          importSources={importSources}
+          className="w-full"
+        />
+      )}
+
+      {/* Affichage spécialisé pour l'agroécologie */}
+      {specialProcessing === 'agroecologie' && (
+        <AgroecologieVignetteGrid
           data={data}
           importSources={importSources}
           className="w-full"
