@@ -1636,9 +1636,20 @@ const sanitizeJson = useCallback((jsonString: string): string => {
           </DialogHeader>
           <ScrollArea className="max-h-[60vh] w-full">
             <div className="p-4">
-              <pre className="whitespace-pre-wrap text-sm font-mono bg-muted p-4 rounded-lg">
-                {fullPromptContent}
+              <pre className="whitespace-pre-wrap text-sm font-mono bg-muted p-4 rounded-lg selection:bg-primary/20">
+                {fullPromptContent || "Chargement du prompt..."}
               </pre>
+              
+              {/* Info pratique en bas */}
+              <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-950/50 rounded-lg border border-blue-200 dark:border-blue-800">
+                <div className="flex items-start gap-2">
+                  <Info className="h-4 w-4 text-blue-600 mt-0.5 flex-shrink-0" />
+                  <div className="text-sm text-blue-700 dark:text-blue-300">
+                    <p className="font-medium mb-1">✅ Prompt optimisé DEEPSEARCH v3</p>
+                    <p>Version corrigée sans dates hardcodées, structure JSON simplifiée, gestion d'erreurs renforcée.</p>
+                  </div>
+                </div>
+              </div>
             </div>
           </ScrollArea>
         </DialogContent>
