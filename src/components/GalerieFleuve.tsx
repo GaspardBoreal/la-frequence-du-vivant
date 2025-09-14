@@ -353,6 +353,43 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes,
     setCommittedIndex(0);
   }, [filterMode]);
 
+  // Handle march URL parameter to set correct photo index
+  useEffect(() => {
+    if (!filteredPhotos.length || isLoading) return;
+
+    const urlParams = new URLSearchParams(window.location.search);
+    const marcheSlug = urlParams.get('marche');
+    
+    if (marcheSlug && currentPhotoIndex === 0 && committedIndex === 0) {
+      // Find the first photo of the targeted march
+      const targetIndex = filteredPhotos.findIndex(photo => {
+        const photoMarcheSlug = photo.nomMarche && photo.ville 
+          ? photo.nomMarche.toLowerCase()
+              .normalize('NFD')
+              .replace(/[\u0300-\u036f]/g, '') // Remove accents
+              .replace(/[^a-z0-9\s-]/g, '') // Remove special chars
+              .replace(/\s+/g, '-') // Replace spaces with hyphens
+              .replace(/-+/g, '-') // Replace multiple hyphens with single
+              .trim() + '-' + 
+            photo.ville.toLowerCase()
+              .normalize('NFD')
+              .replace(/[\u0300-\u036f]/g, '') // Remove accents
+              .replace(/[^a-z0-9\s-]/g, '') // Remove special chars
+              .replace(/\s+/g, '-') // Replace spaces with hyphens
+              .replace(/-+/g, '-') // Replace multiple hyphens with single
+              .trim()
+          : '';
+        return photoMarcheSlug.replace(/^-+|-+$/g, '') === marcheSlug;
+      });
+
+      if (targetIndex !== -1 && targetIndex !== currentPhotoIndex) {
+        console.debug('[GalerieFleuve] Navigate to targeted march', { marcheSlug, targetIndex, total: filteredPhotos.length });
+        setCurrentPhotoIndex(targetIndex);
+        setCommittedIndex(targetIndex);
+      }
+    }
+  }, [filteredPhotos, isLoading, currentPhotoIndex, committedIndex]);
+
   // Dynamic neighbor preloading utility
   const preloadNeighbors = useCallback(async (centerIndex: number, depth: number = 1) => {
     if (!filteredPhotos || filteredPhotos.length === 0) return [];

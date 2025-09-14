@@ -88,19 +88,7 @@ export default function GalerieFluveExploration() {
         converted.push(convertedMarche);
       }
 
-      // Reorder marches to focus selected marche if provided via URL
-      if (selectedMarcheSlug) {
-        try {
-          const idx = converted.findIndex(m => createSlug(m.nomMarche, m.ville) === selectedMarcheSlug);
-          if (idx > 0) {
-            const [sel] = converted.splice(idx, 1);
-            converted.unshift(sel);
-            console.debug('[GalerieFluveExploration] Marche ciblée via URL', { selectedMarcheSlug, nomMarche: converted[0]?.nomMarche, ville: converted[0]?.ville });
-          }
-        } catch (e) {
-          console.warn('[GalerieFluveExploration] Erreur lors du tri par marche', e);
-        }
-      }
+      // Navigation indexes are now handled in GalerieFleuve itself
 
         // Générer les thèmes pour toutes les régions
         const regionThemes: RegionalTheme[] = Array.from(uniqueRegions).map(region => ({
