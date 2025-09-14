@@ -44,6 +44,7 @@ import {
   BarChart3,
   Bot
 } from 'lucide-react';
+import { ImportNavigationControls } from './ImportNavigationControls';
 
 interface ImportRecord {
   id: string;
@@ -63,18 +64,33 @@ interface ModernImportDetailModalProps {
   importRecord: ImportRecord;
   open: boolean;
   onClose: () => void;
-  defaultTab?: string; // Nouvel prop pour spécifier l'onglet par défaut
+  defaultTab?: string;
+  currentIndex?: number;
+  totalImports?: number;
+  onPrevious?: () => void;
+  onNext?: () => void;
+  activeTab?: string;
+  onTabChange?: (tab: string) => void;
 }
 
 export const ModernImportDetailModal: React.FC<ModernImportDetailModalProps> = ({
   importRecord,
   open,
   onClose,
-  defaultTab = "overview" // Par défaut sur "Vue d'ensemble"
+  defaultTab = "overview",
+  currentIndex,
+  totalImports,
+  onPrevious,
+  onNext,
+  activeTab: controlledActiveTab,
+  onTabChange
 }) => {
   const [selectedYear, setSelectedYear] = useState<string | null>(null);
   const [showJsonView, setShowJsonView] = useState(false);
-  const [activeTab, setActiveTab] = useState(defaultTab);
+  const [internalActiveTab, setInternalActiveTab] = useState(defaultTab);
+
+  const activeTab = controlledActiveTab ?? internalActiveTab;
+  const setActiveTab = onTabChange ?? setInternalActiveTab;
 
   const sourcesByYear = useMemo(() => {
     const yearMap = new Map<string, any[]>();
@@ -142,20 +158,33 @@ export const ModernImportDetailModal: React.FC<ModernImportDetailModalProps> = (
       <DialogContent className="max-w-7xl max-h-[95vh] overflow-hidden bg-background/95 backdrop-blur-xl border-border/50">
         <DialogHeader>
           <DialogTitle className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-primary to-accent flex items-center justify-center">
-                <Database className="w-5 h-5 text-primary-foreground" />
-              </div>
-              <div>
-                <span className="text-xl">Import IA - {importRecord.marche_nom}</span>
-                <div className="flex items-center gap-2 mt-1">
-                  <Calendar className="w-4 h-4 text-muted-foreground" />
-                  <span className="text-sm text-muted-foreground">
-                    {formatDate(importRecord.import_date)}
-                  </span>
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-primary to-accent flex items-center justify-center">
+                  <Database className="w-5 h-5 text-primary-foreground" />
+                </div>
+                <div>
+                  <span className="text-xl">Import IA - {importRecord.marche_nom}</span>
+                  <div className="flex items-center gap-2 mt-1">
+                    <Calendar className="w-4 h-4 text-muted-foreground" />
+                    <span className="text-sm text-muted-foreground">
+                      {formatDate(importRecord.import_date)}
+                    </span>
+                  </div>
                 </div>
               </div>
+              
+              {/* Navigation Controls */}
+              {currentIndex !== undefined && totalImports !== undefined && onPrevious && onNext && (
+                <ImportNavigationControls
+                  currentIndex={currentIndex}
+                  totalImports={totalImports}
+                  onPrevious={onPrevious}
+                  onNext={onNext}
+                />
+              )}
             </div>
+            
             <div className="flex items-center gap-2">
               <Button
                 variant="outline"

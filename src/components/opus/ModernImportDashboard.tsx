@@ -136,6 +136,8 @@ export const ModernImportDashboard: React.FC = () => {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [importToDelete, setImportToDelete] = useState<ImportRecord | null>(null);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
+  const [currentImportIndex, setCurrentImportIndex] = useState(0);
+  const [navigationActiveTab, setNavigationActiveTab] = useState('overview');
   
   const { data: explorations } = useExplorations();
   const { data: marches } = useSupabaseMarches();
@@ -400,9 +402,28 @@ export const ModernImportDashboard: React.FC = () => {
   };
 
   const handleImportClick = (importRecord: ImportRecord) => {
+    const importIndex = filteredImports.findIndex(imp => imp.id === importRecord.id);
+    setCurrentImportIndex(importIndex >= 0 ? importIndex : 0);
     setSelectedImport(importRecord);
     setDetailModalDefaultTab("overview");
+    setNavigationActiveTab("overview");
     setDetailModalOpen(true);
+  };
+
+  const handlePreviousImport = () => {
+    const newIndex = Math.max(0, currentImportIndex - 1);
+    setCurrentImportIndex(newIndex);
+    setSelectedImport(filteredImports[newIndex]);
+  };
+
+  const handleNextImport = () => {
+    const newIndex = Math.min(filteredImports.length - 1, currentImportIndex + 1);
+    setCurrentImportIndex(newIndex);
+    setSelectedImport(filteredImports[newIndex]);
+  };
+
+  const handleTabChange = (tab: string) => {
+    setNavigationActiveTab(tab);
   };
 
   const handleSpeciesClick = () => {
@@ -1119,6 +1140,12 @@ export const ModernImportDashboard: React.FC = () => {
               setSelectedImportForSpecies(null);
             }}
             defaultTab={detailModalDefaultTab}
+            currentIndex={selectedImportForSpecies ? undefined : currentImportIndex}
+            totalImports={selectedImportForSpecies ? undefined : filteredImports.length}
+            onPrevious={selectedImportForSpecies ? undefined : handlePreviousImport}
+            onNext={selectedImportForSpecies ? undefined : handleNextImport}
+            activeTab={selectedImportForSpecies ? undefined : navigationActiveTab}
+            onTabChange={selectedImportForSpecies ? undefined : handleTabChange}
           />
         )}
 
