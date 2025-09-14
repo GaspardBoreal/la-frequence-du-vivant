@@ -200,10 +200,27 @@ export const OptimizedOpusImportInterface: React.FC<OptimizedOpusImportInterface
 
   const sanitizeJson = useCallback((jsonString: string): string => {
     if (!jsonString) return jsonString;
-    return jsonString
+    
+    let sanitized = jsonString
+      // Remove markdown comments (lines starting with #)
+      .replace(/^[ \t]*#.*$/gm, '')
+      // Remove parentheses around string values: "key": ("value") → "key": "value"
+      .replace(/:\s*\(\s*"/g, ': "')
+      .replace(/"\s*\)/g, '"')
+      // Replace smart quotes with regular quotes
+      .replace(/[""]/g, '"')
+      .replace(/['']/g, "'")
+      // Remove trailing commas before closing brackets/braces
+      .replace(/,(\s*[}\]])/g, '$1')
+      // Remove invalid escape sequences
       .replace(/\\(\[|\]|\(|\)|~)/g, '$1')
       .replace(/\\(_)/g, '$1')
-      .replace(/\\\\/g, '\\');
+      .replace(/\\\\/g, '\\')
+      // Clean up multiple empty lines
+      .replace(/\n\s*\n\s*\n/g, '\n\n')
+      .trim();
+    
+    return sanitized;
   }, []);
 
   const parseAndValidateJson = useCallback(() => {
@@ -240,7 +257,21 @@ export const OptimizedOpusImportInterface: React.FC<OptimizedOpusImportInterface
       
       return { errors, data: completeData };
     } catch (parseError) {
-      errors.push(`Erreur JSON: ${(parseError as Error).message}`);
+      const error = parseError as Error;
+      let errorMessage = error.message;
+      
+      // Provide more helpful error messages
+      if (errorMessage.includes("Unexpected token")) {
+        if (errorMessage.includes("'('")) {
+          errorMessage += " - Vérifiez les parenthèses autour des valeurs";
+        } else if (errorMessage.includes('"#"') || errorMessage.includes("'#'")) {
+          errorMessage += " - Supprimez les commentaires markdown (#)";
+        } else if (errorMessage.includes('","')) {
+          errorMessage += " - Vérifiez les virgules en trop";
+        }
+      }
+      
+      errors.push(`Format JSON invalide: ${errorMessage}`);
       return { errors, data: null };
     }
   }, [jsonContent, sanitizeJson, currentMarcheId, explorationId]);

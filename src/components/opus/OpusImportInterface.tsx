@@ -818,18 +818,28 @@ export const OpusImportInterface: React.FC<OpusImportInterfaceProps> = ({
 }`;
   }, []);
 
-  // Sanitize JSON by removing invalid escape sequences
+  // Enhanced JSON sanitization for common formatting issues
   const sanitizeJson = useCallback((jsonString: string): string => {
     if (!jsonString) return jsonString;
     
-    // Remove invalid escape sequences that are causing parsing errors
     let sanitized = jsonString
-      // Remove backslashes before brackets and parentheses
+      // Remove markdown comments (lines starting with #)
+      .replace(/^[ \t]*#.*$/gm, '')
+      // Remove parentheses around string values: "key": ("value") → "key": "value"
+      .replace(/:\s*\(\s*"/g, ': "')
+      .replace(/"\s*\)/g, '"')
+      // Replace smart quotes with regular quotes
+      .replace(/[""]/g, '"')
+      .replace(/['']/g, "'")
+      // Remove trailing commas before closing brackets/braces
+      .replace(/,(\s*[}\]])/g, '$1')
+      // Remove invalid escape sequences
       .replace(/\\(\[|\]|\(|\)|~)/g, '$1')
-      // Remove backslashes before underscores (common in field names)
       .replace(/\\(_)/g, '$1')
-      // Fix double backslashes that might have been created
-      .replace(/\\\\/g, '\\');
+      .replace(/\\\\/g, '\\')
+      // Clean up multiple empty lines
+      .replace(/\n\s*\n\s*\n/g, '\n\n')
+      .trim();
     
     return sanitized;
   }, []);
@@ -933,15 +943,24 @@ export const OpusImportInterface: React.FC<OpusImportInterfaceProps> = ({
       setImportData(completeData);
       return errors.length === 0 ? completeData : null;
     } catch (error) {
-      // Provide more specific error messages
-      let errorMessage = error.message;
+      // Enhanced error messages for common JSON issues
+      let errorMessage = (error as Error).message;
+      
       if (errorMessage.includes('Unexpected token')) {
-        if (errorMessage.includes('\\')) {
+        if (errorMessage.includes("'('")) {
+          errorMessage += ' - Vérifiez les parenthèses autour des valeurs (ex: "key": ("value") → "key": "value")';
+        } else if (errorMessage.includes('"#"') || errorMessage.includes("'#'")) {
+          errorMessage += ' - Supprimez les commentaires markdown (lignes commençant par #)';
+        } else if (errorMessage.includes('\\')) {
           errorMessage += ' - Utilisez le bouton "Auto-corriger" pour résoudre les problèmes d\'échappement';
         } else if (errorMessage.includes('[') || errorMessage.includes(']')) {
           errorMessage += ' - Vérifiez la syntaxe des tableaux (crochets)';
         } else if (errorMessage.includes('{') || errorMessage.includes('}')) {
           errorMessage += ' - Vérifiez la syntaxe des objets (accolades)';
+        } else if (errorMessage.includes(',')) {
+          errorMessage += ' - Vérifiez les virgules en trop ou manquantes';
+        } else if (errorMessage.includes('"')) {
+          errorMessage += ' - Vérifiez les guillemets non fermés ou utilisez des guillemets droits (")';
         }
       }
       errors.push(`Format JSON invalide: ${errorMessage}`);
