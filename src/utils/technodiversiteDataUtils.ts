@@ -29,6 +29,30 @@ export interface ProcessedTechnodiversiteData {
 }
 
 /**
+ * Fonction utilitaire pour rechercher récursivement les données réelles
+ */
+const findDonnees = (data: any): any => {
+  if (!data || typeof data !== 'object') return data;
+  
+  // Si nous avons des données directes aux niveaux TRL, retourner tel quel
+  const trlKeys = Object.keys(data).filter(key => key.match(/^niveau_.*trl_/i));
+  if (trlKeys.length > 0) return data;
+  
+  // Si nous avons des catégories alternatives directes
+  if (data.innovations_locales || data.technologies_vertes || data.numerique) return data;
+  
+  // Si nous avons la structure principale directe
+  if (data.innovations || data.fabrication_locale || data.open_source_projects) return data;
+  
+  // Sinon chercher dans 'donnees' ou autres propriétés imbriquées
+  if (data.donnees) return findDonnees(data.donnees);
+  if (data.data) return findDonnees(data.data);
+  if (data.contexte_data) return findDonnees(data.contexte_data);
+  
+  return data;
+};
+
+/**
  * Traite les données de technodiversité pour l'affichage en vignettes
  */
 export const processTechnodiversiteData = (data: any): ProcessedTechnodiversiteData => {
@@ -42,6 +66,9 @@ export const processTechnodiversiteData = (data: any): ProcessedTechnodiversiteD
       totalCount: 0
     };
   }
+
+  const root = findDonnees(data);
+  console.log('Debug - Normalized root data:', root);
 
   const processItems = (items: any[], category: string) => {
     if (!Array.isArray(items)) return [];
@@ -63,16 +90,16 @@ export const processTechnodiversiteData = (data: any): ProcessedTechnodiversiteD
   };
 
   // Traitement de la nouvelle structure structurée
-  if (data.innovations || data.fabrication_locale || data.open_source_projects) {
-    const innovations = processItems(data.innovations || [], 'Innovation');
-    const fabrication_locale = processItems(data.fabrication_locale || [], 'Fabrication locale');
-    const projets_open_source = processItems(data.open_source_projects || [], 'Open Source');
+  if (root.innovations || root.fabrication_locale || root.open_source_projects) {
+    const innovations = processItems(root.innovations || [], 'Innovation');
+    const fabrication_locale = processItems(root.fabrication_locale || [], 'Fabrication locale');
+    const projets_open_source = processItems(root.open_source_projects || [], 'Open Source');
 
-    // Inclure également les catégories alternatives si elles existent (au même niveau ou sous data.donnees)
-    const innovations_locales = processItems((data?.innovations_locales || data?.donnees?.innovations_locales || []), 'Innovations locales');
-    const technologies_vertes = processItems((data?.technologies_vertes || data?.donnees?.technologies_vertes || []), 'Technologies vertes');
-    const numerique = processItems((data?.numerique || data?.donnees?.numerique || []), 'Numérique sobre');
-    const recherche_developpement = processItems((data?.recherche_developpement || data?.donnees?.recherche_developpement || []), 'Recherche & Développement');
+    // Inclure également les catégories alternatives si elles existent
+    const innovations_locales = processItems(root.innovations_locales || [], 'Innovations locales');
+    const technologies_vertes = processItems(root.technologies_vertes || [], 'Technologies vertes');
+    const numerique = processItems(root.numerique || [], 'Numérique sobre');
+    const recherche_developpement = processItems(root.recherche_developpement || [], 'Recherche & Développement');
 
     const total =
       innovations.length +
@@ -108,11 +135,11 @@ export const processTechnodiversiteData = (data: any): ProcessedTechnodiversiteD
     };
   }
 
-  // Schémas alternatifs: détection des catégories spécifiques (avec ou sans data.donnees)
-  const altInnovationsLocales = processItems((data?.innovations_locales || data?.donnees?.innovations_locales || []), 'Innovations locales');
-  const altTechnologiesVertes = processItems((data?.technologies_vertes || data?.donnees?.technologies_vertes || []), 'Technologies vertes');
-  const altNumerique = processItems((data?.numerique || data?.donnees?.numerique || []), 'Numérique sobre');
-  const altRecherche = processItems((data?.recherche_developpement || data?.donnees?.recherche_developpement || []), 'Recherche & Développement');
+  // Schémas alternatifs: détection des catégories spécifiques
+  const altInnovationsLocales = processItems(root.innovations_locales || [], 'Innovations locales');
+  const altTechnologiesVertes = processItems(root.technologies_vertes || [], 'Technologies vertes');
+  const altNumerique = processItems(root.numerique || [], 'Numérique sobre');
+  const altRecherche = processItems(root.recherche_developpement || [], 'Recherche & Développement');
 
   if (altInnovationsLocales.length || altTechnologiesVertes.length || altNumerique.length || altRecherche.length) {
     // Créer un Set pour identifier les éléments uniques par titre
@@ -147,7 +174,7 @@ export const processTechnodiversiteData = (data: any): ProcessedTechnodiversiteD
   }
 
   // Traitement spécialisé pour les formats TRL (Technology Readiness Level)
-  const trlKeys = Object.keys(data).filter(key => key.match(/^niveau_.*trl_/i));
+  const trlKeys = Object.keys(root).filter(key => key.match(/^niveau_.*trl_/i));
   if (trlKeys.length > 0) {
     console.log('Debug - TRL format detected, keys:', trlKeys);
     
@@ -159,7 +186,7 @@ export const processTechnodiversiteData = (data: any): ProcessedTechnodiversiteD
                      item.nom || item.titre || item.name || `${levelName} ${index + 1}`;
         
         const description = item.description_solution || item.description_innovation || item.description_rupture ||
-                          item.description || item.explication || item.details || '';
+                           item.description || item.explication || item.details || '';
         
         const type = determineTechType(item) || levelName.toLowerCase().replace(/\s+/g, '-');
         
@@ -186,9 +213,9 @@ export const processTechnodiversiteData = (data: any): ProcessedTechnodiversiteD
       });
     };
 
-    const innovations_locales = processTrlItems(data.niveau_professionnel_trl_7_9 || [], 'Innovations locales');
-    const technologies_vertes = processTrlItems(data.niveau_innovant_trl_4_6 || [], 'Technologies vertes');  
-    const numerique = processTrlItems(data.niveau_disruptif_trl_1_3 || [], 'Numérique sobre');
+    const innovations_locales = processTrlItems(root.niveau_professionnel_trl_7_9 || [], 'Innovations locales');
+    const technologies_vertes = processTrlItems(root.niveau_innovant_trl_4_6 || [], 'Technologies vertes');  
+    const numerique = processTrlItems(root.niveau_disruptif_trl_1_3 || [], 'Numérique sobre');
 
     const total = innovations_locales.length + technologies_vertes.length + numerique.length;
     
@@ -218,11 +245,11 @@ export const processTechnodiversiteData = (data: any): ProcessedTechnodiversiteD
   }
 
   // Fallback pour l'ancien format (données directes ou autres structures)
-  console.log('Debug - Using fallback processing for:', data);
+  console.log('Debug - Using fallback processing for:', root);
   
   // Si c'est un tableau direct, on le traite comme innovations
-  if (Array.isArray(data)) {
-    const innovations = processItems(data, 'Innovation');
+  if (Array.isArray(root)) {
+    const innovations = processItems(root, 'Innovation');
     console.log('Debug - Array format processed as innovations:', innovations);
     
     return {
@@ -251,7 +278,7 @@ export const processTechnodiversiteData = (data: any): ProcessedTechnodiversiteD
     return !invalidPatterns.some(pattern => pattern.test(key)) && key.length > 2;
   };
   
-  Object.entries(data).forEach(([key, value]) => {
+  Object.entries(root).forEach(([key, value]) => {
     if (!isValidTechKey(key)) {
       console.debug(`[technodiversiteDataUtils] Skipping invalid key: ${key}`);
       return;
