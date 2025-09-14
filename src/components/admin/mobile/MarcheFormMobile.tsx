@@ -5,7 +5,7 @@ import { Input } from '../../ui/input';
 import { Textarea } from '../../ui/textarea';
 import { Label } from '../../ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../ui/select';
-import { Save, MapPin, Loader2 } from 'lucide-react';
+import { Save, MapPin, Loader2, Map, ExternalLink } from 'lucide-react';
 import { useSupabaseMarche } from '../../../hooks/useSupabaseMarches';
 import { createMarche, updateMarche, MarcheFormData } from '../../../utils/supabaseMarcheOperations';
 import { queryClient } from '../../../lib/queryClient';
@@ -13,6 +13,7 @@ import { FRENCH_REGIONS } from '../../../utils/frenchRegions';
 import { FRENCH_DEPARTMENTS } from '../../../utils/frenchDepartments';
 import { toast } from 'sonner';
 import { geocodeAddress } from '../../../utils/geocoding';
+import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from '../../ui/sheet';
 
 interface MarcheFormMobileProps {
   mode: 'create' | 'edit';
@@ -47,6 +48,7 @@ const MarcheFormMobile: React.FC<MarcheFormMobileProps> = ({
   } = useSupabaseMarche(marcheId || undefined);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isGeolocating, setIsGeolocating] = useState(false);
+  const [mapSheetOpen, setMapSheetOpen] = useState(false);
   
   const {
     register,
@@ -59,6 +61,11 @@ const MarcheFormMobile: React.FC<MarcheFormMobileProps> = ({
   
   const selectedRegion = watch('region');
   const selectedDepartement = watch('departement');
+  const currentLatitude = watch('latitude');
+  const currentLongitude = watch('longitude');
+  
+  const hasCoordinates = currentLatitude !== null && currentLongitude !== null && 
+                        currentLatitude !== undefined && currentLongitude !== undefined;
 
   const handleGeolocation = async () => {
     if (!navigator.geolocation) {
@@ -119,6 +126,30 @@ const MarcheFormMobile: React.FC<MarcheFormMobileProps> = ({
         maximumAge: 60000
       }
     );
+  };
+
+  const openGoogleMaps = () => {
+    if (!hasCoordinates) return;
+    const url = `https://maps.google.com/?q=${currentLatitude},${currentLongitude}`;
+    window.open(url, '_blank');
+    setMapSheetOpen(false);
+    toast.success('📍 Ouverture de Google Maps');
+  };
+
+  const openOpenStreetMap = () => {
+    if (!hasCoordinates) return;
+    const url = `https://www.openstreetmap.org/?mlat=${currentLatitude}&mlon=${currentLongitude}&zoom=16`;
+    window.open(url, '_blank');
+    setMapSheetOpen(false);
+    toast.success('🗺️ Ouverture d\'OpenStreetMap');
+  };
+
+  const openStreetView = () => {
+    if (!hasCoordinates) return;
+    const url = `https://www.google.com/maps/@${currentLatitude},${currentLongitude},3a,75y,0h,90t/data=!3m4!1e1!3m2!1s0x0:0x0!2e0`;
+    window.open(url, '_blank');
+    setMapSheetOpen(false);
+    toast.success('👁️ Ouverture de Street View');
   };
   
   useEffect(() => {
@@ -326,6 +357,78 @@ const MarcheFormMobile: React.FC<MarcheFormMobileProps> = ({
                 />
               </div>
             </div>
+            
+            {/* Bouton Voir sur la carte */}
+            {hasCoordinates && (
+              <div className="pt-3 border-t border-border">
+                <Sheet open={mapSheetOpen} onOpenChange={setMapSheetOpen}>
+                  <SheetTrigger asChild>
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      className="w-full animate-fade-in hover-scale"
+                    >
+                      <Map className="h-4 w-4 mr-2" />
+                      🗺️ Voir sur la carte
+                    </Button>
+                  </SheetTrigger>
+                  <SheetContent side="bottom" className="h-[280px]">
+                    <SheetHeader>
+                      <SheetTitle>📍 Choisir une carte</SheetTitle>
+                      <SheetDescription>
+                        Position: {currentLatitude?.toFixed(6)}, {currentLongitude?.toFixed(6)}
+                      </SheetDescription>
+                    </SheetHeader>
+                    <div className="grid gap-4 py-6">
+                      <Button
+                        onClick={openGoogleMaps}
+                        variant="outline"
+                        className="h-14 text-left justify-start hover-scale"
+                      >
+                        <div className="flex items-center space-x-3">
+                          <div className="text-2xl">🌍</div>
+                          <div>
+                            <div className="font-semibold">Google Maps</div>
+                            <div className="text-sm text-muted-foreground">Navigation et détails</div>
+                          </div>
+                        </div>
+                        <ExternalLink className="h-4 w-4 ml-auto" />
+                      </Button>
+                      
+                      <Button
+                        onClick={openOpenStreetMap}
+                        variant="outline"
+                        className="h-14 text-left justify-start hover-scale"
+                      >
+                        <div className="flex items-center space-x-3">
+                          <div className="text-2xl">🗺️</div>
+                          <div>
+                            <div className="font-semibold">OpenStreetMap</div>
+                            <div className="text-sm text-muted-foreground">Carte open source</div>
+                          </div>
+                        </div>
+                        <ExternalLink className="h-4 w-4 ml-auto" />
+                      </Button>
+                      
+                      <Button
+                        onClick={openStreetView}
+                        variant="outline"
+                        className="h-14 text-left justify-start hover-scale"
+                      >
+                        <div className="flex items-center space-x-3">
+                          <div className="text-2xl">👁️</div>
+                          <div>
+                            <div className="font-semibold">Street View</div>
+                            <div className="text-sm text-muted-foreground">Vue à 360°</div>
+                          </div>
+                        </div>
+                        <ExternalLink className="h-4 w-4 ml-auto" />
+                      </Button>
+                    </div>
+                  </SheetContent>
+                </Sheet>
+              </div>
+            )}
           </div>
         </div>
 
