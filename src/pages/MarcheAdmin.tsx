@@ -26,11 +26,6 @@ const MarcheAdmin = () => {
   const navigate = useNavigate();
   const isMobile = useIsMobile();
 
-  // Rediriger vers la version mobile si l'utilisateur est sur mobile
-  if (isMobile) {
-    return <MarcheAdminMobile />;
-  }
-
   const [activeTab, setActiveTab] = useState('list');
   const [viewMode, setViewMode] = useState<ViewMode>('list');
   const [editingMarcheId, setEditingMarcheId] = useState<string | null>(null);
@@ -78,6 +73,11 @@ const MarcheAdmin = () => {
   const handleDelete = () => {
     refetch();
   };
+
+  // Version mobile dédiée
+  if (isMobile) {
+    return <MarcheAdminMobile />;
+  }
 
   if (error) {
     return (
