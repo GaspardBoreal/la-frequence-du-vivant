@@ -35,6 +35,8 @@ import { ModernImportFilters } from './ModernImportFilters';
 import { ModernImportDetailModal } from './ModernImportDetailModal';
 import { DataInsightsDashboard } from './DataInsightsDashboard';
 import { OpusImportInterface } from './OpusImportInterface';
+import { OpusReaderModeInterface } from './OpusReaderModeInterface';
+import { OpusTemplateLibrary } from './OpusTemplateLibrary';
 import { ExplorationSpeciesView } from './ExplorationSpeciesView';
 import { ExplorationVocabularyView } from './ExplorationVocabularyView';
 import { TechnodiversiteVignetteGrid } from './TechnodiversiteVignetteGrid';
@@ -117,6 +119,9 @@ export const ModernImportDashboard: React.FC = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  
+  // Nouveau state pour le mode interface
+  const [interfaceMode, setInterfaceMode] = useState<'advanced' | 'reader'>('advanced');
   
   const [imports, setImports] = useState<ImportRecord[]>([]);
   const [filteredImports, setFilteredImports] = useState<ImportRecord[]>([]);
@@ -592,13 +597,30 @@ export const ModernImportDashboard: React.FC = () => {
                   <Sparkles className="w-4 h-4 mr-2" />
                   Préfigurer
                 </Button>
-                <Button 
-                  onClick={() => setImportModalOpen(true)}
-                  className="bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 shadow-lg hover:shadow-primary/25 transition-all duration-300"
-                >
-                  <Plus className="w-4 h-4 mr-2" />
-                  Nouveau Import
-                </Button>
+                <div className="flex items-center gap-2">
+                  <Button 
+                    onClick={() => {
+                      setInterfaceMode('advanced');
+                      setImportModalOpen(true);
+                    }}
+                    variant={interfaceMode === 'advanced' ? 'default' : 'outline'}
+                    className="bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 shadow-lg hover:shadow-primary/25 transition-all duration-300"
+                  >
+                    <Plus className="w-4 h-4 mr-2" />
+                    Import Avancé
+                  </Button>
+                  <Button 
+                    onClick={() => {
+                      setInterfaceMode('reader');
+                      setImportModalOpen(true);
+                    }}
+                    variant={interfaceMode === 'reader' ? 'default' : 'outline'}
+                    className="bg-gradient-to-r from-accent to-accent/80 hover:from-accent/90 hover:to-accent/70 shadow-lg hover:shadow-accent/25 transition-all duration-300"
+                  >
+                    <Users className="w-4 h-4 mr-2" />
+                    Mode Lecteur
+                  </Button>
+                </div>
                 <Button 
                   onClick={loadImports} 
                   disabled={loading} 
@@ -1194,13 +1216,37 @@ export const ModernImportDashboard: React.FC = () => {
         <Dialog open={importModalOpen} onOpenChange={setImportModalOpen}>
           <DialogContent className="max-w-7xl w-[95vw] max-h-[95vh] overflow-hidden bg-background/95 backdrop-blur-xl border-border/50">
             <DialogHeader className="sr-only">
-              <DialogTitle>Interface d'import</DialogTitle>
-              <DialogDescription>Interface pour importer des données dans l'exploration</DialogDescription>
+              <DialogTitle>{interfaceMode === 'reader' ? 'Mode Lecteur' : 'Interface d\'import avancée'}</DialogTitle>
+              <DialogDescription>
+                {interfaceMode === 'reader' 
+                  ? 'Interface simplifiée pour les lecteurs Gaspard Boréal'
+                  : 'Interface pour importer des données dans l\'exploration'
+                }
+              </DialogDescription>
             </DialogHeader>
+            {interfaceMode === 'reader' ? (
+              <OpusReaderModeInterface
+                marcheId=""
+                marcheName=""
+                explorationId={exploration.id}
+                onSuccess={() => {
+                  loadImports();
+                  setImportModalOpen(false);
+                }}
+                onClose={() => setImportModalOpen(false)}
+              />
+            ) : (
               <OpusImportInterface
-              marcheId=""
-              marcheName=""
-              explorationId={exploration.id}
+                marcheId=""
+                marcheName=""
+                explorationId={exploration.id}
+                onSuccess={() => {
+                  loadImports();
+                  setImportModalOpen(false);
+                }}
+                onClose={() => setImportModalOpen(false)}
+              />
+            )}
               onSuccess={() => {
                 console.log('🎉 Import terminé - Fermeture modal et rechargement');
                 setImportModalOpen(false);
