@@ -1247,28 +1247,6 @@ export const ModernImportDashboard: React.FC = () => {
                 onClose={() => setImportModalOpen(false)}
               />
             )}
-              onSuccess={() => {
-                console.log('🎉 Import terminé - Fermeture modal et rechargement');
-                setImportModalOpen(false);
-                
-                // Toast informatif pour l'utilisateur
-                toast({
-                  title: "✅ Import terminé !",
-                  description: "Actualisation des données...",
-                  variant: "default"
-                });
-                
-                // Recharger les données avec un léger délai pour laisser le temps à la DB de se mettre à jour
-                setTimeout(() => {
-                  loadImports();
-                  // Recharger aussi l'historique si on est sur cet onglet
-                  if (activeTab === 'history') {
-                    loadImportHistory();
-                  }
-                }, 500);
-              }}
-              onClose={() => setImportModalOpen(false)}
-            />
           </DialogContent>
         </Dialog>
 
