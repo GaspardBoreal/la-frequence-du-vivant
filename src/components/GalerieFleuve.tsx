@@ -17,6 +17,7 @@ import MarcheSelector from './MarcheSelector';
 import { OptimizedImage } from './OptimizedImage';
 import { useSmartImagePreloader } from '../hooks/useSmartImagePreloader';
 import PortalOverlay from './ui/PortalOverlay';
+import { createSlug } from '@/utils/slugGenerator';
 
 interface GalerieFluveProps {
   explorations: any[];
@@ -87,6 +88,7 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes,
   const isPreparingRef = useRef(false);
   const prepStartAtRef = useRef<number>(0);
   const overlayTimeoutRef = useRef<number | null>(null);
+  const initializedFromURLRef = useRef(false);
 
   useEffect(() => {
     isPreparingRef.current = isPreparing;
@@ -353,42 +355,33 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes,
     setCommittedIndex(0);
   }, [filterMode]);
 
-  // Handle march URL parameter to set correct photo index
+  // Handle march URL parameter to set correct photo index (once)
   useEffect(() => {
-    if (!filteredPhotos.length || isLoading) return;
+    if (!filteredPhotos.length || isLoading || initializedFromURLRef.current) return;
 
     const urlParams = new URLSearchParams(window.location.search);
     const marcheSlug = urlParams.get('marche');
-    
-    if (marcheSlug && currentPhotoIndex === 0 && committedIndex === 0) {
-      // Find the first photo of the targeted march
-      const targetIndex = filteredPhotos.findIndex(photo => {
-        const photoMarcheSlug = photo.nomMarche && photo.ville 
-          ? photo.nomMarche.toLowerCase()
-              .normalize('NFD')
-              .replace(/[\u0300-\u036f]/g, '') // Remove accents
-              .replace(/[^a-z0-9\s-]/g, '') // Remove special chars
-              .replace(/\s+/g, '-') // Replace spaces with hyphens
-              .replace(/-+/g, '-') // Replace multiple hyphens with single
-              .trim() + '-' + 
-            photo.ville.toLowerCase()
-              .normalize('NFD')
-              .replace(/[\u0300-\u036f]/g, '') // Remove accents
-              .replace(/[^a-z0-9\s-]/g, '') // Remove special chars
-              .replace(/\s+/g, '-') // Replace spaces with hyphens
-              .replace(/-+/g, '-') // Replace multiple hyphens with single
-              .trim()
-          : '';
-        return photoMarcheSlug.replace(/^-+|-+$/g, '') === marcheSlug;
-      });
 
-      if (targetIndex !== -1 && targetIndex !== currentPhotoIndex) {
-        console.debug('[GalerieFleuve] Navigate to targeted march', { marcheSlug, targetIndex, total: filteredPhotos.length });
-        setCurrentPhotoIndex(targetIndex);
-        setCommittedIndex(targetIndex);
+    if (!marcheSlug) return;
+
+    const targetIndex = filteredPhotos.findIndex(photo => {
+      try {
+        return createSlug(photo.nomMarche || '', photo.ville || '') === marcheSlug;
+      } catch {
+        return false;
+      }
+    });
+
+    if (targetIndex !== -1) {
+      setCurrentPhotoIndex(targetIndex);
+      setCommittedIndex(targetIndex);
+      initializedFromURLRef.current = true;
+      if (debugMode) {
+        console.debug('[GalerieFleuve] Initialized from URL', { marcheSlug, targetIndex });
       }
     }
-  }, [filteredPhotos, isLoading, currentPhotoIndex, committedIndex]);
+  }, [filteredPhotos, isLoading, debugMode]);
+
 
   // Dynamic neighbor preloading utility
   const preloadNeighbors = useCallback(async (centerIndex: number, depth: number = 1) => {
@@ -644,8 +637,10 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes,
 
   // Synchronization of indices on initialization
   useEffect(() => {
+    if (initializedFromURLRef.current) return; // Do not override URL-initialized index
     setCommittedIndex(currentPhotoIndex);
   }, [filteredPhotos.length]);  // Sync when photos load
+
 
   // Preload only current and close neighbors using shared cache (lighter on mobile)
   useEffect(() => {
