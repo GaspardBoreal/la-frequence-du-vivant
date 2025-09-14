@@ -21,7 +21,7 @@ export default function TexteRendererAdaptatif({ texte, readingMode = 'rich' }: 
   
   // Generate march slug for navigation
   const marcheSlug = createSlug(texte.marcheNomMarche, texte.marcheVille);
-  const navigationUrl = `/galerie-fleuve/exploration/${explorationSlug}?marche=${marcheSlug}`;
+  const navigationUrl = `/galerie-fleuve/exploration/${explorationSlug}?marche=${marcheSlug}#galerie`;
   
   // Clickable march badge component
   const MarcheBadge = ({ className }: { className?: string }) => (

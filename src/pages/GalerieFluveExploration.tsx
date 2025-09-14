@@ -11,6 +11,7 @@ import { extractPhotosFromGoogleDrive, PhotoData } from '@/utils/googleDriveApi'
 import { MarcheTechnoSensible } from '@/utils/googleSheetsApi';
 import { RegionalTheme } from '@/utils/regionalThemes';
 import { getExplorationTheme } from '@/utils/explorationThemes';
+import { createSlug } from '@/utils/slugGenerator';
 
 export default function GalerieFluveExploration() {
   const { slug } = useParams<{ slug: string }>();
@@ -87,6 +88,20 @@ export default function GalerieFluveExploration() {
         converted.push(convertedMarche);
       }
 
+      // Reorder marches to focus selected marche if provided via URL
+      if (selectedMarcheSlug) {
+        try {
+          const idx = converted.findIndex(m => createSlug(m.nomMarche, m.ville) === selectedMarcheSlug);
+          if (idx > 0) {
+            const [sel] = converted.splice(idx, 1);
+            converted.unshift(sel);
+            console.debug('[GalerieFluveExploration] Marche ciblée via URL', { selectedMarcheSlug, nomMarche: converted[0]?.nomMarche, ville: converted[0]?.ville });
+          }
+        } catch (e) {
+          console.warn('[GalerieFluveExploration] Erreur lors du tri par marche', e);
+        }
+      }
+
         // Générer les thèmes pour toutes les régions
         const regionThemes: RegionalTheme[] = Array.from(uniqueRegions).map(region => ({
           name: region,
@@ -112,6 +127,16 @@ export default function GalerieFluveExploration() {
       convertMarches();
     }
   }, [explorationMarches]);
+
+  // Auto-scroll to gallery when a specific marche is targeted via URL
+  useEffect(() => {
+    if (selectedMarcheSlug && !isLoading && viewMode !== 'fleuve-temporel') {
+      const el = document.getElementById('galerie');
+      if (el) {
+        setTimeout(() => el.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50);
+      }
+    }
+  }, [selectedMarcheSlug, isLoading, viewMode]);
 
   if (explorationLoading || marchesLoading || isLoading) {
     return (
