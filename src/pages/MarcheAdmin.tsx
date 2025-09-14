@@ -25,17 +25,18 @@ type ViewMode = 'list' | 'create' | 'edit';
 const MarcheAdmin = () => {
   const navigate = useNavigate();
   const isMobile = useIsMobile();
+
+  // Rediriger vers la version mobile si l'utilisateur est sur mobile
+  if (isMobile) {
+    return <MarcheAdminMobile />;
+  }
+
   const [activeTab, setActiveTab] = useState('list');
   const [viewMode, setViewMode] = useState<ViewMode>('list');
   const [editingMarcheId, setEditingMarcheId] = useState<string | null>(null);
   const [filteredMarches, setFilteredMarches] = useState<MarcheTechnoSensible[]>([]);
 
   const { data: marches = [], isLoading, error, refetch } = useSupabaseMarches();
-
-  // Rediriger vers la version mobile si l'utilisateur est sur mobile
-  if (isMobile) {
-    return <MarcheAdminMobile />;
-  }
 
   useEffect(() => {
     if (marches && marches.length > 0) {
