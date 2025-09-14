@@ -44,7 +44,22 @@ Transformer un rapport PDF DEEPSEARCH Phase A en JSON 100% conforme au schéma O
     "especes_caracteristiques": {
       "description": "[Synthèse biodiversité PDF]", 
       "donnees": {
-        "poissons": [{"nom_commun": "[PDF]", "statut": "[PDF]"}],
+        "flore": [
+          {"nom_commun": "Aulne glutineux", "nom_scientifique": "Alnus glutinosa", "statut": "[Statut PDF]", "description_courte": "[Description PDF]"},
+          {"nom_commun": "Saule blanc", "nom_scientifique": "Salix alba", "statut": "[Statut PDF]", "description_courte": "[Description PDF]"}
+        ],
+        "poissons": [
+          {"nom_commun": "Saumon atlantique", "nom_scientifique": "Salmo salar", "statut": "[Statut PDF]", "description_courte": "[Description PDF]"}
+        ],
+        "mammiferes": [
+          {"nom_commun": "Loutre d'Europe", "nom_scientifique": "Lutra lutra", "statut": "[Statut PDF]", "description_courte": "[Description PDF]"}
+        ],
+        "insectes": [
+          {"nom_commun": "Manne blanche", "nom_scientifique": "Ephoron virgo", "statut": "[Statut PDF]", "description_courte": "[Description PDF]"}
+        ],
+        "oiseaux": [
+          {"nom_commun": "[Espèce PDF]", "nom_scientifique": "[Nom scientifique PDF]", "statut": "[Statut PDF]", "description_courte": "[Description PDF]"}
+        ],
         "sources": ["S03"]
       }
     },
@@ -189,6 +204,54 @@ Transformer un rapport PDF DEEPSEARCH Phase A en JSON 100% conforme au schéma O
   }
 }
 ```
+
+## STRUCTURE ESPÈCES CARACTÉRISTIQUES CRITIQUE ⚠️
+
+**IMPÉRATIF** : Chaque espèce mentionnée dans le PDF DOIT être catégorisée selon sa taxonomie biologique :
+
+```json
+"especes_caracteristiques": {
+  "description": "[Synthèse complète de toutes les espèces PDF]",
+  "donnees": {
+    "flore": [
+      {"nom_commun": "[Espèce végétale PDF]", "nom_scientifique": "[Nom latin PDF]", "statut": "[Statut PDF]", "description_courte": "[Description PDF]"}
+    ],
+    "poissons": [
+      {"nom_commun": "[Espèce PDF]", "nom_scientifique": "[Nom latin PDF]", "statut": "[Statut PDF]", "description_courte": "[Description PDF]"}
+    ],
+    "mammiferes": [
+      {"nom_commun": "[Espèce PDF]", "nom_scientifique": "[Nom latin PDF]", "statut": "[Statut PDF]", "description_courte": "[Description PDF]"}
+    ],
+    "oiseaux": [
+      {"nom_commun": "[Espèce PDF]", "nom_scientifique": "[Nom latin PDF]", "statut": "[Statut PDF]", "description_courte": "[Description PDF]"}
+    ],
+    "insectes": [
+      {"nom_commun": "[Espèce PDF]", "nom_scientifique": "[Nom latin PDF]", "statut": "[Statut PDF]", "description_courte": "[Description PDF]"}
+    ],
+    "reptiles": [
+      {"nom_commun": "[Espèce PDF]", "nom_scientifique": "[Nom latin PDF]", "statut": "[Statut PDF]", "description_courte": "[Description PDF]"}
+    ],
+    "invertebres": [
+      {"nom_commun": "[Espèce PDF]", "nom_scientifique": "[Nom latin PDF]", "statut": "[Statut PDF]", "description_courte": "[Description PDF]"}
+    ],
+    "sources": ["S_ID"]
+  }
+}
+```
+
+**RÈGLES CATÉGORISATION ESPÈCES :**
+- **flore** : Arbres, arbustes, plantes (ex: Aulne glutineux, Saule blanc)
+- **poissons** : Tous les poissons (ex: Saumon atlantique, Truite)
+- **mammiferes** : Mammifères terrestres et aquatiques (ex: Loutre d'Europe, Castor)
+- **oiseaux** : Tous les oiseaux (ex: Martin-pêcheur, Héron)
+- **insectes** : Insectes et arthropodes (ex: Éphémères, Libellules)
+- **reptiles** : Serpents, lézards, tortues
+- **invertebres** : Mollusques, crustacés, vers
+
+**EXTRACTION OBLIGATOIRE :**
+- Extraire TOUTES les espèces mentionnées, même brièvement
+- Ne jamais laisser une espèce dans la description sans la structurer
+- Minimum : nom_commun, nom_scientifique (si disponible), statut, description_courte
 
 ## LIVRABLE FINAL
 JSON valide, structure OPUS respectée, 9 dimensions complètes, importable directement.
