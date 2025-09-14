@@ -74,6 +74,7 @@ interface ImportRecord {
     nouvelles_activites?: any;
     technodiversite?: any;
     projection_2035_2045?: any;
+    ia_fonctionnalites?: any;
     sources?: any[];
   };
   fables_data: any[];
@@ -107,6 +108,7 @@ interface ImportRunRecord {
     nouvelles_activites?: any;
     technodiversite?: any;
     projection_2035_2045?: any;
+    ia_fonctionnalites?: any;
     sources?: any[];
   };
   sources: any[];
@@ -299,6 +301,7 @@ export const ModernImportDashboard: React.FC = () => {
               nouvelles_activites: contexte.nouvelles_activites,
               technodiversite: contexte.technodiversite,
               projection_2035_2045: contexte.projection_2035_2045,
+              ia_fonctionnalites: (contexte as any)?.ia_fonctionnalites,
               sources: Array.isArray(contexte.sources) ? contexte.sources : []
             },
             fables_data: [],
@@ -319,6 +322,7 @@ export const ModernImportDashboard: React.FC = () => {
             nouvelles_activites: contexte.nouvelles_activites,
             technodiversite: contexte.technodiversite,
             projection_2035_2045: contexte.projection_2035_2045,
+            ia_fonctionnalites: (contexte as any)?.ia_fonctionnalites,
             sources: Array.isArray(contexte.sources) ? contexte.sources : []
           };
           const existingSources = Array.isArray(existing.sources) ? existing.sources : [];

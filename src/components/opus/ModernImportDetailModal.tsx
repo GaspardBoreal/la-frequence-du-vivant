@@ -563,17 +563,6 @@ export const ModernImportDetailModal: React.FC<ModernImportDetailModalProps> = (
               />
             </TabsContent>
 
-            {/* IA Tab - Nouvel onglet pour ia_fonctionnalites */}
-            <TabsContent value="ia" className="space-y-6">
-              <VignetteGrid
-                title="Fonctionnalités IA"
-                data={importRecord.contexte_data?.ia_fonctionnalites?.donnees || importRecord.contexte_data?.ia_fonctionnalites}
-                variant="ia"
-                icon={<Beaker className="w-5 h-5" />}
-                emptyMessage="Aucune fonctionnalité IA n'a été identifiée"
-                importSources={importRecord.sources}
-              />
-            </TabsContent>
           </ScrollArea>
         </Tabs>
       </DialogContent>
