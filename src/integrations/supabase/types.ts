@@ -1554,8 +1554,16 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      can_initialize_admin_system: {
+        Args: Record<PropertyKey, never>
+        Returns: boolean
+      }
       check_is_admin_user: {
         Args: { check_user_id: string }
+        Returns: boolean
+      }
+      check_system_initialization_safe: {
+        Args: Record<PropertyKey, never>
         Returns: boolean
       }
       confirm_admin_email: {
