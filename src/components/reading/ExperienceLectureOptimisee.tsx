@@ -26,6 +26,7 @@ import NavigationLitteraire from './NavigationLitteraire';
 import TextTypeSelector from './TextTypeSelector';
 import { getTextTypeInfo, TextType } from '@/types/textTypes';
 import { AppearanceMode, ReadingMode } from '@/types/readingTypes';
+import { createSlug } from '@/utils/slugGenerator';
 
 export default function ExperienceLectureOptimisee() {
   const { slug, textId } = useParams<{ slug: string; textId?: string }>();
@@ -41,6 +42,40 @@ export default function ExperienceLectureOptimisee() {
   const [selectedTextType, setSelectedTextType] = useState<TextType | 'all'>('all');
   const [appearanceMode, setAppearanceMode] = useState<AppearanceMode>('system');
   const [readingMode, setReadingMode] = useState<ReadingMode>('rich');
+  
+  // Handle marche parameter from URL to navigate to first text of that marche
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const marcheParam = urlParams.get('marche');
+    
+    if (marcheParam && texts.length > 0) {
+      // Find first text that belongs to the specified marche
+      const marcheTexts = texts.filter(text => {
+        if (!text.marcheName || !text.marcheVille) return false;
+        const textMarcheSlug = createSlug(text.marcheName, text.marcheVille);
+        return textMarcheSlug === marcheParam;
+      });
+      
+      if (marcheTexts.length > 0) {
+        const firstMarcheText = marcheTexts[0];
+        const textIndex = texts.findIndex(t => t.id === firstMarcheText.id);
+        if (textIndex >= 0) {
+          setSelectedTextType(firstMarcheText.type_texte);
+          // Find the index in filtered texts for that type
+          const typeTexts = texts.filter(t => t.type_texte === firstMarcheText.type_texte);
+          const filteredIndex = typeTexts.findIndex(t => t.id === firstMarcheText.id);
+          if (filteredIndex >= 0) {
+            setCurrentIndex(filteredIndex);
+          }
+        }
+        
+        // Clean up URL by removing the marche parameter
+        const cleanUrl = new URL(window.location.href);
+        cleanUrl.searchParams.delete('marche');
+        window.history.replaceState(null, '', cleanUrl.toString());
+      }
+    }
+  }, [texts]);
   
   // Apply theme class to document
   useEffect(() => {

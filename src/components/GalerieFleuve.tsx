@@ -1,15 +1,19 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback, memo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Home,
   ChevronLeft,
   ChevronRight,
   ZoomIn,
-  Eye
+  Eye,
+  BookOpen
 } from 'lucide-react';
 import { MarcheTechnoSensible } from '../utils/googleSheetsApi';
 import { RegionalTheme } from '../utils/regionalThemes';
 import { Badge } from './ui/badge';
+import { Button } from './ui/button';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './ui/tooltip';
 import { useIsMobile } from '../hooks/use-mobile';
 import { ExplorationMarcheComplete } from '../hooks/useExplorations';
 import FleuveTemporel from './FleuveTemporel';
@@ -18,6 +22,43 @@ import { OptimizedImage } from './OptimizedImage';
 import { useSmartImagePreloader } from '../hooks/useSmartImagePreloader';
 import PortalOverlay from './ui/PortalOverlay';
 import { createSlug } from '@/utils/slugGenerator';
+
+// Component for the read text navigation button
+const ReadTextButton = memo(({ explorationSlug, photo }: { explorationSlug?: string, photo: EnrichedPhoto }) => {
+  const navigate = useNavigate();
+  
+  const handleReadText = useCallback(() => {
+    if (!explorationSlug) return;
+    
+    const marcheSlug = createSlug(photo.nomMarche || '', photo.ville || '');
+    const readUrl = `/galerie-fleuve/exploration/${explorationSlug}/lire?marche=${marcheSlug}`;
+    navigate(readUrl);
+  }, [explorationSlug, photo, navigate]);
+
+  if (!explorationSlug) return null;
+
+  return (
+    <TooltipProvider>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleReadText}
+            className="h-8 w-8 p-0 bg-white/10 hover:bg-white/20 border border-white/20 backdrop-blur-sm"
+          >
+            <BookOpen className="h-4 w-4 text-white" />
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent>
+          <p>Lire les textes de {photo.nomMarche}</p>
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
+  );
+});
+
+ReadTextButton.displayName = 'ReadTextButton';
 
 interface GalerieFluveProps {
   explorations: any[];
@@ -948,18 +989,24 @@ const GalerieView = memo<{
                        <h3 className="text-xl font-bold mb-2 leading-tight text-cyan-50 drop-shadow-lg">
                          {photo.nomMarche}
                        </h3>
-                       <div className="flex items-center justify-between">
-                         <p className="text-sm opacity-90 text-cyan-100">
-                           Photo {committedIndex + 1} / {filteredPhotos.length}
-                         </p>
-                         {photo.emotionalTags.length > 0 && (
-                           <div className="flex gap-1">
-                             {photo.thematicIcons.slice(0, 3).map((icon, i) => (
-                               <span key={i} className="text-lg drop-shadow-sm">{icon}</span>
-                             ))}
-                           </div>
-                         )}
-                       </div>
+                        <div className="flex items-center justify-between">
+                          <p className="text-sm opacity-90 text-cyan-100">
+                            Photo {committedIndex + 1} / {filteredPhotos.length}
+                          </p>
+                          <div className="flex items-center gap-2">
+                            {photo.emotionalTags.length > 0 && (
+                              <div className="flex gap-1">
+                                {photo.thematicIcons.slice(0, 3).map((icon, i) => (
+                                  <span key={i} className="text-lg drop-shadow-sm">{icon}</span>
+                                ))}
+                              </div>
+                            )}
+                            <ReadTextButton 
+                              explorationSlug={explorations[0]?.slug} 
+                              photo={photo} 
+                            />
+                          </div>
+                        </div>
                      </motion.div>
                   )}
 
