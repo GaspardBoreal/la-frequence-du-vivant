@@ -18,6 +18,8 @@ import PhotoCaptureFloat from './PhotoCaptureFloat';
 import AudioCaptureFloat from './AudioCaptureFloat';
 import PhotoGalleryMobile from './PhotoGalleryMobile';
 import AudioGalleryMobile from './AudioGalleryMobile';
+import MarcheTextesAdminMobile from './MarcheTextesAdminMobile';
+import TexteCaptureFloat from './TexteCaptureFloat';
 import { ProcessedPhoto } from '../../../utils/photoUtils';
 
 interface MarcheFormMobileProps {
@@ -507,6 +509,19 @@ const MarcheFormMobile: React.FC<MarcheFormMobileProps> = ({
           </div>
         )}
 
+        {/* Textes littéraires */}
+        {marcheId && (
+          <div className="space-y-4">
+            <div className="flex items-center space-x-2">
+              <div className="h-px bg-border flex-1" />
+              <span className="text-sm text-muted-foreground px-3">Textes littéraires</span>
+              <div className="h-px bg-border flex-1" />
+            </div>
+            
+            <MarcheTextesAdminMobile marcheId={marcheId} />
+          </div>
+        )}
+
         {/* Actions */}
         <div className="flex flex-col space-y-3 pt-6">
           <Button type="submit" disabled={isSubmitting} className="w-full">
@@ -535,6 +550,7 @@ const MarcheFormMobile: React.FC<MarcheFormMobileProps> = ({
               toast.success('Audio ajouté avec succès !');
             }}
           />
+          <TexteCaptureFloat marcheId={marcheId} />
         </>
       )}
     </div>
