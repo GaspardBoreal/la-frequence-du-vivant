@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { InteractiveVignette } from './InteractiveVignette';
 import { processEmpreintesHumainesData } from '@/utils/empreintesHumainesDataUtils';
+import { mapInfrastructureVariant } from '@/utils/vignetteStyleUtils';
 
 interface InfrastructureVignetteGridProps {
   empreintesHumainesData: any;
@@ -101,7 +102,7 @@ export const InfrastructureVignetteGrid: React.FC<InfrastructureVignetteGridProp
                 <InteractiveVignette
                   key={`${key}-${index}`}
                   data={item}
-                  variant="infrastructure"
+                  variant={mapInfrastructureVariant(item)}
                   importSources={importSources}
                 />
               ))}

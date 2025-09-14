@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { InteractiveVignette } from './InteractiveVignette';
 import { processTechnodiversiteData } from '@/utils/technodiversiteDataUtils';
+import { mapTechnodiversityVariant } from '@/utils/vignetteStyleUtils';
 
 interface TechnodiversiteVignetteGridProps {
   technodiversiteData: any;
@@ -76,7 +77,7 @@ export const TechnodiversiteVignetteGrid: React.FC<TechnodiversiteVignetteGridPr
                   <InteractiveVignette
                     key={`innovation-${index}`}
                     data={item}
-                    variant="technology"
+                    variant={mapTechnodiversityVariant(item)}
                     importSources={importSources}
                   />
                 ))}
@@ -107,7 +108,7 @@ export const TechnodiversiteVignetteGrid: React.FC<TechnodiversiteVignetteGridPr
               <InteractiveVignette
                 key={`fabrication-${index}`}
                 data={item}
-                variant="technology"
+                variant={mapTechnodiversityVariant(item)}
                 importSources={importSources}
               />
             ))}
@@ -136,7 +137,7 @@ export const TechnodiversiteVignetteGrid: React.FC<TechnodiversiteVignetteGridPr
               <InteractiveVignette
                 key={`opensource-${index}`}
                 data={item}
-                variant="technology"
+                variant={mapTechnodiversityVariant(item)}
                 importSources={importSources}
               />
             ))}
@@ -167,7 +168,7 @@ export const TechnodiversiteVignetteGrid: React.FC<TechnodiversiteVignetteGridPr
                 <InteractiveVignette
                   key={`${String(key)}-${index}`}
                   data={item}
-                  variant="technology"
+                  variant={mapTechnodiversityVariant(item)}
                   importSources={importSources}
                 />
               ))}
