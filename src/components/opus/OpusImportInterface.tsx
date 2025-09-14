@@ -29,6 +29,8 @@ import {
   Wand2
 } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 interface ImportData {
   exploration_id: string;
@@ -84,7 +86,8 @@ export const OpusImportInterface: React.FC<OpusImportInterfaceProps> = ({
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
   const [selectedMarcheId, setSelectedMarcheId] = useState<string>(marcheId);
   const [selectedMarcheName, setSelectedMarcheName] = useState<string>(marcheName);
-
+  const [fullPromptContent, setFullPromptContent] = useState<string>('');
+  const [showFullPromptModal, setShowFullPromptModal] = useState(false);
   // Get exploration marches when no specific marche is selected
   const { data: explorationMarches = [], isLoading: marchesLoading } = useExplorationMarches(explorationId || '');
   
@@ -903,6 +906,22 @@ const sanitizeJson = useCallback((jsonString: string): string => {
     }
   }, [jsonContent, sanitizeJson, toast]);
 
+  // Afficher le prompt complet (PDF → JSON OPUS)
+  const handleShowFullPrompt = useCallback(async () => {
+    console.debug('📖 Chargement du Prompt COMPLET...');
+    try {
+      const response = await fetch('/prompt-deepsearch-phase-b-complet.md');
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      const text = await response.text();
+      setFullPromptContent(text);
+      setShowFullPromptModal(true);
+      console.info('✅ Prompt COMPLET chargé');
+    } catch (err) {
+      console.error('❌ Erreur chargement Prompt COMPLET:', err);
+      toast({ title: 'Erreur', description: 'Impossible de charger le prompt complet', variant: 'destructive' });
+    }
+  }, [toast]);
+
   // Copy JSON format to clipboard
   const copyJsonFormat = useCallback(async () => {
     const jsonFormat = generateCompleteTemplate();
@@ -1342,6 +1361,14 @@ const sanitizeJson = useCallback((jsonString: string): string => {
                   <Wand2 className="h-4 w-4" />
                   Nettoyer Python → JSON
                 </Button>
+                <Button 
+                  variant="outline"
+                  onClick={handleShowFullPrompt}
+                  className="flex items-center gap-2"
+                >
+                  <BookOpen className="h-4 w-4" />
+                  Prompt COMPLET
+                </Button>
               </div>
               
               <div className="flex gap-2">
@@ -1579,6 +1606,25 @@ const sanitizeJson = useCallback((jsonString: string): string => {
           </CardContent>
         </Card>
       )}
+
+      {/* Modal Prompt COMPLET */}
+      <Dialog open={showFullPromptModal} onOpenChange={setShowFullPromptModal}>
+        <DialogContent className="max-w-4xl max-h-[80vh] overflow-hidden">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <BookOpen className="h-5 w-5" />
+              Prompt COMPLET - Phase B DeepSearch
+            </DialogTitle>
+          </DialogHeader>
+          <ScrollArea className="max-h-[60vh] w-full">
+            <div className="p-4">
+              <pre className="whitespace-pre-wrap text-sm font-mono bg-muted p-4 rounded-lg">
+                {fullPromptContent}
+              </pre>
+            </div>
+          </ScrollArea>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
