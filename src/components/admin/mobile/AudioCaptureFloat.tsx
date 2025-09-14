@@ -7,7 +7,7 @@ import { Input } from '../../ui/input';
 import { Textarea } from '../../ui/textarea';
 import { Progress } from '../../ui/progress';
 import { toast } from 'sonner';
-import { saveAudio, validateAudioFile, getAudioDuration, AudioUploadProgress } from '../../../utils/supabaseAudioOperations';
+import { saveAudio, validateAudioFile, getAudioDuration, AudioUploadProgress, AudioToUpload } from '../../../utils/supabaseAudioOperations';
 
 // Offset constant pour éviter les barres système mobiles
 const CONTROL_OFFSET = 'clamp(96px, 14vh, 180px)';
@@ -268,13 +268,23 @@ const AudioCaptureFloat: React.FC<AudioCaptureFloatProps> = ({
 
       addDebug('📄 Fichier prêt', { name: file.name, type: file.type, size: file.size });
 
-      const audioData = {
+      // Calculer la vraie durée de l'audio avant l'upload
+      const actualDuration = await getAudioDuration(file);
+      const finalDuration = actualDuration || recordedAudio.duration;
+
+      addDebug('🎵 Durée calculée', { 
+        recorded: recordedAudio.duration, 
+        calculated: actualDuration, 
+        final: finalDuration 
+      });
+
+      const audioData: AudioToUpload = {
         id: recordedAudio.id,
         file,
         url: recordedAudio.url,
         name: title || recordedAudio.name,
         size: (recordedAudio.blob as any).size,
-        duration: recordedAudio.duration,
+        duration: finalDuration,
         uploaded: false,
         titre: title,
         description: description

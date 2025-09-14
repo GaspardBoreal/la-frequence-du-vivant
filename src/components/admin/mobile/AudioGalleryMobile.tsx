@@ -187,6 +187,13 @@ const AudioGalleryMobile: React.FC<AudioGalleryMobileProps> = ({
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
+  const formatFileSize = (bytes?: number | null) => {
+    if (!bytes || bytes <= 0) return '';
+    if (bytes < 1024) return `${bytes}B`;
+    if (bytes < 1048576) return `${(bytes / 1024).toFixed(1)}KB`;
+    return `${(bytes / 1048576).toFixed(1)}MB`;
+  };
+
   const getStatusBadge = (status: AudioStatus) => {
     switch (status) {
       case 'pending':
@@ -350,7 +357,9 @@ const AudioGalleryMobile: React.FC<AudioGalleryMobileProps> = ({
                           {audio.titre || audio.nom_fichier}
                         </p>
                         <p className="text-xs text-muted-foreground">
-                          {formatDuration(audio.duree_secondes)} • {audio.format_audio?.toUpperCase()}
+                          {formatDuration(audio.duree_secondes)}
+                          {audio.taille_octets && ` • ${formatFileSize(audio.taille_octets)}`}
+                          {audio.format_audio && ` • ${audio.format_audio.toUpperCase()}`}
                         </p>
                       </div>
                     </div>
