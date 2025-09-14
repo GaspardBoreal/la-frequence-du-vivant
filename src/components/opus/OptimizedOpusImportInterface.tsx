@@ -214,7 +214,9 @@ export const OptimizedOpusImportInterface: React.FC<OptimizedOpusImportInterface
   }, [toast]);
 
 const sanitizeJson = useCallback((jsonString: string): { sanitized: string; corrections: SanitizationCorrection[] } => {
-    if (!jsonString) return jsonString;
+    if (!jsonString) return { sanitized: jsonString, corrections: [] };
+
+    const corrections: SanitizationCorrection[] = [];
 
     const replacePythonTokensOutsideStrings = (input: string) => {
       let out = '';
@@ -262,7 +264,7 @@ const sanitizeJson = useCallback((jsonString: string): { sanitized: string; corr
       .replace(/\n\s*\n\s*\n/g, '\n\n')
       .trim();
     
-    return sanitized;
+    return { sanitized, corrections };
   }, []);
 
   const handleCleanPythonJson = useCallback(() => {
