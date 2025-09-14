@@ -1,10 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '../../ui/button';
 import { Input } from '../../ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../ui/select';
 import { Label } from '../../ui/label';
 import { X, Search } from 'lucide-react';
 import { MarcheTechnoSensible } from '../../../utils/googleSheetsApi';
+import { useExplorations } from '../../../hooks/useExplorations';
+import { supabase } from '../../../integrations/supabase/client';
 
 interface MarcheFiltersMobileProps {
   marches: MarcheTechnoSensible[];
@@ -21,7 +23,40 @@ const MarcheFiltersMobile: React.FC<MarcheFiltersMobileProps> = ({
 }) => {
   const [villeFilter, setVilleFilter] = useState('');
   const [regionFilter, setRegionFilter] = useState('');
+  const [explorationFilter, setExplorationFilter] = useState('');
   const [searchText, setSearchText] = useState('');
+  const [explorationMarches, setExplorationMarches] = useState<{[explorationId: string]: string[]}>({});
+
+  // Récupérer les explorations
+  const { data: explorations = [] } = useExplorations();
+
+  // Récupérer les associations exploration-marches
+  useEffect(() => {
+    const fetchExplorationMarches = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('exploration_marches')
+          .select('exploration_id, marche_id');
+        
+        if (error) throw error;
+        
+        // Grouper les marches par exploration
+        const grouped = (data || []).reduce((acc, item) => {
+          if (!acc[item.exploration_id]) {
+            acc[item.exploration_id] = [];
+          }
+          acc[item.exploration_id].push(item.marche_id);
+          return acc;
+        }, {} as {[key: string]: string[]});
+        
+        setExplorationMarches(grouped);
+      } catch (error) {
+        console.error('Erreur lors du chargement des associations exploration-marches:', error);
+      }
+    };
+
+    fetchExplorationMarches();
+  }, []);
 
   // Obtenir les régions uniques
   const getUniqueRegions = () => {
@@ -36,7 +71,7 @@ const MarcheFiltersMobile: React.FC<MarcheFiltersMobileProps> = ({
     return regions;
   };
 
-  const applyFilters = (ville: string, region: string, search: string) => {
+  const applyFilters = (ville: string, region: string, exploration: string, search: string) => {
     if (!marches || marches.length === 0) {
       onFilterChange([]);
       return;
@@ -60,6 +95,14 @@ const MarcheFiltersMobile: React.FC<MarcheFiltersMobileProps> = ({
       });
     }
 
+    // Filtre par exploration
+    if (exploration && exploration !== 'all') {
+      const marcheIdsInExploration = explorationMarches[exploration] || [];
+      filtered = filtered.filter(marche => {
+        return marcheIdsInExploration.includes(marche.id);
+      });
+    }
+
     // Recherche textuelle
     if (search.trim()) {
       const searchLower = search.toLowerCase();
@@ -79,27 +122,33 @@ const MarcheFiltersMobile: React.FC<MarcheFiltersMobileProps> = ({
 
   const handleVilleChange = (value: string) => {
     setVilleFilter(value);
-    applyFilters(value, regionFilter, searchText);
+    applyFilters(value, regionFilter, explorationFilter, searchText);
   };
 
   const handleRegionChange = (value: string) => {
     setRegionFilter(value);
-    applyFilters(villeFilter, value, searchText);
+    applyFilters(villeFilter, value, explorationFilter, searchText);
+  };
+
+  const handleExplorationChange = (value: string) => {
+    setExplorationFilter(value);
+    applyFilters(villeFilter, regionFilter, value, searchText);
   };
 
   const handleSearchChange = (value: string) => {
     setSearchText(value);
-    applyFilters(villeFilter, regionFilter, value);
+    applyFilters(villeFilter, regionFilter, explorationFilter, value);
   };
 
   const clearFilters = () => {
     setVilleFilter('');
     setRegionFilter('');
+    setExplorationFilter('');
     setSearchText('');
     onFilterChange(marches);
   };
 
-  const hasActiveFilters = villeFilter || regionFilter || searchText;
+  const hasActiveFilters = villeFilter || regionFilter || explorationFilter || searchText;
   const uniqueRegions = getUniqueRegions();
 
   return (
@@ -148,6 +197,26 @@ const MarcheFiltersMobile: React.FC<MarcheFiltersMobileProps> = ({
         </div>
       )}
 
+      {/* Filtre par exploration */}
+      {explorations.length > 0 && (
+        <div className="space-y-3">
+          <Label>Exploration</Label>
+          <Select value={explorationFilter} onValueChange={handleExplorationChange}>
+            <SelectTrigger>
+              <SelectValue placeholder="Toutes les explorations" />
+            </SelectTrigger>
+            <SelectContent className="bg-background border border-border shadow-lg z-50">
+              <SelectItem value="all">Toutes les explorations</SelectItem>
+              {explorations.map((exploration) => (
+                <SelectItem key={exploration.id} value={exploration.id}>
+                  {exploration.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      )}
+
       {/* Actions */}
       <div className="space-y-3 pt-6">
         <Button 
@@ -177,6 +246,9 @@ const MarcheFiltersMobile: React.FC<MarcheFiltersMobileProps> = ({
           <div className="space-y-1 text-sm text-muted-foreground">
             {villeFilter && <p>• Ville : "{villeFilter}"</p>}
             {regionFilter && regionFilter !== 'all' && <p>• Région : {regionFilter}</p>}
+            {explorationFilter && explorationFilter !== 'all' && (
+              <p>• Exploration : {explorations.find(e => e.id === explorationFilter)?.name}</p>
+            )}
             {searchText && <p>• Recherche : "{searchText}"</p>}
           </div>
         </div>
