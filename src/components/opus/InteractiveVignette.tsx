@@ -425,6 +425,23 @@ export const InteractiveVignette: React.FC<InteractiveVignetteProps> = ({
               Lien
             </Button>}
         </div>
+        
+        {/* Métadonnées d'occurrence pour les onglets Infrastructure et Technodiversité */}
+        {(data.metadata?.marchesCount || data.metadata?.lastImportDate) && (
+          <div className="pt-3 border-t border-border/20">
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              {data.metadata?.marchesCount && (
+                <Badge variant="outline" className="text-xs">
+                  {data.metadata.marchesCount} marche{data.metadata.marchesCount > 1 ? 's' : ''}
+                </Badge>
+              )}
+              {data.metadata?.marchesCount && data.metadata?.lastImportDate && <span>•</span>}
+              {data.metadata?.lastImportDate && (
+                <span>Dernière maj: {new Date(data.metadata.lastImportDate).toLocaleDateString('fr-FR')}</span>
+              )}
+            </div>
+          </div>
+        )}
       </CardContent>
     </Card>;
 };

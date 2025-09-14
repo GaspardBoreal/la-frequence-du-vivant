@@ -395,7 +395,7 @@ export const ExplorationTechnodiversityView: React.FC<ExplorationTechnodiversity
       {/* Liste de la technodiversité */}
       <div className="grid gap-4 lg:grid-cols-2">
         {filteredAndSortedTech.map((tech, index) => (
-          <div key={`${tech.importId}-${index}`} className="space-y-2">
+          <div key={`${tech.importId}-${index}`}>
             <InteractiveVignette
               data={{
                 titre: tech.titre,
@@ -403,20 +403,17 @@ export const ExplorationTechnodiversityView: React.FC<ExplorationTechnodiversity
                 details: tech.details,
                 type: tech.type !== tech.category ? tech.type : undefined,
                 category: tech.category,
-                metadata: tech.metadata
+                metadata: {
+                  ...tech.metadata,
+                  // Ajouter les métadonnées d'occurrence
+                  marchesCount: tech.marchesCount,
+                  marches: tech.marches,
+                  lastImportDate: tech.lastImportDate
+                }
               }}
               importSources={[]}
               className="h-full"
             />
-            
-            {/* Metadata d'occurrence */}
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <Badge variant="outline" className="text-xs">
-                {tech.marchesCount} marché{tech.marchesCount > 1 ? 's' : ''}
-              </Badge>
-              <span>•</span>
-              <span>Dernière maj: {new Date(tech.lastImportDate).toLocaleDateString('fr-FR')}</span>
-            </div>
           </div>
         ))}
       </div>

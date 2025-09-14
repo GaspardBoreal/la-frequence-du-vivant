@@ -354,7 +354,7 @@ export const ExplorationInfrastructureView: React.FC<ExplorationInfrastructureVi
       {/* Liste des infrastructures */}
       <div className="grid gap-4 lg:grid-cols-2">
         {filteredAndSortedInfra.map((infra, index) => (
-          <div key={`${infra.importId}-${index}`} className="space-y-2">
+          <div key={`${infra.importId}-${index}`}>
             <InteractiveVignette
               data={{
                 titre: infra.titre,
@@ -362,20 +362,17 @@ export const ExplorationInfrastructureView: React.FC<ExplorationInfrastructureVi
                 details: infra.details,
                 type: infra.type !== infra.category ? infra.type : undefined,
                 category: infra.category,
-                metadata: infra.metadata
+                metadata: {
+                  ...infra.metadata,
+                  // Ajouter les métadonnées d'occurrence
+                  marchesCount: infra.marchesCount,
+                  marches: infra.marches,
+                  lastImportDate: infra.lastImportDate
+                }
               }}
               importSources={[]}
               className="h-full"
             />
-            
-            {/* Metadata d'occurrence */}
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <Badge variant="outline" className="text-xs">
-                {infra.marchesCount} marché{infra.marchesCount > 1 ? 's' : ''}
-              </Badge>
-              <span>•</span>
-              <span>Dernière maj: {new Date(infra.lastImportDate).toLocaleDateString('fr-FR')}</span>
-            </div>
           </div>
         ))}
       </div>
