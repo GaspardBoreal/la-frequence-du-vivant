@@ -25,6 +25,31 @@ Transformer les données validées du rapport PDF DEEPSEARCH Phase A en JSON str
 - **Sources préservées** : Toutes les références bibliographiques maintenues
 - **Validation garantie** : JSON produit doit passer OpusImportValidator sans erreur
 
+## RÈGLES DE SYNTAXE JSON STRICTE (BLOQUANTES)
+- Clés et chaînes en guillemets doubles uniquement
+- Booleans et null: true, false, null (jamais True/False/None)
+- Interdits: commentaires (#, //), virgules finales, NaN/Infinity, dates non ISO non quotées
+- Aucune chaîne en guillemets simples; convertir en guillemets doubles
+- Noms de dimensions et clé `donnees` obligatoires (jamais `data`)
+
+Snippet de référence:
+```json
+{
+  "dimensions": {
+    "contexte_hydrologique": { "description": "...", "donnees": {} }
+  },
+  "sources": [],
+  "fables": [],
+  "metadata": { "territory_name": "...", "sourcing_date": "2025-01-10", "import_date": "2025-01-10" }
+}
+```
+
+Checklist JSON avant génération:
+- [ ] 0 occurrence de None/True/False
+- [ ] 0 virgule finale
+- [ ] `donnees` présent dans chaque dimension
+- [ ] JSON valide via un parseur
+
 ## MAPPING PDF → JSON OBLIGATOIRE (OPUS-COMPATIBLE)
 
 ### 1. SYNTHÈSE EXÉCUTIVE → Métadonnées JSON

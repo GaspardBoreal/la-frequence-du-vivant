@@ -25,7 +25,8 @@ import {
   BookOpen,
   BarChart3,
   Info,
-  Copy
+  Copy,
+  Wand2
 } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
@@ -819,24 +820,45 @@ export const OpusImportInterface: React.FC<OpusImportInterfaceProps> = ({
   }, []);
 
   // Enhanced JSON sanitization for common formatting issues
-  const sanitizeJson = useCallback((jsonString: string): string => {
+const sanitizeJson = useCallback((jsonString: string): string => {
     if (!jsonString) return jsonString;
-    
-    let sanitized = jsonString
+
+    const replacePythonTokensOutsideStrings = (input: string) => {
+      let out = '';
+      let inDouble = false;
+      let inSingle = false;
+      for (let i = 0; i < input.length; i++) {
+        const ch = input[i];
+        if (ch === '"' && !inSingle && input[i - 1] !== '\\') { inDouble = !inDouble; out += ch; continue; }
+        if (ch === '\'' && !inDouble && input[i - 1] !== '\\') { inSingle = !inSingle; out += ch; continue; }
+        if (!inDouble && !inSingle) {
+          if (input.startsWith('None', i)) { out += 'null'; i += 3; continue; }
+          if (input.startsWith('True', i)) { out += 'true'; i += 3; continue; }
+          if (input.startsWith('False', i)) { out += 'false'; i += 4; continue; }
+        }
+        out += ch;
+      }
+      return out;
+    };
+
+    let sanitized = replacePythonTokensOutsideStrings(jsonString)
       // Remove markdown comments (lines starting with #)
       .replace(/^[ \t]*#.*$/gm, '')
       // Remove parentheses around string values: "key": ("value") → "key": "value"
       .replace(/:\s*\(\s*"/g, ': "')
       .replace(/"\s*\)/g, '"')
+      // Convert common single-quoted values to double quotes
+      .replace(/:\s*'([^']*)'/g, ': "$1"')
+      .replace(/,\s*'([^']*)'/g, ', "$1"')
+      .replace(/\[\s*'([^']*)'/g, '["$1"')
+      .replace(/'([^']*)'\s*\]/g, '"$1"]')
       // Merge adjacent string values on separate lines: "text1"\n"text2" → "text1 text2"
       .replace(/"([^"]*?)"\s*[\r\n]+\s*"([^"]*?)"/g, '"$1 $2"')
-      // Handle multiple adjacent strings (repeat the pattern for up to 5 strings)
       .replace(/"([^"]*?)"\s*[\r\n]+\s*"([^"]*?)"/g, '"$1 $2"')
       .replace(/"([^"]*?)"\s*[\r\n]+\s*"([^"]*?)"/g, '"$1 $2"')
-      .replace(/"([^"]*?)"\s*[\r\n]+\s*"([^"]*?)"/g, '"$1 $2"')
-      // Replace smart quotes with regular quotes
-      .replace(/[""]/g, '"')
-      .replace(/['']/g, "'")
+      // Normalize smart quotes
+      .replace(/[”|“]/g, '"')
+      .replace(/[’|‘]/g, "'")
       // Remove trailing commas before closing brackets/braces
       .replace(/,(\s*[}\]])/g, '$1')
       // Remove invalid escape sequences
@@ -846,7 +868,7 @@ export const OpusImportInterface: React.FC<OpusImportInterfaceProps> = ({
       // Clean up multiple empty lines
       .replace(/\n\s*\n\s*\n/g, '\n\n')
       .trim();
-    
+
     return sanitized;
   }, []);
 
@@ -1312,7 +1334,14 @@ export const OpusImportInterface: React.FC<OpusImportInterfaceProps> = ({
                   <Copy className="h-4 w-4" />
                   Copier le format JSON
                 </Button>
-                
+                <Button 
+                  variant="outline"
+                  onClick={autoCorrectJson}
+                  className="flex items-center gap-2"
+                >
+                  <Wand2 className="h-4 w-4" />
+                  Nettoyer Python → JSON
+                </Button>
               </div>
               
               <div className="flex gap-2">

@@ -24,6 +24,36 @@ Transformer les données validées du rapport PDF DEEPSEARCH Phase A en JSON str
 - **Structure respectée** : Mapping exact vers dimensions OpusImportSchema
 - **Sources préservées** : Toutes les références bibliographiques maintenues
 
+## RÈGLES DE SYNTAXE JSON STRICTE (OBLIGATOIRES)
+- Utiliser exclusivement des guillemets doubles pour les clés et les chaînes: "..."
+- Valeurs booléennes et nulles: true, false, null (jamais True, False, None)
+- Aucune virgule finale avant } ou ]
+- Aucune ligne de commentaire (#, //) ni texte hors structure JSON
+- Aucune chaîne entre guillemets simples (convertir en guillemets doubles)
+- Aucune valeur non-JSON: pas de NaN, Infinity, dates non ISO sans guillemets, etc.
+- Clés exactes du schéma: pas d'inventions ni renommages
+
+Exemple minimal valide:
+```json
+{
+  "dimensions": {},
+  "fables": [],
+  "sources": [],
+  "metadata": {
+    "territory_name": "...",
+    "gps_point": "...",
+    "sourcing_date": "2025-01-10",
+    "import_date": "2025-01-10"
+  }
+}
+```
+
+Checklist de validation rapide:
+- [ ] Aucune occurrence de None/True/False
+- [ ] Aucune virgule finale
+- [ ] Toutes les clés et chaînes en guillemets doubles
+- [ ] JSON.parse(...) passe sans erreur
+
 ## MAPPING PDF → JSON OBLIGATOIRE
 
 ### 1. SYNTHÈSE EXÉCUTIVE → Métadonnées JSON
