@@ -141,7 +141,7 @@ export const processTechnodiversiteData = (data: any): ProcessedTechnodiversiteD
       technologies_vertes: altTechnologiesVertes,
       numerique: altNumerique,
       recherche_developpement: altRecherche,
-      totalCount: totalAll, // Compter tous les éléments, même les doublons potentiels
+      totalCount: totalUnique, // Utiliser le nombre d'éléments uniques pour éviter les doublons
       innovationsDerived: true // Indique que la section "innovations" est une synthèse
     };
   }
