@@ -191,7 +191,7 @@ export const IaFonctionnalitesVignetteGrid: React.FC<IaFonctionnalitesVignetteGr
           {/* Statistiques rapides */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div className="text-center">
-              <div className="text-2xl font-bold text-primary">
+              <div className="text-2xl font-bold text-emerald-500">
                 {processedData.par_maturite.pilote.length + processedData.par_maturite.deploye.length}
               </div>
               <div className="text-xs text-muted-foreground">Prêtes au déploiement</div>
