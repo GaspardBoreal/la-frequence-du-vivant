@@ -77,7 +77,7 @@ export const MediaCaptureFloat: React.FC<MediaCaptureFloatProps> = ({
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="absolute bottom-16 right-0 flex flex-col gap-3"
+              className="absolute bottom-24 right-0 flex flex-col gap-3 z-10"
             >
               {captureOptions.map((option, index) => {
                 const Icon = option.icon;
@@ -105,7 +105,7 @@ export const MediaCaptureFloat: React.FC<MediaCaptureFloatProps> = ({
                     {option.count > 0 && (
                       <Badge 
                         variant="destructive" 
-                        className="absolute -top-2 -right-2 h-6 w-6 rounded-full p-0 flex items-center justify-center text-xs"
+                        className="absolute -top-3 -right-2 h-6 w-6 rounded-full p-0 flex items-center justify-center text-xs"
                       >
                         {option.count}
                       </Badge>
@@ -122,7 +122,7 @@ export const MediaCaptureFloat: React.FC<MediaCaptureFloatProps> = ({
 
         <motion.div
           whileTap={{ scale: 0.95 }}
-          className="relative"
+          className="relative z-20"
         >
           <Button
             onClick={() => setIsExpanded(!isExpanded)}
