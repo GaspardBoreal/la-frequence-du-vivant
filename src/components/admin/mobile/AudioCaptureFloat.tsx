@@ -15,6 +15,8 @@ const CONTROL_OFFSET = 'clamp(96px, 14vh, 180px)';
 interface AudioCaptureFloatProps {
   marcheId: string;
   onAudioUploaded?: (audioId: string) => void;
+  embedded?: boolean;
+  onRequestClose?: () => void;
 }
 
 interface RecordedAudio {

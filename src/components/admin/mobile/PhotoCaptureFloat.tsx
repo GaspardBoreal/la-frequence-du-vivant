@@ -15,13 +15,17 @@ interface PhotoCaptureFloatProps {
   onPhotoCaptured: (photo: ProcessedPhoto) => void;
   disabled?: boolean;
   pendingCount?: number;
+  embedded?: boolean;
+  onRequestClose?: () => void;
 }
 
 const PhotoCaptureFloat: React.FC<PhotoCaptureFloatProps> = ({
   marcheId,
   onPhotoCaptured,
   disabled = false,
-  pendingCount = 0
+  pendingCount = 0,
+  embedded = false,
+  onRequestClose
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [isCapturing, setIsCapturing] = useState(false);
@@ -102,7 +106,8 @@ const PhotoCaptureFloat: React.FC<PhotoCaptureFloatProps> = ({
               onPhotoCaptured(processedPhoto);
               toast.success('📷 Photo capturée et ajoutée !');
               stopCamera();
-              setIsOpen(false);
+if (!embedded) setIsOpen(false);
+              onRequestClose?.();
             } catch (error) {
               console.error('Erreur traitement photo:', error);
               toast.error('Erreur lors du traitement de la photo');
@@ -126,7 +131,8 @@ const PhotoCaptureFloat: React.FC<PhotoCaptureFloatProps> = ({
         const processedPhoto = await processPhoto(file);
         onPhotoCaptured(processedPhoto);
         toast.success('🖼️ Photo importée et ajoutée !');
-        setIsOpen(false);
+        if (!embedded) setIsOpen(false);
+        onRequestClose?.();
       } catch (error) {
         console.error('Erreur import photo:', error);
         toast.error('Erreur lors de l\'import de la photo');
@@ -139,133 +145,234 @@ const PhotoCaptureFloat: React.FC<PhotoCaptureFloatProps> = ({
 
   return (
     <>
-      <Sheet open={isOpen} onOpenChange={setIsOpen}>
-        <SheetTrigger asChild>
-          <div className="relative">
-            <Button 
-              className="fixed bottom-6 right-6 w-16 h-16 rounded-full shadow-xl animate-pulse hover:animate-none bg-primary hover:bg-primary/90"
-              disabled={disabled}
-            >
-              <Camera className="w-8 h-8" />
-            </Button>
-            {pendingCount > 0 && (
-              <Badge 
-                className="absolute -top-2 -right-2 min-w-6 h-6 rounded-full bg-accent text-accent-foreground animate-bounce"
+      {embedded ? (
+        <div className="flex flex-col h-full mt-6">
+          {isProcessing ? (
+            <div className="space-y-6 py-8">
+              <div className="text-center">
+                <Loader2 className="w-12 h-12 animate-spin mx-auto mb-4 text-primary" />
+                <h4 className="text-lg font-semibold">📸 Traitement en cours...</h4>
+                <p className="text-sm text-muted-foreground mt-2">
+                  Compression et optimisation de la photo
+                </p>
+              </div>
+              <div className="space-y-2">
+                <div className="flex justify-between text-sm">
+                  <span>Progression</span>
+                  <span>{processingProgress}%</span>
+                </div>
+                <Progress value={processingProgress} className="h-2" />
+              </div>
+            </div>
+          ) : !isCapturing ? (
+            <div className="grid grid-cols-1 gap-4">
+              <Button
+                onClick={startCamera}
+                className="h-16 text-lg"
+                variant="default"
+                disabled={isProcessing}
               >
-                {pendingCount}
-              </Badge>
-            )}
-          </div>
-        </SheetTrigger>
-        
-        <SheetContent side="bottom" className="h-[90vh]">
-          <SheetHeader>
-            <SheetTitle>📸 Capturer une photo</SheetTitle>
-            <SheetDescription>
-              Prenez une photo ou importez-en une depuis votre galerie
-            </SheetDescription>
-          </SheetHeader>
-
-          <div className="flex flex-col h-full mt-6">
-            {isProcessing ? (
-              <div className="space-y-6 py-8">
-                <div className="text-center">
-                  <Loader2 className="w-12 h-12 animate-spin mx-auto mb-4 text-primary" />
-                  <h4 className="text-lg font-semibold">📸 Traitement en cours...</h4>
-                  <p className="text-sm text-muted-foreground mt-2">
-                    Compression et optimisation de la photo
-                  </p>
-                </div>
-                <div className="space-y-2">
-                  <div className="flex justify-between text-sm">
-                    <span>Progression</span>
-                    <span>{processingProgress}%</span>
-                  </div>
-                  <Progress value={processingProgress} className="h-2" />
-                </div>
-              </div>
-            ) : !isCapturing ? (
-              <div className="grid grid-cols-1 gap-4">
-                <Button
-                  onClick={startCamera}
-                  className="h-16 text-lg"
-                  variant="default"
-                  disabled={isProcessing}
-                >
-                  <Camera className="w-6 h-6 mr-2" />
-                  Prendre une photo
-                </Button>
-                
-                <Button
-                  onClick={() => fileInputRef.current?.click()}
-                  className="h-16 text-lg"
-                  variant="outline"
-                  disabled={isProcessing}
-                >
-                  <Image className="w-6 h-6 mr-2" />
-                  Choisir dans la galerie
-                </Button>
-                
-                <input
-                  type="file"
-                  ref={fileInputRef}
-                  onChange={handleFileSelect}
-                  accept="image/*"
-                  className="hidden"
+                <Camera className="w-6 h-6 mr-2" />
+                Prendre une photo
+              </Button>
+              
+              <Button
+                onClick={() => fileInputRef.current?.click()}
+                className="h-16 text-lg"
+                variant="outline"
+                disabled={isProcessing}
+              >
+                <Image className="w-6 h-6 mr-2" />
+                Choisir dans la galerie
+              </Button>
+              
+              <input
+                type="file"
+                ref={fileInputRef}
+                onChange={handleFileSelect}
+                accept="image/*"
+                className="hidden"
+              />
+            </div>
+          ) : (
+            <div className="flex flex-col h-full">
+              <div 
+                className="relative flex-1 bg-black rounded-lg overflow-hidden"
+                style={{ 
+                  paddingBottom: `calc(env(safe-area-inset-bottom, 0px) + ${CONTROL_OFFSET} + 16px)` 
+                }}
+              >
+                <video
+                  ref={videoRef}
+                  autoPlay
+                  playsInline
+                  className="w-full h-full object-cover"
                 />
-              </div>
-            ) : (
-              <div className="flex flex-col h-full">
+                
+                {/* Zone de contrôle repositionnée plus haut */}
                 <div 
-                  className="relative flex-1 bg-black rounded-lg overflow-hidden"
+                  className="absolute left-0 right-0 bg-black/50 backdrop-blur-sm p-4 rounded-t-xl z-20"
                   style={{ 
-                    paddingBottom: `calc(env(safe-area-inset-bottom, 0px) + ${CONTROL_OFFSET} + 16px)` 
+                    bottom: `calc(env(safe-area-inset-bottom, 0px) + ${CONTROL_OFFSET})` 
                   }}
                 >
-                  <video
-                    ref={videoRef}
-                    autoPlay
-                    playsInline
-                    className="w-full h-full object-cover"
-                  />
-                  
-                  {/* Zone de contrôle repositionnée plus haut */}
-                  <div 
-                    className="absolute left-0 right-0 bg-black/50 backdrop-blur-sm p-4 rounded-t-xl z-20"
-                    style={{ 
-                      bottom: `calc(env(safe-area-inset-bottom, 0px) + ${CONTROL_OFFSET})` 
-                    }}
-                  >
-                    <div className="flex justify-center gap-6">
-                      <div className="flex flex-col items-center gap-2">
-                        <Button
-                          onClick={capturePhoto}
-                          className="w-16 h-16 rounded-full bg-white text-black hover:bg-gray-100 shadow-lg border-2 border-white"
-                          aria-label="Prendre la photo"
-                        >
-                          <div className="w-8 h-8 rounded-full border-2 border-black" />
-                        </Button>
-                        <span className="text-xs text-white font-medium">Capturer</span>
-                      </div>
-                      
-                      <div className="flex flex-col items-center gap-2">
-                        <Button
-                          onClick={stopCamera}
-                          className="w-16 h-16 rounded-full bg-red-500 text-white hover:bg-red-600 shadow-lg border-2 border-red-300"
-                          aria-label="Annuler la capture"
-                        >
-                          <X className="w-6 h-6" />
-                        </Button>
-                        <span className="text-xs text-white font-medium">Annuler</span>
-                      </div>
+                  <div className="flex justify-center gap-6">
+                    <div className="flex flex-col items-center gap-2">
+                      <Button
+                        onClick={capturePhoto}
+                        className="w-16 h-16 rounded-full bg-white text-black hover:bg-gray-100 shadow-lg border-2 border-white"
+                        aria-label="Prendre la photo"
+                      >
+                        <div className="w-8 h-8 rounded-full border-2 border-black" />
+                      </Button>
+                      <span className="text-xs text-white font-medium">Capturer</span>
+                    </div>
+                    
+                    <div className="flex flex-col items-center gap-2">
+                      <Button
+                        onClick={stopCamera}
+                        className="w-16 h-16 rounded-full bg-red-500 text-white hover:bg-red-600 shadow-lg border-2 border-red-300"
+                        aria-label="Annuler la capture"
+                      >
+                        <X className="w-6 h-6" />
+                      </Button>
+                      <span className="text-xs text-white font-medium">Annuler</span>
                     </div>
                   </div>
                 </div>
               </div>
-            )}
-          </div>
-        </SheetContent>
-      </Sheet>
+            </div>
+          )}
+        </div>
+      ) : (
+        <Sheet open={isOpen} onOpenChange={setIsOpen}>
+          <SheetTrigger asChild>
+            <div className="relative">
+              <Button 
+                className="fixed bottom-6 right-6 w-16 h-16 rounded-full shadow-xl animate-pulse hover:animate-none bg-primary hover:bg-primary/90"
+                disabled={disabled}
+              >
+                <Camera className="w-8 h-8" />
+              </Button>
+              {pendingCount > 0 && (
+                <Badge 
+                  className="absolute -top-2 -right-2 min-w-6 h-6 rounded-full bg-accent text-accent-foreground animate-bounce"
+                >
+                  {pendingCount}
+                </Badge>
+              )}
+            </div>
+          </SheetTrigger>
+          
+          <SheetContent side="bottom" className="h-[90vh]">
+            <SheetHeader>
+              <SheetTitle>📸 Capturer une photo</SheetTitle>
+              <SheetDescription>
+                Prenez une photo ou importez-en une depuis votre galerie
+              </SheetDescription>
+            </SheetHeader>
+
+            <div className="flex flex-col h-full mt-6">
+              {isProcessing ? (
+                <div className="space-y-6 py-8">
+                  <div className="text-center">
+                    <Loader2 className="w-12 h-12 animate-spin mx-auto mb-4 text-primary" />
+                    <h4 className="text-lg font-semibold">📸 Traitement en cours...</h4>
+                    <p className="text-sm text-muted-foreground mt-2">
+                      Compression et optimisation de la photo
+                    </p>
+                  </div>
+                  <div className="space-y-2">
+                    <div className="flex justify-between text-sm">
+                      <span>Progression</span>
+                      <span>{processingProgress}%</span>
+                    </div>
+                    <Progress value={processingProgress} className="h-2" />
+                  </div>
+                </div>
+              ) : !isCapturing ? (
+                <div className="grid grid-cols-1 gap-4">
+                  <Button
+                    onClick={startCamera}
+                    className="h-16 text-lg"
+                    variant="default"
+                    disabled={isProcessing}
+                  >
+                    <Camera className="w-6 h-6 mr-2" />
+                    Prendre une photo
+                  </Button>
+                  
+                  <Button
+                    onClick={() => fileInputRef.current?.click()}
+                    className="h-16 text-lg"
+                    variant="outline"
+                    disabled={isProcessing}
+                  >
+                    <Image className="w-6 h-6 mr-2" />
+                    Choisir dans la galerie
+                  </Button>
+                  
+                  <input
+                    type="file"
+                    ref={fileInputRef}
+                    onChange={handleFileSelect}
+                    accept="image/*"
+                    className="hidden"
+                  />
+                </div>
+              ) : (
+                <div className="flex flex-col h-full">
+                  <div 
+                    className="relative flex-1 bg-black rounded-lg overflow-hidden"
+                    style={{ 
+                      paddingBottom: `calc(env(safe-area-inset-bottom, 0px) + ${CONTROL_OFFSET} + 16px)` 
+                    }}
+                  >
+                    <video
+                      ref={videoRef}
+                      autoPlay
+                      playsInline
+                      className="w-full h-full object-cover"
+                    />
+                    
+                    {/* Zone de contrôle repositionnée plus haut */}
+                    <div 
+                      className="absolute left-0 right-0 bg-black/50 backdrop-blur-sm p-4 rounded-t-xl z-20"
+                      style={{ 
+                        bottom: `calc(env(safe-area-inset-bottom, 0px) + ${CONTROL_OFFSET})` 
+                      }}
+                    >
+                      <div className="flex justify-center gap-6">
+                        <div className="flex flex-col items-center gap-2">
+                          <Button
+                            onClick={capturePhoto}
+                            className="w-16 h-16 rounded-full bg-white text-black hover:bg-gray-100 shadow-lg border-2 border-white"
+                            aria-label="Prendre la photo"
+                          >
+                            <div className="w-8 h-8 rounded-full border-2 border-black" />
+                          </Button>
+                          <span className="text-xs text-white font-medium">Capturer</span>
+                        </div>
+                        
+                        <div className="flex flex-col items-center gap-2">
+                          <Button
+                            onClick={stopCamera}
+                            className="w-16 h-16 rounded-full bg-red-500 text-white hover:bg-red-600 shadow-lg border-2 border-red-300"
+                            aria-label="Annuler la capture"
+                          >
+                            <X className="w-6 h-6" />
+                          </Button>
+                          <span className="text-xs text-white font-medium">Annuler</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          </SheetContent>
+        </Sheet>
+      )}
       
       <canvas ref={canvasRef} className="hidden" />
     </>
