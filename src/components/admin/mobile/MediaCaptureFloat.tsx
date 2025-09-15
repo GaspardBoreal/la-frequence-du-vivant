@@ -66,7 +66,7 @@ export const MediaCaptureFloat: React.FC<MediaCaptureFloatProps> = ({
     setActiveCapture(null);
   };
 
-  const totalCount = pendingPhotosCount + textesCount;
+  
 
   return (
     <>
@@ -146,15 +146,6 @@ export const MediaCaptureFloat: React.FC<MediaCaptureFloatProps> = ({
               )}
             </motion.div>
           </Button>
-          
-          {totalCount > 0 && !isExpanded && (
-            <Badge 
-              variant="destructive" 
-              className="absolute -top-2 -right-2 h-7 w-7 rounded-full p-0 flex items-center justify-center text-sm font-bold animate-pulse"
-            >
-              {totalCount}
-            </Badge>
-          )}
         </motion.div>
       </div>
 
