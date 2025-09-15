@@ -102,7 +102,7 @@ export const MediaCaptureFloat: React.FC<MediaCaptureFloatProps> = ({
                     >
                       <Icon className="h-5 w-5 text-white" />
                     </Button>
-                    {option.count > 0 && (
+                    {option.type === 'photo' && option.count > 0 && (
                       <Badge 
                         variant="destructive" 
                         className="absolute -top-3 -left-2 h-6 w-6 rounded-full p-0 flex items-center justify-center text-xs"
@@ -149,26 +149,7 @@ export const MediaCaptureFloat: React.FC<MediaCaptureFloatProps> = ({
         </motion.div>
       </div>
 
-      {/* Hidden capture components - they handle their own modals */}
-      <div className="hidden">
-        {activeCapture === 'photo' && (
-          <PhotoCaptureFloat
-            marcheId={marcheId}
-            onPhotoCaptured={onPhotoCaptured}
-            pendingCount={pendingPhotosCount}
-            disabled={disabled}
-          />
-        )}
-        {activeCapture === 'audio' && (
-          <AudioCaptureFloat
-            marcheId={marcheId}
-            onAudioUploaded={onAudioUploaded}
-          />
-        )}
-        {activeCapture === 'text' && (
-          <TexteCaptureFloat marcheId={marcheId} />
-        )}
-      </div>
+      {/* Hidden components removed to avoid duplicate floating triggers */}
 
       {/* Custom sheets for each capture type */}
       <Sheet open={activeCapture === 'photo'} onOpenChange={(open) => !open && handleClose()}>
@@ -189,6 +170,8 @@ export const MediaCaptureFloat: React.FC<MediaCaptureFloatProps> = ({
                 }}
                 pendingCount={pendingPhotosCount}
                 disabled={disabled}
+                embedded
+                onRequestClose={handleClose}
               />
             </div>
           )}
@@ -211,6 +194,8 @@ export const MediaCaptureFloat: React.FC<MediaCaptureFloatProps> = ({
                   onAudioUploaded?.();
                   handleClose();
                 }}
+                embedded
+                onRequestClose={handleClose}
               />
             </div>
           )}
@@ -227,7 +212,7 @@ export const MediaCaptureFloat: React.FC<MediaCaptureFloatProps> = ({
           </SheetHeader>
           {activeCapture === 'text' && (
             <div className="mt-4">
-              <TexteCaptureFloat marcheId={marcheId} />
+              <TexteCaptureFloat marcheId={marcheId} embedded onRequestClose={handleClose} />
             </div>
           )}
         </SheetContent>
