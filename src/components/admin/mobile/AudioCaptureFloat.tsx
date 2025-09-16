@@ -460,59 +460,68 @@ const AudioCaptureFloat: React.FC<AudioCaptureFloatProps> = ({
               </div>
             </div>
 
-            <div className="flex items-center space-x-2 p-3 bg-green-50 dark:bg-green-950/20 rounded-lg">
-              <Checkbox 
-                id="transcription" 
-                checked={withTranscription}
-                onCheckedChange={(checked) => setWithTranscription(checked as boolean)}
-              />
-              <div className="flex-1">
-                <label htmlFor="transcription" className="text-sm font-medium cursor-pointer">
-                  Transcrire automatiquement
-                </label>
-                {withTranscription && transcriptionModels.length > 0 && (
-                  <div className="mt-2 space-y-2">
-                    <Select value={selectedTranscriptionModel} onValueChange={setSelectedTranscriptionModel}>
-                      <SelectTrigger className="h-8 text-xs">
-                        <SelectValue placeholder="Choisir un modèle..." />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {transcriptionModels.map((model) => (
-                          <SelectItem key={model.id} value={model.id} className="text-xs">
-                            {model.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    
-                    <div className="flex gap-2">
-                      <button
-                        type="button"
-                        onClick={() => setTranscriptionMode('deferred')}
-                        className={`text-xs px-2 py-1 rounded ${
-                          transcriptionMode === 'deferred' 
-                            ? 'bg-primary text-primary-foreground' 
-                            : 'bg-muted text-muted-foreground'
-                        }`}
-                      >
-                        Après upload
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setTranscriptionMode('immediate')}
-                        className={`text-xs px-2 py-1 rounded ${
-                          transcriptionMode === 'immediate' 
-                            ? 'bg-primary text-primary-foreground' 
-                            : 'bg-muted text-muted-foreground'
-                        }`}
-                      >
-                        Temps réel
-                      </button>
-                    </div>
-                  </div>
-                )}
+            <div className="flex items-center justify-between p-4 bg-muted/30 rounded-lg">
+              <div className="flex items-center gap-3">
+                <Mic className="h-5 w-5 text-purple-600" />
+                <div>
+                  <h4 className="font-medium">Transcription automatique</h4>
+                  <p className="text-sm text-muted-foreground">
+                    {withTranscription ? 'Activée' : 'Convertir audio en texte'}
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <Checkbox 
+                  id="transcription" 
+                  checked={withTranscription}
+                  onCheckedChange={(checked) => setWithTranscription(checked as boolean)}
+                />
               </div>
             </div>
+
+            {withTranscription && transcriptionModels.length > 0 && (
+              <div className="p-4 bg-muted/20 rounded-lg space-y-3">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Modèle de transcription</label>
+                  <Select value={selectedTranscriptionModel} onValueChange={setSelectedTranscriptionModel}>
+                    <SelectTrigger className="h-9">
+                      <SelectValue placeholder="Choisir un modèle..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {transcriptionModels.map((model) => (
+                        <SelectItem key={model.id} value={model.id}>
+                          {model.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Mode de transcription</label>
+                  <div className="flex gap-2">
+                    <Button
+                      type="button"
+                      variant={transcriptionMode === 'deferred' ? 'default' : 'outline'}
+                      size="sm"
+                      onClick={() => setTranscriptionMode('deferred')}
+                      className="flex-1"
+                    >
+                      Après upload
+                    </Button>
+                    <Button
+                      type="button"
+                      variant={transcriptionMode === 'immediate' ? 'default' : 'outline'}
+                      size="sm"
+                      onClick={() => setTranscriptionMode('immediate')}
+                      className="flex-1"
+                    >
+                      Temps réel
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         ) : (
           <div className="p-4 space-y-4">
