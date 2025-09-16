@@ -3,11 +3,14 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '../.
 import { Button } from '../../ui/button';
 import { Mic, MicOff, Upload, Square, Play, Pause, Trash2, FileAudio, Waves } from 'lucide-react';
 import { Checkbox } from '../../ui/checkbox';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../ui/select';
 import { Input } from '../../ui/input';
 import { Textarea } from '../../ui/textarea';
 import { Progress } from '../../ui/progress';
 import { toast } from 'sonner';
 import { saveAudio, validateAudioFile, getAudioDuration, AudioUploadProgress, AudioToUpload } from '../../../utils/supabaseAudioOperations';
+import { useTranscriptionModels } from '../../../hooks/useTranscriptionModels';
+import { transcribeAudio } from '../../../utils/audioTranscription';
 
 // Offset constant pour éviter les barres système mobiles
 const CONTROL_OFFSET = 'clamp(96px, 14vh, 180px)';
@@ -40,6 +43,8 @@ const AudioCaptureFloat: React.FC<AudioCaptureFloatProps> = ({
   const [recordingTime, setRecordingTime] = useState(0);
   const [audioLevel, setAudioLevel] = useState(0);
   const [withTranscription, setWithTranscription] = useState(false);
+  const [selectedTranscriptionModel, setSelectedTranscriptionModel] = useState<string>('');
+  const [transcriptionMode, setTranscriptionMode] = useState<'immediate' | 'deferred'>('deferred');
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [isUploading, setIsUploading] = useState(false);
@@ -47,6 +52,44 @@ const AudioCaptureFloat: React.FC<AudioCaptureFloatProps> = ({
   const [debugEnabled, setDebugEnabled] = useState(false);
   const [debugLogs, setDebugLogs] = useState<string[]>([]);
   const [lastError, setLastError] = useState<string | null>(null);
+
+  const { data: transcriptionModels = [] } = useTranscriptionModels();
+
+  // Sélectionner le premier modèle par défaut
+  useEffect(() => {
+    if (transcriptionModels.length > 0 && !selectedTranscriptionModel) {
+      setSelectedTranscriptionModel(transcriptionModels[0].id);
+    }
+  }, [transcriptionModels, selectedTranscriptionModel]);
+
+  // Fonction de transcription
+  const handleTranscription = async (audioId: string, audioBlob: Blob) => {
+    if (!withTranscription) return;
+    
+    try {
+      addDebug('🎤 Démarrage transcription', { audioId, modelId: selectedTranscriptionModel });
+      
+      const result = await transcribeAudio(
+        audioId,
+        audioBlob,
+        selectedTranscriptionModel || undefined,
+        'fr',
+        transcriptionMode
+      );
+
+      if (result.success) {
+        addDebug('✅ Transcription réussie', { audioId });
+        toast.success('Transcription terminée !');
+      } else {
+        addDebug('❌ Échec transcription', { error: result.error });
+        toast.error(`Erreur de transcription: ${result.error}`);
+      }
+    } catch (error) {
+      console.error('Erreur transcription:', error);
+      addDebug('❌ Erreur transcription', { error: error instanceof Error ? error.message : 'Erreur inconnue' });
+      toast.error('Erreur lors de la transcription');
+    }
+  };
 
   const addDebug = (msg: string, data?: any) => {
     try {
@@ -60,6 +103,7 @@ const AudioCaptureFloat: React.FC<AudioCaptureFloatProps> = ({
       }
     } catch {}
   };
+
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
   const analyserRef = useRef<AnalyserNode | null>(null);
@@ -304,6 +348,11 @@ const AudioCaptureFloat: React.FC<AudioCaptureFloatProps> = ({
       
       addDebug('✅ Upload terminé', { audioId });
 
+      // Déclencher la transcription si activée
+      if (withTranscription) {
+        await handleTranscription(audioId, recordedAudio.blob);
+      }
+
       toast.success('Audio uploadé avec succès !');
       onAudioUploaded?.(audioId);
       
@@ -334,6 +383,209 @@ const AudioCaptureFloat: React.FC<AudioCaptureFloatProps> = ({
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
+  const renderContent = () => (
+    <div className="flex flex-col h-full">
+      <div className="flex-1 overflow-auto">
+        {!recordedAudio ? (
+          <div className="p-4 space-y-6">
+            <div className="space-y-4">
+              <h3 className="font-medium text-lg">Mode d'enregistrement</h3>
+              <div className="space-y-4">
+                <div className="flex items-center justify-between p-4 bg-muted/30 rounded-lg">
+                  <div className="flex items-center gap-3">
+                    <Mic className="h-5 w-5 text-green-600" />
+                    <div>
+                      <h4 className="font-medium">Mémo vocal</h4>
+                      <p className="text-sm text-muted-foreground">Enregistrer depuis le micro</p>
+                    </div>
+                  </div>
+                  <Button
+                    onClick={isRecording ? stopRecording : startRecording}
+                    variant={isRecording ? "destructive" : "default"}
+                    size="sm"
+                    disabled={isUploading}
+                  >
+                    {isRecording ? (
+                      <>
+                        <Square className="h-4 w-4 mr-2" />
+                        Arrêter
+                      </>
+                    ) : (
+                      <>
+                        <Mic className="h-4 w-4 mr-2" />
+                        Enregistrer
+                      </>
+                    )}
+                  </Button>
+                </div>
+
+                {isRecording && (
+                  <div className="space-y-3 p-4 bg-green-50 dark:bg-green-950/20 rounded-lg">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-medium text-green-700 dark:text-green-300">
+                        🔴 En cours... {formatTime(recordingTime)}
+                      </span>
+                      <MicOff 
+                        className="h-4 w-4 text-green-600 cursor-pointer" 
+                        onClick={stopRecording}
+                      />
+                    </div>
+                    <div className="w-full bg-green-200 dark:bg-green-800 rounded-full h-2">
+                      <div 
+                        className="bg-green-600 h-2 rounded-full transition-all duration-100"
+                        style={{ width: `${audioLevel}%` }}
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <div className="flex items-center justify-between p-4 bg-muted/30 rounded-lg">
+                <div className="flex items-center gap-3">
+                  <FileAudio className="h-5 w-5 text-blue-600" />
+                  <div>
+                    <h4 className="font-medium">Import fichier</h4>
+                    <p className="text-sm text-muted-foreground">Depuis apps biodiversité</p>
+                  </div>
+                </div>
+                <Button
+                  onClick={handleFileImport}
+                  variant="outline"
+                  size="sm"
+                  disabled={isRecording || isUploading}
+                >
+                  <Upload className="h-4 w-4 mr-2" />
+                  Importer
+                </Button>
+              </div>
+            </div>
+
+            <div className="flex items-center space-x-2 p-3 bg-green-50 dark:bg-green-950/20 rounded-lg">
+              <Checkbox 
+                id="transcription" 
+                checked={withTranscription}
+                onCheckedChange={(checked) => setWithTranscription(checked as boolean)}
+              />
+              <div className="flex-1">
+                <label htmlFor="transcription" className="text-sm font-medium cursor-pointer">
+                  Transcrire automatiquement
+                </label>
+                {withTranscription && transcriptionModels.length > 0 && (
+                  <div className="mt-2 space-y-2">
+                    <Select value={selectedTranscriptionModel} onValueChange={setSelectedTranscriptionModel}>
+                      <SelectTrigger className="h-8 text-xs">
+                        <SelectValue placeholder="Choisir un modèle..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {transcriptionModels.map((model) => (
+                          <SelectItem key={model.id} value={model.id} className="text-xs">
+                            {model.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    
+                    <div className="flex gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setTranscriptionMode('deferred')}
+                        className={`text-xs px-2 py-1 rounded ${
+                          transcriptionMode === 'deferred' 
+                            ? 'bg-primary text-primary-foreground' 
+                            : 'bg-muted text-muted-foreground'
+                        }`}
+                      >
+                        Après upload
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setTranscriptionMode('immediate')}
+                        className={`text-xs px-2 py-1 rounded ${
+                          transcriptionMode === 'immediate' 
+                            ? 'bg-primary text-primary-foreground' 
+                            : 'bg-muted text-muted-foreground'
+                        }`}
+                      >
+                        Temps réel
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div className="p-4 space-y-4">
+            <div className="flex items-center justify-between p-4 bg-muted/30 rounded-lg">
+              <div className="flex items-center gap-3">
+                <FileAudio className="h-8 w-8 text-green-600" />
+                <div>
+                  <h4 className="font-medium">{recordedAudio.name}</h4>
+                  <p className="text-sm text-muted-foreground">
+                    {formatTime(Math.floor(recordedAudio.duration))} • {(recordedAudio.blob.size / 1024 / 1024).toFixed(2)}MB
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <Button onClick={togglePlayback} variant="outline" size="sm">
+                  {isPlaying ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
+                </Button>
+                <Button onClick={deleteRecording} variant="ghost" size="sm">
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              <div>
+                <label className="text-sm font-medium mb-2 block">Titre</label>
+                <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Nom de l'enregistrement" />
+              </div>
+              <div>
+                <label className="text-sm font-medium mb-2 block">Description</label>
+                <Textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Description optionnelle..." rows={3} />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              {isUploading && (
+                <div className="space-y-2">
+                  <div className="flex justify-between text-sm">
+                    <span>Upload en cours...</span>
+                    <span>{uploadProgress}%</span>
+                  </div>
+                  <Progress value={uploadProgress} />
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+      </div>
+
+      {recordedAudio && (
+        <div className="border-t p-4 bg-background">
+          <Button 
+            onClick={handleUpload} 
+            disabled={isUploading || !title.trim()}
+            className="w-full"
+          >
+            {isUploading ? 'Upload en cours...' : 'Sauvegarder l\'audio'}
+          </Button>
+        </div>
+      )}
+
+      {debugEnabled && (
+        <div className="border-t p-2 bg-muted/20 max-h-32 overflow-y-auto">
+          <div className="text-xs font-mono space-y-1">
+            {debugLogs.slice(-10).map((log, i) => (
+              <div key={i} className="text-muted-foreground">{log}</div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+
   return (
     <>
       <input
@@ -344,319 +596,32 @@ const AudioCaptureFloat: React.FC<AudioCaptureFloatProps> = ({
         style={{ display: 'none' }}
       />
       {embedded ? (
-        <div className="flex flex-col h-full">
-          <div className="flex-1 overflow-auto">
-            {!recordedAudio ? (
-              <div className="p-4 space-y-6">
-                <div className="space-y-4">
-                  <h3 className="font-medium text-lg">Mode d'enregistrement</h3>
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between p-4 bg-muted/30 rounded-lg">
-                      <div className="flex items-center gap-3">
-                        <Mic className="h-5 w-5 text-green-600" />
-                        <div>
-                          <h4 className="font-medium">Mémo vocal</h4>
-                          <p className="text-sm text-muted-foreground">Enregistrer depuis le micro</p>
-                        </div>
-                      </div>
-                      <Button
-                        onClick={isRecording ? stopRecording : startRecording}
-                        variant={isRecording ? "destructive" : "default"}
-                        size="sm"
-                        disabled={isUploading}
-                      >
-                        {isRecording ? (
-                          <>
-                            <Square className="h-4 w-4 mr-2" />
-                            Arrêter
-                          </>
-                        ) : (
-                          <>
-                            <Mic className="h-4 w-4 mr-2" />
-                            Enregistrer
-                          </>
-                        )}
-                      </Button>
-                    </div>
-
-                    {isRecording && (
-                      <div className="space-y-3 p-4 bg-green-50 dark:bg-green-950/20 rounded-lg">
-                        <div className="flex items-center justify-between">
-                          <span className="text-sm font-medium text-green-700 dark:text-green-300">
-                            🔴 En cours... {formatTime(recordingTime)}
-                          </span>
-                          <MicOff 
-                            className="h-4 w-4 text-green-600 cursor-pointer" 
-                            onClick={stopRecording}
-                          />
-                        </div>
-                        <div className="w-full bg-green-200 dark:bg-green-800 rounded-full h-2">
-                          <div 
-                            className="bg-green-600 h-2 rounded-full transition-all duration-100"
-                            style={{ width: `${audioLevel}%` }}
-                          />
-                        </div>
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="flex items-center justify-between p-4 bg-muted/30 rounded-lg">
-                    <div className="flex items-center gap-3">
-                      <FileAudio className="h-5 w-5 text-blue-600" />
-                      <div>
-                        <h4 className="font-medium">Import fichier</h4>
-                        <p className="text-sm text-muted-foreground">Depuis apps biodiversité</p>
-                      </div>
-                    </div>
-                    <Button
-                      onClick={handleFileImport}
-                      variant="outline"
-                      size="sm"
-                      disabled={isRecording || isUploading}
-                    >
-                      <Upload className="h-4 w-4 mr-2" />
-                      Importer
-                    </Button>
-                  </div>
-                </div>
-
-                <div className="flex items-center space-x-2 p-3 bg-muted/20 rounded-lg">
-                  <Checkbox 
-                    id="transcription" 
-                    checked={withTranscription}
-                    onCheckedChange={(checked) => setWithTranscription(checked as boolean)}
-                  />
-                  <label htmlFor="transcription" className="text-sm font-medium">
-                    Transcrire automatiquement 
-                    <span className="text-muted-foreground">(bientôt disponible)</span>
-                  </label>
-                </div>
-              </div>
-            ) : (
-              <div className="p-4 space-y-4">
-                <div className="flex items-center justify-between p-4 bg-muted/30 rounded-lg">
-                  <div className="flex items-center gap-3">
-                    <FileAudio className="h-8 w-8 text-green-600" />
-                    <div>
-                      <h4 className="font-medium">{recordedAudio.name}</h4>
-                      <p className="text-sm text-muted-foreground">
-                        {formatTime(Math.floor(recordedAudio.duration))} • {(recordedAudio.blob.size / 1024 / 1024).toFixed(2)}MB
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Button onClick={togglePlayback} variant="outline" size="sm">
-                      {isPlaying ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
-                    </Button>
-                    <Button onClick={deleteRecording} variant="ghost" size="sm">
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </div>
-
-                <div className="space-y-3">
-                  <div>
-                    <label className="text-sm font-medium mb-2 block">Titre</label>
-                    <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Nom de l'enregistrement" />
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium mb-2 block">Description</label>
-                    <Textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Description optionnelle..." rows={3} />
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  {isUploading && (
-                    <div className="space-y-2">
-                      <div className="flex justify-between text-sm">
-                        <span>Upload en cours...</span>
-                        <span>{uploadProgress}%</span>
-                      </div>
-                      <Progress value={uploadProgress} />
-                    </div>
-                  )}
-
-                  <div className="flex items-center justify-between text-xs text-muted-foreground">
-                    <label className="flex items-center gap-2 cursor-pointer">
-                      <input type="checkbox" checked={debugEnabled} onChange={(e) => setDebugEnabled(e.target.checked)} />
-                      Mode debug
-                    </label>
-                    {lastError && <span className="text-destructive">Erreur: {lastError}</span>}
-                  </div>
-
-                  {debugEnabled && (
-                    <div className="rounded-md bg-muted/40 p-2 max-h-40 overflow-auto font-mono text-xs space-y-1">
-                      <div>
-                        Fichier: {recordedAudio?.name} • {(recordedAudio?.blob as any)?.type || 'inconnu'} • {Math.round(((recordedAudio?.blob as any)?.size || 0) / 1024)}KB
-                      </div>
-                      <div>Marche: {marcheId}</div>
-                      {debugLogs.map((l, i) => (
-                        <div key={i} className="truncate">• {l}</div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
-          </div>
-
-          <div className="border-t bg-background/95 backdrop-blur-sm p-4">
-            {recordedAudio ? (
-              <div className="flex gap-3">
-                <Button onClick={deleteRecording} variant="outline" className="flex-1" disabled={isUploading}>
-                  Recommencer
-                </Button>
-                <Button onClick={handleUpload} className="flex-1" disabled={isUploading || !title.trim()}>
-                  {isUploading ? 'Upload...' : 'Sauvegarder'}
-                </Button>
-              </div>
-            ) : (
-              <Button onClick={() => onRequestClose?.()} variant="outline" className="w-full" disabled={isRecording}>
-                Fermer
-              </Button>
-            )}
-          </div>
-        </div>
+        renderContent()
       ) : (
-        <Sheet open={isOpen} onOpenChange={setIsOpen}>
-          <SheetTrigger asChild>
-            <Button
-              size="lg"
-              className="fixed bottom-20 right-4 h-14 w-14 rounded-full shadow-lg z-50 bg-green-600 hover:bg-green-700 text-white border-2 border-green-400"
-              style={{ bottom: `calc(env(safe-area-inset-bottom, 0px) + ${CONTROL_OFFSET})` }}
-            >
-              <Mic className="h-6 w-6" />
-            </Button>
-          </SheetTrigger>
-          <SheetContent side="bottom" className="h-[85vh] max-h-[85vh] p-0 overflow-hidden">
-            <div className="flex flex-col h-full">
+        <div 
+          className="fixed z-50"
+          style={{ bottom: CONTROL_OFFSET, right: '20px' }}
+        >
+          <Sheet open={isOpen} onOpenChange={setIsOpen}>
+            <SheetTrigger asChild>
+              <Button 
+                size="lg" 
+                className="rounded-full h-14 w-14 shadow-lg bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
+              >
+                <Mic className="h-6 w-6" />
+              </Button>
+            </SheetTrigger>
+            <SheetContent side="right" className="w-full sm:max-w-md p-0">
               <SheetHeader className="p-4 border-b">
                 <SheetTitle className="flex items-center gap-2">
-                  <Waves className="h-5 w-5 text-green-600" />
-                  Capture Audio
+                  <Waves className="h-5 w-5" />
+                  Audio
                 </SheetTitle>
               </SheetHeader>
-              <div className="flex-1 overflow-auto">
-                {!recordedAudio ? (
-                  <div className="p-4 space-y-6">
-                    <div className="space-y-4">
-                      <h3 className="font-medium text-lg">Mode d'enregistrement</h3>
-                      <div className="space-y-4">
-                        <div className="flex items-center justify-between p-4 bg-muted/30 rounded-lg">
-                          <div className="flex items-center gap-3">
-                            <Mic className="h-5 w-5 text-green-600" />
-                            <div>
-                              <h4 className="font-medium">Mémo vocal</h4>
-                              <p className="text-sm text-muted-foreground">Enregistrer depuis le micro</p>
-                            </div>
-                          </div>
-                          <Button onClick={isRecording ? stopRecording : startRecording} variant={isRecording ? "destructive" : "default"} size="sm" disabled={isUploading}>
-                            {isRecording ? (
-                              <>
-                                <Square className="h-4 w-4 mr-2" />
-                                Arrêter
-                              </>
-                            ) : (
-                              <>
-                                <Mic className="h-4 w-4 mr-2" />
-                                Enregistrer
-                              </>
-                            )}
-                          </Button>
-                        </div>
-                        {isRecording && (
-                          <div className="space-y-3 p-4 bg-green-50 dark:bg-green-950/20 rounded-lg">
-                            <div className="flex items-center justify-between">
-                              <span className="text-sm font-medium text-green-700 dark:text-green-300">🔴 En cours... {formatTime(recordingTime)}</span>
-                              <MicOff className="h-4 w-4 text-green-600 cursor-pointer" onClick={stopRecording} />
-                            </div>
-                            <div className="w-full bg-green-200 dark:bg-green-800 rounded-full h-2">
-                              <div className="bg-green-600 h-2 rounded-full transition-all duration-100" style={{ width: `${audioLevel}%` }} />
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                      <div className="flex items-center justify-between p-4 bg-muted/30 rounded-lg">
-                        <div className="flex items-center gap-3">
-                          <FileAudio className="h-5 w-5 text-blue-600" />
-                          <div>
-                            <h4 className="font-medium">Import fichier</h4>
-                            <p className="text-sm text-muted-foreground">Depuis apps biodiversité</p>
-                          </div>
-                        </div>
-                        <Button onClick={handleFileImport} variant="outline" size="sm" disabled={isRecording || isUploading}>
-                          <Upload className="h-4 w-4 mr-2" />
-                          Importer
-                        </Button>
-                      </div>
-                    </div>
-                    <div className="flex items-center space-x-2 p-3 bg-muted/20 rounded-lg">
-                      <Checkbox id="transcription" checked={withTranscription} onCheckedChange={(checked) => setWithTranscription(checked as boolean)} />
-                      <label htmlFor="transcription" className="text-sm font-medium">
-                        Transcrire automatiquement <span className="text-muted-foreground">(bientôt disponible)</span>
-                      </label>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="p-4 space-y-4">
-                    <div className="flex items-center justify-between p-4 bg-muted/30 rounded-lg">
-                      <div className="flex items-center gap-3">
-                        <FileAudio className="h-8 w-8 text-green-600" />
-                        <div>
-                          <h4 className="font-medium">{recordedAudio.name}</h4>
-                          <p className="text-sm text-muted-foreground">{formatTime(Math.floor(recordedAudio.duration))} • {(recordedAudio.blob.size / 1024 / 1024).toFixed(2)}MB</p>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Button onClick={togglePlayback} variant="outline" size="sm">{isPlaying ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}</Button>
-                        <Button onClick={deleteRecording} variant="ghost" size="sm"><Trash2 className="h-4 w-4" /></Button>
-                      </div>
-                    </div>
-                    <div className="space-y-3">
-                      <div>
-                        <label className="text-sm font-medium mb-2 block">Titre</label>
-                        <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Nom de l'enregistrement" />
-                      </div>
-                      <div>
-                        <label className="text-sm font-medium mb-2 block">Description</label>
-                        <Textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Description optionnelle..." rows={3} />
-                      </div>
-                    </div>
-                    <div className="space-y-2">
-                      {isUploading && (
-                        <div className="space-y-2">
-                          <div className="flex justify-between text-sm"><span>Upload en cours...</span><span>{uploadProgress}%</span></div>
-                          <Progress value={uploadProgress} />
-                        </div>
-                      )}
-                      <div className="flex items-center justify-between text-xs text-muted-foreground">
-                        <label className="flex items-center gap-2 cursor-pointer"><input type="checkbox" checked={debugEnabled} onChange={(e) => setDebugEnabled(e.target.checked)} />Mode debug</label>
-                        {lastError && <span className="text-destructive">Erreur: {lastError}</span>}
-                      </div>
-                      {debugEnabled && (
-                        <div className="rounded-md bg-muted/40 p-2 max-h-40 overflow-auto font-mono text-xs space-y-1">
-                          <div>Fichier: {recordedAudio?.name} • {(recordedAudio?.blob as any)?.type || 'inconnu'} • {Math.round(((recordedAudio?.blob as any)?.size || 0) / 1024)}KB</div>
-                          <div>Marche: {marcheId}</div>
-                          {debugLogs.map((l, i) => (<div key={i} className="truncate">• {l}</div>))}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                )}
-              </div>
-              <div className="border-t bg-background/95 backdrop-blur-sm p-4" style={{ paddingBottom: `calc(env(safe-area-inset-bottom, 0px) + 16px)` }}>
-                {recordedAudio ? (
-                  <div className="flex gap-3">
-                    <Button onClick={deleteRecording} variant="outline" className="flex-1" disabled={isUploading}>Recommencer</Button>
-                    <Button onClick={handleUpload} className="flex-1" disabled={isUploading || !title.trim()}>{isUploading ? 'Upload...' : 'Sauvegarder'}</Button>
-                  </div>
-                ) : (
-                  <Button onClick={() => setIsOpen(false)} variant="outline" className="w-full" disabled={isRecording}>Fermer</Button>
-                )}
-              </div>
-            </div>
-          </SheetContent>
-        </Sheet>
+              {renderContent()}
+            </SheetContent>
+          </Sheet>
+        </div>
       )}
     </>
   );
