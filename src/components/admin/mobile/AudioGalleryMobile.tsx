@@ -235,7 +235,7 @@ const AudioGalleryMobile: React.FC<AudioGalleryMobileProps> = ({
       <div className="space-y-3">
         <div className="flex items-center justify-between">
           <h3 className="text-lg font-semibold">
-            🎵 Audio ({statusCounts.total})
+            🎵 Audio
           </h3>
           {statusCounts.pending > 0 && (
             <Badge variant="outline" className="animate-pulse">
