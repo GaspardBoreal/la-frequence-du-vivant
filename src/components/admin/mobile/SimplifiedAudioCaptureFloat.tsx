@@ -70,6 +70,7 @@ const SimplifiedAudioCaptureFloat: React.FC<SimplifiedAudioCaptureFloatProps> = 
   const recordingIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const audioElementRef = useRef<HTMLAudioElement | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const wsRetriesRef = useRef(0);
 
   // Auto-select best transcription model
   const getBestTranscriptionModel = () => {
@@ -91,32 +92,57 @@ const SimplifiedAudioCaptureFloat: React.FC<SimplifiedAudioCaptureFloatProps> = 
   // Real-time transcription setup
   const setupRealtimeTranscription = () => {
     if (!realtimeTranscription) return;
-    
-    const projectId = 'xzbunrtgbfbhinkzkzhf';
-    const ws = new WebSocket(`wss://${projectId}.functions.supabase.co/realtime-transcription`);
-    
-    ws.onopen = () => {
-      setIsTranscribing(true);
-      toast.success('Transcription temps réel activée');
-    };
-    
-    ws.onmessage = (event) => {
-      const message = JSON.parse(event.data);
-      if (message.type === 'transcription_result') {
-        setTranscriptionText(prev => message.isFinal ? message.text : prev + message.text);
+
+    const projectRef = 'xzbunrtgbfbhinkzkzhf';
+    const url = `wss://${projectRef}.functions.supabase.co/functions/v1/realtime-transcription`;
+
+    const connect = () => {
+      try {
+        const ws = new WebSocket(url);
+
+        ws.onopen = () => {
+          wsRetriesRef.current = 0;
+          setIsTranscribing(true);
+          toast.success('Transcription temps réel activée');
+        };
+
+        ws.onmessage = (event) => {
+          try {
+            const message = JSON.parse(event.data);
+            if (message.type === 'transcription_result') {
+              setTranscriptionText(prev => message.isFinal ? message.text : prev + message.text);
+            } else if (message.type === 'error') {
+              console.error('Realtime transcription error:', message.message);
+              toast.error(`Erreur transcription: ${message.message}`);
+            }
+          } catch (e) {
+            console.error('Invalid message from websocket:', e);
+          }
+        };
+
+        ws.onclose = (evt) => {
+          setIsTranscribing(false);
+          // Auto-retry a few times if user still wants realtime
+          if (realtimeTranscription && wsRetriesRef.current < 3) {
+            wsRetriesRef.current += 1;
+            const delay = 500 * wsRetriesRef.current; // simple backoff
+            console.warn(`WS closed, retrying in ${delay}ms (attempt ${wsRetriesRef.current})`);
+            setTimeout(connect, delay);
+          }
+        };
+
+        ws.onerror = (err) => {
+          console.error('WebSocket error:', err);
+        };
+
+        setWsConnection(ws);
+      } catch (error) {
+        console.error('Failed to open realtime transcription WS:', error);
+        toast.error('Impossible de démarrer la transcription temps réel');
       }
     };
-    
-    ws.onclose = () => {
-      setIsTranscribing(false);
-    };
-    
-    ws.onerror = () => {
-      setIsTranscribing(false);
-      toast.error('Erreur de transcription temps réel');
-    };
-    
-    setWsConnection(ws);
+
+    connect();
   };
 
   const sendAudioChunkForTranscription = async (audioBlob: Blob) => {
