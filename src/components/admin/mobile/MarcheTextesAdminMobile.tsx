@@ -163,7 +163,6 @@ const MarcheTextesAdminMobile: React.FC<MarcheTextesAdminMobileProps> = ({ march
     return (
       <div className="space-y-4">
         <div className="flex items-center justify-between">
-          <h3 className="text-lg font-semibold">📝 Textes littéraires</h3>
         </div>
         
         <div className="bg-muted rounded-lg p-6 text-center">
@@ -266,9 +265,6 @@ const MarcheTextesAdminMobile: React.FC<MarcheTextesAdminMobileProps> = ({ march
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h3 className="text-lg font-semibold">
-          📝 Textes littéraires
-        </h3>
         <Button size="sm" onClick={handleCreateTexte}>
           <FileText className="w-4 h-4 mr-1" />
           Ajouter

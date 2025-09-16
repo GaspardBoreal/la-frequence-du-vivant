@@ -7,6 +7,7 @@ import { Label } from '../../ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../ui/select';
 import { Save, MapPin, Loader2, Map, ExternalLink } from 'lucide-react';
 import { useSupabaseMarche } from '../../../hooks/useSupabaseMarches';
+import { useMarcheTextes } from '../../../hooks/useMarcheTextes';
 import { createMarche, updateMarche, MarcheFormData } from '../../../utils/supabaseMarcheOperations';
 import { queryClient } from '../../../lib/queryClient';
 import { FRENCH_REGIONS } from '../../../utils/frenchRegions';
@@ -22,6 +23,8 @@ import MarcheTextesAdminMobile from './MarcheTextesAdminMobile';
 import TexteCaptureFloat from './TexteCaptureFloat';
 import MediaCaptureFloat from './MediaCaptureFloat';
 import { ProcessedPhoto } from '../../../utils/photoUtils';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '../../../integrations/supabase/client';
 
 interface MarcheFormMobileProps {
   mode: 'create' | 'edit';
@@ -58,6 +61,35 @@ const MarcheFormMobile: React.FC<MarcheFormMobileProps> = ({
   const [isGeolocating, setIsGeolocating] = useState(false);
   const [pendingPhotos, setPendingPhotos] = useState<ProcessedPhoto[]>([]);
   const [mapSheetOpen, setMapSheetOpen] = useState(false);
+
+  // Hooks pour récupérer les compteurs
+  const { data: textes = [] } = useMarcheTextes(marcheId || '');
+  
+  const { data: photosCount = 0 } = useQuery({
+    queryKey: ['photos-count', marcheId],
+    queryFn: async () => {
+      if (!marcheId) return 0;
+      const { count } = await supabase
+        .from('marche_photos')
+        .select('*', { count: 'exact', head: true })
+        .eq('marche_id', marcheId);
+      return count || 0;
+    },
+    enabled: !!marcheId
+  });
+
+  const { data: audiosCount = 0 } = useQuery({
+    queryKey: ['audios-count', marcheId],
+    queryFn: async () => {
+      if (!marcheId) return 0;
+      const { count } = await supabase
+        .from('marche_audio')
+        .select('*', { count: 'exact', head: true })
+        .eq('marche_id', marcheId);
+      return count || 0;
+    },
+    enabled: !!marcheId
+  });
   
   const {
     register,
@@ -475,7 +507,7 @@ const MarcheFormMobile: React.FC<MarcheFormMobileProps> = ({
           <div className="space-y-4">
             <div className="flex items-center space-x-2">
               <div className="h-px bg-border flex-1" />
-              <span className="text-sm text-muted-foreground px-3">Photos</span>
+              <span className="text-sm text-muted-foreground px-3">Photos ({photosCount + pendingPhotos.length})</span>
               <div className="h-px bg-border flex-1" />
             </div>
             
@@ -493,7 +525,7 @@ const MarcheFormMobile: React.FC<MarcheFormMobileProps> = ({
           <div className="space-y-4">
             <div className="flex items-center space-x-2">
               <div className="h-px bg-border flex-1" />
-              <span className="text-sm text-muted-foreground px-3">Audio</span>
+              <span className="text-sm text-muted-foreground px-3">Audio ({audiosCount})</span>
               <div className="h-px bg-border flex-1" />
             </div>
             
@@ -515,7 +547,7 @@ const MarcheFormMobile: React.FC<MarcheFormMobileProps> = ({
           <div className="space-y-4">
             <div className="flex items-center space-x-2">
               <div className="h-px bg-border flex-1" />
-              <span className="text-sm text-muted-foreground px-3">Textes littéraires</span>
+              <span className="text-sm text-muted-foreground px-3">Textes littéraires ({textes.length})</span>
               <div className="h-px bg-border flex-1" />
             </div>
             
