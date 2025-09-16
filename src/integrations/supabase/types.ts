@@ -552,6 +552,12 @@ export type Database = {
           ordre: number | null
           taille_octets: number | null
           titre: string | null
+          transcription_confidence: number | null
+          transcription_created_at: string | null
+          transcription_model: string | null
+          transcription_segments: Json | null
+          transcription_status: string | null
+          transcription_text: string | null
           url_originale: string | null
           url_supabase: string
         }
@@ -567,6 +573,12 @@ export type Database = {
           ordre?: number | null
           taille_octets?: number | null
           titre?: string | null
+          transcription_confidence?: number | null
+          transcription_created_at?: string | null
+          transcription_model?: string | null
+          transcription_segments?: Json | null
+          transcription_status?: string | null
+          transcription_text?: string | null
           url_originale?: string | null
           url_supabase: string
         }
@@ -582,6 +594,12 @@ export type Database = {
           ordre?: number | null
           taille_octets?: number | null
           titre?: string | null
+          transcription_confidence?: number | null
+          transcription_created_at?: string | null
+          transcription_model?: string | null
+          transcription_segments?: Json | null
+          transcription_status?: string | null
+          transcription_text?: string | null
           url_originale?: string | null
           url_supabase?: string
         }
@@ -1480,6 +1498,45 @@ export type Database = {
           scientific_name?: string
           source?: string
           updated_at?: string
+        }
+        Relationships: []
+      }
+      transcription_models: {
+        Row: {
+          config: Json | null
+          created_at: string | null
+          id: string
+          is_active: boolean | null
+          languages: Json | null
+          model_identifier: string
+          name: string
+          provider: string
+          supports_realtime: boolean | null
+          updated_at: string | null
+        }
+        Insert: {
+          config?: Json | null
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          languages?: Json | null
+          model_identifier: string
+          name: string
+          provider: string
+          supports_realtime?: boolean | null
+          updated_at?: string | null
+        }
+        Update: {
+          config?: Json | null
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          languages?: Json | null
+          model_identifier?: string
+          name?: string
+          provider?: string
+          supports_realtime?: boolean | null
+          updated_at?: string | null
         }
         Relationships: []
       }
