@@ -533,10 +533,18 @@ const MarcheFormMobile: React.FC<MarcheFormMobileProps> = ({
               marcheId={marcheId}
               pendingAudios={[]}
               onAudioUploaded={() => {
-                toast.success('Audio uploadé avec succès !');
+                // Invalider les queries pour rafraîchir le compteur
+                queryClient.invalidateQueries({
+                  queryKey: ['audios-count', marcheId]
+                });
+                toast.success('🎵 Audio uploadé avec succès !');
               }}
               onAudioRemoved={() => {
-                toast.success('Audio supprimé');
+                // Invalider les queries pour rafraîchir le compteur
+                queryClient.invalidateQueries({
+                  queryKey: ['audios-count', marcheId]
+                });
+                toast.success('🗑️ Audio supprimé');
               }}
             />
           </div>
@@ -575,7 +583,11 @@ const MarcheFormMobile: React.FC<MarcheFormMobileProps> = ({
             marcheId={marcheId}
             onPhotoCaptured={handlePhotoCaptured}
             onAudioUploaded={() => {
-              toast.success('Audio ajouté avec succès !');
+              // Invalider les queries pour rafraîchir le compteur
+              queryClient.invalidateQueries({
+                queryKey: ['audios-count', marcheId]
+              });
+              toast.success('🎵 Audio ajouté avec succès !');
             }}
             pendingPhotosCount={pendingPhotos.length}
             disabled={isSubmitting}
