@@ -359,7 +359,13 @@ const AudioGalleryMobile: React.FC<AudioGalleryMobileProps> = ({
                   <div className="flex items-center gap-3">
                     {/* Play button */}
                     <button
-                      onClick={(e) => togglePlayAudio(audio.id, e)}
+                      type="button"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        console.debug('[AudioGalleryMobile] Play/Pause clicked', { audioId: audio.id });
+                        togglePlayAudio(audio.id, e);
+                      }}
                       className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center hover:bg-green-200 transition-colors flex-shrink-0"
                     >
                       {playingAudioId === audio.id ? (
