@@ -420,7 +420,7 @@ const AudioCaptureFloat: React.FC<AudioCaptureFloatProps> = ({
                   </div>
                 </div>
 
-                <div className="flex items-center space-x-2 p-3 bg-green-50 dark:bg-green-950/20 rounded-lg">
+                <div className="flex items-center space-x-2 p-3 bg-muted/20 rounded-lg">
                   <Checkbox 
                     id="transcription" 
                     checked={withTranscription}
@@ -590,7 +590,7 @@ const AudioCaptureFloat: React.FC<AudioCaptureFloatProps> = ({
                         </Button>
                       </div>
                     </div>
-                    <div className="flex items-center space-x-2 p-3 bg-green-50 dark:bg-green-950/20 rounded-lg">
+                    <div className="flex items-center space-x-2 p-3 bg-muted/20 rounded-lg">
                       <Checkbox id="transcription" checked={withTranscription} onCheckedChange={(checked) => setWithTranscription(checked as boolean)} />
                       <label htmlFor="transcription" className="text-sm font-medium">
                         Transcrire automatiquement <span className="text-muted-foreground">(bientôt disponible)</span>
