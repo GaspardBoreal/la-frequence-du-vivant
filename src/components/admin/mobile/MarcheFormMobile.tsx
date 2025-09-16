@@ -16,7 +16,7 @@ import { toast } from 'sonner';
 import { geocodeAddress } from '../../../utils/geocoding';
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from '../../ui/sheet';
 import PhotoCaptureFloat from './PhotoCaptureFloat';
-import AudioCaptureFloat from './AudioCaptureFloat';
+import SimplifiedAudioCaptureFloat from './SimplifiedAudioCaptureFloat';
 import PhotoGalleryMobile from './PhotoGalleryMobile';
 import AudioGalleryMobile from './AudioGalleryMobile';
 import MarcheTextesAdminMobile from './MarcheTextesAdminMobile';

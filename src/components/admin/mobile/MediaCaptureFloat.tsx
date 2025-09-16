@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import PhotoCaptureFloat from './PhotoCaptureFloat';
-import AudioCaptureFloat from './AudioCaptureFloat';
+import SimplifiedAudioCaptureFloat from './SimplifiedAudioCaptureFloat';
 import TexteCaptureFloat from './TexteCaptureFloat';
 import { useMarcheTextes } from '@/hooks/useMarcheTextes';
 import { ProcessedPhoto } from '../../../utils/photoUtils';
@@ -188,7 +188,7 @@ export const MediaCaptureFloat: React.FC<MediaCaptureFloatProps> = ({
           </SheetHeader>
           {activeCapture === 'audio' && (
             <div className="mt-4">
-              <AudioCaptureFloat
+              <SimplifiedAudioCaptureFloat
                 marcheId={marcheId}
                 onAudioUploaded={() => {
                   onAudioUploaded?.();
