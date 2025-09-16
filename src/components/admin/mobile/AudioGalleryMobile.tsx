@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Button } from '../../ui/button';
 import { Input } from '../../ui/input';
 import { Textarea } from '../../ui/textarea';
@@ -38,6 +38,7 @@ const AudioGalleryMobile: React.FC<AudioGalleryMobileProps> = ({
   const [editTitle, setEditTitle] = useState('');
   const [editDescription, setEditDescription] = useState('');
   const [playingAudioId, setPlayingAudioId] = useState<string | null>(null);
+  const audioRef = useRef<HTMLAudioElement>(null);
 
   useEffect(() => {
     loadExistingAudios();
@@ -166,17 +167,35 @@ const AudioGalleryMobile: React.FC<AudioGalleryMobileProps> = ({
     }
   };
 
+  // Effect to handle programmatic audio playback
+  useEffect(() => {
+    if (playingAudioId && audioRef.current) {
+      audioRef.current.play().catch(error => {
+        console.error('Error playing audio:', error);
+        setPlayingAudioId(null);
+      });
+    }
+  }, [playingAudioId]);
+
   const openEditModal = (audio: ExistingAudio) => {
     setSelectedAudio(audio);
     setEditTitle(audio.titre || '');
     setEditDescription(audio.description || '');
   };
 
-  const togglePlayAudio = (audioId: string) => {
+  const togglePlayAudio = (audioId: string, event?: React.MouseEvent) => {
+    // Prevent event from bubbling up to parent components
+    event?.stopPropagation();
+    
     if (playingAudioId === audioId) {
       setPlayingAudioId(null);
+      // Pause the audio if it's currently playing
+      if (audioRef.current) {
+        audioRef.current.pause();
+      }
     } else {
       setPlayingAudioId(audioId);
+      // Audio will be played programmatically when element mounts
     }
   };
 
@@ -340,7 +359,7 @@ const AudioGalleryMobile: React.FC<AudioGalleryMobileProps> = ({
                   <div className="flex items-center gap-3">
                     {/* Play button */}
                     <button
-                      onClick={() => togglePlayAudio(audio.id)}
+                      onClick={(e) => togglePlayAudio(audio.id, e)}
                       className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center hover:bg-green-200 transition-colors flex-shrink-0"
                     >
                       {playingAudioId === audio.id ? (
@@ -387,10 +406,13 @@ const AudioGalleryMobile: React.FC<AudioGalleryMobileProps> = ({
                   {playingAudioId === audio.id && (
                     <div className="mt-3 pt-3 border-t">
                       <audio 
+                        ref={audioRef}
                         controls 
-                        autoPlay
                         className="w-full h-8"
                         onEnded={() => setPlayingAudioId(null)}
+                        onClick={(e) => e.stopPropagation()}
+                        onPlay={(e) => e.stopPropagation()}
+                        onPause={(e) => e.stopPropagation()}
                       >
                         <source src={audio.url_supabase} type={audio.format_audio || 'audio/mpeg'} />
                         Votre navigateur ne supporte pas l'élément audio.
