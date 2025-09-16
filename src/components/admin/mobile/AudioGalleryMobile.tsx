@@ -341,7 +341,7 @@ const AudioGalleryMobile: React.FC<AudioGalleryMobileProps> = ({
                     {/* Play button */}
                     <button
                       onClick={() => togglePlayAudio(audio.id)}
-                      className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center hover:bg-primary/20 transition-colors flex-shrink-0"
+                      className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center hover:bg-green-200 transition-colors flex-shrink-0"
                     >
                       {playingAudioId === audio.id ? (
                         <Pause className="w-4 h-4 text-primary" />
