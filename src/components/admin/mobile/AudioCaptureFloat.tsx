@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '../../ui/sheet';
 import { Button } from '../../ui/button';
-import { Mic, MicOff, Upload, Square, Play, Pause, Trash2, FileAudio, Waves } from 'lucide-react';
+import { Mic, MicOff, Upload, Square, Play, Pause, Trash2, FileAudio, Waves, FileText, Copy } from 'lucide-react';
 import { Checkbox } from '../../ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../ui/select';
 import { Input } from '../../ui/input';
@@ -52,6 +52,12 @@ const AudioCaptureFloat: React.FC<AudioCaptureFloatProps> = ({
   const [debugEnabled, setDebugEnabled] = useState(false);
   const [debugLogs, setDebugLogs] = useState<string[]>([]);
   const [lastError, setLastError] = useState<string | null>(null);
+  
+  // Real-time transcription states
+  const [realtimeTranscription, setRealtimeTranscription] = useState<string>('');
+  const [isRealtimeTranscribing, setIsRealtimeTranscribing] = useState(false);
+  const [showRealtimeTranscription, setShowRealtimeTranscription] = useState(false);
+  const [wsConnection, setWsConnection] = useState<WebSocket | null>(null);
 
   const { data: transcriptionModels = [] } = useTranscriptionModels();
 
@@ -127,6 +133,78 @@ const AudioCaptureFloat: React.FC<AudioCaptureFloatProps> = ({
     };
   }, [recordedAudio]);
 
+  // Real-time transcription functions
+  const setupRealtimeTranscription = () => {
+    const projectId = 'xzbunrtgbfbhinkzkzhf';
+    const ws = new WebSocket(`wss://${projectId}.functions.supabase.co/realtime-transcription`);
+    
+    ws.onopen = () => {
+      console.log('Connected to real-time transcription');
+      setIsRealtimeTranscribing(true);
+      setShowRealtimeTranscription(true);
+      addDebug('🔗 WebSocket connecté pour transcription temps réel');
+    };
+    
+    ws.onmessage = (event) => {
+      const message = JSON.parse(event.data);
+      
+      if (message.type === 'transcription_result') {
+        setRealtimeTranscription(message.text);
+        addDebug('📝 Transcription reçue', { text: message.text.substring(0, 50) + '...', isFinal: message.isFinal });
+        
+        if (message.isFinal) {
+          setIsRealtimeTranscribing(false);
+        }
+      } else if (message.type === 'error') {
+        console.error('Transcription error:', message.message);
+        addDebug('❌ Erreur transcription temps réel', { error: message.message });
+        toast.error(`Erreur de transcription: ${message.message}`);
+      }
+    };
+    
+    ws.onclose = () => {
+      console.log('Disconnected from real-time transcription');
+      setIsRealtimeTranscribing(false);
+      addDebug('🔌 WebSocket déconnecté');
+    };
+    
+    ws.onerror = (error) => {
+      console.error('WebSocket error:', error);
+      setIsRealtimeTranscribing(false);
+      addDebug('❌ Erreur WebSocket', { error });
+    };
+    
+    setWsConnection(ws);
+  };
+
+  const sendAudioChunkForTranscription = async (audioBlob: Blob) => {
+    if (!wsConnection || wsConnection.readyState !== WebSocket.OPEN) return;
+    
+    try {
+      const arrayBuffer = await audioBlob.arrayBuffer();
+      const uint8Array = new Uint8Array(arrayBuffer);
+      let binaryString = '';
+      const chunkSize = 32768;
+      
+      for (let i = 0; i < uint8Array.length; i += chunkSize) {
+        const chunk = uint8Array.subarray(i, Math.min(i + chunkSize, uint8Array.length));
+        binaryString += String.fromCharCode.apply(null, Array.from(chunk));
+      }
+      
+      const base64Audio = btoa(binaryString);
+      
+      wsConnection.send(JSON.stringify({
+        type: 'audio_chunk',
+        audioData: base64Audio
+      }));
+      
+      addDebug('🎤 Chunk audio envoyé', { size: audioBlob.size });
+    } catch (error) {
+      console.error('Error sending audio chunk:', error);
+      addDebug('❌ Erreur envoi chunk audio', { error });
+    }
+  };
+
   // Initialiser l'enregistrement
   const startRecording = async () => {
     try {
@@ -137,6 +215,11 @@ const AudioCaptureFloat: React.FC<AudioCaptureFloatProps> = ({
           sampleRate: 44100
         }
       });
+
+      // Setup real-time transcription if immediate mode is selected
+      if (transcriptionMode === 'immediate') {
+        setupRealtimeTranscription();
+      }
 
       // Configuration MediaRecorder
       const mediaRecorder = new MediaRecorder(stream, {
@@ -169,6 +252,11 @@ const AudioCaptureFloat: React.FC<AudioCaptureFloatProps> = ({
       mediaRecorder.ondataavailable = (event) => {
         if (event.data.size > 0) {
           audioChunksRef.current.push(event.data);
+          
+          // Send chunk to real-time transcription if in immediate mode
+          if (transcriptionMode === 'immediate' && wsConnection && event.data.size > 0) {
+            sendAudioChunkForTranscription(event.data);
+          }
         }
       };
 
@@ -197,10 +285,19 @@ const AudioCaptureFloat: React.FC<AudioCaptureFloatProps> = ({
 
         setTitle(`Mémo vocal - ${timestamp}`);
         stream.getTracks().forEach(track => track.stop());
+        
+        // Finalize real-time transcription
+        if (transcriptionMode === 'immediate' && wsConnection) {
+          wsConnection.send(JSON.stringify({ type: 'finalize' }));
+        }
       };
 
       // Démarrer l'enregistrement
-      mediaRecorder.start();
+      if (transcriptionMode === 'immediate') {
+        mediaRecorder.start(1000); // Record in 1-second chunks
+      } else {
+        mediaRecorder.start();
+      }
       setIsRecording(true);
       setRecordingTime(0);
       updateAudioLevel();
@@ -226,6 +323,13 @@ const AudioCaptureFloat: React.FC<AudioCaptureFloatProps> = ({
       
       if (recordingIntervalRef.current) {
         clearInterval(recordingIntervalRef.current);
+      }
+      
+      // Close WebSocket connection
+      if (wsConnection) {
+        wsConnection.close();
+        setWsConnection(null);
+        setIsRealtimeTranscribing(false);
       }
       
       toast.success('Enregistrement terminé');
@@ -263,6 +367,8 @@ const AudioCaptureFloat: React.FC<AudioCaptureFloatProps> = ({
       }
       setIsPlaying(false);
     }
+    setRealtimeTranscription('');
+    setShowRealtimeTranscription(false);
   };
 
   // Import de fichier
@@ -509,17 +615,72 @@ const AudioCaptureFloat: React.FC<AudioCaptureFloatProps> = ({
                     >
                       Après upload
                     </Button>
-                    <Button
-                      type="button"
-                      variant={transcriptionMode === 'immediate' ? 'default' : 'outline'}
-                      size="sm"
-                      onClick={() => setTranscriptionMode('immediate')}
-                      className="flex-1"
-                    >
-                      Temps réel
-                    </Button>
+                     <Button
+                       type="button"
+                       variant={transcriptionMode === 'immediate' ? 'default' : 'outline'}
+                       size="sm"
+                       onClick={() => {
+                         setTranscriptionMode('immediate');
+                         setShowRealtimeTranscription(false);
+                         setRealtimeTranscription('');
+                       }}
+                       className="flex-1"
+                     >
+                       Temps réel
+                      </Button>
+                   </div>
                   </div>
-                </div>
+                
+                {/* Real-time transcription display */}
+                {transcriptionMode === 'immediate' && (showRealtimeTranscription || isRealtimeTranscribing) && (
+                  <div className="mt-4 p-4 bg-muted/20 rounded-lg border border-dashed border-muted">
+                    <div className="flex items-center gap-2 mb-3">
+                      <FileText className="w-4 h-4 text-purple-500" />
+                      <span className="text-sm font-medium">Transcription en temps réel</span>
+                      {isRealtimeTranscribing && (
+                        <div className="flex items-center gap-1 ml-auto">
+                          <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                          <span className="text-xs text-muted-foreground">En cours...</span>
+                        </div>
+                      )}
+                    </div>
+                    
+                    <div className="bg-background/50 rounded-md p-3 min-h-[80px] border">
+                      {realtimeTranscription ? (
+                        <p className="text-sm text-foreground leading-relaxed">
+                          {realtimeTranscription}
+                        </p>
+                      ) : (
+                        <p className="text-sm text-muted-foreground italic">
+                          {isRealtimeTranscribing ? "Écoute en cours..." : "Commencez à parler pour voir la transcription"}
+                        </p>
+                      )}
+                    </div>
+                    
+                    {realtimeTranscription && (
+                      <div className="flex gap-2 mt-3">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => navigator.clipboard.writeText(realtimeTranscription)}
+                          className="flex items-center gap-1"
+                        >
+                          <Copy className="w-3 h-3" />
+                          Copier
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setRealtimeTranscription('')}
+                          className="flex items-center gap-1"
+                        >
+                          <Trash2 className="w-3 h-3" />
+                          Effacer
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             )}
           </div>
@@ -564,6 +725,57 @@ const AudioCaptureFloat: React.FC<AudioCaptureFloatProps> = ({
                     <span>{uploadProgress}%</span>
                   </div>
                   <Progress value={uploadProgress} />
+                </div>
+              )}
+              
+              {/* Real-time transcription display */}
+              {transcriptionMode === 'immediate' && (showRealtimeTranscription || isRealtimeTranscribing) && (
+                <div className="mt-4 p-4 bg-muted/20 rounded-lg border border-dashed border-muted">
+                  <div className="flex items-center gap-2 mb-3">
+                    <FileText className="w-4 h-4 text-purple-500" />
+                    <span className="text-sm font-medium">Transcription en temps réel</span>
+                    {isRealtimeTranscribing && (
+                      <div className="flex items-center gap-1 ml-auto">
+                        <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                        <span className="text-xs text-muted-foreground">En cours...</span>
+                      </div>
+                    )}
+                  </div>
+                  
+                  <div className="bg-background/50 rounded-md p-3 min-h-[80px] border">
+                    {realtimeTranscription ? (
+                      <p className="text-sm text-foreground leading-relaxed">
+                        {realtimeTranscription}
+                      </p>
+                    ) : (
+                      <p className="text-sm text-muted-foreground italic">
+                        {isRealtimeTranscribing ? "Écoute en cours..." : "Commencez à parler pour voir la transcription"}
+                      </p>
+                    )}
+                  </div>
+                  
+                  {realtimeTranscription && (
+                    <div className="flex gap-2 mt-3">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => navigator.clipboard.writeText(realtimeTranscription)}
+                        className="flex items-center gap-1"
+                      >
+                        <Copy className="w-3 h-3" />
+                        Copier
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setRealtimeTranscription('')}
+                        className="flex items-center gap-1"
+                      >
+                        <Trash2 className="w-3 h-3" />
+                        Effacer
+                      </Button>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
