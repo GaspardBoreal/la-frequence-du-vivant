@@ -10,6 +10,8 @@ import { saveAudio, fetchExistingAudio, deleteAudio, updateAudioMetadata, Existi
 import { toast } from 'sonner';
 import { useQueryClient, useQuery } from '@tanstack/react-query';
 import { supabase } from '../../../integrations/supabase/client';
+import TranscriptionIndicator from '../TranscriptionIndicator';
+import TranscriptionModal from '../TranscriptionModal';
 
 type AudioStatus = 'pending' | 'uploading' | 'uploaded' | 'error';
 
@@ -40,6 +42,10 @@ const AudioGalleryMobile: React.FC<AudioGalleryMobileProps> = ({
   const [playingAudioId, setPlayingAudioId] = useState<string | null>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
   const queryClient = useQueryClient();
+
+  // État pour la modal de transcription
+  const [transcriptionModalOpen, setTranscriptionModalOpen] = useState(false);
+  const [selectedAudioForTranscription, setSelectedAudioForTranscription] = useState<ExistingAudio | null>(null);
 
   // Utiliser React Query pour les audios existants
   const { data: existingAudios = [], isLoading, refetch: refetchAudios } = useQuery({
@@ -236,6 +242,21 @@ const AudioGalleryMobile: React.FC<AudioGalleryMobileProps> = ({
     }
   };
 
+  const openTranscriptionModal = (audio: ExistingAudio) => {
+    setSelectedAudioForTranscription(audio);
+    setTranscriptionModalOpen(true);
+  };
+
+  const closeTranscriptionModal = () => {
+    setTranscriptionModalOpen(false);
+    setSelectedAudioForTranscription(null);
+  };
+
+  const handleTranscriptionUpdate = () => {
+    // Invalider le cache pour recharger les données mises à jour
+    queryClient.invalidateQueries({ queryKey: ['existing-audio', marcheId] });
+  };
+
   const formatDuration = (seconds?: number) => {
     if (!seconds) return '--:--';
     const mins = Math.floor(seconds / 60);
@@ -427,6 +448,15 @@ const AudioGalleryMobile: React.FC<AudioGalleryMobileProps> = ({
                     
                     {/* Actions - always visible */}
                     <div className="flex items-center gap-1 flex-shrink-0">
+                      {/* Indicateur de transcription */}
+                      <TranscriptionIndicator
+                        status={audio.transcription_status}
+                        confidence={audio.transcription_confidence}
+                        hasText={!!audio.transcription_text}
+                        onClick={() => openTranscriptionModal(audio)}
+                        compact={true}
+                      />
+                      
                       <Button
                         type="button"
                         size="sm"
@@ -523,6 +553,16 @@ const AudioGalleryMobile: React.FC<AudioGalleryMobileProps> = ({
           </div>
         </SheetContent>
       </Sheet>
+
+      {/* Modal de transcription */}
+      {selectedAudioForTranscription && (
+        <TranscriptionModal
+          isOpen={transcriptionModalOpen}
+          onClose={closeTranscriptionModal}
+          audio={selectedAudioForTranscription}
+          onTranscriptionUpdate={handleTranscriptionUpdate}
+        />
+      )}
     </div>
   );
 };

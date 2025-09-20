@@ -13,6 +13,12 @@ export interface ExistingAudio {
   ordre?: number;
   metadata?: any;
   created_at: string;
+  transcription_status?: string;
+  transcription_text?: string;
+  transcription_confidence?: number;
+  transcription_model?: string;
+  transcription_segments?: any;
+  transcription_created_at?: string;
 }
 
 export interface AudioToUpload {
@@ -530,7 +536,7 @@ export const deleteAudio = async (audioId: string): Promise<void> => {
 // Mettre à jour les métadonnées d'un fichier audio
 export const updateAudioMetadata = async (
   audioId: string, 
-  updates: { titre?: string; description?: string; ordre?: number }
+  updates: { titre?: string; description?: string; ordre?: number; transcription_text?: string }
 ): Promise<void> => {
   console.log('📝 [updateAudioMetadata] Mise à jour audio:', audioId, updates);
   

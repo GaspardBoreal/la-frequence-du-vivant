@@ -20,6 +20,8 @@ import {
   Download
 } from 'lucide-react';
 import { formatFileSize } from '../../utils/photoUtils';
+import TranscriptionIndicator from './TranscriptionIndicator';
+import TranscriptionModal from './TranscriptionModal';
 
 interface AudioCardProps {
   audio: {
@@ -37,6 +39,12 @@ interface AudioCardProps {
     uploadStatus?: 'pending' | 'uploading' | 'processing' | 'success' | 'error';
     uploadError?: string;
     created_at?: string;
+    transcription_status?: string;
+    transcription_text?: string;
+    transcription_confidence?: number;
+    transcription_model?: string;
+    transcription_segments?: any;
+    transcription_created_at?: string;
   };
   onRemove: (id: string) => void;
   onUpload?: (id: string) => void;
@@ -58,6 +66,9 @@ const AudioCard: React.FC<AudioCardProps> = ({
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const audioRef = useRef<HTMLAudioElement>(null);
+
+  // État pour la modal de transcription
+  const [transcriptionModalOpen, setTranscriptionModalOpen] = useState(false);
 
   // Update progress when audio plays
   useEffect(() => {
@@ -366,6 +377,17 @@ const AudioCard: React.FC<AudioCardProps> = ({
               >
                 <Download className="h-4 w-4" />
               </Button>
+              
+              {/* Indicateur de transcription pour les audios existants */}
+              {audio.isExisting && (
+                <TranscriptionIndicator
+                  status={audio.transcription_status}
+                  confidence={audio.transcription_confidence}
+                  hasText={!!audio.transcription_text}
+                  onClick={() => setTranscriptionModalOpen(true)}
+                  compact={false}
+                />
+              )}
             </div>
           </div>
         )}
@@ -385,6 +407,21 @@ const AudioCard: React.FC<AudioCardProps> = ({
             {isUploading ? 'Upload...' : 'Uploader'}
           </span>
         </Button>
+      )}
+      
+      {/* Modal de transcription */}
+      {audio.isExisting && (
+        <TranscriptionModal
+          isOpen={transcriptionModalOpen}
+          onClose={() => setTranscriptionModalOpen(false)}
+          audio={{
+            ...audio,
+            nom_fichier: audio.name
+          }}
+          onTranscriptionUpdate={() => {
+            // Callback pour mettre à jour les données si nécessaire
+          }}
+        />
       )}
     </Card>
   );
