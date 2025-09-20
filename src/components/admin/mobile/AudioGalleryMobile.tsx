@@ -8,6 +8,7 @@ import { Progress } from '../../ui/progress';
 import { Edit3, Trash2, Upload, Play, Pause, Volume2, Loader2, RotateCcw } from 'lucide-react';
 import { saveAudio, fetchExistingAudio, deleteAudio, updateAudioMetadata, ExistingAudio, AudioToUpload } from '../../../utils/supabaseAudioOperations';
 import { toast } from 'sonner';
+import { useQueryClient } from '@tanstack/react-query';
 
 type AudioStatus = 'pending' | 'uploading' | 'uploaded' | 'error';
 
@@ -39,6 +40,7 @@ const AudioGalleryMobile: React.FC<AudioGalleryMobileProps> = ({
   const [editDescription, setEditDescription] = useState('');
   const [playingAudioId, setPlayingAudioId] = useState<string | null>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
+  const queryClient = useQueryClient();
 
   useEffect(() => {
     loadExistingAudios();
@@ -101,6 +103,10 @@ const AudioGalleryMobile: React.FC<AudioGalleryMobileProps> = ({
       const audioId = await saveAudio(marcheId, audioData);
       updateAudioStatus(audioIndex, 'uploaded', 100);
       
+      // Invalider le cache React Query pour forcer le rafraîchissement
+      queryClient.invalidateQueries({ queryKey: ['audios-count', marcheId] });
+      queryClient.invalidateQueries({ queryKey: ['existing-audio', marcheId] });
+      
       onAudioUploaded(audioId);
       await loadExistingAudios();
       toast.success('🎵 Audio uploadé avec succès !');
@@ -140,6 +146,11 @@ const AudioGalleryMobile: React.FC<AudioGalleryMobileProps> = ({
   const handleDeleteAudio = async (audioId: string) => {
     try {
       await deleteAudio(audioId);
+      
+      // Invalider le cache React Query pour forcer le rafraîchissement
+      queryClient.invalidateQueries({ queryKey: ['audios-count', marcheId] });
+      queryClient.invalidateQueries({ queryKey: ['existing-audio', marcheId] });
+      
       onAudioRemoved(audioId);
       await loadExistingAudios();
       toast.success('🗑️ Audio supprimé');
@@ -157,6 +168,10 @@ const AudioGalleryMobile: React.FC<AudioGalleryMobileProps> = ({
         titre: editTitle,
         description: editDescription
       });
+      
+      // Invalider le cache React Query pour forcer le rafraîchissement
+      queryClient.invalidateQueries({ queryKey: ['audios-count', marcheId] });
+      queryClient.invalidateQueries({ queryKey: ['existing-audio', marcheId] });
       
       await loadExistingAudios();
       setSelectedAudio(null);
