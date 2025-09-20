@@ -96,30 +96,59 @@ export const validateAudioFile = (file: File): { valid: boolean; errors: string[
 };
 
 // Fonction utilitaire pour obtenir la durée d'un fichier audio
-export const getAudioDuration = (file: File): Promise<number | null> => {
-  return new Promise((resolve) => {
-    console.log('🎵 [getAudioDuration] Calcul de la durée pour:', file.name);
+export const getAudioDuration = async (file: File): Promise<number | null> => {
+  console.log('🎵 [getAudioDuration] Calcul de la durée pour:', file.name);
+  
+  // Import dynamique du calculateur robuste
+  try {
+    const { getAudioDurationRobust } = await import('./audioDurationCalculator');
+    const result = await getAudioDurationRobust(file);
     
-    const audio = new Audio();
+    if (result.duration && result.duration > 0) {
+      console.log(`✅ [getAudioDuration] Durée calculée: ${result.duration}s (méthode: ${result.method}, confiance: ${result.confidence})`);
+      return result.duration;
+    } else {
+      console.warn(`⚠️ [getAudioDuration] Impossible de calculer la durée:`, result.error);
+      return null;
+    }
+  } catch (error) {
+    console.error('❌ [getAudioDuration] Erreur lors du calcul robuste:', error);
     
-    const cleanup = () => {
-      URL.revokeObjectURL(audio.src);
-    };
-
-    audio.addEventListener('loadedmetadata', () => {
-      console.log('✅ [getAudioDuration] Durée calculée:', audio.duration, 'secondes');
-      cleanup();
-      resolve(audio.duration);
+    // Fallback vers l'ancienne méthode en cas d'erreur d'import
+    return new Promise((resolve) => {
+      const audio = new Audio();
+      const url = URL.createObjectURL(file);
+      
+      const cleanup = () => URL.revokeObjectURL(url);
+      
+      audio.addEventListener('loadedmetadata', () => {
+        cleanup();
+        const duration = audio.duration;
+        if (duration && isFinite(duration) && duration > 0) {
+          console.log('✅ [getAudioDuration] Durée fallback:', Math.round(duration), 'secondes');
+          resolve(Math.round(duration));
+        } else {
+          console.warn('⚠️ [getAudioDuration] Durée invalide:', duration);
+          resolve(null);
+        }
+      });
+      
+      audio.addEventListener('error', (e) => {
+        cleanup();
+        console.error('❌ [getAudioDuration] Erreur fallback:', e);
+        resolve(null);
+      });
+      
+      // Timeout de sécurité
+      setTimeout(() => {
+        cleanup();
+        console.warn('⏰ [getAudioDuration] Timeout fallback');
+        resolve(null);
+      }, 10000);
+      
+      audio.src = url;
     });
-
-    audio.addEventListener('error', (e) => {
-      console.error('❌ [getAudioDuration] Erreur lors du calcul de la durée:', e);
-      cleanup();
-      resolve(null);
-    });
-
-    audio.src = URL.createObjectURL(file);
-  });
+  }
 };
 
 // Fonction utilitaire pour valider et nettoyer les métadonnées audio

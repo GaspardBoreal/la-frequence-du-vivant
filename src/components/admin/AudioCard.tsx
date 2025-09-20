@@ -170,9 +170,15 @@ const AudioCard: React.FC<AudioCardProps> = ({
   };
 
   const formatDuration = (seconds: number | null): string => {
-    if (!seconds) return 'Durée inconnue';
-    const mins = Math.floor(seconds / 60);
-    const secs = Math.floor(seconds % 60);
+    if (!seconds || seconds <= 0) return '--:--';
+    
+    const hours = Math.floor(seconds / 3600);
+    const mins = Math.floor((seconds % 3600) / 60);
+    const secs = seconds % 60;
+    
+    if (hours > 0) {
+      return `${hours}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+    }
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
@@ -283,8 +289,19 @@ const AudioCard: React.FC<AudioCardProps> = ({
           </div>
           <div className="flex items-center space-x-2">
             <Volume2 className="h-3 w-3 text-gray-400" />
-            <span className="text-xs text-gray-500">
+            <span className={`text-xs font-medium transition-colors duration-200 ${
+              audio.duration 
+                ? audio.duration > 600 
+                  ? audio.duration > 1800
+                    ? 'text-amber-600' // >30min: Amber (très long)
+                    : 'text-orange-600' // >10min: Orange (long)
+                  : 'text-green-600' // ≤10min: Vert (normal)
+                : 'text-red-500 animate-pulse' // Pas de durée: Rouge
+            }`}>
               {formatDuration(audio.duration)}
+              {audio.duration && audio.duration > 1800 && (
+                <span className="ml-1 text-amber-500 animate-bounce">⚠️</span>
+              )}
             </span>
           </div>
         </div>

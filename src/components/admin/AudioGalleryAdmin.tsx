@@ -194,9 +194,15 @@ const AudioGalleryAdmin: React.FC<AudioGalleryAdminProps> = ({ marches }) => {
   };
 
   const formatDuration = (seconds: number | null) => {
-    if (!seconds) return 'N/A';
-    const mins = Math.floor(seconds / 60);
+    if (!seconds || seconds <= 0) return '--:--';
+    
+    const hours = Math.floor(seconds / 3600);
+    const mins = Math.floor((seconds % 3600) / 60);
     const secs = seconds % 60;
+    
+    if (hours > 0) {
+      return `${hours}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+    }
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
@@ -350,7 +356,18 @@ const AudioGalleryAdmin: React.FC<AudioGalleryAdminProps> = ({ marches }) => {
                     </Badge>
                     <span className="text-xs text-muted-foreground flex items-center gap-1">
                       <Clock className="h-3 w-3" />
-                      {formatDuration(audio.duree_secondes)}
+                      <span className={
+                        audio.duree_secondes 
+                          ? audio.duree_secondes > 600 
+                            ? 'text-orange-600 font-medium' 
+                            : 'text-gray-700'
+                          : 'text-red-500'
+                      }>
+                        {formatDuration(audio.duree_secondes)}
+                        {audio.duree_secondes && audio.duree_secondes > 1800 && (
+                          <span className="ml-1 text-amber-600 animate-pulse">⚠️</span>
+                        )}
+                      </span>
                     </span>
                   </div>
                 </div>
