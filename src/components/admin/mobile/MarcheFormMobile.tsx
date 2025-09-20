@@ -117,10 +117,29 @@ const MarcheFormMobile: React.FC<MarcheFormMobileProps> = ({
   const handlePhotoUploaded = (photoId: string) => {
     // Retirer la photo des pending une fois uploadée
     setPendingPhotos(prev => prev.filter((_, index) => index > 0));
+    // Invalider le cache pour rafraîchir le compteur
+    queryClient.invalidateQueries({ queryKey: ['photos-count', marcheId] });
   };
 
   const handlePhotoRemoved = (photoId: string) => {
+    // Invalider le cache pour rafraîchir le compteur
+    queryClient.invalidateQueries({ queryKey: ['photos-count', marcheId] });
     toast.info('🗑️ Photo supprimée');
+  };
+
+  const handleAudioUploaded = (audioId: string) => {
+    console.log('🎵 [MarcheFormMobile] Audio uploadé:', audioId);
+    // Invalider le cache pour rafraîchir le compteur
+    queryClient.invalidateQueries({ queryKey: ['audios-count', marcheId] });
+    queryClient.invalidateQueries({ queryKey: ['existing-audio', marcheId] });
+  };
+
+  const handleAudioRemoved = (audioId: string) => {
+    console.log('🗑️ [MarcheFormMobile] Audio supprimé:', audioId);
+    // Invalider le cache pour rafraîchir le compteur
+    queryClient.invalidateQueries({ queryKey: ['audios-count', marcheId] });
+    queryClient.invalidateQueries({ queryKey: ['existing-audio', marcheId] });
+    toast.info('🗑️ Audio supprimé');
   };
 
   const handleGeolocation = async () => {
@@ -532,20 +551,8 @@ const MarcheFormMobile: React.FC<MarcheFormMobileProps> = ({
             <AudioGalleryMobile
               marcheId={marcheId}
               pendingAudios={[]}
-              onAudioUploaded={() => {
-                // Invalider les queries pour rafraîchir le compteur
-                queryClient.invalidateQueries({
-                  queryKey: ['audios-count', marcheId]
-                });
-                toast.success('🎵 Audio uploadé avec succès !');
-              }}
-              onAudioRemoved={() => {
-                // Invalider les queries pour rafraîchir le compteur
-                queryClient.invalidateQueries({
-                  queryKey: ['audios-count', marcheId]
-                });
-                toast.success('🗑️ Audio supprimé');
-              }}
+              onAudioUploaded={handleAudioUploaded}
+              onAudioRemoved={handleAudioRemoved}
             />
           </div>
         )}
@@ -582,13 +589,7 @@ const MarcheFormMobile: React.FC<MarcheFormMobileProps> = ({
           <MediaCaptureFloat
             marcheId={marcheId}
             onPhotoCaptured={handlePhotoCaptured}
-            onAudioUploaded={() => {
-              // Invalider les queries pour rafraîchir le compteur
-              queryClient.invalidateQueries({
-                queryKey: ['audios-count', marcheId]
-              });
-              toast.success('🎵 Audio ajouté avec succès !');
-            }}
+            onAudioUploaded={() => handleAudioUploaded('unknown')}
             pendingPhotosCount={pendingPhotos.length}
             disabled={isSubmitting}
           />

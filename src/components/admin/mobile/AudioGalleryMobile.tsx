@@ -8,7 +8,8 @@ import { Progress } from '../../ui/progress';
 import { Edit3, Trash2, Upload, Play, Pause, Volume2, Loader2, RotateCcw } from 'lucide-react';
 import { saveAudio, fetchExistingAudio, deleteAudio, updateAudioMetadata, ExistingAudio, AudioToUpload } from '../../../utils/supabaseAudioOperations';
 import { toast } from 'sonner';
-import { useQueryClient } from '@tanstack/react-query';
+import { useQueryClient, useQuery } from '@tanstack/react-query';
+import { supabase } from '../../../integrations/supabase/client';
 
 type AudioStatus = 'pending' | 'uploading' | 'uploaded' | 'error';
 
@@ -31,9 +32,7 @@ const AudioGalleryMobile: React.FC<AudioGalleryMobileProps> = ({
   onAudioUploaded,
   onAudioRemoved
 }) => {
-  const [existingAudios, setExistingAudios] = useState<ExistingAudio[]>([]);
   const [pendingAudiosWithStatus, setPendingAudiosWithStatus] = useState<PendingAudioWithStatus[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [selectedAudio, setSelectedAudio] = useState<ExistingAudio | null>(null);
   const [editTitle, setEditTitle] = useState('');
@@ -42,9 +41,47 @@ const AudioGalleryMobile: React.FC<AudioGalleryMobileProps> = ({
   const audioRef = useRef<HTMLAudioElement>(null);
   const queryClient = useQueryClient();
 
+  // Utiliser React Query pour les audios existants
+  const { data: existingAudios = [], isLoading, refetch: refetchAudios } = useQuery({
+    queryKey: ['existing-audio', marcheId],
+    queryFn: () => fetchExistingAudio(marcheId),
+    enabled: !!marcheId,
+    staleTime: 30000 // 30 secondes
+  });
+
+  // Subscription Realtime pour détecter les changements
   useEffect(() => {
-    loadExistingAudios();
-  }, [marcheId]);
+    if (!marcheId) return;
+
+    console.log('🔔 [AudioGalleryMobile] Mise en place de la subscription Realtime pour marche_audio');
+    
+    const channel = supabase
+      .channel('marche_audio_changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'marche_audio',
+          filter: `marche_id=eq.${marcheId}`
+        },
+        (payload) => {
+          console.log('🔔 [AudioGalleryMobile] Changement détecté sur marche_audio:', payload);
+          
+          // Invalider et recharger les données
+          queryClient.invalidateQueries({ queryKey: ['existing-audio', marcheId] });
+          queryClient.invalidateQueries({ queryKey: ['audios-count', marcheId] });
+          
+          toast.info('🎵 Liste audio mise à jour');
+        }
+      )
+      .subscribe();
+
+    return () => {
+      console.log('🔔 [AudioGalleryMobile] Nettoyage de la subscription Realtime');
+      supabase.removeChannel(channel);
+    };
+  }, [marcheId, queryClient]);
 
   useEffect(() => {
     setPendingAudiosWithStatus(
@@ -54,21 +91,6 @@ const AudioGalleryMobile: React.FC<AudioGalleryMobileProps> = ({
       }))
     );
   }, [pendingAudios]);
-
-  const loadExistingAudios = async () => {
-    if (!marcheId) return;
-    
-    try {
-      setIsLoading(true);
-      const audios = await fetchExistingAudio(marcheId);
-      setExistingAudios(audios);
-    } catch (error) {
-      console.error('Erreur chargement audio:', error);
-      toast.error('Erreur lors du chargement des audios');
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
   const updateAudioStatus = (audioIndex: number, status: AudioStatus, progress?: number, error?: string) => {
     setPendingAudiosWithStatus(prev => 
@@ -108,7 +130,7 @@ const AudioGalleryMobile: React.FC<AudioGalleryMobileProps> = ({
       queryClient.invalidateQueries({ queryKey: ['existing-audio', marcheId] });
       
       onAudioUploaded(audioId);
-      await loadExistingAudios();
+      // Pas besoin de loadExistingAudios car React Query + Realtime se charge du refresh
       toast.success('🎵 Audio uploadé avec succès !');
       
       // Remove from pending after successful upload
@@ -152,7 +174,7 @@ const AudioGalleryMobile: React.FC<AudioGalleryMobileProps> = ({
       queryClient.invalidateQueries({ queryKey: ['existing-audio', marcheId] });
       
       onAudioRemoved(audioId);
-      await loadExistingAudios();
+      // Pas besoin de loadExistingAudios car React Query + Realtime se charge du refresh
       toast.success('🗑️ Audio supprimé');
     } catch (error) {
       console.error('Erreur suppression audio:', error);
@@ -173,7 +195,7 @@ const AudioGalleryMobile: React.FC<AudioGalleryMobileProps> = ({
       queryClient.invalidateQueries({ queryKey: ['audios-count', marcheId] });
       queryClient.invalidateQueries({ queryKey: ['existing-audio', marcheId] });
       
-      await loadExistingAudios();
+      // Pas besoin de loadExistingAudios car React Query + Realtime se charge du refresh
       setSelectedAudio(null);
       toast.success('✏️ Audio modifié');
     } catch (error) {
