@@ -103,9 +103,11 @@ const SimplifiedAudioCaptureFloat: React.FC<SimplifiedAudioCaptureFloatProps> = 
 
     const connect = () => {
       try {
+        console.log('Connecting to realtime transcription WebSocket:', url);
         const ws = new WebSocket(url);
 
         ws.onopen = () => {
+          console.log('WebSocket connected successfully');
           wsRetriesRef.current = 0;
           setIsTranscribing(true);
           toast.success('Transcription temps réel activée');
@@ -114,6 +116,7 @@ const SimplifiedAudioCaptureFloat: React.FC<SimplifiedAudioCaptureFloatProps> = 
         ws.onmessage = (event) => {
           try {
             const message = JSON.parse(event.data);
+            console.log('WebSocket message received:', message);
             if (message.type === 'transcription_result') {
               setTranscriptionText(prev => message.isFinal ? message.text : prev + message.text);
             } else if (message.type === 'error') {
@@ -126,6 +129,7 @@ const SimplifiedAudioCaptureFloat: React.FC<SimplifiedAudioCaptureFloatProps> = 
         };
 
         ws.onclose = (evt) => {
+          console.log('WebSocket closed:', evt.code, evt.reason);
           setIsTranscribing(false);
           // Auto-retry a few times if user still wants realtime
           if (realtimeTranscription && wsRetriesRef.current < 3) {
@@ -133,17 +137,21 @@ const SimplifiedAudioCaptureFloat: React.FC<SimplifiedAudioCaptureFloatProps> = 
             const delay = 500 * wsRetriesRef.current; // simple backoff
             console.warn(`WS closed, retrying in ${delay}ms (attempt ${wsRetriesRef.current})`);
             setTimeout(connect, delay);
+          } else if (evt.code !== 1000) {
+            toast.error('Connexion transcription temps réel fermée');
           }
         };
 
         ws.onerror = (err) => {
           console.error('WebSocket error:', err);
+          toast.error('Erreur de connexion transcription temps réel');
         };
 
         setWsConnection(ws);
       } catch (error) {
         console.error('Failed to open realtime transcription WS:', error);
         toast.error('Impossible de démarrer la transcription temps réel');
+        throw error; // Re-throw to be caught by caller
       }
     };
 
@@ -207,10 +215,14 @@ const SimplifiedAudioCaptureFloat: React.FC<SimplifiedAudioCaptureFloatProps> = 
         }
       });
 
-      // Setup real-time transcription WebSocket FIRST
+      // Setup real-time transcription WebSocket (don't let it block timer)
       if (withTranscription && realtimeTranscription) {
         console.log('Setting up real-time transcription');
-        setupRealtimeTranscription();
+        try {
+          setupRealtimeTranscription();
+        } catch (error) {
+          console.error('Real-time transcription setup failed, but continuing with recording:', error);
+        }
       }
 
       // Setup MediaRecorder for final file
@@ -325,7 +337,10 @@ const SimplifiedAudioCaptureFloat: React.FC<SimplifiedAudioCaptureFloatProps> = 
       setCurrentStep('recording');
       updateAudioLevel();
 
+      // Start timer immediately (don't let it be blocked by other operations)
+      console.log('Starting recording timer');
       recordingIntervalRef.current = setInterval(() => {
+        console.log('Timer tick, incrementing recording time');
         setRecordingTime(prev => prev + 1);
       }, 1000);
 

@@ -33,3 +33,6 @@ verify_jwt = false
 
 [functions.sentinel-hub]
 verify_jwt = false
+
+[functions.realtime-transcription]
+verify_jwt = false
