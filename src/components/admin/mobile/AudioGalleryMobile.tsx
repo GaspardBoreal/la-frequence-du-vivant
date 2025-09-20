@@ -12,6 +12,8 @@ import { useQueryClient, useQuery } from '@tanstack/react-query';
 import { supabase } from '../../../integrations/supabase/client';
 import TranscriptionIndicator from '../TranscriptionIndicator';
 import TranscriptionModal from '../TranscriptionModal';
+import { SmartDurationBadge } from '../SmartDurationBadge';
+import { AudioDurationManager } from '../AudioDurationManager';
 
 type AudioStatus = 'pending' | 'uploading' | 'uploaded' | 'error';
 
@@ -417,7 +419,12 @@ const AudioGalleryMobile: React.FC<AudioGalleryMobileProps> = ({
       {/* Existing Audios */}
       {allAudios.length > 0 && (
         <div className="space-y-3">
-          <h4 className="font-medium text-sm text-muted-foreground">Audio uploadés</h4>
+          <div className="flex items-center justify-between">
+            <h4 className="font-medium text-sm text-muted-foreground">Audio uploadés</h4>
+            <AudioDurationManager onRecalculationComplete={() => {
+              queryClient.invalidateQueries({ queryKey: ['existing-audio', marcheId] });
+            }} />
+          </div>
           <div className="space-y-2">
             {allAudios.map((audio) => (
               <div key={audio.id} className="relative">
@@ -446,10 +453,18 @@ const AudioGalleryMobile: React.FC<AudioGalleryMobileProps> = ({
                       <p className="font-medium text-sm truncate mb-1">
                         {audio.titre || audio.nom_fichier}
                       </p>
-                      <p className="text-xs text-muted-foreground">
-                        {formatDuration(audio.duree_secondes)}
-                        {audio.taille_octets && ` • ${formatFileSize(audio.taille_octets)}`}
-                      </p>
+                      <div className="flex items-center gap-2">
+                        <SmartDurationBadge 
+                          duration={audio.duree_secondes}
+                          size={audio.taille_octets}
+                          className="text-xs"
+                        />
+                        {audio.taille_octets && (
+                          <span className="text-xs text-muted-foreground">
+                            {formatFileSize(audio.taille_octets)}
+                          </span>
+                        )}
+                      </div>
                     </div>
                     
                     {/* Actions - always visible */}
