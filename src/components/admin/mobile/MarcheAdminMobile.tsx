@@ -39,10 +39,16 @@ const MarcheAdminMobile = () => {
     setViewMode('edit');
   };
 
-  const handleSuccess = () => {
+  const handleFormSuccess = () => {
     toast.success('Marche sauvegardée avec succès !');
     setViewMode('list');
     setEditingMarcheId(null);
+    refetch();
+  };
+
+  const handleStayOnMarche = () => {
+    // Fonction pour rester sur la marche actuelle après des opérations (audio, photos, etc.)
+    // Ne fait que rafraîchir les données sans changer de vue
     refetch();
   };
 
@@ -230,7 +236,7 @@ const MarcheAdminMobile = () => {
             mode={viewMode === 'edit' ? 'edit' : 'create'}
             marcheId={editingMarcheId}
             onCancel={handleReturnHome}
-            onSuccess={handleSuccess}
+            onSuccess={handleFormSuccess}
           />
         </div>
       </div>
