@@ -131,14 +131,21 @@ const SimplifiedAudioCaptureFloat: React.FC<SimplifiedAudioCaptureFloatProps> = 
         ws.onclose = (evt) => {
           console.log('WebSocket closed:', evt.code, evt.reason);
           setIsTranscribing(false);
-          // Auto-retry a few times if user still wants realtime
-          if (realtimeTranscription && wsRetriesRef.current < 3) {
+          setWsConnection(null);
+          
+          // Auto-retry only if connection was working before
+          if (realtimeTranscription && wsRetriesRef.current < 2 && evt.code !== 1000) {
             wsRetriesRef.current += 1;
-            const delay = 500 * wsRetriesRef.current; // simple backoff
-            console.warn(`WS closed, retrying in ${delay}ms (attempt ${wsRetriesRef.current})`);
-            setTimeout(connect, delay);
+            const delay = Math.min(2000 * wsRetriesRef.current, 5000); // exponential backoff, max 5s
+            console.warn(`WS closed abnormally (${evt.code}), retrying in ${delay}ms (attempt ${wsRetriesRef.current})`);
+            setTimeout(() => {
+              if (realtimeTranscription && isRecording) { // only retry if still recording
+                connect();
+              }
+            }, delay);
           } else if (evt.code !== 1000) {
-            toast.error('Connexion transcription temps réel fermée');
+            console.error('WebSocket connection failed definitively');
+            toast.error('Transcription temps réel indisponible');
           }
         };
 
@@ -160,13 +167,16 @@ const SimplifiedAudioCaptureFloat: React.FC<SimplifiedAudioCaptureFloatProps> = 
 
   const sendAudioChunkForTranscription = async (audioData: Float32Array) => {
     if (!wsConnection || wsConnection.readyState !== WebSocket.OPEN) {
-      console.warn('WebSocket not ready for chunk sending');
+      console.warn('WebSocket not ready for chunk sending, state:', wsConnection?.readyState);
       return;
     }
     
-    // Éviter d'envoyer trop fréquemment (max 1 chunk par seconde)
+    // Éviter d'envoyer trop fréquemment (max 1 chunk par 2 secondes pour stabilité)
     const now = Date.now();
-    if (now - lastChunkSentRef.current < 1000) return;
+    if (now - lastChunkSentRef.current < 2000) {
+      console.log('Skipping chunk - too frequent');
+      return;
+    }
     lastChunkSentRef.current = now;
     
     try {
@@ -250,6 +260,7 @@ const SimplifiedAudioCaptureFloat: React.FC<SimplifiedAudioCaptureFloatProps> = 
         
         processorRef.current.onaudioprocess = (event) => {
           const inputData = event.inputBuffer.getChannelData(0);
+          console.log('Audio process event - sending chunk for transcription, size:', inputData.length);
           // Envoyer pour transcription temps réel
           sendAudioChunkForTranscription(new Float32Array(inputData));
         };
@@ -337,11 +348,15 @@ const SimplifiedAudioCaptureFloat: React.FC<SimplifiedAudioCaptureFloatProps> = 
       setCurrentStep('recording');
       updateAudioLevel();
 
-      // Start timer immediately (don't let it be blocked by other operations)
+      // Start timer immediately (fix React state batching issue)
       console.log('Starting recording timer');
       recordingIntervalRef.current = setInterval(() => {
-        console.log('Timer tick, incrementing recording time');
-        setRecordingTime(prev => prev + 1);
+        console.log('Timer tick - updating recording time');
+        setRecordingTime(prevTime => {
+          const newTime = prevTime + 1;
+          console.log('Timer updated:', prevTime, '->', newTime);
+          return newTime;
+        });
       }, 1000);
 
     } catch (error) {
