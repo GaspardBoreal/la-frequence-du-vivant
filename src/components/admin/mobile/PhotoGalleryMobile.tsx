@@ -9,6 +9,7 @@ import { Edit3, Trash2, Upload, CheckCircle2, XCircle, Loader2, RotateCcw } from
 import { ProcessedPhoto } from '../../../utils/photoUtils';
 import { savePhoto, fetchExistingPhotos, deletePhoto, updatePhotoMetadata, ExistingPhoto } from '../../../utils/supabasePhotoOperations';
 import { toast } from 'sonner';
+import { ConfirmDeleteDialog } from '@/components/ui/confirm-delete-dialog';
 
 type PhotoStatus = 'pending' | 'uploading' | 'uploaded' | 'error';
 
@@ -38,6 +39,9 @@ const PhotoGalleryMobile: React.FC<PhotoGalleryMobileProps> = ({
   const [selectedPhoto, setSelectedPhoto] = useState<ExistingPhoto | null>(null);
   const [editTitle, setEditTitle] = useState('');
   const [editDescription, setEditDescription] = useState('');
+  const [photoToDelete, setPhotoToDelete] = useState<ExistingPhoto | null>(null);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
     loadExistingPhotos();
@@ -137,15 +141,25 @@ const PhotoGalleryMobile: React.FC<PhotoGalleryMobileProps> = ({
   };
 
   const handleDeletePhoto = async (photoId: string) => {
+    setIsDeleting(true);
     try {
       await deletePhoto(photoId);
       onPhotoRemoved(photoId);
       await loadExistingPhotos();
       toast.success('🗑️ Photo supprimée');
+      setShowDeleteDialog(false);
+      setPhotoToDelete(null);
     } catch (error) {
       console.error('Erreur suppression photo:', error);
       toast.error('Erreur lors de la suppression');
+    } finally {
+      setIsDeleting(false);
     }
+  };
+
+  const openDeleteDialog = (photo: ExistingPhoto) => {
+    setPhotoToDelete(photo);
+    setShowDeleteDialog(true);
   };
 
   const handleEditPhoto = async () => {
@@ -334,12 +348,13 @@ const PhotoGalleryMobile: React.FC<PhotoGalleryMobileProps> = ({
                   <Button
                     type="button"
                     size="sm"
-                    variant="destructive"
+                    variant="ghost"
                     onClick={(e) => {
                       e.preventDefault();
                       e.stopPropagation();
-                      handleDeletePhoto(photo.id);
+                      openDeleteDialog(photo);
                     }}
+                    className="text-destructive hover:text-destructive"
                   >
                     <Trash2 className="w-4 h-4" />
                   </Button>
@@ -404,6 +419,20 @@ const PhotoGalleryMobile: React.FC<PhotoGalleryMobileProps> = ({
           </div>
         </SheetContent>
       </Sheet>
+
+      {/* Delete Confirmation Dialog */}
+      <ConfirmDeleteDialog
+        open={showDeleteDialog}
+        onOpenChange={setShowDeleteDialog}
+        title="Supprimer la photo"
+        description={
+          photoToDelete 
+            ? `Voulez-vous vraiment supprimer la photo "${photoToDelete.titre || 'Sans titre'}" ? Cette action est irréversible.`
+            : "Voulez-vous vraiment supprimer cette photo ?"
+        }
+        onConfirm={() => photoToDelete && handleDeletePhoto(photoToDelete.id)}
+        loading={isDeleting}
+      />
     </div>
   );
 };

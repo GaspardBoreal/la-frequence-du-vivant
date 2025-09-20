@@ -14,6 +14,7 @@ import TranscriptionIndicator from '../TranscriptionIndicator';
 import TranscriptionModal from '../TranscriptionModal';
 import { SmartDurationBadge } from '../SmartDurationBadge';
 import { AudioDurationManager } from '../AudioDurationManager';
+import { ConfirmDeleteDialog } from '@/components/ui/confirm-delete-dialog';
 
 type AudioStatus = 'pending' | 'uploading' | 'uploaded' | 'error';
 
@@ -42,6 +43,9 @@ const AudioGalleryMobile: React.FC<AudioGalleryMobileProps> = ({
   const [editTitle, setEditTitle] = useState('');
   const [editDescription, setEditDescription] = useState('');
   const [playingAudioId, setPlayingAudioId] = useState<string | null>(null);
+  const [audioToDelete, setAudioToDelete] = useState<ExistingAudio | null>(null);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const audioRef = useRef<HTMLAudioElement>(null);
   const queryClient = useQueryClient();
 
@@ -174,6 +178,7 @@ const AudioGalleryMobile: React.FC<AudioGalleryMobileProps> = ({
   };
 
   const handleDeleteAudio = async (audioId: string) => {
+    setIsDeleting(true);
     try {
       await deleteAudio(audioId);
       
@@ -182,12 +187,20 @@ const AudioGalleryMobile: React.FC<AudioGalleryMobileProps> = ({
       queryClient.invalidateQueries({ queryKey: ['existing-audio', marcheId] });
       
       onAudioRemoved(audioId);
-      // Pas besoin de loadExistingAudios car React Query + Realtime se charge du refresh
       toast.success('🗑️ Audio supprimé');
+      setShowDeleteDialog(false);
+      setAudioToDelete(null);
     } catch (error) {
       console.error('Erreur suppression audio:', error);
       toast.error('Erreur lors de la suppression');
+    } finally {
+      setIsDeleting(false);
     }
+  };
+
+  const openDeleteDialog = (audio: ExistingAudio) => {
+    setAudioToDelete(audio);
+    setShowDeleteDialog(true);
   };
 
   const handleEditAudio = async () => {
@@ -500,7 +513,7 @@ const AudioGalleryMobile: React.FC<AudioGalleryMobileProps> = ({
                         onClick={(e) => {
                           e.preventDefault();
                           e.stopPropagation();
-                          handleDeleteAudio(audio.id);
+                          openDeleteDialog(audio);
                         }}
                         className="h-8 w-8 p-0 text-destructive hover:text-destructive"
                       >
@@ -589,6 +602,20 @@ const AudioGalleryMobile: React.FC<AudioGalleryMobileProps> = ({
           onTranscriptionUpdate={handleTranscriptionUpdate}
         />
       )}
+
+      {/* Delete Confirmation Dialog */}
+      <ConfirmDeleteDialog
+        open={showDeleteDialog}
+        onOpenChange={setShowDeleteDialog}
+        title="Supprimer l'audio"
+        description={
+          audioToDelete 
+            ? `Voulez-vous vraiment supprimer l'audio "${audioToDelete.titre || 'Sans titre'}" ? Cette action est irréversible.`
+            : "Voulez-vous vraiment supprimer cet audio ?"
+        }
+        onConfirm={() => audioToDelete && handleDeleteAudio(audioToDelete.id)}
+        loading={isDeleting}
+      />
     </div>
   );
 };

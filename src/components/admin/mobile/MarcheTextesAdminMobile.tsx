@@ -9,6 +9,7 @@ import { SecureRichTextEditor } from '../../ui/secure-rich-text-editor';
 import { useMarcheTextes, useCreateMarcheTexte, useUpdateMarcheTexte, useDeleteMarcheTexte, useReorderMarcheTextes, MarcheTexte } from '../../../hooks/useMarcheTextes';
 import { TextType } from '../../../types/textTypes';
 import { toast } from 'sonner';
+import { ConfirmDeleteDialog } from '@/components/ui/confirm-delete-dialog';
 
 interface MarcheTextesAdminMobileProps {
   marcheId: string;
@@ -69,6 +70,9 @@ const MarcheTextesAdminMobile: React.FC<MarcheTextesAdminMobileProps> = ({ march
   const [editContent, setEditContent] = useState('');
   const [editType, setEditType] = useState<TextType>('prose');
   const [editOrder, setEditOrder] = useState(1);
+  const [texteToDelete, setTexteToDelete] = useState<MarcheTexte | null>(null);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const handleCreateTexte = () => {
     setSelectedTexte(null);
@@ -120,14 +124,24 @@ const MarcheTextesAdminMobile: React.FC<MarcheTextesAdminMobileProps> = ({ march
     }
   };
 
-  const handleDeleteTexte = async (texteId: string, titre: string) => {
-    if (confirm(`Êtes-vous sûr de vouloir supprimer le texte "${titre}" ?`)) {
-      try {
-        await deleteTexte.mutateAsync(texteId);
-      } catch (error) {
-        console.error('Erreur lors de la suppression:', error);
-      }
+  const handleDeleteTexte = async (texteId: string) => {
+    setIsDeleting(true);
+    try {
+      await deleteTexte.mutateAsync(texteId);
+      toast.success('🗑️ Texte supprimé');
+      setShowDeleteDialog(false);
+      setTexteToDelete(null);
+    } catch (error) {
+      console.error('Erreur lors de la suppression:', error);
+      toast.error('Erreur lors de la suppression');
+    } finally {
+      setIsDeleting(false);
     }
+  };
+
+  const openDeleteDialog = (texte: MarcheTexte) => {
+    setTexteToDelete(texte);
+    setShowDeleteDialog(true);
   };
 
   const getTypeColor = (type: TextType) => {
@@ -312,7 +326,7 @@ const MarcheTextesAdminMobile: React.FC<MarcheTextesAdminMobileProps> = ({ march
                     <Button
                       size="sm"
                       variant="ghost"
-                      onClick={() => handleDeleteTexte(texte.id, texte.titre)}
+                      onClick={() => openDeleteDialog(texte)}
                       className="h-8 w-8 p-0 text-destructive hover:text-destructive"
                     >
                       <Trash2 className="w-4 h-4" />
@@ -407,6 +421,20 @@ const MarcheTextesAdminMobile: React.FC<MarcheTextesAdminMobileProps> = ({ march
           </div>
         </SheetContent>
       </Sheet>
+
+      {/* Delete Confirmation Dialog */}
+      <ConfirmDeleteDialog
+        open={showDeleteDialog}
+        onOpenChange={setShowDeleteDialog}
+        title="Supprimer le texte"
+        description={
+          texteToDelete 
+            ? `Voulez-vous vraiment supprimer le texte "${texteToDelete.titre}" ? Cette action est irréversible.`
+            : "Voulez-vous vraiment supprimer ce texte ?"
+        }
+        onConfirm={() => texteToDelete && handleDeleteTexte(texteToDelete.id)}
+        loading={isDeleting}
+      />
     </div>
   );
 };
