@@ -211,16 +211,31 @@ export const getAudioDurationRobust = async (file: File): Promise<AudioDurationR
 };
 
 /**
- * Recalcul de durée pour fichiers existants via URL
+ * Estimation de durée basée sur bytes et MIME type (pour URLs)
+ */
+const estimateDurationFromBytes = (mimeType: string | null, bytes: number): AudioDurationResult => {
+  const bitrate = AVERAGE_BITRATES[mimeType as keyof typeof AVERAGE_BITRATES] || AVERAGE_BITRATES.default;
+  const estimatedDuration = Math.round((bytes * 8) / bitrate);
+  
+  return {
+    duration: estimatedDuration,
+    method: 'estimated',
+    confidence: 'medium',
+    error: `Estimated from size (${Math.round(bytes / 1024)}KB)`
+  };
+};
+
+/**
+ * Recalcul de durée pour fichiers existants via URL avec fallback HEAD request
  */
 export const recalculateDurationFromUrl = async (url: string, filename?: string): Promise<AudioDurationResult> => {
   console.log('🔄 [recalculateDurationFromUrl] Recalcul pour:', filename || url);
   
   try {
-    const audio = new Audio();
-    audio.crossOrigin = 'anonymous';
-    
-    return new Promise((resolve) => {
+    // Méthode 1: HTML5 Audio (le plus fiable)
+    const html5Result = await new Promise<AudioDurationResult>((resolve) => {
+      const audio = new Audio();
+      audio.crossOrigin = 'anonymous';
       let resolved = false;
       
       const resolveOnce = (result: AudioDurationResult) => {
@@ -271,6 +286,38 @@ export const recalculateDurationFromUrl = async (url: string, filename?: string)
       audio.addEventListener('error', onError);
       audio.src = url;
     });
+    
+    // Si HTML5 a réussi, on retourne le résultat
+    if (html5Result.duration && html5Result.duration > 0) {
+      console.log('✅ [HTML5] URL Durée calculée:', html5Result.duration, 's');
+      return html5Result;
+    }
+    
+    console.log('⚠️ [HTML5] URL Échec, tentative HEAD request...');
+    
+    // Méthode 2: HEAD request pour estimer via taille
+    try {
+      const headResponse = await fetch(url, { method: 'HEAD' });
+      const contentLength = headResponse.headers.get('Content-Length');
+      const contentType = headResponse.headers.get('Content-Type');
+      
+      if (contentLength && parseInt(contentLength) > 0) {
+        const bytes = parseInt(contentLength);
+        const estimatedResult = estimateDurationFromBytes(contentType, bytes);
+        console.log('📊 [HEAD] Durée estimée:', estimatedResult.duration, 's');
+        return estimatedResult;
+      }
+    } catch (headError) {
+      console.warn('⚠️ [HEAD] Erreur HEAD request:', headError);
+    }
+    
+    // Aucune méthode n'a fonctionné
+    return {
+      duration: null,
+      method: 'failed',
+      confidence: 'low',
+      error: 'All recalculation methods failed'
+    };
     
   } catch (error) {
     return {

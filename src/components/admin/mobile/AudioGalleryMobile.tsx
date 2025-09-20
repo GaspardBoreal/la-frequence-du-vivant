@@ -460,6 +460,8 @@ const AudioGalleryMobile: React.FC<AudioGalleryMobileProps> = ({
                         <SmartDurationBadge 
                           duration={audio.duree_secondes}
                           size={audio.taille_octets}
+                          format={audio.format_audio}
+                          isEstimated={audio.metadata?.duration_method === 'estimated'}
                           className="text-xs"
                         />
                         {audio.taille_octets && (
