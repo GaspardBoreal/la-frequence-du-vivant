@@ -312,6 +312,7 @@ const AudioGalleryMobile: React.FC<AudioGalleryMobileProps> = ({
                 className="h-2" 
               />
               <Button
+                type="button"
                 onClick={handleUploadAll}
                 disabled={isUploading || statusCounts.pending === 0}
                 className="w-full h-10 animate-fade-in"
@@ -368,6 +369,7 @@ const AudioGalleryMobile: React.FC<AudioGalleryMobileProps> = ({
                   {audio.status === 'error' && (
                     <div className="mt-2 flex justify-center">
                       <Button
+                        type="button"
                         size="sm"
                         variant="outline"
                         onClick={() => retryUpload(index)}
@@ -426,6 +428,7 @@ const AudioGalleryMobile: React.FC<AudioGalleryMobileProps> = ({
                     {/* Actions - always visible */}
                     <div className="flex items-center gap-1 flex-shrink-0">
                       <Button
+                        type="button"
                         size="sm"
                         variant="ghost"
                         onClick={() => openEditModal(audio)}
@@ -435,9 +438,14 @@ const AudioGalleryMobile: React.FC<AudioGalleryMobileProps> = ({
                       </Button>
                       
                       <Button
+                        type="button"
                         size="sm"
                         variant="ghost"
-                        onClick={() => handleDeleteAudio(audio.id)}
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          handleDeleteAudio(audio.id);
+                        }}
                         className="h-8 w-8 p-0 text-destructive hover:text-destructive"
                       >
                         <Trash2 className="w-4 h-4" />
@@ -500,10 +508,11 @@ const AudioGalleryMobile: React.FC<AudioGalleryMobileProps> = ({
             </div>
 
             <div className="flex gap-2 pt-4">
-              <Button onClick={handleEditAudio} className="flex-1">
+              <Button type="button" onClick={handleEditAudio} className="flex-1">
                 💾 Enregistrer
               </Button>
               <Button 
+                type="button"
                 variant="outline" 
                 onClick={() => setSelectedAudio(null)}
                 className="flex-1"

@@ -233,12 +233,13 @@ const PhotoGalleryMobile: React.FC<PhotoGalleryMobileProps> = ({
                 value={(statusCounts.uploaded / statusCounts.total) * 100} 
                 className="h-2" 
               />
-              <Button
-                onClick={handleUploadAll}
-                disabled={isUploading || statusCounts.pending === 0}
-                className="w-full h-10 animate-fade-in"
-                variant="default"
-              >
+            <Button
+              type="button"
+              onClick={handleUploadAll}
+              disabled={isUploading || statusCounts.pending === 0}
+              className="w-full h-10 animate-fade-in"
+              variant="default"
+            >
                 {isUploading ? (
                   <>
                     <Loader2 className="w-4 h-4 mr-2 animate-spin" />
@@ -284,6 +285,7 @@ const PhotoGalleryMobile: React.FC<PhotoGalleryMobileProps> = ({
                 {photo.status === 'error' && (
                   <div className="absolute inset-0 bg-red-500/20 rounded-lg flex items-center justify-center">
                     <Button
+                      type="button"
                       size="sm"
                       variant="outline"
                       onClick={() => retryUpload(index)}
@@ -321,6 +323,7 @@ const PhotoGalleryMobile: React.FC<PhotoGalleryMobileProps> = ({
                 
                 <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg flex items-center justify-center gap-2">
                   <Button
+                    type="button"
                     size="sm"
                     variant="secondary"
                     onClick={() => openEditModal(photo)}
@@ -329,9 +332,14 @@ const PhotoGalleryMobile: React.FC<PhotoGalleryMobileProps> = ({
                   </Button>
                   
                   <Button
+                    type="button"
                     size="sm"
                     variant="destructive"
-                    onClick={() => handleDeletePhoto(photo.id)}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      handleDeletePhoto(photo.id);
+                    }}
                   >
                     <Trash2 className="w-4 h-4" />
                   </Button>
@@ -381,10 +389,11 @@ const PhotoGalleryMobile: React.FC<PhotoGalleryMobileProps> = ({
             </div>
 
             <div className="flex gap-2 pt-4">
-              <Button onClick={handleEditPhoto} className="flex-1">
+              <Button type="button" onClick={handleEditPhoto} className="flex-1">
                 💾 Enregistrer
               </Button>
               <Button 
+                type="button"
                 variant="outline" 
                 onClick={() => setSelectedPhoto(null)}
                 className="flex-1"

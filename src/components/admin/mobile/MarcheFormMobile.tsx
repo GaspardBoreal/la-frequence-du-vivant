@@ -456,6 +456,7 @@ const MarcheFormMobile: React.FC<MarcheFormMobileProps> = ({
                     </SheetHeader>
                     <div className="grid gap-4 py-6">
                       <Button
+                        type="button"
                         onClick={openGoogleMaps}
                         variant="outline"
                         className="h-14 text-left justify-start hover-scale"
@@ -471,6 +472,7 @@ const MarcheFormMobile: React.FC<MarcheFormMobileProps> = ({
                       </Button>
                       
                       <Button
+                        type="button"
                         onClick={openOpenStreetMap}
                         variant="outline"
                         className="h-14 text-left justify-start hover-scale"
@@ -486,6 +488,7 @@ const MarcheFormMobile: React.FC<MarcheFormMobileProps> = ({
                       </Button>
                       
                       <Button
+                        type="button"
                         onClick={openStreetView}
                         variant="outline"
                         className="h-14 text-left justify-start hover-scale"
