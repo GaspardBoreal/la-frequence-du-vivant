@@ -44,29 +44,31 @@ serve(async (req) => {
       })
       .eq('id', audioId);
 
-    // Get transcription model configuration
+    // Get transcription model configuration - force OpenAI Whisper as default
     let modelConfig;
     if (modelId) {
       const { data: model } = await supabase
         .from('transcription_models')
         .select('*')
         .eq('id', modelId)
-        .maybeSingle();
-      
-      modelConfig = model;
-    } else {
-      // Default to Whisper OpenAI
-      const { data: model } = await supabase
-        .from('transcription_models')
-        .select('*')
-        .eq('model_identifier', 'whisper-1')
+        .eq('provider', 'openai') // Only allow OpenAI models for now
         .maybeSingle();
       
       modelConfig = model;
     }
-
+    
+    // Always default to OpenAI Whisper if no model found or no modelId provided
     if (!modelConfig) {
-      throw new Error('Transcription model not found');
+      modelConfig = {
+        id: 'default-whisper',
+        name: 'OpenAI Whisper',
+        provider: 'openai',
+        model_identifier: 'whisper-1',
+        is_active: true,
+        supports_realtime: false,
+        languages: ['fr', 'en'],
+        config: {}
+      };
     }
 
     let transcriptionResult;
