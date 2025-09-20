@@ -421,9 +421,12 @@ const AudioGalleryMobile: React.FC<AudioGalleryMobileProps> = ({
         <div className="space-y-3">
           <div className="flex items-center justify-between">
             <h4 className="font-medium text-sm text-muted-foreground">Audio uploadés</h4>
-            <AudioDurationManager onRecalculationComplete={() => {
-              queryClient.invalidateQueries({ queryKey: ['existing-audio', marcheId] });
-            }} />
+            <AudioDurationManager 
+              marcheId={marcheId}
+              onRecalculationComplete={() => {
+                queryClient.invalidateQueries({ queryKey: ['existing-audio', marcheId] });
+              }} 
+            />
           </div>
           <div className="space-y-2">
             {allAudios.map((audio) => (
