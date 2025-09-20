@@ -571,7 +571,7 @@ const SimplifiedAudioCaptureFloat: React.FC<SimplifiedAudioCaptureFloatProps> = 
 
           <div className="space-y-6">
             {/* Transcription toggle */}
-            <div className="flex items-center justify-between p-4 bg-muted/30 rounded-lg">
+            <div className={`flex items-center justify-between p-4 rounded-lg ${withTranscription ? 'bg-success/20' : 'bg-muted/30'}`}>
               <div className="flex items-center gap-3">
                 <FileText className="h-5 w-5 text-purple-600" />
                 <div>
@@ -589,7 +589,7 @@ const SimplifiedAudioCaptureFloat: React.FC<SimplifiedAudioCaptureFloatProps> = 
 
             {/* Real-time transcription toggle (only if transcription is enabled and recording) */}
             {withTranscription && actionType === 'record' && (
-              <div className="flex items-center justify-between p-4 bg-muted/20 rounded-lg">
+              <div className={`flex items-center justify-between p-4 rounded-lg ${realtimeTranscription ? 'bg-success/20' : 'bg-muted/20'}`}>
                 <div className="flex items-center gap-3">
                   <Waves className="h-5 w-5 text-green-600" />
                   <div>
