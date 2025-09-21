@@ -386,6 +386,10 @@
     animation: gentle-float 12s ease-in-out infinite;
   }
 
+  .animate-gentle-glow {
+    animation: gentle-glow 3s ease-in-out infinite;
+  }
+
   .animate-soft-pulse {
     animation: soft-pulse 6s ease-in-out infinite;
   }
@@ -426,6 +430,15 @@
   25% { transform: translateY(-3px) rotate(0.5deg); }
   50% { transform: translateY(-6px) rotate(0deg); }
   75% { transform: translateY(-3px) rotate(-0.5deg); }
+}
+
+@keyframes gentle-glow {
+  0%, 100% { 
+    box-shadow: 0 0 20px hsla(142 69% 58% / 0.1), 0 0 40px hsla(142 69% 58% / 0.15);
+  }
+  50% { 
+    box-shadow: 0 0 30px hsla(142 69% 58% / 0.15), 0 0 60px hsla(142 69% 58% / 0.25);
+  }
 }
 
 @keyframes soft-pulse {

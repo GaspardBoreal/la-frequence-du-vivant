@@ -71,6 +71,8 @@ const SortableMarcheItem: React.FC<SortableMarcheItemProps> = ({
     opacity: isDragging ? 0.5 : 1,
   };
 
+  const isVisibleToReaders = marche.publication_status === 'published_public' || marche.publication_status === 'published_readers';
+
   return (
     <div
       ref={setNodeRef}
@@ -78,8 +80,12 @@ const SortableMarcheItem: React.FC<SortableMarcheItemProps> = ({
       className={`group relative overflow-hidden rounded-2xl transition-all duration-500 backdrop-blur-xl border ${
         isDragging 
           ? 'scale-105 shadow-2xl bg-gradient-to-br from-gaspard-background/60 to-gaspard-background/40 border-gaspard-primary/40 shadow-gaspard-primary/20' 
-          : 'hover:scale-[1.02] hover:shadow-xl bg-gradient-to-br from-gaspard-background/30 to-gaspard-background/10 border-gaspard-primary/20 hover:border-gaspard-accent/30 shadow-lg shadow-gaspard-primary/5'
-      }`}
+          : `hover:scale-[1.02] hover:shadow-xl ${
+              isVisibleToReaders 
+                ? 'bg-gradient-to-br from-green-50/60 to-gaspard-background/10 border-green-400/40 shadow-lg shadow-green-400/10 border-l-4 border-l-green-400' 
+                : 'bg-gradient-to-br from-gaspard-background/30 to-gaspard-background/10 border-gaspard-primary/20 shadow-lg shadow-gaspard-primary/5'
+            } hover:border-gaspard-accent/30`
+      } ${isVisibleToReaders ? 'animate-gentle-glow' : ''}`}
     >
       {/* Motif décoratif de fréquences élégant */}
       <div className="absolute top-0 right-0 w-40 h-40 opacity-10">
@@ -147,13 +153,19 @@ const SortableMarcheItem: React.FC<SortableMarcheItemProps> = ({
               </div>
             </div>
 
-            {/* Sélecteur de statut de publication */}
-            <div className="mb-4">
+            {/* Sélecteur de statut de publication avec indicateur visuel */}
+            <div className="mb-4 flex items-center gap-3">
               <PublicationStatusSelect
                 value={(marche.publication_status as any) || 'published_public'}
                 onChange={(status) => onUpdatePublicationStatus(marche.marche_id, status)}
                 variant="compact"
               />
+              {isVisibleToReaders && (
+                <div className="flex items-center gap-2 px-3 py-1.5 bg-green-100/80 border border-green-300/50 rounded-full">
+                  <Eye className="h-3 w-3 text-green-600" />
+                  <span className="text-xs font-medium text-green-700">Visible aux lecteurs</span>
+                </div>
+              )}
             </div>
             
             {marche.marche?.descriptif_court && (
