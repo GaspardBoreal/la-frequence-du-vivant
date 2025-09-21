@@ -335,34 +335,42 @@ const ExplorationMarcheList: React.FC<ExplorationMarcheListProps> = ({
               </span>
             </div>
             
-            {/* Actions en lot */}
+            {/* Compteur marches visibles aux lecteurs */}
+            <div className="flex items-center gap-2">
+              <div className="w-2 h-2 rounded-full bg-green-400 animate-gentle-float"></div>
+              <span className="text-sm text-gaspard-secondary font-medium">
+                {sortedMarches.filter(m => 
+                  m.publication_status === 'published_public' || 
+                  m.publication_status === 'published_readers'
+                ).length} marche{sortedMarches.filter(m => 
+                  m.publication_status === 'published_public' || 
+                  m.publication_status === 'published_readers'
+                ).length > 1 ? 's' : ''} visible{sortedMarches.filter(m => 
+                  m.publication_status === 'published_public' || 
+                  m.publication_status === 'published_readers'
+                ).length > 1 ? 's' : ''} aux lecteurs
+              </span>
+            </div>
+            
+            {/* Actions simplifiées pour les lecteurs */}
             <div className="flex items-center gap-2">
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() => onBatchUpdateStatus(sortedMarches.map(m => m.marche_id), 'published_public')}
-                className="text-xs"
+                className="text-xs bg-green-50 hover:bg-green-100 text-green-700 border-green-200"
               >
                 <Eye className="h-3 w-3 mr-1" />
-                Tout public
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => onBatchUpdateStatus(sortedMarches.map(m => m.marche_id), 'published_readers')}
-                className="text-xs"
-              >
-                <Users className="h-3 w-3 mr-1" />
-                Lecteurs seulement
+                Tout cocher pour les lecteurs
               </Button>
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() => onBatchUpdateStatus(sortedMarches.map(m => m.marche_id), 'draft')}
-                className="text-xs"
+                className="text-xs bg-gray-50 hover:bg-gray-100 text-gray-700 border-gray-200"
               >
                 <EyeOff className="h-3 w-3 mr-1" />
-                Brouillon
+                Tout décocher pour les lecteurs
               </Button>
             </div>
           </div>
