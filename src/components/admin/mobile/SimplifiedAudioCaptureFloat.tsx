@@ -68,6 +68,8 @@ const SimplifiedAudioCaptureFloat: React.FC<SimplifiedAudioCaptureFloatProps> = 
   const audioElementRef = useRef<HTMLAudioElement | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const recordingMimeTypeRef = useRef<string>('audio/webm');
+  const isRecordingRef = useRef<boolean>(false);
+  const rafIdRef = useRef<number | null>(null);
 
   // Auto-select best transcription model
   const getBestTranscriptionModel = () => {
@@ -79,6 +81,13 @@ const SimplifiedAudioCaptureFloat: React.FC<SimplifiedAudioCaptureFloatProps> = 
   // Cleanup
   useEffect(() => {
     return () => {
+      // Stop audio level monitoring
+      isRecordingRef.current = false;
+      if (rafIdRef.current) {
+        cancelAnimationFrame(rafIdRef.current);
+        rafIdRef.current = null;
+      }
+      
       if (recordingIntervalRef.current) clearInterval(recordingIntervalRef.current);
       if (processorRef.current) processorRef.current.disconnect();
       if (sourceRef.current) sourceRef.current.disconnect();
@@ -122,27 +131,29 @@ const SimplifiedAudioCaptureFloat: React.FC<SimplifiedAudioCaptureFloatProps> = 
       const bufferLength = analyserRef.current.fftSize;
       const dataArray = new Uint8Array(bufferLength);
 
-      const updateAudioLevel = () => {
-        if (analyserRef.current && isRecording) {
-          // Use time domain data for real amplitude measurement
-          analyserRef.current.getByteTimeDomainData(dataArray);
-          
-          // Calculate RMS (Root Mean Square) for accurate volume level
-          let sum = 0;
-          for (let i = 0; i < bufferLength; i++) {
-            const sample = (dataArray[i] - 128) / 128; // Convert to -1 to 1 range
-            sum += sample * sample;
-          }
-          const rms = Math.sqrt(sum / bufferLength);
-          
-          // Convert to percentage with logarithmic scaling and threshold
-          const threshold = 0.01; // Minimum threshold to avoid noise
-          const normalizedLevel = Math.max(0, (rms - threshold) / (1 - threshold));
-          const levelPercentage = Math.min(100, normalizedLevel * 100 * 2); // Amplify for better visibility
-          
-          setAudioLevel(levelPercentage);
-          requestAnimationFrame(updateAudioLevel);
+      const tick = () => {
+        if (!analyserRef.current || !isRecordingRef.current) return;
+        
+        // Use time domain data for real amplitude measurement
+        analyserRef.current.getByteTimeDomainData(dataArray);
+        
+        // Calculate RMS (Root Mean Square) for accurate volume level
+        let sum = 0;
+        for (let i = 0; i < bufferLength; i++) {
+          const sample = (dataArray[i] - 128) / 128; // Convert to -1 to 1 range
+          sum += sample * sample;
         }
+        const rms = Math.sqrt(sum / bufferLength);
+        
+        // Convert to percentage with logarithmic scaling and threshold
+        const threshold = 0.008; // Reduced threshold for better sensitivity
+        const normalizedLevel = Math.max(0, (rms - threshold) / (1 - threshold));
+        const levelPercentage = Math.min(100, normalizedLevel * 100 * 3); // Increased amplification
+        
+        setAudioLevel(levelPercentage);
+        
+        // Continue the loop
+        rafIdRef.current = requestAnimationFrame(tick);
       };
 
       mediaRecorder.ondataavailable = (event) => {
@@ -179,8 +190,18 @@ const SimplifiedAudioCaptureFloat: React.FC<SimplifiedAudioCaptureFloatProps> = 
       setRecordingTime(0);
       setCurrentStep('recording');
       
+      // Start the audio level monitoring loop BEFORE starting the recorder
+      isRecordingRef.current = true;
+      
+      // Resume audio context if suspended
+      if (audioContextRef.current && audioContextRef.current.state === 'suspended') {
+        await audioContextRef.current.resume();
+      }
+      
+      // Start the audio level monitoring loop
+      rafIdRef.current = requestAnimationFrame(tick);
+      
       mediaRecorder.start(500); // Collect data every 500ms
-      updateAudioLevel();
 
       // Update timer every second
       recordingIntervalRef.current = setInterval(() => {
@@ -196,6 +217,13 @@ const SimplifiedAudioCaptureFloat: React.FC<SimplifiedAudioCaptureFloatProps> = 
   // Stop recording
   const stopRecording = () => {
     console.log('Stopping recording...');
+    
+    // Stop the audio level monitoring loop first
+    isRecordingRef.current = false;
+    if (rafIdRef.current) {
+      cancelAnimationFrame(rafIdRef.current);
+      rafIdRef.current = null;
+    }
     
     if (recordingIntervalRef.current) {
       clearInterval(recordingIntervalRef.current);
