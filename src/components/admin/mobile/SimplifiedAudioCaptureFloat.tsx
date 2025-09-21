@@ -594,45 +594,19 @@ const SimplifiedAudioCaptureFloat: React.FC<SimplifiedAudioCaptureFloatProps> = 
                 <span>75</span>
               </div>
               
-              {/* Audio level bar with progressive gradient */}
-              <div 
-                className="h-4 rounded-full transition-all duration-75 relative"
-                style={{ 
-                  width: `${audioLevel}%`,
-                  minWidth: '1px',
-                  background: `linear-gradient(to right, 
-                    hsl(120, 100%, 40%) 0%, 
-                    hsl(120, 100%, 40%) ${Math.min(40, audioLevel)}%, 
-                    hsl(60, 100%, 50%) ${Math.max(40, Math.min(70, audioLevel))}%, 
-                    hsl(0, 100%, 60%) ${Math.max(70, audioLevel)}%
-                  )`,
-                  boxShadow: audioLevel > 50 ? (
-                    audioLevel > 70 ? '0 0 6px hsla(0, 100%, 60%, 0.5)' : 
-                    audioLevel > 40 ? '0 0 6px hsla(60, 100%, 50%, 0.5)' : 
-                    '0 0 6px hsla(120, 100%, 40%, 0.5)'
-                  ) : undefined
-                }}
-              />
-              
-              {/* Current level cursor - aligned with end of colored bar */}
+              {/* Single color-changing cursor */}
               {audioLevel > 0 && (
                 <div 
-                  className="absolute top-0 h-4 w-0.5 bg-white shadow-lg transition-all duration-75"
-                  style={{ left: `${audioLevel}%` }}
+                  className="absolute top-0 h-4 w-3 rounded-sm shadow-lg transition-all duration-150"
+                  style={{ 
+                    left: `${audioLevel}%`,
+                    backgroundColor: audioLevel <= 33 ? 
+                      'hsl(120, 100%, 50%)' : // Green
+                      audioLevel <= 66 ? 
+                        'hsl(39, 100%, 50%)' : // Orange
+                        'hsl(0, 100%, 50%)' // Red
+                  }}
                 />
-              )}
-              
-              {/* Peak hold indicator - correctly positioned */}
-              {peakHoldRef.current > 0 && (
-                <div 
-                  className="absolute top-0 h-4 w-0.5 bg-red-400/80 shadow-lg"
-                  style={{ left: `${Math.min(100, peakHoldRef.current * 100)}%` }}
-                />
-              )}
-              
-              {/* Peak indicator */}
-              {audioLevel > 85 && (
-                <div className="absolute top-0 right-0 h-4 w-1 bg-red-600 animate-pulse" />
               )}
             </div>
             <p className="text-xs text-center text-muted-foreground font-mono">
