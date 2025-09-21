@@ -71,10 +71,6 @@ const SimplifiedAudioCaptureFloat: React.FC<SimplifiedAudioCaptureFloatProps> = 
   const isRecordingRef = useRef<boolean>(false);
   const rafIdRef = useRef<number | null>(null);
   
-  // Ref and state for pixel-accurate cursor positioning on the level track
-  const levelTrackRef = useRef<HTMLDivElement | null>(null);
-  const [trackWidth, setTrackWidth] = useState(0);
-  const debugFrameRef = useRef(0);
   
   // Audio level smoothing and calibration
   const audioLevelBuffer = useRef<number[]>([]);
@@ -113,31 +109,6 @@ const SimplifiedAudioCaptureFloat: React.FC<SimplifiedAudioCaptureFloatProps> = 
     };
   }, [recordedAudio]);
 
-  // Track width observer for pixel-based cursor positioning
-  useEffect(() => {
-    const el = levelTrackRef.current;
-    if (!el) return;
-
-    const update = () => {
-      const width = el.clientWidth || 0;
-      setTrackWidth(width);
-      // Debug sizing
-      console.debug('[AudioCursor][size]', { width });
-    };
-
-    update();
-    const ro = new ResizeObserver(() => update());
-    ro.observe(el);
-    return () => {
-      try { ro.disconnect(); } catch {}
-    };
-  }, [isOpen, currentStep]);
-
-  // Debug current computed left position
-  useEffect(() => {
-    const leftPx = Math.max(0, Math.min(trackWidth, (audioLevel / 100) * trackWidth));
-    console.debug('[AudioCursor][pos]', { audioLevel, trackWidth, leftPx });
-  }, [audioLevel, trackWidth]);
 
   // Start recording
   const startRecording = async () => {
@@ -235,16 +206,6 @@ const SimplifiedAudioCaptureFloat: React.FC<SimplifiedAudioCaptureFloatProps> = 
         
         lastLevelRef.current = finalLevel;
         setAudioLevel(levelPercentage);
-        
-        // Debug every ~20 frames to avoid flooding
-        debugFrameRef.current = (debugFrameRef.current + 1) % 20;
-        if (debugFrameRef.current === 0) {
-          console.debug('[AudioCursor][tick]', {
-            rms: Number(rms.toFixed(4)),
-            finalLevel: Number(finalLevel.toFixed(3)),
-            levelPercentage: Number(levelPercentage.toFixed(1))
-          });
-        }
         
         // Continue the loop
         rafIdRef.current = requestAnimationFrame(tick);
@@ -619,41 +580,20 @@ const SimplifiedAudioCaptureFloat: React.FC<SimplifiedAudioCaptureFloatProps> = 
           </div>
 
           {/* Audio level visualization */}
-          <div className="space-y-2">
-            <p className="text-sm text-center text-muted-foreground">Niveau audio</p>
-            <div ref={levelTrackRef} className="w-full bg-muted rounded-full h-4 relative overflow-hidden">
-              {/* Visual graduations */}
-              <div className="absolute inset-0 flex">
-                <div className="w-1/4 border-r border-muted-foreground/20"></div>
-                <div className="w-1/4 border-r border-muted-foreground/20"></div>
-                <div className="w-1/4 border-r border-muted-foreground/20"></div>
-                <div className="w-1/4"></div>
+          <div className="space-y-4">
+            <div className="text-center">
+              <p className="text-sm text-muted-foreground mb-3">Niveau audio</p>
+              <div 
+                className="text-6xl font-bold font-mono"
+                style={{ 
+                  color: audioLevel <= 33 ? 'hsl(120, 100%, 40%)' : // Vert
+                        audioLevel <= 66 ? 'hsl(39, 100%, 50%)' : // Orange  
+                        'hsl(0, 100%, 50%)' // Rouge
+                }}
+              >
+                {audioLevel.toFixed(0)}%
               </div>
-              <div className="absolute top-0 text-xs text-muted-foreground/60 -mt-4 flex justify-between w-full px-1">
-                <span>25</span>
-                <span>50</span>
-                <span>75</span>
-              </div>
-              
-              {/* Single color-changing cursor */}
-              {audioLevel > 0 && (
-                <div 
-                  className="pointer-events-none z-10 absolute top-0 h-4 w-3 rounded-sm shadow-lg transition-all duration-150"
-                  style={{ 
-                    left: `${Math.max(0, Math.min(trackWidth, (audioLevel / 100) * trackWidth))}px`,
-                    transform: 'translateX(-50%)', // Center the cursor on the position
-                    backgroundColor: audioLevel <= 33 ? 
-                      'hsl(120, 100%, 50%)' : // Green
-                      audioLevel <= 66 ? 
-                        'hsl(39, 100%, 50%)' : // Orange
-                        'hsl(0, 100%, 50%)' // Red
-                  }}
-                />
-              )}
             </div>
-            <p className="text-xs text-center text-muted-foreground font-mono">
-              {audioLevel.toFixed(1)}% {peakHoldRef.current > 0.8 && <span className="text-red-500">PEAK</span>}
-            </p>
           </div>
 
           <Button
