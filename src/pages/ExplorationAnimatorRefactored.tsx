@@ -362,13 +362,21 @@ export default function ExplorationAnimatorRefactored() {
                       </div>
                       
                       {/* Actions */}
-                      <div className="flex gap-3">
+                      <div className="flex flex-col gap-2">
                         <Button
                           onClick={() => window.open(`/galerie-fleuve/exploration/${exploration.slug}`, '_blank')}
-                          className="flex-1 bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 text-white"
+                          className="w-full bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 text-white"
                           size="sm"
                         >
                           🌊 Ouvrir la galerie
+                        </Button>
+                        <Button
+                          onClick={() => window.open(`/galerie-fleuve/exploration/${exploration.slug}`, '_self')}
+                          variant="outline"
+                          size="sm"
+                          className="w-full"
+                        >
+                          🔍 Ouvrir la galerie en preview
                         </Button>
                         <Button
                           onClick={() => {
@@ -378,9 +386,9 @@ export default function ExplorationAnimatorRefactored() {
                           }}
                           variant="outline"
                           size="sm"
-                          className="flex-none px-4"
+                          className="w-full"
                         >
-                          📋
+                          📋 Copier l'URL
                         </Button>
                       </div>
                     </div>
