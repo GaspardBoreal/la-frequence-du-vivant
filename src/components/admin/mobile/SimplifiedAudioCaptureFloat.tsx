@@ -600,6 +600,7 @@ const SimplifiedAudioCaptureFloat: React.FC<SimplifiedAudioCaptureFloatProps> = 
                   className="absolute top-0 h-4 w-3 rounded-sm shadow-lg transition-all duration-150"
                   style={{ 
                     left: `${audioLevel}%`,
+                    transform: 'translateX(-50%)', // Center the cursor on the position
                     backgroundColor: audioLevel <= 33 ? 
                       'hsl(120, 100%, 50%)' : // Green
                       audioLevel <= 66 ? 
