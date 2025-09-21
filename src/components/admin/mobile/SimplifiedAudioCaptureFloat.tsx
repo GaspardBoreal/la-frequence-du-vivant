@@ -584,7 +584,7 @@ const SimplifiedAudioCaptureFloat: React.FC<SimplifiedAudioCaptureFloatProps> = 
             <div className="text-center">
               <p className="text-sm text-muted-foreground mb-3">Niveau audio</p>
               <div 
-                className="text-6xl font-bold font-mono"
+                className="text-4xl font-bold font-mono"
                 style={{ 
                   color: audioLevel <= 33 ? 'hsl(120, 100%, 40%)' : // Vert
                         audioLevel <= 66 ? 'hsl(39, 100%, 50%)' : // Orange  
