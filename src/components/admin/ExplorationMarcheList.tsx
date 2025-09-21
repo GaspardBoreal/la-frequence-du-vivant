@@ -190,9 +190,9 @@ const SortableMarcheItem: React.FC<SortableMarcheItemProps> = ({
                 variant="compact"
               />
               {isVisibleToReaders && (
-                <div className="flex items-center gap-2 px-3 py-1.5 bg-gradient-to-r from-gaspard-accent/15 to-gaspard-accent/25 border border-gaspard-accent/30 rounded-full backdrop-blur-sm">
-                  <Eye className="h-3 w-3 text-gaspard-accent" />
-                  <span className="text-xs font-medium text-gaspard-accent">Visible aux lecteurs</span>
+                <div className="flex items-center gap-2 px-3 py-1.5 bg-green-100 border border-green-200 rounded-full">
+                  <Eye className="h-3 w-3 text-green-700" />
+                  <span className="text-xs font-bold text-green-800">Visible aux lecteurs</span>
                 </div>
               )}
             </div>
