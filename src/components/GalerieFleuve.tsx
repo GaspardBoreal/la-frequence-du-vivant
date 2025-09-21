@@ -762,7 +762,7 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({
       stiffness: 300,
       damping: 30
     }}>
-      <div className="flex items-center justify-between">
+      <div className="relative flex items-center">
         
         {/* Home Button - Left */}
         <motion.button onClick={() => window.scrollTo({
@@ -774,8 +774,8 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({
           <Home className="h-5 w-5" />
         </motion.button>
 
-        {/* Navigation Controls - Center */}
-        <div className="bg-black/40 backdrop-blur-md rounded-2xl px-3 py-2 border border-white/10 shadow-xl pointer-events-auto">
+        {/* Navigation Controls - Center (absolutely positioned) */}
+        <div className="absolute left-1/2 transform -translate-x-1/2 bg-black/40 backdrop-blur-md rounded-2xl px-3 py-2 border border-white/10 shadow-xl pointer-events-auto">
           <div className="flex items-center gap-1">
             {/* Previous Button */}
             <motion.button onClick={navigatePrevious} disabled={!canNavigatePrevious} className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-300 touch-manipulation ${!canNavigatePrevious ? 'bg-white/10 text-white/30 cursor-not-allowed' : 'bg-white/20 text-white active:bg-white/30'}`} whileTap={canNavigatePrevious ? {
