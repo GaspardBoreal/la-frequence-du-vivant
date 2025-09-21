@@ -155,3 +155,36 @@ export const REGIONAL_THEMES: Record<string, RegionalTheme> = {
     }
   }
 };
+
+export const DEFAULT_THEME: RegionalTheme = {
+  name: 'Thème par défaut',
+  colors: {
+    primary: '#4A5568',
+    secondary: '#718096',
+    accent: '#A0AEC0',
+    background: '#F7FAFC'
+  }
+};
+
+export const generateRegionalThemes = (regions: string[]): RegionalTheme[] => {
+  // ... keep existing code (generateRegionalThemes function implementation)
+  const mappedThemes = regions
+    .map(region => {
+      const normalizedRegion = region.toLowerCase()
+        .replace(/[àáâãäå]/g, 'a')
+        .replace(/[èéêë]/g, 'e')
+        .replace(/[ìíîï]/g, 'i')
+        .replace(/[òóôõö]/g, 'o')
+        .replace(/[ùúûü]/g, 'u')
+        .replace(/[ç]/g, 'c')
+        .replace(/'/g, '-')
+        .replace(/\s+/g, '-');
+      
+      return REGIONAL_THEMES[normalizedRegion] || null;
+    })
+    .filter(Boolean);
+  
+  return mappedThemes.length > 0 ? mappedThemes : [DEFAULT_THEME];
+}
+
+export const exploreRegionalThemes = generateRegionalThemes;

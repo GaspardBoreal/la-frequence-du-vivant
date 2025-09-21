@@ -8,7 +8,7 @@ import GalerieFleuve from '@/components/GalerieFleuve';
 import GalerieFleuveWelcome from '@/components/GalerieFleuveWelcome';
 import { useExplorationBySlug, useExplorationMarchesByStatus } from '@/hooks/useExplorations';
 import { MarcheTechnoSensible } from '@/types';
-import { exploreRegionalThemes } from '@/utils/regionalThemes';
+import { generateRegionalThemes } from '@/utils/regionalThemes';
 
 const GalerieFluveExplorationLecteurs: React.FC = () => {
   const { slug } = useParams<{ slug: string }>();
@@ -54,7 +54,7 @@ const GalerieFluveExplorationLecteurs: React.FC = () => {
 
   // Thèmes régionaux basés sur les régions des marches
   const uniqueRegions = [...new Set(processedMarches.map(marche => marche.region).filter(Boolean))];
-  const regionalThemes = exploreRegionalThemes(uniqueRegions as string[]);
+  const regionalThemes = generateRegionalThemes(uniqueRegions as string[]);
 
   // Scroll vers la galerie si une marche spécifique est ciblée
   useEffect(() => {
@@ -120,11 +120,10 @@ const GalerieFluveExplorationLecteurs: React.FC = () => {
         {/* Composants conditionnels selon le mode */}
         {!viewMode || !selectedMarcheSlug ? (
           <GalerieFleuveWelcome
-            marches={processedMarches}
+            title={exploration.name}
+            description={exploration.description}
             stats={stats}
-            themes={regionalThemes}
-            viewMode="voir"
-            isReadersMode={true}
+            explorationSlug={exploration.slug}
           />
         ) : null}
 
@@ -134,12 +133,10 @@ const GalerieFluveExplorationLecteurs: React.FC = () => {
           transition={{ duration: 0.8, delay: 0.3 }}
         >
           <GalerieFleuve
-            title={exploration.name}
-            marches={processedMarches}
-            stats={stats}
+            explorations={[{ marches: processedMarches, ...exploration }]}
             themes={regionalThemes}
-            viewMode={viewMode}
-            isReadersMode={true}
+            viewMode={viewMode === 'voir' ? 'galerie' : 'fleuve-temporel'}
+            explorationSlug={exploration.slug}
           />
         </motion.div>
       </div>
