@@ -259,7 +259,9 @@ const SimplifiedAudioCaptureFloat: React.FC<SimplifiedAudioCaptureFloatProps> = 
       console.log('🚀 [SimplifiedAudioCaptureFloat] withTranscription:', withTranscription);
 
       // Create a File from the Blob for the AudioToUpload interface
-      const audioFile = new File([recordedAudio.blob], recordedAudio.name, { type: 'audio/webm' });
+      // Ensure the filename has the correct extension for validation
+      const fileName = recordedAudio.name.endsWith('.webm') ? recordedAudio.name : `${recordedAudio.name}.webm`;
+      const audioFile = new File([recordedAudio.blob], fileName, { type: 'audio/webm' });
       
       const audioToUpload: AudioToUpload = {
         id: Date.now().toString(),
