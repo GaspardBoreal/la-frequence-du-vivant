@@ -76,6 +76,8 @@ const SimplifiedAudioCaptureFloat: React.FC<SimplifiedAudioCaptureFloatProps> = 
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const wsRetriesRef = useRef(0);
   const pingIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const pendingChunksRef = useRef<any[]>([]);
+  const recordingMimeTypeRef = useRef<string>('audio/webm');
 
   // Auto-select best transcription model
   const getBestTranscriptionModel = () => {
@@ -106,14 +108,23 @@ const SimplifiedAudioCaptureFloat: React.FC<SimplifiedAudioCaptureFloatProps> = 
 
     const connect = () => {
       try {
-        console.log('Connecting to realtime transcription WebSocket:', url);
+        console.log('🎤 Connecting to realtime transcription WebSocket:', url);
         const ws = new WebSocket(url);
 
         ws.onopen = () => {
-          console.log('WebSocket connected successfully');
+          console.log('✅ WebSocket connected successfully');
           wsRetriesRef.current = 0;
           setIsTranscribing(true);
           toast.success('Transcription temps réel activée');
+          
+          // Process any buffered chunks
+          if (pendingChunksRef.current.length > 0) {
+            console.log('📦 Processing', pendingChunksRef.current.length, 'buffered chunks');
+            pendingChunksRef.current.forEach(chunk => {
+              ws.send(JSON.stringify(chunk));
+            });
+            pendingChunksRef.current = [];
+          }
           
           // Setup ping every 15s during silence
           pingIntervalRef.current = setInterval(() => {
@@ -126,20 +137,28 @@ const SimplifiedAudioCaptureFloat: React.FC<SimplifiedAudioCaptureFloatProps> = 
         ws.onmessage = (event) => {
           try {
             const message = JSON.parse(event.data);
-            console.log('WebSocket message received:', message);
-            if (message.type === 'transcription_result') {
-              setTranscriptionText(prev => message.isFinal ? message.text : prev + message.text);
+            console.log('📥 Received WebSocket message:', message.type, message.text?.substring(0, 50));
+            
+            if (message.type === 'transcription_result' && message.text?.trim()) {
+              console.log('📝 Adding transcription text:', message.text);
+              setTranscriptionText(prev => {
+                const newText = prev + (prev ? ' ' : '') + message.text.trim();
+                console.log('📄 Updated transcription text length:', newText.length);
+                return newText;
+              });
             } else if (message.type === 'error') {
-              console.error('Realtime transcription error:', message.message);
+              console.error('❌ Realtime transcription error:', message.message);
               toast.error(`Erreur transcription: ${message.message}`);
+            } else if (message.type === 'connection') {
+              console.log('🔗 Connection status:', message.status);
             }
           } catch (e) {
-            console.error('Invalid message from websocket:', e);
+            console.error('❌ Invalid message from websocket:', e);
           }
         };
 
         ws.onclose = (evt) => {
-          console.log('WebSocket closed:', evt.code, evt.reason);
+          console.log('🔌 WebSocket closed:', evt.code, evt.reason);
           setIsTranscribing(false);
           setWsConnection(null);
           
@@ -153,26 +172,26 @@ const SimplifiedAudioCaptureFloat: React.FC<SimplifiedAudioCaptureFloatProps> = 
           if (realtimeTranscription && wsRetriesRef.current < 2 && evt.code !== 1000) {
             wsRetriesRef.current += 1;
             const delay = Math.min(2000 * wsRetriesRef.current, 5000); // exponential backoff, max 5s
-            console.warn(`WS closed abnormally (${evt.code}), retrying in ${delay}ms (attempt ${wsRetriesRef.current})`);
+            console.warn(`🔄 WS closed abnormally (${evt.code}), retrying in ${delay}ms (attempt ${wsRetriesRef.current})`);
             setTimeout(() => {
               if (realtimeTranscription && isRecording) { // only retry if still recording
                 connect();
               }
             }, delay);
           } else if (evt.code !== 1000) {
-            console.error('WebSocket connection failed definitively');
+            console.error('❌ WebSocket connection failed definitively');
             toast.error('Transcription temps réel indisponible');
           }
         };
 
         ws.onerror = (err) => {
-          console.error('WebSocket error:', err);
+          console.error('❌ WebSocket error:', err);
           toast.error('Erreur de connexion transcription temps réel');
         };
 
         setWsConnection(ws);
       } catch (error) {
-        console.error('Failed to open realtime transcription WS:', error);
+        console.error('❌ Failed to open realtime transcription WS:', error);
         toast.error('Impossible de démarrer la transcription temps réel');
         throw error; // Re-throw to be caught by caller
       }
@@ -181,18 +200,39 @@ const SimplifiedAudioCaptureFloat: React.FC<SimplifiedAudioCaptureFloatProps> = 
     connect();
   };
 
-  const sendAudioChunkForTranscription = async (audioBlob: Blob, chunkNumber: number) => {
-    if (!wsConnection || wsConnection.readyState !== WebSocket.OPEN) {
-      console.warn('WebSocket not ready for chunk sending, state:', wsConnection?.readyState);
-      return;
+  const detectMimeType = (audioData: Uint8Array): string => {
+    // WebM signature: 0x1A, 0x45, 0xDF, 0xA3
+    if (audioData.length >= 4 && 
+        audioData[0] === 0x1A && audioData[1] === 0x45 && 
+        audioData[2] === 0xDF && audioData[3] === 0xA3) {
+      return 'audio/webm';
     }
     
+    // MP4 signature: ftyp at offset 4
+    if (audioData.length >= 8) {
+      const ftypCheck = String.fromCharCode.apply(null, Array.from(audioData.slice(4, 8)));
+      if (ftypCheck === 'ftyp') {
+        return 'audio/mp4';
+      }
+    }
+    
+    // Default to webm for MediaRecorder or use recorded type
+    return recordingMimeTypeRef.current;
+  };
+
+  const sendAudioChunkForTranscription = async (audioBlob: Blob, chunkNumber: number) => {
     try {
-      console.log('Sending WebM audio chunk for transcription, size:', audioBlob.size, 'chunk:', chunkNumber);
+      console.log('🎵 Processing audio chunk for transcription, size:', audioBlob.size, 'chunk:', chunkNumber);
       
-      // Convert Blob to base64
+      // Convert Blob to Uint8Array for MIME type detection
       const arrayBuffer = await audioBlob.arrayBuffer();
       const uint8Array = new Uint8Array(arrayBuffer);
+      
+      // Detect MIME type from actual audio data
+      const mimeType = detectMimeType(uint8Array);
+      console.log('🔍 Detected MIME type:', mimeType, 'for chunk:', chunkNumber);
+      
+      // Convert to base64 in chunks for better memory handling
       let binaryString = '';
       const chunkSize = 32768;
       
@@ -203,22 +243,41 @@ const SimplifiedAudioCaptureFloat: React.FC<SimplifiedAudioCaptureFloatProps> = 
       
       const base64Audio = btoa(binaryString);
       
-      wsConnection.send(JSON.stringify({
-        type: 'audio_chunk_webm',
+      const message = {
+        type: 'audio_chunk_individual',
         audioData: base64Audio,
-        chunkNumber
-      }));
+        chunkNumber,
+        mimeType
+      };
+
+      if (wsConnection && wsConnection.readyState === WebSocket.OPEN) {
+        console.log('📤 Sending individual audio chunk:', chunkNumber, 'type:', mimeType);
+        wsConnection.send(JSON.stringify(message));
+      } else {
+        console.log('📦 Buffering chunk (WebSocket not ready):', chunkNumber, 'state:', wsConnection?.readyState);
+        pendingChunksRef.current.push(message);
+      }
       
-      console.log('WebM audio chunk sent successfully');
+      console.log('✅ Audio chunk processed successfully');
     } catch (error) {
-      console.error('Error sending audio chunk:', error);
+      console.error('❌ Error processing audio chunk:', error);
     }
   };
 
   // Start recording
   const startRecording = async () => {
     try {
-      console.log('Starting recording with transcription:', withTranscription, 'realtime:', realtimeTranscription);
+      console.log('🎤 Starting recording with transcription:', withTranscription, 'realtime:', realtimeTranscription);
+      
+      // Reset states at the start of recording
+      setChunkCounter(0);
+      pendingChunksRef.current = [];
+      
+      // Reset transcription text for real-time mode
+      if (withTranscription && realtimeTranscription) {
+        console.log('📝 Resetting transcription text for new recording');
+        setTranscriptionText('');
+      }
       
       const stream = await navigator.mediaDevices.getUserMedia({ 
         audio: {
@@ -230,18 +289,20 @@ const SimplifiedAudioCaptureFloat: React.FC<SimplifiedAudioCaptureFloatProps> = 
 
       // Setup real-time transcription WebSocket (don't let it block timer)
       if (withTranscription && realtimeTranscription) {
-        console.log('Setting up real-time transcription');
+        console.log('🔗 Setting up real-time transcription');
         try {
           setupRealtimeTranscription();
         } catch (error) {
-          console.error('Real-time transcription setup failed, but continuing with recording:', error);
+          console.error('❌ Real-time transcription setup failed, but continuing with recording:', error);
         }
       }
 
       // Setup MediaRecorder for final file
-      const mediaRecorder = new MediaRecorder(stream, {
-        mimeType: 'audio/webm;codecs=opus'
-      });
+      const mimeType = 'audio/webm;codecs=opus';
+      recordingMimeTypeRef.current = mimeType;
+      const mediaRecorder = new MediaRecorder(stream, { mimeType });
+      
+      console.log('🎵 MediaRecorder created with MIME type:', mimeType);
       
       mediaRecorderRef.current = mediaRecorder;
       audioChunksRef.current = [];
@@ -270,20 +331,21 @@ const SimplifiedAudioCaptureFloat: React.FC<SimplifiedAudioCaptureFloatProps> = 
 
       mediaRecorder.ondataavailable = (event) => {
         if (event.data.size > 0) {
-          console.log('MediaRecorder chunk received, size:', event.data.size);
+          console.log('📦 MediaRecorder chunk received, size:', event.data.size, 'type:', event.data.type);
           audioChunksRef.current.push(event.data);
           
           // Update timer reliably (increment by 1 second per chunk when using 1s intervals)
           if (withTranscription && realtimeTranscription) {
             setRecordingTime(prev => {
               const newTime = prev + 1;
-              console.log('Timer updated via chunk:', prev, '->', newTime);
+              console.log('⏱️ Timer updated via chunk:', prev, '->', newTime);
               return newTime;
             });
             
             // Send chunk for real-time transcription
             const currentChunk = chunkCounter + 1;
             setChunkCounter(currentChunk);
+            console.log('🚀 Sending chunk for transcription:', currentChunk);
             sendAudioChunkForTranscription(event.data, currentChunk);
           }
         }

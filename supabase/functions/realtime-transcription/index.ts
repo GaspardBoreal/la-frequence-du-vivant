@@ -20,9 +20,6 @@ serve(async (req) => {
   const { socket, response } = Deno.upgradeWebSocket(req);
   
   let accumulatedAudio: Uint8Array[] = [];
-  let pendingChunks: Uint8Array[] = [];
-  let isProcessing = false;
-  let processingTimer: number | null = null;
 
   socket.onopen = () => {
     console.log("WebSocket connection established for real-time transcription");
@@ -35,22 +32,22 @@ serve(async (req) => {
   socket.onmessage = async (event) => {
     try {
       const message = JSON.parse(event.data);
+      console.log('📥 Received message type:', message.type, 'chunk:', message.chunkNumber);
       
-      if (message.type === 'audio_chunk_webm') {
-        // Process WebM chunk immediately
-        console.log('Received WebM chunk:', message.chunkNumber, 'size:', message.audioData?.length);
-        await processWebMChunk(socket, message.audioData, false);
+      if (message.type === 'audio_chunk_individual') {
+        // Process individual chunk immediately
+        console.log('🎵 Processing individual chunk:', message.chunkNumber, 'MIME:', message.mimeType, 'size:', message.audioData?.length);
+        await processIndividualChunk(socket, message);
       } else if (message.type === 'finalize') {
         // Final transcription with any remaining audio
-        console.log('Finalizing transcription');
-        await processWebMChunk(socket, null, true);
+        console.log('🏁 Finalizing transcription');
+        await processIndividualChunk(socket, null, true);
       } else if (message.type === 'ping') {
         // Respond to ping to keep connection alive
         socket.send(JSON.stringify({ type: 'pong' }));
       }
     } catch (error) {
-      console.error('Error processing message:', error);
-      // Send error but don't close socket
+      console.error('❌ Error processing message:', error);
       socket.send(JSON.stringify({
         type: 'error',
         message: error.message
@@ -58,99 +55,71 @@ serve(async (req) => {
     }
   };
 
-  const processWebMChunk = async (socket: WebSocket, audioData: string | null, isFinal = false) => {
-    if (audioData) {
-      // Convert base64 WebM chunk to bytes and add to queue
-      const binaryString = atob(audioData);
+  const processIndividualChunk = async (socket: WebSocket, message: any | null, isFinal = false) => {
+    if (message && message.audioData) {
+      console.log('🔄 Processing individual chunk:', message.chunkNumber, 'MIME:', message.mimeType);
+      
+      // Convert base64 to bytes
+      const binaryString = atob(message.audioData);
       const bytes = new Uint8Array(binaryString.length);
       for (let i = 0; i < binaryString.length; i++) {
         bytes[i] = binaryString.charCodeAt(i);
       }
-      pendingChunks.push(bytes);
-      accumulatedAudio.push(bytes);
-      console.log('Added chunk to queue, pending:', pendingChunks.length, 'accumulated:', accumulatedAudio.length);
-    }
 
-    if (isFinal) {
-      console.log('Final processing requested, draining queue...');
-      // Clear any pending timer
-      if (processingTimer) {
-        clearTimeout(processingTimer);
-        processingTimer = null;
-      }
-      // Process everything accumulated for final result
-      await processQueuedChunks(socket, true);
-      return;
-    }
-
-    // Start batch processing if not already running
-    if (!isProcessing && pendingChunks.length > 0) {
-      startBatchProcessing(socket);
-    }
-  };
-
-  const startBatchProcessing = (socket: WebSocket) => {
-    if (processingTimer) {
-      clearTimeout(processingTimer);
-    }
-    
-    // Wait 2 seconds to accumulate chunks, then process
-    processingTimer = setTimeout(() => {
-      processQueuedChunks(socket, false);
-    }, 2000);
-  };
-
-  const processQueuedChunks = async (socket: WebSocket, isFinal: boolean) => {
-    if (isProcessing && !isFinal) return;
-    
-    isProcessing = true;
-    processingTimer = null;
-
-    try {
-      let chunksToProcess: Uint8Array[] = [];
+      // Process this chunk immediately for incremental results
+      await transcribeChunk(socket, bytes, message.mimeType || 'audio/webm', false);
       
-      if (isFinal) {
-        // Process all accumulated audio for final result
-        chunksToProcess = [...accumulatedAudio];
-        console.log('Final processing: using all', chunksToProcess.length, 'accumulated chunks');
-      } else {
-        // Process pending chunks for incremental results
-        chunksToProcess = [...pendingChunks];
-        pendingChunks = []; // Clear the queue
-        console.log('Batch processing:', chunksToProcess.length, 'chunks');
-      }
+      // Also accumulate for final result
+      accumulatedAudio.push(bytes);
+      console.log('📚 Accumulated', accumulatedAudio.length, 'chunks total');
+    }
 
-      if (chunksToProcess.length === 0) {
-        console.log('No chunks to process');
-        isProcessing = false;
-        return;
-      }
-
-      // Combine chunks into a single blob
-      const totalLength = chunksToProcess.reduce((sum, chunk) => sum + chunk.length, 0);
+    if (isFinal && accumulatedAudio.length > 0) {
+      console.log('🏁 Final processing: transcribing all', accumulatedAudio.length, 'accumulated chunks');
+      
+      // Combine all chunks for final transcription
+      const totalLength = accumulatedAudio.reduce((sum, chunk) => sum + chunk.length, 0);
       const combinedAudio = new Uint8Array(totalLength);
       let offset = 0;
       
-      for (const chunk of chunksToProcess) {
+      for (const chunk of accumulatedAudio) {
         combinedAudio.set(chunk, offset);
         offset += chunk.length;
       }
 
-      const audioBlob = new Blob([combinedAudio], { type: 'audio/webm' });
-      console.log('Processing audio blob, size:', audioBlob.size, 'chunks:', chunksToProcess.length, 'isFinal:', isFinal);
+      await transcribeChunk(socket, combinedAudio, 'audio/webm', true);
+      
+      // Clean up
+      accumulatedAudio = [];
+    }
+  };
 
-      // Transcribe with OpenAI
+  const transcribeChunk = async (socket: WebSocket, audioData: Uint8Array, mimeType: string, isFinal: boolean) => {
+    try {
+      console.log('🎯 Transcribing chunk, size:', audioData.length, 'MIME:', mimeType, 'isFinal:', isFinal);
+      
+      // Skip very small chunks (less than 1KB) for incremental results
+      if (!isFinal && audioData.length < 1024) {
+        console.log('⏭️ Skipping small chunk for incremental transcription');
+        return;
+      }
+
       const openAIKey = Deno.env.get('OPENAI_API_KEY');
       if (!openAIKey) {
         throw new Error('OpenAI API key not configured');
       }
 
+      // Create blob with correct MIME type
+      const audioBlob = new Blob([audioData], { type: mimeType });
+      console.log('📦 Created audio blob, size:', audioBlob.size, 'type:', audioBlob.type);
+
       const formData = new FormData();
-      formData.append('file', audioBlob, 'audio.webm');
+      formData.append('file', audioBlob, `audio.${mimeType.split('/')[1]}`);
       formData.append('model', 'whisper-1');
       formData.append('language', 'fr');
       formData.append('response_format', 'verbose_json');
 
+      console.log('🚀 Sending to OpenAI Whisper...');
       const response = await fetch('https://api.openai.com/v1/audio/transcriptions', {
         method: 'POST',
         headers: {
@@ -161,55 +130,49 @@ serve(async (req) => {
 
       if (response.ok) {
         const result = await response.json();
-        console.log('Transcription result:', result.text, 'isFinal:', isFinal);
+        console.log('✅ Whisper response:', {
+          text: result.text?.substring(0, 100) + (result.text?.length > 100 ? '...' : ''),
+          textLength: result.text?.length,
+          isFinal
+        });
         
         if (result.text && result.text.trim()) {
+          console.log('📤 Sending transcription result to client');
           socket.send(JSON.stringify({
             type: 'transcription_result',
-            text: result.text,
+            text: result.text.trim(),
             segments: result.segments,
             isFinal,
             confidence: 0.9
           }));
         } else {
-          console.log('Empty transcription result, skipping');
-        }
-
-        // Clean up if final
-        if (isFinal) {
-          accumulatedAudio = [];
-          pendingChunks = [];
+          console.log('⚠️ Empty transcription result from Whisper');
         }
       } else {
         const errorText = await response.text();
-        console.error('OpenAI API error:', response.status, errorText);
-        throw new Error(`OpenAI API error: ${errorText}`);
+        console.error('❌ OpenAI API error:', response.status, errorText);
+        
+        // Don't throw error for non-final transcriptions to avoid breaking the flow
+        if (isFinal) {
+          throw new Error(`OpenAI API error: ${errorText}`);
+        }
       }
     } catch (error) {
-      console.error('Transcription error:', error);
-      // Send error but don't close socket
-      socket.send(JSON.stringify({
-        type: 'error',
-        message: error.message
-      }));
-    } finally {
-      isProcessing = false;
+      console.error('❌ Transcription error:', error);
       
-      // Continue processing if there are more chunks and not final
-      if (!isFinal && pendingChunks.length > 0) {
-        startBatchProcessing(socket);
+      // Only send error to client for final transcriptions
+      if (isFinal) {
+        socket.send(JSON.stringify({
+          type: 'error',
+          message: error.message
+        }));
       }
     }
   };
 
   socket.onclose = () => {
-    console.log("WebSocket connection closed");
+    console.log("🔌 WebSocket connection closed");
     accumulatedAudio = [];
-    pendingChunks = [];
-    if (processingTimer) {
-      clearTimeout(processingTimer);
-      processingTimer = null;
-    }
   };
 
   socket.onerror = (error) => {
