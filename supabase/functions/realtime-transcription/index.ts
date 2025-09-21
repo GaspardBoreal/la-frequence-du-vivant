@@ -20,6 +20,7 @@ serve(async (req) => {
   const { socket, response } = Deno.upgradeWebSocket(req);
   
   let accumulatedAudio: Uint8Array[] = [];
+  let lastMimeType: string = 'audio/webm';
 
   socket.onopen = () => {
     console.log("WebSocket connection established for real-time transcription");
@@ -41,6 +42,10 @@ serve(async (req) => {
       } else if (message.type === 'finalize') {
         // Final transcription with any remaining audio
         console.log('🏁 Finalizing transcription');
+        if (message.lastMimeType) {
+          lastMimeType = message.lastMimeType;
+          console.log('🔍 Using last MIME type for finalization:', lastMimeType);
+        }
         await processIndividualChunk(socket, null, true);
       } else if (message.type === 'ping') {
         // Respond to ping to keep connection alive
@@ -59,6 +64,11 @@ serve(async (req) => {
     if (message && message.audioData) {
       console.log('🔄 Processing individual chunk:', message.chunkNumber, 'MIME:', message.mimeType);
       
+      // Store the MIME type for final processing
+      if (message.mimeType) {
+        lastMimeType = message.mimeType;
+      }
+      
       // Convert base64 to bytes
       const binaryString = atob(message.audioData);
       const bytes = new Uint8Array(binaryString.length);
@@ -67,7 +77,7 @@ serve(async (req) => {
       }
 
       // Process this chunk immediately for incremental results
-      await transcribeChunk(socket, bytes, message.mimeType || 'audio/webm', false);
+      await transcribeChunk(socket, bytes, message.mimeType || lastMimeType, false);
       
       // Also accumulate for final result
       accumulatedAudio.push(bytes);
@@ -87,7 +97,13 @@ serve(async (req) => {
         offset += chunk.length;
       }
 
-      await transcribeChunk(socket, combinedAudio, 'audio/webm', true);
+      await transcribeChunk(socket, combinedAudio, lastMimeType, true);
+      
+      // Send finalization complete message
+      socket.send(JSON.stringify({
+        type: 'finalized',
+        message: 'Transcription finalization complete'
+      }));
       
       // Clean up
       accumulatedAudio = [];
@@ -98,9 +114,9 @@ serve(async (req) => {
     try {
       console.log('🎯 Transcribing chunk, size:', audioData.length, 'MIME:', mimeType, 'isFinal:', isFinal);
       
-      // Skip very small chunks (less than 1KB) for incremental results
-      if (!isFinal && audioData.length < 1024) {
-        console.log('⏭️ Skipping small chunk for incremental transcription');
+      // Skip very small chunks (less than 16KB) for incremental results to improve quality
+      if (!isFinal && audioData.length < 16384) {
+        console.log('⏭️ Skipping small chunk for incremental transcription, size:', audioData.length);
         return;
       }
 
@@ -137,10 +153,20 @@ serve(async (req) => {
         });
         
         if (result.text && result.text.trim()) {
-          console.log('📤 Sending transcription result to client');
+          const text = result.text.trim();
+          
+          // Filter out incremental results that are only punctuation or noise
+          const isPunctuationOnly = /^[.,!?;:\-\s]*$/.test(text);
+          
+          if (!isFinal && isPunctuationOnly) {
+            console.log('⏭️ Skipping incremental punctuation-only result:', text);
+            return;
+          }
+          
+          console.log('📤 Sending transcription result to client, isFinal:', isFinal);
           socket.send(JSON.stringify({
             type: 'transcription_result',
-            text: result.text.trim(),
+            text: text,
             segments: result.segments,
             isFinal,
             confidence: 0.9

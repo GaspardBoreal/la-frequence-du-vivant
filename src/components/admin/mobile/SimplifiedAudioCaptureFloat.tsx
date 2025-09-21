@@ -61,6 +61,7 @@ const SimplifiedAudioCaptureFloat: React.FC<SimplifiedAudioCaptureFloatProps> = 
   // Real-time transcription WebSocket
   const [wsConnection, setWsConnection] = useState<WebSocket | null>(null);
   const [chunkCounter, setChunkCounter] = useState(0);
+  const [isFinalizingTranscription, setIsFinalizingTranscription] = useState(false);
   
   const { data: transcriptionModels = [] } = useTranscriptionModels();
   
@@ -81,6 +82,8 @@ const SimplifiedAudioCaptureFloat: React.FC<SimplifiedAudioCaptureFloatProps> = 
   // New refs for robust realtime WS handling
   const wsRef = useRef<WebSocket | null>(null);
   const flushIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const finalizationTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const lastMimeTypeRef = useRef<string>('audio/webm');
 
   // Auto-select best transcription model
   const getBestTranscriptionModel = () => {
@@ -95,6 +98,7 @@ const SimplifiedAudioCaptureFloat: React.FC<SimplifiedAudioCaptureFloatProps> = 
       if (recordingIntervalRef.current) clearInterval(recordingIntervalRef.current);
       if (pingIntervalRef.current) clearInterval(pingIntervalRef.current);
       if (flushIntervalRef.current) clearInterval(flushIntervalRef.current);
+      if (finalizationTimeoutRef.current) clearTimeout(finalizationTimeoutRef.current);
       if (processorRef.current) processorRef.current.disconnect();
       if (sourceRef.current) sourceRef.current.disconnect();
       if (audioContextRef.current) audioContextRef.current.close();
@@ -144,15 +148,38 @@ const SimplifiedAudioCaptureFloat: React.FC<SimplifiedAudioCaptureFloatProps> = 
             console.log('📥 Received WebSocket message:', message.type, message.text?.substring(0, 50));
             
             if (message.type === 'transcription_result' && message.text?.trim()) {
-              console.log('📝 Adding transcription text:', message.text);
+              const text = message.text.trim();
+              
+              // Filter out incremental results that are only punctuation or too short
+              const isPunctuationOnly = /^[.,!?;:\-\s]*$/.test(text);
+              const isTooShort = text.length < 3;
+              
+              if (!message.isFinal && (isPunctuationOnly || isTooShort)) {
+                console.log('⏭️ Skipping incremental result (punctuation/short):', text);
+                return;
+              }
+              
+              console.log('📝 Adding transcription text:', text, 'isFinal:', message.isFinal);
               setTranscriptionText(prev => {
-                const newText = prev + (prev ? ' ' : '') + message.text.trim();
-                console.log('📄 Updated transcription text length:', newText.length);
-                return newText;
+                if (message.isFinal) {
+                  // For final results, replace everything to ensure accuracy
+                  console.log('🏁 Final transcription received, replacing text');
+                  setIsFinalizingTranscription(false);
+                  return text;
+                } else {
+                  // For incremental results, append
+                  const newText = prev + (prev ? ' ' : '') + text;
+                  console.log('📄 Updated transcription text length:', newText.length);
+                  return newText;
+                }
               });
+            } else if (message.type === 'finalized') {
+              console.log('🎯 Finalization complete message received');
+              setIsFinalizingTranscription(false);
             } else if (message.type === 'error') {
               console.error('❌ Realtime transcription error:', message.message);
               toast.error(`Erreur transcription: ${message.message}`);
+              setIsFinalizingTranscription(false);
             } else if (message.type === 'connection') {
               console.log('🔗 Connection status:', message.status);
             }
@@ -164,10 +191,11 @@ const SimplifiedAudioCaptureFloat: React.FC<SimplifiedAudioCaptureFloatProps> = 
         ws.onclose = (evt) => {
           console.log('🔌 WebSocket closed:', evt.code, evt.reason);
           setIsTranscribing(false);
+          setIsFinalizingTranscription(false);
           wsRef.current = null;
           setWsConnection(null);
           
-          // Clear ping/flush intervals
+          // Clear ping/flush intervals and finalization timeout
           if (pingIntervalRef.current) {
             clearInterval(pingIntervalRef.current);
             pingIntervalRef.current = null;
@@ -175,6 +203,10 @@ const SimplifiedAudioCaptureFloat: React.FC<SimplifiedAudioCaptureFloatProps> = 
           if (flushIntervalRef.current) {
             clearInterval(flushIntervalRef.current);
             flushIntervalRef.current = null;
+          }
+          if (finalizationTimeoutRef.current) {
+            clearTimeout(finalizationTimeoutRef.current);
+            finalizationTimeoutRef.current = null;
           }
           
           // Auto-retry only if connection was working before
@@ -264,6 +296,7 @@ const SimplifiedAudioCaptureFloat: React.FC<SimplifiedAudioCaptureFloatProps> = 
       
       // Detect MIME type from actual audio data
       const mimeType = detectMimeType(uint8Array);
+      lastMimeTypeRef.current = mimeType;
       console.log('🔍 Detected MIME type:', mimeType, 'for chunk:', chunkNumber);
       
       // Convert to base64 in chunks for better memory handling
@@ -331,7 +364,7 @@ const SimplifiedAudioCaptureFloat: React.FC<SimplifiedAudioCaptureFloatProps> = 
         }
       }
 
-      // Setup MediaRecorder for final file
+      // Setup MediaRecorder for final file with longer intervals for better quality
       const mimeType = 'audio/webm;codecs=opus';
       recordingMimeTypeRef.current = mimeType;
       const mediaRecorder = new MediaRecorder(stream, { mimeType });
@@ -368,10 +401,10 @@ const SimplifiedAudioCaptureFloat: React.FC<SimplifiedAudioCaptureFloatProps> = 
           console.log('📦 MediaRecorder chunk received, size:', event.data.size, 'type:', event.data.type);
           audioChunksRef.current.push(event.data);
           
-          // Update timer reliably (increment by 1 second per chunk when using 1s intervals)
+          // Update timer reliably (increment by 2.5 seconds per chunk when using 2.5s intervals)
           if (withTranscription && realtimeTranscription) {
             setRecordingTime(prev => {
-              const newTime = prev + 1;
+              const newTime = prev + 2.5;
               console.log('⏱️ Timer updated via chunk:', prev, '->', newTime);
               return newTime;
             });
@@ -392,21 +425,42 @@ const SimplifiedAudioCaptureFloat: React.FC<SimplifiedAudioCaptureFloatProps> = 
         const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
         const audioUrl = URL.createObjectURL(audioBlob);
         
-        // Finalize real-time transcription before building UI state
+        // Finalize real-time transcription with proper timeout handling
         const ws = wsRef.current;
         if (ws && ws.readyState === WebSocket.OPEN) {
-          console.log('Finalizing real-time transcription');
-          ws.send(JSON.stringify({ type: 'finalize' }));
+          console.log('🏁 Finalizing real-time transcription');
+          setIsFinalizingTranscription(true);
+          
+          // Send finalize message with last known MIME type
+          ws.send(JSON.stringify({ 
+            type: 'finalize',
+            lastMimeType: lastMimeTypeRef.current
+          }));
+          
+          // Wait longer for final transcription result (10-12 seconds)
+          finalizationTimeoutRef.current = setTimeout(() => {
+            console.log('⏰ Finalization timeout reached, closing WebSocket');
+            setIsFinalizingTranscription(false);
+            if (wsRef.current) {
+              try { wsRef.current.close(); } catch {}
+              wsRef.current = null;
+              setWsConnection(null);
+            }
+            if (pingIntervalRef.current) { clearInterval(pingIntervalRef.current); pingIntervalRef.current = null; }
+            if (flushIntervalRef.current) { clearInterval(flushIntervalRef.current); flushIntervalRef.current = null; }
+          }, 12000); // 12 seconds timeout
+        } else {
+          // No WebSocket, cleanup immediately
+          setTimeout(() => {
+            if (wsRef.current) {
+              try { wsRef.current.close(); } catch {}
+              wsRef.current = null;
+              setWsConnection(null);
+            }
+            if (pingIntervalRef.current) { clearInterval(pingIntervalRef.current); pingIntervalRef.current = null; }
+            if (flushIntervalRef.current) { clearInterval(flushIntervalRef.current); flushIntervalRef.current = null; }
+          }, 1000);
         }
-        setTimeout(() => {
-          if (wsRef.current) {
-            try { wsRef.current.close(); } catch {}
-            wsRef.current = null;
-            setWsConnection(null);
-          }
-          if (pingIntervalRef.current) { clearInterval(pingIntervalRef.current); pingIntervalRef.current = null; }
-          if (flushIntervalRef.current) { clearInterval(flushIntervalRef.current); flushIntervalRef.current = null; }
-        }, 1000);
         
         const timestamp = new Date().toLocaleString('fr-FR', {
           day: '2-digit',
@@ -452,10 +506,10 @@ const SimplifiedAudioCaptureFloat: React.FC<SimplifiedAudioCaptureFloatProps> = 
         setCurrentStep('finalize');
       };
 
-      // Start recording with appropriate chunk size
+      // Start recording with appropriate chunk size for better quality
       if (withTranscription && realtimeTranscription) {
-        console.log('Starting MediaRecorder with 1s chunks for real-time');
-        mediaRecorder.start(1000); // 1-second chunks for real-time
+        console.log('Starting MediaRecorder with 2.5s chunks for real-time');
+        mediaRecorder.start(2500); // 2.5-second chunks for better quality
       } else {
         console.log('Starting MediaRecorder with single chunk');
         mediaRecorder.start();
@@ -825,10 +879,12 @@ const SimplifiedAudioCaptureFloat: React.FC<SimplifiedAudioCaptureFloatProps> = 
               <div className="flex items-center gap-2 mb-3">
                 <FileText className="w-4 h-4 text-purple-500" />
                 <span className="text-sm font-medium">Transcription en temps réel</span>
-                {isTranscribing && (
+                {(isTranscribing || isFinalizingTranscription) && (
                   <div className="flex items-center gap-1 ml-auto">
                     <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                    <span className="text-xs text-muted-foreground">En cours...</span>
+                    <span className="text-xs text-muted-foreground">
+                      {isFinalizingTranscription ? 'Consolidation...' : 'En cours...'}
+                    </span>
                   </div>
                 )}
               </div>
