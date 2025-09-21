@@ -143,7 +143,7 @@ const GalerieFleuveWelcome: React.FC<GalerieFluveWelcomeProps> = ({
           opacity: 1
         }} transition={{
           delay: 0.2
-        }}>
+        }} className={isMobile ? 'mt-16' : ''}>
             <h1 className={`${isMobile ? 'text-3xl' : 'text-4xl md:text-6xl'} font-bold ${isMobile ? 'mb-2' : 'mb-4'} leading-tight`}>
               {theme?.title.main || title}
             </h1>
