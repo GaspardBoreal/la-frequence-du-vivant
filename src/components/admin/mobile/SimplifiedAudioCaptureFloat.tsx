@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '../../ui/sheet';
 import { Button } from '../../ui/button';
-import { Mic, Upload, Square, Play, Pause, Trash2, FileAudio, Waves, FileText, CheckCircle2, ArrowLeft } from 'lucide-react';
+import { Mic, Upload, Square, Play, Pause, Trash2, FileAudio, FileText, ArrowLeft } from 'lucide-react';
 import { Switch } from '../../ui/switch';
 import { Input } from '../../ui/input';
 import { Textarea } from '../../ui/textarea';
@@ -10,7 +10,6 @@ import { toast } from 'sonner';
 import { saveAudio, validateAudioFile, getAudioDuration, AudioUploadProgress, AudioToUpload } from '../../../utils/supabaseAudioOperations';
 import { useTranscriptionModels } from '../../../hooks/useTranscriptionModels';
 import { transcribeAudio } from '../../../utils/audioTranscription';
-import { supabase } from '../../../integrations/supabase/client';
 
 interface SimplifiedAudioCaptureFloatProps {
   marcheId: string;
@@ -48,8 +47,6 @@ const SimplifiedAudioCaptureFloat: React.FC<SimplifiedAudioCaptureFloatProps> = 
   
   // Transcription states - simplified
   const [withTranscription, setWithTranscription] = useState(false);
-  const [realtimeTranscription, setRealtimeTranscription] = useState(false);
-  const [transcriptionText, setTranscriptionText] = useState('');
   const [isTranscribing, setIsTranscribing] = useState(false);
   
   // Form states
@@ -57,12 +54,7 @@ const SimplifiedAudioCaptureFloat: React.FC<SimplifiedAudioCaptureFloatProps> = 
   const [description, setDescription] = useState('');
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
-  
-  // Real-time transcription WebSocket
-  const [wsConnection, setWsConnection] = useState<WebSocket | null>(null);
-  const [chunkCounter, setChunkCounter] = useState(0);
-  const [isFinalizingTranscription, setIsFinalizingTranscription] = useState(false);
-  
+
   const { data: transcriptionModels = [] } = useTranscriptionModels();
   
   // Refs
@@ -75,15 +67,7 @@ const SimplifiedAudioCaptureFloat: React.FC<SimplifiedAudioCaptureFloatProps> = 
   const recordingIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const audioElementRef = useRef<HTMLAudioElement | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
-  const wsRetriesRef = useRef(0);
-  const pingIntervalRef = useRef<NodeJS.Timeout | null>(null);
-  const pendingChunksRef = useRef<any[]>([]);
   const recordingMimeTypeRef = useRef<string>('audio/webm');
-  // New refs for robust realtime WS handling
-  const wsRef = useRef<WebSocket | null>(null);
-  const flushIntervalRef = useRef<NodeJS.Timeout | null>(null);
-  const finalizationTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const lastMimeTypeRef = useRef<string>('audio/webm');
 
   // Auto-select best transcription model
   const getBestTranscriptionModel = () => {
@@ -96,255 +80,17 @@ const SimplifiedAudioCaptureFloat: React.FC<SimplifiedAudioCaptureFloatProps> = 
   useEffect(() => {
     return () => {
       if (recordingIntervalRef.current) clearInterval(recordingIntervalRef.current);
-      if (pingIntervalRef.current) clearInterval(pingIntervalRef.current);
-      if (flushIntervalRef.current) clearInterval(flushIntervalRef.current);
-      if (finalizationTimeoutRef.current) clearTimeout(finalizationTimeoutRef.current);
       if (processorRef.current) processorRef.current.disconnect();
       if (sourceRef.current) sourceRef.current.disconnect();
       if (audioContextRef.current) audioContextRef.current.close();
       if (recordedAudio) URL.revokeObjectURL(recordedAudio.url);
-      if (wsRef.current) wsRef.current.close();
-      if (wsConnection) wsConnection.close();
     };
-  }, [recordedAudio, wsConnection]);
-
-  // Real-time transcription setup
-  const setupRealtimeTranscription = () => {
-    if (!realtimeTranscription) return;
-
-    const projectRef = 'xzbunrtgbfbhinkzkzhf';
-    const url = `wss://${projectRef}.functions.supabase.co/functions/v1/realtime-transcription`;
-
-    const connect = () => {
-      try {
-        console.log('🎤 Connecting to realtime transcription WebSocket:', url);
-        const ws = new WebSocket(url);
-
-        ws.onopen = () => {
-          console.log('✅ WebSocket connected successfully');
-          wsRetriesRef.current = 0;
-          wsRef.current = ws;
-          setWsConnection(ws);
-          setIsTranscribing(true);
-          toast.success('Transcription temps réel activée');
-          
-          // Flush any buffered chunks immediately
-          flushPending();
-          
-          // Setup periodic flush and ping while connected
-          pingIntervalRef.current = setInterval(() => {
-            if (ws.readyState === WebSocket.OPEN) {
-              ws.send(JSON.stringify({ type: 'ping' }));
-            }
-          }, 15000);
-          flushIntervalRef.current = setInterval(() => {
-            flushPending();
-          }, 1000);
-        };
-
-        ws.onmessage = (event) => {
-          try {
-            const message = JSON.parse(event.data);
-            console.log('📥 Received WebSocket message:', message.type, message.text?.substring(0, 50));
-            
-            if (message.type === 'transcription_result' && message.text?.trim()) {
-              const text = message.text.trim();
-              
-              // Filter out incremental results that are only punctuation or too short
-              const isPunctuationOnly = /^[.,!?;:\-\s]*$/.test(text);
-              const isTooShort = text.length < 3;
-              
-              if (!message.isFinal && (isPunctuationOnly || isTooShort)) {
-                console.log('⏭️ Skipping incremental result (punctuation/short):', text);
-                return;
-              }
-              
-              console.log('📝 Adding transcription text:', text, 'isFinal:', message.isFinal);
-              setTranscriptionText(prev => {
-                if (message.isFinal) {
-                  // For final results, replace everything to ensure accuracy
-                  console.log('🏁 Final transcription received, replacing text');
-                  setIsFinalizingTranscription(false);
-                  return text;
-                } else {
-                  // For incremental results, append
-                  const newText = prev + (prev ? ' ' : '') + text;
-                  console.log('📄 Updated transcription text length:', newText.length);
-                  return newText;
-                }
-              });
-            } else if (message.type === 'finalized') {
-              console.log('🎯 Finalization complete message received');
-              setIsFinalizingTranscription(false);
-            } else if (message.type === 'error') {
-              console.error('❌ Realtime transcription error:', message.message);
-              toast.error(`Erreur transcription: ${message.message}`);
-              setIsFinalizingTranscription(false);
-            } else if (message.type === 'connection') {
-              console.log('🔗 Connection status:', message.status);
-            }
-          } catch (e) {
-            console.error('❌ Invalid message from websocket:', e);
-          }
-        };
-
-        ws.onclose = (evt) => {
-          console.log('🔌 WebSocket closed:', evt.code, evt.reason);
-          setIsTranscribing(false);
-          setIsFinalizingTranscription(false);
-          wsRef.current = null;
-          setWsConnection(null);
-          
-          // Clear ping/flush intervals and finalization timeout
-          if (pingIntervalRef.current) {
-            clearInterval(pingIntervalRef.current);
-            pingIntervalRef.current = null;
-          }
-          if (flushIntervalRef.current) {
-            clearInterval(flushIntervalRef.current);
-            flushIntervalRef.current = null;
-          }
-          if (finalizationTimeoutRef.current) {
-            clearTimeout(finalizationTimeoutRef.current);
-            finalizationTimeoutRef.current = null;
-          }
-          
-          // Auto-retry only if connection was working before
-          if (realtimeTranscription && wsRetriesRef.current < 2 && evt.code !== 1000) {
-            wsRetriesRef.current += 1;
-            const delay = Math.min(2000 * wsRetriesRef.current, 5000); // exponential backoff, max 5s
-            console.warn(`🔄 WS closed abnormally (${evt.code}), retrying in ${delay}ms (attempt ${wsRetriesRef.current})`);
-            setTimeout(() => {
-              if (realtimeTranscription && isRecording) { // only retry if still recording
-                connect();
-              }
-            }, delay);
-          } else if (evt.code !== 1000) {
-            console.error('❌ WebSocket connection failed definitively');
-            toast.error('Transcription temps réel indisponible');
-          }
-        };
-
-        ws.onerror = (err) => {
-          console.error('❌ WebSocket error:', err);
-          toast.error('Erreur de connexion transcription temps réel');
-        };
-
-        setWsConnection(ws);
-      } catch (error) {
-        console.error('❌ Failed to open realtime transcription WS:', error);
-        toast.error('Impossible de démarrer la transcription temps réel');
-        throw error; // Re-throw to be caught by caller
-      }
-    };
-
-    connect();
-  };
-
-  const detectMimeType = (audioData: Uint8Array): string => {
-    // WebM signature: 0x1A, 0x45, 0xDF, 0xA3
-    if (audioData.length >= 4 && 
-        audioData[0] === 0x1A && audioData[1] === 0x45 && 
-        audioData[2] === 0xDF && audioData[3] === 0xA3) {
-      return 'audio/webm';
-    }
-    
-    // MP4 signature: ftyp at offset 4
-    if (audioData.length >= 8) {
-      const ftypCheck = String.fromCharCode.apply(null, Array.from(audioData.slice(4, 8)));
-      if (ftypCheck === 'ftyp') {
-        return 'audio/mp4';
-      }
-    }
-    
-    // Default to webm for MediaRecorder or use recorded type
-    return recordingMimeTypeRef.current;
-  };
-
-  // Flush any buffered messages when WS is open
-  const flushPending = () => {
-    const ws = wsRef.current;
-    if (ws && ws.readyState === WebSocket.OPEN && pendingChunksRef.current.length) {
-      console.log('📤 Flushing buffered chunks:', pendingChunksRef.current.length);
-      for (const msg of pendingChunksRef.current) {
-        ws.send(JSON.stringify(msg));
-      }
-      pendingChunksRef.current = [];
-    }
-  };
-
-  // Send immediately if possible, otherwise buffer (with cap)
-  const sendOrBuffer = (msg: any) => {
-    const ws = wsRef.current;
-    if (ws && ws.readyState === WebSocket.OPEN) {
-      ws.send(JSON.stringify(msg));
-    } else {
-      if (pendingChunksRef.current.length > 200) {
-        pendingChunksRef.current.shift();
-      }
-      pendingChunksRef.current.push(msg);
-    }
-  };
-
-  const sendAudioChunkForTranscription = async (audioBlob: Blob, chunkNumber: number) => {
-    try {
-      console.log('🎵 Processing audio chunk for transcription, size:', audioBlob.size, 'chunk:', chunkNumber);
-      
-      // Convert Blob to Uint8Array for MIME type detection
-      const arrayBuffer = await audioBlob.arrayBuffer();
-      const uint8Array = new Uint8Array(arrayBuffer);
-      
-      // Detect MIME type from actual audio data
-      const mimeType = detectMimeType(uint8Array);
-      lastMimeTypeRef.current = mimeType;
-      console.log('🔍 Detected MIME type:', mimeType, 'for chunk:', chunkNumber);
-      
-      // Convert to base64 in chunks for better memory handling
-      let binaryString = '';
-      const chunkSize = 32768;
-      
-      for (let i = 0; i < uint8Array.length; i += chunkSize) {
-        const chunk = uint8Array.subarray(i, Math.min(i + chunkSize, uint8Array.length));
-        binaryString += String.fromCharCode.apply(null, Array.from(chunk));
-      }
-      
-      const base64Audio = btoa(binaryString);
-      
-      const message = {
-        type: 'audio_chunk_individual',
-        audioData: base64Audio,
-        chunkNumber,
-        mimeType
-      };
-
-      const wsState = wsRef.current?.readyState;
-      if (wsState === WebSocket.OPEN) {
-        console.log('📤 Sending individual audio chunk:', chunkNumber, 'type:', mimeType);
-      } else {
-        console.log('📦 Buffering chunk (WebSocket not ready):', chunkNumber, 'state:', wsState);
-      }
-      sendOrBuffer(message);
-      
-      console.log('✅ Audio chunk processed successfully');
-    } catch (error) {
-      console.error('❌ Error processing audio chunk:', error);
-    }
-  };
+  }, [recordedAudio]);
 
   // Start recording
   const startRecording = async () => {
     try {
-      console.log('🎤 Starting recording with transcription:', withTranscription, 'realtime:', realtimeTranscription);
-      
-      // Reset states at the start of recording
-      setChunkCounter(0);
-      pendingChunksRef.current = [];
-      
-      // Reset transcription text for real-time mode
-      if (withTranscription && realtimeTranscription) {
-        console.log('📝 Resetting transcription text for new recording');
-        setTranscriptionText('');
-      }
+      console.log('🎤 Starting recording with transcription:', withTranscription);
       
       const stream = await navigator.mediaDevices.getUserMedia({ 
         audio: {
@@ -354,17 +100,7 @@ const SimplifiedAudioCaptureFloat: React.FC<SimplifiedAudioCaptureFloatProps> = 
         }
       });
 
-      // Setup real-time transcription WebSocket (don't let it block timer)
-      if (withTranscription && realtimeTranscription) {
-        console.log('🔗 Setting up real-time transcription');
-        try {
-          setupRealtimeTranscription();
-        } catch (error) {
-          console.error('❌ Real-time transcription setup failed, but continuing with recording:', error);
-        }
-      }
-
-      // Setup MediaRecorder for final file with longer intervals for better quality
+      // Setup MediaRecorder for final file
       const mimeType = 'audio/webm;codecs=opus';
       recordingMimeTypeRef.current = mimeType;
       const mediaRecorder = new MediaRecorder(stream, { mimeType });
@@ -374,7 +110,7 @@ const SimplifiedAudioCaptureFloat: React.FC<SimplifiedAudioCaptureFloatProps> = 
       mediaRecorderRef.current = mediaRecorder;
       audioChunksRef.current = [];
 
-      // Setup AudioContext for visualization AND real-time chunks
+      // Setup AudioContext for visualization
       audioContextRef.current = new AudioContext({ sampleRate: 24000 });
       analyserRef.current = audioContextRef.current.createAnalyser();
       sourceRef.current = audioContextRef.current.createMediaStreamSource(stream);
@@ -383,9 +119,6 @@ const SimplifiedAudioCaptureFloat: React.FC<SimplifiedAudioCaptureFloatProps> = 
       analyserRef.current.fftSize = 256;
       const bufferLength = analyserRef.current.frequencyBinCount;
       const dataArray = new Uint8Array(bufferLength);
-
-      // No longer need ScriptProcessorNode for real-time chunks
-      // We'll use MediaRecorder chunks instead for better format compatibility
 
       const updateAudioLevel = () => {
         if (analyserRef.current && isRecording) {
@@ -400,23 +133,6 @@ const SimplifiedAudioCaptureFloat: React.FC<SimplifiedAudioCaptureFloatProps> = 
         if (event.data.size > 0) {
           console.log('📦 MediaRecorder chunk received, size:', event.data.size, 'type:', event.data.type);
           audioChunksRef.current.push(event.data);
-          
-          // Update timer reliably (increment by 2.5 seconds per chunk when using 2.5s intervals)
-          if (withTranscription && realtimeTranscription) {
-            setRecordingTime(prev => {
-              const newTime = prev + 2.5;
-              console.log('⏱️ Timer updated via chunk:', prev, '->', newTime);
-              return newTime;
-            });
-            
-            // Send chunk for real-time transcription with correct increment
-            setChunkCounter(prev => {
-              const next = prev + 1;
-              console.log('🚀 Sending chunk for transcription:', next);
-              void sendAudioChunkForTranscription(event.data, next);
-              return next;
-            });
-          }
         }
       };
 
@@ -425,143 +141,60 @@ const SimplifiedAudioCaptureFloat: React.FC<SimplifiedAudioCaptureFloatProps> = 
         const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
         const audioUrl = URL.createObjectURL(audioBlob);
         
-        // Finalize real-time transcription with proper timeout handling
-        const ws = wsRef.current;
-        if (ws && ws.readyState === WebSocket.OPEN) {
-          console.log('🏁 Finalizing real-time transcription');
-          setIsFinalizingTranscription(true);
-          
-          // Send finalize message with last known MIME type
-          ws.send(JSON.stringify({ 
-            type: 'finalize',
-            lastMimeType: lastMimeTypeRef.current
-          }));
-          
-          // Wait longer for final transcription result (10-12 seconds)
-          finalizationTimeoutRef.current = setTimeout(() => {
-            console.log('⏰ Finalization timeout reached, closing WebSocket');
-            setIsFinalizingTranscription(false);
-            if (wsRef.current) {
-              try { wsRef.current.close(); } catch {}
-              wsRef.current = null;
-              setWsConnection(null);
-            }
-            if (pingIntervalRef.current) { clearInterval(pingIntervalRef.current); pingIntervalRef.current = null; }
-            if (flushIntervalRef.current) { clearInterval(flushIntervalRef.current); flushIntervalRef.current = null; }
-          }, 12000); // 12 seconds timeout
-        } else {
-          // No WebSocket, cleanup immediately
-          setTimeout(() => {
-            if (wsRef.current) {
-              try { wsRef.current.close(); } catch {}
-              wsRef.current = null;
-              setWsConnection(null);
-            }
-            if (pingIntervalRef.current) { clearInterval(pingIntervalRef.current); pingIntervalRef.current = null; }
-            if (flushIntervalRef.current) { clearInterval(flushIntervalRef.current); flushIntervalRef.current = null; }
-          }, 1000);
-        }
+        // Create a File from the Blob for duration calculation
+        const audioFile = new File([audioBlob], `recording-${Date.now()}.webm`, { type: 'audio/webm' });
+        const audioDuration = await getAudioDuration(audioFile) || 0;
         
-        const timestamp = new Date().toLocaleString('fr-FR', {
-          day: '2-digit',
-          month: '2-digit',
-          year: 'numeric',
-          hour: '2-digit',
-          minute: '2-digit'
-        });
-        
-        const duration = await getAudioDuration(new File([audioBlob], 'recording.webm'));
-        
-        setRecordedAudio({
-          id: `recording-${Date.now()}`,
+        const recordedAudioData: RecordedAudio = {
+          id: Date.now().toString(),
           blob: audioBlob,
           url: audioUrl,
-          duration: duration || recordingTime,
-          name: `Mémo vocal - ${timestamp}`
-        });
+          duration: audioDuration,
+          name: `Enregistrement ${new Date().toLocaleTimeString()}`
+        };
 
-        setTitle(`Mémo vocal - ${timestamp}`);
-        stream.getTracks().forEach(track => track.stop());
-        
-        // Cleanup audio processing
-        if (processorRef.current) {
-          processorRef.current.disconnect();
-          processorRef.current = null;
-        }
-        if (sourceRef.current) {
-          sourceRef.current.disconnect();
-          sourceRef.current = null;
-        }
-        
-        // Finalize real-time transcription
-        if (wsConnection && wsConnection.readyState === WebSocket.OPEN) {
-          console.log('Finalizing real-time transcription');
-          wsConnection.send(JSON.stringify({ type: 'finalize' }));
-          setTimeout(() => {
-            wsConnection.close();
-            setWsConnection(null);
-          }, 1000);
-        }
-        
+        setRecordedAudio(recordedAudioData);
         setCurrentStep('finalize');
+        stream.getTracks().forEach(track => track.stop());
       };
 
-      // Start recording with appropriate chunk size for better quality
-      if (withTranscription && realtimeTranscription) {
-        console.log('Starting MediaRecorder with 2.5s chunks for real-time');
-        mediaRecorder.start(2500); // 2.5-second chunks for better quality
-      } else {
-        console.log('Starting MediaRecorder with single chunk');
-        mediaRecorder.start();
-      }
-      
+      // Start recording
       setIsRecording(true);
       setRecordingTime(0);
-      setChunkCounter(0);
       setCurrentStep('recording');
+      
+      mediaRecorder.start(500); // Collect data every 500ms
       updateAudioLevel();
 
-      // Timer now handled by MediaRecorder chunks for reliability
-      // Only use backup timer if not using real-time transcription
-      if (!withTranscription || !realtimeTranscription) {
-        console.log('Starting backup timer (no real-time transcription)');
-        recordingIntervalRef.current = setInterval(() => {
-          console.log('Backup timer tick');
-          setRecordingTime(prevTime => {
-            const newTime = prevTime + 1;
-            console.log('Backup timer updated:', prevTime, '->', newTime);
-            return newTime;
-          });
-        }, 1000);
-      }
+      // Update timer every second
+      recordingIntervalRef.current = setInterval(() => {
+        setRecordingTime(prev => prev + 1);
+      }, 1000);
 
     } catch (error) {
-      console.error('Recording error:', error);
+      console.error('Error starting recording:', error);
       toast.error('Impossible de démarrer l\'enregistrement');
     }
   };
 
   // Stop recording
   const stopRecording = () => {
-    if (mediaRecorderRef.current && isRecording) {
-      console.log('Stopping recording...');
-      mediaRecorderRef.current.stop();
-      setIsRecording(false);
-      setAudioLevel(0);
-      
-      // Stop ScriptProcessorNode if exists
-      if (processorRef.current) {
-        processorRef.current.disconnect();
-        processorRef.current = null;
-      }
-      
-      if (recordingIntervalRef.current) {
-        clearInterval(recordingIntervalRef.current);
-      }
+    console.log('Stopping recording...');
+    
+    if (recordingIntervalRef.current) {
+      clearInterval(recordingIntervalRef.current);
+      recordingIntervalRef.current = null;
     }
+    
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+      mediaRecorderRef.current.stop();
+    }
+    
+    setIsRecording(false);
+    setAudioLevel(0);
   };
 
-  // File import
+  // Handle file import
   const handleFileImport = () => {
     fileInputRef.current?.click();
   };
@@ -570,199 +203,184 @@ const SimplifiedAudioCaptureFloat: React.FC<SimplifiedAudioCaptureFloatProps> = 
     const file = event.target.files?.[0];
     if (!file) return;
 
-    const validation = validateAudioFile(file);
-    if (!validation.valid) {
-      toast.error(`Fichier non valide: ${validation.errors.join(', ')}`);
-      return;
-    }
-
     try {
+      const validation = await validateAudioFile(file);
+      if (!validation.valid) {
+        toast.error(validation.errors[0] || 'Fichier audio invalide');
+        return;
+      }
+
       const audioUrl = URL.createObjectURL(file);
-      const duration = await getAudioDuration(file);
+      const audioDuration = await getAudioDuration(file);
       
-      setRecordedAudio({
-        id: `import-${Date.now()}`,
+      const importedAudio: RecordedAudio = {
+        id: Date.now().toString(),
         blob: file,
         url: audioUrl,
-        duration: duration || 0,
+        duration: audioDuration,
         name: file.name
-      });
+      };
 
-      setTitle(file.name.replace(/\.[^/.]+$/, ''));
+      setRecordedAudio(importedAudio);
       setCurrentStep('finalize');
-      toast.success('Fichier importé avec succès');
     } catch (error) {
-      console.error('Import error:', error);
+      console.error('Error importing file:', error);
       toast.error('Erreur lors de l\'import du fichier');
     }
   };
 
-  // Audio playback
+  // Toggle playback
   const togglePlayback = () => {
     if (!recordedAudio) return;
 
-    if (!audioElementRef.current) {
-      audioElementRef.current = new Audio(recordedAudio.url);
-      audioElementRef.current.onended = () => setIsPlaying(false);
-    }
-
     if (isPlaying) {
-      audioElementRef.current.pause();
+      audioElementRef.current?.pause();
+      setIsPlaying(false);
     } else {
+      if (!audioElementRef.current) {
+        audioElementRef.current = new Audio(recordedAudio.url);
+        audioElementRef.current.onended = () => setIsPlaying(false);
+      }
       audioElementRef.current.play();
+      setIsPlaying(true);
     }
-    
-    setIsPlaying(!isPlaying);
   };
 
-  // Upload to Supabase
+  // Handle upload
   const handleUpload = async () => {
-    if (!recordedAudio || !marcheId) return;
-
-    setIsUploading(true);
-    setUploadProgress(0);
+    if (!recordedAudio) return;
 
     try {
-      const file = new File([recordedAudio.blob], `${title || recordedAudio.name}.webm`, {
-        type: (recordedAudio.blob as any).type || 'audio/webm'
-      });
+      setIsUploading(true);
+      setUploadProgress(0);
 
-      const actualDuration = await getAudioDuration(file);
-      const finalDuration = actualDuration || recordedAudio.duration;
-
-      const audioData: AudioToUpload = {
-        id: recordedAudio.id,
-        file,
+      // Create a File from the Blob for the AudioToUpload interface
+      const audioFile = new File([recordedAudio.blob], recordedAudio.name, { type: 'audio/webm' });
+      
+      const audioToUpload: AudioToUpload = {
+        id: Date.now().toString(),
+        file: audioFile,
         url: recordedAudio.url,
-        name: title || recordedAudio.name,
-        size: (recordedAudio.blob as any).size,
-        duration: finalDuration,
+        name: recordedAudio.name,
+        size: recordedAudio.blob.size,
+        duration: recordedAudio.duration,
         uploaded: false,
-        titre: title,
-        description: description
+        titre: title || recordedAudio.name,
+        description: description || ''
       };
 
       const onProgress = (progress: AudioUploadProgress) => {
-        setUploadProgress(Math.round(progress.progress));
+        setUploadProgress(progress.progress);
       };
 
-      const audioId = await saveAudio(marcheId, audioData, onProgress);
+      const audioId = await saveAudio(marcheId, audioToUpload, onProgress);
 
-      // Handle transcription - always trigger if requested, even with real-time
-      if (withTranscription) {
-        const bestModel = getBestTranscriptionModel();
-        if (bestModel) {
-          console.log('Triggering transcription for uploaded audio (withTranscription=true)');
-          await transcribeAudio(audioId, recordedAudio.blob, bestModel.id, 'fr', 'deferred');
-          
-          // If we have real-time transcription text, update the record immediately
-          if (realtimeTranscription && transcriptionText.trim()) {
-            try {
-              await supabase
-                .from('marche_audio')
-                .update({ transcription_text: transcriptionText.trim() })
-                .eq('id', audioId);
-              console.log('Updated audio record with real-time transcription text');
-            } catch (updateError) {
-              console.error('Error updating real-time transcription:', updateError);
-            }
+      // Handle transcription if enabled
+      if (withTranscription && audioId) {
+        setIsTranscribing(true);
+        const model = getBestTranscriptionModel();
+        
+        if (model) {
+          try {
+            await transcribeAudio(audioId, recordedAudio.blob, model.id);
+            toast.success('Audio enregistré et transcription lancée');
+          } catch (transcriptionError) {
+            console.error('Transcription failed:', transcriptionError);
+            toast.success('Audio enregistré (transcription échouée)');
           }
-          
-          toast.success('Audio sauvegardé et transcription en cours');
         } else {
-          toast.success('Audio sauvegardé avec succès !');
+          toast.success('Audio enregistré (modèle de transcription indisponible)');
         }
+        setIsTranscribing(false);
       } else {
-        toast.success('Audio sauvegardé avec succès !');
+        toast.success('Audio enregistré avec succès');
       }
 
-      onAudioUploaded?.(audioId);
-      
-      // Reset everything
-      resetState();
-      
-      if (embedded) {
-        onRequestClose?.();
-      } else {
-        setIsOpen(false);
+      if (onAudioUploaded && audioId) {
+        onAudioUploaded(audioId);
       }
-      
+
+      resetState();
     } catch (error) {
       console.error('Upload error:', error);
-      toast.error('Erreur lors de la sauvegarde');
-    } finally {
+      toast.error('Erreur lors de l\'upload');
       setIsUploading(false);
-      setUploadProgress(0);
     }
   };
 
+  // Reset state
   const resetState = () => {
-    if (recordedAudio) {
-      URL.revokeObjectURL(recordedAudio.url);
-      setRecordedAudio(null);
-    }
     setCurrentStep('choose-action');
     setActionType(null);
+    setRecordedAudio(null);
     setTitle('');
     setDescription('');
+    setIsUploading(false);
+    setUploadProgress(0);
     setWithTranscription(false);
-    setRealtimeTranscription(false);
-    setTranscriptionText('');
     setIsTranscribing(false);
-    if (wsConnection) {
-      wsConnection.close();
-      setWsConnection(null);
-    }
+    setRecordingTime(0);
+    setAudioLevel(0);
+    
     if (audioElementRef.current) {
       audioElementRef.current.pause();
       audioElementRef.current = null;
     }
-    setIsPlaying(false);
+    
+    if (recordedAudio) {
+      URL.revokeObjectURL(recordedAudio.url);
+    }
+    
+    if (!embedded) {
+      setIsOpen(false);
+    }
   };
 
-  const formatTime = (seconds: number) => {
+  // Format time helper
+  const formatTime = (seconds: number): string => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
+    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 
+  // Go back to previous step
   const goBack = () => {
-    if (currentStep === 'configure') {
-      setCurrentStep('choose-action');
-      setActionType(null);
-    } else if (currentStep === 'finalize') {
+    if (currentStep === 'finalize') {
+      setCurrentStep('configure');
       if (recordedAudio) {
         URL.revokeObjectURL(recordedAudio.url);
         setRecordedAudio(null);
       }
+    } else if (currentStep === 'configure') {
       setCurrentStep('choose-action');
       setActionType(null);
-      setTitle('');
-      setDescription('');
     }
   };
 
+  // Render content based on current step
   const renderContent = () => {
-    // Step 1: Choose Action
+    // Step 1: Choose action type
     if (currentStep === 'choose-action') {
       return (
         <div className="p-6 space-y-6">
-          <div className="text-center">
-            <h2 className="text-xl font-semibold mb-2">Créer un mémo vocal</h2>
-            <p className="text-muted-foreground">Choisissez comment ajouter votre audio</p>
+          <div className="text-center mb-6">
+            <h2 className="text-xl font-semibold mb-2">Capturer du contenu audio</h2>
+            <p className="text-sm text-muted-foreground">
+              Choisissez comment ajouter votre audio
+            </p>
           </div>
 
-          <div className="space-y-4">
+          <div className="grid grid-cols-1 gap-4">
             <Button
               onClick={() => {
                 setActionType('record');
                 setCurrentStep('configure');
               }}
               variant="outline"
-              className="w-full h-20 flex-col gap-2 hover:bg-green-50 hover:border-green-300"
+              className="h-20 flex-col gap-2"
             >
-              <Mic className="h-8 w-8 text-green-600" />
-              <span className="font-medium">Enregistrer</span>
+              <Mic className="h-8 w-8" />
+              <span>Enregistrer</span>
             </Button>
 
             <Button
@@ -771,17 +389,17 @@ const SimplifiedAudioCaptureFloat: React.FC<SimplifiedAudioCaptureFloatProps> = 
                 setCurrentStep('configure');
               }}
               variant="outline"
-              className="w-full h-20 flex-col gap-2 hover:bg-blue-50 hover:border-blue-300"
+              className="h-20 flex-col gap-2"
             >
-              <Upload className="h-8 w-8 text-blue-600" />
-              <span className="font-medium">Importer un fichier</span>
+              <Upload className="h-8 w-8" />
+              <span>Importer un fichier</span>
             </Button>
           </div>
         </div>
       );
     }
 
-    // Step 2: Configure Options
+    // Step 2: Configure options
     if (currentStep === 'configure') {
       return (
         <div className="p-6 space-y-6">
@@ -789,14 +407,16 @@ const SimplifiedAudioCaptureFloat: React.FC<SimplifiedAudioCaptureFloatProps> = 
             <Button variant="ghost" size="sm" onClick={goBack}>
               <ArrowLeft className="h-4 w-4" />
             </Button>
-            <h2 className="text-xl font-semibold">Options</h2>
+            <h2 className="text-xl font-semibold">
+              {actionType === 'record' ? 'Enregistrer' : 'Importer'}
+            </h2>
           </div>
 
-          <div className="space-y-6">
+          <div className="space-y-4">
             {/* Transcription toggle */}
-            <div className={`flex items-center justify-between p-4 rounded-lg ${withTranscription ? 'bg-success/20' : 'bg-muted/30'}`}>
+            <div className={`flex items-center justify-between p-4 rounded-lg ${withTranscription ? 'bg-primary/20' : 'bg-muted/20'}`}>
               <div className="flex items-center gap-3">
-                <FileText className="h-5 w-5 text-purple-600" />
+                <FileText className="h-5 w-5 text-blue-600" />
                 <div>
                   <h3 className="font-medium">Avec transcription</h3>
                   <p className="text-sm text-muted-foreground">
@@ -809,25 +429,6 @@ const SimplifiedAudioCaptureFloat: React.FC<SimplifiedAudioCaptureFloatProps> = 
                 onCheckedChange={setWithTranscription}
               />
             </div>
-
-            {/* Real-time transcription toggle (only if transcription is enabled and recording) */}
-            {withTranscription && actionType === 'record' && (
-              <div className={`flex items-center justify-between p-4 rounded-lg ${realtimeTranscription ? 'bg-success/20' : 'bg-muted/20'}`}>
-                <div className="flex items-center gap-3">
-                  <Waves className="h-5 w-5 text-green-600" />
-                  <div>
-                    <h3 className="font-medium">Temps réel</h3>
-                    <p className="text-sm text-muted-foreground">
-                      Voir le texte pendant l'enregistrement
-                    </p>
-                  </div>
-                </div>
-                <Switch
-                  checked={realtimeTranscription}
-                  onCheckedChange={setRealtimeTranscription}
-                />
-              </div>
-            )}
 
             <div className="pt-4">
               <Button
@@ -873,36 +474,6 @@ const SimplifiedAudioCaptureFloat: React.FC<SimplifiedAudioCaptureFloatProps> = 
             </div>
           </div>
 
-          {/* Real-time transcription display */}
-          {withTranscription && realtimeTranscription && (
-            <div className="bg-muted/30 rounded-lg p-4">
-              <div className="flex items-center gap-2 mb-3">
-                <FileText className="w-4 h-4 text-purple-500" />
-                <span className="text-sm font-medium">Transcription en temps réel</span>
-                {(isTranscribing || isFinalizingTranscription) && (
-                  <div className="flex items-center gap-1 ml-auto">
-                    <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                    <span className="text-xs text-muted-foreground">
-                      {isFinalizingTranscription ? 'Consolidation...' : 'En cours...'}
-                    </span>
-                  </div>
-                )}
-              </div>
-              
-              <div className="bg-background/50 rounded-md p-3 min-h-[100px] border">
-                {transcriptionText ? (
-                  <p className="text-sm text-foreground leading-relaxed">
-                    {transcriptionText}
-                  </p>
-                ) : (
-                  <p className="text-sm text-muted-foreground italic">
-                    {isTranscribing ? "Écoute en cours..." : "Commencez à parler..."}
-                  </p>
-                )}
-              </div>
-            </div>
-          )}
-
           <Button
             onClick={stopRecording}
             variant="destructive"
@@ -945,21 +516,6 @@ const SimplifiedAudioCaptureFloat: React.FC<SimplifiedAudioCaptureFloatProps> = 
             </div>
           </div>
 
-          {/* Real-time transcription result */}
-          {withTranscription && realtimeTranscription && transcriptionText && (
-            <div className="bg-muted/20 rounded-lg p-4">
-              <div className="flex items-center gap-2 mb-3">
-                <CheckCircle2 className="w-4 h-4 text-green-500" />
-                <span className="text-sm font-medium">Transcription terminée</span>
-              </div>
-              <div className="bg-background/50 rounded-md p-3 border max-h-32 overflow-y-auto">
-                <p className="text-sm text-foreground leading-relaxed">
-                  {transcriptionText}
-                </p>
-              </div>
-            </div>
-          )}
-
           {/* Form fields */}
           <div className="space-y-4">
             <div>
@@ -968,16 +524,16 @@ const SimplifiedAudioCaptureFloat: React.FC<SimplifiedAudioCaptureFloatProps> = 
                 value={title} 
                 onChange={(e) => setTitle(e.target.value)} 
                 placeholder="Nom de l'enregistrement" 
-                className="h-11"
               />
             </div>
+            
             <div>
-              <label className="text-sm font-medium mb-2 block">Description (optionnelle)</label>
+              <label className="text-sm font-medium mb-2 block">Description</label>
               <Textarea 
                 value={description} 
                 onChange={(e) => setDescription(e.target.value)} 
-                placeholder="Ajoutez une description..." 
-                rows={3} 
+                placeholder="Description optionnelle..."
+                rows={3}
               />
             </div>
           </div>
@@ -985,23 +541,28 @@ const SimplifiedAudioCaptureFloat: React.FC<SimplifiedAudioCaptureFloatProps> = 
           {/* Upload progress */}
           {isUploading && (
             <div className="space-y-2">
-              <div className="flex justify-between text-sm">
-                <span>Sauvegarde en cours...</span>
+              <div className="flex items-center justify-between text-sm">
+                <span>{isTranscribing ? 'Transcription en cours...' : 'Upload en cours...'}</span>
                 <span>{uploadProgress}%</span>
               </div>
-              <Progress value={uploadProgress} />
+              <Progress value={uploadProgress} className="w-full" />
             </div>
           )}
 
-          {/* Save button */}
-          <Button 
-            onClick={handleUpload} 
-            disabled={isUploading || !title.trim()}
-            className="w-full"
-            size="lg"
-          >
-            {isUploading ? 'Sauvegarde en cours...' : 'Sauvegarder le mémo vocal'}
-          </Button>
+          {/* Action buttons */}
+          <div className="flex gap-3">
+            <Button onClick={resetState} variant="outline" className="flex-1">
+              <Trash2 className="h-4 w-4 mr-2" />
+              Annuler
+            </Button>
+            <Button 
+              onClick={handleUpload} 
+              disabled={isUploading}
+              className="flex-1"
+            >
+              {isUploading ? 'Upload...' : 'Sauvegarder'}
+            </Button>
+          </div>
         </div>
       );
     }
@@ -1009,46 +570,53 @@ const SimplifiedAudioCaptureFloat: React.FC<SimplifiedAudioCaptureFloatProps> = 
     return null;
   };
 
+  // Handle sheet state
+  const handleOpenChange = (open: boolean) => {
+    setIsOpen(open);
+    if (!open && onRequestClose) {
+      onRequestClose();
+    }
+  };
+
+  // Hidden file input for import
+  const fileInput = (
+    <input
+      ref={fileInputRef}
+      type="file"
+      accept="audio/*"
+      onChange={handleFileSelect}
+      style={{ display: 'none' }}
+    />
+  );
+
+  if (embedded) {
+    return (
+      <div className="w-full h-full">
+        {fileInput}
+        {renderContent()}
+      </div>
+    );
+  }
+
   return (
     <>
-      <input
-        type="file"
-        ref={fileInputRef}
-        onChange={handleFileSelect}
-        accept="audio/*"
-        style={{ display: 'none' }}
-      />
-      
-      {embedded ? (
-        renderContent()
-      ) : (
-        <div className="fixed z-50 bottom-24 right-6">
-          <Sheet open={isOpen} onOpenChange={(open) => {
-            setIsOpen(open);
-            if (!open) resetState();
-          }}>
-            <SheetTrigger asChild>
-              <Button 
-                size="lg" 
-                className="rounded-full h-14 w-14 shadow-lg bg-gradient-to-r from-green-600 to-blue-600 hover:from-green-700 hover:to-blue-700"
-              >
-                <Mic className="h-6 w-6" />
-              </Button>
-            </SheetTrigger>
-            <SheetContent side="right" className="w-full sm:max-w-md p-0 overflow-hidden">
-              <SheetHeader className="p-6 pb-0">
-                <SheetTitle className="flex items-center gap-2">
-                  <Waves className="h-5 w-5" />
-                  Mémo vocal
-                </SheetTitle>
-              </SheetHeader>
-              <div className="h-full overflow-auto">
-                {renderContent()}
-              </div>
-            </SheetContent>
-          </Sheet>
-        </div>
-      )}
+      {fileInput}
+      <Sheet open={isOpen} onOpenChange={handleOpenChange}>
+        <SheetTrigger asChild>
+          <Button
+            size="lg"
+            className="rounded-full h-14 w-14 fixed bottom-6 right-6 z-50 shadow-lg"
+          >
+            <Mic className="h-6 w-6" />
+          </Button>
+        </SheetTrigger>
+        <SheetContent side="bottom" className="h-[90vh]">
+          <SheetHeader>
+            <SheetTitle>Enregistrement Audio</SheetTitle>
+          </SheetHeader>
+          {renderContent()}
+        </SheetContent>
+      </Sheet>
     </>
   );
 };
