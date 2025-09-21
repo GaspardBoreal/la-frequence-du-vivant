@@ -116,15 +116,31 @@ const SimplifiedAudioCaptureFloat: React.FC<SimplifiedAudioCaptureFloatProps> = 
       sourceRef.current = audioContextRef.current.createMediaStreamSource(stream);
       sourceRef.current.connect(analyserRef.current);
       
-      analyserRef.current.fftSize = 256;
-      const bufferLength = analyserRef.current.frequencyBinCount;
+      // Improved analyzer configuration for better audio level detection
+      analyserRef.current.fftSize = 1024;
+      analyserRef.current.smoothingTimeConstant = 0.8;
+      const bufferLength = analyserRef.current.fftSize;
       const dataArray = new Uint8Array(bufferLength);
 
       const updateAudioLevel = () => {
         if (analyserRef.current && isRecording) {
-          analyserRef.current.getByteFrequencyData(dataArray);
-          const average = dataArray.reduce((sum, value) => sum + value, 0) / bufferLength;
-          setAudioLevel(average / 255 * 100);
+          // Use time domain data for real amplitude measurement
+          analyserRef.current.getByteTimeDomainData(dataArray);
+          
+          // Calculate RMS (Root Mean Square) for accurate volume level
+          let sum = 0;
+          for (let i = 0; i < bufferLength; i++) {
+            const sample = (dataArray[i] - 128) / 128; // Convert to -1 to 1 range
+            sum += sample * sample;
+          }
+          const rms = Math.sqrt(sum / bufferLength);
+          
+          // Convert to percentage with logarithmic scaling and threshold
+          const threshold = 0.01; // Minimum threshold to avoid noise
+          const normalizedLevel = Math.max(0, (rms - threshold) / (1 - threshold));
+          const levelPercentage = Math.min(100, normalizedLevel * 100 * 2); // Amplify for better visibility
+          
+          setAudioLevel(levelPercentage);
           requestAnimationFrame(updateAudioLevel);
         }
       };
@@ -483,12 +499,26 @@ const SimplifiedAudioCaptureFloat: React.FC<SimplifiedAudioCaptureFloatProps> = 
           {/* Audio level visualization */}
           <div className="space-y-2">
             <p className="text-sm text-center text-muted-foreground">Niveau audio</p>
-            <div className="w-full bg-muted rounded-full h-3">
+            <div className="w-full bg-muted rounded-full h-3 relative overflow-hidden">
               <div 
-                className="bg-green-500 h-3 rounded-full transition-all duration-100"
-                style={{ width: `${audioLevel}%` }}
+                className={`h-3 rounded-full transition-all duration-75 ${
+                  audioLevel > 70 ? 'bg-red-500' : 
+                  audioLevel > 40 ? 'bg-yellow-500' : 
+                  'bg-green-500'
+                }`}
+                style={{ 
+                  width: `${Math.max(2, audioLevel)}%`,
+                  boxShadow: audioLevel > 50 ? '0 0 6px rgba(34, 197, 94, 0.5)' : undefined
+                }}
               />
+              {/* Peak indicator */}
+              {audioLevel > 80 && (
+                <div className="absolute top-0 right-0 h-3 w-1 bg-red-600 animate-pulse" />
+              )}
             </div>
+            <p className="text-xs text-center text-muted-foreground">
+              {audioLevel.toFixed(0)}%
+            </p>
           </div>
 
           <Button
