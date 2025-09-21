@@ -10,6 +10,7 @@ import { toast } from 'sonner';
 import { saveAudio, validateAudioFile, getAudioDuration, AudioUploadProgress, AudioToUpload } from '../../../utils/supabaseAudioOperations';
 import { useTranscriptionModels } from '../../../hooks/useTranscriptionModels';
 import { transcribeAudio } from '../../../utils/audioTranscription';
+import { supabase } from '../../../integrations/supabase/client';
 
 interface SimplifiedAudioCaptureFloatProps {
   marcheId: string;
@@ -479,12 +480,29 @@ const SimplifiedAudioCaptureFloat: React.FC<SimplifiedAudioCaptureFloatProps> = 
 
       const audioId = await saveAudio(marcheId, audioData, onProgress);
 
-      // Handle transcription if enabled (but not real-time)
-      if (withTranscription && !realtimeTranscription) {
+      // Handle transcription - always trigger if requested, even with real-time
+      if (withTranscription) {
         const bestModel = getBestTranscriptionModel();
         if (bestModel) {
+          console.log('Triggering transcription for uploaded audio (withTranscription=true)');
           await transcribeAudio(audioId, recordedAudio.blob, bestModel.id, 'fr', 'deferred');
+          
+          // If we have real-time transcription text, update the record immediately
+          if (realtimeTranscription && transcriptionText.trim()) {
+            try {
+              await supabase
+                .from('marche_audio')
+                .update({ transcription_text: transcriptionText.trim() })
+                .eq('id', audioId);
+              console.log('Updated audio record with real-time transcription text');
+            } catch (updateError) {
+              console.error('Error updating real-time transcription:', updateError);
+            }
+          }
+          
           toast.success('Audio sauvegardé et transcription en cours');
+        } else {
+          toast.success('Audio sauvegardé avec succès !');
         }
       } else {
         toast.success('Audio sauvegardé avec succès !');

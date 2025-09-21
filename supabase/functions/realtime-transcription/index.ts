@@ -20,7 +20,9 @@ serve(async (req) => {
   const { socket, response } = Deno.upgradeWebSocket(req);
   
   let accumulatedAudio: Uint8Array[] = [];
-  let isTranscribing = false;
+  let pendingChunks: Uint8Array[] = [];
+  let isProcessing = false;
+  let processingTimer: number | null = null;
 
   socket.onopen = () => {
     console.log("WebSocket connection established for real-time transcription");
@@ -57,39 +59,85 @@ serve(async (req) => {
   };
 
   const processWebMChunk = async (socket: WebSocket, audioData: string | null, isFinal = false) => {
-    if (isTranscribing && !isFinal) return; // Skip if already processing, unless final
+    if (audioData) {
+      // Convert base64 WebM chunk to bytes and add to queue
+      const binaryString = atob(audioData);
+      const bytes = new Uint8Array(binaryString.length);
+      for (let i = 0; i < binaryString.length; i++) {
+        bytes[i] = binaryString.charCodeAt(i);
+      }
+      pendingChunks.push(bytes);
+      accumulatedAudio.push(bytes);
+      console.log('Added chunk to queue, pending:', pendingChunks.length, 'accumulated:', accumulatedAudio.length);
+    }
+
+    if (isFinal) {
+      console.log('Final processing requested, draining queue...');
+      // Clear any pending timer
+      if (processingTimer) {
+        clearTimeout(processingTimer);
+        processingTimer = null;
+      }
+      // Process everything accumulated for final result
+      await processQueuedChunks(socket, true);
+      return;
+    }
+
+    // Start batch processing if not already running
+    if (!isProcessing && pendingChunks.length > 0) {
+      startBatchProcessing(socket);
+    }
+  };
+
+  const startBatchProcessing = (socket: WebSocket) => {
+    if (processingTimer) {
+      clearTimeout(processingTimer);
+    }
     
-    isTranscribing = true;
+    // Wait 2 seconds to accumulate chunks, then process
+    processingTimer = setTimeout(() => {
+      processQueuedChunks(socket, false);
+    }, 2000);
+  };
+
+  const processQueuedChunks = async (socket: WebSocket, isFinal: boolean) => {
+    if (isProcessing && !isFinal) return;
     
+    isProcessing = true;
+    processingTimer = null;
+
     try {
-      let audioBlob: Blob;
+      let chunksToProcess: Uint8Array[] = [];
       
-      if (audioData) {
-        // Convert base64 WebM chunk to Blob
-        const binaryString = atob(audioData);
-        const bytes = new Uint8Array(binaryString.length);
-        for (let i = 0; i < binaryString.length; i++) {
-          bytes[i] = binaryString.charCodeAt(i);
-        }
-        audioBlob = new Blob([bytes], { type: 'audio/webm' });
-      } else if (accumulatedAudio.length > 0) {
-        // Use accumulated audio for final transcription
-        const totalLength = accumulatedAudio.reduce((sum, chunk) => sum + chunk.length, 0);
-        const combinedAudio = new Uint8Array(totalLength);
-        let offset = 0;
-        
-        for (const chunk of accumulatedAudio) {
-          combinedAudio.set(chunk, offset);
-          offset += chunk.length;
-        }
-        audioBlob = new Blob([combinedAudio], { type: 'audio/webm' });
+      if (isFinal) {
+        // Process all accumulated audio for final result
+        chunksToProcess = [...accumulatedAudio];
+        console.log('Final processing: using all', chunksToProcess.length, 'accumulated chunks');
       } else {
-        console.log('No audio data to process');
-        isTranscribing = false;
+        // Process pending chunks for incremental results
+        chunksToProcess = [...pendingChunks];
+        pendingChunks = []; // Clear the queue
+        console.log('Batch processing:', chunksToProcess.length, 'chunks');
+      }
+
+      if (chunksToProcess.length === 0) {
+        console.log('No chunks to process');
+        isProcessing = false;
         return;
       }
 
-      console.log('Processing audio blob, size:', audioBlob.size, 'isFinal:', isFinal);
+      // Combine chunks into a single blob
+      const totalLength = chunksToProcess.reduce((sum, chunk) => sum + chunk.length, 0);
+      const combinedAudio = new Uint8Array(totalLength);
+      let offset = 0;
+      
+      for (const chunk of chunksToProcess) {
+        combinedAudio.set(chunk, offset);
+        offset += chunk.length;
+      }
+
+      const audioBlob = new Blob([combinedAudio], { type: 'audio/webm' });
+      console.log('Processing audio blob, size:', audioBlob.size, 'chunks:', chunksToProcess.length, 'isFinal:', isFinal);
 
       // Transcribe with OpenAI
       const openAIKey = Deno.env.get('OPENAI_API_KEY');
@@ -113,26 +161,24 @@ serve(async (req) => {
 
       if (response.ok) {
         const result = await response.json();
-        console.log('Transcription result:', result.text);
+        console.log('Transcription result:', result.text, 'isFinal:', isFinal);
         
-        socket.send(JSON.stringify({
-          type: 'transcription_result',
-          text: result.text,
-          segments: result.segments,
-          isFinal,
-          confidence: 0.9
-        }));
-        
-        // Store chunk if not final, for potential final processing
-        if (!isFinal && audioData) {
-          const binaryString = atob(audioData);
-          const bytes = new Uint8Array(binaryString.length);
-          for (let i = 0; i < binaryString.length; i++) {
-            bytes[i] = binaryString.charCodeAt(i);
-          }
-          accumulatedAudio.push(bytes);
-        } else if (isFinal) {
+        if (result.text && result.text.trim()) {
+          socket.send(JSON.stringify({
+            type: 'transcription_result',
+            text: result.text,
+            segments: result.segments,
+            isFinal,
+            confidence: 0.9
+          }));
+        } else {
+          console.log('Empty transcription result, skipping');
+        }
+
+        // Clean up if final
+        if (isFinal) {
           accumulatedAudio = [];
+          pendingChunks = [];
         }
       } else {
         const errorText = await response.text();
@@ -141,19 +187,29 @@ serve(async (req) => {
       }
     } catch (error) {
       console.error('Transcription error:', error);
-      // Send error but don't close socket - let client handle it
+      // Send error but don't close socket
       socket.send(JSON.stringify({
         type: 'error',
         message: error.message
       }));
     } finally {
-      isTranscribing = false;
+      isProcessing = false;
+      
+      // Continue processing if there are more chunks and not final
+      if (!isFinal && pendingChunks.length > 0) {
+        startBatchProcessing(socket);
+      }
     }
   };
 
   socket.onclose = () => {
     console.log("WebSocket connection closed");
     accumulatedAudio = [];
+    pendingChunks = [];
+    if (processingTimer) {
+      clearTimeout(processingTimer);
+      processingTimer = null;
+    }
   };
 
   socket.onerror = (error) => {
