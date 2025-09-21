@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
@@ -16,6 +16,8 @@ import SpecificPagesManager from '@/components/admin/SpecificPagesManager';
 
 export default function ExplorationAnimatorRefactored() {
   const { slug } = useParams<{ slug: string }>();
+  const [searchParams] = useSearchParams();
+  const isPreviewMode = searchParams.get('preview') === 'true';
   const { data: exploration } = useExploration(slug || '');
   const { data: explorationMarches } = useExplorationMarches(exploration?.id || '');
 
@@ -124,14 +126,26 @@ export default function ExplorationAnimatorRefactored() {
         canonicalUrl={canonical}
       />
 
+      {isPreviewMode && (
+        <div className="bg-blue-50 border-b border-blue-200 py-2">
+          <div className="container mx-auto px-4">
+            <p className="text-sm text-blue-800 text-center font-medium">
+              🔍 Mode Prévisualisation - Interface de test pour la responsivité
+            </p>
+          </div>
+        </div>
+      )}
+
       <header className="container mx-auto px-4 py-8">
         <div className="flex items-center gap-4 mb-4">
-          <Link to="/admin/explorations">
-            <Button variant="outline" size="sm">
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Retour aux explorations
-            </Button>
-          </Link>
+          {!isPreviewMode && (
+            <Link to="/admin/explorations">
+              <Button variant="outline" size="sm">
+                <ArrowLeft className="h-4 w-4 mr-2" />
+                Retour aux explorations
+              </Button>
+            </Link>
+          )}
         </div>
         <h1 className="mt-4 text-3xl font-bold text-foreground">
           Animer l'exploration {exploration ? `« ${exploration.name} »` : ''}
@@ -232,15 +246,17 @@ export default function ExplorationAnimatorRefactored() {
         </section>
 
         {/* Save and Generate buttons */}
-        <div className="mt-8 flex gap-4">
-          <Button 
-            onClick={handleSave}
-            disabled={!canSave || saving}
-            variant="outline"
-          >
-            {saving ? 'Sauvegarde...' : 'Sauvegarder les paramètres'}
-          </Button>
-        </div>
+        {!isPreviewMode && (
+          <div className="mt-8 flex gap-4">
+            <Button 
+              onClick={handleSave}
+              disabled={!canSave || saving}
+              variant="outline"
+            >
+              {saving ? 'Sauvegarde...' : 'Sauvegarder les paramètres'}
+            </Button>
+          </div>
+        )}
 
         {/* Section URLs publiques */}
         <section className="mt-16 mb-16">
