@@ -70,6 +70,13 @@ const SimplifiedAudioCaptureFloat: React.FC<SimplifiedAudioCaptureFloatProps> = 
   const recordingMimeTypeRef = useRef<string>('audio/webm');
   const isRecordingRef = useRef<boolean>(false);
   const rafIdRef = useRef<number | null>(null);
+  
+  // Audio level smoothing and calibration
+  const audioLevelBuffer = useRef<number[]>([]);
+  const noiseFloorRef = useRef<number>(0.005);
+  const peakHoldRef = useRef<number>(0);
+  const peakHoldTimeRef = useRef<number>(0);
+  const lastLevelRef = useRef<number>(0);
 
   // Auto-select best transcription model
   const getBestTranscriptionModel = () => {
@@ -87,6 +94,11 @@ const SimplifiedAudioCaptureFloat: React.FC<SimplifiedAudioCaptureFloatProps> = 
         cancelAnimationFrame(rafIdRef.current);
         rafIdRef.current = null;
       }
+      
+      // Reset audio level smoothing
+      audioLevelBuffer.current = [];
+      lastLevelRef.current = 0;
+      peakHoldRef.current = 0;
       
       if (recordingIntervalRef.current) clearInterval(recordingIntervalRef.current);
       if (processorRef.current) processorRef.current.disconnect();
@@ -145,11 +157,52 @@ const SimplifiedAudioCaptureFloat: React.FC<SimplifiedAudioCaptureFloatProps> = 
         }
         const rms = Math.sqrt(sum / bufferLength);
         
-        // Convert to percentage with logarithmic scaling and threshold
-        const threshold = 0.008; // Reduced threshold for better sensitivity
-        const normalizedLevel = Math.max(0, (rms - threshold) / (1 - threshold));
-        const levelPercentage = Math.min(100, normalizedLevel * 100 * 3); // Increased amplification
+        // Adaptive noise floor calibration (gradually adjust to ambient noise)
+        if (rms < noiseFloorRef.current * 2) {
+          noiseFloorRef.current = noiseFloorRef.current * 0.99 + rms * 0.01;
+        }
         
+        // Remove noise floor and apply logarithmic scaling
+        const cleanLevel = Math.max(0, rms - noiseFloorRef.current);
+        const logLevel = cleanLevel > 0 ? Math.log10(cleanLevel * 100 + 1) / Math.log10(101) : 0;
+        
+        // Soft compression to avoid saturation (compress levels above 0.7)
+        const compressed = logLevel > 0.7 ? 0.7 + (logLevel - 0.7) * 0.3 : logLevel;
+        
+        // Add to smoothing buffer (keep last 8 values for temporal smoothing)
+        audioLevelBuffer.current.push(compressed);
+        if (audioLevelBuffer.current.length > 8) {
+          audioLevelBuffer.current.shift();
+        }
+        
+        // Calculate smoothed average with emphasis on recent values
+        const weights = [0.05, 0.08, 0.12, 0.15, 0.18, 0.22, 0.26, 0.34]; // Recent values have more weight
+        let smoothedLevel = 0;
+        let totalWeight = 0;
+        for (let i = 0; i < audioLevelBuffer.current.length; i++) {
+          const weight = weights[weights.length - audioLevelBuffer.current.length + i] || 0.1;
+          smoothedLevel += audioLevelBuffer.current[i] * weight;
+          totalWeight += weight;
+        }
+        smoothedLevel /= totalWeight;
+        
+        // Natural decay (slow descent when level drops)
+        const decayRate = 0.85;
+        const finalLevel = Math.max(smoothedLevel, lastLevelRef.current * decayRate);
+        
+        // Peak hold feature (maintain peaks for visual feedback)
+        const now = Date.now();
+        if (finalLevel > peakHoldRef.current) {
+          peakHoldRef.current = finalLevel;
+          peakHoldTimeRef.current = now;
+        } else if (now - peakHoldTimeRef.current > 800) {
+          peakHoldRef.current *= 0.95; // Gradual peak decay
+        }
+        
+        // Convert to percentage (optimize range for human voice: 20% to 85% for normal use)
+        const levelPercentage = Math.min(100, finalLevel * 120); // Scale to use 0-120% range, clamped to 100%
+        
+        lastLevelRef.current = finalLevel;
         setAudioLevel(levelPercentage);
         
         // Continue the loop
