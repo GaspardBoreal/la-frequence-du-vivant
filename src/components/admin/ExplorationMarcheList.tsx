@@ -82,27 +82,56 @@ const SortableMarcheItem: React.FC<SortableMarcheItemProps> = ({
           ? 'scale-105 shadow-2xl bg-gradient-to-br from-gaspard-background/60 to-gaspard-background/40 border-gaspard-primary/40 shadow-gaspard-primary/20' 
           : `hover:scale-[1.02] hover:shadow-xl ${
               isVisibleToReaders 
-                ? 'bg-gradient-to-br from-gaspard-accent/20 via-gaspard-primary/10 to-gaspard-background/10 border-gaspard-accent/30 shadow-lg shadow-gaspard-accent/15 border-l-4 border-l-gaspard-accent' 
+                ? 'bg-gradient-to-br from-gaspard-accent/25 via-gaspard-accent/15 to-gaspard-primary/20 border-gaspard-accent/50 shadow-xl shadow-gaspard-accent/20 border-l-4 border-l-gaspard-accent' 
                 : 'bg-gradient-to-br from-gaspard-background/30 to-gaspard-background/10 border-gaspard-primary/20 shadow-lg shadow-gaspard-primary/5'
             } hover:border-gaspard-accent/30`
       } ${isVisibleToReaders ? 'animate-gentle-glow' : ''}`}
     >
+      {/* Effet de surbrillance dorée pour les marches visibles aux lecteurs */}
+      {isVisibleToReaders && (
+        <div className="absolute inset-0 bg-gradient-to-r from-gaspard-accent/10 via-transparent to-gaspard-accent/5 pointer-events-none animate-gentle-float"></div>
+      )}
+      
       {/* Motif décoratif de fréquences élégant */}
       <div className="absolute top-0 right-0 w-40 h-40 opacity-10">
         <svg viewBox="0 0 100 100" className="w-full h-full">
-          <path d="M20,50 Q50,10 80,50 Q50,90 20,50" fill="none" stroke="currentColor" strokeWidth="0.3" className="animate-gentle-float text-gaspard-primary" />
-          <path d="M25,50 Q50,20 75,50 Q50,80 25,50" fill="none" stroke="currentColor" strokeWidth="0.3" className="animate-gentle-float animation-delay-300 text-gaspard-accent" />
-          <path d="M30,50 Q50,30 70,50 Q50,70 30,50" fill="none" stroke="currentColor" strokeWidth="0.3" className="animate-gentle-float animation-delay-600 text-gaspard-secondary" />
+          <path 
+            d="M20,50 Q50,10 80,50 Q50,90 20,50" 
+            fill="none" 
+            stroke="currentColor" 
+            strokeWidth="0.3" 
+            className={`animate-gentle-float ${isVisibleToReaders ? 'text-gaspard-accent' : 'text-gaspard-primary'}`} 
+          />
+          <path 
+            d="M25,50 Q50,20 75,50 Q50,80 25,50" 
+            fill="none" 
+            stroke="currentColor" 
+            strokeWidth="0.3" 
+            className={`animate-gentle-float animation-delay-300 ${isVisibleToReaders ? 'text-gaspard-accent' : 'text-gaspard-accent'}`} 
+          />
+          <path 
+            d="M30,50 Q50,30 70,50 Q50,70 30,50" 
+            fill="none" 
+            stroke="currentColor" 
+            strokeWidth="0.3" 
+            className={`animate-gentle-float animation-delay-600 ${isVisibleToReaders ? 'text-gaspard-accent' : 'text-gaspard-secondary'}`} 
+          />
         </svg>
       </div>
       
-      <div className="relative p-8 border-0 rounded-2xl backdrop-blur-sm">
+      <div className={`relative p-8 border-0 rounded-2xl backdrop-blur-sm ${
+        isVisibleToReaders ? 'bg-gradient-to-br from-gaspard-accent/8 to-transparent' : ''
+      }`}>
         <div className="flex items-start gap-4">
           {/* Icône et numéro d'ordre */}
           <div className="flex flex-col items-center gap-2">
             <div className="relative">
-              <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-gaspard-primary/30 to-gaspard-accent/40 flex items-center justify-center shadow-xl backdrop-blur-sm">
-                <Footprints className="h-6 w-6 text-gaspard-background" />
+              <div className={`w-14 h-14 rounded-2xl ${
+                isVisibleToReaders 
+                  ? 'bg-gradient-to-br from-gaspard-accent/40 to-gaspard-accent/60 shadow-xl shadow-gaspard-accent/30' 
+                  : 'bg-gradient-to-br from-gaspard-primary/30 to-gaspard-accent/40 shadow-xl'
+              } flex items-center justify-center backdrop-blur-sm`}>
+                <Footprints className={`h-6 w-6 ${isVisibleToReaders ? 'text-gaspard-background' : 'text-gaspard-background'}`} />
               </div>
               <Badge 
                 variant="secondary" 
