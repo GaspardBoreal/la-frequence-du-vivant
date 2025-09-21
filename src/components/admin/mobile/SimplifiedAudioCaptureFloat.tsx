@@ -594,20 +594,22 @@ const SimplifiedAudioCaptureFloat: React.FC<SimplifiedAudioCaptureFloatProps> = 
                 <span>75</span>
               </div>
               
-              {/* Audio level bar */}
+              {/* Audio level bar with progressive gradient */}
               <div 
-                className={`h-4 rounded-full transition-all duration-75 relative ${
-                  audioLevel > 70 ? 'bg-red-500' : 
-                  audioLevel > 40 ? 'bg-yellow-500' : 
-                  'bg-green-500'
-                }`}
+                className="h-4 rounded-full transition-all duration-75 relative"
                 style={{ 
                   width: `${audioLevel}%`,
                   minWidth: '1px',
+                  background: `linear-gradient(to right, 
+                    hsl(120, 100%, 40%) 0%, 
+                    hsl(120, 100%, 40%) ${Math.min(40, audioLevel)}%, 
+                    hsl(60, 100%, 50%) ${Math.max(40, Math.min(70, audioLevel))}%, 
+                    hsl(0, 100%, 60%) ${Math.max(70, audioLevel)}%
+                  )`,
                   boxShadow: audioLevel > 50 ? (
-                    audioLevel > 70 ? '0 0 6px rgba(239, 68, 68, 0.5)' : 
-                    audioLevel > 40 ? '0 0 6px rgba(234, 179, 8, 0.5)' : 
-                    '0 0 6px rgba(34, 197, 94, 0.5)'
+                    audioLevel > 70 ? '0 0 6px hsla(0, 100%, 60%, 0.5)' : 
+                    audioLevel > 40 ? '0 0 6px hsla(60, 100%, 50%, 0.5)' : 
+                    '0 0 6px hsla(120, 100%, 40%, 0.5)'
                   ) : undefined
                 }}
               />
