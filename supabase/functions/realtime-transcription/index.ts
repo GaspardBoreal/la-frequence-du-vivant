@@ -34,26 +34,21 @@ serve(async (req) => {
     try {
       const message = JSON.parse(event.data);
       
-      if (message.type === 'audio_chunk') {
-        // Accumulate audio chunks
-        const audioData = message.audioData; // base64
-        const binaryString = atob(audioData);
-        const bytes = new Uint8Array(binaryString.length);
-        for (let i = 0; i < binaryString.length; i++) {
-          bytes[i] = binaryString.charCodeAt(i);
-        }
-        accumulatedAudio.push(bytes);
-        
-        // Send transcription every few chunks or when enough audio is accumulated
-        if (accumulatedAudio.length >= 3 && !isTranscribing) {
-          await processAccumulatedAudio(socket);
-        }
+      if (message.type === 'audio_chunk_webm') {
+        // Process WebM chunk immediately
+        console.log('Received WebM chunk:', message.chunkNumber, 'size:', message.audioData?.length);
+        await processWebMChunk(socket, message.audioData, false);
       } else if (message.type === 'finalize') {
-        // Final transcription with all accumulated audio
-        await processAccumulatedAudio(socket, true);
+        // Final transcription with any remaining audio
+        console.log('Finalizing transcription');
+        await processWebMChunk(socket, null, true);
+      } else if (message.type === 'ping') {
+        // Respond to ping to keep connection alive
+        socket.send(JSON.stringify({ type: 'pong' }));
       }
     } catch (error) {
       console.error('Error processing message:', error);
+      // Send error but don't close socket
       socket.send(JSON.stringify({
         type: 'error',
         message: error.message
@@ -61,21 +56,40 @@ serve(async (req) => {
     }
   };
 
-  const processAccumulatedAudio = async (socket: WebSocket, isFinal = false) => {
-    if (accumulatedAudio.length === 0 || isTranscribing) return;
+  const processWebMChunk = async (socket: WebSocket, audioData: string | null, isFinal = false) => {
+    if (isTranscribing && !isFinal) return; // Skip if already processing, unless final
     
     isTranscribing = true;
     
     try {
-      // Combine all accumulated audio chunks
-      const totalLength = accumulatedAudio.reduce((sum, chunk) => sum + chunk.length, 0);
-      const combinedAudio = new Uint8Array(totalLength);
-      let offset = 0;
+      let audioBlob: Blob;
       
-      for (const chunk of accumulatedAudio) {
-        combinedAudio.set(chunk, offset);
-        offset += chunk.length;
+      if (audioData) {
+        // Convert base64 WebM chunk to Blob
+        const binaryString = atob(audioData);
+        const bytes = new Uint8Array(binaryString.length);
+        for (let i = 0; i < binaryString.length; i++) {
+          bytes[i] = binaryString.charCodeAt(i);
+        }
+        audioBlob = new Blob([bytes], { type: 'audio/webm' });
+      } else if (accumulatedAudio.length > 0) {
+        // Use accumulated audio for final transcription
+        const totalLength = accumulatedAudio.reduce((sum, chunk) => sum + chunk.length, 0);
+        const combinedAudio = new Uint8Array(totalLength);
+        let offset = 0;
+        
+        for (const chunk of accumulatedAudio) {
+          combinedAudio.set(chunk, offset);
+          offset += chunk.length;
+        }
+        audioBlob = new Blob([combinedAudio], { type: 'audio/webm' });
+      } else {
+        console.log('No audio data to process');
+        isTranscribing = false;
+        return;
       }
+
+      console.log('Processing audio blob, size:', audioBlob.size, 'isFinal:', isFinal);
 
       // Transcribe with OpenAI
       const openAIKey = Deno.env.get('OPENAI_API_KEY');
@@ -84,7 +98,6 @@ serve(async (req) => {
       }
 
       const formData = new FormData();
-      const audioBlob = new Blob([combinedAudio], { type: 'audio/webm' });
       formData.append('file', audioBlob, 'audio.webm');
       formData.append('model', 'whisper-1');
       formData.append('language', 'fr');
@@ -100,6 +113,7 @@ serve(async (req) => {
 
       if (response.ok) {
         const result = await response.json();
+        console.log('Transcription result:', result.text);
         
         socket.send(JSON.stringify({
           type: 'transcription_result',
@@ -109,15 +123,25 @@ serve(async (req) => {
           confidence: 0.9
         }));
         
-        // Clear processed audio if not final
-        if (!isFinal) {
+        // Store chunk if not final, for potential final processing
+        if (!isFinal && audioData) {
+          const binaryString = atob(audioData);
+          const bytes = new Uint8Array(binaryString.length);
+          for (let i = 0; i < binaryString.length; i++) {
+            bytes[i] = binaryString.charCodeAt(i);
+          }
+          accumulatedAudio.push(bytes);
+        } else if (isFinal) {
           accumulatedAudio = [];
         }
       } else {
-        throw new Error(`OpenAI API error: ${await response.text()}`);
+        const errorText = await response.text();
+        console.error('OpenAI API error:', response.status, errorText);
+        throw new Error(`OpenAI API error: ${errorText}`);
       }
     } catch (error) {
       console.error('Transcription error:', error);
+      // Send error but don't close socket - let client handle it
       socket.send(JSON.stringify({
         type: 'error',
         message: error.message

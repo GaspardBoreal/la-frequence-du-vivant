@@ -59,6 +59,7 @@ const SimplifiedAudioCaptureFloat: React.FC<SimplifiedAudioCaptureFloatProps> = 
   
   // Real-time transcription WebSocket
   const [wsConnection, setWsConnection] = useState<WebSocket | null>(null);
+  const [chunkCounter, setChunkCounter] = useState(0);
   
   const { data: transcriptionModels = [] } = useTranscriptionModels();
   
@@ -73,7 +74,7 @@ const SimplifiedAudioCaptureFloat: React.FC<SimplifiedAudioCaptureFloatProps> = 
   const audioElementRef = useRef<HTMLAudioElement | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const wsRetriesRef = useRef(0);
-  const lastChunkSentRef = useRef<number>(0);
+  const pingIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   // Auto-select best transcription model
   const getBestTranscriptionModel = () => {
@@ -86,6 +87,7 @@ const SimplifiedAudioCaptureFloat: React.FC<SimplifiedAudioCaptureFloatProps> = 
   useEffect(() => {
     return () => {
       if (recordingIntervalRef.current) clearInterval(recordingIntervalRef.current);
+      if (pingIntervalRef.current) clearInterval(pingIntervalRef.current);
       if (processorRef.current) processorRef.current.disconnect();
       if (sourceRef.current) sourceRef.current.disconnect();
       if (audioContextRef.current) audioContextRef.current.close();
@@ -111,6 +113,13 @@ const SimplifiedAudioCaptureFloat: React.FC<SimplifiedAudioCaptureFloatProps> = 
           wsRetriesRef.current = 0;
           setIsTranscribing(true);
           toast.success('Transcription temps réel activée');
+          
+          // Setup ping every 15s during silence
+          pingIntervalRef.current = setInterval(() => {
+            if (ws.readyState === WebSocket.OPEN) {
+              ws.send(JSON.stringify({ type: 'ping' }));
+            }
+          }, 15000);
         };
 
         ws.onmessage = (event) => {
@@ -132,6 +141,12 @@ const SimplifiedAudioCaptureFloat: React.FC<SimplifiedAudioCaptureFloatProps> = 
           console.log('WebSocket closed:', evt.code, evt.reason);
           setIsTranscribing(false);
           setWsConnection(null);
+          
+          // Clear ping interval
+          if (pingIntervalRef.current) {
+            clearInterval(pingIntervalRef.current);
+            pingIntervalRef.current = null;
+          }
           
           // Auto-retry only if connection was working before
           if (realtimeTranscription && wsRetriesRef.current < 2 && evt.code !== 1000) {
@@ -165,32 +180,18 @@ const SimplifiedAudioCaptureFloat: React.FC<SimplifiedAudioCaptureFloatProps> = 
     connect();
   };
 
-  const sendAudioChunkForTranscription = async (audioData: Float32Array) => {
+  const sendAudioChunkForTranscription = async (audioBlob: Blob, chunkNumber: number) => {
     if (!wsConnection || wsConnection.readyState !== WebSocket.OPEN) {
       console.warn('WebSocket not ready for chunk sending, state:', wsConnection?.readyState);
       return;
     }
     
-    // Éviter d'envoyer trop fréquemment (max 1 chunk par 2 secondes pour stabilité)
-    const now = Date.now();
-    if (now - lastChunkSentRef.current < 2000) {
-      console.log('Skipping chunk - too frequent');
-      return;
-    }
-    lastChunkSentRef.current = now;
-    
     try {
-      console.log('Sending audio chunk for transcription, size:', audioData.length);
+      console.log('Sending WebM audio chunk for transcription, size:', audioBlob.size, 'chunk:', chunkNumber);
       
-      // Convertir Float32Array en PCM16 pour OpenAI
-      const int16Array = new Int16Array(audioData.length);
-      for (let i = 0; i < audioData.length; i++) {
-        const s = Math.max(-1, Math.min(1, audioData[i]));
-        int16Array[i] = s < 0 ? s * 0x8000 : s * 0x7FFF;
-      }
-      
-      // Convertir en base64
-      const uint8Array = new Uint8Array(int16Array.buffer);
+      // Convert Blob to base64
+      const arrayBuffer = await audioBlob.arrayBuffer();
+      const uint8Array = new Uint8Array(arrayBuffer);
       let binaryString = '';
       const chunkSize = 32768;
       
@@ -202,11 +203,12 @@ const SimplifiedAudioCaptureFloat: React.FC<SimplifiedAudioCaptureFloatProps> = 
       const base64Audio = btoa(binaryString);
       
       wsConnection.send(JSON.stringify({
-        type: 'audio_chunk',
-        audioData: base64Audio
+        type: 'audio_chunk_webm',
+        audioData: base64Audio,
+        chunkNumber
       }));
       
-      console.log('Audio chunk sent successfully');
+      console.log('WebM audio chunk sent successfully');
     } catch (error) {
       console.error('Error sending audio chunk:', error);
     }
@@ -253,21 +255,8 @@ const SimplifiedAudioCaptureFloat: React.FC<SimplifiedAudioCaptureFloatProps> = 
       const bufferLength = analyserRef.current.frequencyBinCount;
       const dataArray = new Uint8Array(bufferLength);
 
-      // Setup ScriptProcessorNode for real-time audio chunks
-      if (withTranscription && realtimeTranscription) {
-        console.log('Setting up ScriptProcessorNode for real-time chunks');
-        processorRef.current = audioContextRef.current.createScriptProcessor(4096, 1, 1);
-        
-        processorRef.current.onaudioprocess = (event) => {
-          const inputData = event.inputBuffer.getChannelData(0);
-          console.log('Audio process event - sending chunk for transcription, size:', inputData.length);
-          // Envoyer pour transcription temps réel
-          sendAudioChunkForTranscription(new Float32Array(inputData));
-        };
-        
-        sourceRef.current.connect(processorRef.current);
-        processorRef.current.connect(audioContextRef.current.destination);
-      }
+      // No longer need ScriptProcessorNode for real-time chunks
+      // We'll use MediaRecorder chunks instead for better format compatibility
 
       const updateAudioLevel = () => {
         if (analyserRef.current && isRecording) {
@@ -282,6 +271,20 @@ const SimplifiedAudioCaptureFloat: React.FC<SimplifiedAudioCaptureFloatProps> = 
         if (event.data.size > 0) {
           console.log('MediaRecorder chunk received, size:', event.data.size);
           audioChunksRef.current.push(event.data);
+          
+          // Update timer reliably (increment by 1 second per chunk when using 1s intervals)
+          if (withTranscription && realtimeTranscription) {
+            setRecordingTime(prev => {
+              const newTime = prev + 1;
+              console.log('Timer updated via chunk:', prev, '->', newTime);
+              return newTime;
+            });
+            
+            // Send chunk for real-time transcription
+            const currentChunk = chunkCounter + 1;
+            setChunkCounter(currentChunk);
+            sendAudioChunkForTranscription(event.data, currentChunk);
+          }
         }
       };
 
@@ -345,19 +348,23 @@ const SimplifiedAudioCaptureFloat: React.FC<SimplifiedAudioCaptureFloatProps> = 
       
       setIsRecording(true);
       setRecordingTime(0);
+      setChunkCounter(0);
       setCurrentStep('recording');
       updateAudioLevel();
 
-      // Start timer immediately (fix React state batching issue)
-      console.log('Starting recording timer');
-      recordingIntervalRef.current = setInterval(() => {
-        console.log('Timer tick - updating recording time');
-        setRecordingTime(prevTime => {
-          const newTime = prevTime + 1;
-          console.log('Timer updated:', prevTime, '->', newTime);
-          return newTime;
-        });
-      }, 1000);
+      // Timer now handled by MediaRecorder chunks for reliability
+      // Only use backup timer if not using real-time transcription
+      if (!withTranscription || !realtimeTranscription) {
+        console.log('Starting backup timer (no real-time transcription)');
+        recordingIntervalRef.current = setInterval(() => {
+          console.log('Backup timer tick');
+          setRecordingTime(prevTime => {
+            const newTime = prevTime + 1;
+            console.log('Backup timer updated:', prevTime, '->', newTime);
+            return newTime;
+          });
+        }, 1000);
+      }
 
     } catch (error) {
       console.error('Recording error:', error);
