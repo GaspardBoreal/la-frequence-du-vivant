@@ -7,6 +7,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Search, MapPin, Calendar, Plus, Footprints, Radio } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { useAvailableMarches } from '@/hooks/useExplorationMarches';
+import { stripHtml } from '@/utils/textUtils';
 
 interface MarcheOption {
   id: string;
@@ -184,7 +185,7 @@ const ExplorationMarcheSelector: React.FC<ExplorationMarcheSelectorProps> = ({
                           
                           {marche.descriptif_court && (
                             <p className="text-sm text-gaspard-secondary leading-relaxed line-clamp-2 font-light">
-                              {marche.descriptif_court}
+                              {stripHtml(marche.descriptif_court)}
                             </p>
                           )}
                         </div>

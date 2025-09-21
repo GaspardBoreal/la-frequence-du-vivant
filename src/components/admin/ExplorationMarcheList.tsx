@@ -36,6 +36,7 @@ import {
 } from 'lucide-react';
 import { ExplorationMarche } from '@/hooks/useExplorations';
 import PublicationStatusSelect from './PublicationStatusSelect';
+import { stripHtml } from '@/utils/textUtils';
 
 interface SortableMarcheItemProps {
   marche: ExplorationMarche;
@@ -202,7 +203,7 @@ const SortableMarcheItem: React.FC<SortableMarcheItemProps> = ({
             
             {marche.marche?.descriptif_court && (
               <p className="text-sm text-gaspard-secondary leading-relaxed line-clamp-2 font-light">
-                {marche.marche.descriptif_court}
+                {stripHtml(marche.marche.descriptif_court)}
               </p>
             )}
           </div>
