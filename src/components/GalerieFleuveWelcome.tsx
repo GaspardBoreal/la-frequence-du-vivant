@@ -127,8 +127,8 @@ const GalerieFleuveWelcome: React.FC<GalerieFluveWelcomeProps> = ({
         {renderParticles()}
       </div>
 
-        <motion.div className="relative container mx-auto px-4 py-4 md:py-12 flex-1 flex flex-col justify-between" onPanEnd={handleSwipe}>
-        <div className="space-y-3 md:space-y-8">
+        <motion.div className={`relative container mx-auto px-4 ${isMobile ? 'pt-20 pb-4' : 'py-12'} flex-1 flex flex-col justify-between`} onPanEnd={handleSwipe}>
+        <div className={isMobile ? 'space-y-4' : 'space-y-8'}>
           {/* Badge */}
           <div className="flex justify-end items-start">
             
