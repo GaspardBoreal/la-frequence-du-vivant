@@ -254,6 +254,10 @@ const SimplifiedAudioCaptureFloat: React.FC<SimplifiedAudioCaptureFloatProps> = 
       setIsUploading(true);
       setUploadProgress(0);
 
+      console.log('🚀 [SimplifiedAudioCaptureFloat] Début upload avec marcheId:', marcheId);
+      console.log('🚀 [SimplifiedAudioCaptureFloat] recordedAudio:', recordedAudio);
+      console.log('🚀 [SimplifiedAudioCaptureFloat] withTranscription:', withTranscription);
+
       // Create a File from the Blob for the AudioToUpload interface
       const audioFile = new File([recordedAudio.blob], recordedAudio.name, { type: 'audio/webm' });
       
@@ -269,11 +273,16 @@ const SimplifiedAudioCaptureFloat: React.FC<SimplifiedAudioCaptureFloatProps> = 
         description: description || ''
       };
 
+      console.log('🚀 [SimplifiedAudioCaptureFloat] audioToUpload:', audioToUpload);
+
       const onProgress = (progress: AudioUploadProgress) => {
+        console.log('📊 [SimplifiedAudioCaptureFloat] Progress reçu:', progress);
         setUploadProgress(progress.progress);
       };
 
+      console.log('🚀 [SimplifiedAudioCaptureFloat] Appel saveAudio...');
       const audioId = await saveAudio(marcheId, audioToUpload, onProgress);
+      console.log('✅ [SimplifiedAudioCaptureFloat] saveAudio terminé, audioId:', audioId);
 
       // Handle transcription if enabled
       if (withTranscription && audioId) {
@@ -302,7 +311,13 @@ const SimplifiedAudioCaptureFloat: React.FC<SimplifiedAudioCaptureFloatProps> = 
 
       resetState();
     } catch (error) {
-      console.error('Upload error:', error);
+      console.error('❌ [SimplifiedAudioCaptureFloat] Upload error:', error);
+      console.error('❌ [SimplifiedAudioCaptureFloat] Error details:', {
+        message: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
+        marcheId: marcheId,
+        withTranscription: withTranscription
+      });
       toast.error('Erreur lors de l\'upload');
       setIsUploading(false);
     }
