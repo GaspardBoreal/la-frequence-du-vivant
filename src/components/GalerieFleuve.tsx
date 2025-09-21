@@ -1,14 +1,7 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback, memo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  Home,
-  ChevronLeft,
-  ChevronRight,
-  ZoomIn,
-  Eye,
-  BookOpen
-} from 'lucide-react';
+import { Home, ChevronLeft, ChevronRight, ZoomIn, Eye, BookOpen } from 'lucide-react';
 import { MarcheTechnoSensible } from '../utils/googleSheetsApi';
 import { RegionalTheme } from '../utils/regionalThemes';
 import { Badge } from './ui/badge';
@@ -24,79 +17,62 @@ import PortalOverlay from './ui/PortalOverlay';
 import { createSlug } from '@/utils/slugGenerator';
 
 // Component for mobile sparkles navigation button
-const MobileSparklesButton = memo(({ explorationSlug, photo, isMobile }: { explorationSlug?: string, photo: EnrichedPhoto, isMobile: boolean }) => {
+const MobileSparklesButton = memo(({
+  explorationSlug,
+  photo,
+  isMobile
+}: {
+  explorationSlug?: string;
+  photo: EnrichedPhoto;
+  isMobile: boolean;
+}) => {
   const navigate = useNavigate();
-  
   const handleReadText = useCallback(() => {
     if (!explorationSlug) return;
-    
     const marcheSlug = createSlug(photo.nomMarche || '', photo.ville || '');
     const readUrl = `/galerie-fleuve/exploration/${explorationSlug}/lire?marche=${marcheSlug}`;
     navigate(readUrl);
   }, [explorationSlug, photo, navigate]);
-
   if (!explorationSlug || photo.emotionalTags.length === 0) {
     // Show non-clickable sparkles if no explorationSlug or no icons
-    return (
-      <div className="flex gap-1">
-        {photo.thematicIcons.slice(0, 3).map((icon, i) => (
-          <span key={i} className="text-lg drop-shadow-sm">{icon}</span>
-        ))}
-      </div>
-    );
+    return <div className="flex gap-1">
+        {photo.thematicIcons.slice(0, 3).map((icon, i) => <span key={i} className="text-lg drop-shadow-sm">{icon}</span>)}
+      </div>;
   }
-
   if (isMobile) {
     // Mobile: Make sparkles clickable with larger touch target
-    return (
-      <button 
-        onClick={handleReadText}
-        className="flex gap-1 p-2 -m-2 rounded-lg active:bg-white/10 transition-colors touch-manipulation"
-        aria-label={`Lire les textes de ${photo.nomMarche}`}
-      >
-        {photo.thematicIcons.slice(0, 3).map((icon, i) => (
-          <span key={i} className="text-lg drop-shadow-sm">{icon}</span>
-        ))}
-      </button>
-    );
+    return <button onClick={handleReadText} className="flex gap-1 p-2 -m-2 rounded-lg active:bg-white/10 transition-colors touch-manipulation" aria-label={`Lire les textes de ${photo.nomMarche}`}>
+        {photo.thematicIcons.slice(0, 3).map((icon, i) => <span key={i} className="text-lg drop-shadow-sm">{icon}</span>)}
+      </button>;
   }
 
   // Desktop: Non-clickable sparkles (ReadTextButton handles navigation)
-  return (
-    <div className="flex gap-1">
-      {photo.thematicIcons.slice(0, 3).map((icon, i) => (
-        <span key={i} className="text-lg drop-shadow-sm">{icon}</span>
-      ))}
-    </div>
-  );
+  return <div className="flex gap-1">
+      {photo.thematicIcons.slice(0, 3).map((icon, i) => <span key={i} className="text-lg drop-shadow-sm">{icon}</span>)}
+    </div>;
 });
-
 MobileSparklesButton.displayName = 'MobileSparklesButton';
 
 // Component for the read text navigation button
-const ReadTextButton = memo(({ explorationSlug, photo }: { explorationSlug?: string, photo: EnrichedPhoto }) => {
+const ReadTextButton = memo(({
+  explorationSlug,
+  photo
+}: {
+  explorationSlug?: string;
+  photo: EnrichedPhoto;
+}) => {
   const navigate = useNavigate();
-  
   const handleReadText = useCallback(() => {
     if (!explorationSlug) return;
-    
     const marcheSlug = createSlug(photo.nomMarche || '', photo.ville || '');
     const readUrl = `/galerie-fleuve/exploration/${explorationSlug}/lire?marche=${marcheSlug}`;
     navigate(readUrl);
   }, [explorationSlug, photo, navigate]);
-
   if (!explorationSlug) return null;
-
-  return (
-    <TooltipProvider>
+  return <TooltipProvider>
       <Tooltip>
         <TooltipTrigger asChild>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={handleReadText}
-            className="h-8 w-8 p-0 bg-white/10 hover:bg-white/20 border border-white/20 backdrop-blur-sm"
-          >
+          <Button variant="ghost" size="sm" onClick={handleReadText} className="h-8 w-8 p-0 bg-white/10 hover:bg-white/20 border border-white/20 backdrop-blur-sm">
             <BookOpen className="h-4 w-4 text-white" />
           </Button>
         </TooltipTrigger>
@@ -104,12 +80,9 @@ const ReadTextButton = memo(({ explorationSlug, photo }: { explorationSlug?: str
           <p>Lire les textes de {photo.nomMarche}</p>
         </TooltipContent>
       </Tooltip>
-    </TooltipProvider>
-  );
+    </TooltipProvider>;
 });
-
 ReadTextButton.displayName = 'ReadTextButton';
-
 interface GalerieFluveProps {
   explorations: any[];
   themes: RegionalTheme[];
@@ -118,7 +91,6 @@ interface GalerieFluveProps {
   explorationName?: string;
   explorationSlug?: string;
 }
-
 interface EnrichedPhoto {
   id: string;
   url: string;
@@ -136,11 +108,16 @@ interface EnrichedPhoto {
   emotionalTags: string[];
   thematicIcons: string[];
 }
-
 type ViewMode = 'galerie' | 'fleuve-temporel';
 type FilterMode = 'all' | 'biodiversite' | 'bioacoustique' | 'botanique' | 'couleur' | 'saison';
-
-const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes, showWelcome = false, viewMode: initialViewMode = 'galerie', explorationName, explorationSlug }) => {
+const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({
+  explorations,
+  themes,
+  showWelcome = false,
+  viewMode: initialViewMode = 'galerie',
+  explorationName,
+  explorationSlug
+}) => {
   const [allPhotos, setAllPhotos] = useState<EnrichedPhoto[]>([]);
   const [visiblePhotos, setVisiblePhotos] = useState<EnrichedPhoto[]>([]);
   const [viewMode, setViewMode] = useState<ViewMode>(initialViewMode);
@@ -151,37 +128,43 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes,
   const [selectedMarcheId, setSelectedMarcheId] = useState<string | null>(null);
   const [isMarcheSelectorOpen, setIsMarcheSelectorOpen] = useState(false);
   const isMobile = useIsMobile();
-  
+
   // Smart image preloader
-  const { preloadImage, preloadImageSet, getPreloadedImage, getCacheStats } = useSmartImagePreloader(15);
+  const {
+    preloadImage,
+    preloadImageSet,
+    getPreloadedImage,
+    getCacheStats
+  } = useSmartImagePreloader(15);
 
   // Debug mode
   const [debugMode] = useState(() => {
-    return new URLSearchParams(window.location.search).get('debug') === '1' || 
-           localStorage.getItem('galerie-debug') === '1';
+    return new URLSearchParams(window.location.search).get('debug') === '1' || localStorage.getItem('galerie-debug') === '1';
   });
 
   // Navigation states - Fluid Navigation System
   const [currentPhotoIndex, setCurrentPhotoIndex] = useState(0);
   const [committedIndex, setCommittedIndex] = useState(0);
   const [isTransitioning, setIsTransitioning] = useState(false);
-  
+
   // Simplified preparation states
   const [isPreparing, setIsPreparing] = useState(false);
   const [prepareProgress, setPrepareProgress] = useState(0);
   const [targetIndex, setTargetIndex] = useState<number | null>(null);
-  
+
   // Smart overlay system - only for cross-march or slow loads
   const [showCrossMarche, setShowCrossMarche] = useState(false);
-  const [crossMarcheInfo, setCrossMarcheInfo] = useState<{from: string, to: string} | null>(null);
+  const [crossMarcheInfo, setCrossMarcheInfo] = useState<{
+    from: string;
+    to: string;
+  } | null>(null);
   const [showProgressBar, setShowProgressBar] = useState(false);
-  
+
   // Timing refs for intelligent overlays
   const isPreparingRef = useRef(false);
   const prepStartAtRef = useRef<number>(0);
   const overlayTimeoutRef = useRef<number | null>(null);
   const initializedFromURLRef = useRef(false);
-
   useEffect(() => {
     isPreparingRef.current = isPreparing;
   }, [isPreparing]);
@@ -201,7 +184,7 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes,
       root?.classList.remove('pointer-events-none');
     };
   }, [showCrossMarche]);
-  
+
   // Accessibility and user preferences
   const [reduceMotion, setReduceMotion] = useState(false);
 
@@ -209,10 +192,8 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes,
   useEffect(() => {
     const mediaQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
     setReduceMotion(mediaQuery.matches);
-    
     const handleChange = (e: MediaQueryListEvent) => setReduceMotion(e.matches);
     mediaQuery.addEventListener('change', handleChange);
-    
     return () => mediaQuery.removeEventListener('change', handleChange);
   }, []);
 
@@ -224,9 +205,7 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes,
       const height = window.innerHeight;
       const isMobileSize = width < 1024;
       const isPortrait = height > width;
-      
       let newDeviceType: 'mobile-portrait' | 'mobile-landscape' | 'desktop';
-      
       if (isMobileSize && isPortrait) {
         newDeviceType = 'mobile-portrait';
       } else if (isMobileSize && !isPortrait) {
@@ -234,19 +213,19 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes,
       } else {
         newDeviceType = 'desktop';
       }
-      
       setDeviceType(newDeviceType);
     };
-
     updateDeviceType();
     window.addEventListener('resize', updateDeviceType);
-    
     return () => {
       window.removeEventListener('resize', updateDeviceType);
     };
   }, []);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
-  const metadataCache = useRef<Map<string, { emotionalTags: string[], thematicIcons: string[] }>>(new Map());
+  const metadataCache = useRef<Map<string, {
+    emotionalTags: string[];
+    thematicIcons: string[];
+  }>>(new Map());
   const transitionCommittedRef = useRef(false);
   const lastNavAtRef = useRef(0);
   const MIN_NAV_INTERVAL = 180;
@@ -263,16 +242,14 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes,
   // Cache des métadonnées avec mémoïsation
   const generateMetadata = useCallback((photo: any, marche: any) => {
     const cacheKey = `${photo.id || photo.titre}-${marche.ville}`;
-    
     if (metadataCache.current.has(cacheKey)) {
       return metadataCache.current.get(cacheKey)!;
     }
-
     const name = photo.titre?.toLowerCase() || '';
     const desc = photo.description?.toLowerCase() || '';
     const ville = marche.ville?.toLowerCase() || '';
     const themes = marche.sous_themes || [];
-    
+
     // Générer tags émotionnels
     const emotionalTags: string[] = [];
     if (name.includes('eau') || name.includes('rivière') || desc.includes('eau')) emotionalTags.push('Fluidité');
@@ -281,7 +258,7 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes,
     if (name.includes('matin') || name.includes('aube')) emotionalTags.push('Éveil');
     if (name.includes('soir') || name.includes('crépuscule')) emotionalTags.push('Intimité');
     if (ville.includes('bord') || ville.includes('fleuve')) emotionalTags.push('Contemplation');
-    
+
     // Générer icônes thématiques
     const thematicIcons: string[] = [];
     if (themes.includes('biodiversité') || name.includes('espèce')) thematicIcons.push('🦋');
@@ -289,12 +266,10 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes,
     if (themes.includes('botanique') || name.includes('plante')) thematicIcons.push('🌿');
     if (name.includes('eau') || name.includes('rivière')) thematicIcons.push('💧');
     if (name.includes('ciel') || name.includes('nuage')) thematicIcons.push('☁️');
-    
     const result = {
       emotionalTags: emotionalTags.length > 0 ? emotionalTags : ['Mystère'],
       thematicIcons: thematicIcons.length > 0 ? thematicIcons : ['✨']
     };
-
     metadataCache.current.set(cacheKey, result);
     return result;
   }, []);
@@ -304,10 +279,9 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes,
     const loadAndEnrichPhotos = async () => {
       setIsLoading(true);
       setLoadingProgress(0);
-      
+
       // Collecter toutes les photos des explorations
       const photoTasks: Array<() => Promise<EnrichedPhoto[]>> = [];
-      
       explorations.forEach(exploration => {
         if (exploration.marche?.photos && exploration.marche.photos.length > 0) {
           // Photos Supabase
@@ -338,7 +312,9 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes,
           // Photos legacy
           if (exploration.photos.length > 0) {
             photoTasks.push(async () => {
-              const metadata = generateMetadata({ titre: 'Photo 1' }, exploration);
+              const metadata = generateMetadata({
+                titre: 'Photo 1'
+              }, exploration);
               return exploration.photos.map((photoUrl: string, index: number) => ({
                 id: `${exploration.id || exploration.ville}-${index}`,
                 url: photoUrl,
@@ -360,38 +336,33 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes,
           }
         }
       });
-
       console.log(`Traitement de ${photoTasks.length} groupes de photos...`);
-      
+
       // Traitement parallèle par batches
       const BATCH_SIZE = 5;
       const enrichedPhotos: EnrichedPhoto[] = [];
-      
       for (let i = 0; i < photoTasks.length; i += BATCH_SIZE) {
         const batch = photoTasks.slice(i, i + BATCH_SIZE);
         const batchResults = await Promise.all(batch.map(task => task()));
-        
         batchResults.forEach(photos => {
           enrichedPhotos.push(...photos);
         });
-        
+
         // Mise à jour progressive
-        const progress = Math.min(((i + BATCH_SIZE) / photoTasks.length) * 100, 100);
+        const progress = Math.min((i + BATCH_SIZE) / photoTasks.length * 100, 100);
         setLoadingProgress(progress);
         setAllPhotos([...enrichedPhotos]);
-        
+
         // Petit délai pour éviter le blocage UI
         if (i + BATCH_SIZE < photoTasks.length) {
           await new Promise(resolve => setTimeout(resolve, 10));
         }
       }
-      
       console.log(`${enrichedPhotos.length} photos enrichies chargées avec succès`);
       setAllPhotos(enrichedPhotos);
       setVisiblePhotos(enrichedPhotos.slice(0, 20));
       setIsLoading(false);
     };
-
     if (explorations.length > 0) {
       loadAndEnrichPhotos();
     }
@@ -400,7 +371,6 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes,
   // Photos filtrées globales pour navigation
   const filteredPhotos = useMemo(() => {
     if (filterMode === 'all') return allPhotos;
-    
     switch (filterMode) {
       case 'biodiversite':
         return allPhotos.filter(p => p.thematicIcons.includes('🦋') || p.emotionalTags.includes('Éclat'));
@@ -420,7 +390,6 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes,
   // Groupement des photos par marche pour le sélecteur (optionnel)
   const marcheGroups = useMemo(() => {
     const groups = new Map<string, EnrichedPhoto[]>();
-    
     filteredPhotos.forEach(photo => {
       const marcheKey = `${photo.ville}-${photo.nomMarche}`;
       if (!groups.has(marcheKey)) {
@@ -450,12 +419,9 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes,
   // Handle march URL parameter to set correct photo index (once)
   useEffect(() => {
     if (!filteredPhotos.length || isLoading || initializedFromURLRef.current) return;
-
     const urlParams = new URLSearchParams(window.location.search);
     const marcheSlug = urlParams.get('marche');
-
     if (!marcheSlug) return;
-
     const targetIndex = filteredPhotos.findIndex(photo => {
       try {
         return createSlug(photo.nomMarche || '', photo.ville || '') === marcheSlug;
@@ -463,28 +429,30 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes,
         return false;
       }
     });
-
     if (targetIndex !== -1) {
       setCurrentPhotoIndex(targetIndex);
       setCommittedIndex(targetIndex);
       initializedFromURLRef.current = true;
       if (debugMode) {
-        console.debug('[GalerieFleuve] Initialized from URL', { marcheSlug, targetIndex });
+        console.debug('[GalerieFleuve] Initialized from URL', {
+          marcheSlug,
+          targetIndex
+        });
       }
     }
   }, [filteredPhotos, isLoading, debugMode]);
 
-
   // Dynamic neighbor preloading utility
   const preloadNeighbors = useCallback(async (centerIndex: number, depth: number = 1) => {
     if (!filteredPhotos || filteredPhotos.length === 0) return [];
-
     const tasks: Promise<any>[] = [];
 
     // High priority for current image via shared cache
     const currentPhoto = filteredPhotos[centerIndex];
     if (currentPhoto?.url) {
-      tasks.push(preloadImage(currentPhoto.url, { priority: 'high' }).catch(() => null));
+      tasks.push(preloadImage(currentPhoto.url, {
+        priority: 'high'
+      }).catch(() => null));
     }
 
     // Medium priority for neighbors via shared cache
@@ -494,22 +462,21 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes,
       if (idx >= 0 && idx < filteredPhotos.length) {
         const p = filteredPhotos[idx];
         if (p?.url) {
-          tasks.push(preloadImage(p.url, { priority: 'medium' }).catch(() => null));
+          tasks.push(preloadImage(p.url, {
+            priority: 'medium'
+          }).catch(() => null));
         }
       }
     }
-
     if (debugMode) {
       console.log(`🖼️ Smart preload (cache): center=${centerIndex}, depth=${depth}, tasks=${tasks.length}`);
     }
-
     return tasks;
   }, [filteredPhotos, preloadImage, debugMode]);
 
   // Proactive neighbor preloading on index changes
   useEffect(() => {
     if (!filteredPhotos || filteredPhotos.length === 0) return;
-
     const depth = deviceType === 'desktop' ? 3 : 1;
     preloadNeighbors(committedIndex, depth);
   }, [committedIndex, filteredPhotos, deviceType, preloadNeighbors]);
@@ -526,19 +493,21 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes,
   const prepareNavigation = useCallback(async (newIndex: number) => {
     if (isPreparing || newIndex === committedIndex || newIndex < 0 || newIndex >= filteredPhotos.length) {
       if (debugMode) {
-        console.log('[GalerieFleuve] prepareNavigation: ignored', { isPreparing, newIndex, committedIndex, total: filteredPhotos.length });
+        console.log('[GalerieFleuve] prepareNavigation: ignored', {
+          isPreparing,
+          newIndex,
+          committedIndex,
+          total: filteredPhotos.length
+        });
       }
       return false;
     }
-
     const startTime = Date.now();
     const isCross = detectCrossMarche(committedIndex, newIndex);
     const targetPhoto = filteredPhotos[newIndex];
-    
     if (debugMode) {
       console.log(`🚀 Starting navigation: ${committedIndex} → ${newIndex} (${isCross ? 'cross-marche' : 'intra-marche'})`);
     }
-    
     setIsPreparing(true);
     setPrepareProgress(0);
     setTargetIndex(newIndex);
@@ -546,7 +515,6 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes,
     // Smart overlay logic - only show for cross-march or if loading > 300ms
     let showingOverlay = false;
     let overlayTimer: NodeJS.Timeout | null = null;
-
     if (isCross) {
       // Cross-march: immediate cross-march display
       setShowCrossMarche(true);
@@ -564,27 +532,23 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes,
         }
       }, 300);
     }
-
     prepStartAtRef.current = startTime;
-
     try {
       // Aggressive preloading based on device
       const depth = deviceType === 'desktop' ? 3 : 2;
       const loadPromises = await preloadNeighbors(newIndex, depth);
-
       let loadedCount = 0;
       const totalImages = loadPromises.length;
-
       if (debugMode) {
         console.log(`📦 Preloading ${totalImages} images with depth ${depth}`);
       }
 
       // Track progress as images load
-      const trackedPromises = loadPromises.map(async (promise) => {
+      const trackedPromises = loadPromises.map(async promise => {
         try {
           await promise;
           loadedCount++;
-          const progress = Math.round((loadedCount / totalImages) * 100);
+          const progress = Math.round(loadedCount / totalImages * 100);
           setPrepareProgress(progress);
           if (debugMode && loadedCount % 2 === 0) {
             console.log(`📈 Progress: ${loadedCount}/${totalImages} (${progress}%)`);
@@ -592,27 +556,23 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes,
           return true;
         } catch (error) {
           loadedCount++;
-          setPrepareProgress(Math.round((loadedCount / totalImages) * 100));
+          setPrepareProgress(Math.round(loadedCount / totalImages * 100));
           return false;
         }
       });
 
       // Wait for all images with timeout
-      await Promise.race([
-        Promise.allSettled(trackedPromises),
-        new Promise((resolve) => setTimeout(resolve, 800)) // 800ms timeout
+      await Promise.race([Promise.allSettled(trackedPromises), new Promise(resolve => setTimeout(resolve, 800)) // 800ms timeout
       ]);
 
       // Cancel overlay timer if loading finished quickly
       if (overlayTimer && !showingOverlay) {
         clearTimeout(overlayTimer);
       }
-
       const elapsed = Date.now() - startTime;
       if (debugMode) {
         console.log(`✅ Preparation completed in ${elapsed}ms, overlay shown: ${showingOverlay}`);
       }
-      
       return true;
     } catch (error) {
       console.error('❌ Navigation preparation failed:', error);
@@ -622,33 +582,30 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes,
 
   // Seamless navigation completion with smart timing
   const completeNavigation = useCallback(async (toIndex?: number) => {
-    const indexToCommit = (typeof toIndex === 'number') ? toIndex : targetIndex;
+    const indexToCommit = typeof toIndex === 'number' ? toIndex : targetIndex;
     if (indexToCommit === null || indexToCommit === undefined) return;
-    
     if (debugMode) {
       console.log(`🎯 Completing navigation to index ${indexToCommit}`);
     }
-    
     const isCross = detectCrossMarche(committedIndex, indexToCommit);
     const elapsed = Date.now() - prepStartAtRef.current;
-    
+
     // Minimum visibility for cross-march overlays (200ms)
     if (isCross && showCrossMarche && elapsed < 200) {
       await new Promise(resolve => setTimeout(resolve, 200 - elapsed));
     }
-    
+
     // Clear any pending overlay timers
     if (overlayTimeoutRef.current) {
       clearTimeout(overlayTimeoutRef.current);
       overlayTimeoutRef.current = null;
     }
-    
+
     // Use seamless transition with AnimatePresence
     setIsTransitioning(true);
 
     // Brief transition for smooth visual feedback
     const transitionDelay = reduceMotion ? 50 : 100;
-    
     setTimeout(() => {
       setCommittedIndex(indexToCommit);
       setCurrentPhotoIndex(indexToCommit);
@@ -656,12 +613,11 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes,
       setIsPreparing(false);
       setPrepareProgress(0);
       setTargetIndex(null);
-      
+
       // Hide overlays
       setShowCrossMarche(false);
       setCrossMarcheInfo(null);
       setShowProgressBar(false);
-      
       if (debugMode) {
         console.log(`✅ Navigation completed to index ${indexToCommit}`);
       }
@@ -671,11 +627,9 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes,
   // New navigation system with gating
   const navigateNext = useCallback(async () => {
     if (isPreparing || isTransitioning || !filteredPhotos.length) return;
-
     const now = Date.now();
     if (now - lastNavAtRef.current < MIN_NAV_INTERVAL) return;
     lastNavAtRef.current = now;
-
     const target = Math.min(committedIndex + 1, filteredPhotos.length - 1);
     if (target === committedIndex) return;
 
@@ -695,14 +649,11 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes,
       setPhantomFadeActive(false);
     }
   }, [committedIndex, filteredPhotos, isPreparing, isTransitioning, prepareNavigation, completeNavigation, visualComfortMode]);
-
   const navigatePrevious = useCallback(async () => {
     if (isPreparing || isTransitioning || !filteredPhotos.length) return;
-
     const now = Date.now();
     if (now - lastNavAtRef.current < MIN_NAV_INTERVAL) return;
     lastNavAtRef.current = now;
-
     const target = Math.max(committedIndex - 1, 0);
     if (target === committedIndex) return;
 
@@ -731,8 +682,7 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes,
   useEffect(() => {
     if (initializedFromURLRef.current) return; // Do not override URL-initialized index
     setCommittedIndex(currentPhotoIndex);
-  }, [filteredPhotos.length]);  // Sync when photos load
-
+  }, [filteredPhotos.length]); // Sync when photos load
 
   // Preload only current and close neighbors using shared cache (lighter on mobile)
   useEffect(() => {
@@ -740,13 +690,19 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes,
     const depth = deviceType === 'desktop' ? 3 : 1;
     const currentUrl = filteredPhotos[committedIndex]?.url;
     if (currentUrl) {
-      void preloadImage(currentUrl, { priority: 'high' });
+      void preloadImage(currentUrl, {
+        priority: 'high'
+      });
     }
     for (let o = 1; o <= depth; o++) {
       const prevUrl = filteredPhotos[committedIndex - o]?.url;
       const nextUrl = filteredPhotos[committedIndex + o]?.url;
-      if (prevUrl) void preloadImage(prevUrl, { priority: 'medium' });
-      if (nextUrl) void preloadImage(nextUrl, { priority: 'medium' });
+      if (prevUrl) void preloadImage(prevUrl, {
+        priority: 'medium'
+      });
+      if (nextUrl) void preloadImage(nextUrl, {
+        priority: 'medium'
+      });
     }
   }, [filteredPhotos, committedIndex, deviceType, preloadImage]);
 
@@ -760,7 +716,6 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes,
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (isPreparing || isTransitioning) return;
-      
       if (e.key === 'ArrowRight') {
         e.preventDefault();
         navigateNext();
@@ -769,52 +724,53 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({ explorations, themes,
         navigatePrevious();
       }
     };
-
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [navigateNext, navigatePrevious, isPreparing, isTransitioning]);
 
-// Extracted Navigation Controls - Outside component to prevent remounting
-const NavigationControls = memo<{
-  shouldShowMenu: boolean;
-  canNavigatePrevious: boolean;
-  canNavigateNext: boolean;
-  navigatePrevious: () => void;
-  navigateNext: () => void;
-  committedIndex: number;
-  totalPhotos: number;
-  setIsMarcheSelectorOpen: (open: boolean) => void;
-  visualComfortMode: boolean;
-  setVisualComfortMode: (mode: boolean) => void;
-}>(({ 
-  shouldShowMenu, 
-  canNavigatePrevious, 
-  canNavigateNext, 
-  navigatePrevious, 
-  navigateNext, 
-  committedIndex, 
-  totalPhotos, 
-  setIsMarcheSelectorOpen,
-  visualComfortMode,
-  setVisualComfortMode
-}) => {
-  if (!shouldShowMenu) return null;
-  
-  return (
-    <motion.div 
-      className="fixed top-0 left-0 right-0 z-[60] px-4 pt-[env(safe-area-inset-top)]"
-      initial={false} // Prevent initial animation to avoid flicker
-      animate={{ y: 0, opacity: 1 }}
-      transition={{ type: "spring", stiffness: 300, damping: 30 }}
-    >
+  // Extracted Navigation Controls - Outside component to prevent remounting
+  const NavigationControls = memo<{
+    shouldShowMenu: boolean;
+    canNavigatePrevious: boolean;
+    canNavigateNext: boolean;
+    navigatePrevious: () => void;
+    navigateNext: () => void;
+    committedIndex: number;
+    totalPhotos: number;
+    setIsMarcheSelectorOpen: (open: boolean) => void;
+    visualComfortMode: boolean;
+    setVisualComfortMode: (mode: boolean) => void;
+  }>(({
+    shouldShowMenu,
+    canNavigatePrevious,
+    canNavigateNext,
+    navigatePrevious,
+    navigateNext,
+    committedIndex,
+    totalPhotos,
+    setIsMarcheSelectorOpen,
+    visualComfortMode,
+    setVisualComfortMode
+  }) => {
+    if (!shouldShowMenu) return null;
+    return <motion.div className="fixed top-0 left-0 right-0 z-[60] px-4 pt-[env(safe-area-inset-top)]" initial={false} // Prevent initial animation to avoid flicker
+    animate={{
+      y: 0,
+      opacity: 1
+    }} transition={{
+      type: "spring",
+      stiffness: 300,
+      damping: 30
+    }}>
       <div className="flex items-center justify-between">
         
         {/* Home Button - Left */}
-        <motion.button
-          onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-          className="w-10 h-10 rounded-xl flex items-center justify-center bg-black/40 backdrop-blur-md text-white active:bg-white/30 touch-manipulation pointer-events-auto border border-white/10 shadow-xl"
-          whileTap={{ scale: 0.9 }}
-        >
+        <motion.button onClick={() => window.scrollTo({
+          top: 0,
+          behavior: 'smooth'
+        })} className="w-10 h-10 rounded-xl flex items-center justify-center bg-black/40 backdrop-blur-md text-white active:bg-white/30 touch-manipulation pointer-events-auto border border-white/10 shadow-xl" whileTap={{
+          scale: 0.9
+        }}>
           <Home className="h-5 w-5" />
         </motion.button>
 
@@ -822,109 +778,78 @@ const NavigationControls = memo<{
         <div className="bg-black/40 backdrop-blur-md rounded-2xl px-3 py-2 border border-white/10 shadow-xl pointer-events-auto">
           <div className="flex items-center gap-1">
             {/* Previous Button */}
-            <motion.button
-              onClick={navigatePrevious}
-              disabled={!canNavigatePrevious}
-              className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-300 touch-manipulation ${
-                !canNavigatePrevious 
-                  ? 'bg-white/10 text-white/30 cursor-not-allowed' 
-                  : 'bg-white/20 text-white active:bg-white/30'
-              }`}
-              whileTap={canNavigatePrevious ? { scale: 0.9 } : {}}
-            >
+            <motion.button onClick={navigatePrevious} disabled={!canNavigatePrevious} className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-300 touch-manipulation ${!canNavigatePrevious ? 'bg-white/10 text-white/30 cursor-not-allowed' : 'bg-white/20 text-white active:bg-white/30'}`} whileTap={canNavigatePrevious ? {
+              scale: 0.9
+            } : {}}>
               <ChevronLeft className="h-4 w-4" />
             </motion.button>
 
             {/* Position Counter - Clickable */}
-            <motion.button
-              onClick={() => setIsMarcheSelectorOpen(true)}
-              className="bg-white/15 hover:bg-white/25 px-2 py-0.5 rounded-lg transition-all duration-200 touch-manipulation"
-              whileTap={{ scale: 0.95 }}
-            >
+            <motion.button onClick={() => setIsMarcheSelectorOpen(true)} className="bg-white/15 hover:bg-white/25 px-2 py-0.5 rounded-lg transition-all duration-200 touch-manipulation" whileTap={{
+              scale: 0.95
+            }}>
              <span className="text-white text-sm font-medium">
                {committedIndex + 1}/{totalPhotos}
              </span>
             </motion.button>
 
             {/* Next Button */}
-            <motion.button
-              onClick={navigateNext}
-              disabled={!canNavigateNext}
-              className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-300 touch-manipulation ${
-                !canNavigateNext
-                  ? 'bg-white/10 text-white/30 cursor-not-allowed' 
-                  : 'bg-white/20 text-white active:bg-white/30'
-              }`}
-              whileTap={canNavigateNext ? { scale: 0.9 } : {}}
-            >
+            <motion.button onClick={navigateNext} disabled={!canNavigateNext} className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-300 touch-manipulation ${!canNavigateNext ? 'bg-white/10 text-white/30 cursor-not-allowed' : 'bg-white/20 text-white active:bg-white/30'}`} whileTap={canNavigateNext ? {
+              scale: 0.9
+            } : {}}>
               <ChevronRight className="h-4 w-4" />
             </motion.button>
            </div>
         </div>
         
         {/* Spacer replaced with Visual Comfort toggle */}
-        <motion.button
-          onClick={() => setVisualComfortMode(!visualComfortMode)}
-          className={`w-10 h-10 rounded-xl flex items-center justify-center backdrop-blur-md transition-all duration-300 touch-manipulation border border-white/10 shadow-xl ${
-            visualComfortMode 
-              ? 'bg-cyan-500/60 text-cyan-100' 
-              : 'bg-black/40 text-white/70 hover:text-white'
-          }`}
-          whileTap={{ scale: 0.9 }}
-          title="Confort visuel"
-        >
-          <Eye className="h-5 w-5" />
-        </motion.button>
+        
       </div>
-    </motion.div>
-  );
-});
+    </motion.div>;
+  });
 
-// Extracted Galerie View - Outside component to prevent remounting
-const GalerieView = memo<{
-  filteredPhotos: EnrichedPhoto[];
-  committedIndex: number;
-  deviceType: 'mobile-portrait' | 'mobile-landscape' | 'desktop';
-  getPreloadedImage: (url: string) => any;
-  isPreparing: boolean;
-  navigatePrevious: () => void;
-  navigateNext: () => void;
-  reduceMotion: boolean;
-  isTransitioning: boolean;
-}>(({ 
-  filteredPhotos, 
-  committedIndex, 
-  deviceType, 
-  getPreloadedImage, 
-  isPreparing, 
-  navigatePrevious, 
-  navigateNext, 
-  reduceMotion,
-  isTransitioning
-}) => {
-  // Current photos to display
-  const displayPhotos = useMemo(() => {
-    if (!filteredPhotos.length) return [];
-    
-    const workingIndex = committedIndex;
-    const workingPhoto = filteredPhotos[workingIndex];
-    
-    if (!workingPhoto) return [];
-    
-    if (deviceType === 'desktop') {
-      const indices = [workingIndex - 1, workingIndex, workingIndex + 1]
-        .filter(i => i >= 0 && i < filteredPhotos.length);
-      return indices.map((i) => ({
-        photo: filteredPhotos[i],
-        position: i < workingIndex ? 'previous' : i > workingIndex ? 'next' : 'current' as 'previous' | 'current' | 'next'
-      }));
-    } else {
-      return [{ photo: filteredPhotos[workingIndex], position: 'current' }];
-    }
-  }, [filteredPhotos, committedIndex, deviceType]);
-
-  return (
-    <div className="min-h-[100dvh] bg-gradient-to-br from-slate-900 via-blue-950/60 to-emerald-950/40 relative">
+  // Extracted Galerie View - Outside component to prevent remounting
+  const GalerieView = memo<{
+    filteredPhotos: EnrichedPhoto[];
+    committedIndex: number;
+    deviceType: 'mobile-portrait' | 'mobile-landscape' | 'desktop';
+    getPreloadedImage: (url: string) => any;
+    isPreparing: boolean;
+    navigatePrevious: () => void;
+    navigateNext: () => void;
+    reduceMotion: boolean;
+    isTransitioning: boolean;
+  }>(({
+    filteredPhotos,
+    committedIndex,
+    deviceType,
+    getPreloadedImage,
+    isPreparing,
+    navigatePrevious,
+    navigateNext,
+    reduceMotion,
+    isTransitioning
+  }) => {
+    // Current photos to display
+    const displayPhotos = useMemo(() => {
+      if (!filteredPhotos.length) return [];
+      const workingIndex = committedIndex;
+      const workingPhoto = filteredPhotos[workingIndex];
+      if (!workingPhoto) return [];
+      if (deviceType === 'desktop') {
+        const indices = [workingIndex - 1, workingIndex, workingIndex + 1].filter(i => i >= 0 && i < filteredPhotos.length);
+        return indices.map(i => ({
+          photo: filteredPhotos[i],
+          position: i < workingIndex ? 'previous' : i > workingIndex ? 'next' : 'current' as 'previous' | 'current' | 'next'
+        }));
+      } else {
+        return [{
+          photo: filteredPhotos[workingIndex],
+          position: 'current'
+        }];
+      }
+    }, [filteredPhotos, committedIndex, deviceType]);
+    return <div className="min-h-[100dvh] bg-gradient-to-br from-slate-900 via-blue-950/60 to-emerald-950/40 relative">
       {/* Aquatic depth effect with floating particles */}
       <div className="absolute inset-0 pointer-events-none">
         <div className="absolute top-20 left-1/4 w-1 h-1 bg-cyan-400/50 rounded-full animate-pulse"></div>
@@ -936,104 +861,80 @@ const GalerieView = memo<{
         
 
         {/* Velvet Smooth: Phantom Fade Overlay */}
-        {phantomFadeActive && (
-          <div 
-            className="absolute inset-0 z-50 pointer-events-none"
-            style={{
-              background: `linear-gradient(45deg, 
+        {phantomFadeActive && <div className="absolute inset-0 z-50 pointer-events-none" style={{
+          background: `linear-gradient(45deg, 
                 rgba(15, 23, 42, ${visualComfortMode ? 0.15 : 0.1}) 0%, 
                 rgba(15, 23, 42, ${visualComfortMode ? 0.05 : 0.03}) 50%, 
                 rgba(15, 23, 42, ${visualComfortMode ? 0.15 : 0.1}) 100%)`,
-              opacity: phantomFadeActive ? 1 : 0,
-              transition: `opacity ${visualComfortMode ? 400 : 200}ms cubic-bezier(0.25, 0.1, 0.25, 1)`
-            }}
-          />
-        )}
+          opacity: phantomFadeActive ? 1 : 0,
+          transition: `opacity ${visualComfortMode ? 400 : 200}ms cubic-bezier(0.25, 0.1, 0.25, 1)`
+        }} />}
 
         {/* Main photo display */}
         <AnimatePresence mode="popLayout">
-          <div className={`absolute inset-0 ${
-            deviceType === 'desktop' 
-              ? 'flex items-center justify-center gap-4 px-8' 
-              : 'block'
-          }`}>
+          <div className={`absolute inset-0 ${deviceType === 'desktop' ? 'flex items-center justify-center gap-4 px-8' : 'block'}`}>
 
-            {displayPhotos.map(({ photo, position }, index) => {
+            {displayPhotos.map(({
+              photo,
+              position
+            }, index) => {
               const preloadedImage = getPreloadedImage(photo.url);
-              
+
               // Enhanced instant mode for mobile: smooth transitions
-              const shouldUseInstant = deviceType !== 'desktop' && 
-                                     position === 'current' && 
-                                     !isTransitioning;
-              
-              return (
-                  <motion.div
-                  key={deviceType === 'desktop' ? `photo-${photo.id}-${position}` : 'mobile-current'}
-                  className={`
+              const shouldUseInstant = deviceType !== 'desktop' && position === 'current' && !isTransitioning;
+              return <motion.div key={deviceType === 'desktop' ? `photo-${photo.id}-${position}` : 'mobile-current'} className={`
                     relative overflow-hidden rounded-2xl shadow-2xl shadow-cyan-500/10
-                    ${deviceType === 'desktop' ? (
-                      position === 'current' 
-                        ? 'w-[45%] h-[80%] z-10 border border-cyan-400/20' 
-                        : 'w-[25%] h-[60%] z-0 opacity-70 hover:opacity-90 cursor-pointer border border-cyan-400/10'
-                    ) : 'w-full h-full rounded-none'}
-                  `}
-                  initial={false}
-                  animate={ deviceType === 'desktop' ? { 
-                    scale: position === 'current' ? 1 : 0.9,
-                    opacity: position === 'current' ? 1 : (visualComfortMode ? 0.8 : 0.7)
-                  } : { opacity: 1, scale: 1 } }
-                  transition={ deviceType === 'desktop' ? { 
-                    type: "tween",
-                    duration: (prefersReducedMotion || visualComfortMode) ? 0.4 : 0.2,
-                    ease: [0.25, 0.1, 0.25, 1] // Ultra-smooth cubic-bezier
-                  } : { duration: 0 } }
-                  onClick={() => {
-                    if (isPreparing) return;
-                    if (position === 'previous') navigatePrevious();
-                    if (position === 'next') navigateNext();
-                  }}
-                  style={{ 
-                    cursor: isPreparing ? 'not-allowed' : 'pointer',
-                    boxShadow: position === 'current' 
-                      ? '0 25px 50px -12px rgba(34, 211, 238, 0.25), 0 0 40px rgba(16, 185, 129, 0.15)' 
-                      : '0 10px 25px -5px rgba(34, 211, 238, 0.1)'
-                  }}
-                  whileHover={deviceType === 'desktop' && position !== 'current' && !isPreparing ? { scale: 0.95, opacity: 0.9 } : {}}
-                >
-                  <OptimizedImage
-                    src={photo.url}
-                    alt={photo.titre || 'Photo exploration'}
-                    className="w-full h-full"
-                    priority={position === 'current' ? 'high' : 'medium'}
-                    preloadedImage={preloadedImage?.element}
-                    enableCinematicTransitions={false} // Velvet Smooth: Disable concurrent animations
-                    instant={shouldUseInstant}
-                    transition={{
-                      duration: (prefersReducedMotion || visualComfortMode) ? 0.4 : 0.2,
-                      ease: [0.25, 0.1, 0.25, 1]
-                    }}
-                    onLoad={() => {
-                      if (position === 'current') {
-                        // Delay metadata animation until image is fully rendered
-                        setTimeout(() => setImageFullyLoaded(true), visualComfortMode ? 100 : 50);
-                      }
-                    }}
-                  />
+                    ${deviceType === 'desktop' ? position === 'current' ? 'w-[45%] h-[80%] z-10 border border-cyan-400/20' : 'w-[25%] h-[60%] z-0 opacity-70 hover:opacity-90 cursor-pointer border border-cyan-400/10' : 'w-full h-full rounded-none'}
+                  `} initial={false} animate={deviceType === 'desktop' ? {
+                scale: position === 'current' ? 1 : 0.9,
+                opacity: position === 'current' ? 1 : visualComfortMode ? 0.8 : 0.7
+              } : {
+                opacity: 1,
+                scale: 1
+              }} transition={deviceType === 'desktop' ? {
+                type: "tween",
+                duration: prefersReducedMotion || visualComfortMode ? 0.4 : 0.2,
+                ease: [0.25, 0.1, 0.25, 1] // Ultra-smooth cubic-bezier
+              } : {
+                duration: 0
+              }} onClick={() => {
+                if (isPreparing) return;
+                if (position === 'previous') navigatePrevious();
+                if (position === 'next') navigateNext();
+              }} style={{
+                cursor: isPreparing ? 'not-allowed' : 'pointer',
+                boxShadow: position === 'current' ? '0 25px 50px -12px rgba(34, 211, 238, 0.25), 0 0 40px rgba(16, 185, 129, 0.15)' : '0 10px 25px -5px rgba(34, 211, 238, 0.1)'
+              }} whileHover={deviceType === 'desktop' && position !== 'current' && !isPreparing ? {
+                scale: 0.95,
+                opacity: 0.9
+              } : {}}>
+                  <OptimizedImage src={photo.url} alt={photo.titre || 'Photo exploration'} className="w-full h-full" priority={position === 'current' ? 'high' : 'medium'} preloadedImage={preloadedImage?.element} enableCinematicTransitions={false} // Velvet Smooth: Disable concurrent animations
+                instant={shouldUseInstant} transition={{
+                  duration: prefersReducedMotion || visualComfortMode ? 0.4 : 0.2,
+                  ease: [0.25, 0.1, 0.25, 1]
+                }} onLoad={() => {
+                  if (position === 'current') {
+                    // Delay metadata animation until image is fully rendered
+                    setTimeout(() => setImageFullyLoaded(true), visualComfortMode ? 100 : 50);
+                  }
+                }} />
                   
                   <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent" />
                   
                   {/* Velvet Smooth: Metadata synchronized with image loading */}
-                  {position === 'current' && !isPreparing && imageFullyLoaded && (
-                     <motion.div 
-                       className="absolute bottom-6 left-6 right-6 text-white"
-                       initial={shouldUseInstant ? false : { y: 15, opacity: 0 }}
-                       animate={{ y: 0, opacity: visualComfortMode ? 0.9 : 1 }}
-                       transition={shouldUseInstant ? { duration: 0 } : { 
-                         delay: visualComfortMode ? 0.15 : 0.1,
-                         duration: (prefersReducedMotion || visualComfortMode) ? 0.6 : 0.3,
-                         ease: [0.25, 0.1, 0.25, 1]
-                       }}
-                     >
+                  {position === 'current' && !isPreparing && imageFullyLoaded && <motion.div className="absolute bottom-6 left-6 right-6 text-white" initial={shouldUseInstant ? false : {
+                  y: 15,
+                  opacity: 0
+                }} animate={{
+                  y: 0,
+                  opacity: visualComfortMode ? 0.9 : 1
+                }} transition={shouldUseInstant ? {
+                  duration: 0
+                } : {
+                  delay: visualComfortMode ? 0.15 : 0.1,
+                  duration: prefersReducedMotion || visualComfortMode ? 0.6 : 0.3,
+                  ease: [0.25, 0.1, 0.25, 1]
+                }}>
                        <Badge className="mb-3 bg-cyan-500/80 text-cyan-100 border-cyan-400/30 backdrop-blur-xl shadow-lg shadow-cyan-500/20">
                          {photo.ville}
                        </Badge>
@@ -1045,151 +946,91 @@ const GalerieView = memo<{
                              Photo {committedIndex + 1} / {filteredPhotos.length}
                            </p>
                            <div className="flex items-center gap-2">
-                             {photo.emotionalTags.length > 0 && (
-                               <MobileSparklesButton 
-                                 explorationSlug={explorationSlug} 
-                                 photo={photo} 
-                                 isMobile={isMobile}
-                               />
-                             )}
+                             {photo.emotionalTags.length > 0 && <MobileSparklesButton explorationSlug={explorationSlug} photo={photo} isMobile={isMobile} />}
                              {/* Desktop only: Show ReadTextButton */}
-                             {!isMobile && (
-                               <ReadTextButton 
-                                 explorationSlug={explorationSlug} 
-                                 photo={photo} 
-                               />
-                             )}
+                             {!isMobile && <ReadTextButton explorationSlug={explorationSlug} photo={photo} />}
                            </div>
                          </div>
-                     </motion.div>
-                  )}
+                     </motion.div>}
 
                   {/* Navigation hints for side photos */}
-                  {deviceType === 'desktop' && position !== 'current' && !isPreparing && (
-                    <div className="absolute inset-0 flex items-center justify-center">
-                       <motion.div
-                         className="w-12 h-12 rounded-full bg-slate-900/30 backdrop-blur-xl border border-cyan-400/30 shadow-xl shadow-cyan-500/20 flex items-center justify-center"
-                         whileHover={{ scale: 1.1, backgroundColor: 'rgba(34, 211, 238, 0.2)', boxShadow: '0 0 30px rgba(34, 211, 238, 0.4)' }}
-                       >
-                        {position === 'previous' ? (
-                           <ChevronLeft className="h-6 w-6 text-cyan-100" />
-                         ) : (
-                           <ChevronRight className="h-6 w-6 text-cyan-100" />
-                        )}
+                  {deviceType === 'desktop' && position !== 'current' && !isPreparing && <div className="absolute inset-0 flex items-center justify-center">
+                       <motion.div className="w-12 h-12 rounded-full bg-slate-900/30 backdrop-blur-xl border border-cyan-400/30 shadow-xl shadow-cyan-500/20 flex items-center justify-center" whileHover={{
+                    scale: 1.1,
+                    backgroundColor: 'rgba(34, 211, 238, 0.2)',
+                    boxShadow: '0 0 30px rgba(34, 211, 238, 0.4)'
+                  }}>
+                        {position === 'previous' ? <ChevronLeft className="h-6 w-6 text-cyan-100" /> : <ChevronRight className="h-6 w-6 text-cyan-100" />}
                       </motion.div>
-                    </div>
-                  )}
-                </motion.div>
-              );
+                    </div>}
+                </motion.div>;
             })}
           </div>
         </AnimatePresence>
 
       </div>
-    </div>
-  );
-});
-
-  return (
-    <div className="relative">
+    </div>;
+  });
+  return <div className="relative">
       {/* Render based on view mode */}
-      {viewMode === 'fleuve-temporel' ? (
-        <FleuveTemporel explorations={explorations} explorationName={explorationName} />
-      ) : (
-        <>
+      {viewMode === 'fleuve-temporel' ? <FleuveTemporel explorations={explorations} explorationName={explorationName} /> : <>
           {/* Render current view - only galerie mode supported */}
-          <GalerieView 
-            filteredPhotos={filteredPhotos}
-            committedIndex={committedIndex}
-            deviceType={deviceType}
-            getPreloadedImage={getPreloadedImage}
-            isPreparing={isPreparing}
-            navigatePrevious={navigatePrevious}
-            navigateNext={navigateNext}
-            reduceMotion={reduceMotion}
-            isTransitioning={isTransitioning}
-          />
+          <GalerieView filteredPhotos={filteredPhotos} committedIndex={committedIndex} deviceType={deviceType} getPreloadedImage={getPreloadedImage} isPreparing={isPreparing} navigatePrevious={navigatePrevious} navigateNext={navigateNext} reduceMotion={reduceMotion} isTransitioning={isTransitioning} />
 
           {/* Global navigation controls */}
-          <NavigationControls 
-            shouldShowMenu={shouldShowMenu}
-            canNavigatePrevious={canNavigatePrevious}
-            canNavigateNext={canNavigateNext}
-            navigatePrevious={navigatePrevious}
-            navigateNext={navigateNext}
-            committedIndex={committedIndex}
-            totalPhotos={filteredPhotos.length}
-            setIsMarcheSelectorOpen={setIsMarcheSelectorOpen}
-            visualComfortMode={visualComfortMode}
-            setVisualComfortMode={setVisualComfortMode}
-          />
+          <NavigationControls shouldShowMenu={shouldShowMenu} canNavigatePrevious={canNavigatePrevious} canNavigateNext={canNavigateNext} navigatePrevious={navigatePrevious} navigateNext={navigateNext} committedIndex={committedIndex} totalPhotos={filteredPhotos.length} setIsMarcheSelectorOpen={setIsMarcheSelectorOpen} visualComfortMode={visualComfortMode} setVisualComfortMode={setVisualComfortMode} />
 
           {/* Marche Selector */}
-          <MarcheSelector
-            isOpen={isMarcheSelectorOpen}
-            onClose={() => setIsMarcheSelectorOpen(false)}
-            photos={filteredPhotos}
-            onMarcheSelect={(marcheId) => {
-              const firstPhotoIndex = filteredPhotos.findIndex(photo => 
-                `${photo.ville}-${photo.nomMarche}` === marcheId
-              );
-              console.log('[GalerieFleuve] MarcheSelector: select', { marcheId, firstPhotoIndex });
-              if (firstPhotoIndex !== -1) {
-                void (async () => {
-                  const success = await prepareNavigation(firstPhotoIndex);
-                  if (success) {
-                    completeNavigation(firstPhotoIndex);
-                  }
-                })();
-              }
-              setSelectedMarcheId(marcheId);
-              setIsMarcheSelectorOpen(false);
-            }}
-            selectedMarcheId={currentDisplayPhoto ? `${currentDisplayPhoto.ville}-${currentDisplayPhoto.nomMarche}` : null}
-            currentIndex={currentPhotoIndex}
-          />
+          <MarcheSelector isOpen={isMarcheSelectorOpen} onClose={() => setIsMarcheSelectorOpen(false)} photos={filteredPhotos} onMarcheSelect={marcheId => {
+        const firstPhotoIndex = filteredPhotos.findIndex(photo => `${photo.ville}-${photo.nomMarche}` === marcheId);
+        console.log('[GalerieFleuve] MarcheSelector: select', {
+          marcheId,
+          firstPhotoIndex
+        });
+        if (firstPhotoIndex !== -1) {
+          void (async () => {
+            const success = await prepareNavigation(firstPhotoIndex);
+            if (success) {
+              completeNavigation(firstPhotoIndex);
+            }
+          })();
+        }
+        setSelectedMarcheId(marcheId);
+        setIsMarcheSelectorOpen(false);
+      }} selectedMarcheId={currentDisplayPhoto ? `${currentDisplayPhoto.ville}-${currentDisplayPhoto.nomMarche}` : null} currentIndex={currentPhotoIndex} />
 
           {/* Photo detail modal - DISABLED */}
           {/* <PhotoModal /> */}
 
           {/* Filter indicator */}
-          {filterMode !== 'all' && (
-            <motion.div
-              className={`fixed ${deviceType !== 'desktop' ? 'top-4 left-4' : 'top-6 right-6'} z-40`}
-              initial={{ scale: 0, rotate: -10 }}
-              animate={{ scale: 1, rotate: 0 }}
-              transition={{ type: "spring", stiffness: 500, damping: 30 }}
-            >
+          {filterMode !== 'all' && <motion.div className={`fixed ${deviceType !== 'desktop' ? 'top-4 left-4' : 'top-6 right-6'} z-40`} initial={{
+        scale: 0,
+        rotate: -10
+      }} animate={{
+        scale: 1,
+        rotate: 0
+      }} transition={{
+        type: "spring",
+        stiffness: 500,
+        damping: 30
+      }}>
               <Badge className="bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-lg shadow-amber-400/30 px-3 py-1 rounded-full backdrop-blur-sm border border-amber-300/20">
                 🌿 {filterMode}
               </Badge>
-            </motion.div>
-          )}
-        </>
-        )}
+            </motion.div>}
+        </>}
 
         {/* Smart Overlays - Cross March & Progress Bar */}
-        {showCrossMarche && crossMarcheInfo && (
-          <PortalOverlay 
-            visible={true} 
-            label={`${crossMarcheInfo.to}`}
-            progress={prepareProgress} 
-            subtype="cross-marche" 
-          />
-        )}
+        {showCrossMarche && crossMarcheInfo && <PortalOverlay visible={true} label={`${crossMarcheInfo.to}`} progress={prepareProgress} subtype="cross-marche" />}
         
-        {showProgressBar && (
-          <div className="fixed top-0 left-0 right-0 h-0.5 bg-cyan-400/20 z-50">
-            <div 
-              className="h-full bg-gradient-to-r from-cyan-400 to-emerald-400 transition-all duration-150 ease-out"
-              style={{ width: `${prepareProgress}%` }}
-            />
-          </div>
-        )}
+        {showProgressBar && <div className="fixed top-0 left-0 right-0 h-0.5 bg-cyan-400/20 z-50">
+            <div className="h-full bg-gradient-to-r from-cyan-400 to-emerald-400 transition-all duration-150 ease-out" style={{
+        width: `${prepareProgress}%`
+      }} />
+          </div>}
         
         {/* Debug UI */}
-        {debugMode && (
-          <div className="fixed top-4 left-4 z-50 bg-black/80 text-white text-xs p-3 rounded-lg font-mono max-w-xs">
+        {debugMode && <div className="fixed top-4 left-4 z-50 bg-black/80 text-white text-xs p-3 rounded-lg font-mono max-w-xs">
             <div className="font-bold mb-2">🐛 Debug Info</div>
             <div>Device: {deviceType}</div>
             <div>Index: {committedIndex}/{filteredPhotos?.length || 0}</div>
@@ -1199,10 +1040,7 @@ const GalerieView = memo<{
             <div>Progress Bar: {showProgressBar ? '📊' : '🚫'}</div>
             <div>Progress: {prepareProgress}%</div>
             <div>Cache: {getCacheStats().size}/15</div>
-          </div>
-        )}
-      </div>
-  );
+          </div>}
+      </div>;
 });
-
 export default GalerieFleuve;
