@@ -1,8 +1,8 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
-import { Eye, EyeOff, Users } from 'lucide-react';
+import { Eye, EyeOff, Users, Loader2 } from 'lucide-react';
 
 type PublicationStatus = 'published_public' | 'published_readers' | 'draft';
 
@@ -10,13 +10,16 @@ interface PublicationStatusSelectProps {
   value: PublicationStatus;
   onChange: (status: PublicationStatus) => void;
   variant?: 'default' | 'compact';
+  isLoading?: boolean;
 }
 
 const PublicationStatusSelect: React.FC<PublicationStatusSelectProps> = ({ 
   value, 
   onChange, 
-  variant = 'default' 
+  variant = 'default',
+  isLoading = false
 }) => {
+  const [isTransitioning, setIsTransitioning] = useState(false);
   const getStatusInfo = (status: PublicationStatus) => {
     switch (status) {
       case 'published_public':
@@ -46,15 +49,30 @@ const PublicationStatusSelect: React.FC<PublicationStatusSelectProps> = ({
   if (variant === 'compact') {
     const isVisibleToReaders = value === 'published_public' || value === 'published_readers';
     
+    const handleSwitchChange = (checked: boolean) => {
+      setIsTransitioning(true);
+      onChange(checked ? 'published_public' : 'draft');
+      
+      // Reset transition state après un délai court
+      setTimeout(() => setIsTransitioning(false), 150);
+    };
+    
     return (
       <div className="flex items-center gap-2">
-        <Switch
-          checked={isVisibleToReaders}
-          onCheckedChange={(checked) => {
-            onChange(checked ? 'published_public' : 'draft');
-          }}
-        />
-        <span className="text-xs text-muted-foreground">
+        <div className="relative">
+          <Switch
+            checked={isVisibleToReaders}
+            onCheckedChange={handleSwitchChange}
+            disabled={isLoading}
+            className="transition-all duration-200"
+          />
+          {(isLoading || isTransitioning) && (
+            <Loader2 className="absolute -right-6 top-1/2 -translate-y-1/2 h-3 w-3 animate-spin text-muted-foreground" />
+          )}
+        </div>
+        <span className={`text-xs transition-colors duration-200 ${
+          isLoading ? 'text-muted-foreground/70' : 'text-muted-foreground'
+        }`}>
           Visible aux lecteurs
         </span>
       </div>

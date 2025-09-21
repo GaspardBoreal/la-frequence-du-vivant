@@ -45,6 +45,7 @@ interface SortableMarcheItemProps {
   onMoveUp: (index: number) => void;
   onMoveDown: (index: number) => void;
   onUpdatePublicationStatus: (marcheId: string, status: 'published_public' | 'published_readers' | 'draft') => void;
+  isUpdatingStatus?: boolean;
 }
 
 const SortableMarcheItem: React.FC<SortableMarcheItemProps> = ({
@@ -54,7 +55,8 @@ const SortableMarcheItem: React.FC<SortableMarcheItemProps> = ({
   onRemove,
   onMoveUp,
   onMoveDown,
-  onUpdatePublicationStatus
+  onUpdatePublicationStatus,
+  isUpdatingStatus = false
 }) => {
   const {
     attributes,
@@ -188,6 +190,7 @@ const SortableMarcheItem: React.FC<SortableMarcheItemProps> = ({
                 value={(marche.publication_status as any) || 'published_public'}
                 onChange={(status) => onUpdatePublicationStatus(marche.marche_id, status)}
                 variant="compact"
+                isLoading={isUpdatingStatus}
               />
               {isVisibleToReaders && (
                 <div className="flex items-center gap-2 px-3 py-1.5 bg-green-100 border border-green-200 rounded-full">
@@ -250,6 +253,7 @@ interface ExplorationMarcheListProps {
   onRemove: (marcheId: string) => void;
   onUpdatePublicationStatus: (marcheId: string, status: 'published_public' | 'published_readers' | 'draft') => void;
   onBatchUpdateStatus: (marcheIds: string[], status: 'published_public' | 'published_readers' | 'draft') => void;
+  isUpdatingStatus?: boolean;
 }
 
 const ExplorationMarcheList: React.FC<ExplorationMarcheListProps> = ({
@@ -257,7 +261,8 @@ const ExplorationMarcheList: React.FC<ExplorationMarcheListProps> = ({
   onReorder,
   onRemove,
   onUpdatePublicationStatus,
-  onBatchUpdateStatus
+  onBatchUpdateStatus,
+  isUpdatingStatus = false
 }) => {
   const [selectedMarches, setSelectedMarches] = React.useState<string[]>([]);
   const sensors = useSensors(
@@ -442,6 +447,7 @@ const ExplorationMarcheList: React.FC<ExplorationMarcheListProps> = ({
                     onMoveUp={handleMoveUp}
                     onMoveDown={handleMoveDown}
                     onUpdatePublicationStatus={onUpdatePublicationStatus}
+                    isUpdatingStatus={isUpdatingStatus}
                   />
                 ))}
               </div>

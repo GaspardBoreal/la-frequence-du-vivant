@@ -10,9 +10,9 @@ import {
   useAddMarcheToExploration,
   useRemoveMarcheFromExploration,
   useReorderExplorationMarches,
-  useUpdateMarchePublicationStatus,
   useBatchUpdatePublicationStatus
 } from '@/hooks/useExplorationMarches';
+import { useOptimisticPublicationStatus } from '@/hooks/useOptimisticPublicationStatus';
 import ExplorationMarcheList from '@/components/admin/ExplorationMarcheList';
 import ExplorationMarcheSelector from '@/components/admin/ExplorationMarcheSelector';
 import ExplorationGalleryButtons from '@/components/admin/ExplorationGalleryButtons';
@@ -28,8 +28,10 @@ const ExplorationMarchesAdmin = () => {
   const addMarcheMutation = useAddMarcheToExploration();
   const removeMarcheMutation = useRemoveMarcheFromExploration();
   const reorderMutation = useReorderExplorationMarches();
-  const updateStatusMutation = useUpdateMarchePublicationStatus();
   const batchUpdateStatusMutation = useBatchUpdatePublicationStatus();
+  
+  // Hook optimisé pour les mises à jour de statut de publication
+  const { updateStatus: updatePublicationStatus, isLoading: isUpdatingStatus } = useOptimisticPublicationStatus();
 
   const handleMarcheToggle = (marcheId: string) => {
     setSelectedMarches(prev => 
@@ -82,11 +84,7 @@ const ExplorationMarchesAdmin = () => {
   const handleUpdatePublicationStatus = (marcheId: string, status: 'published_public' | 'published_readers' | 'draft') => {
     if (!id) return;
     
-    updateStatusMutation.mutate({
-      explorationId: id,
-      marcheId,
-      publicationStatus: status
-    });
+    updatePublicationStatus(id, marcheId, status);
   };
 
   const handleBatchUpdateStatus = (marcheIds: string[], status: 'published_public' | 'published_readers' | 'draft') => {
@@ -218,6 +216,7 @@ const ExplorationMarchesAdmin = () => {
               onRemove={handleRemoveMarche}
               onUpdatePublicationStatus={handleUpdatePublicationStatus}
               onBatchUpdateStatus={handleBatchUpdateStatus}
+              isUpdatingStatus={isUpdatingStatus}
             />
 
             {/* Sélecteur de nouvelles marches */}

@@ -99,7 +99,7 @@ export const useReorderExplorationMarches = () => {
   });
 };
 
-// Hook pour mettre à jour le statut de publication d'une marche
+// Hook optimisé pour mettre à jour le statut de publication d'une marche
 export const useUpdateMarchePublicationStatus = () => {
   const queryClient = useQueryClient();
   
@@ -116,14 +116,49 @@ export const useUpdateMarchePublicationStatus = () => {
         .eq('marche_id', marcheId);
       
       if (error) throw error;
+      return { explorationId, marcheId, publicationStatus };
     },
-    onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['exploration-marches', variables.explorationId] });
-      toast.success('Statut de publication mis à jour');
+    // Update optimiste : mise à jour immédiate du cache
+    onMutate: async ({ explorationId, marcheId, publicationStatus }) => {
+      // Annuler les requêtes en cours pour éviter les conflits
+      await queryClient.cancelQueries({ queryKey: ['exploration-marches', explorationId] });
+      
+      // Snapshot de l'état précédent pour le rollback
+      const previousData = queryClient.getQueryData(['exploration-marches', explorationId]);
+      
+      // Update optimiste du cache
+      queryClient.setQueryData(['exploration-marches', explorationId], (old: any) => {
+        if (!old) return old;
+        
+        return old.map((marche: any) => 
+          marche.marche_id === marcheId 
+            ? { ...marche, publication_status: publicationStatus }
+            : marche
+        );
+      });
+      
+      // Toast immédiat pour feedback utilisateur
+      toast.info('Mise à jour en cours...', { duration: 1000 });
+      
+      return { previousData };
     },
-    onError: (error) => {
+    onSuccess: () => {
+      toast.success('Statut de publication mis à jour', { duration: 2000 });
+    },
+    onError: (error, variables, context) => {
+      // Rollback en cas d'erreur
+      if (context?.previousData) {
+        queryClient.setQueryData(['exploration-marches', variables.explorationId], context.previousData);
+      }
       console.error('Erreur lors de la mise à jour du statut:', error);
       toast.error('Erreur lors de la mise à jour du statut');
+    },
+    // Finalisation : on peut refetch si nécessaire, mais généralement pas besoin
+    onSettled: (data, error, variables) => {
+      // Refetch seulement en cas d'erreur pour s'assurer de la cohérence
+      if (error) {
+        queryClient.invalidateQueries({ queryKey: ['exploration-marches', variables.explorationId] });
+      }
     }
   });
 };
