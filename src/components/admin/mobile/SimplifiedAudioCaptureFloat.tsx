@@ -614,11 +614,19 @@ const SimplifiedAudioCaptureFloat: React.FC<SimplifiedAudioCaptureFloatProps> = 
                 }}
               />
               
-              {/* Peak hold indicator */}
+              {/* Current level cursor - aligned with end of colored bar */}
+              {audioLevel > 0 && (
+                <div 
+                  className="absolute top-0 h-4 w-0.5 bg-white shadow-lg transition-all duration-75"
+                  style={{ left: `${audioLevel}%` }}
+                />
+              )}
+              
+              {/* Peak hold indicator - correctly positioned */}
               {peakHoldRef.current > 0 && (
                 <div 
-                  className="absolute top-0 h-4 w-0.5 bg-white/80 shadow-lg"
-                  style={{ left: `${Math.min(100, peakHoldRef.current * 120)}%` }}
+                  className="absolute top-0 h-4 w-0.5 bg-red-400/80 shadow-lg"
+                  style={{ left: `${Math.min(100, peakHoldRef.current * 100)}%` }}
                 />
               )}
               
