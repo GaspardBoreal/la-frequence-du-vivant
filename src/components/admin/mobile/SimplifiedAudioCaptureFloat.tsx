@@ -580,25 +580,53 @@ const SimplifiedAudioCaptureFloat: React.FC<SimplifiedAudioCaptureFloatProps> = 
           {/* Audio level visualization */}
           <div className="space-y-2">
             <p className="text-sm text-center text-muted-foreground">Niveau audio</p>
-            <div className="w-full bg-muted rounded-full h-3 relative overflow-hidden">
+            <div className="w-full bg-muted rounded-full h-4 relative overflow-hidden">
+              {/* Visual graduations */}
+              <div className="absolute inset-0 flex">
+                <div className="w-1/4 border-r border-muted-foreground/20"></div>
+                <div className="w-1/4 border-r border-muted-foreground/20"></div>
+                <div className="w-1/4 border-r border-muted-foreground/20"></div>
+                <div className="w-1/4"></div>
+              </div>
+              <div className="absolute top-0 text-xs text-muted-foreground/60 -mt-4 flex justify-between w-full px-1">
+                <span>25</span>
+                <span>50</span>
+                <span>75</span>
+              </div>
+              
+              {/* Audio level bar */}
               <div 
-                className={`h-3 rounded-full transition-all duration-75 ${
+                className={`h-4 rounded-full transition-all duration-75 relative ${
                   audioLevel > 70 ? 'bg-red-500' : 
                   audioLevel > 40 ? 'bg-yellow-500' : 
                   'bg-green-500'
                 }`}
                 style={{ 
-                  width: `${Math.max(2, audioLevel)}%`,
-                  boxShadow: audioLevel > 50 ? '0 0 6px rgba(34, 197, 94, 0.5)' : undefined
+                  width: `${audioLevel}%`,
+                  minWidth: '1px',
+                  boxShadow: audioLevel > 50 ? (
+                    audioLevel > 70 ? '0 0 6px rgba(239, 68, 68, 0.5)' : 
+                    audioLevel > 40 ? '0 0 6px rgba(234, 179, 8, 0.5)' : 
+                    '0 0 6px rgba(34, 197, 94, 0.5)'
+                  ) : undefined
                 }}
               />
+              
+              {/* Peak hold indicator */}
+              {peakHoldRef.current > 0 && (
+                <div 
+                  className="absolute top-0 h-4 w-0.5 bg-white/80 shadow-lg"
+                  style={{ left: `${Math.min(100, peakHoldRef.current * 120)}%` }}
+                />
+              )}
+              
               {/* Peak indicator */}
-              {audioLevel > 80 && (
-                <div className="absolute top-0 right-0 h-3 w-1 bg-red-600 animate-pulse" />
+              {audioLevel > 85 && (
+                <div className="absolute top-0 right-0 h-4 w-1 bg-red-600 animate-pulse" />
               )}
             </div>
-            <p className="text-xs text-center text-muted-foreground">
-              {audioLevel.toFixed(0)}%
+            <p className="text-xs text-center text-muted-foreground font-mono">
+              {audioLevel.toFixed(1)}% {peakHoldRef.current > 0.8 && <span className="text-red-500">PEAK</span>}
             </p>
           </div>
 
