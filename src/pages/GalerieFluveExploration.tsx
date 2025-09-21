@@ -168,8 +168,8 @@ export default function GalerieFluveExploration() {
       />
 
       <div className="min-h-screen bg-gradient-to-b from-background via-secondary/20 to-primary/10">
-        {/* Welcome header avec le thème adapté - seulement si pas en mode fleuve temporel */}
-        {viewMode !== 'fleuve-temporel' && (
+        {/* Welcome header avec le thème adapté - seulement si pas en mode fleuve temporel et pas de marche sélectionnée */}
+        {viewMode !== 'fleuve-temporel' && !selectedMarcheSlug && (
           <GalerieFleuveWelcome
             title={exploration.name}
             description={exploration.description || undefined}
