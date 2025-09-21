@@ -78,6 +78,9 @@ const SimplifiedAudioCaptureFloat: React.FC<SimplifiedAudioCaptureFloatProps> = 
   const pingIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const pendingChunksRef = useRef<any[]>([]);
   const recordingMimeTypeRef = useRef<string>('audio/webm');
+  // New refs for robust realtime WS handling
+  const wsRef = useRef<WebSocket | null>(null);
+  const flushIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   // Auto-select best transcription model
   const getBestTranscriptionModel = () => {
@@ -91,10 +94,12 @@ const SimplifiedAudioCaptureFloat: React.FC<SimplifiedAudioCaptureFloatProps> = 
     return () => {
       if (recordingIntervalRef.current) clearInterval(recordingIntervalRef.current);
       if (pingIntervalRef.current) clearInterval(pingIntervalRef.current);
+      if (flushIntervalRef.current) clearInterval(flushIntervalRef.current);
       if (processorRef.current) processorRef.current.disconnect();
       if (sourceRef.current) sourceRef.current.disconnect();
       if (audioContextRef.current) audioContextRef.current.close();
       if (recordedAudio) URL.revokeObjectURL(recordedAudio.url);
+      if (wsRef.current) wsRef.current.close();
       if (wsConnection) wsConnection.close();
     };
   }, [recordedAudio, wsConnection]);
@@ -114,24 +119,23 @@ const SimplifiedAudioCaptureFloat: React.FC<SimplifiedAudioCaptureFloatProps> = 
         ws.onopen = () => {
           console.log('✅ WebSocket connected successfully');
           wsRetriesRef.current = 0;
+          wsRef.current = ws;
+          setWsConnection(ws);
           setIsTranscribing(true);
           toast.success('Transcription temps réel activée');
           
-          // Process any buffered chunks
-          if (pendingChunksRef.current.length > 0) {
-            console.log('📦 Processing', pendingChunksRef.current.length, 'buffered chunks');
-            pendingChunksRef.current.forEach(chunk => {
-              ws.send(JSON.stringify(chunk));
-            });
-            pendingChunksRef.current = [];
-          }
+          // Flush any buffered chunks immediately
+          flushPending();
           
-          // Setup ping every 15s during silence
+          // Setup periodic flush and ping while connected
           pingIntervalRef.current = setInterval(() => {
             if (ws.readyState === WebSocket.OPEN) {
               ws.send(JSON.stringify({ type: 'ping' }));
             }
           }, 15000);
+          flushIntervalRef.current = setInterval(() => {
+            flushPending();
+          }, 1000);
         };
 
         ws.onmessage = (event) => {
@@ -160,12 +164,17 @@ const SimplifiedAudioCaptureFloat: React.FC<SimplifiedAudioCaptureFloatProps> = 
         ws.onclose = (evt) => {
           console.log('🔌 WebSocket closed:', evt.code, evt.reason);
           setIsTranscribing(false);
+          wsRef.current = null;
           setWsConnection(null);
           
-          // Clear ping interval
+          // Clear ping/flush intervals
           if (pingIntervalRef.current) {
             clearInterval(pingIntervalRef.current);
             pingIntervalRef.current = null;
+          }
+          if (flushIntervalRef.current) {
+            clearInterval(flushIntervalRef.current);
+            flushIntervalRef.current = null;
           }
           
           // Auto-retry only if connection was working before
@@ -220,6 +229,31 @@ const SimplifiedAudioCaptureFloat: React.FC<SimplifiedAudioCaptureFloatProps> = 
     return recordingMimeTypeRef.current;
   };
 
+  // Flush any buffered messages when WS is open
+  const flushPending = () => {
+    const ws = wsRef.current;
+    if (ws && ws.readyState === WebSocket.OPEN && pendingChunksRef.current.length) {
+      console.log('📤 Flushing buffered chunks:', pendingChunksRef.current.length);
+      for (const msg of pendingChunksRef.current) {
+        ws.send(JSON.stringify(msg));
+      }
+      pendingChunksRef.current = [];
+    }
+  };
+
+  // Send immediately if possible, otherwise buffer (with cap)
+  const sendOrBuffer = (msg: any) => {
+    const ws = wsRef.current;
+    if (ws && ws.readyState === WebSocket.OPEN) {
+      ws.send(JSON.stringify(msg));
+    } else {
+      if (pendingChunksRef.current.length > 200) {
+        pendingChunksRef.current.shift();
+      }
+      pendingChunksRef.current.push(msg);
+    }
+  };
+
   const sendAudioChunkForTranscription = async (audioBlob: Blob, chunkNumber: number) => {
     try {
       console.log('🎵 Processing audio chunk for transcription, size:', audioBlob.size, 'chunk:', chunkNumber);
@@ -250,13 +284,13 @@ const SimplifiedAudioCaptureFloat: React.FC<SimplifiedAudioCaptureFloatProps> = 
         mimeType
       };
 
-      if (wsConnection && wsConnection.readyState === WebSocket.OPEN) {
+      const wsState = wsRef.current?.readyState;
+      if (wsState === WebSocket.OPEN) {
         console.log('📤 Sending individual audio chunk:', chunkNumber, 'type:', mimeType);
-        wsConnection.send(JSON.stringify(message));
       } else {
-        console.log('📦 Buffering chunk (WebSocket not ready):', chunkNumber, 'state:', wsConnection?.readyState);
-        pendingChunksRef.current.push(message);
+        console.log('📦 Buffering chunk (WebSocket not ready):', chunkNumber, 'state:', wsState);
       }
+      sendOrBuffer(message);
       
       console.log('✅ Audio chunk processed successfully');
     } catch (error) {
@@ -342,11 +376,13 @@ const SimplifiedAudioCaptureFloat: React.FC<SimplifiedAudioCaptureFloatProps> = 
               return newTime;
             });
             
-            // Send chunk for real-time transcription
-            const currentChunk = chunkCounter + 1;
-            setChunkCounter(currentChunk);
-            console.log('🚀 Sending chunk for transcription:', currentChunk);
-            sendAudioChunkForTranscription(event.data, currentChunk);
+            // Send chunk for real-time transcription with correct increment
+            setChunkCounter(prev => {
+              const next = prev + 1;
+              console.log('🚀 Sending chunk for transcription:', next);
+              void sendAudioChunkForTranscription(event.data, next);
+              return next;
+            });
           }
         }
       };
@@ -355,6 +391,22 @@ const SimplifiedAudioCaptureFloat: React.FC<SimplifiedAudioCaptureFloatProps> = 
         console.log('MediaRecorder stopped, finalizing...');
         const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
         const audioUrl = URL.createObjectURL(audioBlob);
+        
+        // Finalize real-time transcription before building UI state
+        const ws = wsRef.current;
+        if (ws && ws.readyState === WebSocket.OPEN) {
+          console.log('Finalizing real-time transcription');
+          ws.send(JSON.stringify({ type: 'finalize' }));
+        }
+        setTimeout(() => {
+          if (wsRef.current) {
+            try { wsRef.current.close(); } catch {}
+            wsRef.current = null;
+            setWsConnection(null);
+          }
+          if (pingIntervalRef.current) { clearInterval(pingIntervalRef.current); pingIntervalRef.current = null; }
+          if (flushIntervalRef.current) { clearInterval(flushIntervalRef.current); flushIntervalRef.current = null; }
+        }, 1000);
         
         const timestamp = new Date().toLocaleString('fr-FR', {
           day: '2-digit',
