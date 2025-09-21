@@ -9,6 +9,28 @@ export interface SearchResult {
   };
 }
 
+export interface MarcheTechnoSensible {
+  id: string;
+  ville: string;
+  nom_marche?: string;
+  date?: string;
+  descriptif_court?: string;
+  descriptif_long?: string;
+  latitude?: number;
+  longitude?: number;
+  region?: string;
+  departement?: string;
+  theme_principal?: string;
+  sous_themes?: string[];
+  temperature?: number;
+  coordonnees?: any;
+  lien_google_drive?: string;
+  created_at: string;
+  updated_at: string;
+  photos?: any[];
+  audio?: any[];
+}
+
 export interface LayerConfig {
   marchesTechnoSensibles: boolean;
 }

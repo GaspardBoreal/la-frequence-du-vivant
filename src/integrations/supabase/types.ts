@@ -334,6 +334,7 @@ export type Database = {
           id: string
           marche_id: string
           ordre: number | null
+          publication_status: string
         }
         Insert: {
           created_at?: string
@@ -341,6 +342,7 @@ export type Database = {
           id?: string
           marche_id: string
           ordre?: number | null
+          publication_status?: string
         }
         Update: {
           created_at?: string
@@ -348,6 +350,7 @@ export type Database = {
           id?: string
           marche_id?: string
           ordre?: number | null
+          publication_status?: string
         }
         Relationships: [
           {
@@ -1701,6 +1704,21 @@ export type Database = {
           created_at: string
           id: string
           role: string
+        }[]
+      }
+      get_exploration_marches_by_status: {
+        Args: {
+          exploration_id_param: string
+          include_drafts?: boolean
+          readers_mode?: boolean
+        }
+        Returns: {
+          created_at: string
+          exploration_id: string
+          id: string
+          marche_id: string
+          ordre: number
+          publication_status: string
         }[]
       }
       get_exploration_pages: {

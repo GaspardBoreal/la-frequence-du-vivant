@@ -28,9 +28,14 @@ import {
   ArrowDown, 
   Footprints,
   Radio,
-  Waves
+  Waves,
+  Settings2,
+  Eye,
+  Users,
+  EyeOff
 } from 'lucide-react';
 import { ExplorationMarche } from '@/hooks/useExplorations';
+import PublicationStatusSelect from './PublicationStatusSelect';
 
 interface SortableMarcheItemProps {
   marche: ExplorationMarche;
@@ -39,6 +44,7 @@ interface SortableMarcheItemProps {
   onRemove: (marcheId: string) => void;
   onMoveUp: (index: number) => void;
   onMoveDown: (index: number) => void;
+  onUpdatePublicationStatus: (marcheId: string, status: 'published_public' | 'published_readers' | 'draft') => void;
 }
 
 const SortableMarcheItem: React.FC<SortableMarcheItemProps> = ({
@@ -47,7 +53,8 @@ const SortableMarcheItem: React.FC<SortableMarcheItemProps> = ({
   totalCount,
   onRemove,
   onMoveUp,
-  onMoveDown
+  onMoveDown,
+  onUpdatePublicationStatus
 }) => {
   const {
     attributes,
@@ -139,6 +146,15 @@ const SortableMarcheItem: React.FC<SortableMarcheItemProps> = ({
                 <span className="text-gaspard-secondary font-medium">Connexion {index + 1}</span>
               </div>
             </div>
+
+            {/* Sélecteur de statut de publication */}
+            <div className="mb-4">
+              <PublicationStatusSelect
+                value={(marche.publication_status as any) || 'published_public'}
+                onChange={(status) => onUpdatePublicationStatus(marche.marche_id, status)}
+                variant="compact"
+              />
+            </div>
             
             {marche.marche?.descriptif_court && (
               <p className="text-sm text-gaspard-secondary leading-relaxed line-clamp-2 font-light">
@@ -191,13 +207,18 @@ interface ExplorationMarcheListProps {
   explorationMarches: ExplorationMarche[];
   onReorder: (marcheOrders: { marcheId: string; ordre: number }[]) => void;
   onRemove: (marcheId: string) => void;
+  onUpdatePublicationStatus: (marcheId: string, status: 'published_public' | 'published_readers' | 'draft') => void;
+  onBatchUpdateStatus: (marcheIds: string[], status: 'published_public' | 'published_readers' | 'draft') => void;
 }
 
 const ExplorationMarcheList: React.FC<ExplorationMarcheListProps> = ({
   explorationMarches,
   onReorder,
-  onRemove
+  onRemove,
+  onUpdatePublicationStatus,
+  onBatchUpdateStatus
 }) => {
+  const [selectedMarches, setSelectedMarches] = React.useState<string[]>([]);
   const sensors = useSensors(
     useSensor(PointerSensor),
     useSensor(KeyboardSensor, {
@@ -296,7 +317,7 @@ const ExplorationMarcheList: React.FC<ExplorationMarcheListProps> = ({
       </div>
       
       <div className="relative p-8">
-        <div className="flex items-center gap-4 mb-8">
+        <div className="flex items-center justify-between mb-8">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-full bg-gradient-to-br from-gaspard-primary/20 to-gaspard-accent/30 flex items-center justify-center backdrop-blur-sm">
               <Footprints className="h-5 w-5 text-gaspard-primary" />
@@ -305,12 +326,44 @@ const ExplorationMarcheList: React.FC<ExplorationMarcheListProps> = ({
               Séquence de l'exploration
             </h3>
           </div>
-          <div className="flex items-center gap-3 ml-auto">
+          
+          <div className="flex items-center gap-4">
             <div className="flex items-center gap-2">
               <div className="w-2 h-2 rounded-full bg-gaspard-accent animate-gentle-float"></div>
               <span className="text-sm text-gaspard-muted font-light">
                 {sortedMarches.length} étape{sortedMarches.length > 1 ? 's' : ''}
               </span>
+            </div>
+            
+            {/* Actions en lot */}
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => onBatchUpdateStatus(sortedMarches.map(m => m.marche_id), 'published_public')}
+                className="text-xs"
+              >
+                <Eye className="h-3 w-3 mr-1" />
+                Tout public
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => onBatchUpdateStatus(sortedMarches.map(m => m.marche_id), 'published_readers')}
+                className="text-xs"
+              >
+                <Users className="h-3 w-3 mr-1" />
+                Lecteurs seulement
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => onBatchUpdateStatus(sortedMarches.map(m => m.marche_id), 'draft')}
+                className="text-xs"
+              >
+                <EyeOff className="h-3 w-3 mr-1" />
+                Brouillon
+              </Button>
             </div>
           </div>
         </div>
@@ -339,6 +392,7 @@ const ExplorationMarcheList: React.FC<ExplorationMarcheListProps> = ({
                     onRemove={onRemove}
                     onMoveUp={handleMoveUp}
                     onMoveDown={handleMoveDown}
+                    onUpdatePublicationStatus={onUpdatePublicationStatus}
                   />
                 ))}
               </div>

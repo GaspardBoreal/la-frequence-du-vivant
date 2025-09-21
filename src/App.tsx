@@ -35,6 +35,7 @@ import WeatherCalendar from './pages/WeatherCalendar';
 import ProjectPresentation from './pages/ProjectPresentation';
 import GalerieFleuvePage from './pages/GalerieFleuvePage';
 import GalerieFluveExploration from './pages/GalerieFluveExploration';
+import GalerieFluveExplorationLecteurs from './pages/GalerieFluveExplorationLecteurs';
 import ExplorationHistorique from './pages/ExplorationHistorique';
 import ExplorationEssais from './pages/ExplorationEssais';
 import ExperienceAudioContinue from './components/experience/ExperienceAudioContinue';
@@ -63,6 +64,7 @@ function App() {
             <Route path="/explorations" element={<ExplorationsList />} />
             <Route path="/galerie-fleuve" element={<GalerieFleuvePage />} />
             <Route path="/galerie-fleuve/exploration/:slug" element={<GalerieFluveExploration />} />
+            <Route path="/lecteurs/exploration/:slug" element={<GalerieFluveExplorationLecteurs />} />
             <Route path="/galerie-fleuve/exploration/:slug/ecouter" element={<ExperienceAudioContinue />} />
             <Route path="/galerie-fleuve/exploration/:slug/lire" element={<ExperienceLectureOptimisee />} />
             <Route path="/galerie-fleuve/exploration/:slug/lire/:textId" element={<ExperienceLectureOptimisee />} />

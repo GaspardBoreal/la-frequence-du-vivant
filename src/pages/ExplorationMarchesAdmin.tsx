@@ -9,10 +9,13 @@ import { useExplorationById, useExplorationMarches } from '@/hooks/useExploratio
 import {
   useAddMarcheToExploration,
   useRemoveMarcheFromExploration,
-  useReorderExplorationMarches
+  useReorderExplorationMarches,
+  useUpdateMarchePublicationStatus,
+  useBatchUpdatePublicationStatus
 } from '@/hooks/useExplorationMarches';
 import ExplorationMarcheList from '@/components/admin/ExplorationMarcheList';
 import ExplorationMarcheSelector from '@/components/admin/ExplorationMarcheSelector';
+import ExplorationGalleryButtons from '@/components/admin/ExplorationGalleryButtons';
 
 const ExplorationMarchesAdmin = () => {
   const { id } = useParams<{ id: string }>();
@@ -25,6 +28,8 @@ const ExplorationMarchesAdmin = () => {
   const addMarcheMutation = useAddMarcheToExploration();
   const removeMarcheMutation = useRemoveMarcheFromExploration();
   const reorderMutation = useReorderExplorationMarches();
+  const updateStatusMutation = useUpdateMarchePublicationStatus();
+  const batchUpdateStatusMutation = useBatchUpdatePublicationStatus();
 
   const handleMarcheToggle = (marcheId: string) => {
     setSelectedMarches(prev => 
@@ -71,6 +76,26 @@ const ExplorationMarchesAdmin = () => {
     reorderMutation.mutate({
       explorationId: id,
       marcheOrders
+    });
+  };
+
+  const handleUpdatePublicationStatus = (marcheId: string, status: 'published_public' | 'published_readers' | 'draft') => {
+    if (!id) return;
+    
+    updateStatusMutation.mutate({
+      explorationId: id,
+      marcheId,
+      publicationStatus: status
+    });
+  };
+
+  const handleBatchUpdateStatus = (marcheIds: string[], status: 'published_public' | 'published_readers' | 'draft') => {
+    if (!id) return;
+    
+    batchUpdateStatusMutation.mutate({
+      explorationId: id,
+      marcheIds,
+      publicationStatus: status
     });
   };
 
@@ -191,6 +216,8 @@ const ExplorationMarchesAdmin = () => {
               explorationMarches={explorationMarches}
               onReorder={handleReorderMarches}
               onRemove={handleRemoveMarche}
+              onUpdatePublicationStatus={handleUpdatePublicationStatus}
+              onBatchUpdateStatus={handleBatchUpdateStatus}
             />
 
             {/* Sélecteur de nouvelles marches */}
@@ -200,6 +227,9 @@ const ExplorationMarchesAdmin = () => {
               onMarcheToggle={handleMarcheToggle}
               onAddSelected={handleAddSelected}
             />
+
+            {/* Boutons d'accès aux galeries publiques */}
+            <ExplorationGalleryButtons explorationSlug={exploration.slug} />
           </div>
         </div>
 

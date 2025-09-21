@@ -7,17 +7,19 @@ export const useAddMarcheToExploration = () => {
   const queryClient = useQueryClient();
   
   return useMutation({
-    mutationFn: async ({ explorationId, marcheId, ordre }: {
+    mutationFn: async ({ explorationId, marcheId, ordre, publicationStatus = 'published_public' }: {
       explorationId: string;
       marcheId: string;
       ordre?: number;
+      publicationStatus?: 'published_public' | 'published_readers' | 'draft';
     }) => {
       const { data, error } = await supabase
         .from('exploration_marches')
         .insert({
           exploration_id: explorationId,
           marche_id: marcheId,
-          ordre
+          ordre,
+          publication_status: publicationStatus
         })
         .select()
         .single();
@@ -93,6 +95,64 @@ export const useReorderExplorationMarches = () => {
     onError: (error) => {
       console.error('Erreur lors de la réorganisation:', error);
       toast.error('Erreur lors de la réorganisation des marches');
+    }
+  });
+};
+
+// Hook pour mettre à jour le statut de publication d'une marche
+export const useUpdateMarchePublicationStatus = () => {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: async ({ explorationId, marcheId, publicationStatus }: {
+      explorationId: string;
+      marcheId: string;
+      publicationStatus: 'published_public' | 'published_readers' | 'draft';
+    }) => {
+      const { error } = await supabase
+        .from('exploration_marches')
+        .update({ publication_status: publicationStatus })
+        .eq('exploration_id', explorationId)
+        .eq('marche_id', marcheId);
+      
+      if (error) throw error;
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['exploration-marches', variables.explorationId] });
+      toast.success('Statut de publication mis à jour');
+    },
+    onError: (error) => {
+      console.error('Erreur lors de la mise à jour du statut:', error);
+      toast.error('Erreur lors de la mise à jour du statut');
+    }
+  });
+};
+
+// Hook pour mettre à jour en lot le statut de publication
+export const useBatchUpdatePublicationStatus = () => {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: async ({ explorationId, marcheIds, publicationStatus }: {
+      explorationId: string;
+      marcheIds: string[];
+      publicationStatus: 'published_public' | 'published_readers' | 'draft';
+    }) => {
+      const { error } = await supabase
+        .from('exploration_marches')
+        .update({ publication_status: publicationStatus })
+        .eq('exploration_id', explorationId)
+        .in('marche_id', marcheIds);
+      
+      if (error) throw error;
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['exploration-marches', variables.explorationId] });
+      toast.success(`${variables.marcheIds.length} marche(s) mises à jour`);
+    },
+    onError: (error) => {
+      console.error('Erreur lors de la mise à jour en lot:', error);
+      toast.error('Erreur lors de la mise à jour en lot');
     }
   });
 };

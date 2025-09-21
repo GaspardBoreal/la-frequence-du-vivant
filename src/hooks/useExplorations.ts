@@ -38,6 +38,8 @@ export interface ExplorationMarche {
   exploration_id: string;
   marche_id: string;
   ordre?: number;
+  publication_status?: 'published_public' | 'published_readers' | 'draft';
+  created_at: string;
   marche?: {
     id: string;
     ville: string;
@@ -359,5 +361,30 @@ export const useSubmitFeedback = () => {
       if (error) throw error;
       return data;
     },
+    onError: (error) => {
+      console.error('Erreur lors de l\'ajout du feedback:', error);
+    }
   });
 };
+
+export const useExplorationBySlug = (slug: string) => {
+  return useQuery({
+    queryKey: ['exploration-by-slug', slug],
+    queryFn: async () => {
+      if (!slug) return null;
+      
+      const { data, error } = await supabase
+        .from('explorations')
+        .select('*')
+        .eq('slug', slug)
+        .maybeSingle();
+      
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!slug,
+    staleTime: 5 * 60 * 1000,
+  });
+};
+
+export { useExplorationMarchesByStatus } from './useExplorationsByStatus';
