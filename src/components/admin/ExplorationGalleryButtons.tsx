@@ -2,23 +2,21 @@ import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ExternalLink, Eye, Users, Waves } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 interface ExplorationGalleryButtonsProps {
   explorationSlug: string;
 }
 
 const ExplorationGalleryButtons: React.FC<ExplorationGalleryButtonsProps> = ({ explorationSlug }) => {
-  const baseUrl = window.location.origin;
+  const navigate = useNavigate();
   
-  const galleryUrls = {
-    complete: `${baseUrl}/galerie-fleuve/exploration/${explorationSlug}`,
-    completePreview: `${baseUrl}/galerie-fleuve/exploration/${explorationSlug}?preview=true`,
-    readers: `${baseUrl}/lecteurs/exploration/${explorationSlug}`,
-    readersPreview: `${baseUrl}/lecteurs/exploration/${explorationSlug}?preview=true`
+  const handleOpenExternal = (url: string) => {
+    window.open(url, '_blank');
   };
 
-  const handleOpenUrl = (url: string) => {
-    window.open(url, '_blank');
+  const handleNavigatePreview = (path: string) => {
+    navigate(path);
   };
 
   return (
@@ -38,7 +36,6 @@ const ExplorationGalleryButtons: React.FC<ExplorationGalleryButtonsProps> = ({ e
       </CardHeader>
       
       <CardContent className="space-y-4">
-        {/* Galerie complète */}
         <div className="space-y-2">
           <h4 className="text-sm font-medium text-gaspard-primary flex items-center gap-2">
             <Eye className="h-4 w-4" />
@@ -48,7 +45,7 @@ const ExplorationGalleryButtons: React.FC<ExplorationGalleryButtonsProps> = ({ e
             <Button
               variant="outline"
               size="sm"
-              onClick={() => handleOpenUrl(galleryUrls.complete)}
+              onClick={() => handleOpenExternal(`${window.location.origin}/galerie-fleuve/exploration/${explorationSlug}`)}
               className="flex-1 text-xs"
             >
               <ExternalLink className="h-3 w-3 mr-1" />
@@ -57,9 +54,10 @@ const ExplorationGalleryButtons: React.FC<ExplorationGalleryButtonsProps> = ({ e
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => handleOpenUrl(galleryUrls.completePreview)}
+              onClick={() => handleNavigatePreview(`/galerie-fleuve/exploration/${explorationSlug}?preview=true`)}
               className="text-xs"
             >
+              <Eye className="h-3 w-3 mr-1" />
               Preview
             </Button>
           </div>
@@ -75,7 +73,7 @@ const ExplorationGalleryButtons: React.FC<ExplorationGalleryButtonsProps> = ({ e
             <Button
               variant="outline"
               size="sm"
-              onClick={() => handleOpenUrl(galleryUrls.readers)}
+              onClick={() => handleOpenExternal(`${window.location.origin}/lecteurs/exploration/${explorationSlug}`)}
               className="flex-1 text-xs"
             >
               <ExternalLink className="h-3 w-3 mr-1" />
@@ -84,9 +82,10 @@ const ExplorationGalleryButtons: React.FC<ExplorationGalleryButtonsProps> = ({ e
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => handleOpenUrl(galleryUrls.readersPreview)}
+              onClick={() => handleNavigatePreview(`/lecteurs/exploration/${explorationSlug}?preview=true`)}
               className="text-xs"
             >
+              <Eye className="h-3 w-3 mr-1" />
               Preview
             </Button>
           </div>
