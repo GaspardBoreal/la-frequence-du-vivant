@@ -82,7 +82,7 @@ const SortableMarcheItem: React.FC<SortableMarcheItemProps> = ({
           ? 'scale-105 shadow-2xl bg-gradient-to-br from-gaspard-background/60 to-gaspard-background/40 border-gaspard-primary/40 shadow-gaspard-primary/20' 
           : `hover:scale-[1.02] hover:shadow-xl ${
               isVisibleToReaders 
-                ? 'bg-gradient-to-br from-green-50/60 to-gaspard-background/10 border-green-400/40 shadow-lg shadow-green-400/10 border-l-4 border-l-green-400' 
+                ? 'bg-gradient-to-br from-gaspard-accent/20 via-gaspard-primary/10 to-gaspard-background/10 border-gaspard-accent/30 shadow-lg shadow-gaspard-accent/15 border-l-4 border-l-gaspard-accent' 
                 : 'bg-gradient-to-br from-gaspard-background/30 to-gaspard-background/10 border-gaspard-primary/20 shadow-lg shadow-gaspard-primary/5'
             } hover:border-gaspard-accent/30`
       } ${isVisibleToReaders ? 'animate-gentle-glow' : ''}`}
@@ -161,9 +161,9 @@ const SortableMarcheItem: React.FC<SortableMarcheItemProps> = ({
                 variant="compact"
               />
               {isVisibleToReaders && (
-                <div className="flex items-center gap-2 px-3 py-1.5 bg-green-100/80 border border-green-300/50 rounded-full">
-                  <Eye className="h-3 w-3 text-green-600" />
-                  <span className="text-xs font-medium text-green-700">Visible aux lecteurs</span>
+                <div className="flex items-center gap-2 px-3 py-1.5 bg-gradient-to-r from-gaspard-accent/15 to-gaspard-accent/25 border border-gaspard-accent/30 rounded-full backdrop-blur-sm">
+                  <Eye className="h-3 w-3 text-gaspard-accent" />
+                  <span className="text-xs font-medium text-gaspard-accent">Visible aux lecteurs</span>
                 </div>
               )}
             </div>
@@ -349,7 +349,7 @@ const ExplorationMarcheList: React.FC<ExplorationMarcheListProps> = ({
             
             {/* Compteur marches visibles aux lecteurs */}
             <div className="flex items-center gap-2">
-              <div className="w-2 h-2 rounded-full bg-green-400 animate-gentle-float"></div>
+              <div className="w-2 h-2 rounded-full bg-gaspard-accent animate-gentle-float"></div>
               <span className="text-sm text-gaspard-secondary font-medium">
                 {sortedMarches.filter(m => 
                   m.publication_status === 'published_public' || 

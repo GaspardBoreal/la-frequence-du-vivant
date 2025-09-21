@@ -434,10 +434,10 @@
 
 @keyframes gentle-glow {
   0%, 100% { 
-    box-shadow: 0 0 20px hsla(142 69% 58% / 0.1), 0 0 40px hsla(142 69% 58% / 0.15);
+    box-shadow: 0 0 20px hsla(var(--accent) / 0.15), 0 0 40px hsla(var(--accent) / 0.1);
   }
   50% { 
-    box-shadow: 0 0 30px hsla(142 69% 58% / 0.15), 0 0 60px hsla(142 69% 58% / 0.25);
+    box-shadow: 0 0 30px hsla(var(--accent) / 0.25), 0 0 60px hsla(var(--accent) / 0.15);
   }
 }
 
