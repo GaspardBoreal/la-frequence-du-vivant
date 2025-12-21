@@ -26,6 +26,7 @@ const AdminFilters: React.FC<AdminFiltersProps> = ({ marches, onFilterChange }) 
   const [withoutTexts, setWithoutTexts] = useState(false);
   const [explorationFilter, setExplorationFilter] = useState('');
   const [explorationMarchesIds, setExplorationMarchesIds] = useState<string[]>([]);
+  const [explorationMarchesLoaded, setExplorationMarchesLoaded] = useState(false);
 
   // Hook pour récupérer les explorations
   const { data: explorations = [] } = useAdminExplorations();
@@ -34,9 +35,12 @@ const AdminFilters: React.FC<AdminFiltersProps> = ({ marches, onFilterChange }) 
   const fetchExplorationMarches = async (explorationId: string) => {
     if (!explorationId || explorationId === 'all') {
       setExplorationMarchesIds([]);
+      setExplorationMarchesLoaded(false);
       return;
     }
 
+    setExplorationMarchesLoaded(false);
+    
     try {
       const { data, error } = await supabase
         .from('exploration_marches')
@@ -47,9 +51,11 @@ const AdminFilters: React.FC<AdminFiltersProps> = ({ marches, onFilterChange }) 
       
       const marchesIds = data?.map(em => em.marche_id) || [];
       setExplorationMarchesIds(marchesIds);
+      setExplorationMarchesLoaded(true);
     } catch (error) {
       console.error('Erreur lors de la récupération des marches de l\'exploration:', error);
       setExplorationMarchesIds([]);
+      setExplorationMarchesLoaded(true);
     }
   };
 
@@ -59,6 +65,7 @@ const AdminFilters: React.FC<AdminFiltersProps> = ({ marches, onFilterChange }) 
       fetchExplorationMarches(explorationFilter);
     } else {
       setExplorationMarchesIds([]);
+      setExplorationMarchesLoaded(false);
     }
   }, [explorationFilter]);
 
@@ -78,12 +85,16 @@ const AdminFilters: React.FC<AdminFiltersProps> = ({ marches, onFilterChange }) 
 
     let filtered = marches;
 
-    // Filtre par exploration
-    if (exploration && exploration !== 'all' && explorationMarchesIds.length > 0) {
-      filtered = filtered.filter(marche => {
-        const marcheId = marche?.supabaseId || marche?.id;
-        return marcheId && explorationMarchesIds.includes(marcheId);
-      });
+    // Filtre par exploration - Correction : si exploration sélectionnée et données chargées
+    if (exploration && exploration !== 'all') {
+      // Si les données sont chargées (même si vides), on filtre
+      if (explorationMarchesLoaded) {
+        filtered = filtered.filter(marche => {
+          const marcheId = marche?.supabaseId || marche?.id;
+          return marcheId && explorationMarchesIds.includes(marcheId);
+        });
+      }
+      // Si les données ne sont pas encore chargées, on attend (le useEffect re-déclenchera)
     }
 
     // Filtre par ville
@@ -220,6 +231,7 @@ const AdminFilters: React.FC<AdminFiltersProps> = ({ marches, onFilterChange }) 
     setWithoutTexts(false);
     setExplorationFilter('');
     setExplorationMarchesIds([]);
+    setExplorationMarchesLoaded(false);
     onFilterChange(marches);
   };
 
