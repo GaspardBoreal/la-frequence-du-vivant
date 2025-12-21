@@ -991,7 +991,7 @@ export type Database = {
       marches: {
         Row: {
           adresse: string | null
-          coordonnees: unknown | null
+          coordonnees: unknown
           created_at: string
           date: string | null
           departement: string | null
@@ -1011,7 +1011,7 @@ export type Database = {
         }
         Insert: {
           adresse?: string | null
-          coordonnees?: unknown | null
+          coordonnees?: unknown
           created_at?: string
           date?: string | null
           departement?: string | null
@@ -1031,7 +1031,7 @@ export type Database = {
         }
         Update: {
           adresse?: string | null
-          coordonnees?: unknown | null
+          coordonnees?: unknown
           created_at?: string
           date?: string | null
           departement?: string | null
@@ -1618,40 +1618,19 @@ export type Database = {
         Args: { operation_type: string }
         Returns: boolean
       }
-      can_initialize_admin_system: {
-        Args: Record<PropertyKey, never>
-        Returns: boolean
-      }
-      check_is_admin_user: {
-        Args: { check_user_id: string }
-        Returns: boolean
-      }
-      check_system_initialization_safe: {
-        Args: Record<PropertyKey, never>
-        Returns: boolean
-      }
-      confirm_admin_email: {
-        Args: { target_email: string }
-        Returns: boolean
-      }
+      can_initialize_admin_system: { Args: never; Returns: boolean }
+      check_is_admin_user: { Args: { check_user_id: string }; Returns: boolean }
+      check_system_initialization_safe: { Args: never; Returns: boolean }
+      confirm_admin_email: { Args: { target_email: string }; Returns: boolean }
       create_admin_user: {
         Args: { new_email: string; new_user_id: string }
         Returns: boolean
       }
-      delete_exploration_page: {
-        Args: { page_id: string }
-        Returns: undefined
-      }
-      get_admin_count: {
-        Args: Record<PropertyKey, never>
-        Returns: number
-      }
-      get_admin_count_secure: {
-        Args: Record<PropertyKey, never>
-        Returns: number
-      }
+      delete_exploration_page: { Args: { page_id: string }; Returns: undefined }
+      get_admin_count: { Args: never; Returns: number }
+      get_admin_count_secure: { Args: never; Returns: number }
       get_admin_list_safe: {
-        Args: Record<PropertyKey, never>
+        Args: never
         Returns: {
           created_at: string
           id: string
@@ -1660,7 +1639,7 @@ export type Database = {
         }[]
       }
       get_admin_list_secure_no_emails: {
-        Args: Record<PropertyKey, never>
+        Args: never
         Returns: {
           created_at: string
           id: string
@@ -1670,7 +1649,7 @@ export type Database = {
         }[]
       }
       get_admin_users_list: {
-        Args: Record<PropertyKey, never>
+        Args: never
         Returns: {
           created_at: string
           id: string
@@ -1679,16 +1658,10 @@ export type Database = {
           user_id: string
         }[]
       }
-      get_current_admin_email: {
-        Args: Record<PropertyKey, never>
-        Returns: string
-      }
-      get_current_admin_email_secure: {
-        Args: Record<PropertyKey, never>
-        Returns: string
-      }
+      get_current_admin_email: { Args: never; Returns: string }
+      get_current_admin_email_secure: { Args: never; Returns: string }
       get_current_admin_info: {
-        Args: Record<PropertyKey, never>
+        Args: never
         Returns: {
           created_at: string
           email: string
@@ -1699,7 +1672,7 @@ export type Database = {
         }[]
       }
       get_current_admin_user: {
-        Args: Record<PropertyKey, never>
+        Args: never
         Returns: {
           created_at: string
           id: string
@@ -1735,10 +1708,7 @@ export type Database = {
           updated_at: string
         }[]
       }
-      get_my_admin_email_only: {
-        Args: Record<PropertyKey, never>
-        Returns: string
-      }
+      get_my_admin_email_only: { Args: never; Returns: string }
       get_structured_vocabulary_data: {
         Args: { marche_id_param: string }
         Returns: {
@@ -1767,9 +1737,19 @@ export type Database = {
         Args: { new_email: string; new_password: string }
         Returns: Json
       }
-      insert_exploration_page: {
-        Args:
-          | {
+      insert_exploration_page:
+        | {
+            Args: {
+              exploration_id_param: string
+              page_description?: string
+              page_nom: string
+              page_ordre: number
+              page_type: string
+            }
+            Returns: string
+          }
+        | {
+            Args: {
               exploration_id_param: string
               page_config?: Json
               page_description?: string
@@ -1777,60 +1757,44 @@ export type Database = {
               page_ordre: number
               page_type: string
             }
-          | {
-              exploration_id_param: string
-              page_description?: string
-              page_nom: string
-              page_ordre: number
-              page_type: string
-            }
-        Returns: string
-      }
-      is_admin_user: {
-        Args: Record<PropertyKey, never>
-        Returns: boolean
-      }
-      is_system_initialized: {
-        Args: Record<PropertyKey, never>
-        Returns: boolean
-      }
+            Returns: string
+          }
+      is_admin_user: { Args: never; Returns: boolean }
+      is_system_initialized: { Args: never; Returns: boolean }
       migrate_vocabulary_categorization: {
-        Args: Record<PropertyKey, never>
+        Args: never
         Returns: {
           changes_count: number
           migration_log: string
           rec_opus_id: string
         }[]
       }
-      remove_admin_user: {
-        Args: { target_user_id: string }
-        Returns: boolean
-      }
-      update_exploration_page: {
-        Args:
-          | {
+      remove_admin_user: { Args: { target_user_id: string }; Returns: boolean }
+      update_exploration_page:
+        | {
+            Args: {
+              page_description?: string
+              page_id: string
+              page_nom: string
+              page_type: string
+            }
+            Returns: undefined
+          }
+        | {
+            Args: {
               page_config?: Json
               page_description?: string
               page_id: string
               page_nom: string
               page_type: string
             }
-          | {
-              page_description?: string
-              page_id: string
-              page_nom: string
-              page_type: string
-            }
-        Returns: undefined
-      }
+            Returns: undefined
+          }
       update_pages_order: {
         Args: { new_orders: number[]; page_ids: string[] }
         Returns: undefined
       }
-      validate_admin_email_access: {
-        Args: Record<PropertyKey, never>
-        Returns: boolean
-      }
+      validate_admin_email_access: { Args: never; Returns: boolean }
     }
     Enums: {
       etude_type: "principale" | "complementaire" | "annexe"

@@ -908,7 +908,7 @@ const GalerieFleuve: React.FC<GalerieFluveProps> = memo(({
                 scale: 0.95,
                 opacity: 0.9
               } : {}}>
-                  <OptimizedImage src={photo.url} alt={photo.titre || 'Photo exploration'} className="w-full h-full" priority={position === 'current' ? 'high' : 'medium'} preloadedImage={preloadedImage?.element} enableCinematicTransitions={false} // Velvet Smooth: Disable concurrent animations
+                  <OptimizedImage src={photo.url} alt={photo.titre || 'Photo exploration'} className="w-full h-full" priority={position === 'current' ? 'high' : 'low'} preloadedImage={preloadedImage?.element} enableCinematicTransitions={false} // Velvet Smooth: Disable concurrent animations
                 instant={shouldUseInstant} transition={{
                   duration: prefersReducedMotion || visualComfortMode ? 0.4 : 0.2,
                   ease: [0.25, 0.1, 0.25, 1]

@@ -76,7 +76,7 @@ export class ImageCacheManager {
   }
 
   // Preload image with optimizations
-  async preloadImage(url: string, priority: 'high' | 'medium' | 'low' = 'medium'): Promise<HTMLImageElement> {
+  async preloadImage(url: string, priority: 'high' | 'low' | 'auto' = 'auto'): Promise<HTMLImageElement> {
     if (this.has(url)) {
       return this.get(url)!;
     }
