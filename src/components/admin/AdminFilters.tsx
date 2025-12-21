@@ -62,6 +62,13 @@ const AdminFilters: React.FC<AdminFiltersProps> = ({ marches, onFilterChange }) 
     }
   }, [explorationFilter]);
 
+  // Effet pour réappliquer les filtres quand explorationMarchesIds change
+  useEffect(() => {
+    if (explorationFilter && explorationFilter !== 'all') {
+      applyFilters(villeFilter, regionFilter, departementFilter, tagsFilter, searchText, withoutPhotos, withoutAudio, withoutTexts, explorationFilter);
+    }
+  }, [explorationMarchesIds]);
+
   // Fonction sécurisée pour filtrer les marches
   const applyFilters = (ville: string, region: string, departement: string, tags: string, search: string, noPhotos: boolean, noAudio: boolean, noTexts: boolean, exploration: string) => {
     if (!marches || marches.length === 0) {
