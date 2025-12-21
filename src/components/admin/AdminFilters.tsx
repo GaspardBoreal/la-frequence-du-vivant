@@ -31,7 +31,7 @@ const AdminFilters: React.FC<AdminFiltersProps> = ({ marches, onFilterChange }) 
   // Hook pour récupérer les explorations
   const { data: explorations = [] } = useAdminExplorations();
 
-  // Fonction pour récupérer les IDs des marches d'une exploration
+  // Fonction pour récupérer les IDs des marches d'une exploration (ou orphelines)
   const fetchExplorationMarches = async (explorationId: string) => {
     if (!explorationId || explorationId === 'all') {
       setExplorationMarchesIds([]);
@@ -42,16 +42,32 @@ const AdminFilters: React.FC<AdminFiltersProps> = ({ marches, onFilterChange }) 
     setExplorationMarchesLoaded(false);
     
     try {
-      const { data, error } = await supabase
-        .from('exploration_marches')
-        .select('marche_id')
-        .eq('exploration_id', explorationId);
+      if (explorationId === 'orphan') {
+        // Récupérer toutes les marches associées à une exploration
+        const { data: associatedData, error: associatedError } = await supabase
+          .from('exploration_marches')
+          .select('marche_id');
 
-      if (error) throw error;
-      
-      const marchesIds = data?.map(em => em.marche_id) || [];
-      setExplorationMarchesIds(marchesIds);
-      setExplorationMarchesLoaded(true);
+        if (associatedError) throw associatedError;
+        
+        const associatedIds = associatedData?.map(em => em.marche_id) || [];
+        
+        // Les marches orphelines sont celles qui ne sont PAS dans cette liste
+        // On stocke les IDs associés et on inversera la logique dans applyFilters
+        setExplorationMarchesIds(associatedIds);
+        setExplorationMarchesLoaded(true);
+      } else {
+        const { data, error } = await supabase
+          .from('exploration_marches')
+          .select('marche_id')
+          .eq('exploration_id', explorationId);
+
+        if (error) throw error;
+        
+        const marchesIds = data?.map(em => em.marche_id) || [];
+        setExplorationMarchesIds(marchesIds);
+        setExplorationMarchesLoaded(true);
+      }
     } catch (error) {
       console.error('Erreur lors de la récupération des marches de l\'exploration:', error);
       setExplorationMarchesIds([]);
@@ -89,10 +105,19 @@ const AdminFilters: React.FC<AdminFiltersProps> = ({ marches, onFilterChange }) 
     if (exploration && exploration !== 'all') {
       // Si les données sont chargées (même si vides), on filtre
       if (explorationMarchesLoaded) {
-        filtered = filtered.filter(marche => {
-          const marcheId = marche?.supabaseId || marche?.id;
-          return marcheId && explorationMarchesIds.includes(marcheId);
-        });
+        if (exploration === 'orphan') {
+          // Pour "Sans exploration", on exclut les marches qui sont associées
+          filtered = filtered.filter(marche => {
+            const marcheId = marche?.supabaseId || marche?.id;
+            return marcheId && !explorationMarchesIds.includes(marcheId);
+          });
+        } else {
+          // Pour une exploration spécifique, on inclut uniquement les marches associées
+          filtered = filtered.filter(marche => {
+            const marcheId = marche?.supabaseId || marche?.id;
+            return marcheId && explorationMarchesIds.includes(marcheId);
+          });
+        }
       }
       // Si les données ne sont pas encore chargées, on attend (le useEffect re-déclenchera)
     }
@@ -380,6 +405,9 @@ const AdminFilters: React.FC<AdminFiltersProps> = ({ marches, onFilterChange }) 
                   <SelectContent className="bg-white border border-gray-200 shadow-lg z-50 max-h-60 overflow-y-auto">
                     <SelectItem value="all" className="text-gray-900 hover:bg-gray-100">
                       Toutes les explorations
+                    </SelectItem>
+                    <SelectItem value="orphan" className="text-gray-900 hover:bg-gray-100 font-medium text-orange-600">
+                      🚫 Sans exploration
                     </SelectItem>
                     {explorations.map((exploration) => (
                       <SelectItem key={exploration.id} value={exploration.id} className="text-gray-900 hover:bg-gray-100">
