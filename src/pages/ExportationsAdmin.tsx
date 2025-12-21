@@ -11,6 +11,7 @@ import { Separator } from '@/components/ui/separator';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { exportTextesToWord, exportTextesToCSV } from '@/utils/wordExportUtils';
+import WordExportPreview from '@/components/admin/WordExportPreview';
 
 interface Exploration {
   id: string;
@@ -493,11 +494,11 @@ const ExportationsAdmin: React.FC = () => {
                   </div>
                 </div>
 
-                {/* Preview */}
+                {/* Preview Summary */}
                 <div className="bg-muted/50 rounded-lg p-4">
                   <div className="flex items-center justify-between">
                     <div>
-                      <div className="text-sm font-medium">Aperçu de l'export</div>
+                      <div className="text-sm font-medium">Prêt à exporter</div>
                       <div className="text-sm text-muted-foreground">
                         {stats.total} textes • ~{stats.words.toLocaleString()} mots • {Math.round(stats.chars / 1000)}k caractères
                       </div>
@@ -518,6 +519,14 @@ const ExportationsAdmin: React.FC = () => {
                 </div>
               </CardContent>
             </Card>
+
+            {/* Visual Preview */}
+            <WordExportPreview
+              textes={filteredTextes}
+              organizationMode={organizationMode}
+              includeMetadata={includeMetadata}
+              includeCoverPage={includeCoverPage}
+            />
 
             {/* CSV Export Card */}
             <Card>
