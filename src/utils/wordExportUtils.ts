@@ -30,6 +30,187 @@ interface ExportOptions {
   includeMetadata: boolean;
 }
 
+// Parsed content structures for HTML to Word conversion
+interface ParsedRun {
+  text: string;
+  italic?: boolean;
+  bold?: boolean;
+}
+
+interface ParsedParagraph {
+  runs: ParsedRun[];
+}
+
+/**
+ * Parse HTML content into structured paragraphs with formatting
+ * Handles: <div>, <br>, <p> for line breaks
+ *          <em>, <i> for italics
+ *          <strong>, <b> for bold
+ *          &nbsp; for spaces
+ *          strips <span> while keeping content
+ */
+const parseHtmlContent = (html: string): ParsedParagraph[] => {
+  if (!html) return [];
+
+  // Step 1: Normalize HTML entities
+  let content = html
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'");
+
+  // Step 2: Convert block elements to paragraph markers
+  // Replace </div>, </p>, <br>, <br/>, <br /> with a special marker
+  const PARA_MARKER = '§§PARA§§';
+  content = content
+    .replace(/<\/div>/gi, PARA_MARKER)
+    .replace(/<\/p>/gi, PARA_MARKER)
+    .replace(/<br\s*\/?>/gi, PARA_MARKER)
+    .replace(/<div[^>]*>/gi, '')
+    .replace(/<p[^>]*>/gi, '')
+    .replace(/\n/g, PARA_MARKER);
+
+  // Step 3: Strip span tags but keep content
+  content = content.replace(/<\/?span[^>]*>/gi, '');
+
+  // Step 4: Split into paragraphs
+  const rawParagraphs = content.split(PARA_MARKER);
+
+  const parsedParagraphs: ParsedParagraph[] = [];
+
+  for (const rawPara of rawParagraphs) {
+    const trimmed = rawPara.trim();
+    if (!trimmed) continue;
+
+    // Parse formatting within this paragraph
+    const runs = parseFormattedText(trimmed);
+    if (runs.length > 0) {
+      parsedParagraphs.push({ runs });
+    }
+  }
+
+  return parsedParagraphs;
+};
+
+/**
+ * Parse text with inline formatting (bold, italic)
+ * Handles nested and sequential tags
+ */
+const parseFormattedText = (text: string): ParsedRun[] => {
+  const runs: ParsedRun[] = [];
+  
+  // Regex to find formatting tags
+  // Matches: <em>...</em>, <i>...</i>, <strong>...</strong>, <b>...</b>
+  const formatRegex = /<(em|i|strong|b)>([\s\S]*?)<\/\1>/gi;
+  
+  let lastIndex = 0;
+  let match;
+
+  // Create a working copy to process
+  let workingText = text;
+  
+  // First pass: extract all formatted segments with their positions
+  const segments: { start: number; end: number; content: string; italic: boolean; bold: boolean }[] = [];
+  
+  // Reset regex
+  formatRegex.lastIndex = 0;
+  
+  while ((match = formatRegex.exec(workingText)) !== null) {
+    const tag = match[1].toLowerCase();
+    const content = match[2];
+    const isItalic = tag === 'em' || tag === 'i';
+    const isBold = tag === 'strong' || tag === 'b';
+    
+    segments.push({
+      start: match.index,
+      end: match.index + match[0].length,
+      content: stripAllTags(content),
+      italic: isItalic,
+      bold: isBold,
+    });
+  }
+
+  // Sort segments by position
+  segments.sort((a, b) => a.start - b.start);
+
+  // Build runs from segments and gaps
+  let currentPos = 0;
+  for (const segment of segments) {
+    // Add plain text before this segment
+    if (segment.start > currentPos) {
+      const plainText = stripAllTags(workingText.substring(currentPos, segment.start));
+      if (plainText.trim()) {
+        runs.push({ text: plainText });
+      }
+    }
+    
+    // Add the formatted segment
+    if (segment.content.trim()) {
+      runs.push({
+        text: segment.content,
+        italic: segment.italic,
+        bold: segment.bold,
+      });
+    }
+    
+    currentPos = segment.end;
+  }
+
+  // Add remaining plain text
+  if (currentPos < workingText.length) {
+    const remaining = stripAllTags(workingText.substring(currentPos));
+    if (remaining.trim()) {
+      runs.push({ text: remaining });
+    }
+  }
+
+  // If no formatting was found, return the whole text as a single run
+  if (runs.length === 0) {
+    const cleanText = stripAllTags(text);
+    if (cleanText.trim()) {
+      runs.push({ text: cleanText });
+    }
+  }
+
+  return runs;
+};
+
+/**
+ * Strip all remaining HTML tags from text
+ */
+const stripAllTags = (text: string): string => {
+  return text.replace(/<[^>]*>/g, '').trim();
+};
+
+/**
+ * Convert parsed paragraphs to Word Paragraph objects
+ */
+const createParagraphsFromParsed = (
+  parsedParagraphs: ParsedParagraph[],
+  baseSpacing: number = 100,
+  lastSpacing: number = 300
+): Paragraph[] => {
+  return parsedParagraphs.map((para, index) => {
+    const isLast = index === parsedParagraphs.length - 1;
+    
+    const textRuns = para.runs.map(run => 
+      new TextRun({
+        text: run.text,
+        size: 22,
+        italics: run.italic,
+        bold: run.bold,
+      })
+    );
+
+    return new Paragraph({
+      children: textRuns,
+      spacing: { after: isLast ? lastSpacing : baseSpacing },
+    });
+  });
+};
+
 const TEXT_TYPE_LABELS: Record<string, string> = {
   haiku: 'Haïkus',
   poeme: 'Poèmes',
@@ -148,8 +329,8 @@ const createTableOfContentsSection = (): Paragraph[] => {
   ];
 };
 
-const createSectionHeader = (title: string, count: number): Paragraph[] => {
-  return [
+const createSectionHeader = (title: string, count: number, date?: string): Paragraph[] => {
+  const paragraphs: Paragraph[] = [
     new Paragraph({
       children: [
         new TextRun({
@@ -159,7 +340,7 @@ const createSectionHeader = (title: string, count: number): Paragraph[] => {
         }),
       ],
       heading: HeadingLevel.HEADING_1,
-      spacing: { before: 400, after: 300 },
+      spacing: { before: 400, after: date ? 100 : 300 },
       border: {
         bottom: {
           color: 'cccccc',
@@ -170,6 +351,31 @@ const createSectionHeader = (title: string, count: number): Paragraph[] => {
       },
     }),
   ];
+
+  // Add date subtitle if available
+  if (date) {
+    const formattedDate = new Date(date).toLocaleDateString('fr-FR', {
+      weekday: 'long',
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric',
+    });
+    paragraphs.push(
+      new Paragraph({
+        children: [
+          new TextRun({
+            text: formattedDate.charAt(0).toUpperCase() + formattedDate.slice(1),
+            italics: true,
+            size: 20,
+            color: '888888',
+          }),
+        ],
+        spacing: { after: 300 },
+      })
+    );
+  }
+
+  return paragraphs;
 };
 
 const createTexteEntry = (texte: TexteExport, includeMetadata: boolean): Paragraph[] => {
@@ -190,12 +396,17 @@ const createTexteEntry = (texte: TexteExport, includeMetadata: boolean): Paragra
     })
   );
 
-  // Metadata (location, date)
+  // Metadata (location) - improved formatting
   if (includeMetadata && (texte.marche_nom || texte.marche_ville)) {
     const locationParts: string[] = [];
-    if (texte.marche_nom) locationParts.push(texte.marche_nom);
-    if (texte.marche_ville) locationParts.push(texte.marche_ville);
-    if (texte.marche_region) locationParts.push(texte.marche_region);
+    
+    // Format location nicely
+    if (texte.marche_nom) {
+      locationParts.push(texte.marche_nom);
+    }
+    if (texte.marche_ville && texte.marche_ville !== texte.marche_nom) {
+      locationParts.push(texte.marche_ville);
+    }
 
     paragraphs.push(
       new Paragraph({
@@ -207,26 +418,31 @@ const createTexteEntry = (texte: TexteExport, includeMetadata: boolean): Paragra
             color: '666666',
           }),
         ],
-        spacing: { after: 200 },
+        spacing: { after: texte.marche_region ? 50 : 200 },
       })
     );
+
+    // Region on separate line if available
+    if (texte.marche_region) {
+      paragraphs.push(
+        new Paragraph({
+          children: [
+            new TextRun({
+              text: texte.marche_region,
+              italics: true,
+              size: 18,
+              color: '888888',
+            }),
+          ],
+          spacing: { after: 200 },
+        })
+      );
+    }
   }
 
-  // Content - split by newlines and create paragraphs
-  const contentLines = texte.contenu.split('\n').filter(line => line.trim());
-  contentLines.forEach((line, index) => {
-    paragraphs.push(
-      new Paragraph({
-        children: [
-          new TextRun({
-            text: line.trim(),
-            size: 22,
-          }),
-        ],
-        spacing: { after: index === contentLines.length - 1 ? 300 : 100 },
-      })
-    );
-  });
+  // Content - parse HTML and create properly formatted paragraphs
+  const parsedContent = parseHtmlContent(texte.contenu);
+  paragraphs.push(...createParagraphsFromParsed(parsedContent, 100, 300));
 
   // Separator
   paragraphs.push(
@@ -332,7 +548,9 @@ export const exportTextesToWord = async (
     const groups = groupTextesByMarche(textes);
     
     for (const [marcheName, groupTextes] of groups) {
-      children.push(...createSectionHeader(marcheName, groupTextes.length));
+      // Get the date from the first texte in the group
+      const marcheDate = groupTextes[0]?.marche_date;
+      children.push(...createSectionHeader(marcheName, groupTextes.length, marcheDate));
       
       groupTextes.forEach(texte => {
         children.push(...createTexteEntry(texte, options.includeMetadata));
