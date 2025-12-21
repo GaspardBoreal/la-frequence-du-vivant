@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowLeft, FileDown, FileText, Table, Download, Filter, Check, Loader2 } from 'lucide-react';
+import { ArrowLeft, FileDown, FileText, Table, Download, Filter, Loader2, ChevronDown, ChevronRight, MapPin, BookOpen } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -8,6 +8,8 @@ import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { exportTextesToWord, exportTextesToCSV } from '@/utils/wordExportUtils';
@@ -40,6 +42,11 @@ interface TexteWithDetails {
   marche_date?: string;
 }
 
+interface ExplorationMarcheLink {
+  exploration_id: string;
+  marche_id: string;
+}
+
 const TEXT_TYPES = [
   { id: 'haiku', label: 'Haïku' },
   { id: 'senryu', label: 'Senryū' },
@@ -68,12 +75,22 @@ const ExportationsAdmin: React.FC = () => {
   const [allTextes, setAllTextes] = useState<TexteWithDetails[]>([]);
   const [loading, setLoading] = useState(true);
   const [exporting, setExporting] = useState(false);
+  
+  // Exploration ↔ Marche links
+  const [explorationMarchesMap, setExplorationMarchesMap] = useState<Map<string, Set<string>>>(new Map());
+  const [marcheExplorationsMap, setMarcheExplorationsMap] = useState<Map<string, Set<string>>>(new Map());
 
   // Filter state
   const [selectedExplorations, setSelectedExplorations] = useState<Set<string>>(new Set());
   const [selectedTypes, setSelectedTypes] = useState<Set<string>>(new Set(TEXT_TYPES.map(t => t.id)));
   const [selectedRegions, setSelectedRegions] = useState<Set<string>>(new Set(REGIONS));
   const [selectedMarches, setSelectedMarches] = useState<Set<string>>(new Set());
+
+  // Collapsible state
+  const [explorationsOpen, setExplorationsOpen] = useState(true);
+  const [marchesOpen, setMarchesOpen] = useState(false);
+  const [typesOpen, setTypesOpen] = useState(true);
+  const [regionsOpen, setRegionsOpen] = useState(false);
 
   // Export options state
   const [includeCoverPage, setIncludeCoverPage] = useState(true);
@@ -90,6 +107,34 @@ const ExportationsAdmin: React.FC = () => {
           .from('explorations')
           .select('id, name, slug')
           .order('name');
+        
+        // Load exploration_marches links
+        const { data: exploMarchesData } = await supabase
+          .from('exploration_marches')
+          .select('exploration_id, marche_id');
+
+        // Build maps
+        const expToMarches = new Map<string, Set<string>>();
+        const marcheToExps = new Map<string, Set<string>>();
+        
+        if (exploMarchesData) {
+          exploMarchesData.forEach((link: ExplorationMarcheLink) => {
+            // Exploration → Marches
+            if (!expToMarches.has(link.exploration_id)) {
+              expToMarches.set(link.exploration_id, new Set());
+            }
+            expToMarches.get(link.exploration_id)!.add(link.marche_id);
+            
+            // Marche → Explorations
+            if (!marcheToExps.has(link.marche_id)) {
+              marcheToExps.set(link.marche_id, new Set());
+            }
+            marcheToExps.get(link.marche_id)!.add(link.exploration_id);
+          });
+        }
+        
+        setExplorationMarchesMap(expToMarches);
+        setMarcheExplorationsMap(marcheToExps);
         
         if (exploData) {
           setExplorations(exploData);
@@ -145,9 +190,71 @@ const ExportationsAdmin: React.FC = () => {
     loadData();
   }, []);
 
+  // Get marches available based on selected explorations
+  const availableMarches = useMemo(() => {
+    if (selectedExplorations.size === 0) {
+      return marches;
+    }
+    
+    const availableMarcheIds = new Set<string>();
+    selectedExplorations.forEach(expId => {
+      explorationMarchesMap.get(expId)?.forEach(marcheId => {
+        availableMarcheIds.add(marcheId);
+      });
+    });
+    
+    // Include marches not linked to any exploration (orphans)
+    marches.forEach(m => {
+      if (!marcheExplorationsMap.has(m.id) || marcheExplorationsMap.get(m.id)?.size === 0) {
+        availableMarcheIds.add(m.id);
+      }
+    });
+    
+    return marches.filter(m => availableMarcheIds.has(m.id));
+  }, [marches, selectedExplorations, explorationMarchesMap, marcheExplorationsMap]);
+
+  // Count textes per marche
+  const textesPerMarche = useMemo(() => {
+    const counts = new Map<string, number>();
+    allTextes.forEach(t => {
+      counts.set(t.marche_id, (counts.get(t.marche_id) || 0) + 1);
+    });
+    return counts;
+  }, [allTextes]);
+
+  // Count textes per exploration
+  const textesPerExploration = useMemo(() => {
+    const counts = new Map<string, number>();
+    explorations.forEach(exp => {
+      const marcheIds = explorationMarchesMap.get(exp.id) || new Set();
+      let count = 0;
+      marcheIds.forEach(marcheId => {
+        count += textesPerMarche.get(marcheId) || 0;
+      });
+      counts.set(exp.id, count);
+    });
+    return counts;
+  }, [explorations, explorationMarchesMap, textesPerMarche]);
+
   // Filter textes based on selections
   const filteredTextes = useMemo(() => {
     return allTextes.filter(texte => {
+      // Filter by marche (which includes exploration filter implicitly)
+      if (!selectedMarches.has(texte.marche_id)) {
+        return false;
+      }
+      
+      // Check if marche belongs to a selected exploration (or is orphan when all selected)
+      const marcheExplorations = marcheExplorationsMap.get(texte.marche_id);
+      if (marcheExplorations && marcheExplorations.size > 0) {
+        const hasSelectedExploration = Array.from(marcheExplorations).some(
+          expId => selectedExplorations.has(expId)
+        );
+        if (!hasSelectedExploration) {
+          return false;
+        }
+      }
+
       // Filter by type
       if (!selectedTypes.has(texte.type_texte.toLowerCase())) {
         return false;
@@ -158,14 +265,9 @@ const ExportationsAdmin: React.FC = () => {
         return false;
       }
 
-      // Filter by marche
-      if (!selectedMarches.has(texte.marche_id)) {
-        return false;
-      }
-
       return true;
     });
-  }, [allTextes, selectedTypes, selectedRegions, selectedMarches]);
+  }, [allTextes, selectedExplorations, selectedMarches, selectedTypes, selectedRegions, marcheExplorationsMap]);
 
   // Statistics
   const stats = useMemo(() => {
@@ -184,15 +286,45 @@ const ExportationsAdmin: React.FC = () => {
     };
   }, [filteredTextes]);
 
-  // Toggle handlers
+  // Toggle handlers with intelligent sync
   const toggleExploration = (id: string) => {
-    const newSet = new Set(selectedExplorations);
+    const newExploSet = new Set(selectedExplorations);
+    const newMarcheSet = new Set(selectedMarches);
+    
+    if (newExploSet.has(id)) {
+      newExploSet.delete(id);
+      // Remove marches that only belong to this exploration
+      explorationMarchesMap.get(id)?.forEach(marcheId => {
+        const marcheExps = marcheExplorationsMap.get(marcheId);
+        if (marcheExps) {
+          const otherSelectedExps = Array.from(marcheExps).filter(
+            expId => expId !== id && newExploSet.has(expId)
+          );
+          if (otherSelectedExps.length === 0) {
+            newMarcheSet.delete(marcheId);
+          }
+        }
+      });
+    } else {
+      newExploSet.add(id);
+      // Add all marches from this exploration
+      explorationMarchesMap.get(id)?.forEach(marcheId => {
+        newMarcheSet.add(marcheId);
+      });
+    }
+    
+    setSelectedExplorations(newExploSet);
+    setSelectedMarches(newMarcheSet);
+  };
+
+  const toggleMarche = (id: string) => {
+    const newSet = new Set(selectedMarches);
     if (newSet.has(id)) {
       newSet.delete(id);
     } else {
       newSet.add(id);
     }
-    setSelectedExplorations(newSet);
+    setSelectedMarches(newSet);
   };
 
   const toggleType = (id: string) => {
@@ -213,6 +345,23 @@ const ExportationsAdmin: React.FC = () => {
       newSet.add(region);
     }
     setSelectedRegions(newSet);
+  };
+
+  // Select/Clear all handlers
+  const selectAllExplorations = () => {
+    setSelectedExplorations(new Set(explorations.map(e => e.id)));
+    setSelectedMarches(new Set(marches.map(m => m.id)));
+  };
+  const clearAllExplorations = () => {
+    setSelectedExplorations(new Set());
+    setSelectedMarches(new Set());
+  };
+
+  const selectAllMarches = () => {
+    setSelectedMarches(new Set(availableMarches.map(m => m.id)));
+  };
+  const clearAllMarches = () => {
+    setSelectedMarches(new Set());
   };
 
   const selectAllTypes = () => setSelectedTypes(new Set(TEXT_TYPES.map(t => t.id)));
@@ -261,6 +410,19 @@ const ExportationsAdmin: React.FC = () => {
     }
   };
 
+  const formatMarcheDate = (date: string | null) => {
+    if (!date) return '';
+    try {
+      return new Date(date).toLocaleDateString('fr-FR', { 
+        day: 'numeric', 
+        month: 'short', 
+        year: 'numeric' 
+      });
+    } catch {
+      return date;
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -302,13 +464,13 @@ const ExportationsAdmin: React.FC = () => {
           </Card>
           <Card className="text-center">
             <CardContent className="pt-6">
-              <div className="text-3xl font-bold text-foreground">{explorations.length}</div>
+              <div className="text-3xl font-bold text-foreground">{selectedExplorations.size}/{explorations.length}</div>
               <div className="text-sm text-muted-foreground">Explorations</div>
             </CardContent>
           </Card>
           <Card className="text-center">
             <CardContent className="pt-6">
-              <div className="text-3xl font-bold text-foreground">{marches.length}</div>
+              <div className="text-3xl font-bold text-foreground">{selectedMarches.size}/{marches.length}</div>
               <div className="text-sm text-muted-foreground">Marches</div>
             </CardContent>
           </Card>
@@ -330,11 +492,146 @@ const ExportationsAdmin: React.FC = () => {
                   Filtres
                 </CardTitle>
               </CardHeader>
-              <CardContent className="space-y-6">
+              <CardContent className="space-y-4">
+                {/* Explorations Filter */}
+                <Collapsible open={explorationsOpen} onOpenChange={setExplorationsOpen}>
+                  <div className="flex items-center justify-between">
+                    <CollapsibleTrigger className="flex items-center gap-2 text-sm font-medium hover:text-primary transition-colors">
+                      {explorationsOpen ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+                      <BookOpen className="h-4 w-4" />
+                      Explorations
+                      <Badge variant="secondary" className="text-xs ml-1">
+                        {selectedExplorations.size}/{explorations.length}
+                      </Badge>
+                    </CollapsibleTrigger>
+                    <div className="flex gap-2">
+                      <button 
+                        onClick={selectAllExplorations}
+                        className="text-xs text-primary hover:underline"
+                      >
+                        Toutes
+                      </button>
+                      <button 
+                        onClick={clearAllExplorations}
+                        className="text-xs text-muted-foreground hover:underline"
+                      >
+                        Aucune
+                      </button>
+                    </div>
+                  </div>
+                  <CollapsibleContent className="mt-2">
+                    <ScrollArea className="h-[180px] pr-4">
+                      <div className="space-y-2">
+                        {explorations.map(exp => {
+                          const count = textesPerExploration.get(exp.id) || 0;
+                          return (
+                            <div key={exp.id} className="flex items-center gap-2">
+                              <Checkbox
+                                id={`exp-${exp.id}`}
+                                checked={selectedExplorations.has(exp.id)}
+                                onCheckedChange={() => toggleExploration(exp.id)}
+                              />
+                              <Label 
+                                htmlFor={`exp-${exp.id}`} 
+                                className="text-sm flex-1 cursor-pointer truncate"
+                                title={exp.name}
+                              >
+                                {exp.name}
+                              </Label>
+                              {count > 0 && (
+                                <Badge variant="outline" className="text-xs shrink-0">
+                                  {count}
+                                </Badge>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </ScrollArea>
+                  </CollapsibleContent>
+                </Collapsible>
+
+                <Separator />
+
+                {/* Marches Filter */}
+                <Collapsible open={marchesOpen} onOpenChange={setMarchesOpen}>
+                  <div className="flex items-center justify-between">
+                    <CollapsibleTrigger className="flex items-center gap-2 text-sm font-medium hover:text-primary transition-colors">
+                      {marchesOpen ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+                      <MapPin className="h-4 w-4" />
+                      Marches
+                      <Badge variant="secondary" className="text-xs ml-1">
+                        {selectedMarches.size}/{availableMarches.length}
+                      </Badge>
+                    </CollapsibleTrigger>
+                    <div className="flex gap-2">
+                      <button 
+                        onClick={selectAllMarches}
+                        className="text-xs text-primary hover:underline"
+                      >
+                        Toutes
+                      </button>
+                      <button 
+                        onClick={clearAllMarches}
+                        className="text-xs text-muted-foreground hover:underline"
+                      >
+                        Aucune
+                      </button>
+                    </div>
+                  </div>
+                  <CollapsibleContent className="mt-2">
+                    <ScrollArea className="h-[220px] pr-4">
+                      <div className="space-y-2">
+                        {availableMarches.map(marche => {
+                          const count = textesPerMarche.get(marche.id) || 0;
+                          const displayName = marche.nom_marche || marche.ville;
+                          const dateStr = formatMarcheDate(marche.date);
+                          return (
+                            <div key={marche.id} className="flex items-start gap-2">
+                              <Checkbox
+                                id={`marche-${marche.id}`}
+                                checked={selectedMarches.has(marche.id)}
+                                onCheckedChange={() => toggleMarche(marche.id)}
+                                className="mt-0.5"
+                              />
+                              <Label 
+                                htmlFor={`marche-${marche.id}`} 
+                                className="text-sm flex-1 cursor-pointer"
+                              >
+                                <span className="block truncate" title={displayName}>
+                                  {displayName}
+                                </span>
+                                {dateStr && (
+                                  <span className="text-xs text-muted-foreground">
+                                    {dateStr}
+                                  </span>
+                                )}
+                              </Label>
+                              {count > 0 && (
+                                <Badge variant="outline" className="text-xs shrink-0">
+                                  {count}
+                                </Badge>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </ScrollArea>
+                  </CollapsibleContent>
+                </Collapsible>
+
+                <Separator />
+
                 {/* Types Filter */}
-                <div>
-                  <div className="flex items-center justify-between mb-2">
-                    <Label className="text-sm font-medium">Types de texte</Label>
+                <Collapsible open={typesOpen} onOpenChange={setTypesOpen}>
+                  <div className="flex items-center justify-between">
+                    <CollapsibleTrigger className="flex items-center gap-2 text-sm font-medium hover:text-primary transition-colors">
+                      {typesOpen ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+                      Types de texte
+                      <Badge variant="secondary" className="text-xs ml-1">
+                        {selectedTypes.size}/{TEXT_TYPES.length}
+                      </Badge>
+                    </CollapsibleTrigger>
                     <div className="flex gap-2">
                       <button 
                         onClick={selectAllTypes}
@@ -350,39 +647,47 @@ const ExportationsAdmin: React.FC = () => {
                       </button>
                     </div>
                   </div>
-                  <div className="space-y-2">
-                    {TEXT_TYPES.map(type => {
-                      const count = stats.byType.get(type.id) || 0;
-                      return (
-                        <div key={type.id} className="flex items-center gap-2">
-                          <Checkbox
-                            id={`type-${type.id}`}
-                            checked={selectedTypes.has(type.id)}
-                            onCheckedChange={() => toggleType(type.id)}
-                          />
-                          <Label 
-                            htmlFor={`type-${type.id}`} 
-                            className="text-sm flex-1 cursor-pointer"
-                          >
-                            {type.label}
-                          </Label>
-                          {count > 0 && (
-                            <Badge variant="secondary" className="text-xs">
-                              {count}
-                            </Badge>
-                          )}
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
+                  <CollapsibleContent className="mt-2">
+                    <div className="space-y-2">
+                      {TEXT_TYPES.map(type => {
+                        const count = stats.byType.get(type.id) || 0;
+                        return (
+                          <div key={type.id} className="flex items-center gap-2">
+                            <Checkbox
+                              id={`type-${type.id}`}
+                              checked={selectedTypes.has(type.id)}
+                              onCheckedChange={() => toggleType(type.id)}
+                            />
+                            <Label 
+                              htmlFor={`type-${type.id}`} 
+                              className="text-sm flex-1 cursor-pointer"
+                            >
+                              {type.label}
+                            </Label>
+                            {count > 0 && (
+                              <Badge variant="secondary" className="text-xs">
+                                {count}
+                              </Badge>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </CollapsibleContent>
+                </Collapsible>
 
                 <Separator />
 
                 {/* Regions Filter */}
-                <div>
-                  <div className="flex items-center justify-between mb-2">
-                    <Label className="text-sm font-medium">Régions</Label>
+                <Collapsible open={regionsOpen} onOpenChange={setRegionsOpen}>
+                  <div className="flex items-center justify-between">
+                    <CollapsibleTrigger className="flex items-center gap-2 text-sm font-medium hover:text-primary transition-colors">
+                      {regionsOpen ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+                      Régions
+                      <Badge variant="secondary" className="text-xs ml-1">
+                        {selectedRegions.size}/{REGIONS.length}
+                      </Badge>
+                    </CollapsibleTrigger>
                     <div className="flex gap-2">
                       <button 
                         onClick={selectAllRegions}
@@ -398,24 +703,26 @@ const ExportationsAdmin: React.FC = () => {
                       </button>
                     </div>
                   </div>
-                  <div className="space-y-2">
-                    {REGIONS.map(region => (
-                      <div key={region} className="flex items-center gap-2">
-                        <Checkbox
-                          id={`region-${region}`}
-                          checked={selectedRegions.has(region)}
-                          onCheckedChange={() => toggleRegion(region)}
-                        />
-                        <Label 
-                          htmlFor={`region-${region}`} 
-                          className="text-sm cursor-pointer"
-                        >
-                          {region}
-                        </Label>
-                      </div>
-                    ))}
-                  </div>
-                </div>
+                  <CollapsibleContent className="mt-2">
+                    <div className="space-y-2">
+                      {REGIONS.map(region => (
+                        <div key={region} className="flex items-center gap-2">
+                          <Checkbox
+                            id={`region-${region}`}
+                            checked={selectedRegions.has(region)}
+                            onCheckedChange={() => toggleRegion(region)}
+                          />
+                          <Label 
+                            htmlFor={`region-${region}`} 
+                            className="text-sm cursor-pointer"
+                          >
+                            {region}
+                          </Label>
+                        </div>
+                      ))}
+                    </div>
+                  </CollapsibleContent>
+                </Collapsible>
               </CardContent>
             </Card>
           </div>
