@@ -18,6 +18,7 @@ interface TexteExport {
   marche_nom?: string;
   marche_ville?: string;
   marche_region?: string;
+  marche_date?: string;
   created_at?: string;
 }
 
@@ -34,7 +35,7 @@ const TEXT_TYPE_LABELS: Record<string, string> = {
   poeme: 'Poèmes',
   senryu: 'Senryūs',
   haibun: 'Haïbuns',
-  texte_libre: 'Textes libres',
+  'texte-libre': 'Textes libres',
   fable: 'Fables',
   prose: 'Proses',
   recit: 'Récits',
@@ -260,17 +261,32 @@ const groupTextesByType = (textes: TexteExport[]): Map<string, TexteExport[]> =>
 };
 
 const groupTextesByMarche = (textes: TexteExport[]): Map<string, TexteExport[]> => {
-  const groups = new Map<string, TexteExport[]>();
+  // Group textes by marche with date info
+  const groupsWithDate = new Map<string, { date: string | null, textes: TexteExport[] }>();
   
   textes.forEach(texte => {
     const key = texte.marche_nom || texte.marche_ville || 'Sans lieu';
-    if (!groups.has(key)) {
-      groups.set(key, []);
+    if (!groupsWithDate.has(key)) {
+      groupsWithDate.set(key, { date: texte.marche_date || null, textes: [] });
     }
-    groups.get(key)!.push(texte);
+    groupsWithDate.get(key)!.textes.push(texte);
   });
 
-  return groups;
+  // Sort groups by date chronologically
+  const sortedEntries = Array.from(groupsWithDate.entries())
+    .sort((a, b) => {
+      const dateA = a[1].date || '9999-12-31';
+      const dateB = b[1].date || '9999-12-31';
+      return dateA.localeCompare(dateB);
+    });
+
+  // Rebuild sorted Map
+  const sortedMap = new Map<string, TexteExport[]>();
+  sortedEntries.forEach(([key, value]) => {
+    sortedMap.set(key, value.textes);
+  });
+
+  return sortedMap;
 };
 
 export const exportTextesToWord = async (
@@ -294,7 +310,7 @@ export const exportTextesToWord = async (
     const groups = groupTextesByType(textes);
     
     // Sort by predefined order
-    const typeOrder = ['haiku', 'senryu', 'poeme', 'haibun', 'texte_libre', 'fable', 'prose', 'recit'];
+    const typeOrder = ['haiku', 'senryu', 'poeme', 'haibun', 'texte-libre', 'fable', 'prose', 'recit'];
     const sortedTypes = Array.from(groups.keys()).sort((a, b) => {
       const indexA = typeOrder.indexOf(a);
       const indexB = typeOrder.indexOf(b);
