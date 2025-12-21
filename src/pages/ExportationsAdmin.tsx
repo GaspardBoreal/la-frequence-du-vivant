@@ -42,19 +42,20 @@ const TEXT_TYPES = [
   { id: 'senryu', label: 'Senryū' },
   { id: 'poeme', label: 'Poème' },
   { id: 'haibun', label: 'Haïbun' },
-  { id: 'texte_libre', label: 'Texte libre' },
+  { id: 'texte-libre', label: 'Texte libre' },
   { id: 'fable', label: 'Fable' },
   { id: 'prose', label: 'Prose' },
   { id: 'recit', label: 'Récit' },
 ];
 
 const REGIONS = [
-  'Nouvelle-Aquitaine',
-  'Occitanie',
-  'Auvergne-Rhône-Alpes',
-  'Île-de-France',
-  'Bretagne',
-  'Provence-Alpes-Côte d\'Azur',
+  'NOUVELLE-AQUITAINE',
+  'OCCITANIE',
+  'AUVERGNE-RHÔNE-ALPES',
+  'ÎLE-DE-FRANCE',
+  'BRETAGNE',
+  'PROVENCE-ALPES-CÔTE D\'AZUR',
+  'CORSE',
 ];
 
 const ExportationsAdmin: React.FC = () => {
