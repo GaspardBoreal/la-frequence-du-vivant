@@ -23,6 +23,7 @@ interface Marche {
   nom_marche: string | null;
   ville: string;
   region: string | null;
+  date: string | null;
 }
 
 interface TexteWithDetails {
@@ -35,6 +36,7 @@ interface TexteWithDetails {
   marche_nom?: string;
   marche_ville?: string;
   marche_region?: string;
+  marche_date?: string;
 }
 
 const TEXT_TYPES = [
@@ -93,11 +95,11 @@ const ExportationsAdmin: React.FC = () => {
           setSelectedExplorations(new Set(exploData.map(e => e.id)));
         }
 
-        // Load marches
+        // Load marches (sorted by date for chronological order)
         const { data: marchesData } = await supabase
           .from('marches')
-          .select('id, nom_marche, ville, region')
-          .order('ville');
+          .select('id, nom_marche, ville, region, date')
+          .order('date', { ascending: true });
         
         if (marchesData) {
           setMarches(marchesData);
@@ -126,6 +128,7 @@ const ExportationsAdmin: React.FC = () => {
               marche_nom: marche?.nom_marche || undefined,
               marche_ville: marche?.ville,
               marche_region: marche?.region || undefined,
+              marche_date: marche?.date || undefined,
             };
           });
           setAllTextes(enrichedTextes);
