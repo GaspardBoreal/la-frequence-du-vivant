@@ -3,7 +3,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { Card } from '../components/ui/card';
 import { Button } from '../components/ui/button';
-import { Settings, Map, Sparkles, ArrowLeft } from 'lucide-react';
+import { Settings, Map, Sparkles, ArrowLeft, FileDown } from 'lucide-react';
 
 const AdminAccess: React.FC = () => {
   return (
@@ -27,7 +27,7 @@ const AdminAccess: React.FC = () => {
           </p>
         </div>
 
-        <div className="grid gap-6 md:grid-cols-2">
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
           <Card className="gaspard-card p-6 hover:shadow-lg transition-shadow">
             <div className="flex items-center mb-4">
               <Map className="h-8 w-8 text-accent mr-3" />
@@ -58,6 +58,23 @@ const AdminAccess: React.FC = () => {
               <Button variant="outline" className="w-full">
                 <Sparkles className="h-4 w-4 mr-2" />
                 Accéder aux Explorations
+              </Button>
+            </Link>
+          </Card>
+
+          <Card className="gaspard-card p-6 hover:shadow-lg transition-shadow">
+            <div className="flex items-center mb-4">
+              <FileDown className="h-8 w-8 text-accent mr-3" />
+              <h2 className="text-xl font-semibold text-foreground">Exportations & Rapports</h2>
+            </div>
+            <p className="text-muted-foreground mb-4">
+              Exporter les textes littéraires au format Word, JSON ou CSV.
+              Générer des rapports de contenus.
+            </p>
+            <Link to="/admin/exportations">
+              <Button variant="outline" className="w-full">
+                <FileDown className="h-4 w-4 mr-2" />
+                Accéder aux Exportations
               </Button>
             </Link>
           </Card>

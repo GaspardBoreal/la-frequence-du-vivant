@@ -5,7 +5,7 @@ interface OptimizedImageProps {
   src: string;
   alt: string;
   className?: string;
-  priority?: 'high' | 'medium' | 'low';
+  priority?: 'high' | 'low' | 'auto';
   onLoad?: () => void;
   onError?: () => void;
   blur?: boolean;
@@ -23,7 +23,7 @@ export const OptimizedImage = memo<OptimizedImageProps>(({
   src, 
   alt, 
   className = '',
-  priority = 'medium',
+  priority = 'auto',
   onLoad,
   onError,
   blur = true,
