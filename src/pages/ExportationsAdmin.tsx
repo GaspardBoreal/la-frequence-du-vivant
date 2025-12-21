@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowLeft, FileDown, FileText, Table, Download, Filter, Loader2, ChevronDown, ChevronRight, MapPin, BookOpen } from 'lucide-react';
+import { ArrowLeft, FileDown, FileText, Table, Download, Filter, Loader2, ChevronDown, ChevronRight, MapPin, BookOpen, AlertTriangle, AlertCircle, ExternalLink } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -524,8 +524,10 @@ const ExportationsAdmin: React.FC = () => {
                       <div className="space-y-2">
                         {explorations.map(exp => {
                           const count = textesPerExploration.get(exp.id) || 0;
+                          const hasMarches = (explorationMarchesMap.get(exp.id)?.size || 0) > 0;
+                          const isEmpty = count === 0;
                           return (
-                            <div key={exp.id} className="flex items-center gap-2">
+                            <div key={exp.id} className={`flex items-center gap-2 ${isEmpty ? 'opacity-60' : ''}`}>
                               <Checkbox
                                 id={`exp-${exp.id}`}
                                 checked={selectedExplorations.has(exp.id)}
@@ -538,11 +540,17 @@ const ExportationsAdmin: React.FC = () => {
                               >
                                 {exp.name}
                               </Label>
-                              {count > 0 && (
-                                <Badge variant="outline" className="text-xs shrink-0">
-                                  {count}
-                                </Badge>
+                              {!hasMarches && (
+                                <span title="Aucun marché associé">
+                                  <AlertTriangle className="h-3.5 w-3.5 text-amber-500 shrink-0" />
+                                </span>
                               )}
+                              <Badge 
+                                variant={count > 0 ? "outline" : "secondary"} 
+                                className={`text-xs shrink-0 ${count === 0 ? 'text-muted-foreground' : ''}`}
+                              >
+                                {count}
+                              </Badge>
                             </div>
                           );
                         })}
@@ -586,8 +594,9 @@ const ExportationsAdmin: React.FC = () => {
                           const count = textesPerMarche.get(marche.id) || 0;
                           const displayName = marche.nom_marche || marche.ville;
                           const dateStr = formatMarcheDate(marche.date);
+                          const isEmpty = count === 0;
                           return (
-                            <div key={marche.id} className="flex items-start gap-2">
+                            <div key={marche.id} className={`flex items-start gap-2 ${isEmpty ? 'opacity-60' : ''}`}>
                               <Checkbox
                                 id={`marche-${marche.id}`}
                                 checked={selectedMarches.has(marche.id)}
@@ -607,11 +616,12 @@ const ExportationsAdmin: React.FC = () => {
                                   </span>
                                 )}
                               </Label>
-                              {count > 0 && (
-                                <Badge variant="outline" className="text-xs shrink-0">
-                                  {count}
-                                </Badge>
-                              )}
+                              <Badge 
+                                variant={count > 0 ? "outline" : "secondary"} 
+                                className={`text-xs shrink-0 ${count === 0 ? 'text-muted-foreground' : ''}`}
+                              >
+                                {count}
+                              </Badge>
                             </div>
                           );
                         })}
@@ -802,28 +812,76 @@ const ExportationsAdmin: React.FC = () => {
                 </div>
 
                 {/* Preview Summary */}
-                <div className="bg-muted/50 rounded-lg p-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <div className="text-sm font-medium">Prêt à exporter</div>
-                      <div className="text-sm text-muted-foreground">
-                        {stats.total} textes • ~{stats.words.toLocaleString()} mots • {Math.round(stats.chars / 1000)}k caractères
+                {stats.total > 0 ? (
+                  <div className="bg-muted/50 rounded-lg p-4">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <div className="text-sm font-medium">Prêt à exporter</div>
+                        <div className="text-sm text-muted-foreground">
+                          {stats.total} textes • ~{stats.words.toLocaleString()} mots • {Math.round(stats.chars / 1000)}k caractères
+                        </div>
+                      </div>
+                      <Button
+                        onClick={handleExportWord}
+                        disabled={exporting || stats.total === 0}
+                        className="gap-2"
+                      >
+                        {exporting ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <Download className="h-4 w-4" />
+                        )}
+                        Télécharger .docx
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-4">
+                    <div className="flex items-start gap-3">
+                      <AlertCircle className="h-5 w-5 text-amber-500 shrink-0 mt-0.5" />
+                      <div className="flex-1">
+                        <div className="text-sm font-medium text-amber-700 dark:text-amber-400">
+                          Aucun texte littéraire pour cette sélection
+                        </div>
+                        <div className="text-sm text-muted-foreground mt-1">
+                          {(() => {
+                            const selectedMarchesWithoutTexts = Array.from(selectedMarches)
+                              .filter(id => (textesPerMarche.get(id) || 0) === 0)
+                              .map(id => marches.find(m => m.id === id))
+                              .filter(Boolean)
+                              .slice(0, 5);
+                            
+                            if (selectedMarchesWithoutTexts.length > 0) {
+                              return (
+                                <>
+                                  <span>Les marchés sélectionnés n'ont pas de textes :</span>
+                                  <ul className="mt-1 ml-4 list-disc text-xs">
+                                    {selectedMarchesWithoutTexts.map(m => (
+                                      <li key={m!.id}>{m!.nom_marche || m!.ville}</li>
+                                    ))}
+                                    {Array.from(selectedMarches).filter(id => (textesPerMarche.get(id) || 0) === 0).length > 5 && (
+                                      <li className="text-muted-foreground/70">
+                                        et {Array.from(selectedMarches).filter(id => (textesPerMarche.get(id) || 0) === 0).length - 5} autres...
+                                      </li>
+                                    )}
+                                  </ul>
+                                </>
+                              );
+                            }
+                            return "Sélectionnez des explorations et marchés contenant des textes.";
+                          })()}
+                        </div>
+                        <Link 
+                          to="/access-admin-gb2025" 
+                          className="inline-flex items-center gap-1 text-xs text-primary hover:underline mt-2"
+                        >
+                          <ExternalLink className="h-3 w-3" />
+                          Gérer les contenus dans l'admin
+                        </Link>
                       </div>
                     </div>
-                    <Button
-                      onClick={handleExportWord}
-                      disabled={exporting || stats.total === 0}
-                      className="gap-2"
-                    >
-                      {exporting ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                      ) : (
-                        <Download className="h-4 w-4" />
-                      )}
-                      Télécharger .docx
-                    </Button>
                   </div>
-                </div>
+                )}
               </CardContent>
             </Card>
 
