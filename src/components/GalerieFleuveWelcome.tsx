@@ -98,15 +98,15 @@ const GalerieFleuveWelcome: React.FC<GalerieFluveWelcomeProps> = ({
     }} />);
   };
 
-  // Modes d'immersion principaux - retrait de "Préfigurer" 
+  // Modes d'immersion principaux - retrait de "Préfigurer" - Ordre: Écouter, Voir, Lire
   const immersionModes = theme?.immersionModes?.filter(mode => mode.label !== 'Suivre' && mode.label !== 'Préfigurer') || [{
-    icon: 'Eye',
-    label: 'Voir',
-    desc: 'Navigation spatiale des souvenirs'
-  }, {
     icon: 'Heart',
     label: 'Ecouter',
     desc: 'Paysages sonores'
+  }, {
+    icon: 'Eye',
+    label: 'Voir',
+    desc: 'Navigation spatiale des souvenirs'
   }, {
     icon: 'Stars',
     label: 'Lire',
@@ -216,26 +216,12 @@ const GalerieFleuveWelcome: React.FC<GalerieFluveWelcomeProps> = ({
               const IconComponent = iconMap[mode.icon as keyof typeof iconMap] || Heart;
               return <button key={index} onClick={() => handleModeClick(mode.label)} className={`flex items-center ${isMobile ? 'space-x-1 px-2 py-1 justify-center' : 'space-x-2 px-3 py-2'} bg-white/10 rounded-lg backdrop-blur-sm border border-white/20 ${isMobile ? '' : 'whitespace-nowrap'} cursor-pointer hover:bg-white/20 transition-colors ${mode.label === 'Voir' ? 'ring-1 ring-white/40' : ''}`}>
                     <IconComponent className={`${isMobile ? 'h-3 w-3' : 'h-4 w-4'}`} />
-                    <span className={`${isMobile ? 'text-xs' : 'text-sm'} font-medium`}>{mode.label}</span>
+                    <span className={`${isMobile ? 'text-sm' : 'text-base'} font-bold`}>{mode.label}</span>
                   </button>;
             })}
             </div>
           </motion.div>
 
-          {/* Bouton d'action */}
-          <motion.div className={`${isMobile ? 'mt-8' : ''} flex justify-center`} initial={{
-          y: 30,
-          opacity: 0
-        }} animate={{
-          y: 0,
-          opacity: 1
-        }} transition={{
-          delay: 0.8
-        }}>
-            <Button onClick={handleStart} size={isMobile ? "default" : "lg"} className={`bg-white text-primary hover:bg-white/90 font-semibold ${isMobile ? 'px-6 py-2 text-sm w-full' : 'px-8 py-3'}`}>
-              Commencer l'exploration
-            </Button>
-          </motion.div>
 
           {/* Trait séparateur */}
           <motion.div initial={{
