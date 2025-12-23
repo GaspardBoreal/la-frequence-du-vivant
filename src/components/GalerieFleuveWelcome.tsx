@@ -144,12 +144,12 @@ const GalerieFleuveWelcome: React.FC<GalerieFluveWelcomeProps> = ({
         }} transition={{
           delay: 0.2
         }} className={isMobile ? 'mt-24' : ''}>
-            <h1 className={`${isMobile ? 'text-3xl' : 'text-4xl md:text-6xl'} font-bold ${isMobile ? 'mb-2' : 'mb-4'} leading-tight`}>
+            <h1 className={`${isMobile ? 'text-3xl' : 'text-4xl md:text-6xl text-center'} font-bold ${isMobile ? 'mb-2' : 'mb-4'} leading-tight`}>
               {theme?.title.main || title}
             </h1>
             {isMobile && <p className="text-sm italic opacity-70 mt-2">08.2025</p>}
             {!isMobile && <>
-                {(theme?.description || description) && <p className={`${isMobile ? 'text-base' : 'text-lg'} opacity-70 max-w-2xl`}>
+                {(theme?.description || description) && <p className={`${isMobile ? 'text-base' : 'text-lg'} opacity-70 max-w-2xl mx-auto text-center`}>
                     {(theme?.description || description)?.replace(/<br\s*\/?>(\n)?/gi, ' ')}
                   </p>}
               </>}
