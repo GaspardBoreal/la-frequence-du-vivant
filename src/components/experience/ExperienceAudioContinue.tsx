@@ -320,13 +320,13 @@ export default function ExperienceAudioContinue() {
               transition={{ duration: 0.8, delay: 0.6 }}
             >
               <Card className="bg-white border border-slate-200 shadow-2xl dark:backdrop-blur-md dark:bg-card/70 dark:border-accent/20">
-                <CardContent className="p-6 space-y-6">
+                <CardContent className="p-4 space-y-3">
                   
                   {/* Current Track Info */}
                   <AnimatePresence mode="wait">
                     {currentTrack && (
                       <motion.div 
-                        className="space-y-4"
+                        className="space-y-2"
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: -20 }}
@@ -355,12 +355,12 @@ export default function ExperienceAudioContinue() {
                         </div>
 
                         {/* Compact Audio Visualizer */}
-                        <div className="flex justify-center py-3">
+                        <div className="flex justify-center py-1">
                           <EcoAudioVisualizer
                             isPlaying={isPlaying && currentRecording?.url === currentTrack.url}
                             currentTime={currentTime}
                             duration={duration}
-                            className={`w-full ${isMobile ? 'max-w-xs' : 'max-w-sm'} h-16`}
+                            className={`w-full ${isMobile ? 'max-w-xs' : 'max-w-sm'} h-10`}
                           />
                         </div>
                       </motion.div>
@@ -392,7 +392,7 @@ export default function ExperienceAudioContinue() {
                       size={isMobile ? "default" : "lg"}
                       onClick={handlePreviousTrack}
                       disabled={!canGoPrevious}
-                      className={`${isMobile ? 'h-10 w-10' : 'h-12 w-12'} rounded-full btn-nature`}
+                      className={`${isMobile ? 'h-9 w-9' : 'h-10 w-10'} rounded-full btn-nature`}
                     >
                       <SkipBack className={`${isMobile ? 'h-4 w-4' : 'h-5 w-5'}`} />
                     </Button>
@@ -401,12 +401,12 @@ export default function ExperienceAudioContinue() {
                       size={isMobile ? "default" : "lg"}
                       onClick={handlePlayPause}
                       disabled={!currentTrack}
-                      className={`${isMobile ? 'h-14 w-14' : 'h-16 w-16'} rounded-full btn-nature shadow-xl`}
+                      className={`${isMobile ? 'h-12 w-12' : 'h-14 w-14'} rounded-full btn-nature shadow-xl`}
                     >
                       {isPlaying && currentRecording?.url === currentTrack?.url ? (
-                        <Pause className={`${isMobile ? 'h-6 w-6' : 'h-8 w-8'}`} />
+                        <Pause className={`${isMobile ? 'h-5 w-5' : 'h-7 w-7'}`} />
                       ) : (
-                        <Play className={`${isMobile ? 'h-6 w-6' : 'h-8 w-8'}`} />
+                        <Play className={`${isMobile ? 'h-5 w-5' : 'h-7 w-7'}`} />
                       )}
                     </Button>
                     
@@ -415,14 +415,14 @@ export default function ExperienceAudioContinue() {
                       size={isMobile ? "default" : "lg"}
                       onClick={handleNextTrack}
                       disabled={!canGoNext}
-                      className={`${isMobile ? 'h-10 w-10' : 'h-12 w-12'} rounded-full btn-nature`}
+                      className={`${isMobile ? 'h-9 w-9' : 'h-10 w-10'} rounded-full btn-nature`}
                     >
                       <SkipForward className={`${isMobile ? 'h-4 w-4' : 'h-5 w-5'}`} />
                     </Button>
                   </div>
 
                   {/* Compact Bottom Controls Row */}
-                  <div className="flex items-center justify-between pt-2">
+                  <div className="flex items-center justify-between pt-1">
                     {/* Volume Control - Compact */}
                     <div className="flex items-center space-x-2">
                       <Volume2 className="h-4 w-4 text-emerald-800 dark:text-muted-foreground" />
