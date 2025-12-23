@@ -50,9 +50,9 @@ const PodcastNavigationHeader: React.FC<PodcastNavigationHeaderProps> = ({
   const [appearanceMode, setAppearanceMode] = useState<AppearanceMode>(() => {
     if (typeof window !== 'undefined') {
       const saved = localStorage.getItem('appearanceMode') as AppearanceMode;
-      return saved || 'system';
+      return saved || 'dark';
     }
-    return 'system';
+    return 'dark';
   });
 
   // Apply theme class to document
