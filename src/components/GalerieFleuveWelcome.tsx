@@ -157,9 +157,9 @@ const GalerieFleuveWelcome: React.FC<GalerieFluveWelcomeProps> = ({
 
         </div>
 
-        {/* Contenu principal centré */}
-        <div className="flex-1 flex flex-col justify-center space-y-6">
-          {/* Statistiques - position fixe */}
+        {/* Zone centrale - stats + boutons */}
+        <div className="flex-1 flex flex-col justify-center">
+          {/* Statistiques */}
           <motion.div data-gf-indicators className={`grid grid-cols-3 place-items-center ${isMobile ? 'gap-3' : 'gap-6'} max-w-lg mx-auto`} initial={{
           y: 30,
           opacity: 0
@@ -200,8 +200,8 @@ const GalerieFleuveWelcome: React.FC<GalerieFluveWelcomeProps> = ({
             </div>
           </motion.div>
 
-          {/* Modes d'immersion - disposition horizontale 3 boutons */}
-          <motion.div className={`${isMobile ? 'mt-6' : 'mt-6'}`} initial={{
+          {/* Modes d'immersion */}
+          <motion.div className="mt-6" initial={{
           y: 30,
           opacity: 0
         }} animate={{
@@ -210,7 +210,7 @@ const GalerieFleuveWelcome: React.FC<GalerieFluveWelcomeProps> = ({
         }} transition={{
           delay: 0.6
         }}>
-            {!isMobile && <h3 className={`text-lg font-semibold mb-4 opacity-90 text-center`}>Modes d'immersion disponibles</h3>}
+            {!isMobile && <h3 className="text-lg font-semibold mb-4 opacity-90 text-center">Modes d'immersion disponibles</h3>}
             <div className={`${isMobile ? 'flex flex-col gap-2 items-center' : 'flex flex-wrap gap-4 justify-center'}`}>
               {immersionModes.map((mode, index) => {
               const IconComponent = iconMap[mode.icon as keyof typeof iconMap] || Heart;
@@ -221,18 +221,20 @@ const GalerieFleuveWelcome: React.FC<GalerieFluveWelcomeProps> = ({
             })}
             </div>
           </motion.div>
+        </div>
 
-
-          {/* Trait séparateur - avec espacement augmenté */}
+        {/* Footer ancré en bas */}
+        <div className={`w-full ${isMobile ? 'pb-4' : 'pb-6'}`}>
+          {/* Trait séparateur */}
           <motion.div initial={{
           opacity: 0
         }} animate={{
           opacity: 1
         }} transition={{
           delay: 0.9
-        }} className={`w-full h-px bg-white/30 ${isMobile ? 'mt-16' : 'mt-20'}`} />
+        }} className="w-full h-px bg-white/30" />
 
-          {/* Header navigation style - copie 2 */}
+          {/* Gaspard Boréal */}
           <motion.div initial={{
           opacity: 0,
           y: 20
@@ -241,7 +243,7 @@ const GalerieFleuveWelcome: React.FC<GalerieFluveWelcomeProps> = ({
           y: 0
         }} transition={{
           delay: 1.0
-        }} className={`${isMobile ? 'flex flex-col space-y-2 text-center mt-6' : 'flex justify-between items-center mt-8'} w-full`}>
+        }} className={`${isMobile ? 'flex flex-col space-y-2 text-center mt-4' : 'flex justify-between items-center mt-6'} w-full`}>
             <div className="font-crimson text-white">
               <div className={`${isMobile ? 'text-lg' : 'text-xl'} font-medium`}>Gaspard Boréal</div>
               <div className={`${isMobile ? 'text-xs' : 'text-sm'} opacity-80`}>Poète des Mondes Hybrides</div>
