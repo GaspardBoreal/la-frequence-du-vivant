@@ -210,7 +210,7 @@ const GalerieFleuveWelcome: React.FC<GalerieFluveWelcomeProps> = ({
         }} transition={{
           delay: 0.6
         }}>
-            {!isMobile && <h3 className={`text-lg font-semibold mb-4 opacity-90`}>Modes d'immersion disponibles</h3>}
+            {!isMobile && <h3 className={`text-lg font-semibold mb-4 opacity-90 text-center`}>Modes d'immersion disponibles</h3>}
             <div className={`${isMobile ? 'flex flex-col gap-2 items-center' : 'flex flex-wrap gap-4 justify-center'}`}>
               {immersionModes.map((mode, index) => {
               const IconComponent = iconMap[mode.icon as keyof typeof iconMap] || Heart;
@@ -223,7 +223,7 @@ const GalerieFleuveWelcome: React.FC<GalerieFluveWelcomeProps> = ({
           </motion.div>
 
           {/* Bouton d'action */}
-          <motion.div className={`${isMobile ? 'mt-8' : ''}`} initial={{
+          <motion.div className={`${isMobile ? 'mt-8' : ''} flex justify-center`} initial={{
           y: 30,
           opacity: 0
         }} animate={{
