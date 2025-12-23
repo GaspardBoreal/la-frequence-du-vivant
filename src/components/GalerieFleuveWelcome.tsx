@@ -211,13 +211,71 @@ const GalerieFleuveWelcome: React.FC<GalerieFluveWelcomeProps> = ({
           delay: 0.6
         }}>
             {!isMobile && <h3 className="text-lg font-semibold mb-4 opacity-90 text-center">Modes d'immersion disponibles</h3>}
-            <div className={`${isMobile ? 'flex flex-col gap-2 items-center' : 'flex flex-wrap gap-4 justify-center'}`}>
+            <div className={`${isMobile ? 'flex flex-col gap-3 items-center' : 'flex flex-wrap gap-5 justify-center'}`}>
               {immersionModes.map((mode, index) => {
               const IconComponent = iconMap[mode.icon as keyof typeof iconMap] || Heart;
-              return <button key={index} onClick={() => handleModeClick(mode.label)} className={`flex items-center ${isMobile ? 'space-x-1 px-2 py-1 justify-center' : 'space-x-2 px-3 py-2'} bg-white/10 rounded-lg backdrop-blur-sm border border-white/20 ${isMobile ? '' : 'whitespace-nowrap'} cursor-pointer hover:bg-white/20 transition-colors ${mode.label === 'Voir' ? 'ring-1 ring-white/40' : ''}`}>
-                    <IconComponent className={`${isMobile ? 'h-3 w-3' : 'h-4 w-4'}`} />
-                    <span className={`${isMobile ? 'text-sm' : 'text-base'} font-bold`}>{mode.label}</span>
-                  </button>;
+              return (
+                <motion.button 
+                  key={index} 
+                  onClick={() => handleModeClick(mode.label)} 
+                  className={`
+                    group relative flex items-center overflow-hidden
+                    ${isMobile ? 'space-x-2 px-4 py-2.5 justify-center min-w-[140px]' : 'space-x-3 px-5 py-3'} 
+                    bg-white/10 rounded-xl backdrop-blur-md border border-white/20 
+                    ${isMobile ? '' : 'whitespace-nowrap'} cursor-pointer 
+                    ${mode.label === 'Voir' ? 'ring-2 ring-white/50 bg-white/15' : ''}
+                    focus:outline-none focus:ring-2 focus:ring-white/60 focus:ring-offset-2 focus:ring-offset-transparent
+                    transition-all duration-300 ease-out
+                  `}
+                  whileHover={{ 
+                    scale: 1.05,
+                    boxShadow: "0 10px 40px -10px rgba(255,255,255,0.3)"
+                  }}
+                  whileTap={{ scale: 0.98 }}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ 
+                    delay: 0.7 + index * 0.1,
+                    type: "spring",
+                    stiffness: 300,
+                    damping: 20
+                  }}
+                >
+                  {/* Gradient overlay on hover */}
+                  <motion.div 
+                    className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/20 to-white/0 opacity-0 group-hover:opacity-100 transition-opacity duration-500"
+                    initial={false}
+                  />
+                  
+                  {/* Shine effect */}
+                  <div className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-700 ease-in-out bg-gradient-to-r from-transparent via-white/30 to-transparent skew-x-12" />
+                  
+                  {/* Icon with animation */}
+                  <motion.div
+                    className="relative z-10"
+                    whileHover={{ rotate: [0, -10, 10, 0] }}
+                    transition={{ duration: 0.5 }}
+                  >
+                    <IconComponent className={`${isMobile ? 'h-4 w-4' : 'h-5 w-5'} group-hover:drop-shadow-[0_0_8px_rgba(255,255,255,0.5)] transition-all duration-300`} />
+                  </motion.div>
+                  
+                  {/* Label */}
+                  <span className={`${isMobile ? 'text-sm' : 'text-base'} font-bold relative z-10 group-hover:tracking-wider transition-all duration-300`}>
+                    {mode.label}
+                  </span>
+                  
+                  {/* Glow effect for active button */}
+                  {mode.label === 'Voir' && (
+                    <motion.div 
+                      className="absolute inset-0 rounded-xl bg-white/10"
+                      animate={{ 
+                        boxShadow: ["0 0 15px rgba(255,255,255,0.2)", "0 0 25px rgba(255,255,255,0.4)", "0 0 15px rgba(255,255,255,0.2)"]
+                      }}
+                      transition={{ duration: 2, repeat: Infinity }}
+                    />
+                  )}
+                </motion.button>
+              );
             })}
             </div>
           </motion.div>
