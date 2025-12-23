@@ -145,7 +145,7 @@ const GalerieFleuveWelcome: React.FC<GalerieFluveWelcomeProps> = ({
           delay: 0.2
         }} className={isMobile ? 'mt-24' : ''}>
             <h1 className={`${isMobile ? 'text-3xl' : 'text-4xl md:text-6xl text-center'} font-bold ${isMobile ? 'mb-2' : 'mb-4'} leading-tight`}>
-              {theme?.title.main || title}
+              {(theme?.title.main || title).replace(/\s*—\s*atlas des vivants/i, '')}
             </h1>
             {isMobile && <p className="text-sm italic opacity-70 mt-2">08.2025</p>}
             {!isMobile && <>
