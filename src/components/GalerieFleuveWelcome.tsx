@@ -223,14 +223,14 @@ const GalerieFleuveWelcome: React.FC<GalerieFluveWelcomeProps> = ({
           </motion.div>
 
 
-          {/* Trait séparateur */}
+          {/* Trait séparateur - avec espacement augmenté */}
           <motion.div initial={{
           opacity: 0
         }} animate={{
           opacity: 1
         }} transition={{
           delay: 0.9
-        }} className="w-full h-px bg-white/30" />
+        }} className={`w-full h-px bg-white/30 ${isMobile ? 'mt-16' : 'mt-20'}`} />
 
           {/* Header navigation style - copie 2 */}
           <motion.div initial={{
