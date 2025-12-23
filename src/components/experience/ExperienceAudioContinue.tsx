@@ -312,7 +312,7 @@ export default function ExperienceAudioContinue() {
             slug={slug}
           />
 
-          <div className="max-w-5xl mx-auto">
+          <div className="max-w-5xl mx-auto mt-6">
             {/* Main Audio Player - Full Width */}
             <motion.div 
               initial={{ opacity: 0, y: 30 }}
@@ -320,7 +320,7 @@ export default function ExperienceAudioContinue() {
               transition={{ duration: 0.8, delay: 0.6 }}
             >
               <Card className="bg-white border border-slate-200 shadow-2xl dark:backdrop-blur-md dark:bg-card/70 dark:border-accent/20">
-                <CardContent className="p-4 space-y-3">
+                <CardContent className="p-3 space-y-2">
                   
                   {/* Current Track Info */}
                   <AnimatePresence mode="wait">
@@ -332,7 +332,7 @@ export default function ExperienceAudioContinue() {
                         exit={{ opacity: 0, y: -20 }}
                         key={currentTrack.id}
                       >
-                        <div className="text-center space-y-2">
+                        <div className="text-center space-y-1">
                           <h3 className={`${isMobile ? 'text-lg' : 'text-2xl'} font-bold text-emerald-900 dark:text-accent dordogne-title`}>
                             {currentTrack.title}
                           </h3>
@@ -360,7 +360,7 @@ export default function ExperienceAudioContinue() {
                             isPlaying={isPlaying && currentRecording?.url === currentTrack.url}
                             currentTime={currentTime}
                             duration={duration}
-                            className={`w-full ${isMobile ? 'max-w-xs' : 'max-w-sm'} h-10`}
+                            className={`w-full ${isMobile ? 'max-w-xs' : 'max-w-sm'} h-8`}
                           />
                         </div>
                       </motion.div>
@@ -368,7 +368,7 @@ export default function ExperienceAudioContinue() {
                   </AnimatePresence>
 
                   {/* Compact Progress Slider */}
-                  <div className="space-y-2">
+                  <div className="space-y-1">
                     <Slider
                       value={[currentTime]}
                       onValueChange={handleProgressChange}
@@ -386,7 +386,7 @@ export default function ExperienceAudioContinue() {
                   </div>
 
                   {/* Compact Main Controls */}
-                  <div className="flex items-center justify-center space-x-4">
+                  <div className="flex items-center justify-center space-x-3">
                     <Button
                       variant="outline"
                       size={isMobile ? "default" : "lg"}
@@ -401,7 +401,7 @@ export default function ExperienceAudioContinue() {
                       size={isMobile ? "default" : "lg"}
                       onClick={handlePlayPause}
                       disabled={!currentTrack}
-                      className={`${isMobile ? 'h-12 w-12' : 'h-14 w-14'} rounded-full btn-nature shadow-xl`}
+                      className={`${isMobile ? 'h-10 w-10' : 'h-12 w-12'} rounded-full btn-nature shadow-xl`}
                     >
                       {isPlaying && currentRecording?.url === currentTrack?.url ? (
                         <Pause className={`${isMobile ? 'h-5 w-5' : 'h-7 w-7'}`} />
@@ -422,7 +422,7 @@ export default function ExperienceAudioContinue() {
                   </div>
 
                   {/* Compact Bottom Controls Row */}
-                  <div className="flex items-center justify-between pt-1">
+                  <div className="flex items-center justify-between pt-0">
                     {/* Volume Control - Compact */}
                     <div className="flex items-center space-x-2">
                       <Volume2 className="h-4 w-4 text-emerald-800 dark:text-muted-foreground" />
