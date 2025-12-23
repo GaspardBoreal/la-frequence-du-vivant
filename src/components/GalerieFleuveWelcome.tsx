@@ -262,9 +262,6 @@ const GalerieFleuveWelcome: React.FC<GalerieFluveWelcomeProps> = ({
             </div>
             
              <div className={`${isMobile ? 'flex flex-col space-y-1' : 'flex items-center space-x-6'}`}>
-               <a onClick={() => explorationSlug && (window.location.href = `/galerie-fleuve/exploration/${explorationSlug}/prefigurer`)} className={`text-white/80 hover:text-white transition-colors ${isMobile ? 'text-sm' : 'text-base'} hover:underline cursor-pointer`}>
-                 Préfigurer
-               </a>
                <a href="https://www.gaspardboreal.com/" target="_blank" rel="noopener noreferrer" className={`text-white/80 hover:text-white transition-colors ${isMobile ? 'text-sm' : 'text-base'} hover:underline`}>
                  Découvrir l'auteur
                </a>
