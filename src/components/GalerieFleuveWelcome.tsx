@@ -211,7 +211,7 @@ const GalerieFleuveWelcome: React.FC<GalerieFluveWelcomeProps> = ({
           delay: 0.6
         }}>
             {!isMobile && <h3 className={`text-lg font-semibold mb-4 opacity-90`}>Modes d'immersion disponibles</h3>}
-            <div className={`${isMobile ? 'flex flex-col gap-2' : 'flex flex-wrap gap-4'}`}>
+            <div className={`${isMobile ? 'flex flex-col gap-2 items-center' : 'flex flex-wrap gap-4 justify-center'}`}>
               {immersionModes.map((mode, index) => {
               const IconComponent = iconMap[mode.icon as keyof typeof iconMap] || Heart;
               return <button key={index} onClick={() => handleModeClick(mode.label)} className={`flex items-center ${isMobile ? 'space-x-1 px-2 py-1 justify-center' : 'space-x-2 px-3 py-2'} bg-white/10 rounded-lg backdrop-blur-sm border border-white/20 ${isMobile ? '' : 'whitespace-nowrap'} cursor-pointer hover:bg-white/20 transition-colors ${mode.label === 'Voir' ? 'ring-1 ring-white/40' : ''}`}>
