@@ -241,7 +241,7 @@ const GalerieFleuveWelcome: React.FC<GalerieFluveWelcomeProps> = ({
           y: 0
         }} transition={{
           delay: 1.0
-        }} className={`${isMobile ? 'flex flex-col space-y-2 text-center' : 'flex justify-between items-center'} w-full`}>
+        }} className={`${isMobile ? 'flex flex-col space-y-2 text-center mt-6' : 'flex justify-between items-center mt-8'} w-full`}>
             <div className="font-crimson text-white">
               <div className={`${isMobile ? 'text-lg' : 'text-xl'} font-medium`}>Gaspard Boréal</div>
               <div className={`${isMobile ? 'text-xs' : 'text-sm'} opacity-80`}>Poète des Mondes Hybrides</div>
