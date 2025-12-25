@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
+import { Textarea } from '../ui/textarea';
+import { Label } from '../ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Badge } from '../ui/badge';
@@ -16,7 +18,8 @@ import {
   Play,
   Pause,
   Clock,
-  FileAudio
+  FileAudio,
+  Edit
 } from 'lucide-react';
 import { MarcheTechnoSensible } from '../../utils/googleSheetsApi';
 import { fetchExistingAudio, ExistingAudio, deleteAudio } from '../../utils/supabaseAudioOperations';
@@ -47,6 +50,12 @@ const AudioGalleryAdmin: React.FC<AudioGalleryAdminProps> = ({ marches }) => {
   const [showFilters, setShowFilters] = useState(false);
   const [currentPlayingId, setCurrentPlayingId] = useState<string | null>(null);
   const debouncedSearchText = useDebounce(searchText, 300);
+
+  // États pour le mode édition
+  const [editingAudioId, setEditingAudioId] = useState<string | null>(null);
+  const [editingTitle, setEditingTitle] = useState('');
+  const [editingDescription, setEditingDescription] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
 
   const { data: explorations = [] } = useAdminExplorations();
   const [explorationMarcheIds, setExplorationMarcheIds] = useState<string[]>([]);
@@ -190,6 +199,49 @@ const AudioGalleryAdmin: React.FC<AudioGalleryAdminProps> = ({ marches }) => {
     } catch (error) {
       console.error('Erreur suppression audio:', error);
       toast.error('Erreur lors de la suppression');
+    }
+  };
+
+  // Fonctions pour le mode édition
+  const handleStartEdit = (audio: AudioWithMarche) => {
+    setEditingAudioId(audio.id);
+    setEditingTitle(audio.titre || audio.nom_fichier);
+    setEditingDescription(audio.description || '');
+  };
+
+  const handleCancelEdit = () => {
+    setEditingAudioId(null);
+    setEditingTitle('');
+    setEditingDescription('');
+  };
+
+  const handleSaveEdit = async (audioId: string) => {
+    setIsSaving(true);
+    try {
+      const { error } = await supabase
+        .from('marche_audio')
+        .update({
+          titre: editingTitle,
+          description: editingDescription
+        })
+        .eq('id', audioId);
+      
+      if (error) throw error;
+      
+      // Mettre à jour l'état local
+      setAudios(prev => prev.map(audio => 
+        audio.id === audioId 
+          ? { ...audio, titre: editingTitle, description: editingDescription }
+          : audio
+      ));
+      
+      setEditingAudioId(null);
+      toast.success('Audio modifié avec succès');
+    } catch (error) {
+      console.error('Erreur modification audio:', error);
+      toast.error('Erreur lors de la modification');
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -387,35 +439,90 @@ const AudioGalleryAdmin: React.FC<AudioGalleryAdminProps> = ({ marches }) => {
             </CardHeader>
 
             <CardContent className="pt-0">
-              {audio.description && (
-                <p className="text-sm text-muted-foreground mb-3 line-clamp-2">
-                  {audio.description}
-                </p>
+              {editingAudioId === audio.id ? (
+                <div className="space-y-3">
+                  <div>
+                    <Label className="text-sm font-medium">Titre</Label>
+                    <Input 
+                      value={editingTitle}
+                      onChange={(e) => setEditingTitle(e.target.value)}
+                      placeholder="Titre de l'audio"
+                      className="mt-1"
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-sm font-medium">Description</Label>
+                    <Textarea 
+                      value={editingDescription}
+                      onChange={(e) => setEditingDescription(e.target.value)}
+                      placeholder="Description de l'audio"
+                      rows={2}
+                      className="mt-1"
+                    />
+                  </div>
+                  <div className="flex gap-2">
+                    <Button 
+                      size="sm" 
+                      onClick={() => handleSaveEdit(audio.id)} 
+                      disabled={isSaving}
+                    >
+                      {isSaving && <Loader2 className="h-4 w-4 animate-spin mr-1" />}
+                      Sauvegarder
+                    </Button>
+                    <Button 
+                      size="sm" 
+                      variant="outline" 
+                      onClick={handleCancelEdit}
+                      disabled={isSaving}
+                    >
+                      Annuler
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  {audio.description && (
+                    <p className="text-sm text-muted-foreground mb-3 line-clamp-2">
+                      {audio.description}
+                    </p>
+                  )}
+
+                  <audio
+                    id={`audio-${audio.id}`}
+                    src={audio.url_supabase}
+                    onEnded={() => setCurrentPlayingId(null)}
+                    className="w-full mb-3"
+                    controls
+                    preload="none"
+                  />
+
+                  <div className="flex items-center justify-between text-xs text-muted-foreground">
+                    <span className="flex items-center gap-1">
+                      <FileAudio className="h-3 w-3" />
+                      {formatFileSize(audio.taille_octets)}
+                    </span>
+                    <div className="flex gap-1">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleStartEdit(audio)}
+                        className="text-muted-foreground hover:text-foreground"
+                      >
+                        <Edit className="h-3 w-3 mr-1" />
+                        Modifier
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleDeleteAudio(audio.id)}
+                        className="text-destructive hover:text-destructive"
+                      >
+                        Supprimer
+                      </Button>
+                    </div>
+                  </div>
+                </>
               )}
-
-              <audio
-                id={`audio-${audio.id}`}
-                src={audio.url_supabase}
-                onEnded={() => setCurrentPlayingId(null)}
-                className="w-full mb-3"
-                controls
-                preload="none"
-              />
-
-              <div className="flex items-center justify-between text-xs text-muted-foreground">
-                <span className="flex items-center gap-1">
-                  <FileAudio className="h-3 w-3" />
-                  {formatFileSize(audio.taille_octets)}
-                </span>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => handleDeleteAudio(audio.id)}
-                  className="text-destructive hover:text-destructive"
-                >
-                  Supprimer
-                </Button>
-              </div>
             </CardContent>
           </Card>
         ))}

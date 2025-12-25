@@ -211,6 +211,27 @@ export type Database = {
         }
         Relationships: []
       }
+      documents: {
+        Row: {
+          content: string | null
+          embedding: string | null
+          id: number
+          metadata: Json | null
+        }
+        Insert: {
+          content?: string | null
+          embedding?: string | null
+          id?: number
+          metadata?: Json | null
+        }
+        Update: {
+          content?: string | null
+          embedding?: string | null
+          id?: number
+          metadata?: Json | null
+        }
+        Relationships: []
+      }
       exploration_clicks: {
         Row: {
           action: string
@@ -1761,6 +1782,15 @@ export type Database = {
           }
       is_admin_user: { Args: never; Returns: boolean }
       is_system_initialized: { Args: never; Returns: boolean }
+      match_documents: {
+        Args: { filter?: Json; match_count?: number; query_embedding: string }
+        Returns: {
+          content: string
+          id: number
+          metadata: Json
+          similarity: number
+        }[]
+      }
       migrate_vocabulary_categorization: {
         Args: never
         Returns: {
