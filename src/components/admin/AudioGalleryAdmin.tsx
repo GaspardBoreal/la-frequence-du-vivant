@@ -486,14 +486,14 @@ const AudioGalleryAdmin: React.FC<AudioGalleryAdminProps> = ({ marches }) => {
                   <div>
                     <Label className="text-sm font-medium">Type d'audio</Label>
                     <Select 
-                      value={editingAudioType} 
-                      onValueChange={setEditingAudioType}
+                      value={editingAudioType || 'auto'} 
+                      onValueChange={(val) => setEditingAudioType(val === 'auto' ? '' : val)}
                     >
                       <SelectTrigger className="mt-1">
                         <SelectValue placeholder="Auto-détection (par mots-clés)" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="">Auto-détection (par mots-clés)</SelectItem>
+                        <SelectItem value="auto">🔍 Auto-détection (par mots-clés)</SelectItem>
                         {audioTypes.map(type => (
                           <SelectItem key={type.key} value={type.key}>
                             {type.icon} {type.label}
