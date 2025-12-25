@@ -47,6 +47,7 @@ const AudioGalleryAdmin: React.FC<AudioGalleryAdminProps> = ({ marches }) => {
   const [searchText, setSearchText] = useState('');
   const [selectedMarche, setSelectedMarche] = useState<string>('all');
   const [selectedExploration, setSelectedExploration] = useState<string>('all');
+  const [selectedAudioType, setSelectedAudioType] = useState<string>('all');
   const [showFilters, setShowFilters] = useState(false);
   const [currentPlayingId, setCurrentPlayingId] = useState<string | null>(null);
   const debouncedSearchText = useDebounce(searchText, 300);
@@ -152,6 +153,15 @@ const AudioGalleryAdmin: React.FC<AudioGalleryAdminProps> = ({ marches }) => {
       filtered = filtered.filter(audio => explorationMarcheIds.includes(audio.marche.id));
     }
 
+    // Filtre par type d'audio
+    if (selectedAudioType !== 'all') {
+      if (selectedAudioType === 'none') {
+        filtered = filtered.filter(audio => !(audio as any).type_audio);
+      } else {
+        filtered = filtered.filter(audio => (audio as any).type_audio === selectedAudioType);
+      }
+    }
+
     // Tri
     filtered.sort((a, b) => {
       let aValue: any, bValue: any;
@@ -186,7 +196,7 @@ const AudioGalleryAdmin: React.FC<AudioGalleryAdminProps> = ({ marches }) => {
     });
 
     return filtered;
-  }, [audios, debouncedSearchText, selectedMarche, selectedExploration, explorationMarcheIds, sortField, sortDirection]);
+  }, [audios, debouncedSearchText, selectedMarche, selectedExploration, explorationMarcheIds, selectedAudioType, sortField, sortDirection]);
 
   const handleSort = (field: SortField) => {
     if (sortField === field) {
@@ -335,7 +345,7 @@ const AudioGalleryAdmin: React.FC<AudioGalleryAdminProps> = ({ marches }) => {
 
       {showFilters && (
         <Card className="p-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
             <div>
               <label className="text-sm font-medium text-foreground mb-2 block">Recherche</label>
               <div className="relative">
@@ -377,6 +387,24 @@ const AudioGalleryAdmin: React.FC<AudioGalleryAdminProps> = ({ marches }) => {
                   {explorations.map(exploration => (
                     <SelectItem key={exploration.id} value={exploration.id}>
                       {exploration.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div>
+              <label className="text-sm font-medium text-foreground mb-2 block">Type d'audio</label>
+              <Select value={selectedAudioType} onValueChange={setSelectedAudioType}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Tous les types" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Tous les types</SelectItem>
+                  <SelectItem value="none">🔍 Non classés</SelectItem>
+                  {audioTypes.map(type => (
+                    <SelectItem key={type.key} value={type.key}>
+                      {type.icon} {type.label}
                     </SelectItem>
                   ))}
                 </SelectContent>
