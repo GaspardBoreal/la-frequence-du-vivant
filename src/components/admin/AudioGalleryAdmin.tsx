@@ -55,7 +55,15 @@ const AudioGalleryAdmin: React.FC<AudioGalleryAdminProps> = ({ marches }) => {
   const [editingAudioId, setEditingAudioId] = useState<string | null>(null);
   const [editingTitle, setEditingTitle] = useState('');
   const [editingDescription, setEditingDescription] = useState('');
+  const [editingAudioType, setEditingAudioType] = useState<string>('');
   const [isSaving, setIsSaving] = useState(false);
+
+  // Types d'audio disponibles (spécifiques à l'exploration Dordogne)
+  const audioTypes = [
+    { key: 'gaspard', label: 'Gaspard parle', icon: '🎙️' },
+    { key: 'dordogne', label: 'La Dordogne parle', icon: '🌊' },
+    { key: 'sounds', label: 'Sons captés', icon: '🎵' }
+  ];
 
   const { data: explorations = [] } = useAdminExplorations();
   const [explorationMarcheIds, setExplorationMarcheIds] = useState<string[]>([]);
@@ -207,12 +215,14 @@ const AudioGalleryAdmin: React.FC<AudioGalleryAdminProps> = ({ marches }) => {
     setEditingAudioId(audio.id);
     setEditingTitle(audio.titre || audio.nom_fichier);
     setEditingDescription(audio.description || '');
+    setEditingAudioType((audio as any).type_audio || '');
   };
 
   const handleCancelEdit = () => {
     setEditingAudioId(null);
     setEditingTitle('');
     setEditingDescription('');
+    setEditingAudioType('');
   };
 
   const handleSaveEdit = async (audioId: string) => {
@@ -222,7 +232,8 @@ const AudioGalleryAdmin: React.FC<AudioGalleryAdminProps> = ({ marches }) => {
         .from('marche_audio')
         .update({
           titre: editingTitle,
-          description: editingDescription
+          description: editingDescription,
+          type_audio: editingAudioType || null
         })
         .eq('id', audioId);
       
@@ -231,11 +242,12 @@ const AudioGalleryAdmin: React.FC<AudioGalleryAdminProps> = ({ marches }) => {
       // Mettre à jour l'état local
       setAudios(prev => prev.map(audio => 
         audio.id === audioId 
-          ? { ...audio, titre: editingTitle, description: editingDescription }
+          ? { ...audio, titre: editingTitle, description: editingDescription, type_audio: editingAudioType || null } as any
           : audio
       ));
       
       setEditingAudioId(null);
+      setEditingAudioType('');
       toast.success('Audio modifié avec succès');
     } catch (error) {
       console.error('Erreur modification audio:', error);
@@ -243,6 +255,12 @@ const AudioGalleryAdmin: React.FC<AudioGalleryAdminProps> = ({ marches }) => {
     } finally {
       setIsSaving(false);
     }
+  };
+  
+  // Helper pour obtenir le label du type audio
+  const getAudioTypeLabel = (typeKey: string | null | undefined) => {
+    if (!typeKey) return null;
+    return audioTypes.find(t => t.key === typeKey);
   };
 
   const formatDuration = (seconds: number | null) => {
@@ -402,10 +420,15 @@ const AudioGalleryAdmin: React.FC<AudioGalleryAdminProps> = ({ marches }) => {
                   <CardTitle className="text-lg truncate">
                     {audio.titre || audio.nom_fichier}
                   </CardTitle>
-                  <div className="flex items-center gap-2 mt-1">
+                  <div className="flex items-center gap-2 mt-1 flex-wrap">
                     <Badge variant="secondary" className="text-xs">
                       {audio.marche.ville}
                     </Badge>
+                    {(audio as any).type_audio && (
+                      <Badge variant="outline" className="text-xs">
+                        {getAudioTypeLabel((audio as any).type_audio)?.icon} {getAudioTypeLabel((audio as any).type_audio)?.label}
+                      </Badge>
+                    )}
                     <span className="text-xs text-muted-foreground flex items-center gap-1">
                       <Clock className="h-3 w-3" />
                       <span className={
@@ -459,6 +482,25 @@ const AudioGalleryAdmin: React.FC<AudioGalleryAdminProps> = ({ marches }) => {
                       rows={2}
                       className="mt-1"
                     />
+                  </div>
+                  <div>
+                    <Label className="text-sm font-medium">Type d'audio</Label>
+                    <Select 
+                      value={editingAudioType} 
+                      onValueChange={setEditingAudioType}
+                    >
+                      <SelectTrigger className="mt-1">
+                        <SelectValue placeholder="Auto-détection (par mots-clés)" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="">Auto-détection (par mots-clés)</SelectItem>
+                        {audioTypes.map(type => (
+                          <SelectItem key={type.key} value={type.key}>
+                            {type.icon} {type.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
                   <div className="flex gap-2">
                     <Button 

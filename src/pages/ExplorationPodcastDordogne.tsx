@@ -28,8 +28,14 @@ const PodcastView: React.FC<PodcastViewProps> = ({ explorationSlug, sessionId })
   const { data: exploration } = useExploration(explorationSlug);
   const { data: marches } = useExplorationMarches(exploration?.id || '');
 
-  // Helper function to determine audio type based on title/description
+  // Helper function to determine audio type based on stored type or title/description
   const getAudioType = (audio: any): AudioType => {
+    // Priorité au type stocké en base
+    if (audio.type_audio) {
+      return audio.type_audio as AudioType;
+    }
+    
+    // Fallback: classification par mots-clés
     const title = (audio.titre || audio.nom_fichier || '').toLowerCase();
     const description = (audio.description || '').toLowerCase();
     

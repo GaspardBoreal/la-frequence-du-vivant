@@ -582,6 +582,7 @@ export type Database = {
           transcription_segments: Json | null
           transcription_status: string | null
           transcription_text: string | null
+          type_audio: string | null
           url_originale: string | null
           url_supabase: string
         }
@@ -603,6 +604,7 @@ export type Database = {
           transcription_segments?: Json | null
           transcription_status?: string | null
           transcription_text?: string | null
+          type_audio?: string | null
           url_originale?: string | null
           url_supabase: string
         }
@@ -624,6 +626,7 @@ export type Database = {
           transcription_segments?: Json | null
           transcription_status?: string | null
           transcription_text?: string | null
+          type_audio?: string | null
           url_originale?: string | null
           url_supabase?: string
         }
