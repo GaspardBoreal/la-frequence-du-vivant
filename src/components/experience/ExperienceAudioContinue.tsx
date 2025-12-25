@@ -116,6 +116,11 @@ export default function ExperienceAudioContinue() {
   // Build header tracks with audio type classification
   const headerTracks = useMemo(() => {
     const classify = (t: AudioTrackEnhanced): AudioType => {
+      // Priorité au type stocké en base
+      if (t.type_audio) {
+        return t.type_audio as AudioType;
+      }
+      // Fallback: classification par mots-clés
       const text = `${t.title} ${t.description || ''} ${t.marcheName || ''}`.toLowerCase();
       if (text.includes('dordogne')) return 'dordogne';
       if (text.includes('gaspard') || text.includes('parle')) return 'gaspard';

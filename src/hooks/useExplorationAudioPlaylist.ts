@@ -9,6 +9,7 @@ export interface AudioTrackEnhanced extends ExplorationAudioTrack {
   audioIndex: number;
   totalTracksInMarche: number;
   globalIndex: number;
+  type_audio?: string | null;
 }
 
 export const useExplorationAudioPlaylist = (explorationId: string) => {
@@ -39,7 +40,8 @@ export const useExplorationAudioPlaylist = (explorationId: string) => {
               marcheIndex,
               audioIndex,
               totalTracksInMarche: sortedAudio.length,
-              globalIndex: globalIndex++
+              globalIndex: globalIndex++,
+              type_audio: (audio as any).type_audio || null
             });
           });
         }
