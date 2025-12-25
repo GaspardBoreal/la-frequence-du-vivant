@@ -32,6 +32,9 @@ interface PodcastNavigationHeaderProps {
   onPrevious?: () => void;
   onNext?: () => void;
   slug?: string;
+  // New props for lifted state
+  selectedAudioType?: AudioType | 'all';
+  onAudioTypeChange?: (type: AudioType | 'all') => void;
 }
 
 const PodcastNavigationHeader: React.FC<PodcastNavigationHeaderProps> = ({ 
@@ -42,11 +45,12 @@ const PodcastNavigationHeader: React.FC<PodcastNavigationHeaderProps> = ({
   onTrackSelect,
   onPrevious,
   onNext,
-  slug
+  slug,
+  selectedAudioType = 'all',
+  onAudioTypeChange
 }) => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [selectedAudioType, setSelectedAudioType] = useState<AudioType | 'all'>('all');
   const [appearanceMode, setAppearanceMode] = useState<AppearanceMode>(() => {
     if (typeof window !== 'undefined') {
       const saved = localStorage.getItem('appearanceMode') as AppearanceMode;
@@ -103,21 +107,15 @@ const PodcastNavigationHeader: React.FC<PodcastNavigationHeaderProps> = ({
   // Get available audio types from tracks
   const availableTypes = Array.from(new Set(tracks.map(t => t.type).filter(Boolean))) as AudioType[];
 
-  // Filter tracks based on selected type
+  // Filter tracks based on selected type (for display count)
   const filteredTracks = selectedAudioType === 'all' 
     ? tracks 
     : tracks.filter(t => t.type === selectedAudioType);
 
   const handleTypeSelect = (type: AudioType | 'all') => {
-    setSelectedAudioType(type);
-    // Reset to first track of the new type
-    if (onTrackSelect && filteredTracks.length > 0) {
-      const firstTrackIndex = tracks.findIndex(t => 
-        type === 'all' ? true : t.type === type
-      );
-      if (firstTrackIndex >= 0) {
-        onTrackSelect(firstTrackIndex);
-      }
+    // Use lifted state handler if provided
+    if (onAudioTypeChange) {
+      onAudioTypeChange(type);
     }
   };
 
