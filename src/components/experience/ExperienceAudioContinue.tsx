@@ -101,6 +101,7 @@ export default function ExperienceAudioContinue() {
   const [currentTrackIndex, setCurrentTrackIndex] = useState(0);
   const [showPlaylist, setShowPlaylist] = useState(false);
   const [playMode, setPlayMode] = useState<'order' | 'shuffle' | 'repeat'>('order');
+  const [selectedAudioType, setSelectedAudioType] = useState<AudioType | 'all'>('all');
 
   // Find Audio Page content - try both 'audio' and 'Audio' types
   const audioPage = pages?.find(page => 
@@ -108,31 +109,44 @@ export default function ExperienceAudioContinue() {
   );
   const audioPageText = audioPage?.description || '';
 
-  // Current track logic
+  // Classification function for audio type
+  const classifyTrack = useCallback((t: AudioTrackEnhanced): AudioType => {
+    // Priorité au type stocké en base
+    if (t.type_audio) {
+      return t.type_audio as AudioType;
+    }
+    // Fallback: classification par mots-clés
+    const text = `${t.title} ${t.description || ''} ${t.marcheName || ''}`.toLowerCase();
+    if (text.includes('dordogne')) return 'dordogne';
+    if (text.includes('gaspard') || text.includes('parle')) return 'gaspard';
+    return 'sounds';
+  }, []);
+
+  // Filtered playlist based on selected audio type
+  const filteredPlaylist = useMemo(() => {
+    if (selectedAudioType === 'all') return audioPlaylist;
+    return audioPlaylist.filter(track => classifyTrack(track) === selectedAudioType);
+  }, [audioPlaylist, selectedAudioType, classifyTrack]);
+
+  // Current track logic - based on filtered playlist
   const currentTrack = audioPlaylist[currentTrackIndex];
-  const canGoNext = currentTrackIndex < audioPlaylist.length - 1;
-  const canGoPrevious = currentTrackIndex > 0;
+  const currentFilteredIndex = useMemo(() => {
+    if (!currentTrack) return -1;
+    return filteredPlaylist.findIndex(t => t.id === currentTrack.id);
+  }, [filteredPlaylist, currentTrack]);
+  
+  const canGoNext = currentFilteredIndex < filteredPlaylist.length - 1 && currentFilteredIndex >= 0;
+  const canGoPrevious = currentFilteredIndex > 0;
 
   // Build header tracks with audio type classification
   const headerTracks = useMemo(() => {
-    const classify = (t: AudioTrackEnhanced): AudioType => {
-      // Priorité au type stocké en base
-      if (t.type_audio) {
-        return t.type_audio as AudioType;
-      }
-      // Fallback: classification par mots-clés
-      const text = `${t.title} ${t.description || ''} ${t.marcheName || ''}`.toLowerCase();
-      if (text.includes('dordogne')) return 'dordogne';
-      if (text.includes('gaspard') || text.includes('parle')) return 'gaspard';
-      return 'sounds';
-    };
     return audioPlaylist.map(t => ({
       id: t.id,
       title: t.title,
       marche: t.marcheName,
-      type: classify(t)
+      type: classifyTrack(t)
     }));
-  }, [audioPlaylist]);
+  }, [audioPlaylist, classifyTrack]);
 
   // Auto-advance to next track when current ends
   useEffect(() => {
@@ -170,26 +184,46 @@ export default function ExperienceAudioContinue() {
   }, [currentTrack, currentRecording, isPlaying, pause, playRecording]);
 
   const handleNextTrack = useCallback(() => {
-    if (canGoNext) {
-      const nextIndex = currentTrackIndex + 1;
-      setCurrentTrackIndex(nextIndex);
-      const nextTrack = audioPlaylist[nextIndex];
-      if (nextTrack) {
-        playRecording(trackToXenoCantoRecording(nextTrack));
+    if (canGoNext && currentFilteredIndex >= 0) {
+      // Get next track from filtered playlist
+      const nextFilteredTrack = filteredPlaylist[currentFilteredIndex + 1];
+      if (nextFilteredTrack) {
+        // Find global index for state management
+        const nextGlobalIndex = audioPlaylist.findIndex(t => t.id === nextFilteredTrack.id);
+        setCurrentTrackIndex(nextGlobalIndex);
+        playRecording(trackToXenoCantoRecording(nextFilteredTrack));
       }
     }
-  }, [currentTrackIndex, canGoNext, audioPlaylist, playRecording]);
+  }, [currentFilteredIndex, canGoNext, filteredPlaylist, audioPlaylist, playRecording]);
 
   const handlePreviousTrack = useCallback(() => {
-    if (canGoPrevious) {
-      const prevIndex = currentTrackIndex - 1;
-      setCurrentTrackIndex(prevIndex);
-      const prevTrack = audioPlaylist[prevIndex];
-      if (prevTrack) {
-        playRecording(trackToXenoCantoRecording(prevTrack));
+    if (canGoPrevious && currentFilteredIndex > 0) {
+      // Get previous track from filtered playlist
+      const prevFilteredTrack = filteredPlaylist[currentFilteredIndex - 1];
+      if (prevFilteredTrack) {
+        // Find global index for state management
+        const prevGlobalIndex = audioPlaylist.findIndex(t => t.id === prevFilteredTrack.id);
+        setCurrentTrackIndex(prevGlobalIndex);
+        playRecording(trackToXenoCantoRecording(prevFilteredTrack));
       }
     }
-  }, [currentTrackIndex, canGoPrevious, audioPlaylist, playRecording]);
+  }, [currentFilteredIndex, canGoPrevious, filteredPlaylist, audioPlaylist, playRecording]);
+
+  // Handle audio type change - reset to first track of that type
+  const handleAudioTypeChange = useCallback((type: AudioType | 'all') => {
+    setSelectedAudioType(type);
+    // Find first track of the new type
+    const newFilteredPlaylist = type === 'all' 
+      ? audioPlaylist 
+      : audioPlaylist.filter(track => classifyTrack(track) === type);
+    
+    if (newFilteredPlaylist.length > 0) {
+      const firstTrack = newFilteredPlaylist[0];
+      const globalIndex = audioPlaylist.findIndex(t => t.id === firstTrack.id);
+      setCurrentTrackIndex(globalIndex);
+      playRecording(trackToXenoCantoRecording(firstTrack));
+    }
+  }, [audioPlaylist, classifyTrack, playRecording]);
 
   const handleVolumeChange = useCallback((newVolume: number[]) => {
     setVolume(newVolume[0]);
@@ -308,13 +342,15 @@ export default function ExperienceAudioContinue() {
           {/* Header */}
           <PodcastNavigationHeader
             explorationName={exploration.name}
-            currentTrackIndex={currentTrackIndex}
-            totalTracks={totalTracks}
+            currentTrackIndex={currentFilteredIndex >= 0 ? currentFilteredIndex : 0}
+            totalTracks={filteredPlaylist.length}
             tracks={headerTracks}
             onTrackSelect={handleTrackSelect}
             onPrevious={handlePreviousTrack}
             onNext={handleNextTrack}
             slug={slug}
+            selectedAudioType={selectedAudioType}
+            onAudioTypeChange={handleAudioTypeChange}
           />
 
           <div className="max-w-5xl mx-auto mt-6">
@@ -354,7 +390,7 @@ export default function ExperienceAudioContinue() {
                               </Badge>
                             )}
                             <Badge variant="outline" className="text-xs">
-                              Piste {currentTrackIndex + 1}/{totalTracks}
+                              Piste {currentFilteredIndex >= 0 ? currentFilteredIndex + 1 : 1}/{filteredPlaylist.length}
                             </Badge>
                           </div>
                         </div>
