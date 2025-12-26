@@ -127,17 +127,14 @@ export default function ExperienceLectureOptimisee() {
   }, [texts, selectedTextType]);
 
   // Find current text index from URL parameter
+  // Keep filter on "all" to allow chronological navigation through all texts
   useEffect(() => {
     if (textId && texts.length > 0) {
       const textIndex = texts.findIndex(t => t.id === textId);
       if (textIndex >= 0) {
-        const text = texts[textIndex];
-        setSelectedTextType(text.type_texte);
-        // Find the index in filtered texts
-        const filteredIndex = texts.filter(t => t.type_texte === text.type_texte).findIndex(t => t.id === textId);
-        if (filteredIndex >= 0) {
-          setCurrentIndex(filteredIndex);
-        }
+        // Don't force filter by type - keep "all" to allow chronological navigation
+        setSelectedTextType('all');
+        setCurrentIndex(textIndex);
       }
     }
   }, [textId, texts]);
