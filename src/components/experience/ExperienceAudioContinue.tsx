@@ -102,6 +102,10 @@ export default function ExperienceAudioContinue() {
   const [showPlaylist, setShowPlaylist] = useState(false);
   const [playMode, setPlayMode] = useState<'order' | 'shuffle' | 'repeat'>('order');
   const [selectedAudioType, setSelectedAudioType] = useState<AudioType | 'all'>('all');
+  
+  // Deep link modal state
+  const [pendingAudioId, setPendingAudioId] = useState<string | null>(null);
+  const [showDeepLinkModal, setShowDeepLinkModal] = useState(false);
 
   // Find Audio Page content - try both 'audio' and 'Audio' types
   const audioPage = pages?.find(page => 
@@ -197,8 +201,8 @@ export default function ExperienceAudioContinue() {
       const trackIndex = audioPlaylist.findIndex(t => t.id === audioId);
       if (trackIndex >= 0) {
         setCurrentTrackIndex(trackIndex);
-        const track = audioPlaylist[trackIndex];
-        playRecording(trackToXenoCantoRecording(track));
+        setPendingAudioId(audioId);
+        setShowDeepLinkModal(true); // Show modal instead of auto-playing
         
         // Clean up URL
         const cleanUrl = new URL(window.location.href);
@@ -215,7 +219,16 @@ export default function ExperienceAudioContinue() {
         setCurrentTrackIndex(0);
       }
     }
-  }, [audioPlaylist, currentRecording, playRecording]);
+  }, [audioPlaylist, currentRecording]);
+
+  // Handler to start shared audio on user click
+  const handleStartSharedAudio = useCallback(() => {
+    if (pendingAudioId && currentTrack) {
+      playRecording(trackToXenoCantoRecording(currentTrack));
+      setShowDeepLinkModal(false);
+      setPendingAudioId(null);
+    }
+  }, [pendingAudioId, currentTrack, playRecording]);
 
   const handlePlayPause = useCallback(() => {
     if (!currentTrack) return;
@@ -355,6 +368,49 @@ export default function ExperienceAudioContinue() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:bg-gradient-to-br dark:from-emerald-950 dark:via-emerald-900 dark:to-emerald-800 dordogne-experience">
+      
+      {/* Deep Link Welcome Modal */}
+      <AnimatePresence>
+        {showDeepLinkModal && currentTrack && (
+          <motion.div 
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+          >
+            <motion.div 
+              className="bg-white dark:bg-emerald-900 rounded-2xl p-8 max-w-md mx-4 text-center space-y-6 shadow-2xl border border-slate-200 dark:border-accent/30"
+              initial={{ scale: 0.9, y: 20 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.9, y: 20 }}
+            >
+              <div className="w-20 h-20 mx-auto rounded-full bg-accent/20 flex items-center justify-center">
+                <Waves className="h-10 w-10 text-accent animate-pulse" />
+              </div>
+              
+              <div className="space-y-2">
+                <p className="text-sm text-muted-foreground">On vous a partagé cet audio</p>
+                <h3 className="text-xl font-bold text-emerald-900 dark:text-accent">{currentTrack.title}</h3>
+                {currentTrack.marcheName && (
+                  <Badge variant="outline" className="mt-2">
+                    <MapPin className="h-3 w-3 mr-1" />
+                    {currentTrack.marcheName}
+                  </Badge>
+                )}
+              </div>
+              
+              <Button 
+                size="lg" 
+                onClick={handleStartSharedAudio}
+                className="w-full bg-accent hover:bg-accent/90 text-white gap-2"
+              >
+                <Play className="h-5 w-5" />
+                Lancer l'écoute
+              </Button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
       {/* Background Effects */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
         <div className="absolute inset-0 hidden dark:block bg-gradient-to-br from-emerald-950/30 via-emerald-900/20 to-emerald-800/10" />
