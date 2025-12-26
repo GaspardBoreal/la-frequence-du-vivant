@@ -19,6 +19,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from '@/components/ui/tooltip';
 import { useToast } from '@/hooks/use-toast';
 import AudioTypeSelector, { AudioType } from '@/components/audio/AudioTypeSelector';
 import NavigationAudio from '@/components/audio/NavigationAudio';
@@ -65,6 +66,8 @@ interface PodcastNavigationHeaderProps {
   // Playlist duration props
   totalDurationSeconds?: number;
   remainingDurationSeconds?: number;
+  // Current audio ID for share link
+  currentTrackId?: string;
 }
 
 const PodcastNavigationHeader: React.FC<PodcastNavigationHeaderProps> = ({ 
@@ -79,7 +82,8 @@ const PodcastNavigationHeader: React.FC<PodcastNavigationHeaderProps> = ({
   selectedAudioType = 'all',
   onAudioTypeChange,
   totalDurationSeconds = 0,
-  remainingDurationSeconds = 0
+  remainingDurationSeconds = 0,
+  currentTrackId
 }) => {
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -121,17 +125,24 @@ const PodcastNavigationHeader: React.FC<PodcastNavigationHeaderProps> = ({
   };
 
   const handleShare = async () => {
+    // Build URL with audio ID if available
+    const shareUrl = new URL(window.location.href);
+    if (currentTrackId) {
+      shareUrl.searchParams.set('audio', currentTrackId);
+    }
+    const urlToShare = shareUrl.toString();
+    
     try {
       await navigator.share({
         title: explorationName || 'Écoute Contemplative',
-        url: window.location.href,
+        url: urlToShare,
       });
     } catch (error) {
       // Fallback: copy to clipboard
-      navigator.clipboard.writeText(window.location.href);
+      navigator.clipboard.writeText(urlToShare);
       toast({ 
         title: "Lien copié", 
-        description: "Le lien a été copié dans le presse-papiers" 
+        description: "Le lien vers cet audio a été copié" 
       });
     }
   };
@@ -277,14 +288,23 @@ const PodcastNavigationHeader: React.FC<PodcastNavigationHeaderProps> = ({
           </div>
 
           {/* Right: Share only (most important action) */}
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={handleShare}
-            className="h-8 w-8 p-0 shrink-0 text-slate-800 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-emerald-800/20"
-          >
-            <Share2 className="h-3.5 w-3.5" />
-          </Button>
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleShare}
+                  className="h-8 w-8 p-0 shrink-0 text-slate-800 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-emerald-800/20"
+                >
+                  <Share2 className="h-3.5 w-3.5" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="bottom">
+                <p>Copier pour partager</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
         </div>
 
         {/* ========== TABLET LAYOUT (640px - 1024px) ========== */}
@@ -364,14 +384,23 @@ const PodcastNavigationHeader: React.FC<PodcastNavigationHeaderProps> = ({
               <AppearanceDropdownContent />
             </DropdownMenu>
             
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleShare}
-              className="h-8 w-8 p-0 text-slate-800 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-emerald-800/20"
-            >
-              <Share2 className="h-3.5 w-3.5" />
-            </Button>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={handleShare}
+                    className="h-8 w-8 p-0 text-slate-800 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-emerald-800/20"
+                  >
+                    <Share2 className="h-3.5 w-3.5" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="bottom">
+                  <p>Copier pour partager</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           </div>
         </div>
 
@@ -454,14 +483,23 @@ const PodcastNavigationHeader: React.FC<PodcastNavigationHeaderProps> = ({
               <Bookmark className="h-3.5 w-3.5" />
             </Button>
             
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleShare}
-              className="h-8 gap-1.5 text-slate-800 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-emerald-800/20 hover:text-slate-900 dark:hover:text-emerald-100"
-            >
-              <Share2 className="h-3.5 w-3.5" />
-            </Button>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={handleShare}
+                    className="h-8 gap-1.5 text-slate-800 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-emerald-800/20 hover:text-slate-900 dark:hover:text-emerald-100"
+                  >
+                    <Share2 className="h-3.5 w-3.5" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="bottom">
+                  <p>Copier pour partager</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           </div>
         </div>
       </div>

@@ -185,15 +185,37 @@ export default function ExperienceAudioContinue() {
     return () => audio.removeEventListener('ended', handleEnded);
   }, [audioRef, canGoNext, currentTrackIndex]);
 
-  // Initialize first track
+  // Initialize first track or handle deep link to specific audio
   useEffect(() => {
-    if (audioPlaylist.length > 0 && !currentRecording) {
+    if (audioPlaylist.length === 0) return;
+    
+    // Check for audio deep link parameter
+    const urlParams = new URLSearchParams(window.location.search);
+    const audioId = urlParams.get('audio');
+    
+    if (audioId) {
+      const trackIndex = audioPlaylist.findIndex(t => t.id === audioId);
+      if (trackIndex >= 0) {
+        setCurrentTrackIndex(trackIndex);
+        const track = audioPlaylist[trackIndex];
+        playRecording(trackToXenoCantoRecording(track));
+        
+        // Clean up URL
+        const cleanUrl = new URL(window.location.href);
+        cleanUrl.searchParams.delete('audio');
+        window.history.replaceState(null, '', cleanUrl.toString());
+        return;
+      }
+    }
+    
+    // Default: initialize first track if no recording is playing
+    if (!currentRecording) {
       const firstTrack = audioPlaylist[0];
       if (firstTrack) {
         setCurrentTrackIndex(0);
       }
     }
-  }, [audioPlaylist, currentRecording]);
+  }, [audioPlaylist, currentRecording, playRecording]);
 
   const handlePlayPause = useCallback(() => {
     if (!currentTrack) return;
@@ -375,6 +397,7 @@ export default function ExperienceAudioContinue() {
             onAudioTypeChange={handleAudioTypeChange}
             totalDurationSeconds={totalDurationSeconds}
             remainingDurationSeconds={remainingDurationSeconds}
+            currentTrackId={currentTrack?.id}
           />
 
           <div className="max-w-5xl mx-auto mt-6">
