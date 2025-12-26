@@ -72,6 +72,7 @@ const PodcastView: React.FC<PodcastViewProps> = ({ explorationSlug, sessionId })
         description: audio.description || `Capture sonore lors de la marche à ${marchData.marche?.ville}`,
         location: marchData.marche?.ville || 'Localisation inconnue',
         duration: audio.duree_secondes ? formatDuration(audio.duree_secondes) : '0:00',
+        durationSeconds: audio.duree_secondes || 0,
         species: '',
         type: getAudioType(audio)
       }));
@@ -87,7 +88,9 @@ const PodcastView: React.FC<PodcastViewProps> = ({ explorationSlug, sessionId })
     currentIndex,
     playIndex,
     prev,
-    next
+    next,
+    totalDurationSeconds,
+    remainingDurationSeconds
   } = useAudioPlaylist(tracks, 'order');
 
   if (!exploration) {
@@ -125,6 +128,8 @@ const PodcastView: React.FC<PodcastViewProps> = ({ explorationSlug, sessionId })
         onPrevious={prev}
         onNext={next}
         slug="remontee-dordogne-atlas-eaux-vivantes-2050-2100"
+        totalDurationSeconds={totalDurationSeconds}
+        remainingDurationSeconds={remainingDurationSeconds}
       />
       
       {/* Living Waters Background */}
