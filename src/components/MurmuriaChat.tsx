@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useMurmuriaChat, MurmuriaMessage } from '@/hooks/useMurmuriaChat';
 import { useIsMobile } from '@/hooks/use-mobile';
+import ReactMarkdown from 'react-markdown';
 
 interface MurmuriaProps {
   isOpen: boolean;
@@ -28,7 +29,40 @@ const MessageBubble: React.FC<{ message: MurmuriaMessage }> = ({ message }) => {
             : 'bg-cyan-900/40 text-cyan-50 border border-cyan-700/30 rounded-bl-sm'
         }`}
       >
-        <p className="text-sm leading-relaxed whitespace-pre-wrap">{message.content}</p>
+        {isUser ? (
+          <p className="text-sm leading-relaxed whitespace-pre-wrap">{message.content}</p>
+        ) : (
+          <div className="text-sm leading-relaxed">
+            <ReactMarkdown
+              components={{
+                p: ({ children }) => <p className="mb-2 last:mb-0">{children}</p>,
+                strong: ({ children }) => <strong className="text-cyan-200 font-semibold">{children}</strong>,
+                em: ({ children }) => <em className="text-cyan-300 italic">{children}</em>,
+                ul: ({ children }) => <ul className="list-disc list-inside space-y-1 my-2 ml-1">{children}</ul>,
+                ol: ({ children }) => <ol className="list-decimal list-inside space-y-1 my-2 ml-1">{children}</ol>,
+                li: ({ children }) => <li className="text-cyan-100">{children}</li>,
+                a: ({ href, children }) => (
+                  <a href={href} className="text-cyan-400 hover:text-cyan-300 underline" target="_blank" rel="noopener noreferrer">
+                    {children}
+                  </a>
+                ),
+                code: ({ children }) => (
+                  <code className="bg-cyan-800/50 px-1.5 py-0.5 rounded text-cyan-200 text-xs">{children}</code>
+                ),
+                h1: ({ children }) => <h1 className="text-lg font-bold text-cyan-100 mb-2">{children}</h1>,
+                h2: ({ children }) => <h2 className="text-base font-semibold text-cyan-100 mb-2">{children}</h2>,
+                h3: ({ children }) => <h3 className="text-sm font-semibold text-cyan-200 mb-1">{children}</h3>,
+                blockquote: ({ children }) => (
+                  <blockquote className="border-l-2 border-cyan-500/50 pl-3 my-2 italic text-cyan-300/90">
+                    {children}
+                  </blockquote>
+                ),
+              }}
+            >
+              {message.content}
+            </ReactMarkdown>
+          </div>
+        )}
       </div>
     </motion.div>
   );
