@@ -140,6 +140,14 @@ export default function ExperienceAudioContinue() {
     if (!currentTrack) return -1;
     return filteredPlaylist.findIndex(t => t.id === currentTrack.id);
   }, [filteredPlaylist, currentTrack]);
+
+  // Smart duration: use database duration as fallback when player hasn't loaded yet
+  const currentTrackDuration = useMemo(() => {
+    return currentTrack?.duration || 0;
+  }, [currentTrack]);
+
+  // Display duration: prefer player duration if available, else use database duration
+  const displayDuration = duration > 0 ? duration : currentTrackDuration;
   
   // Calculate remaining duration (must be after currentTrack definition)
   const remainingDurationSeconds = useMemo(() => {
@@ -429,7 +437,7 @@ export default function ExperienceAudioContinue() {
                     <Slider
                       value={[currentTime]}
                       onValueChange={handleProgressChange}
-                      max={duration || 1}
+                      max={displayDuration || 1}
                       step={1}
                       className="w-full"
                     />
@@ -437,7 +445,7 @@ export default function ExperienceAudioContinue() {
                       <span>{formatTime(currentTime)}</span>
                       <span className="flex items-center gap-1">
                         <Clock className="h-3 w-3" />
-                        {formatTime(duration)}
+                        {formatTime(displayDuration)}
                       </span>
                     </div>
                   </div>

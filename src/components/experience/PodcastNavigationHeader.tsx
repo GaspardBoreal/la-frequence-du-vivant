@@ -256,8 +256,8 @@ const PodcastNavigationHeader: React.FC<PodcastNavigationHeaderProps> = ({
               </DropdownMenu>
             )}
 
-            {/* Compact duration badge */}
-            {totalDurationSeconds > 0 && (
+            {/* Compact duration badge (only show if duration is known) */}
+            {remainingDurationSeconds > 0 && (
               <div className="flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-slate-100 dark:bg-emerald-900/30 text-[10px] text-slate-600 dark:text-emerald-300 whitespace-nowrap">
                 <Clock className="h-2.5 w-2.5" />
                 <span>{formatCompactDuration(remainingDurationSeconds)}</span>
@@ -338,8 +338,8 @@ const PodcastNavigationHeader: React.FC<PodcastNavigationHeaderProps> = ({
               />
             )}
 
-            {/* Duration badge - simplified */}
-            {totalDurationSeconds > 0 && (
+            {/* Duration badge - simplified (only show if duration is known) */}
+            {remainingDurationSeconds > 0 && (
               <div className="flex items-center gap-1 px-2 py-1 rounded-full bg-slate-100 dark:bg-emerald-900/30 text-xs whitespace-nowrap">
                 <Clock className="h-3 w-3 text-slate-500 dark:text-emerald-400" />
                 <span className="text-slate-600 dark:text-emerald-300">
@@ -420,8 +420,8 @@ const PodcastNavigationHeader: React.FC<PodcastNavigationHeaderProps> = ({
               />
             )}
 
-            {/* Desktop: Playlist duration indicator */}
-            {totalDurationSeconds > 0 && (
+            {/* Desktop: Playlist duration indicator (only show if duration is known) */}
+            {remainingDurationSeconds > 0 && (
               <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-emerald-900/30 text-sm">
                 <Clock className="h-4 w-4 text-slate-500 dark:text-emerald-400" />
                 <div className="flex items-center gap-1.5 text-slate-600 dark:text-emerald-300">
