@@ -6,6 +6,7 @@ import { motion } from 'framer-motion';
 import SEOHead from '@/components/SEOHead';
 import GalerieFleuve from '@/components/GalerieFleuve';
 import GalerieFleuveWelcome from '@/components/GalerieFleuveWelcome';
+import MurmuriaFloatingButton from '@/components/MurmuriaFloatingButton';
 import { useExplorationBySlug, useExplorationMarchesByStatus } from '@/hooks/useExplorations';
 import { MarcheTechnoSensible } from '@/types';
 import { generateRegionalThemes } from '@/utils/regionalThemes';
@@ -139,6 +140,9 @@ const GalerieFluveExplorationLecteurs: React.FC = () => {
             explorationSlug={exploration.slug}
           />
         </motion.div>
+
+        {/* Bouton flottant Murmuria - accessible sur toutes les vues */}
+        <MurmuriaFloatingButton />
       </div>
     </>
   );
