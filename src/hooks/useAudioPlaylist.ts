@@ -13,6 +13,7 @@ export interface Track {
   description?: string;
   location?: string;
   duration?: string;
+  durationSeconds?: number;
   species?: string | null;
 }
 
@@ -87,6 +88,19 @@ export const useAudioPlaylist = (tracks: Track[], initialMode: PlayMode = 'order
     return () => audio.removeEventListener('ended', onEnded);
   }, [audioRef, next]);
 
+  // Playlist duration metrics
+  const totalDurationSeconds = useMemo(() => 
+    list.reduce((sum, t) => sum + (t.durationSeconds || 0), 0), 
+    [list]
+  );
+
+  const elapsedDurationSeconds = useMemo(() => 
+    list.slice(0, currentIndex).reduce((sum, t) => sum + (t.durationSeconds || 0), 0),
+    [list, currentIndex]
+  );
+
+  const remainingDurationSeconds = totalDurationSeconds - elapsedDurationSeconds;
+
   return {
     mode,
     setMode,
@@ -94,6 +108,9 @@ export const useAudioPlaylist = (tracks: Track[], initialMode: PlayMode = 'order
     currentIndex,
     currentTrack,
     isPlaying,
+    totalDurationSeconds,
+    elapsedDurationSeconds,
+    remainingDurationSeconds,
     play,
     pause,
     toggle: async () => (isPlaying ? pause() : play()),

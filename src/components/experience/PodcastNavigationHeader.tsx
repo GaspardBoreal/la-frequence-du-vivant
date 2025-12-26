@@ -8,7 +8,8 @@ import {
   Share2,
   Monitor,
   Sun,
-  Moon
+  Moon,
+  Clock
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -23,6 +24,19 @@ import NavigationAudio from '@/components/audio/NavigationAudio';
 
 type AppearanceMode = 'light' | 'dark' | 'system';
 
+// Format duration in human-readable format
+const formatPlaylistDuration = (seconds: number): string => {
+  if (seconds <= 0) return '0:00';
+  const hours = Math.floor(seconds / 3600);
+  const mins = Math.floor((seconds % 3600) / 60);
+  const secs = Math.floor(seconds % 60);
+  
+  if (hours > 0) {
+    return `${hours}h ${mins.toString().padStart(2, '0')}min`;
+  }
+  return `${mins}:${secs.toString().padStart(2, '0')}`;
+};
+
 interface PodcastNavigationHeaderProps {
   explorationName?: string;
   currentTrackIndex?: number;
@@ -35,6 +49,9 @@ interface PodcastNavigationHeaderProps {
   // New props for lifted state
   selectedAudioType?: AudioType | 'all';
   onAudioTypeChange?: (type: AudioType | 'all') => void;
+  // Playlist duration props
+  totalDurationSeconds?: number;
+  remainingDurationSeconds?: number;
 }
 
 const PodcastNavigationHeader: React.FC<PodcastNavigationHeaderProps> = ({ 
@@ -47,7 +64,9 @@ const PodcastNavigationHeader: React.FC<PodcastNavigationHeaderProps> = ({
   onNext,
   slug,
   selectedAudioType = 'all',
-  onAudioTypeChange
+  onAudioTypeChange,
+  totalDurationSeconds = 0,
+  remainingDurationSeconds = 0
 }) => {
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -143,6 +162,13 @@ const PodcastNavigationHeader: React.FC<PodcastNavigationHeaderProps> = ({
                 availableTypes={availableTypes}
                 onTypeSelect={handleTypeSelect}
               />
+            )}
+            {/* Mobile: Compact remaining time badge */}
+            {totalDurationSeconds > 0 && (
+              <div className="flex items-center gap-1 px-2 py-1 rounded-full bg-slate-100 dark:bg-emerald-900/30 text-xs text-slate-600 dark:text-emerald-300">
+                <Clock className="h-3 w-3" />
+                <span>{formatPlaylistDuration(remainingDurationSeconds)}</span>
+              </div>
             )}
             {onPrevious && onNext && (
               <NavigationAudio
@@ -260,6 +286,19 @@ const PodcastNavigationHeader: React.FC<PodcastNavigationHeaderProps> = ({
                 onPrevious={onPrevious}
                 onNext={onNext}
               />
+            )}
+
+            {/* Desktop: Playlist duration indicator */}
+            {totalDurationSeconds > 0 && (
+              <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-emerald-900/30 text-sm">
+                <Clock className="h-4 w-4 text-slate-500 dark:text-emerald-400" />
+                <div className="flex items-center gap-1.5 text-slate-600 dark:text-emerald-300">
+                  <span className="font-medium">{formatPlaylistDuration(remainingDurationSeconds)}</span>
+                  <span className="text-slate-400 dark:text-emerald-500">restant</span>
+                  <span className="text-slate-300 dark:text-emerald-600 mx-1">•</span>
+                  <span className="text-slate-500 dark:text-emerald-400">{formatPlaylistDuration(totalDurationSeconds)} total</span>
+                </div>
+              </div>
             )}
           </div>
 
