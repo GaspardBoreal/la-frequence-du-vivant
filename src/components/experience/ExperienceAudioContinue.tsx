@@ -128,6 +128,12 @@ export default function ExperienceAudioContinue() {
     return audioPlaylist.filter(track => classifyTrack(track) === selectedAudioType);
   }, [audioPlaylist, selectedAudioType, classifyTrack]);
 
+  // Calculate total duration for the filtered playlist
+  const totalDurationSeconds = useMemo(() => 
+    filteredPlaylist.reduce((sum, t) => sum + (t.duration || 0), 0), 
+    [filteredPlaylist]
+  );
+
   // Current track logic - based on filtered playlist
   const currentTrack = audioPlaylist[currentTrackIndex];
   const currentFilteredIndex = useMemo(() => {
@@ -135,6 +141,14 @@ export default function ExperienceAudioContinue() {
     return filteredPlaylist.findIndex(t => t.id === currentTrack.id);
   }, [filteredPlaylist, currentTrack]);
   
+  // Calculate remaining duration (must be after currentTrack definition)
+  const remainingDurationSeconds = useMemo(() => {
+    if (currentFilteredIndex < 0) return totalDurationSeconds;
+    return filteredPlaylist
+      .slice(currentFilteredIndex)
+      .reduce((sum, t) => sum + (t.duration || 0), 0);
+  }, [filteredPlaylist, currentFilteredIndex, totalDurationSeconds]);
+
   const canGoNext = currentFilteredIndex < filteredPlaylist.length - 1 && currentFilteredIndex >= 0;
   const canGoPrevious = currentFilteredIndex > 0;
 
@@ -351,6 +365,8 @@ export default function ExperienceAudioContinue() {
             slug={slug}
             selectedAudioType={selectedAudioType}
             onAudioTypeChange={handleAudioTypeChange}
+            totalDurationSeconds={totalDurationSeconds}
+            remainingDurationSeconds={remainingDurationSeconds}
           />
 
           <div className="max-w-5xl mx-auto mt-6">
