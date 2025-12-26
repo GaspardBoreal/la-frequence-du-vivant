@@ -45,6 +45,7 @@ import ExplorationPrefigurer from './pages/ExplorationPrefigurer';
 import ExplorationImports from './pages/ExplorationImports';
 import AtlasClimatique from './pages/AtlasClimatique';
 import ExportationsAdmin from './pages/ExportationsAdmin';
+import ExplorationLayout from './layouts/ExplorationLayout';
 
 function App() {
   return (
@@ -64,14 +65,23 @@ function App() {
             {/* Routes explorations */}
             <Route path="/explorations" element={<ExplorationsList />} />
             <Route path="/galerie-fleuve" element={<GalerieFleuvePage />} />
-            <Route path="/galerie-fleuve/exploration/:slug" element={<GalerieFluveExploration />} />
-            <Route path="/lecteurs/exploration/:slug" element={<GalerieFluveExplorationLecteurs />} />
-            <Route path="/galerie-fleuve/exploration/:slug/ecouter" element={<ExperienceAudioContinue />} />
-            <Route path="/galerie-fleuve/exploration/:slug/lire" element={<ExperienceLectureOptimisee />} />
-            <Route path="/galerie-fleuve/exploration/:slug/lire/:textId" element={<ExperienceLectureOptimisee />} />
-            <Route path="/galerie-fleuve/exploration/:slug/prefigurer" element={<ExplorationPrefigurer />} />
-            <Route path="/galerie-fleuve/exploration/:slug/historique" element={<ExplorationHistorique />} />
-            <Route path="/galerie-fleuve/exploration/:slug/essais" element={<ExplorationEssais />} />
+            
+            {/* Routes avec ExplorationLayout (Murmuria intégré pour l'exploration Dordogne) */}
+            <Route path="/galerie-fleuve/exploration/:slug" element={<ExplorationLayout />}>
+              <Route index element={<GalerieFluveExploration />} />
+              <Route path="ecouter" element={<ExperienceAudioContinue />} />
+              <Route path="lire" element={<ExperienceLectureOptimisee />} />
+              <Route path="lire/:textId" element={<ExperienceLectureOptimisee />} />
+              <Route path="prefigurer" element={<ExplorationPrefigurer />} />
+              <Route path="historique" element={<ExplorationHistorique />} />
+              <Route path="essais" element={<ExplorationEssais />} />
+            </Route>
+            
+            {/* Route lecteurs avec ExplorationLayout */}
+            <Route path="/lecteurs/exploration/:slug" element={<ExplorationLayout />}>
+              <Route index element={<GalerieFluveExplorationLecteurs />} />
+            </Route>
+            
             <Route path="/explorations/:slug" element={<ExplorationDetail />} />
             <Route path="/explorations/:slug/animer" element={<ExplorationDetail />} />
             <Route path="/explorations/:slug/experience/audio" element={<ExperienceAudioContinue />} />
