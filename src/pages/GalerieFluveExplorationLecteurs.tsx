@@ -6,7 +6,6 @@ import { motion } from 'framer-motion';
 import SEOHead from '@/components/SEOHead';
 import GalerieFleuve from '@/components/GalerieFleuve';
 import GalerieFleuveWelcome from '@/components/GalerieFleuveWelcome';
-import MurmuriaFloatingButton from '@/components/MurmuriaFloatingButton';
 import { useExplorationBySlug, useExplorationMarchesByStatus } from '@/hooks/useExplorations';
 import { MarcheTechnoSensible } from '@/types';
 import { generateRegionalThemes } from '@/utils/regionalThemes';
@@ -116,9 +115,6 @@ const GalerieFluveExplorationLecteurs: React.FC = () => {
         description={exploration.description || `Découvrez progressivement l'exploration "${exploration.name}" dans sa version accessible aux lecteurs`}
         keywords={exploration.meta_keywords?.join(', ') || 'exploration, lecteurs'}
       />
-
-      {/* Bouton flottant Murmuria - niveau DOM le plus élevé pour visibilité maximale */}
-      <MurmuriaFloatingButton />
 
       <div className="min-h-screen relative overflow-hidden">
         {/* Composants conditionnels selon le mode */}
