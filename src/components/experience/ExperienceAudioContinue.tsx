@@ -402,9 +402,9 @@ export default function ExperienceAudioContinue() {
               <Button 
                 size="lg" 
                 onClick={handleStartSharedAudio}
-                className="w-full bg-accent hover:bg-accent/90 text-white gap-2"
+                className="w-full bg-emerald-700 hover:bg-emerald-600 text-white gap-2 font-medium"
               >
-                <Play className="h-5 w-5" />
+                <Play className="h-5 w-5 fill-white" />
                 Lancer l'écoute
               </Button>
             </motion.div>
