@@ -9,7 +9,8 @@ import {
   Monitor,
   Sun,
   Moon,
-  Clock
+  Clock,
+  ChevronDown
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -35,6 +36,18 @@ const formatPlaylistDuration = (seconds: number): string => {
     return `${hours}h ${mins.toString().padStart(2, '0')}min`;
   }
   return `${mins}:${secs.toString().padStart(2, '0')}`;
+};
+
+// Compact duration format for small screens
+const formatCompactDuration = (seconds: number): string => {
+  if (seconds <= 0) return '0min';
+  const hours = Math.floor(seconds / 3600);
+  const mins = Math.floor((seconds % 3600) / 60);
+  
+  if (hours > 0) {
+    return `${hours}h${mins > 0 ? mins : ''}`;
+  }
+  return `${mins}min`;
 };
 
 interface PodcastNavigationHeaderProps {
@@ -138,38 +151,184 @@ const PodcastNavigationHeader: React.FC<PodcastNavigationHeaderProps> = ({
     }
   };
 
+  // Get label for current audio type
+  const getTypeLabel = (type: AudioType | 'all', compact = false): string => {
+    switch (type) {
+      case 'all': return compact ? 'Tous' : 'Tous les audio';
+      case 'gaspard': return compact ? 'Gaspard' : 'Gaspard parle';
+      case 'dordogne': return compact ? 'Dordogne' : 'La Dordogne parle';
+      case 'sounds': return compact ? 'Sons' : 'Sons captés';
+      default: return compact ? 'Tous' : 'Tous les audio';
+    }
+  };
+
+  // Appearance dropdown content - reusable
+  const AppearanceDropdownContent = () => (
+    <DropdownMenuContent align="end" className="z-50 w-36 bg-white dark:bg-slate-950 border border-slate-200/60 dark:border-slate-800/60 shadow-lg">
+      <DropdownMenuItem
+        onClick={() => setAppearanceMode('light')}
+        className={`flex items-center gap-2 cursor-pointer hover:bg-slate-100 dark:hover:bg-emerald-800/30 focus:bg-slate-100 dark:focus:bg-emerald-800/30 ${
+          appearanceMode === 'light' 
+            ? 'bg-slate-100 text-slate-900 dark:bg-emerald-700/50 dark:text-emerald-100'
+            : 'text-slate-800 dark:text-emerald-200'
+        }`}
+      >
+        <Sun className="h-4 w-4" />
+        <span>Clair</span>
+      </DropdownMenuItem>
+      <DropdownMenuItem
+        onClick={() => setAppearanceMode('system')}
+        className={`flex items-center gap-2 cursor-pointer hover:bg-slate-100 dark:hover:bg-emerald-800/30 focus:bg-slate-100 dark:focus:bg-emerald-800/30 ${
+          appearanceMode === 'system' 
+            ? 'bg-slate-100 text-slate-900 dark:bg-emerald-700/50 dark:text-emerald-100'
+            : 'text-slate-800 dark:text-emerald-200'
+        }`}
+      >
+        <Monitor className="h-4 w-4" />
+        <span>Système</span>
+      </DropdownMenuItem>
+      <DropdownMenuItem
+        onClick={() => setAppearanceMode('dark')}
+        className={`flex items-center gap-2 cursor-pointer hover:bg-slate-100 dark:hover:bg-emerald-800/30 focus:bg-slate-100 dark:focus:bg-emerald-800/30 ${
+          appearanceMode === 'dark' 
+            ? 'bg-slate-100 text-slate-900 dark:bg-emerald-700/50 dark:text-emerald-100'
+            : 'text-slate-800 dark:text-emerald-200'
+        }`}
+      >
+        <Moon className="h-4 w-4" />
+        <span>Sombre</span>
+      </DropdownMenuItem>
+    </DropdownMenuContent>
+  );
+
   return (
     <motion.header
       initial={{ y: -20, opacity: 0 }}
       animate={{ y: 0, opacity: 1 }}
       className="sticky top-0 z-40 border-b bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800/60"
     >
-      <div className="px-4 py-3">
-        {/* Mobile Layout */}
-        <div className="flex md:hidden items-center justify-between">
-          {/* Mobile Left: Return button */}
-          <Button variant="ghost" size="sm" asChild className="text-slate-800 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-emerald-800/20 hover:text-slate-900 dark:hover:text-emerald-100">
+      <div className="px-3 sm:px-4 py-2 sm:py-3">
+        
+        {/* ========== MOBILE LAYOUT (< 640px) ========== */}
+        <div className="flex sm:hidden items-center justify-between gap-1">
+          {/* Left: Back icon only */}
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            asChild 
+            className="h-8 w-8 p-0 shrink-0 text-slate-800 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-emerald-800/20"
+          >
             <Link to={`/galerie-fleuve/exploration/${slug}`}>
               <ArrowLeft className="h-4 w-4" />
             </Link>
           </Button>
 
-          {/* Mobile Center: Navigation + Type Selector */}
-          <div className="flex items-center gap-2 flex-1 justify-center">
+          {/* Center: Type dropdown + Duration + Navigation */}
+          <div className="flex items-center gap-1.5 flex-1 justify-center min-w-0">
+            {/* Type selector as compact dropdown */}
             {availableTypes.length > 0 && (
-              <AudioTypeSelector
-                currentType={selectedAudioType}
-                availableTypes={availableTypes}
-                onTypeSelect={handleTypeSelect}
-              />
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    className="h-7 px-2 gap-1 text-xs text-slate-700 dark:text-emerald-200 hover:bg-slate-100 dark:hover:bg-emerald-800/20"
+                  >
+                    <span className="truncate max-w-[60px]">{getTypeLabel(selectedAudioType, true)}</span>
+                    <ChevronDown className="h-3 w-3 shrink-0" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="center" className="z-50 w-40 bg-white dark:bg-slate-950 border border-slate-200/60 dark:border-slate-800/60 shadow-lg">
+                  {(['all', ...availableTypes] as (AudioType | 'all')[]).map((type) => (
+                    <DropdownMenuItem
+                      key={type}
+                      onClick={() => handleTypeSelect(type)}
+                      className={`cursor-pointer ${
+                        selectedAudioType === type 
+                          ? 'bg-slate-100 dark:bg-emerald-700/50 text-slate-900 dark:text-emerald-100'
+                          : 'text-slate-700 dark:text-slate-300'
+                      }`}
+                    >
+                      {getTypeLabel(type)}
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
             )}
-            {/* Mobile: Compact remaining time badge */}
+
+            {/* Compact duration badge */}
             {totalDurationSeconds > 0 && (
-              <div className="flex items-center gap-1 px-2 py-1 rounded-full bg-slate-100 dark:bg-emerald-900/30 text-xs text-slate-600 dark:text-emerald-300">
-                <Clock className="h-3 w-3" />
-                <span>{formatPlaylistDuration(remainingDurationSeconds)}</span>
+              <div className="flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-slate-100 dark:bg-emerald-900/30 text-[10px] text-slate-600 dark:text-emerald-300 whitespace-nowrap">
+                <Clock className="h-2.5 w-2.5" />
+                <span>{formatCompactDuration(remainingDurationSeconds)}</span>
               </div>
             )}
+
+            {/* Compact navigation */}
+            {onPrevious && onNext && (
+              <NavigationAudio
+                currentIndex={currentTrackIndex}
+                totalTracks={totalTracks}
+                onPrevious={onPrevious}
+                onNext={onNext}
+                compact
+              />
+            )}
+          </div>
+
+          {/* Right: Share only (most important action) */}
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleShare}
+            className="h-8 w-8 p-0 shrink-0 text-slate-800 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-emerald-800/20"
+          >
+            <Share2 className="h-3.5 w-3.5" />
+          </Button>
+        </div>
+
+        {/* ========== TABLET LAYOUT (640px - 1024px) ========== */}
+        <div className="hidden sm:flex lg:hidden items-center justify-between gap-3">
+          {/* Left: Compact back button */}
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            asChild 
+            className="shrink-0 text-slate-800 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-emerald-800/20"
+          >
+            <Link to={`/galerie-fleuve/exploration/${slug}`}>
+              <ArrowLeft className="h-4 w-4 mr-1" />
+              <span className="text-sm">Retour</span>
+            </Link>
+          </Button>
+
+          {/* Center: Type buttons + Navigation + Duration */}
+          <div className="flex items-center gap-2 flex-1 justify-center min-w-0">
+            {/* Type selector as compact buttons */}
+            {availableTypes.length > 0 && (
+              <div className="flex items-center gap-1">
+                {(['all', ...availableTypes] as (AudioType | 'all')[]).map((type) => {
+                  const isActive = selectedAudioType === type;
+                  return (
+                    <Button
+                      key={type}
+                      variant={isActive ? 'default' : 'ghost'}
+                      size="sm"
+                      className={`h-7 px-2 text-xs ${
+                        isActive 
+                          ? 'bg-slate-200 text-slate-900 dark:bg-emerald-700/50 dark:text-emerald-100' 
+                          : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-emerald-800/20'
+                      }`}
+                      onClick={() => handleTypeSelect(type)}
+                    >
+                      {getTypeLabel(type, true)}
+                    </Button>
+                  );
+                })}
+              </div>
+            )}
+
+            {/* Navigation */}
             {onPrevious && onNext && (
               <NavigationAudio
                 currentIndex={currentTrackIndex}
@@ -178,68 +337,48 @@ const PodcastNavigationHeader: React.FC<PodcastNavigationHeaderProps> = ({
                 onNext={onNext}
               />
             )}
+
+            {/* Duration badge - simplified */}
+            {totalDurationSeconds > 0 && (
+              <div className="flex items-center gap-1 px-2 py-1 rounded-full bg-slate-100 dark:bg-emerald-900/30 text-xs whitespace-nowrap">
+                <Clock className="h-3 w-3 text-slate-500 dark:text-emerald-400" />
+                <span className="text-slate-600 dark:text-emerald-300">
+                  {formatCompactDuration(remainingDurationSeconds)} restant
+                </span>
+              </div>
+            )}
           </div>
 
-          {/* Mobile Right: Actions */}
-          <div className="flex items-center gap-1">
+          {/* Right: Actions (icons only) */}
+          <div className="flex items-center gap-1 shrink-0">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-slate-800 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-emerald-800/20">
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className="h-8 w-8 p-0 text-slate-800 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-emerald-800/20"
+                >
                   <Palette className="h-3.5 w-3.5" />
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="z-50 w-36 bg-white dark:bg-slate-950 border border-slate-200/60 dark:border-slate-800/60 shadow-lg">
-                <DropdownMenuItem
-                  onClick={() => setAppearanceMode('light')}
-                  className={`flex items-center gap-2 cursor-pointer hover:text-emerald-900 dark:hover:text-emerald-900 data-[highlighted]:text-emerald-900 dark:data-[highlighted]:text-emerald-900 ${
-                    appearanceMode === 'light' 
-                      ? 'bg-yellow-200 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-200'
-                      : 'text-slate-800 dark:text-slate-300'
-                  }`}
-                >
-                  <Sun className="h-4 w-4" />
-                  <span>Clair</span>
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  onClick={() => setAppearanceMode('system')}
-                  className={`flex items-center gap-2 cursor-pointer hover:text-emerald-900 dark:hover:text-emerald-900 data-[highlighted]:text-emerald-900 dark:data-[highlighted]:text-emerald-900 ${
-                    appearanceMode === 'system' 
-                      ? 'bg-yellow-200 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-200'
-                      : 'text-slate-800 dark:text-slate-300'
-                  }`}
-                >
-                  <Monitor className="h-4 w-4" />
-                  <span>Système</span>
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  onClick={() => setAppearanceMode('dark')}
-                  className={`flex items-center gap-2 cursor-pointer hover:text-emerald-900 dark:hover:text-emerald-900 data-[highlighted]:text-emerald-900 dark:data-[highlighted]:text-emerald-900 ${
-                    appearanceMode === 'dark' 
-                      ? 'bg-yellow-200 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-200'
-                      : 'text-slate-800 dark:text-slate-300'
-                  }`}
-                >
-                  <Moon className="h-4 w-4" />
-                  <span>Sombre</span>
-                </DropdownMenuItem>
-              </DropdownMenuContent>
+              <AppearanceDropdownContent />
             </DropdownMenu>
             
             <Button
               variant="ghost"
               size="sm"
               onClick={handleShare}
-              className="h-8 w-8 p-0 text-slate-800 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-emerald-800/20 hover:text-slate-900 dark:hover:text-emerald-100"
+              className="h-8 w-8 p-0 text-slate-800 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-emerald-800/20"
             >
               <Share2 className="h-3.5 w-3.5" />
             </Button>
           </div>
         </div>
 
-        {/* Desktop Layout */}
-        <div className="hidden md:flex items-center justify-between">
+        {/* ========== DESKTOP LAYOUT (>= 1024px) ========== */}
+        <div className="hidden lg:flex items-center justify-between">
           {/* Left: Gaspard Boréal signature */}
-          <div className="font-crimson text-slate-800 dark:text-emerald-200">
+          <div className="font-crimson text-slate-800 dark:text-emerald-200 shrink-0">
             <div className="text-lg font-medium">Gaspard Boréal</div>
             <div className="text-xs opacity-80">Poète des Mondes Hybrides</div>
           </div>
@@ -256,13 +395,6 @@ const PodcastNavigationHeader: React.FC<PodcastNavigationHeaderProps> = ({
             {availableTypes.length > 0 && (
               <div className="flex items-center gap-2">
                 {(['all', ...availableTypes] as (AudioType | 'all')[]).map((type) => {
-                  const label = type === 'all'
-                    ? 'Tous les audio'
-                    : type === 'gaspard'
-                      ? 'Gaspard parle'
-                      : type === 'dordogne'
-                        ? 'La Dordogne parle'
-                        : 'Sons captés';
                   const isActive = selectedAudioType === type;
                   return (
                     <Button
@@ -272,7 +404,7 @@ const PodcastNavigationHeader: React.FC<PodcastNavigationHeaderProps> = ({
                       className={isActive ? 'bg-slate-200 text-slate-900 dark:bg-emerald-700/50 dark:text-emerald-100' : 'text-slate-800 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-emerald-800/20 hover:text-slate-900 dark:hover:text-emerald-100'}
                       onClick={() => handleTypeSelect(type)}
                     >
-                      {label}
+                      {getTypeLabel(type)}
                     </Button>
                   );
                 })}
@@ -303,48 +435,14 @@ const PodcastNavigationHeader: React.FC<PodcastNavigationHeaderProps> = ({
           </div>
 
           {/* Right: Actions */}
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 shrink-0">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="sm" className="h-8 gap-1.5 text-slate-800 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-emerald-800/20">
                   <Palette className="h-3.5 w-3.5" />
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="z-50 w-36 bg-white dark:bg-slate-950 border border-slate-200/60 dark:border-slate-800/60 shadow-lg">
-                <DropdownMenuItem
-                  onClick={() => setAppearanceMode('light')}
-                  className={`flex items-center gap-2 cursor-pointer hover:bg-slate-100 dark:hover:bg-emerald-800/30 focus:bg-slate-100 dark:focus:bg-emerald-800/30 ${
-                    appearanceMode === 'light' 
-                      ? 'bg-slate-100 text-slate-900 dark:bg-emerald-700/50 dark:text-emerald-100'
-                      : 'text-slate-800 dark:text-emerald-200'
-                  }`}
-                >
-                  <Sun className="h-4 w-4" />
-                  <span>Clair</span>
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  onClick={() => setAppearanceMode('system')}
-                  className={`flex items-center gap-2 cursor-pointer hover:bg-slate-100 dark:hover:bg-emerald-800/30 focus:bg-slate-100 dark:focus:bg-emerald-800/30 ${
-                    appearanceMode === 'system' 
-                      ? 'bg-slate-100 text-slate-900 dark:bg-emerald-700/50 dark:text-emerald-100'
-                      : 'text-slate-800 dark:text-emerald-200'
-                  }`}
-                >
-                  <Monitor className="h-4 w-4" />
-                  <span>Système</span>
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  onClick={() => setAppearanceMode('dark')}
-                  className={`flex items-center gap-2 cursor-pointer hover:bg-slate-100 dark:hover:bg-emerald-800/30 focus:bg-slate-100 dark:focus:bg-emerald-800/30 ${
-                    appearanceMode === 'dark' 
-                      ? 'bg-slate-100 text-slate-900 dark:bg-emerald-700/50 dark:text-emerald-100'
-                      : 'text-slate-800 dark:text-emerald-200'
-                  }`}
-                >
-                  <Moon className="h-4 w-4" />
-                  <span>Sombre</span>
-                </DropdownMenuItem>
-              </DropdownMenuContent>
+              <AppearanceDropdownContent />
             </DropdownMenu>
             
             <Button
