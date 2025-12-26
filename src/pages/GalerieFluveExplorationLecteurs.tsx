@@ -117,6 +117,9 @@ const GalerieFluveExplorationLecteurs: React.FC = () => {
         keywords={exploration.meta_keywords?.join(', ') || 'exploration, lecteurs'}
       />
 
+      {/* Bouton flottant Murmuria - niveau DOM le plus élevé pour visibilité maximale */}
+      <MurmuriaFloatingButton />
+
       <div className="min-h-screen relative overflow-hidden">
         {/* Composants conditionnels selon le mode */}
         {!viewMode || !selectedMarcheSlug ? (
@@ -140,9 +143,6 @@ const GalerieFluveExplorationLecteurs: React.FC = () => {
             explorationSlug={exploration.slug}
           />
         </motion.div>
-
-        {/* Bouton flottant Murmuria - accessible sur toutes les vues */}
-        <MurmuriaFloatingButton />
       </div>
     </>
   );
