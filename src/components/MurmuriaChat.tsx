@@ -124,13 +124,16 @@ const MurmuriaChat: React.FC<MurmuriaProps> = ({ isOpen, onClose }) => {
   const isMobile = useIsMobile();
   const [inputValue, setInputValue] = useState('');
   const { messages, isLoading, error, sendMessage, resetSession } = useMurmuriaChat();
-  const scrollRef = useRef<HTMLDivElement>(null);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // Auto-scroll vers le bas
+  // Auto-scroll vers le dernier message avec animation fluide
   useEffect(() => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    if (messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ 
+        behavior: 'smooth',
+        block: 'end'
+      });
     }
   }, [messages, isLoading]);
 
@@ -240,7 +243,7 @@ const MurmuriaChat: React.FC<MurmuriaProps> = ({ isOpen, onClose }) => {
 
             {/* Zone des messages */}
             <ScrollArea className="flex-1 relative">
-              <div ref={scrollRef} className="p-4">
+              <div className="p-4">
                 {messages.length === 0 && !isLoading && <WelcomeMessage />}
                 
                 {messages.map((message) => (
@@ -258,6 +261,9 @@ const MurmuriaChat: React.FC<MurmuriaProps> = ({ isOpen, onClose }) => {
                     {error}
                   </motion.div>
                 )}
+                
+                {/* Anchor invisible pour l'auto-scroll fluide */}
+                <div ref={messagesEndRef} />
               </div>
             </ScrollArea>
 
