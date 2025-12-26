@@ -46,7 +46,11 @@ export default function ExperienceLectureOptimisee() {
   const [readingMode, setReadingMode] = useState<ReadingMode>('rich');
   
   // Handle marche parameter from URL to navigate to first text of that marche
+  // Keep filter on "all" to allow chronological navigation through all texts
   useEffect(() => {
+    // Skip if textId is present (handled by another effect)
+    if (textId) return;
+    
     const urlParams = new URLSearchParams(window.location.search);
     const marcheParam = urlParams.get('marche');
     
@@ -62,13 +66,9 @@ export default function ExperienceLectureOptimisee() {
         const firstMarcheText = marcheTexts[0];
         const textIndex = texts.findIndex(t => t.id === firstMarcheText.id);
         if (textIndex >= 0) {
-          setSelectedTextType(firstMarcheText.type_texte);
-          // Find the index in filtered texts for that type
-          const typeTexts = texts.filter(t => t.type_texte === firstMarcheText.type_texte);
-          const filteredIndex = typeTexts.findIndex(t => t.id === firstMarcheText.id);
-          if (filteredIndex >= 0) {
-            setCurrentIndex(filteredIndex);
-          }
+          // Don't force filter by type - keep "all" to allow chronological navigation
+          setSelectedTextType('all');
+          setCurrentIndex(textIndex);
         }
         
         // Clean up URL by removing the marche parameter
@@ -77,7 +77,7 @@ export default function ExperienceLectureOptimisee() {
         window.history.replaceState(null, '', cleanUrl.toString());
       }
     }
-  }, [texts]);
+  }, [texts, textId]);
   
   // Apply theme class to document
   useEffect(() => {
