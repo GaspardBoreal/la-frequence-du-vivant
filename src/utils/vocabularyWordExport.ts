@@ -32,33 +32,49 @@ interface MarcheVocabulary {
 
 /**
  * Récupère les données de vocabulaire depuis Supabase
+ * Utilise deux requêtes séparées pour éviter l'erreur de clé étrangère
  */
 export const fetchVocabularyData = async (): Promise<MarcheVocabulary[]> => {
-  const { data, error } = await supabase
+  // 1. Récupérer les contextes avec vocabulaire
+  const { data: contextes, error: contextesError } = await supabase
     .from('marche_contextes_hybrids')
-    .select(`
-      id,
-      marche_id,
-      vocabulaire_local,
-      marches!marche_contextes_hybrids_marche_id_fkey (
-        nom_marche,
-        ville,
-        region
-      )
-    `)
+    .select('id, marche_id, vocabulaire_local')
     .not('vocabulaire_local', 'is', null);
 
-  if (error) {
-    console.error('Erreur lors de la récupération du vocabulaire:', error);
-    throw error;
+  if (contextesError) {
+    console.error('Erreur récupération contextes:', contextesError);
+    throw contextesError;
   }
 
-  if (!data) return [];
+  if (!contextes || contextes.length === 0) return [];
 
-  // Transformer les données
-  return data
-    .filter((item: any) => {
-      const vocab = item.vocabulaire_local;
+  // 2. Récupérer les IDs de marchés concernés
+  const marcheIds = contextes
+    .map(c => c.marche_id)
+    .filter((id): id is string => Boolean(id));
+
+  if (marcheIds.length === 0) return [];
+
+  // 3. Récupérer les infos des marchés
+  const { data: marches, error: marchesError } = await supabase
+    .from('marches')
+    .select('id, nom_marche, ville, region')
+    .in('id', marcheIds);
+
+  if (marchesError) {
+    console.error('Erreur récupération marchés:', marchesError);
+    throw marchesError;
+  }
+
+  // 4. Créer un map des marchés pour lookup rapide
+  const marchesMap = new Map(
+    (marches || []).map(m => [m.id, m])
+  );
+
+  // 5. Transformer et combiner les données
+  return contextes
+    .filter((item) => {
+      const vocab = item.vocabulaire_local as any;
       if (!vocab) return false;
       
       const termesLocaux = vocab.termes_locaux || [];
@@ -67,9 +83,9 @@ export const fetchVocabularyData = async (): Promise<MarcheVocabulary[]> => {
       
       return termesLocaux.length > 0 || phenomenes.length > 0 || pratiques.length > 0;
     })
-    .map((item: any) => {
-      const vocab = item.vocabulaire_local;
-      const marche = item.marches;
+    .map((item) => {
+      const vocab = item.vocabulaire_local as any;
+      const marche = marchesMap.get(item.marche_id);
       
       return {
         marche_id: item.marche_id,
