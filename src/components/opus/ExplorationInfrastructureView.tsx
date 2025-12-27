@@ -55,7 +55,7 @@ interface ExplorationInfrastructureViewProps {
     categoryKey: string;
     itemIndex: number;
     itemName: string;
-  }) => Promise<void>;
+  }) => Promise<boolean>;
   isDeleting?: boolean;
 }
 
