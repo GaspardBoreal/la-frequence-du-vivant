@@ -160,10 +160,15 @@ export const ModernImportDashboard: React.FC = () => {
     categoryKey: string;
     itemIndex: number;
     itemName: string;
-  }) => {
-    if (!exploration) return;
+  }): Promise<boolean> => {
+    if (!exploration) {
+      console.error('❌ handleDeleteContextItem: exploration non trouvée');
+      return false;
+    }
     
-    await deleteItem({
+    console.log('🔄 handleDeleteContextItem appelé avec:', params);
+    
+    const result = await deleteItem({
       marcheId: params.marcheId,
       opusId: exploration.id,
       dimension: params.dimension as DimensionType,
@@ -171,6 +176,9 @@ export const ModernImportDashboard: React.FC = () => {
       itemIndex: params.itemIndex,
       itemName: params.itemName
     });
+    
+    console.log('✅ handleDeleteContextItem résultat:', result);
+    return result;
   }, [exploration, deleteItem]);
 
   // Animated counters for statistics

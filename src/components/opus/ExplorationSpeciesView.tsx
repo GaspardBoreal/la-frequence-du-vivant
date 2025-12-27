@@ -58,7 +58,7 @@ interface ExplorationSpeciesViewProps {
     categoryKey: string;
     itemIndex: number;
     itemName: string;
-  }) => Promise<void>;
+  }) => Promise<boolean>;
   isDeleting?: boolean;
 }
 
@@ -333,7 +333,7 @@ export const ExplorationSpeciesView: React.FC<ExplorationSpeciesViewProps> = ({
               canDelete={!!onDeleteItem}
               isDeleting={isDeleting}
               onDelete={onDeleteItem ? async () => {
-                await onDeleteItem({
+                return await onDeleteItem({
                   marcheId: species.marcheId,
                   dimension: 'especes_caracteristiques',
                   categoryKey: species.categoryKey,

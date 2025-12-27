@@ -39,7 +39,7 @@ interface InteractiveVignetteProps {
   importSources?: any[];
   // Props pour la suppression
   canDelete?: boolean;
-  onDelete?: () => Promise<void>;
+  onDelete?: () => Promise<boolean>;
   isDeleting?: boolean;
 }
 
