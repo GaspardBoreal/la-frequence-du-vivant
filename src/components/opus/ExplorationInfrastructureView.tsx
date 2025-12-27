@@ -41,13 +41,30 @@ interface ProcessedInfrastructureWithMeta {
   marches: string[];
   lastImportDate: string;
   importId: string;
+  marcheId?: string;
+  categoryKey?: string;
+  indexInArray?: number;
 }
 
 interface ExplorationInfrastructureViewProps {
   imports: ImportRecord[];
+  opusId?: string;
+  onDeleteItem?: (params: {
+    marcheId: string;
+    dimension: string;
+    categoryKey: string;
+    itemIndex: number;
+    itemName: string;
+  }) => Promise<void>;
+  isDeleting?: boolean;
 }
 
-export const ExplorationInfrastructureView: React.FC<ExplorationInfrastructureViewProps> = ({ imports }) => {
+export const ExplorationInfrastructureView: React.FC<ExplorationInfrastructureViewProps> = ({ 
+  imports,
+  opusId,
+  onDeleteItem,
+  isDeleting
+}) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedMarche, setSelectedMarche] = useState<string>('all');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');

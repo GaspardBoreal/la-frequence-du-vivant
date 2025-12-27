@@ -4,9 +4,20 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { ChevronRight, Info, ExternalLink, BookOpen, Globe, Calendar, Zap, DollarSign, MapPin } from 'lucide-react';
+import { ChevronRight, Info, ExternalLink, BookOpen, Globe, Calendar, Zap, DollarSign, MapPin, Trash2, Loader2 } from 'lucide-react';
 import { getVignetteStyles, getDialogHeaderStyles, type VignetteVariant } from '@/utils/vignetteStyleUtils';
 import { getTechTypeIcon, getTechTypeBadgeColor, getTechMetadata, type TechnodiversiteItem } from '@/utils/technodiversiteDataUtils';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+
 interface VignetteData {
   titre: string;
   description_courte?: string;
@@ -25,15 +36,24 @@ interface InteractiveVignetteProps {
   data: VignetteData;
   variant?: VignetteVariant;
   className?: string;
-  importSources?: any[]; // Sources de l'import pour résoudre les source_ids
+  importSources?: any[];
+  // Props pour la suppression
+  canDelete?: boolean;
+  onDelete?: () => Promise<void>;
+  isDeleting?: boolean;
 }
+
 export const InteractiveVignette: React.FC<InteractiveVignetteProps> = ({
   data,
   variant = 'default',
   className = '',
-  importSources = []
+  importSources = [],
+  canDelete = false,
+  onDelete,
+  isDeleting = false
 }) => {
   const [showDetails, setShowDetails] = useState(false);
+  const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
   const styles = getVignetteStyles(variant);
 
   // Résolution des sources pour toutes vignettes (espèces, vocabulaire, techno)
@@ -140,7 +160,8 @@ export const InteractiveVignette: React.FC<InteractiveVignetteProps> = ({
             
             <DialogContent className="max-w-3xl max-h-[90vh] overflow-hidden bg-gradient-to-br from-background via-background/95 to-background/90 backdrop-blur-xl border-border/30">
               <DialogHeader className="border-b border-border/20 pb-4">
-                <DialogTitle className="flex items-center gap-3">
+                <div className="flex items-center justify-between gap-3">
+                <DialogTitle className="flex items-center gap-3 flex-1">
                   {variant === 'vocabulary' ? <div className="flex items-center gap-3 w-full">
                       <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-info/20 to-info/10 border border-info/20 flex items-center justify-center flex-shrink-0">
                         <BookOpen className="w-5 h-5 text-info" />
@@ -192,6 +213,24 @@ export const InteractiveVignette: React.FC<InteractiveVignetteProps> = ({
                         </Badge>}
                     </div>}
                 </DialogTitle>
+                
+                {/* Bouton de suppression */}
+                {canDelete && onDelete && (
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    onClick={() => setConfirmDeleteOpen(true)}
+                    disabled={isDeleting}
+                    className="text-destructive hover:bg-destructive/10 flex-shrink-0"
+                  >
+                    {isDeleting ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <Trash2 className="w-4 h-4" />
+                    )}
+                  </Button>
+                )}
+                </div>
               </DialogHeader>
                
               <ScrollArea className="flex-1 pr-4">
@@ -443,5 +482,41 @@ export const InteractiveVignette: React.FC<InteractiveVignetteProps> = ({
           </div>
         )}
       </CardContent>
+      
+      {/* Dialog de confirmation de suppression */}
+      <AlertDialog open={confirmDeleteOpen} onOpenChange={setConfirmDeleteOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirmer la suppression</AlertDialogTitle>
+            <AlertDialogDescription>
+              Êtes-vous sûr de vouloir supprimer "{data.titre || data.nom_commun}" ? 
+              Cette action est irréversible.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeleting}>Annuler</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={async () => {
+                if (onDelete) {
+                  await onDelete();
+                  setConfirmDeleteOpen(false);
+                  setShowDetails(false);
+                }
+              }}
+              disabled={isDeleting}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {isDeleting ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Suppression...
+                </>
+              ) : (
+                'Supprimer'
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Card>;
 };

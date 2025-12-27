@@ -41,13 +41,30 @@ interface ProcessedTechnodiversityWithMeta {
   marches: string[];
   lastImportDate: string;
   importId: string;
+  marcheId?: string;
+  categoryKey?: string;
+  indexInArray?: number;
 }
 
 interface ExplorationTechnodiversityViewProps {
   imports: ImportRecord[];
+  opusId?: string;
+  onDeleteItem?: (params: {
+    marcheId: string;
+    dimension: string;
+    categoryKey: string;
+    itemIndex: number;
+    itemName: string;
+  }) => Promise<void>;
+  isDeleting?: boolean;
 }
 
-export const ExplorationTechnodiversityView: React.FC<ExplorationTechnodiversityViewProps> = ({ imports }) => {
+export const ExplorationTechnodiversityView: React.FC<ExplorationTechnodiversityViewProps> = ({ 
+  imports,
+  opusId,
+  onDeleteItem,
+  isDeleting
+}) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedMarche, setSelectedMarche] = useState<string>('all');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
