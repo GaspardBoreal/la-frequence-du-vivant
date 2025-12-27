@@ -506,9 +506,12 @@ export const InteractiveVignette: React.FC<InteractiveVignetteProps> = ({
                   console.log('🗑️ [VIGNETTE] Déclenchement suppression pour:', data.titre || data.nom_commun);
                   const success = await onDelete();
                   console.log('🗑️ [VIGNETTE] Résultat suppression:', success);
-                  // Fermer seulement après la suppression
-                  setConfirmDeleteOpen(false);
-                  setShowDetails(false);
+
+                  // Fermer seulement après succès
+                  if (success) {
+                    setConfirmDeleteOpen(false);
+                    setShowDetails(false);
+                  }
                 }
               }}
               disabled={isDeleting}

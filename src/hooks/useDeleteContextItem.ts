@@ -81,66 +81,88 @@ export const useDeleteContextItem = (onSuccess?: () => void) => {
       console.log('🗑️ [DELETE] Clés disponibles:', Object.keys(dataToModify));
       console.log('🗑️ [DELETE] Recherche catégorie:', categoryKey);
 
-      // Trouver le tableau correspondant à la catégorie
-      const categoryArray = dataToModify[categoryKey];
-      
-      if (!Array.isArray(categoryArray)) {
-        console.error('🗑️ [DELETE] Catégorie non trouvée ou pas un tableau:', categoryKey, categoryArray);
+      // Trouver et supprimer l'élément dans la catégorie (tableau OU objet)
+      const categoryValue = (dataToModify as any)[categoryKey];
+      let updatedCategoryValue: any;
+
+      if (Array.isArray(categoryValue)) {
+        console.log('🗑️ [DELETE] Tableau catégorie trouvé avec', categoryValue.length, 'éléments');
+        console.log('🗑️ [DELETE] Index demandé:', itemIndex, '/ Nom:', itemName);
+
+        // Chercher l'élément par nom plutôt que par index (plus fiable)
+        let realIndex = -1;
+        for (let i = 0; i < categoryValue.length; i++) {
+          const item = categoryValue[i];
+          const itemTitle =
+            item?.nom_vernaculaire || item?.nom_commun || item?.nom || item?.titre || item?.terme || '';
+          console.log(`🗑️ [DELETE] Comparaison [${i}]: "${itemTitle}" vs "${itemName}"`);
+          if (itemTitle === itemName) {
+            realIndex = i;
+            break;
+          }
+        }
+
+        if (realIndex === -1) {
+          console.error('🗑️ [DELETE] Élément non trouvé par nom, tentative avec index');
+          // Fallback sur l'index si le nom ne correspond pas
+          if (itemIndex >= 0 && itemIndex < categoryValue.length) {
+            realIndex = itemIndex;
+            console.log("🗑️ [DELETE] Utilisation de l'index fourni:", realIndex);
+          } else {
+            throw new Error(`Élément "${itemName}" non trouvé dans ${categoryKey}`);
+          }
+        }
+
+        console.log('🗑️ [DELETE] Index réel à supprimer:', realIndex);
+        console.log('🗑️ [DELETE] Élément à supprimer:', JSON.stringify(categoryValue[realIndex], null, 2));
+
+        const newArray = [...categoryValue.slice(0, realIndex), ...categoryValue.slice(realIndex + 1)];
+        console.log(
+          '🗑️ [DELETE] Nouveau tableau:',
+          newArray.length,
+          'éléments (avant:',
+          categoryValue.length,
+          ')'
+        );
+
+        updatedCategoryValue = newArray;
+      } else if (categoryValue && typeof categoryValue === 'object') {
+        console.log('🗑️ [DELETE] Catégorie objet détectée (élément unique):', categoryKey);
+        const itemTitle =
+          (categoryValue as any).nom_vernaculaire ||
+          (categoryValue as any).nom_commun ||
+          (categoryValue as any).nom ||
+          (categoryValue as any).titre ||
+          (categoryValue as any).terme ||
+          '';
+        console.log(`🗑️ [DELETE] Comparaison objet: "${itemTitle}" vs "${itemName}"`);
+
+        if (itemTitle !== itemName) {
+          throw new Error(`Élément "${itemName}" non trouvé dans ${categoryKey}`);
+        }
+
+        console.log('🗑️ [DELETE] Suppression objet → mise à null');
+        updatedCategoryValue = null;
+      } else {
+        console.error('🗑️ [DELETE] Catégorie non trouvée ou invalide:', categoryKey, categoryValue);
         throw new Error(`Catégorie ${categoryKey} non trouvée ou invalide`);
       }
 
-      console.log('🗑️ [DELETE] Tableau catégorie trouvé avec', categoryArray.length, 'éléments');
-      console.log('🗑️ [DELETE] Index demandé:', itemIndex, '/ Nom:', itemName);
-
-      // Chercher l'élément par nom plutôt que par index (plus fiable)
-      let realIndex = -1;
-      for (let i = 0; i < categoryArray.length; i++) {
-        const item = categoryArray[i];
-        const itemTitle = item.nom_commun || item.nom || item.titre || item.terme || '';
-        console.log(`🗑️ [DELETE] Comparaison [${i}]: "${itemTitle}" vs "${itemName}"`);
-        if (itemTitle === itemName) {
-          realIndex = i;
-          break;
-        }
-      }
-
-      if (realIndex === -1) {
-        console.error('🗑️ [DELETE] Élément non trouvé par nom, tentative avec index');
-        // Fallback sur l'index si le nom ne correspond pas
-        if (itemIndex >= 0 && itemIndex < categoryArray.length) {
-          realIndex = itemIndex;
-          console.log('🗑️ [DELETE] Utilisation de l\'index fourni:', realIndex);
-        } else {
-          throw new Error(`Élément "${itemName}" non trouvé dans ${categoryKey}`);
-        }
-      }
-
-      console.log('🗑️ [DELETE] Index réel à supprimer:', realIndex);
-      console.log('🗑️ [DELETE] Élément à supprimer:', JSON.stringify(categoryArray[realIndex], null, 2));
-
-      // 3. Créer le nouveau tableau sans l'élément
-      const newArray = [
-        ...categoryArray.slice(0, realIndex),
-        ...categoryArray.slice(realIndex + 1)
-      ];
-
-      console.log('🗑️ [DELETE] Nouveau tableau:', newArray.length, 'éléments (avant:', categoryArray.length, ')');
-
       // 4. Reconstruire l'objet de dimension
       let updatedDimensionData: any;
-      
+
       if (hasWrappedData) {
         updatedDimensionData = {
           ...dimensionData,
           donnees: {
             ...dataToModify,
-            [categoryKey]: newArray
-          }
+            [categoryKey]: updatedCategoryValue,
+          },
         };
       } else {
         updatedDimensionData = {
           ...dimensionData,
-          [categoryKey]: newArray
+          [categoryKey]: updatedCategoryValue,
         };
       }
 
