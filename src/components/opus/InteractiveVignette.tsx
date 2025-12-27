@@ -219,9 +219,13 @@ export const InteractiveVignette: React.FC<InteractiveVignetteProps> = ({
                   <Button 
                     variant="ghost" 
                     size="sm" 
-                    onClick={() => setConfirmDeleteOpen(true)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setConfirmDeleteOpen(true);
+                    }}
                     disabled={isDeleting}
                     className="text-destructive hover:bg-destructive/10 flex-shrink-0"
+                    title="Supprimer cet élément"
                   >
                     {isDeleting ? (
                       <Loader2 className="w-4 h-4 animate-spin" />
@@ -496,9 +500,13 @@ export const InteractiveVignette: React.FC<InteractiveVignetteProps> = ({
           <AlertDialogFooter>
             <AlertDialogCancel disabled={isDeleting}>Annuler</AlertDialogCancel>
             <AlertDialogAction
-              onClick={async () => {
+              onClick={async (e) => {
+                e.preventDefault(); // Empêcher la fermeture automatique
                 if (onDelete) {
-                  await onDelete();
+                  console.log('🗑️ [VIGNETTE] Déclenchement suppression pour:', data.titre || data.nom_commun);
+                  const success = await onDelete();
+                  console.log('🗑️ [VIGNETTE] Résultat suppression:', success);
+                  // Fermer seulement après la suppression
                   setConfirmDeleteOpen(false);
                   setShowDetails(false);
                 }
