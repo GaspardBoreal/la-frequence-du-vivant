@@ -41,13 +41,30 @@ interface ProcessedVocabularyWithMeta {
   marches: string[];
   lastImportDate: string;
   importId: string;
+  marcheId?: string;
+  categoryKey?: string;
+  indexInArray?: number;
 }
 
 interface ExplorationVocabularyViewProps {
   imports: ImportRecord[];
+  opusId?: string;
+  onDeleteItem?: (params: {
+    marcheId: string;
+    dimension: string;
+    categoryKey: string;
+    itemIndex: number;
+    itemName: string;
+  }) => Promise<void>;
+  isDeleting?: boolean;
 }
 
-export const ExplorationVocabularyView: React.FC<ExplorationVocabularyViewProps> = ({ imports }) => {
+export const ExplorationVocabularyView: React.FC<ExplorationVocabularyViewProps> = ({ 
+  imports,
+  opusId,
+  onDeleteItem,
+  isDeleting
+}) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedMarche, setSelectedMarche] = useState<string>('all');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');

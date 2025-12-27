@@ -40,87 +40,87 @@ interface ProcessedSpeciesWithMeta {
   type: string;
   category: string;
   metadata: any;
-  // Métadonnées d'occurrence
   marchesCount: number;
   marches: string[];
   lastImportDate: string;
   importId: string;
+  marcheId: string;
+  categoryKey: string;
+  indexInArray: number;
 }
 
 interface ExplorationSpeciesViewProps {
   imports: ImportRecord[];
+  opusId?: string;
+  onDeleteItem?: (params: {
+    marcheId: string;
+    dimension: string;
+    categoryKey: string;
+    itemIndex: number;
+    itemName: string;
+  }) => Promise<void>;
+  isDeleting?: boolean;
 }
 
-export const ExplorationSpeciesView: React.FC<ExplorationSpeciesViewProps> = ({ imports }) => {
+export const ExplorationSpeciesView: React.FC<ExplorationSpeciesViewProps> = ({ 
+  imports, 
+  opusId, 
+  onDeleteItem, 
+  isDeleting 
+}) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedMarche, setSelectedMarche] = useState<string>('all');
   const [selectedType, setSelectedType] = useState<string>('all');
   const [sortBy, setSortBy] = useState<'name-asc' | 'name-desc' | 'count-desc' | 'date-desc'>('name-asc');
 
-  // Extraire toutes les espèces de tous les imports
+  // Extraire toutes les espèces avec métadonnées pour suppression
   const allSpecies = useMemo(() => {
-    const speciesMap = new Map<string, ProcessedSpeciesWithMeta>();
+    const speciesList: ProcessedSpeciesWithMeta[] = [];
     
     imports.forEach(importRecord => {
       const processed = processSpeciesData(importRecord.contexte_data?.especes_caracteristiques);
       
       // Traiter la flore
-      processed.flore.forEach(species => {
-        const key = `${species.nom_commun}_${species.nom_scientifique}`.toLowerCase().replace(/\s+/g, '_');
-        
-        if (speciesMap.has(key)) {
-          const existing = speciesMap.get(key)!;
-          existing.marchesCount += 1;
-          existing.marches.push(importRecord.marche_nom || 'Marché inconnu');
-          if (importRecord.import_date > existing.lastImportDate) {
-            existing.lastImportDate = importRecord.import_date;
-            existing.importId = importRecord.id;
-          }
-        } else {
-          speciesMap.set(key, {
+      processed.flore.forEach((species, index) => {
+        speciesList.push({
+          ...species,
+          marchesCount: 1,
+          marches: [importRecord.marche_nom || 'Marché inconnu'],
+          lastImportDate: importRecord.import_date,
+          importId: importRecord.id,
+          marcheId: importRecord.marche_id,
+          categoryKey: 'especes_vegetales',
+          indexInArray: index
+        });
+      });
+
+      // Traiter la faune
+      Object.entries(processed.faune).forEach(([fauneType, speciesList_]) => {
+        const categoryKey = fauneType === 'Oiseaux' ? 'especes_animales' : 
+                           fauneType === 'Poissons' ? 'especes_aquatiques' : 
+                           'espece_indicatrice';
+        speciesList_.forEach((species, index) => {
+          speciesList.push({
             ...species,
             marchesCount: 1,
             marches: [importRecord.marche_nom || 'Marché inconnu'],
             lastImportDate: importRecord.import_date,
-            importId: importRecord.id
+            importId: importRecord.id,
+            marcheId: importRecord.marche_id,
+            categoryKey,
+            indexInArray: index
           });
-        }
-      });
-
-      // Traiter la faune
-      Object.entries(processed.faune).forEach(([fauneType, speciesList]) => {
-        speciesList.forEach(species => {
-          const key = `${species.nom_commun}_${species.nom_scientifique}`.toLowerCase().replace(/\s+/g, '_');
-          
-          if (speciesMap.has(key)) {
-            const existing = speciesMap.get(key)!;
-            existing.marchesCount += 1;
-            existing.marches.push(importRecord.marche_nom || 'Marché inconnu');
-            if (importRecord.import_date > existing.lastImportDate) {
-              existing.lastImportDate = importRecord.import_date;
-              existing.importId = importRecord.id;
-            }
-          } else {
-            speciesMap.set(key, {
-              ...species,
-              marchesCount: 1,
-              marches: [importRecord.marche_nom || 'Marché inconnu'],
-              lastImportDate: importRecord.import_date,
-              importId: importRecord.id
-            });
-          }
         });
       });
     });
 
-    return Array.from(speciesMap.values());
+    return speciesList;
   }, [imports]);
 
   // Filtrer et trier les espèces
   const filteredAndSortedSpecies = useMemo(() => {
     let filtered = allSpecies;
 
-    // Filtre par terme de recherche
     if (searchTerm) {
       const term = searchTerm.toLowerCase();
       filtered = filtered.filter(species => 
@@ -131,14 +131,12 @@ export const ExplorationSpeciesView: React.FC<ExplorationSpeciesViewProps> = ({ 
       );
     }
 
-    // Filtre par marché
     if (selectedMarche !== 'all') {
       filtered = filtered.filter(species => 
         species.marches.some(marche => marche === selectedMarche)
       );
     }
 
-    // Filtre par type d'espèces
     if (selectedType !== 'all') {
       filtered = filtered.filter(species => {
         switch (selectedType) {
@@ -160,7 +158,6 @@ export const ExplorationSpeciesView: React.FC<ExplorationSpeciesViewProps> = ({ 
       });
     }
 
-    // Tri
     filtered.sort((a, b) => {
       switch (sortBy) {
         case 'name-asc':
@@ -179,7 +176,6 @@ export const ExplorationSpeciesView: React.FC<ExplorationSpeciesViewProps> = ({ 
     return filtered;
   }, [allSpecies, searchTerm, selectedMarche, selectedType, sortBy]);
 
-  // Listes pour les selects
   const uniqueMarches = useMemo(() => {
     const marches = new Set<string>();
     imports.forEach(imp => {
@@ -187,33 +183,6 @@ export const ExplorationSpeciesView: React.FC<ExplorationSpeciesViewProps> = ({ 
     });
     return Array.from(marches).sort();
   }, [imports]);
-
-  const getSpeciesIcon = (category: string) => {
-    switch (category) {
-      case 'Flore':
-        return <Leaf className="w-4 h-4" />;
-      case 'Oiseaux':
-        return <Bird className="w-4 h-4" />;
-      case 'Poissons':
-        return <Fish className="w-4 h-4" />;
-      case 'Insectes':
-        return <Bug className="w-4 h-4" />;
-      case 'Invertébrés':
-        return <Bug className="w-4 h-4" />;
-      case 'Mammifères':
-        return <Rabbit className="w-4 h-4" />;
-      default:
-        return <TreePine className="w-4 h-4" />;
-    }
-  };
-
-  const getConservationColor = (statut: string) => {
-    const statutLower = statut.toLowerCase();
-    if (statutLower.includes('critique') || statutLower.includes('danger')) return 'destructive';
-    if (statutLower.includes('vulnérable') || statutLower.includes('menacé')) return 'outline';
-    if (statutLower.includes('protégé') || statutLower.includes('protection')) return 'secondary';
-    return 'default';
-  };
 
   return (
     <div className="space-y-6">
@@ -266,7 +235,6 @@ export const ExplorationSpeciesView: React.FC<ExplorationSpeciesViewProps> = ({ 
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            {/* Recherche */}
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
               <Input
@@ -277,7 +245,6 @@ export const ExplorationSpeciesView: React.FC<ExplorationSpeciesViewProps> = ({ 
               />
             </div>
 
-            {/* Filtre marche */}
             <Select value={selectedMarche} onValueChange={setSelectedMarche}>
               <SelectTrigger>
                 <SelectValue placeholder="Toutes les marches" />
@@ -290,7 +257,6 @@ export const ExplorationSpeciesView: React.FC<ExplorationSpeciesViewProps> = ({ 
               </SelectContent>
             </Select>
 
-            {/* Filtre type */}
             <Select value={selectedType} onValueChange={setSelectedType}>
               <SelectTrigger>
                 <SelectValue placeholder="Tous les types" />
@@ -305,7 +271,6 @@ export const ExplorationSpeciesView: React.FC<ExplorationSpeciesViewProps> = ({ 
               </SelectContent>
             </Select>
 
-            {/* Tri */}
             <Select value={sortBy} onValueChange={setSortBy as (value: string) => void}>
               <SelectTrigger>
                 <SelectValue />
@@ -343,8 +308,7 @@ export const ExplorationSpeciesView: React.FC<ExplorationSpeciesViewProps> = ({ 
 
       {/* Liste des espèces */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-        {filteredAndSortedSpecies.map((species, index) => {
-          // Conversion vers le format VignetteData
+        {filteredAndSortedSpecies.map((species) => {
           const vignetteData = {
             titre: species.nom_commun,
             nom_commun: species.nom_commun,
@@ -363,15 +327,25 @@ export const ExplorationSpeciesView: React.FC<ExplorationSpeciesViewProps> = ({ 
 
           return (
             <InteractiveVignette
-              key={`${species.importId}-${index}`}
+              key={`${species.importId}-${species.categoryKey}-${species.indexInArray}`}
               data={vignetteData}
               variant="species"
+              canDelete={!!onDeleteItem}
+              isDeleting={isDeleting}
+              onDelete={onDeleteItem ? async () => {
+                await onDeleteItem({
+                  marcheId: species.marcheId,
+                  dimension: 'especes_caracteristiques',
+                  categoryKey: species.categoryKey,
+                  itemIndex: species.indexInArray,
+                  itemName: species.nom_commun
+                });
+              } : undefined}
             />
           );
         })}
       </div>
 
-      {/* Message si aucun résultat */}
       {filteredAndSortedSpecies.length === 0 && (
         <Card className="bg-background/50 backdrop-blur-sm border-border/30">
           <CardContent className="p-12 text-center">
