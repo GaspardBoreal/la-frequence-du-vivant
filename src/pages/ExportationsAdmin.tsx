@@ -13,6 +13,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/component
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { exportTextesToWord, exportTextesToCSV } from '@/utils/wordExportUtils';
+import { exportVocabularyToWord } from '@/utils/vocabularyWordExport';
 import WordExportPreview from '@/components/admin/WordExportPreview';
 
 interface Exploration {
@@ -75,6 +76,7 @@ const ExportationsAdmin: React.FC = () => {
   const [allTextes, setAllTextes] = useState<TexteWithDetails[]>([]);
   const [loading, setLoading] = useState(true);
   const [exporting, setExporting] = useState(false);
+  const [exportingVocabulary, setExportingVocabulary] = useState(false);
   
   // Exploration ↔ Marche links
   const [explorationMarchesMap, setExplorationMarchesMap] = useState<Map<string, Set<string>>>(new Map());
@@ -407,6 +409,19 @@ const ExportationsAdmin: React.FC = () => {
     } catch (error) {
       console.error('Export error:', error);
       toast.error('Erreur lors de l\'export');
+    }
+  };
+
+  const handleExportVocabulary = async () => {
+    setExportingVocabulary(true);
+    try {
+      await exportVocabularyToWord();
+      toast.success('Lexique patois exporté avec succès');
+    } catch (error) {
+      console.error('Vocabulary export error:', error);
+      toast.error('Erreur lors de l\'export du lexique');
+    } finally {
+      setExportingVocabulary(false);
     }
   };
 
@@ -919,6 +934,43 @@ const ExportationsAdmin: React.FC = () => {
                     Télécharger .csv
                   </Button>
                 </div>
+              </CardContent>
+            </Card>
+
+            {/* Vocabulary Export Card */}
+            <Card className="border-dashed border-2 border-amber-800/30 bg-amber-950/10">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <BookOpen className="h-5 w-5 text-amber-500" />
+                  Export Word - Lexique Patois
+                </CardTitle>
+                <CardDescription>
+                  Exportez le vocabulaire local et les termes régionaux collectés
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="text-sm text-muted-foreground">
+                  Ce document inclut :
+                  <ul className="list-disc list-inside mt-2 space-y-1">
+                    <li>Termes locaux et dialectaux</li>
+                    <li>Phénomènes naturels régionaux</li>
+                    <li>Pratiques traditionnelles</li>
+                    <li>Sources et références</li>
+                  </ul>
+                </div>
+                
+                <Button 
+                  onClick={handleExportVocabulary}
+                  disabled={exportingVocabulary}
+                  className="w-full bg-amber-700 hover:bg-amber-600 text-white"
+                >
+                  {exportingVocabulary ? (
+                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                  ) : (
+                    <Download className="h-4 w-4 mr-2" />
+                  )}
+                  Télécharger le lexique .docx
+                </Button>
               </CardContent>
             </Card>
 
