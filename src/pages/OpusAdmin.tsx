@@ -12,6 +12,8 @@ import { PrefigurerInterface } from '@/components/opus/PrefigurerInterface';
 import { OpusImportInterface } from '@/components/opus/OpusImportInterface';
 import { useOpusExploration, useOpusContextes } from '@/hooks/useOpus';
 import { useExplorationMarches } from '@/hooks/useExplorations';
+import { exportVocabularyToWord } from '@/utils/vocabularyWordExport';
+import { toast } from 'sonner';
 import { 
   ArrowLeft, 
   Waves, 
@@ -21,7 +23,9 @@ import {
   BarChart3,
   Settings,
   Bot,
-  Upload
+  Upload,
+  FileText,
+  Download
 } from 'lucide-react';
 
 const OpusAdmin: React.FC = () => {
@@ -30,6 +34,20 @@ const OpusAdmin: React.FC = () => {
   const [selectedMarche, setSelectedMarche] = useState<string | null>(null);
   const [activeMode, setActiveMode] = useState<'contextes' | 'fables' | 'prefigurer' | 'import'>('contextes');
   const [showImport, setShowImport] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
+
+  const handleExportVocabulary = async () => {
+    setIsExporting(true);
+    try {
+      await exportVocabularyToWord();
+      toast.success('Lexique exporté avec succès !');
+    } catch (error) {
+      console.error('Erreur export:', error);
+      toast.error('Erreur lors de l\'export du lexique');
+    } finally {
+      setIsExporting(false);
+    }
+  };
   
   const { data: opus, isLoading: opusLoading } = useOpusExploration(slug || '');
   const { data: contextes, isLoading: contextesLoading } = useOpusContextes(opus?.id || '');
@@ -93,6 +111,19 @@ const OpusAdmin: React.FC = () => {
             </div>
             
             <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                onClick={handleExportVocabulary}
+                disabled={isExporting}
+                className="bg-white/10 border-white/20 text-white hover:bg-white/20"
+              >
+                {isExporting ? (
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />
+                ) : (
+                  <FileText className="h-4 w-4 mr-2" />
+                )}
+                Exporter lexique patois
+              </Button>
               <Badge className="bg-blue-600 text-white">
                 {opus.theme_principal}
               </Badge>
