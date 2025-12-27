@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -48,6 +48,7 @@ import { getProcessedSpeciesCount } from '@/utils/speciesDataUtils';
 import { getVocabularyTermsCount } from '@/utils/vocabularyDataUtils';
 import { processTechnodiversiteData } from '@/utils/technodiversiteDataUtils';
 import { processEmpreintesHumainesData } from '@/utils/empreintesHumainesDataUtils';
+import { useDeleteContextItem, DimensionType } from '@/hooks/useDeleteContextItem';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -145,6 +146,32 @@ export const ModernImportDashboard: React.FC = () => {
   const { data: marches } = useSupabaseMarches();
   
   const exploration = explorations?.find(exp => exp.slug === slug);
+
+  // Hook for deleting individual context items
+  const { deleteItem, isDeleting } = useDeleteContextItem(() => {
+    // Callback on successful deletion - reload the imports
+    loadImports();
+  });
+
+  // Handler for deleting items from context views
+  const handleDeleteContextItem = useCallback(async (params: {
+    marcheId: string;
+    dimension: string;
+    categoryKey: string;
+    itemIndex: number;
+    itemName: string;
+  }) => {
+    if (!exploration) return;
+    
+    await deleteItem({
+      marcheId: params.marcheId,
+      opusId: exploration.id,
+      dimension: params.dimension as DimensionType,
+      categoryKey: params.categoryKey,
+      itemIndex: params.itemIndex,
+      itemName: params.itemName
+    });
+  }, [exploration, deleteItem]);
 
   // Animated counters for statistics
   const totalImports = useAnimatedCounter(filteredImports.length, 1000);
@@ -866,22 +893,38 @@ export const ModernImportDashboard: React.FC = () => {
 
             {/* Species View */}
             <TabsContent value="species" className="space-y-6">
-              <ExplorationSpeciesView imports={filteredImports} />
+              <ExplorationSpeciesView 
+                imports={filteredImports} 
+                onDeleteItem={handleDeleteContextItem}
+                isDeleting={isDeleting}
+              />
             </TabsContent>
 
             {/* Vocabulary View */}
             <TabsContent value="vocabulary" className="space-y-6">
-              <ExplorationVocabularyView imports={filteredImports} />
+              <ExplorationVocabularyView 
+                imports={filteredImports}
+                onDeleteItem={handleDeleteContextItem}
+                isDeleting={isDeleting}
+              />
             </TabsContent>
 
             {/* Technodiversity View */}
             <TabsContent value="technodiversity" className="space-y-6">
-              <ExplorationTechnodiversityView imports={filteredImports} />
+              <ExplorationTechnodiversityView 
+                imports={filteredImports}
+                onDeleteItem={handleDeleteContextItem}
+                isDeleting={isDeleting}
+              />
             </TabsContent>
 
             {/* Infrastructure View */}
             <TabsContent value="infrastructure" className="space-y-6">
-              <ExplorationInfrastructureView imports={filteredImports} />
+              <ExplorationInfrastructureView 
+                imports={filteredImports}
+                onDeleteItem={handleDeleteContextItem}
+                isDeleting={isDeleting}
+              />
             </TabsContent>
 
             {/* Imports List */}
