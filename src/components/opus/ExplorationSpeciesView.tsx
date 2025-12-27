@@ -18,7 +18,6 @@ import {
   Calendar,
   Hash
 } from 'lucide-react';
-import { processSpeciesData } from '@/utils/speciesDataUtils';
 import { InteractiveVignette } from './InteractiveVignette';
 
 interface ImportRecord {
@@ -74,44 +73,72 @@ export const ExplorationSpeciesView: React.FC<ExplorationSpeciesViewProps> = ({
   const [sortBy, setSortBy] = useState<'name-asc' | 'name-desc' | 'count-desc' | 'date-desc'>('name-asc');
 
   // Extraire toutes les espèces avec métadonnées pour suppression
+  // IMPORTANT: on lit la structure source (JSONB) pour garder les bons `categoryKey` (clés DB)
   const allSpecies = useMemo(() => {
     const speciesList: ProcessedSpeciesWithMeta[] = [];
-    
-    imports.forEach(importRecord => {
-      const processed = processSpeciesData(importRecord.contexte_data?.especes_caracteristiques);
-      
-      // Traiter la flore
-      processed.flore.forEach((species, index) => {
+
+    imports.forEach((importRecord) => {
+      const raw = importRecord.contexte_data?.especes_caracteristiques;
+      const dataToProcess = raw?.donnees && typeof raw.donnees === 'object' ? raw.donnees : raw;
+
+      if (!dataToProcess || typeof dataToProcess !== 'object') return;
+
+      const pushSpecies = (
+        item: any,
+        categoryKey: string,
+        indexInArray: number,
+        category: string
+      ) => {
+        const nom_commun =
+          item?.nom_vernaculaire || item?.nom_commun || item?.nom || item?.titre || item?.terme || '';
+        const nom_scientifique = item?.nom_scientifique || item?.nom_latin || item?.scientific_name || '';
+        const statut_conservation =
+          item?.statut_conservation ||
+          item?.statut ||
+          item?.conservation_status ||
+          item?.protection ||
+          'Non renseigné';
+        const description_courte =
+          item?.description_courte || item?.description || item?.details || item?.role_ecologique || '';
+
         speciesList.push({
-          ...species,
+          titre: nom_commun || nom_scientifique || 'Espèce',
+          nom_commun: nom_commun || 'Espèce',
+          nom_scientifique,
+          statut_conservation,
+          description_courte,
+          type: category,
+          category,
+          metadata: item,
           marchesCount: 1,
           marches: [importRecord.marche_nom || 'Marché inconnu'],
           lastImportDate: importRecord.import_date,
           importId: importRecord.id,
           marcheId: importRecord.marche_id,
-          categoryKey: 'especes_vegetales',
-          indexInArray: index
+          categoryKey,
+          indexInArray,
         });
-      });
+      };
 
-      // Traiter la faune
-      Object.entries(processed.faune).forEach(([fauneType, speciesList_]) => {
-        const categoryKey = fauneType === 'Oiseaux' ? 'especes_animales' : 
-                           fauneType === 'Poissons' ? 'especes_aquatiques' : 
-                           'espece_indicatrice';
-        speciesList_.forEach((species, index) => {
-          speciesList.push({
-            ...species,
-            marchesCount: 1,
-            marches: [importRecord.marche_nom || 'Marché inconnu'],
-            lastImportDate: importRecord.import_date,
-            importId: importRecord.id,
-            marcheId: importRecord.marche_id,
-            categoryKey,
-            indexInArray: index
-          });
-        });
-      });
+      const vegetales = (dataToProcess as any).especes_vegetales;
+      if (Array.isArray(vegetales)) {
+        vegetales.forEach((item, index) => pushSpecies(item, 'especes_vegetales', index, 'Flore'));
+      }
+
+      const animales = (dataToProcess as any).especes_animales;
+      if (Array.isArray(animales)) {
+        animales.forEach((item, index) => pushSpecies(item, 'especes_animales', index, 'Oiseaux'));
+      }
+
+      const aquatiques = (dataToProcess as any).especes_aquatiques;
+      if (Array.isArray(aquatiques)) {
+        aquatiques.forEach((item, index) => pushSpecies(item, 'especes_aquatiques', index, 'Poissons'));
+      }
+
+      const indicatrice = (dataToProcess as any).espece_indicatrice;
+      if (indicatrice && typeof indicatrice === 'object' && !Array.isArray(indicatrice)) {
+        pushSpecies(indicatrice, 'espece_indicatrice', 0, 'Mammifères');
+      }
     });
 
     return speciesList;
