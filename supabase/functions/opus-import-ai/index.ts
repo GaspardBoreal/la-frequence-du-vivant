@@ -116,6 +116,41 @@ function normalizeDimensions(dimensions: any): any {
     delete normalized.agroecologie;
   }
   
+  // 2b. Normalisation spécifique pour vocabulaire_local
+  // Mapper les clés du format JSON d'import vers les clés canoniques
+  if (normalized.vocabulaire_local) {
+    console.log('[OPUS Import] Normalizing vocabulaire_local structure...');
+    const vocab = normalized.vocabulaire_local;
+    const donnees = vocab.donnees || vocab;
+    
+    // Mapping des clés: termes_hydrologiques → termes_locaux, etc.
+    const normalizedDonnees = {
+      termes_locaux: [
+        ...(donnees.termes_locaux || []),
+        ...(donnees.termes_hydrologiques || [])
+      ],
+      phenomenes: [
+        ...(donnees.phenomenes || []),
+        ...(donnees.phenomenes_naturels || [])
+      ],
+      pratiques: [
+        ...(donnees.pratiques || []),
+        ...(donnees.pratiques_traditionnelles || [])
+      ],
+      sources: donnees.sources || []
+    };
+    
+    normalized.vocabulaire_local = {
+      description: vocab.description || "Vocabulaire local et patrimonial du territoire",
+      donnees: normalizedDonnees
+    };
+    
+    const termCount = normalizedDonnees.termes_locaux.length + 
+                      normalizedDonnees.phenomenes.length + 
+                      normalizedDonnees.pratiques.length;
+    corrections.push(`vocabulaire_local normalisé (${termCount} termes au total)`);
+  }
+  
   // 3. Détection et correction de noms alternatifs courants
   const alternativeNames: { [key: string]: string } = {
     'contexte': 'contexte_hydrologique',

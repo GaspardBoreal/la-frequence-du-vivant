@@ -72,47 +72,71 @@ export const fetchVocabularyData = async (): Promise<MarcheVocabulary[]> => {
   );
 
   // 5. Transformer et combiner les données
+  // IMPORTANT: Fusionner toutes les structures possibles de vocabulaire
+  // - Racine: vocab.termes_locaux, vocab.phenomenes, vocab.pratiques
+  // - Donnees: vocab.donnees.termes_locaux, vocab.donnees.phenomenes, vocab.donnees.pratiques
+  // - Format import: vocab.donnees.termes_hydrologiques, vocab.donnees.phenomenes_naturels, vocab.donnees.pratiques_traditionnelles
   return contextes
     .filter((item) => {
       const vocab = item.vocabulaire_local as any;
       if (!vocab) return false;
       
-      const termesLocaux = vocab.termes_locaux || [];
-      const phenomenes = vocab.phenomenes || [];
-      const pratiques = vocab.pratiques || [];
+      const donnees = vocab.donnees || {};
       
-      return termesLocaux.length > 0 || phenomenes.length > 0 || pratiques.length > 0;
+      // Compter tous les termes de toutes les structures possibles
+      const allTermesCount = (vocab.termes_locaux?.length || 0) + 
+                             (donnees.termes_locaux?.length || 0) + 
+                             (donnees.termes_hydrologiques?.length || 0);
+      const allPhenomenesCount = (vocab.phenomenes?.length || 0) + 
+                                  (donnees.phenomenes?.length || 0) + 
+                                  (donnees.phenomenes_naturels?.length || 0);
+      const allPratiquesCount = (vocab.pratiques?.length || 0) + 
+                                 (donnees.pratiques?.length || 0) + 
+                                 (donnees.pratiques_traditionnelles?.length || 0);
+      
+      return allTermesCount > 0 || allPhenomenesCount > 0 || allPratiquesCount > 0;
     })
     .map((item) => {
       const vocab = item.vocabulaire_local as any;
       const marche = marchesMap.get(item.marche_id);
+      const donnees = vocab.donnees || {};
+      
+      // Fusionner toutes les sources possibles pour chaque catégorie
+      const allTermesLocaux = [
+        ...(vocab.termes_locaux || []),           // racine
+        ...(donnees.termes_locaux || []),         // donnees.termes_locaux
+        ...(donnees.termes_hydrologiques || [])   // donnees.termes_hydrologiques (format import)
+      ];
+      
+      const allPhenomenes = [
+        ...(vocab.phenomenes || []),              // racine
+        ...(donnees.phenomenes || []),            // donnees.phenomenes
+        ...(donnees.phenomenes_naturels || [])    // donnees.phenomenes_naturels (format import)
+      ];
+      
+      const allPratiques = [
+        ...(vocab.pratiques || []),               // racine
+        ...(donnees.pratiques || []),             // donnees.pratiques
+        ...(donnees.pratiques_traditionnelles || []) // donnees.pratiques_traditionnelles (format import)
+      ];
+
+      // Helper pour normaliser les termes avec différents noms de champs
+      const normalizeTerm = (t: any) => ({
+        terme: t.terme || t.nom || t.expression || '',
+        definition: t.definition || t.description || t.phenomene_designe || '',
+        source: t.source || t.source_etymologique || '',
+        usage: t.usage || t.contexte_usage || t.contexte_cultural || t.savoir_faire || '',
+        contexte: t.contexte || t.geolocalisation || t.periode_occurrence || t.periode_historique || '',
+      });
       
       return {
         marche_id: item.marche_id,
         marche_nom: marche?.nom_marche || marche?.ville || 'Lieu inconnu',
         marche_ville: marche?.ville || '',
         marche_region: marche?.region || '',
-        termes_locaux: (vocab.termes_locaux || []).map((t: any) => ({
-          terme: t.terme || t.nom || '',
-          definition: t.definition || t.description || '',
-          source: t.source || '',
-          usage: t.usage || '',
-          contexte: t.contexte || '',
-        })),
-        phenomenes: (vocab.phenomenes || []).map((p: any) => ({
-          terme: p.terme || p.nom || '',
-          definition: p.definition || p.description || '',
-          source: p.source || '',
-          usage: p.usage || '',
-          contexte: p.contexte || '',
-        })),
-        pratiques: (vocab.pratiques || []).map((p: any) => ({
-          terme: p.terme || p.nom || '',
-          definition: p.definition || p.description || '',
-          source: p.source || '',
-          usage: p.usage || '',
-          contexte: p.contexte || '',
-        })),
+        termes_locaux: allTermesLocaux.map(normalizeTerm),
+        phenomenes: allPhenomenes.map(normalizeTerm),
+        pratiques: allPratiques.map(normalizeTerm),
       };
     });
 };
