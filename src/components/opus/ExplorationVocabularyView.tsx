@@ -103,10 +103,10 @@ export const ExplorationVocabularyView: React.FC<ExplorationVocabularyViewProps>
       const processVocabularyCategory = (items: any[], categoryName: string) => {
         if (!Array.isArray(items)) return;
         
-        items.forEach(item => {
+        items.forEach((item, itemIndex) => {
           // Si l'item a des metadata avec des sous-éléments
           if (item.metadata && item.metadata[categoryName] && Array.isArray(item.metadata[categoryName])) {
-            item.metadata[categoryName].forEach((subItem: any) => {
+            item.metadata[categoryName].forEach((subItem: any, subIndex: number) => {
               // Valider le terme avant de l'ajouter
               if (!isValidVocabularyTerm(subItem)) {
                 console.warn(`[${importRecord.marche_nom}] Rejected invalid vocabulary term in ${categoryName}:`, subItem);
@@ -123,6 +123,9 @@ export const ExplorationVocabularyView: React.FC<ExplorationVocabularyViewProps>
                 if (importRecord.import_date > existing.lastImportDate) {
                   existing.lastImportDate = importRecord.import_date;
                   existing.importId = importRecord.id;
+                  existing.marcheId = importRecord.marche_id;
+                  existing.categoryKey = categoryName;
+                  existing.indexInArray = subIndex;
                 }
               } else {
                 vocabularyMap.set(key, {
@@ -136,7 +139,10 @@ export const ExplorationVocabularyView: React.FC<ExplorationVocabularyViewProps>
                   marchesCount: 1,
                   marches: [importRecord.marche_nom || 'Marché inconnu'],
                   lastImportDate: importRecord.import_date,
-                  importId: importRecord.id
+                  importId: importRecord.id,
+                  marcheId: importRecord.marche_id,
+                  categoryKey: categoryName,
+                  indexInArray: subIndex
                 });
               }
             });
@@ -158,6 +164,9 @@ export const ExplorationVocabularyView: React.FC<ExplorationVocabularyViewProps>
               if (importRecord.import_date > existing.lastImportDate) {
                 existing.lastImportDate = importRecord.import_date;
                 existing.importId = importRecord.id;
+                existing.marcheId = importRecord.marche_id;
+                existing.categoryKey = categoryName;
+                existing.indexInArray = itemIndex;
               }
             } else {
               vocabularyMap.set(key, {
@@ -171,7 +180,10 @@ export const ExplorationVocabularyView: React.FC<ExplorationVocabularyViewProps>
                 marchesCount: 1,
                 marches: [importRecord.marche_nom || 'Marché inconnu'],
                 lastImportDate: importRecord.import_date,
-                importId: importRecord.id
+                importId: importRecord.id,
+                marcheId: importRecord.marche_id,
+                categoryKey: categoryName,
+                indexInArray: itemIndex
               });
             }
           }
@@ -452,6 +464,16 @@ export const ExplorationVocabularyView: React.FC<ExplorationVocabularyViewProps>
                 metadata: vocab.metadata
               }}
               variant="vocabulary"
+              canDelete={!!onDeleteItem && !!vocab.marcheId && !!vocab.categoryKey}
+              onDelete={onDeleteItem && vocab.marcheId && vocab.categoryKey ? async () => {
+                return await onDeleteItem({
+                  marcheId: vocab.marcheId!,
+                  dimension: 'vocabulaire_local',
+                  categoryKey: vocab.categoryKey!,
+                  itemIndex: vocab.indexInArray ?? 0,
+                  itemName: vocab.titre
+                });
+              } : undefined}
             />
             
             {/* Métadonnées spécifiques au dashboard */}

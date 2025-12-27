@@ -114,7 +114,7 @@ export const ExplorationTechnodiversityView: React.FC<ExplorationTechnodiversity
       const processTechCategory = (items: any[], categoryName: string, displayCategory: string) => {
         if (!Array.isArray(items)) return;
         
-        items.forEach(item => {
+        items.forEach((item, itemIndex) => {
           if (!isValidTechItem(item)) {
             console.warn(`[${importRecord.marche_nom}] Rejected invalid tech item in ${categoryName}:`, item);
             return;
@@ -130,6 +130,9 @@ export const ExplorationTechnodiversityView: React.FC<ExplorationTechnodiversity
             if (importRecord.import_date > existing.lastImportDate) {
               existing.lastImportDate = importRecord.import_date;
               existing.importId = importRecord.id;
+              existing.marcheId = importRecord.marche_id;
+              existing.categoryKey = categoryName;
+              existing.indexInArray = itemIndex;
             }
           } else {
             techMap.set(key, {
@@ -142,7 +145,10 @@ export const ExplorationTechnodiversityView: React.FC<ExplorationTechnodiversity
               marchesCount: 1,
               marches: [importRecord.marche_nom || 'Marché inconnu'],
               lastImportDate: importRecord.import_date,
-              importId: importRecord.id
+              importId: importRecord.id,
+              marcheId: importRecord.marche_id,
+              categoryKey: categoryName,
+              indexInArray: itemIndex
             });
           }
         });
@@ -441,6 +447,16 @@ export const ExplorationTechnodiversityView: React.FC<ExplorationTechnodiversity
               }}
               importSources={[]}
               className="h-full"
+              canDelete={!!onDeleteItem && !!tech.marcheId && !!tech.categoryKey}
+              onDelete={onDeleteItem && tech.marcheId && tech.categoryKey ? async () => {
+                return await onDeleteItem({
+                  marcheId: tech.marcheId!,
+                  dimension: 'technodiversite',
+                  categoryKey: tech.categoryKey!,
+                  itemIndex: tech.indexInArray ?? 0,
+                  itemName: tech.titre
+                });
+              } : undefined}
             />
           </div>
         ))}

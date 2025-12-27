@@ -93,9 +93,17 @@ export const ExplorationInfrastructureView: React.FC<ExplorationInfrastructureVi
       // Utiliser la même logique que le comptage
       const processedData = processEmpreintesHumainesData(rawInfraData);
       
+      // Mapping des catégories affichées vers les clés JSONB
+      const categoryToKey: Record<string, string> = {
+        'Patrimoines et architectures': 'patrimoniales',
+        'Infrastructures industrielles': 'industrielles',
+        'Infrastructures de transport': 'transport',
+        'Développements urbains': 'urbaines'
+      };
+
       // Traiter toutes les catégories de la structure processée
       const processCategory = (items: any[], displayCategory: string) => {
-        items.forEach(item => {
+        items.forEach((item, itemIndex) => {
           if (!isValidInfrastructureItem(item)) {
             console.warn(`[${importRecord.marche_nom}] Rejected invalid infrastructure item:`, item);
             return;
@@ -103,6 +111,7 @@ export const ExplorationInfrastructureView: React.FC<ExplorationInfrastructureVi
 
           const titre = item.titre;
           const key = `${titre}_${displayCategory}_${importRecord.marche_id}`.toLowerCase().replace(/\s+/g, '_');
+          const categoryKey = categoryToKey[displayCategory] || displayCategory.toLowerCase();
           
           if (infraMap.has(key)) {
             const existing = infraMap.get(key)!;
@@ -111,6 +120,9 @@ export const ExplorationInfrastructureView: React.FC<ExplorationInfrastructureVi
             if (importRecord.import_date > existing.lastImportDate) {
               existing.lastImportDate = importRecord.import_date;
               existing.importId = importRecord.id;
+              existing.marcheId = importRecord.marche_id;
+              existing.categoryKey = categoryKey;
+              existing.indexInArray = itemIndex;
             }
           } else {
             infraMap.set(key, {
@@ -123,7 +135,10 @@ export const ExplorationInfrastructureView: React.FC<ExplorationInfrastructureVi
               marchesCount: 1,
               marches: [importRecord.marche_nom || 'Marché inconnu'],
               lastImportDate: importRecord.import_date,
-              importId: importRecord.id
+              importId: importRecord.id,
+              marcheId: importRecord.marche_id,
+              categoryKey: categoryKey,
+              indexInArray: itemIndex
             });
           }
         });
@@ -389,6 +404,16 @@ export const ExplorationInfrastructureView: React.FC<ExplorationInfrastructureVi
               }}
               importSources={[]}
               className="h-full"
+              canDelete={!!onDeleteItem && !!infra.marcheId && !!infra.categoryKey}
+              onDelete={onDeleteItem && infra.marcheId && infra.categoryKey ? async () => {
+                return await onDeleteItem({
+                  marcheId: infra.marcheId!,
+                  dimension: 'empreintes_humaines',
+                  categoryKey: infra.categoryKey!,
+                  itemIndex: infra.indexInArray ?? 0,
+                  itemName: infra.titre
+                });
+              } : undefined}
             />
           </div>
         ))}
