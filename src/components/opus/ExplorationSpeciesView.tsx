@@ -72,8 +72,27 @@ export const ExplorationSpeciesView: React.FC<ExplorationSpeciesViewProps> = ({
   const [selectedType, setSelectedType] = useState<string>('all');
   const [sortBy, setSortBy] = useState<'name-asc' | 'name-desc' | 'count-desc' | 'date-desc'>('name-asc');
 
-  // Extraire toutes les espèces avec métadonnées pour suppression
-  // IMPORTANT: on lit la structure source (JSONB) pour garder les bons `categoryKey` (clés DB)
+  // Mapping des clés JSONB vers catégories d'affichage (même logique que speciesDataUtils)
+  const mapKeyToCategory = (key: string): string => {
+    const keyLower = key.toLowerCase();
+    
+    if (keyLower.includes('poisson')) return 'Poissons';
+    if (keyLower.includes('oiseau')) return 'Oiseaux';
+    if (keyLower.includes('vegetation') || keyLower.includes('plante') || keyLower.includes('flore') || keyLower.includes('vegetale')) return 'Flore';
+    if (keyLower.includes('invertebr') || keyLower.includes('crustac') || keyLower.includes('mollusque')) return 'Invertébrés';
+    if (keyLower.includes('insecte') || keyLower.includes('arthropode')) return 'Insectes';
+    if (keyLower.includes('reptile') || keyLower.includes('serpent')) return 'Reptiles';
+    if (keyLower.includes('mammifère') || keyLower.includes('mammifere') || keyLower.includes('indicatrice')) return 'Mammifères';
+    if (keyLower.includes('animale')) return 'Oiseaux';
+    if (keyLower.includes('aquatique')) return 'Poissons';
+    
+    return 'Autres';
+  };
+
+  // Clés à ignorer (métadonnées, pas des espèces)
+  const ignoredKeys = ['sources', 'description', 'resume', 'date_observation', 'contexte', 'methodologie', 'notes'];
+
+  // Extraire TOUTES les espèces dynamiquement (comme speciesDataUtils)
   const allSpecies = useMemo(() => {
     const speciesList: ProcessedSpeciesWithMeta[] = [];
 
@@ -90,7 +109,7 @@ export const ExplorationSpeciesView: React.FC<ExplorationSpeciesViewProps> = ({
         category: string
       ) => {
         const nom_commun =
-          item?.nom_vernaculaire || item?.nom_commun || item?.nom || item?.titre || item?.terme || '';
+          item?.nom_vernaculaire || item?.nom_commun || item?.nom || item?.espece || item?.titre || item?.terme || '';
         const nom_scientifique = item?.nom_scientifique || item?.nom_latin || item?.scientific_name || '';
         const statut_conservation =
           item?.statut_conservation ||
@@ -99,7 +118,10 @@ export const ExplorationSpeciesView: React.FC<ExplorationSpeciesViewProps> = ({
           item?.protection ||
           'Non renseigné';
         const description_courte =
-          item?.description_courte || item?.description || item?.details || item?.role_ecologique || '';
+          item?.description_courte || item?.description || item?.details || item?.role_ecologique || item?.caracteristiques || '';
+
+        // Vérifier que c'est bien une espèce (a un nom)
+        if (!nom_commun && !nom_scientifique) return;
 
         speciesList.push({
           titre: nom_commun || nom_scientifique || 'Espèce',
@@ -120,25 +142,25 @@ export const ExplorationSpeciesView: React.FC<ExplorationSpeciesViewProps> = ({
         });
       };
 
-      const vegetales = (dataToProcess as any).especes_vegetales;
-      if (Array.isArray(vegetales)) {
-        vegetales.forEach((item, index) => pushSpecies(item, 'especes_vegetales', index, 'Flore'));
-      }
+      // Parcourir TOUTES les clés dynamiquement
+      Object.entries(dataToProcess).forEach(([key, value]) => {
+        // Ignorer les clés de métadonnées
+        if (ignoredKeys.includes(key.toLowerCase())) return;
+        
+        const category = mapKeyToCategory(key);
 
-      const animales = (dataToProcess as any).especes_animales;
-      if (Array.isArray(animales)) {
-        animales.forEach((item, index) => pushSpecies(item, 'especes_animales', index, 'Oiseaux'));
-      }
-
-      const aquatiques = (dataToProcess as any).especes_aquatiques;
-      if (Array.isArray(aquatiques)) {
-        aquatiques.forEach((item, index) => pushSpecies(item, 'especes_aquatiques', index, 'Poissons'));
-      }
-
-      const indicatrice = (dataToProcess as any).espece_indicatrice;
-      if (indicatrice && typeof indicatrice === 'object' && !Array.isArray(indicatrice)) {
-        pushSpecies(indicatrice, 'espece_indicatrice', 0, 'Mammifères');
-      }
+        if (Array.isArray(value)) {
+          // Tableau d'espèces
+          value.forEach((item, index) => {
+            if (typeof item === 'object' && item !== null) {
+              pushSpecies(item, key, index, category);
+            }
+          });
+        } else if (typeof value === 'object' && value !== null) {
+          // Objet unique (ex: espece_indicatrice)
+          pushSpecies(value, key, 0, category);
+        }
+      });
     });
 
     return speciesList;
