@@ -57,9 +57,34 @@ export default function ExperienceLectureOptimisee() {
   const [showMarcheTransition, setShowMarcheTransition] = useState(false);
   const [transitionInfo, setTransitionInfo] = useState<TransitionInfo | null>(null);
   const pendingIndexRef = useRef<number | null>(null);
+  const isInitialEntryRef = useRef<boolean>(true);
+
+  // Build marche order map from all texts (for initial entry before filter is applied)
+  const initialMarcheOrderInfo = useMemo(() => {
+    const uniqueMarches: { id: string; ordre: number; name: string; ville: string }[] = [];
+    const seenIds = new Set<string>();
+    
+    texts.forEach(t => {
+      if (t.marche_id && !seenIds.has(t.marche_id)) {
+        seenIds.add(t.marche_id);
+        uniqueMarches.push({
+          id: t.marche_id,
+          ordre: uniqueMarches.length + 1,
+          name: t.marcheNomMarche || t.marcheVille || 'Marche',
+          ville: t.marcheVille || ''
+        });
+      }
+    });
+    
+    return {
+      totalMarches: uniqueMarches.length,
+      getOrdre: (marcheId: string) => uniqueMarches.find(m => m.id === marcheId)?.ordre || 0
+    };
+  }, [texts]);
 
   // Handle marche parameter from URL to navigate to first text of that marche
   // Keep filter on "all" to allow chronological navigation through all texts
+  // Trigger transition on initial entry
   useEffect(() => {
     // Skip if textId is present (handled by another effect)
     if (textId) return;
@@ -81,7 +106,21 @@ export default function ExperienceLectureOptimisee() {
         if (textIndex >= 0) {
           // Don't force filter by type - keep "all" to allow chronological navigation
           setSelectedTextType('all');
-          setCurrentIndex(textIndex);
+          
+          // Trigger initial entry transition
+          if (isInitialEntryRef.current) {
+            isInitialEntryRef.current = false;
+            pendingIndexRef.current = textIndex;
+            setTransitionInfo({
+              marcheName: firstMarcheText.marcheNomMarche || firstMarcheText.marcheVille || 'Marche',
+              marcheVille: firstMarcheText.marcheVille || '',
+              marcheOrdre: initialMarcheOrderInfo.getOrdre(firstMarcheText.marche_id),
+              direction: 'next'
+            });
+            setShowMarcheTransition(true);
+          } else {
+            setCurrentIndex(textIndex);
+          }
         }
         
         // Clean up URL by removing the marche parameter
@@ -90,7 +129,7 @@ export default function ExperienceLectureOptimisee() {
         window.history.replaceState(null, '', cleanUrl.toString());
       }
     }
-  }, [texts, textId]);
+  }, [texts, textId, initialMarcheOrderInfo]);
   
   // Apply theme class to document
   useEffect(() => {
@@ -165,16 +204,33 @@ export default function ExperienceLectureOptimisee() {
 
   // Find current text index from URL parameter
   // Keep filter on "all" to allow chronological navigation through all texts
+  // Trigger transition on initial entry via direct textId
   useEffect(() => {
     if (textId && texts.length > 0) {
+      const targetText = texts.find(t => t.id === textId);
       const textIndex = texts.findIndex(t => t.id === textId);
-      if (textIndex >= 0) {
+      
+      if (targetText && textIndex >= 0) {
         // Don't force filter by type - keep "all" to allow chronological navigation
         setSelectedTextType('all');
-        setCurrentIndex(textIndex);
+        
+        // Trigger initial entry transition
+        if (isInitialEntryRef.current) {
+          isInitialEntryRef.current = false;
+          pendingIndexRef.current = textIndex;
+          setTransitionInfo({
+            marcheName: targetText.marcheNomMarche || targetText.marcheVille || 'Marche',
+            marcheVille: targetText.marcheVille || '',
+            marcheOrdre: initialMarcheOrderInfo.getOrdre(targetText.marche_id),
+            direction: 'next'
+          });
+          setShowMarcheTransition(true);
+        } else {
+          setCurrentIndex(textIndex);
+        }
       }
     }
-  }, [textId, texts]);
+  }, [textId, texts, initialMarcheOrderInfo]);
   
   // Update URL when index or type changes
   useEffect(() => {
