@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
@@ -25,9 +25,17 @@ import { useExplorationTextsOptimized } from '@/hooks/useExplorationTextsOptimiz
 import TexteRendererAdaptatif from './TexteRendererAdaptatif';
 import NavigationLitteraire from './NavigationLitteraire';
 import TextTypeSelector from './TextTypeSelector';
+import MarcheTransitionOverlay from './MarcheTransitionOverlay';
 import { getTextTypeInfo, TextType } from '@/types/textTypes';
 import { AppearanceMode, ReadingMode } from '@/types/readingTypes';
 import { createSlug } from '@/utils/slugGenerator';
+
+interface TransitionInfo {
+  marcheName: string;
+  marcheVille: string;
+  marcheOrdre: number;
+  direction: 'next' | 'previous';
+}
 
 export default function ExperienceLectureOptimisee() {
   const { slug, textId } = useParams<{ slug: string; textId?: string }>();
@@ -45,6 +53,11 @@ export default function ExperienceLectureOptimisee() {
   const [appearanceMode, setAppearanceMode] = useState<AppearanceMode>('system');
   const [readingMode, setReadingMode] = useState<ReadingMode>('rich');
   
+  // Marche transition states
+  const [showMarcheTransition, setShowMarcheTransition] = useState(false);
+  const [transitionInfo, setTransitionInfo] = useState<TransitionInfo | null>(null);
+  const pendingIndexRef = useRef<number | null>(null);
+
   // Handle marche parameter from URL to navigate to first text of that marche
   // Keep filter on "all" to allow chronological navigation through all texts
   useEffect(() => {
@@ -126,6 +139,30 @@ export default function ExperienceLectureOptimisee() {
     return texts.filter(t => t.type_texte === selectedTextType);
   }, [texts, selectedTextType]);
 
+  // Build marche order map for transition display
+  const marcheOrderInfo = useMemo(() => {
+    const uniqueMarches: { id: string; ordre: number; name: string; ville: string }[] = [];
+    const seenIds = new Set<string>();
+    
+    filteredTexts.forEach(t => {
+      if (t.marche_id && !seenIds.has(t.marche_id)) {
+        seenIds.add(t.marche_id);
+        uniqueMarches.push({
+          id: t.marche_id,
+          ordre: uniqueMarches.length + 1,
+          name: t.marcheNomMarche || t.marcheVille || 'Marche',
+          ville: t.marcheVille || ''
+        });
+      }
+    });
+    
+    return {
+      marches: uniqueMarches,
+      totalMarches: uniqueMarches.length,
+      getOrdre: (marcheId: string) => uniqueMarches.find(m => m.id === marcheId)?.ordre || 0
+    };
+  }, [filteredTexts]);
+
   // Find current text index from URL parameter
   // Keep filter on "all" to allow chronological navigation through all texts
   useEffect(() => {
@@ -156,18 +193,59 @@ export default function ExperienceLectureOptimisee() {
   const currentText = filteredTexts[currentIndex];
   const currentType = selectedTextType === 'all' ? currentText?.type_texte : selectedTextType;
 
-  // Navigation handlers
+  // Navigation handlers with marche transition detection
   const handlePrevious = useCallback(() => {
     if (currentIndex > 0) {
-      setCurrentIndex(currentIndex - 1);
+      const currentMarche = filteredTexts[currentIndex]?.marche_id;
+      const previousText = filteredTexts[currentIndex - 1];
+      const previousMarche = previousText?.marche_id;
+      
+      // Check if we're changing marche
+      if (currentMarche && previousMarche && currentMarche !== previousMarche) {
+        pendingIndexRef.current = currentIndex - 1;
+        setTransitionInfo({
+          marcheName: previousText.marcheNomMarche || previousText.marcheVille || 'Marche',
+          marcheVille: previousText.marcheVille || '',
+          marcheOrdre: marcheOrderInfo.getOrdre(previousMarche),
+          direction: 'previous'
+        });
+        setShowMarcheTransition(true);
+      } else {
+        setCurrentIndex(currentIndex - 1);
+      }
     }
-  }, [currentIndex]);
+  }, [currentIndex, filteredTexts, marcheOrderInfo]);
 
   const handleNext = useCallback(() => {
     if (currentIndex < filteredTexts.length - 1) {
-      setCurrentIndex(currentIndex + 1);
+      const currentMarche = filteredTexts[currentIndex]?.marche_id;
+      const nextText = filteredTexts[currentIndex + 1];
+      const nextMarche = nextText?.marche_id;
+      
+      // Check if we're changing marche
+      if (currentMarche && nextMarche && currentMarche !== nextMarche) {
+        pendingIndexRef.current = currentIndex + 1;
+        setTransitionInfo({
+          marcheName: nextText.marcheNomMarche || nextText.marcheVille || 'Marche',
+          marcheVille: nextText.marcheVille || '',
+          marcheOrdre: marcheOrderInfo.getOrdre(nextMarche),
+          direction: 'next'
+        });
+        setShowMarcheTransition(true);
+      } else {
+        setCurrentIndex(currentIndex + 1);
+      }
     }
-  }, [currentIndex, filteredTexts.length]);
+  }, [currentIndex, filteredTexts, marcheOrderInfo]);
+
+  // Handle transition dismiss (manual skip or auto-dismiss)
+  const handleTransitionDismiss = useCallback(() => {
+    setShowMarcheTransition(false);
+    if (pendingIndexRef.current !== null) {
+      setCurrentIndex(pendingIndexRef.current);
+      pendingIndexRef.current = null;
+    }
+  }, []);
 
   const handleTypeSelect = useCallback((type: TextType | 'all') => {
     setSelectedTextType(type);
@@ -568,6 +646,17 @@ export default function ExperienceLectureOptimisee() {
           </div>
         </motion.div>
       )}
+
+      {/* Marche Transition Overlay */}
+      <MarcheTransitionOverlay
+        visible={showMarcheTransition}
+        marcheName={transitionInfo?.marcheName || ''}
+        marcheVille={transitionInfo?.marcheVille || ''}
+        marcheOrdre={transitionInfo?.marcheOrdre || 0}
+        totalMarches={marcheOrderInfo.totalMarches}
+        direction={transitionInfo?.direction || 'next'}
+        onDismiss={handleTransitionDismiss}
+      />
     </div>
   );
 }

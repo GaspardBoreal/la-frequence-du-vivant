@@ -3,6 +3,7 @@
 
 export { default as SymphonieTextuelle } from './SymphonieTextuelle';
 export { default as ExperienceLectureRevolutionnaire } from './ExperienceLectureRevolutionnaire';
+export { default as MarcheTransitionOverlay } from './MarcheTransitionOverlay';
 
 // Legacy components (kept for reference)
 export { default as ExperienceLivreWelcome } from './ExperienceLivreWelcome';
