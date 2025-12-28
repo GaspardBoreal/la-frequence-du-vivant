@@ -130,6 +130,37 @@ export default function ExperienceLectureOptimisee() {
       }
     }
   }, [texts, textId, initialMarcheOrderInfo]);
+
+  // Fallback: Handle entry from home page without any URL parameters
+  // This triggers transition for the first text when no ?marche= or textId is present
+  useEffect(() => {
+    // Skip if textId is present (handled by another effect)
+    if (textId) return;
+    
+    // Skip if texts not loaded yet
+    if (texts.length === 0) return;
+    
+    // Skip if not initial entry
+    if (!isInitialEntryRef.current) return;
+    
+    // Check if marcheParam is present (handled by the effect above)
+    const urlParams = new URLSearchParams(window.location.search);
+    const marcheParam = urlParams.get('marche');
+    if (marcheParam) return;
+    
+    // This is a "clean" entry from home page - trigger transition for first text
+    const firstText = texts[0];
+    isInitialEntryRef.current = false;
+    setSelectedTextType('all');
+    pendingIndexRef.current = 0;
+    setTransitionInfo({
+      marcheName: firstText.marcheNomMarche || firstText.marcheVille || 'Marche',
+      marcheVille: firstText.marcheVille || '',
+      marcheOrdre: initialMarcheOrderInfo.getOrdre(firstText.marche_id),
+      direction: 'next'
+    });
+    setShowMarcheTransition(true);
+  }, [texts, textId, initialMarcheOrderInfo]);
   
   // Apply theme class to document
   useEffect(() => {
