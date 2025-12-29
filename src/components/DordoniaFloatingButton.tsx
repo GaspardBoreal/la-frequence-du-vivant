@@ -2,9 +2,9 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Waves } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
-import MurmuriaChat from './MurmuriaChat';
+import DordoniaChat from './DordoniaChat';
 
-const MurmuriaFloatingButton: React.FC = () => {
+const DordoniaFloatingButton: React.FC = () => {
   const isMobile = useIsMobile();
   const [showTooltip, setShowTooltip] = useState(false);
   const [isChatOpen, setIsChatOpen] = useState(false);
@@ -16,8 +16,8 @@ const MurmuriaFloatingButton: React.FC = () => {
 
   return (
     <>
-      {/* Chat Murmuria */}
-      <MurmuriaChat isOpen={isChatOpen} onClose={() => setIsChatOpen(false)} />
+      {/* Chat Dordonia */}
+      <DordoniaChat isOpen={isChatOpen} onClose={() => setIsChatOpen(false)} />
 
       {/* Bouton flottant - masqué quand le chat est ouvert */}
       <AnimatePresence>
@@ -41,10 +41,10 @@ const MurmuriaFloatingButton: React.FC = () => {
                 >
                   <div className="bg-background/95 backdrop-blur-md border border-border/50 rounded-xl px-4 py-2.5 shadow-xl">
                     <p className="text-sm font-medium text-foreground">
-                      Murmurer avec la rivière Dordogne
+                      Dialoguer avec Dordonia
                     </p>
                     <p className="text-xs text-muted-foreground mt-0.5">
-                      Dialoguer avec Murmuria
+                      L'esprit des marches
                     </p>
                   </div>
                   {/* Flèche du tooltip */}
@@ -63,7 +63,7 @@ const MurmuriaFloatingButton: React.FC = () => {
               className="relative group"
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
-              aria-label="Murmurer avec la rivière Dordogne - Dialoguer avec Murmuria"
+              aria-label="Dialoguer avec Dordonia - L'esprit des marches sur la rivière Dordogne"
             >
               {/* Effet d'ondulation de fond */}
               <motion.div
@@ -99,7 +99,7 @@ const MurmuriaFloatingButton: React.FC = () => {
 
               {/* Texte accessible aux lecteurs d'écran */}
               <span className="sr-only">
-                Murmurer avec la rivière Dordogne - Ouvrir le dialogue avec Murmuria, l'esprit de la Dordogne
+                Dialoguer avec Dordonia - Ouvrir le dialogue avec l'esprit des marches sur la rivière Dordogne
               </span>
             </motion.button>
           </motion.div>
@@ -109,4 +109,4 @@ const MurmuriaFloatingButton: React.FC = () => {
   );
 };
 
-export default MurmuriaFloatingButton;
+export default DordoniaFloatingButton;
