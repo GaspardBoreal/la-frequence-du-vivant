@@ -13,6 +13,8 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
+import PlaylistViewToggle, { type PlaylistViewMode } from '@/components/audio/PlaylistViewToggle';
+import PlaylistParcoursView from '@/components/audio/PlaylistParcoursView';
 import { 
   Play, 
   Pause, 
@@ -102,6 +104,7 @@ export default function ExperienceAudioContinue() {
   const [showPlaylist, setShowPlaylist] = useState(false);
   const [playMode, setPlayMode] = useState<'order' | 'shuffle' | 'repeat'>('order');
   const [selectedAudioType, setSelectedAudioType] = useState<AudioType | 'all'>('all');
+  const [playlistViewMode, setPlaylistViewMode] = useState<PlaylistViewMode>('list');
   
   // Deep link modal state
   const [pendingAudioId, setPendingAudioId] = useState<string | null>(null);
@@ -601,47 +604,64 @@ export default function ExperienceAudioContinue() {
                           </SheetTitle>
                         </SheetHeader>
                         
-                        <ScrollArea className="h-full mt-6">
-                          <div className="space-y-2">
-                            {audioPlaylist.map((track, index) => (
-                              <motion.div
-                                key={track.id}
-                                whileHover={{ scale: 1.02 }}
-                                whileTap={{ scale: 0.98 }}
-                              >
-                                <Button
-                                  variant={index === currentTrackIndex ? "default" : "ghost"}
-                                  onClick={() => handleTrackSelect(index)}
-                                  className="w-full justify-start text-left p-4 h-auto btn-nature"
+                        {/* View mode toggle */}
+                        <div className="mt-4 mb-2">
+                          <PlaylistViewToggle 
+                            mode={playlistViewMode} 
+                            onModeChange={setPlaylistViewMode} 
+                          />
+                        </div>
+                        
+                        <ScrollArea className="h-[calc(100vh-180px)] mt-2">
+                          {playlistViewMode === 'list' ? (
+                            <div className="space-y-2">
+                              {audioPlaylist.map((track, index) => (
+                                <motion.div
+                                  key={track.id}
+                                  whileHover={{ scale: 1.02 }}
+                                  whileTap={{ scale: 0.98 }}
                                 >
-                                  <div className="space-y-1">
-                                    <div className="flex items-center gap-2">
-                                      <span className="text-xs text-emerald-700 dark:text-muted-foreground">
-                                        {String(index + 1).padStart(2, '0')}
-                                      </span>
-                                      <span className="font-medium truncate">
-                                        {track.title}
-                                      </span>
-                                    </div>
-                                    <div className="flex items-center gap-2 text-xs text-emerald-600 dark:text-muted-foreground">
-                                      {track.marcheName && (
-                                        <span className="flex items-center gap-1">
-                                          <MapPin className="h-3 w-3" />
-                                          {track.marcheName}
+                                  <Button
+                                    variant={index === currentTrackIndex ? "default" : "ghost"}
+                                    onClick={() => handleTrackSelect(index)}
+                                    className="w-full justify-start text-left p-4 h-auto btn-nature"
+                                  >
+                                    <div className="space-y-1">
+                                      <div className="flex items-center gap-2">
+                                        <span className="text-xs text-emerald-700 dark:text-muted-foreground">
+                                          {String(index + 1).padStart(2, '0')}
                                         </span>
-                                      )}
-                                      {track.duration && (
-                                        <span className="flex items-center gap-1">
-                                          <Clock className="h-3 w-3" />
-                                          {formatTime(track.duration)}
+                                        <span className="font-medium truncate">
+                                          {track.title}
                                         </span>
-                                      )}
+                                      </div>
+                                      <div className="flex items-center gap-2 text-xs text-emerald-600 dark:text-muted-foreground">
+                                        {track.marcheName && (
+                                          <span className="flex items-center gap-1">
+                                            <MapPin className="h-3 w-3" />
+                                            {track.marcheName}
+                                          </span>
+                                        )}
+                                        {track.duration && (
+                                          <span className="flex items-center gap-1">
+                                            <Clock className="h-3 w-3" />
+                                            {formatTime(track.duration)}
+                                          </span>
+                                        )}
+                                      </div>
                                     </div>
-                                  </div>
-                                </Button>
-                              </motion.div>
-                            ))}
-                          </div>
+                                  </Button>
+                                </motion.div>
+                              ))}
+                            </div>
+                          ) : (
+                            <PlaylistParcoursView
+                              tracks={audioPlaylist}
+                              currentTrackIndex={currentTrackIndex}
+                              onTrackSelect={handleTrackSelect}
+                              formatTime={formatTime}
+                            />
+                          )}
                         </ScrollArea>
                       </SheetContent>
                     </Sheet>
