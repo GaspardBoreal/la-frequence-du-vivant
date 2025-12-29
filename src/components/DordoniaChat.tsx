@@ -3,16 +3,16 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { X, Send, Waves, RotateCcw, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { useMurmuriaChat, MurmuriaMessage } from '@/hooks/useMurmuriaChat';
+import { useDordoniaChat, DordoniaMessage } from '@/hooks/useDordoniaChat';
 import { useIsMobile } from '@/hooks/use-mobile';
 import ReactMarkdown from 'react-markdown';
 
-interface MurmuriaProps {
+interface DordoniaProps {
   isOpen: boolean;
   onClose: () => void;
 }
 
-const MessageBubble: React.FC<{ message: MurmuriaMessage }> = ({ message }) => {
+const MessageBubble: React.FC<{ message: DordoniaMessage }> = ({ message }) => {
   const isUser = message.role === 'user';
   
   return (
@@ -86,11 +86,16 @@ const WelcomeMessage: React.FC = () => (
       <Waves className="h-12 w-12 text-cyan-400" />
     </motion.div>
     <h3 className="text-lg font-medium text-cyan-100 mb-2">
-      Murmures de la Dordogne
+      Dordonia
     </h3>
+    <p className="text-xs text-cyan-400/80 mb-3">
+      L'esprit des marches sur la rivière Dordogne
+    </p>
     <p className="text-sm text-cyan-300/80 leading-relaxed max-w-xs mx-auto">
-      Je suis Murmuria, l'esprit de la rivière. 
-      Posez-moi vos questions sur les eaux vivantes de la Dordogne...
+      Je suis Dordonia, mémoire vivante des marches de Gaspard Boréal le long de la rivière Dordogne d'Août 2025 à nos jours.
+    </p>
+    <p className="text-sm text-cyan-300/80 leading-relaxed max-w-xs mx-auto mt-2">
+      Je peux te répondre soit par écrit soit te parler avec les dialectes recréés lors des marches poétiques.
     </p>
   </motion.div>
 );
@@ -120,10 +125,10 @@ const TypingIndicator: React.FC = () => (
   </motion.div>
 );
 
-const MurmuriaChat: React.FC<MurmuriaProps> = ({ isOpen, onClose }) => {
+const DordoniaChat: React.FC<DordoniaProps> = ({ isOpen, onClose }) => {
   const isMobile = useIsMobile();
   const [inputValue, setInputValue] = useState('');
-  const { messages, isLoading, error, sendMessage, resetSession } = useMurmuriaChat();
+  const { messages, isLoading, error, sendMessage, resetSession } = useDordoniaChat();
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -216,8 +221,8 @@ const MurmuriaChat: React.FC<MurmuriaProps> = ({ isOpen, onClose }) => {
                   <Waves className="h-5 w-5 text-cyan-400" />
                 </motion.div>
                 <div>
-                  <h2 className="text-sm font-semibold text-cyan-100">Murmuria</h2>
-                  <p className="text-xs text-cyan-400/70">L'esprit de la Dordogne</p>
+                  <h2 className="text-sm font-semibold text-cyan-100">Dordonia</h2>
+                  <p className="text-xs text-cyan-400/70">L'esprit des marches sur la rivière Dordogne</p>
                 </div>
               </div>
               <div className="flex items-center gap-1">
@@ -276,7 +281,7 @@ const MurmuriaChat: React.FC<MurmuriaProps> = ({ isOpen, onClose }) => {
                   value={inputValue}
                   onChange={(e) => setInputValue(e.target.value)}
                   onKeyDown={handleKeyDown}
-                  placeholder="Murmurez à la rivière..."
+                  placeholder="Parlez à Dordonia..."
                   disabled={isLoading}
                   className="flex-1 bg-cyan-900/40 border border-cyan-700/40 rounded-xl px-4 py-2.5 text-sm text-cyan-50 placeholder:text-cyan-500/60 focus:outline-none focus:ring-2 focus:ring-cyan-500/50 focus:border-transparent disabled:opacity-50"
                 />
@@ -300,4 +305,4 @@ const MurmuriaChat: React.FC<MurmuriaProps> = ({ isOpen, onClose }) => {
   );
 };
 
-export default MurmuriaChat;
+export default DordoniaChat;

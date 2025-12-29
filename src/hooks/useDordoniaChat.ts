@@ -1,8 +1,8 @@
 import { useState, useRef, useCallback } from 'react';
 
-const MURMURIA_WEBHOOK_URL = 'https://gaspard-boreal.app.n8n.cloud/webhook/3d02e00f-964a-413f-a036-5f05211f92bc/chat';
+const DORDONIA_WEBHOOK_URL = 'https://gaspard-boreal.app.n8n.cloud/webhook/3d02e00f-964a-413f-a036-5f05211f92bc/chat';
 
-export interface MurmuriaMessage {
+export interface DordoniaMessage {
   id: string;
   role: 'user' | 'assistant';
   content: string;
@@ -10,19 +10,19 @@ export interface MurmuriaMessage {
 }
 
 const getOrCreateSessionId = (): string => {
-  const storageKey = 'murmuria_session_id';
+  const storageKey = 'dordonia_session_id';
   let sessionId = localStorage.getItem(storageKey);
   
   if (!sessionId) {
-    sessionId = `murmuria_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+    sessionId = `dordonia_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
     localStorage.setItem(storageKey, sessionId);
   }
   
   return sessionId;
 };
 
-export const useMurmuriaChat = () => {
-  const [messages, setMessages] = useState<MurmuriaMessage[]>([]);
+export const useDordoniaChat = () => {
+  const [messages, setMessages] = useState<DordoniaMessage[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const sessionId = useRef(getOrCreateSessionId());
@@ -30,7 +30,7 @@ export const useMurmuriaChat = () => {
   const sendMessage = useCallback(async (chatInput: string) => {
     if (!chatInput.trim()) return;
 
-    const userMessage: MurmuriaMessage = {
+    const userMessage: DordoniaMessage = {
       id: `user_${Date.now()}`,
       role: 'user',
       content: chatInput.trim(),
@@ -42,7 +42,7 @@ export const useMurmuriaChat = () => {
     setError(null);
 
     try {
-      const response = await fetch(MURMURIA_WEBHOOK_URL, {
+      const response = await fetch(DORDONIA_WEBHOOK_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -53,7 +53,7 @@ export const useMurmuriaChat = () => {
       });
 
       if (!response.ok) {
-        throw new Error(`Erreur de communication avec Murmuria (${response.status})`);
+        throw new Error(`Erreur de communication avec Dordonia (${response.status})`);
       }
 
       const data = await response.json();
@@ -63,7 +63,7 @@ export const useMurmuriaChat = () => {
         ? data 
         : data.output || data.text || data.response || data.message || JSON.stringify(data);
 
-      const assistantMessage: MurmuriaMessage = {
+      const assistantMessage: DordoniaMessage = {
         id: `assistant_${Date.now()}`,
         role: 'assistant',
         content: assistantContent,
@@ -74,7 +74,7 @@ export const useMurmuriaChat = () => {
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Erreur inconnue';
       setError(errorMessage);
-      console.error('Murmuria chat error:', err);
+      console.error('Dordonia chat error:', err);
     } finally {
       setIsLoading(false);
     }
@@ -86,7 +86,7 @@ export const useMurmuriaChat = () => {
   }, []);
 
   const resetSession = useCallback(() => {
-    localStorage.removeItem('murmuria_session_id');
+    localStorage.removeItem('dordonia_session_id');
     sessionId.current = getOrCreateSessionId();
     clearMessages();
   }, [clearMessages]);
