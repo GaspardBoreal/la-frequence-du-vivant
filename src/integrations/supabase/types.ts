@@ -570,6 +570,7 @@ export type Database = {
           duree_secondes: number | null
           format_audio: string | null
           id: string
+          literary_type: string | null
           marche_id: string
           metadata: Json | null
           nom_fichier: string
@@ -592,6 +593,7 @@ export type Database = {
           duree_secondes?: number | null
           format_audio?: string | null
           id?: string
+          literary_type?: string | null
           marche_id: string
           metadata?: Json | null
           nom_fichier: string
@@ -614,6 +616,7 @@ export type Database = {
           duree_secondes?: number | null
           format_audio?: string | null
           id?: string
+          literary_type?: string | null
           marche_id?: string
           metadata?: Json | null
           nom_fichier?: string

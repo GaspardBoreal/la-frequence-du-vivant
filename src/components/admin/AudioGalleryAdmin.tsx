@@ -27,6 +27,8 @@ import { toast } from 'sonner';
 import { useDebounce } from '../../hooks/useDebounce';
 import { useAdminExplorations } from '../../hooks/useExplorations';
 import { supabase } from '../../integrations/supabase/client';
+import { getLiteraryTypeForAudio, getLiteraryTypeBadge } from '../../utils/audioLiteraryTypeDetection';
+import { TEXT_TYPES_REGISTRY, TextType } from '../../types/textTypes';
 
 interface AudioGalleryAdminProps {
   marches: MarcheTechnoSensible[];
@@ -48,6 +50,7 @@ const AudioGalleryAdmin: React.FC<AudioGalleryAdminProps> = ({ marches }) => {
   const [selectedMarche, setSelectedMarche] = useState<string>('all');
   const [selectedExploration, setSelectedExploration] = useState<string>('all');
   const [selectedAudioType, setSelectedAudioType] = useState<string>('all');
+  const [selectedLiteraryType, setSelectedLiteraryType] = useState<string>('all');
   const [showFilters, setShowFilters] = useState(false);
   const [currentPlayingId, setCurrentPlayingId] = useState<string | null>(null);
   const debouncedSearchText = useDebounce(searchText, 300);
@@ -57,13 +60,24 @@ const AudioGalleryAdmin: React.FC<AudioGalleryAdminProps> = ({ marches }) => {
   const [editingTitle, setEditingTitle] = useState('');
   const [editingDescription, setEditingDescription] = useState('');
   const [editingAudioType, setEditingAudioType] = useState<string>('');
+  const [editingLiteraryType, setEditingLiteraryType] = useState<string>('');
   const [isSaving, setIsSaving] = useState(false);
 
-  // Types d'audio disponibles (spécifiques à l'exploration Dordogne)
+  // Types d'audio disponibles (source technique)
   const audioTypes = [
     { key: 'gaspard', label: 'Gaspard parle', icon: '🎙️' },
     { key: 'dordogne', label: 'La Dordogne parle', icon: '🌊' },
     { key: 'sounds', label: 'Sons captés', icon: '🎵' }
+  ];
+
+  // Types littéraires disponibles pour la classification enrichie
+  const literaryTypes: { key: TextType; label: string; icon: string }[] = [
+    { key: 'haiku', label: 'Haïku', icon: '🎋' },
+    { key: 'fable', label: 'Fable', icon: '🐺' },
+    { key: 'poeme', label: 'Poème', icon: '📝' },
+    { key: 'prose', label: 'Prose', icon: '📖' },
+    { key: 'fragment', label: 'Fragment', icon: '✨' },
+    { key: 'carnet', label: 'Carnet', icon: '📓' },
   ];
 
   const { data: explorations = [] } = useAdminExplorations();
@@ -153,12 +167,35 @@ const AudioGalleryAdmin: React.FC<AudioGalleryAdminProps> = ({ marches }) => {
       filtered = filtered.filter(audio => explorationMarcheIds.includes(audio.marche.id));
     }
 
-    // Filtre par type d'audio
+    // Filtre par type d'audio (source technique)
     if (selectedAudioType !== 'all') {
       if (selectedAudioType === 'none') {
         filtered = filtered.filter(audio => !(audio as any).type_audio);
       } else {
         filtered = filtered.filter(audio => (audio as any).type_audio === selectedAudioType);
+      }
+    }
+
+    // Filtre par type littéraire enrichi
+    if (selectedLiteraryType !== 'all') {
+      if (selectedLiteraryType === 'none') {
+        // Non classés : pas de literary_type en DB ET pas détectable automatiquement
+        filtered = filtered.filter(audio => {
+          const detected = getLiteraryTypeForAudio(
+            audio.titre || audio.nom_fichier,
+            (audio as any).literary_type
+          );
+          return !detected.type;
+        });
+      } else {
+        // Type spécifique : vérifier le type final (DB ou auto-détecté)
+        filtered = filtered.filter(audio => {
+          const detected = getLiteraryTypeForAudio(
+            audio.titre || audio.nom_fichier,
+            (audio as any).literary_type
+          );
+          return detected.type === selectedLiteraryType;
+        });
       }
     }
 
@@ -196,7 +233,7 @@ const AudioGalleryAdmin: React.FC<AudioGalleryAdminProps> = ({ marches }) => {
     });
 
     return filtered;
-  }, [audios, debouncedSearchText, selectedMarche, selectedExploration, explorationMarcheIds, selectedAudioType, sortField, sortDirection]);
+  }, [audios, debouncedSearchText, selectedMarche, selectedExploration, explorationMarcheIds, selectedAudioType, selectedLiteraryType, sortField, sortDirection]);
 
   const handleSort = (field: SortField) => {
     if (sortField === field) {
@@ -226,6 +263,7 @@ const AudioGalleryAdmin: React.FC<AudioGalleryAdminProps> = ({ marches }) => {
     setEditingTitle(audio.titre || audio.nom_fichier);
     setEditingDescription(audio.description || '');
     setEditingAudioType((audio as any).type_audio || '');
+    setEditingLiteraryType((audio as any).literary_type || '');
   };
 
   const handleCancelEdit = () => {
@@ -233,6 +271,7 @@ const AudioGalleryAdmin: React.FC<AudioGalleryAdminProps> = ({ marches }) => {
     setEditingTitle('');
     setEditingDescription('');
     setEditingAudioType('');
+    setEditingLiteraryType('');
   };
 
   const handleSaveEdit = async (audioId: string) => {
@@ -243,7 +282,8 @@ const AudioGalleryAdmin: React.FC<AudioGalleryAdminProps> = ({ marches }) => {
         .update({
           titre: editingTitle,
           description: editingDescription,
-          type_audio: editingAudioType || null
+          type_audio: editingAudioType || null,
+          literary_type: editingLiteraryType || null
         })
         .eq('id', audioId);
       
@@ -252,12 +292,19 @@ const AudioGalleryAdmin: React.FC<AudioGalleryAdminProps> = ({ marches }) => {
       // Mettre à jour l'état local
       setAudios(prev => prev.map(audio => 
         audio.id === audioId 
-          ? { ...audio, titre: editingTitle, description: editingDescription, type_audio: editingAudioType || null } as any
+          ? { 
+              ...audio, 
+              titre: editingTitle, 
+              description: editingDescription, 
+              type_audio: editingAudioType || null,
+              literary_type: editingLiteraryType || null
+            } as any
           : audio
       ));
       
       setEditingAudioId(null);
       setEditingAudioType('');
+      setEditingLiteraryType('');
       toast.success('Audio modifié avec succès');
     } catch (error) {
       console.error('Erreur modification audio:', error);
@@ -345,7 +392,7 @@ const AudioGalleryAdmin: React.FC<AudioGalleryAdminProps> = ({ marches }) => {
 
       {showFilters && (
         <Card className="p-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4">
             <div>
               <label className="text-sm font-medium text-foreground mb-2 block">Recherche</label>
               <div className="relative">
@@ -412,6 +459,24 @@ const AudioGalleryAdmin: React.FC<AudioGalleryAdminProps> = ({ marches }) => {
             </div>
 
             <div>
+              <label className="text-sm font-medium text-foreground mb-2 block">Type littéraire</label>
+              <Select value={selectedLiteraryType} onValueChange={setSelectedLiteraryType}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Tous les types" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Tous les types</SelectItem>
+                  <SelectItem value="none">🔍 Non classés</SelectItem>
+                  {literaryTypes.map(type => (
+                    <SelectItem key={type.key} value={type.key}>
+                      {type.icon} {type.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div>
               <label className="text-sm font-medium text-foreground mb-2 block">Tri</label>
               <div className="flex gap-2">
                 <Select value={sortField} onValueChange={(value) => setSortField(value as SortField)}>
@@ -457,6 +522,26 @@ const AudioGalleryAdmin: React.FC<AudioGalleryAdminProps> = ({ marches }) => {
                         {getAudioTypeLabel((audio as any).type_audio)?.icon} {getAudioTypeLabel((audio as any).type_audio)?.label}
                       </Badge>
                     )}
+                    {/* Badge type littéraire enrichi */}
+                    {(() => {
+                      const detected = getLiteraryTypeForAudio(
+                        audio.titre || audio.nom_fichier,
+                        (audio as any).literary_type
+                      );
+                      if (detected.type) {
+                        const badgeInfo = getLiteraryTypeBadge(audio.titre || audio.nom_fichier);
+                        return (
+                          <Badge 
+                            variant="secondary" 
+                            className={`text-xs ${detected.isManual ? 'ring-1 ring-accent' : ''}`}
+                          >
+                            {detected.icon} {detected.label}
+                            {detected.isManual && <span className="ml-1">✓</span>}
+                          </Badge>
+                        );
+                      }
+                      return null;
+                    })()}
                     <span className="text-xs text-muted-foreground flex items-center gap-1">
                       <Clock className="h-3 w-3" />
                       <span className={
@@ -518,11 +603,30 @@ const AudioGalleryAdmin: React.FC<AudioGalleryAdminProps> = ({ marches }) => {
                       onValueChange={(val) => setEditingAudioType(val === 'auto' ? '' : val)}
                     >
                       <SelectTrigger className="mt-1">
-                        <SelectValue placeholder="Auto-détection (par mots-clés)" />
+                        <SelectValue placeholder="Non défini" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="auto">🔍 Auto-détection (par mots-clés)</SelectItem>
+                        <SelectItem value="auto">🔍 Non défini</SelectItem>
                         {audioTypes.map(type => (
+                          <SelectItem key={type.key} value={type.key}>
+                            {type.icon} {type.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label className="text-sm font-medium">Type littéraire enrichi</Label>
+                    <Select 
+                      value={editingLiteraryType || 'auto'} 
+                      onValueChange={(val) => setEditingLiteraryType(val === 'auto' ? '' : val)}
+                    >
+                      <SelectTrigger className="mt-1">
+                        <SelectValue placeholder="Auto-détection" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="auto">🔍 Auto-détection (par titre)</SelectItem>
+                        {literaryTypes.map(type => (
                           <SelectItem key={type.key} value={type.key}>
                             {type.icon} {type.label}
                           </SelectItem>
