@@ -280,13 +280,32 @@ const ExportationsAdmin: React.FC = () => {
       const type = t.type_texte.toLowerCase();
       typeCount.set(type, (typeCount.get(type) || 0) + 1);
     });
+
+    // Compter les marches uniques contenant des textes filtrés
+    const uniqueMarcheIds = new Set(filteredTextes.map(t => t.marche_id));
+    
+    // Compter les explorations uniques contenant des textes filtrés
+    const uniqueExplorationIds = new Set<string>();
+    uniqueMarcheIds.forEach(marcheId => {
+      const explorations = marcheExplorationsMap.get(marcheId);
+      if (explorations) {
+        explorations.forEach(expId => {
+          if (selectedExplorations.has(expId)) {
+            uniqueExplorationIds.add(expId);
+          }
+        });
+      }
+    });
+
     return {
       total: filteredTextes.length,
       chars: totalChars,
       words: estimatedWords,
       byType: typeCount,
+      uniqueMarches: uniqueMarcheIds.size,
+      uniqueExplorations: uniqueExplorationIds.size,
     };
-  }, [filteredTextes]);
+  }, [filteredTextes, marcheExplorationsMap, selectedExplorations]);
 
   // Toggle handlers with intelligent sync
   const toggleExploration = (id: string) => {
@@ -479,13 +498,13 @@ const ExportationsAdmin: React.FC = () => {
           </Card>
           <Card className="text-center">
             <CardContent className="pt-6">
-              <div className="text-3xl font-bold text-foreground">{selectedExplorations.size}/{explorations.length}</div>
+              <div className="text-3xl font-bold text-foreground">{stats.uniqueExplorations}/{explorations.length}</div>
               <div className="text-sm text-muted-foreground">Explorations</div>
             </CardContent>
           </Card>
           <Card className="text-center">
             <CardContent className="pt-6">
-              <div className="text-3xl font-bold text-foreground">{selectedMarches.size}/{marches.length}</div>
+              <div className="text-3xl font-bold text-foreground">{stats.uniqueMarches}/{marches.length}</div>
               <div className="text-sm text-muted-foreground">Marches</div>
             </CardContent>
           </Card>
