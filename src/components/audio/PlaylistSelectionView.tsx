@@ -10,6 +10,7 @@ import { toast } from 'sonner';
 import { 
   getAvailableTypesFromTracks, 
   getLiteraryTypeBadge,
+  getLiteraryTypeForAudio,
   type AvailableLiteraryType 
 } from '@/utils/audioLiteraryTypeDetection';
 import type { TextType } from '@/types/textTypes';
@@ -36,9 +37,13 @@ export default function PlaylistSelectionView({
   formatTime,
   explorationSlug
 }: PlaylistSelectionViewProps) {
-  // Get available types from tracks
+  // Get available types from tracks (uses DB literary_type when available)
   const availableTypes = useMemo(() => 
-    getAvailableTypesFromTracks(tracks),
+    getAvailableTypesFromTracks(tracks.map(t => ({
+      title: t.title,
+      duration: t.duration,
+      literary_type: t.literary_type
+    }))),
     [tracks]
   );
 
@@ -49,14 +54,11 @@ export default function PlaylistSelectionView({
     return tracks
       .map((track, index) => ({ ...track, globalIndex: index }))
       .filter(track => {
-        const badge = getLiteraryTypeBadge(track.title);
-        // Include tracks whose detected type is in selectedTypes
-        // Also check if 'all' types are effectively selected by having all available types selected
-        const detectedType = badge.label !== 'Audio' ? 
-          availableTypes.find(t => t.info.label === badge.label)?.type : null;
-        return detectedType && selectedTypes.has(detectedType);
+        // Use getLiteraryTypeForAudio to prioritize DB field
+        const detected = getLiteraryTypeForAudio(track.title, track.literary_type);
+        return detected.type && selectedTypes.has(detected.type);
       });
-  }, [tracks, selectedTypes, availableTypes]);
+  }, [tracks, selectedTypes]);
 
   // Calculate total duration of filtered selection
   const totalFilteredDuration = useMemo(() => 
@@ -248,7 +250,13 @@ export default function PlaylistSelectionView({
         
         <AnimatePresence>
           {filteredTracks.map((track, idx) => {
+            const detected = getLiteraryTypeForAudio(track.title, track.literary_type);
             const badge = getLiteraryTypeBadge(track.title);
+            const displayBadge = detected.type ? {
+              icon: detected.icon,
+              label: detected.label,
+              color: badge.color
+            } : badge;
             const isCurrentTrack = track.globalIndex === currentTrackIndex;
             
             return (
@@ -295,11 +303,14 @@ export default function PlaylistSelectionView({
                           variant="secondary" 
                           className={cn(
                             "text-[10px] px-1.5 py-0 h-5 gap-1",
-                            badge.color
+                            displayBadge.color
                           )}
                         >
-                          <span>{badge.icon}</span>
-                          <span>{badge.label}</span>
+                          <span>{displayBadge.icon}</span>
+                          <span>{displayBadge.label}</span>
+                          {detected.isManual && (
+                            <span className="ml-0.5">✓</span>
+                          )}
                         </Badge>
                         
                         {track.marcheName && (

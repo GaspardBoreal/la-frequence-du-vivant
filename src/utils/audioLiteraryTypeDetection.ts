@@ -122,6 +122,33 @@ export function detectLiteraryTypeFromTitle(title: string): DetectedLiteraryType
 }
 
 /**
+ * NEW: Get literary type for an audio, prioritizing DB field over auto-detection
+ * @param title - Audio title for auto-detection fallback
+ * @param dbLiteraryType - Literary type stored in database (manual classification)
+ */
+export function getLiteraryTypeForAudio(
+  title: string, 
+  dbLiteraryType?: string | null
+): DetectedLiteraryType & { isManual: boolean } {
+  // Priority 1: Use manually set literary_type from DB
+  if (dbLiteraryType && TEXT_TYPES_REGISTRY[dbLiteraryType as TextType]) {
+    const type = dbLiteraryType as TextType;
+    const info = TEXT_TYPES_REGISTRY[type];
+    return { 
+      type, 
+      info, 
+      icon: info.icon, 
+      label: info.label,
+      isManual: true 
+    };
+  }
+  
+  // Priority 2: Fall back to auto-detection
+  const autoDetected = detectLiteraryTypeFromTitle(title);
+  return { ...autoDetected, isManual: false };
+}
+
+/**
  * Gets a compact badge representation for display
  */
 export function getLiteraryTypeBadge(title: string): { icon: string; label: string; color: string } {
@@ -163,11 +190,14 @@ export interface AvailableLiteraryType {
   totalDuration: number;
 }
 
-export function getAvailableTypesFromTracks(tracks: { title: string; duration?: number }[]): AvailableLiteraryType[] {
+export function getAvailableTypesFromTracks(
+  tracks: { title: string; duration?: number; literary_type?: string | null }[]
+): AvailableLiteraryType[] {
   const typeCounts = new Map<TextType, { count: number; totalDuration: number }>();
   
   tracks.forEach(track => {
-    const detected = detectLiteraryTypeFromTitle(track.title);
+    // Use new function that prioritizes DB literary_type
+    const detected = getLiteraryTypeForAudio(track.title, track.literary_type);
     if (detected.type && detected.info) {
       const existing = typeCounts.get(detected.type) || { count: 0, totalDuration: 0 };
       typeCounts.set(detected.type, {
