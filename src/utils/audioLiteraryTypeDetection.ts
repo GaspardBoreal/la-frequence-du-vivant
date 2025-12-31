@@ -30,14 +30,47 @@ const LITERARY_TYPE_KEYWORDS: Record<TextType, string[]> = {
   'recit-donnees': ['données', 'data', 'récit-données']
 };
 
+// Regex patterns for detecting literary types by title structure
+// These patterns catch titles that follow typical literary conventions without explicit keywords
+
+// Fable patterns: "La X et le/la Y", "Le X et la Y", etc.
+const FABLE_PATTERNS: RegExp[] = [
+  // "La libellule, le drone et le modèle" - pattern with comma and "et"
+  /^l[ae']?\s*\w+[,\s]+l[ae']?\s*\w+.*\s+et\s+l[ae']?\s*\w+/i,
+  // "La Lamproie et l'ascenseur" - simple "La X et le/la Y"
+  /^l[ae']?\s*\w+\s+et\s+l[ae']?\s*\w+/i,
+  // "Le papillon et le jardinier" - "Le X et le Y"
+  /^le\s+\w+\s+et\s+l[ae']?\s*\w+/i,
+];
+
+// Poème patterns: titles with poetic structures
+const POEME_PATTERNS: RegExp[] = [
+  // "Ode à...", "Élégie pour...", "Chant de..."
+  /^(ode|élégie|chant|hymne|complainte)\s+(à|de|pour|du|des)/i,
+];
+
 /**
- * Detects literary type from an audio title by analyzing keywords
+ * Detects if a title matches fable patterns (like "La X et le Y")
+ */
+function matchesFablePattern(title: string): boolean {
+  return FABLE_PATTERNS.some(pattern => pattern.test(title.trim()));
+}
+
+/**
+ * Detects if a title matches poem patterns
+ */
+function matchesPoemePattern(title: string): boolean {
+  return POEME_PATTERNS.some(pattern => pattern.test(title.trim()));
+}
+
+/**
+ * Detects literary type from an audio title by analyzing keywords and patterns
  */
 export function detectLiteraryTypeFromTitle(title: string): DetectedLiteraryType {
   const normalizedTitle = title.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
   const originalTitle = title.toLowerCase();
   
-  // Check each literary type for matching keywords
+  // First: Check keywords for each literary type
   for (const [typeKey, keywords] of Object.entries(LITERARY_TYPE_KEYWORDS)) {
     for (const keyword of keywords) {
       const normalizedKeyword = keyword.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
@@ -53,6 +86,30 @@ export function detectLiteraryTypeFromTitle(title: string): DetectedLiteraryType
         };
       }
     }
+  }
+  
+  // Second: Check structural patterns (for titles without explicit keywords)
+  
+  // Check fable patterns like "La X et le Y"
+  if (matchesFablePattern(title)) {
+    const info = TEXT_TYPES_REGISTRY['fable'];
+    return {
+      type: 'fable',
+      info,
+      icon: info.icon,
+      label: info.label
+    };
+  }
+  
+  // Check poem patterns
+  if (matchesPoemePattern(title)) {
+    const info = TEXT_TYPES_REGISTRY['poeme'];
+    return {
+      type: 'poeme',
+      info,
+      icon: info.icon,
+      label: info.label
+    };
   }
   
   // Default: unknown type
