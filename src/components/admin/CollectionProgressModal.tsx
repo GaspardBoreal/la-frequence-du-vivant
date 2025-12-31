@@ -119,7 +119,7 @@ const CollectionProgressModal: React.FC<CollectionProgressModalProps> = ({
                     {currentDataType || 'Collecte en cours...'}
                   </p>
                   <p className="text-xs opacity-75">
-                    Marché : {currentMarcheName}
+                    Marche : {currentMarcheName}
                   </p>
                 </div>
               )}

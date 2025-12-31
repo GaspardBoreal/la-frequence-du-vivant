@@ -603,7 +603,7 @@ export const exportTextesToWord = async (
 
 // CSV Export utility
 export const exportTextesToCSV = (textes: TexteExport[]): void => {
-  const headers = ['Titre', 'Type', 'Marché', 'Ville', 'Région', 'Contenu', 'Date de création'];
+  const headers = ['Titre', 'Type', 'Marche', 'Ville', 'Région', 'Contenu', 'Date de création'];
   
   const rows = textes.map(texte => [
     texte.titre,

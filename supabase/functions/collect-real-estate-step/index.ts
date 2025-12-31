@@ -33,7 +33,7 @@ serve(async (req) => {
       .from('data_collection_logs')
       .update({
         summary_stats: {
-          current_marche_name: marcheName || 'Marché inconnu',
+          current_marche_name: marcheName || 'Marche inconnue',
           current_data_type: '🏠 Collecte immobilier...',
           marche_start_time: new Date().toISOString()
         },

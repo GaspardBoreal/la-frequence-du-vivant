@@ -217,7 +217,7 @@ const createCoverPage = (data: ExplorationStatsExport): Paragraph[] => {
       alignment: AlignmentType.CENTER,
       children: [
         new TextRun({
-          text: 'Liste des marchés avec statistiques et tonalités',
+          text: 'Liste des marches avec statistiques et tonalités',
           size: 28,
           color: '888888',
         }),
@@ -228,7 +228,7 @@ const createCoverPage = (data: ExplorationStatsExport): Paragraph[] => {
       spacing: { before: 1600 },
       children: [
         new TextRun({
-          text: `${data.marches.length} marchés documentés`,
+          text: `${data.marches.length} marches documentées`,
           size: 32,
           bold: true,
         }),
@@ -293,7 +293,7 @@ const createSummarySection = (data: ExplorationStatsExport): Paragraph[] => {
     }),
     new Paragraph({
       bullet: { level: 0 },
-      children: [new TextRun({ text: `Nombre total de marchés : ${data.marches.length}` })],
+      children: [new TextRun({ text: `Nombre total de marches : ${data.marches.length}` })],
     }),
     new Paragraph({
       bullet: { level: 0 },
@@ -324,7 +324,7 @@ const createSummarySection = (data: ExplorationStatsExport): Paragraph[] => {
     ...Array.from(tonalityCount.entries()).map(([tonalite, count]) =>
       new Paragraph({
         bullet: { level: 0 },
-        children: [new TextRun({ text: `${tonalite} : ${count} marché(s)` })],
+        children: [new TextRun({ text: `${tonalite} : ${count} marche(s)` })],
       })
     ),
     new Paragraph({ children: [new PageBreak()] }),
@@ -354,7 +354,7 @@ const createMarchesTable = (data: ExplorationStatsExport): (Paragraph | Table)[]
       new TableCell({
         width: { size: 20, type: WidthType.PERCENTAGE },
         shading: { fill: '2c3e50', type: ShadingType.CLEAR },
-        children: [new Paragraph({ children: [new TextRun({ text: 'Marché', bold: true, color: 'ffffff' })] })],
+        children: [new Paragraph({ children: [new TextRun({ text: 'Marche', bold: true, color: 'ffffff' })] })],
       }),
       new TableCell({
         width: { size: 8, type: WidthType.PERCENTAGE },
@@ -426,7 +426,7 @@ const createMarchesTable = (data: ExplorationStatsExport): (Paragraph | Table)[]
   return [
     new Paragraph({
       heading: HeadingLevel.HEADING_1,
-      children: [new TextRun({ text: 'Liste des marchés', bold: true })],
+      children: [new TextRun({ text: 'Liste des marches', bold: true })],
     }),
     new Paragraph({ spacing: { after: 300 }, children: [] }),
     table,
@@ -448,9 +448,9 @@ export const exportMarchesStatsToWord = async (explorationId: string): Promise<v
   ];
 
   const doc = new Document({
-    title: `${data.explorationName} - Statistiques des marchés`,
+    title: `${data.explorationName} - Statistiques des marches`,
     creator: 'Gaspard Boréal',
-    description: 'Documentation des marchés avec statistiques et tonalités',
+    description: 'Documentation des marches avec statistiques et tonalités',
     styles: {
       paragraphStyles: [
         {

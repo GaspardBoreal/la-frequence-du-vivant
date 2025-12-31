@@ -254,9 +254,9 @@ export const PrefigurerInterface: React.FC<PrefigurerInterfaceProps> = ({
           <div className="h-full flex items-center justify-center">
             <div className="text-center">
               <ChevronRight className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-              <h3 className="text-lg font-medium mb-2">Sélectionnez un marché</h3>
+              <h3 className="text-lg font-medium mb-2">Sélectionnez une marche</h3>
               <p className="text-sm text-muted-foreground">
-                Choisissez un marché dans la liste de gauche pour commencer l'édition
+                Choisissez une marche dans la liste de gauche pour commencer l'édition
               </p>
             </div>
           </div>

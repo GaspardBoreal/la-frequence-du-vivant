@@ -745,7 +745,7 @@ const sanitizeJson = useCallback((jsonString: string): { sanitized: string; corr
               }}
             >
               <SelectTrigger>
-                <SelectValue placeholder="Sélectionnez un marché" />
+                <SelectValue placeholder="Sélectionnez une marche" />
               </SelectTrigger>
               <SelectContent>
                 {explorationMarches.map((marche) => (

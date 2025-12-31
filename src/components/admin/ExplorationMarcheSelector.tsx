@@ -162,9 +162,9 @@ const ExplorationMarcheSelector: React.FC<ExplorationMarcheSelectorProps> = ({
                         </div>
                         
                         <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-3 mb-4">
+                        <div className="flex items-center gap-3 mb-4">
                             <h4 className="font-bold text-lg text-gaspard-primary truncate">
-                              {marche.nom_marche || `Marché de ${marche.ville}`}
+                              {marche.nom_marche || `Marche de ${marche.ville}`}
                             </h4>
                             <Radio className="h-4 w-4 text-gaspard-secondary animate-soft-pulse" />
                           </div>
