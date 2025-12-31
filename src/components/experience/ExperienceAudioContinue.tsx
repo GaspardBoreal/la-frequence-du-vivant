@@ -15,6 +15,9 @@ import { Separator } from '@/components/ui/separator';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import PlaylistViewToggle, { type PlaylistViewMode } from '@/components/audio/PlaylistViewToggle';
 import PlaylistParcoursView from '@/components/audio/PlaylistParcoursView';
+import PlaylistSelectionView from '@/components/audio/PlaylistSelectionView';
+import { detectLiteraryTypeFromTitle } from '@/utils/audioLiteraryTypeDetection';
+import { TextType, TEXT_TYPES_REGISTRY } from '@/types/textTypes';
 import { 
   Play, 
   Pause, 
@@ -106,9 +109,15 @@ export default function ExperienceAudioContinue() {
   const [selectedAudioType, setSelectedAudioType] = useState<AudioType | 'all'>('all');
   const [playlistViewMode, setPlaylistViewMode] = useState<PlaylistViewMode>('list');
   
+  // Literary type selection for "Sélection" mode
+  const [selectedLiteraryTypes, setSelectedLiteraryTypes] = useState<Set<TextType>>(new Set());
+  
   // Deep link modal state
   const [pendingAudioId, setPendingAudioId] = useState<string | null>(null);
   const [showDeepLinkModal, setShowDeepLinkModal] = useState(false);
+  
+  // Deep link for literary types selection
+  const [pendingTypesSelection, setPendingTypesSelection] = useState<string[] | null>(null);
 
   // Find Audio Page content - try both 'audio' and 'Audio' types
   const audioPage = pages?.find(page => 
@@ -129,11 +138,25 @@ export default function ExperienceAudioContinue() {
     return 'sounds';
   }, []);
 
-  // Filtered playlist based on selected audio type
+  // Filtered playlist based on selected audio type AND literary types (for selection mode)
   const filteredPlaylist = useMemo(() => {
-    if (selectedAudioType === 'all') return audioPlaylist;
-    return audioPlaylist.filter(track => classifyTrack(track) === selectedAudioType);
-  }, [audioPlaylist, selectedAudioType, classifyTrack]);
+    let result = audioPlaylist;
+    
+    // Filter by audio type
+    if (selectedAudioType !== 'all') {
+      result = result.filter(track => classifyTrack(track) === selectedAudioType);
+    }
+    
+    // Filter by literary types if in selection mode with types selected
+    if (playlistViewMode === 'selection' && selectedLiteraryTypes.size > 0) {
+      result = result.filter(track => {
+        const detected = detectLiteraryTypeFromTitle(track.title);
+        return detected.type && selectedLiteraryTypes.has(detected.type);
+      });
+    }
+    
+    return result;
+  }, [audioPlaylist, selectedAudioType, classifyTrack, playlistViewMode, selectedLiteraryTypes]);
 
   // Calculate total duration for the filtered playlist
   const totalDurationSeconds = useMemo(() => 
@@ -192,20 +215,38 @@ export default function ExperienceAudioContinue() {
     return () => audio.removeEventListener('ended', handleEnded);
   }, [audioRef, canGoNext, currentTrackIndex]);
 
-  // Initialize first track or handle deep link to specific audio
+  // Initialize first track or handle deep link to specific audio or types
   useEffect(() => {
     if (audioPlaylist.length === 0) return;
     
-    // Check for audio deep link parameter
     const urlParams = new URLSearchParams(window.location.search);
-    const audioId = urlParams.get('audio');
     
+    // Check for types deep link parameter (literary types selection)
+    const typesParam = urlParams.get('types');
+    if (typesParam) {
+      const types = typesParam.split(',').filter(Boolean) as TextType[];
+      if (types.length > 0) {
+        setSelectedLiteraryTypes(new Set(types));
+        setPlaylistViewMode('selection');
+        setPendingTypesSelection(types);
+        setShowDeepLinkModal(true);
+        
+        // Clean up URL
+        const cleanUrl = new URL(window.location.href);
+        cleanUrl.searchParams.delete('types');
+        window.history.replaceState(null, '', cleanUrl.toString());
+        return;
+      }
+    }
+    
+    // Check for audio deep link parameter
+    const audioId = urlParams.get('audio');
     if (audioId) {
       const trackIndex = audioPlaylist.findIndex(t => t.id === audioId);
       if (trackIndex >= 0) {
         setCurrentTrackIndex(trackIndex);
         setPendingAudioId(audioId);
-        setShowDeepLinkModal(true); // Show modal instead of auto-playing
+        setShowDeepLinkModal(true);
         
         // Clean up URL
         const cleanUrl = new URL(window.location.href);
@@ -230,8 +271,34 @@ export default function ExperienceAudioContinue() {
       playRecording(trackToXenoCantoRecording(currentTrack));
       setShowDeepLinkModal(false);
       setPendingAudioId(null);
+    } else if (pendingTypesSelection && pendingTypesSelection.length > 0) {
+      // Start playing the first track of the selection
+      const typesSet = new Set(pendingTypesSelection as TextType[]);
+      const firstMatchingTrack = audioPlaylist.find(track => {
+        const detected = detectLiteraryTypeFromTitle(track.title);
+        return detected.type && typesSet.has(detected.type);
+      });
+      if (firstMatchingTrack) {
+        const globalIndex = audioPlaylist.findIndex(t => t.id === firstMatchingTrack.id);
+        setCurrentTrackIndex(globalIndex);
+        playRecording(trackToXenoCantoRecording(firstMatchingTrack));
+      }
+      setShowDeepLinkModal(false);
+      setPendingTypesSelection(null);
+      setShowPlaylist(true); // Open playlist to show the selection
     }
-  }, [pendingAudioId, currentTrack, playRecording]);
+  }, [pendingAudioId, pendingTypesSelection, currentTrack, audioPlaylist, playRecording]);
+
+  // Handler for playing selection from PlaylistSelectionView
+  const handlePlaySelection = useCallback(() => {
+    if (filteredPlaylist.length > 0) {
+      const firstTrack = filteredPlaylist[0];
+      const globalIndex = audioPlaylist.findIndex(t => t.id === firstTrack.id);
+      setCurrentTrackIndex(globalIndex);
+      playRecording(trackToXenoCantoRecording(firstTrack));
+      setShowPlaylist(false);
+    }
+  }, [filteredPlaylist, audioPlaylist, playRecording]);
 
   const handlePlayPause = useCallback(() => {
     if (!currentTrack) return;
@@ -372,9 +439,9 @@ export default function ExperienceAudioContinue() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:bg-gradient-to-br dark:from-emerald-950 dark:via-emerald-900 dark:to-emerald-800 dordogne-experience">
       
-      {/* Deep Link Welcome Modal */}
+      {/* Deep Link Welcome Modal - supports both audio and types sharing */}
       <AnimatePresence>
-        {showDeepLinkModal && currentTrack && (
+        {showDeepLinkModal && (pendingAudioId ? currentTrack : pendingTypesSelection) && (
           <motion.div 
             className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
             initial={{ opacity: 0 }}
@@ -391,16 +458,40 @@ export default function ExperienceAudioContinue() {
                 <Waves className="h-10 w-10 text-accent animate-pulse" />
               </div>
               
-              <div className="space-y-2">
-                <p className="text-sm text-muted-foreground">On vous a partagé cet audio</p>
-                <h3 className="text-xl font-bold text-emerald-900 dark:text-accent">{currentTrack.title}</h3>
-                {currentTrack.marcheName && (
-                  <Badge variant="outline" className="mt-2">
-                    <MapPin className="h-3 w-3 mr-1" />
-                    {currentTrack.marcheName}
-                  </Badge>
-                )}
-              </div>
+              {pendingAudioId && currentTrack ? (
+                // Single audio share
+                <div className="space-y-2">
+                  <p className="text-sm text-muted-foreground">On vous a partagé cet audio</p>
+                  <h3 className="text-xl font-bold text-emerald-900 dark:text-accent">{currentTrack.title}</h3>
+                  {currentTrack.marcheName && (
+                    <Badge variant="outline" className="mt-2">
+                      <MapPin className="h-3 w-3 mr-1" />
+                      {currentTrack.marcheName}
+                    </Badge>
+                  )}
+                </div>
+              ) : pendingTypesSelection ? (
+                // Literary types selection share
+                <div className="space-y-3">
+                  <p className="text-sm text-muted-foreground">On vous a partagé une sélection</p>
+                  <h3 className="text-xl font-bold text-emerald-900 dark:text-accent">Écoute thématique</h3>
+                  <div className="flex flex-wrap justify-center gap-2">
+                    {pendingTypesSelection.map(type => {
+                      const info = TEXT_TYPES_REGISTRY[type as TextType];
+                      if (!info) return null;
+                      return (
+                        <Badge key={type} variant="secondary" className="text-sm gap-1">
+                          <span>{info.icon}</span>
+                          {info.label}
+                        </Badge>
+                      );
+                    })}
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    {filteredPlaylist.length} audio{filteredPlaylist.length > 1 ? 's' : ''} dans cette sélection
+                  </p>
+                </div>
+              ) : null}
               
               <Button 
                 size="lg" 
@@ -654,12 +745,23 @@ export default function ExperienceAudioContinue() {
                                 </motion.div>
                               ))}
                             </div>
-                          ) : (
+                          ) : playlistViewMode === 'parcours' ? (
                             <PlaylistParcoursView
                               tracks={audioPlaylist}
                               currentTrackIndex={currentTrackIndex}
                               onTrackSelect={handleTrackSelect}
                               formatTime={formatTime}
+                            />
+                          ) : (
+                            <PlaylistSelectionView
+                              tracks={audioPlaylist}
+                              selectedTypes={selectedLiteraryTypes}
+                              onTypesChange={setSelectedLiteraryTypes}
+                              onPlaySelection={handlePlaySelection}
+                              onTrackSelect={handleTrackSelect}
+                              currentTrackIndex={currentTrackIndex}
+                              formatTime={formatTime}
+                              explorationSlug={slug || ''}
                             />
                           )}
                         </ScrollArea>

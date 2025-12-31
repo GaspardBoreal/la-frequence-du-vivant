@@ -1,10 +1,10 @@
-// Toggle between List view and Parcours (journey) view for the audio playlist
+// Toggle between List, Parcours, and Selection views for the audio playlist
 import React from 'react';
 import { Button } from '@/components/ui/button';
-import { List, Route } from 'lucide-react';
+import { List, Route, Sparkles } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-export type PlaylistViewMode = 'list' | 'parcours';
+export type PlaylistViewMode = 'list' | 'parcours' | 'selection';
 
 interface PlaylistViewToggleProps {
   mode: PlaylistViewMode;
@@ -42,6 +42,20 @@ export default function PlaylistViewToggle({ mode, onModeChange, className }: Pl
       >
         <Route className="h-3.5 w-3.5" />
         <span className="hidden sm:inline">Parcours</span>
+      </Button>
+      <Button
+        variant={mode === 'selection' ? 'secondary' : 'ghost'}
+        size="sm"
+        onClick={() => onModeChange('selection')}
+        className={cn(
+          "h-8 px-3 gap-1.5 text-xs font-medium transition-all",
+          mode === 'selection' 
+            ? "bg-background shadow-sm" 
+            : "hover:bg-background/50"
+        )}
+      >
+        <Sparkles className="h-3.5 w-3.5" />
+        <span className="hidden sm:inline">Sélection</span>
       </Button>
     </div>
   );
