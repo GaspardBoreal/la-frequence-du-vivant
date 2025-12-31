@@ -212,7 +212,7 @@ const createCoverPage = (totalTerms: number, marchesCount: number): Paragraph[] 
           color: '2563eb',
         }),
         new TextRun({
-          text: ` • ${marchesCount} marchés`,
+          text: ` • ${marchesCount} marches`,
           size: 24,
           color: '666666',
         }),

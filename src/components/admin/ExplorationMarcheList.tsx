@@ -158,7 +158,7 @@ const SortableMarcheItem: React.FC<SortableMarcheItemProps> = ({
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-3 mb-3">
               <h4 className="text-xl font-bold text-gaspard-primary truncate leading-tight mb-2">
-                {marche.marche?.nom_marche || `Marché de ${marche.marche?.ville}`}
+                {marche.marche?.nom_marche || `Marche de ${marche.marche?.ville}`}
               </h4>
               <div className="flex items-center gap-2 text-gaspard-secondary mb-4">
                 <Waves className="h-4 w-4" />

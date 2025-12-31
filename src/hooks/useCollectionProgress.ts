@@ -114,7 +114,7 @@ export const useCollectionProgress = (logId: string | null, collectionTypes: str
       // Utiliser marches_processed comme indicateur principal de progression
       const currentMarcheName = summaryStats?.current_marche_name || 
         summaryStats?.next_marche ||
-        (processed < total ? `Marché ${processed + 1}/${total}` : 
+        (processed < total ? `Marche ${processed + 1}/${total}` : 
          processed === total ? 'Finalisation...' : 'En attente...');
       
       // Déterminer le type de donnée en cours de traitement avec fallback intelligent

@@ -1021,17 +1021,17 @@ const ExportationsAdmin: React.FC = () => {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <BarChart3 className="h-5 w-5 text-blue-500" />
-                  Export Word - Statistiques des Marchés
+                  Export Word - Statistiques des Marches
                 </CardTitle>
                 <CardDescription>
-                  Exportez la liste des marchés avec statistiques et tonalités
+                  Exportez la liste des marches avec statistiques et tonalités
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="text-sm text-muted-foreground">
                   Ce document inclut :
                   <ul className="list-disc list-inside mt-2 space-y-1">
-                    <li>Liste chronologique des marchés</li>
+                    <li>Liste chronologique des marches</li>
                     <li>Région et département</li>
                     <li>Nombre de photos, textes, audios</li>
                     <li>Analyse de la tonalité littéraire</li>

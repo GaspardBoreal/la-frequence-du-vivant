@@ -516,7 +516,7 @@ serve(async (req) => {
               errors: errorsCount,
               success_rate: Math.round((validMarches.length - errorsCount) / validMarches.length * 100),
               current_data_type: 'Collection terminée ✅',
-              current_marche_name: 'Tous les marchés traités'
+              current_marche_name: 'Toutes les marches traitées'
             }
           })
           .eq('id', logEntry.id);
