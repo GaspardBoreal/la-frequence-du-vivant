@@ -95,3 +95,38 @@ export function getLiteraryTypeBadge(title: string): { icon: string; label: stri
     color
   };
 }
+
+/**
+ * Analyzes a list of audio tracks and returns available literary types with counts
+ */
+export interface AvailableLiteraryType {
+  type: TextType;
+  info: TextTypeInfo;
+  count: number;
+  totalDuration: number;
+}
+
+export function getAvailableTypesFromTracks(tracks: { title: string; duration?: number }[]): AvailableLiteraryType[] {
+  const typeCounts = new Map<TextType, { count: number; totalDuration: number }>();
+  
+  tracks.forEach(track => {
+    const detected = detectLiteraryTypeFromTitle(track.title);
+    if (detected.type && detected.info) {
+      const existing = typeCounts.get(detected.type) || { count: 0, totalDuration: 0 };
+      typeCounts.set(detected.type, {
+        count: existing.count + 1,
+        totalDuration: existing.totalDuration + (track.duration || 0)
+      });
+    }
+  });
+  
+  // Convert to array and sort by count (descending)
+  return Array.from(typeCounts.entries())
+    .map(([type, { count, totalDuration }]) => ({
+      type,
+      info: TEXT_TYPES_REGISTRY[type],
+      count,
+      totalDuration
+    }))
+    .sort((a, b) => b.count - a.count);
+}
