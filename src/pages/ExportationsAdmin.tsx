@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowLeft, FileDown, FileText, Table, Download, Filter, Loader2, ChevronDown, ChevronRight, MapPin, BookOpen, AlertTriangle, AlertCircle, ExternalLink } from 'lucide-react';
+import { ArrowLeft, FileDown, FileText, Table, Download, Filter, Loader2, ChevronDown, ChevronRight, MapPin, BookOpen, AlertTriangle, AlertCircle, ExternalLink, BarChart3 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -10,10 +10,12 @@ import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { exportTextesToWord, exportTextesToCSV } from '@/utils/wordExportUtils';
 import { exportVocabularyToWord } from '@/utils/vocabularyWordExport';
+import { exportMarchesStatsToWord } from '@/utils/marchesStatsExport';
 import WordExportPreview from '@/components/admin/WordExportPreview';
 
 interface Exploration {
@@ -77,6 +79,8 @@ const ExportationsAdmin: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [exporting, setExporting] = useState(false);
   const [exportingVocabulary, setExportingVocabulary] = useState(false);
+  const [exportingStats, setExportingStats] = useState(false);
+  const [selectedStatsExploration, setSelectedStatsExploration] = useState<string>('');
   
   // Exploration ↔ Marche links
   const [explorationMarchesMap, setExplorationMarchesMap] = useState<Map<string, Set<string>>>(new Map());
@@ -441,6 +445,25 @@ const ExportationsAdmin: React.FC = () => {
       toast.error('Erreur lors de l\'export du lexique');
     } finally {
       setExportingVocabulary(false);
+    }
+  };
+
+  const handleExportMarchesStats = async () => {
+    if (!selectedStatsExploration) {
+      toast.error('Veuillez sélectionner une exploration');
+      return;
+    }
+
+    setExportingStats(true);
+    try {
+      await exportMarchesStatsToWord(selectedStatsExploration);
+      const explorationName = explorations.find(e => e.id === selectedStatsExploration)?.name || 'Exploration';
+      toast.success(`Statistiques de "${explorationName}" exportées avec succès`);
+    } catch (error) {
+      console.error('Stats export error:', error);
+      toast.error('Erreur lors de l\'export des statistiques');
+    } finally {
+      setExportingStats(false);
     }
   };
 
@@ -989,6 +1012,63 @@ const ExportationsAdmin: React.FC = () => {
                     <Download className="h-4 w-4 mr-2" />
                   )}
                   Télécharger le lexique .docx
+                </Button>
+              </CardContent>
+            </Card>
+
+            {/* Marches Statistics Export Card */}
+            <Card className="border-dashed border-2 border-blue-800/30 bg-blue-950/10">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <BarChart3 className="h-5 w-5 text-blue-500" />
+                  Export Word - Statistiques des Marchés
+                </CardTitle>
+                <CardDescription>
+                  Exportez la liste des marchés avec statistiques et tonalités
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="text-sm text-muted-foreground">
+                  Ce document inclut :
+                  <ul className="list-disc list-inside mt-2 space-y-1">
+                    <li>Liste chronologique des marchés</li>
+                    <li>Région et département</li>
+                    <li>Nombre de photos, textes, audios</li>
+                    <li>Analyse de la tonalité littéraire</li>
+                    <li>Synthèse statistique globale</li>
+                  </ul>
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">Sélectionner une exploration</Label>
+                  <Select 
+                    value={selectedStatsExploration} 
+                    onValueChange={setSelectedStatsExploration}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Choisir une exploration..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {explorations.map(expl => (
+                        <SelectItem key={expl.id} value={expl.id}>
+                          {expl.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                <Button 
+                  onClick={handleExportMarchesStats}
+                  disabled={exportingStats || !selectedStatsExploration}
+                  className="w-full bg-blue-700 hover:bg-blue-600 text-white"
+                >
+                  {exportingStats ? (
+                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                  ) : (
+                    <Download className="h-4 w-4 mr-2" />
+                  )}
+                  Télécharger les statistiques .docx
                 </Button>
               </CardContent>
             </Card>
