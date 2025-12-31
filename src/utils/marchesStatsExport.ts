@@ -10,8 +10,8 @@ import {
   TableRow,
   TableCell,
   WidthType,
-  BorderStyle,
   ShadingType,
+  PageOrientation,
 } from 'docx';
 import { saveAs } from 'file-saver';
 import { supabase } from '@/integrations/supabase/client';
@@ -20,13 +20,16 @@ export interface MarcheStats {
   numero: number;
   id: string;
   nom: string;
+  ville: string;
   region: string;
   departement: string;
   date: string;
+  latitude: number | null;
+  longitude: number | null;
   nbPhotos: number;
   nbTextes: number;
   nbAudios: number;
-  tonalite: string;
+  resumeEditorial: string;
 }
 
 interface ExplorationStatsExport {
@@ -35,51 +38,37 @@ interface ExplorationStatsExport {
   exportDate: Date;
 }
 
-// Analyze text content to determine tonality
-const analyzeTextTonality = (textes: { type_texte: string; contenu: string }[]): string => {
-  if (textes.length === 0) return 'Non définie';
-
-  const types = textes.map(t => t.type_texte.toLowerCase());
-  const content = textes.map(t => t.contenu.toLowerCase()).join(' ');
-
-  // Keywords for different tonalities
-  const poeticKeywords = ['haiku', 'haïku', 'senryu', 'poème', 'vers'];
-  const narrativeKeywords = ['récit', 'fable', 'histoire', 'conte'];
-  const contemplativeKeywords = ['silence', 'calme', 'paix', 'méditation', 'contemplation', 'lenteur'];
-  const ecologicalKeywords = ['nature', 'rivière', 'arbre', 'oiseau', 'biodiversité', 'écosystème', 'forêt'];
-  const humanKeywords = ['rencontre', 'paysan', 'artisan', 'producteur', 'marché', 'communauté', 'terroir'];
-
-  let tonalities: string[] = [];
-
-  // Check types
-  if (types.some(t => poeticKeywords.some(k => t.includes(k)))) {
-    tonalities.push('Poétique');
-  }
-  if (types.some(t => narrativeKeywords.some(k => t.includes(k)))) {
-    tonalities.push('Narrative');
+// Generate editorial summary using AI
+const generateEditorialSummary = async (
+  textes: { type_texte: string; titre: string; contenu: string }[],
+  marcheName: string
+): Promise<string> => {
+  if (textes.length === 0) {
+    return 'Aucun texte disponible pour cette marche.';
   }
 
-  // Check content
-  const contemplativeScore = contemplativeKeywords.filter(k => content.includes(k)).length;
-  const ecologicalScore = ecologicalKeywords.filter(k => content.includes(k)).length;
-  const humanScore = humanKeywords.filter(k => content.includes(k)).length;
+  try {
+    const { data, error } = await supabase.functions.invoke('marche-editorial-summary', {
+      body: { textes, marcheName },
+    });
 
-  if (contemplativeScore >= 2) tonalities.push('Contemplative');
-  if (ecologicalScore >= 3) tonalities.push('Écologique');
-  if (humanScore >= 3) tonalities.push('Humaine');
+    if (error) {
+      console.error('Error calling editorial summary function:', error);
+      return 'Résumé non disponible.';
+    }
 
-  // Default fallback
-  if (tonalities.length === 0) {
-    if (types.includes('haiku') || types.includes('senryu')) return 'Poétique minimaliste';
-    if (types.includes('prose') || types.includes('texte-libre')) return 'Libre & exploratoire';
-    return 'Documentaire';
+    return data?.summary || 'Résumé non disponible.';
+  } catch (err) {
+    console.error('Error generating editorial summary:', err);
+    return 'Résumé non disponible.';
   }
-
-  return tonalities.slice(0, 2).join(' & ');
 };
 
 // Fetch all data for an exploration
-export const fetchExplorationMarchesStats = async (explorationId: string): Promise<ExplorationStatsExport | null> => {
+export const fetchExplorationMarchesStats = async (
+  explorationId: string,
+  onProgress?: (current: number, total: number, marcheName: string) => void
+): Promise<ExplorationStatsExport | null> => {
   // Get exploration details
   const { data: exploration, error: explError } = await supabase
     .from('explorations')
@@ -105,12 +94,11 @@ export const fetchExplorationMarchesStats = async (explorationId: string): Promi
   }
 
   const marcheIds = links.map(l => l.marche_id);
-  const ordreMap = new Map(links.map(l => [l.marche_id, l.ordre]));
 
-  // Get marche details
+  // Get marche details including GPS
   const { data: marches, error: marchesError } = await supabase
     .from('marches')
-    .select('id, nom_marche, ville, region, departement, date')
+    .select('id, nom_marche, ville, region, departement, date, latitude, longitude')
     .in('id', marcheIds);
 
   if (marchesError || !marches) {
@@ -140,48 +128,74 @@ export const fetchExplorationMarchesStats = async (explorationId: string): Promi
     audioCountMap.set(a.marche_id, (audioCountMap.get(a.marche_id) || 0) + 1);
   });
 
-  // Get textes per marche for count and tonality
+  // Get textes per marche for count and AI summary
   const { data: textes } = await supabase
     .from('marche_textes')
-    .select('marche_id, type_texte, contenu')
+    .select('marche_id, type_texte, titre, contenu')
     .in('marche_id', marcheIds);
 
-  const textesByMarche = new Map<string, { type_texte: string; contenu: string }[]>();
+  const textesByMarche = new Map<string, { type_texte: string; titre: string; contenu: string }[]>();
   textes?.forEach(t => {
     const existing = textesByMarche.get(t.marche_id) || [];
-    existing.push({ type_texte: t.type_texte, contenu: t.contenu });
+    existing.push({ type_texte: t.type_texte, titre: t.titre, contenu: t.contenu });
     textesByMarche.set(t.marche_id, existing);
   });
 
-  // Build marches stats
-  const marchesStats: MarcheStats[] = marches
-    .sort((a, b) => {
-      // Sort by date chronologically
-      const dateA = a.date ? new Date(a.date).getTime() : 0;
-      const dateB = b.date ? new Date(b.date).getTime() : 0;
-      return dateA - dateB;
-    })
-    .map((m, index) => {
+  // Sort marches by date
+  const sortedMarches = marches.sort((a, b) => {
+    const dateA = a.date ? new Date(a.date).getTime() : 0;
+    const dateB = b.date ? new Date(b.date).getTime() : 0;
+    return dateA - dateB;
+  });
+
+  // Generate AI summaries for each marche (in batches of 3 for rate limiting)
+  const marchesStats: MarcheStats[] = [];
+  const batchSize = 3;
+  
+  for (let i = 0; i < sortedMarches.length; i += batchSize) {
+    const batch = sortedMarches.slice(i, i + batchSize);
+    
+    const batchPromises = batch.map(async (m, batchIndex) => {
+      const index = i + batchIndex;
+      const marcheName = m.nom_marche || m.ville;
       const marcheTextes = textesByMarche.get(m.id) || [];
+      
+      onProgress?.(index + 1, sortedMarches.length, marcheName);
+      
+      const resumeEditorial = await generateEditorialSummary(marcheTextes, marcheName);
+      
       return {
         numero: index + 1,
         id: m.id,
-        nom: m.nom_marche || m.ville,
+        nom: marcheName,
+        ville: m.ville,
         region: m.region || 'Non spécifiée',
         departement: m.departement || 'Non spécifié',
         date: m.date || '',
+        latitude: m.latitude,
+        longitude: m.longitude,
         nbPhotos: photoCountMap.get(m.id) || 0,
         nbTextes: marcheTextes.length,
         nbAudios: audioCountMap.get(m.id) || 0,
-        tonalite: analyzeTextTonality(marcheTextes),
+        resumeEditorial,
       };
     });
+    
+    const batchResults = await Promise.all(batchPromises);
+    marchesStats.push(...batchResults);
+  }
 
   return {
     explorationName: exploration.name,
     marches: marchesStats,
     exportDate: new Date(),
   };
+};
+
+// Format GPS coordinates
+const formatGPS = (lat: number | null, lng: number | null): string => {
+  if (lat === null || lng === null) return '-';
+  return `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
 };
 
 // Create cover page
@@ -217,7 +231,7 @@ const createCoverPage = (data: ExplorationStatsExport): Paragraph[] => {
       alignment: AlignmentType.CENTER,
       children: [
         new TextRun({
-          text: 'Liste des marches avec statistiques et tonalités',
+          text: 'Liste des marches avec statistiques et résumés éditoriaux',
           size: 28,
           color: '888888',
         }),
@@ -272,13 +286,7 @@ const createSummarySection = (data: ExplorationStatsExport): Paragraph[] => {
   
   const regions = new Set(data.marches.map(m => m.region));
   const departements = new Set(data.marches.map(m => m.departement));
-
-  // Count tonalities
-  const tonalityCount = new Map<string, number>();
-  data.marches.forEach(m => {
-    const key = m.tonalite;
-    tonalityCount.set(key, (tonalityCount.get(key) || 0) + 1);
-  });
+  const villes = data.marches.map(m => m.ville).filter(Boolean);
 
   return [
     new Paragraph({
@@ -305,6 +313,10 @@ const createSummarySection = (data: ExplorationStatsExport): Paragraph[] => {
     }),
     new Paragraph({
       bullet: { level: 0 },
+      children: [new TextRun({ text: `Villes : ${villes.length}` })],
+    }),
+    new Paragraph({
+      bullet: { level: 0 },
       children: [new TextRun({ text: `Total photos : ${totalPhotos}` })],
     }),
     new Paragraph({
@@ -315,66 +327,64 @@ const createSummarySection = (data: ExplorationStatsExport): Paragraph[] => {
       bullet: { level: 0 },
       children: [new TextRun({ text: `Total audios : ${totalAudios}` })],
     }),
-    new Paragraph({
-      spacing: { before: 400, after: 200 },
-      children: [
-        new TextRun({ text: 'Distribution des tonalités', bold: true, size: 24 }),
-      ],
-    }),
-    ...Array.from(tonalityCount.entries()).map(([tonalite, count]) =>
-      new Paragraph({
-        bullet: { level: 0 },
-        children: [new TextRun({ text: `${tonalite} : ${count} marche(s)` })],
-      })
-    ),
     new Paragraph({ children: [new PageBreak()] }),
   ];
 };
 
-// Create table with marches
+// Create table with marches (landscape format)
 const createMarchesTable = (data: ExplorationStatsExport): (Paragraph | Table)[] => {
   const headerRow = new TableRow({
     tableHeader: true,
     children: [
       new TableCell({
-        width: { size: 5, type: WidthType.PERCENTAGE },
+        width: { size: 3, type: WidthType.PERCENTAGE },
         shading: { fill: '2c3e50', type: ShadingType.CLEAR },
-        children: [new Paragraph({ children: [new TextRun({ text: 'N°', bold: true, color: 'ffffff' })] })],
+        children: [new Paragraph({ children: [new TextRun({ text: 'N°', bold: true, color: 'ffffff', size: 18 })] })],
       }),
       new TableCell({
-        width: { size: 12, type: WidthType.PERCENTAGE },
+        width: { size: 9, type: WidthType.PERCENTAGE },
         shading: { fill: '2c3e50', type: ShadingType.CLEAR },
-        children: [new Paragraph({ children: [new TextRun({ text: 'Région', bold: true, color: 'ffffff' })] })],
+        children: [new Paragraph({ children: [new TextRun({ text: 'Région', bold: true, color: 'ffffff', size: 18 })] })],
+      }),
+      new TableCell({
+        width: { size: 5, type: WidthType.PERCENTAGE },
+        shading: { fill: '2c3e50', type: ShadingType.CLEAR },
+        children: [new Paragraph({ children: [new TextRun({ text: 'Dépt', bold: true, color: 'ffffff', size: 18 })] })],
+      }),
+      new TableCell({
+        width: { size: 9, type: WidthType.PERCENTAGE },
+        shading: { fill: '2c3e50', type: ShadingType.CLEAR },
+        children: [new Paragraph({ children: [new TextRun({ text: 'Ville', bold: true, color: 'ffffff', size: 18 })] })],
       }),
       new TableCell({
         width: { size: 10, type: WidthType.PERCENTAGE },
         shading: { fill: '2c3e50', type: ShadingType.CLEAR },
-        children: [new Paragraph({ children: [new TextRun({ text: 'Dépt', bold: true, color: 'ffffff' })] })],
+        children: [new Paragraph({ children: [new TextRun({ text: 'Marche', bold: true, color: 'ffffff', size: 18 })] })],
       }),
       new TableCell({
-        width: { size: 20, type: WidthType.PERCENTAGE },
+        width: { size: 10, type: WidthType.PERCENTAGE },
         shading: { fill: '2c3e50', type: ShadingType.CLEAR },
-        children: [new Paragraph({ children: [new TextRun({ text: 'Marche', bold: true, color: 'ffffff' })] })],
+        children: [new Paragraph({ children: [new TextRun({ text: 'GPS', bold: true, color: 'ffffff', size: 18 })] })],
       }),
       new TableCell({
-        width: { size: 8, type: WidthType.PERCENTAGE },
+        width: { size: 4, type: WidthType.PERCENTAGE },
         shading: { fill: '2c3e50', type: ShadingType.CLEAR },
-        children: [new Paragraph({ children: [new TextRun({ text: 'Photos', bold: true, color: 'ffffff' })] })],
+        children: [new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: '📷', size: 18 })] })],
       }),
       new TableCell({
-        width: { size: 8, type: WidthType.PERCENTAGE },
+        width: { size: 4, type: WidthType.PERCENTAGE },
         shading: { fill: '2c3e50', type: ShadingType.CLEAR },
-        children: [new Paragraph({ children: [new TextRun({ text: 'Textes', bold: true, color: 'ffffff' })] })],
+        children: [new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: '📝', size: 18 })] })],
       }),
       new TableCell({
-        width: { size: 8, type: WidthType.PERCENTAGE },
+        width: { size: 4, type: WidthType.PERCENTAGE },
         shading: { fill: '2c3e50', type: ShadingType.CLEAR },
-        children: [new Paragraph({ children: [new TextRun({ text: 'Audios', bold: true, color: 'ffffff' })] })],
+        children: [new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: '🎙️', size: 18 })] })],
       }),
       new TableCell({
-        width: { size: 29, type: WidthType.PERCENTAGE },
+        width: { size: 42, type: WidthType.PERCENTAGE },
         shading: { fill: '2c3e50', type: ShadingType.CLEAR },
-        children: [new Paragraph({ children: [new TextRun({ text: 'Tonalité', bold: true, color: 'ffffff' })] })],
+        children: [new Paragraph({ children: [new TextRun({ text: 'Résumé éditorial', bold: true, color: 'ffffff', size: 18 })] })],
       }),
     ],
   });
@@ -384,35 +394,43 @@ const createMarchesTable = (data: ExplorationStatsExport): (Paragraph | Table)[]
       children: [
         new TableCell({
           shading: { fill: index % 2 === 0 ? 'f8f9fa' : 'ffffff', type: ShadingType.CLEAR },
-          children: [new Paragraph({ children: [new TextRun({ text: String(marche.numero) })] })],
+          children: [new Paragraph({ children: [new TextRun({ text: String(marche.numero), size: 18 })] })],
         }),
         new TableCell({
           shading: { fill: index % 2 === 0 ? 'f8f9fa' : 'ffffff', type: ShadingType.CLEAR },
-          children: [new Paragraph({ children: [new TextRun({ text: marche.region, size: 18 })] })],
+          children: [new Paragraph({ children: [new TextRun({ text: marche.region, size: 16 })] })],
         }),
         new TableCell({
           shading: { fill: index % 2 === 0 ? 'f8f9fa' : 'ffffff', type: ShadingType.CLEAR },
-          children: [new Paragraph({ children: [new TextRun({ text: marche.departement, size: 18 })] })],
+          children: [new Paragraph({ children: [new TextRun({ text: marche.departement, size: 16 })] })],
         }),
         new TableCell({
           shading: { fill: index % 2 === 0 ? 'f8f9fa' : 'ffffff', type: ShadingType.CLEAR },
-          children: [new Paragraph({ children: [new TextRun({ text: marche.nom, bold: true })] })],
+          children: [new Paragraph({ children: [new TextRun({ text: marche.ville, size: 18 })] })],
         }),
         new TableCell({
           shading: { fill: index % 2 === 0 ? 'f8f9fa' : 'ffffff', type: ShadingType.CLEAR },
-          children: [new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: String(marche.nbPhotos) })] })],
+          children: [new Paragraph({ children: [new TextRun({ text: marche.nom, bold: true, size: 18 })] })],
         }),
         new TableCell({
           shading: { fill: index % 2 === 0 ? 'f8f9fa' : 'ffffff', type: ShadingType.CLEAR },
-          children: [new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: String(marche.nbTextes) })] })],
+          children: [new Paragraph({ children: [new TextRun({ text: formatGPS(marche.latitude, marche.longitude), size: 16 })] })],
         }),
         new TableCell({
           shading: { fill: index % 2 === 0 ? 'f8f9fa' : 'ffffff', type: ShadingType.CLEAR },
-          children: [new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: String(marche.nbAudios) })] })],
+          children: [new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: String(marche.nbPhotos), size: 18 })] })],
         }),
         new TableCell({
           shading: { fill: index % 2 === 0 ? 'f8f9fa' : 'ffffff', type: ShadingType.CLEAR },
-          children: [new Paragraph({ children: [new TextRun({ text: marche.tonalite, italics: true, size: 20 })] })],
+          children: [new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: String(marche.nbTextes), size: 18 })] })],
+        }),
+        new TableCell({
+          shading: { fill: index % 2 === 0 ? 'f8f9fa' : 'ffffff', type: ShadingType.CLEAR },
+          children: [new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: String(marche.nbAudios), size: 18 })] })],
+        }),
+        new TableCell({
+          shading: { fill: index % 2 === 0 ? 'f8f9fa' : 'ffffff', type: ShadingType.CLEAR },
+          children: [new Paragraph({ children: [new TextRun({ text: marche.resumeEditorial, italics: true, size: 18 })] })],
         }),
       ],
     })
@@ -434,8 +452,11 @@ const createMarchesTable = (data: ExplorationStatsExport): (Paragraph | Table)[]
 };
 
 // Main export function
-export const exportMarchesStatsToWord = async (explorationId: string): Promise<void> => {
-  const data = await fetchExplorationMarchesStats(explorationId);
+export const exportMarchesStatsToWord = async (
+  explorationId: string,
+  onProgress?: (current: number, total: number, marcheName: string) => void
+): Promise<void> => {
+  const data = await fetchExplorationMarchesStats(explorationId, onProgress);
   
   if (!data) {
     throw new Error('Impossible de récupérer les données de l\'exploration');
@@ -450,7 +471,7 @@ export const exportMarchesStatsToWord = async (explorationId: string): Promise<v
   const doc = new Document({
     title: `${data.explorationName} - Statistiques des marches`,
     creator: 'Gaspard Boréal',
-    description: 'Documentation des marches avec statistiques et tonalités',
+    description: 'Documentation des marches avec statistiques et résumés éditoriaux',
     styles: {
       paragraphStyles: [
         {
@@ -467,11 +488,14 @@ export const exportMarchesStatsToWord = async (explorationId: string): Promise<v
       {
         properties: {
           page: {
+            size: {
+              orientation: PageOrientation.LANDSCAPE,
+            },
             margin: {
-              top: 1000,
-              right: 800,
-              bottom: 1000,
-              left: 800,
+              top: 720,
+              right: 720,
+              bottom: 720,
+              left: 720,
             },
           },
         },
