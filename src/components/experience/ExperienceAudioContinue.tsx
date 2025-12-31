@@ -16,7 +16,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/co
 import PlaylistViewToggle, { type PlaylistViewMode } from '@/components/audio/PlaylistViewToggle';
 import PlaylistParcoursView from '@/components/audio/PlaylistParcoursView';
 import PlaylistSelectionView from '@/components/audio/PlaylistSelectionView';
-import { detectLiteraryTypeFromTitle } from '@/utils/audioLiteraryTypeDetection';
+import { detectLiteraryTypeFromTitle, getLiteraryTypeForAudio } from '@/utils/audioLiteraryTypeDetection';
 import { TextType, TEXT_TYPES_REGISTRY } from '@/types/textTypes';
 import { 
   Play, 
@@ -150,7 +150,8 @@ export default function ExperienceAudioContinue() {
     // Filter by literary types if in selection mode with types selected
     if (playlistViewMode === 'selection' && selectedLiteraryTypes.size > 0) {
       result = result.filter(track => {
-        const detected = detectLiteraryTypeFromTitle(track.title);
+        // Use hybrid detection: prioritize DB literary_type, fallback to auto-detection
+        const detected = getLiteraryTypeForAudio(track.title, track.literary_type);
         return detected.type && selectedLiteraryTypes.has(detected.type);
       });
     }
@@ -275,7 +276,8 @@ export default function ExperienceAudioContinue() {
       // Start playing the first track of the selection
       const typesSet = new Set(pendingTypesSelection as TextType[]);
       const firstMatchingTrack = audioPlaylist.find(track => {
-        const detected = detectLiteraryTypeFromTitle(track.title);
+        // Use hybrid detection for consistent behavior with PlaylistSelectionView
+        const detected = getLiteraryTypeForAudio(track.title, track.literary_type);
         return detected.type && typesSet.has(detected.type);
       });
       if (firstMatchingTrack) {
