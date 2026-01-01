@@ -19,16 +19,18 @@ serve(async (req) => {
     
     console.log(`Fetching calendar events from ${start_date} to ${end_date}`);
 
+    // Build URL with query parameters for GET request
+    const params = new URLSearchParams({
+      start_date: start_date || new Date().toISOString(),
+      end_date: end_date || new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString(),
+    });
+
     // Call n8n webhook to get Google Calendar events
-    const response = await fetch(N8N_WEBHOOK_URL, {
-      method: 'POST',
+    const response = await fetch(`${N8N_WEBHOOK_URL}?${params.toString()}`, {
+      method: 'GET',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({
-        start_date: start_date || new Date().toISOString(),
-        end_date: end_date || new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString(), // 90 days ahead
-      }),
     });
 
     if (!response.ok) {
