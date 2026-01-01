@@ -45,6 +45,7 @@ import ExplorationPrefigurer from './pages/ExplorationPrefigurer';
 import ExplorationImports from './pages/ExplorationImports';
 import AtlasClimatique from './pages/AtlasClimatique';
 import ExportationsAdmin from './pages/ExportationsAdmin';
+import AutomationsAdmin from './pages/AutomationsAdmin';
 import ExplorationLayout from './layouts/ExplorationLayout';
 
 function App() {
@@ -144,6 +145,11 @@ function App() {
             <Route path="/admin/exportations" element={
               <AdminAuth>
                 <ExportationsAdmin />
+              </AdminAuth>
+            } />
+            <Route path="/admin/automations" element={
+              <AdminAuth>
+                <AutomationsAdmin />
               </AdminAuth>
             } />
             <Route path="/admin/opus/:slug" element={
