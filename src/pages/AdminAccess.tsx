@@ -3,7 +3,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { Card } from '../components/ui/card';
 import { Button } from '../components/ui/button';
-import { Settings, Map, Sparkles, ArrowLeft, FileDown } from 'lucide-react';
+import { Settings, Map, Sparkles, ArrowLeft, FileDown, Zap } from 'lucide-react';
 
 const AdminAccess: React.FC = () => {
   return (
@@ -75,6 +75,23 @@ const AdminAccess: React.FC = () => {
               <Button variant="outline" className="w-full">
                 <FileDown className="h-4 w-4 mr-2" />
                 Accéder aux Exportations
+              </Button>
+            </Link>
+          </Card>
+
+          <Card className="gaspard-card p-6 hover:shadow-lg transition-shadow">
+            <div className="flex items-center mb-4">
+              <Zap className="h-8 w-8 text-accent mr-3" />
+              <h2 className="text-xl font-semibold text-foreground">Automations & Intégrations</h2>
+            </div>
+            <p className="text-muted-foreground mb-4">
+              Gérer les connexions externes : Google Calendar, n8n workflows.
+              Tester et monitorer les synchronisations.
+            </p>
+            <Link to="/admin/automations">
+              <Button variant="outline" className="w-full">
+                <Zap className="h-4 w-4 mr-2" />
+                Accéder aux Automations
               </Button>
             </Link>
           </Card>
