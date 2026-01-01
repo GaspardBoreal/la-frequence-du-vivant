@@ -232,6 +232,56 @@ export type Database = {
         }
         Relationships: []
       }
+      engagement_analytics: {
+        Row: {
+          created_at: string
+          exploration_id: string
+          id: string
+          last_message_content: string | null
+          last_reservation_location: string | null
+          nb_messages_sent: number
+          nb_popup_planning_shown: number
+          nb_popup_video_shown: number
+          nb_reservations: number
+          session_key: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          exploration_id: string
+          id?: string
+          last_message_content?: string | null
+          last_reservation_location?: string | null
+          nb_messages_sent?: number
+          nb_popup_planning_shown?: number
+          nb_popup_video_shown?: number
+          nb_reservations?: number
+          session_key: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          exploration_id?: string
+          id?: string
+          last_message_content?: string | null
+          last_reservation_location?: string | null
+          nb_messages_sent?: number
+          nb_popup_planning_shown?: number
+          nb_popup_video_shown?: number
+          nb_reservations?: number
+          session_key?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_analytics_exploration"
+            columns: ["exploration_id"]
+            isOneToOne: false
+            referencedRelation: "explorations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       exploration_clicks: {
         Row: {
           action: string
@@ -289,6 +339,47 @@ export type Database = {
             columns: ["narrative_id"]
             isOneToOne: false
             referencedRelation: "narrative_landscapes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      exploration_engagement_settings: {
+        Row: {
+          created_at: string
+          exploration_id: string
+          id: string
+          popup_planning_enabled: boolean
+          popup_video_enabled: boolean
+          temps_parametrable_seconds: number
+          updated_at: string
+          video_youtube_url: string | null
+        }
+        Insert: {
+          created_at?: string
+          exploration_id: string
+          id?: string
+          popup_planning_enabled?: boolean
+          popup_video_enabled?: boolean
+          temps_parametrable_seconds?: number
+          updated_at?: string
+          video_youtube_url?: string | null
+        }
+        Update: {
+          created_at?: string
+          exploration_id?: string
+          id?: string
+          popup_planning_enabled?: boolean
+          popup_video_enabled?: boolean
+          temps_parametrable_seconds?: number
+          updated_at?: string
+          video_youtube_url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_engagement_exploration"
+            columns: ["exploration_id"]
+            isOneToOne: true
+            referencedRelation: "explorations"
             referencedColumns: ["id"]
           },
         ]
@@ -562,6 +653,168 @@ export type Database = {
           version?: string
         }
         Relationships: []
+      }
+      gaspard_events: {
+        Row: {
+          created_at: string
+          current_attendees: number
+          description: string | null
+          end_date: string
+          google_event_id: string | null
+          id: string
+          is_bookable: boolean
+          location: string | null
+          max_attendees: number | null
+          start_date: string
+          synced_at: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          current_attendees?: number
+          description?: string | null
+          end_date: string
+          google_event_id?: string | null
+          id?: string
+          is_bookable?: boolean
+          location?: string | null
+          max_attendees?: number | null
+          start_date: string
+          synced_at?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          current_attendees?: number
+          description?: string | null
+          end_date?: string
+          google_event_id?: string | null
+          id?: string
+          is_bookable?: boolean
+          location?: string | null
+          max_attendees?: number | null
+          start_date?: string
+          synced_at?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      gaspard_messages: {
+        Row: {
+          created_at: string
+          event_id: string | null
+          exploration_id: string | null
+          id: string
+          message: string
+          relance_j48_sent: boolean
+          relance_j48_sent_at: string | null
+          sender_email: string
+          sender_name: string
+        }
+        Insert: {
+          created_at?: string
+          event_id?: string | null
+          exploration_id?: string | null
+          id?: string
+          message: string
+          relance_j48_sent?: boolean
+          relance_j48_sent_at?: string | null
+          sender_email: string
+          sender_name: string
+        }
+        Update: {
+          created_at?: string
+          event_id?: string | null
+          exploration_id?: string | null
+          id?: string
+          message?: string
+          relance_j48_sent?: boolean
+          relance_j48_sent_at?: string | null
+          sender_email?: string
+          sender_name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_message_event"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "gaspard_events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_message_exploration"
+            columns: ["exploration_id"]
+            isOneToOne: false
+            referencedRelation: "explorations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      gaspard_reservations: {
+        Row: {
+          created_at: string
+          email: string
+          event_id: string
+          exploration_id: string | null
+          first_name: string
+          id: string
+          last_name: string
+          message: string | null
+          phone: string | null
+          rappel_j48_sent: boolean
+          rappel_j48_sent_at: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          event_id: string
+          exploration_id?: string | null
+          first_name: string
+          id?: string
+          last_name: string
+          message?: string | null
+          phone?: string | null
+          rappel_j48_sent?: boolean
+          rappel_j48_sent_at?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          event_id?: string
+          exploration_id?: string | null
+          first_name?: string
+          id?: string
+          last_name?: string
+          message?: string | null
+          phone?: string | null
+          rappel_j48_sent?: boolean
+          rappel_j48_sent_at?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_reservation_event"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "gaspard_events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_reservation_exploration"
+            columns: ["exploration_id"]
+            isOneToOne: false
+            referencedRelation: "explorations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       marche_audio: {
         Row: {
