@@ -6,7 +6,7 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-const N8N_WEBHOOK_URL = "https://gaspard-boreal.app.n8n.cloud/webhook/314d99b8-871f-4311-95ff-cf934212809e";
+const N8N_WEBHOOK_URL = "https://gaspard-boreal.app.n8n.cloud/webhook/lovable-calendar-events";
 
 serve(async (req) => {
   // Handle CORS preflight requests
@@ -36,21 +36,18 @@ serve(async (req) => {
     
     console.log(`Fetching calendar events from ${finalStartDate} to ${finalEndDate}`);
 
-    // 2. Build URL with query parameters
-    const params = new URLSearchParams({
-      start_date: finalStartDate,
-      end_date: finalEndDate,
-    });
+    // 2. Call n8n webhook with POST and JSON body
+    console.log(`Calling n8n webhook: ${N8N_WEBHOOK_URL}`);
 
-    const fullUrl = `${N8N_WEBHOOK_URL}?${params.toString()}`;
-    console.log(`Calling n8n webhook: ${fullUrl}`);
-
-    // 3. Call n8n webhook
-    const response = await fetch(fullUrl, {
-      method: 'GET',
+    const response = await fetch(N8N_WEBHOOK_URL, {
+      method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
+      body: JSON.stringify({
+        start_date: finalStartDate,
+        end_date: finalEndDate,
+      }),
     });
 
     const contentType = response.headers.get('content-type') || 'unknown';
