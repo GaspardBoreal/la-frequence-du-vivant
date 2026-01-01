@@ -10,18 +10,23 @@ export interface CalendarEvent {
   description?: string;
 }
 
-interface SyncResult {
+export interface SyncResult {
   success: boolean;
-  events?: CalendarEvent[];
+  events: CalendarEvent[];
   error?: string;
-  syncedAt?: string;
+  warning?: string;
+  syncedAt: string;
+  meta?: {
+    upstreamStatus?: number;
+    upstreamContentType?: string;
+  };
 }
 
 export function useCalendarSync() {
   const [loading, setLoading] = useState(false);
   const [lastSync, setLastSync] = useState<SyncResult | null>(null);
 
-  const syncCalendar = useCallback(async (startDate?: string, endDate?: string) => {
+  const syncCalendar = useCallback(async (startDate?: string, endDate?: string): Promise<SyncResult> => {
     setLoading(true);
     
     try {
@@ -35,6 +40,7 @@ export function useCalendarSync() {
       if (error) {
         const result: SyncResult = {
           success: false,
+          events: [],
           error: error.message || 'Erreur de connexion',
           syncedAt: new Date().toISOString(),
         };
@@ -42,22 +48,37 @@ export function useCalendarSync() {
         return result;
       }
 
-      // Parse events from n8n response
-      const events: CalendarEvent[] = Array.isArray(data?.events) 
-        ? data.events.map((event: any) => ({
-            id: event.id || event.iCalUID || crypto.randomUUID(),
-            title: event.summary || event.title || 'Sans titre',
-            start: event.start?.dateTime || event.start?.date || event.start || '',
-            end: event.end?.dateTime || event.end?.date || event.end || '',
-            location: event.location || '',
-            description: event.description || '',
-          }))
-        : [];
+      // Handle error returned in response body
+      if (data?.error) {
+        const result: SyncResult = {
+          success: false,
+          events: [],
+          error: data.error,
+          warning: data.rawSnippet ? `Extrait: ${data.rawSnippet.slice(0, 200)}...` : undefined,
+          syncedAt: new Date().toISOString(),
+          meta: data.meta,
+        };
+        setLastSync(result);
+        return result;
+      }
+
+      // Parse events with robust fallbacks
+      const rawEvents = data?.events || [];
+      const events: CalendarEvent[] = rawEvents.map((event: Record<string, unknown>, index: number) => ({
+        id: String(event.id || event.eventId || `event-${index}`),
+        title: String(event.summary || event.title || event.subject || 'Sans titre'),
+        start: String((event.start as Record<string, unknown>)?.dateTime || (event.start as Record<string, unknown>)?.date || event.startTime || event.start || ''),
+        end: String((event.end as Record<string, unknown>)?.dateTime || (event.end as Record<string, unknown>)?.date || event.endTime || event.end || ''),
+        location: event.location ? String(event.location) : undefined,
+        description: event.description ? String(event.description) : undefined,
+      }));
 
       const result: SyncResult = {
         success: true,
         events,
+        warning: data?.warning,
         syncedAt: new Date().toISOString(),
+        meta: data?.meta,
       };
       
       setLastSync(result);
@@ -65,6 +86,7 @@ export function useCalendarSync() {
     } catch (err) {
       const result: SyncResult = {
         success: false,
+        events: [],
         error: err instanceof Error ? err.message : 'Erreur inconnue',
         syncedAt: new Date().toISOString(),
       };

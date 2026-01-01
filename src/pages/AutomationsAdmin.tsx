@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowLeft, Calendar, CheckCircle, XCircle, Loader2, RefreshCw, MapPin, Clock, Zap } from 'lucide-react';
+import { ArrowLeft, Calendar, CheckCircle, XCircle, Loader2, RefreshCw, MapPin, Clock, Zap, AlertTriangle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -16,7 +16,11 @@ const AutomationsAdmin: React.FC = () => {
     const result = await syncCalendar();
     
     if (result.success) {
-      toast.success(`${result.events?.length || 0} événement(s) récupéré(s)`);
+      if (result.warning) {
+        toast.warning(result.warning);
+      } else {
+        toast.success(`${result.events?.length || 0} événement(s) récupéré(s)`);
+      }
     } else {
       toast.error(result.error || 'Erreur de synchronisation');
     }
@@ -51,6 +55,36 @@ const AutomationsAdmin: React.FC = () => {
     }
   };
 
+  // Determine status badge
+  const getStatusBadge = () => {
+    if (!lastSync) return null;
+    
+    if (!lastSync.success) {
+      return (
+        <Badge variant="destructive" className="gap-1">
+          <XCircle className="h-3 w-3" />
+          Erreur
+        </Badge>
+      );
+    }
+    
+    if (lastSync.warning) {
+      return (
+        <Badge variant="outline" className="gap-1 border-amber-500 text-amber-600 bg-amber-50">
+          <AlertTriangle className="h-3 w-3" />
+          Avertissement
+        </Badge>
+      );
+    }
+    
+    return (
+      <Badge variant="default" className="gap-1">
+        <CheckCircle className="h-3 w-3" />
+        Connecté
+      </Badge>
+    );
+  };
+
   return (
     <div className="min-h-screen bg-background p-4 md:p-6">
       <div className="max-w-4xl mx-auto">
@@ -82,21 +116,7 @@ const AutomationsAdmin: React.FC = () => {
                     <CardDescription>Synchronisation Google Calendar via n8n</CardDescription>
                   </div>
                 </div>
-                {lastSync && (
-                  <Badge variant={lastSync.success ? "default" : "destructive"} className="gap-1">
-                    {lastSync.success ? (
-                      <>
-                        <CheckCircle className="h-3 w-3" />
-                        Connecté
-                      </>
-                    ) : (
-                      <>
-                        <XCircle className="h-3 w-3" />
-                        Erreur
-                      </>
-                    )}
-                  </Badge>
-                )}
+                {getStatusBadge()}
               </div>
             </CardHeader>
             
@@ -127,6 +147,13 @@ const AutomationsAdmin: React.FC = () => {
                   </span>
                 )}
               </div>
+
+              {/* Warning Display */}
+              {lastSync?.warning && (
+                <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                  <p className="text-sm text-amber-700">{lastSync.warning}</p>
+                </div>
+              )}
 
               {/* Error Display */}
               {lastSync?.error && (
