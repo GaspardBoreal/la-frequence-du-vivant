@@ -703,39 +703,6 @@ export default function ExperienceLectureOptimisee() {
           className="fixed bottom-6 left-1/2 -translate-x-1/2 z-30"
         >
           <div className="flex gap-3 p-3 bg-white/90 dark:bg-slate-950/90 backdrop-blur-xl border border-slate-200/60 dark:border-slate-800/60 rounded-2xl shadow-lg">
-            {/* Reading Mode Toggle - Hidden on mobile */}
-            {!isMobile && (
-              <>
-                <div className="flex bg-slate-100 dark:bg-slate-800 rounded-xl p-1">
-                  <Button
-                    onClick={() => setReadingMode('standard')}
-                    variant={getButtonVariant('standard')}
-                    size="sm"
-                    className={getButtonStyles('standard')}
-                  >
-                    Simple
-                  </Button>
-                  <Button
-                    onClick={() => setReadingMode('rich')}
-                    variant={getButtonVariant('rich')}
-                    size="sm"
-                    className={getButtonStyles('rich')}
-                  >
-                    Enrichi
-                  </Button>
-                  <Button
-                    onClick={() => setReadingMode('focus')}
-                    variant={getButtonVariant('focus')}
-                    size="sm"
-                    className={getButtonStyles('focus')}
-                  >
-                    Focus
-                  </Button>
-                </div>
-                
-                <div className="w-px bg-slate-200 dark:bg-slate-700"></div>
-              </>
-            )}
             
             {/* Navigation buttons - Hidden on mobile */}
             {!isMobile && (
