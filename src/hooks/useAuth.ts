@@ -122,7 +122,11 @@ export const useAuth = () => {
   };
 
   const resetPassword = async (email: string) => {
-    const redirectUrl = `${window.location.origin}/admin/reset-password`;
+    // Utiliser l'URL de production pour éviter la redirection vers localhost
+    const baseUrl = window.location.hostname === 'localhost' 
+      ? 'https://gaspardboreal.com'
+      : window.location.origin;
+    const redirectUrl = `${baseUrl}/admin/reset-password`;
     
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
       redirectTo: redirectUrl
