@@ -5,6 +5,13 @@ export { default as SymphonieTextuelle } from './SymphonieTextuelle';
 export { default as ExperienceLectureRevolutionnaire } from './ExperienceLectureRevolutionnaire';
 export { default as MarcheTransitionOverlay } from './MarcheTransitionOverlay';
 
+// Sommaire Poétique - Navigation immersive par marche et type littéraire
+export { default as TextNavigationViewToggle } from './TextNavigationViewToggle';
+export { default as TextParcoursView } from './TextParcoursView';
+export { default as TextAnthologieView } from './TextAnthologieView';
+export { default as TextFilView } from './TextFilView';
+export { default as TextSommaireSheet } from './TextSommaireSheet';
+
 // Legacy components (kept for reference)
 export { default as ExperienceLivreWelcome } from './ExperienceLivreWelcome';
 export { default as NavigationPoetique } from './NavigationPoetique';
