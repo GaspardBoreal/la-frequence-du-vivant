@@ -20,7 +20,7 @@ export default function TextNavigationViewToggle({
 }: TextNavigationViewToggleProps) {
   return (
     <div className={cn(
-      "flex items-center bg-slate-100 dark:bg-slate-800 rounded-xl p-1",
+      "flex items-center bg-slate-100 dark:bg-slate-900/80 border border-slate-200 dark:border-slate-600 rounded-xl p-1",
       className
     )}>
       <Button
@@ -30,12 +30,12 @@ export default function TextNavigationViewToggle({
         className={cn(
           "rounded-lg px-2.5 py-1.5 h-auto text-xs gap-1.5 transition-all",
           mode === 'fil' 
-            ? "bg-white dark:bg-slate-700 shadow-sm font-medium" 
-            : "hover:bg-white/50 dark:hover:bg-slate-700/50"
+            ? "bg-white dark:bg-emerald-700 text-slate-900 dark:text-white shadow-sm font-medium" 
+            : "text-slate-600 dark:text-slate-300 hover:bg-white/50 dark:hover:bg-slate-700/50"
         )}
       >
         <BookOpen className="h-3.5 w-3.5" />
-        <span className="hidden sm:inline">Fil</span>
+        <span>Fil</span>
       </Button>
       
       <Button
@@ -45,12 +45,12 @@ export default function TextNavigationViewToggle({
         className={cn(
           "rounded-lg px-2.5 py-1.5 h-auto text-xs gap-1.5 transition-all",
           mode === 'parcours' 
-            ? "bg-white dark:bg-slate-700 shadow-sm font-medium" 
-            : "hover:bg-white/50 dark:hover:bg-slate-700/50"
+            ? "bg-white dark:bg-emerald-700 text-slate-900 dark:text-white shadow-sm font-medium" 
+            : "text-slate-600 dark:text-slate-300 hover:bg-white/50 dark:hover:bg-slate-700/50"
         )}
       >
         <Route className="h-3.5 w-3.5" />
-        <span className="hidden sm:inline">Parcours</span>
+        <span>Parcours</span>
       </Button>
       
       <Button
@@ -60,12 +60,12 @@ export default function TextNavigationViewToggle({
         className={cn(
           "rounded-lg px-2.5 py-1.5 h-auto text-xs gap-1.5 transition-all",
           mode === 'anthologie' 
-            ? "bg-white dark:bg-slate-700 shadow-sm font-medium" 
-            : "hover:bg-white/50 dark:hover:bg-slate-700/50"
+            ? "bg-white dark:bg-emerald-700 text-slate-900 dark:text-white shadow-sm font-medium" 
+            : "text-slate-600 dark:text-slate-300 hover:bg-white/50 dark:hover:bg-slate-700/50"
         )}
       >
         <Sparkles className="h-3.5 w-3.5" />
-        <span className="hidden sm:inline">Anthologie</span>
+        <span>Anthologie</span>
       </Button>
     </div>
   );
