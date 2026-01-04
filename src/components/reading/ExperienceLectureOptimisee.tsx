@@ -12,6 +12,7 @@ import {
   Clock,
   Monitor,
   Sun,
+  BookOpen,
   Moon,
   List
 } from 'lucide-react';
@@ -27,8 +28,8 @@ import TexteRendererAdaptatif from './TexteRendererAdaptatif';
 import NavigationLitteraire from './NavigationLitteraire';
 import TextTypeSelector from './TextTypeSelector';
 import MarcheTransitionOverlay from './MarcheTransitionOverlay';
-import TextNavigationViewToggle, { TextViewMode } from './TextNavigationViewToggle';
 import TextSommaireSheet from './TextSommaireSheet';
+import { TextViewMode } from './TextNavigationViewToggle';
 import { getTextTypeInfo, TextType } from '@/types/textTypes';
 import { AppearanceMode, ReadingMode } from '@/types/readingTypes';
 import { createSlug } from '@/utils/slugGenerator';
@@ -512,14 +513,14 @@ export default function ExperienceLectureOptimisee() {
 
               {/* Mobile Right: Sommaire + Actions */}
               <div className="flex items-center gap-1">
-                {/* Sommaire button for mobile */}
+                {/* Sommaire button for mobile - More visible with accent style */}
                 <Button
-                  variant="ghost"
+                  variant="outline"
                   size="sm"
                   onClick={() => setShowSommaire(true)}
-                  className="h-8 w-8 p-0 text-slate-800 dark:text-slate-300"
+                  className="h-8 px-2.5 gap-1.5 text-emerald-700 dark:text-emerald-400 border-emerald-300 dark:border-emerald-700 bg-emerald-50/50 dark:bg-emerald-950/30 hover:bg-emerald-100 dark:hover:bg-emerald-900/40"
                 >
-                  <List className="h-3.5 w-3.5" />
+                  <BookOpen className="h-3.5 w-3.5" />
                 </Button>
                 
                 <DropdownMenu>
@@ -740,14 +741,16 @@ export default function ExperienceLectureOptimisee() {
                 
                 <div className="w-px bg-slate-200 dark:bg-slate-700"></div>
                 
-                {/* Sommaire Poétique Toggle for Desktop */}
-                <TextNavigationViewToggle
-                  mode={textViewMode}
-                  onModeChange={(mode) => {
-                    setTextViewMode(mode);
-                    setShowSommaire(true);
-                  }}
-                />
+                {/* Sommaire Poétique Button for Desktop - Single button that opens Sheet */}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowSommaire(true)}
+                  className="rounded-xl px-3 py-2 text-xs font-medium h-auto gap-1.5 border-emerald-300 dark:border-emerald-700 text-emerald-700 dark:text-emerald-400 bg-emerald-50/50 dark:bg-emerald-950/30 hover:bg-emerald-100 dark:hover:bg-emerald-900/40"
+                >
+                  <BookOpen className="h-3.5 w-3.5" />
+                  Sommaire
+                </Button>
                 
                 <div className="w-px bg-slate-200 dark:bg-slate-700"></div>
               </>

@@ -1,4 +1,5 @@
-// Text Sommaire Sheet - Mobile navigation sheet for Sommaire Poétique
+// Text Sommaire Sheet - Responsive navigation sheet for Sommaire Poétique
+// Mobile: bottom sheet, Desktop/Tablet: right side panel
 import React from 'react';
 import {
   Sheet,
@@ -7,6 +8,7 @@ import {
   SheetTitle,
 } from '@/components/ui/sheet';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { useIsMobile } from '@/hooks/use-mobile';
 import TextNavigationViewToggle, { TextViewMode } from './TextNavigationViewToggle';
 import TextFilView from './TextFilView';
 import TextParcoursView from './TextParcoursView';
@@ -50,6 +52,8 @@ export default function TextSommaireSheet({
   onReadSelection,
   explorationSlug
 }: TextSommaireSheetProps) {
+  const isMobile = useIsMobile();
+  
   const handleTextSelect = (index: number) => {
     onTextSelect(index);
     onOpenChange(false);
@@ -60,11 +64,20 @@ export default function TextSommaireSheet({
     onOpenChange(false);
   };
 
+  // Responsive: bottom on mobile, right on desktop/tablet
+  const sheetSide = isMobile ? 'bottom' : 'right';
+  const sheetClassName = isMobile 
+    ? 'h-[85vh] rounded-t-2xl' 
+    : 'w-[400px] sm:w-[450px] sm:max-w-lg';
+  const scrollHeight = isMobile 
+    ? 'h-[calc(85vh-8rem)]' 
+    : 'h-[calc(100vh-8rem)]';
+
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="bottom" className="h-[85vh] rounded-t-2xl">
+      <SheetContent side={sheetSide} className={sheetClassName}>
         <SheetHeader className="pb-4">
-          <SheetTitle className="text-center font-serif">
+          <SheetTitle className="text-center font-serif text-slate-800 dark:text-slate-200">
             Sommaire Poétique
           </SheetTitle>
           
@@ -77,7 +90,7 @@ export default function TextSommaireSheet({
           </div>
         </SheetHeader>
         
-        <ScrollArea className="h-[calc(85vh-8rem)] pr-4">
+        <ScrollArea className={`${scrollHeight} pr-4`}>
           {viewMode === 'fil' && (
             <TextFilView
               texts={texts}
