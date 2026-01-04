@@ -12,7 +12,8 @@ import {
   Clock,
   Monitor,
   Sun,
-  Moon
+  Moon,
+  List
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -26,6 +27,8 @@ import TexteRendererAdaptatif from './TexteRendererAdaptatif';
 import NavigationLitteraire from './NavigationLitteraire';
 import TextTypeSelector from './TextTypeSelector';
 import MarcheTransitionOverlay from './MarcheTransitionOverlay';
+import TextNavigationViewToggle, { TextViewMode } from './TextNavigationViewToggle';
+import TextSommaireSheet from './TextSommaireSheet';
 import { getTextTypeInfo, TextType } from '@/types/textTypes';
 import { AppearanceMode, ReadingMode } from '@/types/readingTypes';
 import { createSlug } from '@/utils/slugGenerator';
@@ -52,6 +55,11 @@ export default function ExperienceLectureOptimisee() {
   const [selectedTextType, setSelectedTextType] = useState<TextType | 'all'>('all');
   const [appearanceMode, setAppearanceMode] = useState<AppearanceMode>('system');
   const [readingMode, setReadingMode] = useState<ReadingMode>('rich');
+  
+  // Sommaire Poétique states
+  const [showSommaire, setShowSommaire] = useState(false);
+  const [textViewMode, setTextViewMode] = useState<TextViewMode>('fil');
+  const [selectedAnthologieTypes, setSelectedAnthologieTypes] = useState<Set<TextType>>(new Set());
   
   // Marche transition states
   const [showMarcheTransition, setShowMarcheTransition] = useState(false);
@@ -381,6 +389,24 @@ export default function ExperienceLectureOptimisee() {
     }
   }, [currentText, slug, toast, isMobile]);
 
+  // Handle text select from Sommaire views
+  const handleSommaireTextSelect = useCallback((index: number) => {
+    setCurrentIndex(index);
+  }, []);
+
+  // Handle "Read" button from Anthologie view
+  const handleReadAnthologieSelection = useCallback(() => {
+    if (selectedAnthologieTypes.size > 0) {
+      // Find first text matching selected types
+      const firstMatchIndex = texts.findIndex(t => selectedAnthologieTypes.has(t.type_texte));
+      if (firstMatchIndex >= 0) {
+        // Set the filter to match selected types and navigate
+        setSelectedTextType('all'); // Keep all to allow navigation
+        setCurrentIndex(firstMatchIndex);
+      }
+    }
+  }, [texts, selectedAnthologieTypes]);
+
   // Keyboard navigation
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -484,8 +510,18 @@ export default function ExperienceLectureOptimisee() {
                 />
               </div>
 
-              {/* Mobile Right: Actions */}
+              {/* Mobile Right: Sommaire + Actions */}
               <div className="flex items-center gap-1">
+                {/* Sommaire button for mobile */}
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setShowSommaire(true)}
+                  className="h-8 w-8 p-0 text-slate-800 dark:text-slate-300"
+                >
+                  <List className="h-3.5 w-3.5" />
+                </Button>
+                
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-slate-800 dark:text-slate-300">
@@ -703,6 +739,17 @@ export default function ExperienceLectureOptimisee() {
                 </div>
                 
                 <div className="w-px bg-slate-200 dark:bg-slate-700"></div>
+                
+                {/* Sommaire Poétique Toggle for Desktop */}
+                <TextNavigationViewToggle
+                  mode={textViewMode}
+                  onModeChange={(mode) => {
+                    setTextViewMode(mode);
+                    setShowSommaire(true);
+                  }}
+                />
+                
+                <div className="w-px bg-slate-200 dark:bg-slate-700"></div>
               </>
             )}
             
@@ -743,6 +790,21 @@ export default function ExperienceLectureOptimisee() {
         totalMarches={marcheOrderInfo.totalMarches}
         direction={transitionInfo?.direction || 'next'}
         onDismiss={handleTransitionDismiss}
+      />
+      
+      {/* Sommaire Poétique Sheet (mobile & desktop) */}
+      <TextSommaireSheet
+        open={showSommaire}
+        onOpenChange={setShowSommaire}
+        texts={filteredTexts}
+        currentTextIndex={currentIndex}
+        onTextSelect={handleSommaireTextSelect}
+        viewMode={textViewMode}
+        onViewModeChange={setTextViewMode}
+        selectedTypes={selectedAnthologieTypes}
+        onTypesChange={setSelectedAnthologieTypes}
+        onReadSelection={handleReadAnthologieSelection}
+        explorationSlug={slug || ''}
       />
     </div>
   );
