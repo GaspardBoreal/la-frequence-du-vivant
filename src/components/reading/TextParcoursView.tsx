@@ -118,8 +118,8 @@ export default function TextParcoursView({
             <CollapsibleTrigger asChild>
               <Button
                 variant="ghost"
-                className={cn(
-                  "w-full justify-between p-4 h-auto rounded-xl transition-all",
+              className={cn(
+                "w-full justify-between items-start p-4 h-auto rounded-xl transition-all",
                   isCurrentMarche 
                     ? "bg-emerald-500/10 border border-emerald-500/30 hover:bg-emerald-500/20" 
                     : "bg-muted/30 hover:bg-muted/50 border border-transparent"
@@ -144,7 +144,7 @@ export default function TextParcoursView({
                       />
                     )}
                   </div>
-                  <span className="font-semibold text-foreground break-words">
+                  <span className="font-semibold text-foreground break-words whitespace-normal">
                     {group.marcheName}
                   </span>
                   <div className="flex items-center gap-3 text-xs text-muted-foreground">
