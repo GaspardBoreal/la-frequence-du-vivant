@@ -13,8 +13,7 @@ import {
   Monitor,
   Sun,
   BookOpen,
-  Moon,
-  List
+  Moon
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -26,7 +25,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useExplorationTextsOptimized } from '@/hooks/useExplorationTextsOptimized';
 import TexteRendererAdaptatif from './TexteRendererAdaptatif';
 import NavigationLitteraire from './NavigationLitteraire';
-import TextTypeSelector from './TextTypeSelector';
+// TextTypeSelector moved inside TextSommaireSheet's Anthologie view
 import MarcheTransitionOverlay from './MarcheTransitionOverlay';
 import TextSommaireSheet from './TextSommaireSheet';
 import { TextViewMode } from './TextNavigationViewToggle';
@@ -493,16 +492,18 @@ export default function ExperienceLectureOptimisee() {
                 </Link>
               </Button>
 
-              {/* Mobile Center: Navigation + Type Selector */}
+              {/* Mobile Center: Sommaire + Navigation */}
               <div className="flex items-center gap-2 flex-1 justify-center">
-                {selectedTextType && (
-                  <TextTypeSelector
-                    currentType={selectedTextType}
-                    availableTypes={availableTypes}
-                    onTypeSelect={handleTypeSelect}
-                    textCounts={textCounts}
-                  />
-                )}
+                {/* Sommaire Poétique button replacing TextTypeSelector */}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowSommaire(true)}
+                  className="h-8 px-2.5 gap-1.5 text-emerald-700 dark:text-emerald-400 border-emerald-300 dark:border-emerald-700 bg-emerald-50/50 dark:bg-emerald-950/30 hover:bg-emerald-100 dark:hover:bg-emerald-900/40"
+                >
+                  <BookOpen className="h-3.5 w-3.5" />
+                  <span className="text-xs">Sommaire</span>
+                </Button>
                 <NavigationLitteraire
                   currentIndex={currentIndex}
                   totalTexts={filteredTexts.length}
@@ -511,17 +512,8 @@ export default function ExperienceLectureOptimisee() {
                 />
               </div>
 
-              {/* Mobile Right: Sommaire + Actions */}
+              {/* Mobile Right: Actions only (no Sommaire button here) */}
               <div className="flex items-center gap-1">
-                {/* Sommaire button for mobile - More visible with accent style */}
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setShowSommaire(true)}
-                  className="h-8 px-2.5 gap-1.5 text-emerald-700 dark:text-emerald-400 border-emerald-300 dark:border-emerald-700 bg-emerald-50/50 dark:bg-emerald-950/30 hover:bg-emerald-100 dark:hover:bg-emerald-900/40"
-                >
-                  <BookOpen className="h-3.5 w-3.5" />
-                </Button>
                 
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
@@ -585,7 +577,7 @@ export default function ExperienceLectureOptimisee() {
                 <div className="text-xs opacity-80">Poète des Mondes Hybrides</div>
               </div>
 
-              {/* Center: Navigation + Type Selector */}
+              {/* Center: Navigation + Sommaire Poétique */}
               <div className="flex items-center gap-6">
                 <Button variant="ghost" size="sm" asChild className="text-slate-800 dark:text-slate-300 hover:text-slate-900 dark:hover:text-slate-100">
                   <Link to={`/galerie-fleuve/exploration/${slug}`}>
@@ -594,14 +586,16 @@ export default function ExperienceLectureOptimisee() {
                   </Link>
                 </Button>
                 
-                {selectedTextType && (
-                  <TextTypeSelector
-                    currentType={selectedTextType}
-                    availableTypes={availableTypes}
-                    onTypeSelect={handleTypeSelect}
-                    textCounts={textCounts}
-                  />
-                )}
+                {/* Sommaire Poétique button replacing TextTypeSelector */}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowSommaire(true)}
+                  className="h-8 px-3 gap-1.5 text-emerald-700 dark:text-emerald-400 border-emerald-300 dark:border-emerald-700 bg-emerald-50/50 dark:bg-emerald-950/30 hover:bg-emerald-100 dark:hover:bg-emerald-900/40"
+                >
+                  <BookOpen className="h-3.5 w-3.5" />
+                  <span className="text-xs font-medium">Sommaire Poétique</span>
+                </Button>
 
                 <NavigationLitteraire
                   currentIndex={currentIndex}
@@ -738,19 +732,6 @@ export default function ExperienceLectureOptimisee() {
                     Focus
                   </Button>
                 </div>
-                
-                <div className="w-px bg-slate-200 dark:bg-slate-700"></div>
-                
-                {/* Sommaire Poétique Button for Desktop - Single button that opens Sheet */}
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setShowSommaire(true)}
-                  className="rounded-xl px-3 py-2 text-xs font-medium h-auto gap-1.5 border-emerald-300 dark:border-emerald-700 text-emerald-700 dark:text-emerald-400 bg-emerald-50/50 dark:bg-emerald-950/30 hover:bg-emerald-100 dark:hover:bg-emerald-900/40"
-                >
-                  <BookOpen className="h-3.5 w-3.5" />
-                  Sommaire
-                </Button>
                 
                 <div className="w-px bg-slate-200 dark:bg-slate-700"></div>
               </>
