@@ -125,7 +125,7 @@ export default function TextParcoursView({
                     : "bg-muted/30 hover:bg-muted/50 border border-transparent"
                 )}
               >
-                <div className="flex flex-col items-start gap-1 text-left">
+                <div className="flex flex-col items-start gap-1 text-left flex-1 min-w-0">
                   <div className="flex items-center gap-2">
                     <Badge 
                       variant={isCurrentMarche ? "default" : "outline"} 
@@ -144,7 +144,7 @@ export default function TextParcoursView({
                       />
                     )}
                   </div>
-                  <span className="font-semibold text-foreground">
+                  <span className="font-semibold text-foreground break-words">
                     {group.marcheName}
                   </span>
                   <div className="flex items-center gap-3 text-xs text-muted-foreground">
@@ -162,7 +162,7 @@ export default function TextParcoursView({
                 </div>
                 <ChevronDown 
                   className={cn(
-                    "h-5 w-5 text-muted-foreground transition-transform duration-200",
+                    "h-5 w-5 flex-shrink-0 text-muted-foreground transition-transform duration-200",
                     isOpen && "rotate-180"
                   )} 
                 />
