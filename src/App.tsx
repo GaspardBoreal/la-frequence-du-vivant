@@ -8,6 +8,7 @@ import { AudioProvider } from './contexts/AudioContext';
 import { LanguageProvider } from './contexts/LanguageContext';
 import AdminAuth from './components/AdminAuth';
 import AdminLogin from './pages/AdminLogin';
+import AdminResetPassword from './pages/AdminResetPassword';
 import Index from './pages/Index';
 import NotFound from './pages/NotFound';
 import MarcheDetail from './pages/MarcheDetail';
@@ -95,6 +96,7 @@ function App() {
 
             {/* Routes d'administration */}
             <Route path="/admin/login" element={<AdminLogin />} />
+            <Route path="/admin/reset-password" element={<AdminResetPassword />} />
             
             {/* Routes d'administration protégées */}
             <Route path="/admin/migration" element={

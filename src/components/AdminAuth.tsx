@@ -12,11 +12,14 @@ interface AdminAuthProps {
 }
 
 const AdminAuth: React.FC<AdminAuthProps> = ({ children }) => {
-  const { user, isLoading, isAdmin, signIn, signOut } = useAuth();
+  const { user, isLoading, isAdmin, signIn, signOut, resetPassword } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isSigningIn, setIsSigningIn] = useState(false);
+  const [mode, setMode] = useState<'login' | 'forgot'>('login');
+  const [resetEmail, setResetEmail] = useState('');
+  const [isResetting, setIsResetting] = useState(false);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -24,6 +27,19 @@ const AdminAuth: React.FC<AdminAuthProps> = ({ children }) => {
     
     await signIn(email, password);
     setIsSigningIn(false);
+  };
+
+  const handleResetPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsResetting(true);
+    
+    const { error } = await resetPassword(resetEmail);
+    setIsResetting(false);
+    
+    if (!error) {
+      setMode('login');
+      setResetEmail('');
+    }
   };
 
   const handleLogout = async () => {
@@ -56,57 +72,101 @@ const AdminAuth: React.FC<AdminAuthProps> = ({ children }) => {
           
           <CardContent>
             {!user ? (
-              <form onSubmit={handleLogin} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="email">Email</Label>
-                  <div className="relative">
-                    <Input
-                      id="email"
-                      type="email"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      placeholder="admin@exemple.com"
-                      className="pl-10"
-                      required
-                      autoFocus
-                    />
-                    <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  </div>
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="password">Mot de passe</Label>
-                  <div className="relative">
-                    <Input
-                      id="password"
-                      type={showPassword ? 'text' : 'password'}
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      placeholder="Entrez votre mot de passe"
-                      className="pr-10"
-                      required
-                    />
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
-                      onClick={() => setShowPassword(!showPassword)}
-                    >
-                      {showPassword ? (
-                        <EyeOff className="h-4 w-4 text-muted-foreground" />
-                      ) : (
-                        <Eye className="h-4 w-4 text-muted-foreground" />
-                      )}
+              <>
+                {mode === 'login' ? (
+                  <form onSubmit={handleLogin} className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="email">Email</Label>
+                      <div className="relative">
+                        <Input
+                          id="email"
+                          type="email"
+                          value={email}
+                          onChange={(e) => setEmail(e.target.value)}
+                          placeholder="admin@exemple.com"
+                          className="pl-10"
+                          required
+                          autoFocus
+                        />
+                        <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                      </div>
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <Label htmlFor="password">Mot de passe</Label>
+                      <div className="relative">
+                        <Input
+                          id="password"
+                          type={showPassword ? 'text' : 'password'}
+                          value={password}
+                          onChange={(e) => setPassword(e.target.value)}
+                          placeholder="Entrez votre mot de passe"
+                          className="pr-10"
+                          required
+                        />
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                          onClick={() => setShowPassword(!showPassword)}
+                        >
+                          {showPassword ? (
+                            <EyeOff className="h-4 w-4 text-muted-foreground" />
+                          ) : (
+                            <Eye className="h-4 w-4 text-muted-foreground" />
+                          )}
+                        </Button>
+                      </div>
+                    </div>
+                    
+                    <Button type="submit" className="w-full" disabled={isSigningIn}>
+                      <Lock className="h-4 w-4 mr-2" />
+                      {isSigningIn ? 'Connexion...' : 'Se connecter'}
                     </Button>
-                  </div>
-                </div>
-                
-                <Button type="submit" className="w-full" disabled={isSigningIn}>
-                  <Lock className="h-4 w-4 mr-2" />
-                  {isSigningIn ? 'Connexion...' : 'Se connecter'}
-                </Button>
-              </form>
+                    
+                    <button
+                      type="button"
+                      onClick={() => setMode('forgot')}
+                      className="w-full text-sm text-muted-foreground hover:text-accent underline-offset-4 hover:underline"
+                    >
+                      Mot de passe oublié ?
+                    </button>
+                  </form>
+                ) : (
+                  <form onSubmit={handleResetPassword} className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="reset-email">Email</Label>
+                      <div className="relative">
+                        <Input
+                          id="reset-email"
+                          type="email"
+                          value={resetEmail}
+                          onChange={(e) => setResetEmail(e.target.value)}
+                          placeholder="votre@email.com"
+                          className="pl-10"
+                          required
+                          autoFocus
+                        />
+                        <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                      </div>
+                    </div>
+                    
+                    <Button type="submit" className="w-full" disabled={isResetting}>
+                      <Mail className="h-4 w-4 mr-2" />
+                      {isResetting ? 'Envoi en cours...' : 'Envoyer le lien de réinitialisation'}
+                    </Button>
+                    
+                    <button
+                      type="button"
+                      onClick={() => setMode('login')}
+                      className="w-full text-sm text-muted-foreground hover:text-accent"
+                    >
+                      ← Retour à la connexion
+                    </button>
+                  </form>
+                )}
+              </>
             ) : (
               <div className="text-center space-y-4">
                 <p className="text-muted-foreground">
