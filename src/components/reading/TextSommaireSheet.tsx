@@ -77,7 +77,7 @@ export default function TextSommaireSheet({
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent side={sheetSide} className={sheetClassName}>
         <SheetHeader className="pb-4">
-          <SheetTitle className="text-center font-serif text-slate-800 dark:text-white">
+          <SheetTitle className="text-center font-serif !text-white font-semibold text-lg">
             Sommaire Poétique
           </SheetTitle>
           

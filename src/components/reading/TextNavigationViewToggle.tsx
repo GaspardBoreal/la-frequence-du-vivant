@@ -24,13 +24,13 @@ export default function TextNavigationViewToggle({
       className
     )}>
       <Button
-        variant={mode === 'fil' ? 'secondary' : 'ghost'}
+        variant="ghost"
         size="sm"
         onClick={() => onModeChange('fil')}
         className={cn(
           "rounded-lg px-2.5 py-1.5 h-auto text-xs gap-1.5 transition-all",
           mode === 'fil' 
-            ? "bg-white dark:bg-emerald-700 text-slate-900 dark:text-white shadow-sm font-medium" 
+            ? "!bg-emerald-700 !text-white shadow-sm font-medium" 
             : "text-slate-600 dark:text-slate-300 hover:bg-white/50 dark:hover:bg-slate-700/50"
         )}
       >
@@ -39,13 +39,13 @@ export default function TextNavigationViewToggle({
       </Button>
       
       <Button
-        variant={mode === 'parcours' ? 'secondary' : 'ghost'}
+        variant="ghost"
         size="sm"
         onClick={() => onModeChange('parcours')}
         className={cn(
           "rounded-lg px-2.5 py-1.5 h-auto text-xs gap-1.5 transition-all",
           mode === 'parcours' 
-            ? "bg-white dark:bg-emerald-700 text-slate-900 dark:text-white shadow-sm font-medium" 
+            ? "!bg-emerald-700 !text-white shadow-sm font-medium" 
             : "text-slate-600 dark:text-slate-300 hover:bg-white/50 dark:hover:bg-slate-700/50"
         )}
       >
@@ -54,13 +54,13 @@ export default function TextNavigationViewToggle({
       </Button>
       
       <Button
-        variant={mode === 'anthologie' ? 'secondary' : 'ghost'}
+        variant="ghost"
         size="sm"
         onClick={() => onModeChange('anthologie')}
         className={cn(
           "rounded-lg px-2.5 py-1.5 h-auto text-xs gap-1.5 transition-all",
           mode === 'anthologie' 
-            ? "bg-white dark:bg-emerald-700 text-slate-900 dark:text-white shadow-sm font-medium" 
+            ? "!bg-emerald-700 !text-white shadow-sm font-medium" 
             : "text-slate-600 dark:text-slate-300 hover:bg-white/50 dark:hover:bg-slate-700/50"
         )}
       >
