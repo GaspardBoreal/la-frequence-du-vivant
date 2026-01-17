@@ -9,6 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Input } from '@/components/ui/input';
+import { Switch } from '@/components/ui/switch';
 import { toast } from 'sonner';
 import { 
   CheckCircle2, 
@@ -24,7 +25,10 @@ import {
   CheckCheck,
   XCircle,
   Search,
-  Info
+  Info,
+  User,
+  Users,
+  Filter
 } from 'lucide-react';
 
 interface MarcheurObservationPickerProps {
@@ -33,11 +37,18 @@ interface MarcheurObservationPickerProps {
   onComplete?: () => void;
 }
 
+interface Attribution {
+  observerName: string;
+  source?: string;
+}
+
 interface SpeciesItem {
   scientificName: string;
   commonName: string | null;
   kingdom: string;
   photos?: string[];
+  source?: string;
+  attributions?: Attribution[];
 }
 
 interface MarcheWithSpecies {
@@ -45,6 +56,12 @@ interface MarcheWithSpecies {
   nom_marche: string | null;
   ville: string;
   species: SpeciesItem[];
+}
+
+interface ContributorInfo {
+  name: string;
+  count: number;
+  isMatch: boolean; // true if matches the marcheur name
 }
 
 // Map kingdoms to display categories with icons
@@ -62,6 +79,23 @@ function getKingdomConfig(kingdom: string) {
   return kingdomConfig[kingdom] || kingdomConfig['Unknown'];
 }
 
+// Normalize a name for matching (lowercase, no accents, trim)
+function normalizeName(name: string): string {
+  return name
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[_-]/g, ' ')
+    .trim();
+}
+
+// Check if two names match (fuzzy matching)
+function namesMatch(name1: string, name2: string): boolean {
+  const n1 = normalizeName(name1);
+  const n2 = normalizeName(name2);
+  return n1 === n2 || n1.includes(n2) || n2.includes(n1);
+}
+
 export default function MarcheurObservationPicker({
   marcheur,
   explorationId,
@@ -72,10 +106,16 @@ export default function MarcheurObservationPicker({
   const [selectedSpecies, setSelectedSpecies] = useState<Set<string>>(new Set());
   const [saving, setSaving] = useState(false);
   const [speciesSearch, setSpeciesSearch] = useState('');
+  const [contributorFilterEnabled, setContributorFilterEnabled] = useState(false);
+  const [selectedContributor, setSelectedContributor] = useState<string>('all');
+  const [contributorSearch, setContributorSearch] = useState('');
 
-  // Fetch marches with their biodiversity snapshots
+  // Get marcheur full name for auto-matching
+  const marcheurFullName = `${marcheur.prenom} ${marcheur.nom}`.trim();
+
+  // Fetch marches with their biodiversity snapshots (including attributions)
   const { data: marchesWithSpecies, isLoading: loadingMarches } = useQuery({
-    queryKey: ['marches-with-species', explorationId],
+    queryKey: ['marches-with-species-attributions', explorationId],
     queryFn: async (): Promise<MarcheWithSpecies[]> => {
       // Get marches for this exploration
       const { data: explorationMarches, error: emError } = await supabase
@@ -123,13 +163,32 @@ export default function MarcheurObservationPicker({
           const uniqueSpecies = new Map<string, SpeciesItem>();
           speciesData.forEach((s: any) => {
             const scientificName = s.scientificName || s.nom_scientifique;
-            if (scientificName && !uniqueSpecies.has(scientificName)) {
-              uniqueSpecies.set(scientificName, {
-                scientificName,
-                commonName: s.commonName || s.nom_commun || null,
-                kingdom: s.kingdom || 'Unknown',
-                photos: s.photos || [],
-              });
+            if (scientificName) {
+              // Merge attributions if species already exists
+              const existing = uniqueSpecies.get(scientificName);
+              const newAttributions: Attribution[] = (s.attributions || []).map((a: any) => ({
+                observerName: a.observerName || 'Anonyme',
+                source: s.source || 'unknown'
+              }));
+              
+              if (existing) {
+                // Merge attributions
+                const existingAttrNames = new Set(existing.attributions?.map(a => a.observerName));
+                newAttributions.forEach(attr => {
+                  if (!existingAttrNames.has(attr.observerName)) {
+                    existing.attributions?.push(attr);
+                  }
+                });
+              } else {
+                uniqueSpecies.set(scientificName, {
+                  scientificName,
+                  commonName: s.commonName || s.nom_commun || null,
+                  kingdom: s.kingdom || 'Unknown',
+                  photos: s.photos || [],
+                  source: s.source,
+                  attributions: newAttributions.length > 0 ? newAttributions : undefined,
+                });
+              }
             }
           });
           marcheSpeciesMap.set(marcheId, Array.from(uniqueSpecies.values()));
@@ -174,16 +233,76 @@ export default function MarcheurObservationPicker({
     return marchesWithSpecies?.find(m => m.id === selectedMarcheId);
   }, [marchesWithSpecies, selectedMarcheId]);
 
+  // Extract unique contributors from the selected marche
+  const contributors = useMemo((): ContributorInfo[] => {
+    if (!selectedMarche) return [];
+    
+    const contributorMap = new Map<string, { count: number; isMatch: boolean }>();
+    
+    selectedMarche.species.forEach(species => {
+      species.attributions?.forEach(attr => {
+        const name = attr.observerName || 'Anonyme';
+        const existing = contributorMap.get(name);
+        const isMatch = namesMatch(name, marcheurFullName);
+        
+        if (existing) {
+          existing.count++;
+          if (isMatch) existing.isMatch = true;
+        } else {
+          contributorMap.set(name, { count: 1, isMatch });
+        }
+      });
+    });
+    
+    // Sort: matches first, then by count
+    return Array.from(contributorMap.entries())
+      .map(([name, info]) => ({ name, ...info }))
+      .sort((a, b) => {
+        if (a.isMatch && !b.isMatch) return -1;
+        if (!a.isMatch && b.isMatch) return 1;
+        return b.count - a.count;
+      });
+  }, [selectedMarche, marcheurFullName]);
+
+  // Filter contributors by search
+  const filteredContributors = useMemo(() => {
+    if (!contributorSearch.trim()) return contributors;
+    const search = contributorSearch.toLowerCase();
+    return contributors.filter(c => c.name.toLowerCase().includes(search));
+  }, [contributors, contributorSearch]);
+
+  // Auto-select matching contributor when enabled
+  useEffect(() => {
+    if (contributorFilterEnabled && selectedMarche) {
+      const matchingContributor = contributors.find(c => c.isMatch);
+      if (matchingContributor) {
+        setSelectedContributor(matchingContributor.name);
+      } else {
+        setSelectedContributor('all');
+      }
+    } else {
+      setSelectedContributor('all');
+    }
+  }, [contributorFilterEnabled, selectedMarche, contributors]);
+
   // Reset search when changing marche
   useEffect(() => {
     setSpeciesSearch('');
+    setContributorSearch('');
   }, [selectedMarcheId]);
 
-  // Filter and group species by kingdom (with species search)
+  // Filter and group species by kingdom (with species search AND contributor filter)
   const speciesByKingdom = useMemo(() => {
     if (!selectedMarche) return new Map<string, SpeciesItem[]>();
     
     let speciesToDisplay = selectedMarche.species;
+    
+    // Filter by contributor if enabled
+    if (contributorFilterEnabled && selectedContributor !== 'all') {
+      speciesToDisplay = speciesToDisplay.filter(s => 
+        s.attributions?.some(attr => attr.observerName === selectedContributor)
+      );
+    }
     
     // Filter by species name search
     if (speciesSearch.trim()) {
@@ -212,7 +331,7 @@ export default function MarcheurObservationPicker({
     });
     
     return grouped;
-  }, [selectedMarche, speciesSearch]);
+  }, [selectedMarche, speciesSearch, contributorFilterEnabled, selectedContributor]);
 
   // Count displayed species
   const displayedSpeciesCount = useMemo(() => {
@@ -427,6 +546,118 @@ export default function MarcheurObservationPicker({
             </CardContent>
           </Card>
 
+          {/* Contributor Filter Section */}
+          <Card className="border-amber-500/30 bg-amber-500/5">
+            <CardContent className="py-4 space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <Users className="h-5 w-5 text-amber-500" />
+                  <div>
+                    <p className="font-medium text-sm">Filtrer par contributeur Open Data</p>
+                    <p className="text-xs text-muted-foreground">
+                      Retrouvez les observations d'un contributeur spécifique (iNaturalist, eBird, GBIF)
+                    </p>
+                  </div>
+                </div>
+                <Switch
+                  checked={contributorFilterEnabled}
+                  onCheckedChange={setContributorFilterEnabled}
+                />
+              </div>
+
+              {contributorFilterEnabled && (
+                <div className="space-y-3 pt-2 border-t border-amber-500/20">
+                  {/* Contributor search */}
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      placeholder="Rechercher un contributeur..."
+                      value={contributorSearch}
+                      onChange={(e) => setContributorSearch(e.target.value)}
+                      className="pl-9"
+                    />
+                  </div>
+
+                  {/* Contributors list */}
+                  <ScrollArea className="h-[180px]">
+                    <div className="space-y-1">
+                      {/* "All" option */}
+                      <div
+                        className={`flex items-center justify-between p-2 rounded-lg cursor-pointer transition-colors ${
+                          selectedContributor === 'all' ? 'bg-primary/10 border border-primary/30' : 'hover:bg-muted/50'
+                        }`}
+                        onClick={() => setSelectedContributor('all')}
+                      >
+                        <div className="flex items-center gap-2">
+                          <Filter className="h-4 w-4 text-muted-foreground" />
+                          <span className="text-sm">Tous les contributeurs</span>
+                        </div>
+                        <Badge variant="secondary">{selectedMarche.species.length}</Badge>
+                      </div>
+
+                      {filteredContributors.map((contributor) => (
+                        <div
+                          key={contributor.name}
+                          className={`flex items-center justify-between p-2 rounded-lg cursor-pointer transition-colors ${
+                            selectedContributor === contributor.name 
+                              ? 'bg-primary/10 border border-primary/30' 
+                              : contributor.isMatch 
+                                ? 'bg-emerald-500/10 border border-emerald-500/30'
+                                : 'hover:bg-muted/50'
+                          }`}
+                          onClick={() => setSelectedContributor(contributor.name)}
+                        >
+                          <div className="flex items-center gap-2">
+                            <User className={`h-4 w-4 ${contributor.isMatch ? 'text-emerald-500' : 'text-muted-foreground'}`} />
+                            <span className={`text-sm ${contributor.isMatch ? 'font-medium text-emerald-600' : ''}`}>
+                              {contributor.name}
+                            </span>
+                            {contributor.isMatch && (
+                              <Badge variant="outline" className="text-xs bg-emerald-500/10 border-emerald-500/30 text-emerald-600">
+                                Correspond au marcheur
+                              </Badge>
+                            )}
+                          </div>
+                          <Badge variant="secondary">{contributor.count}</Badge>
+                        </div>
+                      ))}
+
+                      {filteredContributors.length === 0 && contributorSearch && (
+                        <div className="text-center py-4 text-muted-foreground text-sm">
+                          Aucun contributeur trouvé pour "{contributorSearch}"
+                        </div>
+                      )}
+
+                      {contributors.length === 0 && (
+                        <div className="text-center py-4 text-muted-foreground text-sm">
+                          Aucune attribution disponible pour cette marche
+                        </div>
+                      )}
+                    </div>
+                  </ScrollArea>
+
+                  {selectedContributor !== 'all' && (
+                    <div className="flex items-center justify-between pt-2 border-t border-amber-500/20">
+                      <span className="text-sm">
+                        <span className="font-medium text-amber-600">{displayedSpeciesCount}</span> espèce{displayedSpeciesCount > 1 ? 's' : ''} attribuée{displayedSpeciesCount > 1 ? 's' : ''} à <span className="font-medium">{selectedContributor}</span>
+                      </span>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={selectAll}
+                        disabled={stats.available === 0}
+                        className="text-amber-600 border-amber-500/30 hover:bg-amber-500/10"
+                      >
+                        <CheckCheck className="h-4 w-4 mr-1" />
+                        Tout sélectionner
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
           {/* Species Search */}
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -461,7 +692,7 @@ export default function MarcheurObservationPicker({
               </Button>
             </div>
             <div className="text-sm text-muted-foreground">
-              {speciesSearch.trim() && (
+              {(speciesSearch.trim() || (contributorFilterEnabled && selectedContributor !== 'all')) && (
                 <span className="text-blue-500 font-medium mr-2">
                   {displayedSpeciesCount} résultat{displayedSpeciesCount > 1 ? 's' : ''}
                 </span>
@@ -537,14 +768,26 @@ export default function MarcheurObservationPicker({
               {displayedSpeciesCount === 0 && (
                 <div className="text-center py-8 text-muted-foreground">
                   <Search className="h-12 w-12 mx-auto mb-3 opacity-50" />
-                  <p>Aucune espèce trouvée pour "{speciesSearch}"</p>
-                  <Button 
-                    variant="link" 
-                    size="sm" 
-                    onClick={() => setSpeciesSearch('')}
-                  >
-                    Effacer la recherche
-                  </Button>
+                  <p>
+                    {contributorFilterEnabled && selectedContributor !== 'all'
+                      ? `Aucune espèce attribuée à "${selectedContributor}"`
+                      : speciesSearch
+                        ? `Aucune espèce trouvée pour "${speciesSearch}"`
+                        : 'Aucune espèce disponible'
+                    }
+                  </p>
+                  {(speciesSearch || (contributorFilterEnabled && selectedContributor !== 'all')) && (
+                    <Button 
+                      variant="link" 
+                      size="sm" 
+                      onClick={() => {
+                        setSpeciesSearch('');
+                        if (contributorFilterEnabled) setSelectedContributor('all');
+                      }}
+                    >
+                      Effacer les filtres
+                    </Button>
+                  )}
                 </div>
               )}
             </div>
