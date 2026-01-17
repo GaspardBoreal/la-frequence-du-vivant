@@ -1,12 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { ArrowLeft, Loader2 } from 'lucide-react';
+import { ArrowLeft, Loader2, MapPin } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import SEOHead from '@/components/SEOHead';
 import { useExploration } from '@/hooks/useExplorations';
 import { useExplorationBiodiversitySummary } from '@/hooks/useExplorationBiodiversitySummary';
-import { useBiodiversityIntelligence } from '@/hooks/useBiodiversityIntelligence';
 import BiodiversityHeroSection from '@/components/biodiversity/BiodiversityHeroSection';
 import BiodiversityTop10Podium from '@/components/biodiversity/BiodiversityTop10Podium';
 import BiodiversityGradientRiver from '@/components/biodiversity/BiodiversityGradientRiver';
@@ -14,36 +13,40 @@ import EmblematicSpeciesGallery from '@/components/biodiversity/EmblematicSpecie
 import { BiodiversityMap } from '@/components/biodiversity/BiodiversityMap';
 import BiodiversityTransitionRadar from '@/components/biodiversity/BiodiversityTransitionRadar';
 import GaspardBorealNarratives from '@/components/biodiversity/GaspardBorealNarratives';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 export default function ExplorationBiodiversite() {
   const { slug } = useParams<{ slug: string }>();
   const { data: exploration, isLoading: explorationLoading } = useExploration(slug || '');
   const { data: biodiversitySummary, isLoading: summaryLoading } = useExplorationBiodiversitySummary(exploration?.id);
   
-  // Get first marche coordinates for map center
+  const [activeYear, setActiveYear] = useState(2025);
+  const [selectedMarcheId, setSelectedMarcheId] = useState<string | null>(null);
+
+  // Get first marche coordinates for map center, or selected marche
+  const selectedMarche = selectedMarcheId 
+    ? biodiversitySummary?.speciesByMarche.find(m => m.marcheId === selectedMarcheId)
+    : null;
   const firstMarcheWithCoords = biodiversitySummary?.speciesByMarche.find(m => m.latitude && m.longitude);
+  
   const mapCenter = {
-    lat: firstMarcheWithCoords?.latitude || 44.8378,
-    lon: firstMarcheWithCoords?.longitude || -0.5792,
+    lat: selectedMarche?.latitude || firstMarcheWithCoords?.latitude || 44.8378,
+    lon: selectedMarche?.longitude || firstMarcheWithCoords?.longitude || -0.5792,
   };
 
-  // Get biodiversity intelligence for radar (disabled for now - use mock data)
   const intelligenceData = null;
-  const [activeYear, setActiveYear] = useState(2025);
-
   const isLoading = explorationLoading || summaryLoading;
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-emerald-900 to-teal-900">
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-950 via-slate-900 to-emerald-950">
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          className="text-center"
+          className="text-center px-4"
         >
-          <Loader2 className="h-12 w-12 animate-spin text-emerald-400 mx-auto mb-4" />
-          <p className="text-emerald-200 text-lg">Chargement des données de biodiversité...</p>
-          <p className="text-emerald-300/60 text-sm mt-2">Analyse de 13 800+ espèces en cours</p>
+          <Loader2 className="h-10 w-10 md:h-12 md:w-12 animate-spin text-emerald-400 mx-auto mb-4" />
+          <p className="text-emerald-200 text-base md:text-lg">Chargement des données de biodiversité...</p>
         </motion.div>
       </div>
     );
@@ -51,11 +54,11 @@ export default function ExplorationBiodiversite() {
 
   if (!exploration || !biodiversitySummary) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-100">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold text-slate-800 mb-4">Exploration non trouvée</h1>
+      <div className="min-h-screen flex items-center justify-center bg-slate-900">
+        <div className="text-center px-4">
+          <h1 className="text-xl md:text-2xl font-bold text-white mb-4">Exploration non trouvée</h1>
           <Link to="/galerie-fleuve">
-            <Button variant="outline">
+            <Button variant="outline" className="border-slate-600 text-slate-300 hover:bg-slate-700">
               <ArrowLeft className="h-4 w-4 mr-2" />
               Retour à la galerie
             </Button>
@@ -65,7 +68,7 @@ export default function ExplorationBiodiversite() {
     );
   }
 
-  // Mock biodiversity data for the map
+  // Build map data
   const mockMapData = {
     location: {
       latitude: mapCenter.lat,
@@ -105,7 +108,7 @@ export default function ExplorationBiodiversite() {
     },
   };
 
-  // Mock intelligence data for radar
+  // Mock intelligence data
   const mockIntelligenceData = intelligenceData || {
     signals: [
       {
@@ -210,7 +213,7 @@ export default function ExplorationBiodiversite() {
   };
 
   return (
-    <>
+    <div className="bg-slate-950">
       <SEOHead
         title={`Biodiversité | ${exploration.name}`}
         description={`Découvrez les ${biodiversitySummary.totalSpecies.toLocaleString('fr-FR')} espèces identifiées le long de la Dordogne : Top 10, gradient fleuve, carte interactive et récits prospectifs.`}
@@ -220,9 +223,12 @@ export default function ExplorationBiodiversite() {
       {/* Back button */}
       <div className="fixed top-4 left-4 z-50">
         <Link to={`/galerie-fleuve/exploration/${slug}`}>
-          <Button variant="outline" className="bg-white/90 backdrop-blur-sm shadow-lg">
+          <Button 
+            variant="outline" 
+            className="bg-slate-900/90 backdrop-blur-sm border-slate-700 text-white hover:bg-slate-800 shadow-lg"
+          >
             <ArrowLeft className="h-4 w-4 mr-2" />
-            Retour
+            <span className="hidden sm:inline">Retour</span>
           </Button>
         </Link>
       </div>
@@ -246,34 +252,66 @@ export default function ExplorationBiodiversite() {
         topSpecies={biodiversitySummary.topSpecies}
       />
 
-      {/* Section 5: Interactive Map */}
-      <section className="py-16 px-4 bg-slate-100">
+      {/* Section 5: Interactive Map with marche selector */}
+      <section className="py-12 md:py-16 px-4 bg-gradient-to-b from-slate-900 to-slate-950">
         <div className="max-w-7xl mx-auto">
           <motion.div
-            className="text-center mb-8"
+            className="text-center mb-6 md:mb-8"
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
           >
-            <h2 className="text-3xl md:text-4xl font-bold text-slate-800 mb-4">
+            <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-white mb-4">
               🗺️ Carte interactive
             </h2>
-            <p className="text-lg text-slate-600">
+            <p className="text-base md:text-lg text-slate-400">
               Localisez les observations le long du fleuve
             </p>
           </motion.div>
 
-          <BiodiversityMap
-            data={mockMapData}
-            centerLat={mapCenter.lat}
-            centerLon={mapCenter.lon}
-            isLoading={false}
-          />
+          {/* Marche selector */}
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-3 mb-6">
+            <div className="flex items-center gap-2 text-slate-400">
+              <MapPin className="h-5 w-5" />
+              <span className="text-sm">Étape :</span>
+            </div>
+            <Select 
+              value={selectedMarcheId || 'all'} 
+              onValueChange={(val) => setSelectedMarcheId(val === 'all' ? null : val)}
+            >
+              <SelectTrigger className="w-64 bg-slate-800 border-slate-600 text-white">
+                <SelectValue placeholder="Toutes les étapes" />
+              </SelectTrigger>
+              <SelectContent className="bg-slate-800 border-slate-600">
+                <SelectItem value="all" className="text-white hover:bg-slate-700">
+                  Toutes les étapes
+                </SelectItem>
+                {biodiversitySummary.speciesByMarche.map((marche) => (
+                  <SelectItem 
+                    key={marche.marcheId} 
+                    value={marche.marcheId}
+                    className="text-white hover:bg-slate-700"
+                  >
+                    {marche.marcheName.split(' - ')[0]} ({marche.speciesCount} esp.)
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="rounded-xl overflow-hidden border border-slate-700">
+            <BiodiversityMap
+              data={mockMapData}
+              centerLat={mapCenter.lat}
+              centerLon={mapCenter.lon}
+              isLoading={false}
+            />
+          </div>
         </div>
       </section>
 
       {/* Section 6: Prospective Radar 2025-2045 */}
-      <section className="py-16 px-4">
+      <section className="py-12 md:py-16 px-4 bg-slate-950">
         <div className="max-w-7xl mx-auto">
           <BiodiversityTransitionRadar
             intelligenceData={mockIntelligenceData}
@@ -284,21 +322,21 @@ export default function ExplorationBiodiversite() {
       </section>
 
       {/* Section 7: Gaspard Boreal Narratives */}
-      <section className="py-16 px-4 bg-gradient-to-br from-purple-50 to-blue-50">
+      <section className="py-12 md:py-16 px-4 bg-gradient-to-b from-slate-950 via-purple-950/30 to-slate-950">
         <div className="max-w-7xl mx-auto">
           <GaspardBorealNarratives narratives={mockIntelligenceData.gaspardNarratives} />
         </div>
       </section>
 
       {/* Footer */}
-      <footer className="py-8 px-4 bg-slate-900 text-center">
-        <p className="text-slate-400 text-sm">
+      <footer className="py-6 md:py-8 px-4 bg-slate-950 border-t border-slate-800 text-center">
+        <p className="text-slate-500 text-xs md:text-sm">
           Données issues de GBIF, iNaturalist, eBird et Xeno-Canto
         </p>
-        <p className="text-slate-500 text-xs mt-2">
+        <p className="text-slate-600 text-xs mt-2">
           © {new Date().getFullYear()} La Fréquence du Vivant
         </p>
       </footer>
-    </>
+    </div>
   );
 }
