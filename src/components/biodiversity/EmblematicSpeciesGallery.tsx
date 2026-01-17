@@ -1,11 +1,12 @@
 import React, { useState, useMemo } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { AnimatePresence } from 'framer-motion';
 import { Filter, Search, X, Bird, TreePine, Flower2, Bug, MapPin } from 'lucide-react';
+import { motion } from 'framer-motion';
 import { Button } from '../ui/button';
-import { Badge } from '../ui/badge';
 import { Input } from '../ui/input';
 import { MarcheurFilterPills } from './MarcheurFilterPills';
 import SpeciesGalleryDetailModal from './SpeciesGalleryDetailModal';
+import SpeciesCardWithPhoto from './SpeciesCardWithPhoto';
 import type { ExplorationMarcheur } from '@/hooks/useExplorationMarcheurs';
 
 interface SpeciesData {
@@ -218,54 +219,14 @@ const EmblematicSpeciesGallery: React.FC<EmblematicSpeciesGalleryProps> = ({
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 md:gap-4">
           <AnimatePresence mode="popLayout">
             {displayedSpecies.map((species, index) => (
-              <motion.div
-                key={species.name}
-                layout
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.9 }}
-                transition={{ delay: index * 0.02 }}
-                className="group"
-              >
-                <div 
-                  className={`relative bg-gradient-to-br ${getKingdomColor(species.kingdom)} 
-                  rounded-xl md:rounded-2xl overflow-hidden shadow-lg hover:shadow-xl transition-all duration-300
-                  hover:scale-105 cursor-pointer`}
-                  onClick={() => setSelectedSpecies(species)}
-                >
-                  {/* Photo or placeholder */}
-                  <div className="aspect-square relative">
-                    {species.photos?.[0] ? (
-                      <img
-                        src={species.photos[0]}
-                        alt={species.name}
-                        className="w-full h-full object-cover"
-                        loading="lazy"
-                      />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center bg-white/20">
-                        <span className="text-4xl md:text-6xl opacity-80">{getKingdomEmoji(species.kingdom)}</span>
-                      </div>
-                    )}
-                    
-                    {/* Overlay gradient */}
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
-                    
-                    {/* Content */}
-                    <div className="absolute bottom-0 left-0 right-0 p-2 md:p-3 text-white">
-                      <h3 className="font-bold text-xs md:text-sm truncate">{species.name}</h3>
-                      <p className="text-[10px] md:text-xs text-white/70 italic truncate">{species.scientificName}</p>
-                    </div>
-
-                    {/* Badge */}
-                    <div className="absolute top-2 right-2">
-                      <Badge className="bg-white/20 backdrop-blur-sm text-white text-[10px] md:text-xs">
-                        {species.count} obs.
-                      </Badge>
-                    </div>
-                  </div>
-                </div>
-              </motion.div>
+              <SpeciesCardWithPhoto
+                key={species.scientificName}
+                species={species}
+                onClick={() => setSelectedSpecies(species)}
+                getKingdomColor={getKingdomColor}
+                getKingdomEmoji={getKingdomEmoji}
+                index={index}
+              />
             ))}
           </AnimatePresence>
         </div>
