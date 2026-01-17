@@ -231,8 +231,19 @@ export default function MarcheurObservationsManager({
 
   // Fetch detailed observations for "Mes observations" section
   const { data: detailedObservations, refetch: refetchDetailed } = useQuery({
-    queryKey: ['marcheur-detailed-observations', marcheur.id],
+    queryKey: ['marcheur-detailed-observations', marcheur.id, explorationId],
     queryFn: async (): Promise<GroupedObservations[]> => {
+      // First, get marche order from exploration_marches
+      const { data: explorationMarches } = await supabase
+        .from('exploration_marches')
+        .select('marche_id, ordre')
+        .eq('exploration_id', explorationId);
+      
+      const marcheOrderMap = new Map<string, number>();
+      (explorationMarches || []).forEach(em => {
+        marcheOrderMap.set(em.marche_id, em.ordre ?? 999);
+      });
+
       const { data, error } = await supabase
         .from('marcheur_observations')
         .select(`
@@ -248,15 +259,17 @@ export default function MarcheurObservationsManager({
       if (error) throw error;
 
       // Group by marche
-      const grouped = new Map<string, GroupedObservations>();
+      const grouped = new Map<string, GroupedObservations & { ordre: number }>();
       (data || []).forEach((obs: any) => {
         const marcheName = obs.marches?.nom_marche || obs.marches?.ville || 'Marche inconnue';
+        const ordre = marcheOrderMap.get(obs.marche_id) ?? 999;
         
         if (!grouped.has(obs.marche_id)) {
           grouped.set(obs.marche_id, {
             marcheId: obs.marche_id,
             marcheName,
             observations: [],
+            ordre,
           });
         }
         
@@ -269,9 +282,8 @@ export default function MarcheurObservationsManager({
         });
       });
 
-      return Array.from(grouped.values()).sort((a, b) => 
-        b.observations.length - a.observations.length
-      );
+      // Sort by marche order (ascending)
+      return Array.from(grouped.values()).sort((a, b) => a.ordre - b.ordre);
     },
     staleTime: 0,
   });
