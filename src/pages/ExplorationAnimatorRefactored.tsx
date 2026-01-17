@@ -412,189 +412,71 @@ export default function ExplorationAnimatorRefactored() {
               </div>
             </div>
 
-            {/* Titre modes d'exploration */}
-            <div className="flex items-center mt-12 mb-8">
-              <div className="flex-1 h-px bg-gradient-to-r from-transparent via-border to-border"></div>
-              <h3 className="px-6 text-lg font-medium text-muted-foreground bg-background">
-                Modes d'exploration thématiques
-              </h3>
-              <div className="flex-1 h-px bg-gradient-to-l from-transparent via-border to-border"></div>
-            </div>
-
-            {/* Grille des modes VOIR / ÉCOUTER / LIRE */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {/* Mode VOIR */}
+            {/* URL Biodiversité */}
+            <div className="mt-8">
               <div className="group relative">
-                <div className="absolute inset-0 bg-gradient-to-r from-amber-500/5 to-orange-500/5 rounded-2xl blur-xl group-hover:blur-2xl transition-all duration-500"></div>
-                <div className="relative bg-card/80 backdrop-blur-sm border border-border/50 rounded-2xl p-6 hover:border-amber-400/30 transition-all duration-300 hover:shadow-lg hover:shadow-amber-500/5">
-                  <div className="flex items-start gap-3 mb-4">
-                    <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-amber-500 to-orange-500 flex items-center justify-center text-xl shadow-lg">
-                      👁️
+                <div className="absolute inset-0 bg-gradient-to-r from-emerald-500/5 to-green-500/5 rounded-2xl blur-xl group-hover:blur-2xl transition-all duration-500"></div>
+                <div className="relative bg-card/80 backdrop-blur-sm border border-border/50 rounded-2xl p-8 hover:border-emerald-400/30 transition-all duration-300 hover:shadow-lg hover:shadow-emerald-500/5">
+                  {/* Icône et titre */}
+                  <div className="flex items-start gap-4 mb-6">
+                    <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-emerald-500 to-green-600 flex items-center justify-center text-2xl shadow-lg">
+                      🦋
                     </div>
                     <div className="flex-1">
-                      <h3 className="text-lg font-semibold text-foreground mb-1">VOIR</h3>
-                      <p className="text-xs text-muted-foreground">Galerie photos immersive</p>
+                      <h3 className="text-xl font-semibold text-foreground mb-2">
+                        Biodiversité
+                      </h3>
+                      <p className="text-sm text-muted-foreground leading-relaxed">
+                        Exploration immersive des 13 800+ espèces identifiées : Top 10, gradient fleuve, galerie emblématique, radar prospectif et récits Gaspard Boréal
+                      </p>
                     </div>
                   </div>
                   
+                  {/* URL */}
                   {exploration?.slug ? (
-                    <div className="space-y-3">
-                      <div className="p-3 bg-muted/30 rounded-lg border border-border/30">
-                        <code className="text-xs text-foreground/80 break-all">
-                          /galerie-fleuve/exploration/{exploration.slug}/voir
+                    <div className="space-y-4">
+                      <div className="p-4 bg-muted/30 rounded-xl border border-border/30">
+                        <code className="text-sm text-foreground/80 break-all">
+                          {window.location.origin}/galerie-fleuve/exploration/{exploration.slug}/biodiversite
                         </code>
                       </div>
+                      
+                      {/* Actions harmonisées */}
                       <div className="flex flex-col gap-2">
                         <Button
-                          onClick={() => window.open(`/galerie-fleuve/exploration/${exploration.slug}/voir`, '_blank')}
-                          className="w-full bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white"
+                          onClick={() => window.open(`/galerie-fleuve/exploration/${exploration.slug}/biodiversite`, '_blank')}
+                          className="w-full bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-600 hover:to-green-700 text-white"
                           size="sm"
                         >
-                          👁️ Ouvrir
+                          🦋 Ouvrir l'exploration Biodiversité
                         </Button>
                         <Button
-                          onClick={() => navigate(`/galerie-fleuve/exploration/${exploration.slug}/voir`)}
+                          onClick={() => navigate(`/galerie-fleuve/exploration/${exploration.slug}/biodiversite`)}
                           variant="outline"
                           size="sm"
                           className="w-full"
                         >
-                          🔍 Preview
+                          🔍 Ouvrir en preview
                         </Button>
                         <Button
                           onClick={() => {
-                            const url = `${window.location.origin}/galerie-fleuve/exploration/${exploration.slug}/voir`;
+                            const url = `${window.location.origin}/galerie-fleuve/exploration/${exploration.slug}/biodiversite`;
                             navigator.clipboard.writeText(url);
-                            toast.success('URL VOIR copiée');
+                            toast.success('URL Biodiversité copiée dans le presse-papiers');
                           }}
                           variant="outline"
                           size="sm"
                           className="w-full"
                         >
-                          📋 Copier
+                          📋 Copier l'URL
                         </Button>
                       </div>
                     </div>
                   ) : (
-                    <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg">
-                      <p className="text-xs text-amber-800">Sauvegardez l'exploration</p>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Mode ÉCOUTER */}
-              <div className="group relative">
-                <div className="absolute inset-0 bg-gradient-to-r from-emerald-500/5 to-teal-500/5 rounded-2xl blur-xl group-hover:blur-2xl transition-all duration-500"></div>
-                <div className="relative bg-card/80 backdrop-blur-sm border border-border/50 rounded-2xl p-6 hover:border-emerald-400/30 transition-all duration-300 hover:shadow-lg hover:shadow-emerald-500/5">
-                  <div className="flex items-start gap-3 mb-4">
-                    <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-500 flex items-center justify-center text-xl shadow-lg">
-                      🎧
-                    </div>
-                    <div className="flex-1">
-                      <h3 className="text-lg font-semibold text-foreground mb-1">ÉCOUTER</h3>
-                      <p className="text-xs text-muted-foreground">Playlist audio du fleuve</p>
-                    </div>
-                  </div>
-                  
-                  {exploration?.slug ? (
-                    <div className="space-y-3">
-                      <div className="p-3 bg-muted/30 rounded-lg border border-border/30">
-                        <code className="text-xs text-foreground/80 break-all">
-                          /galerie-fleuve/exploration/{exploration.slug}/ecouter
-                        </code>
-                      </div>
-                      <div className="flex flex-col gap-2">
-                        <Button
-                          onClick={() => window.open(`/galerie-fleuve/exploration/${exploration.slug}/ecouter`, '_blank')}
-                          className="w-full bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white"
-                          size="sm"
-                        >
-                          🎧 Ouvrir
-                        </Button>
-                        <Button
-                          onClick={() => navigate(`/galerie-fleuve/exploration/${exploration.slug}/ecouter`)}
-                          variant="outline"
-                          size="sm"
-                          className="w-full"
-                        >
-                          🔍 Preview
-                        </Button>
-                        <Button
-                          onClick={() => {
-                            const url = `${window.location.origin}/galerie-fleuve/exploration/${exploration.slug}/ecouter`;
-                            navigator.clipboard.writeText(url);
-                            toast.success('URL ÉCOUTER copiée');
-                          }}
-                          variant="outline"
-                          size="sm"
-                          className="w-full"
-                        >
-                          📋 Copier
-                        </Button>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg">
-                      <p className="text-xs text-amber-800">Sauvegardez l'exploration</p>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Mode LIRE */}
-              <div className="group relative">
-                <div className="absolute inset-0 bg-gradient-to-r from-violet-500/5 to-purple-500/5 rounded-2xl blur-xl group-hover:blur-2xl transition-all duration-500"></div>
-                <div className="relative bg-card/80 backdrop-blur-sm border border-border/50 rounded-2xl p-6 hover:border-violet-400/30 transition-all duration-300 hover:shadow-lg hover:shadow-violet-500/5">
-                  <div className="flex items-start gap-3 mb-4">
-                    <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-violet-500 to-purple-500 flex items-center justify-center text-xl shadow-lg">
-                      📖
-                    </div>
-                    <div className="flex-1">
-                      <h3 className="text-lg font-semibold text-foreground mb-1">LIRE</h3>
-                      <p className="text-xs text-muted-foreground">Textes en lecture continue</p>
-                    </div>
-                  </div>
-                  
-                  {exploration?.slug ? (
-                    <div className="space-y-3">
-                      <div className="p-3 bg-muted/30 rounded-lg border border-border/30">
-                        <code className="text-xs text-foreground/80 break-all">
-                          /galerie-fleuve/exploration/{exploration.slug}/lire
-                        </code>
-                      </div>
-                      <div className="flex flex-col gap-2">
-                        <Button
-                          onClick={() => window.open(`/galerie-fleuve/exploration/${exploration.slug}/lire`, '_blank')}
-                          className="w-full bg-gradient-to-r from-violet-500 to-purple-500 hover:from-violet-600 hover:to-purple-600 text-white"
-                          size="sm"
-                        >
-                          📖 Ouvrir
-                        </Button>
-                        <Button
-                          onClick={() => navigate(`/galerie-fleuve/exploration/${exploration.slug}/lire`)}
-                          variant="outline"
-                          size="sm"
-                          className="w-full"
-                        >
-                          🔍 Preview
-                        </Button>
-                        <Button
-                          onClick={() => {
-                            const url = `${window.location.origin}/galerie-fleuve/exploration/${exploration.slug}/lire`;
-                            navigator.clipboard.writeText(url);
-                            toast.success('URL LIRE copiée');
-                          }}
-                          variant="outline"
-                          size="sm"
-                          className="w-full"
-                        >
-                          📋 Copier
-                        </Button>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg">
-                      <p className="text-xs text-amber-800">Sauvegardez l'exploration</p>
+                    <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl">
+                      <p className="text-sm text-amber-800">
+                        L'exploration doit être sauvegardée pour générer l'URL
+                      </p>
                     </div>
                   )}
                 </div>
