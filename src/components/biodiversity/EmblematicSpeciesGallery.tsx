@@ -5,6 +5,7 @@ import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
 import { Input } from '../ui/input';
 import { MarcheurFilterPills } from './MarcheurFilterPills';
+import SpeciesGalleryDetailModal from './SpeciesGalleryDetailModal';
 import type { ExplorationMarcheur } from '@/hooks/useExplorationMarcheurs';
 
 interface SpeciesData {
@@ -40,6 +41,7 @@ const EmblematicSpeciesGallery: React.FC<EmblematicSpeciesGalleryProps> = ({
   const [selectedKingdom, setSelectedKingdom] = useState<string | null>(null);
   const [displayLimit, setDisplayLimit] = useState(50);
   const [localSelectedMarcheurs, setLocalSelectedMarcheurs] = useState<string[]>([]);
+  const [selectedSpecies, setSelectedSpecies] = useState<TopSpecies | null>(null);
 
   // Use external state if provided, otherwise use local state
   const activeMarcheurIds = onMarcheurSelectionChange ? selectedMarcheurIds : localSelectedMarcheurs;
@@ -225,9 +227,11 @@ const EmblematicSpeciesGallery: React.FC<EmblematicSpeciesGalleryProps> = ({
                 transition={{ delay: index * 0.02 }}
                 className="group"
               >
-                <div className={`relative bg-gradient-to-br ${getKingdomColor(species.kingdom)} 
+                <div 
+                  className={`relative bg-gradient-to-br ${getKingdomColor(species.kingdom)} 
                   rounded-xl md:rounded-2xl overflow-hidden shadow-lg hover:shadow-xl transition-all duration-300
                   hover:scale-105 cursor-pointer`}
+                  onClick={() => setSelectedSpecies(species)}
                 >
                   {/* Photo or placeholder */}
                   <div className="aspect-square relative">
@@ -333,6 +337,13 @@ const EmblematicSpeciesGallery: React.FC<EmblematicSpeciesGalleryProps> = ({
             ))}
           </div>
         </motion.div>
+
+        {/* Species detail modal */}
+        <SpeciesGalleryDetailModal
+          species={selectedSpecies}
+          isOpen={!!selectedSpecies}
+          onClose={() => setSelectedSpecies(null)}
+        />
       </div>
     </section>
   );
