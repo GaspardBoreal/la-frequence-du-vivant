@@ -85,6 +85,8 @@ export default function MarcheursManager({ explorationId }: MarcheursManagerProp
   };
 
   const handleOpenObservations = (marcheur: ExplorationMarcheur) => {
+    // Force refresh data before opening
+    queryClient.invalidateQueries({ queryKey: ['exploration-marcheurs', explorationId] });
     setSelectedMarcheur(marcheur);
     setObservationsDialogOpen(true);
   };
@@ -409,7 +411,13 @@ export default function MarcheursManager({ explorationId }: MarcheursManagerProp
 
       {/* Observations Dialog - Now unified for all marcheurs */}
       {selectedMarcheur && (
-        <Dialog open={observationsDialogOpen} onOpenChange={setObservationsDialogOpen}>
+        <Dialog open={observationsDialogOpen} onOpenChange={(open) => {
+          setObservationsDialogOpen(open);
+          if (!open) {
+            // Refresh marcheur data when closing to update observation count
+            queryClient.invalidateQueries({ queryKey: ['exploration-marcheurs', explorationId] });
+          }
+        }}>
           <DialogContent className="max-w-4xl max-h-[85vh] overflow-hidden flex flex-col">
             <DialogHeader>
               <DialogTitle className="flex items-center gap-3">
