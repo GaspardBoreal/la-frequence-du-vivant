@@ -702,6 +702,11 @@ export default function MarcheurObservationsManager({
     return uniqueSpecies.size;
   }, [detailedObservations]);
 
+  // Calculate total observations count (all entries, not deduplicated)
+  const totalObservationsCount = detailedObservations?.reduce(
+    (sum, group) => sum + group.observations.length, 0
+  ) || 0;
+
   if (marchesLoading) {
     return (
       <div className="flex items-center justify-center py-16">
@@ -859,9 +864,14 @@ export default function MarcheurObservationsManager({
             <span className="font-semibold flex-1 text-left">
               Mes observations
             </span>
-            <Badge className="bg-emerald-500/20 text-emerald-600 border-emerald-500/30">
-              {uniqueSpeciesCount} espèce{uniqueSpeciesCount > 1 ? 's' : ''}
-            </Badge>
+            <div className="flex items-center gap-2">
+              <Badge className="bg-emerald-500/20 text-emerald-600 border-emerald-500/30">
+                {uniqueSpeciesCount} espèce{uniqueSpeciesCount > 1 ? 's' : ''}
+              </Badge>
+              <span className="text-xs text-muted-foreground">
+                ({totalObservationsCount} observation{totalObservationsCount > 1 ? 's' : ''})
+              </span>
+            </div>
           </button>
 
           {/* Content - conditionally shown */}
