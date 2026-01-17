@@ -11,9 +11,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
-import { Plus, Edit2, Trash2, Users, Eye, Leaf, BookOpen, Sparkles } from 'lucide-react';
+import { Plus, Edit2, Trash2, Users, Eye, Leaf } from 'lucide-react';
 import MarcheurObservationsManager from './MarcheurObservationsManager';
-import PrincipalMarcheurObservationsViewer from './PrincipalMarcheurObservationsViewer';
 
 interface MarcheursManagerProps {
   explorationId: string;
@@ -240,19 +239,11 @@ export default function MarcheursManager({ explorationId }: MarcheursManagerProp
                   </p>
                 )}
                 
-                <div className="space-y-1">
-                  <div className="flex items-center gap-2 text-sm">
-                    <Leaf className="h-4 w-4 text-emerald-500" />
-                    <span className="text-muted-foreground">
-                      {marcheur.observationsCount.toLocaleString()} espèce{marcheur.observationsCount > 1 ? 's' : ''} observée{marcheur.observationsCount > 1 ? 's' : ''}
-                    </span>
-                  </div>
-                  {marcheur.isInheritedFromExploration && (
-                    <div className="flex items-center gap-1.5 text-xs text-emerald-400/80">
-                      <Sparkles className="h-3 w-3" />
-                      <span>Héritées de l'exploration</span>
-                    </div>
-                  )}
+                <div className="flex items-center gap-2 text-sm">
+                  <Leaf className="h-4 w-4 text-emerald-500" />
+                  <span className="text-muted-foreground">
+                    {marcheur.observationsCount} espèce{marcheur.observationsCount > 1 ? 's' : ''} observée{marcheur.observationsCount > 1 ? 's' : ''}
+                  </span>
                 </div>
 
                 <div className="flex gap-2 pt-2">
@@ -262,17 +253,8 @@ export default function MarcheursManager({ explorationId }: MarcheursManagerProp
                     className="flex-1 gap-1"
                     onClick={() => handleOpenObservations(marcheur)}
                   >
-                    {marcheur.isInheritedFromExploration ? (
-                      <>
-                        <BookOpen className="h-3 w-3" />
-                        Explorer
-                      </>
-                    ) : (
-                      <>
-                        <Eye className="h-3 w-3" />
-                        Observations
-                      </>
-                    )}
+                    <Eye className="h-3 w-3" />
+                    Observations
                   </Button>
                   <Button
                     variant="outline"
@@ -425,7 +407,7 @@ export default function MarcheursManager({ explorationId }: MarcheursManagerProp
         </DialogContent>
       </Dialog>
 
-      {/* Observations Dialog */}
+      {/* Observations Dialog - Now unified for all marcheurs */}
       {selectedMarcheur && (
         <Dialog open={observationsDialogOpen} onOpenChange={setObservationsDialogOpen}>
           <DialogContent className="max-w-4xl max-h-[85vh] overflow-hidden flex flex-col">
@@ -437,24 +419,14 @@ export default function MarcheursManager({ explorationId }: MarcheursManagerProp
                 >
                   {selectedMarcheur.prenom[0]}{selectedMarcheur.nom[0]}
                 </div>
-                {selectedMarcheur.isInheritedFromExploration 
-                  ? `Exploration de ${selectedMarcheur.fullName}`
-                  : `Observations de ${selectedMarcheur.fullName}`
-                }
+                Observations de {selectedMarcheur.fullName}
               </DialogTitle>
             </DialogHeader>
             <div className="flex-1 overflow-y-auto">
-              {selectedMarcheur.isInheritedFromExploration ? (
-                <PrincipalMarcheurObservationsViewer
-                  marcheur={selectedMarcheur}
-                  explorationId={explorationId}
-                />
-              ) : (
-                <MarcheurObservationsManager
-                  marcheur={selectedMarcheur}
-                  explorationId={explorationId}
-                />
-              )}
+              <MarcheurObservationsManager
+                marcheur={selectedMarcheur}
+                explorationId={explorationId}
+              />
             </div>
           </DialogContent>
         </Dialog>
