@@ -155,14 +155,14 @@ export const useExplorationBiodiversitySummary = (explorationId?: string) => {
         .select('species_scientific_name, photo_url')
         .in('marche_id', marcheIds);
 
-      // Add marcheur species not already in uniqueSpeciesMap
-      // For species already in the map, we don't need to increment count (already counted in snapshots)
+      // Add marcheur observations to species counts
+      // Each marcheur observation increments the count (they are validated sightings)
       // Priority: marcheur photo > snapshot photo
       (marcheurObservations || []).forEach(obs => {
         const scientificName = obs.species_scientific_name;
         const marcheurPhotoUrl = obs.photo_url;
         
-        // Search for existing entry by scientificName (case-insensitive)
+        // Search for existing entry by scientificName (case-insensitive) in snapshot species
         let foundEntry: { count: number; scientificName: string; kingdom: string; photos: string[] } | undefined;
         let foundKey: string | undefined;
         
@@ -175,54 +175,66 @@ export const useExplorationBiodiversitySummary = (explorationId?: string) => {
         }
         
         if (foundEntry && foundKey) {
+          // ✅ FIX: Increment count for each marcheur observation
+          foundEntry.count += 1;
+          
           // If marcheur has a photo, prepend it to the photos array (priority)
           if (marcheurPhotoUrl && !foundEntry.photos.includes(marcheurPhotoUrl)) {
             foundEntry.photos = [marcheurPhotoUrl, ...foundEntry.photos];
           }
         } else {
-          // Species observed by marcheur but not in any snapshot
-          // Try to find it in raw snapshot data to get kingdom/photos
-          let kingdom = 'Unknown';
-          let photos: string[] = marcheurPhotoUrl ? [marcheurPhotoUrl] : [];
+          // Species not found in snapshot species - check if already added by previous marcheur observation
+          const existingMarcheurEntry = uniqueSpeciesMap.get(scientificName);
           
-          // Search through all snapshots to find this species data
-          const snapshotsToSearch = Array.from(latestSnapshotsByMarche.values());
-          for (const snapshot of snapshotsToSearch) {
-            if (!snapshot.species_data) continue;
+          if (existingMarcheurEntry) {
+            // ✅ FIX: Increment count for duplicate marcheur observations of same species
+            existingMarcheurEntry.count += 1;
+            if (marcheurPhotoUrl && !existingMarcheurEntry.photos.includes(marcheurPhotoUrl)) {
+              existingMarcheurEntry.photos = [marcheurPhotoUrl, ...existingMarcheurEntry.photos];
+            }
+          } else {
+            // New species observed by marcheur - try to find metadata in snapshots
+            let kingdom = 'Unknown';
+            let photos: string[] = marcheurPhotoUrl ? [marcheurPhotoUrl] : [];
             
-            let speciesArray: any[] = [];
-            try {
-              if (Array.isArray(snapshot.species_data)) {
-                speciesArray = snapshot.species_data;
-              } else if (typeof snapshot.species_data === 'string') {
-                speciesArray = JSON.parse(snapshot.species_data);
+            // Search through all snapshots to find this species data
+            const snapshotsToSearch = Array.from(latestSnapshotsByMarche.values());
+            for (const snapshot of snapshotsToSearch) {
+              if (!snapshot.species_data) continue;
+              
+              let speciesArray: any[] = [];
+              try {
+                if (Array.isArray(snapshot.species_data)) {
+                  speciesArray = snapshot.species_data;
+                } else if (typeof snapshot.species_data === 'string') {
+                  speciesArray = JSON.parse(snapshot.species_data);
+                }
+              } catch {
+                continue;
               }
-            } catch {
-              continue;
+              
+              const found = speciesArray.find((sp: any) => 
+                sp?.scientificName?.toLowerCase() === scientificName.toLowerCase()
+              );
+              
+              if (found) {
+                kingdom = found.kingdom || 'Unknown';
+                if (found.photos && Array.isArray(found.photos)) {
+                  photos = marcheurPhotoUrl 
+                    ? [marcheurPhotoUrl, ...found.photos]
+                    : found.photos;
+                }
+                break;
+              }
             }
             
-            const found = speciesArray.find((sp: any) => 
-              sp?.scientificName?.toLowerCase() === scientificName.toLowerCase()
-            );
-            
-            if (found) {
-              kingdom = found.kingdom || 'Unknown';
-              if (found.photos && Array.isArray(found.photos)) {
-                // Marcheur photo has priority, add snapshot photos after
-                photos = marcheurPhotoUrl 
-                  ? [marcheurPhotoUrl, ...found.photos]
-                  : found.photos;
-              }
-              break;
-            }
+            uniqueSpeciesMap.set(scientificName, {
+              count: 1,
+              scientificName: scientificName,
+              kingdom: kingdom,
+              photos: photos,
+            });
           }
-          
-          uniqueSpeciesMap.set(scientificName, {
-            count: 1,
-            scientificName: scientificName,
-            kingdom: kingdom,
-            photos: photos,
-          });
         }
       });
 
