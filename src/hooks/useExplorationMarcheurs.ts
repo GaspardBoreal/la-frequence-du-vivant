@@ -29,12 +29,26 @@ export interface ExplorationMarcheur {
 // Extract species from biodiversity snapshot species_data JSONB
 // Structure réelle: array of { scientificName, commonName, kingdom, photos, ... }
 function extractSpeciesFromSnapshot(speciesData: unknown): SpeciesInfo[] {
-  if (!speciesData || !Array.isArray(speciesData)) return [];
+  // Parse si c'est une string JSON (cas Supabase JSONB parfois sérialisé)
+  let data = speciesData;
+  if (typeof speciesData === 'string') {
+    try {
+      data = JSON.parse(speciesData);
+    } catch (e) {
+      console.error('[extractSpeciesFromSnapshot] Failed to parse JSON string:', e);
+      return [];
+    }
+  }
+  
+  if (!data || !Array.isArray(data)) {
+    console.log('[extractSpeciesFromSnapshot] Data is not an array:', typeof data, data);
+    return [];
+  }
   
   const seenNames = new Set<string>();
   const species: SpeciesInfo[] = [];
   
-  for (const item of speciesData) {
+  for (const item of data) {
     if (item && typeof item === 'object') {
       const s = item as Record<string, unknown>;
       const scientificName = (s.scientificName || s.scientific_name || s.name) as string | undefined;
@@ -129,6 +143,14 @@ export function useExplorationMarcheurs(explorationId?: string) {
           }
 
           if (snapshots && snapshots.length > 0) {
+            console.log('[Marcheurs] Snapshots récupérés:', snapshots.length);
+            console.log('[Marcheurs] Premier snapshot species_data type:', typeof snapshots[0]?.species_data);
+            console.log('[Marcheurs] Premier snapshot species_data sample:', 
+              Array.isArray(snapshots[0]?.species_data) 
+                ? `Array de ${(snapshots[0]?.species_data as unknown[]).length} éléments`
+                : snapshots[0]?.species_data
+            );
+            
             // Get only latest snapshot per marche
             const latestByMarche = new Map<string, typeof snapshots[0]>();
             for (const snapshot of snapshots) {
@@ -137,10 +159,13 @@ export function useExplorationMarcheurs(explorationId?: string) {
               }
             }
 
+            console.log('[Marcheurs] Marches avec snapshot:', latestByMarche.size);
+
             // Extract unique species from all latest snapshots
             const seenNames = new Set<string>();
             for (const snapshot of latestByMarche.values()) {
               const species = extractSpeciesFromSnapshot(snapshot.species_data);
+              console.log('[Marcheurs] Espèces extraites du snapshot', snapshot.marche_id, ':', species.length);
               for (const s of species) {
                 if (!seenNames.has(s.scientificName)) {
                   seenNames.add(s.scientificName);
@@ -148,6 +173,8 @@ export function useExplorationMarcheurs(explorationId?: string) {
                 }
               }
             }
+            
+            console.log('[Marcheurs] Total espèces uniques extraites:', principalSpeciesDetails.length);
           }
         }
       }
