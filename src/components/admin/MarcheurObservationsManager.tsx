@@ -9,8 +9,10 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
-import { Plus, Trash2, Search, Leaf, MapPin, Calendar } from 'lucide-react';
+import { Plus, Trash2, Search, Leaf, MapPin, Calendar, Zap, List } from 'lucide-react';
+import MarcheurObservationPicker from './MarcheurObservationPicker';
 
 interface MarcheurObservationsManagerProps {
   marcheur: ExplorationMarcheur;
@@ -212,171 +214,196 @@ export default function MarcheurObservationsManager({
   };
 
   return (
-    <div className="space-y-6 p-4">
-      {/* Add New Section */}
-      {!addingNew ? (
-        <Button onClick={() => setAddingNew(true)} className="gap-2">
-          <Plus className="h-4 w-4" />
-          Ajouter une observation
-        </Button>
-      ) : (
-        <Card className="border-primary/50">
-          <CardContent className="pt-6 space-y-4">
-            <div className="space-y-2">
-              <Label>Espèce (nom scientifique) *</Label>
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  value={searchTerm}
-                  onChange={(e) => {
-                    setSearchTerm(e.target.value);
-                    setNewObservation(prev => ({ ...prev, species_scientific_name: e.target.value }));
-                  }}
-                  placeholder="Rechercher une espèce..."
-                  className="pl-10"
-                />
-                {filteredSpecies.length > 0 && searchTerm && (
-                  <div className="absolute z-10 w-full mt-1 bg-popover border rounded-md shadow-lg max-h-48 overflow-y-auto">
-                    {filteredSpecies.map((species) => (
-                      <button
-                        key={species.scientific_name}
-                        type="button"
-                        className="w-full px-4 py-2 text-left hover:bg-muted flex items-center justify-between"
-                        onClick={() => handleSelectSpecies(species.scientific_name)}
-                      >
-                        <span className="italic">{species.scientific_name}</span>
-                        {species.common_name_fr && (
-                          <span className="text-sm text-muted-foreground">{species.common_name_fr}</span>
-                        )}
-                      </button>
-                    ))}
+    <Tabs defaultValue="picker" className="w-full">
+      <TabsList className="grid w-full grid-cols-2 mb-6">
+        <TabsTrigger value="picker" className="gap-2">
+          <Zap className="h-4 w-4" />
+          Sélection rapide
+        </TabsTrigger>
+        <TabsTrigger value="manual" className="gap-2">
+          <List className="h-4 w-4" />
+          Liste détaillée
+        </TabsTrigger>
+      </TabsList>
+
+      <TabsContent value="picker">
+        <MarcheurObservationPicker 
+          marcheur={marcheur} 
+          explorationId={explorationId}
+          onComplete={() => {
+            queryClient.invalidateQueries({ queryKey: ['marcheur-observations', marcheur.id] });
+          }}
+        />
+      </TabsContent>
+
+      <TabsContent value="manual">
+        <div className="space-y-6 p-4">
+          {/* Add New Section */}
+          {!addingNew ? (
+            <Button onClick={() => setAddingNew(true)} className="gap-2">
+              <Plus className="h-4 w-4" />
+              Ajouter une observation
+            </Button>
+          ) : (
+            <Card className="border-primary/50">
+              <CardContent className="pt-6 space-y-4">
+                <div className="space-y-2">
+                  <Label>Espèce (nom scientifique) *</Label>
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      value={searchTerm}
+                      onChange={(e) => {
+                        setSearchTerm(e.target.value);
+                        setNewObservation(prev => ({ ...prev, species_scientific_name: e.target.value }));
+                      }}
+                      placeholder="Rechercher une espèce..."
+                      className="pl-10"
+                    />
+                    {filteredSpecies.length > 0 && searchTerm && (
+                      <div className="absolute z-10 w-full mt-1 bg-popover border rounded-md shadow-lg max-h-48 overflow-y-auto">
+                        {filteredSpecies.map((species) => (
+                          <button
+                            key={species.scientific_name}
+                            type="button"
+                            className="w-full px-4 py-2 text-left hover:bg-muted flex items-center justify-between"
+                            onClick={() => handleSelectSpecies(species.scientific_name)}
+                          >
+                            <span className="italic">{species.scientific_name}</span>
+                            {species.common_name_fr && (
+                              <span className="text-sm text-muted-foreground">{species.common_name_fr}</span>
+                            )}
+                          </button>
+                        ))}
+                      </div>
+                    )}
                   </div>
-                )}
-              </div>
-            </div>
+                </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Marche *</Label>
-                <Select
-                  value={newObservation.marche_id}
-                  onValueChange={(value) => setNewObservation(prev => ({ ...prev, marche_id: value }))}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Sélectionner une marche" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {availableMarches?.map((marche) => (
-                      <SelectItem key={marche.id} value={marche.id}>
-                        {marche.nom_marche || marche.ville}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label>Date d'observation</Label>
-                <Input
-                  type="date"
-                  value={newObservation.observation_date}
-                  onChange={(e) => setNewObservation(prev => ({ ...prev, observation_date: e.target.value }))}
-                />
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label>Notes</Label>
-              <Textarea
-                value={newObservation.notes}
-                onChange={(e) => setNewObservation(prev => ({ ...prev, notes: e.target.value }))}
-                placeholder="Observations, contexte..."
-                rows={2}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label>URL Photo (optionnel)</Label>
-              <Input
-                value={newObservation.photo_url}
-                onChange={(e) => setNewObservation(prev => ({ ...prev, photo_url: e.target.value }))}
-                placeholder="https://..."
-              />
-            </div>
-
-            <div className="flex gap-2">
-              <Button onClick={handleAddObservation} disabled={saving}>
-                {saving ? 'Ajout...' : 'Ajouter l\'observation'}
-              </Button>
-              <Button variant="outline" onClick={() => setAddingNew(false)}>
-                Annuler
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Observations List */}
-      <div className="space-y-3">
-        <h4 className="font-medium text-sm text-muted-foreground uppercase tracking-wide">
-          {observations?.length || 0} observation{(observations?.length || 0) > 1 ? 's' : ''}
-        </h4>
-        
-        {loadingObs ? (
-          <div className="animate-pulse space-y-2">
-            {[1, 2, 3].map(i => (
-              <div key={i} className="h-16 bg-muted rounded"></div>
-            ))}
-          </div>
-        ) : observations && observations.length > 0 ? (
-          <div className="space-y-2">
-            {observations.map((obs) => (
-              <Card key={obs.id} className="group hover:shadow-md transition-shadow">
-                <CardContent className="py-3 px-4">
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="flex-1 space-y-1">
-                      <div className="flex items-center gap-2">
-                        <Leaf className="h-4 w-4 text-emerald-500" />
-                        <span className="font-medium italic">{obs.species_scientific_name}</span>
-                      </div>
-                      <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                        {obs.marche && (
-                          <span className="flex items-center gap-1">
-                            <MapPin className="h-3 w-3" />
-                            {obs.marche.nom_marche || obs.marche.ville}
-                          </span>
-                        )}
-                        {obs.observation_date && (
-                          <span className="flex items-center gap-1">
-                            <Calendar className="h-3 w-3" />
-                            {new Date(obs.observation_date).toLocaleDateString('fr-FR')}
-                          </span>
-                        )}
-                      </div>
-                      {obs.notes && (
-                        <p className="text-sm text-muted-foreground mt-1">{obs.notes}</p>
-                      )}
-                    </div>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleDeleteObservation(obs.id)}
-                      disabled={deleting === obs.id}
-                      className="opacity-0 group-hover:opacity-100 text-destructive hover:text-destructive"
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>Marche *</Label>
+                    <Select
+                      value={newObservation.marche_id}
+                      onValueChange={(value) => setNewObservation(prev => ({ ...prev, marche_id: value }))}
                     >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Sélectionner une marche" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {availableMarches?.map((marche) => (
+                          <SelectItem key={marche.id} value={marche.id}>
+                            {marche.nom_marche || marche.ville}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
-                </CardContent>
-              </Card>
-            ))}
+                  <div className="space-y-2">
+                    <Label>Date d'observation</Label>
+                    <Input
+                      type="date"
+                      value={newObservation.observation_date}
+                      onChange={(e) => setNewObservation(prev => ({ ...prev, observation_date: e.target.value }))}
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Notes</Label>
+                  <Textarea
+                    value={newObservation.notes}
+                    onChange={(e) => setNewObservation(prev => ({ ...prev, notes: e.target.value }))}
+                    placeholder="Observations, contexte..."
+                    rows={2}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label>URL Photo (optionnel)</Label>
+                  <Input
+                    value={newObservation.photo_url}
+                    onChange={(e) => setNewObservation(prev => ({ ...prev, photo_url: e.target.value }))}
+                    placeholder="https://..."
+                  />
+                </div>
+
+                <div className="flex gap-2">
+                  <Button onClick={handleAddObservation} disabled={saving}>
+                    {saving ? 'Ajout...' : 'Ajouter l\'observation'}
+                  </Button>
+                  <Button variant="outline" onClick={() => setAddingNew(false)}>
+                    Annuler
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Observations List */}
+          <div className="space-y-3">
+            <h4 className="font-medium text-sm text-muted-foreground uppercase tracking-wide">
+              {observations?.length || 0} observation{(observations?.length || 0) > 1 ? 's' : ''}
+            </h4>
+            
+            {loadingObs ? (
+              <div className="animate-pulse space-y-2">
+                {[1, 2, 3].map(i => (
+                  <div key={i} className="h-16 bg-muted rounded"></div>
+                ))}
+              </div>
+            ) : observations && observations.length > 0 ? (
+              <div className="space-y-2">
+                {observations.map((obs) => (
+                  <Card key={obs.id} className="group hover:shadow-md transition-shadow">
+                    <CardContent className="py-3 px-4">
+                      <div className="flex items-start justify-between gap-4">
+                        <div className="flex-1 space-y-1">
+                          <div className="flex items-center gap-2">
+                            <Leaf className="h-4 w-4 text-emerald-500" />
+                            <span className="font-medium italic">{obs.species_scientific_name}</span>
+                          </div>
+                          <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                            {obs.marche && (
+                              <span className="flex items-center gap-1">
+                                <MapPin className="h-3 w-3" />
+                                {obs.marche.nom_marche || obs.marche.ville}
+                              </span>
+                            )}
+                            {obs.observation_date && (
+                              <span className="flex items-center gap-1">
+                                <Calendar className="h-3 w-3" />
+                                {new Date(obs.observation_date).toLocaleDateString('fr-FR')}
+                              </span>
+                            )}
+                          </div>
+                          {obs.notes && (
+                            <p className="text-sm text-muted-foreground mt-1">{obs.notes}</p>
+                          )}
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleDeleteObservation(obs.id)}
+                          disabled={deleting === obs.id}
+                          className="opacity-0 group-hover:opacity-100 text-destructive hover:text-destructive"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-8 text-muted-foreground">
+                <Leaf className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                <p>Aucune observation enregistrée</p>
+              </div>
+            )}
           </div>
-        ) : (
-          <div className="text-center py-8 text-muted-foreground">
-            <Leaf className="h-8 w-8 mx-auto mb-2 opacity-50" />
-            <p>Aucune observation enregistrée</p>
-          </div>
-        )}
-      </div>
-    </div>
+        </div>
+      </TabsContent>
+    </Tabs>
   );
 }
