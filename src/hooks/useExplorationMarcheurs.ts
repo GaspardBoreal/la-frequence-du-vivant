@@ -1,6 +1,14 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 
+// Species information from biodiversity snapshots
+export interface SpeciesInfo {
+  scientificName: string;
+  commonName: string | null;
+  kingdom: string;
+  photos: string[];
+}
+
 export interface ExplorationMarcheur {
   id: string;
   nom: string;
@@ -13,25 +21,32 @@ export interface ExplorationMarcheur {
   isPrincipal: boolean;
   ordre: number;
   observationsCount: number;
-  speciesObserved: string[]; // Liste des noms scientifiques observés
+  speciesObserved: string[]; // Liste des noms scientifiques observés (compatibilité)
+  speciesDetails?: SpeciesInfo[]; // Détails complets avec noms communs et règnes
   isInheritedFromExploration?: boolean; // True si observations héritées des snapshots
 }
 
-// Extract unique species from biodiversity snapshot species_data JSONB
-function extractSpeciesFromSnapshot(speciesData: unknown): string[] {
-  if (!speciesData || typeof speciesData !== 'object') return [];
+// Extract species from biodiversity snapshot species_data JSONB
+// Structure réelle: array of { scientificName, commonName, kingdom, photos, ... }
+function extractSpeciesFromSnapshot(speciesData: unknown): SpeciesInfo[] {
+  if (!speciesData || !Array.isArray(speciesData)) return [];
   
-  const species: string[] = [];
-  const data = speciesData as Record<string, unknown>;
+  const seenNames = new Set<string>();
+  const species: SpeciesInfo[] = [];
   
-  // species_data structure: { kingdom: { species_name: count, ... }, ... }
-  for (const kingdom of Object.values(data)) {
-    if (kingdom && typeof kingdom === 'object') {
-      const kingdomData = kingdom as Record<string, unknown>;
-      for (const speciesName of Object.keys(kingdomData)) {
-        if (speciesName && !species.includes(speciesName)) {
-          species.push(speciesName);
-        }
+  for (const item of speciesData) {
+    if (item && typeof item === 'object') {
+      const s = item as Record<string, unknown>;
+      const scientificName = (s.scientificName || s.scientific_name || s.name) as string | undefined;
+      
+      if (scientificName && !seenNames.has(scientificName)) {
+        seenNames.add(scientificName);
+        species.push({
+          scientificName,
+          commonName: (s.commonName || s.common_name || null) as string | null,
+          kingdom: (s.kingdom || 'Unknown') as string,
+          photos: Array.isArray(s.photos) ? s.photos as string[] : [],
+        });
       }
     }
   }
@@ -86,7 +101,7 @@ export function useExplorationMarcheurs(explorationId?: string) {
       }
 
       // For principal marcheur, get species from biodiversity_snapshots
-      let principalSpecies: string[] = [];
+      let principalSpeciesDetails: SpeciesInfo[] = [];
       
       if (principalMarcheur) {
         // Get marche_ids linked to this exploration
@@ -123,12 +138,16 @@ export function useExplorationMarcheurs(explorationId?: string) {
             }
 
             // Extract unique species from all latest snapshots
-            const allSpecies = new Set<string>();
+            const seenNames = new Set<string>();
             for (const snapshot of latestByMarche.values()) {
               const species = extractSpeciesFromSnapshot(snapshot.species_data);
-              species.forEach(s => allSpecies.add(s));
+              for (const s of species) {
+                if (!seenNames.has(s.scientificName)) {
+                  seenNames.add(s.scientificName);
+                  principalSpeciesDetails.push(s);
+                }
+              }
             }
-            principalSpecies = Array.from(allSpecies);
           }
         }
       }
@@ -136,8 +155,9 @@ export function useExplorationMarcheurs(explorationId?: string) {
       // Map to our interface
       return marcheurs.map(m => {
         const isPrincipal = m.is_principal || false;
+        const speciesDetails = isPrincipal ? principalSpeciesDetails : undefined;
         const speciesObserved = isPrincipal 
-          ? principalSpecies 
+          ? principalSpeciesDetails.map(s => s.scientificName)
           : (observationsByMarcheur.get(m.id) || []);
         
         return {
@@ -153,7 +173,8 @@ export function useExplorationMarcheurs(explorationId?: string) {
           ordre: m.ordre || 1,
           observationsCount: speciesObserved.length,
           speciesObserved,
-          isInheritedFromExploration: isPrincipal && principalSpecies.length > 0,
+          speciesDetails,
+          isInheritedFromExploration: isPrincipal && principalSpeciesDetails.length > 0,
         };
       });
     },

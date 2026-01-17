@@ -1,9 +1,6 @@
 import React, { useState, useMemo } from 'react';
-import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
 import { ExplorationMarcheur } from '@/hooks/useExplorationMarcheurs';
 import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Leaf, Bird, TreeDeciduous, Microscope, Search, Sparkles, ExternalLink } from 'lucide-react';
 
@@ -22,6 +19,15 @@ const kingdomConfig: Record<KingdomFilter, { label: string; icon: React.ReactNod
   other: { label: 'Autres', icon: <Leaf className="h-3.5 w-3.5" />, color: 'bg-blue-500/20 text-blue-400 border-blue-500/30' },
 };
 
+// Map kingdom strings to filter categories
+const mapKingdomToFilter = (kingdom: string): KingdomFilter => {
+  const lower = kingdom.toLowerCase();
+  if (lower === 'animalia' || lower === 'animal' || lower === 'fauna') return 'Animalia';
+  if (lower === 'plantae' || lower === 'plant' || lower === 'flora') return 'Plantae';
+  if (lower === 'fungi' || lower === 'fungus' || lower === 'champignon') return 'Fungi';
+  return 'other';
+};
+
 export default function PrincipalMarcheurObservationsViewer({ 
   marcheur, 
   explorationId 
@@ -30,85 +36,25 @@ export default function PrincipalMarcheurObservationsViewer({
   const [kingdomFilter, setKingdomFilter] = useState<KingdomFilter>('all');
   const [displayLimit, setDisplayLimit] = useState(50);
 
-  // Fetch species translations for the observed species
-  const { data: speciesDetails, isLoading } = useQuery({
-    queryKey: ['principal-species-details', marcheur.id, marcheur.speciesObserved.length],
-    queryFn: async () => {
-      if (!marcheur.speciesObserved || marcheur.speciesObserved.length === 0) {
-        return [];
-      }
-
-      // Fetch translations in batches (Supabase has limits on IN clause)
-      const batchSize = 500;
-      const allDetails: Array<{
-        scientific_name: string;
-        common_name_fr: string | null;
-      }> = [];
-
-      for (let i = 0; i < marcheur.speciesObserved.length; i += batchSize) {
-        const batch = marcheur.speciesObserved.slice(i, i + batchSize);
-        const { data, error } = await supabase
-          .from('species_translations')
-          .select('scientific_name, common_name_fr')
-          .in('scientific_name', batch);
-
-        if (!error && data) {
-          allDetails.push(...data);
-        }
-      }
-
-      return allDetails;
-    },
-    enabled: marcheur.speciesObserved.length > 0,
-    staleTime: 10 * 60 * 1000, // 10 minutes
-  });
-
-  // Create a map for quick lookup
-  const translationsMap = useMemo(() => {
-    const map = new Map<string, string>();
-    speciesDetails?.forEach(s => {
-      if (s.common_name_fr) {
-        map.set(s.scientific_name, s.common_name_fr);
-      }
-    });
-    return map;
-  }, [speciesDetails]);
-
-  // Infer kingdom from scientific name patterns (heuristic)
-  const inferKingdom = (scientificName: string): string => {
-    const lower = scientificName.toLowerCase();
-    // Common plant suffixes/patterns
-    if (lower.includes('quercus') || lower.includes('acer') || lower.includes('pinus') || 
-        lower.includes('rosa') || lower.includes('carex') || lower.includes('salix') ||
-        lower.endsWith('aceae') || lower.includes('phyllum')) {
-      return 'Plantae';
-    }
-    // Common fungi patterns
-    if (lower.includes('boletus') || lower.includes('agaricus') || lower.includes('amanita') ||
-        lower.includes('mycena') || lower.includes('cortinarius') || lower.includes('russula')) {
-      return 'Fungi';
-    }
-    // Assume most others are animals (birds, insects, mammals)
-    return 'Animalia';
-  };
-
-  // Build enriched species list
+  // Use speciesDetails directly from marcheur (already enriched from biodiversity_snapshots)
   const enrichedSpecies = useMemo(() => {
-    return marcheur.speciesObserved.map(scientificName => ({
-      scientificName,
-      commonName: translationsMap.get(scientificName) || null,
-      kingdom: inferKingdom(scientificName),
+    if (!marcheur.speciesDetails || marcheur.speciesDetails.length === 0) {
+      return [];
+    }
+    
+    return marcheur.speciesDetails.map(s => ({
+      scientificName: s.scientificName,
+      commonName: s.commonName,
+      kingdom: mapKingdomToFilter(s.kingdom),
+      photos: s.photos || [],
     }));
-  }, [marcheur.speciesObserved, translationsMap]);
+  }, [marcheur.speciesDetails]);
 
   // Calculate kingdom counts
   const kingdomCounts = useMemo(() => {
     const counts = { Animalia: 0, Plantae: 0, Fungi: 0, other: 0 };
     enrichedSpecies.forEach(s => {
-      if (s.kingdom === 'Animalia') counts.Animalia++;
-      else if (s.kingdom === 'Plantae') counts.Plantae++;
-      else if (s.kingdom === 'Fungi') counts.Fungi++;
-      else counts.other++;
+      counts[s.kingdom]++;
     });
     return counts;
   }, [enrichedSpecies]);
@@ -118,11 +64,7 @@ export default function PrincipalMarcheurObservationsViewer({
     return enrichedSpecies.filter(s => {
       // Kingdom filter
       if (kingdomFilter !== 'all') {
-        if (kingdomFilter === 'other') {
-          if (['Animalia', 'Plantae', 'Fungi'].includes(s.kingdom)) return false;
-        } else if (s.kingdom !== kingdomFilter) {
-          return false;
-        }
+        if (s.kingdom !== kingdomFilter) return false;
       }
       
       // Search filter
@@ -139,6 +81,7 @@ export default function PrincipalMarcheurObservationsViewer({
 
   const displayedSpecies = filteredSpecies.slice(0, displayLimit);
   const hasMore = filteredSpecies.length > displayLimit;
+  const isLoading = !marcheur.speciesDetails;
 
   return (
     <div className="space-y-6 py-4">
