@@ -147,6 +147,32 @@ export const useExplorationBiodiversitySummary = (explorationId?: string) => {
         };
       }) || [];
 
+      // Fetch marcheur observations to enrich allSpecies with validated observations
+      // This ensures species observed by marcheurs appear in the gallery even if not in snapshots
+      const { data: marcheurObservations } = await supabase
+        .from('marcheur_observations')
+        .select('species_scientific_name')
+        .in('marche_id', marcheIds);
+
+      // Add marcheur species not already in uniqueSpeciesMap
+      (marcheurObservations || []).forEach(obs => {
+        const scientificName = obs.species_scientific_name;
+        // Check if this species already exists by scientificName (case-insensitive)
+        const existsByScientificName = Array.from(uniqueSpeciesMap.values())
+          .some(sp => sp.scientificName.toLowerCase() === scientificName.toLowerCase());
+        
+        if (!existsByScientificName) {
+          // Add species observed by marcheur but not in snapshots
+          // Use scientificName as both name and scientificName since we don't have common name
+          uniqueSpeciesMap.set(scientificName, {
+            count: 1,
+            scientificName: scientificName,
+            kingdom: 'Unknown', // Default, can be enriched later
+            photos: [],
+          });
+        }
+      });
+
       // Calculate total unique species (sum of per-marche counts, not unique species count)
       const totalSpecies = speciesByMarche.reduce((sum, m) => sum + m.speciesCount, 0);
 
