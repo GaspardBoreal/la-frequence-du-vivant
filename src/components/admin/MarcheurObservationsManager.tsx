@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
+import { Progress } from '@/components/ui/progress';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { toast } from 'sonner';
 import { 
@@ -141,6 +142,7 @@ export default function MarcheurObservationsManager({
   const [loadedMarchesData, setLoadedMarchesData] = useState<Map<string, MarcheWithSpecies>>(new Map());
   const [contributorsData, setContributorsData] = useState<ContributorWithMarches[]>([]);
   const [loadingContributors, setLoadingContributors] = useState(false);
+  const [loadingProgress, setLoadingProgress] = useState<{current: number, total: number, marcheName: string} | null>(null);
 
   const marcheurFullName = `${marcheur.prenom} ${marcheur.nom}`.trim();
 
@@ -254,122 +256,172 @@ export default function MarcheurObservationsManager({
     }
   };
 
-  // Load all contributors data
+  // Helper: Build contributors list from contributorMap
+  const buildContributorsList = (
+    contributorMap: Map<string, Map<string, SpeciesItem[]>>,
+    marcheNameMap: Map<string, string>
+  ): ContributorWithMarches[] => {
+    const result: ContributorWithMarches[] = [];
+    
+    contributorMap.forEach((marchesMap, contributorName) => {
+      const marches: ContributorMarche[] = [];
+      let totalSpecies = 0;
+      
+      marchesMap.forEach((species, marcheId) => {
+        const marcheName = marcheNameMap.get(marcheId) || marcheId;
+        marches.push({
+          marcheId,
+          marcheName,
+          speciesCount: species.length,
+          species,
+        });
+        totalSpecies += species.length;
+      });
+
+      if (marches.length > 0) {
+        result.push({
+          name: contributorName,
+          isMatch: namesMatch(contributorName, marcheurFullName),
+          totalSpecies,
+          marches: marches.sort((a, b) => b.speciesCount - a.speciesCount),
+        });
+      }
+    });
+
+    // Sort: matches first, then by total species
+    return result.sort((a, b) => {
+      if (a.isMatch && !b.isMatch) return -1;
+      if (!a.isMatch && b.isMatch) return 1;
+      return b.totalSpecies - a.totalSpecies;
+    });
+  };
+
+  // Load all contributors data with parallel calls and progress
   const loadAllContributorsData = async () => {
     if (!marchesWithCoords || marchesWithCoords.length === 0) return;
 
     setLoadingContributors(true);
+    setLoadingProgress(null);
     
     try {
       const contributorMap = new Map<string, Map<string, SpeciesItem[]>>();
       const marcheNameMap = new Map<string, string>();
 
-      // Load data for all marches
-      for (const marche of marchesWithCoords) {
-        if (!marche.latitude || !marche.longitude) continue;
-        
-        marcheNameMap.set(marche.id, marche.name);
+      // Filter marches with coordinates
+      const marchesToLoad = marchesWithCoords.filter(m => m.latitude && m.longitude);
+      const totalToLoad = marchesToLoad.length;
+      
+      // Initialize marche names
+      marchesToLoad.forEach(m => marcheNameMap.set(m.id, m.name));
 
-        // Check cache first
-        let marcheData = loadedMarchesData.get(marche.id);
+      // Process in parallel batches of 3
+      const BATCH_SIZE = 3;
+      let loadedCount = 0;
+
+      for (let i = 0; i < marchesToLoad.length; i += BATCH_SIZE) {
+        const batch = marchesToLoad.slice(i, i + BATCH_SIZE);
         
-        if (!marcheData) {
-          const { data, error } = await supabase.functions.invoke('biodiversity-data', {
-            body: {
-              latitude: marche.latitude,
-              longitude: marche.longitude,
-              radius: 5000,
-              mode: 'interactive'
+        // Update progress with first marche of batch
+        setLoadingProgress({
+          current: loadedCount + 1,
+          total: totalToLoad,
+          marcheName: batch.map(m => m.name).join(', ')
+        });
+
+        // Process batch in parallel
+        const batchResults = await Promise.all(
+          batch.map(async (marche) => {
+            // Check cache first
+            let marcheData = loadedMarchesData.get(marche.id);
+            
+            if (!marcheData) {
+              try {
+                console.log(`🔄 Chargement: ${marche.name}`);
+                const { data, error } = await supabase.functions.invoke('biodiversity-data', {
+                  body: {
+                    latitude: marche.latitude,
+                    longitude: marche.longitude,
+                    radius: 5000,
+                    mode: 'interactive'
+                  }
+                });
+
+                if (error) {
+                  console.error(`❌ Erreur pour ${marche.name}:`, error);
+                  return null;
+                }
+
+                const { species } = parseSpeciesFromResponse(data);
+                marcheData = {
+                  id: marche.id,
+                  name: marche.name,
+                  speciesCount: species.length,
+                  species,
+                  contributorsCount: 0,
+                };
+                
+                console.log(`✅ ${marche.name}: ${species.length} espèces`);
+              } catch (err) {
+                console.error(`❌ Exception pour ${marche.name}:`, err);
+                return null;
+              }
             }
-          });
 
-          if (error) {
-            console.error(`Erreur pour ${marche.name}:`, error);
-            continue;
-          }
+            return { marche, marcheData };
+          })
+        );
 
-          const { species } = parseSpeciesFromResponse(data);
-          marcheData = {
-            id: marche.id,
-            name: marche.name,
-            speciesCount: species.length,
-            species,
-            contributorsCount: 0,
-          };
+        // Process batch results and update cache
+        batchResults.forEach(result => {
+          if (!result || !result.marcheData) return;
           
-          setLoadedMarchesData(prev => new Map(prev).set(marche.id, marcheData!));
-        }
+          const { marche, marcheData } = result;
+          
+          // Update cache
+          setLoadedMarchesData(prev => new Map(prev).set(marche.id, marcheData));
 
-        // Build contributor -> marches -> species structure
-        marcheData.species.forEach(s => {
-          const observers = s.observers || ['Anonyme'];
-          observers.forEach(observerName => {
-            if (!contributorMap.has(observerName)) {
-              contributorMap.set(observerName, new Map());
-            }
-            
-            const marcheSpeciesMap = contributorMap.get(observerName)!;
-            if (!marcheSpeciesMap.has(marche.id)) {
-              marcheSpeciesMap.set(marche.id, []);
-            }
-            
-            const existingSpecies = marcheSpeciesMap.get(marche.id)!;
-            if (!existingSpecies.find(sp => sp.scientificName === s.scientificName)) {
-              existingSpecies.push(s);
-            }
+          // Build contributor -> marches -> species structure
+          marcheData.species.forEach(s => {
+            const observers = s.observers || ['Anonyme'];
+            observers.forEach(observerName => {
+              if (!contributorMap.has(observerName)) {
+                contributorMap.set(observerName, new Map());
+              }
+              
+              const marcheSpeciesMap = contributorMap.get(observerName)!;
+              if (!marcheSpeciesMap.has(marche.id)) {
+                marcheSpeciesMap.set(marche.id, []);
+              }
+              
+              const existingSpecies = marcheSpeciesMap.get(marche.id)!;
+              if (!existingSpecies.find(sp => sp.scientificName === s.scientificName)) {
+                existingSpecies.push(s);
+              }
+            });
           });
         });
-      }
 
-      // Convert to array structure
-      const result: ContributorWithMarches[] = [];
-      
-      contributorMap.forEach((marchesMap, contributorName) => {
-        const marches: ContributorMarche[] = [];
-        let totalSpecies = 0;
+        loadedCount += batch.length;
+
+        // Update contributors progressively after each batch
+        const partialResult = buildContributorsList(contributorMap, marcheNameMap);
+        setContributorsData(partialResult);
         
-        marchesMap.forEach((species, marcheId) => {
-          const marcheName = marcheNameMap.get(marcheId) || marcheId;
-          marches.push({
-            marcheId,
-            marcheName,
-            speciesCount: species.length,
-            species,
-          });
-          totalSpecies += species.length;
-        });
-
-        if (marches.length > 0) {
-          result.push({
-            name: contributorName,
-            isMatch: namesMatch(contributorName, marcheurFullName),
-            totalSpecies,
-            marches: marches.sort((a, b) => b.speciesCount - a.speciesCount),
-          });
+        // Auto-expand matching contributor
+        const matchingContributor = partialResult.find(c => c.isMatch);
+        if (matchingContributor) {
+          setExpandedContributors(prev => new Set([...prev, matchingContributor.name]));
         }
-      });
-
-      // Sort: matches first, then by total species
-      const sorted = result.sort((a, b) => {
-        if (a.isMatch && !b.isMatch) return -1;
-        if (!a.isMatch && b.isMatch) return 1;
-        return b.totalSpecies - a.totalSpecies;
-      });
-
-      setContributorsData(sorted);
-      
-      // Auto-expand matching contributor
-      const matchingContributor = sorted.find(c => c.isMatch);
-      if (matchingContributor) {
-        setExpandedContributors(new Set([matchingContributor.name]));
       }
 
-      toast.success(`${sorted.length} contributeurs chargés`);
+      setLoadingProgress(null);
+      toast.success(`${contributorsData.length || buildContributorsList(contributorMap, marcheNameMap).length} contributeurs chargés depuis ${loadedCount} marches`);
     } catch (error: any) {
       console.error('Erreur chargement contributeurs:', error);
       toast.error(`Erreur: ${error.message}`);
     } finally {
       setLoadingContributors(false);
+      setLoadingProgress(null);
     }
   };
 
@@ -734,31 +786,52 @@ export default function MarcheurObservationsManager({
       {/* MODE: Par contributeur Open Data */}
       {mode === 'contributor' && (
         <>
-          {/* Load button if no data */}
-          {contributorsData.length === 0 && (
+          {/* Load button if no data or loading state */}
+          {(contributorsData.length === 0 || loadingContributors) && !loadingProgress && !loadingContributors && (
             <div className="text-center py-8">
               <User className="h-12 w-12 mx-auto mb-3 text-muted-foreground opacity-50" />
               <p className="text-muted-foreground mb-4">
                 Chargez les contributeurs depuis l'API biodiversité<br />
-                <span className="text-sm">(Cette opération peut prendre quelques secondes)</span>
+                <span className="text-sm">(Chargement parallélisé ~1 minute)</span>
               </p>
               <Button 
                 onClick={loadAllContributorsData}
                 disabled={loadingContributors}
                 size="lg"
               >
-                {loadingContributors ? (
-                  <>
-                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                    Chargement en cours...
-                  </>
-                ) : (
-                  <>
-                    <RefreshCw className="h-4 w-4 mr-2" />
-                    Charger tous les contributeurs
-                  </>
-                )}
+                <RefreshCw className="h-4 w-4 mr-2" />
+                Charger tous les contributeurs
               </Button>
+            </div>
+          )}
+
+          {/* Progress indicator during loading */}
+          {loadingContributors && loadingProgress && (
+            <div className="text-center py-8 space-y-4">
+              <Loader2 className="h-10 w-10 animate-spin mx-auto text-primary" />
+              <div>
+                <p className="font-semibold text-lg">
+                  Chargement {loadingProgress.current}/{loadingProgress.total}
+                </p>
+                <p className="text-sm text-muted-foreground truncate max-w-sm mx-auto mt-1">
+                  {loadingProgress.marcheName}
+                </p>
+              </div>
+              <Progress 
+                value={(loadingProgress.current / loadingProgress.total) * 100} 
+                className="max-w-xs mx-auto h-2"
+              />
+              <p className="text-xs text-muted-foreground">
+                {contributorsData.length > 0 && `${contributorsData.length} contributeurs trouvés...`}
+              </p>
+            </div>
+          )}
+
+          {/* Loading spinner without progress (initial state) */}
+          {loadingContributors && !loadingProgress && (
+            <div className="text-center py-8">
+              <Loader2 className="h-10 w-10 animate-spin mx-auto text-primary mb-4" />
+              <p className="text-muted-foreground">Initialisation...</p>
             </div>
           )}
 
