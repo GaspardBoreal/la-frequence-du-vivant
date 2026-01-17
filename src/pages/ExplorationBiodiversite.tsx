@@ -31,8 +31,6 @@ export default function ExplorationBiodiversite() {
   const intelligenceData = null;
   const [activeYear, setActiveYear] = useState(2025);
 
-  const [activeYear, setActiveYear] = useState(2025);
-
   const isLoading = explorationLoading || summaryLoading;
 
   if (isLoading) {
@@ -67,31 +65,44 @@ export default function ExplorationBiodiversite() {
     );
   }
 
-  // Mock biodiversity data for the map (should come from actual data in production)
+  // Mock biodiversity data for the map
   const mockMapData = {
     location: {
       latitude: mapCenter.lat,
       longitude: mapCenter.lon,
       radius: 10,
-      locationName: exploration.name,
     },
     summary: {
       totalSpecies: biodiversitySummary.totalSpecies,
-      floraCount: biodiversitySummary.speciesByKingdom.plants,
-      faunaCount: biodiversitySummary.speciesByKingdom.birds + biodiversitySummary.speciesByKingdom.others,
-      fungiCount: biodiversitySummary.speciesByKingdom.fungi,
-      biodiversityIndex: 0.85,
+      birds: biodiversitySummary.speciesByKingdom.birds,
+      plants: biodiversitySummary.speciesByKingdom.plants,
+      fungi: biodiversitySummary.speciesByKingdom.fungi,
+      others: biodiversitySummary.speciesByKingdom.others,
+      recentObservations: biodiversitySummary.totalSpecies,
     },
     species: biodiversitySummary.topSpecies.map((sp, i) => ({
       id: `sp-${i}`,
       commonName: sp.name,
       scientificName: sp.scientificName,
-      kingdom: sp.kingdom,
-      observationCount: sp.count,
+      family: 'Unknown',
+      kingdom: sp.kingdom as 'Plantae' | 'Animalia' | 'Fungi' | 'Other',
+      observations: sp.count,
+      lastSeen: new Date().toISOString(),
       photos: sp.photos,
-      attributions: [],
       source: 'gbif' as const,
+      attributions: [],
     })),
+    hotspots: [
+      { name: 'Réserve naturelle de la Dordogne', type: 'reserve', distance: 5 },
+      { name: 'Zone humide du bec d\'Ambès', type: 'wetland', distance: 12 },
+    ],
+    methodology: {
+      radius: 10,
+      dateFilter: 'recent',
+      excludedData: [],
+      sources: ['gbif', 'inaturalist', 'ebird'],
+      confidence: 'high',
+    },
   };
 
   // Mock intelligence data for radar
