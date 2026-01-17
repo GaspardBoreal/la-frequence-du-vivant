@@ -427,13 +427,24 @@ export default function MarcheursManager({ explorationId }: MarcheursManagerProp
                 >
                   {selectedMarcheur.prenom[0]}{selectedMarcheur.nom[0]}
                 </div>
-                Observations de {selectedMarcheur.fullName}
+                <div className="flex items-center gap-2">
+                  <span>Observations de {selectedMarcheur.fullName}</span>
+                  <Badge variant="secondary" className="bg-emerald-500/20 text-emerald-600 border-emerald-500/30">
+                    {selectedMarcheur.observationsCount} espèce{selectedMarcheur.observationsCount > 1 ? 's' : ''}
+                  </Badge>
+                </div>
               </DialogTitle>
             </DialogHeader>
             <div className="flex-1 overflow-y-auto">
               <MarcheurObservationsManager
                 marcheur={selectedMarcheur}
                 explorationId={explorationId}
+                onObservationsSaved={() => {
+                  // Force immediate refresh of marcheur data
+                  queryClient.invalidateQueries({ 
+                    queryKey: ['exploration-marcheurs', explorationId] 
+                  });
+                }}
               />
             </div>
           </DialogContent>
