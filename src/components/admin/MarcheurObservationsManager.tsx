@@ -50,6 +50,13 @@ interface ContributorWithMarches {
   marches: ContributorMarche[];
 }
 
+interface MarcheWithSpecies {
+  id: string;
+  name: string;
+  speciesCount: number;
+  species: SpeciesItem[];
+}
+
 // Normalize name for matching
 function normalizeName(name: string): string {
   return name
@@ -71,7 +78,9 @@ export default function MarcheurObservationsManager({
   explorationId 
 }: MarcheurObservationsManagerProps) {
   const queryClient = useQueryClient();
+  const [mode, setMode] = useState<'marche' | 'contributor'>('marche');
   const [searchTerm, setSearchTerm] = useState('');
+  const [marcheSearchTerm, setMarcheSearchTerm] = useState('');
   const [selectedView, setSelectedView] = useState<{
     contributor: string;
     marcheId: string;
@@ -214,6 +223,93 @@ export default function MarcheurObservationsManager({
     },
   });
 
+  // Fetch marches with species (for "Par marche" mode)
+  const { data: marchesData, isLoading: marchesLoading } = useQuery({
+    queryKey: ['marches-with-species', explorationId],
+    queryFn: async (): Promise<MarcheWithSpecies[]> => {
+      // Get marches for this exploration
+      const { data: explorationMarches, error: emError } = await supabase
+        .from('exploration_marches')
+        .select(`
+          marche_id,
+          marches:marche_id (
+            id,
+            nom_marche,
+            ville
+          )
+        `)
+        .eq('exploration_id', explorationId);
+
+      if (emError) throw emError;
+
+      const marcheMap = new Map<string, { id: string; name: string }>();
+      (explorationMarches || []).forEach(em => {
+        const m = em.marches as any;
+        if (m) {
+          marcheMap.set(m.id, { id: m.id, name: m.nom_marche || m.ville });
+        }
+      });
+
+      const marcheIds = Array.from(marcheMap.keys());
+      if (marcheIds.length === 0) return [];
+
+      // Get biodiversity snapshots
+      const { data: snapshots, error: snapError } = await supabase
+        .from('biodiversity_snapshots')
+        .select('marche_id, species_data')
+        .in('marche_id', marcheIds)
+        .not('species_data', 'is', null);
+
+      if (snapError) throw snapError;
+
+      // Build marche -> species structure
+      const marcheSpeciesMap = new Map<string, SpeciesItem[]>();
+
+      (snapshots || []).forEach(snapshot => {
+        const marcheId = snapshot.marche_id;
+        const speciesData = snapshot.species_data as any[];
+        
+        if (!speciesData || !Array.isArray(speciesData)) return;
+
+        if (!marcheSpeciesMap.has(marcheId)) {
+          marcheSpeciesMap.set(marcheId, []);
+        }
+
+        const existingSpecies = marcheSpeciesMap.get(marcheId)!;
+
+        speciesData.forEach((s: any) => {
+          const scientificName = s.scientificName || s.nom_scientifique;
+          if (!scientificName) return;
+
+          // Add species if not already present
+          if (!existingSpecies.find(sp => sp.scientificName === scientificName)) {
+            existingSpecies.push({
+              scientificName,
+              commonName: s.commonName || s.nom_commun || null,
+              kingdom: s.kingdom || 'Unknown',
+            });
+          }
+        });
+      });
+
+      // Convert to array
+      const result: MarcheWithSpecies[] = [];
+      marcheSpeciesMap.forEach((species, marcheId) => {
+        const marcheInfo = marcheMap.get(marcheId);
+        if (marcheInfo && species.length > 0) {
+          result.push({
+            id: marcheId,
+            name: marcheInfo.name,
+            speciesCount: species.length,
+            species,
+          });
+        }
+      });
+
+      return result.sort((a, b) => b.speciesCount - a.speciesCount);
+    },
+  });
+
   // Fetch existing observations
   const { data: existingObservations } = useQuery({
     queryKey: ['marcheur-all-observations', marcheur.id],
@@ -260,12 +356,34 @@ export default function MarcheurObservationsManager({
     return selectedView.species.filter(s => !isRegistered(selectedView.marcheId, s.scientificName));
   }, [selectedView, existingObservations]);
 
+  // Filter marches for "Par marche" mode
+  const filteredMarches = useMemo(() => {
+    if (!marchesData) return [];
+    if (!marcheSearchTerm.trim()) return marchesData;
+    
+    const search = marcheSearchTerm.toLowerCase();
+    return marchesData.filter(m => 
+      m.name.toLowerCase().includes(search)
+    );
+  }, [marchesData, marcheSearchTerm]);
+
   // Handle select marche from contributor
   const handleSelectMarche = (contributor: ContributorWithMarches, marche: ContributorMarche) => {
     setSelectedView({
       contributor: contributor.name,
       marcheId: marche.marcheId,
       marcheName: marche.marcheName,
+      species: marche.species,
+    });
+    setSelectedSpecies(new Set());
+  };
+
+  // Handle select marche directly (mode "Par marche")
+  const handleSelectMarcheDirectly = (marche: MarcheWithSpecies) => {
+    setSelectedView({
+      contributor: 'Direct',
+      marcheId: marche.id,
+      marcheName: marche.name,
       species: marche.species,
     });
     setSelectedSpecies(new Set());
@@ -322,7 +440,7 @@ export default function MarcheurObservationsManager({
     }
   };
 
-  if (isLoading) {
+  if (isLoading || marchesLoading) {
     return (
       <div className="flex items-center justify-center py-16">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -349,9 +467,11 @@ export default function MarcheurObservationsManager({
           </Button>
           <div className="flex-1">
             <h3 className="font-semibold">{selectedView.marcheName}</h3>
-            <p className="text-sm text-muted-foreground">
-              Contributeur : {selectedView.contributor}
-            </p>
+            {selectedView.contributor !== 'Direct' && (
+              <p className="text-sm text-muted-foreground">
+                Contributeur : {selectedView.contributor}
+              </p>
+            )}
           </div>
         </div>
 
@@ -454,26 +574,91 @@ export default function MarcheurObservationsManager({
   // SEARCH VIEW - Step 1
   return (
     <div className="space-y-4">
-      {/* Search */}
-      <div className="relative">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-        <Input
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          placeholder="Rechercher un contributeur Open Data..."
-          className="pl-10 h-12 text-base"
-          autoFocus
-        />
+      {/* Mode Tabs */}
+      <div className="flex gap-2 border-b pb-4">
+        <Button 
+          variant={mode === 'marche' ? 'default' : 'outline'}
+          onClick={() => setMode('marche')}
+          size="sm"
+        >
+          <MapPin className="h-4 w-4 mr-2" />
+          Par marche
+        </Button>
+        <Button 
+          variant={mode === 'contributor' ? 'default' : 'outline'}
+          onClick={() => setMode('contributor')}
+          size="sm"
+        >
+          <User className="h-4 w-4 mr-2" />
+          Par contributeur Open Data
+        </Button>
       </div>
 
-      {/* Results */}
-      {filteredContributors.length === 0 ? (
-        <div className="text-center py-12 text-muted-foreground">
-          <User className="h-12 w-12 mx-auto mb-3 opacity-30" />
-          <p>Aucun contributeur trouvé</p>
-          <p className="text-sm mt-1">Essayez un autre terme de recherche</p>
-        </div>
-      ) : (
+      {/* MODE: Par marche */}
+      {mode === 'marche' && (
+        <>
+          {/* Search */}
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              value={marcheSearchTerm}
+              onChange={(e) => setMarcheSearchTerm(e.target.value)}
+              placeholder="Rechercher une marche..."
+              className="pl-10 h-12 text-base"
+              autoFocus
+            />
+          </div>
+
+          {/* Results */}
+          {filteredMarches.length === 0 ? (
+            <div className="text-center py-12 text-muted-foreground">
+              <MapPin className="h-12 w-12 mx-auto mb-3 opacity-30" />
+              <p>Aucune marche trouvée</p>
+            </div>
+          ) : (
+            <ScrollArea className="h-[450px]">
+              <div className="space-y-2">
+                {filteredMarches.map(marche => (
+                  <button
+                    key={marche.id}
+                    onClick={() => handleSelectMarcheDirectly(marche)}
+                    className="w-full flex items-center gap-3 p-4 border rounded-lg hover:bg-muted/50 transition-colors"
+                  >
+                    <MapPin className="h-5 w-5 text-primary shrink-0" />
+                    <span className="flex-1 text-left font-medium truncate">{marche.name}</span>
+                    <Badge variant="secondary">{marche.speciesCount} espèces</Badge>
+                    <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                  </button>
+                ))}
+              </div>
+            </ScrollArea>
+          )}
+        </>
+      )}
+
+      {/* MODE: Par contributeur Open Data */}
+      {mode === 'contributor' && (
+        <>
+          {/* Search */}
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              placeholder="Rechercher un contributeur Open Data..."
+              className="pl-10 h-12 text-base"
+              autoFocus
+            />
+          </div>
+
+          {/* Results */}
+          {filteredContributors.length === 0 ? (
+            <div className="text-center py-12 text-muted-foreground">
+              <User className="h-12 w-12 mx-auto mb-3 opacity-30" />
+              <p>Aucun contributeur trouvé</p>
+              <p className="text-sm mt-1">Essayez un autre terme de recherche</p>
+            </div>
+          ) : (
         <ScrollArea className="h-[450px]">
           <div className="space-y-2">
             {filteredContributors.map(contributor => {
@@ -533,6 +718,8 @@ export default function MarcheurObservationsManager({
             })}
           </div>
         </ScrollArea>
+          )}
+        </>
       )}
     </div>
   );
