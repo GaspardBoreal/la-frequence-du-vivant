@@ -249,7 +249,7 @@ export default function ExplorationBiodiversite() {
       {/* Section 4: Emblematic Species Gallery */}
       <EmblematicSpeciesGallery
         speciesByMarche={biodiversitySummary.speciesByMarche}
-        topSpecies={biodiversitySummary.topSpecies}
+        topSpecies={biodiversitySummary.allSpecies}
       />
 
       {/* Section 5: Interactive Map with marche selector */}

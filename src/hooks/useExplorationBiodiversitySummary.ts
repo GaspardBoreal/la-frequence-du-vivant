@@ -25,6 +25,13 @@ export interface BiodiversitySummary {
     kingdom: string;
     photos?: string[];
   }>;
+  allSpecies: Array<{
+    name: string;
+    scientificName: string;
+    count: number;
+    kingdom: string;
+    photos?: string[];
+  }>;
   gradientData: Array<{
     marcheId: string;
     marcheName: string;
@@ -63,6 +70,7 @@ export const useExplorationBiodiversitySummary = (explorationId?: string) => {
           speciesByMarche: [],
           speciesByKingdom: { birds: 0, plants: 0, fungi: 0, others: 0 },
           topSpecies: [],
+          allSpecies: [],
           gradientData: [],
         };
       }
@@ -138,10 +146,9 @@ export const useExplorationBiodiversitySummary = (explorationId?: string) => {
       // Calculate total unique species (sum of per-marche counts, not unique species count)
       const totalSpecies = speciesByMarche.reduce((sum, m) => sum + m.speciesCount, 0);
 
-      // Get top 10 species
-      const topSpecies = Array.from(uniqueSpeciesMap.entries())
+      // Get all species sorted by count
+      const allSpecies = Array.from(uniqueSpeciesMap.entries())
         .sort((a, b) => b[1].count - a[1].count)
-        .slice(0, 10)
         .map(([name, data]) => ({
           name,
           scientificName: data.scientificName,
@@ -149,6 +156,9 @@ export const useExplorationBiodiversitySummary = (explorationId?: string) => {
           kingdom: data.kingdom,
           photos: data.photos,
         }));
+
+      // Top 10 for podium
+      const topSpecies = allSpecies.slice(0, 10);
 
       // Prepare gradient data (sorted by order for river visualization)
       const gradientData = speciesByMarche
@@ -166,6 +176,7 @@ export const useExplorationBiodiversitySummary = (explorationId?: string) => {
         speciesByMarche,
         speciesByKingdom: { birds, plants, fungi, others },
         topSpecies,
+        allSpecies,
         gradientData,
       };
     },

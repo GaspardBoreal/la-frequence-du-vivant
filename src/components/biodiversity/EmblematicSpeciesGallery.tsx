@@ -30,12 +30,23 @@ const EmblematicSpeciesGallery: React.FC<EmblematicSpeciesGalleryProps> = ({
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedKingdom, setSelectedKingdom] = useState<string | null>(null);
+  const [displayLimit, setDisplayLimit] = useState(50);
+
+  // Kingdom counts for filter buttons
+  const kingdomCounts = useMemo(() => {
+    return {
+      Animalia: topSpecies.filter(s => s.kingdom === 'Animalia').length,
+      Plantae: topSpecies.filter(s => s.kingdom === 'Plantae').length,
+      Fungi: topSpecies.filter(s => s.kingdom === 'Fungi').length,
+      Other: topSpecies.filter(s => !['Animalia', 'Plantae', 'Fungi'].includes(s.kingdom)).length,
+    };
+  }, [topSpecies]);
 
   const kingdoms = [
-    { key: 'Animalia', label: 'Faune', icon: Bird, color: 'bg-sky-500' },
-    { key: 'Plantae', label: 'Flore', icon: TreePine, color: 'bg-emerald-500' },
-    { key: 'Fungi', label: 'Champignons', icon: Flower2, color: 'bg-violet-500' },
-    { key: 'Other', label: 'Autres', icon: Bug, color: 'bg-amber-500' },
+    { key: 'Animalia', label: 'Faune', icon: Bird, color: 'bg-sky-500', count: kingdomCounts.Animalia },
+    { key: 'Plantae', label: 'Flore', icon: TreePine, color: 'bg-emerald-500', count: kingdomCounts.Plantae },
+    { key: 'Fungi', label: 'Champignons', icon: Flower2, color: 'bg-violet-500', count: kingdomCounts.Fungi },
+    { key: 'Other', label: 'Autres', icon: Bug, color: 'bg-amber-500', count: kingdomCounts.Other },
   ];
 
   const filteredSpecies = useMemo(() => {
@@ -49,6 +60,13 @@ const EmblematicSpeciesGallery: React.FC<EmblematicSpeciesGalleryProps> = ({
       return matchesSearch && matchesKingdom;
     });
   }, [topSpecies, searchQuery, selectedKingdom]);
+
+  // Limit displayed species for performance
+  const displayedSpecies = useMemo(() => {
+    return filteredSpecies.slice(0, displayLimit);
+  }, [filteredSpecies, displayLimit]);
+
+  const hasMoreSpecies = filteredSpecies.length > displayLimit;
 
   const getKingdomColor = (kingdom: string) => {
     switch (kingdom) {
@@ -71,9 +89,14 @@ const EmblematicSpeciesGallery: React.FC<EmblematicSpeciesGalleryProps> = ({
   const clearFilters = () => {
     setSearchQuery('');
     setSelectedKingdom(null);
+    setDisplayLimit(50);
   };
 
   const hasActiveFilters = searchQuery !== '' || selectedKingdom !== null;
+
+  const loadMore = () => {
+    setDisplayLimit(prev => prev + 50);
+  };
 
   return (
     <section className="py-12 md:py-16 px-4 bg-gradient-to-b from-cyan-950 via-slate-900 to-slate-900">
@@ -126,6 +149,7 @@ const EmblematicSpeciesGallery: React.FC<EmblematicSpeciesGalleryProps> = ({
                 >
                   <k.icon className="h-4 w-4" />
                   <span className="hidden sm:inline">{k.label}</span>
+                  <span className="text-xs opacity-70">({k.count})</span>
                 </Button>
               ))}
               
@@ -146,7 +170,7 @@ const EmblematicSpeciesGallery: React.FC<EmblematicSpeciesGalleryProps> = ({
             {/* Results count */}
             <div className="flex items-center gap-2 text-sm text-slate-400">
               <Filter className="h-4 w-4" />
-              <span>{filteredSpecies.length} espèces affichées</span>
+              <span>{displayedSpecies.length} / {filteredSpecies.length} espèces affichées</span>
             </div>
           </div>
         </motion.div>
@@ -154,7 +178,7 @@ const EmblematicSpeciesGallery: React.FC<EmblematicSpeciesGalleryProps> = ({
         {/* Species grid - Responsive */}
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 md:gap-4">
           <AnimatePresence mode="popLayout">
-            {filteredSpecies.map((species, index) => (
+            {displayedSpecies.map((species, index) => (
               <motion.div
                 key={species.name}
                 layout
@@ -204,6 +228,23 @@ const EmblematicSpeciesGallery: React.FC<EmblematicSpeciesGalleryProps> = ({
             ))}
           </AnimatePresence>
         </div>
+
+        {/* Load more button */}
+        {hasMoreSpecies && (
+          <motion.div
+            className="text-center mt-8"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+          >
+            <Button
+              variant="outline"
+              onClick={loadMore}
+              className="border-emerald-600 text-emerald-400 hover:bg-emerald-600/20"
+            >
+              Voir plus ({filteredSpecies.length - displayLimit} restantes)
+            </Button>
+          </motion.div>
+        )}
 
         {/* Empty state */}
         {filteredSpecies.length === 0 && (
