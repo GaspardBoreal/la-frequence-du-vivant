@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { ExplorationMarcheur } from '@/hooks/useExplorationMarcheurs';
@@ -8,6 +8,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
 import { 
   CheckCircle2, 
@@ -21,7 +22,10 @@ import {
   HelpCircle,
   Save,
   CheckCheck,
-  XCircle
+  XCircle,
+  User,
+  Search,
+  Users
 } from 'lucide-react';
 
 interface MarcheurObservationPickerProps {
@@ -35,6 +39,7 @@ interface SpeciesItem {
   commonName: string | null;
   kingdom: string;
   photos?: string[];
+  contributors: string[]; // Liste des observateurs originaux
 }
 
 interface MarcheWithSpecies {
@@ -42,6 +47,11 @@ interface MarcheWithSpecies {
   nom_marche: string | null;
   ville: string;
   species: SpeciesItem[];
+}
+
+interface ContributorInfo {
+  name: string;
+  count: number;
 }
 
 // Map kingdoms to display categories with icons
@@ -68,6 +78,8 @@ export default function MarcheurObservationPicker({
   const [selectedMarcheId, setSelectedMarcheId] = useState<string>('');
   const [selectedSpecies, setSelectedSpecies] = useState<Set<string>>(new Set());
   const [saving, setSaving] = useState(false);
+  const [selectedContributor, setSelectedContributor] = useState<string>('all');
+  const [contributorSearch, setContributorSearch] = useState('');
 
   // Fetch marches with their biodiversity snapshots
   const { data: marchesWithSpecies, isLoading: loadingMarches } = useQuery({
@@ -119,13 +131,32 @@ export default function MarcheurObservationPicker({
           const uniqueSpecies = new Map<string, SpeciesItem>();
           speciesData.forEach((s: any) => {
             const scientificName = s.scientificName || s.nom_scientifique;
-            if (scientificName && !uniqueSpecies.has(scientificName)) {
-              uniqueSpecies.set(scientificName, {
-                scientificName,
-                commonName: s.commonName || s.nom_commun || null,
-                kingdom: s.kingdom || 'Unknown',
-                photos: s.photos || [],
+            if (scientificName) {
+              // Extraire les noms de contributeurs uniques
+              const contributors = new Set<string>();
+              (s.attributions || []).forEach((attr: any) => {
+                if (attr.observerName) {
+                  contributors.add(attr.observerName);
+                }
               });
+
+              // Merge contributors if species already exists
+              if (uniqueSpecies.has(scientificName)) {
+                const existing = uniqueSpecies.get(scientificName)!;
+                contributors.forEach(c => {
+                  if (!existing.contributors.includes(c)) {
+                    existing.contributors.push(c);
+                  }
+                });
+              } else {
+                uniqueSpecies.set(scientificName, {
+                  scientificName,
+                  commonName: s.commonName || s.nom_commun || null,
+                  kingdom: s.kingdom || 'Unknown',
+                  photos: s.photos || [],
+                  contributors: Array.from(contributors),
+                });
+              }
             }
           });
           marcheSpeciesMap.set(marcheId, Array.from(uniqueSpecies.values()));
@@ -170,12 +201,70 @@ export default function MarcheurObservationPicker({
     return marchesWithSpecies?.find(m => m.id === selectedMarcheId);
   }, [marchesWithSpecies, selectedMarcheId]);
 
-  // Group species by kingdom for display
+  // Calculate unique contributors for selected marche
+  const uniqueContributors = useMemo((): ContributorInfo[] => {
+    if (!selectedMarche) return [];
+    
+    const contributorsMap = new Map<string, number>();
+    selectedMarche.species.forEach(s => {
+      s.contributors.forEach(name => {
+        contributorsMap.set(name, (contributorsMap.get(name) || 0) + 1);
+      });
+    });
+    
+    return Array.from(contributorsMap.entries())
+      .map(([name, count]) => ({ name, count }))
+      .sort((a, b) => b.count - a.count);
+  }, [selectedMarche]);
+
+  // Filter contributors based on search
+  const filteredContributors = useMemo(() => {
+    if (!contributorSearch.trim()) return uniqueContributors;
+    const search = contributorSearch.toLowerCase();
+    return uniqueContributors.filter(c => c.name.toLowerCase().includes(search));
+  }, [uniqueContributors, contributorSearch]);
+
+  // Auto-match marcheur name to contributor
+  useEffect(() => {
+    if (!uniqueContributors || uniqueContributors.length === 0) return;
+    
+    const marcheurFullName = `${marcheur.prenom} ${marcheur.nom}`.toLowerCase();
+    const matchingContributor = uniqueContributors.find(c => {
+      const contributorName = c.name.toLowerCase();
+      return contributorName.includes(marcheurFullName) ||
+        marcheurFullName.includes(contributorName) ||
+        // Also check partial matches (first name or last name)
+        contributorName.includes(marcheur.prenom.toLowerCase()) ||
+        contributorName.includes(marcheur.nom.toLowerCase());
+    });
+    
+    if (matchingContributor && selectedContributor === 'all') {
+      setSelectedContributor(matchingContributor.name);
+      toast.info(`Contributeur "${matchingContributor.name}" détecté automatiquement`);
+    }
+  }, [uniqueContributors, marcheur, selectedContributor]);
+
+  // Reset contributor filter when changing marche
+  useEffect(() => {
+    setSelectedContributor('all');
+    setContributorSearch('');
+  }, [selectedMarcheId]);
+
+  // Filter and group species by kingdom (with contributor filter)
   const speciesByKingdom = useMemo(() => {
     if (!selectedMarche) return new Map<string, SpeciesItem[]>();
     
+    let speciesToDisplay = selectedMarche.species;
+    
+    // Filter by contributor if selected
+    if (selectedContributor !== 'all') {
+      speciesToDisplay = speciesToDisplay.filter(s => 
+        s.contributors.includes(selectedContributor)
+      );
+    }
+    
     const grouped = new Map<string, SpeciesItem[]>();
-    selectedMarche.species.forEach(species => {
+    speciesToDisplay.forEach(species => {
       const kingdom = species.kingdom || 'Unknown';
       const existing = grouped.get(kingdom) || [];
       existing.push(species);
@@ -192,7 +281,16 @@ export default function MarcheurObservationPicker({
     });
     
     return grouped;
-  }, [selectedMarche]);
+  }, [selectedMarche, selectedContributor]);
+
+  // Count displayed species
+  const displayedSpeciesCount = useMemo(() => {
+    let count = 0;
+    speciesByKingdom.forEach(species => {
+      count += species.length;
+    });
+    return count;
+  }, [speciesByKingdom]);
 
   // Check if a species is already registered
   const isAlreadyRegistered = (scientificName: string) => {
@@ -211,15 +309,20 @@ export default function MarcheurObservationPicker({
     setSelectedSpecies(newSelected);
   };
 
-  // Select all unregistered species
+  // Select all unregistered species (respecting current filter)
   const selectAll = () => {
     if (!selectedMarche) return;
     const newSelected = new Set<string>();
-    selectedMarche.species.forEach(s => {
-      if (!isAlreadyRegistered(s.scientificName)) {
-        newSelected.add(s.scientificName);
-      }
+    
+    // Get displayed species (filtered by contributor)
+    speciesByKingdom.forEach((species) => {
+      species.forEach(s => {
+        if (!isAlreadyRegistered(s.scientificName)) {
+          newSelected.add(s.scientificName);
+        }
+      });
     });
+    
     setSelectedSpecies(newSelected);
   };
 
@@ -269,14 +372,25 @@ export default function MarcheurObservationPicker({
     }
   };
 
-  // Calculate stats
+  // Calculate stats for current view
   const stats = useMemo(() => {
     if (!selectedMarche || !existingObservations) return { total: 0, registered: 0, available: 0 };
     
-    const total = selectedMarche.species.length;
-    const registered = selectedMarche.species.filter(s => isAlreadyRegistered(s.scientificName)).length;
+    // Count based on displayed (filtered) species
+    let total = 0;
+    let registered = 0;
+    
+    speciesByKingdom.forEach((species) => {
+      species.forEach(s => {
+        total++;
+        if (isAlreadyRegistered(s.scientificName)) {
+          registered++;
+        }
+      });
+    });
+    
     return { total, registered, available: total - registered };
-  }, [selectedMarche, existingObservations]);
+  }, [speciesByKingdom, existingObservations, selectedMarcheId]);
 
   // Global stats across all marches
   const globalStats = useMemo(() => {
@@ -364,6 +478,63 @@ export default function MarcheurObservationPicker({
       {/* Species Selection */}
       {selectedMarche && (
         <>
+          {/* Contributor Filter Section */}
+          {uniqueContributors.length > 0 && (
+            <Card className="border-blue-500/30 bg-blue-500/5">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm font-medium flex items-center gap-2">
+                  <Users className="h-4 w-4 text-blue-500" />
+                  Filtrer par contributeur Open Data
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {/* Search input */}
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Rechercher un contributeur..."
+                    value={contributorSearch}
+                    onChange={(e) => setContributorSearch(e.target.value)}
+                    className="pl-9"
+                  />
+                </div>
+                
+                {/* Contributor chips */}
+                <div className="flex flex-wrap gap-2">
+                  <Badge
+                    variant={selectedContributor === 'all' ? 'default' : 'outline'}
+                    className="cursor-pointer hover:bg-primary/80 transition-colors"
+                    onClick={() => setSelectedContributor('all')}
+                  >
+                    Tous ({selectedMarche.species.length})
+                  </Badge>
+                  {filteredContributors.slice(0, 10).map((contrib) => (
+                    <Badge
+                      key={contrib.name}
+                      variant={selectedContributor === contrib.name ? 'default' : 'outline'}
+                      className="cursor-pointer hover:bg-primary/80 transition-colors"
+                      onClick={() => setSelectedContributor(contrib.name)}
+                    >
+                      <User className="h-3 w-3 mr-1" />
+                      {contrib.name} ({contrib.count})
+                    </Badge>
+                  ))}
+                  {filteredContributors.length > 10 && (
+                    <Badge variant="secondary">
+                      +{filteredContributors.length - 10} autres
+                    </Badge>
+                  )}
+                </div>
+
+                {/* Help text */}
+                <p className="text-xs text-muted-foreground">
+                  💡 Cliquez sur un contributeur pour afficher uniquement ses observations, 
+                  puis utilisez "Tout sélectionner" pour les associer rapidement à {marcheur.prenom}.
+                </p>
+              </CardContent>
+            </Card>
+          )}
+
           {/* Actions Bar */}
           <div className="flex items-center justify-between gap-4">
             <div className="flex items-center gap-2">
@@ -374,7 +545,7 @@ export default function MarcheurObservationPicker({
                 disabled={stats.available === 0}
               >
                 <CheckCheck className="h-4 w-4 mr-2" />
-                Tout sélectionner
+                Tout sélectionner {selectedContributor !== 'all' && `(${stats.available})`}
               </Button>
               <Button 
                 variant="outline" 
@@ -387,6 +558,11 @@ export default function MarcheurObservationPicker({
               </Button>
             </div>
             <div className="text-sm text-muted-foreground">
+              {selectedContributor !== 'all' && (
+                <span className="text-blue-500 font-medium mr-2">
+                  Filtré : {displayedSpeciesCount} espèces
+                </span>
+              )}
               {stats.registered} déjà enregistrée{stats.registered > 1 ? 's' : ''} • {stats.available} disponible{stats.available > 1 ? 's' : ''}
             </div>
           </div>
@@ -441,6 +617,16 @@ export default function MarcheurObservationPicker({
                                   {s.scientificName}
                                 </span>
                               </div>
+                              {/* Display contributors */}
+                              {s.contributors.length > 0 && (
+                                <div className="flex items-center gap-1 mt-1">
+                                  <User className="h-3 w-3 text-muted-foreground" />
+                                  <span className="text-xs text-muted-foreground">
+                                    {s.contributors.slice(0, 2).join(', ')}
+                                    {s.contributors.length > 2 && ` +${s.contributors.length - 2}`}
+                                  </span>
+                                </div>
+                              )}
                             </div>
                             {isRegistered && (
                               <Badge variant="secondary" className="bg-emerald-500/20 text-emerald-600">
@@ -454,6 +640,20 @@ export default function MarcheurObservationPicker({
                   </div>
                 );
               })}
+              
+              {displayedSpeciesCount === 0 && (
+                <div className="text-center py-8 text-muted-foreground">
+                  <Users className="h-12 w-12 mx-auto mb-3 opacity-50" />
+                  <p>Aucune espèce trouvée pour ce contributeur</p>
+                  <Button 
+                    variant="link" 
+                    size="sm" 
+                    onClick={() => setSelectedContributor('all')}
+                  >
+                    Afficher toutes les espèces
+                  </Button>
+                </div>
+              )}
             </div>
           </ScrollArea>
 
@@ -480,21 +680,12 @@ export default function MarcheurObservationPicker({
         </>
       )}
 
-      {/* Empty State */}
-      {!selectedMarcheId && marchesWithSpecies && marchesWithSpecies.length > 0 && (
-        <div className="text-center py-8 text-muted-foreground">
-          <Bird className="h-12 w-12 mx-auto mb-3 opacity-30" />
-          <p>Sélectionnez une marche pour voir les espèces Open Data</p>
-          <p className="text-sm mt-1">et cochez celles réellement observées</p>
-        </div>
-      )}
-
-      {marchesWithSpecies && marchesWithSpecies.length === 0 && (
-        <div className="text-center py-8 text-muted-foreground">
-          <HelpCircle className="h-12 w-12 mx-auto mb-3 opacity-30" />
-          <p>Aucune donnée biodiversité disponible</p>
-          <p className="text-sm mt-1">Lancez d'abord une collecte Open Data sur les marches</p>
-        </div>
+      {!marchesWithSpecies?.length && (
+        <Card>
+          <CardContent className="py-8 text-center text-muted-foreground">
+            <p>Aucune marche avec des données de biodiversité trouvée pour cette exploration.</p>
+          </CardContent>
+        </Card>
       )}
     </div>
   );
