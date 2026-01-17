@@ -481,6 +481,59 @@ export type Database = {
           },
         ]
       }
+      exploration_marcheurs: {
+        Row: {
+          avatar_url: string | null
+          bio_courte: string | null
+          couleur: string | null
+          created_at: string | null
+          exploration_id: string
+          id: string
+          is_principal: boolean | null
+          nom: string
+          ordre: number | null
+          prenom: string
+          role: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          avatar_url?: string | null
+          bio_courte?: string | null
+          couleur?: string | null
+          created_at?: string | null
+          exploration_id: string
+          id?: string
+          is_principal?: boolean | null
+          nom: string
+          ordre?: number | null
+          prenom: string
+          role?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          avatar_url?: string | null
+          bio_courte?: string | null
+          couleur?: string | null
+          created_at?: string | null
+          exploration_id?: string
+          id?: string
+          is_principal?: boolean | null
+          nom?: string
+          ordre?: number | null
+          prenom?: string
+          role?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "exploration_marcheurs_exploration_id_fkey"
+            columns: ["exploration_id"]
+            isOneToOne: false
+            referencedRelation: "explorations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       exploration_narrative_settings: {
         Row: {
           created_at: string
@@ -1330,6 +1383,54 @@ export type Database = {
           ville?: string
         }
         Relationships: []
+      }
+      marcheur_observations: {
+        Row: {
+          created_at: string | null
+          id: string
+          marche_id: string
+          marcheur_id: string
+          notes: string | null
+          observation_date: string | null
+          photo_url: string | null
+          species_scientific_name: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          marche_id: string
+          marcheur_id: string
+          notes?: string | null
+          observation_date?: string | null
+          photo_url?: string | null
+          species_scientific_name: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          marche_id?: string
+          marcheur_id?: string
+          notes?: string | null
+          observation_date?: string | null
+          photo_url?: string | null
+          species_scientific_name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "marcheur_observations_marche_id_fkey"
+            columns: ["marche_id"]
+            isOneToOne: false
+            referencedRelation: "marches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "marcheur_observations_marcheur_id_fkey"
+            columns: ["marcheur_id"]
+            isOneToOne: false
+            referencedRelation: "exploration_marcheurs"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       narrative_fragments: {
         Row: {

@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import SEOHead from '@/components/SEOHead';
 import { useExploration } from '@/hooks/useExplorations';
 import { useExplorationBiodiversitySummary } from '@/hooks/useExplorationBiodiversitySummary';
+import { useExplorationMarcheurs } from '@/hooks/useExplorationMarcheurs';
 import BiodiversityHeroSection from '@/components/biodiversity/BiodiversityHeroSection';
 import BiodiversityTop10Podium from '@/components/biodiversity/BiodiversityTop10Podium';
 import BiodiversityGradientRiver from '@/components/biodiversity/BiodiversityGradientRiver';
@@ -19,9 +20,11 @@ export default function ExplorationBiodiversite() {
   const { slug } = useParams<{ slug: string }>();
   const { data: exploration, isLoading: explorationLoading } = useExploration(slug || '');
   const { data: biodiversitySummary, isLoading: summaryLoading } = useExplorationBiodiversitySummary(exploration?.id);
+  const { data: marcheurs = [] } = useExplorationMarcheurs(exploration?.id);
   
   const [activeYear, setActiveYear] = useState(2025);
   const [selectedMarcheId, setSelectedMarcheId] = useState<string | null>(null);
+  const [selectedMarcheurIds, setSelectedMarcheurIds] = useState<string[]>([]);
 
   // Get first marche coordinates for map center, or selected marche
   const selectedMarche = selectedMarcheId 
@@ -250,6 +253,9 @@ export default function ExplorationBiodiversite() {
       <EmblematicSpeciesGallery
         speciesByMarche={biodiversitySummary.speciesByMarche}
         topSpecies={biodiversitySummary.allSpecies}
+        marcheurs={marcheurs}
+        selectedMarcheurIds={selectedMarcheurIds}
+        onMarcheurSelectionChange={setSelectedMarcheurIds}
       />
 
       {/* Section 5: Interactive Map with marche selector */}

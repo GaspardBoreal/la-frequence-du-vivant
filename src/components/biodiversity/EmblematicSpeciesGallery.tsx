@@ -4,6 +4,8 @@ import { Filter, Search, X, Bird, TreePine, Flower2, Bug, MapPin } from 'lucide-
 import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
 import { Input } from '../ui/input';
+import { MarcheurFilterPills } from './MarcheurFilterPills';
+import type { ExplorationMarcheur } from '@/hooks/useExplorationMarcheurs';
 
 interface SpeciesData {
   marcheId: string;
@@ -22,15 +24,26 @@ interface TopSpecies {
 interface EmblematicSpeciesGalleryProps {
   speciesByMarche: SpeciesData[];
   topSpecies: TopSpecies[];
+  marcheurs?: ExplorationMarcheur[];
+  selectedMarcheurIds?: string[];
+  onMarcheurSelectionChange?: (ids: string[]) => void;
 }
 
 const EmblematicSpeciesGallery: React.FC<EmblematicSpeciesGalleryProps> = ({
   speciesByMarche = [],
   topSpecies = [],
+  marcheurs = [],
+  selectedMarcheurIds = [],
+  onMarcheurSelectionChange,
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedKingdom, setSelectedKingdom] = useState<string | null>(null);
   const [displayLimit, setDisplayLimit] = useState(50);
+  const [localSelectedMarcheurs, setLocalSelectedMarcheurs] = useState<string[]>([]);
+
+  // Use external state if provided, otherwise use local state
+  const activeMarcheurIds = onMarcheurSelectionChange ? selectedMarcheurIds : localSelectedMarcheurs;
+  const handleMarcheurChange = onMarcheurSelectionChange || setLocalSelectedMarcheurs;
 
   // Kingdom counts for filter buttons
   const kingdomCounts = useMemo(() => {
@@ -49,6 +62,16 @@ const EmblematicSpeciesGallery: React.FC<EmblematicSpeciesGalleryProps> = ({
     { key: 'Other', label: 'Autres', icon: Bug, color: 'bg-amber-500', count: kingdomCounts.Other },
   ];
 
+  // Build set of species observed by selected marcheurs
+  const marcheurSpeciesSet = useMemo(() => {
+    if (activeMarcheurIds.length === 0) return null; // null = no filter
+    const speciesSet = new Set<string>();
+    marcheurs
+      .filter(m => activeMarcheurIds.includes(m.id))
+      .forEach(m => m.speciesObserved.forEach(s => speciesSet.add(s.toLowerCase())));
+    return speciesSet;
+  }, [activeMarcheurIds, marcheurs]);
+
   const filteredSpecies = useMemo(() => {
     return topSpecies.filter(sp => {
       const matchesSearch = searchQuery === '' || 
@@ -57,9 +80,12 @@ const EmblematicSpeciesGallery: React.FC<EmblematicSpeciesGalleryProps> = ({
       
       const matchesKingdom = selectedKingdom === null || sp.kingdom === selectedKingdom;
       
-      return matchesSearch && matchesKingdom;
+      const matchesMarcheur = marcheurSpeciesSet === null || 
+        marcheurSpeciesSet.has(sp.scientificName.toLowerCase());
+      
+      return matchesSearch && matchesKingdom && matchesMarcheur;
     });
-  }, [topSpecies, searchQuery, selectedKingdom]);
+  }, [topSpecies, searchQuery, selectedKingdom, marcheurSpeciesSet]);
 
   // Limit displayed species for performance
   const displayedSpecies = useMemo(() => {
@@ -90,9 +116,10 @@ const EmblematicSpeciesGallery: React.FC<EmblematicSpeciesGalleryProps> = ({
     setSearchQuery('');
     setSelectedKingdom(null);
     setDisplayLimit(50);
+    handleMarcheurChange([]);
   };
 
-  const hasActiveFilters = searchQuery !== '' || selectedKingdom !== null;
+  const hasActiveFilters = searchQuery !== '' || selectedKingdom !== null || activeMarcheurIds.length > 0;
 
   const loadMore = () => {
     setDisplayLimit(prev => prev + 50);
@@ -153,7 +180,7 @@ const EmblematicSpeciesGallery: React.FC<EmblematicSpeciesGalleryProps> = ({
                 </Button>
               ))}
               
-              {/* Clear filters */}
+            {/* Clear filters */}
               {hasActiveFilters && (
                 <Button 
                   variant="ghost" 
@@ -166,6 +193,16 @@ const EmblematicSpeciesGallery: React.FC<EmblematicSpeciesGalleryProps> = ({
                 </Button>
               )}
             </div>
+
+            {/* Marcheur filter pills */}
+            {marcheurs.length > 0 && (
+              <MarcheurFilterPills
+                marcheurs={marcheurs}
+                selectedMarcheurIds={activeMarcheurIds}
+                onSelectionChange={handleMarcheurChange}
+                totalSpeciesCount={topSpecies.length}
+              />
+            )}
 
             {/* Results count */}
             <div className="flex items-center gap-2 text-sm text-slate-400">
