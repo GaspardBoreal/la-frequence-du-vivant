@@ -48,6 +48,7 @@ import AtlasClimatique from './pages/AtlasClimatique';
 import ExportationsAdmin from './pages/ExportationsAdmin';
 import AutomationsAdmin from './pages/AutomationsAdmin';
 import ExplorationLayout from './layouts/ExplorationLayout';
+import ExplorationBiodiversite from './pages/ExplorationBiodiversite';
 
 function App() {
   return (
@@ -77,6 +78,7 @@ function App() {
               <Route path="prefigurer" element={<ExplorationPrefigurer />} />
               <Route path="historique" element={<ExplorationHistorique />} />
               <Route path="essais" element={<ExplorationEssais />} />
+              <Route path="biodiversite" element={<ExplorationBiodiversite />} />
             </Route>
             
             {/* Route lecteurs avec ExplorationLayout */}
