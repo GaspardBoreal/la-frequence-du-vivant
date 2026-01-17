@@ -307,6 +307,13 @@ export default function ExplorationBiodiversite() {
               isLoading={false}
               marches={biodiversitySummary.speciesByMarche}
               selectedMarcheId={selectedMarcheId}
+              biodiversityStats={{
+                flora: biodiversitySummary.speciesByKingdom.plants,
+                fauna: biodiversitySummary.speciesByKingdom.birds,
+                fungi: biodiversitySummary.speciesByKingdom.fungi,
+                other: biodiversitySummary.speciesByKingdom.others,
+                total: biodiversitySummary.totalSpecies,
+              }}
             />
           </div>
         </div>
