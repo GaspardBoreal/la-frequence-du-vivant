@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
-import { Bird, Flower2, TreePine, Bug } from 'lucide-react';
+import { Bird, Flower2, TreePine, Bug, ChevronDown } from 'lucide-react';
 
 interface BiodiversityHeroSectionProps {
   totalSpecies: number;
@@ -27,7 +27,6 @@ const BiodiversityHeroSection: React.FC<BiodiversityHeroSectionProps> = ({
     // Animate counter from 0 to totalSpecies
     const duration = 2500;
     const steps = 60;
-    const increment = totalSpecies / steps;
     let currentStep = 0;
 
     const timer = setInterval(() => {
@@ -36,9 +35,8 @@ const BiodiversityHeroSection: React.FC<BiodiversityHeroSectionProps> = ({
         setDisplayCount(totalSpecies);
         clearInterval(timer);
       } else {
-        // Easing function for smooth animation
         const progress = currentStep / steps;
-        const eased = 1 - Math.pow(1 - progress, 3); // Cubic ease-out
+        const eased = 1 - Math.pow(1 - progress, 3);
         setDisplayCount(Math.floor(totalSpecies * eased));
       }
     }, duration / steps);
@@ -46,30 +44,34 @@ const BiodiversityHeroSection: React.FC<BiodiversityHeroSectionProps> = ({
     return () => clearInterval(timer);
   }, [totalSpecies]);
 
+  const kingdomData = [
+    { key: 'birds', icon: Bird, value: speciesByKingdom.birds, label: 'Oiseaux', color: 'text-sky-300' },
+    { key: 'plants', icon: TreePine, value: speciesByKingdom.plants, label: 'Plantes', color: 'text-emerald-300' },
+    { key: 'fungi', icon: Flower2, value: speciesByKingdom.fungi, label: 'Champignons', color: 'text-violet-300' },
+    { key: 'others', icon: Bug, value: speciesByKingdom.others, label: 'Autres', color: 'text-amber-300' },
+  ];
+
   return (
-    <section className="relative min-h-[70vh] flex items-center justify-center overflow-hidden">
-      {/* Background gradient */}
-      <div className="absolute inset-0 bg-gradient-to-br from-emerald-900 via-green-800 to-teal-900" />
-      
+    <section className="relative min-h-screen flex items-center justify-center overflow-hidden bg-gradient-to-br from-slate-950 via-slate-900 to-emerald-950">
       {/* Animated particles */}
-      <div className="absolute inset-0 overflow-hidden">
-        {[...Array(20)].map((_, i) => (
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        {[...Array(30)].map((_, i) => (
           <motion.div
             key={i}
-            className="absolute w-2 h-2 bg-white/20 rounded-full"
+            className="absolute w-1 h-1 md:w-2 md:h-2 bg-emerald-400/30 rounded-full"
             initial={{ 
-              x: Math.random() * 100 + '%',
-              y: '100%',
+              x: `${Math.random() * 100}%`,
+              y: '110%',
               opacity: 0 
             }}
             animate={{ 
-              y: '-20%',
-              opacity: [0, 0.6, 0],
+              y: '-10%',
+              opacity: [0, 0.8, 0],
             }}
             transition={{
-              duration: 8 + Math.random() * 4,
+              duration: 10 + Math.random() * 5,
               repeat: Infinity,
-              delay: Math.random() * 5,
+              delay: Math.random() * 8,
               ease: 'linear',
             }}
           />
@@ -77,62 +79,54 @@ const BiodiversityHeroSection: React.FC<BiodiversityHeroSectionProps> = ({
       </div>
 
       {/* Content */}
-      <div className="relative z-10 text-center px-4">
+      <div className="relative z-10 text-center px-4 sm:px-6 lg:px-8 w-full max-w-5xl mx-auto">
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: isVisible ? 1 : 0, y: isVisible ? 0 : 30 }}
           transition={{ duration: 0.8 }}
+          className="space-y-6 md:space-y-8"
         >
-          <h1 className="text-lg md:text-xl text-emerald-200 mb-4 tracking-wide uppercase">
+          <h1 className="text-sm sm:text-base md:text-lg text-emerald-400 tracking-widest uppercase font-medium">
             Fréquences de la rivière Dordogne
           </h1>
           
           {/* Main counter */}
-          <div className="mb-8">
+          <div className="py-4 md:py-8">
             <motion.div
-              className="text-7xl md:text-9xl font-bold text-white mb-2"
+              className="text-5xl sm:text-6xl md:text-8xl lg:text-9xl font-bold text-white mb-2 md:mb-4"
               style={{ fontVariantNumeric: 'tabular-nums' }}
             >
               {displayCount.toLocaleString('fr-FR')}
             </motion.div>
-            <div className="text-2xl md:text-3xl text-emerald-300 font-light">
+            <div className="text-xl sm:text-2xl md:text-3xl text-emerald-300 font-light">
               espèces identifiées
             </div>
-            <div className="text-lg text-emerald-400 mt-2">
+            <div className="text-sm sm:text-base md:text-lg text-emerald-400/80 mt-2">
               sur {totalMarches} étapes du fleuve
             </div>
           </div>
 
-          {/* Kingdom breakdown */}
+          {/* Kingdom breakdown - Responsive grid */}
           <motion.div 
-            className="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-3xl mx-auto mt-12"
+            className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 max-w-3xl mx-auto mt-8 md:mt-12"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: isVisible ? 1 : 0, y: isVisible ? 0 : 20 }}
             transition={{ duration: 0.8, delay: 0.5 }}
           >
-            <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/20">
-              <Bird className="h-8 w-8 text-blue-300 mx-auto mb-2" />
-              <div className="text-2xl font-bold text-white">{speciesByKingdom.birds.toLocaleString('fr-FR')}</div>
-              <div className="text-sm text-blue-200">Oiseaux</div>
-            </div>
-            
-            <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/20">
-              <TreePine className="h-8 w-8 text-green-300 mx-auto mb-2" />
-              <div className="text-2xl font-bold text-white">{speciesByKingdom.plants.toLocaleString('fr-FR')}</div>
-              <div className="text-sm text-green-200">Plantes</div>
-            </div>
-            
-            <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/20">
-              <Flower2 className="h-8 w-8 text-purple-300 mx-auto mb-2" />
-              <div className="text-2xl font-bold text-white">{speciesByKingdom.fungi.toLocaleString('fr-FR')}</div>
-              <div className="text-sm text-purple-200">Champignons</div>
-            </div>
-            
-            <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/20">
-              <Bug className="h-8 w-8 text-amber-300 mx-auto mb-2" />
-              <div className="text-2xl font-bold text-white">{speciesByKingdom.others.toLocaleString('fr-FR')}</div>
-              <div className="text-sm text-amber-200">Autres</div>
-            </div>
+            {kingdomData.map((item) => (
+              <div 
+                key={item.key}
+                className="bg-white/5 backdrop-blur-sm rounded-xl p-3 sm:p-4 border border-white/10 hover:bg-white/10 transition-colors"
+              >
+                <item.icon className={`h-6 w-6 sm:h-8 sm:w-8 ${item.color} mx-auto mb-2`} />
+                <div className="text-xl sm:text-2xl font-bold text-white">
+                  {item.value.toLocaleString('fr-FR')}
+                </div>
+                <div className={`text-xs sm:text-sm ${item.color} opacity-80`}>
+                  {item.label}
+                </div>
+              </div>
+            ))}
           </motion.div>
         </motion.div>
 
@@ -144,11 +138,12 @@ const BiodiversityHeroSection: React.FC<BiodiversityHeroSectionProps> = ({
           transition={{ delay: 1.5 }}
         >
           <motion.div
-            className="w-6 h-10 border-2 border-white/40 rounded-full p-1"
+            className="flex flex-col items-center text-emerald-400/60"
             animate={{ y: [0, 8, 0] }}
             transition={{ duration: 1.5, repeat: Infinity }}
           >
-            <div className="w-2 h-2 bg-white/60 rounded-full mx-auto" />
+            <span className="text-xs uppercase tracking-wider mb-2 hidden sm:block">Découvrir</span>
+            <ChevronDown className="h-6 w-6" />
           </motion.div>
         </motion.div>
       </div>

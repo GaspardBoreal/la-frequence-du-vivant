@@ -97,16 +97,16 @@ const GaspardBorealNarratives: React.FC<GaspardBorealNarrativesProps> = ({
     <div className="space-y-6">
       {/* Header */}
       <div className="text-center">
-        <h2 className="text-3xl font-bold text-transparent bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text mb-2">
-          Les Récits de Gaspard Boréal
+        <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-transparent bg-gradient-to-r from-purple-400 to-cyan-400 bg-clip-text mb-2">
+          📖 Les Récits de Gaspard Boréal
         </h2>
-        <p className="text-gray-600">
+        <p className="text-slate-400 text-base md:text-lg">
           Explorations narratives de la biodiversité et du changement climatique
         </p>
       </div>
 
       {/* Narratives Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
         {narratives.map((narrative, index) => (
           <motion.div
             key={narrative.id}
@@ -115,7 +115,7 @@ const GaspardBorealNarratives: React.FC<GaspardBorealNarrativesProps> = ({
             transition={{ delay: index * 0.1 }}
           >
             <Card 
-              className="cursor-pointer hover:shadow-xl transition-all duration-300 border-2 hover:border-blue-300"
+              className="cursor-pointer hover:shadow-xl transition-all duration-300 border-slate-700 hover:border-purple-500/50 bg-slate-800/50"
               onClick={() => handleCardClick(narrative)}
             >
               {/* Card Header */}
@@ -150,10 +150,10 @@ const GaspardBorealNarratives: React.FC<GaspardBorealNarrativesProps> = ({
               </div>
 
               {/* Card Content */}
-              <div className="p-6">
+              <div className="p-4 md:p-6 bg-slate-900/50">
                 {/* Story Preview */}
                 <div className="mb-4">
-                  <p className="text-gray-700 leading-relaxed">
+                  <p className="text-slate-300 leading-relaxed text-sm md:text-base">
                     {expandedCard === narrative.id 
                       ? narrative.story
                       : narrative.story.length > 200 
@@ -167,7 +167,7 @@ const GaspardBorealNarratives: React.FC<GaspardBorealNarrativesProps> = ({
                       variant="ghost"
                       size="sm"
                       onClick={(e) => handleToggleExpand(narrative.id, e)}
-                      className="mt-2 text-blue-600 hover:text-blue-800"
+                      className="mt-2 text-purple-400 hover:text-purple-300 hover:bg-purple-500/10"
                     >
                       {expandedCard === narrative.id ? 'Réduire' : 'Lire plus'}
                     </Button>
@@ -177,7 +177,7 @@ const GaspardBorealNarratives: React.FC<GaspardBorealNarrativesProps> = ({
                 {/* Species Badge */}
                 {narrative.species && (
                   <div className="mb-4">
-                    <Badge variant="outline" className="text-green-700 border-green-300 bg-green-50">
+                    <Badge variant="outline" className="text-emerald-400 border-emerald-500/50 bg-emerald-500/10">
                       🦋 {narrative.species}
                     </Badge>
                   </div>
@@ -185,22 +185,22 @@ const GaspardBorealNarratives: React.FC<GaspardBorealNarrativesProps> = ({
 
                 {/* Call to Action */}
                 {narrative.callToAction && (
-                  <div className="bg-gray-50 rounded-lg p-4">
+                  <div className="bg-slate-800/50 rounded-lg p-3 md:p-4 border border-slate-700">
                     <div className="flex items-start gap-3">
-                      <div className="text-2xl">
+                      <div className="text-xl md:text-2xl">
                         {getActionIcon(narrative.callToAction.actionType)}
                       </div>
                       <div className="flex-1">
-                        <div className="font-medium text-gray-800 mb-1">
+                        <div className="font-medium text-white text-sm md:text-base mb-1">
                           Passez à l'action
                         </div>
-                        <p className="text-sm text-gray-600 mb-3">
+                        <p className="text-xs md:text-sm text-slate-400 mb-3">
                           {narrative.callToAction.message}
                         </p>
                         <Button 
                           variant="outline" 
                           size="sm"
-                          className="text-blue-600 border-blue-300 hover:bg-blue-50"
+                          className="text-purple-400 border-purple-500/50 hover:bg-purple-500/10 text-xs md:text-sm"
                           onClick={(e) => {
                             e.stopPropagation();
                             if (narrative.callToAction?.link) {

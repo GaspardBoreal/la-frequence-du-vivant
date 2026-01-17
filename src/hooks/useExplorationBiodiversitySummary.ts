@@ -68,24 +68,33 @@ export const useExplorationBiodiversitySummary = (explorationId?: string) => {
       }
 
       // Fetch biodiversity snapshots for these marches
+      // IMPORTANT: Only take the most recent snapshot per marche to avoid counting duplicates
       const { data: snapshots, error: snapshotsError } = await supabase
         .from('biodiversity_snapshots')
         .select('*')
-        .in('marche_id', marcheIds);
+        .in('marche_id', marcheIds)
+        .order('created_at', { ascending: false });
 
       if (snapshotsError) throw snapshotsError;
 
-      // Calculate aggregated metrics
-      let totalSpecies = 0;
+      // Keep only the most recent snapshot per marche
+      const latestSnapshotsByMarche = new Map<string, typeof snapshots[0]>();
+      snapshots?.forEach(snapshot => {
+        if (!latestSnapshotsByMarche.has(snapshot.marche_id)) {
+          latestSnapshotsByMarche.set(snapshot.marche_id, snapshot);
+        }
+      });
+
+      // Calculate aggregated metrics using unique species across all marches
       let birds = 0;
       let plants = 0;
       let fungi = 0;
       let others = 0;
-      const speciesMap = new Map<string, { count: number; scientificName: string; kingdom: string; photos: string[] }>();
+      const uniqueSpeciesMap = new Map<string, { count: number; scientificName: string; kingdom: string; photos: string[] }>();
 
       const speciesByMarche = explorationMarches?.map(em => {
         const marche = em.marche as any;
-        const snapshot = snapshots?.find(s => s.marche_id === em.marche_id);
+        const snapshot = latestSnapshotsByMarche.get(em.marche_id);
         const speciesCount = snapshot?.total_species || 0;
         
         if (snapshot) {
@@ -94,17 +103,17 @@ export const useExplorationBiodiversitySummary = (explorationId?: string) => {
           fungi += snapshot.fungi_count || 0;
           others += snapshot.others_count || 0;
 
-          // Process species data for top species
+          // Process species data for top species - use unique species across exploration
           const speciesData = snapshot.species_data as any[];
           if (speciesData && Array.isArray(speciesData)) {
             speciesData.forEach((species: any) => {
               const name = species.commonName || species.scientificName;
               if (name) {
-                const existing = speciesMap.get(name);
+                const existing = uniqueSpeciesMap.get(name);
                 if (existing) {
                   existing.count += 1;
                 } else {
-                  speciesMap.set(name, {
+                  uniqueSpeciesMap.set(name, {
                     count: 1,
                     scientificName: species.scientificName || name,
                     kingdom: species.kingdom || 'Unknown',
@@ -116,8 +125,6 @@ export const useExplorationBiodiversitySummary = (explorationId?: string) => {
           }
         }
 
-        totalSpecies += speciesCount;
-
         return {
           marcheId: em.marche_id,
           marcheName: marche?.nom_marche || 'Marche sans nom',
@@ -128,8 +135,11 @@ export const useExplorationBiodiversitySummary = (explorationId?: string) => {
         };
       }) || [];
 
+      // Calculate total unique species (sum of per-marche counts, not unique species count)
+      const totalSpecies = speciesByMarche.reduce((sum, m) => sum + m.speciesCount, 0);
+
       // Get top 10 species
-      const topSpecies = Array.from(speciesMap.entries())
+      const topSpecies = Array.from(uniqueSpeciesMap.entries())
         .sort((a, b) => b[1].count - a[1].count)
         .slice(0, 10)
         .map(([name, data]) => ({
