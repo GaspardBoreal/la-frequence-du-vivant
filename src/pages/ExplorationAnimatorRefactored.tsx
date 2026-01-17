@@ -13,6 +13,7 @@ import { Eye, ArrowLeft } from 'lucide-react';
 import ExperienceMarcheSimple from '@/components/experience/ExperienceMarcheSimple';
 import ExperienceMarcheElabore from '@/components/experience/ExperienceMarcheElabore';
 import SpecificPagesManager from '@/components/admin/SpecificPagesManager';
+import MarcheursManager from '@/components/admin/MarcheursManager';
 
 export default function ExplorationAnimatorRefactored() {
   const { slug } = useParams<{ slug: string }>();
@@ -160,6 +161,22 @@ export default function ExplorationAnimatorRefactored() {
           {exploration?.id && <SpecificPagesManager explorationId={exploration.id} />}
         </section>
 
+        {/* P1.5 - Gestion des marcheurs */}
+        <section className="mt-10">
+          <div className="relative">
+            <div className="flex items-center mb-6">
+              <div className="flex-1 h-px bg-gradient-to-r from-transparent via-emerald-500/30 to-emerald-500/30"></div>
+              <h2 className="px-6 text-2xl font-semibold text-foreground">
+                P1.5 · Équipage & Observations
+              </h2>
+              <div className="flex-1 h-px bg-gradient-to-l from-transparent via-emerald-500/30 to-emerald-500/30"></div>
+            </div>
+            <p className="text-sm text-foreground/70 mb-6">
+              Gérez les marcheurs de l'exploration et associez leurs observations d'espèces pour le filtrage biodiversité.
+            </p>
+            {exploration?.id && <MarcheursManager explorationId={exploration.id} />}
+          </div>
+        </section>
 
         {/* P2 - Modèle de visualisation des marches */}
         <section className="mt-10">
