@@ -49,6 +49,7 @@ import ExportationsAdmin from './pages/ExportationsAdmin';
 import AutomationsAdmin from './pages/AutomationsAdmin';
 import ExplorationLayout from './layouts/ExplorationLayout';
 import ExplorationBiodiversite from './pages/ExplorationBiodiversite';
+import MarcheursAdmin from './pages/MarcheursAdmin';
 
 function App() {
   return (
@@ -154,6 +155,11 @@ function App() {
             <Route path="/admin/automations" element={
               <AdminAuth>
                 <AutomationsAdmin />
+              </AdminAuth>
+            } />
+            <Route path="/admin/marcheurs" element={
+              <AdminAuth>
+                <MarcheursAdmin />
               </AdminAuth>
             } />
             <Route path="/admin/opus/:slug" element={
