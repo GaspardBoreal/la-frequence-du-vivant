@@ -11,8 +11,9 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
-import { Plus, Trash2, Search, Leaf, MapPin, Calendar, Zap, List } from 'lucide-react';
+import { Plus, Trash2, Search, Leaf, MapPin, Calendar, Zap, List, Upload } from 'lucide-react';
 import MarcheurObservationPicker from './MarcheurObservationPicker';
+import MarcheurObservationsImport from './MarcheurObservationsImport';
 
 interface MarcheurObservationsManagerProps {
   marcheur: ExplorationMarcheur;
@@ -215,10 +216,14 @@ export default function MarcheurObservationsManager({
 
   return (
     <Tabs defaultValue="picker" className="w-full">
-      <TabsList className="grid w-full grid-cols-2 mb-6">
+      <TabsList className="grid w-full grid-cols-3 mb-6">
         <TabsTrigger value="picker" className="gap-2">
           <Zap className="h-4 w-4" />
           Sélection rapide
+        </TabsTrigger>
+        <TabsTrigger value="import" className="gap-2">
+          <Upload className="h-4 w-4" />
+          Import liste
         </TabsTrigger>
         <TabsTrigger value="manual" className="gap-2">
           <List className="h-4 w-4" />
@@ -229,6 +234,16 @@ export default function MarcheurObservationsManager({
       <TabsContent value="picker">
         <MarcheurObservationPicker 
           marcheur={marcheur} 
+          explorationId={explorationId}
+          onComplete={() => {
+            queryClient.invalidateQueries({ queryKey: ['marcheur-observations', marcheur.id] });
+          }}
+        />
+      </TabsContent>
+
+      <TabsContent value="import">
+        <MarcheurObservationsImport
+          marcheur={marcheur}
           explorationId={explorationId}
           onComplete={() => {
             queryClient.invalidateQueries({ queryKey: ['marcheur-observations', marcheur.id] });
