@@ -20,12 +20,29 @@ import {
   Check,
   Star,
   MapPin,
-  RefreshCw
+  RefreshCw,
+  Trash2,
+  ListTree
 } from 'lucide-react';
 
 interface MarcheurObservationsManagerProps {
   marcheur: ExplorationMarcheur;
   explorationId: string;
+  onObservationsSaved?: () => void;
+}
+
+interface DetailedObservation {
+  id: string;
+  species_scientific_name: string;
+  marche_id: string;
+  observation_date: string | null;
+  marcheName: string;
+}
+
+interface GroupedObservations {
+  marcheId: string;
+  marcheName: string;
+  observations: DetailedObservation[];
 }
 
 interface Attribution {
@@ -123,7 +140,8 @@ function parseSpeciesFromResponse(data: any): { species: SpeciesItem[], contribu
 
 export default function MarcheurObservationsManager({ 
   marcheur, 
-  explorationId 
+  explorationId,
+  onObservationsSaved
 }: MarcheurObservationsManagerProps) {
   const queryClient = useQueryClient();
   const [mode, setMode] = useState<'marche' | 'contributor'>('marche');
@@ -143,6 +161,9 @@ export default function MarcheurObservationsManager({
   const [contributorsData, setContributorsData] = useState<ContributorWithMarches[]>([]);
   const [loadingContributors, setLoadingContributors] = useState(false);
   const [loadingProgress, setLoadingProgress] = useState<{current: number, total: number, marcheName: string} | null>(null);
+  const [showMyObservations, setShowMyObservations] = useState(true);
+  const [expandedObsMarches, setExpandedObsMarches] = useState<Set<string>>(new Set());
+  const [deletingObservation, setDeletingObservation] = useState<string | null>(null);
 
   const marcheurFullName = `${marcheur.prenom} ${marcheur.nom}`.trim();
 
@@ -194,8 +215,8 @@ export default function MarcheurObservationsManager({
     },
   });
 
-  // Fetch existing observations
-  const { data: existingObservations } = useQuery({
+  // Fetch existing observations (simple set for checking)
+  const { data: existingObservations, refetch: refetchExisting } = useQuery({
     queryKey: ['marcheur-all-observations', marcheur.id],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -207,6 +228,108 @@ export default function MarcheurObservationsManager({
       return new Set((data || []).map(o => `${o.marche_id}:${o.species_scientific_name}`));
     },
   });
+
+  // Fetch detailed observations for "Mes observations" section
+  const { data: detailedObservations, refetch: refetchDetailed } = useQuery({
+    queryKey: ['marcheur-detailed-observations', marcheur.id],
+    queryFn: async (): Promise<GroupedObservations[]> => {
+      const { data, error } = await supabase
+        .from('marcheur_observations')
+        .select(`
+          id,
+          species_scientific_name,
+          marche_id,
+          observation_date,
+          marches:marche_id (nom_marche, ville)
+        `)
+        .eq('marcheur_id', marcheur.id)
+        .order('observation_date', { ascending: false });
+
+      if (error) throw error;
+
+      // Group by marche
+      const grouped = new Map<string, GroupedObservations>();
+      (data || []).forEach((obs: any) => {
+        const marcheName = obs.marches?.nom_marche || obs.marches?.ville || 'Marche inconnue';
+        
+        if (!grouped.has(obs.marche_id)) {
+          grouped.set(obs.marche_id, {
+            marcheId: obs.marche_id,
+            marcheName,
+            observations: [],
+          });
+        }
+        
+        grouped.get(obs.marche_id)!.observations.push({
+          id: obs.id,
+          species_scientific_name: obs.species_scientific_name,
+          marche_id: obs.marche_id,
+          observation_date: obs.observation_date,
+          marcheName,
+        });
+      });
+
+      return Array.from(grouped.values()).sort((a, b) => 
+        b.observations.length - a.observations.length
+      );
+    },
+    staleTime: 0,
+  });
+
+  // Toggle marche expansion in "Mes observations"
+  const toggleObsMarche = (marcheId: string) => {
+    const newSet = new Set(expandedObsMarches);
+    if (newSet.has(marcheId)) {
+      newSet.delete(marcheId);
+    } else {
+      newSet.add(marcheId);
+    }
+    setExpandedObsMarches(newSet);
+  };
+
+  // Delete a single observation
+  const handleDeleteObservation = async (observationId: string) => {
+    setDeletingObservation(observationId);
+    try {
+      const { error } = await supabase
+        .from('marcheur_observations')
+        .delete()
+        .eq('id', observationId);
+
+      if (error) throw error;
+      
+      toast.success('Observation supprimée');
+      await Promise.all([refetchDetailed(), refetchExisting()]);
+      onObservationsSaved?.();
+    } catch (error: any) {
+      console.error('Error deleting observation:', error);
+      toast.error(`Erreur: ${error.message}`);
+    } finally {
+      setDeletingObservation(null);
+    }
+  };
+
+  // Delete all observations for a marche
+  const handleDeleteMarcheObservations = async (marcheId: string, count: number) => {
+    if (!confirm(`Supprimer les ${count} observation(s) de cette marche ?`)) return;
+    
+    try {
+      const { error } = await supabase
+        .from('marcheur_observations')
+        .delete()
+        .eq('marcheur_id', marcheur.id)
+        .eq('marche_id', marcheId);
+
+      if (error) throw error;
+      
+      toast.success(`${count} observation(s) supprimée(s)`);
+      await Promise.all([refetchDetailed(), refetchExisting()]);
+      onObservationsSaved?.();
+    } catch (error: any) {
+      console.error('Error deleting marche observations:', error);
+      toast.error(`Erreur: ${error.message}`);
+    }
+  };
 
   // Load species data for a specific marche via Edge Function
   const loadMarcheData = async (marche: MarcheWithCoords) => {
@@ -534,9 +657,16 @@ export default function MarcheurObservationsManager({
 
       toast.success(`${selectedSpecies.size} espèce(s) associée(s) à ${marcheur.prenom}`);
       
-      queryClient.invalidateQueries({ queryKey: ['marcheur-observations', marcheur.id] });
-      queryClient.invalidateQueries({ queryKey: ['marcheur-all-observations', marcheur.id] });
-      queryClient.invalidateQueries({ queryKey: ['exploration-marcheurs', explorationId] });
+      // Refresh all relevant queries
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['marcheur-observations', marcheur.id] }),
+        queryClient.invalidateQueries({ queryKey: ['marcheur-all-observations', marcheur.id] }),
+        queryClient.invalidateQueries({ queryKey: ['marcheur-detailed-observations', marcheur.id] }),
+        queryClient.invalidateQueries({ queryKey: ['exploration-marcheurs', explorationId] }),
+      ]);
+      
+      // Notify parent to refresh
+      onObservationsSaved?.();
 
       setSelectedSpecies(new Set());
       setSelectedView(null);
@@ -547,6 +677,11 @@ export default function MarcheurObservationsManager({
       setSaving(false);
     }
   };
+
+  // Calculate total observations count
+  const totalObservationsCount = detailedObservations?.reduce(
+    (sum, group) => sum + group.observations.length, 0
+  ) || 0;
 
   if (marchesLoading) {
     return (
@@ -688,6 +823,102 @@ export default function MarcheurObservationsManager({
   // SEARCH VIEW - Step 1
   return (
     <div className="space-y-4">
+      {/* MY OBSERVATIONS SECTION */}
+      {totalObservationsCount > 0 && (
+        <div className="border rounded-lg overflow-hidden bg-muted/20">
+          {/* Header - collapsible */}
+          <button
+            onClick={() => setShowMyObservations(!showMyObservations)}
+            className="w-full flex items-center gap-3 p-3 bg-muted/40 hover:bg-muted/60 transition-colors"
+          >
+            {showMyObservations ? (
+              <ChevronDown className="h-4 w-4 text-muted-foreground" />
+            ) : (
+              <ChevronRight className="h-4 w-4 text-muted-foreground" />
+            )}
+            <ListTree className="h-5 w-5 text-emerald-500" />
+            <span className="font-semibold flex-1 text-left">
+              Mes observations
+            </span>
+            <Badge className="bg-emerald-500/20 text-emerald-600 border-emerald-500/30">
+              {totalObservationsCount} espèce{totalObservationsCount > 1 ? 's' : ''}
+            </Badge>
+          </button>
+
+          {/* Content - conditionally shown */}
+          {showMyObservations && detailedObservations && detailedObservations.length > 0 && (
+            <div className="divide-y border-t max-h-[250px] overflow-y-auto">
+              {detailedObservations.map(group => {
+                const isExpanded = expandedObsMarches.has(group.marcheId);
+                
+                return (
+                  <div key={group.marcheId}>
+                    {/* Marche header */}
+                    <div className="flex items-center gap-2 p-2 bg-background/50">
+                      <button
+                        onClick={() => toggleObsMarche(group.marcheId)}
+                        className="flex items-center gap-2 flex-1 hover:bg-muted/30 rounded p-1 transition-colors"
+                      >
+                        {isExpanded ? (
+                          <ChevronDown className="h-3 w-3 text-muted-foreground" />
+                        ) : (
+                          <ChevronRight className="h-3 w-3 text-muted-foreground" />
+                        )}
+                        <MapPin className="h-3 w-3 text-muted-foreground" />
+                        <span className="text-sm font-medium truncate flex-1 text-left">
+                          {group.marcheName}
+                        </span>
+                        <Badge variant="secondary" className="text-xs">
+                          {group.observations.length}
+                        </Badge>
+                      </button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleDeleteMarcheObservations(group.marcheId, group.observations.length)}
+                        className="h-7 px-2 text-destructive hover:text-destructive hover:bg-destructive/10"
+                      >
+                        <Trash2 className="h-3 w-3" />
+                      </Button>
+                    </div>
+
+                    {/* Species list */}
+                    {isExpanded && (
+                      <div className="divide-y pl-6 bg-muted/10">
+                        {group.observations.map(obs => (
+                          <div
+                            key={obs.id}
+                            className="flex items-center gap-2 p-2 text-sm group/obs"
+                          >
+                            <Leaf className="h-3 w-3 text-emerald-500 shrink-0" />
+                            <span className="flex-1 truncate">
+                              {obs.species_scientific_name}
+                            </span>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleDeleteObservation(obs.id)}
+                              disabled={deletingObservation === obs.id}
+                              className="h-6 px-1.5 opacity-0 group-hover/obs:opacity-100 text-destructive hover:text-destructive hover:bg-destructive/10 transition-opacity"
+                            >
+                              {deletingObservation === obs.id ? (
+                                <Loader2 className="h-3 w-3 animate-spin" />
+                              ) : (
+                                <Trash2 className="h-3 w-3" />
+                              )}
+                            </Button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Mode Tabs */}
       <div className="flex gap-2 border-b pb-4">
         <Button 
