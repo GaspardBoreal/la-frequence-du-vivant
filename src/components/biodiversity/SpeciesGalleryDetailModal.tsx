@@ -2,7 +2,8 @@ import React from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { ExternalLink, Leaf, Bird, Bug, HelpCircle } from 'lucide-react';
+import { ExternalLink, Leaf, Bird, Bug, HelpCircle, Loader2 } from 'lucide-react';
+import { useSpeciesPhoto } from '@/hooks/useSpeciesPhoto';
 
 interface SpeciesGalleryDetailModalProps {
   species: {
@@ -18,7 +19,7 @@ interface SpeciesGalleryDetailModalProps {
 
 const getKingdomInfo = (kingdom: string) => {
   const lowerKingdom = kingdom?.toLowerCase() || '';
-  if (lowerKingdom.includes('plant') || lowerKingdom.includes('flore')) {
+  if (lowerKingdom.includes('plant') || lowerKingdom.includes('flore') || lowerKingdom === 'plantae') {
     return { icon: Leaf, label: 'Flore', color: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30' };
   }
   if (lowerKingdom.includes('bird') || lowerKingdom.includes('aves')) {
@@ -27,7 +28,7 @@ const getKingdomInfo = (kingdom: string) => {
   if (lowerKingdom.includes('insect') || lowerKingdom.includes('arthropod')) {
     return { icon: Bug, label: 'Insecte', color: 'bg-amber-500/20 text-amber-300 border-amber-500/30' };
   }
-  if (lowerKingdom.includes('animal') || lowerKingdom.includes('faune')) {
+  if (lowerKingdom.includes('animal') || lowerKingdom.includes('faune') || lowerKingdom === 'animalia') {
     return { icon: Bird, label: 'Faune', color: 'bg-rose-500/20 text-rose-300 border-rose-500/30' };
   }
   if (lowerKingdom.includes('fung')) {
@@ -41,12 +42,25 @@ const SpeciesGalleryDetailModal: React.FC<SpeciesGalleryDetailModalProps> = ({
   isOpen,
   onClose,
 }) => {
+  // Fetch real-time photo data from iNaturalist when modal opens
+  const { data: photoData, isLoading } = useSpeciesPhoto(
+    isOpen ? species?.scientificName : undefined
+  );
+
   if (!species) return null;
 
-  const kingdomInfo = getKingdomInfo(species.kingdom);
+  // Use fetched data if available, otherwise fall back to props
+  const photos = (photoData?.photos && photoData.photos.length > 0) 
+    ? photoData.photos 
+    : species.photos || [];
+  const kingdom = (photoData?.kingdom && photoData.kingdom !== 'Unknown') 
+    ? photoData.kingdom 
+    : species.kingdom;
+  const displayName = photoData?.commonName || species.name || species.scientificName;
+
+  const hasPhoto = photos.length > 0;
+  const kingdomInfo = getKingdomInfo(kingdom);
   const KingdomIcon = kingdomInfo.icon;
-  const hasPhoto = species.photos && species.photos.length > 0;
-  const displayName = species.name || species.scientificName;
 
   // Build external search URLs
   const gbifSearchUrl = `https://www.gbif.org/species/search?q=${encodeURIComponent(species.scientificName)}`;
@@ -64,9 +78,16 @@ const SpeciesGalleryDetailModal: React.FC<SpeciesGalleryDetailModalProps> = ({
         <div className="space-y-4">
           {/* Photo or placeholder */}
           <div className="relative aspect-[4/3] rounded-lg overflow-hidden">
-            {hasPhoto ? (
+            {isLoading ? (
+              <div className="w-full h-full bg-gradient-to-br from-slate-800 to-slate-700 flex items-center justify-center">
+                <div className="text-center text-white/60 space-y-2">
+                  <Loader2 className="w-10 h-10 mx-auto animate-spin" />
+                  <p className="text-sm">Chargement...</p>
+                </div>
+              </div>
+            ) : hasPhoto ? (
               <img
-                src={species.photos![0]}
+                src={photos[0]}
                 alt={displayName}
                 className="w-full h-full object-cover"
                 onError={(e) => {
@@ -81,9 +102,39 @@ const SpeciesGalleryDetailModal: React.FC<SpeciesGalleryDetailModalProps> = ({
                 </div>
               </div>
             )}
+            
+            {/* Photo badge */}
+            {hasPhoto && !isLoading && (
+              <div className="absolute top-3 left-3">
+                <Badge className="bg-emerald-600/90 text-white text-xs">
+                  📷 Photo disponible
+                </Badge>
+              </div>
+            )}
           </div>
 
-          {/* Scientific name */}
+          {/* Thumbnails if multiple photos */}
+          {photos.length > 1 && !isLoading && (
+            <div className="flex gap-2 overflow-x-auto pb-1">
+              {photos.slice(0, 4).map((photo, index) => (
+                <div
+                  key={index}
+                  className="flex-shrink-0 w-14 h-14 rounded-md overflow-hidden border border-white/10"
+                >
+                  <img
+                    src={photo}
+                    alt={`${displayName} ${index + 1}`}
+                    className="w-full h-full object-cover"
+                    onError={(e) => {
+                      e.currentTarget.style.display = 'none';
+                    }}
+                  />
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Scientific name and badges */}
           <div className="space-y-2">
             <p className="text-sm text-white/50 italic">{species.scientificName}</p>
             
