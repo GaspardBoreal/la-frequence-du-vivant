@@ -26,11 +26,22 @@ import { BiodiversityData, BiodiversitySpecies } from '@/types/biodiversity';
 import SpeciesDetailModal from './SpeciesDetailModal';
 import 'leaflet/dist/leaflet.css';
 
+interface MarcheLocation {
+  marcheId: string;
+  marcheName: string;
+  speciesCount: number;
+  order: number;
+  latitude?: number;
+  longitude?: number;
+}
+
 interface BiodiversityMapProps {
   data: BiodiversityData;
   centerLat: number;
   centerLon: number;
   isLoading?: boolean;
+  marches?: MarcheLocation[];
+  selectedMarcheId?: string | null;
 }
 
 // Type pour les clusters de données
@@ -44,28 +55,46 @@ interface ObservationCluster {
 }
 
 // Composant pour ajuster la vue de la carte
-const MapViewController: React.FC<{ clusters: ObservationCluster[]; center: [number, number] }> = ({ clusters, center }) => {
+const MapViewController: React.FC<{ 
+  clusters: ObservationCluster[]; 
+  center: [number, number];
+  marches?: MarcheLocation[];
+  selectedMarcheId?: string | null;
+}> = ({ clusters, center, marches = [], selectedMarcheId }) => {
   const map = useMap();
   
   useEffect(() => {
-    if (clusters.length > 0) {
-      // Calculer les bounds pour inclure tous les points
-      const group = new L.FeatureGroup();
-      clusters.forEach(cluster => {
-        group.addLayer(L.marker([cluster.lat, cluster.lng]));
-      });
-      
-      // Ajouter le point central
-      group.addLayer(L.marker(center));
-      
-      const bounds = group.getBounds();
-      if (bounds.isValid()) {
-        map.fitBounds(bounds, { padding: [20, 20], maxZoom: 15 });
+    const group = new L.FeatureGroup();
+    
+    // Si une marche spécifique est sélectionnée, zoomer dessus
+    if (selectedMarcheId) {
+      const selectedMarche = marches.find(m => m.marcheId === selectedMarcheId);
+      if (selectedMarche?.latitude && selectedMarche?.longitude) {
+        map.setView([selectedMarche.latitude, selectedMarche.longitude], 12);
+        return;
       }
-    } else {
-      map.setView(center, 13);
     }
-  }, [clusters, center, map]);
+    
+    // Ajouter toutes les marches aux bounds
+    marches.forEach(marche => {
+      if (marche.latitude && marche.longitude) {
+        group.addLayer(L.marker([marche.latitude, marche.longitude]));
+      }
+    });
+    
+    // Ajouter les clusters aux bounds
+    clusters.forEach(cluster => {
+      group.addLayer(L.marker([cluster.lat, cluster.lng]));
+    });
+    
+    // Si on a des points, ajuster la vue
+    const bounds = group.getBounds();
+    if (bounds.isValid()) {
+      map.fitBounds(bounds, { padding: [50, 50], maxZoom: 10 });
+    } else {
+      map.setView(center, 8);
+    }
+  }, [clusters, center, marches, selectedMarcheId, map]);
   
   return null;
 };
@@ -98,11 +127,31 @@ const createCustomIcon = (kingdom: string, count: number, isSelected: boolean = 
   });
 };
 
+// Création des icônes pour les marches
+const createMarcheIcon = (order: number, speciesCount: number, isSelected: boolean = false) => {
+  const size = Math.min(Math.max(36 + Math.log10(speciesCount + 1) * 8, 36), 52);
+  const selectedClass = isSelected ? 'ring-4 ring-yellow-400' : '';
+  
+  return L.divIcon({
+    html: `
+      <div class="flex flex-col items-center justify-center ${selectedClass} rounded-full shadow-lg transition-all duration-300" 
+           style="background: linear-gradient(135deg, #10b981, #059669); width: ${size}px; height: ${size}px; border: 3px solid white;">
+        <span style="font-size: 14px; color: white; font-weight: bold; text-shadow: 0 1px 2px rgba(0,0,0,0.3);">${order}</span>
+      </div>
+    `,
+    className: 'marche-marker',
+    iconSize: [size, size],
+    iconAnchor: [size / 2, size / 2],
+  });
+};
+
 export const BiodiversityMap: React.FC<BiodiversityMapProps> = ({ 
   data, 
   centerLat, 
   centerLon, 
-  isLoading 
+  isLoading,
+  marches = [],
+  selectedMarcheId 
 }) => {
   const [selectedCluster, setSelectedCluster] = useState<string | null>(null);
   const [activeFilters, setActiveFilters] = useState<Set<string>>(new Set(['flora', 'fauna', 'fungi', 'other']));
@@ -315,7 +364,34 @@ export const BiodiversityMap: React.FC<BiodiversityMapProps> = ({
           />
           
           <ZoomControl position="topright" />
-          <MapViewController clusters={observationClusters} center={center} />
+          <MapViewController 
+            clusters={observationClusters} 
+            center={center} 
+            marches={marches}
+            selectedMarcheId={selectedMarcheId}
+          />
+          
+          {/* Marqueurs des marches */}
+          {marches
+            .filter(m => m.latitude && m.longitude)
+            .map((marche) => (
+              <Marker
+                key={`marche-${marche.marcheId}`}
+                position={[marche.latitude!, marche.longitude!]}
+                icon={createMarcheIcon(marche.order, marche.speciesCount, selectedMarcheId === marche.marcheId)}
+              >
+                <Popup>
+                  <div className="text-center p-2 min-w-[180px]">
+                    <h4 className="font-bold text-lg text-slate-800">{marche.marcheName.split(' - ')[0]}</h4>
+                    <p className="text-emerald-600 font-semibold text-base">
+                      {marche.speciesCount.toLocaleString('fr-FR')} espèces
+                    </p>
+                    <p className="text-sm text-slate-500">Étape {marche.order}</p>
+                  </div>
+                </Popup>
+              </Marker>
+            ))
+          }
           
           {/* Marqueur central */}
           <Marker

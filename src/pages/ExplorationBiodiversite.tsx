@@ -305,6 +305,8 @@ export default function ExplorationBiodiversite() {
               centerLat={mapCenter.lat}
               centerLon={mapCenter.lon}
               isLoading={false}
+              marches={biodiversitySummary.speciesByMarche}
+              selectedMarcheId={selectedMarcheId}
             />
           </div>
         </div>
