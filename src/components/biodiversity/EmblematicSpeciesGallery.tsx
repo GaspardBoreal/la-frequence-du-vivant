@@ -25,8 +25,8 @@ interface EmblematicSpeciesGalleryProps {
 }
 
 const EmblematicSpeciesGallery: React.FC<EmblematicSpeciesGalleryProps> = ({
-  speciesByMarche,
-  topSpecies,
+  speciesByMarche = [],
+  topSpecies = [],
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedKingdom, setSelectedKingdom] = useState<string | null>(null);
