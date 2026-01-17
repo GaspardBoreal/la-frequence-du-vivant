@@ -149,31 +149,41 @@ export const useExplorationBiodiversitySummary = (explorationId?: string) => {
 
       // Fetch marcheur observations to enrich allSpecies with validated observations
       // This ensures species observed by marcheurs appear in the gallery even if not in snapshots
+      // Include photo_url to display marcheur photos in the gallery
       const { data: marcheurObservations } = await supabase
         .from('marcheur_observations')
-        .select('species_scientific_name')
+        .select('species_scientific_name, photo_url')
         .in('marche_id', marcheIds);
 
       // Add marcheur species not already in uniqueSpeciesMap
       // For species already in the map, we don't need to increment count (already counted in snapshots)
+      // Priority: marcheur photo > snapshot photo
       (marcheurObservations || []).forEach(obs => {
         const scientificName = obs.species_scientific_name;
+        const marcheurPhotoUrl = obs.photo_url;
         
         // Search for existing entry by scientificName (case-insensitive)
         let foundEntry: { count: number; scientificName: string; kingdom: string; photos: string[] } | undefined;
+        let foundKey: string | undefined;
         
-        for (const [, value] of uniqueSpeciesMap.entries()) {
+        for (const [key, value] of uniqueSpeciesMap.entries()) {
           if (value.scientificName.toLowerCase() === scientificName.toLowerCase()) {
             foundEntry = value;
+            foundKey = key;
             break;
           }
         }
         
-        if (!foundEntry) {
+        if (foundEntry && foundKey) {
+          // If marcheur has a photo, prepend it to the photos array (priority)
+          if (marcheurPhotoUrl && !foundEntry.photos.includes(marcheurPhotoUrl)) {
+            foundEntry.photos = [marcheurPhotoUrl, ...foundEntry.photos];
+          }
+        } else {
           // Species observed by marcheur but not in any snapshot
           // Try to find it in raw snapshot data to get kingdom/photos
           let kingdom = 'Unknown';
-          let photos: string[] = [];
+          let photos: string[] = marcheurPhotoUrl ? [marcheurPhotoUrl] : [];
           
           // Search through all snapshots to find this species data
           const snapshotsToSearch = Array.from(latestSnapshotsByMarche.values());
@@ -198,7 +208,10 @@ export const useExplorationBiodiversitySummary = (explorationId?: string) => {
             if (found) {
               kingdom = found.kingdom || 'Unknown';
               if (found.photos && Array.isArray(found.photos)) {
-                photos = found.photos;
+                // Marcheur photo has priority, add snapshot photos after
+                photos = marcheurPhotoUrl 
+                  ? [marcheurPhotoUrl, ...found.photos]
+                  : found.photos;
               }
               break;
             }
