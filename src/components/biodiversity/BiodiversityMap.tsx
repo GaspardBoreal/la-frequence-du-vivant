@@ -42,6 +42,13 @@ interface BiodiversityMapProps {
   isLoading?: boolean;
   marches?: MarcheLocation[];
   selectedMarcheId?: string | null;
+  biodiversityStats?: {
+    flora: number;
+    fauna: number;
+    fungi: number;
+    other: number;
+    total: number;
+  };
 }
 
 // Type pour les clusters de données
@@ -151,7 +158,8 @@ export const BiodiversityMap: React.FC<BiodiversityMapProps> = ({
   centerLon, 
   isLoading,
   marches = [],
-  selectedMarcheId 
+  selectedMarcheId,
+  biodiversityStats
 }) => {
   const [selectedCluster, setSelectedCluster] = useState<string | null>(null);
   const [activeFilters, setActiveFilters] = useState<Set<string>>(new Set(['flora', 'fauna', 'fungi', 'other']));
@@ -204,9 +212,22 @@ export const BiodiversityMap: React.FC<BiodiversityMapProps> = ({
     return Array.from(clusters.values());
   }, [data?.species, activeFilters]);
 
-  // Statistiques filtrées
+  // Statistiques filtrées - utiliser les stats passées en prop si disponibles
   const filteredStats = useMemo(() => {
-    const stats = {
+    // Si les stats sont passées en props (données de la BDD), les utiliser en priorité
+    if (biodiversityStats) {
+      return {
+        total: biodiversityStats.total,
+        observations: biodiversityStats.total,
+        flora: biodiversityStats.flora,
+        fauna: biodiversityStats.fauna,
+        fungi: biodiversityStats.fungi,
+        other: biodiversityStats.other,
+      };
+    }
+    
+    // Sinon, fallback sur le calcul depuis les clusters
+    return {
       total: observationClusters.length,
       observations: observationClusters.reduce((sum, cluster) => sum + cluster.count, 0),
       flora: observationClusters.filter(c => c.mainKingdom === 'Plantae').length,
@@ -214,8 +235,7 @@ export const BiodiversityMap: React.FC<BiodiversityMapProps> = ({
       fungi: observationClusters.filter(c => c.mainKingdom === 'Fungi').length,
       other: observationClusters.filter(c => !['Plantae', 'Animalia', 'Fungi'].includes(c.mainKingdom)).length,
     };
-    return stats;
-  }, [observationClusters]);
+  }, [observationClusters, biodiversityStats]);
 
   const center: [number, number] = [centerLat, centerLon];
   
