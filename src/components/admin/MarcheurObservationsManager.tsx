@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { ExplorationMarcheur } from '@/hooks/useExplorationMarcheurs';
@@ -12,6 +12,7 @@ import {
   Search, 
   ArrowLeft,
   ChevronRight,
+  ChevronDown,
   Loader2,
   User,
   Leaf,
@@ -79,8 +80,20 @@ export default function MarcheurObservationsManager({
   } | null>(null);
   const [selectedSpecies, setSelectedSpecies] = useState<Set<string>>(new Set());
   const [saving, setSaving] = useState(false);
+  const [expandedContributors, setExpandedContributors] = useState<Set<string>>(new Set());
 
   const marcheurFullName = `${marcheur.prenom} ${marcheur.nom}`.trim();
+
+  // Toggle contributor expansion
+  const toggleContributor = (name: string) => {
+    const newSet = new Set(expandedContributors);
+    if (newSet.has(name)) {
+      newSet.delete(name);
+    } else {
+      newSet.add(name);
+    }
+    setExpandedContributors(newSet);
+  };
 
   // Fetch all marches with species and attributions
   const { data: contributorsData, isLoading } = useQuery({
@@ -214,6 +227,16 @@ export default function MarcheurObservationsManager({
       return new Set((data || []).map(o => `${o.marche_id}:${o.species_scientific_name}`));
     },
   });
+
+  // Auto-expand matching contributor when data loads
+  useEffect(() => {
+    if (contributorsData) {
+      const matchingContributor = contributorsData.find(c => c.isMatch);
+      if (matchingContributor) {
+        setExpandedContributors(new Set([matchingContributor.name]));
+      }
+    }
+  }, [contributorsData]);
 
   // Filter contributors
   const filteredContributors = useMemo(() => {
@@ -453,47 +476,61 @@ export default function MarcheurObservationsManager({
       ) : (
         <ScrollArea className="h-[450px]">
           <div className="space-y-2">
-            {filteredContributors.map(contributor => (
-              <div 
-                key={contributor.name}
-                className={`border rounded-lg overflow-hidden ${
-                  contributor.isMatch ? 'border-primary/50 bg-primary/5' : ''
-                }`}
-              >
-                {/* Contributor Header */}
-                <div className="flex items-center gap-3 p-3 bg-muted/30">
-                  <User className="h-5 w-5 text-muted-foreground" />
-                  <span className="font-medium flex-1">{contributor.name}</span>
-                  {contributor.isMatch && (
-                    <Badge className="bg-primary/20 text-primary gap-1">
-                      <Star className="h-3 w-3" />
-                      Correspond au marcheur
-                    </Badge>
-                  )}
-                  <Badge variant="secondary">
-                    {contributor.totalSpecies} espèce(s)
-                  </Badge>
-                </div>
-
-                {/* Marches list */}
-                <div className="divide-y">
-                  {contributor.marches.map(marche => (
-                    <button
-                      key={marche.marcheId}
-                      onClick={() => handleSelectMarche(contributor, marche)}
-                      className="w-full flex items-center gap-3 p-3 text-left hover:bg-muted/30 transition-colors"
-                    >
-                      <MapPin className="h-4 w-4 text-muted-foreground shrink-0 ml-4" />
-                      <span className="flex-1 truncate">{marche.marcheName}</span>
-                      <Badge variant="outline">
-                        {marche.speciesCount} espèce(s)
+            {filteredContributors.map(contributor => {
+              const isExpanded = expandedContributors.has(contributor.name);
+              
+              return (
+                <div 
+                  key={contributor.name}
+                  className={`border rounded-lg overflow-hidden ${
+                    contributor.isMatch ? 'border-primary/50 bg-primary/5' : ''
+                  }`}
+                >
+                  {/* Contributor Header - Clickable */}
+                  <button
+                    onClick={() => toggleContributor(contributor.name)}
+                    className="w-full flex items-center gap-3 p-3 bg-muted/30 hover:bg-muted/50 transition-colors"
+                  >
+                    {isExpanded ? (
+                      <ChevronDown className="h-4 w-4 text-muted-foreground shrink-0" />
+                    ) : (
+                      <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
+                    )}
+                    <User className="h-5 w-5 text-muted-foreground" />
+                    <span className="font-medium flex-1 text-left">{contributor.name}</span>
+                    {contributor.isMatch && (
+                      <Badge className="bg-primary/20 text-primary gap-1">
+                        <Star className="h-3 w-3" />
+                        Correspond
                       </Badge>
-                      <ChevronRight className="h-4 w-4 text-muted-foreground" />
-                    </button>
-                  ))}
+                    )}
+                    <Badge variant="secondary">
+                      {contributor.totalSpecies} espèce(s)
+                    </Badge>
+                  </button>
+
+                  {/* Marches list - Conditionally visible */}
+                  {isExpanded && (
+                    <div className="divide-y border-t">
+                      {contributor.marches.map(marche => (
+                        <button
+                          key={marche.marcheId}
+                          onClick={() => handleSelectMarche(contributor, marche)}
+                          className="w-full flex items-center gap-3 p-3 text-left hover:bg-muted/30 transition-colors"
+                        >
+                          <MapPin className="h-4 w-4 text-muted-foreground shrink-0 ml-6" />
+                          <span className="flex-1 truncate">{marche.marcheName}</span>
+                          <Badge variant="outline">
+                            {marche.speciesCount} espèce(s)
+                          </Badge>
+                          <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                        </button>
+                      ))}
+                    </div>
+                  )}
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </ScrollArea>
       )}
