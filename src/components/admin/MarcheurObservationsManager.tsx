@@ -690,10 +690,17 @@ export default function MarcheurObservationsManager({
     }
   };
 
-  // Calculate total observations count
-  const totalObservationsCount = detailedObservations?.reduce(
-    (sum, group) => sum + group.observations.length, 0
-  ) || 0;
+  // Calculate unique species count (deduplicated across all marches)
+  const uniqueSpeciesCount = useMemo(() => {
+    if (!detailedObservations) return 0;
+    const uniqueSpecies = new Set<string>();
+    detailedObservations.forEach(group => {
+      group.observations.forEach(obs => {
+        uniqueSpecies.add(obs.species_scientific_name);
+      });
+    });
+    return uniqueSpecies.size;
+  }, [detailedObservations]);
 
   if (marchesLoading) {
     return (
@@ -836,7 +843,7 @@ export default function MarcheurObservationsManager({
   return (
     <div className="space-y-4">
       {/* MY OBSERVATIONS SECTION */}
-      {totalObservationsCount > 0 && (
+      {uniqueSpeciesCount > 0 && (
         <div className="border rounded-lg overflow-hidden bg-muted/20">
           {/* Header - collapsible */}
           <button
@@ -853,7 +860,7 @@ export default function MarcheurObservationsManager({
               Mes observations
             </span>
             <Badge className="bg-emerald-500/20 text-emerald-600 border-emerald-500/30">
-              {totalObservationsCount} espèce{totalObservationsCount > 1 ? 's' : ''}
+              {uniqueSpeciesCount} espèce{uniqueSpeciesCount > 1 ? 's' : ''}
             </Badge>
           </button>
 
