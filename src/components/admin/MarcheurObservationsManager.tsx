@@ -18,7 +18,8 @@ import {
   Leaf,
   Check,
   Star,
-  MapPin
+  MapPin,
+  RefreshCw
 } from 'lucide-react';
 
 interface MarcheurObservationsManagerProps {
@@ -34,6 +35,7 @@ interface SpeciesItem {
   scientificName: string;
   commonName: string | null;
   kingdom: string;
+  observers?: string[];
 }
 
 interface ContributorMarche {
@@ -50,11 +52,19 @@ interface ContributorWithMarches {
   marches: ContributorMarche[];
 }
 
+interface MarcheWithCoords {
+  id: string;
+  name: string;
+  latitude: number | null;
+  longitude: number | null;
+}
+
 interface MarcheWithSpecies {
   id: string;
   name: string;
   speciesCount: number;
   species: SpeciesItem[];
+  contributorsCount: number;
 }
 
 // Normalize name for matching
@@ -71,6 +81,43 @@ function namesMatch(name1: string, name2: string): boolean {
   const n1 = normalizeName(name1);
   const n2 = normalizeName(name2);
   return n1 === n2 || n1.includes(n2) || n2.includes(n1);
+}
+
+// Parse species from Edge Function response
+function parseSpeciesFromResponse(data: any): { species: SpeciesItem[], contributors: Set<string> } {
+  const species: SpeciesItem[] = [];
+  const contributors = new Set<string>();
+  
+  if (!data?.species || !Array.isArray(data.species)) {
+    return { species, contributors };
+  }
+  
+  data.species.forEach((s: any) => {
+    const scientificName = s.scientificName || s.nom_scientifique;
+    if (!scientificName) return;
+    
+    const observers: string[] = [];
+    
+    // Extract observers from attributions
+    if (s.attributions && Array.isArray(s.attributions)) {
+      s.attributions.forEach((attr: Attribution) => {
+        const observerName = attr.observerName || 'Anonyme';
+        if (observerName !== 'Anonyme') {
+          observers.push(observerName);
+          contributors.add(observerName);
+        }
+      });
+    }
+    
+    species.push({
+      scientificName,
+      commonName: s.commonName || s.vernacularName || s.nom_commun || null,
+      kingdom: s.kingdom || 'Unknown',
+      observers: observers.length > 0 ? observers : undefined,
+    });
+  });
+  
+  return { species, contributors };
 }
 
 export default function MarcheurObservationsManager({ 
@@ -90,6 +137,10 @@ export default function MarcheurObservationsManager({
   const [selectedSpecies, setSelectedSpecies] = useState<Set<string>>(new Set());
   const [saving, setSaving] = useState(false);
   const [expandedContributors, setExpandedContributors] = useState<Set<string>>(new Set());
+  const [loadingMarcheId, setLoadingMarcheId] = useState<string | null>(null);
+  const [loadedMarchesData, setLoadedMarchesData] = useState<Map<string, MarcheWithSpecies>>(new Map());
+  const [contributorsData, setContributorsData] = useState<ContributorWithMarches[]>([]);
+  const [loadingContributors, setLoadingContributors] = useState(false);
 
   const marcheurFullName = `${marcheur.prenom} ${marcheur.nom}`.trim();
 
@@ -104,11 +155,10 @@ export default function MarcheurObservationsManager({
     setExpandedContributors(newSet);
   };
 
-  // Fetch all marches with species and attributions
-  const { data: contributorsData, isLoading } = useQuery({
-    queryKey: ['contributors-with-marches', explorationId],
-    queryFn: async (): Promise<ContributorWithMarches[]> => {
-      // Get marches for this exploration
+  // Fetch marches with coordinates (base info only)
+  const { data: marchesWithCoords, isLoading: marchesLoading } = useQuery({
+    queryKey: ['marches-coords', explorationId],
+    queryFn: async (): Promise<MarcheWithCoords[]> => {
       const { data: explorationMarches, error: emError } = await supabase
         .from('exploration_marches')
         .select(`
@@ -116,197 +166,29 @@ export default function MarcheurObservationsManager({
           marches:marche_id (
             id,
             nom_marche,
-            ville
+            ville,
+            latitude,
+            longitude
           )
         `)
         .eq('exploration_id', explorationId);
 
       if (emError) throw emError;
 
-      const marcheMap = new Map<string, { id: string; name: string }>();
+      const result: MarcheWithCoords[] = [];
       (explorationMarches || []).forEach(em => {
         const m = em.marches as any;
         if (m) {
-          marcheMap.set(m.id, { id: m.id, name: m.nom_marche || m.ville });
-        }
-      });
-
-      const marcheIds = Array.from(marcheMap.keys());
-      if (marcheIds.length === 0) return [];
-
-      // Get biodiversity snapshots
-      const { data: snapshots, error: snapError } = await supabase
-        .from('biodiversity_snapshots')
-        .select('marche_id, species_data')
-        .in('marche_id', marcheIds)
-        .not('species_data', 'is', null);
-
-      if (snapError) throw snapError;
-
-      // Build contributor -> marches -> species structure
-      const contributorMap = new Map<string, Map<string, SpeciesItem[]>>();
-
-      (snapshots || []).forEach(snapshot => {
-        const marcheId = snapshot.marche_id;
-        const speciesData = snapshot.species_data as any[];
-        
-        if (!speciesData || !Array.isArray(speciesData)) return;
-
-        speciesData.forEach((s: any) => {
-          const scientificName = s.scientificName || s.nom_scientifique;
-          if (!scientificName) return;
-
-          const species: SpeciesItem = {
-            scientificName,
-            commonName: s.commonName || s.nom_commun || null,
-            kingdom: s.kingdom || 'Unknown',
-          };
-
-          const attributions = s.attributions as Attribution[] || [];
-          attributions.forEach(attr => {
-            const observerName = attr.observerName || 'Anonyme';
-            
-            if (!contributorMap.has(observerName)) {
-              contributorMap.set(observerName, new Map());
-            }
-            
-            const marcheSpeciesMap = contributorMap.get(observerName)!;
-            if (!marcheSpeciesMap.has(marcheId)) {
-              marcheSpeciesMap.set(marcheId, []);
-            }
-            
-            // Add species if not already present
-            const existingSpecies = marcheSpeciesMap.get(marcheId)!;
-            if (!existingSpecies.find(sp => sp.scientificName === scientificName)) {
-              existingSpecies.push(species);
-            }
-          });
-        });
-      });
-
-      // Convert to array structure
-      const result: ContributorWithMarches[] = [];
-      
-      contributorMap.forEach((marchesMap, contributorName) => {
-        const marches: ContributorMarche[] = [];
-        let totalSpecies = 0;
-        
-        marchesMap.forEach((species, marcheId) => {
-          const marcheInfo = marcheMap.get(marcheId);
-          if (marcheInfo) {
-            marches.push({
-              marcheId,
-              marcheName: marcheInfo.name,
-              speciesCount: species.length,
-              species,
-            });
-            totalSpecies += species.length;
-          }
-        });
-
-        if (marches.length > 0) {
           result.push({
-            name: contributorName,
-            isMatch: namesMatch(contributorName, marcheurFullName),
-            totalSpecies,
-            marches: marches.sort((a, b) => b.speciesCount - a.speciesCount),
+            id: m.id,
+            name: m.nom_marche || m.ville,
+            latitude: m.latitude,
+            longitude: m.longitude,
           });
         }
       });
 
-      // Sort: matches first, then by total species
-      return result.sort((a, b) => {
-        if (a.isMatch && !b.isMatch) return -1;
-        if (!a.isMatch && b.isMatch) return 1;
-        return b.totalSpecies - a.totalSpecies;
-      });
-    },
-  });
-
-  // Fetch marches with species (for "Par marche" mode)
-  const { data: marchesData, isLoading: marchesLoading } = useQuery({
-    queryKey: ['marches-with-species', explorationId],
-    queryFn: async (): Promise<MarcheWithSpecies[]> => {
-      // Get marches for this exploration
-      const { data: explorationMarches, error: emError } = await supabase
-        .from('exploration_marches')
-        .select(`
-          marche_id,
-          marches:marche_id (
-            id,
-            nom_marche,
-            ville
-          )
-        `)
-        .eq('exploration_id', explorationId);
-
-      if (emError) throw emError;
-
-      const marcheMap = new Map<string, { id: string; name: string }>();
-      (explorationMarches || []).forEach(em => {
-        const m = em.marches as any;
-        if (m) {
-          marcheMap.set(m.id, { id: m.id, name: m.nom_marche || m.ville });
-        }
-      });
-
-      const marcheIds = Array.from(marcheMap.keys());
-      if (marcheIds.length === 0) return [];
-
-      // Get biodiversity snapshots
-      const { data: snapshots, error: snapError } = await supabase
-        .from('biodiversity_snapshots')
-        .select('marche_id, species_data')
-        .in('marche_id', marcheIds)
-        .not('species_data', 'is', null);
-
-      if (snapError) throw snapError;
-
-      // Build marche -> species structure
-      const marcheSpeciesMap = new Map<string, SpeciesItem[]>();
-
-      (snapshots || []).forEach(snapshot => {
-        const marcheId = snapshot.marche_id;
-        const speciesData = snapshot.species_data as any[];
-        
-        if (!speciesData || !Array.isArray(speciesData)) return;
-
-        if (!marcheSpeciesMap.has(marcheId)) {
-          marcheSpeciesMap.set(marcheId, []);
-        }
-
-        const existingSpecies = marcheSpeciesMap.get(marcheId)!;
-
-        speciesData.forEach((s: any) => {
-          const scientificName = s.scientificName || s.nom_scientifique;
-          if (!scientificName) return;
-
-          // Add species if not already present
-          if (!existingSpecies.find(sp => sp.scientificName === scientificName)) {
-            existingSpecies.push({
-              scientificName,
-              commonName: s.commonName || s.nom_commun || null,
-              kingdom: s.kingdom || 'Unknown',
-            });
-          }
-        });
-      });
-
-      // Convert to array
-      const result: MarcheWithSpecies[] = [];
-      marcheSpeciesMap.forEach((species, marcheId) => {
-        const marcheInfo = marcheMap.get(marcheId);
-        if (marcheInfo && species.length > 0) {
-          result.push({
-            id: marcheId,
-            name: marcheInfo.name,
-            speciesCount: species.length,
-            species,
-          });
-        }
-      });
-
-      return result.sort((a, b) => b.speciesCount - a.speciesCount);
+      return result;
     },
   });
 
@@ -324,19 +206,176 @@ export default function MarcheurObservationsManager({
     },
   });
 
-  // Auto-expand matching contributor when data loads
-  useEffect(() => {
-    if (contributorsData) {
-      const matchingContributor = contributorsData.find(c => c.isMatch);
+  // Load species data for a specific marche via Edge Function
+  const loadMarcheData = async (marche: MarcheWithCoords) => {
+    if (!marche.latitude || !marche.longitude) {
+      toast.error(`Coordonnées manquantes pour ${marche.name}`);
+      return null;
+    }
+
+    setLoadingMarcheId(marche.id);
+    
+    try {
+      console.log(`🔄 Chargement des données pour: ${marche.name}`);
+      
+      const { data, error } = await supabase.functions.invoke('biodiversity-data', {
+        body: {
+          latitude: marche.latitude,
+          longitude: marche.longitude,
+          radius: 5000, // 5km - same as bioacoustique page
+          mode: 'interactive'
+        }
+      });
+
+      if (error) throw error;
+
+      const { species, contributors } = parseSpeciesFromResponse(data);
+      
+      console.log(`✅ ${marche.name}: ${species.length} espèces, ${contributors.size} contributeurs`);
+      
+      const marcheData: MarcheWithSpecies = {
+        id: marche.id,
+        name: marche.name,
+        speciesCount: species.length,
+        species,
+        contributorsCount: contributors.size,
+      };
+
+      // Update cache
+      setLoadedMarchesData(prev => new Map(prev).set(marche.id, marcheData));
+      
+      return marcheData;
+    } catch (error: any) {
+      console.error(`❌ Erreur pour ${marche.name}:`, error);
+      toast.error(`Erreur: ${error.message}`);
+      return null;
+    } finally {
+      setLoadingMarcheId(null);
+    }
+  };
+
+  // Load all contributors data
+  const loadAllContributorsData = async () => {
+    if (!marchesWithCoords || marchesWithCoords.length === 0) return;
+
+    setLoadingContributors(true);
+    
+    try {
+      const contributorMap = new Map<string, Map<string, SpeciesItem[]>>();
+      const marcheNameMap = new Map<string, string>();
+
+      // Load data for all marches
+      for (const marche of marchesWithCoords) {
+        if (!marche.latitude || !marche.longitude) continue;
+        
+        marcheNameMap.set(marche.id, marche.name);
+
+        // Check cache first
+        let marcheData = loadedMarchesData.get(marche.id);
+        
+        if (!marcheData) {
+          const { data, error } = await supabase.functions.invoke('biodiversity-data', {
+            body: {
+              latitude: marche.latitude,
+              longitude: marche.longitude,
+              radius: 5000,
+              mode: 'interactive'
+            }
+          });
+
+          if (error) {
+            console.error(`Erreur pour ${marche.name}:`, error);
+            continue;
+          }
+
+          const { species } = parseSpeciesFromResponse(data);
+          marcheData = {
+            id: marche.id,
+            name: marche.name,
+            speciesCount: species.length,
+            species,
+            contributorsCount: 0,
+          };
+          
+          setLoadedMarchesData(prev => new Map(prev).set(marche.id, marcheData!));
+        }
+
+        // Build contributor -> marches -> species structure
+        marcheData.species.forEach(s => {
+          const observers = s.observers || ['Anonyme'];
+          observers.forEach(observerName => {
+            if (!contributorMap.has(observerName)) {
+              contributorMap.set(observerName, new Map());
+            }
+            
+            const marcheSpeciesMap = contributorMap.get(observerName)!;
+            if (!marcheSpeciesMap.has(marche.id)) {
+              marcheSpeciesMap.set(marche.id, []);
+            }
+            
+            const existingSpecies = marcheSpeciesMap.get(marche.id)!;
+            if (!existingSpecies.find(sp => sp.scientificName === s.scientificName)) {
+              existingSpecies.push(s);
+            }
+          });
+        });
+      }
+
+      // Convert to array structure
+      const result: ContributorWithMarches[] = [];
+      
+      contributorMap.forEach((marchesMap, contributorName) => {
+        const marches: ContributorMarche[] = [];
+        let totalSpecies = 0;
+        
+        marchesMap.forEach((species, marcheId) => {
+          const marcheName = marcheNameMap.get(marcheId) || marcheId;
+          marches.push({
+            marcheId,
+            marcheName,
+            speciesCount: species.length,
+            species,
+          });
+          totalSpecies += species.length;
+        });
+
+        if (marches.length > 0) {
+          result.push({
+            name: contributorName,
+            isMatch: namesMatch(contributorName, marcheurFullName),
+            totalSpecies,
+            marches: marches.sort((a, b) => b.speciesCount - a.speciesCount),
+          });
+        }
+      });
+
+      // Sort: matches first, then by total species
+      const sorted = result.sort((a, b) => {
+        if (a.isMatch && !b.isMatch) return -1;
+        if (!a.isMatch && b.isMatch) return 1;
+        return b.totalSpecies - a.totalSpecies;
+      });
+
+      setContributorsData(sorted);
+      
+      // Auto-expand matching contributor
+      const matchingContributor = sorted.find(c => c.isMatch);
       if (matchingContributor) {
         setExpandedContributors(new Set([matchingContributor.name]));
       }
+
+      toast.success(`${sorted.length} contributeurs chargés`);
+    } catch (error: any) {
+      console.error('Erreur chargement contributeurs:', error);
+      toast.error(`Erreur: ${error.message}`);
+    } finally {
+      setLoadingContributors(false);
     }
-  }, [contributorsData]);
+  };
 
   // Filter contributors
   const filteredContributors = useMemo(() => {
-    if (!contributorsData) return [];
+    if (!contributorsData.length) return [];
     if (!searchTerm.trim()) return contributorsData;
     
     const search = searchTerm.toLowerCase();
@@ -358,14 +397,14 @@ export default function MarcheurObservationsManager({
 
   // Filter marches for "Par marche" mode
   const filteredMarches = useMemo(() => {
-    if (!marchesData) return [];
-    if (!marcheSearchTerm.trim()) return marchesData;
+    if (!marchesWithCoords) return [];
+    if (!marcheSearchTerm.trim()) return marchesWithCoords;
     
     const search = marcheSearchTerm.toLowerCase();
-    return marchesData.filter(m => 
+    return marchesWithCoords.filter(m => 
       m.name.toLowerCase().includes(search)
     );
-  }, [marchesData, marcheSearchTerm]);
+  }, [marchesWithCoords, marcheSearchTerm]);
 
   // Handle select marche from contributor
   const handleSelectMarche = (contributor: ContributorWithMarches, marche: ContributorMarche) => {
@@ -378,15 +417,32 @@ export default function MarcheurObservationsManager({
     setSelectedSpecies(new Set());
   };
 
-  // Handle select marche directly (mode "Par marche")
-  const handleSelectMarcheDirectly = (marche: MarcheWithSpecies) => {
-    setSelectedView({
-      contributor: 'Direct',
-      marcheId: marche.id,
-      marcheName: marche.name,
-      species: marche.species,
-    });
-    setSelectedSpecies(new Set());
+  // Handle select marche directly (mode "Par marche") - loads via API
+  const handleSelectMarcheDirectly = async (marche: MarcheWithCoords) => {
+    // Check cache first
+    const cached = loadedMarchesData.get(marche.id);
+    if (cached) {
+      setSelectedView({
+        contributor: 'Direct',
+        marcheId: cached.id,
+        marcheName: cached.name,
+        species: cached.species,
+      });
+      setSelectedSpecies(new Set());
+      return;
+    }
+
+    // Load from API
+    const marcheData = await loadMarcheData(marche);
+    if (marcheData) {
+      setSelectedView({
+        contributor: 'Direct',
+        marcheId: marcheData.id,
+        marcheName: marcheData.name,
+        species: marcheData.species,
+      });
+      setSelectedSpecies(new Set());
+    }
   };
 
   // Toggle species
@@ -440,7 +496,7 @@ export default function MarcheurObservationsManager({
     }
   };
 
-  if (isLoading || marchesLoading) {
+  if (marchesLoading) {
     return (
       <div className="flex items-center justify-center py-16">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -476,7 +532,7 @@ export default function MarcheurObservationsManager({
         </div>
 
         {/* Stats */}
-        <div className="flex gap-3 text-sm">
+        <div className="flex gap-3 text-sm flex-wrap">
           <Badge variant="secondary">
             {selectedView.species.length} espèce(s) total
           </Badge>
@@ -538,6 +594,12 @@ export default function MarcheurObservationsManager({
                         {species.scientificName}
                       </div>
                     )}
+                    {species.observers && species.observers.length > 0 && (
+                      <div className="text-xs text-muted-foreground mt-0.5">
+                        Par : {species.observers.slice(0, 3).join(', ')}
+                        {species.observers.length > 3 && ` +${species.observers.length - 3}`}
+                      </div>
+                    )}
                   </div>
                   {registered && (
                     <Badge variant="outline" className="text-emerald-600 shrink-0">
@@ -597,6 +659,14 @@ export default function MarcheurObservationsManager({
       {/* MODE: Par marche */}
       {mode === 'marche' && (
         <>
+          {/* Info banner */}
+          <div className="bg-primary/10 border border-primary/20 rounded-lg p-3 text-sm">
+            <p className="text-primary">
+              📡 <strong>Mode temps réel</strong> : Les données sont chargées depuis l'API biodiversité (rayon 5km) 
+              avec les mêmes contributeurs que la page publique.
+            </p>
+          </div>
+
           {/* Search */}
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -616,20 +686,45 @@ export default function MarcheurObservationsManager({
               <p>Aucune marche trouvée</p>
             </div>
           ) : (
-            <ScrollArea className="h-[450px]">
+            <ScrollArea className="h-[400px]">
               <div className="space-y-2">
-                {filteredMarches.map(marche => (
-                  <button
-                    key={marche.id}
-                    onClick={() => handleSelectMarcheDirectly(marche)}
-                    className="w-full flex items-center gap-3 p-4 border rounded-lg hover:bg-muted/50 transition-colors"
-                  >
-                    <MapPin className="h-5 w-5 text-primary shrink-0" />
-                    <span className="flex-1 text-left font-medium truncate">{marche.name}</span>
-                    <Badge variant="secondary">{marche.speciesCount} espèces</Badge>
-                    <ChevronRight className="h-4 w-4 text-muted-foreground" />
-                  </button>
-                ))}
+                {filteredMarches.map(marche => {
+                  const isLoading = loadingMarcheId === marche.id;
+                  const cached = loadedMarchesData.get(marche.id);
+                  const hasCoords = marche.latitude && marche.longitude;
+                  
+                  return (
+                    <button
+                      key={marche.id}
+                      onClick={() => handleSelectMarcheDirectly(marche)}
+                      disabled={isLoading || !hasCoords}
+                      className={`w-full flex items-center gap-3 p-4 border rounded-lg transition-colors ${
+                        isLoading 
+                          ? 'bg-muted/50' 
+                          : hasCoords
+                            ? 'hover:bg-muted/50'
+                            : 'opacity-50 cursor-not-allowed'
+                      }`}
+                    >
+                      <MapPin className={`h-5 w-5 shrink-0 ${hasCoords ? 'text-primary' : 'text-muted-foreground'}`} />
+                      <span className="flex-1 text-left font-medium truncate">{marche.name}</span>
+                      
+                      {isLoading ? (
+                        <Loader2 className="h-4 w-4 animate-spin text-primary" />
+                      ) : cached ? (
+                        <Badge variant="secondary">{cached.speciesCount} espèces</Badge>
+                      ) : hasCoords ? (
+                        <Badge variant="outline">Charger</Badge>
+                      ) : (
+                        <Badge variant="destructive">Pas de coords</Badge>
+                      )}
+                      
+                      {!isLoading && hasCoords && (
+                        <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                      )}
+                    </button>
+                  );
+                })}
               </div>
             </ScrollArea>
           )}
@@ -639,85 +734,131 @@ export default function MarcheurObservationsManager({
       {/* MODE: Par contributeur Open Data */}
       {mode === 'contributor' && (
         <>
-          {/* Search */}
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="Rechercher un contributeur Open Data..."
-              className="pl-10 h-12 text-base"
-              autoFocus
-            />
-          </div>
-
-          {/* Results */}
-          {filteredContributors.length === 0 ? (
-            <div className="text-center py-12 text-muted-foreground">
-              <User className="h-12 w-12 mx-auto mb-3 opacity-30" />
-              <p>Aucun contributeur trouvé</p>
-              <p className="text-sm mt-1">Essayez un autre terme de recherche</p>
+          {/* Load button if no data */}
+          {contributorsData.length === 0 && (
+            <div className="text-center py-8">
+              <User className="h-12 w-12 mx-auto mb-3 text-muted-foreground opacity-50" />
+              <p className="text-muted-foreground mb-4">
+                Chargez les contributeurs depuis l'API biodiversité<br />
+                <span className="text-sm">(Cette opération peut prendre quelques secondes)</span>
+              </p>
+              <Button 
+                onClick={loadAllContributorsData}
+                disabled={loadingContributors}
+                size="lg"
+              >
+                {loadingContributors ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                    Chargement en cours...
+                  </>
+                ) : (
+                  <>
+                    <RefreshCw className="h-4 w-4 mr-2" />
+                    Charger tous les contributeurs
+                  </>
+                )}
+              </Button>
             </div>
-          ) : (
-        <ScrollArea className="h-[450px]">
-          <div className="space-y-2">
-            {filteredContributors.map(contributor => {
-              const isExpanded = expandedContributors.has(contributor.name);
-              
-              return (
-                <div 
-                  key={contributor.name}
-                  className={`border rounded-lg overflow-hidden ${
-                    contributor.isMatch ? 'border-primary/50 bg-primary/5' : ''
-                  }`}
-                >
-                  {/* Contributor Header - Clickable */}
-                  <button
-                    onClick={() => toggleContributor(contributor.name)}
-                    className="w-full flex items-center gap-3 p-3 bg-muted/30 hover:bg-muted/50 transition-colors"
-                  >
-                    {isExpanded ? (
-                      <ChevronDown className="h-4 w-4 text-muted-foreground shrink-0" />
-                    ) : (
-                      <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
-                    )}
-                    <User className="h-5 w-5 text-muted-foreground" />
-                    <span className="font-medium flex-1 text-left">{contributor.name}</span>
-                    {contributor.isMatch && (
-                      <Badge className="bg-primary/20 text-primary gap-1">
-                        <Star className="h-3 w-3" />
-                        Correspond
-                      </Badge>
-                    )}
-                    <Badge variant="secondary">
-                      {contributor.totalSpecies} espèce(s)
-                    </Badge>
-                  </button>
+          )}
 
-                  {/* Marches list - Conditionally visible */}
-                  {isExpanded && (
-                    <div className="divide-y border-t">
-                      {contributor.marches.map(marche => (
-                        <button
-                          key={marche.marcheId}
-                          onClick={() => handleSelectMarche(contributor, marche)}
-                          className="w-full flex items-center gap-3 p-3 text-left hover:bg-muted/30 transition-colors"
-                        >
-                          <MapPin className="h-4 w-4 text-muted-foreground shrink-0 ml-6" />
-                          <span className="flex-1 truncate">{marche.marcheName}</span>
-                          <Badge variant="outline">
-                            {marche.speciesCount} espèce(s)
-                          </Badge>
-                          <ChevronRight className="h-4 w-4 text-muted-foreground" />
-                        </button>
-                      ))}
-                    </div>
-                  )}
+          {/* Contributors loaded */}
+          {contributorsData.length > 0 && (
+            <>
+              {/* Search */}
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  placeholder="Rechercher un contributeur Open Data..."
+                  className="pl-10 h-12 text-base"
+                  autoFocus
+                />
+              </div>
+
+              {/* Refresh button */}
+              <div className="flex justify-end">
+                <Button 
+                  variant="ghost" 
+                  size="sm"
+                  onClick={loadAllContributorsData}
+                  disabled={loadingContributors}
+                >
+                  <RefreshCw className={`h-4 w-4 mr-2 ${loadingContributors ? 'animate-spin' : ''}`} />
+                  Actualiser
+                </Button>
+              </div>
+
+              {/* Results */}
+              {filteredContributors.length === 0 ? (
+                <div className="text-center py-12 text-muted-foreground">
+                  <User className="h-12 w-12 mx-auto mb-3 opacity-30" />
+                  <p>Aucun contributeur trouvé</p>
+                  <p className="text-sm mt-1">Essayez un autre terme de recherche</p>
                 </div>
-              );
-            })}
-          </div>
-        </ScrollArea>
+              ) : (
+                <ScrollArea className="h-[380px]">
+                  <div className="space-y-2">
+                    {filteredContributors.map(contributor => {
+                      const isExpanded = expandedContributors.has(contributor.name);
+                      
+                      return (
+                        <div 
+                          key={contributor.name}
+                          className={`border rounded-lg overflow-hidden ${
+                            contributor.isMatch ? 'border-primary/50 bg-primary/5' : ''
+                          }`}
+                        >
+                          {/* Contributor Header - Clickable */}
+                          <button
+                            onClick={() => toggleContributor(contributor.name)}
+                            className="w-full flex items-center gap-3 p-3 bg-muted/30 hover:bg-muted/50 transition-colors"
+                          >
+                            {isExpanded ? (
+                              <ChevronDown className="h-4 w-4 text-muted-foreground shrink-0" />
+                            ) : (
+                              <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
+                            )}
+                            <User className="h-5 w-5 text-muted-foreground" />
+                            <span className="font-medium flex-1 text-left">{contributor.name}</span>
+                            {contributor.isMatch && (
+                              <Badge className="bg-primary/20 text-primary gap-1">
+                                <Star className="h-3 w-3" />
+                                Correspond
+                              </Badge>
+                            )}
+                            <Badge variant="secondary">
+                              {contributor.totalSpecies} espèce(s)
+                            </Badge>
+                          </button>
+
+                          {/* Marches list - Conditionally visible */}
+                          {isExpanded && (
+                            <div className="divide-y border-t">
+                              {contributor.marches.map(marche => (
+                                <button
+                                  key={marche.marcheId}
+                                  onClick={() => handleSelectMarche(contributor, marche)}
+                                  className="w-full flex items-center gap-3 p-3 text-left hover:bg-muted/30 transition-colors"
+                                >
+                                  <MapPin className="h-4 w-4 text-muted-foreground shrink-0 ml-6" />
+                                  <span className="flex-1 truncate">{marche.marcheName}</span>
+                                  <Badge variant="outline">
+                                    {marche.speciesCount} espèce(s)
+                                  </Badge>
+                                  <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                                </button>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </ScrollArea>
+              )}
+            </>
           )}
         </>
       )}
