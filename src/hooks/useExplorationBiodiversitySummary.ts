@@ -7,6 +7,8 @@ export interface BiodiversitySummary {
   speciesByMarche: Array<{
     marcheId: string;
     marcheName: string;
+    ville: string;
+    departement: string;
     speciesCount: number;
     order: number;
     latitude?: number;
@@ -54,7 +56,7 @@ export const useExplorationBiodiversitySummary = (explorationId?: string) => {
         .select(`
           marche_id,
           ordre,
-          marche:marches(id, nom_marche, latitude, longitude)
+          marche:marches(id, nom_marche, ville, departement, latitude, longitude)
         `)
         .eq('exploration_id', explorationId)
         .order('ordre', { ascending: true });
@@ -136,6 +138,8 @@ export const useExplorationBiodiversitySummary = (explorationId?: string) => {
         return {
           marcheId: em.marche_id,
           marcheName: marche?.nom_marche || 'Marche sans nom',
+          ville: marche?.ville || '',
+          departement: marche?.departement || '',
           speciesCount,
           order: em.ordre || 0,
           latitude: marche?.latitude,

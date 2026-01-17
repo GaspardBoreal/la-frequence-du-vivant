@@ -269,32 +269,81 @@ export default function ExplorationBiodiversite() {
             </p>
           </motion.div>
 
-          {/* Marche selector */}
+          {/* Marche selector - Enriched with city and department */}
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3 mb-6">
             <div className="flex items-center gap-2 text-slate-400">
               <MapPin className="h-5 w-5" />
-              <span className="text-sm">Étape :</span>
+              <span className="text-sm font-medium">Étape :</span>
             </div>
             <Select 
               value={selectedMarcheId || 'all'} 
               onValueChange={(val) => setSelectedMarcheId(val === 'all' ? null : val)}
             >
-              <SelectTrigger className="w-64 bg-slate-800 border-slate-600 text-white">
-                <SelectValue placeholder="Toutes les étapes" />
+              <SelectTrigger className="w-full sm:w-80 bg-slate-800/90 border-slate-600 text-white hover:bg-slate-700/80 transition-colors">
+                <SelectValue>
+                  {selectedMarcheId ? (
+                    (() => {
+                      const marche = biodiversitySummary.speciesByMarche.find(m => m.marcheId === selectedMarcheId);
+                      if (!marche) return 'Toutes les étapes';
+                      const formatVille = (v: string) => v.toLowerCase().split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join('-');
+                      return (
+                        <div className="flex items-center gap-2">
+                          <span className="flex items-center justify-center w-6 h-6 rounded-full bg-emerald-600 text-white text-xs font-bold shrink-0">
+                            {marche.order}
+                          </span>
+                          <span className="truncate font-medium">{formatVille(marche.ville)}</span>
+                          <span className="text-slate-400 text-sm hidden sm:inline">· {marche.departement.charAt(0).toUpperCase() + marche.departement.slice(1).toLowerCase()}</span>
+                        </div>
+                      );
+                    })()
+                  ) : (
+                    <div className="flex items-center gap-2">
+                      <span className="flex items-center justify-center w-6 h-6 rounded-full bg-slate-600 text-white text-xs font-bold">∞</span>
+                      <span>Toutes les étapes</span>
+                    </div>
+                  )}
+                </SelectValue>
               </SelectTrigger>
-              <SelectContent className="bg-slate-800 border-slate-600">
-                <SelectItem value="all" className="text-white hover:bg-slate-700">
-                  Toutes les étapes
+              <SelectContent className="bg-slate-800 border-slate-600 max-h-80 z-50">
+                {/* All stages option */}
+                <SelectItem value="all" className="text-white hover:bg-slate-700 py-3 cursor-pointer">
+                  <div className="flex items-center gap-3">
+                    <span className="flex items-center justify-center w-7 h-7 rounded-full bg-slate-600 text-white text-xs font-bold shrink-0">∞</span>
+                    <div>
+                      <div className="font-medium">Toutes les étapes</div>
+                      <div className="text-sm text-slate-400">
+                        {biodiversitySummary.totalSpecies.toLocaleString('fr-FR')} espèces au total
+                      </div>
+                    </div>
+                  </div>
                 </SelectItem>
-                {biodiversitySummary.speciesByMarche.map((marche) => (
-                  <SelectItem 
-                    key={marche.marcheId} 
-                    value={marche.marcheId}
-                    className="text-white hover:bg-slate-700"
-                  >
-                    {marche.marcheName.split(' - ')[0]} ({marche.speciesCount} esp.)
-                  </SelectItem>
-                ))}
+                
+                {/* Individual marches */}
+                {biodiversitySummary.speciesByMarche.map((marche) => {
+                  const formatVille = (v: string) => v.toLowerCase().split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join('-');
+                  const formatDept = (d: string) => d.charAt(0).toUpperCase() + d.slice(1).toLowerCase();
+                  return (
+                    <SelectItem 
+                      key={marche.marcheId} 
+                      value={marche.marcheId}
+                      className="text-white hover:bg-slate-700 py-3 cursor-pointer"
+                    >
+                      <div className="flex items-center gap-3">
+                        <span className="flex items-center justify-center w-7 h-7 rounded-full bg-emerald-600 text-white text-xs font-bold shrink-0">
+                          {marche.order}
+                        </span>
+                        <div className="min-w-0">
+                          <div className="font-medium truncate">
+                            {formatVille(marche.ville)}
+                          </div>
+                          <div className="text-sm text-slate-400 truncate">
+                            {formatDept(marche.departement)} · {marche.speciesCount.toLocaleString('fr-FR')} esp.
+                          </div>
+                        </div>
+                      </div>
+                    </SelectItem>
+                  );
+                })}
               </SelectContent>
             </Select>
           </div>
