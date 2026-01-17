@@ -285,14 +285,22 @@ export default function ExplorationBiodiversite() {
                     (() => {
                       const marche = biodiversitySummary.speciesByMarche.find(m => m.marcheId === selectedMarcheId);
                       if (!marche) return 'Toutes les étapes';
-                      const formatVille = (v: string) => v.toLowerCase().split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join('-');
+                      const formatVille = (v: string | undefined | null) => {
+                        if (!v) return 'Étape';
+                        return v.toLowerCase().split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join('-');
+                      };
+                      const formatDept = (d: string | undefined | null) => {
+                        if (!d) return '';
+                        return d.charAt(0).toUpperCase() + d.slice(1).toLowerCase();
+                      };
+                      const deptDisplay = formatDept(marche.departement);
                       return (
                         <div className="flex items-center gap-2">
                           <span className="flex items-center justify-center w-6 h-6 rounded-full bg-emerald-600 text-white text-xs font-bold shrink-0">
                             {marche.order}
                           </span>
                           <span className="truncate font-medium">{formatVille(marche.ville)}</span>
-                          <span className="text-slate-400 text-sm hidden sm:inline">· {marche.departement.charAt(0).toUpperCase() + marche.departement.slice(1).toLowerCase()}</span>
+                          {deptDisplay && <span className="text-slate-400 text-sm hidden sm:inline">· {deptDisplay}</span>}
                         </div>
                       );
                     })()
@@ -320,8 +328,16 @@ export default function ExplorationBiodiversite() {
                 
                 {/* Individual marches */}
                 {biodiversitySummary.speciesByMarche.map((marche) => {
-                  const formatVille = (v: string) => v.toLowerCase().split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join('-');
-                  const formatDept = (d: string) => d.charAt(0).toUpperCase() + d.slice(1).toLowerCase();
+                  const formatVille = (v: string | undefined | null) => {
+                    if (!v) return 'Étape';
+                    return v.toLowerCase().split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join('-');
+                  };
+                  const formatDept = (d: string | undefined | null) => {
+                    if (!d) return '';
+                    return d.charAt(0).toUpperCase() + d.slice(1).toLowerCase();
+                  };
+                  const villeDisplay = formatVille(marche.ville);
+                  const deptDisplay = formatDept(marche.departement);
                   return (
                     <SelectItem 
                       key={marche.marcheId} 
@@ -334,10 +350,10 @@ export default function ExplorationBiodiversite() {
                         </span>
                         <div className="min-w-0">
                           <div className="font-medium truncate">
-                            {formatVille(marche.ville)}
+                            {villeDisplay}
                           </div>
                           <div className="text-sm text-slate-400 truncate">
-                            {formatDept(marche.departement)} · {marche.speciesCount.toLocaleString('fr-FR')} esp.
+                            {deptDisplay ? `${deptDisplay} · ` : ''}{marche.speciesCount.toLocaleString('fr-FR')} esp.
                           </div>
                         </div>
                       </div>
