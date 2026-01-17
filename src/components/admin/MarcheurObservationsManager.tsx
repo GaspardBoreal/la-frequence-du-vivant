@@ -210,7 +210,7 @@ export default function MarcheurObservationsManager({
 
   // Load species data for a specific marche via Edge Function
   const loadMarcheData = async (marche: MarcheWithCoords) => {
-    if (!marche.latitude || !marche.longitude) {
+    if (marche.latitude == null || marche.longitude == null) {
       toast.error(`Coordonnées manquantes pour ${marche.name}`);
       return null;
     }
@@ -224,7 +224,7 @@ export default function MarcheurObservationsManager({
         body: {
           latitude: marche.latitude,
           longitude: marche.longitude,
-          radius: 5000, // 5km - same as bioacoustique page
+          radius: 5, // 5km - radius is in kilometers, same as bioacoustique page
           mode: 'interactive'
         }
       });
@@ -308,7 +308,7 @@ export default function MarcheurObservationsManager({
       const marcheNameMap = new Map<string, string>();
 
       // Filter marches with coordinates
-      const marchesToLoad = marchesWithCoords.filter(m => m.latitude && m.longitude);
+      const marchesToLoad = marchesWithCoords.filter(m => m.latitude != null && m.longitude != null);
       const totalToLoad = marchesToLoad.length;
       
       // Initialize marche names
@@ -341,7 +341,7 @@ export default function MarcheurObservationsManager({
                   body: {
                     latitude: marche.latitude,
                     longitude: marche.longitude,
-                    radius: 5000,
+                    radius: 5, // 5km - radius is in kilometers
                     mode: 'interactive'
                   }
                 });
@@ -743,7 +743,7 @@ export default function MarcheurObservationsManager({
                 {filteredMarches.map(marche => {
                   const isLoading = loadingMarcheId === marche.id;
                   const cached = loadedMarchesData.get(marche.id);
-                  const hasCoords = marche.latitude && marche.longitude;
+                  const hasCoords = marche.latitude != null && marche.longitude != null;
                   
                   return (
                     <button
@@ -786,8 +786,8 @@ export default function MarcheurObservationsManager({
       {/* MODE: Par contributeur Open Data */}
       {mode === 'contributor' && (
         <>
-          {/* Load button if no data or loading state */}
-          {(contributorsData.length === 0 || loadingContributors) && !loadingProgress && !loadingContributors && (
+          {/* Load button if no data and not loading */}
+          {contributorsData.length === 0 && !loadingContributors && (
             <div className="text-center py-8">
               <User className="h-12 w-12 mx-auto mb-3 text-muted-foreground opacity-50" />
               <p className="text-muted-foreground mb-4">
@@ -796,7 +796,6 @@ export default function MarcheurObservationsManager({
               </p>
               <Button 
                 onClick={loadAllContributorsData}
-                disabled={loadingContributors}
                 size="lg"
               >
                 <RefreshCw className="h-4 w-4 mr-2" />
