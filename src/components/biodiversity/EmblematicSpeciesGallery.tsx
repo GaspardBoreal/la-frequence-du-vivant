@@ -77,15 +77,26 @@ const EmblematicSpeciesGallery: React.FC<EmblematicSpeciesGalleryProps> = ({
       .forEach(m => m.speciesObserved.forEach(s => speciesSet.add(s.toLowerCase())));
     return speciesSet;
   }, [activeMarcheurIds, marcheurs]);
+  // Normalize text for accent-insensitive and variant-tolerant search
+  const normalizeText = (text: string): string => {
+    return text
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '') // Remove accents
+      .replace(/[-_]/g, ' ')           // Normalize hyphens/underscores to spaces
+      .replace(/\s+/g, ' ')            // Collapse multiple spaces
+      .trim();
+  };
 
   const filteredSpecies = useMemo(() => {
+    const normalizedSearch = normalizeText(searchQuery);
+    
     return topSpecies.filter(sp => {
-      const searchLower = searchQuery.toLowerCase();
-      // Multilingual search: English name, French name, Scientific name
-      const matchesSearch = searchQuery === '' || 
-        sp.name.toLowerCase().includes(searchLower) ||
-        sp.scientificName.toLowerCase().includes(searchLower) ||
-        (sp.commonNameFr && sp.commonNameFr.toLowerCase().includes(searchLower));
+      // Multilingual search with accent/variant tolerance
+      const matchesSearch = normalizedSearch === '' || 
+        normalizeText(sp.name).includes(normalizedSearch) ||
+        normalizeText(sp.scientificName).includes(normalizedSearch) ||
+        (sp.commonNameFr && normalizeText(sp.commonNameFr).includes(normalizedSearch));
       
       const matchesKingdom = selectedKingdom === null || sp.kingdom === selectedKingdom;
       
