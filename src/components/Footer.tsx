@@ -55,7 +55,7 @@ const Footer = () => {
             </a>
             <div className="space-y-2">
               <a 
-                href="/marche/entre-deux-frequences-bonzac-bonzac" 
+                href="/bioacoustique/la-ou-elle-se-jette-je-me-redresse-a-bec-dambes--bec-dambes-gauriac" 
                 className="flex items-center gap-2 text-muted-foreground hover:text-[#4ade80] transition-colors"
               >
                 <MapPin size={16} />
