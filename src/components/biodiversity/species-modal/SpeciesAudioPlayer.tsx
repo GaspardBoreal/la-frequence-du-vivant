@@ -173,16 +173,16 @@ const SpeciesAudioPlayer: React.FC<SpeciesAudioPlayerProps> = ({
       <div className="p-3 space-y-2">
         <div className="flex items-center justify-between text-xs">
           <div className="flex items-center gap-2 text-white/60">
-            <span>🎙 {currentRecording.recordist}</span>
-            {currentRecording.country && (
-              <span className="text-white/40">• {currentRecording.locality || currentRecording.country}</span>
+            <span>🎙 {currentRecording.rec}</span>
+            {currentRecording.loc && (
+              <span className="text-white/40">• {currentRecording.loc}</span>
             )}
           </div>
           <div className="flex items-center gap-2 text-white/40">
             <span>{currentRecording.length}</span>
-            {currentRecording.quality && (
+            {currentRecording.q && (
               <span className="px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 text-[10px]">
-                Q: {currentRecording.quality}
+                Q: {currentRecording.q}
               </span>
             )}
           </div>

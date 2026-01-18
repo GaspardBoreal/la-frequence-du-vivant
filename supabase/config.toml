@@ -42,3 +42,6 @@ verify_jwt = false
 
 [functions.gaspard-calendar-sync]
 verify_jwt = false
+
+[functions.xeno-canto]
+verify_jwt = false
