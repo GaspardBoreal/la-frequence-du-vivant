@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Clock, Zap, TreePine, Volume2, AlertTriangle, MapPin } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { Clock, Zap, TreePine, Volume2 } from 'lucide-react';
 import { MarcheTechnoSensible } from '../../utils/googleSheetsApi';
 import { RegionalTheme } from '../../utils/regionalThemes';
 import { useRealClimateProjections } from '../../hooks/useRealClimateProjections';
@@ -9,6 +9,7 @@ import BiodiversityRiskRadar from '../biodiversity/BiodiversityRiskRadar';
 import TemporalSelector from '../ui/temporal-selector';
 import { Button } from '../ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
+import TransparencyBadge from './TransparencyBadge';
 
 interface ProjectionsSubSectionProps {
   marche: MarcheTechnoSensible;
@@ -53,77 +54,112 @@ const ProjectionsSubSection: React.FC<ProjectionsSubSectionProps> = ({ marche, t
 
   if (error) {
     return (
-      <div className="bg-red-50 border border-red-200 rounded-xl p-6 text-center">
-        <div className="text-red-600 font-medium">
+      <div className="bg-red-950/50 border border-red-500/30 rounded-xl p-6 text-center">
+        <div className="text-red-400 font-medium">
           Erreur lors du chargement des projections climatiques
         </div>
-        <p className="text-red-500 text-sm mt-2">
+        <p className="text-red-300/70 text-sm mt-2">
           Impossible de générer les données prospectives pour {marche.ville}
         </p>
       </div>
     );
   }
 
-  // Data source indicator component
-  const DataSourceIndicator = () => {
-    if (!projectionsData) return null;
-    
-    const isReal = projectionsData.dataSource === 'real';
-    const coords = projectionsData.coordinates;
-    
-    return (
-      <div className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium ${
-        isReal 
-          ? 'bg-green-100 text-green-700 border border-green-200' 
-          : 'bg-amber-100 text-amber-700 border border-amber-200'
-      }`}>
-        {isReal ? (
-          <>
-            <MapPin className="h-3 w-3" />
-            <span>Données Open-Meteo • {coords.lat.toFixed(2)}°N, {coords.lng.toFixed(2)}°E</span>
-          </>
-        ) : (
-          <>
-            <AlertTriangle className="h-3 w-3" />
-            <span>Estimation géographique • {coords.lat.toFixed(2)}°N, {coords.lng.toFixed(2)}°E</span>
-          </>
-        )}
-      </div>
-    );
-  };
-
   return (
     <div className="space-y-8">
-      {/* Hero Section */}
+      {/* Hero Section - Immersive Dark Theme */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="text-center space-y-4 mb-8"
+        className="relative rounded-3xl bg-gradient-to-br from-slate-950 via-slate-900 to-emerald-950 border border-emerald-500/20 p-8 mb-8 overflow-hidden"
       >
-        <h1 className="text-4xl font-bold text-transparent bg-gradient-to-r from-purple-600 via-blue-600 to-green-600 bg-clip-text">
-          Machine à Voyager dans le Temps Climatique
-        </h1>
-        <p className="text-xl text-gray-700 max-w-3xl mx-auto">
-          Explorez les transformations climatiques et biodiversitaires de {marche.ville} 
-          à travers trois horizons temporels : présent, 2035 et 2045.
-        </p>
-        
-        {/* Data Source Indicator */}
-        <DataSourceIndicator />
+        {/* Animated particles background */}
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          {[...Array(20)].map((_, i) => (
+            <motion.div
+              key={i}
+              className="absolute w-1 h-1 bg-emerald-400/30 rounded-full"
+              animate={{
+                y: [0, -300],
+                opacity: [0, 0.8, 0],
+              }}
+              transition={{
+                duration: 6 + Math.random() * 4,
+                repeat: Infinity,
+                delay: Math.random() * 5,
+                ease: "easeOut"
+              }}
+              style={{
+                left: `${Math.random() * 100}%`,
+                top: '100%',
+              }}
+            />
+          ))}
+        </div>
 
-        {/* Current Year Indicator */}
-        <motion.div 
-          className="inline-flex items-center gap-3 bg-gradient-to-r from-purple-100 to-blue-100 rounded-full px-6 py-3 border border-purple-200"
-          key={activeYear}
-          initial={{ scale: 0.9, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          transition={{ duration: 0.3 }}
-        >
-          <Clock className="h-5 w-5 text-purple-600" />
-          <span className="font-semibold text-purple-800">
-            Vision temporelle active: {activeYear}
-          </span>
-        </motion.div>
+        <div className="relative z-10 text-center space-y-6">
+          {/* Subtitle */}
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
+            className="inline-block"
+          >
+            <span className="text-xs text-emerald-400/80 tracking-[0.3em] uppercase font-medium bg-emerald-500/10 px-4 py-1.5 rounded-full border border-emerald-500/20">
+              Projections Open Data 2025 → 2045
+            </span>
+          </motion.div>
+
+          {/* Main Title */}
+          <motion.h1
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ delay: 0.2 }}
+            className="text-3xl md:text-4xl font-bold text-transparent bg-gradient-to-r from-white via-emerald-100 to-emerald-300 bg-clip-text"
+          >
+            Machine à Voyager dans le Temps Climatique
+          </motion.h1>
+
+          {/* Description */}
+          <motion.p
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.3 }}
+            className="text-lg text-emerald-100/70 max-w-2xl mx-auto leading-relaxed"
+          >
+            Explorez les transformations climatiques de{' '}
+            <span className="text-emerald-300 font-semibold">{marche.ville}</span>{' '}
+            à travers trois horizons temporels.
+          </motion.p>
+
+          {/* Transparency Badge Component */}
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.4 }}
+          >
+            <TransparencyBadge
+              latitude={marche.latitude || 0}
+              longitude={marche.longitude || 0}
+              dataSource={projectionsData?.dataSource || 'estimated'}
+              methodology={projectionsData?.methodology}
+            />
+          </motion.div>
+
+          {/* Active Year Indicator */}
+          <motion.div
+            className="inline-flex items-center gap-3 bg-white/5 backdrop-blur-sm rounded-full px-6 py-3 border border-emerald-500/30"
+            key={activeYear}
+            initial={{ scale: 0.9, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ duration: 0.3 }}
+          >
+            <Clock className="h-5 w-5 text-emerald-400" />
+            <span className="font-semibold text-emerald-100">
+              Vision temporelle active : <span className="text-emerald-300">{activeYear}</span>
+            </span>
+          </motion.div>
+        </div>
       </motion.div>
 
       {/* Main Tabs Interface */}
