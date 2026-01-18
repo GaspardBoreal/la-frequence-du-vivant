@@ -45,3 +45,6 @@ verify_jwt = false
 
 [functions.xeno-canto]
 verify_jwt = false
+
+[functions.open-meteo-data]
+verify_jwt = false

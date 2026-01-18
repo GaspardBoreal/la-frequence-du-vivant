@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Clock, Zap, TreePine, Volume2 } from 'lucide-react';
+import { Clock, Zap, TreePine, Volume2, AlertTriangle, MapPin } from 'lucide-react';
 import { MarcheTechnoSensible } from '../../utils/googleSheetsApi';
 import { RegionalTheme } from '../../utils/regionalThemes';
-import { useClimateProjections } from '../../hooks/useClimateProjections';
+import { useRealClimateProjections } from '../../hooks/useRealClimateProjections';
 import ClimateTimeMachine from '../climate/ClimateTimeMachine';
 import BiodiversityRiskRadar from '../biodiversity/BiodiversityRiskRadar';
 import TemporalSelector from '../ui/temporal-selector';
@@ -28,7 +28,7 @@ const ProjectionsSubSection: React.FC<ProjectionsSubSectionProps> = ({ marche, t
     data: projectionsData,
     isLoading,
     error
-  } = useClimateProjections(marche.latitude || 0, marche.longitude || 0);
+  } = useRealClimateProjections(marche.latitude || 0, marche.longitude || 0);
 
   const handleYearChange = (year: number) => {
     setActiveYear(year);
@@ -64,6 +64,34 @@ const ProjectionsSubSection: React.FC<ProjectionsSubSectionProps> = ({ marche, t
     );
   }
 
+  // Data source indicator component
+  const DataSourceIndicator = () => {
+    if (!projectionsData) return null;
+    
+    const isReal = projectionsData.dataSource === 'real';
+    const coords = projectionsData.coordinates;
+    
+    return (
+      <div className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium ${
+        isReal 
+          ? 'bg-green-100 text-green-700 border border-green-200' 
+          : 'bg-amber-100 text-amber-700 border border-amber-200'
+      }`}>
+        {isReal ? (
+          <>
+            <MapPin className="h-3 w-3" />
+            <span>Données Open-Meteo • {coords.lat.toFixed(2)}°N, {coords.lng.toFixed(2)}°E</span>
+          </>
+        ) : (
+          <>
+            <AlertTriangle className="h-3 w-3" />
+            <span>Estimation géographique • {coords.lat.toFixed(2)}°N, {coords.lng.toFixed(2)}°E</span>
+          </>
+        )}
+      </div>
+    );
+  };
+
   return (
     <div className="space-y-8">
       {/* Hero Section */}
@@ -80,6 +108,9 @@ const ProjectionsSubSection: React.FC<ProjectionsSubSectionProps> = ({ marche, t
           à travers trois horizons temporels : présent, 2035 et 2045.
         </p>
         
+        {/* Data Source Indicator */}
+        <DataSourceIndicator />
+
         {/* Current Year Indicator */}
         <motion.div 
           className="inline-flex items-center gap-3 bg-gradient-to-r from-purple-100 to-blue-100 rounded-full px-6 py-3 border border-purple-200"
