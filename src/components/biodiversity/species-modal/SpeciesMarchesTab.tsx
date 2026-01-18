@@ -1,7 +1,8 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { MapPin } from 'lucide-react';
+import { MapPin, ExternalLink } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { createSlug } from '@/utils/slugGenerator';
 import type { SpeciesMarcheData } from '@/hooks/useSpeciesMarches';
 
 interface SpeciesMarchesTabProps {
@@ -10,6 +11,12 @@ interface SpeciesMarchesTabProps {
 }
 
 const SpeciesMarchesTab: React.FC<SpeciesMarchesTabProps> = ({ marches, isLoading }) => {
+  const handleMarcheClick = (marche: SpeciesMarcheData) => {
+    const slug = createSlug(marche.marcheName, marche.ville);
+    const url = `https://la-frequence-du-vivant.com/bioacoustique/${slug}`;
+    window.open(url, '_blank', 'noopener,noreferrer');
+  };
+
   if (isLoading) {
     return (
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
@@ -54,8 +61,12 @@ const SpeciesMarchesTab: React.FC<SpeciesMarchesTabProps> = ({ marches, isLoadin
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ delay: index * 0.02 }}
+              onClick={() => handleMarcheClick(marche)}
               className="relative p-3 rounded-xl bg-gradient-to-br from-white/[0.08] to-white/[0.02] border border-white/10 hover:border-emerald-500/30 hover:from-white/[0.12] transition-all duration-200 group cursor-pointer"
             >
+              {/* External link icon - top right corner */}
+              <ExternalLink className="absolute top-2 right-2 w-3 h-3 text-white/20 group-hover:text-emerald-400 transition-colors" />
+
               {/* Order number - top left corner */}
               <div className="absolute -top-1.5 -left-1.5 w-6 h-6 rounded-full bg-emerald-600 border-2 border-slate-900 flex items-center justify-center shadow-lg">
                 <span className="text-[10px] font-bold text-white">
@@ -64,7 +75,7 @@ const SpeciesMarchesTab: React.FC<SpeciesMarchesTabProps> = ({ marches, isLoadin
               </div>
 
               {/* Marche name - truncate elegantly */}
-              <p className="text-xs font-medium text-white/90 leading-tight line-clamp-2 mb-2 mt-1 group-hover:text-white transition-colors">
+              <p className="text-xs font-medium text-white/90 leading-tight line-clamp-2 mb-2 mt-1 pr-4 group-hover:text-white transition-colors">
                 {marche.marcheName}
               </p>
 

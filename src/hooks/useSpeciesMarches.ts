@@ -4,6 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 export interface SpeciesMarcheData {
   marcheId: string;
   marcheName: string;
+  ville: string;
   order: number;
   observationCount: number;
   latitude?: number;
@@ -50,6 +51,7 @@ export const useSpeciesMarches = (
       // Build marche info map
       const marcheInfoMap = new Map<string, { 
         name: string; 
+        ville: string;
         order: number; 
         lat?: number; 
         lng?: number;
@@ -59,6 +61,7 @@ export const useSpeciesMarches = (
         if (em.marches) {
           marcheInfoMap.set(em.marche_id, {
             name: em.marches.nom_marche || em.marches.ville,
+            ville: em.marches.ville || '',
             order: em.ordre ?? 0,
             lat: em.marches.latitude,
             lng: em.marches.longitude,
@@ -101,6 +104,7 @@ export const useSpeciesMarches = (
               marcheMap.set(snapshot.marche_id, {
                 marcheId: snapshot.marche_id,
                 marcheName: info.name,
+                ville: info.ville,
                 order: info.order,
                 observationCount: matchingSpecies.length,
                 latitude: info.lat,
@@ -130,6 +134,7 @@ export const useSpeciesMarches = (
               marcheMap.set(obs.marche_id, {
                 marcheId: obs.marche_id,
                 marcheName: info.name,
+                ville: info.ville,
                 order: info.order,
                 observationCount: 1,
                 latitude: info.lat,
