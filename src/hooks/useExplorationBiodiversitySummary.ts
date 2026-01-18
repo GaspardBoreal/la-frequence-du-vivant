@@ -113,18 +113,34 @@ export const useExplorationBiodiversitySummary = (explorationId?: string) => {
           fungi += snapshot.fungi_count || 0;
           others += snapshot.others_count || 0;
 
-          // Process species data for top species - use unique species across exploration
+          // Process species data for top species - count ACTUAL occurrences per species
           const speciesData = snapshot.species_data as any[];
           if (speciesData && Array.isArray(speciesData)) {
+            // First, count occurrences per species in this snapshot
+            const speciesCountInSnapshot = new Map<string, { count: number; species: any }>();
+            
             speciesData.forEach((species: any) => {
+              const sciName = species.scientificName?.toLowerCase();
+              if (sciName) {
+                const existing = speciesCountInSnapshot.get(sciName);
+                if (existing) {
+                  existing.count += 1;
+                } else {
+                  speciesCountInSnapshot.set(sciName, { count: 1, species });
+                }
+              }
+            });
+            
+            // Then update uniqueSpeciesMap with actual occurrence counts
+            speciesCountInSnapshot.forEach(({ count: occurrenceCount, species }) => {
               const name = species.commonName || species.scientificName;
               if (name) {
                 const existing = uniqueSpeciesMap.get(name);
                 if (existing) {
-                  existing.count += 1;
+                  existing.count += occurrenceCount; // ✅ Add actual number of occurrences
                 } else {
                   uniqueSpeciesMap.set(name, {
-                    count: 1,
+                    count: occurrenceCount,
                     scientificName: species.scientificName || name,
                     kingdom: species.kingdom || 'Unknown',
                     photos: species.photos || [],
