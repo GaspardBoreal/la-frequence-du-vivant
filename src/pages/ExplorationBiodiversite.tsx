@@ -256,6 +256,7 @@ export default function ExplorationBiodiversite() {
         marcheurs={marcheurs}
         selectedMarcheurIds={selectedMarcheurIds}
         onMarcheurSelectionChange={setSelectedMarcheurIds}
+        explorationId={exploration?.id}
       />
 
       {/* Section 5: Interactive Map with marche selector */}
