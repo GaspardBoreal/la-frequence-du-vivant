@@ -260,15 +260,23 @@ export const useExplorationBiodiversitySummary = (explorationId?: string) => {
       const totalSpecies = speciesByMarche.reduce((sum, m) => sum + m.speciesCount, 0);
 
       // Fetch French translations for all species to enable multilingual search
+      // Use case-insensitive matching since scientific names may have different casing
       const scientificNames = Array.from(uniqueSpeciesMap.values()).map(s => s.scientificName);
-      const { data: translations } = await supabase
+      const lowerCaseNames = scientificNames.map(n => n.toLowerCase());
+      
+      // Fetch all translations and filter client-side for case-insensitive matching
+      const { data: allTranslations } = await supabase
         .from('species_translations')
-        .select('scientific_name, common_name_fr')
-        .in('scientific_name', scientificNames);
+        .select('scientific_name, common_name_fr');
+      
+      // Filter to only relevant translations (case-insensitive)
+      const relevantTranslations = allTranslations?.filter(t => 
+        lowerCaseNames.includes(t.scientific_name.toLowerCase())
+      ) || [];
 
-      // Build translation lookup map (case-insensitive)
+      // Build translation lookup map (case-insensitive keys)
       const translationMap = new Map<string, string | null>(
-        translations?.map(t => [t.scientific_name.toLowerCase(), t.common_name_fr]) || []
+        relevantTranslations.map(t => [t.scientific_name.toLowerCase(), t.common_name_fr])
       );
 
       // Get all species sorted by count, enriched with French names
