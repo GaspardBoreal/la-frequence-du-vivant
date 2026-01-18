@@ -7,6 +7,7 @@ import { Loader2 } from 'lucide-react';
 interface TopSpecies {
   name: string;
   scientificName: string;
+  commonNameFr?: string | null;
   count: number;
   kingdom: string;
   photos?: string[];
@@ -80,9 +81,11 @@ const SpeciesCardWithPhoto: React.FC<SpeciesCardWithPhotoProps> = ({
           {/* Overlay gradient */}
           <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
           
-          {/* Content */}
+          {/* Content - Display French name if available, otherwise English */}
           <div className="absolute bottom-0 left-0 right-0 p-2 md:p-3 text-white">
-            <h3 className="font-bold text-xs md:text-sm truncate">{species.name}</h3>
+            <h3 className="font-bold text-xs md:text-sm truncate">
+              {species.commonNameFr || species.name}
+            </h3>
             <p className="text-[10px] md:text-xs text-white/70 italic truncate">{species.scientificName}</p>
           </div>
 
