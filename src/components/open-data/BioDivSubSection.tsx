@@ -293,19 +293,21 @@ const BioDivSubSection: React.FC<BioDivSubSectionProps> = ({ marche, theme }) =>
     return filtered;
   }, [biodiversityData?.species, selectedMetricFilter, selectedCategory, selectedSource, selectedConfidence, selectedTimeRange, hasAudioFilter, selectedContributor, searchTerm, sortBy, sortOrder]);
 
+  // Métriques basées sur les données brutes (pas le filtre recherche) pour cohérence avec les onglets
   const summaryStats = useMemo(() => {
     if (!biodiversityData?.species) return null;
     
-    const total = filteredSpecies.length;
-    const birds = filteredSpecies.filter(isBirdSpecies).length;
-    const plants = filteredSpecies.filter(s => s.kingdom === 'Plantae').length;
-    const fungi = filteredSpecies.filter(s => s.kingdom === 'Fungi').length;
+    const species = biodiversityData.species;
+    const total = species.length;
+    const birds = species.filter(isBirdSpecies).length;
+    const plants = species.filter(s => s.kingdom === 'Plantae').length;
+    const fungi = species.filter(s => s.kingdom === 'Fungi').length;
     const others = total - birds - plants - fungi;
-    const withAudio = filteredSpecies.filter(s => s.xenoCantoRecordings && s.xenoCantoRecordings.length > 0).length;
-    const withPhotos = filteredSpecies.filter(s => s.photoData && s.photoData.source !== 'placeholder').length;
+    const withAudio = species.filter(s => s.xenoCantoRecordings && s.xenoCantoRecordings.length > 0).length;
+    const withPhotos = species.filter(s => s.photoData && s.photoData.source !== 'placeholder').length;
     
     return { total, birds, plants, fungi, others, withAudio, withPhotos };
-  }, [filteredSpecies, biodiversityData?.species]);
+  }, [biodiversityData?.species]);
 
   if (isLoading) {
     return (
@@ -550,9 +552,16 @@ const BioDivSubSection: React.FC<BioDivSubSectionProps> = ({ marche, theme }) =>
               )}
             </div>
             {searchTerm && (
-              <Badge variant="secondary" className="bg-primary/10 text-primary border-primary/20">
-                "{searchTerm}" : {filteredSpecies.length} résultat{filteredSpecies.length > 1 ? 's' : ''}
-              </Badge>
+              <div className="flex flex-wrap items-center gap-2">
+                <Badge variant="secondary" className="bg-primary/10 text-primary border-primary/20">
+                  "{searchTerm}" : {filteredSpecies.length} résultat{filteredSpecies.length > 1 ? 's' : ''}
+                </Badge>
+                {filteredSpecies.length === 0 && biodiversityData?.species?.length > 0 && (
+                  <span className="text-sm text-muted-foreground">
+                    sur {biodiversityData.species.length} espèces disponibles
+                  </span>
+                )}
+              </div>
             )}
           </div>
 
