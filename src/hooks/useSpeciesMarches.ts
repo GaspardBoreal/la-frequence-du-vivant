@@ -41,7 +41,7 @@ export const useSpeciesMarches = (
           )
         `)
         .eq('exploration_id', explorationId)
-        .eq('publication_status', 'published');
+        .in('publication_status', ['published', 'published_public']);
 
       if (!explorationMarches || explorationMarches.length === 0) {
         return [];

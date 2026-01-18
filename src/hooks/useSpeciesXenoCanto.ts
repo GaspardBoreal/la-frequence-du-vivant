@@ -1,31 +1,32 @@
 import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
 
 export interface XenoCantoRecording {
   id: string;
   url: string;
   file: string;
+  file_name: string;
   sono: {
     small: string;
     med: string;
     large: string;
     full: string;
   };
-  recordist: string;
-  country: string;
-  locality: string;
+  rec: string;
+  loc: string;
   length: string;
-  quality: string;
+  q: string;
   type: string;
   date: string;
 }
 
-interface XenoCantoResponse {
+export interface XenoCantoResponse {
   recordings: XenoCantoRecording[];
   numRecordings: number;
 }
 
 /**
- * Hook to fetch audio recordings from Xeno-Canto API
+ * Hook to fetch audio recordings from Xeno-Canto API via Edge Function
  * Only works for birds and some other animals with vocalizations
  */
 export const useSpeciesXenoCanto = (scientificName: string | undefined, kingdom: string = 'Unknown') => {
@@ -42,108 +43,23 @@ export const useSpeciesXenoCanto = (scientificName: string | undefined, kingdom:
       }
 
       try {
-        // Query Xeno-Canto API - prefer quality A recordings
-        const response = await fetch(
-          `https://xeno-canto.org/api/2/recordings?query=${encodeURIComponent(scientificName)}+q:A`
-        );
+        // Call Edge Function to avoid CORS issues
+        const { data, error } = await supabase.functions.invoke('xeno-canto', {
+          body: { scientificName },
+        });
 
-        if (!response.ok) {
-          // Try without quality filter
-          const fallbackResponse = await fetch(
-            `https://xeno-canto.org/api/2/recordings?query=${encodeURIComponent(scientificName)}`
-          );
-          
-          if (!fallbackResponse.ok) {
-            console.warn('Xeno-Canto API error:', fallbackResponse.status);
-            return null;
-          }
-          
-          const fallbackData = await fallbackResponse.json();
-          
-          if (!fallbackData.recordings || fallbackData.recordings.length === 0) {
-            return null;
-          }
-
-          return {
-            recordings: fallbackData.recordings.slice(0, 3).map((rec: any) => ({
-              id: rec.id,
-              url: `https://xeno-canto.org/${rec.id}`,
-              file: rec.file,
-              sono: {
-                small: rec.sono?.small || '',
-                med: rec.sono?.med || '',
-                large: rec.sono?.large || '',
-                full: rec.sono?.full || '',
-              },
-              recordist: rec.rec,
-              country: rec.cnt,
-              locality: rec.loc,
-              length: rec.length,
-              quality: rec.q,
-              type: rec.type,
-              date: rec.date,
-            })),
-            numRecordings: parseInt(fallbackData.numRecordings) || 0,
-          };
+        if (error) {
+          console.warn('Xeno-Canto Edge Function error:', error);
+          return null;
         }
 
-        const data = await response.json();
-
-        if (!data.recordings || data.recordings.length === 0) {
-          // Try without quality filter if no quality A recordings
-          const fallbackResponse = await fetch(
-            `https://xeno-canto.org/api/2/recordings?query=${encodeURIComponent(scientificName)}`
-          );
-          
-          if (fallbackResponse.ok) {
-            const fallbackData = await fallbackResponse.json();
-            if (fallbackData.recordings?.length > 0) {
-              return {
-                recordings: fallbackData.recordings.slice(0, 3).map((rec: any) => ({
-                  id: rec.id,
-                  url: `https://xeno-canto.org/${rec.id}`,
-                  file: rec.file,
-                  sono: {
-                    small: rec.sono?.small || '',
-                    med: rec.sono?.med || '',
-                    large: rec.sono?.large || '',
-                    full: rec.sono?.full || '',
-                  },
-                  recordist: rec.rec,
-                  country: rec.cnt,
-                  locality: rec.loc,
-                  length: rec.length,
-                  quality: rec.q,
-                  type: rec.type,
-                  date: rec.date,
-                })),
-                numRecordings: parseInt(fallbackData.numRecordings) || 0,
-              };
-            }
-          }
+        if (!data?.recordings?.length) {
           return null;
         }
 
         return {
-          recordings: data.recordings.slice(0, 3).map((rec: any) => ({
-            id: rec.id,
-            url: `https://xeno-canto.org/${rec.id}`,
-            file: rec.file,
-            sono: {
-              small: rec.sono?.small || '',
-              med: rec.sono?.med || '',
-              large: rec.sono?.large || '',
-              full: rec.sono?.full || '',
-            },
-            recordist: rec.rec,
-            country: rec.cnt,
-            locality: rec.loc,
-            length: rec.length,
-            quality: rec.q,
-            type: rec.type,
-            date: rec.date,
-          })),
-          numRecordings: parseInt(data.numRecordings) || 0,
+          recordings: data.recordings,
+          numRecordings: data.numRecordings || 0,
         };
       } catch (error) {
         console.warn('Error fetching Xeno-Canto data:', error);
