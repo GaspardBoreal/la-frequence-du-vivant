@@ -69,13 +69,24 @@ export const useSpeciesMarches = (
       const marcheIds = explorationMarches.map((em: any) => em.marche_id);
 
       // 2. Search in biodiversity_snapshots for this species
+      // ONLY use the latest snapshot per marche to avoid counting duplicates
       const { data: snapshots } = await supabase
         .from('biodiversity_snapshots')
         .select('marche_id, species_data, snapshot_date')
         .in('marche_id', marcheIds);
 
       if (snapshots) {
-        snapshots.forEach((snapshot: any) => {
+        // Filter to keep only the latest snapshot per marche
+        const latestSnapshotsByMarche = new Map<string, typeof snapshots[0]>();
+        snapshots.forEach((snapshot) => {
+          const existing = latestSnapshotsByMarche.get(snapshot.marche_id);
+          if (!existing || new Date(snapshot.snapshot_date) > new Date(existing.snapshot_date)) {
+            latestSnapshotsByMarche.set(snapshot.marche_id, snapshot);
+          }
+        });
+
+        // Now process only the latest snapshots
+        Array.from(latestSnapshotsByMarche.values()).forEach((snapshot: any) => {
           const speciesData = snapshot.species_data as any[];
           if (!speciesData) return;
 
@@ -87,20 +98,15 @@ export const useSpeciesMarches = (
           if (matchingSpecies.length > 0) {
             const info = marcheInfoMap.get(snapshot.marche_id);
             if (info) {
-              const existing = marcheMap.get(snapshot.marche_id);
-              if (existing) {
-                existing.observationCount += matchingSpecies.length;
-              } else {
-                marcheMap.set(snapshot.marche_id, {
-                  marcheId: snapshot.marche_id,
-                  marcheName: info.name,
-                  order: info.order,
-                  observationCount: matchingSpecies.length,
-                  latitude: info.lat,
-                  longitude: info.lng,
-                  observationDate: snapshot.snapshot_date,
-                });
-              }
+              marcheMap.set(snapshot.marche_id, {
+                marcheId: snapshot.marche_id,
+                marcheName: info.name,
+                order: info.order,
+                observationCount: matchingSpecies.length,
+                latitude: info.lat,
+                longitude: info.lng,
+                observationDate: snapshot.snapshot_date,
+              });
             }
           }
         });
