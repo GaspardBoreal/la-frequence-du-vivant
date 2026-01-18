@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import { HelmetProvider } from 'react-helmet-async';
 import { toast } from 'sonner';
@@ -22,6 +21,7 @@ import DebugMarcheData from '../components/DebugMarcheData';
 
 import { MarcheTechnoSensible } from '../utils/googleSheetsApi';
 import { useSupabaseMarches } from '../hooks/useSupabaseMarches';
+import { useExplorationMarchesList } from '../hooks/useExplorationMarchesList';
 import { findMarcheBySlug, createSlug } from '../utils/slugGenerator';
 import { REGIONAL_THEMES, RegionalTheme } from '../utils/regionalThemes';
 import { queryClient } from '../lib/queryClient';
@@ -33,52 +33,43 @@ const MarcheDetailBio = () => {
   const [activeSubSection, setActiveSubSection] = useState<string>('biodiv');
   const [theme, setTheme] = useState<RegionalTheme>(REGIONAL_THEMES['nouvelle-aquitaine']);
 
+  // Récupérer toutes les marches pour trouver la marche courante par slug
   const {
     data: marchesData = [],
     isLoading,
     error
   } = useSupabaseMarches();
 
+  // Récupérer les marches de l'exploration Dordogne (triées par ordre narratif)
+  const { data: explorationMarches = [] } = useExplorationMarchesList();
+
   const marche = slug ? findMarcheBySlug(marchesData, slug) : null;
 
+  // Navigation basée sur l'ordre de l'exploration Dordogne (pas la date)
   const { previousMarche, nextMarche } = useMemo(() => {
-    if (!marche || !marchesData.length) {
+    if (!marche || !explorationMarches.length) {
       return { previousMarche: null, nextMarche: null };
     }
 
-    const parseDate = (dateStr: string) => {
-      if (dateStr.includes('-')) {
-        // Format ISO: YYYY-MM-DD
-        return new Date(dateStr);
-      } else if (dateStr.includes('/')) {
-        // Format français: DD/MM/YYYY
-        const [day, month, year] = dateStr.split('/').map(Number);
-        return new Date(year, month - 1, day);
-      } else {
-        return new Date(dateStr); // fallback
-      }
-    };
-
-    const marchesWithDates = marchesData.filter(m => m.date && m.date.trim());
+    // Trouver l'index de la marche actuelle dans l'exploration
+    const currentIndex = explorationMarches.findIndex(m => m.id === marche.id);
     
-    if (!marche.date) {
+    // Si la marche n'est pas dans l'exploration Dordogne, pas de navigation
+    if (currentIndex === -1) {
       return { previousMarche: null, nextMarche: null };
     }
 
-    const currentDate = parseDate(marche.date);
+    // Navigation basée sur l'ordre narratif de l'exploration
+    const prev = currentIndex > 0 
+      ? explorationMarches[currentIndex - 1] 
+      : null;
+      
+    const next = currentIndex < explorationMarches.length - 1 
+      ? explorationMarches[currentIndex + 1] 
+      : null;
 
-    // Précédente : date < currentDate, triée par date décroissante, prendre la première
-    const previousMarche = marchesWithDates
-      .filter(m => parseDate(m.date!).getTime() < currentDate.getTime())
-      .sort((a, b) => parseDate(b.date!).getTime() - parseDate(a.date!).getTime())[0] || null;
-
-    // Suivante : date > currentDate, triée par date croissante, prendre la première  
-    const nextMarche = marchesWithDates
-      .filter(m => parseDate(m.date!).getTime() > currentDate.getTime())
-      .sort((a, b) => parseDate(a.date!).getTime() - parseDate(b.date!).getTime())[0] || null;
-
-    return { previousMarche, nextMarche };
-  }, [marche, marchesData]);
+    return { previousMarche: prev, nextMarche: next };
+  }, [marche, explorationMarches]);
 
   useEffect(() => {
     if (marche?.region) {
