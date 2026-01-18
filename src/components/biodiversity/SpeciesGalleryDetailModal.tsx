@@ -1,12 +1,14 @@
 import React, { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Dialog, DialogContent } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import * as VisuallyHidden from '@radix-ui/react-visually-hidden';
 import { 
   ExternalLink, Leaf, Bird, Bug, HelpCircle, Loader2, 
-  X, MapPin, List, Music, Camera, ChevronLeft, ChevronRight 
+  MapPin, List, Music, ChevronLeft, ChevronRight, X
 } from 'lucide-react';
 import { useSpeciesPhoto } from '@/hooks/useSpeciesPhoto';
 import { useSpeciesTranslation } from '@/hooks/useSpeciesTranslation';
@@ -118,15 +120,12 @@ const SpeciesGalleryDetailModal: React.FC<SpeciesGalleryDetailModalProps> = ({
 
   return (
     <>
-      <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
+      <Dialog open={isOpen && !showLightbox} onOpenChange={(open) => !open && onClose()}>
         <DialogContent className="bg-slate-900/98 backdrop-blur-xl border-white/10 text-white max-w-lg p-0 overflow-hidden max-h-[90vh] overflow-y-auto">
-          {/* Close button */}
-          <button
-            onClick={onClose}
-            className="absolute top-3 right-3 z-20 w-8 h-8 rounded-full bg-black/50 hover:bg-black/70 flex items-center justify-center transition-colors"
-          >
-            <X className="w-4 h-4" />
-          </button>
+          {/* Accessible title (hidden) */}
+          <VisuallyHidden.Root asChild>
+            <DialogTitle>Détails de l'espèce {species.scientificName}</DialogTitle>
+          </VisuallyHidden.Root>
 
           {/* Hero Image Section */}
           <div className="relative aspect-[4/3] bg-gradient-to-br from-slate-800 to-slate-900">
@@ -315,18 +314,18 @@ const SpeciesGalleryDetailModal: React.FC<SpeciesGalleryDetailModalProps> = ({
         </DialogContent>
       </Dialog>
 
-      {/* Lightbox */}
-      <AnimatePresence>
-        {showLightbox && hasPhoto && (
+      {/* Lightbox - rendered in portal to avoid z-index conflicts */}
+      {showLightbox && hasPhoto && createPortal(
+        <AnimatePresence>
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[100] bg-black/95 flex items-center justify-center"
+            className="fixed inset-0 z-[9999] bg-black flex items-center justify-center"
             onClick={() => setShowLightbox(false)}
           >
             <button
-              className="absolute top-4 right-4 w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center"
+              className="absolute top-4 right-4 w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center z-10"
               onClick={() => setShowLightbox(false)}
             >
               <X className="w-5 h-5 text-white" />
@@ -365,8 +364,9 @@ const SpeciesGalleryDetailModal: React.FC<SpeciesGalleryDetailModalProps> = ({
               <p className="text-sm text-white/60 italic">{species.scientificName}</p>
             </div>
           </motion.div>
-        )}
-      </AnimatePresence>
+        </AnimatePresence>,
+        document.body
+      )}
     </>
   );
 };
