@@ -27,6 +27,17 @@ interface ClimateProjectionsResult {
   generatedAt: string;
   dataSource: 'real' | 'estimated';
   coordinates: { lat: number; lng: number };
+  methodology: {
+    apiUrl: string;
+    altitude: number;
+    oceanDistance: number;
+    scenariosUsed: string[];
+    rawDataSummary: {
+      tempAvg: number;
+      precipTotal: number;
+      dataRange: string;
+    };
+  };
 }
 
 // Calcul de l'altitude approximative basée sur les coordonnées (pour la France)
@@ -469,6 +480,8 @@ export const useRealClimateProjections = (latitude: number, longitude: number) =
           location: `${latitude.toFixed(2)}°N, ${longitude.toFixed(2)}°E`
         });
 
+        const altitude = estimateAltitude(latitude, longitude);
+        const oceanDistance = calculateOceanDistance(longitude);
         const climateProjections = calculateClimateProjections(realData, latitude, longitude);
         const biodiversityProjections = generateBiodiversityProjections(climateProjections, latitude, longitude);
         const futureSoundscapes = generateFutureSoundscapes(biodiversityProjections, latitude, longitude);
@@ -479,7 +492,18 @@ export const useRealClimateProjections = (latitude: number, longitude: number) =
           futureSoundscapes,
           generatedAt: new Date().toISOString(),
           dataSource: 'real',
-          coordinates: { lat: latitude, lng: longitude }
+          coordinates: { lat: latitude, lng: longitude },
+          methodology: {
+            apiUrl: `https://archive-api.open-meteo.com/v1/archive?latitude=${latitude}&longitude=${longitude}`,
+            altitude,
+            oceanDistance,
+            scenariosUsed: ['SSP2-4.5 (2035)', 'SSP5-8.5 (2045)'],
+            rawDataSummary: {
+              tempAvg: realData.temperature.avg,
+              precipTotal: realData.precipitation.total,
+              dataRange: `${daysOfData} jours de données`
+            }
+          }
         };
 
       } catch (fetchError) {
@@ -528,7 +552,18 @@ export const useRealClimateProjections = (latitude: number, longitude: number) =
           futureSoundscapes,
           generatedAt: new Date().toISOString(),
           dataSource: 'estimated',
-          coordinates: { lat: latitude, lng: longitude }
+          coordinates: { lat: latitude, lng: longitude },
+          methodology: {
+            apiUrl: `https://archive-api.open-meteo.com/v1/archive?latitude=${latitude}&longitude=${longitude}`,
+            altitude,
+            oceanDistance,
+            scenariosUsed: ['SSP2-4.5 (2035)', 'SSP5-8.5 (2045)'],
+            rawDataSummary: {
+              tempAvg: estimatedTemp,
+              precipTotal: estimatedPrecip,
+              dataRange: 'Estimation géographique'
+            }
+          }
         };
       }
     },
