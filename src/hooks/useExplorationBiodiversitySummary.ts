@@ -23,6 +23,7 @@ export interface BiodiversitySummary {
   topSpecies: Array<{
     name: string;
     scientificName: string;
+    commonNameFr?: string | null;
     count: number;
     kingdom: string;
     photos?: string[];
@@ -30,6 +31,7 @@ export interface BiodiversitySummary {
   allSpecies: Array<{
     name: string;
     scientificName: string;
+    commonNameFr?: string | null;
     count: number;
     kingdom: string;
     photos?: string[];
@@ -257,12 +259,25 @@ export const useExplorationBiodiversitySummary = (explorationId?: string) => {
       // Calculate total unique species (sum of per-marche counts, not unique species count)
       const totalSpecies = speciesByMarche.reduce((sum, m) => sum + m.speciesCount, 0);
 
-      // Get all species sorted by count
+      // Fetch French translations for all species to enable multilingual search
+      const scientificNames = Array.from(uniqueSpeciesMap.values()).map(s => s.scientificName);
+      const { data: translations } = await supabase
+        .from('species_translations')
+        .select('scientific_name, common_name_fr')
+        .in('scientific_name', scientificNames);
+
+      // Build translation lookup map (case-insensitive)
+      const translationMap = new Map<string, string | null>(
+        translations?.map(t => [t.scientific_name.toLowerCase(), t.common_name_fr]) || []
+      );
+
+      // Get all species sorted by count, enriched with French names
       const allSpecies = Array.from(uniqueSpeciesMap.entries())
         .sort((a, b) => b[1].count - a[1].count)
         .map(([name, data]) => ({
           name,
           scientificName: data.scientificName,
+          commonNameFr: translationMap.get(data.scientificName.toLowerCase()) || null,
           count: data.count,
           kingdom: data.kingdom,
           photos: data.photos,

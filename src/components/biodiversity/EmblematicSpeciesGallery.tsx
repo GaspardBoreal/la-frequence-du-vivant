@@ -18,6 +18,7 @@ interface SpeciesData {
 interface TopSpecies {
   name: string;
   scientificName: string;
+  commonNameFr?: string | null;
   count: number;
   kingdom: string;
   photos?: string[];
@@ -79,9 +80,12 @@ const EmblematicSpeciesGallery: React.FC<EmblematicSpeciesGalleryProps> = ({
 
   const filteredSpecies = useMemo(() => {
     return topSpecies.filter(sp => {
+      const searchLower = searchQuery.toLowerCase();
+      // Multilingual search: English name, French name, Scientific name
       const matchesSearch = searchQuery === '' || 
-        sp.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        sp.scientificName.toLowerCase().includes(searchQuery.toLowerCase());
+        sp.name.toLowerCase().includes(searchLower) ||
+        sp.scientificName.toLowerCase().includes(searchLower) ||
+        (sp.commonNameFr && sp.commonNameFr.toLowerCase().includes(searchLower));
       
       const matchesKingdom = selectedKingdom === null || sp.kingdom === selectedKingdom;
       
