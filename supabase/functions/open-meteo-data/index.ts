@@ -43,16 +43,19 @@ serve(async (req) => {
 
     console.log(`📍 Fetching weather data for: ${latitude}, ${longitude}`);
 
-    // Calculate date range
-    const endDate = new Date();
-    const startDate = new Date();
-    startDate.setDate(startDate.getDate() - days);
+    // Calculate date range - use last 30 days of HISTORICAL data (not forecast)
+    const today = new Date();
+    const endDate = new Date(today);
+    endDate.setDate(endDate.getDate() - 1); // Yesterday (archive API needs completed days)
+    const startDate = new Date(endDate);
+    startDate.setDate(startDate.getDate() - Math.min(days, 90)); // Max 90 days for archive
 
     const startDateStr = startDate.toISOString().split('T')[0];
     const endDateStr = endDate.toISOString().split('T')[0];
 
-    // Fetch current + historical weather data
-    const weatherUrl = new URL('https://api.open-meteo.com/v1/forecast');
+    // Use ARCHIVE API for historical data (not forecast)
+    // Open-Meteo Archive API: https://open-meteo.com/en/docs/historical-weather-api
+    const weatherUrl = new URL('https://archive-api.open-meteo.com/v1/archive');
     weatherUrl.searchParams.set('latitude', latitude.toString());
     weatherUrl.searchParams.set('longitude', longitude.toString());
     weatherUrl.searchParams.set('start_date', startDateStr);
@@ -60,12 +63,12 @@ serve(async (req) => {
     weatherUrl.searchParams.set('daily', 'temperature_2m_max,temperature_2m_min,temperature_2m_mean,relative_humidity_2m_max,relative_humidity_2m_min,relative_humidity_2m_mean,precipitation_sum,wind_speed_10m_max,sunshine_duration');
     weatherUrl.searchParams.set('timezone', 'Europe/Paris');
 
-    console.log('🌡️ Fetching from Open-Meteo API:', weatherUrl.toString());
+    console.log('🌡️ Fetching from Open-Meteo Archive API:', weatherUrl.toString());
 
     // Add robust timeout with AbortController
     const controller = new AbortController();
-    const timeoutMs = 12000; // 12 second timeout
-    
+    const timeoutMs = 15000; // 15 second timeout for archive API
+
     const weatherData = await Promise.race([
       // Actual API call
       (async () => {
@@ -74,7 +77,9 @@ serve(async (req) => {
         });
         
         if (!weatherResponse.ok) {
-          throw new Error(`Open-Meteo API error: ${weatherResponse.status}`);
+          const errorText = await weatherResponse.text();
+          console.error('❌ Open-Meteo Archive API error:', weatherResponse.status, errorText);
+          throw new Error(`Open-Meteo Archive API error: ${weatherResponse.status} - ${errorText}`);
         }
         
         return await weatherResponse.json();
@@ -83,7 +88,7 @@ serve(async (req) => {
       new Promise((_, reject) => {
         setTimeout(() => {
           controller.abort();
-          reject(new Error(`Open-Meteo API timeout after ${timeoutMs}ms`));
+          reject(new Error(`Open-Meteo Archive API timeout after ${timeoutMs}ms`));
         }, timeoutMs);
       })
     ]);
