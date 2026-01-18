@@ -29,6 +29,7 @@ interface EmblematicSpeciesGalleryProps {
   marcheurs?: ExplorationMarcheur[];
   selectedMarcheurIds?: string[];
   onMarcheurSelectionChange?: (ids: string[]) => void;
+  explorationId?: string;
 }
 
 const EmblematicSpeciesGallery: React.FC<EmblematicSpeciesGalleryProps> = ({
@@ -37,6 +38,7 @@ const EmblematicSpeciesGallery: React.FC<EmblematicSpeciesGalleryProps> = ({
   marcheurs = [],
   selectedMarcheurIds = [],
   onMarcheurSelectionChange,
+  explorationId,
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedKingdom, setSelectedKingdom] = useState<string | null>(null);
@@ -302,6 +304,7 @@ const EmblematicSpeciesGallery: React.FC<EmblematicSpeciesGalleryProps> = ({
         {/* Species detail modal */}
         <SpeciesGalleryDetailModal
           species={selectedSpecies}
+          explorationId={explorationId}
           isOpen={!!selectedSpecies}
           onClose={() => setSelectedSpecies(null)}
         />
