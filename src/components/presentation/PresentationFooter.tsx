@@ -214,7 +214,7 @@ export default function PresentationFooter() {
         <div className="border-t mt-12 pt-8">
           <div className="flex flex-col md:flex-row justify-between items-center gap-4">
             <div className="text-sm text-muted-foreground">
-              © 2025 Fréquence du Vivant • Gaspard Boréal • 
+              © 2025 - 2026 Fréquence du Vivant • Gaspard Boréal • 
               <span className="text-primary"> Révolution Territoriale</span>
             </div>
             <div className="flex gap-4 text-sm text-muted-foreground">

@@ -155,7 +155,7 @@ const MarcheursAdmin: React.FC = () => {
 
         {/* Footer */}
         <div className="mt-12 text-center text-sm text-muted-foreground">
-          <p>Gestion des équipages - Gaspard Boréal © 2025</p>
+          <p>Gestion des équipages - Gaspard Boréal © 2025 - 2026</p>
         </div>
       </div>
     </div>

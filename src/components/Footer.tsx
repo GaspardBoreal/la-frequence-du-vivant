@@ -128,7 +128,7 @@ const Footer = () => {
         <div className="border-t border-border/20 mt-8 pt-8">
           <div className="flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0">
             <div className="text-sm text-muted-foreground">
-              © 2025 Gaspard Boréal - Observatoire Poétique des Mondes Hybrides
+              © 2025 - 2026 Gaspard Boréal - Observatoire Poétique des Mondes Hybrides
             </div>
             <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
               <span className="hover:text-[#4ade80] cursor-pointer">#BioacustiquePoétique</span>
