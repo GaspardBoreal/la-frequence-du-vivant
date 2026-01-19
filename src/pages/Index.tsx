@@ -62,9 +62,7 @@ const Index = () => {
                 
                 {/* Meta informations */}
                 <div className="flex items-center justify-center space-x-4 pt-8">
-                  <span className="text-white text-base">2025</span>
-                  <span className="text-white">•</span>
-                  <span className="text-white text-base">Gaspard Boréal</span>
+                  <span className="text-white text-base">2025 - 2026 • Gaspard Boréal</span>
                 </div>
 
                 <div className="pt-8">
