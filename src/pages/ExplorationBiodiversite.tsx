@@ -415,7 +415,7 @@ export default function ExplorationBiodiversite() {
           Données issues de GBIF, iNaturalist, eBird et Xeno-Canto
         </p>
         <p className="text-slate-600 text-xs mt-2">
-          © {new Date().getFullYear()} La Fréquence du Vivant
+          © 2025 - 2026 La Fréquence du Vivant
         </p>
       </footer>
     </div>
