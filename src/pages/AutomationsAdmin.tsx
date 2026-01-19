@@ -237,7 +237,7 @@ const AutomationsAdmin: React.FC = () => {
 
         {/* Footer */}
         <div className="mt-8 text-center text-sm text-muted-foreground">
-          <p>Module Automations - Gaspard Boréal © 2025</p>
+          <p>Module Automations - Gaspard Boréal © 2025 - 2026</p>
         </div>
       </div>
     </div>

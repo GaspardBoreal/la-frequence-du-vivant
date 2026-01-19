@@ -115,7 +115,7 @@ const AdminAccess: React.FC = () => {
         </div>
 
         <div className="mt-12 text-center text-sm text-muted-foreground">
-          <p>Page d'accès restreint - Gaspard Boréal © 2025</p>
+          <p>Page d'accès restreint - Gaspard Boréal © 2025 - 2026</p>
         </div>
       </div>
     </div>

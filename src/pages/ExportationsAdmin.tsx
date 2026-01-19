@@ -1095,7 +1095,7 @@ const ExportationsAdmin: React.FC = () => {
         </div>
 
         <div className="mt-12 text-center text-sm text-muted-foreground">
-          <p>Centre d'Exportation - Gaspard Boréal © 2025</p>
+          <p>Centre d'Exportation - Gaspard Boréal © 2025 - 2026</p>
         </div>
       </div>
     </div>

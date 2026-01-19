@@ -184,7 +184,7 @@ const AdminAuth: React.FC<AdminAuthProps> = ({ children }) => {
             )}
             
             <div className="mt-6 text-center text-sm text-muted-foreground">
-              <p>Protection d'accès - Gaspard Boréal © 2025</p>
+              <p>Protection d'accès - Gaspard Boréal © 2025 - 2026</p>
             </div>
           </CardContent>
         </Card>
