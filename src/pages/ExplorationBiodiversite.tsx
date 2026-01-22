@@ -13,6 +13,7 @@ import BiodiversityGradientRiver from '@/components/biodiversity/BiodiversityGra
 import EmblematicSpeciesGallery from '@/components/biodiversity/EmblematicSpeciesGallery';
 import { BiodiversityMap } from '@/components/biodiversity/BiodiversityMap';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import BiodiversityTestPanel from '@/components/biodiversity/BiodiversityTestPanel';
 
 export default function ExplorationBiodiversite() {
   const { slug } = useParams<{ slug: string }>();
@@ -283,12 +284,15 @@ export default function ExplorationBiodiversite() {
         </div>
       </section>
 
+      {/* Section 6: Test Panel */}
+      <BiodiversityTestPanel />
+
       {/* Footer */}
       <footer className="py-6 md:py-8 px-4 bg-slate-950 border-t border-slate-800 text-center">
-        <p className="text-slate-500 text-xs md:text-sm">
+        <p className="text-muted-foreground text-xs md:text-sm">
           Données issues de GBIF, iNaturalist, eBird et Xeno-Canto
         </p>
-        <p className="text-slate-600 text-xs mt-2">
+        <p className="text-muted-foreground/60 text-xs mt-2">
           © 2025 - 2026 La Fréquence du Vivant
         </p>
       </footer>
