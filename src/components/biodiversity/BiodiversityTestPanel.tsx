@@ -1,12 +1,23 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { motion } from 'framer-motion';
-import { MapPin, Search, Loader2, ChevronDown, ChevronUp, Navigation, Bird, Leaf, TreeDeciduous } from 'lucide-react';
+import { Search, Loader2, ChevronDown, ChevronUp, Navigation, Bird, Leaf, TreeDeciduous, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Slider } from '@/components/ui/slider';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useBiodiversityData } from '@/hooks/useBiodiversityData';
+import { useSpeciesTranslationBatch } from '@/hooks/useSpeciesTranslation';
+import SpeciesGalleryDetailModal from './SpeciesGalleryDetailModal';
 import { toast } from 'sonner';
+import { cn } from '@/lib/utils';
+
+type KingdomFilter = 'all' | 'birds' | 'plants' | 'fungi';
+
+// Helper to detect birds (family-based heuristic)
+const isBirdSpecies = (species: { family?: string; scientificName: string }) => {
+  const birdFamilies = ['Paridae', 'Turdidae', 'Fringillidae', 'Corvidae', 'Picidae', 'Strigidae', 'Accipitridae', 'Anatidae', 'Ardeidae', 'Columbidae', 'Passeridae', 'Muscicapidae', 'Sittidae', 'Certhiidae', 'Troglodytidae', 'Sylviidae', 'Regulidae', 'Aegithalidae', 'Hirundinidae', 'Motacillidae', 'Prunellidae', 'Emberizidae', 'Carduelidae', 'Oriolidae', 'Laniidae', 'Sturnidae', 'Phasianidae', 'Rallidae', 'Charadriidae', 'Scolopacidae', 'Laridae', 'Alcidae', 'Apodidae', 'Meropidae', 'Upupidae', 'Alcedinidae', 'Cuculidae', 'Caprimulgidae', 'Falconidae', 'Pandionidae', 'Tytonidae', 'Phalacrocoracidae', 'Podicipedidae', 'Gaviidae', 'Procellariidae', 'Sulidae', 'Ciconiidae', 'Threskiornithidae', 'Phoenicopteridae', 'Gruidae', 'Otididae', 'Recurvirostridae', 'Haematopodidae', 'Burhinidae', 'Glareolidae', 'Pteroclidae', 'Psittacidae'];
+  return birdFamilies.includes(species.family || '');
+};
 
 export default function BiodiversityTestPanel() {
   const [latitude, setLatitude] = useState<number>(44.85);
@@ -16,6 +27,14 @@ export default function BiodiversityTestPanel() {
   const [isSearchEnabled, setIsSearchEnabled] = useState(false);
   const [showDebugJson, setShowDebugJson] = useState(false);
   const [gpsLoading, setGpsLoading] = useState(false);
+  const [activeFilter, setActiveFilter] = useState<KingdomFilter>('all');
+  const [selectedSpecies, setSelectedSpecies] = useState<{
+    name: string;
+    scientificName: string;
+    count: number;
+    kingdom: string;
+    photos?: string[];
+  } | null>(null);
 
   const { data, isLoading, error, refetch } = useBiodiversityData({
     latitude: isSearchEnabled ? latitude : 0,
@@ -24,6 +43,35 @@ export default function BiodiversityTestPanel() {
     dateFilter,
     mode: 'interactive',
   });
+
+  // Prepare species for batch translation
+  const speciesToTranslate = useMemo(() => {
+    if (!data?.species) return [];
+    return data.species.map(sp => ({
+      scientificName: sp.scientificName,
+      commonName: sp.commonName
+    }));
+  }, [data?.species]);
+
+  const { data: translations, isLoading: translationsLoading } = useSpeciesTranslationBatch(speciesToTranslate);
+
+  // Create a map for quick translation lookup
+  const translationMap = useMemo(() => {
+    if (!translations) return new Map();
+    return new Map(translations.map(t => [t.scientificName, t]));
+  }, [translations]);
+
+  // Filter species based on active filter
+  const filteredSpecies = useMemo(() => {
+    if (!data?.species) return [];
+    return data.species.filter(sp => {
+      if (activeFilter === 'all') return true;
+      if (activeFilter === 'birds') return sp.kingdom === 'Animalia' && isBirdSpecies(sp);
+      if (activeFilter === 'plants') return sp.kingdom === 'Plantae';
+      if (activeFilter === 'fungi') return sp.kingdom === 'Fungi';
+      return true;
+    });
+  }, [data?.species, activeFilter]);
 
   const handleSearch = () => {
     if (!latitude || !longitude) {
@@ -54,6 +102,21 @@ export default function BiodiversityTestPanel() {
       },
       { enableHighAccuracy: true, timeout: 10000 }
     );
+  };
+
+  const handleSpeciesClick = (sp: typeof data.species[0], frenchName: string) => {
+    setSelectedSpecies({
+      name: frenchName,
+      scientificName: sp.scientificName,
+      count: sp.observations,
+      kingdom: sp.kingdom,
+      photos: sp.photos
+    });
+  };
+
+  const getDisplayName = (sp: typeof data.species[0]) => {
+    const translation = translationMap.get(sp.scientificName);
+    return translation?.commonName || sp.commonName;
   };
 
   return (
@@ -187,51 +250,141 @@ export default function BiodiversityTestPanel() {
             animate={{ opacity: 1, y: 0 }}
             className="space-y-6"
           >
-            {/* Summary cards */}
+            {/* Summary cards - now clickable filters */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-              <div className="bg-slate-900/80 rounded-xl border border-slate-700 p-4 text-center">
+              {/* All species */}
+              <button
+                onClick={() => setActiveFilter('all')}
+                className={cn(
+                  "bg-slate-900/80 rounded-xl border-2 p-4 text-center transition-all duration-200 hover:bg-slate-800/80",
+                  activeFilter === 'all' 
+                    ? "border-white ring-2 ring-white/20" 
+                    : "border-slate-700 hover:border-slate-500"
+                )}
+              >
+                <Sparkles className={cn(
+                  "h-5 w-5 mx-auto mb-1",
+                  activeFilter === 'all' ? "text-white" : "text-slate-400"
+                )} />
                 <div className="text-3xl font-bold text-white mb-1">
                   {data.summary.totalSpecies.toLocaleString('fr-FR')}
                 </div>
-                <div className="text-sm text-slate-400">Espèces</div>
-              </div>
-              <div className="bg-slate-900/80 rounded-xl border border-emerald-800/50 p-4 text-center">
-                <Bird className="h-5 w-5 text-emerald-400 mx-auto mb-1" />
+                <div className="text-sm text-slate-400">Toutes</div>
+              </button>
+
+              {/* Birds */}
+              <button
+                onClick={() => setActiveFilter('birds')}
+                className={cn(
+                  "bg-slate-900/80 rounded-xl border-2 p-4 text-center transition-all duration-200 hover:bg-slate-800/80",
+                  activeFilter === 'birds' 
+                    ? "border-emerald-400 ring-2 ring-emerald-400/20" 
+                    : "border-emerald-800/50 hover:border-emerald-600"
+                )}
+              >
+                <Bird className={cn(
+                  "h-5 w-5 mx-auto mb-1",
+                  activeFilter === 'birds' ? "text-emerald-300" : "text-emerald-400"
+                )} />
                 <div className="text-2xl font-bold text-emerald-400">{data.summary.birds}</div>
                 <div className="text-xs text-slate-400">Oiseaux</div>
-              </div>
-              <div className="bg-slate-900/80 rounded-xl border border-green-800/50 p-4 text-center">
-                <Leaf className="h-5 w-5 text-green-400 mx-auto mb-1" />
+              </button>
+
+              {/* Plants */}
+              <button
+                onClick={() => setActiveFilter('plants')}
+                className={cn(
+                  "bg-slate-900/80 rounded-xl border-2 p-4 text-center transition-all duration-200 hover:bg-slate-800/80",
+                  activeFilter === 'plants' 
+                    ? "border-green-400 ring-2 ring-green-400/20" 
+                    : "border-green-800/50 hover:border-green-600"
+                )}
+              >
+                <Leaf className={cn(
+                  "h-5 w-5 mx-auto mb-1",
+                  activeFilter === 'plants' ? "text-green-300" : "text-green-400"
+                )} />
                 <div className="text-2xl font-bold text-green-400">{data.summary.plants}</div>
                 <div className="text-xs text-slate-400">Plantes</div>
-              </div>
-              <div className="bg-slate-900/80 rounded-xl border border-amber-800/50 p-4 text-center">
-                <TreeDeciduous className="h-5 w-5 text-amber-400 mx-auto mb-1" />
+              </button>
+
+              {/* Fungi */}
+              <button
+                onClick={() => setActiveFilter('fungi')}
+                className={cn(
+                  "bg-slate-900/80 rounded-xl border-2 p-4 text-center transition-all duration-200 hover:bg-slate-800/80",
+                  activeFilter === 'fungi' 
+                    ? "border-amber-400 ring-2 ring-amber-400/20" 
+                    : "border-amber-800/50 hover:border-amber-600"
+                )}
+              >
+                <TreeDeciduous className={cn(
+                  "h-5 w-5 mx-auto mb-1",
+                  activeFilter === 'fungi' ? "text-amber-300" : "text-amber-400"
+                )} />
                 <div className="text-2xl font-bold text-amber-400">{data.summary.fungi}</div>
                 <div className="text-xs text-slate-400">Champignons</div>
-              </div>
+              </button>
             </div>
 
-            {/* Top 10 species */}
-            <div className="bg-slate-900/80 rounded-xl border border-slate-700 p-6">
-              <h3 className="text-lg font-semibold text-white mb-4">🏆 Top 10 espèces</h3>
-              <div className="space-y-3">
-                {data.species.slice(0, 10).map((sp, i) => (
-                  <div key={sp.id} className="flex items-center gap-3 py-2 border-b border-slate-800 last:border-0">
-                    <span className="flex items-center justify-center w-7 h-7 rounded-full bg-emerald-600 text-white text-sm font-bold shrink-0">
-                      {i + 1}
-                    </span>
-                    <div className="flex-1 min-w-0">
-                      <div className="text-white font-medium truncate">{sp.commonName}</div>
-                      <div className="text-xs text-slate-500 italic truncate">{sp.scientificName}</div>
-                    </div>
-                    <div className="text-sm text-slate-400">{sp.observations} obs.</div>
-                    {sp.audioUrl && (
-                      <span className="text-emerald-400 text-xs">🔊</span>
-                    )}
-                  </div>
-                ))}
+            {/* Filter indicator */}
+            {activeFilter !== 'all' && (
+              <div className="text-center text-sm text-slate-400">
+                Affichage de <span className="text-white font-medium">{filteredSpecies.length}</span> espèces filtrées
               </div>
+            )}
+
+            {/* Top species list */}
+            <div className="bg-slate-900/80 rounded-xl border border-slate-700 p-6">
+              <h3 className="text-lg font-semibold text-white mb-4">
+                🏆 {activeFilter === 'all' ? 'Top 10 espèces' : `Espèces (${filteredSpecies.length})`}
+              </h3>
+              
+              {translationsLoading && (
+                <div className="flex items-center gap-2 text-slate-400 text-sm mb-4">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Chargement des noms français...
+                </div>
+              )}
+
+              <div className="space-y-1">
+                {filteredSpecies.slice(0, activeFilter === 'all' ? 10 : 50).map((sp, i) => {
+                  const frenchName = getDisplayName(sp);
+                  const translation = translationMap.get(sp.scientificName);
+                  const isTranslated = translation?.source === 'local';
+                  
+                  return (
+                    <button
+                      key={sp.id}
+                      onClick={() => handleSpeciesClick(sp, frenchName)}
+                      className="w-full flex items-center gap-3 py-3 px-2 rounded-lg hover:bg-slate-800/80 transition-colors cursor-pointer text-left group"
+                    >
+                      <span className="flex items-center justify-center w-7 h-7 rounded-full bg-emerald-600 text-white text-sm font-bold shrink-0">
+                        {i + 1}
+                      </span>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <span className="text-white font-medium truncate group-hover:text-emerald-300 transition-colors">
+                            {frenchName}
+                          </span>
+                          {isTranslated && (
+                            <span className="text-xs text-emerald-500">🇫🇷</span>
+                          )}
+                        </div>
+                        <div className="text-xs text-slate-500 italic truncate">{sp.scientificName}</div>
+                      </div>
+                      <div className="text-sm text-slate-400 shrink-0">{sp.observations} obs.</div>
+                      {sp.audioUrl && (
+                        <span className="text-emerald-400 text-xs shrink-0">🔊</span>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+
+              {filteredSpecies.length === 0 && (
+                <p className="text-slate-500 text-center py-4">Aucune espèce trouvée pour ce filtre</p>
+              )}
             </div>
 
             {/* Debug JSON collapsible */}
@@ -265,6 +418,13 @@ export default function BiodiversityTestPanel() {
           </motion.div>
         )}
       </div>
+
+      {/* Species Detail Modal */}
+      <SpeciesGalleryDetailModal
+        species={selectedSpecies}
+        isOpen={!!selectedSpecies}
+        onClose={() => setSelectedSpecies(null)}
+      />
     </section>
   );
 }
