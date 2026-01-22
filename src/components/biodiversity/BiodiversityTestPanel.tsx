@@ -109,6 +109,21 @@ export default function BiodiversityTestPanel() {
     });
   }, [data?.species, activeFilter]);
 
+  // IMPORTANT: compute displayed counters from the exact same predicates used for filtering
+  // This avoids mismatches when the backend summary uses a different taxonomy mapping.
+  const computedCounts = useMemo(() => {
+    const all = data?.species ?? [];
+    const birds = all.filter(sp => sp.kingdom === 'Animalia' && isBirdSpecies(sp)).length;
+    const plants = all.filter(sp => sp.kingdom === 'Plantae').length;
+    const fungi = all.filter(sp => sp.kingdom === 'Fungi').length;
+    return {
+      total: all.length,
+      birds,
+      plants,
+      fungi,
+    };
+  }, [data?.species]);
+
   const handleSearch = () => {
     if (!latitude || !longitude) {
       toast.error('Veuillez entrer des coordonnées valides');
@@ -303,7 +318,7 @@ export default function BiodiversityTestPanel() {
                   activeFilter === 'all' ? "text-white" : "text-slate-400"
                 )} />
                 <div className="text-3xl font-bold text-white mb-1">
-                  {data.summary.totalSpecies.toLocaleString('fr-FR')}
+                  {computedCounts.total.toLocaleString('fr-FR')}
                 </div>
                 <div className="text-sm text-slate-400">Toutes</div>
               </button>
@@ -322,7 +337,7 @@ export default function BiodiversityTestPanel() {
                   "h-5 w-5 mx-auto mb-1",
                   activeFilter === 'birds' ? "text-emerald-300" : "text-emerald-400"
                 )} />
-                <div className="text-2xl font-bold text-emerald-400">{data.summary.birds}</div>
+                <div className="text-2xl font-bold text-emerald-400">{computedCounts.birds}</div>
                 <div className="text-xs text-slate-400">Oiseaux</div>
               </button>
 
@@ -340,7 +355,7 @@ export default function BiodiversityTestPanel() {
                   "h-5 w-5 mx-auto mb-1",
                   activeFilter === 'plants' ? "text-green-300" : "text-green-400"
                 )} />
-                <div className="text-2xl font-bold text-green-400">{data.summary.plants}</div>
+                <div className="text-2xl font-bold text-green-400">{computedCounts.plants}</div>
                 <div className="text-xs text-slate-400">Plantes</div>
               </button>
 
@@ -358,7 +373,7 @@ export default function BiodiversityTestPanel() {
                   "h-5 w-5 mx-auto mb-1",
                   activeFilter === 'fungi' ? "text-amber-300" : "text-amber-400"
                 )} />
-                <div className="text-2xl font-bold text-amber-400">{data.summary.fungi}</div>
+                <div className="text-2xl font-bold text-amber-400">{computedCounts.fungi}</div>
                 <div className="text-xs text-slate-400">Champignons</div>
               </button>
             </div>
