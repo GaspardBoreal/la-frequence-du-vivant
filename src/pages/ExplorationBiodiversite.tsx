@@ -12,8 +12,6 @@ import BiodiversityTop10Podium from '@/components/biodiversity/BiodiversityTop10
 import BiodiversityGradientRiver from '@/components/biodiversity/BiodiversityGradientRiver';
 import EmblematicSpeciesGallery from '@/components/biodiversity/EmblematicSpeciesGallery';
 import { BiodiversityMap } from '@/components/biodiversity/BiodiversityMap';
-import BiodiversityTransitionRadar from '@/components/biodiversity/BiodiversityTransitionRadar';
-import GaspardBorealNarratives from '@/components/biodiversity/GaspardBorealNarratives';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 export default function ExplorationBiodiversite() {
@@ -22,7 +20,6 @@ export default function ExplorationBiodiversite() {
   const { data: biodiversitySummary, isLoading: summaryLoading } = useExplorationBiodiversitySummary(exploration?.id);
   const { data: marcheurs = [] } = useExplorationMarcheurs(exploration?.id);
   
-  const [activeYear, setActiveYear] = useState(2025);
   const [selectedMarcheId, setSelectedMarcheId] = useState<string | null>(null);
   const [selectedMarcheurIds, setSelectedMarcheurIds] = useState<string[]>([]);
 
@@ -37,7 +34,6 @@ export default function ExplorationBiodiversite() {
     lon: selectedMarche?.longitude || firstMarcheWithCoords?.longitude || -0.5792,
   };
 
-  const intelligenceData = null;
   const isLoading = explorationLoading || summaryLoading;
 
   if (isLoading) {
@@ -111,115 +107,11 @@ export default function ExplorationBiodiversite() {
     },
   };
 
-  // Mock intelligence data
-  const mockIntelligenceData = intelligenceData || {
-    signals: [
-      {
-        species: 'Hirondelle rustique',
-        signalType: 'new_arrival' as const,
-        strength: 0.85,
-        trend: 'increasing' as const,
-        prediction: {
-          likelihood2035: 0.7,
-          likelihood2045: 0.9,
-          migrationDirection: 'Nord',
-          estimatedDistance: 150,
-        },
-      },
-      {
-        species: 'Loutre d\'Europe',
-        signalType: 'population_decline' as const,
-        strength: 0.6,
-        trend: 'stable' as const,
-        prediction: {
-          likelihood2035: 0.5,
-          likelihood2045: 0.4,
-        },
-      },
-    ],
-    territorialAlerts: [
-      {
-        id: 'alert-1',
-        title: 'Sécheresse prolongée',
-        description: 'Impact sur les populations de poissons migrateurs',
-        severity: 'warning' as const,
-        timeline: '2-5years' as const,
-        stakeholders: ['Pêcheurs', 'Écologistes'],
-        actionRequired: true,
-      },
-    ],
-    ecosystemTransition: {
-      currentType: 'Forêt alluviale tempérée',
-      futureType2035: 'Forêt mixte méditerranéenne',
-      futureType2045: 'Garrigue et maquis',
-      transitionProbability: 0.65,
-      conservationActions: [
-        {
-          action: 'Préserver les corridors écologiques',
-          priority: 'immediate' as const,
-          expectedOutcome: 'Maintien de la connectivité',
-        },
-        {
-          action: 'Restaurer les zones humides',
-          priority: 'short_term' as const,
-          expectedOutcome: 'Refuge pour espèces sensibles',
-        },
-      ],
-    },
-    citizenContributions: {
-      totalObservations: 15420,
-      validatedObservations: 12350,
-      topContributors: [
-        { username: 'naturalist_dordogne', observations: 1250, validationScore: 0.95 },
-        { username: 'birdwatcher24', observations: 890, validationScore: 0.88 },
-      ],
-    },
-    climateThresholds: biodiversitySummary.topSpecies.slice(0, 5).map(sp => ({
-      species: sp.name,
-      currentTemp: 12,
-      maxTolerance: 18,
-      criticalYear: 2038,
-    })),
-    gaspardNarratives: [
-      {
-        id: 'narrative-1',
-        type: 'future_chronicle' as const,
-        title: 'La Dordogne de 2045',
-        story: 'En cette année 2045, la rivière a changé de visage. Les hirondelles, autrefois rares, nichent maintenant sous chaque pont...',
-        species: 'Hirondelle rustique',
-        location: 'Bergerac',
-        mood: 'hopeful' as const,
-        futureYear: 2045,
-        readingTime: 5,
-        callToAction: {
-          actionType: 'observe' as const,
-          message: 'Participez au suivi des hirondelles',
-          link: 'https://www.oiseaux.net/',
-        },
-      },
-      {
-        id: 'narrative-2',
-        type: 'ecosystem_story' as const,
-        title: 'Les gardiens du fleuve',
-        story: 'Dans les méandres de la Dordogne, une communauté de loutres a reconquis son territoire ancestral...',
-        species: 'Loutre d\'Europe',
-        location: 'Argentat',
-        mood: 'inspiring' as const,
-        readingTime: 4,
-        callToAction: {
-          actionType: 'protect' as const,
-          message: 'Soutenez la protection des loutres',
-          link: 'https://www.lpo.fr/',
-        },
-      },
-    ],
-  };
-
   return (
     <div className="bg-slate-950">
       <SEOHead
         title={`Biodiversité | ${exploration.name}`}
-        description={`Découvrez les ${biodiversitySummary.totalSpecies.toLocaleString('fr-FR')} espèces identifiées le long de la Dordogne : Top 10, gradient fleuve, carte interactive et récits prospectifs.`}
+        description={`Découvrez les ${biodiversitySummary.totalSpecies.toLocaleString('fr-FR')} espèces identifiées le long de la Dordogne : Top 10, gradient fleuve, galerie emblématique et carte interactive.`}
         canonicalUrl={`${window.location.origin}/galerie-fleuve/exploration/${slug}/biodiversite`}
       />
 
@@ -388,24 +280,6 @@ export default function ExplorationBiodiversite() {
               }}
             />
           </div>
-        </div>
-      </section>
-
-      {/* Section 6: Prospective Radar 2025-2045 */}
-      <section className="py-12 md:py-16 px-4 bg-slate-950">
-        <div className="max-w-7xl mx-auto">
-          <BiodiversityTransitionRadar
-            intelligenceData={mockIntelligenceData}
-            activeYear={activeYear}
-            onYearChange={setActiveYear}
-          />
-        </div>
-      </section>
-
-      {/* Section 7: Gaspard Boreal Narratives */}
-      <section className="py-12 md:py-16 px-4 bg-gradient-to-b from-slate-950 via-purple-950/30 to-slate-950">
-        <div className="max-w-7xl mx-auto">
-          <GaspardBorealNarratives narratives={mockIntelligenceData.gaspardNarratives} />
         </div>
       </section>
 
