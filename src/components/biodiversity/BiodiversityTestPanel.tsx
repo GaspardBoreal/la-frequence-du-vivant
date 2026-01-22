@@ -13,10 +13,46 @@ import { cn } from '@/lib/utils';
 
 type KingdomFilter = 'all' | 'birds' | 'plants' | 'fungi';
 
-// Helper to detect birds (family-based heuristic)
-const isBirdSpecies = (species: { family?: string; scientificName: string }) => {
+// Helper to detect birds - robust detection using source, family and genus
+const isBirdSpecies = (species: { family?: string; scientificName: string; source?: string }) => {
+  // 1. If source is eBird, it's always a bird
+  if (species.source === 'ebird') return true;
+  
+  // 2. Check known bird families
   const birdFamilies = ['Paridae', 'Turdidae', 'Fringillidae', 'Corvidae', 'Picidae', 'Strigidae', 'Accipitridae', 'Anatidae', 'Ardeidae', 'Columbidae', 'Passeridae', 'Muscicapidae', 'Sittidae', 'Certhiidae', 'Troglodytidae', 'Sylviidae', 'Regulidae', 'Aegithalidae', 'Hirundinidae', 'Motacillidae', 'Prunellidae', 'Emberizidae', 'Carduelidae', 'Oriolidae', 'Laniidae', 'Sturnidae', 'Phasianidae', 'Rallidae', 'Charadriidae', 'Scolopacidae', 'Laridae', 'Alcidae', 'Apodidae', 'Meropidae', 'Upupidae', 'Alcedinidae', 'Cuculidae', 'Caprimulgidae', 'Falconidae', 'Pandionidae', 'Tytonidae', 'Phalacrocoracidae', 'Podicipedidae', 'Gaviidae', 'Procellariidae', 'Sulidae', 'Ciconiidae', 'Threskiornithidae', 'Phoenicopteridae', 'Gruidae', 'Otididae', 'Recurvirostridae', 'Haematopodidae', 'Burhinidae', 'Glareolidae', 'Pteroclidae', 'Psittacidae'];
-  return birdFamilies.includes(species.family || '');
+  if (birdFamilies.includes(species.family || '')) return true;
+  
+  // 3. Fallback: check known bird genera from scientific name
+  const knownBirdGenera = [
+    'Turdus', 'Columba', 'Certhia', 'Parus', 'Passer', 'Corvus', 'Cyanistes',
+    'Erithacus', 'Pica', 'Dendrocopos', 'Picus', 'Buteo', 'Falco', 'Strix',
+    'Athene', 'Ardea', 'Anas', 'Aythya', 'Cygnus', 'Motacilla', 'Sturnus',
+    'Garrulus', 'Phoenicurus', 'Sylvia', 'Phylloscopus', 'Regulus', 'Aegithalos',
+    'Sitta', 'Troglodytes', 'Hirundo', 'Delichon', 'Apus', 'Cuculus',
+    'Streptopelia', 'Fringilla', 'Carduelis', 'Chloris', 'Emberiza', 'Larus',
+    'Vanellus', 'Gallinula', 'Fulica', 'Podiceps', 'Phalacrocorax', 'Alcedo',
+    'Merops', 'Upupa', 'Accipiter', 'Milvus', 'Circus', 'Aquila', 'Pandion',
+    'Tyto', 'Asio', 'Bubo', 'Caprimulgus', 'Jynx', 'Oriolus', 'Lanius',
+    'Cinclus', 'Prunella', 'Anthus', 'Saxicola', 'Oenanthe', 'Luscinia',
+    'Ficedula', 'Muscicapa', 'Locustella', 'Acrocephalus', 'Hippolais',
+    'Cisticola', 'Cettia', 'Panurus', 'Remiz', 'Periparus', 'Lophophanes',
+    'Poecile', 'Nucifraga', 'Pyrrhocorax', 'Coloeus', 'Pyrrhula', 'Coccothraustes',
+    'Serinus', 'Linaria', 'Acanthis', 'Loxia', 'Pinicola', 'Carpodacus',
+    'Perdix', 'Coturnix', 'Phasianus', 'Tetrao', 'Lagopus', 'Bonasa',
+    'Grus', 'Ciconia', 'Platalea', 'Nycticorax', 'Egretta', 'Bubulcus',
+    'Botaurus', 'Ixobrychus', 'Rallus', 'Porzana', 'Crex', 'Haematopus',
+    'Recurvirostra', 'Himantopus', 'Charadrius', 'Pluvialis', 'Arenaria',
+    'Calidris', 'Tringa', 'Actitis', 'Numenius', 'Limosa', 'Scolopax',
+    'Gallinago', 'Phalaropus', 'Stercorarius', 'Chroicocephalus', 'Hydrocoloeus',
+    'Ichthyaetus', 'Gelochelidon', 'Hydroprogne', 'Thalasseus', 'Sterna',
+    'Sternula', 'Chlidonias', 'Rissa', 'Uria', 'Alca', 'Fratercula',
+    'Cepphus', 'Gavia', 'Fulmarus', 'Puffinus', 'Calonectris', 'Hydrobates',
+    'Morus', 'Sula', 'Pelecanus', 'Phoenicopterus', 'Anser', 'Branta',
+    'Tadorna', 'Mareca', 'Spatula', 'Netta', 'Bucephala', 'Mergellus',
+    'Mergus', 'Clangula', 'Melanitta', 'Somateria', 'Oxyura'
+  ];
+  const genus = species.scientificName.split(' ')[0];
+  return knownBirdGenera.includes(genus);
 };
 
 export default function BiodiversityTestPanel() {
