@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Search, Loader2, ChevronDown, ChevronUp, Navigation, Bird, Leaf, TreeDeciduous, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -6,7 +6,8 @@ import { Input } from '@/components/ui/input';
 import { Slider } from '@/components/ui/slider';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useBiodiversityData } from '@/hooks/useBiodiversityData';
-import { useSpeciesTranslationBatch } from '@/hooks/useSpeciesTranslation';
+import { useSpeciesTranslation, useSpeciesTranslationBatch } from '@/hooks/useSpeciesTranslation';
+import { useBiodiversityContextSafe } from '@/contexts/BiodiversityContext';
 import SpeciesGalleryDetailModal from './SpeciesGalleryDetailModal';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
@@ -72,6 +73,9 @@ export default function BiodiversityTestPanel() {
     photos?: string[];
   } | null>(null);
 
+  // Get the biodiversity context (if available) to publish data for Dordonia
+  const biodiversityContext = useBiodiversityContextSafe();
+
   const { data, isLoading, error, refetch } = useBiodiversityData({
     latitude: isSearchEnabled ? latitude : 0,
     longitude: isSearchEnabled ? longitude : 0,
@@ -123,6 +127,17 @@ export default function BiodiversityTestPanel() {
       fungi,
     };
   }, [data?.species]);
+
+  // Publish data to BiodiversityContext when search results are available
+  useEffect(() => {
+    if (data?.species && biodiversityContext?.setLocalBiodiversity) {
+      biodiversityContext.setLocalBiodiversity({
+        species: data.species,
+        location: { lat: latitude, lon: longitude, radius },
+        summary: computedCounts,
+      });
+    }
+  }, [data?.species, latitude, longitude, radius, computedCounts, biodiversityContext?.setLocalBiodiversity]);
 
   const handleSearch = () => {
     if (!latitude || !longitude) {

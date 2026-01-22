@@ -1,10 +1,11 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Send, Waves, RotateCcw, Loader2 } from 'lucide-react';
+import { X, Send, Waves, RotateCcw, Loader2, Leaf } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useDordoniaChat, DordoniaMessage } from '@/hooks/useDordoniaChat';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { useBiodiversityContextSafe } from '@/contexts/BiodiversityContext';
 import ReactMarkdown from 'react-markdown';
 
 interface DordoniaProps {
@@ -129,8 +130,14 @@ const DordoniaChat: React.FC<DordoniaProps> = ({ isOpen, onClose }) => {
   const isMobile = useIsMobile();
   const [inputValue, setInputValue] = useState('');
   const { messages, isLoading, error, sendMessage, resetSession } = useDordoniaChat();
+  const biodiversityContext = useBiodiversityContextSafe();
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  // Check if we have fresh biodiversity data (less than 10 minutes old)
+  const hasFreshBiodiversityData = biodiversityContext?.localData && 
+    (Date.now() - biodiversityContext.localData.timestamp) < 600000;
+  const speciesCount = biodiversityContext?.localData?.summary?.total || 0;
 
   // Auto-scroll vers le dernier message avec animation fluide
   useEffect(() => {
@@ -152,7 +159,8 @@ const DordoniaChat: React.FC<DordoniaProps> = ({ isOpen, onClose }) => {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (inputValue.trim() && !isLoading) {
-      sendMessage(inputValue);
+      // Pass biodiversity context to sendMessage
+      sendMessage(inputValue, biodiversityContext?.localData);
       setInputValue('');
     }
   };
@@ -222,7 +230,14 @@ const DordoniaChat: React.FC<DordoniaProps> = ({ isOpen, onClose }) => {
                 </motion.div>
                 <div>
                   <h2 className="text-sm font-semibold text-cyan-100">Dordonia</h2>
-                  <p className="text-xs text-cyan-400/70">L'esprit des marches sur la rivière Dordogne</p>
+                  {hasFreshBiodiversityData ? (
+                    <p className="text-xs text-emerald-400 flex items-center gap-1">
+                      <Leaf className="h-3 w-3" />
+                      {speciesCount} espèces locales détectées
+                    </p>
+                  ) : (
+                    <p className="text-xs text-cyan-400/70">L'esprit des marches sur la rivière Dordogne</p>
+                  )}
                 </div>
               </div>
               <div className="flex items-center gap-1">
