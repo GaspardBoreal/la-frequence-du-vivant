@@ -55,22 +55,6 @@ const MaterielPedagogique: React.FC = () => {
             </p>
           </motion.div>
 
-          {/* Citation d'intention */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.2 }}
-            className="mt-12 max-w-3xl mx-auto"
-          >
-            <div className="relative bg-card/30 backdrop-blur-sm border border-border/30 rounded-2xl p-8">
-              <Quote className="absolute -top-3 -left-3 w-8 h-8 text-purple-400/40" />
-              <p className="font-crimson text-xl md:text-2xl text-center text-foreground/90 italic leading-relaxed">
-                Marcher pour écouter.<br />
-                Écouter pour habiter.<br />
-                Habiter sans posséder.
-              </p>
-            </div>
-          </motion.div>
         </div>
       </header>
 
