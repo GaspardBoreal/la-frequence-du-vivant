@@ -4,7 +4,6 @@ import { Waves, TreeDeciduous, Wheat, ExternalLink, MapPin, Compass, Check, Leaf
 import { Button } from '@/components/ui/button';
 import Footer from '@/components/Footer';
 import DecorativeElements from '@/components/DecorativeElements';
-import FormationSection from '@/components/FormationSection';
 
 const DORDOGNE_URL = '/galerie-fleuve/exploration/remontee-dordogne-atlas-eaux-vivantes-2025-2045';
 const DORDOGNE_BIODIVERSITE_URL = `${DORDOGNE_URL}/biodiversite`;
@@ -231,8 +230,8 @@ const ExplorationsSensibles: React.FC = () => {
         </div>
       </section>
 
-      {/* Section Formation / Matériel pédagogique */}
-      <FormationSection />
+
+      {/* Citation finale */}
 
       {/* Citation finale */}
       <section className="relative z-10 px-6 py-12">

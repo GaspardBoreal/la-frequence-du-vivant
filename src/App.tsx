@@ -51,6 +51,7 @@ import ExplorationLayout from './layouts/ExplorationLayout';
 import ExplorationBiodiversite from './pages/ExplorationBiodiversite';
 import MarcheursAdmin from './pages/MarcheursAdmin';
 import ExplorationsSensibles from './pages/ExplorationsSensibles';
+import MaterielPedagogique from './pages/MaterielPedagogique';
 
 function App() {
   return (
@@ -67,6 +68,7 @@ function App() {
             <Route path="/bioacoustique-poetique" element={<BioacoustiquePoetique />} />
             <Route path="/bioacoustique/:slug" element={<MarcheDetailBio />} />
             <Route path="/explorations-sensibles" element={<ExplorationsSensibles />} />
+            <Route path="/materiel-pedagogique" element={<MaterielPedagogique />} />
             
             {/* Routes explorations */}
             <Route path="/explorations" element={<ExplorationsList />} />
