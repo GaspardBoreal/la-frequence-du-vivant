@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Waves, TreeDeciduous, Wheat, ExternalLink, MapPin, Compass } from 'lucide-react';
+import { Waves, TreeDeciduous, Wheat, ExternalLink, MapPin, Compass, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Footer from '@/components/Footer';
 import DecorativeElements from '@/components/DecorativeElements';
@@ -175,11 +175,15 @@ const ExplorationsSensibles: React.FC = () => {
                   <p className="text-muted-foreground mt-1">
                     Atlas des Vivants — De l'estuaire aux sources
                   </p>
+                  <span className="inline-flex items-center gap-1.5 mt-2 px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-300 text-xs font-medium">
+                    <Check className="h-3.5 w-3.5" />
+                    Disponible depuis janvier 2026
+                  </span>
                 </div>
               </div>
               
               <p className="text-muted-foreground mb-8 max-w-2xl">
-                Deux semaines pour remonter la rivière Dordogne, de Bec d'Ambès au Mont Dore. 
+                Deux semaines pour remonter la rivière Dordogne, de Bec d'Ambès au Mont Dore.
                 Deux semaines d'écoute poétique et bioacoustique pour imaginer nos futurs désirables.
               </p>
               
