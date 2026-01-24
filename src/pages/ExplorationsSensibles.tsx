@@ -1,11 +1,12 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Waves, TreeDeciduous, Wheat, ExternalLink, MapPin, Compass, Check } from 'lucide-react';
+import { Waves, TreeDeciduous, Wheat, ExternalLink, MapPin, Compass, Check, Leaf } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Footer from '@/components/Footer';
 import DecorativeElements from '@/components/DecorativeElements';
 
 const DORDOGNE_URL = '/galerie-fleuve/exploration/remontee-dordogne-atlas-eaux-vivantes-2025-2045';
+const DORDOGNE_BIODIVERSITE_URL = `${DORDOGNE_URL}/biodiversite`;
 
 interface ThemeCardProps {
   icon: React.ReactNode;
@@ -52,6 +53,10 @@ const ThemeCard: React.FC<ThemeCardProps> = ({
 const ExplorationsSensibles: React.FC = () => {
   const handleEnterExploration = () => {
     window.open(DORDOGNE_URL, '_blank', 'noopener,noreferrer');
+  };
+
+  const handleOpenBiodiversite = () => {
+    window.open(DORDOGNE_BIODIVERSITE_URL, '_blank', 'noopener,noreferrer');
   };
 
   return (
@@ -203,13 +208,23 @@ const ExplorationsSensibles: React.FC = () => {
                 </div>
               </div>
               
-              <Button
-                onClick={handleEnterExploration}
-                className="bg-emerald-600 hover:bg-emerald-500 text-white px-6 py-3 rounded-lg font-medium transition-all hover:shadow-lg hover:shadow-emerald-500/20"
-              >
-                Entrer dans l'exploration
-                <ExternalLink className="ml-2 h-4 w-4" />
-              </Button>
+              <div className="flex flex-wrap gap-3">
+                <Button
+                  onClick={handleEnterExploration}
+                  className="bg-emerald-600 hover:bg-emerald-500 text-white px-6 py-3 rounded-lg font-medium transition-all hover:shadow-lg hover:shadow-emerald-500/20"
+                >
+                  Entrer dans l'exploration
+                  <ExternalLink className="ml-2 h-4 w-4" />
+                </Button>
+                <Button
+                  onClick={handleOpenBiodiversite}
+                  variant="outline"
+                  className="border-emerald-500/30 text-emerald-300 hover:bg-emerald-500/10 hover:border-emerald-500/50 px-6 py-3 rounded-lg font-medium transition-all"
+                >
+                  <Leaf className="mr-2 h-4 w-4" />
+                  3 100+ espèces identifiées
+                </Button>
+              </div>
             </div>
           </motion.div>
         </div>
