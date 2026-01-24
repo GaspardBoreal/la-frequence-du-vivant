@@ -50,6 +50,7 @@ import AutomationsAdmin from './pages/AutomationsAdmin';
 import ExplorationLayout from './layouts/ExplorationLayout';
 import ExplorationBiodiversite from './pages/ExplorationBiodiversite';
 import MarcheursAdmin from './pages/MarcheursAdmin';
+import ExplorationsSensibles from './pages/ExplorationsSensibles';
 
 function App() {
   return (
@@ -65,6 +66,7 @@ function App() {
             {/* Nouvelles routes bioacoustiques */}
             <Route path="/bioacoustique-poetique" element={<BioacoustiquePoetique />} />
             <Route path="/bioacoustique/:slug" element={<MarcheDetailBio />} />
+            <Route path="/explorations-sensibles" element={<ExplorationsSensibles />} />
             
             {/* Routes explorations */}
             <Route path="/explorations" element={<ExplorationsList />} />
