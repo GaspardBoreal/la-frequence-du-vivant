@@ -89,17 +89,11 @@ const WelcomeMessage: React.FC = () => (
     <h3 className="text-lg font-medium text-cyan-100 mb-2">
       Dordonia
     </h3>
-    <p className="text-xs text-cyan-400/80 mb-3">
-      L'esprit des marches sur la rivière Dordogne
-    </p>
     <p className="text-sm text-cyan-300/80 leading-relaxed max-w-xs mx-auto">
-      Je suis Dordonia, mémoire vivante des marches de Gaspard Boréal le long de la rivière Dordogne d'Août 2025 à nos jours.
+      Je suis la mémoire vivante des marches de Gaspard Boréal le long de la rivière Dordogne d'Août 2025 à nos jours.
     </p>
     <p className="text-sm text-cyan-300/80 leading-relaxed max-w-xs mx-auto mt-2">
-      Je conserve la mémoire des chemins de halage, des berges murmurantes et des oiseaux d'eau de la vallée.
-    </p>
-    <p className="text-sm text-cyan-300/80 leading-relaxed max-w-xs mx-auto mt-2">
-      Je suis l'écho numérique de ce qui vit le long de la rivière.
+      Je suis l'écho numérique de ce qui vit le long de la rivière et de son histoire : chemins de halage, berges murmurantes, oiseaux d'eau de la vallée...
     </p>
   </motion.div>
 );
