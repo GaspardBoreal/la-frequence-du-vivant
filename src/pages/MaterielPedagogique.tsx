@@ -6,6 +6,7 @@ import { ArrowLeft, BookOpen, Quote, GraduationCap } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import FormationSection from '@/components/FormationSection';
 import OutilsSection from '@/components/OutilsSection';
+import ConstellationSection from '@/components/ConstellationSection';
 import Footer from '@/components/Footer';
 
 const MaterielPedagogique: React.FC = () => {
@@ -113,6 +114,9 @@ const MaterielPedagogique: React.FC = () => {
 
         {/* Section Outils du Marcheur */}
         <OutilsSection />
+
+        {/* Section Constellation des Voix Territoriales */}
+        <ConstellationSection />
 
         {/* Citation de clôture */}
         <motion.section
