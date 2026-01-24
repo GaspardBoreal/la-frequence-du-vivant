@@ -90,13 +90,13 @@ const Footer = () => {
               Ressources Académiques
             </h3>
             <div className="space-y-2">
-              <a 
-                href="#ressources" 
+              <Link 
+                to="/materiel-pedagogique" 
                 className="flex items-center gap-2 text-muted-foreground hover:text-[#4ade80] transition-colors"
               >
                 <BookOpen size={16} />
                 <span>Matériel pédagogique</span>
-              </a>
+              </Link>
               <a 
                 href="#presse" 
                 className="flex items-center gap-2 text-muted-foreground hover:text-[#4ade80] transition-colors"
