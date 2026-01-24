@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { ExternalLink, BookOpen, Mic, MapPin, Zap, Settings } from 'lucide-react';
+import { ExternalLink, BookOpen, Mic, MapPin, Leaf, Settings } from 'lucide-react';
 
 const Footer = () => {
   return (
@@ -61,13 +61,13 @@ const Footer = () => {
                 <MapPin size={16} />
                 <span>Marches Sensibles</span>
               </a>
-              <a 
-                href="/marches-techno-sensibles" 
+              <Link 
+                to="/explorations-sensibles" 
                 className="flex items-center gap-2 text-muted-foreground hover:text-[#4ade80] transition-colors"
               >
-                <Zap size={16} />
-                <span>Explorer la cartographie</span>
-              </a>
+                <Leaf size={16} />
+                <span>Explorations Sensibles</span>
+              </Link>
               <Link 
                 to="/bioacoustique-poetique" 
                 className="flex items-center gap-2 text-muted-foreground hover:text-[#4ade80] transition-colors"
