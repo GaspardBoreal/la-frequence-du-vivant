@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Footprints, Users, GraduationCap, BookOpen, Clock, Target, Compass, Sunrise, TreeDeciduous, Building2 } from 'lucide-react';
+import { Footprints, Users, GraduationCap, Clock, Target, Compass, Sunrise, TreeDeciduous, Building2 } from 'lucide-react';
 import {
   Accordion,
   AccordionContent,
@@ -102,43 +102,12 @@ const ProfilCard: React.FC<{ profil: ProfilFormation; delay: number }> = ({ prof
 
 const FormationSection: React.FC = () => {
   return (
-    <section className="relative z-10 px-6 py-16">
+    <section className="relative z-10 px-6 py-8">
       <div className="max-w-4xl mx-auto">
-        {/* Header */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
-          className="text-center mb-12"
-        >
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-purple-950/30 border border-purple-500/20 mb-6">
-            <BookOpen className="h-4 w-4 text-purple-400" />
-            <span className="text-sm text-purple-300">Matériel pédagogique</span>
-          </div>
-          
-          <h2 className="font-crimson text-3xl md:text-4xl text-foreground mb-2">
-            Les Marches du Vivant
-          </h2>
-          <p className="text-muted-foreground mb-6">
-            Poésie · Bioacoustique · Biodiversité
-          </p>
-          
-          <motion.blockquote
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.3 }}
-            className="max-w-xl mx-auto text-lg text-muted-foreground italic border-l-2 border-purple-500/30 pl-4 text-left"
-          >
-            Marcher pour écouter.<br />
-            Écouter pour habiter.<br />
-            Habiter sans posséder.
-          </motion.blockquote>
-        </motion.div>
-
         {/* 3 Profils de marcheurs */}
         <div className="grid md:grid-cols-3 gap-4 mb-12">
           {PARCOURS_FORMATION.map((profil, index) => (
-            <ProfilCard key={profil.id} profil={profil} delay={0.4 + index * 0.1} />
+            <ProfilCard key={profil.id} profil={profil} delay={0.1 + index * 0.1} />
           ))}
         </div>
 
@@ -264,18 +233,6 @@ const FormationSection: React.FC = () => {
           </div>
         </motion.div>
 
-        {/* Citation de clôture */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 1 }}
-          className="text-center"
-        >
-          <p className="font-crimson text-xl text-muted-foreground italic max-w-2xl mx-auto">
-            « Former des marcheurs, ce n'est pas transmettre une méthode,<br />
-            <span className="text-foreground">c'est ouvrir une qualité d'écoute et d'écriture poétique.</span> »
-          </p>
-        </motion.div>
       </div>
     </section>
   );
