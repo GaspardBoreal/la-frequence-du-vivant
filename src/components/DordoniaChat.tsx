@@ -96,7 +96,10 @@ const WelcomeMessage: React.FC = () => (
       Je suis Dordonia, mémoire vivante des marches de Gaspard Boréal le long de la rivière Dordogne d'Août 2025 à nos jours.
     </p>
     <p className="text-sm text-cyan-300/80 leading-relaxed max-w-xs mx-auto mt-2">
-      Je peux te répondre soit par écrit soit te parler avec les dialectes recréés lors des marches poétiques.
+      Je conserve la mémoire des chemins de halage, des berges murmurantes et des oiseaux d'eau de la vallée.
+    </p>
+    <p className="text-sm text-cyan-300/80 leading-relaxed max-w-xs mx-auto mt-2">
+      Je suis l'écho numérique de ce qui vit le long de la rivière.
     </p>
   </motion.div>
 );
