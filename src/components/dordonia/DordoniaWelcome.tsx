@@ -65,7 +65,7 @@ const DordoniaWelcome: React.FC<DordoniaWelcomeProps> = ({ onContinue }) => {
             initial={{ opacity: 0 }}
             animate={{ opacity: phase !== 'title' ? 0.7 : 0 }}
             transition={{ duration: 1 }}
-            className="text-lg text-muted-foreground mt-4"
+            className="text-lg text-muted-foreground mt-4 text-center mx-auto"
           >
             Marcher, écouter et décider avec la rivière
           </motion.p>
@@ -80,7 +80,7 @@ const DordoniaWelcome: React.FC<DordoniaWelcomeProps> = ({ onContinue }) => {
               transition={{ duration: 1.5 }}
               className="mb-12"
             >
-              <p className="font-crimson text-xl md:text-2xl text-cyan-300/80 italic">
+              <p className="font-crimson text-xl md:text-2xl text-cyan-300/80 italic text-center mx-auto">
                 « Nous n'écrivons qu'après la rivière. »
               </p>
             </motion.div>
