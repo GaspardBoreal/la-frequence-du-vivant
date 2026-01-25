@@ -103,8 +103,11 @@ const VoiceApparition: React.FC<VoiceApparitionProps> = ({
       }}
       exit={{ opacity: 0, scale: 0.8 }}
       transition={{ duration: 0.5, ease: 'easeOut' }}
-      style={{ left: `${position.x}%`, top: `${position.y}%` }}
-      className="absolute max-w-xs cursor-pointer"
+      style={{ 
+        left: `${Math.min(position.x, 50)}%`,
+        top: `${position.y}%`,
+      }}
+      className="absolute w-64 sm:w-72 max-w-[calc(100vw-2rem)] cursor-pointer"
       onClick={handleClick}
     >
       <div className={`
