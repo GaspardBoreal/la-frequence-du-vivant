@@ -1,8 +1,8 @@
 import { useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 
-// ID de l'exploration Dordogne (à adapter si besoin)
-const DORDOGNE_EXPLORATION_ID = '2a9f85d4-ec53-4cda-b181-fb8f7fc70a70';
+// ID de l'exploration Dordogne
+const DORDOGNE_EXPLORATION_ID = '10ed8c41-5361-42f0-b62d-cda24b1d1401';
 
 interface SpeciesData {
   scientificName?: string;
