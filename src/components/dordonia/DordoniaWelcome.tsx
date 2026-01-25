@@ -81,7 +81,8 @@ const DordoniaWelcome: React.FC<DordoniaWelcomeProps> = ({ onContinue }) => {
               className="mb-12"
             >
               <p className="font-crimson text-xl md:text-2xl text-cyan-300/80 italic text-center mx-auto">
-                « Nous n'écrivons qu'après la rivière. »
+                « Nous n'écrivons qu'après la rivière,<br />
+                commencez par marcher ou par écouter. »
               </p>
             </motion.div>
           )}
