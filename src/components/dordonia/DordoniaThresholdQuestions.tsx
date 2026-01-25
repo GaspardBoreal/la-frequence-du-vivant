@@ -102,7 +102,7 @@ const DordoniaThresholdQuestions: React.FC<DordoniaThresholdQuestionsProps> = ({
             <div className="space-y-3">
               <OptionButton
                 value="dehors"
-                label="Je suis en train de marcher dehors"
+                label="Je marche le long de la rivière Dordogne"
                 onClick={() => handleAnswer('ouEsTu', 'dehors')}
                 isSelected={answers.ouEsTu === 'dehors'}
               />
