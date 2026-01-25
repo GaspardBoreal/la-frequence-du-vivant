@@ -87,27 +87,27 @@ const DordoniaWelcome: React.FC<DordoniaWelcomeProps> = ({ onContinue }) => {
             </motion.div>
           )}
         </AnimatePresence>
-
-        {/* Continue hint */}
-        <AnimatePresence>
-          {canContinue && (
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 0.5 }}
-                transition={{ duration: 1, delay: 0.5 }}
-                className="absolute bottom-4 left-0 right-0 text-center"
-              >
-                <motion.p
-                  animate={{ opacity: [0.3, 0.6, 0.3] }}
-                  transition={{ duration: 2, repeat: Infinity }}
-                  className="text-sm text-muted-foreground"
-                >
-                Toucher pour continuer
-              </motion.p>
-            </motion.div>
-          )}
-        </AnimatePresence>
       </div>
+
+      {/* Continue hint - positioned outside content container for proper centering */}
+      <AnimatePresence>
+        {canContinue && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 0.5 }}
+            transition={{ duration: 1, delay: 0.5 }}
+            className="absolute bottom-16 left-0 right-0 flex justify-center"
+          >
+            <motion.p
+              animate={{ opacity: [0.3, 0.6, 0.3] }}
+              transition={{ duration: 2, repeat: Infinity }}
+              className="text-sm text-muted-foreground text-center"
+            >
+              Toucher pour continuer
+            </motion.p>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Footer */}
       <motion.footer
