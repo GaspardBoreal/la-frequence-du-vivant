@@ -266,7 +266,7 @@ const DordoniaChoirView: React.FC<DordoniaChoirViewProps> = ({ sessionKey, onExi
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            className="absolute inset-0 flex flex-col items-center justify-center"
+            className="absolute inset-0 flex flex-col items-center justify-center px-6"
           >
             <motion.div
               animate={{ 
@@ -276,9 +276,18 @@ const DordoniaChoirView: React.FC<DordoniaChoirViewProps> = ({ sessionKey, onExi
               transition={{ duration: 3, repeat: Infinity }}
               className="w-20 h-20 rounded-full bg-rose-500/10 mb-6"
             />
-            <p className="text-muted-foreground text-sm font-crimson italic">
-              Les seuils s'ouvrent... les apparitions arrivent.
-            </p>
+            <div className="text-center space-y-3">
+              <p className="text-muted-foreground text-sm font-crimson italic">
+                Qui souhaitez-vous invoquer ?
+              </p>
+              <div className="text-xs text-muted-foreground/70 font-crimson space-y-1">
+                <p><span className="text-cyan-400">Un oiseau</span> croise sur la rivière</p>
+                <p><span className="text-emerald-400">Une espèce</span> murmure son nom latin</p>
+                <p><span className="text-rose-400">Un fragment</span> de poésie surgit</p>
+                <p><span className="text-amber-400">Une voix</span> chante depuis les rives</p>
+                <p><span className="text-violet-400">Une morale</span> s'échappe d'une fable</p>
+              </div>
+            </div>
           </motion.div>
         )}
 
