@@ -486,9 +486,14 @@ const groupTextesByType = (textes: TexteExport[]): Map<string, TexteExport[]> =>
   return groups;
 };
 
-const groupTextesByMarche = (textes: TexteExport[]): Map<string, TexteExport[]> => {
-  // Group textes by marche with date info
-  const groupsWithDate = new Map<string, { date: string | null, textes: TexteExport[] }>();
+// Structure interne pour le tri chronologique des marches
+interface MarcheGroupWithDate {
+  date: string | null;
+  textes: TexteExport[];
+}
+
+const groupTextesByMarcheWithDate = (textes: TexteExport[]): Map<string, MarcheGroupWithDate> => {
+  const groupsWithDate = new Map<string, MarcheGroupWithDate>();
   
   textes.forEach(texte => {
     const key = texte.marche_nom || texte.marche_ville || 'Sans lieu';
@@ -507,12 +512,210 @@ const groupTextesByMarche = (textes: TexteExport[]): Map<string, TexteExport[]> 
     });
 
   // Rebuild sorted Map
-  const sortedMap = new Map<string, TexteExport[]>();
+  const sortedMap = new Map<string, MarcheGroupWithDate>();
   sortedEntries.forEach(([key, value]) => {
-    sortedMap.set(key, value.textes);
+    sortedMap.set(key, value);
   });
 
   return sortedMap;
+};
+
+const groupTextesByMarche = (textes: TexteExport[]): Map<string, TexteExport[]> => {
+  const groupsWithDate = groupTextesByMarcheWithDate(textes);
+  
+  // Convert to simple Map for backward compatibility
+  const simpleMap = new Map<string, TexteExport[]>();
+  groupsWithDate.forEach((value, key) => {
+    simpleMap.set(key, value.textes);
+  });
+
+  return simpleMap;
+};
+
+// ============================================================================
+// INDEX GENERATION FUNCTIONS
+// ============================================================================
+
+/**
+ * Create an index grouping texts by location (marche)
+ * Shows each location with its associated literary genres
+ */
+const createIndexByMarche = (textes: TexteExport[]): Paragraph[] => {
+  const paragraphs: Paragraph[] = [];
+  
+  // Index title
+  paragraphs.push(
+    new Paragraph({
+      children: [
+        new TextRun({
+          text: 'Index par Lieu',
+          bold: true,
+          size: 36,
+        }),
+      ],
+      heading: HeadingLevel.HEADING_1,
+      spacing: { after: 400 },
+    })
+  );
+
+  // Group texts by marche (chronologically sorted)
+  const marcheGroups = groupTextesByMarcheWithDate(textes);
+  
+  for (const [marcheName, { textes: groupTextes }] of marcheGroups) {
+    // Extract unique types for this marche, sorted by predefined order
+    const typeOrder = ['haiku', 'senryu', 'poeme', 'haibun', 'texte-libre', 'fable', 'prose', 'recit'];
+    const uniqueTypes = [...new Set(groupTextes.map(t => t.type_texte.toLowerCase()))];
+    const sortedTypes = uniqueTypes.sort((a, b) => {
+      const indexA = typeOrder.indexOf(a);
+      const indexB = typeOrder.indexOf(b);
+      return (indexA === -1 ? 999 : indexA) - (indexB === -1 ? 999 : indexB);
+    });
+    const typesInMarche = sortedTypes.map(t => getTypeLabel(t)).join(', ');
+    
+    // Location name (bold)
+    paragraphs.push(
+      new Paragraph({
+        children: [
+          new TextRun({
+            text: marcheName,
+            bold: true,
+            size: 24,
+          }),
+        ],
+        spacing: { before: 200, after: 50 },
+      })
+    );
+    
+    // Associated types (indented, italic)
+    paragraphs.push(
+      new Paragraph({
+        children: [
+          new TextRun({
+            text: typesInMarche,
+            italics: true,
+            size: 22,
+            color: '666666',
+          }),
+        ],
+        indent: { left: 400 },
+        spacing: { after: 100 },
+      })
+    );
+  }
+  
+  return paragraphs;
+};
+
+/**
+ * Create an index grouping texts by literary genre (type)
+ * Shows each genre with its associated locations
+ */
+const createIndexByType = (textes: TexteExport[]): Paragraph[] => {
+  const paragraphs: Paragraph[] = [];
+  
+  // Index title
+  paragraphs.push(
+    new Paragraph({
+      children: [
+        new TextRun({
+          text: 'Index par Genre Littéraire',
+          bold: true,
+          size: 36,
+        }),
+      ],
+      heading: HeadingLevel.HEADING_1,
+      spacing: { after: 400 },
+    })
+  );
+
+  // Group by type
+  const typeGroups = groupTextesByType(textes);
+  
+  // Predefined type order
+  const typeOrder = ['haiku', 'senryu', 'poeme', 'haibun', 'texte-libre', 'fable', 'prose', 'recit'];
+  const sortedTypes = Array.from(typeGroups.keys()).sort((a, b) => {
+    const indexA = typeOrder.indexOf(a);
+    const indexB = typeOrder.indexOf(b);
+    return (indexA === -1 ? 999 : indexA) - (indexB === -1 ? 999 : indexB);
+  });
+
+  for (const type of sortedTypes) {
+    const groupTextes = typeGroups.get(type)!;
+    
+    // Extract unique marches for this type, sorted chronologically
+    const marcheMap = new Map<string, string | null>();
+    groupTextes.forEach(t => {
+      const key = t.marche_nom || t.marche_ville || 'Sans lieu';
+      if (!marcheMap.has(key)) {
+        marcheMap.set(key, t.marche_date || null);
+      }
+    });
+    
+    // Sort marches by date
+    const sortedMarches = Array.from(marcheMap.entries())
+      .sort((a, b) => {
+        const dateA = a[1] || '9999-12-31';
+        const dateB = b[1] || '9999-12-31';
+        return dateA.localeCompare(dateB);
+      })
+      .map(([name]) => name);
+    
+    const marchesForType = sortedMarches.join(', ');
+    
+    // Type name (bold)
+    paragraphs.push(
+      new Paragraph({
+        children: [
+          new TextRun({
+            text: getTypeLabel(type),
+            bold: true,
+            size: 24,
+          }),
+        ],
+        spacing: { before: 200, after: 50 },
+      })
+    );
+    
+    // Associated marches (indented, italic)
+    paragraphs.push(
+      new Paragraph({
+        children: [
+          new TextRun({
+            text: marchesForType,
+            italics: true,
+            size: 22,
+            color: '666666',
+          }),
+        ],
+        indent: { left: 400 },
+        spacing: { after: 100 },
+      })
+    );
+  }
+  
+  return paragraphs;
+};
+
+/**
+ * Create the complete indexes section with both indexes
+ * Adds page breaks before and between indexes
+ */
+const createIndexesSection = (textes: TexteExport[]): Paragraph[] => {
+  const paragraphs: Paragraph[] = [];
+  
+  // Page break before indexes
+  paragraphs.push(new Paragraph({ children: [new PageBreak()] }));
+  
+  // Index by Location
+  paragraphs.push(...createIndexByMarche(textes));
+  
+  // Page break between the two indexes
+  paragraphs.push(new Paragraph({ children: [new PageBreak()] }));
+  
+  // Index by Literary Genre
+  paragraphs.push(...createIndexByType(textes));
+  
+  return paragraphs;
 };
 
 export const exportTextesToWord = async (
@@ -555,12 +758,10 @@ export const exportTextesToWord = async (
       children.push(new Paragraph({ children: [new PageBreak()] }));
     }
   } else {
-    const groups = groupTextesByMarche(textes);
+    const groups = groupTextesByMarcheWithDate(textes);
     
-    for (const [marcheName, groupTextes] of groups) {
-      // Get the date from the first texte in the group
-      const marcheDate = groupTextes[0]?.marche_date;
-      children.push(...createSectionHeader(marcheName, groupTextes.length, marcheDate, false));
+    for (const [marcheName, { date: marcheDate, textes: groupTextes }] of groups) {
+      children.push(...createSectionHeader(marcheName, groupTextes.length, marcheDate || undefined, false));
       
       groupTextes.forEach(texte => {
         children.push(...createTexteEntry(texte, options.includeMetadata));
@@ -569,6 +770,11 @@ export const exportTextesToWord = async (
       // Page break between sections
       children.push(new Paragraph({ children: [new PageBreak()] }));
     }
+  }
+
+  // Add both indexes at the end of the document
+  if (options.includeTableOfContents) {
+    children.push(...createIndexesSection(textes));
   }
 
   // Create document
