@@ -115,7 +115,7 @@ const DordoniaWelcome: React.FC<DordoniaWelcomeProps> = ({ onContinue }) => {
         transition={{ duration: 2, delay: 3 }}
         className="absolute bottom-4 left-0 right-0 flex justify-center"
       >
-        <p className="font-crimson text-xs tracking-wide text-muted-foreground/60 italic text-center">
+        <p className="font-crimson text-sm tracking-wide text-muted-foreground/60 italic text-center">
           © 2026 Gaspard Boréal / Mots, marches et code sous licence CC BY-NC-SA 4.0
         </p>
       </motion.footer>
