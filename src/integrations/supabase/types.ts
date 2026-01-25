@@ -232,6 +232,318 @@ export type Database = {
         }
         Relationships: []
       }
+      dordonia_atlas: {
+        Row: {
+          contenu: string | null
+          created_at: string
+          exploration_id: string | null
+          grid_cell: string
+          id: string
+          is_silent_zone: boolean | null
+          session_id: string
+          type_entree: string
+        }
+        Insert: {
+          contenu?: string | null
+          created_at?: string
+          exploration_id?: string | null
+          grid_cell: string
+          id?: string
+          is_silent_zone?: boolean | null
+          session_id: string
+          type_entree: string
+        }
+        Update: {
+          contenu?: string | null
+          created_at?: string
+          exploration_id?: string | null
+          grid_cell?: string
+          id?: string
+          is_silent_zone?: boolean | null
+          session_id?: string
+          type_entree?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dordonia_atlas_exploration_id_fkey"
+            columns: ["exploration_id"]
+            isOneToOne: false
+            referencedRelation: "explorations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      dordonia_care_registry: {
+        Row: {
+          accomplished_at: string | null
+          acte_soin: string
+          created_at: string
+          id: string
+          revers_id: string
+          statut: string
+          temoignage: string | null
+        }
+        Insert: {
+          accomplished_at?: string | null
+          acte_soin: string
+          created_at?: string
+          id?: string
+          revers_id: string
+          statut?: string
+          temoignage?: string | null
+        }
+        Update: {
+          accomplished_at?: string | null
+          acte_soin?: string
+          created_at?: string
+          id?: string
+          revers_id?: string
+          statut?: string
+          temoignage?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dordonia_care_registry_revers_id_fkey"
+            columns: ["revers_id"]
+            isOneToOne: false
+            referencedRelation: "dordonia_revers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      dordonia_choeur: {
+        Row: {
+          apparition: string
+          created_at: string
+          expires_at: string | null
+          exploration_id: string | null
+          id: string
+          is_ephemeral: boolean | null
+          session_id: string
+        }
+        Insert: {
+          apparition: string
+          created_at?: string
+          expires_at?: string | null
+          exploration_id?: string | null
+          id?: string
+          is_ephemeral?: boolean | null
+          session_id: string
+        }
+        Update: {
+          apparition?: string
+          created_at?: string
+          expires_at?: string | null
+          exploration_id?: string | null
+          id?: string
+          is_ephemeral?: boolean | null
+          session_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dordonia_choeur_exploration_id_fkey"
+            columns: ["exploration_id"]
+            isOneToOne: false
+            referencedRelation: "explorations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      dordonia_fragments: {
+        Row: {
+          contenu: string | null
+          created_at: string
+          id: string
+          is_silence: boolean | null
+          metadata: Json | null
+          scenario: string
+          session_id: string | null
+        }
+        Insert: {
+          contenu?: string | null
+          created_at?: string
+          id?: string
+          is_silence?: boolean | null
+          metadata?: Json | null
+          scenario: string
+          session_id?: string | null
+        }
+        Update: {
+          contenu?: string | null
+          created_at?: string
+          id?: string
+          is_silence?: boolean | null
+          metadata?: Json | null
+          scenario?: string
+          session_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dordonia_fragments_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "dordonia_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      dordonia_parlement: {
+        Row: {
+          cas_deliberation: string
+          created_at: string
+          decision: string | null
+          deliberation: string | null
+          donnees_sobres: Json | null
+          id: string
+          incertitude_affichee: string | null
+          pv_genere: string | null
+          revers_id: string | null
+          session_id: string | null
+          veto_riviere: boolean | null
+        }
+        Insert: {
+          cas_deliberation: string
+          created_at?: string
+          decision?: string | null
+          deliberation?: string | null
+          donnees_sobres?: Json | null
+          id?: string
+          incertitude_affichee?: string | null
+          pv_genere?: string | null
+          revers_id?: string | null
+          session_id?: string | null
+          veto_riviere?: boolean | null
+        }
+        Update: {
+          cas_deliberation?: string
+          created_at?: string
+          decision?: string | null
+          deliberation?: string | null
+          donnees_sobres?: Json | null
+          id?: string
+          incertitude_affichee?: string | null
+          pv_genere?: string | null
+          revers_id?: string | null
+          session_id?: string | null
+          veto_riviere?: boolean | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dordonia_parlement_revers_id_fkey"
+            columns: ["revers_id"]
+            isOneToOne: false
+            referencedRelation: "dordonia_revers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dordonia_parlement_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "dordonia_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      dordonia_revers: {
+        Row: {
+          created_at: string
+          decision: string
+          dette_reparation: string | null
+          exploration_id: string | null
+          id: string
+          is_sealed: boolean | null
+          pertes_humain_differe: Json | null
+          pertes_humain_immediat: Json | null
+          pertes_machine: Json | null
+          pertes_riviere: Json | null
+          sealed_at: string | null
+          session_id: string
+        }
+        Insert: {
+          created_at?: string
+          decision: string
+          dette_reparation?: string | null
+          exploration_id?: string | null
+          id?: string
+          is_sealed?: boolean | null
+          pertes_humain_differe?: Json | null
+          pertes_humain_immediat?: Json | null
+          pertes_machine?: Json | null
+          pertes_riviere?: Json | null
+          sealed_at?: string | null
+          session_id: string
+        }
+        Update: {
+          created_at?: string
+          decision?: string
+          dette_reparation?: string | null
+          exploration_id?: string | null
+          id?: string
+          is_sealed?: boolean | null
+          pertes_humain_differe?: Json | null
+          pertes_humain_immediat?: Json | null
+          pertes_machine?: Json | null
+          pertes_riviere?: Json | null
+          sealed_at?: string | null
+          session_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dordonia_revers_exploration_id_fkey"
+            columns: ["exploration_id"]
+            isOneToOne: false
+            referencedRelation: "explorations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      dordonia_sessions: {
+        Row: {
+          context: Json | null
+          created_at: string
+          exploration_id: string | null
+          id: string
+          scenario_actif: string | null
+          session_key: string
+          seuil_ou_es_tu: string | null
+          seuil_que_cherches_tu: string | null
+          seuil_quel_risque: string | null
+          updated_at: string
+        }
+        Insert: {
+          context?: Json | null
+          created_at?: string
+          exploration_id?: string | null
+          id?: string
+          scenario_actif?: string | null
+          session_key: string
+          seuil_ou_es_tu?: string | null
+          seuil_que_cherches_tu?: string | null
+          seuil_quel_risque?: string | null
+          updated_at?: string
+        }
+        Update: {
+          context?: Json | null
+          created_at?: string
+          exploration_id?: string | null
+          id?: string
+          scenario_actif?: string | null
+          session_key?: string
+          seuil_ou_es_tu?: string | null
+          seuil_que_cherches_tu?: string | null
+          seuil_quel_risque?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dordonia_sessions_exploration_id_fkey"
+            columns: ["exploration_id"]
+            isOneToOne: false
+            referencedRelation: "explorations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       engagement_analytics: {
         Row: {
           created_at: string
