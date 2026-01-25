@@ -281,11 +281,11 @@ const DordoniaChoirView: React.FC<DordoniaChoirViewProps> = ({ sessionKey, onExi
                 Qui souhaitez-vous invoquer ?
               </p>
               <div className="text-xs text-muted-foreground/70 font-crimson space-y-1">
-                <p><span className="text-cyan-400">Un oiseau</span> croise sur la rivière</p>
-                <p><span className="text-emerald-400">Une espèce</span> murmure son nom latin</p>
-                <p><span className="text-rose-400">Un fragment</span> de poésie surgit</p>
-                <p><span className="text-amber-400">Une voix</span> chante depuis les rives</p>
-                <p><span className="text-violet-400">Une morale</span> s'échappe d'une fable</p>
+                <p><span className="text-cyan-400">Un oiseau</span> croisé sur la rivière</p>
+                <p><span className="text-emerald-400">Une espèce</span> murmurant son nom latin</p>
+                <p><span className="text-rose-400">Un fragment</span> de poésie surgissant</p>
+                <p><span className="text-amber-400">Une voix</span> chantant depuis les rives</p>
+                <p><span className="text-violet-400">Une morale</span> s'échappant d'une fable</p>
               </div>
             </div>
           </motion.div>
