@@ -46,8 +46,11 @@ const FragmentApparition: React.FC<FragmentApparitionProps> = ({
       }}
       exit={{ opacity: 0, x: 30 }}
       transition={{ duration: 0.8, ease: 'easeOut' }}
-      style={{ left: `${position.x}%`, top: `${position.y}%` }}
-      className="absolute max-w-sm cursor-pointer"
+      style={{ 
+        left: `${Math.min(position.x, 50)}%`,
+        top: `${position.y}%`,
+      }}
+      className="absolute w-72 sm:w-80 max-w-[calc(100vw-2rem)] cursor-pointer right-auto"
       onClick={handleClick}
     >
       <div className={`
@@ -72,7 +75,7 @@ const FragmentApparition: React.FC<FragmentApparitionProps> = ({
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: index * 0.15 }}
-              className="font-crimson text-base text-rose-100/90 italic leading-relaxed"
+              className="font-crimson text-base text-rose-100/90 italic leading-relaxed break-words"
             >
               {line}
             </motion.p>
