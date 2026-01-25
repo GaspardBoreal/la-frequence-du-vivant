@@ -650,6 +650,30 @@ export type Database = {
         }
         Relationships: []
       }
+      export_keywords: {
+        Row: {
+          category: string | null
+          created_at: string
+          created_by: string | null
+          id: string
+          keyword: string
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          keyword: string
+        }
+        Update: {
+          category?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          keyword?: string
+        }
+        Relationships: []
+      }
       fables_narratives: {
         Row: {
           contenu_principal: string
