@@ -911,7 +911,7 @@ const ExportationsAdmin: React.FC = () => {
                             if (selectedMarchesWithoutTexts.length > 0) {
                               return (
                                 <>
-                                  <span>Les marchés sélectionnés n'ont pas de textes :</span>
+                                  <span>Les marches sélectionnées n'ont pas de textes :</span>
                                   <ul className="mt-1 ml-4 list-disc text-xs">
                                     {selectedMarchesWithoutTexts.map(m => (
                                       <li key={m!.id}>{m!.nom_marche || m!.ville}</li>
@@ -964,7 +964,7 @@ const ExportationsAdmin: React.FC = () => {
               <CardContent>
                 <div className="flex items-center justify-between">
                   <div className="text-sm text-muted-foreground">
-                    Colonnes : Titre, Type, Marché, Ville, Région, Contenu, Date
+                    Colonnes : Titre, Type, Marche, Ville, Région, Contenu, Date
                   </div>
                   <Button
                     variant="outline"
