@@ -329,12 +329,17 @@ const createTableOfContentsSection = (): Paragraph[] => {
   ];
 };
 
-const createSectionHeader = (title: string, count: number, date?: string): Paragraph[] => {
+const createSectionHeader = (
+  title: string, 
+  count: number, 
+  date?: string,
+  showCount: boolean = true
+): Paragraph[] => {
   const paragraphs: Paragraph[] = [
     new Paragraph({
       children: [
         new TextRun({
-          text: `${title} (${count})`,
+          text: showCount ? `${title} (${count})` : title,
           bold: true,
           size: 32,
         }),
@@ -550,7 +555,7 @@ export const exportTextesToWord = async (
     for (const [marcheName, groupTextes] of groups) {
       // Get the date from the first texte in the group
       const marcheDate = groupTextes[0]?.marche_date;
-      children.push(...createSectionHeader(marcheName, groupTextes.length, marcheDate));
+      children.push(...createSectionHeader(marcheName, groupTextes.length, marcheDate, false));
       
       groupTextes.forEach(texte => {
         children.push(...createTexteEntry(texte, options.includeMetadata));
