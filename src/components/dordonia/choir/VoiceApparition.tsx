@@ -8,6 +8,7 @@ interface VoiceApparitionProps {
   position: { x: number; y: number };
   onExpire: () => void;
   ttl: number;
+  zIndex?: number;
 }
 
 const VoiceApparition: React.FC<VoiceApparitionProps> = ({
@@ -15,6 +16,7 @@ const VoiceApparition: React.FC<VoiceApparitionProps> = ({
   position,
   onExpire,
   ttl,
+  zIndex = 100,
 }) => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [isPinned, setIsPinned] = useState(false);
@@ -106,6 +108,7 @@ const VoiceApparition: React.FC<VoiceApparitionProps> = ({
       style={{ 
         left: `${Math.min(position.x, 50)}%`,
         top: `${position.y}%`,
+        zIndex,
       }}
       className="absolute w-64 sm:w-72 max-w-[calc(100vw-2rem)] cursor-pointer"
       onClick={handleClick}

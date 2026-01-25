@@ -20,6 +20,7 @@ interface Apparition {
   createdAt: Date;
   ttl: number;
   content: RandomBird | RandomSpecies | RandomText | RandomAudio;
+  zIndex: number;
 }
 
 // Configuration des timers par type d'apparition
@@ -68,6 +69,9 @@ const DordoniaChoirView: React.FC<DordoniaChoirViewProps> = ({ sessionKey, onExi
     moral: null,
   });
   
+  // Compteur z-index global pour que les nouvelles apparitions soient toujours au premier plan
+  const zIndexCounter = useRef(100);
+  
   const { fetchRandomBird, fetchRandomSpecies, fetchRandomText, fetchRandomAudio } = useRandomExplorationData();
 
   // Supprimer une apparition
@@ -82,9 +86,13 @@ const DordoniaChoirView: React.FC<DordoniaChoirViewProps> = ({ sessionKey, onExi
     const id = `${type}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     const ttl = randomInRange(APPARITION_CONFIG[type].ttl);
     
+    // Incrémenter le z-index pour que cette apparition soit au premier plan
+    zIndexCounter.current += 1;
+    const zIndex = zIndexCounter.current;
+    
     setApparitions(prev => {
       const position = generatePosition(prev);
-      return [...prev, { id, type, position, createdAt: new Date(), ttl, content }];
+      return [...prev, { id, type, position, createdAt: new Date(), ttl, content, zIndex }];
     });
     
     setStats(prev => ({ 
@@ -207,6 +215,7 @@ const DordoniaChoirView: React.FC<DordoniaChoirViewProps> = ({ sessionKey, onExi
       key: apparition.id,
       position: apparition.position,
       ttl: apparition.ttl,
+      zIndex: apparition.zIndex,
       onExpire: () => removeApparition(apparition.id),
     };
 

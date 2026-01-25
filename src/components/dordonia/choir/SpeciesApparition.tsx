@@ -8,6 +8,7 @@ interface SpeciesApparitionProps {
   position: { x: number; y: number };
   onExpire: () => void;
   ttl: number;
+  zIndex?: number;
 }
 
 const SpeciesApparition: React.FC<SpeciesApparitionProps> = ({
@@ -15,6 +16,7 @@ const SpeciesApparition: React.FC<SpeciesApparitionProps> = ({
   position,
   onExpire,
   ttl,
+  zIndex = 100,
 }) => {
   const [isPinned, setIsPinned] = useState(false);
   const [photoUrl, setPhotoUrl] = useState<string | null>(null);
@@ -76,8 +78,12 @@ const SpeciesApparition: React.FC<SpeciesApparitionProps> = ({
       }}
       exit={{ opacity: 0, scale: 0.7, filter: 'blur(10px)' }}
       transition={{ duration: 0.7, ease: 'easeOut' }}
-      style={{ left: `${position.x}%`, top: `${position.y}%` }}
-      className="absolute max-w-xs cursor-pointer"
+      style={{ 
+        left: `${Math.min(position.x, 50)}%`,
+        top: `${position.y}%`,
+        zIndex,
+      }}
+      className="absolute w-64 sm:w-72 max-w-[calc(100vw-2rem)] cursor-pointer"
       onClick={handleClick}
     >
       <div className={`

@@ -8,6 +8,7 @@ interface BirdApparitionProps {
   position: { x: number; y: number };
   onExpire: () => void;
   ttl: number;
+  zIndex?: number;
 }
 
 const BirdApparition: React.FC<BirdApparitionProps> = ({
@@ -15,6 +16,7 @@ const BirdApparition: React.FC<BirdApparitionProps> = ({
   position,
   onExpire,
   ttl,
+  zIndex = 100,
 }) => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [audio, setAudio] = useState<HTMLAudioElement | null>(null);
@@ -101,8 +103,12 @@ const BirdApparition: React.FC<BirdApparitionProps> = ({
       }}
       exit={{ opacity: 0, scale: 0.6, y: -20 }}
       transition={{ duration: 0.6, ease: 'easeOut' }}
-      style={{ left: `${position.x}%`, top: `${position.y}%` }}
-      className="absolute max-w-xs cursor-pointer"
+      style={{ 
+        left: `${Math.min(position.x, 50)}%`,
+        top: `${position.y}%`,
+        zIndex,
+      }}
+      className="absolute w-64 sm:w-72 max-w-[calc(100vw-2rem)] cursor-pointer"
       onClick={handleClick}
     >
       <div className={`
