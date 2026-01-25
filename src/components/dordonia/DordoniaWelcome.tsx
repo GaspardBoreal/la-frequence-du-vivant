@@ -91,17 +91,17 @@ const DordoniaWelcome: React.FC<DordoniaWelcomeProps> = ({ onContinue }) => {
         {/* Continue hint */}
         <AnimatePresence>
           {canContinue && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 0.5 }}
-              transition={{ duration: 1, delay: 0.5 }}
-              className="absolute bottom-8 left-0 right-0"
-            >
-              <motion.p
-                animate={{ opacity: [0.3, 0.6, 0.3] }}
-                transition={{ duration: 2, repeat: Infinity }}
-                className="text-sm text-muted-foreground"
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 0.5 }}
+                transition={{ duration: 1, delay: 0.5 }}
+                className="absolute bottom-4 left-0 right-0 text-center"
               >
+                <motion.p
+                  animate={{ opacity: [0.3, 0.6, 0.3] }}
+                  transition={{ duration: 2, repeat: Infinity }}
+                  className="text-sm text-muted-foreground"
+                >
                 Toucher pour continuer
               </motion.p>
             </motion.div>
