@@ -33,6 +33,7 @@ interface ExportOptions {
   includeKeywordIndex?: boolean;
   selectedKeywordCategories?: string[];
   customKeywords?: string[];
+  categorizedCustomKeywords?: { keyword: string; category: string }[];
 }
 
 // ============================================================================
@@ -866,7 +867,8 @@ const capitalizeFirst = (str: string): string => {
 const extractKeywordsFromTextes = (
   textes: TexteExport[],
   selectedCategories: string[],
-  customKeywords: string[]
+  customKeywords: string[],
+  categorizedCustomKeywords: { keyword: string; category: string }[] = []
 ): Map<string, KeywordOccurrence> => {
   const occurrences = new Map<string, KeywordOccurrence>();
   
@@ -881,7 +883,15 @@ const extractKeywordsFromTextes = (
     }
   }
   
-  // Add custom keywords to a special category
+  // Add categorized custom keywords to their respective categories
+  for (const { keyword, category } of categorizedCustomKeywords) {
+    const trimmed = keyword.trim().toLowerCase();
+    if (trimmed && !categoryKeywordsMap.has(trimmed) && selectedCategories.includes(category)) {
+      categoryKeywordsMap.set(trimmed, category);
+    }
+  }
+  
+  // Add uncategorized custom keywords to a special category (fallback)
   for (const keyword of customKeywords) {
     const trimmed = keyword.trim().toLowerCase();
     if (trimmed && !categoryKeywordsMap.has(trimmed)) {
@@ -918,11 +928,12 @@ const extractKeywordsFromTextes = (
 const createKeywordIndex = (
   textes: TexteExport[],
   selectedCategories: string[],
-  customKeywords: string[]
+  customKeywords: string[],
+  categorizedCustomKeywords: { keyword: string; category: string }[] = []
 ): Paragraph[] => {
   const paragraphs: Paragraph[] = [];
   
-  const occurrences = extractKeywordsFromTextes(textes, selectedCategories, customKeywords);
+  const occurrences = extractKeywordsFromTextes(textes, selectedCategories, customKeywords, categorizedCustomKeywords);
   
   if (occurrences.size === 0) {
     return paragraphs;
@@ -1038,7 +1049,8 @@ const createIndexesSection = (
   textes: TexteExport[],
   includeKeywordIndex: boolean = false,
   selectedKeywordCategories: string[] = [],
-  customKeywords: string[] = []
+  customKeywords: string[] = [],
+  categorizedCustomKeywords: { keyword: string; category: string }[] = []
 ): Paragraph[] => {
   const paragraphs: Paragraph[] = [];
   
@@ -1057,7 +1069,7 @@ const createIndexesSection = (
   // Keyword Index (if enabled)
   if (includeKeywordIndex && selectedKeywordCategories.length > 0) {
     paragraphs.push(new Paragraph({ children: [new PageBreak()] }));
-    paragraphs.push(...createKeywordIndex(textes, selectedKeywordCategories, customKeywords));
+    paragraphs.push(...createKeywordIndex(textes, selectedKeywordCategories, customKeywords, categorizedCustomKeywords));
   }
   
   return paragraphs;
@@ -1123,7 +1135,8 @@ export const exportTextesToWord = async (
       textes,
       options.includeKeywordIndex ?? false,
       options.selectedKeywordCategories ?? [],
-      options.customKeywords ?? []
+      options.customKeywords ?? [],
+      options.categorizedCustomKeywords ?? []
     ));
   }
 

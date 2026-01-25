@@ -111,11 +111,12 @@ const ExportationsAdmin: React.FC = () => {
     new Set(KEYWORD_CATEGORIES.map(c => c.id))
   );
   const [customKeywords, setCustomKeywords] = useState('');
-  const [savedKeywords, setSavedKeywords] = useState<string[]>([]);
+  const [savedKeywords, setSavedKeywords] = useState<{ keyword: string; category: string }[]>([]);
   const [loadingKeywords, setLoadingKeywords] = useState(false);
   const [suggestingKeywords, setSuggestingKeywords] = useState(false);
   const [suggestedKeywords, setSuggestedKeywords] = useState<string[]>([]);
   const [newKeywordInput, setNewKeywordInput] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState<string>('faune');
 
   // Load data
   useEffect(() => {
@@ -216,17 +217,16 @@ const ExportationsAdmin: React.FC = () => {
       try {
         const { data, error } = await supabase
           .from('export_keywords')
-          .select('keyword')
-          .eq('category', 'custom')
-          .order('created_at', { ascending: true });
+          .select('keyword, category')
+          .order('category', { ascending: true })
+          .order('keyword', { ascending: true });
         
         if (error) throw error;
         
         if (data) {
-          const keywords = data.map(k => k.keyword);
-          setSavedKeywords(keywords);
-          // Pre-populate the custom keywords input
-          setCustomKeywords(keywords.join(', '));
+          setSavedKeywords(data.map(k => ({ keyword: k.keyword, category: k.category })));
+          // Pre-populate the custom keywords input with all saved keywords
+          setCustomKeywords(data.map(k => k.keyword).join(', '));
         }
       } catch (error) {
         console.error('Error loading saved keywords:', error);
@@ -467,18 +467,19 @@ const ExportationsAdmin: React.FC = () => {
   // Get all existing keywords (predefined + saved)
   const getAllExistingKeywords = useCallback((): string[] => {
     const predefinedKeywords = KEYWORD_CATEGORIES.flatMap(c => c.keywords);
-    return [...predefinedKeywords, ...savedKeywords, ...getCustomKeywordsArray()];
+    const savedKeywordStrings = savedKeywords.map(k => k.keyword);
+    return [...predefinedKeywords, ...savedKeywordStrings, ...getCustomKeywordsArray()];
   }, [savedKeywords, getCustomKeywordsArray]);
 
-  // Save a keyword to database
-  const saveKeyword = async (keyword: string) => {
+  // Save a keyword to database with category
+  const saveKeyword = async (keyword: string, category: string = selectedCategory) => {
     const normalizedKeyword = keyword.trim().toLowerCase();
-    if (!normalizedKeyword || savedKeywords.includes(normalizedKeyword)) return;
+    if (!normalizedKeyword || savedKeywords.some(k => k.keyword === normalizedKeyword)) return;
 
     try {
       const { error } = await supabase
         .from('export_keywords')
-        .insert({ keyword: normalizedKeyword, category: 'custom' });
+        .insert({ keyword: normalizedKeyword, category });
       
       if (error) {
         if (error.code === '23505') { // Unique constraint violation
@@ -488,9 +489,10 @@ const ExportationsAdmin: React.FC = () => {
         throw error;
       }
       
-      setSavedKeywords(prev => [...prev, normalizedKeyword]);
+      const categoryLabel = KEYWORD_CATEGORIES.find(c => c.id === category)?.label || category;
+      setSavedKeywords(prev => [...prev, { keyword: normalizedKeyword, category }]);
       setCustomKeywords(prev => prev ? `${prev}, ${normalizedKeyword}` : normalizedKeyword);
-      toast.success(`Mot-clé "${normalizedKeyword}" sauvegardé`);
+      toast.success(`"${normalizedKeyword}" ajouté à "${categoryLabel}"`);
     } catch (error) {
       console.error('Error saving keyword:', error);
       toast.error('Erreur lors de la sauvegarde');
@@ -507,7 +509,7 @@ const ExportationsAdmin: React.FC = () => {
       
       if (error) throw error;
       
-      setSavedKeywords(prev => prev.filter(k => k !== keyword));
+      setSavedKeywords(prev => prev.filter(k => k.keyword !== keyword));
       setCustomKeywords(prev => 
         prev.split(',')
           .map(k => k.trim())
@@ -596,6 +598,7 @@ const ExportationsAdmin: React.FC = () => {
         includeKeywordIndex,
         selectedKeywordCategories: Array.from(selectedKeywordCategories),
         customKeywords: getCustomKeywordsArray(),
+        categorizedCustomKeywords: savedKeywords,
       });
       toast.success(`${filteredTextes.length} textes exportés au format Word`);
     } catch (error) {
@@ -1142,15 +1145,27 @@ const ExportationsAdmin: React.FC = () => {
                             </Button>
                           </div>
 
-                          {/* Add new keyword input */}
-                          <div className="flex gap-2">
+                          {/* Add new keyword input with category selection */}
+                          <div className="flex gap-2 flex-wrap sm:flex-nowrap">
                             <Input
-                              placeholder="Ajouter un mot-clé..."
+                              placeholder="Nouveau mot-clé..."
                               value={newKeywordInput}
                               onChange={(e) => setNewKeywordInput(e.target.value)}
                               onKeyDown={(e) => e.key === 'Enter' && handleAddKeyword()}
-                              className="text-sm flex-1"
+                              className="text-sm flex-1 min-w-[120px]"
                             />
+                            <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+                              <SelectTrigger className="w-[160px] text-xs">
+                                <SelectValue placeholder="Catégorie" />
+                              </SelectTrigger>
+                              <SelectContent className="z-50 bg-popover">
+                                {KEYWORD_CATEGORIES.map(cat => (
+                                  <SelectItem key={cat.id} value={cat.id} className="text-xs">
+                                    {cat.label.split(' ')[0]}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
                             <Button
                               variant="outline"
                               size="sm"
@@ -1197,29 +1212,40 @@ const ExportationsAdmin: React.FC = () => {
                             </div>
                           )}
 
-                          {/* Saved keywords list */}
+                          {/* Saved keywords list grouped by category */}
                           {savedKeywords.length > 0 && (
-                            <div className="space-y-2">
+                            <div className="space-y-3">
                               <div className="text-xs text-muted-foreground">
-                                {savedKeywords.length} mot(s)-clé(s) sauvegardé(s)
+                                {savedKeywords.length} mot(s)-clé(s) personnalisé(s)
                               </div>
-                              <div className="flex flex-wrap gap-1.5">
-                                {savedKeywords.map(keyword => (
-                                  <Badge
-                                    key={keyword}
-                                    variant="secondary"
-                                    className="group"
-                                  >
-                                    {keyword}
-                                    <button
-                                      onClick={() => deleteKeyword(keyword)}
-                                      className="ml-1 opacity-40 hover:opacity-100 hover:text-destructive"
-                                    >
-                                      <X className="h-3 w-3" />
-                                    </button>
-                                  </Badge>
-                                ))}
-                              </div>
+                              {KEYWORD_CATEGORIES.map(cat => {
+                                const categoryKeywords = savedKeywords.filter(k => k.category === cat.id);
+                                if (categoryKeywords.length === 0) return null;
+                                return (
+                                  <div key={cat.id} className="space-y-1">
+                                    <div className="text-xs font-medium text-muted-foreground">
+                                      {cat.label.split(' ')[0]}
+                                    </div>
+                                    <div className="flex flex-wrap gap-1.5">
+                                      {categoryKeywords.map(({ keyword }) => (
+                                        <Badge
+                                          key={keyword}
+                                          variant="secondary"
+                                          className="group"
+                                        >
+                                          {keyword}
+                                          <button
+                                            onClick={() => deleteKeyword(keyword)}
+                                            className="ml-1 opacity-40 hover:opacity-100 hover:text-destructive"
+                                          >
+                                            <X className="h-3 w-3" />
+                                          </button>
+                                        </Badge>
+                                      ))}
+                                    </div>
+                                  </div>
+                                );
+                              })}
                             </div>
                           )}
                         </div>
