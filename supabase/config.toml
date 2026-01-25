@@ -48,3 +48,6 @@ verify_jwt = false
 
 [functions.open-meteo-data]
 verify_jwt = false
+
+[functions.suggest-keywords]
+verify_jwt = false

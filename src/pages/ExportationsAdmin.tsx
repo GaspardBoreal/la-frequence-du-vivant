@@ -1,6 +1,6 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowLeft, FileDown, FileText, Table, Download, Filter, Loader2, ChevronDown, ChevronRight, MapPin, BookOpen, AlertTriangle, AlertCircle, ExternalLink, BarChart3 } from 'lucide-react';
+import { ArrowLeft, FileDown, FileText, Table, Download, Filter, Loader2, ChevronDown, ChevronRight, MapPin, BookOpen, AlertTriangle, AlertCircle, ExternalLink, BarChart3, Sparkles, Plus, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -18,7 +18,6 @@ import { exportVocabularyToWord } from '@/utils/vocabularyWordExport';
 import { exportMarchesStatsToWord } from '@/utils/marchesStatsExport';
 import WordExportPreview from '@/components/admin/WordExportPreview';
 import { Input } from '@/components/ui/input';
-
 interface Exploration {
   id: string;
   name: string;
@@ -112,6 +111,11 @@ const ExportationsAdmin: React.FC = () => {
     new Set(KEYWORD_CATEGORIES.map(c => c.id))
   );
   const [customKeywords, setCustomKeywords] = useState('');
+  const [savedKeywords, setSavedKeywords] = useState<string[]>([]);
+  const [loadingKeywords, setLoadingKeywords] = useState(false);
+  const [suggestingKeywords, setSuggestingKeywords] = useState(false);
+  const [suggestedKeywords, setSuggestedKeywords] = useState<string[]>([]);
+  const [newKeywordInput, setNewKeywordInput] = useState('');
 
   // Load data
   useEffect(() => {
@@ -203,6 +207,35 @@ const ExportationsAdmin: React.FC = () => {
     };
 
     loadData();
+  }, []);
+
+  // Load saved keywords from database
+  useEffect(() => {
+    const loadSavedKeywords = async () => {
+      setLoadingKeywords(true);
+      try {
+        const { data, error } = await supabase
+          .from('export_keywords')
+          .select('keyword')
+          .eq('category', 'custom')
+          .order('created_at', { ascending: true });
+        
+        if (error) throw error;
+        
+        if (data) {
+          const keywords = data.map(k => k.keyword);
+          setSavedKeywords(keywords);
+          // Pre-populate the custom keywords input
+          setCustomKeywords(keywords.join(', '));
+        }
+      } catch (error) {
+        console.error('Error loading saved keywords:', error);
+      } finally {
+        setLoadingKeywords(false);
+      }
+    };
+
+    loadSavedKeywords();
   }, []);
 
   // Get marches available based on selected explorations
@@ -424,11 +457,125 @@ const ExportationsAdmin: React.FC = () => {
   };
 
   // Parse custom keywords from comma-separated string
-  const getCustomKeywordsArray = (): string[] => {
+  const getCustomKeywordsArray = useCallback((): string[] => {
     return customKeywords
       .split(',')
       .map(k => k.trim().toLowerCase())
       .filter(k => k.length > 0);
+  }, [customKeywords]);
+
+  // Get all existing keywords (predefined + saved)
+  const getAllExistingKeywords = useCallback((): string[] => {
+    const predefinedKeywords = KEYWORD_CATEGORIES.flatMap(c => c.keywords);
+    return [...predefinedKeywords, ...savedKeywords, ...getCustomKeywordsArray()];
+  }, [savedKeywords, getCustomKeywordsArray]);
+
+  // Save a keyword to database
+  const saveKeyword = async (keyword: string) => {
+    const normalizedKeyword = keyword.trim().toLowerCase();
+    if (!normalizedKeyword || savedKeywords.includes(normalizedKeyword)) return;
+
+    try {
+      const { error } = await supabase
+        .from('export_keywords')
+        .insert({ keyword: normalizedKeyword, category: 'custom' });
+      
+      if (error) {
+        if (error.code === '23505') { // Unique constraint violation
+          toast.info(`"${normalizedKeyword}" existe déjà`);
+          return;
+        }
+        throw error;
+      }
+      
+      setSavedKeywords(prev => [...prev, normalizedKeyword]);
+      setCustomKeywords(prev => prev ? `${prev}, ${normalizedKeyword}` : normalizedKeyword);
+      toast.success(`Mot-clé "${normalizedKeyword}" sauvegardé`);
+    } catch (error) {
+      console.error('Error saving keyword:', error);
+      toast.error('Erreur lors de la sauvegarde');
+    }
+  };
+
+  // Delete a saved keyword
+  const deleteKeyword = async (keyword: string) => {
+    try {
+      const { error } = await supabase
+        .from('export_keywords')
+        .delete()
+        .eq('keyword', keyword);
+      
+      if (error) throw error;
+      
+      setSavedKeywords(prev => prev.filter(k => k !== keyword));
+      setCustomKeywords(prev => 
+        prev.split(',')
+          .map(k => k.trim())
+          .filter(k => k.toLowerCase() !== keyword.toLowerCase())
+          .join(', ')
+      );
+      toast.success(`Mot-clé "${keyword}" supprimé`);
+    } catch (error) {
+      console.error('Error deleting keyword:', error);
+      toast.error('Erreur lors de la suppression');
+    }
+  };
+
+  // Add new keyword from input
+  const handleAddKeyword = () => {
+    if (newKeywordInput.trim()) {
+      saveKeyword(newKeywordInput);
+      setNewKeywordInput('');
+    }
+  };
+
+  // Accept a suggested keyword
+  const acceptSuggestion = (keyword: string) => {
+    saveKeyword(keyword);
+    setSuggestedKeywords(prev => prev.filter(k => k !== keyword));
+  };
+
+  // Dismiss a suggestion
+  const dismissSuggestion = (keyword: string) => {
+    setSuggestedKeywords(prev => prev.filter(k => k !== keyword));
+  };
+
+  // Request AI suggestions
+  const handleSuggestKeywords = async () => {
+    if (filteredTextes.length === 0) {
+      toast.error('Sélectionnez des textes pour obtenir des suggestions');
+      return;
+    }
+
+    setSuggestingKeywords(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('suggest-keywords', {
+        body: {
+          textes: filteredTextes.slice(0, 50).map(t => ({
+            titre: t.titre,
+            contenu: t.contenu,
+            type_texte: t.type_texte,
+          })),
+          existingKeywords: getAllExistingKeywords(),
+        },
+      });
+
+      if (error) throw error;
+
+      if (data?.suggestions && Array.isArray(data.suggestions)) {
+        setSuggestedKeywords(data.suggestions);
+        if (data.suggestions.length === 0) {
+          toast.info('Aucun nouveau mot-clé suggéré');
+        } else {
+          toast.success(`${data.suggestions.length} nouveaux mots-clés suggérés`);
+        }
+      }
+    } catch (error) {
+      console.error('Error suggesting keywords:', error);
+      toast.error('Erreur lors de la suggestion IA');
+    } finally {
+      setSuggestingKeywords(false);
+    }
   };
 
   // Export handlers
@@ -972,22 +1119,108 @@ const ExportationsAdmin: React.FC = () => {
                           ))}
                         </div>
                         
-                        {/* Custom keywords input */}
-                        <div className="space-y-2 pt-2 border-t border-border">
-                          <Label htmlFor="custom-keywords" className="text-sm font-medium">
-                            Mots-clés personnalisés
-                          </Label>
-                          <Input
-                            id="custom-keywords"
-                            placeholder="Entrez vos mots-clés séparés par des virgules (ex: brochet, esturgeon, zone humide)"
-                            value={customKeywords}
-                            onChange={(e) => setCustomKeywords(e.target.value)}
-                            className="text-sm"
-                          />
-                          {getCustomKeywordsArray().length > 0 && (
-                            <p className="text-xs text-muted-foreground">
-                              {getCustomKeywordsArray().length} mot(s)-clé(s) personnalisé(s) ajouté(s)
-                            </p>
+                        {/* Custom keywords section */}
+                        <div className="space-y-3 pt-3 border-t border-border">
+                          <div className="flex items-center justify-between">
+                            <Label className="text-sm font-medium">
+                              Mots-clés personnalisés
+                              {loadingKeywords && <Loader2 className="h-3 w-3 animate-spin inline ml-2" />}
+                            </Label>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={handleSuggestKeywords}
+                              disabled={suggestingKeywords || filteredTextes.length === 0}
+                              className="gap-1.5 text-xs"
+                            >
+                              {suggestingKeywords ? (
+                                <Loader2 className="h-3 w-3 animate-spin" />
+                              ) : (
+                                <Sparkles className="h-3 w-3" />
+                              )}
+                              Suggérer avec l'IA
+                            </Button>
+                          </div>
+
+                          {/* Add new keyword input */}
+                          <div className="flex gap-2">
+                            <Input
+                              placeholder="Ajouter un mot-clé..."
+                              value={newKeywordInput}
+                              onChange={(e) => setNewKeywordInput(e.target.value)}
+                              onKeyDown={(e) => e.key === 'Enter' && handleAddKeyword()}
+                              className="text-sm flex-1"
+                            />
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={handleAddKeyword}
+                              disabled={!newKeywordInput.trim()}
+                            >
+                              <Plus className="h-4 w-4" />
+                            </Button>
+                          </div>
+
+                          {/* AI Suggestions */}
+                          {suggestedKeywords.length > 0 && (
+                            <div className="bg-accent/20 rounded-lg p-3 space-y-2">
+                              <div className="flex items-center gap-2 text-xs font-medium text-accent-foreground">
+                                <Sparkles className="h-3 w-3" />
+                                Suggestions IA
+                              </div>
+                              <div className="flex flex-wrap gap-1.5">
+                                {suggestedKeywords.map(keyword => (
+                                  <Badge
+                                    key={keyword}
+                                    variant="outline"
+                                    className="cursor-pointer hover:bg-primary hover:text-primary-foreground transition-colors group"
+                                  >
+                                    <button
+                                      onClick={() => acceptSuggestion(keyword)}
+                                      className="flex items-center gap-1"
+                                    >
+                                      <Plus className="h-3 w-3 opacity-60 group-hover:opacity-100" />
+                                      {keyword}
+                                    </button>
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        dismissSuggestion(keyword);
+                                      }}
+                                      className="ml-1 opacity-40 hover:opacity-100"
+                                    >
+                                      <X className="h-3 w-3" />
+                                    </button>
+                                  </Badge>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Saved keywords list */}
+                          {savedKeywords.length > 0 && (
+                            <div className="space-y-2">
+                              <div className="text-xs text-muted-foreground">
+                                {savedKeywords.length} mot(s)-clé(s) sauvegardé(s)
+                              </div>
+                              <div className="flex flex-wrap gap-1.5">
+                                {savedKeywords.map(keyword => (
+                                  <Badge
+                                    key={keyword}
+                                    variant="secondary"
+                                    className="group"
+                                  >
+                                    {keyword}
+                                    <button
+                                      onClick={() => deleteKeyword(keyword)}
+                                      className="ml-1 opacity-40 hover:opacity-100 hover:text-destructive"
+                                    >
+                                      <X className="h-3 w-3" />
+                                    </button>
+                                  </Badge>
+                                ))}
+                              </div>
+                            </div>
                           )}
                         </div>
                       </>
