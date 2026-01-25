@@ -9,6 +9,7 @@ interface FragmentApparitionProps {
   position: { x: number; y: number };
   onExpire: () => void;
   ttl: number;
+  zIndex?: number;
 }
 
 const FragmentApparition: React.FC<FragmentApparitionProps> = ({
@@ -16,6 +17,7 @@ const FragmentApparition: React.FC<FragmentApparitionProps> = ({
   position,
   onExpire,
   ttl,
+  zIndex = 100,
 }) => {
   const [isPinned, setIsPinned] = useState(false);
   
@@ -49,6 +51,7 @@ const FragmentApparition: React.FC<FragmentApparitionProps> = ({
       style={{ 
         left: `${Math.min(position.x, 50)}%`,
         top: `${position.y}%`,
+        zIndex,
       }}
       className="absolute w-72 sm:w-80 max-w-[calc(100vw-2rem)] cursor-pointer right-auto"
       onClick={handleClick}

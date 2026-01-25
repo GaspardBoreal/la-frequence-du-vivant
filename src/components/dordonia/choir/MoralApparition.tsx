@@ -9,6 +9,7 @@ interface MoralApparitionProps {
   position: { x: number; y: number };
   onExpire: () => void;
   ttl: number;
+  zIndex?: number;
 }
 
 const MoralApparition: React.FC<MoralApparitionProps> = ({
@@ -16,6 +17,7 @@ const MoralApparition: React.FC<MoralApparitionProps> = ({
   position,
   onExpire,
   ttl,
+  zIndex = 100,
 }) => {
   const [isPinned, setIsPinned] = useState(false);
   const [displayedChars, setDisplayedChars] = useState(0);
@@ -57,8 +59,12 @@ const MoralApparition: React.FC<MoralApparitionProps> = ({
       }}
       exit={{ opacity: 0 }}
       transition={{ duration: 1, ease: 'easeOut' }}
-      style={{ left: `${position.x}%`, top: `${position.y}%` }}
-      className="absolute max-w-md cursor-pointer"
+      style={{ 
+        left: `${Math.min(position.x, 50)}%`,
+        top: `${position.y}%`,
+        zIndex,
+      }}
+      className="absolute w-72 sm:w-80 md:max-w-md max-w-[calc(100vw-2rem)] cursor-pointer"
       onClick={handleClick}
     >
       <div className={`

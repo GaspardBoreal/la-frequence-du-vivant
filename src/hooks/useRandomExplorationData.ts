@@ -68,18 +68,23 @@ export const useRandomExplorationData = () => {
       
       const marcheIds = marches.map(m => m.marche_id);
       
-      // Récupérer un snapshot aléatoire avec des oiseaux
+      // Récupérer les snapshots les plus récents avec des oiseaux
       const { data: snapshots } = await supabase
         .from('biodiversity_snapshots')
         .select('id, species_data, snapshot_date, marche_id')
         .in('marche_id', marcheIds)
         .gt('birds_count', 0)
-        .not('species_data', 'is', null);
+        .not('species_data', 'is', null)
+        .order('snapshot_date', { ascending: false })
+        .limit(10);
       
       if (!snapshots || snapshots.length === 0) return null;
       
-      // Choisir un snapshot aléatoire
-      const randomSnapshot = snapshots[Math.floor(Math.random() * snapshots.length)];
+      // Sélection pondérée : 70% de chance pour les 3 plus récents, 30% pour les autres
+      const weightedIndex = Math.random() < 0.7 
+        ? Math.floor(Math.random() * Math.min(3, snapshots.length))
+        : Math.floor(Math.random() * snapshots.length);
+      const randomSnapshot = snapshots[weightedIndex];
       const speciesArray = randomSnapshot.species_data as SpeciesData[];
       
       if (!Array.isArray(speciesArray)) return null;
@@ -129,16 +134,23 @@ export const useRandomExplorationData = () => {
       
       const marcheIds = marches.map(m => m.marche_id);
       
+      // Récupérer les snapshots les plus récents avec des espèces
       const { data: snapshots } = await supabase
         .from('biodiversity_snapshots')
         .select('id, species_data, snapshot_date, marche_id')
         .in('marche_id', marcheIds)
         .gt('total_species', 0)
-        .not('species_data', 'is', null);
+        .not('species_data', 'is', null)
+        .order('snapshot_date', { ascending: false })
+        .limit(10);
       
       if (!snapshots || snapshots.length === 0) return null;
       
-      const randomSnapshot = snapshots[Math.floor(Math.random() * snapshots.length)];
+      // Sélection pondérée : 70% de chance pour les 3 plus récents, 30% pour les autres
+      const weightedIndex = Math.random() < 0.7 
+        ? Math.floor(Math.random() * Math.min(3, snapshots.length))
+        : Math.floor(Math.random() * snapshots.length);
+      const randomSnapshot = snapshots[weightedIndex];
       const speciesArray = randomSnapshot.species_data as SpeciesData[];
       
       if (!Array.isArray(speciesArray) || speciesArray.length === 0) return null;
