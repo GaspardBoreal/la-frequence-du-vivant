@@ -24,11 +24,11 @@ interface Apparition {
 
 // Configuration des timers par type d'apparition
 const APPARITION_CONFIG: Record<ApparitionType, { interval: [number, number]; ttl: [number, number] }> = {
-  bird: { interval: [8000, 15000], ttl: [20000, 40000] },
-  fragment: { interval: [20000, 30000], ttl: [30000, 60000] },
-  voice: { interval: [45000, 60000], ttl: [20000, 30000] },
-  species: { interval: [12000, 18000], ttl: [25000, 35000] },
-  moral: { interval: [30000, 40000], ttl: [40000, 50000] },
+  bird: { interval: [25000, 45000], ttl: [30000, 50000] },      // 25-45 sec
+  fragment: { interval: [40000, 70000], ttl: [40000, 80000] },  // 40-70 sec
+  voice: { interval: [90000, 150000], ttl: [25000, 40000] },    // 90-150 sec
+  species: { interval: [35000, 55000], ttl: [35000, 50000] },   // 35-55 sec
+  moral: { interval: [60000, 100000], ttl: [50000, 70000] },    // 60-100 sec
 };
 
 // Générer une valeur aléatoire dans une plage
