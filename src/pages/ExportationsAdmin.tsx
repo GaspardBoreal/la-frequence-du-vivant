@@ -13,10 +13,11 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/component
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { exportTextesToWord, exportTextesToCSV } from '@/utils/wordExportUtils';
+import { exportTextesToWord, exportTextesToCSV, KEYWORD_CATEGORIES } from '@/utils/wordExportUtils';
 import { exportVocabularyToWord } from '@/utils/vocabularyWordExport';
 import { exportMarchesStatsToWord } from '@/utils/marchesStatsExport';
 import WordExportPreview from '@/components/admin/WordExportPreview';
+import { Input } from '@/components/ui/input';
 
 interface Exploration {
   id: string;
@@ -97,12 +98,20 @@ const ExportationsAdmin: React.FC = () => {
   const [marchesOpen, setMarchesOpen] = useState(false);
   const [typesOpen, setTypesOpen] = useState(true);
   const [regionsOpen, setRegionsOpen] = useState(false);
+  const [keywordIndexOpen, setKeywordIndexOpen] = useState(false);
 
   // Export options state
   const [includeCoverPage, setIncludeCoverPage] = useState(true);
   const [includeTableOfContents, setIncludeTableOfContents] = useState(true);
   const [includeMetadata, setIncludeMetadata] = useState(true);
   const [organizationMode, setOrganizationMode] = useState<'type' | 'marche'>('type');
+  
+  // Keyword index state
+  const [includeKeywordIndex, setIncludeKeywordIndex] = useState(true);
+  const [selectedKeywordCategories, setSelectedKeywordCategories] = useState<Set<string>>(
+    new Set(KEYWORD_CATEGORIES.map(c => c.id))
+  );
+  const [customKeywords, setCustomKeywords] = useState('');
 
   // Load data
   useEffect(() => {
@@ -395,6 +404,33 @@ const ExportationsAdmin: React.FC = () => {
   const selectAllRegions = () => setSelectedRegions(new Set(REGIONS));
   const clearAllRegions = () => setSelectedRegions(new Set());
 
+  // Keyword category toggle
+  const toggleKeywordCategory = (categoryId: string) => {
+    const newSet = new Set(selectedKeywordCategories);
+    if (newSet.has(categoryId)) {
+      newSet.delete(categoryId);
+    } else {
+      newSet.add(categoryId);
+    }
+    setSelectedKeywordCategories(newSet);
+  };
+
+  const selectAllKeywordCategories = () => {
+    setSelectedKeywordCategories(new Set(KEYWORD_CATEGORIES.map(c => c.id)));
+  };
+
+  const clearAllKeywordCategories = () => {
+    setSelectedKeywordCategories(new Set());
+  };
+
+  // Parse custom keywords from comma-separated string
+  const getCustomKeywordsArray = (): string[] => {
+    return customKeywords
+      .split(',')
+      .map(k => k.trim().toLowerCase())
+      .filter(k => k.length > 0);
+  };
+
   // Export handlers
   const handleExportWord = async () => {
     if (filteredTextes.length === 0) {
@@ -410,6 +446,9 @@ const ExportationsAdmin: React.FC = () => {
         includeTableOfContents,
         includeMetadata,
         organizationMode,
+        includeKeywordIndex,
+        selectedKeywordCategories: Array.from(selectedKeywordCategories),
+        customKeywords: getCustomKeywordsArray(),
       });
       toast.success(`${filteredTextes.length} textes exportés au format Word`);
     } catch (error) {
@@ -867,6 +906,94 @@ const ExportationsAdmin: React.FC = () => {
                     </RadioGroup>
                   </div>
                 </div>
+
+                {/* Keyword Index Section */}
+                <Separator />
+                
+                <Collapsible open={keywordIndexOpen} onOpenChange={setKeywordIndexOpen}>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <Checkbox
+                        id="keyword-index"
+                        checked={includeKeywordIndex}
+                        onCheckedChange={(checked) => setIncludeKeywordIndex(checked === true)}
+                      />
+                      <CollapsibleTrigger className="flex items-center gap-2 text-sm font-medium hover:text-primary transition-colors">
+                        {keywordIndexOpen ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+                        Index des Mots-Clés
+                        <Badge variant="secondary" className="text-xs ml-1">
+                          {selectedKeywordCategories.size}/{KEYWORD_CATEGORIES.length}
+                        </Badge>
+                      </CollapsibleTrigger>
+                    </div>
+                    {includeKeywordIndex && (
+                      <div className="flex gap-2">
+                        <button 
+                          onClick={selectAllKeywordCategories}
+                          className="text-xs text-primary hover:underline"
+                        >
+                          Toutes
+                        </button>
+                        <button 
+                          onClick={clearAllKeywordCategories}
+                          className="text-xs text-muted-foreground hover:underline"
+                        >
+                          Aucune
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                  
+                  <CollapsibleContent className="mt-4 space-y-4">
+                    {includeKeywordIndex && (
+                      <>
+                        {/* Categories checkboxes */}
+                        <div className="grid grid-cols-2 gap-3">
+                          {KEYWORD_CATEGORIES.map(category => (
+                            <div key={category.id} className="flex items-start gap-2">
+                              <Checkbox
+                                id={`keyword-cat-${category.id}`}
+                                checked={selectedKeywordCategories.has(category.id)}
+                                onCheckedChange={() => toggleKeywordCategory(category.id)}
+                                className="mt-0.5"
+                              />
+                              <div className="flex-1">
+                                <Label 
+                                  htmlFor={`keyword-cat-${category.id}`} 
+                                  className="text-sm cursor-pointer font-medium"
+                                >
+                                  {category.label}
+                                </Label>
+                                <p className="text-xs text-muted-foreground truncate" title={category.keywords.slice(0, 5).join(', ')}>
+                                  {category.keywords.slice(0, 4).join(', ')}...
+                                </p>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                        
+                        {/* Custom keywords input */}
+                        <div className="space-y-2 pt-2 border-t border-border">
+                          <Label htmlFor="custom-keywords" className="text-sm font-medium">
+                            Mots-clés personnalisés
+                          </Label>
+                          <Input
+                            id="custom-keywords"
+                            placeholder="Entrez vos mots-clés séparés par des virgules (ex: brochet, esturgeon, zone humide)"
+                            value={customKeywords}
+                            onChange={(e) => setCustomKeywords(e.target.value)}
+                            className="text-sm"
+                          />
+                          {getCustomKeywordsArray().length > 0 && (
+                            <p className="text-xs text-muted-foreground">
+                              {getCustomKeywordsArray().length} mot(s)-clé(s) personnalisé(s) ajouté(s)
+                            </p>
+                          )}
+                        </div>
+                      </>
+                    )}
+                  </CollapsibleContent>
+                </Collapsible>
 
                 {/* Preview Summary */}
                 {stats.total > 0 ? (

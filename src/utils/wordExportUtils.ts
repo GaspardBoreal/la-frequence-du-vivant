@@ -30,6 +30,86 @@ interface ExportOptions {
   includeCoverPage: boolean;
   organizationMode: 'type' | 'marche';
   includeMetadata: boolean;
+  includeKeywordIndex?: boolean;
+  selectedKeywordCategories?: string[];
+  customKeywords?: string[];
+}
+
+// ============================================================================
+// KEYWORD INDEX CONFIGURATION
+// ============================================================================
+
+export interface KeywordCategory {
+  id: string;
+  label: string;
+  keywords: string[];
+}
+
+export const KEYWORD_CATEGORIES: KeywordCategory[] = [
+  {
+    id: 'faune',
+    label: 'Faune Fluviale et Migratrice',
+    keywords: [
+      'lamproie', 'saumon', 'alose', 'truite', 'silure', 'anguille', 'brochet', 'esturgeon',
+      'aigrette', 'martin-pêcheur', 'loutre', 'grand-duc', 'héron', 'corneille',
+      'libellule', 'papillon', 'cigale', 'grenouille', 'crapaud', 'couleuvre'
+    ]
+  },
+  {
+    id: 'hydrologie',
+    label: 'Hydrologie et Dynamiques Fluviales',
+    keywords: [
+      'étiage', 'crue', 'marnage', 'mascaret', 'confluence', 'débit', 'courant',
+      'ripisylve', 'frayère', 'berge', 'méandre', 'estuaire', 'embouchure',
+      'source', 'résurgence', 'nappe', 'alluvion', 'lit', 'aval', 'amont'
+    ]
+  },
+  {
+    id: 'ouvrages',
+    label: 'Ouvrages Humains',
+    keywords: [
+      'barrage', 'ascenseur', 'pont', 'écluse', 'gabarre', 'passe', 'vanne', 'digue',
+      'moulin', 'centrale', 'éolienne', 'usine', 'port', 'quai'
+    ]
+  },
+  {
+    id: 'flore',
+    label: 'Flore et Paysages',
+    keywords: [
+      'aulne', 'saule', 'séquoia', 'renoncule', 'vigne', 'chêne', 'roseau', 'nénuphar',
+      'herbier', 'forêt', 'prairie', 'falaise', 'garrigue', 'marais', 'zone humide'
+    ]
+  },
+  {
+    id: 'temporalites',
+    label: 'Temporalités et Projections',
+    keywords: [
+      '2050', '2035', 'holocène', 'mémoire', 'avenir', 'futur', 'prospective',
+      'anthropocène', 'demain', 'hier', 'jadis', 'siècle'
+    ]
+  },
+  {
+    id: 'poetique',
+    label: 'Geste Poétique',
+    keywords: [
+      'remonter', 'fréquence', 'spectre', 'géopoétique', 'syntoniser', 'écouter',
+      'silence', 'souffle', 'marcher', 'arpenter', 'contempler', 'vibration'
+    ]
+  },
+  {
+    id: 'technologies',
+    label: 'Technologies et Médiations',
+    keywords: [
+      'IA', 'drone', 'ADN', 'capteur', 'spectrogramme', 'tablette', 'robot',
+      'algorithme', 'numérique', 'satellite', 'GPS', 'sonar'
+    ]
+  }
+];
+
+interface KeywordOccurrence {
+  keyword: string;
+  texteIds: string[];
+  category: string;
 }
 
 // Parsed content structures for HTML to Word conversion
@@ -754,11 +834,212 @@ const createIndexByType = (textes: TexteExport[]): Paragraph[] => {
   return paragraphs;
 };
 
+// ============================================================================
+// KEYWORD INDEX GENERATION
+// ============================================================================
+
 /**
- * Create the complete indexes section with both indexes
+ * Strip HTML tags for keyword search
+ */
+const stripHtmlForSearch = (html: string): string => {
+  return html
+    .replace(/<[^>]*>/g, ' ')
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .toLowerCase();
+};
+
+/**
+ * Capitalize first letter of a string
+ */
+const capitalizeFirst = (str: string): string => {
+  return str.charAt(0).toUpperCase() + str.slice(1);
+};
+
+/**
+ * Extract keywords from texts based on selected categories and custom keywords
+ */
+const extractKeywordsFromTextes = (
+  textes: TexteExport[],
+  selectedCategories: string[],
+  customKeywords: string[]
+): Map<string, KeywordOccurrence> => {
+  const occurrences = new Map<string, KeywordOccurrence>();
+  
+  // Collect keywords from selected categories
+  const categoryKeywordsMap = new Map<string, string>();
+  
+  for (const category of KEYWORD_CATEGORIES) {
+    if (selectedCategories.includes(category.id)) {
+      for (const keyword of category.keywords) {
+        categoryKeywordsMap.set(keyword.toLowerCase(), category.id);
+      }
+    }
+  }
+  
+  // Add custom keywords to a special category
+  for (const keyword of customKeywords) {
+    const trimmed = keyword.trim().toLowerCase();
+    if (trimmed && !categoryKeywordsMap.has(trimmed)) {
+      categoryKeywordsMap.set(trimmed, 'custom');
+    }
+  }
+  
+  // Scan each text for keywords
+  for (const [keyword, categoryId] of categoryKeywordsMap) {
+    // Create a regex that matches the keyword as a whole word (with accents support)
+    const escapedKeyword = keyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const regex = new RegExp(`\\b${escapedKeyword}\\b`, 'gi');
+    
+    const matchingTextes = textes.filter(t => {
+      const searchableContent = stripHtmlForSearch(t.contenu) + ' ' + t.titre.toLowerCase();
+      return regex.test(searchableContent);
+    });
+    
+    if (matchingTextes.length > 0) {
+      occurrences.set(keyword, {
+        keyword,
+        texteIds: matchingTextes.map(t => t.id),
+        category: categoryId
+      });
+    }
+  }
+  
+  return occurrences;
+};
+
+/**
+ * Create the keyword index section
+ */
+const createKeywordIndex = (
+  textes: TexteExport[],
+  selectedCategories: string[],
+  customKeywords: string[]
+): Paragraph[] => {
+  const paragraphs: Paragraph[] = [];
+  
+  const occurrences = extractKeywordsFromTextes(textes, selectedCategories, customKeywords);
+  
+  if (occurrences.size === 0) {
+    return paragraphs;
+  }
+  
+  // Index title
+  paragraphs.push(
+    new Paragraph({
+      children: [
+        new TextRun({
+          text: 'Index des Mots-Clés',
+          bold: true,
+          size: 36,
+        }),
+      ],
+      heading: HeadingLevel.HEADING_1,
+      spacing: { after: 400 },
+    })
+  );
+  
+  // Group occurrences by category
+  const categoriesWithKeywords = new Map<string, Map<string, KeywordOccurrence>>();
+  
+  for (const [keyword, occurrence] of occurrences) {
+    if (!categoriesWithKeywords.has(occurrence.category)) {
+      categoriesWithKeywords.set(occurrence.category, new Map());
+    }
+    categoriesWithKeywords.get(occurrence.category)!.set(keyword, occurrence);
+  }
+  
+  // Define category order
+  const categoryOrder = ['faune', 'hydrologie', 'ouvrages', 'flore', 'temporalites', 'poetique', 'technologies', 'custom'];
+  
+  // Sort categories by predefined order
+  const sortedCategories = Array.from(categoriesWithKeywords.keys()).sort((a, b) => {
+    const indexA = categoryOrder.indexOf(a);
+    const indexB = categoryOrder.indexOf(b);
+    return (indexA === -1 ? 999 : indexA) - (indexB === -1 ? 999 : indexB);
+  });
+  
+  for (const categoryId of sortedCategories) {
+    const categoryKeywords = categoriesWithKeywords.get(categoryId)!;
+    
+    // Get category label
+    let categoryLabel: string;
+    if (categoryId === 'custom') {
+      categoryLabel = 'Mots-Clés Personnalisés';
+    } else {
+      const category = KEYWORD_CATEGORIES.find(c => c.id === categoryId);
+      categoryLabel = category?.label || categoryId;
+    }
+    
+    // Category header
+    paragraphs.push(
+      new Paragraph({
+        children: [
+          new TextRun({
+            text: categoryLabel,
+            bold: true,
+            italics: true,
+            size: 26,
+          }),
+        ],
+        spacing: { before: 300, after: 150 },
+      })
+    );
+    
+    // Sort keywords alphabetically
+    const sortedKeywords = Array.from(categoryKeywords.entries())
+      .sort((a, b) => a[0].localeCompare(b[0], 'fr'));
+    
+    // List keywords with page references
+    for (const [keyword, occurrence] of sortedKeywords) {
+      const children: (TextRun | SimpleField)[] = [
+        new TextRun({
+          text: capitalizeFirst(keyword),
+          size: 22,
+        }),
+        new TextRun({
+          text: ' — p. ',
+          size: 20,
+          color: '888888',
+        }),
+      ];
+      
+      // Add page references with commas
+      occurrence.texteIds.forEach((id, index) => {
+        const bookmarkId = `texte_${id}`.replace(/[^a-zA-Z0-9_]/g, '_').substring(0, 40);
+        if (index > 0) {
+          children.push(new TextRun({ text: ', ', size: 20, color: '888888' }));
+        }
+        children.push(createPageRef(bookmarkId));
+      });
+      
+      paragraphs.push(
+        new Paragraph({
+          children,
+          indent: { left: 300 },
+          spacing: { after: 80 },
+        })
+      );
+    }
+  }
+  
+  return paragraphs;
+};
+
+/**
+ * Create the complete indexes section with all indexes
  * Adds page breaks before and between indexes
  */
-const createIndexesSection = (textes: TexteExport[]): Paragraph[] => {
+const createIndexesSection = (
+  textes: TexteExport[],
+  includeKeywordIndex: boolean = false,
+  selectedKeywordCategories: string[] = [],
+  customKeywords: string[] = []
+): Paragraph[] => {
   const paragraphs: Paragraph[] = [];
   
   // Page break before indexes
@@ -772,6 +1053,12 @@ const createIndexesSection = (textes: TexteExport[]): Paragraph[] => {
   
   // Index by Literary Genre
   paragraphs.push(...createIndexByType(textes));
+  
+  // Keyword Index (if enabled)
+  if (includeKeywordIndex && selectedKeywordCategories.length > 0) {
+    paragraphs.push(new Paragraph({ children: [new PageBreak()] }));
+    paragraphs.push(...createKeywordIndex(textes, selectedKeywordCategories, customKeywords));
+  }
   
   return paragraphs;
 };
@@ -830,9 +1117,14 @@ export const exportTextesToWord = async (
     }
   }
 
-  // Add both indexes at the end of the document
+  // Add all indexes at the end of the document
   if (options.includeTableOfContents) {
-    children.push(...createIndexesSection(textes));
+    children.push(...createIndexesSection(
+      textes,
+      options.includeKeywordIndex ?? false,
+      options.selectedKeywordCategories ?? [],
+      options.customKeywords ?? []
+    ));
   }
 
   // Create document
