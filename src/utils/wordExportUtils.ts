@@ -540,7 +540,7 @@ export const exportTextesToWord = async (
 
     for (const type of sortedTypes) {
       const groupTextes = groups.get(type)!;
-      children.push(...createSectionHeader(getTypeLabel(type), groupTextes.length));
+      children.push(...createSectionHeader(getTypeLabel(type), groupTextes.length, undefined, false));
       
       groupTextes.forEach(texte => {
         children.push(...createTexteEntry(texte, options.includeMetadata));
