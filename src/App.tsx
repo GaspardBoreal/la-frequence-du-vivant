@@ -52,6 +52,7 @@ import ExplorationBiodiversite from './pages/ExplorationBiodiversite';
 import MarcheursAdmin from './pages/MarcheursAdmin';
 import ExplorationsSensibles from './pages/ExplorationsSensibles';
 import MaterielPedagogique from './pages/MaterielPedagogique';
+import Dordonia from './pages/Dordonia';
 
 function App() {
   return (
@@ -69,6 +70,7 @@ function App() {
             <Route path="/bioacoustique/:slug" element={<MarcheDetailBio />} />
             <Route path="/explorations-sensibles" element={<ExplorationsSensibles />} />
             <Route path="/materiel-pedagogique" element={<MaterielPedagogique />} />
+            <Route path="/dordonia" element={<Dordonia />} />
             
             {/* Routes explorations */}
             <Route path="/explorations" element={<ExplorationsList />} />

@@ -1,13 +1,13 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Waves, TreeDeciduous, Wheat, ExternalLink, MapPin, Compass, Check, Leaf } from 'lucide-react';
+import { Waves, TreeDeciduous, Wheat, ExternalLink, MapPin, Compass, Check, Leaf, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { useNavigate } from 'react-router-dom';
 import Footer from '@/components/Footer';
 import DecorativeElements from '@/components/DecorativeElements';
 
 const DORDOGNE_URL = '/galerie-fleuve/exploration/remontee-dordogne-atlas-eaux-vivantes-2025-2045';
 const DORDOGNE_BIODIVERSITE_URL = `${DORDOGNE_URL}/biodiversite`;
-
 interface ThemeCardProps {
   icon: React.ReactNode;
   title: string;
@@ -51,12 +51,18 @@ const ThemeCard: React.FC<ThemeCardProps> = ({
 );
 
 const ExplorationsSensibles: React.FC = () => {
+  const navigate = useNavigate();
+
   const handleEnterExploration = () => {
     window.open(DORDOGNE_URL, '_blank', 'noopener,noreferrer');
   };
 
   const handleOpenBiodiversite = () => {
     window.open(DORDOGNE_BIODIVERSITE_URL, '_blank', 'noopener,noreferrer');
+  };
+
+  const handleOpenDordonia = () => {
+    navigate('/dordonia');
   };
 
   return (
@@ -222,7 +228,14 @@ const ExplorationsSensibles: React.FC = () => {
                   className="border-emerald-500/30 text-emerald-300 hover:bg-emerald-500/10 hover:border-emerald-500/50 px-6 py-3 rounded-lg font-medium transition-all"
                 >
                   <Leaf className="mr-2 h-4 w-4" />
-                  3 100+ espèces identifiées
+                  3 100+ espèces
+                </Button>
+                <Button
+                  onClick={handleOpenDordonia}
+                  className="bg-gradient-to-r from-cyan-600 to-purple-600 hover:from-cyan-500 hover:to-purple-500 text-white px-6 py-3 rounded-lg font-medium transition-all hover:shadow-lg hover:shadow-cyan-500/20"
+                >
+                  <Sparkles className="mr-2 h-4 w-4" />
+                  Découvrez Dordonia
                 </Button>
               </div>
             </div>
