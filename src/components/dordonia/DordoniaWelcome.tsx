@@ -107,6 +107,18 @@ const DordoniaWelcome: React.FC<DordoniaWelcomeProps> = ({ onContinue }) => {
           )}
         </AnimatePresence>
       </div>
+
+      {/* Footer */}
+      <motion.footer
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 0.4 }}
+        transition={{ duration: 2, delay: 3 }}
+        className="absolute bottom-4 left-0 right-0 text-center"
+      >
+        <p className="font-crimson text-sm tracking-widest text-muted-foreground/60 italic">
+          @Gaspard Boréal — 2026
+        </p>
+      </motion.footer>
     </motion.div>
   );
 };
