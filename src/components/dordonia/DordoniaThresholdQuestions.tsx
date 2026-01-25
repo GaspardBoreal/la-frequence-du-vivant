@@ -115,6 +115,7 @@ const DordoniaThresholdQuestions: React.FC<DordoniaThresholdQuestionsProps> = ({
               <OptionButton
                 value="immobile"
                 label="Je suis immobile mais connecté au dehors"
+                sublabel="Sur une terrasse, à une fenêtre, au bord de l'eau..."
                 onClick={() => handleAnswer('ouEsTu', 'immobile')}
                 isSelected={answers.ouEsTu === 'immobile'}
               />
