@@ -7,6 +7,8 @@ import {
   PageBreak,
   AlignmentType,
   BorderStyle,
+  Bookmark,
+  SimpleField,
 } from 'docx';
 import { saveAs } from 'file-saver';
 
@@ -226,6 +228,22 @@ const getTypeLabel = (type: string): string => {
   return TEXT_TYPE_LABELS[type.toLowerCase()] || type;
 };
 
+/**
+ * Generate a valid Word bookmark ID from a text ID
+ * Word bookmark IDs: max 40 chars, alphanumeric + underscore, must start with letter
+ */
+const generateBookmarkId = (texte: TexteExport): string => {
+  const base = `texte_${texte.id}`.replace(/[^a-zA-Z0-9_]/g, '_');
+  return base.substring(0, 40);
+};
+
+/**
+ * Create a PAGEREF field that references a bookmark
+ */
+const createPageRef = (bookmarkId: string): SimpleField => {
+  return new SimpleField(`PAGEREF ${bookmarkId} \\h`);
+};
+
 const createCoverPage = (title: string, textCount: number): Paragraph[] => {
   return [
     new Paragraph({
@@ -385,20 +403,26 @@ const createSectionHeader = (
 
 const createTexteEntry = (texte: TexteExport, includeMetadata: boolean): Paragraph[] => {
   const paragraphs: Paragraph[] = [];
+  const bookmarkId = generateBookmarkId(texte);
 
   // Construire le titre avec préfixe pour les fables uniquement
   const displayTitle = texte.type_texte === 'fable' 
     ? `Fable : ${texte.titre}` 
     : texte.titre;
 
-  // Title
+  // Title with Bookmark for cross-referencing in indexes
   paragraphs.push(
     new Paragraph({
       children: [
-        new TextRun({
-          text: displayTitle,
-          bold: true,
-          size: 26,
+        new Bookmark({
+          id: bookmarkId,
+          children: [
+            new TextRun({
+              text: displayTitle,
+              bold: true,
+              size: 26,
+            }),
+          ],
         }),
       ],
       heading: HeadingLevel.HEADING_2,
@@ -560,18 +584,9 @@ const createIndexByMarche = (textes: TexteExport[]): Paragraph[] => {
 
   // Group texts by marche (chronologically sorted)
   const marcheGroups = groupTextesByMarcheWithDate(textes);
+  const typeOrder = ['haiku', 'senryu', 'poeme', 'haibun', 'texte-libre', 'fable', 'prose', 'recit'];
   
   for (const [marcheName, { textes: groupTextes }] of marcheGroups) {
-    // Extract unique types for this marche, sorted by predefined order
-    const typeOrder = ['haiku', 'senryu', 'poeme', 'haibun', 'texte-libre', 'fable', 'prose', 'recit'];
-    const uniqueTypes = [...new Set(groupTextes.map(t => t.type_texte.toLowerCase()))];
-    const sortedTypes = uniqueTypes.sort((a, b) => {
-      const indexA = typeOrder.indexOf(a);
-      const indexB = typeOrder.indexOf(b);
-      return (indexA === -1 ? 999 : indexA) - (indexB === -1 ? 999 : indexB);
-    });
-    const typesInMarche = sortedTypes.map(t => getTypeLabel(t)).join(', ');
-    
     // Location name (bold)
     paragraphs.push(
       new Paragraph({
@@ -582,25 +597,63 @@ const createIndexByMarche = (textes: TexteExport[]): Paragraph[] => {
             size: 24,
           }),
         ],
-        spacing: { before: 200, after: 50 },
+        spacing: { before: 250, after: 100 },
       })
     );
     
-    // Associated types (indented, italic)
-    paragraphs.push(
-      new Paragraph({
-        children: [
-          new TextRun({
-            text: typesInMarche,
-            italics: true,
-            size: 22,
-            color: '666666',
-          }),
-        ],
-        indent: { left: 400 },
-        spacing: { after: 100 },
-      })
-    );
+    // Group textes by type within this marche
+    const textesByType = new Map<string, TexteExport[]>();
+    groupTextes.forEach(t => {
+      const type = t.type_texte.toLowerCase();
+      if (!textesByType.has(type)) {
+        textesByType.set(type, []);
+      }
+      textesByType.get(type)!.push(t);
+    });
+    
+    // Sort types by predefined order
+    const sortedTypes = Array.from(textesByType.keys()).sort((a, b) => {
+      const indexA = typeOrder.indexOf(a);
+      const indexB = typeOrder.indexOf(b);
+      return (indexA === -1 ? 999 : indexA) - (indexB === -1 ? 999 : indexB);
+    });
+    
+    // For each type, list texts with page references
+    for (const type of sortedTypes) {
+      const typeTextes = textesByType.get(type)!;
+      
+      for (const texte of typeTextes) {
+        const bookmarkId = generateBookmarkId(texte);
+        const shortTitle = texte.titre.length > 50 
+          ? texte.titre.substring(0, 47) + '...' 
+          : texte.titre;
+        
+        paragraphs.push(
+          new Paragraph({
+            children: [
+              new TextRun({
+                text: `${shortTitle} `,
+                size: 22,
+              }),
+              new TextRun({
+                text: `(${getTypeLabel(type)}) `,
+                italics: true,
+                size: 20,
+                color: '888888',
+              }),
+              new TextRun({
+                text: '— p. ',
+                size: 20,
+                color: '888888',
+              }),
+              createPageRef(bookmarkId),
+            ],
+            indent: { left: 400 },
+            spacing: { after: 60 },
+          })
+        );
+      }
+    }
   }
   
   return paragraphs;
@@ -642,26 +695,6 @@ const createIndexByType = (textes: TexteExport[]): Paragraph[] => {
   for (const type of sortedTypes) {
     const groupTextes = typeGroups.get(type)!;
     
-    // Extract unique marches for this type, sorted chronologically
-    const marcheMap = new Map<string, string | null>();
-    groupTextes.forEach(t => {
-      const key = t.marche_nom || t.marche_ville || 'Sans lieu';
-      if (!marcheMap.has(key)) {
-        marcheMap.set(key, t.marche_date || null);
-      }
-    });
-    
-    // Sort marches by date
-    const sortedMarches = Array.from(marcheMap.entries())
-      .sort((a, b) => {
-        const dateA = a[1] || '9999-12-31';
-        const dateB = b[1] || '9999-12-31';
-        return dateA.localeCompare(dateB);
-      })
-      .map(([name]) => name);
-    
-    const marchesForType = sortedMarches.join(', ');
-    
     // Type name (bold)
     paragraphs.push(
       new Paragraph({
@@ -672,25 +705,50 @@ const createIndexByType = (textes: TexteExport[]): Paragraph[] => {
             size: 24,
           }),
         ],
-        spacing: { before: 200, after: 50 },
+        spacing: { before: 250, after: 100 },
       })
     );
     
-    // Associated marches (indented, italic)
-    paragraphs.push(
-      new Paragraph({
-        children: [
-          new TextRun({
-            text: marchesForType,
-            italics: true,
-            size: 22,
-            color: '666666',
-          }),
-        ],
-        indent: { left: 400 },
-        spacing: { after: 100 },
-      })
-    );
+    // Sort textes by marche date (chronologically)
+    const sortedTextes = [...groupTextes].sort((a, b) => {
+      const dateA = a.marche_date || '9999-12-31';
+      const dateB = b.marche_date || '9999-12-31';
+      return dateA.localeCompare(dateB);
+    });
+    
+    // List each text with its location and page reference
+    for (const texte of sortedTextes) {
+      const bookmarkId = generateBookmarkId(texte);
+      const location = texte.marche_nom || texte.marche_ville || 'Sans lieu';
+      const shortTitle = texte.titre.length > 45 
+        ? texte.titre.substring(0, 42) + '...' 
+        : texte.titre;
+      
+      paragraphs.push(
+        new Paragraph({
+          children: [
+            new TextRun({
+              text: `${shortTitle} `,
+              size: 22,
+            }),
+            new TextRun({
+              text: `— ${location} `,
+              italics: true,
+              size: 20,
+              color: '888888',
+            }),
+            new TextRun({
+              text: '— p. ',
+              size: 20,
+              color: '888888',
+            }),
+            createPageRef(bookmarkId),
+          ],
+          indent: { left: 400 },
+          spacing: { after: 60 },
+        })
+      );
+    }
   }
   
   return paragraphs;
