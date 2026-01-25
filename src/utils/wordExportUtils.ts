@@ -386,12 +386,17 @@ const createSectionHeader = (
 const createTexteEntry = (texte: TexteExport, includeMetadata: boolean): Paragraph[] => {
   const paragraphs: Paragraph[] = [];
 
+  // Construire le titre avec préfixe pour les fables uniquement
+  const displayTitle = texte.type_texte === 'fable' 
+    ? `Fable : ${texte.titre}` 
+    : texte.titre;
+
   // Title
   paragraphs.push(
     new Paragraph({
       children: [
         new TextRun({
-          text: texte.titre,
+          text: displayTitle,
           bold: true,
           size: 26,
         }),
