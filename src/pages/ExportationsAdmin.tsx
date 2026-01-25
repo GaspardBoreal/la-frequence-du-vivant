@@ -598,7 +598,7 @@ const ExportationsAdmin: React.FC = () => {
                                 {exp.name}
                               </Label>
                               {!hasMarches && (
-                                <span title="Aucun marché associé">
+                                <span title="Aucune marche associée">
                                   <AlertTriangle className="h-3.5 w-3.5 text-amber-500 shrink-0" />
                                 </span>
                               )}
