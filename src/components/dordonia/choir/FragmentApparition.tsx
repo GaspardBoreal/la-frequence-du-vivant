@@ -6,20 +6,16 @@ import { extractHaikuLines, extractPoeticFragment, getApparitionTypeFromTextType
 
 interface FragmentApparitionProps {
   text: RandomText;
-  position: { x: number; y: number };
   onExpire: () => void;
   onFocus?: () => void;
   ttl: number;
-  zIndex?: number;
 }
 
 const FragmentApparition: React.FC<FragmentApparitionProps> = ({
   text,
-  position,
   onExpire,
   onFocus,
   ttl,
-  zIndex = 100,
 }) => {
   const [isPinned, setIsPinned] = useState(false);
   
@@ -51,13 +47,7 @@ const FragmentApparition: React.FC<FragmentApparitionProps> = ({
       }}
       exit={{ opacity: 0, x: 30 }}
       transition={{ duration: 0.8, ease: 'easeOut' }}
-      whileHover={{ scale: 1.02 }}
-      style={{ 
-        left: `${Math.min(position.x, 50)}%`,
-        top: `${position.y}%`,
-        zIndex,
-      }}
-      className={`absolute w-72 sm:w-80 max-w-[calc(100vw-2rem)] cursor-pointer right-auto transition-shadow duration-300 ${
+      className={`w-72 sm:w-80 max-w-[calc(100vw-2rem)] transition-shadow duration-300 ${
         isPinned ? 'shadow-2xl shadow-rose-500/30' : 'shadow-lg shadow-black/30'
       }`}
       onClick={handleClick}
