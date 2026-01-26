@@ -7,6 +7,7 @@ interface VoiceApparitionProps {
   audioData: RandomAudio;
   onExpire: () => void;
   onFocus?: () => void;
+  onRelease?: () => void;
   ttl: number;
 }
 
@@ -14,6 +15,7 @@ const VoiceApparition: React.FC<VoiceApparitionProps> = ({
   audioData,
   onExpire,
   onFocus,
+  onRelease,
   ttl,
 }) => {
   const [isPlaying, setIsPlaying] = useState(false);
@@ -85,7 +87,15 @@ const VoiceApparition: React.FC<VoiceApparitionProps> = ({
 
   const handleClick = () => {
     onFocus?.();
+    const wasPinned = isPinned;
     setIsPinned(!isPinned);
+    
+    // Si on libère (était pinned, ne l'est plus), invoquer une nouvelle apparition
+    if (wasPinned) {
+      setTimeout(() => {
+        onRelease?.();
+      }, 400);
+    }
   };
 
   const formatDuration = (seconds: number | null): string => {
@@ -193,9 +203,12 @@ const VoiceApparition: React.FC<VoiceApparitionProps> = ({
 
         {/* Indicateur pinned */}
         {isPinned && (
-          <p className="mt-2 text-xs text-amber-400/40 text-center">
-            ✧ Fixé — toucher pour libérer
-          </p>
+          <motion.p 
+            className="mt-2 text-xs text-amber-400/40 text-center cursor-pointer"
+            whileHover={{ scale: 1.05, color: 'rgba(251, 191, 36, 0.6)' }}
+          >
+            ✧ Libérer pour invoquer
+          </motion.p>
         )}
       </div>
     </motion.div>

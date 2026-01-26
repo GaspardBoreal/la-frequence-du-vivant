@@ -8,6 +8,7 @@ interface MoralApparitionProps {
   text: RandomText;
   onExpire: () => void;
   onFocus?: () => void;
+  onRelease?: () => void;
   ttl: number;
 }
 
@@ -15,6 +16,7 @@ const MoralApparition: React.FC<MoralApparitionProps> = ({
   text,
   onExpire,
   onFocus,
+  onRelease,
   ttl,
 }) => {
   const [isPinned, setIsPinned] = useState(false);
@@ -43,10 +45,18 @@ const MoralApparition: React.FC<MoralApparitionProps> = ({
 
   const handleClick = () => {
     onFocus?.();
+    const wasPinned = isPinned;
     setIsPinned(!isPinned);
     // Si on pin, afficher tout immédiatement
     if (!isPinned) {
       setDisplayedChars(moral.length);
+    }
+    
+    // Si on libère (était pinned, ne l'est plus), invoquer une nouvelle apparition
+    if (wasPinned) {
+      setTimeout(() => {
+        onRelease?.();
+      }, 400);
     }
   };
 
@@ -108,9 +118,12 @@ const MoralApparition: React.FC<MoralApparitionProps> = ({
 
         {/* Indicateur pinned */}
         {isPinned && (
-          <p className="mt-3 text-xs text-violet-400/40">
-            ✧ Fixé — toucher pour libérer
-          </p>
+          <motion.p 
+            className="mt-3 text-xs text-violet-400/40 text-center cursor-pointer"
+            whileHover={{ scale: 1.05, color: 'rgba(167, 139, 250, 0.6)' }}
+          >
+            ✧ Libérer pour invoquer
+          </motion.p>
         )}
       </div>
     </motion.div>
