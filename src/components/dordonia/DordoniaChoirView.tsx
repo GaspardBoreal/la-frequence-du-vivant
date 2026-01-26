@@ -276,12 +276,32 @@ const DordoniaChoirView: React.FC<DordoniaChoirViewProps> = ({ sessionKey, onExi
     }
   }, [fetchAndAddBird, fetchAndAddSpecies, fetchAndAddText, fetchAndAddAudio]);
 
+  // Invoquer une apparition du même type (libérer pour invoquer)
+  const invokeApparitionOfType = useCallback((type: ApparitionType) => {
+    switch (type) {
+      case 'bird':
+        fetchAndAddBird();
+        break;
+      case 'species':
+        fetchAndAddSpecies();
+        break;
+      case 'fragment':
+      case 'moral':
+        fetchAndAddText();
+        break;
+      case 'voice':
+        fetchAndAddAudio();
+        break;
+    }
+  }, [fetchAndAddBird, fetchAndAddSpecies, fetchAndAddText, fetchAndAddAudio]);
+
   // Rendu des apparitions selon leur type
   const renderApparition = (apparition: Apparition) => {
     const commonProps = {
       ttl: apparition.ttl,
       onExpire: () => removeApparition(apparition.id),
       onFocus: () => bringToFront(apparition.id),
+      onRelease: () => invokeApparitionOfType(apparition.type),
     };
 
     const content = (() => {

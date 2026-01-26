@@ -7,6 +7,7 @@ interface SpeciesApparitionProps {
   species: RandomSpecies;
   onExpire: () => void;
   onFocus?: () => void;
+  onRelease?: () => void;
   ttl: number;
 }
 
@@ -14,6 +15,7 @@ const SpeciesApparition: React.FC<SpeciesApparitionProps> = ({
   species,
   onExpire,
   onFocus,
+  onRelease,
   ttl,
 }) => {
   const [isPinned, setIsPinned] = useState(false);
@@ -50,7 +52,15 @@ const SpeciesApparition: React.FC<SpeciesApparitionProps> = ({
 
   const handleClick = () => {
     onFocus?.();
+    const wasPinned = isPinned;
     setIsPinned(!isPinned);
+    
+    // Si on libère (était pinned, ne l'est plus), invoquer une nouvelle apparition
+    if (wasPinned) {
+      setTimeout(() => {
+        onRelease?.();
+      }, 400);
+    }
   };
 
   // Icône selon le royaume
@@ -144,9 +154,12 @@ const SpeciesApparition: React.FC<SpeciesApparitionProps> = ({
 
           {/* Indicateur pinned */}
           {isPinned && (
-            <p className="mt-2 text-xs text-emerald-400/40 text-center">
-              ✧ Fixé — toucher pour libérer
-            </p>
+            <motion.p 
+              className="mt-2 text-xs text-emerald-400/40 text-center cursor-pointer"
+              whileHover={{ scale: 1.05, color: 'rgba(52, 211, 153, 0.6)' }}
+            >
+              ✧ Libérer pour invoquer
+            </motion.p>
           )}
         </div>
       </div>

@@ -8,6 +8,7 @@ interface FragmentApparitionProps {
   text: RandomText;
   onExpire: () => void;
   onFocus?: () => void;
+  onRelease?: () => void;
   ttl: number;
 }
 
@@ -15,6 +16,7 @@ const FragmentApparition: React.FC<FragmentApparitionProps> = ({
   text,
   onExpire,
   onFocus,
+  onRelease,
   ttl,
 }) => {
   const [isPinned, setIsPinned] = useState(false);
@@ -35,7 +37,15 @@ const FragmentApparition: React.FC<FragmentApparitionProps> = ({
 
   const handleClick = () => {
     onFocus?.();
+    const wasPinned = isPinned;
     setIsPinned(!isPinned);
+    
+    // Si on libère (était pinned, ne l'est plus), invoquer une nouvelle apparition
+    if (wasPinned) {
+      setTimeout(() => {
+        onRelease?.();
+      }, 400);
+    }
   };
 
   return (
@@ -92,9 +102,12 @@ const FragmentApparition: React.FC<FragmentApparitionProps> = ({
 
         {/* Indicateur pinned */}
         {isPinned && (
-          <p className="mt-2 text-xs text-rose-400/40 text-center">
-            ✧ Fixé — toucher pour libérer
-          </p>
+          <motion.p 
+            className="mt-2 text-xs text-rose-400/40 text-center cursor-pointer"
+            whileHover={{ scale: 1.05, color: 'rgba(251, 113, 133, 0.6)' }}
+          >
+            ✧ Libérer pour invoquer
+          </motion.p>
         )}
       </div>
     </motion.div>

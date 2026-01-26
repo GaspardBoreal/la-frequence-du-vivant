@@ -7,6 +7,7 @@ interface BirdApparitionProps {
   bird: RandomBird;
   onExpire: () => void;
   onFocus?: () => void;
+  onRelease?: () => void;
   ttl: number;
 }
 
@@ -14,6 +15,7 @@ const BirdApparition: React.FC<BirdApparitionProps> = ({
   bird,
   onExpire,
   onFocus,
+  onRelease,
   ttl,
 }) => {
   const [isPlaying, setIsPlaying] = useState(false);
@@ -82,7 +84,15 @@ const BirdApparition: React.FC<BirdApparitionProps> = ({
 
   const handleClick = () => {
     onFocus?.();
+    const wasPinned = isPinned;
     setIsPinned(!isPinned);
+    
+    // Si on libère (était pinned, ne l'est plus), invoquer une nouvelle apparition
+    if (wasPinned) {
+      setTimeout(() => {
+        onRelease?.();
+      }, 400);
+    }
   };
 
   const formattedDate = bird.observationDate 
@@ -179,9 +189,12 @@ const BirdApparition: React.FC<BirdApparitionProps> = ({
 
         {/* Indicateur pinned */}
         {isPinned && (
-          <p className="mt-2 text-xs text-cyan-400/40 text-center">
-            ✧ Fixé — toucher pour libérer
-          </p>
+          <motion.p 
+            className="mt-2 text-xs text-cyan-400/40 text-center cursor-pointer"
+            whileHover={{ scale: 1.05, color: 'rgba(34, 211, 238, 0.6)' }}
+          >
+            ✧ Libérer pour invoquer
+          </motion.p>
         )}
       </div>
     </motion.div>
