@@ -7,6 +7,7 @@ interface BirdApparitionProps {
   bird: RandomBird;
   position: { x: number; y: number };
   onExpire: () => void;
+  onFocus?: () => void;
   ttl: number;
   zIndex?: number;
 }
@@ -15,6 +16,7 @@ const BirdApparition: React.FC<BirdApparitionProps> = ({
   bird,
   position,
   onExpire,
+  onFocus,
   ttl,
   zIndex = 100,
 }) => {
@@ -83,6 +85,7 @@ const BirdApparition: React.FC<BirdApparitionProps> = ({
   };
 
   const handleClick = () => {
+    onFocus?.();
     setIsPinned(!isPinned);
   };
 
@@ -103,12 +106,15 @@ const BirdApparition: React.FC<BirdApparitionProps> = ({
       }}
       exit={{ opacity: 0, scale: 0.6, y: -20 }}
       transition={{ duration: 0.6, ease: 'easeOut' }}
+      whileHover={{ scale: 1.02 }}
       style={{ 
         left: `${Math.min(position.x, 50)}%`,
         top: `${position.y}%`,
         zIndex,
       }}
-      className="absolute w-64 sm:w-72 max-w-[calc(100vw-2rem)] cursor-pointer"
+      className={`absolute w-64 sm:w-72 max-w-[calc(100vw-2rem)] cursor-pointer transition-shadow duration-300 ${
+        isPinned ? 'shadow-2xl shadow-cyan-500/30' : 'shadow-lg shadow-black/30'
+      }`}
       onClick={handleClick}
     >
       <div className={`

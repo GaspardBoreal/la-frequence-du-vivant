@@ -7,6 +7,7 @@ interface SpeciesApparitionProps {
   species: RandomSpecies;
   position: { x: number; y: number };
   onExpire: () => void;
+  onFocus?: () => void;
   ttl: number;
   zIndex?: number;
 }
@@ -15,6 +16,7 @@ const SpeciesApparition: React.FC<SpeciesApparitionProps> = ({
   species,
   position,
   onExpire,
+  onFocus,
   ttl,
   zIndex = 100,
 }) => {
@@ -51,6 +53,7 @@ const SpeciesApparition: React.FC<SpeciesApparitionProps> = ({
   }, [species.scientificName]);
 
   const handleClick = () => {
+    onFocus?.();
     setIsPinned(!isPinned);
   };
 
@@ -78,12 +81,15 @@ const SpeciesApparition: React.FC<SpeciesApparitionProps> = ({
       }}
       exit={{ opacity: 0, scale: 0.7, filter: 'blur(10px)' }}
       transition={{ duration: 0.7, ease: 'easeOut' }}
+      whileHover={{ scale: 1.02 }}
       style={{ 
         left: `${Math.min(position.x, 50)}%`,
         top: `${position.y}%`,
         zIndex,
       }}
-      className="absolute w-64 sm:w-72 max-w-[calc(100vw-2rem)] cursor-pointer"
+      className={`absolute w-64 sm:w-72 max-w-[calc(100vw-2rem)] cursor-pointer transition-shadow duration-300 ${
+        isPinned ? 'shadow-2xl shadow-emerald-500/30' : 'shadow-lg shadow-black/30'
+      }`}
       onClick={handleClick}
     >
       <div className={`
