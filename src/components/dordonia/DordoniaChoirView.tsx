@@ -283,13 +283,13 @@ const DordoniaChoirView: React.FC<DordoniaChoirViewProps> = ({ sessionKey, onExi
                 opacity: [0.3, 0.6, 0.3],
               }}
               transition={{ duration: 3, repeat: Infinity }}
-              className="w-20 h-20 rounded-full bg-rose-500/10 mb-6"
+              className="w-16 h-16 sm:w-20 sm:h-20 md:w-24 md:h-24 rounded-full bg-rose-500/10 mb-4 sm:mb-6"
             />
-            <div className="text-center space-y-3">
-              <p className="text-muted-foreground text-sm font-crimson italic">
+            <div className="text-center space-y-4 sm:space-y-5">
+              <p className="text-muted-foreground text-base sm:text-lg md:text-xl font-crimson italic">
                 Qui souhaitez-vous invoquer ?
               </p>
-              <div className="text-xs text-muted-foreground/70 font-crimson space-y-1">
+              <div className="text-sm sm:text-base text-muted-foreground/70 font-crimson space-y-2 sm:space-y-2.5">
                 <p><span className="text-cyan-400">Un oiseau</span> croisé sur la rivière</p>
                 <p><span className="text-emerald-400">Une espèce</span> murmurant son nom latin</p>
                 <p><span className="text-rose-400">Un fragment</span> de poésie surgissant</p>
@@ -325,60 +325,63 @@ const DordoniaChoirView: React.FC<DordoniaChoirViewProps> = ({ sessionKey, onExi
       {/* Footer avec stats et boutons d'invocation */}
       <div className="p-4 border-t border-border/30 bg-background/80 backdrop-blur-sm z-10">
         {/* Boutons d'invocation */}
-        <div className="flex items-center justify-center gap-2 mb-3">
-          <span className="text-xs text-muted-foreground mr-2">Invoquer :</span>
+        <div className="flex items-center justify-center gap-1 sm:gap-2 mb-3">
+          <span className="text-sm sm:text-xs text-muted-foreground mr-2 sm:mr-2">Invoquer :</span>
           <Button
             variant="ghost"
             size="sm"
             onClick={() => invokeApparition('bird')}
-            className="text-cyan-400 hover:bg-cyan-500/10 h-8 px-2"
+            className="text-cyan-400 hover:bg-cyan-500/10 h-10 w-10 sm:h-8 sm:w-auto sm:px-3 p-0 sm:p-2"
           >
-            <Bird className="h-3.5 w-3.5" />
+            <Bird className="h-5 w-5 sm:h-4 sm:w-4" />
           </Button>
           <Button
             variant="ghost"
             size="sm"
             onClick={() => invokeApparition('species')}
-            className="text-emerald-400 hover:bg-emerald-500/10 h-8 px-2"
+            className="text-emerald-400 hover:bg-emerald-500/10 h-10 w-10 sm:h-8 sm:w-auto sm:px-3 p-0 sm:p-2"
           >
-            <Leaf className="h-3.5 w-3.5" />
+            <Leaf className="h-5 w-5 sm:h-4 sm:w-4" />
           </Button>
           <Button
             variant="ghost"
             size="sm"
             onClick={() => invokeApparition('fragment')}
-            className="text-rose-400 hover:bg-rose-500/10 h-8 px-2"
+            className="text-rose-400 hover:bg-rose-500/10 h-10 w-10 sm:h-8 sm:w-auto sm:px-3 p-0 sm:p-2"
           >
-            <Feather className="h-3.5 w-3.5" />
+            <Feather className="h-5 w-5 sm:h-4 sm:w-4" />
           </Button>
           <Button
             variant="ghost"
             size="sm"
             onClick={() => invokeApparition('voice')}
-            className="text-amber-400 hover:bg-amber-500/10 h-8 px-2"
+            className="text-amber-400 hover:bg-amber-500/10 h-10 w-10 sm:h-8 sm:w-auto sm:px-3 p-0 sm:p-2"
           >
-            <Volume2 className="h-3.5 w-3.5" />
+            <Volume2 className="h-5 w-5 sm:h-4 sm:w-4" />
           </Button>
           <Button
             variant="ghost"
             size="sm"
             onClick={() => invokeApparition('moral')}
-            className="text-violet-400 hover:bg-violet-500/10 h-8 px-2"
+            className="text-violet-400 hover:bg-violet-500/10 h-10 w-10 sm:h-8 sm:w-auto sm:px-3 p-0 sm:p-2"
           >
-            <BookOpen className="h-3.5 w-3.5" />
+            <BookOpen className="h-5 w-5 sm:h-4 sm:w-4" />
           </Button>
         </div>
 
         {/* Statistiques */}
-        <div className="flex items-center justify-center gap-4 text-xs text-muted-foreground">
-          <span>{apparitions.length} visible(s)</span>
-          <span className="opacity-50">•</span>
-          <span>{stats.total} surgies</span>
-          <span className="opacity-50">•</span>
-          <span className="text-cyan-400/70">{stats.birds} 🐦</span>
-          <span className="text-emerald-400/70">{stats.species} 🌿</span>
-          <span className="text-rose-400/70">{stats.fragments} ✨</span>
-          <span className="text-amber-400/70">{stats.voices} 🔊</span>
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-4 text-xs sm:text-sm text-muted-foreground">
+          <div className="flex items-center gap-2 sm:gap-4">
+            <span>{apparitions.length} visible(s)</span>
+            <span className="hidden sm:inline opacity-50">•</span>
+            <span>{stats.total} surgies</span>
+          </div>
+          <div className="flex items-center gap-3 sm:gap-4 mt-1 sm:mt-0">
+            <span className="text-cyan-400/70">{stats.birds} 🐦</span>
+            <span className="text-emerald-400/70">{stats.species} 🌿</span>
+            <span className="text-rose-400/70">{stats.fragments} ✨</span>
+            <span className="text-amber-400/70">{stats.voices} 🔊</span>
+          </div>
         </div>
       </div>
     </div>
