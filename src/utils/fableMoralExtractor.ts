@@ -30,8 +30,8 @@ export const cleanHtml = (html: string): string => {
   return html
     .replace(/<br\s*\/?>/gi, '\n')
     .replace(/<\/p>/gi, '\n\n')
-    .replace(/<\/div>/gi, '\n')      // Fermeture div = retour ligne (haïkus)
-    .replace(/<div[^>]*>/gi, '')     // Supprime les div ouvrantes
+    .replace(/<div[^>]*>/gi, '\n')   // MODIFIÉ: div ouvrante = retour ligne AVANT
+    .replace(/<\/div>/gi, '')        // MODIFIÉ: supprime la div fermante (plus de \n ici)
     .replace(/<[^>]+>/g, '')         // Supprime le reste des balises
     .replace(/&nbsp;/g, ' ')
     .replace(/&amp;/g, '&')
