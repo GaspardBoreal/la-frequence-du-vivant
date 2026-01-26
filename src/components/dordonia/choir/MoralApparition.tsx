@@ -8,6 +8,7 @@ interface MoralApparitionProps {
   text: RandomText;
   position: { x: number; y: number };
   onExpire: () => void;
+  onFocus?: () => void;
   ttl: number;
   zIndex?: number;
 }
@@ -16,6 +17,7 @@ const MoralApparition: React.FC<MoralApparitionProps> = ({
   text,
   position,
   onExpire,
+  onFocus,
   ttl,
   zIndex = 100,
 }) => {
@@ -44,6 +46,7 @@ const MoralApparition: React.FC<MoralApparitionProps> = ({
   }, [ttl, onExpire, isPinned]);
 
   const handleClick = () => {
+    onFocus?.();
     setIsPinned(!isPinned);
     // Si on pin, afficher tout immédiatement
     if (!isPinned) {
@@ -59,12 +62,15 @@ const MoralApparition: React.FC<MoralApparitionProps> = ({
       }}
       exit={{ opacity: 0 }}
       transition={{ duration: 1, ease: 'easeOut' }}
+      whileHover={{ scale: 1.02 }}
       style={{ 
         left: `${Math.min(position.x, 50)}%`,
         top: `${position.y}%`,
         zIndex,
       }}
-      className="absolute w-72 sm:w-80 md:max-w-md max-w-[calc(100vw-2rem)] cursor-pointer"
+      className={`absolute w-72 sm:w-80 md:max-w-md max-w-[calc(100vw-2rem)] cursor-pointer transition-shadow duration-300 ${
+        isPinned ? 'shadow-2xl shadow-violet-500/30' : 'shadow-lg shadow-black/30'
+      }`}
       onClick={handleClick}
     >
       <div className={`

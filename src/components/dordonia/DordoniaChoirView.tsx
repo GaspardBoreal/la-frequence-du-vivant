@@ -36,24 +36,41 @@ const APPARITION_CONFIG: Record<ApparitionType, { interval: [number, number]; tt
 const randomInRange = (range: [number, number]) => 
   Math.floor(Math.random() * (range[1] - range[0]) + range[0]);
 
-// Générer une position aléatoire évitant les chevauchements
+// Limite maximum d'apparitions visibles
+const MAX_VISIBLE_APPARITIONS = 5;
+
+// Zones de positionnement pour répartir les widgets
+const POSITION_ZONES = [
+  { x: [5, 25], y: [8, 28] },    // Haut gauche
+  { x: [30, 50], y: [8, 28] },   // Haut centre
+  { x: [5, 25], y: [35, 55] },   // Milieu gauche
+  { x: [30, 50], y: [35, 55] },  // Milieu centre
+  { x: [15, 40], y: [20, 42] },  // Zone centrale
+];
+
+// Générer une position dans la zone la moins occupée
 const generatePosition = (existingApparitions: Apparition[]): { x: number; y: number } => {
-  const maxAttempts = 10;
+  // Compter les apparitions par zone
+  const zoneCounts = POSITION_ZONES.map((zone, index) => ({
+    index,
+    count: existingApparitions.filter(a => 
+      a.position.x >= zone.x[0] && a.position.x <= zone.x[1] &&
+      a.position.y >= zone.y[0] && a.position.y <= zone.y[1]
+    ).length
+  }));
   
-  for (let i = 0; i < maxAttempts; i++) {
-    const x = 5 + Math.random() * 65; // 5% à 70% pour éviter les bords
-    const y = 10 + Math.random() * 55; // 10% à 65%
-    
-    // Vérifier qu'on n'est pas trop proche d'une apparition existante
-    const tooClose = existingApparitions.some(a => 
-      Math.abs(a.position.x - x) < 15 && Math.abs(a.position.y - y) < 15
-    );
-    
-    if (!tooClose) return { x, y };
-  }
+  // Trier par densité et ajouter un peu d'aléatoire
+  zoneCounts.sort((a, b) => a.count - b.count);
   
-  // Fallback si on ne trouve pas de position idéale
-  return { x: 5 + Math.random() * 70, y: 10 + Math.random() * 60 };
+  // Prendre une des deux zones les moins peuplées aléatoirement
+  const selectedZoneIndex = zoneCounts[Math.random() < 0.7 ? 0 : Math.min(1, zoneCounts.length - 1)].index;
+  const selectedZone = POSITION_ZONES[selectedZoneIndex];
+  
+  // Position aléatoire dans la zone choisie
+  return {
+    x: selectedZone.x[0] + Math.random() * (selectedZone.x[1] - selectedZone.x[0]),
+    y: selectedZone.y[0] + Math.random() * (selectedZone.y[1] - selectedZone.y[0]),
+  };
 };
 
 const DordoniaChoirView: React.FC<DordoniaChoirViewProps> = ({ sessionKey, onExit }) => {
@@ -69,14 +86,22 @@ const DordoniaChoirView: React.FC<DordoniaChoirViewProps> = ({ sessionKey, onExi
     moral: null,
   });
   
-  // Compteur z-index global pour que les nouvelles apparitions soient toujours au premier plan
-  const zIndexCounter = useRef(100);
+  // Compteur z-index global - base haute et incrément de 10 pour hiérarchie claire
+  const zIndexCounter = useRef(1000);
   
   const { fetchRandomBird, fetchRandomSpecies, fetchRandomText, fetchRandomAudio } = useRandomExplorationData();
 
   // Supprimer une apparition
   const removeApparition = useCallback((id: string) => {
     setApparitions(prev => prev.filter(a => a.id !== id));
+  }, []);
+
+  // Remonter un widget au premier plan
+  const bringToFront = useCallback((id: string) => {
+    zIndexCounter.current += 10;
+    setApparitions(prev => 
+      prev.map(a => a.id === id ? { ...a, zIndex: zIndexCounter.current } : a)
+    );
   }, []);
 
   // Ajouter une apparition
@@ -86,13 +111,24 @@ const DordoniaChoirView: React.FC<DordoniaChoirViewProps> = ({ sessionKey, onExi
     const id = `${type}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     const ttl = randomInRange(APPARITION_CONFIG[type].ttl);
     
-    // Incrémenter le z-index pour que cette apparition soit au premier plan
-    zIndexCounter.current += 1;
+    // Incrémenter le z-index par 10 pour hiérarchie claire
+    zIndexCounter.current += 10;
     const zIndex = zIndexCounter.current;
     
     setApparitions(prev => {
-      const position = generatePosition(prev);
-      return [...prev, { id, type, position, createdAt: new Date(), ttl, content, zIndex }];
+      // Si trop d'apparitions, supprimer la plus ancienne non-pinnée
+      let updatedList = [...prev];
+      if (updatedList.length >= MAX_VISIBLE_APPARITIONS) {
+        // Trouver et supprimer l'apparition la plus ancienne avec le z-index le plus bas
+        const sortedByZ = [...updatedList].sort((a, b) => a.zIndex - b.zIndex);
+        const toRemove = sortedByZ[0];
+        if (toRemove) {
+          updatedList = updatedList.filter(a => a.id !== toRemove.id);
+        }
+      }
+      
+      const position = generatePosition(updatedList);
+      return [...updatedList, { id, type, position, createdAt: new Date(), ttl, content, zIndex }];
     });
     
     setStats(prev => ({ 
@@ -217,6 +253,7 @@ const DordoniaChoirView: React.FC<DordoniaChoirViewProps> = ({ sessionKey, onExi
       ttl: apparition.ttl,
       zIndex: apparition.zIndex,
       onExpire: () => removeApparition(apparition.id),
+      onFocus: () => bringToFront(apparition.id),
     };
 
     switch (apparition.type) {

@@ -7,6 +7,7 @@ interface VoiceApparitionProps {
   audioData: RandomAudio;
   position: { x: number; y: number };
   onExpire: () => void;
+  onFocus?: () => void;
   ttl: number;
   zIndex?: number;
 }
@@ -15,6 +16,7 @@ const VoiceApparition: React.FC<VoiceApparitionProps> = ({
   audioData,
   position,
   onExpire,
+  onFocus,
   ttl,
   zIndex = 100,
 }) => {
@@ -86,6 +88,7 @@ const VoiceApparition: React.FC<VoiceApparitionProps> = ({
   };
 
   const handleClick = () => {
+    onFocus?.();
     setIsPinned(!isPinned);
   };
 
@@ -105,12 +108,15 @@ const VoiceApparition: React.FC<VoiceApparitionProps> = ({
       }}
       exit={{ opacity: 0, scale: 0.8 }}
       transition={{ duration: 0.5, ease: 'easeOut' }}
+      whileHover={{ scale: 1.02 }}
       style={{ 
         left: `${Math.min(position.x, 50)}%`,
         top: `${position.y}%`,
         zIndex,
       }}
-      className="absolute w-64 sm:w-72 max-w-[calc(100vw-2rem)] cursor-pointer"
+      className={`absolute w-64 sm:w-72 max-w-[calc(100vw-2rem)] cursor-pointer transition-shadow duration-300 ${
+        isPinned ? 'shadow-2xl shadow-amber-500/30' : 'shadow-lg shadow-black/30'
+      }`}
       onClick={handleClick}
     >
       <div className={`
