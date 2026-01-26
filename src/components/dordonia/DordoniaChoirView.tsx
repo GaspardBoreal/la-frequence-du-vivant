@@ -1,9 +1,11 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Ghost, Pause, Play, Sparkles, Bird, Feather, Volume2, Leaf, BookOpen } from 'lucide-react';
+import { DndContext, DragEndEvent, useSensor, useSensors, PointerSensor, TouchSensor } from '@dnd-kit/core';
 import { Button } from '@/components/ui/button';
 import { useRandomExplorationData, RandomBird, RandomSpecies, RandomText, RandomAudio } from '@/hooks/useRandomExplorationData';
 import { BirdApparition, FragmentApparition, VoiceApparition, SpeciesApparition, MoralApparition } from './choir';
+import DraggableApparition from './choir/DraggableApparition';
 import { getApparitionTypeFromTextType } from '@/utils/fableMoralExtractor';
 
 interface DordoniaChoirViewProps {
@@ -90,6 +92,35 @@ const DordoniaChoirView: React.FC<DordoniaChoirViewProps> = ({ sessionKey, onExi
   const zIndexCounter = useRef(1000);
   
   const { fetchRandomBird, fetchRandomSpecies, fetchRandomText, fetchRandomAudio } = useRandomExplorationData();
+
+  // Configurer les capteurs pour souris et tactile
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 200, tolerance: 5 } })
+  );
+
+  // Handler de fin de drag
+  const handleDragEnd = useCallback((event: DragEndEvent) => {
+    const { active, delta } = event;
+    if (!delta) return;
+    
+    // Convertir le delta pixels en pourcentage du viewport
+    const deltaXPercent = (delta.x / window.innerWidth) * 100;
+    const deltaYPercent = (delta.y / window.innerHeight) * 100;
+    
+    setApparitions(prev => prev.map(a => {
+      if (a.id === active.id) {
+        // Calculer nouvelle position avec contraintes
+        const newX = Math.max(2, Math.min(60, a.position.x + deltaXPercent));
+        const newY = Math.max(5, Math.min(70, a.position.y + deltaYPercent));
+        return { ...a, position: { x: newX, y: newY } };
+      }
+      return a;
+    }));
+    
+    // Remonter au premier plan après déplacement
+    bringToFront(active.id as string);
+  }, []);
 
   // Supprimer une apparition
   const removeApparition = useCallback((id: string) => {
@@ -248,28 +279,38 @@ const DordoniaChoirView: React.FC<DordoniaChoirViewProps> = ({ sessionKey, onExi
   // Rendu des apparitions selon leur type
   const renderApparition = (apparition: Apparition) => {
     const commonProps = {
-      key: apparition.id,
-      position: apparition.position,
       ttl: apparition.ttl,
-      zIndex: apparition.zIndex,
       onExpire: () => removeApparition(apparition.id),
       onFocus: () => bringToFront(apparition.id),
     };
 
-    switch (apparition.type) {
-      case 'bird':
-        return <BirdApparition {...commonProps} bird={apparition.content as RandomBird} />;
-      case 'fragment':
-        return <FragmentApparition {...commonProps} text={apparition.content as RandomText} />;
-      case 'voice':
-        return <VoiceApparition {...commonProps} audioData={apparition.content as RandomAudio} />;
-      case 'species':
-        return <SpeciesApparition {...commonProps} species={apparition.content as RandomSpecies} />;
-      case 'moral':
-        return <MoralApparition {...commonProps} text={apparition.content as RandomText} />;
-      default:
-        return null;
-    }
+    const content = (() => {
+      switch (apparition.type) {
+        case 'bird':
+          return <BirdApparition {...commonProps} bird={apparition.content as RandomBird} />;
+        case 'fragment':
+          return <FragmentApparition {...commonProps} text={apparition.content as RandomText} />;
+        case 'voice':
+          return <VoiceApparition {...commonProps} audioData={apparition.content as RandomAudio} />;
+        case 'species':
+          return <SpeciesApparition {...commonProps} species={apparition.content as RandomSpecies} />;
+        case 'moral':
+          return <MoralApparition {...commonProps} text={apparition.content as RandomText} />;
+        default:
+          return null;
+      }
+    })();
+
+    return (
+      <DraggableApparition
+        key={apparition.id}
+        id={apparition.id}
+        position={apparition.position}
+        zIndex={apparition.zIndex}
+      >
+        {content}
+      </DraggableApparition>
+    );
   };
 
   return (
@@ -303,9 +344,11 @@ const DordoniaChoirView: React.FC<DordoniaChoirViewProps> = ({ sessionKey, onExi
 
       {/* Zone des apparitions */}
       <div className="flex-1 relative">
-        <AnimatePresence>
-          {apparitions.map(renderApparition)}
-        </AnimatePresence>
+        <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
+          <AnimatePresence>
+            {apparitions.map(renderApparition)}
+          </AnimatePresence>
+        </DndContext>
 
         {/* Message de bienvenue si aucune apparition */}
         {apparitions.length === 0 && !isPaused && (
