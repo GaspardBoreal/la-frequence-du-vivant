@@ -129,7 +129,7 @@ Session: ${sessionKey}
               <h2 className="font-crimson text-2xl text-foreground">
                 Parlement 2050
               </h2>
-              <p className="text-muted-foreground mt-2">
+              <p className="text-muted-foreground mt-2 text-center">
                 Choisissez un cas de délibération
               </p>
             </div>
