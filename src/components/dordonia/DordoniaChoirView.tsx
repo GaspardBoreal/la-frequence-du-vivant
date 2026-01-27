@@ -135,18 +135,32 @@ const DordoniaChoirView: React.FC<DordoniaChoirViewProps> = ({ sessionKey, onExi
     );
   }, []);
 
-  // Ajouter une apparition
+  // Ajouter une apparition avec vérification anti-doublons
   const addApparition = useCallback((type: ApparitionType, content: any) => {
     if (!content) return;
     
-    const id = `${type}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-    const ttl = randomInRange(APPARITION_CONFIG[type].ttl);
-    
-    // Incrémenter le z-index par 10 pour hiérarchie claire
-    zIndexCounter.current += 10;
-    const zIndex = zIndexCounter.current;
+    // Extraire l'ID source du contenu pour détection de doublons
+    const contentId = content.id;
     
     setApparitions(prev => {
+      // Vérifier si ce contenu est déjà affiché
+      const isDuplicate = prev.some(a => {
+        const existingId = (a.content as any).id;
+        return existingId === contentId;
+      });
+      
+      if (isDuplicate) {
+        console.log(`Apparition ignorée (doublon): ${contentId}`);
+        return prev; // Ne pas ajouter
+      }
+      
+      const id = `${type}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      const ttl = randomInRange(APPARITION_CONFIG[type].ttl);
+      
+      // Incrémenter le z-index par 10 pour hiérarchie claire
+      zIndexCounter.current += 10;
+      const zIndex = zIndexCounter.current;
+      
       // Si trop d'apparitions, supprimer la plus ancienne non-pinnée
       let updatedList = [...prev];
       if (updatedList.length >= MAX_VISIBLE_APPARITIONS) {
@@ -169,29 +183,41 @@ const DordoniaChoirView: React.FC<DordoniaChoirViewProps> = ({ sessionKey, onExi
     }));
   }, []);
 
-  // Fetchers par type
+  // Helper pour extraire les IDs actuellement visibles par type
+  const getVisibleIds = useCallback((types: ApparitionType[]): string[] => {
+    return apparitions
+      .filter(a => types.includes(a.type))
+      .map(a => (a.content as any).id)
+      .filter(Boolean);
+  }, [apparitions]);
+
+  // Fetchers par type avec exclusion des doublons
   const fetchAndAddBird = useCallback(async () => {
-    const bird = await fetchRandomBird();
+    const excludeIds = getVisibleIds(['bird']);
+    const bird = await fetchRandomBird(excludeIds);
     if (bird) addApparition('bird', bird);
-  }, [fetchRandomBird, addApparition]);
+  }, [fetchRandomBird, addApparition, getVisibleIds]);
 
   const fetchAndAddSpecies = useCallback(async () => {
-    const species = await fetchRandomSpecies();
+    const excludeIds = getVisibleIds(['species']);
+    const species = await fetchRandomSpecies(excludeIds);
     if (species) addApparition('species', species);
-  }, [fetchRandomSpecies, addApparition]);
+  }, [fetchRandomSpecies, addApparition, getVisibleIds]);
 
   const fetchAndAddText = useCallback(async () => {
-    const text = await fetchRandomText();
+    const excludeIds = getVisibleIds(['fragment', 'moral']);
+    const text = await fetchRandomText(excludeIds);
     if (text) {
       const textType = getApparitionTypeFromTextType(text.typeTexte);
       addApparition(textType === 'haiku' ? 'fragment' : textType, text);
     }
-  }, [fetchRandomText, addApparition]);
+  }, [fetchRandomText, addApparition, getVisibleIds]);
 
   const fetchAndAddAudio = useCallback(async () => {
-    const audio = await fetchRandomAudio();
+    const excludeIds = getVisibleIds(['voice']);
+    const audio = await fetchRandomAudio(excludeIds);
     if (audio) addApparition('voice', audio);
-  }, [fetchRandomAudio, addApparition]);
+  }, [fetchRandomAudio, addApparition, getVisibleIds]);
 
   // Démarrer les timers
   const startTimers = useCallback(() => {

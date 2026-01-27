@@ -56,7 +56,7 @@ export const useRandomExplorationData = () => {
   /**
    * Récupère un oiseau aléatoire des snapshots biodiversité
    */
-  const fetchRandomBird = useCallback(async (): Promise<RandomBird | null> => {
+  const fetchRandomBird = useCallback(async (excludeIds: string[] = []): Promise<RandomBird | null> => {
     try {
       // Récupérer les marches de l'exploration Dordogne
       const { data: marches } = await supabase
@@ -103,7 +103,15 @@ export const useRandomExplorationData = () => {
       
       if (birds.length === 0) return null;
       
-      const randomBird = birds[Math.floor(Math.random() * birds.length)];
+      // Filtrer les oiseaux déjà affichés (par nom scientifique comme ID)
+      const availableBirds = birds.filter(b => {
+        const birdId = b.scientificName || b.nom_scientifique || '';
+        return !excludeIds.includes(birdId);
+      });
+      
+      // Fallback: utiliser tous les oiseaux si tous sont exclus
+      const birdsToSelect = availableBirds.length > 0 ? availableBirds : birds;
+      const randomBird = birdsToSelect[Math.floor(Math.random() * birdsToSelect.length)];
       const marcheData = marches.find(m => m.marche_id === randomSnapshot.marche_id);
       
       return {
@@ -123,7 +131,7 @@ export const useRandomExplorationData = () => {
   /**
    * Récupère une espèce aléatoire (plante, champignon, etc.)
    */
-  const fetchRandomSpecies = useCallback(async (): Promise<RandomSpecies | null> => {
+  const fetchRandomSpecies = useCallback(async (excludeIds: string[] = []): Promise<RandomSpecies | null> => {
     try {
       const { data: marches } = await supabase
         .from('exploration_marches')
@@ -155,7 +163,15 @@ export const useRandomExplorationData = () => {
       
       if (!Array.isArray(speciesArray) || speciesArray.length === 0) return null;
       
-      const randomSpecies = speciesArray[Math.floor(Math.random() * speciesArray.length)];
+      // Filtrer les espèces déjà affichées (par nom scientifique)
+      const availableSpecies = speciesArray.filter(s => {
+        const speciesId = s.scientificName || s.nom_scientifique || '';
+        return !excludeIds.includes(speciesId);
+      });
+      
+      // Fallback: utiliser toutes les espèces si toutes sont exclues
+      const speciesToSelect = availableSpecies.length > 0 ? availableSpecies : speciesArray;
+      const randomSpecies = speciesToSelect[Math.floor(Math.random() * speciesToSelect.length)];
       const marcheData = marches.find(m => m.marche_id === randomSnapshot.marche_id);
       
       return {
@@ -175,7 +191,7 @@ export const useRandomExplorationData = () => {
   /**
    * Récupère un texte poétique aléatoire
    */
-  const fetchRandomText = useCallback(async (): Promise<RandomText | null> => {
+  const fetchRandomText = useCallback(async (excludeIds: string[] = []): Promise<RandomText | null> => {
     try {
       const { data: marches } = await supabase
         .from('exploration_marches')
@@ -194,7 +210,12 @@ export const useRandomExplorationData = () => {
       
       if (!textes || textes.length === 0) return null;
       
-      const randomText = textes[Math.floor(Math.random() * textes.length)];
+      // Filtrer les textes déjà affichés
+      const availableTextes = textes.filter(t => !excludeIds.includes(t.id));
+      
+      // Fallback: utiliser tous les textes si tous sont exclus
+      const textesToSelect = availableTextes.length > 0 ? availableTextes : textes;
+      const randomText = textesToSelect[Math.floor(Math.random() * textesToSelect.length)];
       const marcheData = marches.find(m => m.marche_id === randomText.marche_id);
       
       return {
@@ -213,7 +234,7 @@ export const useRandomExplorationData = () => {
   /**
    * Récupère un audio aléatoire
    */
-  const fetchRandomAudio = useCallback(async (): Promise<RandomAudio | null> => {
+  const fetchRandomAudio = useCallback(async (excludeIds: string[] = []): Promise<RandomAudio | null> => {
     try {
       const { data: marches } = await supabase
         .from('exploration_marches')
@@ -231,7 +252,12 @@ export const useRandomExplorationData = () => {
       
       if (!audios || audios.length === 0) return null;
       
-      const randomAudio = audios[Math.floor(Math.random() * audios.length)];
+      // Filtrer les audios déjà affichés
+      const availableAudios = audios.filter(a => !excludeIds.includes(a.id));
+      
+      // Fallback: utiliser tous les audios si tous sont exclus
+      const audiosToSelect = availableAudios.length > 0 ? availableAudios : audios;
+      const randomAudio = audiosToSelect[Math.floor(Math.random() * audiosToSelect.length)];
       const marcheData = marches.find(m => m.marche_id === randomAudio.marche_id);
       
       return {
