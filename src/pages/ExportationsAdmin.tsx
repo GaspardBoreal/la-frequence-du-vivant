@@ -58,7 +58,18 @@ const TEXT_TYPES = [
   { id: 'haibun', label: 'Haïbun' },
   { id: 'texte-libre', label: 'Texte libre' },
   { id: 'fable', label: 'Fable' },
+  { id: 'fragment', label: 'Fragment' },
+  { id: 'essai-bref', label: 'Essai bref' },
+  { id: 'dialogue-polyphonique', label: 'Dialogue polyphonique' },
+  { id: 'carte-poetique', label: 'Carte poétique' },
   { id: 'prose', label: 'Prose' },
+  { id: 'carnet', label: 'Carnet de terrain' },
+  { id: 'correspondance', label: 'Correspondance' },
+  { id: 'manifeste', label: 'Manifeste' },
+  { id: 'glossaire', label: 'Glossaire poétique' },
+  { id: 'protocole', label: 'Protocole hybride' },
+  { id: 'synthese', label: 'Synthèse IA-Humain' },
+  { id: 'recit-donnees', label: 'Récit-données' },
   { id: 'recit', label: 'Récit' },
 ];
 
