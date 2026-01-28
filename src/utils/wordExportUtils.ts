@@ -21,6 +21,7 @@ interface TexteExport {
   marche_ville?: string;
   marche_region?: string;
   marche_date?: string;
+  ordre?: number;
   created_at?: string;
 }
 
@@ -296,12 +297,23 @@ const createParagraphsFromParsed = (
 
 const TEXT_TYPE_LABELS: Record<string, string> = {
   haiku: 'Haïkus',
-  poeme: 'Poèmes',
   senryu: 'Senryūs',
   haibun: 'Haïbuns',
+  poeme: 'Poèmes',
   'texte-libre': 'Textes libres',
+  'essai-bref': 'Essais brefs',
+  'dialogue-polyphonique': 'Dialogues polyphoniques',
   fable: 'Fables',
+  fragment: 'Fragments',
+  'carte-poetique': 'Cartes poétiques',
   prose: 'Proses',
+  carnet: 'Carnets de terrain',
+  correspondance: 'Correspondances',
+  manifeste: 'Manifestes',
+  glossaire: 'Glossaires poétiques',
+  protocole: 'Protocoles hybrides',
+  synthese: 'Synthèses IA-Humain',
+  'recit-donnees': 'Récits-données',
   recit: 'Récits',
 };
 
@@ -608,6 +620,11 @@ const groupTextesByMarcheWithDate = (textes: TexteExport[]): Map<string, MarcheG
     groupsWithDate.get(key)!.textes.push(texte);
   });
 
+  // Trier les textes par ordre à l'intérieur de chaque groupe
+  groupsWithDate.forEach(group => {
+    group.textes.sort((a, b) => (a.ordre ?? 999) - (b.ordre ?? 999));
+  });
+
   // Sort groups by date chronologically
   const sortedEntries = Array.from(groupsWithDate.entries())
     .sort((a, b) => {
@@ -665,8 +682,6 @@ const createIndexByMarche = (textes: TexteExport[]): Paragraph[] => {
 
   // Group texts by marche (chronologically sorted)
   const marcheGroups = groupTextesByMarcheWithDate(textes);
-  const typeOrder = ['haiku', 'senryu', 'poeme', 'haibun', 'texte-libre', 'fable', 'prose', 'recit'];
-  
   for (const [marcheName, { textes: groupTextes }] of marcheGroups) {
     // Location name (bold)
     paragraphs.push(
@@ -682,58 +697,37 @@ const createIndexByMarche = (textes: TexteExport[]): Paragraph[] => {
       })
     );
     
-    // Group textes by type within this marche
-    const textesByType = new Map<string, TexteExport[]>();
-    groupTextes.forEach(t => {
-      const type = t.type_texte.toLowerCase();
-      if (!textesByType.has(type)) {
-        textesByType.set(type, []);
-      }
-      textesByType.get(type)!.push(t);
-    });
-    
-    // Sort types by predefined order
-    const sortedTypes = Array.from(textesByType.keys()).sort((a, b) => {
-      const indexA = typeOrder.indexOf(a);
-      const indexB = typeOrder.indexOf(b);
-      return (indexA === -1 ? 999 : indexA) - (indexB === -1 ? 999 : indexB);
-    });
-    
-    // For each type, list texts with page references
-    for (const type of sortedTypes) {
-      const typeTextes = textesByType.get(type)!;
+    // Afficher les textes dans leur ordre naturel (déjà triés par ordre dans groupTextesByMarcheWithDate)
+    for (const texte of groupTextes) {
+      const bookmarkId = generateBookmarkId(texte);
+      const shortTitle = texte.titre.length > 50 
+        ? texte.titre.substring(0, 47) + '...' 
+        : texte.titre;
       
-      for (const texte of typeTextes) {
-        const bookmarkId = generateBookmarkId(texte);
-        const shortTitle = texte.titre.length > 50 
-          ? texte.titre.substring(0, 47) + '...' 
-          : texte.titre;
-        
-        paragraphs.push(
-          new Paragraph({
-            children: [
-              new TextRun({
-                text: `${shortTitle} `,
-                size: 22,
-              }),
-              new TextRun({
-                text: `(${getTypeLabel(type)}) `,
-                italics: true,
-                size: 20,
-                color: '888888',
-              }),
-              new TextRun({
-                text: '— p. ',
-                size: 20,
-                color: '888888',
-              }),
-              createPageRef(bookmarkId),
-            ],
-            indent: { left: 400 },
-            spacing: { after: 60 },
-          })
-        );
-      }
+      paragraphs.push(
+        new Paragraph({
+          children: [
+            new TextRun({
+              text: `${shortTitle} `,
+              size: 22,
+            }),
+            new TextRun({
+              text: `(${getTypeLabel(texte.type_texte)}) `,
+              italics: true,
+              size: 20,
+              color: '888888',
+            }),
+            new TextRun({
+              text: '— p. ',
+              size: 20,
+              color: '888888',
+            }),
+            createPageRef(bookmarkId),
+          ],
+          indent: { left: 400 },
+          spacing: { after: 60 },
+        })
+      );
     }
   }
   
