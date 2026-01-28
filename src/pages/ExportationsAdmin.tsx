@@ -38,6 +38,7 @@ interface TexteWithDetails {
   contenu: string;
   type_texte: string;
   marche_id: string;
+  ordre: number | null;
   created_at: string;
   marche_nom?: string;
   marche_ville?: string;
@@ -181,9 +182,10 @@ const ExportationsAdmin: React.FC = () => {
             contenu,
             type_texte,
             marche_id,
+            ordre,
             created_at
           `)
-          .order('created_at', { ascending: false });
+          .order('ordre', { ascending: true });
 
         if (textesData && marchesData) {
           const marchesMap = new Map(marchesData.map(m => [m.id, m]));
