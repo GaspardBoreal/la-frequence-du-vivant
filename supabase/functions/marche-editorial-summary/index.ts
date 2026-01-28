@@ -1,10 +1,6 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
+import { validateAuth, corsHeaders, forbiddenResponse } from "../_shared/auth-helper.ts";
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -12,6 +8,17 @@ serve(async (req) => {
   }
 
   try {
+    // Require admin authentication for this sensitive endpoint
+    const { user, isAdmin, errorResponse } = await validateAuth(req);
+    
+    if (errorResponse) {
+      return errorResponse;
+    }
+    
+    if (!isAdmin) {
+      return forbiddenResponse('Admin access required to generate editorial summaries');
+    }
+
     const { textes, marcheName } = await req.json();
 
     console.log(`[marche-editorial-summary] Request for: ${marcheName}, textes count: ${textes?.length || 0}`);
