@@ -1,9 +1,5 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-}
+import { validateAuth, corsHeaders, forbiddenResponse, createServiceClient } from "../_shared/auth-helper.ts"
 
 Deno.serve(async (req) => {
   // Handle CORS preflight requests
@@ -12,10 +8,19 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const supabase = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-    )
+    // Require admin authentication for biodiversity data collection
+    const { user, isAdmin, errorResponse } = await validateAuth(req);
+    
+    if (errorResponse) {
+      return errorResponse;
+    }
+    
+    if (!isAdmin) {
+      return forbiddenResponse('Admin access required for biodiversity data collection');
+    }
+
+    // Use service role client for database operations
+    const supabase = createServiceClient()
 
     const { logId, marcheId, latitude, longitude, marcheName } = await req.json()
     
@@ -151,21 +156,21 @@ Deno.serve(async (req) => {
     console.error('❌ Biodiversity step collection failed:', error)
 
     // Update error count in log
+    const requestBody = await req.clone().json().catch(() => ({}));
+    const logId = requestBody.logId;
+    
     if (logId) {
       try {
-        const supabase = createClient(
-          Deno.env.get('SUPABASE_URL') ?? '',
-          Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-        )
+        const supabaseService = createServiceClient()
 
-        const { data: currentLog } = await supabase
+        const { data: currentLog } = await supabaseService
           .from('data_collection_logs')
           .select('errors_count')
           .eq('id', logId)
           .single()
 
         if (currentLog) {
-          await supabase
+          await supabaseService
             .from('data_collection_logs')
             .update({
               errors_count: (currentLog.errors_count || 0) + 1,

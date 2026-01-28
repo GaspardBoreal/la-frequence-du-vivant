@@ -1,11 +1,7 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.52.1';
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
+import { validateAuth, corsHeaders, forbiddenResponse, createServiceClient } from "../_shared/auth-helper.ts";
 
 interface TranscriptionRequest {
   audioId: string;
@@ -22,10 +18,19 @@ serve(async (req) => {
   }
 
   try {
-    // Initialize Supabase client
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+    // Require admin authentication for audio transcription
+    const { user, isAdmin, errorResponse } = await validateAuth(req);
+    
+    if (errorResponse) {
+      return errorResponse;
+    }
+    
+    if (!isAdmin) {
+      return forbiddenResponse('Admin access required for audio transcription');
+    }
+
+    // Initialize Supabase client with service role for database operations
+    const supabase = createServiceClient();
 
     const { audioId, audioData, modelId, language = 'fr', mode = 'immediate' }: TranscriptionRequest = await req.json();
 

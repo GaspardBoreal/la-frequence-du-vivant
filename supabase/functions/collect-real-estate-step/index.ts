@@ -1,10 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.52.1';
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
+import { validateAuth, corsHeaders, forbiddenResponse, createServiceClient } from "../_shared/auth-helper.ts";
 
 interface RealEstateStepRequest {
   logId: string;
@@ -19,12 +15,21 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
-  const supabase = createClient(
-    Deno.env.get('SUPABASE_URL') ?? '',
-    Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-  );
-
   try {
+    // Require admin authentication for real estate data collection
+    const { user, isAdmin, errorResponse } = await validateAuth(req);
+    
+    if (errorResponse) {
+      return errorResponse;
+    }
+    
+    if (!isAdmin) {
+      return forbiddenResponse('Admin access required for real estate data collection');
+    }
+
+    // Use service role client for database operations
+    const supabase = createServiceClient();
+
     const { logId, marcheId, latitude, longitude, marcheName }: RealEstateStepRequest = await req.json();
     console.log(`🏠 Processing real estate for marche: ${marcheName || marcheId}`);
 

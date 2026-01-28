@@ -1,10 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-}
+import { validateAuth, corsHeaders, forbiddenResponse, createServiceClient } from "../_shared/auth-helper.ts"
 
 // Phase 1 améliorations : Import robuste et fiable
 console.log('[OPUS Import AI] Phase 1 - Import Engine v2.0 loaded');
@@ -471,10 +467,21 @@ serve(async (req) => {
   }
 
   try {
-    const supabase = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-    );
+    // Require admin authentication for data import
+    const { user, isAdmin, errorResponse } = await validateAuth(req);
+    
+    if (errorResponse) {
+      return errorResponse;
+    }
+    
+    if (!isAdmin) {
+      return forbiddenResponse('Admin access required for data import');
+    }
+
+    console.log(`[OPUS Import] Admin user authenticated: ${user?.email}`);
+    
+    // Use service role client for database operations
+    const supabase = createServiceClient();
 
     const { data: importData, preview = false } = await req.json() as { 
       data: ImportData; 
