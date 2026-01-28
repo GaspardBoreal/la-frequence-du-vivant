@@ -435,13 +435,6 @@ export type Database = {
             referencedRelation: "dordonia_revers"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "dordonia_parlement_session_id_fkey"
-            columns: ["session_id"]
-            isOneToOne: false
-            referencedRelation: "dordonia_sessions"
-            referencedColumns: ["id"]
-          },
         ]
       }
       dordonia_revers: {
