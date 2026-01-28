@@ -1,36 +1,44 @@
 
+## Plan : Corriger l'incompatibilité de type session_id
 
-## Plan : Centrer "Choisissez un cas de délibération"
+### Diagnostic technique
 
-### Diagnostic
+- **Table** : `dordonia_parlement`
+- **Colonne** : `session_id` (type `uuid`)
+- **Valeur envoyée** : `"dord_1769355163807_kd0oo6pad"` (string custom)
+- **Erreur** : PostgreSQL rejette cette valeur car ce n'est pas un UUID valide
 
-Le texte est dans un `<p>` à l'intérieur d'un `<div className="text-center">`, donc il devrait être centré. Cependant, le problème visuel peut provenir du fait que le conteneur parent (`max-w-lg`) n'est pas lui-même centré correctement dans certains cas.
+### Solution recommandée : Modifier le type de colonne
 
-### Solution
+La solution la plus cohérente est de changer le type de la colonne `session_id` de `uuid` vers `text`, car :
+1. Le format de session custom est déjà utilisé dans toute l'application (localStorage, autres tables)
+2. Changer le générateur de session impacterait les sessions existantes
+3. La colonne est nullable, donc aucune contrainte de migration
 
-Ajouter explicitement `text-center` au paragraphe lui-même pour garantir le centrage indépendamment de la cascade CSS.
+### Migration SQL
 
-### Modification
-
-**Fichier** : `src/components/dordonia/DordoniaParliament.tsx`
-
-**Ligne 132-134** — Modifier :
-
-```tsx
-// Avant
-<p className="text-muted-foreground mt-2">
-  Choisissez un cas de délibération
-</p>
-
-// Après
-<p className="text-muted-foreground mt-2 text-center">
-  Choisissez un cas de délibération
-</p>
+```sql
+ALTER TABLE dordonia_parlement 
+ALTER COLUMN session_id TYPE text;
 ```
 
-### Résumé
+### Alternative (non recommandée)
 
-| Fichier | Ligne | Modification |
-|---------|-------|--------------|
-| `DordoniaParliament.tsx` | 132 | Ajouter `text-center` au `<p>` |
+Modifier le code pour générer un vrai UUID au lieu du format custom. Cependant, cela :
+- Casserait la cohérence avec les autres tables Dordonia qui utilisent le même format
+- Nécessiterait de migrer le localStorage des utilisateurs existants
 
+### Vérification des autres tables
+
+Il faudra s'assurer que les autres tables Dordonia (`dordonia_sessions`, `dordonia_fragments`, etc.) utilisent le type `text` pour leurs colonnes `session_id`.
+
+### Résumé des modifications
+
+| Type | Élément | Action |
+|------|---------|--------|
+| Migration DB | `dordonia_parlement.session_id` | Changer `uuid` → `text` |
+| Code | Aucun | Pas de modification nécessaire |
+
+### Résultat attendu
+
+Après la migration, l'insertion fonctionnera avec le format de session existant `dord_xxx_xxx`.
