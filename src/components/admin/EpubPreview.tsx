@@ -2,8 +2,11 @@ import React, { useMemo, useState } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Book, FileText, Image as ImageIcon, Layout, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { Book, FileText, Image as ImageIcon, Layout, ChevronLeft, ChevronRight, List, BookOpen, Check, X } from 'lucide-react';
 import type { EpubExportOptions, TexteExport } from '@/utils/epubExportUtils';
+import EpubDocumentTree from './EpubDocumentTree';
+import EpubIndexPreview from './EpubIndexPreview';
 
 interface EpubPreviewProps {
   textes: TexteExport[];
@@ -73,10 +76,18 @@ const EpubPreview: React.FC<EpubPreviewProps> = ({ textes, options }) => {
       .substring(0, 200) + '...';
   };
 
+  // Option indicators for footer
+  const optionIndicators = useMemo(() => [
+    { label: 'TdM', active: options.includeTableOfContents },
+    { label: 'Parties', active: options.includePartiePages },
+    { label: 'Index', active: options.includeIndexes },
+    { label: 'Illus.', active: options.includeIllustrations },
+  ], [options]);
+
   return (
     <Card className="border-border/50 overflow-hidden">
       <Tabs defaultValue="cover" className="w-full">
-        <TabsList className="w-full grid grid-cols-4 rounded-none border-b border-border/50">
+        <TabsList className="w-full grid grid-cols-6 rounded-none border-b border-border/50">
           <TabsTrigger value="cover" className="text-xs gap-1">
             <Book className="h-3 w-3" />
             Couverture
@@ -84,6 +95,14 @@ const EpubPreview: React.FC<EpubPreviewProps> = ({ textes, options }) => {
           <TabsTrigger value="partie" className="text-xs gap-1">
             <Layout className="h-3 w-3" />
             Partie
+          </TabsTrigger>
+          <TabsTrigger value="structure" className="text-xs gap-1">
+            <List className="h-3 w-3" />
+            Structure
+          </TabsTrigger>
+          <TabsTrigger value="index" className="text-xs gap-1">
+            <BookOpen className="h-3 w-3" />
+            Index
           </TabsTrigger>
           <TabsTrigger value="texte" className="text-xs gap-1">
             <FileText className="h-3 w-3" />
@@ -218,6 +237,16 @@ const EpubPreview: React.FC<EpubPreviewProps> = ({ textes, options }) => {
           </div>
         </TabsContent>
 
+        {/* Structure Preview (NEW) */}
+        <TabsContent value="structure" className="m-0">
+          <EpubDocumentTree textes={textes} options={options} />
+        </TabsContent>
+
+        {/* Index Preview (NEW) */}
+        <TabsContent value="index" className="m-0">
+          <EpubIndexPreview textes={textes} options={options} />
+        </TabsContent>
+
         {/* Text Preview */}
         <TabsContent value="texte" className="m-0">
           <div 
@@ -350,16 +379,34 @@ const EpubPreview: React.FC<EpubPreviewProps> = ({ textes, options }) => {
         </TabsContent>
       </Tabs>
 
-      {/* Preview Footer with Stats */}
+      {/* Preview Footer with Stats and Option Indicators */}
       <div 
-        className="px-4 py-2 text-xs border-t"
+        className="px-4 py-2 text-xs border-t flex items-center justify-between flex-wrap gap-2"
         style={{ 
           borderColor: colorScheme.secondary + '30',
           color: colorScheme.secondary,
           backgroundColor: colorScheme.background,
         }}
       >
-        Aperçu • {textes.length} textes • Police: {typography.bodyFont} / {typography.headingFont}
+        <span>
+          Aperçu • {textes.length} textes • {typography.bodyFont} / {typography.headingFont}
+        </span>
+        <div className="flex items-center gap-1.5">
+          {optionIndicators.map((opt) => (
+            <Badge
+              key={opt.label}
+              variant={opt.active ? 'default' : 'outline'}
+              className="text-[10px] px-1.5 py-0 h-5 gap-0.5"
+            >
+              {opt.active ? (
+                <Check className="h-2.5 w-2.5" />
+              ) : (
+                <X className="h-2.5 w-2.5" />
+              )}
+              {opt.label}
+            </Badge>
+          ))}
+        </div>
       </div>
     </Card>
   );
