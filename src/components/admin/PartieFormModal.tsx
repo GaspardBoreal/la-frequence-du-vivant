@@ -110,16 +110,16 @@ const PartieFormModal: React.FC<PartieFormModalProps> = ({
           <div className="space-y-6 py-6">
             {/* Numéro romain */}
             <div className="space-y-2">
-              <Label htmlFor="numero" className="text-gaspard-text">
+              <Label htmlFor="numero" className="text-gaspard-text text-sm font-medium">
                 Numéro
               </Label>
               <Select value={numeroRomain} onValueChange={setNumeroRomain}>
-                <SelectTrigger className="w-32 border-gaspard-primary/30 bg-gaspard-card">
+                <SelectTrigger className="w-24 border-gaspard-primary/20 bg-gaspard-background/50 text-gaspard-text focus:border-gaspard-primary focus:ring-gaspard-primary/20">
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="bg-gaspard-card border-gaspard-primary/20">
                   {ROMAN_NUMERALS.map((num) => (
-                    <SelectItem key={num} value={num}>
+                    <SelectItem key={num} value={num} className="text-gaspard-text hover:bg-gaspard-primary/10">
                       {num}
                     </SelectItem>
                   ))}
@@ -129,52 +129,52 @@ const PartieFormModal: React.FC<PartieFormModalProps> = ({
 
             {/* Titre principal */}
             <div className="space-y-2">
-              <Label htmlFor="titre" className="text-gaspard-text">
-                Titre principal <span className="text-destructive">*</span>
+              <Label htmlFor="titre" className="text-gaspard-text text-sm font-medium">
+                Titre principal <span className="text-red-400">*</span>
               </Label>
               <Input
                 id="titre"
                 value={titre}
                 onChange={(e) => setTitre(e.target.value)}
                 placeholder="LE CONTRE-COURANT"
-                className="border-gaspard-primary/30 bg-gaspard-card uppercase font-semibold tracking-wide"
+                className="border-gaspard-primary/20 bg-gaspard-background/50 text-gaspard-text placeholder:text-gaspard-muted/50 uppercase font-semibold tracking-wide focus:border-gaspard-primary focus:ring-gaspard-primary/20"
                 required
               />
             </div>
 
             {/* Sous-titre */}
             <div className="space-y-2">
-              <Label htmlFor="sousTitre" className="text-gaspard-text">
-                Sous-titre <span className="text-gaspard-muted">(optionnel)</span>
+              <Label htmlFor="sousTitre" className="text-gaspard-text text-sm font-medium">
+                Sous-titre <span className="text-gaspard-muted text-xs">(optionnel)</span>
               </Label>
               <Input
                 id="sousTitre"
                 value={sousTitre}
                 onChange={(e) => setSousTitre(e.target.value)}
                 placeholder="L'Observation"
-                className="border-gaspard-primary/30 bg-gaspard-card italic"
+                className="border-gaspard-primary/20 bg-gaspard-background/50 text-gaspard-text placeholder:text-gaspard-muted/50 italic focus:border-gaspard-primary focus:ring-gaspard-primary/20"
               />
             </div>
 
             {/* Couleur */}
             <div className="space-y-3">
-              <Label className="text-gaspard-text flex items-center gap-2">
-                <Palette className="h-4 w-4" />
+              <Label className="text-gaspard-text text-sm font-medium flex items-center gap-2">
+                <Palette className="h-4 w-4 text-gaspard-muted" />
                 Couleur d'accent
               </Label>
-              <div className="flex flex-wrap gap-2">
+              <div className="flex flex-wrap gap-3 p-3 bg-gaspard-background/30 rounded-lg border border-gaspard-primary/10">
                 {PRESET_COLORS.map((color) => (
                   <button
                     key={color}
                     type="button"
                     onClick={() => setCouleur(color)}
-                    className={`w-8 h-8 rounded-full transition-all duration-200 ${
+                    className={`w-7 h-7 rounded-full transition-all duration-200 shadow-sm ${
                       couleur === color
-                        ? 'ring-2 ring-offset-2 ring-offset-gaspard-background ring-gaspard-primary scale-110'
-                        : 'hover:scale-105'
+                        ? 'ring-2 ring-offset-2 ring-offset-gaspard-card ring-white/60 scale-110 shadow-lg'
+                        : 'hover:scale-110 opacity-80 hover:opacity-100'
                     }`}
                     style={{ backgroundColor: color }}
-                    title={color}
+                    aria-label={`Couleur ${color}`}
                   />
                 ))}
               </div>
@@ -182,15 +182,15 @@ const PartieFormModal: React.FC<PartieFormModalProps> = ({
 
             {/* Description */}
             <div className="space-y-2">
-              <Label htmlFor="description" className="text-gaspard-text">
-                Notes internes <span className="text-gaspard-muted">(non publiées)</span>
+              <Label htmlFor="description" className="text-gaspard-text text-sm font-medium">
+                Notes internes <span className="text-gaspard-muted text-xs">(non publiées)</span>
               </Label>
               <Textarea
                 id="description"
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 placeholder="Notes sur le choix de cette structure..."
-                className="border-gaspard-primary/30 bg-gaspard-card min-h-[80px] resize-none"
+                className="border-gaspard-primary/20 bg-gaspard-background/50 text-gaspard-text placeholder:text-gaspard-muted/50 min-h-[80px] resize-none focus:border-gaspard-primary focus:ring-gaspard-primary/20"
               />
             </div>
           </div>
