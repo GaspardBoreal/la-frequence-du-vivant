@@ -137,149 +137,153 @@ const ExportationsAdmin: React.FC = () => {
   const [newKeywordInput, setNewKeywordInput] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('faune');
 
-  // Load data
-  useEffect(() => {
-    const loadData = async () => {
-      try {
-        // Load explorations
-        const { data: exploData } = await supabase
-          .from('explorations')
-          .select('id, name, slug')
-          .order('name');
-        
-        // Load exploration_marches links with partie info AND marche ordre
-        const { data: exploMarchesData } = await supabase
-          .from('exploration_marches')
-          .select(`
-            exploration_id, 
-            marche_id, 
-            partie_id,
-            ordre,
-            exploration_parties (
-              id,
-              numero_romain,
-              titre,
-              sous_titre,
-              ordre
-            )
-          `);
+  // Load data function - extracted to allow refresh
+  const loadData = useCallback(async (isRefresh = false) => {
+    if (!isRefresh) setLoading(true);
+    try {
+      // Load explorations
+      const { data: exploData } = await supabase
+        .from('explorations')
+        .select('id, name, slug')
+        .order('name');
+      
+      // Load exploration_marches links with partie info AND marche ordre
+      const { data: exploMarchesData } = await supabase
+        .from('exploration_marches')
+        .select(`
+          exploration_id, 
+          marche_id, 
+          partie_id,
+          ordre,
+          exploration_parties (
+            id,
+            numero_romain,
+            titre,
+            sous_titre,
+            ordre
+          )
+        `);
 
-        // Load exploration_parties separately to build a map
-        const { data: partiesData } = await supabase
-          .from('exploration_parties')
-          .select('id, numero_romain, titre, sous_titre, ordre, exploration_id')
-          .order('ordre', { ascending: true });
+      // Build parties map: marche_id → partie info + marche ordre
+      const marcheToPartie = new Map<string, {
+        partie_id: string;
+        numero_romain: string;
+        titre: string;
+        sous_titre: string | null;
+        ordre: number;
+        marche_ordre: number;
+      }>();
+      
+      if (exploMarchesData) {
+        exploMarchesData.forEach((link: any) => {
+          if (link.partie_id && link.exploration_parties) {
+            const partie = link.exploration_parties;
+            marcheToPartie.set(link.marche_id, {
+              partie_id: partie.id,
+              numero_romain: partie.numero_romain,
+              titre: partie.titre,
+              sous_titre: partie.sous_titre,
+              ordre: partie.ordre,
+              marche_ordre: link.ordre ?? 999,
+            });
+          }
+        });
+      }
 
-        // Build parties map: marche_id → partie info + marche ordre
-        const marcheToPartie = new Map<string, {
-          partie_id: string;
-          numero_romain: string;
-          titre: string;
-          sous_titre: string | null;
-          ordre: number;
-          marche_ordre: number;
-        }>();
-        
-        if (exploMarchesData) {
-          exploMarchesData.forEach((link: any) => {
-            if (link.partie_id && link.exploration_parties) {
-              const partie = link.exploration_parties;
-              marcheToPartie.set(link.marche_id, {
-                partie_id: partie.id,
-                numero_romain: partie.numero_romain,
-                titre: partie.titre,
-                sous_titre: partie.sous_titre,
-                ordre: partie.ordre,
-                marche_ordre: link.ordre ?? 999,
-              });
-            }
-          });
-        }
-
-        // Build maps
-        const expToMarches = new Map<string, Set<string>>();
-        const marcheToExps = new Map<string, Set<string>>();
-        
-        if (exploMarchesData) {
-          exploMarchesData.forEach((link: any) => {
-            // Exploration → Marches
-            if (!expToMarches.has(link.exploration_id)) {
-              expToMarches.set(link.exploration_id, new Set());
-            }
-            expToMarches.get(link.exploration_id)!.add(link.marche_id);
-            
-            // Marche → Explorations
-            if (!marcheToExps.has(link.marche_id)) {
-              marcheToExps.set(link.marche_id, new Set());
-            }
-            marcheToExps.get(link.marche_id)!.add(link.exploration_id);
-          });
-        }
-        
-        setExplorationMarchesMap(expToMarches);
-        setMarcheExplorationsMap(marcheToExps);
-        
-        if (exploData) {
-          setExplorations(exploData);
+      // Build maps
+      const expToMarches = new Map<string, Set<string>>();
+      const marcheToExps = new Map<string, Set<string>>();
+      
+      if (exploMarchesData) {
+        exploMarchesData.forEach((link: any) => {
+          // Exploration → Marches
+          if (!expToMarches.has(link.exploration_id)) {
+            expToMarches.set(link.exploration_id, new Set());
+          }
+          expToMarches.get(link.exploration_id)!.add(link.marche_id);
+          
+          // Marche → Explorations
+          if (!marcheToExps.has(link.marche_id)) {
+            marcheToExps.set(link.marche_id, new Set());
+          }
+          marcheToExps.get(link.marche_id)!.add(link.exploration_id);
+        });
+      }
+      
+      setExplorationMarchesMap(expToMarches);
+      setMarcheExplorationsMap(marcheToExps);
+      
+      if (exploData) {
+        setExplorations(exploData);
+        if (!isRefresh) {
           setSelectedExplorations(new Set(exploData.map(e => e.id)));
         }
+      }
 
-        // Load marches (sorted by date for chronological order)
-        const { data: marchesData } = await supabase
-          .from('marches')
-          .select('id, nom_marche, ville, region, date')
-          .order('date', { ascending: true });
-        
-        if (marchesData) {
-          setMarches(marchesData);
+      // Load marches (sorted by date for chronological order)
+      const { data: marchesData } = await supabase
+        .from('marches')
+        .select('id, nom_marche, ville, region, date')
+        .order('date', { ascending: true });
+      
+      if (marchesData) {
+        setMarches(marchesData);
+        if (!isRefresh) {
           setSelectedMarches(new Set(marchesData.map(m => m.id)));
         }
-
-        // Load all textes with marche info
-        const { data: textesData } = await supabase
-          .from('marche_textes')
-          .select(`
-            id,
-            titre,
-            contenu,
-            type_texte,
-            marche_id,
-            ordre,
-            created_at
-          `)
-          .order('ordre', { ascending: true });
-
-        if (textesData && marchesData) {
-          const marchesMap = new Map(marchesData.map(m => [m.id, m]));
-          const enrichedTextes = textesData.map(t => {
-            const marche = marchesMap.get(t.marche_id);
-            const partie = marcheToPartie.get(t.marche_id);
-            return {
-              ...t,
-              marche_nom: marche?.nom_marche || undefined,
-              marche_ville: marche?.ville,
-              marche_region: marche?.region || undefined,
-              marche_date: marche?.date || undefined,
-              partie_id: partie?.partie_id,
-              partie_numero_romain: partie?.numero_romain,
-              partie_titre: partie?.titre,
-              partie_sous_titre: partie?.sous_titre || undefined,
-              partie_ordre: partie?.ordre,
-              marche_ordre: partie?.marche_ordre,
-            };
-          });
-          setAllTextes(enrichedTextes);
-        }
-      } catch (error) {
-        console.error('Error loading data:', error);
-        toast.error('Erreur lors du chargement des données');
-      } finally {
-        setLoading(false);
       }
-    };
 
-    loadData();
+      // Load all textes with marche info
+      const { data: textesData } = await supabase
+        .from('marche_textes')
+        .select(`
+          id,
+          titre,
+          contenu,
+          type_texte,
+          marche_id,
+          ordre,
+          created_at
+        `)
+        .order('ordre', { ascending: true });
+
+      if (textesData && marchesData) {
+        const marchesMap = new Map(marchesData.map(m => [m.id, m]));
+        const enrichedTextes = textesData.map(t => {
+          const marche = marchesMap.get(t.marche_id);
+          const partie = marcheToPartie.get(t.marche_id);
+          return {
+            ...t,
+            marche_nom: marche?.nom_marche || undefined,
+            marche_ville: marche?.ville,
+            marche_region: marche?.region || undefined,
+            marche_date: marche?.date || undefined,
+            partie_id: partie?.partie_id,
+            partie_numero_romain: partie?.numero_romain,
+            partie_titre: partie?.titre,
+            partie_sous_titre: partie?.sous_titre || undefined,
+            partie_ordre: partie?.ordre,
+            marche_ordre: partie?.marche_ordre,
+          };
+        });
+        setAllTextes(enrichedTextes);
+      }
+      
+      if (isRefresh) {
+        toast.success('Données rafraîchies');
+      }
+    } catch (error) {
+      console.error('Error loading data:', error);
+      toast.error('Erreur lors du chargement des données');
+    } finally {
+      setLoading(false);
+    }
   }, []);
+
+  // Initial load
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
 
   // Load saved keywords from database
   useEffect(() => {
@@ -1473,83 +1477,6 @@ const ExportationsAdmin: React.FC = () => {
               </CardContent>
             </Card>
 
-            {/* Marches Statistics Export Card */}
-            <Card className="border-dashed border-2 border-blue-800/30 bg-blue-950/10">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <BarChart3 className="h-5 w-5 text-blue-500" />
-                  Export Word - Statistiques des Marches
-                </CardTitle>
-                <CardDescription>
-                  Exportez la liste des marches avec statistiques et tonalités
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="text-sm text-muted-foreground">
-                  Ce document inclut :
-                  <ul className="list-disc list-inside mt-2 space-y-1">
-                    <li>Liste chronologique des marches</li>
-                    <li>Région et département</li>
-                    <li>Nombre de photos, textes, audios</li>
-                    <li>Analyse de la tonalité littéraire</li>
-                    <li>Synthèse statistique globale</li>
-                  </ul>
-                </div>
-
-                <div className="space-y-2">
-                  <Label className="text-sm font-medium">Sélectionner une exploration</Label>
-                  <Select 
-                    value={selectedStatsExploration} 
-                    onValueChange={setSelectedStatsExploration}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Choisir une exploration..." />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {explorations.map(expl => (
-                        <SelectItem key={expl.id} value={expl.id}>
-                          {expl.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                
-                <Button 
-                  onClick={handleExportMarchesStats}
-                  disabled={exportingStats || !selectedStatsExploration}
-                  className="w-full bg-blue-700 hover:bg-blue-600 text-white"
-                >
-                  {exportingStats ? (
-                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                  ) : (
-                    <Download className="h-4 w-4 mr-2" />
-                  )}
-                  Télécharger les statistiques .docx
-                </Button>
-              </CardContent>
-            </Card>
-
-            {/* EPUB Export Card */}
-            <Card className="border-dashed border-2 border-primary/30 bg-primary/5">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <BookOpen className="h-5 w-5 text-primary" />
-                  Export EPUB Professionnel
-                </CardTitle>
-                <CardDescription>
-                  Créez un eBook ultra-design pour plateformes et éditeurs
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <EpubExportPanel
-                  textes={filteredTextes}
-                  explorationCoverUrl={explorations.find(e => selectedExplorations.has(e.id))?.id ? undefined : undefined}
-                  explorationName={explorations.find(e => selectedExplorations.has(e.id))?.name}
-                />
-              </CardContent>
-            </Card>
-
             {/* Type Distribution */}
             {stats.byType.size > 0 && (
               <Card>
@@ -1570,6 +1497,84 @@ const ExportationsAdmin: React.FC = () => {
             )}
           </div>
         </div>
+
+        {/* EPUB Export Card - Full Width */}
+        <Card className="border-dashed border-2 border-primary/30 bg-primary/5">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <BookOpen className="h-5 w-5 text-primary" />
+              Export EPUB Professionnel
+            </CardTitle>
+            <CardDescription>
+              Créez un eBook ultra-design pour plateformes et éditeurs
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <EpubExportPanel
+              textes={filteredTextes}
+              explorationCoverUrl={explorations.find(e => selectedExplorations.has(e.id))?.id ? undefined : undefined}
+              explorationName={explorations.find(e => selectedExplorations.has(e.id))?.name}
+              onRefresh={() => loadData(true)}
+            />
+          </CardContent>
+        </Card>
+
+        {/* Marches Statistics Export Card - Full Width */}
+        <Card className="border-dashed border-2 border-blue-800/30 bg-blue-950/10">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <BarChart3 className="h-5 w-5 text-blue-500" />
+              Export Word - Statistiques des Marches
+            </CardTitle>
+            <CardDescription>
+              Exportez la liste des marches avec statistiques et tonalités
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="text-sm text-muted-foreground">
+              Ce document inclut :
+              <ul className="list-disc list-inside mt-2 space-y-1">
+                <li>Liste chronologique des marches</li>
+                <li>Région et département</li>
+                <li>Nombre de photos, textes, audios</li>
+                <li>Analyse de la tonalité littéraire</li>
+                <li>Synthèse statistique globale</li>
+              </ul>
+            </div>
+
+            <div className="space-y-2">
+              <Label className="text-sm font-medium">Sélectionner une exploration</Label>
+              <Select 
+                value={selectedStatsExploration} 
+                onValueChange={setSelectedStatsExploration}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Choisir une exploration..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {explorations.map(expl => (
+                    <SelectItem key={expl.id} value={expl.id}>
+                      {expl.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <Button 
+              onClick={handleExportMarchesStats}
+              disabled={exportingStats || !selectedStatsExploration}
+              className="w-full bg-blue-700 hover:bg-blue-600 text-white"
+            >
+              {exportingStats ? (
+                <Loader2 className="h-4 w-4 animate-spin mr-2" />
+              ) : (
+                <Download className="h-4 w-4 mr-2" />
+              )}
+              Télécharger les statistiques .docx
+            </Button>
+          </CardContent>
+        </Card>
 
         <div className="mt-12 text-center text-sm text-muted-foreground">
           <p>Centre d'Exportation - Gaspard Boréal © 2025 - 2026</p>

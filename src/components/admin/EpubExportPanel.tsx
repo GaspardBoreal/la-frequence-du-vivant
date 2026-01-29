@@ -21,7 +21,8 @@ import {
   Loader2,
   Sparkles,
   Type,
-  Layout
+  Layout,
+  RefreshCw
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { 
@@ -40,12 +41,14 @@ interface EpubExportPanelProps {
   textes: TexteExport[];
   explorationCoverUrl?: string;
   explorationName?: string;
+  onRefresh?: () => void;
 }
 
 const EpubExportPanel: React.FC<EpubExportPanelProps> = ({
   textes,
   explorationCoverUrl,
   explorationName,
+  onRefresh,
 }) => {
   // State for export options
   const [options, setOptions] = useState<EpubExportOptions>(() => {
@@ -150,12 +153,23 @@ const EpubExportPanel: React.FC<EpubExportPanelProps> = ({
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            {/* Statistics */}
-            <div className="flex flex-wrap gap-2">
+            {/* Statistics + Refresh */}
+            <div className="flex flex-wrap items-center gap-2">
               <Badge variant="secondary">{textes.length} textes</Badge>
               <Badge variant="secondary">{stats.uniqueMarches} lieux</Badge>
               <Badge variant="secondary">{stats.uniqueTypes} genres</Badge>
               <Badge variant="secondary">~{stats.estimatedWords.toLocaleString()} mots</Badge>
+              {onRefresh && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={onRefresh}
+                  className="ml-auto gap-1.5"
+                >
+                  <RefreshCw className="h-3.5 w-3.5" />
+                  Rafraîchir
+                </Button>
+              )}
             </div>
 
             {/* Metadata Section */}
