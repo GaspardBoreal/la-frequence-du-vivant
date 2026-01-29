@@ -1,125 +1,137 @@
 
-## Diagnostic (ce qui se passe vraiment)
+# Plan : Afficher les vraies Parties dans l'aperçu EPUB
 
-### Symptôme
-Quand vous cliquez sur **“Générer l’EPUB (49 textes)”**, l’UI affiche “Erreur lors de la génération de l’EPUB”.
+## Problème Identifié
 
-### Cause racine confirmée (console)
-L’erreur réelle est :
+Dans l'onglet **"Partie"** de l'aperçu EPUB, les valeurs sont codées en dur :
+- **"I"** au lieu du vrai numéro romain (ex: "I", "II", "III")
+- **"MOUVEMENT PREMIER"** au lieu du vrai titre (ex: "LE CONTRE-COURANT")
+- **"La descente vers l'embouchure"** au lieu du vrai sous-titre (ex: "L'Observation")
 
-- `TypeError: path.extname is not a function`
-- provenance : `epub-gen-memory` → dépendance `ejs` → usage de `path` (Node.js)
+Or, les textes contiennent déjà les métadonnées correctes (`partie_numero_romain`, `partie_titre`, `partie_sous_titre`) — il suffit de les extraire et de les afficher.
 
-Vite “externalise” les modules Node (`path`, `fs`) côté navigateur. Du coup, **`epub-gen-memory` n’est pas exécuté avec le bon build** dans le browser, et plante pendant la compilation des templates.
+## Solution
 
-### Do I know what the issue is?
-Oui. **Ce n’est pas un bug de données/chapitres**, c’est un **mauvais artefact importé** : on importe l’entrée Node (`dist/lib`) au lieu du **bundle browser** prévu par la lib.
+Modifier le composant `EpubPreview.tsx` pour :
 
----
+1. **Extraire les parties uniques** depuis les textes filtrés
+2. **Afficher la première partie trouvée** dans l'aperçu (ou permettre de naviguer entre les parties)
+3. **Afficher un placeholder** uniquement si aucune partie n'est assignée
 
-## Solution “wahou” (robuste, rapide, sans backend) : charger le bundle navigateur de `epub-gen-memory`
+## Détail de l'Implémentation
 
-`epub-gen-memory` fournit explicitement un bundle navigateur :  
-`node_modules/epub-gen-memory/dist/bundle.min.js` (UMD), qui embarque ses propres dépendances (dont les shims nécessaires).  
-C’est précisément ce qu’il faut utiliser dans Vite pour éviter `path.extname`.
+### Fichier à modifier
 
-### Pourquoi c’est “wahou”
-- Zéro polyfill Vite à maintenir (pas de “vite-plugin-node-polyfills”, pas de bricolage fragile)
-- On conserve le système **Ultra-design** (presets, CSS, TOC, cover)
-- On garde la génération **client-side** (rapide, pas de latence serveur, pas de quotas edge)
-- On peut ensuite ajouter une “version premium” server-side si un jour on veut embarquer des images privées ou faire du KDP strict, mais on débloque tout de suite l’usage.
+`src/components/admin/EpubPreview.tsx`
 
----
+### Logique à ajouter
 
-## Changements à implémenter
+Ajouter un `useMemo` pour extraire les parties uniques depuis les textes :
 
-### 1) Modifier `src/utils/epubExportUtils.ts` (correction principale)
-Objectif : **ne plus importer `epub-gen-memory` (entrée Node)**, mais charger **le bundle browser** au moment du clic export.
+```text
+const uniqueParties = useMemo(() => {
+  const partiesMap = new Map();
+  
+  textes.forEach(texte => {
+    if (texte.partie_id && texte.partie_numero_romain && texte.partie_titre) {
+      if (!partiesMap.has(texte.partie_id)) {
+        partiesMap.set(texte.partie_id, {
+          numeroRomain: texte.partie_numero_romain,
+          titre: texte.partie_titre,
+          sousTitre: texte.partie_sous_titre,
+          ordre: texte.partie_ordre ?? 999
+        });
+      }
+    }
+  });
+  
+  // Trier par ordre et retourner un tableau
+  return Array.from(partiesMap.values())
+    .sort((a, b) => a.ordre - b.ordre);
+}, [textes]);
 
-- Remplacer :
-  - `await import('epub-gen-memory')`
-- Par :
-  - `await import('epub-gen-memory/dist/bundle.min.js')`
+// Partie à afficher dans l'aperçu (la première trouvée)
+const previewPartie = uniqueParties[0] || null;
+```
 
-#### Important : gérer correctement le type de retour
-Le bundle browser configure `JSZip` pour retourner un **Blob** (la lib expose `type='blob'` dans `fetchable-browser.js`).
+### Modification de l'UI (lignes 106-137)
 
-Donc :
-- si le résultat est un `Blob` → on le renvoie directement
-- sinon fallback compatible (ArrayBuffer/Buffer) → conversion en `Blob`
+Remplacer les valeurs statiques par les données dynamiques :
 
-> Cela rend l’export robuste quel que soit l’environnement, sans hypothèses fragiles.
+```text
+Avant :
+  I                           → valeur fixe
+  MOUVEMENT PREMIER           → valeur fixe
+  La descente vers l'embouchure → valeur fixe
 
----
+Après :
+  {previewPartie?.numeroRomain || 'I'}
+  {previewPartie?.titre || 'PARTIE'}
+  {previewPartie?.sousTitre || ''}
+```
 
-### 2) Améliorer le logging pour éviter une nouvelle boucle d’erreurs (petit mais décisif)
-Dans `exportToEpub` / `downloadEpub`, ajouter des logs techniques plus “diagnostics” :
-- quelle entrée a été chargée (`bundle.min.js`)
-- type du résultat (`Blob`, `ArrayBuffer`, etc.)
-- taille du fichier généré
+### Amélioration UX (bonus)
 
-Cela permet de trancher instantanément si un autre point (cover, fonts, images) bloque.
+- **Navigation entre parties** : Ajouter des boutons ◀ ▶ pour prévisualiser chaque partie si plusieurs existent
+- **Indicateur de nombre** : Afficher "1/3" si 3 parties sont présentes
+- **Fallback élégant** : Si aucune partie n'est assignée aux textes, afficher un message "Aucune partie assignée" avec un style discret
 
----
+### Résultat attendu
 
-### 3) (Bonus cohérence UI) Harmoniser le “compteur de lieux”
-Actuellement, dans `EpubExportPanel.tsx`, le badge “lieux” utilise :
-- `new Set(textes.map(t => t.marche_nom || t.marche_ville)).size`
+| Avant | Après |
+|-------|-------|
+| I | I |
+| MOUVEMENT PREMIER | LE CONTRE-COURANT |
+| La descente vers l'embouchure | L'Observation |
 
-Ce mélange “nom de marche” et “ville” peut recréer de la confusion (ex: 32 au lieu de 16).
-Le générateur de métadonnées a déjà été corrigé pour compter seulement `marche_ville`.
+Avec les filtres actuels (49 textes, exploration Dordogne), l'aperçu affichera les vraies parties :
+- **I. LE CONTRE-COURANT** — L'Observation
+- **II. L'HÉSITATION DU MODÈLE** — La Friction
+- **III. LE DROIT AU SILENCE** — Le Nouveau Pacte
 
-Plan :
-- aligner le badge “lieux” sur la même logique (ville uniquement)
-- optionnel : afficher aussi un badge “marches” séparé si vous voulez les deux métriques (utile éditorialement)
+## Schéma de l'aperçu amélioré
 
----
+```text
+┌─────────────────────────────────────────┐
+│  Couverture | [Partie] | Texte | Visuel │
+├─────────────────────────────────────────┤
+│                                         │
+│               ◀  I  ▶                   │
+│                                         │
+│        LE CONTRE-COURANT                │
+│                                         │
+│           L'Observation                 │
+│                                         │
+│         ───────────────────             │
+│                                         │
+│              [1/3 parties]              │
+│                                         │
+└─────────────────────────────────────────┘
+```
 
-## Étapes de validation (test end-to-end)
+## Section Technique
+
+### Modifications précises
+
+| Fichier | Modification |
+|---------|--------------|
+| `src/components/admin/EpubPreview.tsx` | Ajout du `useMemo` pour extraire les parties + remplacement des valeurs hardcodées lignes 116, 122, 128 |
+
+### État ajouté (optionnel pour navigation)
+
+```typescript
+const [currentPartieIndex, setCurrentPartieIndex] = useState(0);
+const previewPartie = uniqueParties[currentPartieIndex] || null;
+```
+
+### Aucune dépendance nouvelle
+
+Le code utilise uniquement les données déjà présentes dans `textes: TexteExport[]`.
+
+## Validation
 
 1. Aller sur `/admin/exportations`
-2. Vérifier que les filtres donnent bien **49 textes**
-3. Cliquer “Générer l’EPUB”
-4. Résultat attendu :
-   - plus de warning `path/fs externalized`
-   - plus d’erreur `path.extname`
-   - téléchargement d’un `.epub` fonctionnel
-5. Ouvrir l’EPUB dans Apple Books / Calibre pour valider :
-   - styles (CSS)
-   - table des matières
-   - ordre des chapitres
-   - métadonnées (titre/sous-titre/description)
-
----
-
-## Plan B (si vous voulez une garantie “KDP-proof” et images privées)
-Si, après ce fix, on veut aller encore plus loin (et c’est cohérent avec l’ambition) :
-- déplacer la génération EPUB dans une **Edge Function** (serveur), avec :
-  - récupération d’assets privés Supabase Storage (cover/images)
-  - packaging ultra-strict EPUB3
-  - validation structurelle
-
-Mais dans l’état, **ce n’est pas nécessaire pour corriger l’erreur bloquante actuelle**.
-
----
-
-## Fichiers concernés
-
-- À modifier (obligatoire)
-  - `src/utils/epubExportUtils.ts`
-
-- À modifier (recommandé, cohérence UX)
-  - `src/components/admin/EpubExportPanel.tsx`
-
-Aucune migration Supabase nécessaire. Aucune dépendance à installer.
-
----
-
-## Risques / points d’attention
-
-- `bundle.min.js` est un gros fichier : on le garde en **dynamic import** (déjà le cas) pour ne pas alourdir le chargement initial de l’admin.
-- Si vous activez cover/fonts/images via URL non publiques : la lib peut échouer au fetch. On pourra alors :
-  - soit activer `ignoreFailedDownloads`
-  - soit passer la cover en data URL
-  - soit basculer en Edge Function (Plan B)
-
+2. Sélectionner l'exploration Dordogne
+3. Cliquer sur l'onglet **"Partie"** dans l'aperçu
+4. Vérifier que "LE CONTRE-COURANT" s'affiche (et non "MOUVEMENT PREMIER")
+5. Naviguer entre les parties avec les boutons ◀ ▶
