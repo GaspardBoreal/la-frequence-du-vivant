@@ -1003,8 +1003,13 @@ export const exportToEpub = async (
   options: EpubExportOptions,
   illustrations?: Map<string, IllustrationData[]>
 ): Promise<EpubGenerationResult> => {
-  // Dynamic import of epub-gen-memory
-  const { default: EPub } = await import('epub-gen-memory');
+  // Dynamic import of epub-gen-memory BROWSER BUNDLE (not the Node entry)
+  // The browser bundle includes shims for path/fs and uses JSZip with Blob output
+  console.log('[EPUB] Loading browser bundle: epub-gen-memory/dist/bundle.min.js');
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const epubGenModule = await import('epub-gen-memory/dist/bundle.min.js') as any;
+  const EPub = epubGenModule.default || epubGenModule;
+  console.log('[EPUB] Browser bundle loaded successfully');
   
   // Generate custom CSS
   const customCSS = generateEpubCSS(options);
@@ -1064,10 +1069,32 @@ export const exportToEpub = async (
     cover: options.coverImageUrl,
   };
   
-  // Generate EPUB using epub-gen-memory - chapters must be passed as second argument
+  console.log('[EPUB] Generating EPUB with', epubContent.length, 'chapters');
+  
+  // Generate EPUB using epub-gen-memory browser bundle
+  // The browser bundle returns a Blob directly (JSZip type='blob')
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const epubBuffer: ArrayBuffer = await (EPub as any)(epubOptions, epubContent);
-  const blob = new Blob([new Uint8Array(epubBuffer as ArrayBuffer)], { type: 'application/epub+zip' });
+  const epubResult = await (EPub as any)(epubOptions, epubContent);
+  
+  // Handle different return types (Blob from browser bundle, ArrayBuffer/Buffer fallback)
+  let blob: Blob;
+  if (epubResult instanceof Blob) {
+    console.log('[EPUB] Result is Blob, size:', epubResult.size);
+    blob = epubResult;
+  } else if (epubResult instanceof ArrayBuffer) {
+    console.log('[EPUB] Result is ArrayBuffer, size:', epubResult.byteLength);
+    blob = new Blob([new Uint8Array(epubResult)], { type: 'application/epub+zip' });
+  } else if (epubResult?.buffer instanceof ArrayBuffer) {
+    // Buffer-like object (Node.js Buffer)
+    console.log('[EPUB] Result is Buffer-like, length:', epubResult.length);
+    blob = new Blob([new Uint8Array(epubResult.buffer)], { type: 'application/epub+zip' });
+  } else {
+    // Try direct conversion as last resort
+    console.log('[EPUB] Unknown result type, attempting conversion');
+    blob = new Blob([epubResult], { type: 'application/epub+zip' });
+  }
+  
+  console.log('[EPUB] Final EPUB blob size:', blob.size, 'bytes');
   
   // Generate filename
   const safeTitle = options.title
@@ -1075,6 +1102,8 @@ export const exportToEpub = async (
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-|-$/g, '');
   const filename = `${safeTitle}-${new Date().toISOString().split('T')[0]}.epub`;
+  
+  console.log('[EPUB] Generated filename:', filename);
   
   return { blob, filename };
 };

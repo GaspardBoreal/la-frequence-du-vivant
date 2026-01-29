@@ -141,12 +141,18 @@ const EpubExportPanel: React.FC<EpubExportPanelProps> = ({
   };
 
   // Statistics
+  // IMPORTANT: Use marche_ville only for counting unique locations to match metadata generator
   const stats = useMemo(() => {
     const totalChars = textes.reduce((sum, t) => sum + t.contenu.length, 0);
     const estimatedWords = Math.round(totalChars / 5);
-    const uniqueMarches = new Set(textes.map(t => t.marche_nom || t.marche_ville)).size;
+    // Count only unique cities (marche_ville) to avoid doubling
+    const lieuxSet = new Set<string>();
+    textes.forEach(t => {
+      if (t.marche_ville) lieuxSet.add(t.marche_ville);
+    });
+    const uniqueLieux = lieuxSet.size;
     const uniqueTypes = new Set(textes.map(t => t.type_texte)).size;
-    return { totalChars, estimatedWords, uniqueMarches, uniqueTypes };
+    return { totalChars, estimatedWords, uniqueLieux, uniqueTypes };
   }, [textes]);
 
   // === INTELLIGENT METADATA GENERATION ===
@@ -244,7 +250,7 @@ const EpubExportPanel: React.FC<EpubExportPanelProps> = ({
             {/* Statistics + Refresh */}
             <div className="flex flex-wrap items-center gap-2">
               <Badge variant="secondary">{textes.length} textes</Badge>
-              <Badge variant="secondary">{stats.uniqueMarches} lieux</Badge>
+              <Badge variant="secondary">{stats.uniqueLieux} lieux</Badge>
               <Badge variant="secondary">{stats.uniqueTypes} genres</Badge>
               <Badge variant="secondary">~{stats.estimatedWords.toLocaleString()} mots</Badge>
               {onRefresh && (
@@ -316,7 +322,7 @@ const EpubExportPanel: React.FC<EpubExportPanelProps> = ({
                 <div className="flex items-start gap-2 p-2 text-xs text-muted-foreground bg-muted/30 rounded-md">
                   <Lightbulb className="h-4 w-4 mt-0.5 shrink-0 text-accent" />
                   <span>
-                    Généré d'après {textes.length} textes • {stats.uniqueMarches} lieux.
+                    Généré d'après {textes.length} textes • {stats.uniqueLieux} lieux.
                     Cliquez <span className="font-medium text-primary">Inspiration poétique</span> pour une version IA digne de Gaspard Boréal.
                   </span>
                 </div>
