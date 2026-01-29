@@ -62,7 +62,7 @@ const ExplorationPartiesManager: React.FC<ExplorationPartiesManagerProps> = ({
   // Check if all parties are expanded/collapsed
   const allExpanded = useMemo(() => {
     if (parties.length === 0) return false;
-    return parties.every((p) => expandedParties[p.id] !== false);
+    return parties.every((p) => expandedParties[p.id] === true);
   }, [parties, expandedParties]);
 
   const toggleAllParties = () => {
@@ -77,7 +77,7 @@ const ExplorationPartiesManager: React.FC<ExplorationPartiesManagerProps> = ({
   const togglePartie = (partieId: string) => {
     setExpandedParties((prev) => ({
       ...prev,
-      [partieId]: prev[partieId] === undefined ? false : !prev[partieId],
+      [partieId]: !prev[partieId],
     }));
   };
 
@@ -249,7 +249,7 @@ const ExplorationPartiesManager: React.FC<ExplorationPartiesManagerProps> = ({
               partie={partie}
               isFirst={index === 0}
               isLast={index === parties.length - 1}
-              isExpanded={expandedParties[partie.id] !== false}
+              isExpanded={expandedParties[partie.id] === true}
               onToggleExpand={() => togglePartie(partie.id)}
               onEdit={() => {
                 setEditingPartie(partie);
