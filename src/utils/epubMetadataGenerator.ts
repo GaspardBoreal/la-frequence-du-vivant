@@ -74,11 +74,10 @@ export function analyzeTextes(textes: TexteExport[]): TexteAnalysis {
     };
   }
 
-  // Extract unique locations
+  // Extract unique locations (only count cities, not market names to avoid duplicates)
   const lieuxSet = new Set<string>();
   textes.forEach(t => {
     if (t.marche_ville) lieuxSet.add(t.marche_ville);
-    if (t.marche_nom) lieuxSet.add(t.marche_nom);
   });
   const uniqueLieux = Array.from(lieuxSet);
 
