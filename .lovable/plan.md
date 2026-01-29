@@ -1,137 +1,190 @@
 
-# Plan : Afficher les vraies Parties dans l'aperçu EPUB
+
+# Plan : Aperçu EPUB complet et exhaustif en temps réel
 
 ## Problème Identifié
 
-Dans l'onglet **"Partie"** de l'aperçu EPUB, les valeurs sont codées en dur :
-- **"I"** au lieu du vrai numéro romain (ex: "I", "II", "III")
-- **"MOUVEMENT PREMIER"** au lieu du vrai titre (ex: "LE CONTRE-COURANT")
-- **"La descente vers l'embouchure"** au lieu du vrai sous-titre (ex: "L'Observation")
+L'aperçu EPUB actuel (`EpubPreview.tsx`) présente plusieurs limitations majeures :
 
-Or, les textes contiennent déjà les métadonnées correctes (`partie_numero_romain`, `partie_titre`, `partie_sous_titre`) — il suffit de les extraire et de les afficher.
+| Élément | État Actuel | Ce qui manque |
+|---------|-------------|---------------|
+| **Textes** | Affiche 1-2 textes échantillons | Pas de vue complète des 49 textes |
+| **Structure** | Onglets séparés (Partie/Texte) | Pas de vue hiérarchique Partie > Marche > Texte |
+| **Table des matières** | Non prévisualisée | Option `includeTableOfContents` non reflétée |
+| **Index (lieux + genres)** | Non prévisualisé | Option `includeIndexes` non reflétée |
+| **Options cochées** | Non visibles | Pas de feedback visuel des options actives |
 
-## Solution
+## Solution Proposée
 
-Modifier le composant `EpubPreview.tsx` pour :
+Transformer l'aperçu en un **véritable "Aperçu du document"** (WYSIWYG), similaire à celui du Word mais adapté au format EPUB, avec :
 
-1. **Extraire les parties uniques** depuis les textes filtrés
-2. **Afficher la première partie trouvée** dans l'aperçu (ou permettre de naviguer entre les parties)
-3. **Afficher un placeholder** uniquement si aucune partie n'est assignée
+1. **Vue hiérarchique complète** : Partie > Marche > Texte (collapsibles imbriqués)
+2. **Prévisualisation de la Table des Matières** si activée
+3. **Prévisualisation des Index** (par lieu et par genre) si activés
+4. **Indicateurs visuels des options actives**
 
-## Détail de l'Implémentation
-
-### Fichier à modifier
-
-`src/components/admin/EpubPreview.tsx`
-
-### Logique à ajouter
-
-Ajouter un `useMemo` pour extraire les parties uniques depuis les textes :
+## Nouvelle Architecture de l'Aperçu
 
 ```text
-const uniqueParties = useMemo(() => {
-  const partiesMap = new Map();
-  
-  textes.forEach(texte => {
-    if (texte.partie_id && texte.partie_numero_romain && texte.partie_titre) {
-      if (!partiesMap.has(texte.partie_id)) {
-        partiesMap.set(texte.partie_id, {
-          numeroRomain: texte.partie_numero_romain,
-          titre: texte.partie_titre,
-          sousTitre: texte.partie_sous_titre,
-          ordre: texte.partie_ordre ?? 999
-        });
-      }
-    }
-  });
-  
-  // Trier par ordre et retourner un tableau
-  return Array.from(partiesMap.values())
-    .sort((a, b) => a.ordre - b.ordre);
-}, [textes]);
-
-// Partie à afficher dans l'aperçu (la première trouvée)
-const previewPartie = uniqueParties[0] || null;
+┌─────────────────────────────────────────────────────────────────┐
+│  Aperçu du document EPUB                                        │
+├─────────────────────────────────────────────────────────────────┤
+│  [Couverture] [Structure] [Index] [Style]  ← Onglets améliorés  │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                 │
+│  ONGLET "STRUCTURE" (nouveau) :                                 │
+│  ┌───────────────────────────────────────────────────────────┐  │
+│  │ ▼ I. LE CONTRE-COURANT                      [15 textes]  │  │
+│  │   ├─ ▶ Bergerac (15 mars 2024)              [4 textes]   │  │
+│  │   ├─ ▶ Libourne (22 mars 2024)              [3 textes]   │  │
+│  │   └─ ▶ Sainte-Foy-la-Grande                 [2 textes]   │  │
+│  │                                                           │  │
+│  │ ▶ II. L'HÉSITATION DU MODÈLE                [18 textes]  │  │
+│  │ ▶ III. LE DROIT AU SILENCE                  [16 textes]  │  │
+│  └───────────────────────────────────────────────────────────┘  │
+│                                                                 │
+│  ONGLET "INDEX" (nouveau, si option activée) :                  │
+│  ┌───────────────────────────────────────────────────────────┐  │
+│  │ Index par Lieu           │ Index par Genre                │  │
+│  │ ─────────────────────    │ ────────────────────           │  │
+│  │ • Bergerac               │ • Haïkus (12)                  │  │
+│  │   → Haïkus, Fables       │   Bergerac, Libourne...        │  │
+│  │ • Libourne               │ • Fables (8)                   │  │
+│  │   → Poèmes, Haïkus       │   Argentat, Beaulieu...        │  │
+│  └───────────────────────────────────────────────────────────┘  │
+│                                                                 │
+│  OPTIONS ACTIVES : [✓ TdM] [✓ Parties] [✓ Index] [✓ Illus.]    │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
 ```
 
-### Modification de l'UI (lignes 106-137)
+## Détails de l'Implémentation
 
-Remplacer les valeurs statiques par les données dynamiques :
+### 1. Nouveau composant `EpubDocumentPreview.tsx`
+
+Créer un composant dédié pour la vue hiérarchique (inspiré de `WordExportPreview.tsx`) :
+
+- **Groupement des textes** : Utiliser la même logique que `groupTextesByPartie()` de `epubExportUtils.ts`
+- **Collapsibles imbriqués** : Parties → Marches → Textes (avec compteurs)
+- **État expandé/collapsé** : Toutes les parties collapsées par défaut, premier niveau accessible
+
+### 2. Nouveaux onglets dans `EpubPreview.tsx`
+
+Passer de 4 à 5-6 onglets :
+
+| Onglet | Icône | Contenu |
+|--------|-------|---------|
+| Couverture | Book | Titre, auteur, image (existant) |
+| Partie | Layout | Aperçu d'une page de partie (existant, amélioré) |
+| **Structure** | List | **Vue hiérarchique complète (NOUVEAU)** |
+| **Index** | BookOpen | **Aperçu TdM + Index lieux/genres (NOUVEAU)** |
+| Texte | FileText | Échantillon de texte stylisé (existant) |
+| Visuel | Image | Illustration + QR (existant) |
+
+### 3. Prévisualisation conditionnelle des Index
+
+Dans l'onglet "Index", afficher dynamiquement selon les options :
 
 ```text
-Avant :
-  I                           → valeur fixe
-  MOUVEMENT PREMIER           → valeur fixe
-  La descente vers l'embouchure → valeur fixe
+Si options.includeTableOfContents :
+  → Afficher une Table des Matières générée à partir des textes
 
-Après :
-  {previewPartie?.numeroRomain || 'I'}
-  {previewPartie?.titre || 'PARTIE'}
-  {previewPartie?.sousTitre || ''}
+Si options.includeIndexes :
+  → Afficher l'Index par Lieu (villes → genres)
+  → Afficher l'Index par Genre (genres → villes)
+
+Si aucune option activée :
+  → Afficher "Aucun index sélectionné"
 ```
 
-### Amélioration UX (bonus)
+### 4. Indicateurs visuels des options actives
 
-- **Navigation entre parties** : Ajouter des boutons ◀ ▶ pour prévisualiser chaque partie si plusieurs existent
-- **Indicateur de nombre** : Afficher "1/3" si 3 parties sont présentes
-- **Fallback élégant** : Si aucune partie n'est assignée aux textes, afficher un message "Aucune partie assignée" avec un style discret
-
-### Résultat attendu
-
-| Avant | Après |
-|-------|-------|
-| I | I |
-| MOUVEMENT PREMIER | LE CONTRE-COURANT |
-| La descente vers l'embouchure | L'Observation |
-
-Avec les filtres actuels (49 textes, exploration Dordogne), l'aperçu affichera les vraies parties :
-- **I. LE CONTRE-COURANT** — L'Observation
-- **II. L'HÉSITATION DU MODÈLE** — La Friction
-- **III. LE DROIT AU SILENCE** — Le Nouveau Pacte
-
-## Schéma de l'aperçu amélioré
+Ajouter au pied de page une barre récapitulative :
 
 ```text
-┌─────────────────────────────────────────┐
-│  Couverture | [Partie] | Texte | Visuel │
-├─────────────────────────────────────────┤
-│                                         │
-│               ◀  I  ▶                   │
-│                                         │
-│        LE CONTRE-COURANT                │
-│                                         │
-│           L'Observation                 │
-│                                         │
-│         ───────────────────             │
-│                                         │
-│              [1/3 parties]              │
-│                                         │
-└─────────────────────────────────────────┘
+[✓ Couverture] [✓ TdM] [✓ Parties] [○ Index] [✓ Illustrations]
+      actif      actif    actif    inactif      actif
+```
+
+### 5. Optimisations de performance
+
+- **Virtualisation** : Pour les listes longues (> 50 textes), utiliser un affichage paginé ou virtualisé
+- **Lazy loading** : Ne calculer les index que si l'onglet est ouvert
+- **Mémoïsation** : Utiliser `useMemo` pour les calculs de groupement et d'index
+
+## Fichiers à créer/modifier
+
+| Fichier | Action | Description |
+|---------|--------|-------------|
+| `src/components/admin/EpubPreview.tsx` | Modifier | Ajouter les nouveaux onglets Structure et Index |
+| `src/components/admin/EpubDocumentTree.tsx` | **Créer** | Vue arborescente Partie > Marche > Texte |
+| `src/components/admin/EpubIndexPreview.tsx` | **Créer** | Aperçu des index (TdM, lieux, genres) |
+
+## Logique de génération des Index (pour l'aperçu)
+
+### Index par Lieu
+
+```text
+Pour chaque ville unique dans textes :
+  - Lister les genres présents (Haïkus, Fables, Poèmes...)
+  - Afficher le nombre de textes par genre
+```
+
+### Index par Genre
+
+```text
+Pour chaque type de texte unique :
+  - Lister les villes où ce genre apparaît
+  - Suivre l'ordre : haiku, senryu, poeme, fable, manifeste...
 ```
 
 ## Section Technique
 
-### Modifications précises
-
-| Fichier | Modification |
-|---------|--------------|
-| `src/components/admin/EpubPreview.tsx` | Ajout du `useMemo` pour extraire les parties + remplacement des valeurs hardcodées lignes 116, 122, 128 |
-
-### État ajouté (optionnel pour navigation)
+### Types à ajouter
 
 ```typescript
-const [currentPartieIndex, setCurrentPartieIndex] = useState(0);
-const previewPartie = uniqueParties[currentPartieIndex] || null;
+interface PartieGroup {
+  id: string | null;
+  numeroRomain: string;
+  titre: string;
+  sousTitre: string | null;
+  ordre: number;
+  marches: Map<string, {
+    date: string | null;
+    textes: TexteExport[];
+    marche_ordre: number;
+  }>;
+}
+
+interface IndexEntry {
+  name: string;
+  items: string[];
+  count: number;
+}
 ```
 
-### Aucune dépendance nouvelle
+### Dépendances
 
-Le code utilise uniquement les données déjà présentes dans `textes: TexteExport[]`.
+Aucune nouvelle dépendance requise. Utilisation des composants Radix UI existants (Collapsible, Tabs, ScrollArea).
 
 ## Validation
 
 1. Aller sur `/admin/exportations`
-2. Sélectionner l'exploration Dordogne
-3. Cliquer sur l'onglet **"Partie"** dans l'aperçu
-4. Vérifier que "LE CONTRE-COURANT" s'affiche (et non "MOUVEMENT PREMIER")
-5. Naviguer entre les parties avec les boutons ◀ ▶
+2. Sélectionner l'exploration Dordogne (49 textes)
+3. Vérifier l'onglet **Structure** :
+   - Affiche les 3 parties avec compteurs corrects
+   - Chaque partie peut être déployée pour voir les marches
+   - Chaque marche peut être déployée pour voir les textes
+4. Vérifier l'onglet **Index** :
+   - La TdM reflète la structure réelle
+   - Les index par lieu/genre sont générés dynamiquement
+5. Cocher/décocher les options :
+   - Les indicateurs visuels changent en temps réel
+   - Le contenu de l'onglet Index s'adapte
+
+## Risques et Points d'Attention
+
+- **Performance** : Avec 49+ textes, le rendu doit rester fluide. Utiliser des collapsibles fermés par défaut et la mémoïsation.
+- **Cohérence** : La structure affichée dans l'aperçu doit strictement correspondre à celle générée dans l'EPUB final.
+- **Responsive** : Le composant doit rester lisible sur tablette (le panneau fait ~50% de la largeur).
+
