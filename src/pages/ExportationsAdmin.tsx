@@ -11,12 +11,14 @@ import { Separator } from '@/components/ui/separator';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { exportTextesToWord, exportTextesToCSV, KEYWORD_CATEGORIES } from '@/utils/wordExportUtils';
 import { exportVocabularyToWord } from '@/utils/vocabularyWordExport';
 import { exportMarchesStatsToWord } from '@/utils/marchesStatsExport';
 import WordExportPreview from '@/components/admin/WordExportPreview';
+import EpubExportPanel from '@/components/admin/EpubExportPanel';
 import { Input } from '@/components/ui/input';
 interface Exploration {
   id: string;
@@ -1525,6 +1527,26 @@ const ExportationsAdmin: React.FC = () => {
                   )}
                   Télécharger les statistiques .docx
                 </Button>
+              </CardContent>
+            </Card>
+
+            {/* EPUB Export Card */}
+            <Card className="border-dashed border-2 border-primary/30 bg-primary/5">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <BookOpen className="h-5 w-5 text-primary" />
+                  Export EPUB Professionnel
+                </CardTitle>
+                <CardDescription>
+                  Créez un eBook ultra-design pour plateformes et éditeurs
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <EpubExportPanel
+                  textes={filteredTextes}
+                  explorationCoverUrl={explorations.find(e => selectedExplorations.has(e.id))?.id ? undefined : undefined}
+                  explorationName={explorations.find(e => selectedExplorations.has(e.id))?.name}
+                />
               </CardContent>
             </Card>
 
