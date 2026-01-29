@@ -1,238 +1,125 @@
 
-# Plan : Génération Intelligente des Métadonnées EPUB
+## Diagnostic (ce qui se passe vraiment)
 
-## Problème Identifié
+### Symptôme
+Quand vous cliquez sur **“Générer l’EPUB (49 textes)”**, l’UI affiche “Erreur lors de la génération de l’EPUB”.
 
-Les champs **Titre**, **Sous-titre** et **Description** sont actuellement des placeholders génériques ("Bonzac en intimité partagée", "Sous-titre ou accroche", "Description pour les métadonnées EPUB...") qui ne reflètent pas l'intelligence littéraire de Gaspard Boréal ni le contenu réellement sélectionné par les filtres.
+### Cause racine confirmée (console)
+L’erreur réelle est :
 
-## Solution Proposée : Double Intelligence
+- `TypeError: path.extname is not a function`
+- provenance : `epub-gen-memory` → dépendance `ejs` → usage de `path` (Node.js)
 
-### 1. Intelligence Contextuelle (Automatique)
-Génération dynamique basée sur l'analyse des données filtrées :
-- Extraction des **parties** (mouvements geopoétiques) présentes
-- Analyse des **lieux** uniques traversés
-- Identification des **types littéraires** dominants
-- Détection de la **région** principale
+Vite “externalise” les modules Node (`path`, `fs`) côté navigateur. Du coup, **`epub-gen-memory` n’est pas exécuté avec le bon build** dans le browser, et plante pendant la compilation des templates.
 
-**Exemples de titres générés automatiquement :**
-```text
-Filtre: Exploration Dordogne complète
-→ "Fréquence de la rivière Dordogne"
-→ Sous-titre: "Du Bec d'Ambès aux sources — Haïkus, fables et manifestes"
+### Do I know what the issue is?
+Oui. **Ce n’est pas un bug de données/chapitres**, c’est un **mauvais artefact importé** : on importe l’entrée Node (`dist/lib`) au lieu du **bundle browser** prévu par la lib.
 
-Filtre: Seulement haïkus
-→ "Haïkus de la Dordogne"
-→ Sous-titre: "49 instants de rivière en Nouvelle-Aquitaine"
+---
 
-Filtre: Une seule marche (Bonzac)
-→ "Bonzac — Là où elle se jette"
-→ Sous-titre: "Carnet de marche poétique"
-```
+## Solution “wahou” (robuste, rapide, sans backend) : charger le bundle navigateur de `epub-gen-memory`
 
-### 2. Intelligence Poétique (IA via Lovable AI)
-Un bouton **"✨ Inspiration poétique"** qui appelle une Edge Function dédiée pour générer des métadonnées dignes d'un poète :
+`epub-gen-memory` fournit explicitement un bundle navigateur :  
+`node_modules/epub-gen-memory/dist/bundle.min.js` (UMD), qui embarque ses propres dépendances (dont les shims nécessaires).  
+C’est précisément ce qu’il faut utiliser dans Vite pour éviter `path.extname`.
 
-**Prompt système inspiré de l'identité Gaspard Boréal :**
-- Poète des mondes hybrides
-- Convergence IA/Vivant
-- Méthode "Inspirer, Simplifier, Agir"
-- Vocabulaire riverain et écologique
+### Pourquoi c’est “wahou”
+- Zéro polyfill Vite à maintenir (pas de “vite-plugin-node-polyfills”, pas de bricolage fragile)
+- On conserve le système **Ultra-design** (presets, CSS, TOC, cover)
+- On garde la génération **client-side** (rapide, pas de latence serveur, pas de quotas edge)
+- On peut ensuite ajouter une “version premium” server-side si un jour on veut embarquer des images privées ou faire du KDP strict, mais on débloque tout de suite l’usage.
 
-**Résultat attendu :**
-```text
-Titre: "Fréquence du Vivant"
-Sous-titre: "Là où le réel commence quand le modèle hésite"
-Description: "Un recueil de 49 textes — haïkus, fables, manifestes — 
-composés le long de la Dordogne, de son estuaire aux sources du Puy de Sancy.
-Gaspard Boréal y tisse une cartographie sensible où algorithmes et martinets,
-barrages et truites, cohabitent dans une même partition écologique."
-```
+---
 
-## Architecture Technique
+## Changements à implémenter
 
-### Nouveaux Fichiers
+### 1) Modifier `src/utils/epubExportUtils.ts` (correction principale)
+Objectif : **ne plus importer `epub-gen-memory` (entrée Node)**, mais charger **le bundle browser** au moment du clic export.
 
-| Fichier | Description |
-|---------|-------------|
-| `supabase/functions/generate-epub-metadata/index.ts` | Edge Function pour génération IA des métadonnées |
-| `src/utils/epubMetadataGenerator.ts` | Utilitaire de génération contextuelle locale |
+- Remplacer :
+  - `await import('epub-gen-memory')`
+- Par :
+  - `await import('epub-gen-memory/dist/bundle.min.js')`
 
-### Fichiers Modifiés
+#### Important : gérer correctement le type de retour
+Le bundle browser configure `JSZip` pour retourner un **Blob** (la lib expose `type='blob'` dans `fetchable-browser.js`).
 
-| Fichier | Modification |
-|---------|-------------|
-| `src/components/admin/EpubExportPanel.tsx` | Intégration des générateurs + bouton IA |
+Donc :
+- si le résultat est un `Blob` → on le renvoie directement
+- sinon fallback compatible (ArrayBuffer/Buffer) → conversion en `Blob`
 
-## Détail de l'Implémentation
+> Cela rend l’export robuste quel que soit l’environnement, sans hypothèses fragiles.
 
-### Phase 1 : Générateur Contextuel Local
+---
 
-**Nouveau fichier `src/utils/epubMetadataGenerator.ts` :**
+### 2) Améliorer le logging pour éviter une nouvelle boucle d’erreurs (petit mais décisif)
+Dans `exportToEpub` / `downloadEpub`, ajouter des logs techniques plus “diagnostics” :
+- quelle entrée a été chargée (`bundle.min.js`)
+- type du résultat (`Blob`, `ArrayBuffer`, etc.)
+- taille du fichier généré
 
-```text
-Interface EpubMetadataSuggestion {
-  title: string;
-  subtitle: string;
-  description: string;
-  confidence: 'high' | 'medium' | 'low';
-}
+Cela permet de trancher instantanément si un autre point (cover, fonts, images) bloque.
 
-Fonction generateContextualMetadata(textes, explorationName?) → EpubMetadataSuggestion
+---
 
-Logique:
-1. Extraire les parties uniques (ex: "LE CONTRE-COURANT", "L'HÉSITATION DU MODÈLE")
-2. Extraire les lieux uniques (villes/marches)
-3. Compter les types de textes (haïkus, fables, etc.)
-4. Identifier la région dominante
+### 3) (Bonus cohérence UI) Harmoniser le “compteur de lieux”
+Actuellement, dans `EpubExportPanel.tsx`, le badge “lieux” utilise :
+- `new Set(textes.map(t => t.marche_nom || t.marche_ville)).size`
 
-Règles de génération:
-- Si 1 seule partie → Utiliser son titre ("Le Contre-Courant")
-- Si plusieurs parties → Utiliser le nom de l'exploration
-- Si 1 seul lieu → Utiliser le nom du lieu + accroche
-- Si plusieurs types → Énumérer les dominants dans le sous-titre
-- Description auto-générée avec statistiques élégantes
-```
+Ce mélange “nom de marche” et “ville” peut recréer de la confusion (ex: 32 au lieu de 16).
+Le générateur de métadonnées a déjà été corrigé pour compter seulement `marche_ville`.
 
-### Phase 2 : Générateur IA (Edge Function)
+Plan :
+- aligner le badge “lieux” sur la même logique (ville uniquement)
+- optionnel : afficher aussi un badge “marches” séparé si vous voulez les deux métriques (utile éditorialement)
 
-**Nouveau fichier `supabase/functions/generate-epub-metadata/index.ts` :**
+---
 
-```text
-Endpoint: POST /functions/v1/generate-epub-metadata
+## Étapes de validation (test end-to-end)
 
-Payload:
-{
-  textes: [{titre, type_texte, marche_ville, partie_titre}...],
-  explorationName?: string,
-  stats: { totalTextes, uniqueLieux, typesDistribution }
-}
+1. Aller sur `/admin/exportations`
+2. Vérifier que les filtres donnent bien **49 textes**
+3. Cliquer “Générer l’EPUB”
+4. Résultat attendu :
+   - plus de warning `path/fs externalized`
+   - plus d’erreur `path.extname`
+   - téléchargement d’un `.epub` fonctionnel
+5. Ouvrir l’EPUB dans Apple Books / Calibre pour valider :
+   - styles (CSS)
+   - table des matières
+   - ordre des chapitres
+   - métadonnées (titre/sous-titre/description)
 
-Prompt système (inspiré de l'identité Gaspard Boréal):
-"Tu es le conseiller éditorial de Gaspard Boréal, poète des mondes hybrides.
-Ton rôle est de proposer des métadonnées éditoriales pour un recueil EPUB
-destiné aux grands éditeurs de poésie nationale (Gallimard, Le Seuil, Actes Sud).
+---
 
-Le style Gaspard Boréal:
-- Convergence entre le vivant et l'algorithmique
-- Phrases courtes, évocatrices, sans verbiage
-- Vocabulaire riverain (estuaire, méandre, bief, alose, mascaret)
-- Tension entre observation scientifique et émotion poétique
-- Maxime centrale: 'Là où le réel commence quand le modèle hésite'
+## Plan B (si vous voulez une garantie “KDP-proof” et images privées)
+Si, après ce fix, on veut aller encore plus loin (et c’est cohérent avec l’ambition) :
+- déplacer la génération EPUB dans une **Edge Function** (serveur), avec :
+  - récupération d’assets privés Supabase Storage (cover/images)
+  - packaging ultra-strict EPUB3
+  - validation structurelle
 
-Tu dois proposer:
-1. Un TITRE percutant (3-6 mots)
-2. Un SOUS-TITRE évocateur (10-15 mots)
-3. Une DESCRIPTION pour quatrième de couverture (50-80 mots)"
+Mais dans l’état, **ce n’est pas nécessaire pour corriger l’erreur bloquante actuelle**.
 
-Réponse JSON structurée via tool calling
-```
+---
 
-### Phase 3 : Interface Utilisateur
+## Fichiers concernés
 
-**Modifications de `EpubExportPanel.tsx` :**
+- À modifier (obligatoire)
+  - `src/utils/epubExportUtils.ts`
 
-```text
-Section Métadonnées enrichie:
+- À modifier (recommandé, cohérence UX)
+  - `src/components/admin/EpubExportPanel.tsx`
 
-┌─────────────────────────────────────────────────────────────┐
-│ 📄 Métadonnées éditoriales                     [✨ Inspirer] │
-├─────────────────────────────────────────────────────────────┤
-│                                                             │
-│ Titre                          Auteur                       │
-│ ┌─────────────────────────┐    ┌─────────────────────────┐ │
-│ │ Fréquence du Vivant     │    │ Gaspard Boréal          │ │
-│ └─────────────────────────┘    └─────────────────────────┘ │
-│                                                             │
-│ Sous-titre (optionnel)                                      │
-│ ┌─────────────────────────────────────────────────────────┐ │
-│ │ Du Bec d'Ambès aux sources — Haïkus, fables et manifestes│ │
-│ └─────────────────────────────────────────────────────────┘ │
-│                                                             │
-│ Description                                       [↻ Regénérer]│
-│ ┌─────────────────────────────────────────────────────────┐ │
-│ │ Un recueil de 49 textes — haïkus, fables, manifestes —  │ │
-│ │ composés le long de la Dordogne, de son estuaire aux    │ │
-│ │ sources du Puy de Sancy. Gaspard Boréal y tisse une     │ │
-│ │ cartographie sensible où algorithmes et martinets...    │ │
-│ └─────────────────────────────────────────────────────────┘ │
-│                                                             │
-│ 💡 Généré automatiquement d'après 49 textes • 16 lieux     │
-│    Cliquez "✨ Inspirer" pour une version poétique IA      │
-└─────────────────────────────────────────────────────────────┘
-```
+Aucune migration Supabase nécessaire. Aucune dépendance à installer.
 
-**Nouvelles fonctionnalités:**
-1. **Auto-remplissage au chargement** : `useEffect` qui appelle `generateContextualMetadata()` quand les textes changent
-2. **Bouton "✨ Inspirer"** : Appelle l'Edge Function pour génération IA poétique
-3. **Indicateur de source** : Badge "Généré automatiquement" ou "Inspiré par IA"
-4. **Bouton "↻ Regénérer"** : Permet de relancer la génération contextuelle
+---
 
-## Flux Utilisateur
+## Risques / points d’attention
 
-```text
-1. L'utilisateur sélectionne des filtres (exploration, marches, types)
-   ↓
-2. Le panneau EPUB se rafraîchit (bouton Rafraîchir ou auto)
-   ↓
-3. generateContextualMetadata() analyse les textes filtrés
-   ↓
-4. Les champs Titre/Sous-titre/Description sont pré-remplis intelligemment
-   ↓
-5. (Optionnel) L'utilisateur clique "✨ Inspirer"
-   ↓
-6. Edge Function génère des métadonnées poétiques via Lovable AI
-   ↓
-7. L'utilisateur ajuste si besoin avant export
-```
-
-## Exemples de Génération Contextuelle
-
-| Filtre Sélectionné | Titre Généré | Sous-titre | Description |
-|-------------------|--------------|------------|-------------|
-| Exploration complète (49 textes, 16 lieux) | Fréquence de la rivière Dordogne | Du Bec d'Ambès aux sources — Haïkus, fables et manifestes | Un recueil de 49 textes traversant 16 lieux de Nouvelle-Aquitaine, mêlant haïkus, poèmes et manifestes dans une exploration poétique de la Dordogne. |
-| Seulement Partie I (36 textes) | Le Contre-Courant | L'Observation — 36 textes de l'estuaire aux basses vallées | Premier mouvement d'une trilogie riveraine : 36 textes composés entre le Bec d'Ambès et Saint-Michel de Fronsac. |
-| Seulement Haïkus (24 textes) | Haïkus de la Dordogne | 24 instants de rivière en Nouvelle-Aquitaine | Recueil de 24 haïkus composés lors de marches le long de la Dordogne, captant l'essence fugitive des paysages fluviaux. |
-| Une seule marche (Bonzac) | Bonzac — Là où elle se jette | Carnet de marche poétique | Exploration poétique de Bonzac, entre estuaire et confluences. |
-
-## Exemple de Génération IA (après clic "✨ Inspirer")
-
-**Input stats:** 49 textes, 16 lieux, 7 genres, exploration "Fréquence de la rivière Dordogne"
-
-**Output IA:**
-```json
-{
-  "title": "Fréquence du Vivant",
-  "subtitle": "Là où le réel commence quand le modèle hésite",
-  "description": "De l'estuaire aux sources, 49 textes tissent une cartographie sensible de la Dordogne. Haïkus captés à l'aube, fables où dialoguent aloses et algorithmes, manifestes pour un nouveau pacte entre l'homme et la rivière. Gaspard Boréal y déploie sa poétique hybride : celle d'un monde où le mascaret répond aux capteurs, où la truite arc-en-ciel croise les modèles prédictifs."
-}
-```
-
-## Section Technique
-
-### Fichiers à Créer
-
-1. **`src/utils/epubMetadataGenerator.ts`** : Générateur contextuel local
-2. **`supabase/functions/generate-epub-metadata/index.ts`** : Edge Function IA
-
-### Fichiers à Modifier
-
-1. **`src/components/admin/EpubExportPanel.tsx`** :
-   - Import du générateur contextuel
-   - Ajout `useEffect` pour auto-génération au changement de textes
-   - Ajout bouton "✨ Inspirer" avec appel Edge Function
-   - Badge indicateur de source (auto/IA)
-   - Bouton regénérer
-
-### Dépendances
-
-Aucune nouvelle dépendance requise (utilise Lovable AI existant)
-
-## Résultat Attendu
-
-Un système de métadonnées EPUB qui :
-1. **Ne laisse jamais de champs vides** — Toujours pré-remplis intelligemment
-2. **S'adapte aux filtres** — Change dynamiquement selon la sélection
-3. **Offre l'inspiration poétique** — Génération IA digne de Gaspard Boréal
-4. **Reste éditable** — L'utilisateur garde le contrôle final
-5. **Impressionne les éditeurs** — Qualité professionnelle des métadonnées
+- `bundle.min.js` est un gros fichier : on le garde en **dynamic import** (déjà le cas) pour ne pas alourdir le chargement initial de l’admin.
+- Si vous activez cover/fonts/images via URL non publiques : la lib peut échouer au fetch. On pourra alors :
+  - soit activer `ignoreFailedDownloads`
+  - soit passer la cover en data URL
+  - soit basculer en Edge Function (Plan B)
 
