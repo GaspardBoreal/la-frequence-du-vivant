@@ -137,7 +137,7 @@ const PartieFormModal: React.FC<PartieFormModalProps> = ({
                 value={titre}
                 onChange={(e) => setTitre(e.target.value)}
                 placeholder="LE CONTRE-COURANT"
-                className="border-gaspard-primary/20 bg-gaspard-background/50 text-gaspard-text placeholder:text-gaspard-muted/50 uppercase font-semibold tracking-wide focus:border-gaspard-primary focus:ring-gaspard-primary/20"
+                className="border-gaspard-primary/20 bg-white/5 text-white placeholder:text-white/30 uppercase font-semibold tracking-wide focus:border-gaspard-primary focus:ring-gaspard-primary/20"
                 required
               />
             </div>
@@ -152,7 +152,7 @@ const PartieFormModal: React.FC<PartieFormModalProps> = ({
                 value={sousTitre}
                 onChange={(e) => setSousTitre(e.target.value)}
                 placeholder="L'Observation"
-                className="border-gaspard-primary/20 bg-gaspard-background/50 text-gaspard-text placeholder:text-gaspard-muted/50 italic focus:border-gaspard-primary focus:ring-gaspard-primary/20"
+                className="border-gaspard-primary/20 bg-white/5 text-white placeholder:text-white/30 italic focus:border-gaspard-primary focus:ring-gaspard-primary/20"
               />
             </div>
 
@@ -190,7 +190,7 @@ const PartieFormModal: React.FC<PartieFormModalProps> = ({
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 placeholder="Notes sur le choix de cette structure..."
-                className="border-gaspard-primary/20 bg-gaspard-background/50 text-gaspard-text placeholder:text-gaspard-muted/50 min-h-[80px] resize-none focus:border-gaspard-primary focus:ring-gaspard-primary/20"
+                className="border-gaspard-primary/20 bg-white/5 text-white placeholder:text-white/30 min-h-[80px] resize-none focus:border-gaspard-primary focus:ring-gaspard-primary/20"
               />
             </div>
           </div>
