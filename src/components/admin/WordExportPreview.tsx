@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { Eye, EyeOff, ChevronDown, ChevronUp, FileText, MapPin } from 'lucide-react';
+import { Eye, EyeOff, ChevronDown, ChevronUp, ChevronRight, FileText, MapPin, BookOpen } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -15,6 +15,11 @@ interface TexteExport {
   marche_ville?: string;
   marche_region?: string;
   marche_date?: string;
+  partie_id?: string;
+  partie_numero_romain?: string;
+  partie_titre?: string;
+  partie_sous_titre?: string;
+  partie_ordre?: number;
 }
 
 interface WordExportPreviewProps {
@@ -22,6 +27,15 @@ interface WordExportPreviewProps {
   organizationMode: 'type' | 'marche';
   includeMetadata: boolean;
   includeCoverPage: boolean;
+}
+
+interface PartieGroup {
+  id: string | null;
+  numeroRomain: string | null;
+  titre: string | null;
+  sousTitre: string | null;
+  ordre: number;
+  marches: Map<string, { date: string | null; textes: TexteExport[] }>;
 }
 
 const TEXT_TYPE_LABELS: Record<string, string> = {
@@ -200,6 +214,61 @@ const groupByMarche = (textes: TexteExport[]): Map<string, { date: string | null
   return sortedMap;
 };
 
+/**
+ * Group textes by Partie > Marche hierarchy
+ */
+const groupByPartie = (textes: TexteExport[]): PartieGroup[] => {
+  const partieMap = new Map<string, PartieGroup>();
+  
+  textes.forEach(texte => {
+    const partieKey = texte.partie_id || 'sans-partie';
+    
+    if (!partieMap.has(partieKey)) {
+      partieMap.set(partieKey, {
+        id: texte.partie_id || null,
+        numeroRomain: texte.partie_numero_romain || null,
+        titre: texte.partie_titre || null,
+        sousTitre: texte.partie_sous_titre || null,
+        ordre: texte.partie_ordre ?? 999,
+        marches: new Map(),
+      });
+    }
+    
+    const partie = partieMap.get(partieKey)!;
+    const marcheKey = texte.marche_nom || texte.marche_ville || 'Sans lieu';
+    
+    if (!partie.marches.has(marcheKey)) {
+      partie.marches.set(marcheKey, { date: texte.marche_date || null, textes: [] });
+    }
+    partie.marches.get(marcheKey)!.textes.push(texte);
+  });
+
+  // Sort parties by ordre, then sort marches within each partie by date
+  const sortedParties = Array.from(partieMap.values())
+    .sort((a, b) => a.ordre - b.ordre);
+
+  sortedParties.forEach(partie => {
+    const sortedMarches = new Map(
+      Array.from(partie.marches.entries())
+        .sort((a, b) => {
+          const dateA = a[1].date || '9999-12-31';
+          const dateB = b[1].date || '9999-12-31';
+          return dateA.localeCompare(dateB);
+        })
+    );
+    partie.marches = sortedMarches;
+  });
+
+  return sortedParties;
+};
+
+/**
+ * Check if any textes have partie assignments
+ */
+const hasPartieAssignments = (textes: TexteExport[]): boolean => {
+  return textes.some(t => t.partie_id && t.partie_titre);
+};
+
 const formatDate = (date: string): string => {
   const formatted = new Date(date).toLocaleDateString('fr-FR', {
     weekday: 'long',
@@ -242,6 +311,148 @@ const TextePreviewCard: React.FC<{
   );
 };
 
+const MarcheSection: React.FC<{
+  marcheName: string;
+  date: string | null;
+  textes: TexteExport[];
+  includeMetadata: boolean;
+  isExpanded: boolean;
+  onToggle: () => void;
+  indented?: boolean;
+}> = ({ marcheName, date, textes, includeMetadata, isExpanded, onToggle, indented = false }) => {
+  return (
+    <Collapsible open={isExpanded} onOpenChange={onToggle}>
+      <CollapsibleTrigger asChild>
+        <div className={`flex items-center justify-between cursor-pointer hover:bg-muted/50 p-2 rounded-lg transition-colors ${indented ? 'ml-4' : ''}`}>
+          <div>
+            <div className="flex items-center gap-3">
+              <h3 className={`font-semibold text-foreground ${indented ? 'text-base' : 'text-lg'}`}>
+                {marcheName}
+              </h3>
+              <Badge variant="secondary" className="text-xs">
+                {textes.length}
+              </Badge>
+            </div>
+            {date && (
+              <p className="text-sm text-muted-foreground italic mt-1">
+                {formatDate(date)}
+              </p>
+            )}
+          </div>
+          {isExpanded ? (
+            <ChevronUp className="h-4 w-4 text-muted-foreground" />
+          ) : (
+            <ChevronDown className="h-4 w-4 text-muted-foreground" />
+          )}
+        </div>
+      </CollapsibleTrigger>
+      <CollapsibleContent>
+        <div className={`space-y-4 mt-4 ${indented ? 'ml-6' : 'ml-2'}`}>
+          {textes.slice(0, 5).map(texte => (
+            <TextePreviewCard
+              key={texte.id}
+              texte={texte}
+              includeMetadata={includeMetadata}
+            />
+          ))}
+          {textes.length > 5 && (
+            <p className="text-sm text-muted-foreground italic text-center py-2">
+              ... et {textes.length - 5} autres textes
+            </p>
+          )}
+        </div>
+      </CollapsibleContent>
+    </Collapsible>
+  );
+};
+
+const PartieSection: React.FC<{
+  partie: PartieGroup;
+  includeMetadata: boolean;
+  expandedParties: Set<string>;
+  expandedMarches: Set<string>;
+  onTogglePartie: (key: string) => void;
+  onToggleMarche: (key: string) => void;
+}> = ({ partie, includeMetadata, expandedParties, expandedMarches, onTogglePartie, onToggleMarche }) => {
+  const partieKey = partie.id || 'sans-partie';
+  const isPartieExpanded = expandedParties.has(partieKey);
+  const totalTextes = Array.from(partie.marches.values()).reduce((sum, m) => sum + m.textes.length, 0);
+  const marchesCount = partie.marches.size;
+
+  // If no partie assignment, render marches directly
+  if (!partie.titre) {
+    return (
+      <div className="space-y-4">
+        <div className="flex items-center gap-2 text-muted-foreground mb-2">
+          <FileText className="h-4 w-4" />
+          <span className="text-sm italic">Marches non assignées à une partie</span>
+        </div>
+        {Array.from(partie.marches.entries()).map(([marcheName, { date, textes }]) => (
+          <MarcheSection
+            key={marcheName}
+            marcheName={marcheName}
+            date={date}
+            textes={textes}
+            includeMetadata={includeMetadata}
+            isExpanded={expandedMarches.has(marcheName)}
+            onToggle={() => onToggleMarche(marcheName)}
+          />
+        ))}
+      </div>
+    );
+  }
+
+  return (
+    <Collapsible open={isPartieExpanded} onOpenChange={() => onTogglePartie(partieKey)}>
+      <CollapsibleTrigger asChild>
+        <div className="flex items-center justify-between cursor-pointer hover:bg-primary/10 p-3 rounded-lg transition-colors border border-primary/20 bg-primary/5">
+          <div className="flex items-center gap-3">
+            <ChevronRight className={`h-5 w-5 text-primary transition-transform ${isPartieExpanded ? 'rotate-90' : ''}`} />
+            <BookOpen className="h-5 w-5 text-primary" />
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="text-lg font-bold text-primary">{partie.numeroRomain}.</span>
+                <h2 className="font-bold text-lg text-foreground uppercase tracking-wide">
+                  {partie.titre}
+                </h2>
+              </div>
+              {partie.sousTitre && (
+                <p className="text-sm text-muted-foreground italic mt-0.5 ml-8">
+                  {partie.sousTitre}
+                </p>
+              )}
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <Badge variant="outline" className="text-xs">
+              {marchesCount} marche{marchesCount > 1 ? 's' : ''}
+            </Badge>
+            <Badge variant="secondary" className="text-xs">
+              {totalTextes} texte{totalTextes > 1 ? 's' : ''}
+            </Badge>
+          </div>
+        </div>
+      </CollapsibleTrigger>
+      <CollapsibleContent>
+        <div className="space-y-3 mt-3 pl-2 border-l-2 border-primary/30 ml-4">
+          {Array.from(partie.marches.entries()).map(([marcheName, { date, textes }]) => (
+            <MarcheSection
+              key={`${partieKey}-${marcheName}`}
+              marcheName={marcheName}
+              date={date}
+              textes={textes}
+              includeMetadata={includeMetadata}
+              isExpanded={expandedMarches.has(`${partieKey}-${marcheName}`)}
+              onToggle={() => onToggleMarche(`${partieKey}-${marcheName}`)}
+              indented
+            />
+          ))}
+        </div>
+      </CollapsibleContent>
+    </Collapsible>
+  );
+};
+
 const WordExportPreview: React.FC<WordExportPreviewProps> = ({
   textes,
   organizationMode,
@@ -249,24 +460,47 @@ const WordExportPreview: React.FC<WordExportPreviewProps> = ({
   includeCoverPage,
 }) => {
   const [isExpanded, setIsExpanded] = useState(false);
-  const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set());
+  const [expandedParties, setExpandedParties] = useState<Set<string>>(new Set());
+  const [expandedMarches, setExpandedMarches] = useState<Set<string>>(new Set());
+
+  const hasParties = useMemo(() => {
+    return organizationMode === 'marche' && hasPartieAssignments(textes);
+  }, [textes, organizationMode]);
+
+  const partieGroups = useMemo(() => {
+    if (organizationMode === 'marche' && hasParties) {
+      return groupByPartie(textes);
+    }
+    return null;
+  }, [textes, organizationMode, hasParties]);
 
   const groupedTextes = useMemo(() => {
     if (organizationMode === 'type') {
       return { type: 'type' as const, groups: groupByType(textes) };
-    } else {
+    } else if (!hasParties) {
       return { type: 'marche' as const, groups: groupByMarche(textes) };
     }
-  }, [textes, organizationMode]);
+    return null;
+  }, [textes, organizationMode, hasParties]);
 
-  const toggleSection = (key: string) => {
-    const newSet = new Set(expandedSections);
+  const togglePartie = (key: string) => {
+    const newSet = new Set(expandedParties);
     if (newSet.has(key)) {
       newSet.delete(key);
     } else {
       newSet.add(key);
     }
-    setExpandedSections(newSet);
+    setExpandedParties(newSet);
+  };
+
+  const toggleMarche = (key: string) => {
+    const newSet = new Set(expandedMarches);
+    if (newSet.has(key)) {
+      newSet.delete(key);
+    } else {
+      newSet.add(key);
+    }
+    setExpandedMarches(newSet);
   };
 
   if (textes.length === 0) {
@@ -325,13 +559,13 @@ const WordExportPreview: React.FC<WordExportPreviewProps> = ({
               )}
 
               {/* Grouped Sections */}
-              {organizationMode === 'type' ? (
+              {organizationMode === 'type' && groupedTextes ? (
                 // Group by type
                 Array.from((groupedTextes.groups as Map<string, TexteExport[]>).entries()).map(([type, groupTextes]) => (
                   <Collapsible
                     key={type}
-                    open={expandedSections.has(type)}
-                    onOpenChange={() => toggleSection(type)}
+                    open={expandedMarches.has(type)}
+                    onOpenChange={() => toggleMarche(type)}
                   >
                     <CollapsibleTrigger asChild>
                       <div className="flex items-center justify-between cursor-pointer hover:bg-muted/50 p-2 rounded-lg transition-colors">
@@ -343,7 +577,7 @@ const WordExportPreview: React.FC<WordExportPreviewProps> = ({
                             {groupTextes.length}
                           </Badge>
                         </div>
-                        {expandedSections.has(type) ? (
+                        {expandedMarches.has(type) ? (
                           <ChevronUp className="h-4 w-4 text-muted-foreground" />
                         ) : (
                           <ChevronDown className="h-4 w-4 text-muted-foreground" />
@@ -368,57 +602,33 @@ const WordExportPreview: React.FC<WordExportPreviewProps> = ({
                     </CollapsibleContent>
                   </Collapsible>
                 ))
-              ) : (
-                // Group by marche
+              ) : hasParties && partieGroups ? (
+                // Group by Partie > Marche hierarchy
+                partieGroups.map((partie) => (
+                  <PartieSection
+                    key={partie.id || 'sans-partie'}
+                    partie={partie}
+                    includeMetadata={includeMetadata}
+                    expandedParties={expandedParties}
+                    expandedMarches={expandedMarches}
+                    onTogglePartie={togglePartie}
+                    onToggleMarche={toggleMarche}
+                  />
+                ))
+              ) : groupedTextes ? (
+                // Group by marche only (no parties)
                 Array.from((groupedTextes.groups as Map<string, { date: string | null; textes: TexteExport[] }>).entries()).map(([marcheName, { date, textes: groupTextes }]) => (
-                  <Collapsible
+                  <MarcheSection
                     key={marcheName}
-                    open={expandedSections.has(marcheName)}
-                    onOpenChange={() => toggleSection(marcheName)}
-                  >
-                    <CollapsibleTrigger asChild>
-                      <div className="flex items-center justify-between cursor-pointer hover:bg-muted/50 p-2 rounded-lg transition-colors">
-                        <div>
-                          <div className="flex items-center gap-3">
-                            <h3 className="font-semibold text-lg text-foreground">
-                              {marcheName}
-                            </h3>
-                            <Badge variant="secondary" className="text-xs">
-                              {groupTextes.length}
-                            </Badge>
-                          </div>
-                          {date && (
-                            <p className="text-sm text-muted-foreground italic mt-1">
-                              {formatDate(date)}
-                            </p>
-                          )}
-                        </div>
-                        {expandedSections.has(marcheName) ? (
-                          <ChevronUp className="h-4 w-4 text-muted-foreground" />
-                        ) : (
-                          <ChevronDown className="h-4 w-4 text-muted-foreground" />
-                        )}
-                      </div>
-                    </CollapsibleTrigger>
-                    <CollapsibleContent>
-                      <div className="space-y-4 mt-4 ml-2">
-                        {groupTextes.slice(0, 5).map(texte => (
-                          <TextePreviewCard
-                            key={texte.id}
-                            texte={texte}
-                            includeMetadata={includeMetadata}
-                          />
-                        ))}
-                        {groupTextes.length > 5 && (
-                          <p className="text-sm text-muted-foreground italic text-center py-2">
-                            ... et {groupTextes.length - 5} autres textes
-                          </p>
-                        )}
-                      </div>
-                    </CollapsibleContent>
-                  </Collapsible>
+                    marcheName={marcheName}
+                    date={date}
+                    textes={groupTextes}
+                    includeMetadata={includeMetadata}
+                    isExpanded={expandedMarches.has(marcheName)}
+                    onToggle={() => toggleMarche(marcheName)}
+                  />
                 ))
-              )}
+              ) : null}
             </div>
           </ScrollArea>
 
