@@ -1,7 +1,8 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { Card } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Book, FileText, Image as ImageIcon, Layout } from 'lucide-react';
+import { Book, FileText, Image as ImageIcon, Layout, ChevronLeft, ChevronRight } from 'lucide-react';
 import type { EpubExportOptions, TexteExport } from '@/utils/epubExportUtils';
 
 interface EpubPreviewProps {
@@ -11,6 +12,36 @@ interface EpubPreviewProps {
 
 const EpubPreview: React.FC<EpubPreviewProps> = ({ textes, options }) => {
   const { colorScheme, typography } = options;
+  const [currentPartieIndex, setCurrentPartieIndex] = useState(0);
+
+  // Extract unique parties from textes
+  const uniqueParties = useMemo(() => {
+    const partiesMap = new Map<string, {
+      numeroRomain: string;
+      titre: string;
+      sousTitre: string | null;
+      ordre: number;
+    }>();
+    
+    textes.forEach(texte => {
+      if (texte.partie_id && texte.partie_numero_romain && texte.partie_titre) {
+        if (!partiesMap.has(texte.partie_id)) {
+          partiesMap.set(texte.partie_id, {
+            numeroRomain: texte.partie_numero_romain,
+            titre: texte.partie_titre,
+            sousTitre: texte.partie_sous_titre || null,
+            ordre: texte.partie_ordre ?? 999
+          });
+        }
+      }
+    });
+    
+    return Array.from(partiesMap.values())
+      .sort((a, b) => a.ordre - b.ordre);
+  }, [textes]);
+
+  // Current partie to preview
+  const previewPartie = uniqueParties[currentPartieIndex] || null;
 
   // Get a sample text for preview
   const sampleText = useMemo(() => {
@@ -106,33 +137,84 @@ const EpubPreview: React.FC<EpubPreviewProps> = ({ textes, options }) => {
         {/* Partie Preview */}
         <TabsContent value="partie" className="m-0">
           <div 
-            className="h-[400px] flex flex-col items-center justify-center p-8 text-center"
+            className="h-[400px] flex flex-col items-center justify-center p-8 text-center relative"
             style={previewStyle}
           >
-            <p 
-              className="text-6xl font-bold mb-4"
-              style={headingStyle}
-            >
-              I
-            </p>
-            <h2 
-              className="text-2xl uppercase tracking-widest mb-2"
-              style={headingStyle}
-            >
-              MOUVEMENT PREMIER
-            </h2>
-            <p 
-              className="text-lg italic"
-              style={{ color: colorScheme.secondary }}
-            >
-              La descente vers l'embouchure
-            </p>
-            <p 
-              className="mt-8 text-2xl tracking-[0.5em]"
-              style={{ color: colorScheme.accent }}
-            >
-              ───────────
-            </p>
+            {/* Navigation arrows */}
+            {uniqueParties.length > 1 && (
+              <div className="absolute top-4 right-4 flex items-center gap-2">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8"
+                  onClick={() => setCurrentPartieIndex(prev => Math.max(0, prev - 1))}
+                  disabled={currentPartieIndex === 0}
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+                <span 
+                  className="text-xs px-2"
+                  style={{ color: colorScheme.secondary }}
+                >
+                  {currentPartieIndex + 1}/{uniqueParties.length}
+                </span>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8"
+                  onClick={() => setCurrentPartieIndex(prev => Math.min(uniqueParties.length - 1, prev + 1))}
+                  disabled={currentPartieIndex === uniqueParties.length - 1}
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              </div>
+            )}
+
+            {previewPartie ? (
+              <>
+                <p 
+                  className="text-6xl font-bold mb-4"
+                  style={headingStyle}
+                >
+                  {previewPartie.numeroRomain}
+                </p>
+                <h2 
+                  className="text-2xl uppercase tracking-widest mb-2"
+                  style={headingStyle}
+                >
+                  {previewPartie.titre}
+                </h2>
+                {previewPartie.sousTitre && (
+                  <p 
+                    className="text-lg italic"
+                    style={{ color: colorScheme.secondary }}
+                  >
+                    {previewPartie.sousTitre}
+                  </p>
+                )}
+                <p 
+                  className="mt-8 text-2xl tracking-[0.5em]"
+                  style={{ color: colorScheme.accent }}
+                >
+                  ───────────
+                </p>
+              </>
+            ) : (
+              <div className="text-center">
+                <p 
+                  className="text-lg italic"
+                  style={{ color: colorScheme.secondary }}
+                >
+                  Aucune partie assignée aux textes sélectionnés
+                </p>
+                <p 
+                  className="text-sm mt-2"
+                  style={{ color: colorScheme.secondary + '80' }}
+                >
+                  Assignez des textes à des parties dans l'exploration pour les voir ici
+                </p>
+              </div>
+            )}
           </div>
         </TabsContent>
 
