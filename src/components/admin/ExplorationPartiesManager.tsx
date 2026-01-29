@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -19,6 +19,8 @@ import {
   Footprints,
   AlertCircle,
   ArrowRight,
+  ChevronsUpDown,
+  ChevronsDownUp,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import {
@@ -44,6 +46,7 @@ const ExplorationPartiesManager: React.FC<ExplorationPartiesManagerProps> = ({
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingPartie, setEditingPartie] = useState<ExplorationPartie | null>(null);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+  const [expandedParties, setExpandedParties] = useState<Record<string, boolean>>({});
 
   // Queries
   const { data: parties = [], isLoading: isLoadingParties } = useExplorationPartiesWithMarches(explorationId);
@@ -55,6 +58,28 @@ const ExplorationPartiesManager: React.FC<ExplorationPartiesManagerProps> = ({
   const deleteMutation = useDeleteExplorationPartie();
   const reorderMutation = useReorderParties();
   const assignMutation = useAssignMarcheToPartie();
+
+  // Check if all parties are expanded/collapsed
+  const allExpanded = useMemo(() => {
+    if (parties.length === 0) return false;
+    return parties.every((p) => expandedParties[p.id] !== false);
+  }, [parties, expandedParties]);
+
+  const toggleAllParties = () => {
+    const newState: Record<string, boolean> = {};
+    const newValue = !allExpanded;
+    parties.forEach((p) => {
+      newState[p.id] = newValue;
+    });
+    setExpandedParties(newState);
+  };
+
+  const togglePartie = (partieId: string) => {
+    setExpandedParties((prev) => ({
+      ...prev,
+      [partieId]: prev[partieId] === undefined ? false : !prev[partieId],
+    }));
+  };
 
   const handleCreateOrUpdate = (data: {
     titre: string;
@@ -173,16 +198,38 @@ const ExplorationPartiesManager: React.FC<ExplorationPartiesManagerProps> = ({
           )}
         </div>
 
-        <Button
-          onClick={() => {
-            setEditingPartie(null);
-            setIsFormOpen(true);
-          }}
-          className="bg-gradient-to-r from-gaspard-primary to-gaspard-secondary hover:from-gaspard-primary/90 hover:to-gaspard-secondary/90"
-        >
-          <Plus className="h-4 w-4 mr-2" />
-          Nouvelle partie
-        </Button>
+        <div className="flex items-center gap-2">
+          {parties.length > 0 && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={toggleAllParties}
+              className="border-gaspard-primary/20 text-gaspard-muted hover:text-gaspard-primary hover:bg-gaspard-primary/5"
+            >
+              {allExpanded ? (
+                <>
+                  <ChevronsDownUp className="h-4 w-4 mr-2" />
+                  Tout réduire
+                </>
+              ) : (
+                <>
+                  <ChevronsUpDown className="h-4 w-4 mr-2" />
+                  Tout déplier
+                </>
+              )}
+            </Button>
+          )}
+          <Button
+            onClick={() => {
+              setEditingPartie(null);
+              setIsFormOpen(true);
+            }}
+            className="bg-gradient-to-r from-gaspard-primary to-gaspard-secondary hover:from-gaspard-primary/90 hover:to-gaspard-secondary/90"
+          >
+            <Plus className="h-4 w-4 mr-2" />
+            Nouvelle partie
+          </Button>
+        </div>
       </div>
 
       {/* Loading state */}
@@ -202,6 +249,8 @@ const ExplorationPartiesManager: React.FC<ExplorationPartiesManagerProps> = ({
               partie={partie}
               isFirst={index === 0}
               isLast={index === parties.length - 1}
+              isExpanded={expandedParties[partie.id] !== false}
+              onToggleExpand={() => togglePartie(partie.id)}
               onEdit={() => {
                 setEditingPartie(partie);
                 setIsFormOpen(true);
