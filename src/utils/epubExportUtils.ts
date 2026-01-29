@@ -1062,12 +1062,11 @@ export const exportToEpub = async (
     description: options.description || '',
     css: customCSS,
     cover: options.coverImageUrl,
-    content: epubContent,
   };
   
-  // Generate EPUB using epub-gen-memory - cast to any to handle type issues
+  // Generate EPUB using epub-gen-memory - chapters must be passed as second argument
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const epubBuffer: ArrayBuffer = await (EPub as any)(epubOptions);
+  const epubBuffer: ArrayBuffer = await (EPub as any)(epubOptions, epubContent);
   const blob = new Blob([new Uint8Array(epubBuffer as ArrayBuffer)], { type: 'application/epub+zip' });
   
   // Generate filename
