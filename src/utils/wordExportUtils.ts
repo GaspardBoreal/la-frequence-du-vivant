@@ -152,14 +152,17 @@ const parseHtmlContent = (html: string): ParsedParagraph[] => {
     .replace(/&#39;/g, "'");
 
   // Step 2: Convert block elements to paragraph markers
-  // Replace </div>, </p>, <br>, <br/>, <br /> with a special marker
+  // IMPORTANT: Insert marker BEFORE opening <div> tags to handle haiku-style structures
+  // where each line is wrapped in its own <div> without preceding closing tags
   const PARA_MARKER = '§§PARA§§';
   content = content
-    .replace(/<\/div>/gi, PARA_MARKER)
-    .replace(/<\/p>/gi, PARA_MARKER)
+    // Insert marker before opening div/p tags (handles <div>line1</div><div>line2</div>)
+    .replace(/<div[^>]*>/gi, PARA_MARKER)
+    .replace(/<p[^>]*>/gi, PARA_MARKER)
+    // Also handle closing tags and br
+    .replace(/<\/div>/gi, '')
+    .replace(/<\/p>/gi, '')
     .replace(/<br\s*\/?>/gi, PARA_MARKER)
-    .replace(/<div[^>]*>/gi, '')
-    .replace(/<p[^>]*>/gi, '')
     .replace(/\n/g, PARA_MARKER);
 
   // Step 3: Strip span tags but keep content
