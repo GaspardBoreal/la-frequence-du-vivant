@@ -176,3 +176,32 @@ export interface ExplorationRouteParams extends Record<string, string> {
   sessionId?: string;
   narrativeSlug?: string;
 }
+
+// Phase 1.5: Parties/Mouvements littéraires
+export interface ExplorationPartie {
+  id: string;
+  exploration_id: string;
+  titre: string;
+  sous_titre?: string;
+  numero_romain: string;
+  ordre: number;
+  couleur?: string;
+  description?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ExplorationPartieWithMarches extends ExplorationPartie {
+  marches: Array<{
+    id: string;
+    marche_id: string;
+    ordre: number;
+    publication_status: string;
+    marche?: {
+      id: string;
+      nom_marche?: string;
+      ville: string;
+    };
+    textes_count?: number;
+  }>;
+}

@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Footprints, Waves, Sparkles } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { ArrowLeft, Footprints, Waves, Sparkles, Layers, List } from 'lucide-react';
 import SEOHead from '@/components/SEOHead';
 import DecorativeParticles from '@/components/DecorativeParticles';
 import { useExplorationById, useExplorationMarches } from '@/hooks/useExplorations';
@@ -16,12 +16,13 @@ import { useOptimisticPublicationStatus } from '@/hooks/useOptimisticPublication
 import ExplorationMarcheList from '@/components/admin/ExplorationMarcheList';
 import ExplorationMarcheSelector from '@/components/admin/ExplorationMarcheSelector';
 import ExplorationGalleryButtons from '@/components/admin/ExplorationGalleryButtons';
+import ExplorationPartiesManager from '@/components/admin/ExplorationPartiesManager';
 
 const ExplorationMarchesAdmin = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [selectedMarches, setSelectedMarches] = useState<string[]>([]);
-
+  const [activeTab, setActiveTab] = useState<'sequence' | 'parties'>('sequence');
   const { data: exploration, isLoading: isLoadingExploration } = useExplorationById(id || '');
   const { data: explorationMarches = [], isLoading: isLoadingMarches } = useExplorationMarches(id || '');
   
@@ -207,27 +208,54 @@ const ExplorationMarchesAdmin = () => {
             <div className="mt-8 w-24 h-0.5 bg-gradient-to-r from-gaspard-primary to-gaspard-accent mx-auto rounded-full opacity-60"></div>
           </header>
 
-          {/* Composition des séquences */}
-          <div className="space-y-12 animate-fade-in animation-delay-300">
-            {/* Liste des marches assignées */}
-            <ExplorationMarcheList
-              explorationMarches={explorationMarches}
-              onReorder={handleReorderMarches}
-              onRemove={handleRemoveMarche}
-              onUpdatePublicationStatus={handleUpdatePublicationStatus}
-              onBatchUpdateStatus={handleBatchUpdateStatus}
-              isUpdatingStatus={isUpdatingStatus}
-            />
+          {/* Système d'onglets */}
+          <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'sequence' | 'parties')} className="animate-fade-in animation-delay-300">
+            <TabsList className="bg-gaspard-card/50 border border-gaspard-primary/20 p-1 rounded-2xl mb-8">
+              <TabsTrigger 
+                value="sequence" 
+                className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-gaspard-primary data-[state=active]:to-gaspard-secondary data-[state=active]:text-white rounded-xl px-6 py-2 transition-all"
+              >
+                <List className="h-4 w-4 mr-2" />
+                Séquence
+              </TabsTrigger>
+              <TabsTrigger 
+                value="parties"
+                className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-gaspard-primary data-[state=active]:to-gaspard-secondary data-[state=active]:text-white rounded-xl px-6 py-2 transition-all"
+              >
+                <Layers className="h-4 w-4 mr-2" />
+                Parties
+              </TabsTrigger>
+            </TabsList>
 
-            {/* Sélecteur de nouvelles marches */}
-            <ExplorationMarcheSelector
-              explorationId={id || ''}
-              selectedMarches={selectedMarches}
-              onMarcheToggle={handleMarcheToggle}
-              onAddSelected={handleAddSelected}
-            />
+            {/* Onglet Séquence (vue existante) */}
+            <TabsContent value="sequence" className="space-y-12 mt-0">
+              {/* Liste des marches assignées */}
+              <ExplorationMarcheList
+                explorationMarches={explorationMarches}
+                onReorder={handleReorderMarches}
+                onRemove={handleRemoveMarche}
+                onUpdatePublicationStatus={handleUpdatePublicationStatus}
+                onBatchUpdateStatus={handleBatchUpdateStatus}
+                isUpdatingStatus={isUpdatingStatus}
+              />
 
-            {/* Boutons d'accès aux galeries publiques */}
+              {/* Sélecteur de nouvelles marches */}
+              <ExplorationMarcheSelector
+                explorationId={id || ''}
+                selectedMarches={selectedMarches}
+                onMarcheToggle={handleMarcheToggle}
+                onAddSelected={handleAddSelected}
+              />
+            </TabsContent>
+
+            {/* Onglet Parties (nouvelle vue) */}
+            <TabsContent value="parties" className="mt-0">
+              <ExplorationPartiesManager explorationId={id || ''} />
+            </TabsContent>
+          </Tabs>
+
+          {/* Boutons d'accès aux galeries publiques */}
+          <div className="mt-12 animate-fade-in animation-delay-600">
             <ExplorationGalleryButtons explorationSlug={exploration.slug} />
           </div>
         </div>
