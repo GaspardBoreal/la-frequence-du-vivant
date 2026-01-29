@@ -145,13 +145,14 @@ const ExportationsAdmin: React.FC = () => {
           .select('id, name, slug')
           .order('name');
         
-        // Load exploration_marches links with partie info
+        // Load exploration_marches links with partie info AND marche ordre
         const { data: exploMarchesData } = await supabase
           .from('exploration_marches')
           .select(`
             exploration_id, 
             marche_id, 
             partie_id,
+            ordre,
             exploration_parties (
               id,
               numero_romain,
@@ -167,13 +168,14 @@ const ExportationsAdmin: React.FC = () => {
           .select('id, numero_romain, titre, sous_titre, ordre, exploration_id')
           .order('ordre', { ascending: true });
 
-        // Build parties map: marche_id → partie info
+        // Build parties map: marche_id → partie info + marche ordre
         const marcheToPartie = new Map<string, {
           partie_id: string;
           numero_romain: string;
           titre: string;
           sous_titre: string | null;
           ordre: number;
+          marche_ordre: number;
         }>();
         
         if (exploMarchesData) {
@@ -186,6 +188,7 @@ const ExportationsAdmin: React.FC = () => {
                 titre: partie.titre,
                 sous_titre: partie.sous_titre,
                 ordre: partie.ordre,
+                marche_ordre: link.ordre ?? 999,
               });
             }
           });
@@ -260,6 +263,7 @@ const ExportationsAdmin: React.FC = () => {
               partie_titre: partie?.titre,
               partie_sous_titre: partie?.sous_titre || undefined,
               partie_ordre: partie?.ordre,
+              marche_ordre: partie?.marche_ordre,
             };
           });
           setAllTextes(enrichedTextes);

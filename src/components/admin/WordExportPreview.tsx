@@ -20,6 +20,7 @@ interface TexteExport {
   partie_titre?: string;
   partie_sous_titre?: string;
   partie_ordre?: number;
+  marche_ordre?: number;
 }
 
 interface WordExportPreviewProps {
@@ -35,7 +36,7 @@ interface PartieGroup {
   titre: string | null;
   sousTitre: string | null;
   ordre: number;
-  marches: Map<string, { date: string | null; textes: TexteExport[] }>;
+  marches: Map<string, { date: string | null; textes: TexteExport[]; marche_ordre: number }>;
 }
 
 const TEXT_TYPE_LABELS: Record<string, string> = {
@@ -238,23 +239,24 @@ const groupByPartie = (textes: TexteExport[]): PartieGroup[] => {
     const marcheKey = texte.marche_nom || texte.marche_ville || 'Sans lieu';
     
     if (!partie.marches.has(marcheKey)) {
-      partie.marches.set(marcheKey, { date: texte.marche_date || null, textes: [] });
+      partie.marches.set(marcheKey, { 
+        date: texte.marche_date || null, 
+        textes: [],
+        marche_ordre: texte.marche_ordre ?? 999,
+      });
     }
     partie.marches.get(marcheKey)!.textes.push(texte);
   });
 
-  // Sort parties by ordre, then sort marches within each partie by date
+  // Sort parties by ordre
   const sortedParties = Array.from(partieMap.values())
     .sort((a, b) => a.ordre - b.ordre);
 
+  // Sort marches within each partie by marche_ordre (not by date)
   sortedParties.forEach(partie => {
     const sortedMarches = new Map(
       Array.from(partie.marches.entries())
-        .sort((a, b) => {
-          const dateA = a[1].date || '9999-12-31';
-          const dateB = b[1].date || '9999-12-31';
-          return dateA.localeCompare(dateB);
-        })
+        .sort((a, b) => a[1].marche_ordre - b[1].marche_ordre)
     );
     partie.marches = sortedMarches;
   });
