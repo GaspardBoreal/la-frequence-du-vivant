@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -22,7 +22,10 @@ import {
   Sparkles,
   Type,
   Layout,
-  RefreshCw
+  RefreshCw,
+  Wand2,
+  RotateCcw,
+  Lightbulb
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { 
@@ -34,6 +37,12 @@ import {
   type EpubColorScheme,
   type EpubTypography
 } from '@/utils/epubExportUtils';
+import { 
+  generateContextualMetadata, 
+  buildAIPayload,
+  type EpubMetadataSuggestion 
+} from '@/utils/epubMetadataGenerator';
+import { supabase } from '@/integrations/supabase/client';
 import EpubPreview from './EpubPreview';
 import CoverEditor from './CoverEditor';
 
@@ -66,8 +75,10 @@ const EpubExportPanel: React.FC<EpubExportPanelProps> = ({
   const [coverOpen, setCoverOpen] = useState(false);
   const [contentOpen, setContentOpen] = useState(false);
 
-  // Export state
+  // Export and generation states
   const [exporting, setExporting] = useState(false);
+  const [generatingAI, setGeneratingAI] = useState(false);
+  const [metadataSource, setMetadataSource] = useState<'contextual' | 'ai' | 'manual'>('contextual');
 
   // Update a single option
   const updateOption = useCallback(<K extends keyof EpubExportOptions>(
@@ -138,6 +149,83 @@ const EpubExportPanel: React.FC<EpubExportPanelProps> = ({
     return { totalChars, estimatedWords, uniqueMarches, uniqueTypes };
   }, [textes]);
 
+  // === INTELLIGENT METADATA GENERATION ===
+  
+  // Auto-generate contextual metadata when textes change
+  useEffect(() => {
+    if (textes.length > 0 && metadataSource !== 'manual') {
+      const suggestion = generateContextualMetadata(textes, explorationName);
+      setOptions(prev => ({
+        ...prev,
+        title: suggestion.title,
+        subtitle: suggestion.subtitle,
+        description: suggestion.description,
+      }));
+      setMetadataSource('contextual');
+    }
+  }, [textes, explorationName]); // Don't include metadataSource to avoid loop
+
+  // Regenerate contextual metadata
+  const handleRegenerateContextual = useCallback(() => {
+    const suggestion = generateContextualMetadata(textes, explorationName);
+    setOptions(prev => ({
+      ...prev,
+      title: suggestion.title,
+      subtitle: suggestion.subtitle,
+      description: suggestion.description,
+    }));
+    setMetadataSource('contextual');
+    toast.success('Métadonnées régénérées');
+  }, [textes, explorationName]);
+
+  // Generate AI-powered poetic metadata
+  const handleGenerateAI = async () => {
+    if (textes.length === 0) {
+      toast.error('Aucun texte disponible');
+      return;
+    }
+
+    setGeneratingAI(true);
+    try {
+      const payload = buildAIPayload(textes, explorationName);
+      
+      const { data, error } = await supabase.functions.invoke('generate-epub-metadata', {
+        body: payload,
+      });
+
+      if (error) {
+        console.error('AI generation error:', error);
+        toast.error('Erreur lors de la génération IA');
+        return;
+      }
+
+      if (data && data.title) {
+        setOptions(prev => ({
+          ...prev,
+          title: data.title,
+          subtitle: data.subtitle || '',
+          description: data.description || '',
+        }));
+        setMetadataSource('ai');
+        toast.success('✨ Métadonnées poétiques générées !');
+      }
+    } catch (error) {
+      console.error('AI generation error:', error);
+      toast.error('Erreur lors de la génération IA');
+    } finally {
+      setGeneratingAI(false);
+    }
+  };
+
+  // Mark as manual when user edits
+  const handleManualEdit = useCallback(<K extends keyof EpubExportOptions>(
+    key: K,
+    value: EpubExportOptions[K]
+  ) => {
+    setOptions(prev => ({ ...prev, [key]: value }));
+    setMetadataSource('manual');
+  }, []);
+
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
       {/* Configuration Panel */}
@@ -179,19 +267,69 @@ const EpubExportPanel: React.FC<EpubExportPanelProps> = ({
                   <span className="flex items-center gap-2 font-medium">
                     <FileText className="h-4 w-4" />
                     Métadonnées éditoriales
+                    {metadataSource === 'ai' && (
+                      <Badge variant="default" className="ml-2 text-[10px] h-4 bg-gradient-to-r from-primary/80 to-primary">
+                        ✨ IA
+                      </Badge>
+                    )}
+                    {metadataSource === 'contextual' && (
+                      <Badge variant="secondary" className="ml-2 text-[10px] h-4">
+                        Auto
+                      </Badge>
+                    )}
                   </span>
                   {metadataOpen ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
                 </Button>
               </CollapsibleTrigger>
               <CollapsibleContent className="space-y-3 pt-2">
+                {/* AI Generation Buttons */}
+                <div className="flex flex-wrap gap-2 p-2 bg-muted/50 rounded-lg border border-border/50">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleGenerateAI}
+                    disabled={generatingAI || textes.length === 0}
+                    className="gap-1.5 bg-gradient-to-r from-primary/10 to-accent/10 hover:from-primary/20 hover:to-accent/20 border-primary/30"
+                  >
+                    {generatingAI ? (
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    ) : (
+                      <Wand2 className="h-3.5 w-3.5 text-primary" />
+                    )}
+                    <span className="bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent font-medium">
+                      Inspiration poétique
+                    </span>
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={handleRegenerateContextual}
+                    disabled={textes.length === 0}
+                    className="gap-1.5"
+                  >
+                    <RotateCcw className="h-3.5 w-3.5" />
+                    Regénérer
+                  </Button>
+                </div>
+
+                {/* Info banner */}
+                <div className="flex items-start gap-2 p-2 text-xs text-muted-foreground bg-muted/30 rounded-md">
+                  <Lightbulb className="h-4 w-4 mt-0.5 shrink-0 text-accent" />
+                  <span>
+                    Généré d'après {textes.length} textes • {stats.uniqueMarches} lieux.
+                    Cliquez <span className="font-medium text-primary">Inspiration poétique</span> pour une version IA digne de Gaspard Boréal.
+                  </span>
+                </div>
+
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <Label htmlFor="title" className="text-xs">Titre</Label>
                     <Input
                       id="title"
                       value={options.title}
-                      onChange={(e) => updateOption('title', e.target.value)}
+                      onChange={(e) => handleManualEdit('title', e.target.value)}
                       placeholder="Titre du recueil"
+                      className="font-medium"
                     />
                   </div>
                   <div>
@@ -209,7 +347,7 @@ const EpubExportPanel: React.FC<EpubExportPanelProps> = ({
                   <Input
                     id="subtitle"
                     value={options.subtitle}
-                    onChange={(e) => updateOption('subtitle', e.target.value)}
+                    onChange={(e) => handleManualEdit('subtitle', e.target.value)}
                     placeholder="Sous-titre ou accroche"
                   />
                 </div>
@@ -238,9 +376,9 @@ const EpubExportPanel: React.FC<EpubExportPanelProps> = ({
                   <Textarea
                     id="description"
                     value={options.description}
-                    onChange={(e) => updateOption('description', e.target.value)}
+                    onChange={(e) => handleManualEdit('description', e.target.value)}
                     placeholder="Description pour les métadonnées EPUB..."
-                    rows={2}
+                    rows={3}
                   />
                 </div>
               </CollapsibleContent>
