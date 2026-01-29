@@ -23,6 +23,11 @@ interface TexteExport {
   marche_date?: string;
   ordre?: number;
   created_at?: string;
+  partie_id?: string;
+  partie_numero_romain?: string;
+  partie_titre?: string;
+  partie_sous_titre?: string;
+  partie_ordre?: number;
 }
 
 interface ExportOptions {
@@ -494,6 +499,89 @@ const createSectionHeader = (
   return paragraphs;
 };
 
+// Create a cover page for a "Partie" (movement/section)
+const createPartieCoverPage = (
+  numeroRomain: string,
+  titre: string,
+  sousTitre?: string
+): Paragraph[] => {
+  const paragraphs: Paragraph[] = [
+    // Page break before
+    new Paragraph({
+      children: [new PageBreak()],
+    }),
+    // Spacer for vertical centering effect
+    new Paragraph({
+      children: [],
+      spacing: { before: 3000 },
+    }),
+    // Roman numeral
+    new Paragraph({
+      children: [
+        new TextRun({
+          text: numeroRomain,
+          bold: true,
+          size: 72,
+          color: '333333',
+        }),
+      ],
+      alignment: AlignmentType.CENTER,
+      spacing: { after: 400 },
+    }),
+    // Main title
+    new Paragraph({
+      children: [
+        new TextRun({
+          text: titre.toUpperCase(),
+          bold: true,
+          size: 48,
+        }),
+      ],
+      alignment: AlignmentType.CENTER,
+      spacing: { after: sousTitre ? 300 : 600 },
+    }),
+  ];
+
+  // Subtitle if present
+  if (sousTitre) {
+    paragraphs.push(
+      new Paragraph({
+        children: [
+          new TextRun({
+            text: sousTitre,
+            italics: true,
+            size: 32,
+            color: '666666',
+          }),
+        ],
+        alignment: AlignmentType.CENTER,
+        spacing: { after: 600 },
+      })
+    );
+  }
+
+  // Decorative separator
+  paragraphs.push(
+    new Paragraph({
+      children: [
+        new TextRun({
+          text: '───────────────────',
+          size: 24,
+          color: 'aaaaaa',
+        }),
+      ],
+      alignment: AlignmentType.CENTER,
+      spacing: { after: 400 },
+    }),
+    // Page break after
+    new Paragraph({
+      children: [new PageBreak()],
+    })
+  );
+
+  return paragraphs;
+}
+
 const createTexteEntry = (texte: TexteExport, includeMetadata: boolean): Paragraph[] => {
   const paragraphs: Paragraph[] = [];
   const bookmarkId = generateBookmarkId(texte);
@@ -654,13 +742,99 @@ const groupTextesByMarche = (textes: TexteExport[]): Map<string, TexteExport[]> 
   return simpleMap;
 };
 
+// Structure for organizing by Partie > Marche
+interface PartieInfo {
+  id: string;
+  numeroRomain: string;
+  titre: string;
+  sousTitre?: string;
+  ordre: number;
+}
+
+interface PartieGroup {
+  partie: PartieInfo | null; // null for unassigned marches
+  marches: Map<string, MarcheGroupWithDate>;
+}
+
+/**
+ * Group textes by Partie (movement) then by Marche
+ * Returns an ordered array of PartieGroup for the document structure
+ */
+const groupTextesByPartie = (textes: TexteExport[]): PartieGroup[] => {
+  const partiesMap = new Map<string, PartieGroup>();
+  const unassignedMarches = new Map<string, MarcheGroupWithDate>();
+
+  textes.forEach(texte => {
+    const marcheKey = texte.marche_nom || texte.marche_ville || 'Sans lieu';
+    
+    if (texte.partie_id && texte.partie_numero_romain && texte.partie_titre) {
+      // Assigned to a partie
+      if (!partiesMap.has(texte.partie_id)) {
+        partiesMap.set(texte.partie_id, {
+          partie: {
+            id: texte.partie_id,
+            numeroRomain: texte.partie_numero_romain,
+            titre: texte.partie_titre,
+            sousTitre: texte.partie_sous_titre,
+            ordre: texte.partie_ordre ?? 999,
+          },
+          marches: new Map(),
+        });
+      }
+      
+      const partieGroup = partiesMap.get(texte.partie_id)!;
+      if (!partieGroup.marches.has(marcheKey)) {
+        partieGroup.marches.set(marcheKey, { date: texte.marche_date || null, textes: [] });
+      }
+      partieGroup.marches.get(marcheKey)!.textes.push(texte);
+    } else {
+      // Not assigned to any partie
+      if (!unassignedMarches.has(marcheKey)) {
+        unassignedMarches.set(marcheKey, { date: texte.marche_date || null, textes: [] });
+      }
+      unassignedMarches.get(marcheKey)!.textes.push(texte);
+    }
+  });
+
+  // Sort textes within each marche
+  partiesMap.forEach(partieGroup => {
+    partieGroup.marches.forEach(marcheGroup => {
+      marcheGroup.textes.sort((a, b) => (a.ordre ?? 999) - (b.ordre ?? 999));
+    });
+  });
+  unassignedMarches.forEach(group => {
+    group.textes.sort((a, b) => (a.ordre ?? 999) - (b.ordre ?? 999));
+  });
+
+  // Sort parties by ordre
+  const sortedParties = Array.from(partiesMap.values())
+    .sort((a, b) => (a.partie?.ordre ?? 999) - (b.partie?.ordre ?? 999));
+
+  // Add unassigned marches at the end if any
+  if (unassignedMarches.size > 0) {
+    sortedParties.push({
+      partie: null,
+      marches: unassignedMarches,
+    });
+  }
+
+  return sortedParties;
+};
+
+/**
+ * Check if textes have partie assignments
+ */
+const hasPartieAssignments = (textes: TexteExport[]): boolean => {
+  return textes.some(t => t.partie_id && t.partie_numero_romain && t.partie_titre);
+}
+
 // ============================================================================
 // INDEX GENERATION FUNCTIONS
 // ============================================================================
 
 /**
  * Create an index grouping texts by location (marche)
- * Shows each location with its associated literary genres
+ * If parties are present, shows them as top-level sections
  */
 const createIndexByMarche = (textes: TexteExport[]): Paragraph[] => {
   const paragraphs: Paragraph[] = [];
@@ -680,54 +854,161 @@ const createIndexByMarche = (textes: TexteExport[]): Paragraph[] => {
     })
   );
 
-  // Group texts by marche (chronologically sorted)
-  const marcheGroups = groupTextesByMarcheWithDate(textes);
-  for (const [marcheName, { textes: groupTextes }] of marcheGroups) {
-    // Location name (bold)
-    paragraphs.push(
-      new Paragraph({
-        children: [
-          new TextRun({
-            text: marcheName,
-            bold: true,
-            size: 24,
-          }),
-        ],
-        spacing: { before: 250, after: 100 },
-      })
-    );
+  // Check if we have partie assignments
+  if (hasPartieAssignments(textes)) {
+    // Group by Partie > Marche
+    const partieGroups = groupTextesByPartie(textes);
     
-    // Afficher les textes dans leur ordre naturel (déjà triés par ordre dans groupTextesByMarcheWithDate)
-    for (const texte of groupTextes) {
-      const bookmarkId = generateBookmarkId(texte);
-      const shortTitle = texte.titre.length > 50 
-        ? texte.titre.substring(0, 47) + '...' 
-        : texte.titre;
+    for (const { partie, marches } of partieGroups) {
+      // Add partie header if assigned
+      if (partie) {
+        paragraphs.push(
+          new Paragraph({
+            children: [
+              new TextRun({
+                text: `${partie.numeroRomain}. ${partie.titre.toUpperCase()}`,
+                bold: true,
+                size: 28,
+              }),
+            ],
+            spacing: { before: 400, after: 100 },
+          })
+        );
+        
+        // Add sous-titre if present
+        if (partie.sousTitre) {
+          paragraphs.push(
+            new Paragraph({
+              children: [
+                new TextRun({
+                  text: partie.sousTitre,
+                  italics: true,
+                  size: 22,
+                  color: '666666',
+                }),
+              ],
+              spacing: { after: 200 },
+            })
+          );
+        }
+      } else {
+        // Unassigned section
+        paragraphs.push(
+          new Paragraph({
+            children: [
+              new TextRun({
+                text: 'Non classé',
+                bold: true,
+                size: 28,
+                color: '888888',
+              }),
+            ],
+            spacing: { before: 400, after: 200 },
+          })
+        );
+      }
       
+      // Add marches within this partie
+      for (const [marcheName, { textes: groupTextes }] of marches) {
+        // Location name (bold, indented)
+        paragraphs.push(
+          new Paragraph({
+            children: [
+              new TextRun({
+                text: marcheName,
+                bold: true,
+                size: 24,
+              }),
+            ],
+            indent: { left: 300 },
+            spacing: { before: 200, after: 100 },
+          })
+        );
+        
+        // List textes
+        for (const texte of groupTextes) {
+          const bookmarkId = generateBookmarkId(texte);
+          const shortTitle = texte.titre.length > 50 
+            ? texte.titre.substring(0, 47) + '...' 
+            : texte.titre;
+          
+          paragraphs.push(
+            new Paragraph({
+              children: [
+                new TextRun({
+                  text: `${shortTitle} `,
+                  size: 22,
+                }),
+                new TextRun({
+                  text: `(${getTypeLabel(texte.type_texte)}) `,
+                  italics: true,
+                  size: 20,
+                  color: '888888',
+                }),
+                new TextRun({
+                  text: '— p. ',
+                  size: 20,
+                  color: '888888',
+                }),
+                createPageRef(bookmarkId),
+              ],
+              indent: { left: 600 },
+              spacing: { after: 60 },
+            })
+          );
+        }
+      }
+    }
+  } else {
+    // Fallback: no parties, just group by marche
+    const marcheGroups = groupTextesByMarcheWithDate(textes);
+    for (const [marcheName, { textes: groupTextes }] of marcheGroups) {
+      // Location name (bold)
       paragraphs.push(
         new Paragraph({
           children: [
             new TextRun({
-              text: `${shortTitle} `,
-              size: 22,
+              text: marcheName,
+              bold: true,
+              size: 24,
             }),
-            new TextRun({
-              text: `(${getTypeLabel(texte.type_texte)}) `,
-              italics: true,
-              size: 20,
-              color: '888888',
-            }),
-            new TextRun({
-              text: '— p. ',
-              size: 20,
-              color: '888888',
-            }),
-            createPageRef(bookmarkId),
           ],
-          indent: { left: 400 },
-          spacing: { after: 60 },
+          spacing: { before: 250, after: 100 },
         })
       );
+      
+      // List textes
+      for (const texte of groupTextes) {
+        const bookmarkId = generateBookmarkId(texte);
+        const shortTitle = texte.titre.length > 50 
+          ? texte.titre.substring(0, 47) + '...' 
+          : texte.titre;
+        
+        paragraphs.push(
+          new Paragraph({
+            children: [
+              new TextRun({
+                text: `${shortTitle} `,
+                size: 22,
+              }),
+              new TextRun({
+                text: `(${getTypeLabel(texte.type_texte)}) `,
+                italics: true,
+                size: 20,
+                color: '888888',
+              }),
+              new TextRun({
+                text: '— p. ',
+                size: 20,
+                color: '888888',
+              }),
+              createPageRef(bookmarkId),
+            ],
+            indent: { left: 400 },
+            spacing: { after: 60 },
+          })
+        );
+      }
     }
   }
   
@@ -1109,17 +1390,47 @@ export const exportTextesToWord = async (
       children.push(new Paragraph({ children: [new PageBreak()] }));
     }
   } else {
-    const groups = groupTextesByMarcheWithDate(textes);
-    
-    for (const [marcheName, { date: marcheDate, textes: groupTextes }] of groups) {
-      children.push(...createSectionHeader(marcheName, groupTextes.length, marcheDate || undefined, false));
+    // Check if textes have partie assignments
+    if (hasPartieAssignments(textes)) {
+      // Group by Partie > Marche
+      const partieGroups = groupTextesByPartie(textes);
       
-      groupTextes.forEach(texte => {
-        children.push(...createTexteEntry(texte, options.includeMetadata));
-      });
+      for (const { partie, marches } of partieGroups) {
+        // Add partie cover page if assigned to a partie
+        if (partie) {
+          children.push(...createPartieCoverPage(
+            partie.numeroRomain,
+            partie.titre,
+            partie.sousTitre
+          ));
+        }
+        
+        // Add marches within this partie
+        for (const [marcheName, { date: marcheDate, textes: groupTextes }] of marches) {
+          children.push(...createSectionHeader(marcheName, groupTextes.length, marcheDate || undefined, false));
+          
+          groupTextes.forEach(texte => {
+            children.push(...createTexteEntry(texte, options.includeMetadata));
+          });
 
-      // Page break between sections
-      children.push(new Paragraph({ children: [new PageBreak()] }));
+          // Page break between sections
+          children.push(new Paragraph({ children: [new PageBreak()] }));
+        }
+      }
+    } else {
+      // Fallback: no parties, just group by marche
+      const groups = groupTextesByMarcheWithDate(textes);
+      
+      for (const [marcheName, { date: marcheDate, textes: groupTextes }] of groups) {
+        children.push(...createSectionHeader(marcheName, groupTextes.length, marcheDate || undefined, false));
+        
+        groupTextes.forEach(texte => {
+          children.push(...createTexteEntry(texte, options.includeMetadata));
+        });
+
+        // Page break between sections
+        children.push(new Paragraph({ children: [new PageBreak()] }));
+      }
     }
   }
 

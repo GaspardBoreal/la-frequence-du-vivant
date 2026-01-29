@@ -44,6 +44,11 @@ interface TexteWithDetails {
   marche_ville?: string;
   marche_region?: string;
   marche_date?: string;
+  partie_id?: string;
+  partie_numero_romain?: string;
+  partie_titre?: string;
+  partie_sous_titre?: string;
+  partie_ordre?: number;
 }
 
 interface ExplorationMarcheLink {
@@ -140,17 +145,58 @@ const ExportationsAdmin: React.FC = () => {
           .select('id, name, slug')
           .order('name');
         
-        // Load exploration_marches links
+        // Load exploration_marches links with partie info
         const { data: exploMarchesData } = await supabase
           .from('exploration_marches')
-          .select('exploration_id, marche_id');
+          .select(`
+            exploration_id, 
+            marche_id, 
+            partie_id,
+            exploration_parties (
+              id,
+              numero_romain,
+              titre,
+              sous_titre,
+              ordre
+            )
+          `);
+
+        // Load exploration_parties separately to build a map
+        const { data: partiesData } = await supabase
+          .from('exploration_parties')
+          .select('id, numero_romain, titre, sous_titre, ordre, exploration_id')
+          .order('ordre', { ascending: true });
+
+        // Build parties map: marche_id → partie info
+        const marcheToPartie = new Map<string, {
+          partie_id: string;
+          numero_romain: string;
+          titre: string;
+          sous_titre: string | null;
+          ordre: number;
+        }>();
+        
+        if (exploMarchesData) {
+          exploMarchesData.forEach((link: any) => {
+            if (link.partie_id && link.exploration_parties) {
+              const partie = link.exploration_parties;
+              marcheToPartie.set(link.marche_id, {
+                partie_id: partie.id,
+                numero_romain: partie.numero_romain,
+                titre: partie.titre,
+                sous_titre: partie.sous_titre,
+                ordre: partie.ordre,
+              });
+            }
+          });
+        }
 
         // Build maps
         const expToMarches = new Map<string, Set<string>>();
         const marcheToExps = new Map<string, Set<string>>();
         
         if (exploMarchesData) {
-          exploMarchesData.forEach((link: ExplorationMarcheLink) => {
+          exploMarchesData.forEach((link: any) => {
             // Exploration → Marches
             if (!expToMarches.has(link.exploration_id)) {
               expToMarches.set(link.exploration_id, new Set());
@@ -202,12 +248,18 @@ const ExportationsAdmin: React.FC = () => {
           const marchesMap = new Map(marchesData.map(m => [m.id, m]));
           const enrichedTextes = textesData.map(t => {
             const marche = marchesMap.get(t.marche_id);
+            const partie = marcheToPartie.get(t.marche_id);
             return {
               ...t,
               marche_nom: marche?.nom_marche || undefined,
               marche_ville: marche?.ville,
               marche_region: marche?.region || undefined,
               marche_date: marche?.date || undefined,
+              partie_id: partie?.partie_id,
+              partie_numero_romain: partie?.numero_romain,
+              partie_titre: partie?.titre,
+              partie_sous_titre: partie?.sous_titre || undefined,
+              partie_ordre: partie?.ordre,
             };
           });
           setAllTextes(enrichedTextes);
