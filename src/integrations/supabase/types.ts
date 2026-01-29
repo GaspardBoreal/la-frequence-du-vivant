@@ -751,6 +751,7 @@ export type Database = {
           id: string
           marche_id: string
           ordre: number | null
+          partie_id: string | null
           publication_status: string
         }
         Insert: {
@@ -759,6 +760,7 @@ export type Database = {
           id?: string
           marche_id: string
           ordre?: number | null
+          partie_id?: string | null
           publication_status?: string
         }
         Update: {
@@ -767,6 +769,7 @@ export type Database = {
           id?: string
           marche_id?: string
           ordre?: number | null
+          partie_id?: string | null
           publication_status?: string
         }
         Relationships: [
@@ -782,6 +785,13 @@ export type Database = {
             columns: ["marche_id"]
             isOneToOne: false
             referencedRelation: "marches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "exploration_marches_partie_id_fkey"
+            columns: ["partie_id"]
+            isOneToOne: false
+            referencedRelation: "exploration_parties"
             referencedColumns: ["id"]
           },
         ]
@@ -909,6 +919,53 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      exploration_parties: {
+        Row: {
+          couleur: string | null
+          created_at: string
+          description: string | null
+          exploration_id: string
+          id: string
+          numero_romain: string
+          ordre: number
+          sous_titre: string | null
+          titre: string
+          updated_at: string
+        }
+        Insert: {
+          couleur?: string | null
+          created_at?: string
+          description?: string | null
+          exploration_id: string
+          id?: string
+          numero_romain?: string
+          ordre?: number
+          sous_titre?: string | null
+          titre: string
+          updated_at?: string
+        }
+        Update: {
+          couleur?: string | null
+          created_at?: string
+          description?: string | null
+          exploration_id?: string
+          id?: string
+          numero_romain?: string
+          ordre?: number
+          sous_titre?: string | null
+          titre?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "exploration_parties_exploration_id_fkey"
+            columns: ["exploration_id"]
+            isOneToOne: false
+            referencedRelation: "explorations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       explorations: {
         Row: {
