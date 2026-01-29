@@ -28,6 +28,7 @@ interface TexteExport {
   partie_titre?: string;
   partie_sous_titre?: string;
   partie_ordre?: number;
+  marche_ordre?: number;
 }
 
 interface ExportOptions {
@@ -751,18 +752,23 @@ interface PartieInfo {
   ordre: number;
 }
 
+interface MarcheGroupWithOrdre extends MarcheGroupWithDate {
+  marche_ordre: number;
+}
+
 interface PartieGroup {
   partie: PartieInfo | null; // null for unassigned marches
-  marches: Map<string, MarcheGroupWithDate>;
+  marches: Map<string, MarcheGroupWithOrdre>;
 }
 
 /**
  * Group textes by Partie (movement) then by Marche
  * Returns an ordered array of PartieGroup for the document structure
+ * IMPORTANT: Marches within each partie are sorted by marche_ordre (from exploration_marches.ordre)
  */
 const groupTextesByPartie = (textes: TexteExport[]): PartieGroup[] => {
   const partiesMap = new Map<string, PartieGroup>();
-  const unassignedMarches = new Map<string, MarcheGroupWithDate>();
+  const unassignedMarches = new Map<string, MarcheGroupWithOrdre>();
 
   textes.forEach(texte => {
     const marcheKey = texte.marche_nom || texte.marche_ville || 'Sans lieu';
@@ -784,19 +790,27 @@ const groupTextesByPartie = (textes: TexteExport[]): PartieGroup[] => {
       
       const partieGroup = partiesMap.get(texte.partie_id)!;
       if (!partieGroup.marches.has(marcheKey)) {
-        partieGroup.marches.set(marcheKey, { date: texte.marche_date || null, textes: [] });
+        partieGroup.marches.set(marcheKey, { 
+          date: texte.marche_date || null, 
+          textes: [],
+          marche_ordre: texte.marche_ordre ?? 999,
+        });
       }
       partieGroup.marches.get(marcheKey)!.textes.push(texte);
     } else {
       // Not assigned to any partie
       if (!unassignedMarches.has(marcheKey)) {
-        unassignedMarches.set(marcheKey, { date: texte.marche_date || null, textes: [] });
+        unassignedMarches.set(marcheKey, { 
+          date: texte.marche_date || null, 
+          textes: [],
+          marche_ordre: texte.marche_ordre ?? 999,
+        });
       }
       unassignedMarches.get(marcheKey)!.textes.push(texte);
     }
   });
 
-  // Sort textes within each marche
+  // Sort textes within each marche by texte.ordre
   partiesMap.forEach(partieGroup => {
     partieGroup.marches.forEach(marcheGroup => {
       marcheGroup.textes.sort((a, b) => (a.ordre ?? 999) - (b.ordre ?? 999));
@@ -806,15 +820,31 @@ const groupTextesByPartie = (textes: TexteExport[]): PartieGroup[] => {
     group.textes.sort((a, b) => (a.ordre ?? 999) - (b.ordre ?? 999));
   });
 
+  // Sort marches within each partie by marche_ordre
+  partiesMap.forEach(partieGroup => {
+    const sortedMarchesEntries = Array.from(partieGroup.marches.entries())
+      .sort((a, b) => a[1].marche_ordre - b[1].marche_ordre);
+    partieGroup.marches = new Map(sortedMarchesEntries);
+  });
+
+  // Sort unassigned marches by date (fallback behavior)
+  const sortedUnassignedEntries = Array.from(unassignedMarches.entries())
+    .sort((a, b) => {
+      const dateA = a[1].date || '9999-12-31';
+      const dateB = b[1].date || '9999-12-31';
+      return dateA.localeCompare(dateB);
+    });
+  const sortedUnassignedMarches = new Map(sortedUnassignedEntries);
+
   // Sort parties by ordre
   const sortedParties = Array.from(partiesMap.values())
     .sort((a, b) => (a.partie?.ordre ?? 999) - (b.partie?.ordre ?? 999));
 
   // Add unassigned marches at the end if any
-  if (unassignedMarches.size > 0) {
+  if (sortedUnassignedMarches.size > 0) {
     sortedParties.push({
       partie: null,
-      marches: unassignedMarches,
+      marches: sortedUnassignedMarches,
     });
   }
 
