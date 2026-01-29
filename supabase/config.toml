@@ -64,3 +64,6 @@ verify_jwt = false
 
 [functions.opus-import-ai]
 verify_jwt = false
+
+[functions.generate-epub-metadata]
+verify_jwt = false
