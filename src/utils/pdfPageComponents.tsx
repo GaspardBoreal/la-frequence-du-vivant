@@ -560,28 +560,42 @@ export const IndexGenresPage: React.FC<IndexGenresPageProps> = ({ entries, optio
           ─────  INDEX DES ŒUVRES  ─────
         </Text>
         
-        {sortedEntries.map((genreEntry, gIndex) => (
-          <View key={gIndex} wrap={false}>
-            <View style={styles.indexGenreSection as Style}>
-              <Text style={styles.indexGenreOrnament as Style}>
-                &  {genreEntry.genre.toUpperCase()}  &
-              </Text>
-            </View>
-            
-            {genreEntry.textes.map((texte, tIndex) => (
-              <View key={tIndex} style={styles.indexGenreEntryBlock as Style}>
-                {/* Line 1: Title only (bold) */}
-                <Text style={styles.indexGenreTitle as Style}>{texte.titre}</Text>
-                {/* Line 2: Lieu with dot leader and page */}
-                <View style={styles.indexGenreDetailRow as Style}>
-                  <Text style={styles.indexGenreLieu as Style}>{texte.lieu}</Text>
-                  <View style={styles.indexGenreDotLeader as Style} />
-                  <Text style={styles.indexGenrePage as Style}>{texte.page}</Text>
-                </View>
+        {sortedEntries.map((genreEntry, gIndex) => {
+          // IMPORTANT: avoid page breaks between a title line and its (lieu + dots + page) line.
+          // If React-PDF splits inside the entry, it produces “orphan” lines at the top of the next page,
+          // which visually overlaps with the next section header (MANIFESTE / POÈME / HAIKU).
+          const [first, ...rest] = genreEntry.textes;
+
+          const renderEntry = (texte: any, key: React.Key) => (
+            <View key={key} style={styles.indexGenreEntryBlock as Style} wrap={false}>
+              {/* Line 1: Title only (bold) */}
+              <Text style={styles.indexGenreTitle as Style}>{texte.titre}</Text>
+              {/* Line 2: Lieu with dot leader and page */}
+              <View style={styles.indexGenreDetailRow as Style}>
+                <Text style={styles.indexGenreLieu as Style}>{texte.lieu}</Text>
+                <View style={styles.indexGenreDotLeader as Style} />
+                <Text style={styles.indexGenrePage as Style}>{texte.page}</Text>
               </View>
-            ))}
-          </View>
-        ))}
+            </View>
+          );
+
+          return (
+            <View key={gIndex}>
+              {/* Keep the section header with at least the first entry to avoid lonely headers at the bottom */}
+              <View wrap={false}>
+                <View style={styles.indexGenreSection as Style}>
+                  <Text style={styles.indexGenreOrnament as Style}>
+                    &  {genreEntry.genre.toUpperCase()}  &
+                  </Text>
+                </View>
+                {first ? renderEntry(first, 'first') : null}
+              </View>
+
+              {/* Remaining entries can flow across pages normally, but each entry stays unbreakable */}
+              {rest.map((texte, tIndex) => renderEntry(texte, tIndex))}
+            </View>
+          );
+        })}
       </View>
       
       <PageFooter styles={styles} pageNumber={pageNumber} options={options} />
