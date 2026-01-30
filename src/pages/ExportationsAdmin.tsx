@@ -326,15 +326,8 @@ const ExportationsAdmin: React.FC = () => {
       });
     });
     
-    // Include marches not linked to any exploration (orphans)
-    marches.forEach(m => {
-      if (!marcheExplorationsMap.has(m.id) || marcheExplorationsMap.get(m.id)?.size === 0) {
-        availableMarcheIds.add(m.id);
-      }
-    });
-    
     return marches.filter(m => availableMarcheIds.has(m.id));
-  }, [marches, selectedExplorations, explorationMarchesMap, marcheExplorationsMap]);
+  }, [marches, selectedExplorations, explorationMarchesMap]);
 
   // Count textes per marche
   const textesPerMarche = useMemo(() => {
