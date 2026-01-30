@@ -3,11 +3,11 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
-import { Book, FileText, Image as ImageIcon, Layout, ChevronLeft, ChevronRight, List, BookOpen, Check, X, Activity } from 'lucide-react';
+import { Book, FileText, Image as ImageIcon, Layout, ChevronLeft, ChevronRight, List, BookOpen, Check, X, Compass } from 'lucide-react';
 import type { EpubExportOptions, TexteExport } from '@/utils/epubExportUtils';
 import EpubDocumentTree from './EpubDocumentTree';
 import EpubIndexPreview from './EpubIndexPreview';
-import PoeticSeismograph from './PoeticSeismograph';
+import TraverseesHub from './TraverseesHub';
 
 interface EpubPreviewProps {
   textes: TexteExport[];
@@ -105,9 +105,9 @@ const EpubPreview: React.FC<EpubPreviewProps> = ({ textes, options }) => {
             <BookOpen className="h-3 w-3" />
             Index
           </TabsTrigger>
-          <TabsTrigger value="seismograph" className="text-xs gap-1">
-            <Activity className="h-3 w-3" />
-            Sismographe
+          <TabsTrigger value="traversees" className="text-xs gap-1">
+            <Compass className="h-3 w-3" />
+            Traversées
           </TabsTrigger>
           <TabsTrigger value="texte" className="text-xs gap-1">
             <FileText className="h-3 w-3" />
@@ -252,9 +252,9 @@ const EpubPreview: React.FC<EpubPreviewProps> = ({ textes, options }) => {
           <EpubIndexPreview textes={textes} options={options} />
         </TabsContent>
 
-        {/* Seismograph Preview */}
-        <TabsContent value="seismograph" className="m-0">
-          <PoeticSeismograph textes={textes} colorScheme={colorScheme} />
+        {/* Traversées Hub */}
+        <TabsContent value="traversees" className="m-0">
+          <TraverseesHub textes={textes} colorScheme={colorScheme} />
         </TabsContent>
 
         {/* Text Preview */}
