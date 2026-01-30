@@ -248,14 +248,14 @@ export const generatePdfStyles = (options: PdfExportOptions): PdfStylesRaw => {
       paddingRight: marginsEven.right,
     },
     
-    // =========== COVER ===========
+    // =========== COVER (Optimized: all elements on single page) ===========
     coverPage: {
       backgroundColor: colorScheme.background,
       display: 'flex',
       flexDirection: 'column',
       justifyContent: 'center',
       alignItems: 'center',
-      padding: mmToPoints(30),
+      padding: mmToPoints(25),  // Reduced from 30mm for better fit
     },
     coverContent: {
       textAlign: 'center',
@@ -275,23 +275,23 @@ export const generatePdfStyles = (options: PdfExportOptions): PdfStylesRaw => {
       fontWeight: 'normal',
       fontStyle: 'italic',
       color: colorScheme.secondary,
-      marginBottom: mmToPoints(20),
+      marginBottom: mmToPoints(15),  // Reduced from 20mm
     },
     coverAuthor: {
       fontFamily: typography.bodyFont,
       fontSize: headingFontSize,
       color: colorScheme.text,
-      marginTop: mmToPoints(30),
+      marginTop: mmToPoints(25),  // Reduced from 30mm
       letterSpacing: 2,
     },
     coverPublisher: {
       fontFamily: typography.bodyFont,
       fontSize: baseFontSize * 0.9,
       color: colorScheme.secondary,
-      marginTop: mmToPoints(40),
+      marginTop: mmToPoints(25),  // Reduced from 40mm
     },
     coverDecoration: {
-      marginVertical: mmToPoints(15),
+      marginVertical: mmToPoints(12),  // Reduced from 15mm
       width: mmToPoints(40),
       height: 1,
       backgroundColor: colorScheme.accent,
