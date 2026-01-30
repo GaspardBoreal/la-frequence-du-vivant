@@ -212,7 +212,7 @@ const PdfExportPanel: React.FC<PdfExportPanelProps> = ({
                     id="pdf-publisher"
                     value={options.publisher}
                     onChange={(e) => updateOption('publisher', e.target.value)}
-                    placeholder="Auto-édition"
+                    placeholder="La Comédie des Mondes Hybrides"
                   />
                 </div>
                 <div>

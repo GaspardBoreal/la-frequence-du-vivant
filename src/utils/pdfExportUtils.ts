@@ -204,7 +204,7 @@ export const getDefaultPdfOptions = (preset: keyof typeof PDF_PRESETS = 'edition
     title: 'Recueil Poétique',
     author: 'Gaspard Boréal',
     subtitle: '',
-    publisher: 'Auto-édition',
+    publisher: 'La Comédie des Mondes Hybrides',
     isbn: '',
     language: 'fr',
     description: '',
@@ -420,7 +420,7 @@ export const generateColophonText = (options: PdfExportOptions, texteCount: numb
   const formattedDate = `${date.getDate()} ${months[date.getMonth()]} ${date.getFullYear()}`;
   
   return `Achevé d'imprimer le ${formattedDate}
-pour le compte des Éditions ${options.publisher || 'Auto-édition'}
+pour le compte des Éditions ${options.publisher || 'La Comédie des Mondes Hybrides'}
 
 Ce recueil contient ${texteCount} textes poétiques.
 
