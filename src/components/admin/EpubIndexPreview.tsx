@@ -84,27 +84,48 @@ const EpubIndexPreview: React.FC<EpubIndexPreviewProps> = ({ textes, options }) 
     return toc;
   }, [textes]);
 
-  // Generate Location Index (ville -> genres)
+  // Generate Location Index (ville -> genres) - ordered by marche_ordre (narrative order)
   const locationIndex = useMemo(() => {
-    const indexMap = new Map<string, Set<string>>();
+    const indexMap = new Map<string, { genres: Set<string>; minOrdre: number; partieOrdre: number }>();
 
     textes.forEach(texte => {
       const location = texte.marche_nom || texte.marche_ville || 'Sans lieu';
+      const marcheOrdre = texte.marche_ordre ?? 999;
+      const partieOrdre = texte.partie_ordre ?? 999;
+      
       if (!indexMap.has(location)) {
-        indexMap.set(location, new Set());
+        indexMap.set(location, { 
+          genres: new Set(), 
+          minOrdre: marcheOrdre,
+          partieOrdre: partieOrdre,
+        });
       }
-      indexMap.get(location)!.add(texte.type_texte.toLowerCase());
+      
+      const entry = indexMap.get(location)!;
+      entry.genres.add(texte.type_texte.toLowerCase());
+      
+      // Keep the minimum ordre (first appearance in the narrative)
+      if (partieOrdre < entry.partieOrdre || 
+          (partieOrdre === entry.partieOrdre && marcheOrdre < entry.minOrdre)) {
+        entry.minOrdre = marcheOrdre;
+        entry.partieOrdre = partieOrdre;
+      }
     });
 
-    // Convert to sorted array
+    // Sort by partie_ordre first, then by marche_ordre (narrative order)
     return Array.from(indexMap.entries())
-      .map(([location, genres]) => ({
+      .map(([location, data]) => ({
         location,
-        genres: Array.from(genres)
+        genres: Array.from(data.genres)
           .sort((a, b) => GENRE_ORDER.indexOf(a) - GENRE_ORDER.indexOf(b))
           .map(g => getGenreLabel(g)),
+        partieOrdre: data.partieOrdre,
+        minOrdre: data.minOrdre,
       }))
-      .sort((a, b) => a.location.localeCompare(b.location, 'fr'));
+      .sort((a, b) => {
+        if (a.partieOrdre !== b.partieOrdre) return a.partieOrdre - b.partieOrdre;
+        return a.minOrdre - b.minOrdre;
+      });
   }, [textes]);
 
   // Generate Genre Index (genre -> villes)
