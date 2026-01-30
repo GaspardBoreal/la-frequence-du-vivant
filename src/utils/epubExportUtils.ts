@@ -49,7 +49,7 @@ export interface EpubExportOptions {
   description?: string;
   
   // Artistic direction
-  format: 'classique' | 'poesie_poche' | 'livre_art' | 'contemporain' | 'galerie_fleuve';
+  format: 'classique' | 'poesie_poche' | 'livre_art' | 'contemporain' | 'galerie_fleuve' | 'frequence_vivant';
   colorScheme: EpubColorScheme;
   typography: EpubTypography;
   
@@ -179,6 +179,24 @@ export const EPUB_PRESETS: Record<string, EpubPreset> = {
       headingFont: 'Playfair Display',
       baseFontSize: 1.1,
       lineHeight: 1.75,
+    },
+  },
+  frequence_vivant: {
+    id: 'frequence_vivant',
+    name: 'La Fréquence du Vivant',
+    description: 'Thème sombre forêt, accents menthe vive - bioacoustique & poésie',
+    colorScheme: {
+      primary: '#4ADE80',      // Menthe vive pour titres
+      secondary: '#86EFAC',    // Vert clair pour sous-titres
+      background: '#14281D',   // Vert forêt profond
+      text: '#D1FAE5',         // Texte clair lumineux
+      accent: '#22C55E',       // Vert émeraude vif pour CTA
+    },
+    typography: {
+      bodyFont: 'Lora',
+      headingFont: 'Playfair Display',
+      baseFontSize: 1.05,
+      lineHeight: 1.8,
     },
   },
 };
