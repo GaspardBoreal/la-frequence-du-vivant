@@ -485,7 +485,8 @@ export const IndexLieuxPage: React.FC<IndexLieuxPageProps> = ({ entries, options
         </Text>
         
         {entries.map((partieEntry, pIndex) => (
-          <View key={pIndex} wrap={false}>
+          <View key={pIndex}>
+            {/* Partie header (Movement) */}
             {partieEntry.partieTitre && (
               <Text style={styles.indexLieuxPartieHeader as Style}>
                 {partieEntry.partieNumero && `${partieEntry.partieNumero}. `}{partieEntry.partieTitre}
@@ -493,11 +494,13 @@ export const IndexLieuxPage: React.FC<IndexLieuxPageProps> = ({ entries, options
             )}
             
             {partieEntry.marches.map((marche, mIndex) => (
-              <View key={mIndex}>
+              <View key={mIndex} style={styles.indexLieuxMarcheBlock as Style} wrap={false}>
+                {/* Line 1: Marche name only (bold) */}
                 <Text style={styles.indexLieuxMarcheEntry as Style}>
-                  {marche.nom}{marche.region ? ` (${marche.region})` : marche.ville ? ` (${marche.ville})` : ''}
+                  {marche.nom}
                 </Text>
                 
+                {/* Types listed below with proper indentation */}
                 {marche.types.map((typeEntry, tIndex) => (
                   <View key={tIndex} style={styles.indexLieuxTypeRow as Style}>
                     <Text style={styles.indexLieuxTypeName as Style}>{typeEntry.type}</Text>
@@ -561,16 +564,20 @@ export const IndexGenresPage: React.FC<IndexGenresPageProps> = ({ entries, optio
           <View key={gIndex} wrap={false}>
             <View style={styles.indexGenreSection as Style}>
               <Text style={styles.indexGenreOrnament as Style}>
-                ✦  {genreEntry.genre.toUpperCase()}  ✦
+                &  {genreEntry.genre.toUpperCase()}  &
               </Text>
             </View>
             
             {genreEntry.textes.map((texte, tIndex) => (
-              <View key={tIndex} style={styles.indexGenreEntry as Style}>
+              <View key={tIndex} style={styles.indexGenreEntryBlock as Style}>
+                {/* Line 1: Title only (bold) */}
                 <Text style={styles.indexGenreTitle as Style}>{texte.titre}</Text>
-                <Text style={styles.indexGenreLieu as Style}>─ {texte.lieu}</Text>
-                <View style={styles.indexGenreDotLeader as Style} />
-                <Text style={styles.indexGenrePage as Style}>{texte.page}</Text>
+                {/* Line 2: Lieu with dot leader and page */}
+                <View style={styles.indexGenreDetailRow as Style}>
+                  <Text style={styles.indexGenreLieu as Style}>{texte.lieu}</Text>
+                  <View style={styles.indexGenreDotLeader as Style} />
+                  <Text style={styles.indexGenrePage as Style}>{texte.page}</Text>
+                </View>
               </View>
             ))}
           </View>
@@ -769,6 +776,9 @@ export const PdfDocument: React.FC<PdfDocumentProps> = ({ textes, options, parti
   const indexGenresEntries = options.includeIndexGenres
     ? buildIndexGenresData(textes, pageMapping)
     : [];
+  const indexKeywordsEntries = options.includeIndexKeywords
+    ? buildIndexKeywordsData(textes, pageMapping, options.selectedKeywordCategories)
+    : [];
   
   let currentPage = 1;
   
@@ -853,6 +863,16 @@ export const PdfDocument: React.FC<PdfDocumentProps> = ({ textes, options, parti
       {options.includeIndexGenres && indexGenresEntries.length > 0 && (
         <IndexGenresPage
           entries={indexGenresEntries}
+          options={options}
+          styles={styles}
+          pageNumber={contentEndPage++}
+        />
+      )}
+      
+      {/* Index Thématique (mots-clés) */}
+      {options.includeIndexKeywords && indexKeywordsEntries.length > 0 && (
+        <IndexKeywordsPage
+          entries={indexKeywordsEntries}
           options={options}
           styles={styles}
           pageNumber={contentEndPage++}
@@ -1242,6 +1262,115 @@ function buildIndexGenresData(
     genre,
     textes: items.sort((a, b) => a.page - b.page),
   }));
+}
+
+// ============================================================================
+// THEMATIC KEYWORD DEFINITIONS (7 families)
+// ============================================================================
+
+const KEYWORD_CATEGORIES: Record<string, string[]> = {
+  'Faune Fluviale et Migratrice': [
+    'lamproie', 'saumon', 'alose', 'truite', 'anguille', 'brochet', 'sandre', 'silure',
+    'esturgeon', 'barbeau', 'goujon', 'ablette', 'carpe', 'tanche', 'perche',
+    'aigrette', 'héron', 'martin-pêcheur', 'cormoran', 'canard', 'cygne', 'grèbe',
+    'loutre', 'castor', 'ragondin', 'grenouille', 'triton', 'libellule', 'éphémère',
+  ],
+  'Hydrologie et Dynamiques Fluviales': [
+    'étiage', 'crue', 'marnage', 'mascaret', 'confluence', 'méandre', 'bras mort',
+    'débit', 'courant', 'flux', 'reflux', 'onde', 'vague', 'remous', 'tourbillon',
+    'source', 'résurgence', 'nappe', 'aquifère', 'infiltration', 'ruissellement',
+    'berge', 'rive', 'lit', 'chenal', 'estuaire', 'delta', 'embouchure',
+  ],
+  'Ouvrages Humains': [
+    'barrage', 'ascenseur', 'pont', 'écluse', 'digue', 'quai', 'ponton', 'gabarre',
+    'moulin', 'usine', 'centrale', 'turbine', 'seuil', 'passe', 'échelle',
+    'cale', 'port', 'halage', 'chemin', 'belvédère', 'observatoire', 'passerelle',
+  ],
+  'Flore et Paysages': [
+    'aulne', 'saule', 'peuplier', 'séquoia', 'renoncule', 'nénuphar', 'roseau',
+    'jonc', 'iris', 'carex', 'phragmite', 'massette', 'menthe', 'cresson',
+    'ripisylve', 'forêt', 'prairie', 'bocage', 'falaise', 'grotte', 'gouffre',
+  ],
+  'Temporalités et Projections': [
+    '2050', '2035', '2045', 'holocène', 'anthropocène', 'mémoire', 'avenir',
+    'projection', 'cycle', 'saison', 'migration', 'génération', 'extinction',
+    'résilience', 'adaptation', 'évolution', 'héritage', 'transmission',
+  ],
+  'Geste Poétique': [
+    'remonter', 'fréquence', 'spectre', 'géopoétique', 'écoute', 'observation',
+    'marche', 'traversée', 'contemplation', 'silence', 'murmure', 'chant',
+    'trace', 'empreinte', 'signe', 'cartographie', 'atlas', 'territoire',
+  ],
+  'Technologies et Médiations': [
+    'IA', 'intelligence artificielle', 'drone', 'ADN', 'capteur', 'hydrophone',
+    'satellite', 'radar', 'sonar', 'bioacoustique', 'télédétection', 'modélisation',
+    'data', 'algorithme', 'simulation', 'prédiction', 'monitoring',
+  ],
+};
+
+/**
+ * Build Index Thématique data: Category > Keywords with pages
+ */
+function buildIndexKeywordsData(
+  textes: TexteExport[],
+  pageMapping: Map<string, number>,
+  selectedCategories?: string[]
+): Array<{
+  category: string;
+  keywords: { name: string; pages: number[] }[];
+}> {
+  const result: Array<{
+    category: string;
+    keywords: { name: string; pages: number[] }[];
+  }> = [];
+  
+  // Filter categories if specified
+  const categoriesToUse = selectedCategories && selectedCategories.length > 0
+    ? Object.entries(KEYWORD_CATEGORIES).filter(([cat]) => selectedCategories.includes(cat))
+    : Object.entries(KEYWORD_CATEGORIES);
+  
+  for (const [category, keywords] of categoriesToUse) {
+    const keywordPages = new Map<string, number[]>();
+    
+    // Search each texte for keywords
+    textes.forEach(texte => {
+      const page = pageMapping.get(texte.id);
+      if (!page) return;
+      
+      // Search in title and content (case-insensitive)
+      const searchText = `${texte.titre} ${texte.contenu}`.toLowerCase();
+      
+      keywords.forEach(keyword => {
+        const keywordLower = keyword.toLowerCase();
+        if (searchText.includes(keywordLower)) {
+          if (!keywordPages.has(keyword)) {
+            keywordPages.set(keyword, []);
+          }
+          const pages = keywordPages.get(keyword)!;
+          if (!pages.includes(page)) {
+            pages.push(page);
+          }
+        }
+      });
+    });
+    
+    // Only include categories with found keywords
+    if (keywordPages.size > 0) {
+      const sortedKeywords = Array.from(keywordPages.entries())
+        .sort((a, b) => a[0].localeCompare(b[0], 'fr'))
+        .map(([name, pages]) => ({
+          name: name.charAt(0).toUpperCase() + name.slice(1), // Capitalize
+          pages: pages.sort((a, b) => a - b),
+        }));
+      
+      result.push({
+        category,
+        keywords: sortedKeywords,
+      });
+    }
+  }
+  
+  return result;
 }
 
 // ============================================================================

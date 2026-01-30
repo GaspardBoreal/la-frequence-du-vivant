@@ -200,6 +200,7 @@ export interface PdfStylesRaw {
   
   // Index par Lieu (hierarchical)
   indexLieuxPartieHeader: Style;
+  indexLieuxMarcheBlock: Style;
   indexLieuxMarcheEntry: Style;
   indexLieuxTypeRow: Style;
   indexLieuxTypeName: Style;
@@ -209,8 +210,10 @@ export interface PdfStylesRaw {
   // Index par Genre (with ornaments)
   indexGenreSection: Style;
   indexGenreOrnament: Style;
+  indexGenreEntryBlock: Style;
   indexGenreEntry: Style;
   indexGenreTitle: Style;
+  indexGenreDetailRow: Style;
   indexGenreLieu: Style;
   indexGenreDotLeader: Style;
   indexGenrePage: Style;
@@ -650,30 +653,33 @@ export const generatePdfStyles = (options: PdfExportOptions): PdfStylesRaw => {
       fontSize: baseFontSize * 0.95,
       fontWeight: 'bold',
       color: colorScheme.primary,
-      marginTop: mmToPoints(6),
-      marginBottom: mmToPoints(3),
+      marginTop: mmToPoints(8),
+      marginBottom: mmToPoints(2),
       letterSpacing: 1,
+    },
+    indexLieuxMarcheBlock: {
+      marginTop: mmToPoints(3),
+      marginBottom: mmToPoints(4),
+      paddingLeft: mmToPoints(4),
     },
     indexLieuxMarcheEntry: {
       fontFamily: typography.bodyFont,
       fontSize: baseFontSize * 0.85,
       fontWeight: 'bold',
-      color: colorScheme.secondary,
-      marginTop: mmToPoints(3),
-      marginBottom: mmToPoints(1.5),
-      paddingLeft: mmToPoints(4),
+      color: colorScheme.text,
+      marginBottom: mmToPoints(2),
     },
     indexLieuxTypeRow: {
       flexDirection: 'row',
       alignItems: 'flex-end',
       marginBottom: mmToPoints(1),
-      paddingLeft: mmToPoints(8),
+      paddingLeft: mmToPoints(6),
     },
     indexLieuxTypeName: {
       fontFamily: typography.bodyFont,
-      fontSize: baseFontSize * 0.8,
+      fontSize: baseFontSize * 0.75,
       fontStyle: 'italic',
-      color: colorScheme.text,
+      color: colorScheme.secondary,
     },
     indexLieuxDotLeader: {
       flex: 1,
@@ -691,17 +697,20 @@ export const generatePdfStyles = (options: PdfExportOptions): PdfStylesRaw => {
     
     // =========== INDEX PAR GENRE (with ornaments) ===========
     indexGenreSection: {
-      marginTop: mmToPoints(8),
+      marginTop: mmToPoints(10),
       marginBottom: mmToPoints(4),
       textAlign: 'center',
     },
     indexGenreOrnament: {
       fontFamily: typography.headingFont,
-      fontSize: baseFontSize * 0.85,
+      fontSize: baseFontSize * 0.9,
       color: colorScheme.accent,
-      letterSpacing: 3,
+      letterSpacing: 4,
       textAlign: 'center',
-      marginBottom: mmToPoints(4),
+    },
+    indexGenreEntryBlock: {
+      marginBottom: mmToPoints(3),
+      paddingLeft: mmToPoints(2),
     },
     indexGenreEntry: {
       flexDirection: 'row',
@@ -711,14 +720,20 @@ export const generatePdfStyles = (options: PdfExportOptions): PdfStylesRaw => {
     indexGenreTitle: {
       fontFamily: typography.bodyFont,
       fontSize: baseFontSize * 0.85,
+      fontWeight: 'bold',
       color: colorScheme.text,
+      marginBottom: mmToPoints(1),
+    },
+    indexGenreDetailRow: {
+      flexDirection: 'row',
+      alignItems: 'flex-end',
+      paddingLeft: mmToPoints(4),
     },
     indexGenreLieu: {
       fontFamily: typography.bodyFont,
       fontSize: baseFontSize * 0.75,
       fontStyle: 'italic',
       color: colorScheme.secondary,
-      marginLeft: mmToPoints(2),
     },
     indexGenreDotLeader: {
       flex: 1,
@@ -730,7 +745,7 @@ export const generatePdfStyles = (options: PdfExportOptions): PdfStylesRaw => {
     },
     indexGenrePage: {
       fontFamily: typography.bodyFont,
-      fontSize: baseFontSize * 0.8,
+      fontSize: baseFontSize * 0.75,
       color: colorScheme.secondary,
     },
     
