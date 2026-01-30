@@ -180,11 +180,14 @@ export interface PdfStylesRaw {
   haikuSeparator: Style;
   haikuLine: Style;
   
-  // Fable specific
+  // Fable specific (Style "Carnet de Naturaliste")
   fableContainer: Style;
-  fableFrame: Style;
+  fableHeader: Style;
+  fableHeaderLabel: Style;
   fableTitle: Style;
   fableContent: Style;
+  fableMoral: Style;
+  fableSection: Style;
   
   // Index
   indexPage: Style;
@@ -517,31 +520,61 @@ export const generatePdfStyles = (options: PdfExportOptions): PdfStylesRaw => {
       lineHeight: typography.lineHeight * 1.15,
     },
     
-    // =========== FABLE SPECIFIC ===========
+    // =========== FABLE SPECIFIC (Style "Carnet de Naturaliste") ===========
     fableContainer: {
       flex: 1,
-      padding: mmToPoints(8),
+      paddingHorizontal: mmToPoints(4),   // Utilise toute la largeur
+      paddingVertical: mmToPoints(6),
     },
-    fableFrame: {
-      borderWidth: 0.5,
-      borderColor: colorScheme.accent,
-      borderRadius: 2,
-      padding: mmToPoints(10),
+    fableHeader: {
+      textAlign: 'center',
+      marginBottom: mmToPoints(6),
+      paddingBottom: mmToPoints(4),
+      borderBottomWidth: 0.75,
+      borderBottomColor: colorScheme.accent,
+    },
+    fableHeaderLabel: {
+      fontFamily: typography.bodyFont,
+      fontSize: baseFontSize * 0.7,
+      color: colorScheme.accent,
+      letterSpacing: 3,
+      marginBottom: mmToPoints(3),
+      textAlign: 'center',
     },
     fableTitle: {
       fontFamily: typography.headingFont,
-      fontSize: headingFontSize * 0.9,
+      fontSize: headingFontSize * 0.85,
       fontWeight: 'bold',
       color: colorScheme.primary,
-      marginBottom: mmToPoints(10),
       textAlign: 'center',
+      letterSpacing: 0.5,
     },
     fableContent: {
       fontFamily: typography.bodyFont,
       fontSize: baseFontSize,
-      lineHeight: typography.lineHeight,
+      lineHeight: typography.lineHeight * 1.05,
       color: colorScheme.text,
+      textAlign: 'left',
+      marginTop: mmToPoints(6),
+    },
+    fableMoral: {
+      fontFamily: typography.bodyFont,
+      fontSize: baseFontSize * 0.9,
       fontStyle: 'italic',
+      color: colorScheme.secondary,
+      marginTop: mmToPoints(8),
+      paddingTop: mmToPoints(5),
+      borderTopWidth: 0.5,
+      borderTopColor: colorScheme.accent,
+      textAlign: 'center',
+    },
+    fableSection: {
+      fontFamily: typography.headingFont,
+      fontSize: baseFontSize * 0.85,
+      fontWeight: 'bold',
+      color: colorScheme.primary,
+      marginTop: mmToPoints(6),
+      marginBottom: mmToPoints(3),
     },
     
     // =========== INDEX ===========
