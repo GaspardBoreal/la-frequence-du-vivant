@@ -246,8 +246,16 @@ export const getDefaultPdfOptions = (preset: keyof typeof PDF_PRESETS = 'edition
     // Indexes
     includeIndexLieux: true,
     includeIndexGenres: true,
-    includeIndexKeywords: false,
-    selectedKeywordCategories: ['Faune', 'Hydrologie', 'Ouvrages', 'Flore', 'Temporalités', 'Poétique', 'Technologies'],
+    includeIndexKeywords: true,
+    selectedKeywordCategories: [
+      'Faune Fluviale et Migratrice',
+      'Hydrologie et Dynamiques Fluviales',
+      'Ouvrages Humains',
+      'Flore et Paysages',
+      'Temporalités et Projections',
+      'Geste Poétique',
+      'Technologies et Médiations',
+    ],
     
     // Structure
     organizationMode: 'marche',
