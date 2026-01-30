@@ -49,7 +49,7 @@ export interface EpubExportOptions {
   description?: string;
   
   // Artistic direction
-  format: 'classique' | 'poesie_poche' | 'livre_art' | 'contemporain' | 'galerie_fleuve' | 'frequence_vivant';
+  format: 'classique' | 'poesie_poche' | 'livre_art' | 'contemporain' | 'galerie_fleuve' | 'frequence_vivant' | 'dordonia';
   colorScheme: EpubColorScheme;
   typography: EpubTypography;
   
@@ -186,17 +186,35 @@ export const EPUB_PRESETS: Record<string, EpubPreset> = {
     name: 'La Fréquence du Vivant',
     description: 'Thème sombre forêt, accents menthe vive - bioacoustique & poésie',
     colorScheme: {
-      primary: '#4ADE80',      // Menthe vive pour titres
-      secondary: '#86EFAC',    // Vert clair pour sous-titres
-      background: '#14281D',   // Vert forêt profond
-      text: '#D1FAE5',         // Texte clair lumineux
-      accent: '#22C55E',       // Vert émeraude vif pour CTA
+      primary: '#4ADE80',
+      secondary: '#86EFAC',
+      background: '#14281D',
+      text: '#D1FAE5',
+      accent: '#22C55E',
     },
     typography: {
       bodyFont: 'Lora',
       headingFont: 'Playfair Display',
       baseFontSize: 1.05,
       lineHeight: 1.8,
+    },
+  },
+  dordonia: {
+    id: 'dordonia',
+    name: 'Dordonia',
+    description: 'Thème nocturne rivière, accents cyan - marcher, écouter, décider',
+    colorScheme: {
+      primary: '#E2E8F0',
+      secondary: '#94A3B8',
+      background: '#0F172A',
+      text: '#CBD5E1',
+      accent: '#22D3EE',
+    },
+    typography: {
+      bodyFont: 'Lora',
+      headingFont: 'Cormorant Garamond',
+      baseFontSize: 1.05,
+      lineHeight: 1.85,
     },
   },
 };
