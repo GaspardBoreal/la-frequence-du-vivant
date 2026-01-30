@@ -160,7 +160,7 @@ export const PDF_PRESETS: Record<string, PdfPreset> = {
     marginOuter: 15,  // Was 18mm - reduced for more text area
     marginTop: 22,    // Was 30mm - reduced for more text area
     marginBottom: 18, // Was 24mm - reduced for more text area
-    includeFauxTitre: true,
+    includeFauxTitre: false,  // Faux-titre fusionné sur couverture unique
     includeColophon: true,
   },
   
