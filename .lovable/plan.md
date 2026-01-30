@@ -1,245 +1,386 @@
 
-# Index Vivant : Orbites Thématiques
+# Visionneuse eBook Immersive : Architecture Extensible
 
 ## Vision
 
-Remplacer la navigation linéaire actuelle par une **cartographie sémantique orbitale** où les 7 grandes familles thématiques deviennent des "planètes" ou "attracteurs gravitationnels" autour desquels les mots-clés extraits des textes orbitent comme des satellites vivants.
+Creer une visionneuse "Livre Vivant" conçue des le depart comme un **systeme a plugins** permettant d'ajouter facilement :
+- De nouveaux modes de "Traversees" (Constellations, Flux Temporel...)
+- De nouveaux types d'index (Index Sonore, Index Emotionnel...)
+- Des liens vers des contenus externes (blogs, agents IA, reseaux sociaux)
 
-Le lecteur ne consulte plus un index : il **traverse un cosmos de sens**.
+L'architecture s'inspire du pattern **Registry** deja present dans le codebase (`marcheModels`, `TEXT_TYPES_REGISTRY`, `KEYWORD_CATEGORIES`).
 
 ---
 
-## Concept : Les Sept Mondes
-
-Chaque catégorie devient un "monde" avec sa propre identité visuelle et son comportement :
+## Architecture Modulaire Proposee
 
 ```text
-                    ◐ Temporalités
-                   (pulsation lente, 
-                    couleur ambre)
-                         
-    ◑ Technologies                    ◐ Hydrologie
-    (rotation rapide,               (ondulation fluide,
-     bleu électrique)                 bleu profond)
-                         
-              ⬤ CENTRE : Le Recueil
-              
-    ◐ Ouvrages                        ◐ Faune
-    (statique massif,               (vol erratique,
-     gris pierre)                    vert émeraude)
-                         
-                    ◐ Flore
-                   (croissance lente,
-                    vert mousse)
-                    
-                    ◐ Geste Poétique
-                   (respiration profonde,
-                    doré/accent)
++------------------------------------------------------------------+
+|                    LIVRE VIVANT VIEWER                           |
++------------------------------------------------------------------+
+|                                                                  |
+|  +------------------+    +------------------+                    |
+|  |  PAGE REGISTRY   |    | TRAVERSEE REGISTRY|                   |
+|  |  (types de pages)|    | (modes exploration)|                  |
+|  +------------------+    +------------------+                    |
+|          |                       |                               |
+|          v                       v                               |
+|  +------------------+    +------------------+    +-------------+ |
+|  |  INDEX REGISTRY  |    |  LINKS REGISTRY  |    |   THEMES    | |
+|  | (types d'index)  |    |(liens externes)  |    |  REGISTRY   | |
+|  +------------------+    +------------------+    +-------------+ |
+|                                                                  |
++------------------------------------------------------------------+
 ```
 
 ---
 
-## Architecture de l'Interface
+## 1. Registre des Pages (PageTypeRegistry)
 
-### 1. Vue Centrale : Le Cosmos des Mondes
-
-Une visualisation SVG radiale/orbitale :
-
-- **Centre** : Le titre du recueil, pulsant doucement
-- **7 orbites** : Chaque catégorie thématique sur une trajectoire circulaire
-- **Satellites** : Les mots-clés extraits des textes orbitent autour de leur catégorie parente
-- **Interactions** :
-  - Survol d'un monde : les satellites (mots-clés) s'illuminent et affichent le nombre d'occurrences
-  - Clic sur un monde : zoom sur cette catégorie, affichage de tous les mots-clés et des textes associés
-  - Animation continue : rotation lente différenciée par catégorie (Technologies tourne vite, Temporalités lentement)
-
-### 2. Mode Détail : Exploration d'un Monde
-
-Quand l'utilisateur clique sur une catégorie :
-
-- Transition fluide vers une vue focalisée
-- Liste des mots-clés trouvés dans les textes, avec :
-  - Nombre d'occurrences
-  - Animation de "gravité" (plus il y a d'occurrences, plus le mot est proche du centre)
-- Bouton retour vers la vue cosmique
-
-### 3. Indicateurs Visuels
-
-- **Taille des mondes** : proportionnelle au nombre total de mots-clés trouvés dans cette catégorie
-- **Luminosité** : plus une catégorie est dense en textes, plus elle brille
-- **Particules orbitales** : des particules fines connectent les mondes partageant des textes communs
-
----
-
-## Comportements Animés par Catégorie
-
-Chaque monde a une "personnalité" visuelle unique :
-
-| Catégorie | Animation | Couleur | Métaphore |
-|-----------|-----------|---------|-----------|
-| Faune | Mouvement erratique, vol | Vert émeraude | La migration |
-| Hydrologie | Ondulation sinusoïdale | Bleu profond | Le courant |
-| Ouvrages | Statique massif, pulsation lente | Gris pierre | La permanence |
-| Flore | Croissance organique lente | Vert mousse | L'enracinement |
-| Temporalités | Pulsation très lente, halo | Ambre/Or | Le temps qui passe |
-| Geste Poétique | Respiration (scale in/out) | Couleur accent du thème | Le souffle |
-| Technologies | Rotation rapide, clignotement | Bleu électrique | Le signal |
-
----
-
-## Logique de Données
-
-Extraction des mots-clés depuis les textes :
+Chaque type de page du livre est un module independant :
 
 ```text
-Pour chaque texte dans `textes`:
-  Pour chaque catégorie dans KEYWORD_CATEGORIES:
-    Scanner le contenu du texte
-    Compter les occurrences de chaque mot-clé
-    Stocker: { catégorie, mot-clé, occurrences, texte_ids[] }
+PageType {
+  id: 'cover' | 'toc' | 'partie' | 'texte' | 'index-lieu' | 'traversee' | ...
+  label: string
+  icon: LucideIcon
+  renderer: React.FC<PageRendererProps>
+  category: 'structure' | 'content' | 'navigation' | 'exploration'
+  order: number
+}
+```
+
+**Types de pages initiaux :**
+- `cover` - Couverture
+- `toc` - Table des matieres
+- `partie` - Page de mouvement
+- `texte` - Contenu litteraire
+- `index-lieu` - Index par lieu
+- `index-genre` - Index par genre
+- `index-oeuvres` - Index alphabetique
+- `traversee-seismograph` - Sismographe Poetique
+- `traversee-orbites` - Index Vivant Orbital
+
+**Extensibilite :** Ajouter un nouveau type = ajouter une entree au registre + son composant renderer.
+
+---
+
+## 2. Registre des Traversees (TraverseeRegistry)
+
+Extension du `TraverseesHub` actuel vers un systeme enfichable :
+
+```text
+TraverseeMode {
+  id: string
+  label: string
+  icon: LucideIcon
+  description: string
+  component: React.FC<TraverseeProps>
+  category: 'visualisation' | 'index' | 'immersion'
+  requiredData?: ('textes' | 'audio' | 'photos' | 'marches')[]
+  badge?: 'new' | 'beta' | 'experimental'
+}
+```
+
+**Modes actuels :**
+- `seismograph` - Sismographe Poetique (visualisation)
+- `living-index` - Index Vivant / Orbites Thematiques (index)
+
+**Modes futurs envisages :**
+- `constellation` - Constellation Textuelle (liens semantiques entre textes)
+- `flux-temporel` - Timeline poetique animee
+- `cartographie-sonore` - Visualisation audio des marches
+- `resonances` - Connexions inter-textes par mots-cles partages
+
+---
+
+## 3. Registre des Index (IndexRegistry)
+
+Generalisation des index existants :
+
+```text
+IndexType {
+  id: string
+  label: string
+  icon: LucideIcon
+  description: string
+  extractor: (textes: TexteExport[]) => IndexData
+  renderer: React.FC<IndexRendererProps>
+  exportable: boolean  // Peut etre exporte dans l'EPUB
+  interactive: boolean // Mode interactif dans la visionneuse
+}
+```
+
+**Index actuels :**
+- `lieu` - Par lieu (ordre narratif)
+- `genre` - Par genre litteraire
+- `oeuvres` - Alphabetique des titres
+- `mots-cles` - 7 categories thematiques (Faune, Hydrologie, etc.)
+
+**Index futurs envisages :**
+- `emotionnel` - Classification par tonalite emotionnelle (IA)
+- `sonore` - Par paysage sonore associe
+- `temporel` - Par periode evoquee (2050, Holocène, etc.)
+- `intertextuel` - Connexions entre textes par motifs communs
+
+---
+
+## 4. Registre des Liens Externes (ExternalLinksRegistry)
+
+Nouveaute pour connecter le livre au monde :
+
+```text
+ExternalLinkType {
+  id: string
+  label: string
+  icon: LucideIcon
+  platform: 'blog' | 'social' | 'agent' | 'audio' | 'video' | 'custom'
+  urlPattern?: string
+  renderer: React.FC<ExternalLinkProps>
+  contexts: ('texte' | 'marche' | 'partie' | 'global')[]
+}
+```
+
+**Types de liens envisages :**
+- `dordonia-agent` - Lien vers l'agent IA Dordonia
+- `blog-post` - Article de blog associe
+- `instagram-post` - Post Instagram du lieu
+- `soundcloud-track` - Piste audio externe
+- `youtube-video` - Video documentaire
+- `wikipedia-article` - Reference encyclopedique
+
+**Integration :** Chaque texte/marche peut avoir des `externalLinks[]` qui apparaissent comme des boutons/icones dans la visionneuse.
+
+---
+
+## 5. Structure des Fichiers Proposee
+
+```text
+src/
+  registries/
+    pageTypes.ts           # Registre des types de pages
+    traverseeModes.ts      # Registre des modes de traversee
+    indexTypes.ts          # Registre des types d'index
+    externalLinks.ts       # Registre des liens externes
     
-Résultat:
-  - Données par monde (catégorie)
-  - Données par satellite (mot-clé)
-  - Connexions entre mondes (textes partagés)
+  components/admin/
+    livre-vivant/
+      LivreVivantViewer.tsx       # Composant principal (modal)
+      LivreVivantNavigation.tsx   # Barre de navigation
+      LivreVivantToc.tsx          # Panneau Table des Matieres
+      LivreVivantToolbar.tsx      # Barre d'outils (device, theme)
+      
+      renderers/
+        CoverRenderer.tsx         # Page de couverture
+        PartieRenderer.tsx        # Page de partie
+        TexteRenderer.tsx         # Page de texte
+        IndexRenderer.tsx         # Page d'index (generique)
+        TraverseeRenderer.tsx     # Page de traversee (wrapper)
+        ExternalLinksBar.tsx      # Barre de liens externes
+        
+      hooks/
+        useBookPages.ts           # Generation de la sequence de pages
+        useBookNavigation.ts      # Logique de navigation
+        useDeviceSimulation.ts    # Simulation responsive
 ```
 
 ---
 
-## Exemple Visuel
+## 6. Interface du Livre Vivant
 
 ```text
-+--------------------------------------------------+
-|              INDEX VIVANT                         |
-|    Les sept mondes de la Dordogne                |
-+--------------------------------------------------+
-|                                                  |
-|          ○ Temporalités                          |
-|              2050 · mémoire · avenir            |
-|                                                  |
-|    ● Technologies           ○ Hydrologie         |
-|       IA · drone                étiage · crue   |
-|                                                  |
-|              ◉ LA FREQUENCE                      |
-|              DU VIVANT                           |
-|                                                  |
-|    ○ Ouvrages               ● Faune              |
-|       barrage                  saumon · loutre  |
-|                                                  |
-|          ○ Flore                                 |
-|             saule · vigne                        |
-|                                                  |
-|              ◐ Geste Poétique                    |
-|                 fréquence · silence              |
-|                                                  |
-+--------------------------------------------------+
-|  Survolez un monde pour explorer ses satellites  |
-+--------------------------------------------------+
++------------------------------------------------------------------+
+|  ← 12/47          LIVRE VIVANT          📱 🎨  ×                 |
++------------------------------------------------------------------+
+|                                                                  |
+|                         ┌─────────────┐                          |
+|                         │             │                          |
+|                         │   CONTENU   │                          |
+|                         │   DE LA     │                          |
+|                         │   PAGE      │                          |
+|                         │             │                          |
+|                         └─────────────┘                          |
+|                                                                  |
+|  [🌐 Blog] [🤖 Dordonia] [📸 Instagram]     <- Liens Externes    |
+|                                                                  |
++------------------------------------------------------------------+
+|  ◀◀   ◀   [═══════●══════════════]   ▶   ▶▶                     |
+|                                                                  |
+|  🏠 Accueil  📑 TdM  🧭 Traversees  🔖 Signets                   |
++------------------------------------------------------------------+
 ```
 
 ---
 
-## Interactions Detaillees
+## 7. Navigation vers les Traversees
 
-### Survol d'un Monde
-
-```text
-1. Le monde s'agrandit (scale: 1.2)
-2. Les satellites (mots-clés) apparaissent autour
-3. Un halo lumineux entoure le monde
-4. Les autres mondes s'estompent (opacity: 0.4)
-5. Affichage: "12 occurrences dans 8 textes"
-```
-
-### Clic sur un Monde (Vue Detail)
+Depuis la visionneuse, un bouton "Traversees" ouvre un menu permettant d'acceder directement aux modes immersifs :
 
 ```text
-+--------------------------------------------------+
-|  ← Retour                                        |
-|                                                  |
-|              HYDROLOGIE                          |
-|        Dynamiques Fluviales                      |
-|                                                  |
-|    +----------------------------------------+    |
-|    |                                        |    |
-|    |    ●●● étiage (15)                    |    |
-|    |      ●● crue (8)                      |    |
-|    |       ● mascaret (3)                  |    |
-|    |        · confluence (2)               |    |
-|    |         · méandre (1)                 |    |
-|    |                                        |    |
-|    +----------------------------------------+    |
-|                                                  |
-|    Textes associés:                              |
-|    - "Le saumon remonte" (Bergerac)             |
-|    - "Mascaret d'automne" (Libourne)            |
-|                                                  |
-+--------------------------------------------------+
++---------------------------+
+|     TRAVERSEES            |
++---------------------------+
+| 📊 Sismographe Poetique   |
+| 🌌 Index Vivant (Orbites) |
+| ─────────────────────     |
+| 🌟 Constellation  [BETA]  |
+| ⏱️ Flux Temporel  [NEW]   |
+| 🎵 Cartographie Sonore    |
++---------------------------+
 ```
+
+---
+
+## 8. Mode d'Ajout d'un Nouveau Mode de Traversee
+
+Pour ajouter une nouvelle traversee (ex: "Constellation Textuelle") :
+
+**Etape 1 :** Creer le composant
+```text
+src/components/admin/ConstellationView.tsx
+```
+
+**Etape 2 :** L'enregistrer dans le registre
+```text
+// src/registries/traverseeModes.ts
+{
+  id: 'constellation',
+  label: 'Constellation Textuelle',
+  icon: Stars,
+  description: 'Visualise les liens semantiques entre textes',
+  component: ConstellationView,
+  category: 'visualisation',
+  badge: 'beta',
+}
+```
+
+**Etape 3 :** Le mode apparait automatiquement dans le menu Traversees.
+
+---
+
+## 9. Implementation en Phases
+
+### Phase 1 : Fondations (Cette iteration)
+- Creer la structure de registres (`src/registries/`)
+- Creer `LivreVivantViewer` avec navigation basique
+- Integrer les pages existantes (cover, partie, texte)
+- Bouton "Lire le Livre" dans `EpubPreview.tsx`
+
+### Phase 2 : Navigation Complete
+- Table des matieres interactive
+- Raccourcis clavier et swipe
+- Simulation responsive (mobile/tablette)
+
+### Phase 3 : Traversees Integrees
+- Menu Traversees dans la visionneuse
+- Integration du Sismographe et Index Vivant
+- Transition fluide livre -> traversee -> livre
+
+### Phase 4 : Liens Externes
+- Registre des liens externes
+- Barre de liens contextuels par texte/marche
+- Integration Dordonia, blogs, reseaux sociaux
+
+### Phase 5 : Nouveaux Modes
+- Constellation Textuelle
+- Flux Temporel
+- Index Emotionnel (IA)
 
 ---
 
 ## Section Technique
 
+### Fichiers a Creer
+
+1. **`src/registries/pageTypes.ts`**
+   - Type `PageType` et tableau `PAGE_TYPES_REGISTRY`
+   - Fonction `getPageRenderer(type)`
+
+2. **`src/registries/traverseeModes.ts`**
+   - Type `TraverseeMode` et tableau `TRAVERSEE_MODES_REGISTRY`
+   - Fonction `getTraverseeComponent(id)`
+
+3. **`src/registries/indexTypes.ts`**
+   - Type `IndexType` et tableau `INDEX_TYPES_REGISTRY`
+   - Reutilisation de `KEYWORD_CATEGORIES` pour l'index thematique
+
+4. **`src/registries/externalLinks.ts`**
+   - Type `ExternalLinkType` et tableau `EXTERNAL_LINKS_REGISTRY`
+   - Configurations pour blog, agents, reseaux sociaux
+
+5. **`src/components/admin/livre-vivant/LivreVivantViewer.tsx`**
+   - Modal plein ecran
+   - Gestion de l'etat (page courante, signets, mode)
+   - Rendu conditionnel via registres
+
+6. **`src/components/admin/livre-vivant/LivreVivantNavigation.tsx`**
+   - Barre de progression
+   - Boutons navigation
+   - Menu Traversees
+
+7. **`src/components/admin/livre-vivant/LivreVivantToc.tsx`**
+   - Panneau lateral slide-in
+   - Liste navigable
+
+8. **`src/components/admin/livre-vivant/renderers/*.tsx`**
+   - Un renderer par type de page
+   - Props standardisees via `PageRendererProps`
+
+9. **`src/components/admin/livre-vivant/hooks/useBookPages.ts`**
+   - Hook pour generer la sequence de pages
+   - Utilise `groupTextesByPartie` existant
+
 ### Fichiers a Modifier
 
-1. `src/components/admin/LivingIndex.tsx` - Refonte complete
+1. **`src/components/admin/EpubPreview.tsx`**
+   - Ajouter import de `LivreVivantViewer`
+   - Ajouter etat `isViewerOpen`
+   - Ajouter bouton "Lire le Livre" dans le footer
 
-### Nouvelles Dependances Utilisees
+2. **`src/components/admin/TraverseesHub.tsx`**
+   - Migrer vers l'utilisation de `TRAVERSEE_MODES_REGISTRY`
+   - Rendre le composant plus generique
 
-- `framer-motion` (deja installe) pour les animations orbitales
-- `lucide-react` pour les icones de retour
-
-### Structure du Composant
-
-```text
-LivingIndex
-  ├── useExtractedKeywords() - Hook pour extraire les mots-cles des textes
-  ├── OrbitalView - Vue cosmique principale (7 mondes)
-  │   ├── WorldNode - Composant pour chaque monde/categorie
-  │   └── SatelliteOrbit - Mots-cles orbitant
-  └── WorldDetailView - Vue detaillee d'une categorie
-      ├── KeywordList - Liste des mots-cles avec occurrences
-      └── AssociatedTexts - Textes lies (optionnel)
-```
-
-### Logique d'Extraction des Mots-Cles
-
-Reutilisation de la logique existante de `wordExportUtils.ts`:
-- Import de `KEYWORD_CATEGORIES`
-- Scan du contenu des textes pour detecter les occurrences
-- Agregation par categorie avec comptage
-
-### Animations Framer Motion
+### Types TypeScript Cles
 
 ```text
-WorldNode:
-  - animate: { rotate: [0, 360] } avec duration variable par categorie
-  - whileHover: { scale: 1.2 }
-  - Transition spring pour les interactions
+// PageRendererProps - Interface commune pour tous les renderers
+interface PageRendererProps {
+  colorScheme: ColorScheme;
+  typography: Typography;
+  data?: unknown;  // Donnees specifiques au type de page
+  onNavigate?: (pageIndex: number) => void;
+  onOpenTraversee?: (mode: string) => void;
+  externalLinks?: ExternalLink[];
+}
 
-SatelliteOrbit:
-  - Positionnement en cercle autour du monde parent
-  - animate: { opacity: [0.5, 1, 0.5] } pour l'effet "vivant"
-  - staggerChildren pour apparition progressive
+// BookPage - Une page dans la sequence du livre
+interface BookPage {
+  id: string;
+  type: string;
+  title: string;
+  data?: unknown;
+  externalLinks?: ExternalLink[];
+}
+
+// ExternalLink - Lien vers contenu externe
+interface ExternalLink {
+  type: string;  // Reference au registre
+  url: string;
+  label?: string;
+  context: 'texte' | 'marche' | 'partie' | 'global';
+}
 ```
 
-### Palette de Couleurs par Monde
+### Dependances Utilisees
 
-```text
-faune: #059669 (emerald-600)
-hydrologie: #1d4ed8 (blue-700)
-ouvrages: #6b7280 (gray-500)
-flore: #65a30d (lime-600)
-temporalites: #d97706 (amber-600)
-poetique: colorScheme.accent (theme-dependent)
-technologies: #3b82f6 (blue-500)
-```
+- `framer-motion` (deja installe) : animations, gestures, transitions
+- `lucide-react` : icones
+- `@radix-ui/react-dialog` (deja installe) : modal accessible
 
-### Dimensions SVG
+### Considerations UX
 
-- ViewBox: 100x100 (carre pour disposition radiale)
-- Centre: (50, 50)
-- Rayons orbitaux: 15, 25, 35 (trois orbites concentriques)
-- Taille des mondes: 3-8 (variable selon densite)
-
+- **Responsive** : La visionneuse s'adapte a la taille d'ecran
+- **Accessible** : Navigation clavier complete, focus visible
+- **Performant** : Virtualisation des pages si > 100 pages
+- **Persistant** : Position de lecture sauvegardee en localStorage
