@@ -1,401 +1,92 @@
 
-# Visionneuse eBook Immersive : Architecture Extensible
 
-## ✅ Statut : Phase 1 Complétée
+# Correction de l'affichage des icones de simulation responsive
 
-### Implémenté dans cette itération :
+## Probleme identifie
 
-**Registres (src/registries/)**
-- ✅ `types.ts` - Types communs
-- ✅ `pageTypes.ts` - Registre pages
-- ✅ `traverseeModes.ts` - Registre traversées
-- ✅ `indexTypes.ts` - Registre index
-- ✅ `externalLinks.ts` - Registre liens externes
-- ✅ `index.ts` - Point d'entrée
+Les boutons de selection d'appareil (Desktop/Tablette/Mobile) dans la barre d'en-tete du Livre Vivant ne sont pas esthetiquement integres au design. Le probleme visible dans les captures :
+- Les icones sont dans des boutons standards qui ne respectent pas le theme de couleurs
+- Le contraste et l'etat actif ne sont pas clairement visibles
+- L'espacement et les proportions ne sont pas harmonieux
 
-**Livre Vivant (src/components/admin/livre-vivant/)**
-- ✅ `LivreVivantViewer.tsx` - Modal plein écran
-- ✅ `LivreVivantNavigation.tsx` - Barre de navigation
-- ✅ `hooks/useBookPages.ts` - Séquence de pages
-- ✅ `hooks/useBookNavigation.ts` - Navigation + clavier
-- ✅ Renderers: Cover, Partie, Texte, Toc, Index
+## Solution proposee
 
-**Intégration**
-- ✅ Bouton "Lire le Livre" dans EpubPreview
-- ✅ TraverseesHub utilise TRAVERSEE_MODES_REGISTRY
+Remplacer les boutons standards par un **toggle group** elegant qui s'integre au colorScheme du livre, avec :
+- Un fond subtil pour le groupe entier
+- Un indicateur anime pour l'element actif (comme dans TraverseesHub)
+- Des icones bien proportionnees avec tooltips explicatifs
+- Une transition fluide entre les etats
 
----
-
-## Vision
-
+## Design visuel cible
 
 ```text
-+------------------------------------------------------------------+
-|                    LIVRE VIVANT VIEWER                           |
-+------------------------------------------------------------------+
-|                                                                  |
-|  +------------------+    +------------------+                    |
-|  |  PAGE REGISTRY   |    | TRAVERSEE REGISTRY|                   |
-|  |  (types de pages)|    | (modes exploration)|                  |
-|  +------------------+    +------------------+                    |
-|          |                       |                               |
-|          v                       v                               |
-|  +------------------+    +------------------+    +-------------+ |
-|  |  INDEX REGISTRY  |    |  LINKS REGISTRY  |    |   THEMES    | |
-|  | (types d'index)  |    |(liens externes)  |    |  REGISTRY   | |
-|  +------------------+    +------------------+    +-------------+ |
-|                                                                  |
-+------------------------------------------------------------------+
+┌─────────────────────────────────────┐
+│   ┌─────┐ ┌─────┐ ┌─────┐          │
+│   │ 🖥️ │ │ 📱 │ │ 📲 │   ×       │
+│   └──┬──┘ └─────┘ └─────┘          │
+│      └─ indicateur anime ─┘         │
+└─────────────────────────────────────┘
 ```
 
----
+## Modifications techniques
 
-## 1. Registre des Pages (PageTypeRegistry)
+### Fichier a modifier
 
-Chaque type de page du livre est un module independant :
+**`src/components/admin/livre-vivant/LivreVivantViewer.tsx`**
 
-```text
-PageType {
-  id: 'cover' | 'toc' | 'partie' | 'texte' | 'index-lieu' | 'traversee' | ...
-  label: string
-  icon: LucideIcon
-  renderer: React.FC<PageRendererProps>
-  category: 'structure' | 'content' | 'navigation' | 'exploration'
-  order: number
-}
-```
+Remplacer les lignes 152-170 (le bloc des boutons d'appareil) par :
 
-**Types de pages initiaux :**
-- `cover` - Couverture
-- `toc` - Table des matieres
-- `partie` - Page de mouvement
-- `texte` - Contenu litteraire
-- `index-lieu` - Index par lieu
-- `index-genre` - Index par genre
-- `index-oeuvres` - Index alphabetique
-- `traversee-seismograph` - Sismographe Poetique
-- `traversee-orbites` - Index Vivant Orbital
-
-**Extensibilite :** Ajouter un nouveau type = ajouter une entree au registre + son composant renderer.
-
----
-
-## 2. Registre des Traversees (TraverseeRegistry)
-
-Extension du `TraverseesHub` actuel vers un systeme enfichable :
-
-```text
-TraverseeMode {
-  id: string
-  label: string
-  icon: LucideIcon
-  description: string
-  component: React.FC<TraverseeProps>
-  category: 'visualisation' | 'index' | 'immersion'
-  requiredData?: ('textes' | 'audio' | 'photos' | 'marches')[]
-  badge?: 'new' | 'beta' | 'experimental'
-}
-```
-
-**Modes actuels :**
-- `seismograph` - Sismographe Poetique (visualisation)
-- `living-index` - Index Vivant / Orbites Thematiques (index)
-
-**Modes futurs envisages :**
-- `constellation` - Constellation Textuelle (liens semantiques entre textes)
-- `flux-temporel` - Timeline poetique animee
-- `cartographie-sonore` - Visualisation audio des marches
-- `resonances` - Connexions inter-textes par mots-cles partages
-
----
-
-## 3. Registre des Index (IndexRegistry)
-
-Generalisation des index existants :
-
-```text
-IndexType {
-  id: string
-  label: string
-  icon: LucideIcon
-  description: string
-  extractor: (textes: TexteExport[]) => IndexData
-  renderer: React.FC<IndexRendererProps>
-  exportable: boolean  // Peut etre exporte dans l'EPUB
-  interactive: boolean // Mode interactif dans la visionneuse
-}
-```
-
-**Index actuels :**
-- `lieu` - Par lieu (ordre narratif)
-- `genre` - Par genre litteraire
-- `oeuvres` - Alphabetique des titres
-- `mots-cles` - 7 categories thematiques (Faune, Hydrologie, etc.)
-
-**Index futurs envisages :**
-- `emotionnel` - Classification par tonalite emotionnelle (IA)
-- `sonore` - Par paysage sonore associe
-- `temporel` - Par periode evoquee (2050, Holocène, etc.)
-- `intertextuel` - Connexions entre textes par motifs communs
-
----
-
-## 4. Registre des Liens Externes (ExternalLinksRegistry)
-
-Nouveaute pour connecter le livre au monde :
-
-```text
-ExternalLinkType {
-  id: string
-  label: string
-  icon: LucideIcon
-  platform: 'blog' | 'social' | 'agent' | 'audio' | 'video' | 'custom'
-  urlPattern?: string
-  renderer: React.FC<ExternalLinkProps>
-  contexts: ('texte' | 'marche' | 'partie' | 'global')[]
-}
-```
-
-**Types de liens envisages :**
-- `dordonia-agent` - Lien vers l'agent IA Dordonia
-- `blog-post` - Article de blog associe
-- `instagram-post` - Post Instagram du lieu
-- `soundcloud-track` - Piste audio externe
-- `youtube-video` - Video documentaire
-- `wikipedia-article` - Reference encyclopedique
-
-**Integration :** Chaque texte/marche peut avoir des `externalLinks[]` qui apparaissent comme des boutons/icones dans la visionneuse.
-
----
-
-## 5. Structure des Fichiers Proposee
-
-```text
-src/
-  registries/
-    pageTypes.ts           # Registre des types de pages
-    traverseeModes.ts      # Registre des modes de traversee
-    indexTypes.ts          # Registre des types d'index
-    externalLinks.ts       # Registre des liens externes
+```typescript
+{/* Device preview toggles - Design elegant */}
+<div 
+  className="flex items-center gap-1 rounded-lg p-1"
+  style={{ 
+    backgroundColor: colorScheme.secondary + '15',
+    border: `1px solid ${colorScheme.secondary}20`
+  }}
+>
+  {(Object.entries(DEVICE_SIZES) as [DevicePreview, typeof deviceSize][]).map(([key, value]) => {
+    const Icon = key === 'desktop' ? Monitor : key === 'tablet' ? Tablet : Smartphone;
+    const isActive = devicePreview === key;
     
-  components/admin/
-    livre-vivant/
-      LivreVivantViewer.tsx       # Composant principal (modal)
-      LivreVivantNavigation.tsx   # Barre de navigation
-      LivreVivantToc.tsx          # Panneau Table des Matieres
-      LivreVivantToolbar.tsx      # Barre d'outils (device, theme)
-      
-      renderers/
-        CoverRenderer.tsx         # Page de couverture
-        PartieRenderer.tsx        # Page de partie
-        TexteRenderer.tsx         # Page de texte
-        IndexRenderer.tsx         # Page d'index (generique)
-        TraverseeRenderer.tsx     # Page de traversee (wrapper)
-        ExternalLinksBar.tsx      # Barre de liens externes
+    return (
+      <button
+        key={key}
+        onClick={() => setDevicePreview(key)}
+        className="relative flex items-center justify-center h-8 w-8 rounded-md transition-all duration-200"
+        style={{
+          color: isActive ? colorScheme.primary : colorScheme.secondary,
+          backgroundColor: isActive ? colorScheme.background : 'transparent',
+          boxShadow: isActive ? '0 1px 3px rgba(0,0,0,0.12)' : 'none',
+        }}
+        title={value.label}
+      >
+        <Icon className="h-4 w-4" />
         
-      hooks/
-        useBookPages.ts           # Generation de la sequence de pages
-        useBookNavigation.ts      # Logique de navigation
-        useDeviceSimulation.ts    # Simulation responsive
+        {/* Indicateur anime sous l'icone active */}
+        {isActive && (
+          <motion.div
+            layoutId="device-indicator"
+            className="absolute -bottom-0.5 left-1/2 -translate-x-1/2 w-4 h-0.5 rounded-full"
+            style={{ backgroundColor: colorScheme.accent }}
+            transition={{ type: 'spring', stiffness: 500, damping: 30 }}
+          />
+        )}
+      </button>
+    );
+  })}
+</div>
 ```
 
----
+## Ameliorations apportees
 
-## 6. Interface du Livre Vivant
+1. **Integration visuelle** : Le groupe utilise le `colorScheme` du livre pour le fond et les couleurs
+2. **Etat actif clair** : L'icone active a un fond distinct + une barre indicatrice animee
+3. **Transitions fluides** : Animation `layoutId` de Framer Motion pour l'indicateur
+4. **Proportions harmonieuses** : Tailles legerement augmentees (h-8 w-8) pour meilleur confort
+5. **Tooltips preserves** : L'attribut `title` affiche le nom de l'appareil au survol
 
-```text
-+------------------------------------------------------------------+
-|  ← 12/47          LIVRE VIVANT          📱 🎨  ×                 |
-+------------------------------------------------------------------+
-|                                                                  |
-|                         ┌─────────────┐                          |
-|                         │             │                          |
-|                         │   CONTENU   │                          |
-|                         │   DE LA     │                          |
-|                         │   PAGE      │                          |
-|                         │             │                          |
-|                         └─────────────┘                          |
-|                                                                  |
-|  [🌐 Blog] [🤖 Dordonia] [📸 Instagram]     <- Liens Externes    |
-|                                                                  |
-+------------------------------------------------------------------+
-|  ◀◀   ◀   [═══════●══════════════]   ▶   ▶▶                     |
-|                                                                  |
-|  🏠 Accueil  📑 TdM  🧭 Traversees  🔖 Signets                   |
-+------------------------------------------------------------------+
-```
+## Resultat attendu
 
----
+Le toggle group s'integrera parfaitement au theme du Livre Vivant, avec un indicateur anime sous l'icone selectionnee, comme le selecteur de modes dans TraverseesHub.
 
-## 7. Navigation vers les Traversees
-
-Depuis la visionneuse, un bouton "Traversees" ouvre un menu permettant d'acceder directement aux modes immersifs :
-
-```text
-+---------------------------+
-|     TRAVERSEES            |
-+---------------------------+
-| 📊 Sismographe Poetique   |
-| 🌌 Index Vivant (Orbites) |
-| ─────────────────────     |
-| 🌟 Constellation  [BETA]  |
-| ⏱️ Flux Temporel  [NEW]   |
-| 🎵 Cartographie Sonore    |
-+---------------------------+
-```
-
----
-
-## 8. Mode d'Ajout d'un Nouveau Mode de Traversee
-
-Pour ajouter une nouvelle traversee (ex: "Constellation Textuelle") :
-
-**Etape 1 :** Creer le composant
-```text
-src/components/admin/ConstellationView.tsx
-```
-
-**Etape 2 :** L'enregistrer dans le registre
-```text
-// src/registries/traverseeModes.ts
-{
-  id: 'constellation',
-  label: 'Constellation Textuelle',
-  icon: Stars,
-  description: 'Visualise les liens semantiques entre textes',
-  component: ConstellationView,
-  category: 'visualisation',
-  badge: 'beta',
-}
-```
-
-**Etape 3 :** Le mode apparait automatiquement dans le menu Traversees.
-
----
-
-## 9. Implementation en Phases
-
-### Phase 1 : Fondations (Cette iteration)
-- Creer la structure de registres (`src/registries/`)
-- Creer `LivreVivantViewer` avec navigation basique
-- Integrer les pages existantes (cover, partie, texte)
-- Bouton "Lire le Livre" dans `EpubPreview.tsx`
-
-### Phase 2 : Navigation Complete
-- Table des matieres interactive
-- Raccourcis clavier et swipe
-- Simulation responsive (mobile/tablette)
-
-### Phase 3 : Traversees Integrees
-- Menu Traversees dans la visionneuse
-- Integration du Sismographe et Index Vivant
-- Transition fluide livre -> traversee -> livre
-
-### Phase 4 : Liens Externes
-- Registre des liens externes
-- Barre de liens contextuels par texte/marche
-- Integration Dordonia, blogs, reseaux sociaux
-
-### Phase 5 : Nouveaux Modes
-- Constellation Textuelle
-- Flux Temporel
-- Index Emotionnel (IA)
-
----
-
-## Section Technique
-
-### Fichiers a Creer
-
-1. **`src/registries/pageTypes.ts`**
-   - Type `PageType` et tableau `PAGE_TYPES_REGISTRY`
-   - Fonction `getPageRenderer(type)`
-
-2. **`src/registries/traverseeModes.ts`**
-   - Type `TraverseeMode` et tableau `TRAVERSEE_MODES_REGISTRY`
-   - Fonction `getTraverseeComponent(id)`
-
-3. **`src/registries/indexTypes.ts`**
-   - Type `IndexType` et tableau `INDEX_TYPES_REGISTRY`
-   - Reutilisation de `KEYWORD_CATEGORIES` pour l'index thematique
-
-4. **`src/registries/externalLinks.ts`**
-   - Type `ExternalLinkType` et tableau `EXTERNAL_LINKS_REGISTRY`
-   - Configurations pour blog, agents, reseaux sociaux
-
-5. **`src/components/admin/livre-vivant/LivreVivantViewer.tsx`**
-   - Modal plein ecran
-   - Gestion de l'etat (page courante, signets, mode)
-   - Rendu conditionnel via registres
-
-6. **`src/components/admin/livre-vivant/LivreVivantNavigation.tsx`**
-   - Barre de progression
-   - Boutons navigation
-   - Menu Traversees
-
-7. **`src/components/admin/livre-vivant/LivreVivantToc.tsx`**
-   - Panneau lateral slide-in
-   - Liste navigable
-
-8. **`src/components/admin/livre-vivant/renderers/*.tsx`**
-   - Un renderer par type de page
-   - Props standardisees via `PageRendererProps`
-
-9. **`src/components/admin/livre-vivant/hooks/useBookPages.ts`**
-   - Hook pour generer la sequence de pages
-   - Utilise `groupTextesByPartie` existant
-
-### Fichiers a Modifier
-
-1. **`src/components/admin/EpubPreview.tsx`**
-   - Ajouter import de `LivreVivantViewer`
-   - Ajouter etat `isViewerOpen`
-   - Ajouter bouton "Lire le Livre" dans le footer
-
-2. **`src/components/admin/TraverseesHub.tsx`**
-   - Migrer vers l'utilisation de `TRAVERSEE_MODES_REGISTRY`
-   - Rendre le composant plus generique
-
-### Types TypeScript Cles
-
-```text
-// PageRendererProps - Interface commune pour tous les renderers
-interface PageRendererProps {
-  colorScheme: ColorScheme;
-  typography: Typography;
-  data?: unknown;  // Donnees specifiques au type de page
-  onNavigate?: (pageIndex: number) => void;
-  onOpenTraversee?: (mode: string) => void;
-  externalLinks?: ExternalLink[];
-}
-
-// BookPage - Une page dans la sequence du livre
-interface BookPage {
-  id: string;
-  type: string;
-  title: string;
-  data?: unknown;
-  externalLinks?: ExternalLink[];
-}
-
-// ExternalLink - Lien vers contenu externe
-interface ExternalLink {
-  type: string;  // Reference au registre
-  url: string;
-  label?: string;
-  context: 'texte' | 'marche' | 'partie' | 'global';
-}
-```
-
-### Dependances Utilisees
-
-- `framer-motion` (deja installe) : animations, gestures, transitions
-- `lucide-react` : icones
-- `@radix-ui/react-dialog` (deja installe) : modal accessible
-
-### Considerations UX
-
-- **Responsive** : La visionneuse s'adapte a la taille d'ecran
-- **Accessible** : Navigation clavier complete, focus visible
-- **Performant** : Virtualisation des pages si > 100 pages
-- **Persistant** : Position de lecture sauvegardee en localStorage
