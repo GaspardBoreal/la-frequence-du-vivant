@@ -19,6 +19,7 @@ import { exportVocabularyToWord } from '@/utils/vocabularyWordExport';
 import { exportMarchesStatsToWord } from '@/utils/marchesStatsExport';
 import WordExportPreview from '@/components/admin/WordExportPreview';
 import EpubExportPanel from '@/components/admin/EpubExportPanel';
+import PdfExportPanel from '@/components/admin/PdfExportPanel';
 import { Input } from '@/components/ui/input';
 interface Exploration {
   id: string;
@@ -1506,6 +1507,26 @@ const ExportationsAdmin: React.FC = () => {
             <EpubExportPanel
               textes={filteredTextes}
               explorationCoverUrl={explorations.find(e => selectedExplorations.has(e.id))?.id ? undefined : undefined}
+              explorationName={explorations.find(e => selectedExplorations.has(e.id))?.name}
+              onRefresh={() => loadData(true)}
+            />
+          </CardContent>
+        </Card>
+
+        {/* PDF Export Card - Full Width */}
+        <Card className="border-dashed border-2 border-primary/30 bg-primary/5">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <FileText className="h-5 w-5 text-primary" />
+              Export PDF Professionnel
+            </CardTitle>
+            <CardDescription>
+              Créez un PDF ultra-design pour éditeurs et lecteurs partenaires
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <PdfExportPanel
+              textes={filteredTextes}
               explorationName={explorations.find(e => selectedExplorations.has(e.id))?.name}
               onRefresh={() => loadData(true)}
             />
