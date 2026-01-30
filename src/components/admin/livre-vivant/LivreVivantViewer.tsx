@@ -5,6 +5,7 @@ import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { VisuallyHidden } from '@radix-ui/react-visually-hidden';
 import type { TexteExport, EpubExportOptions } from '@/utils/epubExportUtils';
+import TraverseesHub from '@/components/admin/TraverseesHub';
 import { useBookPages } from './hooks/useBookPages';
 import { useBookNavigation } from './hooks/useBookNavigation';
 import LivreVivantNavigation from './LivreVivantNavigation';
@@ -39,6 +40,7 @@ const LivreVivantViewer: React.FC<LivreVivantViewerProps> = ({
 }) => {
   const [devicePreview, setDevicePreview] = useState<DevicePreview>('desktop');
   const [showToc, setShowToc] = useState(false);
+  const [isTraverseesOpen, setIsTraverseesOpen] = useState(false);
 
   const pages = useBookPages({ textes, options });
   const {
@@ -60,8 +62,7 @@ const LivreVivantViewer: React.FC<LivreVivantViewerProps> = ({
   const handleGoToToc = () => goToPageById('toc');
   const handleGoToIndex = (type: 'lieu' | 'genre') => goToPageById(`index-${type}`);
   const handleOpenTraversees = () => {
-    // TODO: Implement traversées modal/view
-    console.log('Traversées Immersives - Coming soon');
+    setIsTraverseesOpen(true);
   };
 
   const { colorScheme, typography } = options;
@@ -121,7 +122,7 @@ const LivreVivantViewer: React.FC<LivreVivantViewerProps> = ({
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <DialogContent 
-        className="max-w-none w-screen h-screen p-0 gap-0 rounded-none border-0"
+        className="relative max-w-none w-screen h-screen p-0 gap-0 rounded-none border-0"
         style={{ backgroundColor: colorScheme.background }}
       >
         <VisuallyHidden>
@@ -259,6 +260,62 @@ const LivreVivantViewer: React.FC<LivreVivantViewerProps> = ({
           onOpenTraversees={handleOpenTraversees}
           colorScheme={colorScheme}
         />
+
+        {/* Traversées overlay */}
+        <AnimatePresence>
+          {isTraverseesOpen && (
+            <motion.div
+              className="absolute inset-0 z-50 flex items-center justify-center p-4"
+              style={{ backgroundColor: `${colorScheme.secondary}55` }}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setIsTraverseesOpen(false)}
+            >
+              <motion.div
+                className="w-full max-w-5xl overflow-hidden rounded-xl border"
+                style={{
+                  backgroundColor: colorScheme.background,
+                  borderColor: `${colorScheme.secondary}25`,
+                  boxShadow: '0 20px 60px rgba(0,0,0,0.25)',
+                }}
+                initial={{ scale: 0.98, y: 8 }}
+                animate={{ scale: 1, y: 0 }}
+                exit={{ scale: 0.98, y: 8 }}
+                transition={{ type: 'spring', stiffness: 260, damping: 22 }}
+                onClick={(e) => e.stopPropagation()}
+              >
+                <div
+                  className="flex items-center justify-between px-4 py-3 border-b"
+                  style={{ borderColor: `${colorScheme.secondary}20` }}
+                >
+                  <div>
+                    <h3 className="text-sm font-semibold" style={{ color: colorScheme.primary }}>
+                      Traversées immersives
+                    </h3>
+                    <p className="text-xs" style={{ color: colorScheme.secondary }}>
+                      Sismographe poétique, Index vivant, et autres modes.
+                    </p>
+                  </div>
+
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8"
+                    onClick={() => setIsTraverseesOpen(false)}
+                    style={{ color: colorScheme.secondary }}
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+
+                <div className="p-3">
+                  <TraverseesHub textes={textes} colorScheme={colorScheme} />
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </DialogContent>
     </Dialog>
   );
