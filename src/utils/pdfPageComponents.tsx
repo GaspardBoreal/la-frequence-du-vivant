@@ -252,15 +252,44 @@ export const FablePage: React.FC<FablePageProps> = ({ texte, options, styles, pa
   const dimensions = getPageDimensions(options);
   const isOdd = pageNumber % 2 === 1;
   
+  // Detect and extract moral from content (common patterns: "Morale :", "MORALE", "La morale")
+  const extractMoral = (text: string): { main: string; moral: string | null } => {
+    const moralPatterns = [
+      /\n\s*(Morale\s*:\s*.+)$/i,
+      /\n\s*(MORALE\s*:\s*.+)$/i,
+      /\n\s*(La morale\s*:\s*.+)$/i,
+    ];
+    
+    for (const pattern of moralPatterns) {
+      const match = text.match(pattern);
+      if (match) {
+        return {
+          main: text.replace(match[0], '').trim(),
+          moral: match[1].trim(),
+        };
+      }
+    }
+    return { main: text, moral: null };
+  };
+  
+  const { main: mainContent, moral } = extractMoral(content);
+  
   return (
-    <Page size={[dimensions.width, dimensions.height]} style={mergeStyles(styles.page, isOdd ? styles.pageOdd : styles.pageEven)}>
+    <Page size={[dimensions.width, dimensions.height]} style={mergeStyles(styles.page, isOdd ? styles.pageOdd : styles.pageEven)} wrap>
       <View style={styles.fableContainer as Style}>
-        <View style={styles.fableFrame as Style}>
-          <Text style={styles.fableTitle as Style}>
-            {texte.titre.toLowerCase().startsWith('fable') ? texte.titre : `Fable : ${texte.titre}`}
-          </Text>
-          <Text style={styles.fableContent as Style}>{content}</Text>
+        {/* Header with ornament and title */}
+        <View style={styles.fableHeader as Style}>
+          <Text style={styles.fableHeaderLabel as Style}>❦ FABLE ❦</Text>
+          <Text style={styles.fableTitle as Style}>{texte.titre}</Text>
         </View>
+        
+        {/* Main content in roman (not italic) */}
+        <Text style={styles.fableContent as Style}>{mainContent}</Text>
+        
+        {/* Moral section if detected */}
+        {moral && (
+          <Text style={styles.fableMoral as Style}>{moral}</Text>
+        )}
       </View>
       
       <Text style={mergeStyles(styles.pageNumber, isOdd ? styles.pageNumberOdd : styles.pageNumberEven)}>
