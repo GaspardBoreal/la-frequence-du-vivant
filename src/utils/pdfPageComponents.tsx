@@ -131,14 +131,11 @@ export const TocPage: React.FC<TocPageProps> = ({ entries, options, styles, page
               </Text>
             )}
             {entry.type === 'marche' && (
-              <Text style={styles.tocMarche as Style}>{entry.title}</Text>
-            )}
-            {entry.type === 'texte' && (
-              <>
-                <Text style={styles.tocTexte as Style}>{entry.title}</Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center' } as Style}>
+                <Text style={styles.tocMarche as Style}>{entry.title}</Text>
                 <View style={styles.tocDotLeader as Style} />
                 <Text style={styles.tocPageNumber as Style}>{entry.pageNumber}</Text>
-              </>
+              </View>
             )}
           </View>
         ))}
@@ -218,12 +215,22 @@ export const HaikuPage: React.FC<HaikuPageProps> = ({ texte, options, styles, pa
   const dimensions = getPageDimensions(options);
   const isOdd = pageNumber % 2 === 1;
   
+  // Split haiku content into individual lines for proper centering
+  const lines = content
+    .split('\n')
+    .map(line => line.trim())
+    .filter(Boolean);
+  
   return (
     <Page size={[dimensions.width, dimensions.height]} style={mergeStyles(styles.page, isOdd ? styles.pageOdd : styles.pageEven)}>
       <View style={styles.haikuContainer as Style}>
         <Text style={styles.texteTitle as Style}>{texte.titre}</Text>
         <View style={styles.separator as Style} />
-        <Text style={styles.haikuContent as Style}>{content}</Text>
+        <View style={{ alignItems: 'center' } as Style}>
+          {lines.map((line, idx) => (
+            <Text key={idx} style={styles.haikuContent as Style}>{line}</Text>
+          ))}
+        </View>
       </View>
       
       <Text style={mergeStyles(styles.pageNumber, isOdd ? styles.pageNumberOdd : styles.pageNumberEven)}>
@@ -586,17 +593,22 @@ function groupTextesByStructure(
       
       const partieTextes = partiesMap.get(partie.id) || [];
       
-      const marcheGroups = new Map<string, TexteExport[]>();
+      const marcheGroups = new Map<string, { textes: TexteExport[]; marcheOrdre: number }>();
       partieTextes.forEach(texte => {
         const marcheKey = texte.marche_nom || texte.marche_ville || 'no-marche';
         if (!marcheGroups.has(marcheKey)) {
-          marcheGroups.set(marcheKey, []);
+          marcheGroups.set(marcheKey, { textes: [], marcheOrdre: texte.marche_ordre || 999 });
         }
-        marcheGroups.get(marcheKey)!.push(texte);
+        marcheGroups.get(marcheKey)!.textes.push(texte);
       });
       
-      marcheGroups.forEach((marcheTextes, marcheName) => {
-        const sortedTextes = marcheTextes.sort((a, b) => (a.ordre || 0) - (b.ordre || 0));
+      // Sort marches by marche_ordre (like Word export)
+      const sortedMarcheEntries = Array.from(marcheGroups.entries())
+        .sort((a, b) => a[1].marcheOrdre - b[1].marcheOrdre);
+      
+      sortedMarcheEntries.forEach(([marcheName, marcheData]) => {
+        // Sort textes within marche by ordre
+        const sortedTextes = marcheData.textes.sort((a, b) => (a.ordre || 0) - (b.ordre || 0));
         
         sortedTextes.forEach((texte, index) => {
           const marche: MarcheData = {
@@ -660,6 +672,9 @@ function buildTocEntries(groupedContent: GroupedItem[], options: PdfExportOption
   if (options.includeFauxTitre) pageNumber += 2;
   if (options.includeTableOfContents) pageNumber += 1;
   
+  // Track which marches we've already added to ToC
+  const seenMarches = new Set<string>();
+  
   groupedContent.forEach(item => {
     if (item.type === 'partie' && item.partie) {
       entries.push({
@@ -670,13 +685,18 @@ function buildTocEntries(groupedContent: GroupedItem[], options: PdfExportOption
       });
     }
     
-    if (item.type === 'texte' && item.texte) {
-      entries.push({
-        type: 'texte',
-        title: item.texte.titre,
-        pageNumber,
-        indent: 2,
-      });
+    // Only add marche entry for first text in that marche
+    if (item.type === 'texte' && item.texte && item.isFirstInMarche && item.marche) {
+      const marcheKey = item.marche.nom || item.marche.ville;
+      if (!seenMarches.has(marcheKey)) {
+        seenMarches.add(marcheKey);
+        entries.push({
+          type: 'marche',
+          title: marcheKey,
+          pageNumber,
+          indent: 1,
+        });
+      }
     }
     
     pageNumber++;
