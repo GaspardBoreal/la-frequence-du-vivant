@@ -709,7 +709,8 @@ export const generatePdfStyles = (options: PdfExportOptions): PdfStylesRaw => {
       textAlign: 'center',
     },
     indexGenreEntryBlock: {
-      marginBottom: mmToPoints(3),
+      flexDirection: 'column',
+      marginBottom: mmToPoints(4),
       paddingLeft: mmToPoints(2),
     },
     indexGenreEntry: {
@@ -722,11 +723,12 @@ export const generatePdfStyles = (options: PdfExportOptions): PdfStylesRaw => {
       fontSize: baseFontSize * 0.85,
       fontWeight: 'bold',
       color: colorScheme.text,
-      marginBottom: mmToPoints(1),
+      marginBottom: mmToPoints(0.5),
     },
     indexGenreDetailRow: {
       flexDirection: 'row',
-      alignItems: 'flex-end',
+      alignItems: 'center',
+      marginTop: mmToPoints(0.5),
       paddingLeft: mmToPoints(4),
     },
     indexGenreLieu: {
@@ -734,19 +736,22 @@ export const generatePdfStyles = (options: PdfExportOptions): PdfStylesRaw => {
       fontSize: baseFontSize * 0.75,
       fontStyle: 'italic',
       color: colorScheme.secondary,
+      flexShrink: 0,
     },
     indexGenreDotLeader: {
       flex: 1,
-      marginHorizontal: mmToPoints(1.5),
+      marginHorizontal: mmToPoints(2),
       borderBottomWidth: 0.5,
       borderBottomStyle: 'dotted',
       borderBottomColor: colorScheme.secondary,
       marginBottom: 2,
+      minWidth: mmToPoints(10),
     },
     indexGenrePage: {
       fontFamily: typography.bodyFont,
       fontSize: baseFontSize * 0.75,
       color: colorScheme.secondary,
+      flexShrink: 0,
     },
     
     // =========== INDEX THÉMATIQUE (keyword categories) ===========
