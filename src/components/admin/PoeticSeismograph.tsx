@@ -221,7 +221,7 @@ const PoeticSeismograph: React.FC<PoeticSeismographProps> = ({ textes, colorSche
           Sismographe Poétique
         </h3>
         <p 
-          className="text-[10px] italic"
+          className="text-[10px] italic text-center"
           style={{ color: colorScheme.secondary + '80' }}
         >
           Intensité du voyage littéraire
