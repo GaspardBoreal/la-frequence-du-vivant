@@ -1,74 +1,181 @@
 
 
-# Plan : Exclure les marches orphelines de l'export par exploration
+# Traversées : Hub des Lectures Immersives
 
-## Problème identifié
+## Vision
 
-Quand une exploration est sélectionnée (ex: "Dordogne"), le code actuel inclut **automatiquement toutes les marches orphelines** (non liées à aucune exploration). C'est ce qui fait apparaître la marche "PICHERANDE / Les nuages se drapent..." dans l'export alors qu'elle n'appartient pas à l'exploration Dordogne.
+Transformer l'onglet "Sismographe" en un portail "Traversées" regroupant plusieurs modes d'exploration poétique. Ce hub permettra à l'utilisateur de basculer entre différentes visualisations immersives du recueil, positionnant l'ouvrage comme une experience editoriale innovante.
 
-## Code responsable
+---
 
-Dans `src/pages/ExportationsAdmin.tsx`, lignes 329-334 :
+## Architecture Proposee
 
-```typescript
-// Include marches not linked to any exploration (orphans)
-marches.forEach(m => {
-  if (!marcheExplorationsMap.has(m.id) || marcheExplorationsMap.get(m.id)?.size === 0) {
-    availableMarcheIds.add(m.id);  // ← Ajoute les marches orphelines
-  }
-});
+```text
++--------------------------------------------------+
+|  [Onglet: Traversées]                            |
++--------------------------------------------------+
+|                                                  |
+|  +-----------+  +-----------+  +-----------+     |
+|  |Sismographe|  |Index Vivant|  |  + ...   |     |
+|  |  Poetique |  |           |  | (futur)  |     |
+|  +-----------+  +-----------+  +-----------+     |
+|                                                  |
+|  +--------------------------------------------+  |
+|  |                                            |  |
+|  |     [Contenu du mode selectionne]          |  |
+|  |                                            |  |
+|  +--------------------------------------------+  |
++--------------------------------------------------+
 ```
 
-## Solution
+---
 
-**Supprimer ce bloc de code** pour que seules les marches explicitement liées aux explorations sélectionnées soient disponibles dans l'export.
+## Nouveaux Composants
 
-## Comportement après modification
+### 1. TraverseesHub (Conteneur Principal)
 
-| Scénario | Avant | Après |
-|----------|-------|-------|
-| Exploration "Dordogne" sélectionnée | 50 textes (49 Dordogne + 1 PICHERANDE orpheline) | 49 textes (uniquement Dordogne) |
-| Aucune exploration sélectionnée | Toutes les marches (y compris orphelines) | Toutes les marches (y compris orphelines) |
+Nouveau composant qui orchestre les differents modes de traversee :
 
-## Fichier à modifier
+- Interface a onglets internes (style minimal, typographique)
+- Gestion de l'etat du mode actif
+- Design epure avec transition fluide entre les modes
 
-| Fichier | Modification |
-|---------|--------------|
-| `src/pages/ExportationsAdmin.tsx` | Supprimer les lignes 329-334 (bloc d'inclusion des marches orphelines) |
+### 2. LivingIndex (Index Vivant)
 
-## Code modifié
+Visualisation typographique pure et animee :
 
-```typescript
-// Get marches available based on selected explorations
-const availableMarches = useMemo(() => {
-  if (selectedExplorations.size === 0) {
-    return marches;
-  }
-  
-  const availableMarcheIds = new Set<string>();
-  selectedExplorations.forEach(expId => {
-    explorationMarchesMap.get(expId)?.forEach(marcheId => {
-      availableMarcheIds.add(marcheId);
-    });
-  });
-  
-  // SUPPRIMÉ : le bloc qui ajoutait les marches orphelines
-  
-  return marches.filter(m => availableMarcheIds.has(m.id));
-}, [marches, selectedExplorations, explorationMarchesMap]);
+**Concept :**
+- Liste verticale des lieux dans l'ordre narratif
+- Chaque nom de lieu "respire" avec une animation subtile
+- Opacite et taille varient selon la densite textuelle
+- Pas de carte, pas d'icones : uniquement la typographie comme medium
+
+**Interactions :**
+- Survol : le lieu s'illumine, affiche le nombre de textes
+- Les parties sont marquees par des separateurs typographiques (tirets longs, numero romain)
+- Effet de "battement de coeur" subtil base sur l'intensite poetique
+
+**Caracteristiques visuelles :**
+- Police serif italique pour les noms de lieux
+- Espacement genereux (lettrespace elargi)
+- Animation de pulsation douce (opacite 0.7 a 1.0)
+- Fond sobre, texte en couleur primaire du theme
+
+---
+
+## Modifications
+
+### EpubPreview.tsx
+
+1. Renommer l'onglet "Sismographe" en "Traversees"
+2. Importer et utiliser le nouveau `TraverseesHub` a la place de `PoeticSeismograph`
+3. Conserver les 7 onglets (pas de modification de la grille)
+
+---
+
+## Structure des Fichiers
+
+```text
+src/components/admin/
+  +-- TraverseesHub.tsx        (nouveau - conteneur)
+  +-- LivingIndex.tsx          (nouveau - Index Vivant)
+  +-- PoeticSeismograph.tsx    (existant - inchange)
+  +-- EpubPreview.tsx          (modifie - import du hub)
 ```
 
-## Impact
+---
 
-- La marche "PICHERANDE / Les nuages se drapent..." n'apparaîtra plus dans l'export de l'exploration Dordogne
-- Les marches orphelines restent accessibles quand aucune exploration n'est sélectionnée
-- Le compteur passera de 50 textes à 49 textes pour l'exploration Dordogne
+## Details Techniques
 
-## Validation
+### TraverseesHub.tsx
 
-1. Aller sur `/admin/exportations`
-2. Sélectionner l'exploration "Dordogne"
-3. Vérifier que la marche "PICHERANDE" n'apparaît plus dans la liste
-4. Vérifier que le compteur affiche bien 49 textes (et non 50)
-5. Vérifier dans l'onglet "Structure" qu'il n'y a plus de "Textes sans partie assignée"
+```text
+Props:
+  - textes: TexteExport[]
+  - colorScheme: { primary, secondary, accent, background, text }
+
+Etat interne:
+  - activeMode: 'seismograph' | 'living-index'
+
+Rendu:
+  - Selecteur de mode (boutons minimalistes)
+  - Rendu conditionnel du composant actif
+```
+
+### LivingIndex.tsx
+
+```text
+Props:
+  - textes: TexteExport[]
+  - colorScheme: { primary, secondary, accent, background, text }
+
+Logique:
+  - Grouper par partie + marche (ordre narratif)
+  - Calculer intensite par lieu (nombre de textes, variete de genres)
+  - Normaliser pour animation
+
+Animation (Framer Motion):
+  - Pulsation: animate={{ opacity: [0.7, 1, 0.7] }}
+  - Transition: repeat: Infinity, duration: 3-5s (varie selon intensite)
+  - Entree: staggerChildren avec fadeIn + slideUp
+```
+
+---
+
+## Exemple Visuel de l'Index Vivant
+
+```text
++------------------------------------------+
+|           TRAVERSEES                     |
+|   [ Sismographe ]  [ Index Vivant ]      |
++------------------------------------------+
+|                                          |
+|              I                           |
+|     ─────────────────────                |
+|                                          |
+|         B e r g e r a c                  |  <- pulsation lente
+|            (12 textes)                   |
+|                                          |
+|       S a i n t e - F o y               |  <- pulsation moyenne
+|            (8 textes)                    |
+|                                          |
+|              II                          |
+|     ─────────────────────                |
+|                                          |
+|     C a s t i l l o n                   |  <- pulsation rapide
+|            (15 textes)                   |
+|                                          |
++------------------------------------------+
+```
+
+---
+
+## Extensibilite Future
+
+La structure du `TraverseesHub` permettra d'ajouter facilement de nouveaux modes :
+
+- "Constellation Textuelle" (visualisation spatiale)
+- "Cartographie Sonore" (integration audio)
+- "Flux Temporel" (timeline poetique)
+
+Chaque nouveau mode sera un composant independant ajoute au hub.
+
+---
+
+## Section Technique
+
+### Fichiers a Creer
+1. `src/components/admin/TraverseesHub.tsx` - Hub conteneur avec sous-navigation
+2. `src/components/admin/LivingIndex.tsx` - Composant Index Vivant anime
+
+### Fichiers a Modifier
+1. `src/components/admin/EpubPreview.tsx`
+   - Ligne 6 : Ajouter import de `TraverseesHub`
+   - Ligne 10 : Supprimer import direct de `PoeticSeismograph`
+   - Ligne 108-111 : Renommer "Sismographe" en "Traversees" et changer l'icone en `Compass`
+   - Ligne 256-258 : Remplacer `PoeticSeismograph` par `TraverseesHub`
+
+### Dependances Utilisees
+- `framer-motion` (deja installe) pour les animations de pulsation
+- `lucide-react` pour les icones (Compass, Activity, List)
 
