@@ -448,7 +448,194 @@ export const TextePage: React.FC<TextePageProps> = ({
 };
 
 // ============================================================================
-// INDEX PAGE
+// INDEX PAR LIEU (Hierarchical: Partie > Marche > Types with pages)
+// ============================================================================
+
+interface IndexLieuxEntry {
+  partieId?: string;
+  partieNumero?: string;
+  partieTitre?: string;
+  marches: {
+    nom: string;
+    ville?: string;
+    region?: string;
+    types: {
+      type: string;
+      pages: number[];
+    }[];
+  }[];
+}
+
+interface IndexLieuxPageProps {
+  entries: IndexLieuxEntry[];
+  options: PdfExportOptions;
+  styles: PdfStylesRaw;
+  pageNumber: number;
+}
+
+export const IndexLieuxPage: React.FC<IndexLieuxPageProps> = ({ entries, options, styles, pageNumber }) => {
+  const dimensions = getPageDimensions(options);
+  const isOdd = pageNumber % 2 === 1;
+  
+  return (
+    <Page size={[dimensions.width, dimensions.height]} style={mergeStyles(styles.page, isOdd ? styles.pageOdd : styles.pageEven)} wrap>
+      <View style={styles.indexPage as Style}>
+        <Text style={styles.indexTitle as Style}>
+          ─────  INDEX PAR LIEU  ─────
+        </Text>
+        
+        {entries.map((partieEntry, pIndex) => (
+          <View key={pIndex} wrap={false}>
+            {partieEntry.partieTitre && (
+              <Text style={styles.indexLieuxPartieHeader as Style}>
+                {partieEntry.partieNumero && `${partieEntry.partieNumero}. `}{partieEntry.partieTitre}
+              </Text>
+            )}
+            
+            {partieEntry.marches.map((marche, mIndex) => (
+              <View key={mIndex}>
+                <Text style={styles.indexLieuxMarcheEntry as Style}>
+                  {marche.nom}{marche.region ? ` (${marche.region})` : marche.ville ? ` (${marche.ville})` : ''}
+                </Text>
+                
+                {marche.types.map((typeEntry, tIndex) => (
+                  <View key={tIndex} style={styles.indexLieuxTypeRow as Style}>
+                    <Text style={styles.indexLieuxTypeName as Style}>{typeEntry.type}</Text>
+                    <View style={styles.indexLieuxDotLeader as Style} />
+                    <Text style={styles.indexLieuxPages as Style}>{typeEntry.pages.join(', ')}</Text>
+                  </View>
+                ))}
+              </View>
+            ))}
+          </View>
+        ))}
+      </View>
+      
+      <PageFooter styles={styles} pageNumber={pageNumber} options={options} />
+    </Page>
+  );
+};
+
+// ============================================================================
+// INDEX PAR GENRE (with ornaments: ✦ HAÏKUS ✦)
+// ============================================================================
+
+interface IndexGenreEntry {
+  genre: string;
+  textes: {
+    titre: string;
+    lieu: string;
+    page: number;
+  }[];
+}
+
+interface IndexGenresPageProps {
+  entries: IndexGenreEntry[];
+  options: PdfExportOptions;
+  styles: PdfStylesRaw;
+  pageNumber: number;
+}
+
+// Predefined order for genres (matching Word export)
+const GENRE_ORDER = ['Haïku', 'Senryū', 'Fable', 'Poème', 'Manifeste', 'Prose', 'Autre'];
+
+export const IndexGenresPage: React.FC<IndexGenresPageProps> = ({ entries, options, styles, pageNumber }) => {
+  const dimensions = getPageDimensions(options);
+  const isOdd = pageNumber % 2 === 1;
+  
+  // Sort entries by predefined genre order
+  const sortedEntries = [...entries].sort((a, b) => {
+    const aIndex = GENRE_ORDER.findIndex(g => a.genre.toLowerCase().includes(g.toLowerCase()));
+    const bIndex = GENRE_ORDER.findIndex(g => b.genre.toLowerCase().includes(g.toLowerCase()));
+    return (aIndex === -1 ? 999 : aIndex) - (bIndex === -1 ? 999 : bIndex);
+  });
+  
+  return (
+    <Page size={[dimensions.width, dimensions.height]} style={mergeStyles(styles.page, isOdd ? styles.pageOdd : styles.pageEven)} wrap>
+      <View style={styles.indexPage as Style}>
+        <Text style={styles.indexTitle as Style}>
+          ─────  INDEX DES ŒUVRES  ─────
+        </Text>
+        
+        {sortedEntries.map((genreEntry, gIndex) => (
+          <View key={gIndex} wrap={false}>
+            <View style={styles.indexGenreSection as Style}>
+              <Text style={styles.indexGenreOrnament as Style}>
+                ✦  {genreEntry.genre.toUpperCase()}  ✦
+              </Text>
+            </View>
+            
+            {genreEntry.textes.map((texte, tIndex) => (
+              <View key={tIndex} style={styles.indexGenreEntry as Style}>
+                <Text style={styles.indexGenreTitle as Style}>{texte.titre}</Text>
+                <Text style={styles.indexGenreLieu as Style}>─ {texte.lieu}</Text>
+                <View style={styles.indexGenreDotLeader as Style} />
+                <Text style={styles.indexGenrePage as Style}>{texte.page}</Text>
+              </View>
+            ))}
+          </View>
+        ))}
+      </View>
+      
+      <PageFooter styles={styles} pageNumber={pageNumber} options={options} />
+    </Page>
+  );
+};
+
+// ============================================================================
+// INDEX THÉMATIQUE (Keywords by category)
+// ============================================================================
+
+interface IndexKeywordEntry {
+  category: string;
+  keywords: {
+    name: string;
+    pages: number[];
+  }[];
+}
+
+interface IndexKeywordsPageProps {
+  entries: IndexKeywordEntry[];
+  options: PdfExportOptions;
+  styles: PdfStylesRaw;
+  pageNumber: number;
+}
+
+export const IndexKeywordsPage: React.FC<IndexKeywordsPageProps> = ({ entries, options, styles, pageNumber }) => {
+  const dimensions = getPageDimensions(options);
+  const isOdd = pageNumber % 2 === 1;
+  
+  return (
+    <Page size={[dimensions.width, dimensions.height]} style={mergeStyles(styles.page, isOdd ? styles.pageOdd : styles.pageEven)} wrap>
+      <View style={styles.indexPage as Style}>
+        <Text style={styles.indexTitle as Style}>
+          ─────  INDEX THÉMATIQUE  ─────
+        </Text>
+        
+        {entries.map((categoryEntry, cIndex) => (
+          <View key={cIndex} wrap={false}>
+            <View style={styles.indexKeywordCategoryBox as Style}>
+              <Text style={styles.indexKeywordCategoryTitle as Style}>{categoryEntry.category}</Text>
+            </View>
+            
+            {categoryEntry.keywords.map((keyword, kIndex) => (
+              <View key={kIndex} style={styles.indexKeywordEntry as Style}>
+                <Text style={styles.indexKeywordName as Style}>{keyword.name}</Text>
+                <View style={styles.indexKeywordDotLeader as Style} />
+                <Text style={styles.indexKeywordPages as Style}>{keyword.pages.join(', ')}</Text>
+              </View>
+            ))}
+          </View>
+        ))}
+      </View>
+      
+      <PageFooter styles={styles} pageNumber={pageNumber} options={options} />
+    </Page>
+  );
+};
+
+// ============================================================================
+// INDEX PAGE (Legacy - kept for backwards compatibility)
 // ============================================================================
 
 interface IndexEntry {
@@ -572,7 +759,25 @@ export const PdfDocument: React.FC<PdfDocumentProps> = ({ textes, options, parti
   const groupedContent = groupTextesByStructure(textes, parties, options);
   const tocEntries = buildTocEntries(groupedContent, options);
   
+  // Build page mapping for indexes (texteId -> pageNumber)
+  const pageMapping = buildPageMapping(groupedContent, options);
+  
+  // Build index data
+  const indexLieuxEntries = options.includeIndexLieux 
+    ? buildIndexLieuxData(textes, parties, pageMapping)
+    : [];
+  const indexGenresEntries = options.includeIndexGenres
+    ? buildIndexGenresData(textes, pageMapping)
+    : [];
+  
   let currentPage = 1;
+  
+  // Calculate content end page for index positioning
+  let contentEndPage = currentPage;
+  if (options.includeCover) contentEndPage++;
+  if (options.includeFauxTitre) contentEndPage++;
+  if (options.includeTableOfContents) contentEndPage++;
+  contentEndPage += groupedContent.length;
   
   return (
     <Document
@@ -634,12 +839,32 @@ export const PdfDocument: React.FC<PdfDocumentProps> = ({ textes, options, parti
         return null;
       })}
       
+      {/* Index par Lieu */}
+      {options.includeIndexLieux && indexLieuxEntries.length > 0 && (
+        <IndexLieuxPage
+          entries={indexLieuxEntries}
+          options={options}
+          styles={styles}
+          pageNumber={contentEndPage++}
+        />
+      )}
+      
+      {/* Index des Œuvres (par genre) */}
+      {options.includeIndexGenres && indexGenresEntries.length > 0 && (
+        <IndexGenresPage
+          entries={indexGenresEntries}
+          options={options}
+          styles={styles}
+          pageNumber={contentEndPage++}
+        />
+      )}
+      
       {options.includeColophon && (
         <ColophonPage 
           options={options} 
           styles={styles} 
           texteCount={textes.length}
-          pageNumber={currentPage++}
+          pageNumber={contentEndPage++}
         />
       )}
     </Document>
@@ -820,6 +1045,203 @@ function buildTocEntries(groupedContent: GroupedItem[], options: PdfExportOption
   });
   
   return entries;
+}
+
+// ============================================================================
+// INDEX BUILDING FUNCTIONS
+// ============================================================================
+
+/**
+ * Build page mapping: texteId -> pageNumber
+ */
+function buildPageMapping(
+  groupedContent: GroupedItem[],
+  options: PdfExportOptions
+): Map<string, number> {
+  const mapping = new Map<string, number>();
+  let pageNumber = options.startPageNumber;
+  
+  if (options.includeCover) pageNumber++;
+  if (options.includeFauxTitre) pageNumber++;
+  if (options.includeTableOfContents) pageNumber++;
+  
+  groupedContent.forEach(item => {
+    if (item.type === 'texte' && item.texte) {
+      mapping.set(item.texte.id, pageNumber);
+    }
+    pageNumber++;
+  });
+  
+  return mapping;
+}
+
+/**
+ * Build Index par Lieu data: Partie > Marche > Types with pages
+ */
+function buildIndexLieuxData(
+  textes: TexteExport[],
+  parties: PartieData[],
+  pageMapping: Map<string, number>
+): Array<{
+  partieId?: string;
+  partieNumero?: string;
+  partieTitre?: string;
+  marches: {
+    nom: string;
+    ville?: string;
+    region?: string;
+    types: { type: string; pages: number[] }[];
+  }[];
+}> {
+  const result: Array<{
+    partieId?: string;
+    partieNumero?: string;
+    partieTitre?: string;
+    marches: {
+      nom: string;
+      ville?: string;
+      region?: string;
+      types: { type: string; pages: number[] }[];
+    }[];
+  }> = [];
+  
+  // Group textes by partie
+  const partiesMap = new Map<string, TexteExport[]>();
+  textes.forEach(texte => {
+    const partieId = texte.partie_id || 'no-partie';
+    if (!partiesMap.has(partieId)) {
+      partiesMap.set(partieId, []);
+    }
+    partiesMap.get(partieId)!.push(texte);
+  });
+  
+  // Sort parties
+  const sortedParties = [...parties].sort((a, b) => a.ordre - b.ordre);
+  
+  sortedParties.forEach(partie => {
+    const partieTextes = partiesMap.get(partie.id) || [];
+    if (partieTextes.length === 0) return;
+    
+    // Group by marche
+    const marcheMap = new Map<string, { textes: TexteExport[]; ville?: string; region?: string; ordre: number }>();
+    partieTextes.forEach(texte => {
+      const marcheKey = texte.marche_nom || texte.marche_ville || 'Sans lieu';
+      if (!marcheMap.has(marcheKey)) {
+        marcheMap.set(marcheKey, {
+          textes: [],
+          ville: texte.marche_ville,
+          region: texte.marche_region,
+          ordre: texte.marche_ordre || 999,
+        });
+      }
+      marcheMap.get(marcheKey)!.textes.push(texte);
+    });
+    
+    // Sort marches and build entry
+    const marches = Array.from(marcheMap.entries())
+      .sort((a, b) => a[1].ordre - b[1].ordre)
+      .map(([nom, data]) => {
+        // Group by type within marche
+        const typeMap = new Map<string, number[]>();
+        data.textes.forEach(texte => {
+          const type = texte.type_texte || 'Autre';
+          const page = pageMapping.get(texte.id);
+          if (page) {
+            if (!typeMap.has(type)) typeMap.set(type, []);
+            typeMap.get(type)!.push(page);
+          }
+        });
+        
+        const types = Array.from(typeMap.entries())
+          .map(([type, pages]) => ({ type, pages: pages.sort((a, b) => a - b) }));
+        
+        return {
+          nom,
+          ville: data.ville,
+          region: data.region,
+          types,
+        };
+      });
+    
+    result.push({
+      partieId: partie.id,
+      partieNumero: partie.numeroRomain,
+      partieTitre: partie.titre,
+      marches,
+    });
+  });
+  
+  // Handle textes without partie
+  const noPartieTextes = partiesMap.get('no-partie') || [];
+  if (noPartieTextes.length > 0) {
+    const marcheMap = new Map<string, { textes: TexteExport[]; ville?: string; region?: string }>();
+    noPartieTextes.forEach(texte => {
+      const marcheKey = texte.marche_nom || texte.marche_ville || 'Sans lieu';
+      if (!marcheMap.has(marcheKey)) {
+        marcheMap.set(marcheKey, { textes: [], ville: texte.marche_ville, region: texte.marche_region });
+      }
+      marcheMap.get(marcheKey)!.textes.push(texte);
+    });
+    
+    const marches = Array.from(marcheMap.entries()).map(([nom, data]) => {
+      const typeMap = new Map<string, number[]>();
+      data.textes.forEach(texte => {
+        const type = texte.type_texte || 'Autre';
+        const page = pageMapping.get(texte.id);
+        if (page) {
+          if (!typeMap.has(type)) typeMap.set(type, []);
+          typeMap.get(type)!.push(page);
+        }
+      });
+      
+      return {
+        nom,
+        ville: data.ville,
+        region: data.region,
+        types: Array.from(typeMap.entries()).map(([type, pages]) => ({ type, pages: pages.sort((a, b) => a - b) })),
+      };
+    });
+    
+    result.push({ marches });
+  }
+  
+  return result;
+}
+
+/**
+ * Build Index par Genre data: Genre > Textes with lieu + page
+ */
+function buildIndexGenresData(
+  textes: TexteExport[],
+  pageMapping: Map<string, number>
+): Array<{
+  genre: string;
+  textes: { titre: string; lieu: string; page: number }[];
+}> {
+  // Group by genre
+  const genreMap = new Map<string, Array<{ titre: string; lieu: string; page: number }>>();
+  
+  textes.forEach(texte => {
+    const genre = texte.type_texte || 'Autre';
+    const page = pageMapping.get(texte.id);
+    if (!page) return;
+    
+    if (!genreMap.has(genre)) {
+      genreMap.set(genre, []);
+    }
+    
+    genreMap.get(genre)!.push({
+      titre: texte.titre,
+      lieu: texte.marche_nom || texte.marche_ville || 'Lieu inconnu',
+      page,
+    });
+  });
+  
+  // Convert to array and sort textes within each genre by page
+  return Array.from(genreMap.entries()).map(([genre, items]) => ({
+    genre,
+    textes: items.sort((a, b) => a.page - b.page),
+  }));
 }
 
 // ============================================================================
