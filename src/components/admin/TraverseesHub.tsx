@@ -1,9 +1,7 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Activity, List } from 'lucide-react';
 import type { TexteExport } from '@/utils/epubExportUtils';
-import PoeticSeismograph from './PoeticSeismograph';
-import LivingIndex from './LivingIndex';
+import { TRAVERSEE_MODES_REGISTRY } from '@/registries/traverseeModes';
 
 interface TraverseesHubProps {
   textes: TexteExport[];
@@ -16,15 +14,19 @@ interface TraverseesHubProps {
   };
 }
 
-type TraverseeMode = 'seismograph' | 'living-index';
-
-const modes: { id: TraverseeMode; label: string; icon: React.ElementType }[] = [
-  { id: 'seismograph', label: 'Sismographe Poétique', icon: Activity },
-  { id: 'living-index', label: 'Index Vivant', icon: List },
-];
+// Use the registry to build modes array
+const modes = TRAVERSEE_MODES_REGISTRY.map(mode => ({
+  id: mode.id,
+  label: mode.label,
+  icon: mode.icon,
+}));
 
 const TraverseesHub: React.FC<TraverseesHubProps> = ({ textes, colorScheme }) => {
-  const [activeMode, setActiveMode] = useState<TraverseeMode>('seismograph');
+  const [activeMode, setActiveMode] = useState<string>(modes[0]?.id || 'seismograph');
+
+  // Get the active mode's component from the registry
+  const activeModeConfig = TRAVERSEE_MODES_REGISTRY.find(m => m.id === activeMode);
+  const ActiveComponent = activeModeConfig?.component;
 
   return (
     <div 
@@ -80,11 +82,8 @@ const TraverseesHub: React.FC<TraverseesHubProps> = ({ textes, colorScheme }) =>
             transition={{ duration: 0.2 }}
             className="h-full"
           >
-            {activeMode === 'seismograph' && (
-              <PoeticSeismograph textes={textes} colorScheme={colorScheme} />
-            )}
-            {activeMode === 'living-index' && (
-              <LivingIndex textes={textes} colorScheme={colorScheme} />
+            {ActiveComponent && (
+              <ActiveComponent textes={textes} colorScheme={colorScheme} />
             )}
           </motion.div>
         </AnimatePresence>
