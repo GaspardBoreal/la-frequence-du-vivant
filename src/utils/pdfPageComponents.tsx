@@ -10,6 +10,7 @@ import {
   formatPageNumber,
   generateColophonText,
   getPageDimensions,
+  mmToPoints,
 } from './pdfExportUtils';
 import { generatePdfStyles, PdfStylesRaw, registerFonts } from './pdfStyleGenerator';
 
@@ -40,6 +41,7 @@ export interface TocEntry {
   pageNumber: number;
   partieNumero?: string;
   indent?: number;
+  ville?: string;
 }
 
 // Helper to merge styles
@@ -117,14 +119,14 @@ export const TocPage: React.FC<TocPageProps> = ({ entries, options, styles, page
   const isOdd = pageNumber % 2 === 1;
   
   return (
-    <Page size={[dimensions.width, dimensions.height]} style={mergeStyles(styles.page, isOdd ? styles.pageOdd : styles.pageEven)}>
+    <Page size={[dimensions.width, dimensions.height]} style={mergeStyles(styles.page, isOdd ? styles.pageOdd : styles.pageEven)} wrap>
       <View style={styles.tocPage as Style}>
         <Text style={styles.tocTitle as Style}>
           {options.language === 'fr' ? 'Table des Matières' : 'Table of Contents'}
         </Text>
         
         {entries.map((entry, index) => (
-          <View key={index} style={styles.tocEntry as Style}>
+          <View key={index} style={styles.tocEntry as Style} wrap={false}>
             {entry.type === 'partie' && (
               <Text style={styles.tocPartie as Style}>
                 {entry.partieNumero && `${entry.partieNumero} · `}{entry.title}
@@ -132,7 +134,9 @@ export const TocPage: React.FC<TocPageProps> = ({ entries, options, styles, page
             )}
             {entry.type === 'marche' && (
               <View style={{ flexDirection: 'row', alignItems: 'center' } as Style}>
-                <Text style={styles.tocMarche as Style}>{entry.title}</Text>
+                <Text style={styles.tocMarche as Style}>
+                  {entry.title}{entry.ville ? ` (${entry.ville})` : ''}
+                </Text>
                 <View style={styles.tocDotLeader as Style} />
                 <Text style={styles.tocPageNumber as Style}>{entry.pageNumber}</Text>
               </View>
@@ -141,7 +145,7 @@ export const TocPage: React.FC<TocPageProps> = ({ entries, options, styles, page
         ))}
       </View>
       
-      <Text style={mergeStyles(styles.pageNumber, isOdd ? styles.pageNumberOdd : styles.pageNumberEven)}>
+      <Text style={mergeStyles(styles.pageNumber, isOdd ? styles.pageNumberOdd : styles.pageNumberEven)} fixed>
         {formatPageNumber(pageNumber, options.pageNumberStyle, true)}
       </Text>
     </Page>
@@ -211,10 +215,8 @@ interface HaikuPageProps {
   content: string;
 }
 
-export const HaikuPage: React.FC<HaikuPageProps> = ({ texte, options, styles, pageNumber, content }) => {
-  const dimensions = getPageDimensions(options);
-  const isOdd = pageNumber % 2 === 1;
-  
+// Haiku/Senryu rendered inline (not as separate page) for space efficiency
+export const HaikuBlock: React.FC<{ texte: TexteExport; styles: PdfStylesRaw; content: string }> = ({ texte, styles, content }) => {
   // Split haiku content into individual lines for proper centering
   const lines = content
     .split('\n')
@@ -222,21 +224,15 @@ export const HaikuPage: React.FC<HaikuPageProps> = ({ texte, options, styles, pa
     .filter(Boolean);
   
   return (
-    <Page size={[dimensions.width, dimensions.height]} style={mergeStyles(styles.page, isOdd ? styles.pageOdd : styles.pageEven)}>
-      <View style={styles.haikuContainer as Style}>
-        <Text style={styles.texteTitle as Style}>{texte.titre}</Text>
-        <View style={styles.separator as Style} />
-        <View style={{ alignItems: 'center' } as Style}>
-          {lines.map((line, idx) => (
-            <Text key={idx} style={styles.haikuContent as Style}>{line}</Text>
-          ))}
-        </View>
+    <View style={styles.haikuBlock as Style} wrap={false}>
+      <Text style={styles.haikuTitle as Style}>{texte.titre}</Text>
+      <View style={styles.haikuSeparator as Style} />
+      <View style={{ alignItems: 'center', marginTop: mmToPoints(4) } as Style}>
+        {lines.map((line, idx) => (
+          <Text key={idx} style={styles.haikuLine as Style}>{line}</Text>
+        ))}
       </View>
-      
-      <Text style={mergeStyles(styles.pageNumber, isOdd ? styles.pageNumberOdd : styles.pageNumberEven)}>
-        {formatPageNumber(pageNumber, options.pageNumberStyle)}
-      </Text>
-    </Page>
+    </View>
   );
 };
 
@@ -302,15 +298,21 @@ export const TextePage: React.FC<TextePageProps> = ({
   const isHaikuText = isHaiku(texte);
   const isFableText = isFable(texte);
   
+  // Haikus are rendered inline (not as separate centered page)
   if (isHaikuText) {
     return (
-      <HaikuPage 
-        texte={texte} 
-        options={options} 
-        styles={styles} 
-        pageNumber={pageNumber}
-        content={content}
-      />
+      <Page size={[dimensions.width, dimensions.height]} style={mergeStyles(styles.page, isOdd ? styles.pageOdd : styles.pageEven)}>
+        <View style={styles.textePage as Style}>
+          {showMarcheHeader && marche && (
+            <MarcheHeader marche={marche} styles={styles} />
+          )}
+          <HaikuBlock texte={texte} styles={styles} content={content} />
+        </View>
+        
+        <Text style={mergeStyles(styles.pageNumber, isOdd ? styles.pageNumberOdd : styles.pageNumberEven)}>
+          {formatPageNumber(pageNumber, options.pageNumberStyle)}
+        </Text>
+      </Page>
     );
   }
   
@@ -492,15 +494,8 @@ export const PdfDocument: React.FC<PdfDocumentProps> = ({ textes, options, parti
         <CoverPage options={options} styles={styles} />
       )}
       
-      {options.includeCover && (
-        <BlankPage options={options} styles={styles} />
-      )}
-      
       {options.includeFauxTitre && (
-        <>
-          <FauxTitrePage options={options} styles={styles} />
-          <BlankPage options={options} styles={styles} />
-        </>
+        <FauxTitrePage options={options} styles={styles} />
       )}
       
       {options.includeTableOfContents && tocEntries.length > 0 && (
@@ -668,8 +663,9 @@ function buildTocEntries(groupedContent: GroupedItem[], options: PdfExportOption
   const entries: TocEntry[] = [];
   let pageNumber = options.startPageNumber;
   
-  if (options.includeCover) pageNumber += 2;
-  if (options.includeFauxTitre) pageNumber += 2;
+  // Simplified page counting: cover + faux-titre are single pages now (no blanks)
+  if (options.includeCover) pageNumber += 1;
+  if (options.includeFauxTitre) pageNumber += 1;
   if (options.includeTableOfContents) pageNumber += 1;
   
   // Track which marches we've already added to ToC
@@ -695,6 +691,7 @@ function buildTocEntries(groupedContent: GroupedItem[], options: PdfExportOption
           title: marcheKey,
           pageNumber,
           indent: 1,
+          ville: item.marche.ville || undefined, // Add ville for display in ToC
         });
       }
     }
