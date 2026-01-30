@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { BookOpen, MapPin, Tag, AlertCircle } from 'lucide-react';
+import { BookOpen, MapPin, Tag, AlertCircle, FileText } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import type { TexteExport, EpubExportOptions } from '@/utils/epubExportUtils';
@@ -21,6 +21,17 @@ const getGenreLabel = (type: string): string => {
     'manifeste': 'Manifestes',
   };
   return labels[type.toLowerCase()] || type;
+};
+
+const getGenreBadgeStyle = (type: string): string => {
+  const styles: Record<string, string> = {
+    'haiku': 'bg-emerald-100 text-emerald-700',
+    'senryu': 'bg-teal-100 text-teal-700',
+    'poeme': 'bg-blue-100 text-blue-700',
+    'fable': 'bg-amber-100 text-amber-700',
+    'manifeste': 'bg-purple-100 text-purple-700',
+  };
+  return styles[type.toLowerCase()] || 'bg-gray-100 text-gray-700';
 };
 
 const EpubIndexPreview: React.FC<EpubIndexPreviewProps> = ({ textes, options }) => {
@@ -127,6 +138,19 @@ const EpubIndexPreview: React.FC<EpubIndexPreviewProps> = ({ textes, options }) 
       });
   }, [textes]);
 
+  // Generate Works Index (alphabetical list of all titles with genre and location)
+  const worksIndex = useMemo(() => {
+    return textes
+      .map(texte => ({
+        titre: texte.titre,
+        genre: texte.type_texte.toLowerCase(),
+        genreLabel: getGenreLabel(texte.type_texte),
+        location: texte.marche_nom || texte.marche_ville || 'Sans lieu',
+        partieNumero: texte.partie_numero_romain,
+      }))
+      .sort((a, b) => a.titre.localeCompare(b.titre, 'fr'));
+  }, [textes]);
+
   // If no options are enabled
   if (!includeTableOfContents && !includeIndexes) {
     return (
@@ -165,11 +189,11 @@ const EpubIndexPreview: React.FC<EpubIndexPreviewProps> = ({ textes, options }) 
         color: colorScheme.text,
       }}
     >
-      <Tabs defaultValue={includeTableOfContents ? 'toc' : 'location'} className="flex-1 flex flex-col">
+      <Tabs defaultValue={includeTableOfContents ? 'toc' : (includeIndexes ? 'works' : 'location')} className="flex-1 flex flex-col">
         <TabsList 
           className="w-full grid rounded-none border-b"
           style={{ 
-            gridTemplateColumns: `repeat(${(includeTableOfContents ? 1 : 0) + (includeIndexes ? 2 : 0)}, 1fr)`,
+            gridTemplateColumns: `repeat(${(includeTableOfContents ? 1 : 0) + (includeIndexes ? 3 : 0)}, 1fr)`,
             borderColor: colorScheme.secondary + '30',
           }}
         >
@@ -181,6 +205,10 @@ const EpubIndexPreview: React.FC<EpubIndexPreviewProps> = ({ textes, options }) 
           )}
           {includeIndexes && (
             <>
+              <TabsTrigger value="works" className="text-xs gap-1">
+                <FileText className="h-3 w-3" />
+                Par Œuvre
+              </TabsTrigger>
               <TabsTrigger value="location" className="text-xs gap-1">
                 <MapPin className="h-3 w-3" />
                 Par Lieu
@@ -232,6 +260,45 @@ const EpubIndexPreview: React.FC<EpubIndexPreviewProps> = ({ textes, options }) 
                         • {entry.titre}
                       </div>
                     )}
+                  </div>
+                ))}
+              </div>
+            </ScrollArea>
+          </TabsContent>
+        )}
+
+        {/* Works Index - Alphabetical list of all titles */}
+        {includeIndexes && (
+          <TabsContent value="works" className="flex-1 m-0">
+            <ScrollArea className="h-[360px] px-4 py-3">
+              <h3 
+                className="text-sm font-semibold mb-3 uppercase tracking-wide"
+                style={{ color: colorScheme.primary }}
+              >
+                Index des Œuvres
+              </h3>
+              <div className="space-y-1.5">
+                {worksIndex.map((entry, index) => (
+                  <div key={index} className="text-xs flex items-start gap-2">
+                    <span 
+                      className={`shrink-0 text-[9px] px-1.5 py-0.5 rounded font-medium ${getGenreBadgeStyle(entry.genre)}`}
+                    >
+                      {entry.genreLabel}
+                    </span>
+                    <div className="flex-1">
+                      <span 
+                        className="font-medium"
+                        style={{ color: colorScheme.text }}
+                      >
+                        {entry.titre}
+                      </span>
+                      <span 
+                        className="ml-1 italic text-[10px]"
+                        style={{ color: colorScheme.secondary }}
+                      >
+                        — {entry.location}
+                      </span>
+                    </div>
                   </div>
                 ))}
               </div>
