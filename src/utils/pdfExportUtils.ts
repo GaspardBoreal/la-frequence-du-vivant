@@ -49,6 +49,8 @@ export interface PdfExportOptions {
   // Indexes
   includeIndexLieux: boolean;
   includeIndexGenres: boolean;
+  includeIndexKeywords: boolean;
+  selectedKeywordCategories?: string[];
   
   // Structure
   organizationMode: 'type' | 'marche';
@@ -244,6 +246,8 @@ export const getDefaultPdfOptions = (preset: keyof typeof PDF_PRESETS = 'edition
     // Indexes
     includeIndexLieux: true,
     includeIndexGenres: true,
+    includeIndexKeywords: false,
+    selectedKeywordCategories: ['Faune', 'Hydrologie', 'Ouvrages', 'Flore', 'Temporalités', 'Poétique', 'Technologies'],
     
     // Structure
     organizationMode: 'marche',

@@ -189,7 +189,7 @@ export interface PdfStylesRaw {
   fableMoral: Style;
   fableSection: Style;
   
-  // Index
+  // Index styles (ultra-design professional)
   indexPage: Style;
   indexTitle: Style;
   indexColumns: Style;
@@ -197,6 +197,31 @@ export interface PdfStylesRaw {
   indexEntry: Style;
   indexEntryTitle: Style;
   indexEntryPage: Style;
+  
+  // Index par Lieu (hierarchical)
+  indexLieuxPartieHeader: Style;
+  indexLieuxMarcheEntry: Style;
+  indexLieuxTypeRow: Style;
+  indexLieuxTypeName: Style;
+  indexLieuxDotLeader: Style;
+  indexLieuxPages: Style;
+  
+  // Index par Genre (with ornaments)
+  indexGenreSection: Style;
+  indexGenreOrnament: Style;
+  indexGenreEntry: Style;
+  indexGenreTitle: Style;
+  indexGenreLieu: Style;
+  indexGenreDotLeader: Style;
+  indexGenrePage: Style;
+  
+  // Index Thématique (keyword categories)
+  indexKeywordCategoryBox: Style;
+  indexKeywordCategoryTitle: Style;
+  indexKeywordEntry: Style;
+  indexKeywordName: Style;
+  indexKeywordDotLeader: Style;
+  indexKeywordPages: Style;
   
   // Colophon
   colophonPage: Style;
@@ -582,16 +607,17 @@ export const generatePdfStyles = (options: PdfExportOptions): PdfStylesRaw => {
       marginBottom: mmToPoints(3),
     },
     
-    // =========== INDEX ===========
+    // =========== INDEX COMMON ===========
     indexPage: {
-      paddingTop: mmToPoints(30),
+      paddingTop: mmToPoints(18),
     },
     indexTitle: {
       fontFamily: typography.headingFont,
-      fontSize: headingFontSize,
+      fontSize: headingFontSize * 0.9,
       color: colorScheme.primary,
-      marginBottom: mmToPoints(12),
+      marginBottom: mmToPoints(10),
       textAlign: 'center',
+      letterSpacing: 2,
     },
     indexColumns: {
       flexDirection: 'row',
@@ -616,6 +642,140 @@ export const generatePdfStyles = (options: PdfExportOptions): PdfStylesRaw => {
       fontSize: baseFontSize * 0.85,
       color: colorScheme.secondary,
       marginLeft: mmToPoints(3),
+    },
+    
+    // =========== INDEX PAR LIEU (Hierarchical: Partie > Marche > Types) ===========
+    indexLieuxPartieHeader: {
+      fontFamily: typography.headingFont,
+      fontSize: baseFontSize * 0.95,
+      fontWeight: 'bold',
+      color: colorScheme.primary,
+      marginTop: mmToPoints(6),
+      marginBottom: mmToPoints(3),
+      letterSpacing: 1,
+    },
+    indexLieuxMarcheEntry: {
+      fontFamily: typography.bodyFont,
+      fontSize: baseFontSize * 0.85,
+      fontWeight: 'bold',
+      color: colorScheme.secondary,
+      marginTop: mmToPoints(3),
+      marginBottom: mmToPoints(1.5),
+      paddingLeft: mmToPoints(4),
+    },
+    indexLieuxTypeRow: {
+      flexDirection: 'row',
+      alignItems: 'flex-end',
+      marginBottom: mmToPoints(1),
+      paddingLeft: mmToPoints(8),
+    },
+    indexLieuxTypeName: {
+      fontFamily: typography.bodyFont,
+      fontSize: baseFontSize * 0.8,
+      fontStyle: 'italic',
+      color: colorScheme.text,
+    },
+    indexLieuxDotLeader: {
+      flex: 1,
+      marginHorizontal: mmToPoints(1.5),
+      borderBottomWidth: 0.5,
+      borderBottomStyle: 'dotted',
+      borderBottomColor: colorScheme.secondary,
+      marginBottom: 2,
+    },
+    indexLieuxPages: {
+      fontFamily: typography.bodyFont,
+      fontSize: baseFontSize * 0.75,
+      color: colorScheme.secondary,
+    },
+    
+    // =========== INDEX PAR GENRE (with ornaments) ===========
+    indexGenreSection: {
+      marginTop: mmToPoints(8),
+      marginBottom: mmToPoints(4),
+      textAlign: 'center',
+    },
+    indexGenreOrnament: {
+      fontFamily: typography.headingFont,
+      fontSize: baseFontSize * 0.85,
+      color: colorScheme.accent,
+      letterSpacing: 3,
+      textAlign: 'center',
+      marginBottom: mmToPoints(4),
+    },
+    indexGenreEntry: {
+      flexDirection: 'row',
+      alignItems: 'flex-end',
+      marginBottom: mmToPoints(1.5),
+    },
+    indexGenreTitle: {
+      fontFamily: typography.bodyFont,
+      fontSize: baseFontSize * 0.85,
+      color: colorScheme.text,
+    },
+    indexGenreLieu: {
+      fontFamily: typography.bodyFont,
+      fontSize: baseFontSize * 0.75,
+      fontStyle: 'italic',
+      color: colorScheme.secondary,
+      marginLeft: mmToPoints(2),
+    },
+    indexGenreDotLeader: {
+      flex: 1,
+      marginHorizontal: mmToPoints(1.5),
+      borderBottomWidth: 0.5,
+      borderBottomStyle: 'dotted',
+      borderBottomColor: colorScheme.secondary,
+      marginBottom: 2,
+    },
+    indexGenrePage: {
+      fontFamily: typography.bodyFont,
+      fontSize: baseFontSize * 0.8,
+      color: colorScheme.secondary,
+    },
+    
+    // =========== INDEX THÉMATIQUE (keyword categories) ===========
+    indexKeywordCategoryBox: {
+      marginTop: mmToPoints(6),
+      marginBottom: mmToPoints(4),
+      paddingVertical: mmToPoints(2),
+      paddingHorizontal: mmToPoints(4),
+      borderWidth: 0.75,
+      borderColor: colorScheme.accent,
+      borderRadius: 2,
+      alignSelf: 'flex-start',
+    },
+    indexKeywordCategoryTitle: {
+      fontFamily: typography.headingFont,
+      fontSize: baseFontSize * 0.8,
+      fontWeight: 'bold',
+      color: colorScheme.primary,
+      letterSpacing: 1,
+      textTransform: 'uppercase',
+    },
+    indexKeywordEntry: {
+      flexDirection: 'row',
+      alignItems: 'flex-end',
+      marginBottom: mmToPoints(1),
+      paddingLeft: mmToPoints(2),
+    },
+    indexKeywordName: {
+      fontFamily: typography.bodyFont,
+      fontSize: baseFontSize * 0.8,
+      color: colorScheme.text,
+    },
+    indexKeywordDotLeader: {
+      flex: 1,
+      marginHorizontal: mmToPoints(1.5),
+      borderBottomWidth: 0.5,
+      borderBottomStyle: 'dotted',
+      borderBottomColor: colorScheme.secondary,
+      marginBottom: 2,
+    },
+    indexKeywordPages: {
+      fontFamily: typography.bodyFont,
+      fontSize: baseFontSize * 0.75,
+      color: colorScheme.secondary,
     },
     
     // =========== COLOPHON ===========
