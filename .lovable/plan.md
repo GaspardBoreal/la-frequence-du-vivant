@@ -1,120 +1,143 @@
 
-Objectif
-- Rendre réellement cliquables (et utiles) les éléments affichés comme “liens” dans :
-  1) la page “Sommaire” (Table des matières)
-  2) les pages “Lieux” et “Genres” (Index)
-  3) le sous-menu de l’“Index Vivant” (mots-clés/occurrences) dans “Traversées”
+# Plan : Système de Directions Artistiques pour l'EPUB Pro
 
-Diagnostic (pourquoi ce n’est pas cliquable aujourd’hui)
-- Sommaire (TocRenderer)
-  - Seul l’en-tête de “Partie” a un onClick (et encore : il utilise un calcul fragile `groupIdx + 2`).
-  - Les lignes “marches” sont rendues en <div>/<span> sans handler => visuellement “liste”, mais pas un lien.
-- Index (IndexRenderer)
-  - Les entrées sont rendues en <div>/<span> sans onClick => jamais cliquables.
-  - Les extracteurs d’index (src/registries/indexTypes.ts) calculent des `texteIds`… mais les jettent à la fin (ils ne les renvoient pas). Donc même si on ajoutait un onClick, on ne saurait pas “où aller”.
-- Index Vivant (LivingIndex)
-  - Les lignes de mots-clés dans la vue détail (`motion.div`) n’ont pas de onClick.
-  - De plus, LivingIndex/TraverseesHub ne reçoivent aucune “fonction de navigation du livre”, donc même si on clique, il n’y a rien à déclencher vers le lecteur.
-  - Important : LivingIndex est aussi utilisé ailleurs (page lecteurs + aperçu admin), donc la solution doit rester compatible (props optionnelles).
+## Objectif
+Permettre l'application de directions artistiques complètes (palette, typographie, mise en page) via des presets personnalisés, en commençant par "Galerie Fleuve" issu de l'analyse de votre image.
 
-Approche retenue (efficace + robuste)
-- Standardiser une navigation “par id de page” utilisable partout, plutôt que des index numériques fragiles :
-  - Les pages du livre ont déjà des ids stables : `cover`, `toc`, `index-lieu`, `index-genre`, `partie-<id>`, `texte-<id>`.
-  - Le hook `useBookNavigation` expose déjà `goToPageById(pageId)` (retourne boolean).
-- Injecter cette capacité de navigation dans les renderers (Sommaire/Index) et dans Traversées (Index Vivant) via des props optionnelles, pour ne rien casser ailleurs.
+## Analyse de la Direction "Galerie Fleuve"
 
-Modifications prévues (fichiers)
-1) Ajouter une API de navigation par id pour les renderers du Livre Vivant
-- Fichier : src/registries/types.ts
-  - Étendre `PageRendererProps` avec :
-    - `onNavigateToPageId?: (pageId: string) => boolean;`
-  - (Optionnel) garder `onNavigate?: (pageIndex: number) => void` tel quel pour compatibilité.
+### Palette de couleurs extraite
+| Role | Couleur | Hex |
+|------|---------|-----|
+| Primary | Noir profond | `#1A1A1A` |
+| Secondary | Gris neutre | `#666666` |
+| Background | Blanc pur | `#FFFFFF` |
+| Text | Gris charbon | `#333333` |
+| Accent | Vert emeraude | `#10B981` |
 
-- Fichier : src/components/admin/livre-vivant/LivreVivantViewer.tsx
-  - Dans `commonProps`, ajouter :
-    - `onNavigateToPageId: goToPageById`
-  - Ainsi, TocRenderer et IndexRenderer pourront faire : `onNavigateToPageId?.("texte-...")`.
+### Typographie
+- **Police titres** : Playfair Display (elegant, serieux)
+- **Police corps** : Georgia (classique, lisible)
+- **Taille de base** : 1.1rem
+- **Interligne** : 1.75 (genereux, aere)
 
-2) Rendre le Sommaire réellement navigable
-- Fichier : src/components/admin/livre-vivant/renderers/TocRenderer.tsx
-  - Remplacer le calcul fragile `onNavigate?.(groupIdx + 2)` par :
-    - `onNavigateToPageId?.(partieId)` avec `partieId = 'partie-' + group.partie.id`
-    - Si la page partie n’existe pas (ex: option includePartiePages=false), fallback :
-      - naviguer vers le premier texte du groupe (premier texte de la première marche).
-  - Rendre chaque ligne “marche” cliquable :
-    - transformer le bloc marche en `<button type="button">` (full width, text-left)
-    - au click : aller au premier texte de cette marche (`texte-${marcheData.textes[0].id}`)
-  - Ajouter feedback UX :
-    - `cursor-pointer`, hover/active styles (ex: fond léger `secondary+10`, underline, etc.)
-    - Accessibilité : `aria-label` “Aller à …”
+### Caracteristiques visuelles
+- Style "galerie d'art" : epure, minimaliste, blanc dominant
+- Accents de couleur vive (vert) sur les elements interactifs
+- Badges de localisation colores
+- Icone livre en en-tete de page texte
+- Separateurs discrets
 
-3) Rendre “Lieux” et “Genres” cliquables (avec choix du texte)
-- Fichier : src/registries/indexTypes.ts
-  - Modifier `extractIndexByLieu` et `extractIndexByGenre` pour renvoyer aussi les `texteIds` par entrée.
-  - Ex : chaque `IndexEntry` inclura :
-    - `label`, `count`, `texteIds: string[]`
-- Fichier : src/registries/types.ts
-  - Étendre `IndexEntry` avec :
-    - `texteIds?: string[]`
-  - (Optionnel) laisser `pageRef` inchangé (on ne s’en sert pas ici).
+## Modifications techniques
 
-- Fichier : src/components/admin/livre-vivant/renderers/IndexRenderer.tsx
-  - Rendre chaque entrée “Lieu/Genre” cliquable sous forme de bouton :
-    - Au clic : déplier/plier un sous-menu listant les textes correspondants (à partir de `texteIds`)
-  - Pour chaque texte listé :
-    - bouton “titre du texte” (+ petit contexte marche/ville si dispo)
-    - `onClick => onNavigateToPageId?.('texte-' + texteId)`
-  - UX mobile :
-    - liste en 1 colonne, items larges (tappable)
-    - éventuellement icône “chevron” + `aria-expanded`
+### 1. Etendre les types pour accepter plus de polices
 
-4) Rendre le sous-menu de l’Index Vivant cliquable (mots-clés => textes)
-- Objectif UX : depuis Traversées > Index Vivant > (monde) > (mot-clé), on doit pouvoir ouvrir la liste des textes, puis cliquer un texte et “sauter” dans le livre.
-- Contraintes : LivingIndex utilisé aussi hors lecteur => navigation doit être optionnelle.
+**Fichier** : `src/utils/epubExportUtils.ts`
 
-- Fichier : src/registries/types.ts
-  - Étendre `TraverseeProps` avec (optionnel) :
-    - `onNavigateToTexteId?: (texteId: string) => void;`
-  - (Ne rien rendre obligatoire, pour ne pas casser les usages existants.)
+Modifier les types `EpubTypography` pour inclure les polices supplementaires necessaires :
 
-- Fichier : src/components/admin/TraverseesHub.tsx
-  - Accepter `onNavigateToTexteId?` dans les props de TraverseesHub
-  - Le passer à `ActiveComponent` :
-    - `<ActiveComponent textes={textes} colorScheme={colorScheme} onNavigateToTexteId={...} />`
+```typescript
+export interface EpubTypography {
+  bodyFont: 'Georgia' | 'Libre Baskerville' | 'EB Garamond' | 'Crimson Pro' | 'Lora' | 'Merriweather';
+  headingFont: 'Playfair Display' | 'Cormorant Garamond' | 'Libre Baskerville' | 'DM Serif Display' | 'Fraunces';
+  baseFontSize: number;
+  lineHeight: number;
+}
+```
 
-- Fichier : src/components/admin/livre-vivant/LivreVivantViewer.tsx
-  - Créer une fonction dédiée :
-    - `handleNavigateToTexteFromTraversees(texteId)` :
-      - ferme la modale Traversées (`setIsTraverseesOpen(false)`)
-      - navigue dans le livre : `goToPageById('texte-' + texteId)`
-  - Passer ce handler à `<TraverseesHub ... onNavigateToTexteId={handleNavigateToTexteFromTraversees} />`
+### 2. Ajouter le preset "Galerie Fleuve"
 
-- Fichier : src/components/admin/LivingIndex.tsx
-  - Dans la vue détail (liste de mots-clés) :
-    - Transformer chaque ligne mot-clé en `<button>` cliquable
-    - Au clic : ouvrir une sous-vue “Textes contenant <mot-clé>” (nouvel état `selectedKeyword`), listant les textes via `data.texteIds`.
-  - Dans la liste de textes :
-    - sur clic d’un texte :
-      - si `onNavigateToTexteId` existe : l’appeler (dans le lecteur, ça fermera Traversées + sautera au texte)
-      - sinon : soit ne rien faire, soit afficher une petite info (“Navigation disponible dans ‘Lire le Livre Complet’”) — optionnel.
-  - Ajouter un bouton “Retour” de cette sous-vue vers la liste des mots-clés.
+**Fichier** : `src/utils/epubExportUtils.ts`
 
-Checklist de tests (end-to-end)
-- Dans /admin/exportations > Lire le Livre Complet :
-  - Cliquer “Sommaire” (barre du bas) => page ToC
-  - Cliquer une Partie => va à la page “partie-…”, ou au premier texte si pages partie désactivées
-  - Cliquer une Marche => va au premier texte de la marche
-  - Cliquer “Lieux” => index lieu, cliquer un lieu => déplie la liste, cliquer un texte => navigation OK
-  - Cliquer “Genres” => idem
-  - Cliquer “Traversées” => modale, Index Vivant => sélectionner un monde => cliquer un mot-clé => liste textes => cliquer un texte => modale se ferme + navigation au texte
-- Vérifier sur mobile (preview mobile dans le viewer) :
-  - zones tactiles suffisantes
-  - pas de scroll bloqué (overlay + listes)
+Ajouter le nouveau preset dans `EPUB_PRESETS` :
 
-Points de vigilance / robustesse
-- Éviter toute navigation “au numéro de page” calculé à la main (le `groupIdx + 2`) : on passe par les ids pour rester stable malgré les options (cover/toc/parties/indexes activés/désactivés).
-- Props optionnelles partout pour ne pas casser :
-  - TraverseesLecteurs.tsx (public) et EpubPreview.tsx (admin preview) continueront de fonctionner même sans navigation vers le livre.
+```typescript
+galerie_fleuve: {
+  id: 'galerie_fleuve',
+  name: 'Galerie Fleuve',
+  description: 'Style galerie d'art epure, accents emeraude',
+  colorScheme: {
+    primary: '#1A1A1A',
+    secondary: '#666666',
+    background: '#FFFFFF',
+    text: '#333333',
+    accent: '#10B981',
+  },
+  typography: {
+    bodyFont: 'Georgia',
+    headingFont: 'Playfair Display',
+    baseFontSize: 1.1,
+    lineHeight: 1.75,
+  },
+},
+```
 
-Livrable
-- Après ces changements, tout ce qui est présenté comme “lien” dans Sommaire/Lieux/Genres et dans l’Index Vivant deviendra réellement cliquable, avec une navigation cohérente vers les textes du “Livre Vivant”.
+### 3. Etendre le type format
+
+**Fichier** : `src/utils/epubExportUtils.ts`
+
+Modifier le type `format` dans `EpubExportOptions` pour accepter les nouveaux presets :
+
+```typescript
+format: 'classique' | 'poesie_poche' | 'livre_art' | 'contemporain' | 'galerie_fleuve';
+```
+
+### 4. Adapter les renderers pour le style "Galerie Fleuve"
+
+Les renderers existants utilisent deja dynamiquement `colorScheme` et `typography`, donc ils appliqueront automatiquement le nouveau preset. Cependant, on peut ajouter des variantes specifiques si necessaire.
+
+**Fichier** : `src/components/admin/livre-vivant/renderers/TexteRenderer.tsx`
+
+Ameliorations optionnelles pour le style Galerie Fleuve :
+- Icone livre en en-tete (deja visible dans l'image)
+- Badges de lieu avec fond colore (accent)
+- Separateur plus discret
+
+```typescript
+// Badge de localisation avec style accent
+<span 
+  className="px-3 py-1 rounded-full text-xs font-medium"
+  style={{ 
+    backgroundColor: colorScheme.accent + '15',
+    color: colorScheme.accent,
+  }}
+>
+  {marche.ville}
+</span>
+```
+
+### 5. Mettre a jour le panel de selection
+
+**Fichier** : `src/components/admin/EpubExportPanel.tsx`
+
+Le panel utilise deja `Object.values(EPUB_PRESETS)`, donc le nouveau preset apparaitra automatiquement dans la grille de selection.
+
+## Structure pour les 3 directions artistiques
+
+Vous avez mentionne 3 scenarios d'identite. Pour preparer le systeme :
+
+```typescript
+// Presets a implementer
+galerie_fleuve: { ... }     // Style 1 - Galerie d'art, vert emeraude
+// style_2: { ... }          // A definir avec l'image suivante
+// style_3: { ... }          // A definir avec l'image suivante
+```
+
+## Resultat attendu
+
+Apres implementation :
+1. Un nouveau bouton "Galerie Fleuve" apparaitra dans la section "Direction artistique"
+2. Cliquer dessus appliquera instantanement :
+   - La palette vert emeraude sur fond blanc
+   - La typographie Playfair Display / Georgia
+   - L'interligne aere (1.75)
+3. Le "Livre Vivant" s'adaptera en temps reel avec ces couleurs
+4. L'export EPUB utilisera ce style
+
+## Prochaines etapes
+
+Une fois "Galerie Fleuve" implemente, vous pourrez fournir les 2 autres images de direction artistique pour :
+- **Style 2** : A analyser
+- **Style 3** : A analyser
+
+Chacun sera ajoute comme preset supplementaire suivant la meme structure.
