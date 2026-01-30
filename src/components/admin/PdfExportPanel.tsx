@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -15,7 +15,6 @@ import {
   ChevronRight,
   Download,
   Loader2,
-  Settings,
   Printer,
 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -28,6 +27,7 @@ import {
   type TexteExport,
 } from '@/utils/pdfExportUtils';
 import { PdfDocument, registerFonts } from '@/utils/pdfPageComponents';
+import { generateContextualMetadata } from '@/utils/epubMetadataGenerator';
 
 interface PdfExportPanelProps {
   textes: TexteExport[];
@@ -41,23 +41,38 @@ const PdfExportPanel: React.FC<PdfExportPanelProps> = ({
   explorationName,
 }) => {
   const [options, setOptions] = useState<PdfExportOptions>(() => {
-    const defaults = getDefaultPdfOptions('edition_nationale');
-    return {
-      ...defaults,
-      title: explorationName || 'Recueil Poétique',
-    };
+    return getDefaultPdfOptions('edition_nationale');
   });
+  const [metadataSource, setMetadataSource] = useState<'contextual' | 'manual'>('contextual');
 
   const [metadataOpen, setMetadataOpen] = useState(true);
   const [designOpen, setDesignOpen] = useState(true);
   const [printOpen, setPrintOpen] = useState(false);
   const [exporting, setExporting] = useState(false);
 
+  // Synchronize metadata with exploration and textes changes
+  useEffect(() => {
+    if (textes.length > 0 && metadataSource !== 'manual') {
+      const suggestion = generateContextualMetadata(textes, explorationName);
+      setOptions(prev => ({
+        ...prev,
+        title: suggestion.title,
+        subtitle: suggestion.subtitle,
+        description: suggestion.description,
+      }));
+      setMetadataSource('contextual');
+    }
+  }, [textes, explorationName]);
+
   const updateOption = useCallback(<K extends keyof PdfExportOptions>(
     key: K,
     value: PdfExportOptions[K]
   ) => {
     setOptions(prev => ({ ...prev, [key]: value }));
+    // Mark as manual when user edits metadata fields
+    if (['title', 'subtitle', 'description'].includes(key as string)) {
+      setMetadataSource('manual');
+    }
   }, []);
 
   const applyPreset = useCallback((presetId: string) => {
