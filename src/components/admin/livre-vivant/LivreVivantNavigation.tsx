@@ -131,17 +131,18 @@ const LivreVivantNavigation: React.FC<LivreVivantNavigationProps> = ({
               <motion.button
                 key={mode.id}
                 onClick={() => handleModeClick(mode.action)}
-                className="relative group flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs transition-all duration-200"
+                className="relative group flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs transition-colors duration-200 cursor-pointer"
                 style={{
                   color: isTraversee ? colorScheme.accent : colorScheme.secondary,
-                  backgroundColor: isTraversee ? colorScheme.accent + '15' : 'transparent',
-                  border: `1px solid ${isTraversee ? colorScheme.accent + '30' : 'transparent'}`,
+                  backgroundColor: isTraversee ? colorScheme.accent + '15' : 'rgba(0,0,0,0)',
+                  border: `1px solid ${isTraversee ? colorScheme.accent + '30' : 'rgba(0,0,0,0)'}`,
                 }}
                 whileHover={{ 
                   scale: 1.05,
                   backgroundColor: isTraversee ? colorScheme.accent + '25' : colorScheme.secondary + '15',
                 }}
-                whileTap={{ scale: 0.98 }}
+                whileTap={{ scale: 0.95 }}
+                initial={false}
                 title={mode.label}
               >
                 <Icon className="h-3.5 w-3.5" />
