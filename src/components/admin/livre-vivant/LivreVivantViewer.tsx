@@ -122,7 +122,7 @@ const LivreVivantViewer: React.FC<LivreVivantViewerProps> = ({
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <DialogContent 
-        className="relative max-w-none w-screen h-screen p-0 gap-0 rounded-none border-0"
+        className="fixed inset-0 z-[100] flex flex-col max-w-none w-screen h-screen p-0 gap-0 rounded-none border-0 translate-x-0 translate-y-0 left-0 top-0"
         style={{ backgroundColor: colorScheme.background }}
       >
         <VisuallyHidden>
