@@ -1,85 +1,164 @@
 
-# Plan : Fusion Couverture + Faux-Titre sur une seule page
 
-## Analyse du problème
+# Plan : Refonte du style visuel des Fables
 
-Actuellement, le PDF génère 2 pages liminaires distinctes :
+## Diagnostic du problème
 
-| Page 1 (Couverture) | Page 2 (Faux-titre) |
-|---------------------|---------------------|
-| Décoration émeraude | Décoration émeraude |
-| **Titre principal** | — |
-| *Sous-titre* | — |
-| Décoration émeraude | — |
-| Auteur | Auteur |
-| Éditeur | Éditeur |
+Actuellement, les fables utilisent un style minimaliste qui pose plusieurs problèmes :
 
-Les éléments "Auteur" et "Éditeur" sont **dupliqués** sur les deux pages, ce qui est redondant et coûte 1 page.
+| Élément actuel | Problème |
+|----------------|----------|
+| Cadre fin (0.5px) | Trop discret, "étriqué" |
+| Padding 10mm | Texte trop serré contre les bords |
+| Texte 100% italique | Fatigue visuelle sur 5-7 pages |
+| Titre centré simple | Manque de caractère "fable" |
+| Pas de différenciation | Morale, dialogues, sections indifférenciés |
+| Largeur réduite | Impression de texte confiné |
 
-## Solution proposée
+## Solution proposée : Style "Carnet de Naturaliste"
 
-Supprimer complètement la page "Faux-titre" et intégrer tous les éléments sur la **page de couverture unique** :
+Un style reconnaissable dès qu'on tourne la page, inspiré des carnets de terrain et éditions de fables classiques :
 
 ```text
-┌─────────────────────────────┐
-│                             │
-│      ───────────────        │ ← Décoration émeraude
-│                             │
-│   Fréquences de la          │
-│   rivière Dordogne —        │ ← Titre principal (gras)
-│     atlas des vivants       │
-│                             │
-│  16 lieux traversés —       │ ← Sous-titre (italique)
-│  Haïkus, fables, textes...  │
-│                             │
-│      ───────────────        │ ← Décoration émeraude
-│                             │
-│       Gaspard Boréal        │ ← Auteur
-│                             │
-│  La Comédie des Mondes      │ ← Éditeur
-│         Hybrides            │
-│                             │
-└─────────────────────────────┘
+┌─────────────────────────────────────────────┐
+│                                             │
+│           ❦ FABLE ❦                         │  ← Bandeau supérieur distinctif
+│                                             │
+│    La Discorde et les cent-vingt témoins    │  ← Titre en petites caps
+│    ─────────────────────────────────        │
+│                                             │
+│  Combien de ponts construits ?              │  ← Corps roman (pas italique)
+│  Combien d'ouvrages d'art détruits ?        │
+│                                             │
+│  Combien de passerelles tentées ?           │
+│  Combien de médiations avortées ?           │
+│                                             │
+│  Et les aqueducs, les viaducs,              │  ← Vers poétiques fluides
+│  Et les jetées, et les chaussées,           │
+│                                             │
+│    « Raccorder les rives,                   │  ← Dialogues en italique
+│      Haubaner les quais,                    │
+│      Ourler les berges,                     │
+│      Réensauvager les ripisylves. »         │
+│                                             │
+│  ─────────────────────────────────          │
+│                                             │
+│  MORALE : Plus de cent ponts...             │  ← Morale mise en valeur
+│                                             │
+└─────────────────────────────────────────────┘
 ```
 
 ## Modifications techniques
 
-### 1. Désactiver l'option "Faux-titre" par défaut
+### 1. Fichier `src/utils/pdfStyleGenerator.ts`
 
-**Fichier** : `src/utils/pdfExportUtils.ts`
+Refonte complète de la section `FABLE SPECIFIC` :
 
-Modifier le preset "Galerie Fleuve" pour désactiver le faux-titre :
-
+**Avant :**
 ```typescript
-galerie_fleuve: {
-  // ...
-  includeFauxTitre: false,  // Était true
-}
+fableContainer: {
+  flex: 1,
+  padding: mmToPoints(8),
+},
+fableFrame: {
+  borderWidth: 0.5,
+  borderColor: colorScheme.accent,
+  borderRadius: 2,
+  padding: mmToPoints(10),
+},
 ```
 
-### 2. Améliorer la mise en page de la couverture
+**Après :**
+```typescript
+// =========== FABLE SPECIFIC (Style Carnet de Naturaliste) ===========
+fableContainer: {
+  flex: 1,
+  paddingHorizontal: mmToPoints(4),   // Utilise toute la largeur
+  paddingVertical: mmToPoints(6),
+},
+fableHeader: {                        // NOUVEAU: Bandeau distinctif
+  textAlign: 'center',
+  marginBottom: mmToPoints(8),
+  paddingBottom: mmToPoints(4),
+  borderBottomWidth: 0.75,
+  borderBottomColor: colorScheme.accent,
+},
+fableHeaderLabel: {                   // NOUVEAU: "❦ FABLE ❦"
+  fontFamily: typography.bodyFont,
+  fontSize: baseFontSize * 0.75,
+  color: colorScheme.accent,
+  letterSpacing: 3,
+  marginBottom: mmToPoints(4),
+},
+fableTitle: {
+  fontFamily: typography.headingFont,
+  fontSize: headingFontSize * 0.85,
+  fontWeight: 'bold',
+  color: colorScheme.primary,
+  textAlign: 'center',
+  textTransform: 'none',              // Pas de caps forcées
+  letterSpacing: 0.5,
+},
+fableContent: {
+  fontFamily: typography.bodyFont,
+  fontSize: baseFontSize,             // Police normale (pas italique)
+  lineHeight: typography.lineHeight * 1.05,
+  color: colorScheme.text,
+  textAlign: 'left',
+  marginTop: mmToPoints(6),
+},
+fableMoral: {                         // NOUVEAU: Style morale
+  fontFamily: typography.bodyFont,
+  fontSize: baseFontSize * 0.9,
+  fontStyle: 'italic',
+  color: colorScheme.secondary,
+  marginTop: mmToPoints(10),
+  paddingTop: mmToPoints(6),
+  borderTopWidth: 0.5,
+  borderTopColor: colorScheme.accent,
+  textAlign: 'center',
+},
+fableSection: {                       // NOUVEAU: Sous-sections
+  fontFamily: typography.headingFont,
+  fontSize: baseFontSize * 0.85,
+  fontWeight: 'bold',
+  color: colorScheme.primary,
+  marginTop: mmToPoints(8),
+  marginBottom: mmToPoints(4),
+},
+```
 
-**Fichier** : `src/utils/pdfStyleGenerator.ts`
+### 2. Fichier `src/utils/pdfPageComponents.tsx`
 
-Ajuster les styles de la page de couverture pour une disposition plus équilibrée :
-- Réduire le `padding` global (30mm → 25mm)
-- Augmenter légèrement l'espacement vertical entre les éléments
-- Assurer que titre + sous-titre + auteur + éditeur tiennent élégamment sur une page
+Refonte du composant `FablePage` :
 
-### 3. Ajustement des espacements
+- Ajouter un en-tête "❦ FABLE ❦" avec ornement typographique
+- Retirer le cadre englobant (`fableFrame`)
+- Corps du texte en roman (pas italique)
+- Détecter et styliser automatiquement la "Morale" en fin de fable
+- Support du `wrap` pour pagination automatique sur plusieurs pages
 
-Modifier les `marginTop` et `marginBottom` des éléments de couverture :
-- `coverSubtitle.marginBottom` : 20mm → 15mm
-- `coverAuthor.marginTop` : 30mm → 25mm  
-- `coverPublisher.marginTop` : 40mm → 25mm
+### 3. Nouveaux éléments d'interface dans `PdfStylesRaw`
 
-## Résultat attendu
+Ajouter les nouvelles propriétés au type :
+- `fableHeader`
+- `fableHeaderLabel`
+- `fableMoral`
+- `fableSection`
 
-- **Gain** : 1 page (P2 supprimée)
-- **Esthétique** : tous les éléments éditoriaux regroupés sur une page de couverture cohérente
-- **Option conservée** : l'utilisateur peut réactiver le faux-titre manuellement si nécessaire pour d'autres directions artistiques
+## Bénéfices attendus
+
+| Amélioration | Impact |
+|--------------|--------|
+| **Plus large** | Texte occupe 90% de la largeur utile au lieu de 70% |
+| **Plus lisible** | Corps en roman, italique réservé aux dialogues/citations |
+| **Reconnaissable** | Bandeau "FABLE" distinctif en haut de chaque page |
+| **Condensé** | Moins de padding = plus de texte par page |
+| **Professionnel** | Style cohérent avec les éditions littéraires classiques |
+| **Morale mise en valeur** | Séparateur + italique centré pour la sentence finale |
 
 ## Fichiers à modifier
 
-1. `src/utils/pdfExportUtils.ts` — Désactiver `includeFauxTitre` pour le preset Galerie Fleuve
-2. `src/utils/pdfStyleGenerator.ts` — Ajuster les espacements de la couverture
+1. `src/utils/pdfStyleGenerator.ts` — Nouveaux styles fable
+2. `src/utils/pdfPageComponents.tsx` — Nouveau composant FablePage
+
