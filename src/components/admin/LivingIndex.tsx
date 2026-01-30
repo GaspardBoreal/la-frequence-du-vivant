@@ -335,11 +335,11 @@ const LivingIndex: React.FC<LivingIndexProps> = ({ textes, colorScheme }) => {
             </div>
 
             {/* Visualisation orbitale */}
-            <div className="flex-1 relative">
+            <div className="flex-1 relative overflow-hidden flex items-center justify-center p-2 sm:p-4">
               <svg
-                viewBox="0 0 100 100"
-                className="w-full h-full"
-                style={{ maxHeight: 'calc(100% - 40px)' }}
+                viewBox="-10 -10 120 120"
+                preserveAspectRatio="xMidYMid meet"
+                className="w-full h-full max-w-[400px] max-h-[400px] sm:max-w-none sm:max-h-none"
               >
                 {/* Orbites (cercles de fond) */}
                 <circle
@@ -533,14 +533,17 @@ const LivingIndex: React.FC<LivingIndexProps> = ({ textes, colorScheme }) => {
 
             {/* Légende */}
             <div 
-              className="text-center py-2 px-4"
+              className="text-center py-2 px-4 shrink-0"
               style={{ borderTop: `1px solid ${colorScheme.secondary}15` }}
             >
               <p 
-                className="text-[9px]"
+                className="text-[9px] sm:text-[10px]"
                 style={{ color: colorScheme.secondary }}
               >
-                Survolez un monde pour explorer ses satellites · Cliquez pour plonger
+                <span className="hidden sm:inline">Survolez un monde pour explorer ses satellites · </span>
+                <span className="sm:hidden">Touchez un monde pour </span>
+                <span className="hidden sm:inline">Cliquez pour plonger</span>
+                <span className="sm:hidden">l'explorer</span>
               </p>
             </div>
           </motion.div>
