@@ -710,7 +710,8 @@ export const generatePdfStyles = (options: PdfExportOptions): PdfStylesRaw => {
     },
     indexGenreEntryBlock: {
       flexDirection: 'column',
-      marginBottom: mmToPoints(4),
+      // Critical: ensure each entry has enough vertical space to avoid overlap
+      marginBottom: mmToPoints(3.5),
       paddingLeft: mmToPoints(2),
     },
     indexGenreEntry: {
@@ -723,11 +724,9 @@ export const generatePdfStyles = (options: PdfExportOptions): PdfStylesRaw => {
       fontSize: baseFontSize * 0.85,
       fontWeight: 'bold',
       color: colorScheme.text,
-      // Index pages should be more compact than the main book content.
-      // We override the global lineHeight (often ~1.85) to avoid a large visual gap
-      // between the title line and the "lieu" line.
-      lineHeight: 1.12,
-      marginBottom: mmToPoints(0),
+      // Compact line height for single-line title, but enough to be readable
+      lineHeight: 1.25,
+      marginBottom: mmToPoints(0.8),
     },
     indexGenreDetailRow: {
       flexDirection: 'row',
@@ -740,11 +739,9 @@ export const generatePdfStyles = (options: PdfExportOptions): PdfStylesRaw => {
       fontSize: baseFontSize * 0.75,
       fontStyle: 'italic',
       color: colorScheme.secondary,
-      lineHeight: 1.12,
-      // Allow long locations to shrink instead of pushing the dot leader/page off
-      // while still keeping a consistent right-aligned page column.
+      lineHeight: 1.2,
       flexShrink: 1,
-      maxWidth: '72%',
+      maxWidth: '70%',
     },
     indexGenreDotLeader: {
       flex: 1,
@@ -760,7 +757,7 @@ export const generatePdfStyles = (options: PdfExportOptions): PdfStylesRaw => {
       fontSize: baseFontSize * 0.75,
       color: colorScheme.secondary,
       flexShrink: 0,
-      lineHeight: 1.12,
+      lineHeight: 1.2,
     },
     
     // =========== INDEX THÉMATIQUE (keyword categories) ===========
