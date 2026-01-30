@@ -413,11 +413,13 @@ const EpubExportPanel: React.FC<EpubExportPanelProps> = ({
                         key={preset.id}
                         variant={options.format === preset.id ? 'default' : 'outline'}
                         size="sm"
-                        className="h-auto py-2 px-3 flex flex-col items-start text-left"
+                        className="h-auto py-2 px-3 flex flex-col items-start text-left min-h-[60px]"
                         onClick={() => applyPreset(preset.id)}
                       >
-                        <span className="font-medium text-xs">{preset.name}</span>
-                        <span className="text-[10px] opacity-70 font-normal">{preset.description}</span>
+                        <span className="font-medium text-xs leading-tight">{preset.name}</span>
+                        <span className="text-[10px] opacity-70 font-normal leading-tight line-clamp-2 w-full">
+                          {preset.description}
+                        </span>
                       </Button>
                     ))}
                   </div>
