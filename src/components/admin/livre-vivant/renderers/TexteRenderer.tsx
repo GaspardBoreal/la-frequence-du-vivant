@@ -1,6 +1,7 @@
 import React from 'react';
 import type { PageRendererProps } from '@/registries/types';
 import type { TexteExport } from '@/utils/epubExportUtils';
+import { sanitizeHtml } from '@/utils/htmlSanitizer';
 
 interface TexteData {
   texte: TexteExport;
@@ -18,15 +19,54 @@ interface TexteRendererProps extends PageRendererProps {
   data: TexteData;
 }
 
-// Strip HTML tags for clean display
-const stripHtml = (html: string): string => {
-  return html
+/**
+ * Renders haiku/senryu content with proper line-by-line centering
+ * Preserves rich text formatting (bold, italic) within each line
+ */
+const renderHaikuContent = (content: string, colorScheme: { text: string }) => {
+  const sanitizedContent = sanitizeHtml(content);
+  
+  // Convert HTML breaks to newlines, then split by lines
+  const contentWithBreaks = sanitizedContent
     .replace(/<br\s*\/?>/gi, '\n')
-    .replace(/<\/p>/gi, '\n\n')
-    .replace(/<[^>]*>/g, '')
-    .replace(/&nbsp;/g, ' ')
-    .replace(/\n{3,}/g, '\n\n')
-    .trim();
+    .replace(/<\/(div|p)>/gi, '\n')
+    .replace(/<(div|p)[^>]*>/gi, '\n')
+    .replace(/\n{2,}/g, '\n');
+  
+  // Split by lines while preserving HTML formatting in each line
+  const lines = contentWithBreaks
+    .split('\n')
+    .map(line => line.trim())
+    .filter(Boolean);
+  
+  return (
+    <div className="flex flex-col items-center justify-center h-full">
+      {lines.map((line, i) => (
+        <div 
+          key={i} 
+          className="text-center mb-2 last:mb-0 [&_strong]:font-bold [&_em]:italic"
+          style={{ color: colorScheme.text }}
+          dangerouslySetInnerHTML={{ __html: sanitizeHtml(line) }}
+        />
+      ))}
+    </div>
+  );
+};
+
+/**
+ * Renders standard prose content with rich text support
+ * Handles bold, italic, paragraphs, line breaks
+ */
+const renderProseContent = (content: string, colorScheme: { text: string }) => {
+  const sanitizedContent = sanitizeHtml(content);
+  
+  return (
+    <div 
+      className="prose prose-sm max-w-none [&_strong]:font-bold [&_em]:italic [&_p]:mb-4 [&_p:last-child]:mb-0"
+      style={{ color: colorScheme.text }}
+      dangerouslySetInnerHTML={{ __html: sanitizedContent }}
+    />
+  );
 };
 
 const TexteRenderer: React.FC<TexteRendererProps> = ({ 
@@ -35,8 +75,9 @@ const TexteRenderer: React.FC<TexteRendererProps> = ({
   typography 
 }) => {
   const { texte, marche } = data;
-  const isHaiku = texte.type_texte?.toLowerCase() === 'haiku';
-  const isSenryu = texte.type_texte?.toLowerCase() === 'senryu';
+  const typeTexte = texte.type_texte?.toLowerCase() || '';
+  const isHaiku = typeTexte === 'haiku' || typeTexte === 'haïku';
+  const isSenryu = typeTexte === 'senryu';
   const isCentered = isHaiku || isSenryu;
 
   const previewStyle = {
@@ -51,8 +92,6 @@ const TexteRenderer: React.FC<TexteRendererProps> = ({
     fontFamily: `'${typography.headingFont}', serif`,
     color: colorScheme.primary,
   };
-
-  const cleanContent = stripHtml(texte.contenu);
 
   return (
     <div 
@@ -101,20 +140,12 @@ const TexteRenderer: React.FC<TexteRendererProps> = ({
         {texte.titre}
       </h4>
 
-      {/* Content */}
-      <div 
-        className={`flex-1 overflow-auto ${isCentered ? 'text-center' : ''}`}
-      >
-        {cleanContent.split('\n\n').map((paragraph, idx) => (
-          <p key={idx} className="mb-4 last:mb-0">
-            {paragraph.split('\n').map((line, lineIdx) => (
-              <React.Fragment key={lineIdx}>
-                {line}
-                {lineIdx < paragraph.split('\n').length - 1 && <br />}
-              </React.Fragment>
-            ))}
-          </p>
-        ))}
+      {/* Content - with proper HTML rendering */}
+      <div className={`flex-1 overflow-auto ${isCentered ? 'flex items-center justify-center' : ''}`}>
+        {isCentered 
+          ? renderHaikuContent(texte.contenu, colorScheme)
+          : renderProseContent(texte.contenu, colorScheme)
+        }
       </div>
     </div>
   );
