@@ -32,8 +32,8 @@ export interface EpubColorScheme {
 }
 
 export interface EpubTypography {
-  bodyFont: 'Georgia' | 'Libre Baskerville' | 'EB Garamond' | 'Crimson Pro';
-  headingFont: 'Playfair Display' | 'Cormorant Garamond' | 'Libre Baskerville';
+  bodyFont: 'Georgia' | 'Libre Baskerville' | 'EB Garamond' | 'Crimson Pro' | 'Lora' | 'Merriweather';
+  headingFont: 'Playfair Display' | 'Cormorant Garamond' | 'Libre Baskerville' | 'DM Serif Display' | 'Fraunces';
   baseFontSize: number;
   lineHeight: number;
 }
@@ -49,7 +49,7 @@ export interface EpubExportOptions {
   description?: string;
   
   // Artistic direction
-  format: 'classique' | 'poesie_poche' | 'livre_art' | 'contemporain';
+  format: 'classique' | 'poesie_poche' | 'livre_art' | 'contemporain' | 'galerie_fleuve';
   colorScheme: EpubColorScheme;
   typography: EpubTypography;
   
@@ -161,6 +161,24 @@ export const EPUB_PRESETS: Record<string, EpubPreset> = {
       headingFont: 'Playfair Display',
       baseFontSize: 1.0,
       lineHeight: 1.9,
+    },
+  },
+  galerie_fleuve: {
+    id: 'galerie_fleuve',
+    name: 'Galerie Fleuve',
+    description: 'Style galerie d\'art épuré, accents émeraude',
+    colorScheme: {
+      primary: '#1A1A1A',
+      secondary: '#666666',
+      background: '#FFFFFF',
+      text: '#333333',
+      accent: '#10B981',
+    },
+    typography: {
+      bodyFont: 'Georgia',
+      headingFont: 'Playfair Display',
+      baseFontSize: 1.1,
+      lineHeight: 1.75,
     },
   },
 };
