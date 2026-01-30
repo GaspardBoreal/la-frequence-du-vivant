@@ -1,18 +1,33 @@
 
 # Visionneuse eBook Immersive : Architecture Extensible
 
-## Vision
+## ✅ Statut : Phase 1 Complétée
 
-Creer une visionneuse "Livre Vivant" conçue des le depart comme un **systeme a plugins** permettant d'ajouter facilement :
-- De nouveaux modes de "Traversees" (Constellations, Flux Temporel...)
-- De nouveaux types d'index (Index Sonore, Index Emotionnel...)
-- Des liens vers des contenus externes (blogs, agents IA, reseaux sociaux)
+### Implémenté dans cette itération :
 
-L'architecture s'inspire du pattern **Registry** deja present dans le codebase (`marcheModels`, `TEXT_TYPES_REGISTRY`, `KEYWORD_CATEGORIES`).
+**Registres (src/registries/)**
+- ✅ `types.ts` - Types communs
+- ✅ `pageTypes.ts` - Registre pages
+- ✅ `traverseeModes.ts` - Registre traversées
+- ✅ `indexTypes.ts` - Registre index
+- ✅ `externalLinks.ts` - Registre liens externes
+- ✅ `index.ts` - Point d'entrée
+
+**Livre Vivant (src/components/admin/livre-vivant/)**
+- ✅ `LivreVivantViewer.tsx` - Modal plein écran
+- ✅ `LivreVivantNavigation.tsx` - Barre de navigation
+- ✅ `hooks/useBookPages.ts` - Séquence de pages
+- ✅ `hooks/useBookNavigation.ts` - Navigation + clavier
+- ✅ Renderers: Cover, Partie, Texte, Toc, Index
+
+**Intégration**
+- ✅ Bouton "Lire le Livre" dans EpubPreview
+- ✅ TraverseesHub utilise TRAVERSEE_MODES_REGISTRY
 
 ---
 
-## Architecture Modulaire Proposee
+## Vision
+
 
 ```text
 +------------------------------------------------------------------+

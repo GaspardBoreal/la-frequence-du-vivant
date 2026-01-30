@@ -3,11 +3,12 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
-import { Book, FileText, Image as ImageIcon, Layout, ChevronLeft, ChevronRight, List, BookOpen, Check, X, Compass } from 'lucide-react';
+import { Book, FileText, Image as ImageIcon, Layout, ChevronLeft, ChevronRight, List, BookOpen, Check, X, Compass, BookOpenCheck } from 'lucide-react';
 import type { EpubExportOptions, TexteExport } from '@/utils/epubExportUtils';
 import EpubDocumentTree from './EpubDocumentTree';
 import EpubIndexPreview from './EpubIndexPreview';
 import TraverseesHub from './TraverseesHub';
+import { LivreVivantViewer } from './livre-vivant';
 
 interface EpubPreviewProps {
   textes: TexteExport[];
@@ -17,6 +18,7 @@ interface EpubPreviewProps {
 const EpubPreview: React.FC<EpubPreviewProps> = ({ textes, options }) => {
   const { colorScheme, typography } = options;
   const [currentPartieIndex, setCurrentPartieIndex] = useState(0);
+  const [isLivreVivantOpen, setIsLivreVivantOpen] = useState(false);
 
   // Extract unique parties from textes
   const uniqueParties = useMemo(() => {
@@ -389,35 +391,60 @@ const EpubPreview: React.FC<EpubPreviewProps> = ({ textes, options }) => {
         </TabsContent>
       </Tabs>
 
-      {/* Preview Footer with Stats and Option Indicators */}
+      {/* Preview Footer with Stats, Option Indicators and Livre Vivant Button */}
       <div 
-        className="px-4 py-2 text-xs border-t flex items-center justify-between flex-wrap gap-2"
+        className="px-4 py-2 text-xs border-t flex flex-col gap-2"
         style={{ 
           borderColor: colorScheme.secondary + '30',
           color: colorScheme.secondary,
           backgroundColor: colorScheme.background,
         }}
       >
-        <span>
-          Aperçu • {textes.length} textes • {typography.bodyFont} / {typography.headingFont}
-        </span>
-        <div className="flex items-center gap-1.5">
-          {optionIndicators.map((opt) => (
-            <Badge
-              key={opt.label}
-              variant={opt.active ? 'default' : 'outline'}
-              className="text-[10px] px-1.5 py-0 h-5 gap-0.5"
-            >
-              {opt.active ? (
-                <Check className="h-2.5 w-2.5" />
-              ) : (
-                <X className="h-2.5 w-2.5" />
-              )}
-              {opt.label}
-            </Badge>
-          ))}
+        <div className="flex items-center justify-between flex-wrap gap-2">
+          <span>
+            Aperçu • {textes.length} textes • {typography.bodyFont} / {typography.headingFont}
+          </span>
+          <div className="flex items-center gap-1.5">
+            {optionIndicators.map((opt) => (
+              <Badge
+                key={opt.label}
+                variant={opt.active ? 'default' : 'outline'}
+                className="text-[10px] px-1.5 py-0 h-5 gap-0.5"
+              >
+                {opt.active ? (
+                  <Check className="h-2.5 w-2.5" />
+                ) : (
+                  <X className="h-2.5 w-2.5" />
+                )}
+                {opt.label}
+              </Badge>
+            ))}
+          </div>
         </div>
+        
+        {/* Livre Vivant Button */}
+        <Button
+          variant="outline"
+          size="sm"
+          className="w-full gap-2 text-xs"
+          onClick={() => setIsLivreVivantOpen(true)}
+          style={{
+            borderColor: colorScheme.accent,
+            color: colorScheme.accent,
+          }}
+        >
+          <BookOpenCheck className="h-3.5 w-3.5" />
+          Lire le Livre Complet
+        </Button>
       </div>
+
+      {/* Livre Vivant Viewer Modal */}
+      <LivreVivantViewer
+        isOpen={isLivreVivantOpen}
+        onClose={() => setIsLivreVivantOpen(false)}
+        textes={textes}
+        options={options}
+      />
     </Card>
   );
 };
