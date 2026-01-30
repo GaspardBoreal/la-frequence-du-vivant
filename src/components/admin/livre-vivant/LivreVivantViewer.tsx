@@ -150,21 +150,42 @@ const LivreVivantViewer: React.FC<LivreVivantViewerProps> = ({
           </h2>
 
           <div className="flex items-center gap-2">
-            {/* Device preview toggles */}
-            <div className="flex items-center gap-0.5 border rounded-md p-0.5" style={{ borderColor: colorScheme.secondary + '30' }}>
+            {/* Device preview toggles - Design elegant */}
+            <div 
+              className="flex items-center gap-1 rounded-lg p-1"
+              style={{ 
+                backgroundColor: colorScheme.secondary + '15',
+                border: `1px solid ${colorScheme.secondary}20`
+              }}
+            >
               {(Object.entries(DEVICE_SIZES) as [DevicePreview, typeof deviceSize][]).map(([key, value]) => {
                 const Icon = key === 'desktop' ? Monitor : key === 'tablet' ? Tablet : Smartphone;
+                const isActive = devicePreview === key;
+                
                 return (
-                  <Button
+                  <button
                     key={key}
-                    variant={devicePreview === key ? 'default' : 'ghost'}
-                    size="icon"
-                    className="h-7 w-7"
                     onClick={() => setDevicePreview(key)}
+                    className="relative flex items-center justify-center h-8 w-8 rounded-md transition-all duration-200"
+                    style={{
+                      color: isActive ? colorScheme.primary : colorScheme.secondary,
+                      backgroundColor: isActive ? colorScheme.background : 'transparent',
+                      boxShadow: isActive ? '0 1px 3px rgba(0,0,0,0.12)' : 'none',
+                    }}
                     title={value.label}
                   >
-                    <Icon className="h-3.5 w-3.5" />
-                  </Button>
+                    <Icon className="h-4 w-4" />
+                    
+                    {/* Indicateur anime sous l'icone active */}
+                    {isActive && (
+                      <motion.div
+                        layoutId="device-indicator"
+                        className="absolute -bottom-0.5 left-1/2 -translate-x-1/2 w-4 h-0.5 rounded-full"
+                        style={{ backgroundColor: colorScheme.accent }}
+                        transition={{ type: 'spring', stiffness: 500, damping: 30 }}
+                      />
+                    )}
+                  </button>
                 );
               })}
             </div>
