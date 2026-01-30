@@ -723,12 +723,16 @@ export const generatePdfStyles = (options: PdfExportOptions): PdfStylesRaw => {
       fontSize: baseFontSize * 0.85,
       fontWeight: 'bold',
       color: colorScheme.text,
-      marginBottom: mmToPoints(0.5),
+      // Index pages should be more compact than the main book content.
+      // We override the global lineHeight (often ~1.85) to avoid a large visual gap
+      // between the title line and the "lieu" line.
+      lineHeight: 1.12,
+      marginBottom: mmToPoints(0),
     },
     indexGenreDetailRow: {
       flexDirection: 'row',
       alignItems: 'center',
-      marginTop: mmToPoints(0.5),
+      marginTop: mmToPoints(0),
       paddingLeft: mmToPoints(4),
     },
     indexGenreLieu: {
@@ -736,7 +740,11 @@ export const generatePdfStyles = (options: PdfExportOptions): PdfStylesRaw => {
       fontSize: baseFontSize * 0.75,
       fontStyle: 'italic',
       color: colorScheme.secondary,
-      flexShrink: 0,
+      lineHeight: 1.12,
+      // Allow long locations to shrink instead of pushing the dot leader/page off
+      // while still keeping a consistent right-aligned page column.
+      flexShrink: 1,
+      maxWidth: '72%',
     },
     indexGenreDotLeader: {
       flex: 1,
@@ -752,6 +760,7 @@ export const generatePdfStyles = (options: PdfExportOptions): PdfStylesRaw => {
       fontSize: baseFontSize * 0.75,
       color: colorScheme.secondary,
       flexShrink: 0,
+      lineHeight: 1.12,
     },
     
     // =========== INDEX THÉMATIQUE (keyword categories) ===========
