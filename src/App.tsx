@@ -49,6 +49,7 @@ import ExportationsAdmin from './pages/ExportationsAdmin';
 import AutomationsAdmin from './pages/AutomationsAdmin';
 import ExplorationLayout from './layouts/ExplorationLayout';
 import ExplorationBiodiversite from './pages/ExplorationBiodiversite';
+import TraverseesLecteurs from './pages/TraverseesLecteurs';
 import MarcheursAdmin from './pages/MarcheursAdmin';
 import ExplorationsSensibles from './pages/ExplorationsSensibles';
 import MaterielPedagogique from './pages/MaterielPedagogique';
@@ -91,6 +92,7 @@ function App() {
             {/* Route lecteurs avec ExplorationLayout */}
             <Route path="/lecteurs/exploration/:slug" element={<ExplorationLayout />}>
               <Route index element={<GalerieFluveExplorationLecteurs />} />
+              <Route path="traversees" element={<TraverseesLecteurs />} />
             </Route>
             
             <Route path="/explorations/:slug" element={<ExplorationDetail />} />
