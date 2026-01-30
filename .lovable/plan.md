@@ -1,164 +1,223 @@
 
 
-# Plan : Refonte du style visuel des Fables
+# Plan : Indices Professionnels pour l'Export PDF Pro
 
-## Diagnostic du problème
+## Synthèse de l'existant (Export Word)
 
-Actuellement, les fables utilisent un style minimaliste qui pose plusieurs problèmes :
+L'export Word actuel génère **3 types d'index** à la fin du document :
 
-| Élément actuel | Problème |
-|----------------|----------|
-| Cadre fin (0.5px) | Trop discret, "étriqué" |
-| Padding 10mm | Texte trop serré contre les bords |
-| Texte 100% italique | Fatigue visuelle sur 5-7 pages |
-| Titre centré simple | Manque de caractère "fable" |
-| Pas de différenciation | Morale, dialogues, sections indifférenciés |
-| Largeur réduite | Impression de texte confiné |
+| Index | Contenu | Structure |
+|-------|---------|-----------|
+| **Index par Lieu** | Partie > Marche > Textes (titre + type + page) | Hiérarchique géopoétique |
+| **Index par Genre Littéraire** | Haïkus, Senryūs, Fables... avec lieu + page | Par type prédéfini |
+| **Index des Mots-Clés** | 7 familles thématiques (Faune, Hydrologie, Ouvrages, Flore, Temporalités, Poétique, Technologies) | Alphabétique par catégorie |
 
-## Solution proposée : Style "Carnet de Naturaliste"
+## État actuel du PDF Pro
 
-Un style reconnaissable dès qu'on tourne la page, inspiré des carnets de terrain et éditions de fables classiques :
+- Options `includeIndexLieux` et `includeIndexGenres` présentes dans `PdfExportOptions`
+- Composant `IndexPage` basique existe mais **non utilisé** dans le document final
+- Aucune logique d'extraction de mots-clés
+
+## Proposition : Index Ultra-Design pour lecture papier "Wahou"
+
+### 1. Index par Lieu (Géographique)
 
 ```text
-┌─────────────────────────────────────────────┐
-│                                             │
-│           ❦ FABLE ❦                         │  ← Bandeau supérieur distinctif
-│                                             │
-│    La Discorde et les cent-vingt témoins    │  ← Titre en petites caps
-│    ─────────────────────────────────        │
-│                                             │
-│  Combien de ponts construits ?              │  ← Corps roman (pas italique)
-│  Combien d'ouvrages d'art détruits ?        │
-│                                             │
-│  Combien de passerelles tentées ?           │
-│  Combien de médiations avortées ?           │
-│                                             │
-│  Et les aqueducs, les viaducs,              │  ← Vers poétiques fluides
-│  Et les jetées, et les chaussées,           │
-│                                             │
-│    « Raccorder les rives,                   │  ← Dialogues en italique
-│      Haubaner les quais,                    │
-│      Ourler les berges,                     │
-│      Réensauvager les ripisylves. »         │
-│                                             │
-│  ─────────────────────────────────          │
-│                                             │
-│  MORALE : Plus de cent ponts...             │  ← Morale mise en valeur
-│                                             │
-└─────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────┐
+│                                                                 │
+│                    ─────  INDEX PAR LIEU  ─────                 │
+│                                                                 │
+│  I. LE CONTRE-COURANT                                           │
+│                                                                 │
+│     La Roque-Gageac (Dordogne)                                  │
+│         Haïkus ........................ 12, 14, 15              │
+│         Fables ........................ 18                      │
+│         Poèmes ........................ 23, 24                  │
+│                                                                 │
+│     Domme (Dordogne)                                            │
+│         Senryūs ....................... 28, 29, 30              │
+│         Prose ......................... 35                      │
+│                                                                 │
+│  II. LA TRAVERSÉE LENTE                                         │
+│     ...                                                         │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
 ```
 
-## Modifications techniques
+**Style** : Hiérarchie visuelle avec mouvements en chiffres romains, marches en gras, types indentés avec pointillés vers pages
 
-### 1. Fichier `src/utils/pdfStyleGenerator.ts`
+### 2. Index par Genre Littéraire
 
-Refonte complète de la section `FABLE SPECIFIC` :
+```text
+┌─────────────────────────────────────────────────────────────────┐
+│                                                                 │
+│               ─────  INDEX DES ŒUVRES  ─────                    │
+│                                                                 │
+│                       ✦  HAÏKUS  ✦                              │
+│                                                                 │
+│  Titre du haïku 1 ─ La Roque-Gageac ............... 12          │
+│  Titre du haïku 2 ─ Domme ......................... 14          │
+│  Titre du haïku 3 ─ Bergerac ...................... 15          │
+│                                                                 │
+│                      ✦  SENRYŪS  ✦                              │
+│                                                                 │
+│  Titre 1 ─ Lieu ................................... 28          │
+│  ...                                                            │
+│                                                                 │
+│                       ✦  FABLES  ✦                              │
+│                                                                 │
+│  La Discorde et les cent-vingt témoins ─ Brantôme .. 67         │
+│  ...                                                            │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+```
 
-**Avant :**
+**Style** : Titres de genre en petites caps avec ornements, entrées avec titre + lieu + pointillés + page
+
+### 3. Index Thématique (Mots-Clés) - NOUVEAU
+
+```text
+┌─────────────────────────────────────────────────────────────────┐
+│                                                                 │
+│              ─────  INDEX THÉMATIQUE  ─────                     │
+│                                                                 │
+│  ╭──────────────────────────────────────╮                       │
+│  │   FAUNE FLUVIALE ET MIGRATRICE       │                       │
+│  ╰──────────────────────────────────────╯                       │
+│                                                                 │
+│  Aigrette ................................. 23, 45, 67          │
+│  Anguille ................................. 12                  │
+│  Lamproie ................................. 34, 56, 78          │
+│  Martin-pêcheur ........................... 89, 102             │
+│  Saumon ................................... 15, 23, 45          │
+│                                                                 │
+│  ╭──────────────────────────────────────╮                       │
+│  │   HYDROLOGIE ET DYNAMIQUES           │                       │
+│  ╰──────────────────────────────────────╯                       │
+│                                                                 │
+│  Confluence ............................... 12, 45              │
+│  Étiage ................................... 23, 67              │
+│  Mascaret ................................. 89                  │
+│  ...                                                            │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+**Style** : 7 familles encadrées, mots-clés alphabétiques avec pointillés vers pages multiples
+
+## Architecture technique
+
+### Fichiers à modifier
+
+1. **`src/utils/pdfExportUtils.ts`** - Ajouter option `includeIndexKeywords` et catégories
+2. **`src/utils/pdfStyleGenerator.ts`** - Nouveaux styles d'index (titres ornés, pointillés, colonnes)
+3. **`src/utils/pdfPageComponents.tsx`** - Nouveaux composants :
+   - `IndexLieuxPage` - Index géographique hiérarchique
+   - `IndexGenresPage` - Index par type littéraire
+   - `IndexKeywordsPage` - Index thématique par mots-clés
+
+### Nouvelles options dans `PdfExportOptions`
+
 ```typescript
-fableContainer: {
-  flex: 1,
-  padding: mmToPoints(8),
-},
-fableFrame: {
-  borderWidth: 0.5,
-  borderColor: colorScheme.accent,
-  borderRadius: 2,
-  padding: mmToPoints(10),
-},
+// Indexes (existant mais non implémenté)
+includeIndexLieux: boolean;      // Index par Lieu
+includeIndexGenres: boolean;     // Index par Genre Littéraire
+// NOUVEAU
+includeIndexKeywords: boolean;   // Index Thématique
+selectedKeywordCategories?: string[]; // Catégories à inclure
 ```
 
-**Après :**
+### Nouveaux styles dans `PdfStylesRaw`
+
 ```typescript
-// =========== FABLE SPECIFIC (Style Carnet de Naturaliste) ===========
-fableContainer: {
-  flex: 1,
-  paddingHorizontal: mmToPoints(4),   // Utilise toute la largeur
-  paddingVertical: mmToPoints(6),
-},
-fableHeader: {                        // NOUVEAU: Bandeau distinctif
-  textAlign: 'center',
-  marginBottom: mmToPoints(8),
-  paddingBottom: mmToPoints(4),
-  borderBottomWidth: 0.75,
-  borderBottomColor: colorScheme.accent,
-},
-fableHeaderLabel: {                   // NOUVEAU: "❦ FABLE ❦"
-  fontFamily: typography.bodyFont,
-  fontSize: baseFontSize * 0.75,
-  color: colorScheme.accent,
-  letterSpacing: 3,
-  marginBottom: mmToPoints(4),
-},
-fableTitle: {
-  fontFamily: typography.headingFont,
-  fontSize: headingFontSize * 0.85,
-  fontWeight: 'bold',
-  color: colorScheme.primary,
-  textAlign: 'center',
-  textTransform: 'none',              // Pas de caps forcées
-  letterSpacing: 0.5,
-},
-fableContent: {
-  fontFamily: typography.bodyFont,
-  fontSize: baseFontSize,             // Police normale (pas italique)
-  lineHeight: typography.lineHeight * 1.05,
-  color: colorScheme.text,
-  textAlign: 'left',
-  marginTop: mmToPoints(6),
-},
-fableMoral: {                         // NOUVEAU: Style morale
-  fontFamily: typography.bodyFont,
-  fontSize: baseFontSize * 0.9,
-  fontStyle: 'italic',
-  color: colorScheme.secondary,
-  marginTop: mmToPoints(10),
-  paddingTop: mmToPoints(6),
-  borderTopWidth: 0.5,
-  borderTopColor: colorScheme.accent,
-  textAlign: 'center',
-},
-fableSection: {                       // NOUVEAU: Sous-sections
-  fontFamily: typography.headingFont,
-  fontSize: baseFontSize * 0.85,
-  fontWeight: 'bold',
-  color: colorScheme.primary,
-  marginTop: mmToPoints(8),
-  marginBottom: mmToPoints(4),
-},
+// Index styling
+indexLieuxPage: Style;
+indexGenresPage: Style;
+indexKeywordsPage: Style;
+indexSectionTitle: Style;        // "✦ HAÏKUS ✦"
+indexPartieHeader: Style;        // "I. LE CONTRE-COURANT"
+indexMarcheEntry: Style;         // "La Roque-Gageac"
+indexTextEntry: Style;           // Titre + lieu + page
+indexDotLeader: Style;           // Pointillés vers page
+indexCategoryBox: Style;         // Encadré catégorie thématique
+indexKeywordEntry: Style;        // Mot + pages
 ```
 
-### 2. Fichier `src/utils/pdfPageComponents.tsx`
+### Logique de pagination
 
-Refonte du composant `FablePage` :
+1. **Calcul des pages réelles** : Parcourir tous les textes et calculer leur page finale
+2. **Regroupement** : 
+   - Par lieu : Partie > Marche > Types (avec pages)
+   - Par genre : Type > Textes (avec lieu + page)
+   - Par mot-clé : Catégorie > Mots (avec pages multiples)
+3. **Rendu** : Générer les pages d'index avec wrap automatique
 
-- Ajouter un en-tête "❦ FABLE ❦" avec ornement typographique
-- Retirer le cadre englobant (`fableFrame`)
-- Corps du texte en roman (pas italique)
-- Détecter et styliser automatiquement la "Morale" en fin de fable
-- Support du `wrap` pour pagination automatique sur plusieurs pages
+### Composant `IndexLieuxPage`
 
-### 3. Nouveaux éléments d'interface dans `PdfStylesRaw`
+```tsx
+interface IndexLieuxPageProps {
+  textes: TexteExport[];
+  parties: PartieData[];
+  options: PdfExportOptions;
+  styles: PdfStylesRaw;
+  pageMapping: Map<string, number>; // texteId -> pageNumber
+  startPage: number;
+}
+```
 
-Ajouter les nouvelles propriétés au type :
-- `fableHeader`
-- `fableHeaderLabel`
-- `fableMoral`
-- `fableSection`
+### Composant `IndexGenresPage`
 
-## Bénéfices attendus
+```tsx
+interface IndexGenresPageProps {
+  textes: TexteExport[];
+  options: PdfExportOptions;
+  styles: PdfStylesRaw;
+  pageMapping: Map<string, number>;
+  startPage: number;
+}
+```
 
-| Amélioration | Impact |
-|--------------|--------|
-| **Plus large** | Texte occupe 90% de la largeur utile au lieu de 70% |
-| **Plus lisible** | Corps en roman, italique réservé aux dialogues/citations |
-| **Reconnaissable** | Bandeau "FABLE" distinctif en haut de chaque page |
-| **Condensé** | Moins de padding = plus de texte par page |
-| **Professionnel** | Style cohérent avec les éditions littéraires classiques |
-| **Morale mise en valeur** | Séparateur + italique centré pour la sentence finale |
+### Composant `IndexKeywordsPage`
+
+```tsx
+interface IndexKeywordsPageProps {
+  textes: TexteExport[];
+  selectedCategories: string[];
+  options: PdfExportOptions;
+  styles: PdfStylesRaw;
+  pageMapping: Map<string, number>;
+  startPage: number;
+}
+```
+
+## Séquence de génération finale
+
+```text
+1. Couverture
+2. (Faux-titre - désactivé pour Galerie Fleuve)
+3. Table des Matières (Mouvement > Marche + page)
+4. Contenu (Parties, Textes...)
+5. ─────────────────────────────
+6. Index par Lieu (géographique)
+7. Index des Œuvres (par genre)
+8. Index Thématique (mots-clés) - optionnel
+9. ─────────────────────────────
+10. Colophon
+```
+
+## Bénéfices pour un éditeur national
+
+| Critère | Impact |
+|---------|--------|
+| **Navigation papier** | 3 modes d'accès complémentaires au contenu |
+| **Référencement** | Chaque texte trouvable par lieu, genre OU thème |
+| **Prestige éditorial** | Standards des grandes maisons d'édition |
+| **Cohérence visuelle** | Ornements et typographie alignés sur le reste du livre |
+| **Valeur ajoutée** | Index thématique unique pour recueil géopoétique |
 
 ## Fichiers à modifier
 
-1. `src/utils/pdfStyleGenerator.ts` — Nouveaux styles fable
-2. `src/utils/pdfPageComponents.tsx` — Nouveau composant FablePage
+1. `src/utils/pdfExportUtils.ts` - Options et types
+2. `src/utils/pdfStyleGenerator.ts` - Styles des index
+3. `src/utils/pdfPageComponents.tsx` - Composants d'index + intégration dans PdfDocument
 
