@@ -219,7 +219,7 @@ interface HaikuPageProps {
 export const HaikuBlock: React.FC<{ texte: TexteExport; styles: PdfStylesRaw; content: string }> = ({ texte, styles, content }) => {
   // Split haiku content into individual lines for proper centering
   const lines = content
-    .split('\n')
+    .split(/\r?\n+/)
     .map(line => line.trim())
     .filter(Boolean);
   

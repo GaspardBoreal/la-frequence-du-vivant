@@ -358,16 +358,26 @@ export const isFable = (texte: TexteExport): boolean => {
  */
 export const sanitizeContentForPdf = (html: string): string => {
   if (!html) return '';
-  
+
+  // NOTE:
+  // The database sometimes stores poetic lines as:
+  //   "ligne 1<div>ligne 2</div><div>ligne 3</div>"
+  // If we only add newlines on closing tags, "ligne 1" and "ligne 2" get glued
+  // together (e.g. "descendreAlors").
+  // We therefore insert a newline BEFORE opening block tags (div/p/section/article)
+  // to reliably preserve line breaks for haïkus/senryūs.
+
+  let text = html.replace(/\r\n/g, '\n');
+
+  // Insert newline BEFORE opening block tags
+  text = text.replace(/<(div|p|section|article)\b[^>]*>/gi, '\n');
+
   // Replace <br>, <br/>, <br /> with newlines
-  let text = html.replace(/<br\s*\/?>/gi, '\n');
-  
-  // Replace </p><p> with double newlines (paragraph breaks)
-  text = text.replace(/<\/p>\s*<p[^>]*>/gi, '\n\n');
-  
-  // Replace block-level elements with newlines
-  text = text.replace(/<\/(div|section|article)>/gi, '\n');
-  
+  text = text.replace(/<br\s*\/?>/gi, '\n');
+
+  // Remove closing block tags (newline already inserted on next opening)
+  text = text.replace(/<\/(div|p|section|article)>/gi, '');
+
   // Strip all remaining HTML tags
   text = text.replace(/<[^>]+>/g, '');
   
