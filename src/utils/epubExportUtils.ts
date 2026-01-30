@@ -229,7 +229,7 @@ export const getDefaultEpubOptions = (preset: keyof typeof EPUB_PRESETS = 'class
     title: 'Recueil Poétique',
     author: 'Gaspard Boréal',
     subtitle: '',
-    publisher: 'Auto-édition',
+    publisher: 'La Comédie des Mondes Hybrides',
     isbn: '',
     language: 'fr',
     description: '',
@@ -1116,7 +1116,7 @@ export const exportToEpub = async (
   const epubOptions = {
     title: options.title,
     author: options.author,
-    publisher: options.publisher || 'Auto-édition',
+    publisher: options.publisher || 'La Comédie des Mondes Hybrides',
     lang: options.language,
     description: options.description || '',
     css: customCSS,
