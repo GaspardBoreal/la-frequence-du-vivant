@@ -219,7 +219,8 @@ export const generatePdfStyles = (options: PdfExportOptions): PdfStylesRaw => {
   const marginsOdd = getPageMargins(options, true);
   const marginsEven = getPageMargins(options, false);
   
-  const baseFontSize = typography.baseFontSize * 11; // Base 11pt for poetry
+  // OPTIMIZED: Base 10pt for long poems (was 11pt), haikus keep special sizing
+  const baseFontSize = typography.baseFontSize * 10;
   const headingFontSize = baseFontSize * 1.5;
   const titleFontSize = baseFontSize * 2.2;
   
@@ -320,53 +321,53 @@ export const generatePdfStyles = (options: PdfExportOptions): PdfStylesRaw => {
       fontStyle: 'italic',
     },
     
-    // =========== TABLE OF CONTENTS (Compact) ===========
+    // =========== TABLE OF CONTENTS (ULTRA-COMPACT for space savings) ===========
     tocPage: {
-      paddingTop: mmToPoints(25),
+      paddingTop: mmToPoints(18),
     },
     tocTitle: {
       fontFamily: typography.headingFont,
-      fontSize: headingFontSize * 0.95,
+      fontSize: headingFontSize * 0.85,
       color: colorScheme.primary,
-      marginBottom: mmToPoints(10),
+      marginBottom: mmToPoints(6),
       textAlign: 'center',
     },
     tocEntry: {
       flexDirection: 'row',
       justifyContent: 'space-between',
       alignItems: 'flex-end',
-      marginBottom: mmToPoints(1.5),
+      marginBottom: mmToPoints(0.8),
     },
     tocPartie: {
       fontFamily: typography.headingFont,
-      fontSize: baseFontSize * 1.0,
+      fontSize: baseFontSize * 0.95,
       fontWeight: 'bold',
       color: colorScheme.primary,
-      marginTop: mmToPoints(5),
-      marginBottom: mmToPoints(2),
+      marginTop: mmToPoints(3),
+      marginBottom: mmToPoints(1),
     },
     tocMarche: {
       fontFamily: typography.bodyFont,
-      fontSize: baseFontSize * 0.9,
+      fontSize: baseFontSize * 0.8,
       fontWeight: 'bold',
       color: colorScheme.secondary,
-      marginTop: mmToPoints(1),
-      paddingLeft: mmToPoints(4),
+      marginTop: mmToPoints(0.5),
+      paddingLeft: mmToPoints(3),
     },
     tocTexte: {
       fontFamily: typography.bodyFont,
-      fontSize: baseFontSize * 0.85,
+      fontSize: baseFontSize * 0.75,
       color: colorScheme.text,
-      paddingLeft: mmToPoints(8),
+      paddingLeft: mmToPoints(6),
     },
     tocPageNumber: {
       fontFamily: typography.bodyFont,
-      fontSize: baseFontSize * 0.8,
+      fontSize: baseFontSize * 0.7,
       color: colorScheme.secondary,
     },
     tocDotLeader: {
       flex: 1,
-      marginHorizontal: mmToPoints(1.5),
+      marginHorizontal: mmToPoints(1),
       borderBottomWidth: 0.5,
       borderBottomStyle: 'dotted',
       borderBottomColor: colorScheme.secondary,
@@ -471,18 +472,18 @@ export const generatePdfStyles = (options: PdfExportOptions): PdfStylesRaw => {
       fontStyle: 'italic',
     },
     
-    // =========== HAIKU SPECIFIC ===========
+    // =========== HAIKU SPECIFIC (Keep original sizing for artistic quality) ===========
     haikuContainer: {
       flex: 1,
       justifyContent: 'center',
       alignItems: 'center',
-      paddingVertical: mmToPoints(20),
-      paddingHorizontal: mmToPoints(15),
+      paddingVertical: mmToPoints(15),
+      paddingHorizontal: mmToPoints(12),
     },
     haikuContent: {
       textAlign: 'center',
       fontFamily: typography.bodyFont,
-      fontSize: baseFontSize * 1.15,
+      fontSize: 11.5, // Fixed 11.5pt for haikus (artistic decision)
       lineHeight: typography.lineHeight * 1.3,
       color: colorScheme.text,
       letterSpacing: 0.5,
@@ -490,30 +491,30 @@ export const generatePdfStyles = (options: PdfExportOptions): PdfStylesRaw => {
     // Compact inline block style for haiku (Galerie Fleuve inspired)
     haikuBlock: {
       alignItems: 'center',
-      marginVertical: mmToPoints(6),
-      paddingVertical: mmToPoints(8),
+      marginVertical: mmToPoints(4),
+      paddingVertical: mmToPoints(6),
     },
     haikuTitle: {
       fontFamily: typography.headingFont,
-      fontSize: baseFontSize * 1.1,
+      fontSize: 12, // Fixed 12pt for haiku titles
       fontWeight: 'bold',
       color: colorScheme.primary,
       textAlign: 'center',
-      marginBottom: mmToPoints(4),
+      marginBottom: mmToPoints(3),
     },
     haikuSeparator: {
-      width: mmToPoints(20),
+      width: mmToPoints(18),
       height: 0.5,
       backgroundColor: colorScheme.accent,
-      marginVertical: mmToPoints(3),
+      marginVertical: mmToPoints(2),
     },
     haikuLine: {
       fontFamily: typography.bodyFont,
-      fontSize: baseFontSize,
+      fontSize: 11, // Fixed 11pt for haiku lines
       fontStyle: 'italic',
       color: colorScheme.text,
       textAlign: 'center',
-      lineHeight: typography.lineHeight * 1.2,
+      lineHeight: typography.lineHeight * 1.15,
     },
     
     // =========== FABLE SPECIFIC ===========
