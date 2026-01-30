@@ -50,6 +50,49 @@ const mergeStyles = (...styles: (Style | undefined)[]): Style => {
 };
 
 // ============================================================================
+// PAGE FOOTER COMPONENT (Context + Page Number)
+// ============================================================================
+
+interface PageFooterProps {
+  styles: PdfStylesRaw;
+  pageNumber: number;
+  options: PdfExportOptions;
+  partieName?: string;
+  marcheName?: string;
+}
+
+export const PageFooter: React.FC<PageFooterProps> = ({ 
+  styles, 
+  pageNumber, 
+  options, 
+  partieName, 
+  marcheName 
+}) => {
+  const isOdd = pageNumber % 2 === 1;
+  const contextText = partieName || marcheName || '';
+  
+  return (
+    <View style={mergeStyles(styles.pageFooter, isOdd ? styles.pageFooterOdd : styles.pageFooterEven)} fixed>
+      {isOdd ? (
+        <>
+          <Text style={styles.pageFooterContext as Style}>{contextText}</Text>
+          <Text style={styles.pageNumberInline as Style}>
+            {formatPageNumber(pageNumber, options.pageNumberStyle)}
+          </Text>
+        </>
+      ) : (
+        <>
+          <Text style={styles.pageNumberInline as Style}>
+            {formatPageNumber(pageNumber, options.pageNumberStyle)}
+          </Text>
+          <Text style={styles.pageFooterContext as Style}>{contextText}</Text>
+        </>
+      )}
+    </View>
+  );
+};
+
+// ============================================================================
 // COVER PAGE
 // ============================================================================
 
@@ -246,9 +289,11 @@ interface FablePageProps {
   styles: PdfStylesRaw;
   pageNumber: number;
   content: string;
+  partieName?: string;
+  marcheName?: string;
 }
 
-export const FablePage: React.FC<FablePageProps> = ({ texte, options, styles, pageNumber, content }) => {
+export const FablePage: React.FC<FablePageProps> = ({ texte, options, styles, pageNumber, content, partieName, marcheName }) => {
   const dimensions = getPageDimensions(options);
   const isOdd = pageNumber % 2 === 1;
   
@@ -292,9 +337,13 @@ export const FablePage: React.FC<FablePageProps> = ({ texte, options, styles, pa
         )}
       </View>
       
-      <Text style={mergeStyles(styles.pageNumber, isOdd ? styles.pageNumberOdd : styles.pageNumberEven)}>
-        {formatPageNumber(pageNumber, options.pageNumberStyle)}
-      </Text>
+      <PageFooter 
+        styles={styles} 
+        pageNumber={pageNumber} 
+        options={options}
+        partieName={partieName}
+        marcheName={marcheName}
+      />
     </Page>
   );
 };
@@ -310,15 +359,19 @@ interface TextePageProps {
   pageNumber: number;
   showMarcheHeader?: boolean;
   marche?: MarcheData;
+  partieName?: string;
+  marcheName?: string;
 }
 
 export const TextePage: React.FC<TextePageProps> = ({ 
   texte, 
-  options, 
+  options,
   styles, 
   pageNumber,
   showMarcheHeader,
   marche,
+  partieName,
+  marcheName,
 }) => {
   const dimensions = getPageDimensions(options);
   const isOdd = pageNumber % 2 === 1;
@@ -338,9 +391,13 @@ export const TextePage: React.FC<TextePageProps> = ({
           <HaikuBlock texte={texte} styles={styles} content={content} />
         </View>
         
-        <Text style={mergeStyles(styles.pageNumber, isOdd ? styles.pageNumberOdd : styles.pageNumberEven)}>
-          {formatPageNumber(pageNumber, options.pageNumberStyle)}
-        </Text>
+        <PageFooter 
+          styles={styles} 
+          pageNumber={pageNumber} 
+          options={options}
+          partieName={partieName}
+          marcheName={marcheName}
+        />
       </Page>
     );
   }
@@ -353,6 +410,8 @@ export const TextePage: React.FC<TextePageProps> = ({
         styles={styles} 
         pageNumber={pageNumber}
         content={content}
+        partieName={partieName}
+        marcheName={marcheName}
       />
     );
   }
@@ -377,9 +436,13 @@ export const TextePage: React.FC<TextePageProps> = ({
         </View>
       </View>
       
-      <Text style={mergeStyles(styles.pageNumber, isOdd ? styles.pageNumberOdd : styles.pageNumberEven)}>
-        {formatPageNumber(pageNumber, options.pageNumberStyle)}
-      </Text>
+      <PageFooter 
+        styles={styles} 
+        pageNumber={pageNumber} 
+        options={options}
+        partieName={partieName}
+        marcheName={marcheName}
+      />
     </Page>
   );
 };
@@ -550,6 +613,9 @@ export const PdfDocument: React.FC<PdfDocumentProps> = ({ textes, options, parti
         }
         
         if (item.type === 'texte' && item.texte) {
+          const partieName = item.currentPartie?.titre;
+          const marcheName = item.marche?.nom || item.marche?.ville;
+          
           return (
             <TextePage
               key={`texte-${item.texte.id}`}
@@ -559,6 +625,8 @@ export const PdfDocument: React.FC<PdfDocumentProps> = ({ textes, options, parti
               pageNumber={currentPage++}
               showMarcheHeader={item.isFirstInMarche}
               marche={item.marche}
+              partieName={partieName}
+              marcheName={marcheName}
             />
           );
         }
@@ -588,6 +656,7 @@ interface GroupedItem {
   texte?: TexteExport;
   marche?: MarcheData;
   isFirstInMarche?: boolean;
+  currentPartie?: PartieData; // Track current partie for footer context
 }
 
 function groupTextesByStructure(
@@ -649,6 +718,7 @@ function groupTextesByStructure(
             texte,
             marche,
             isFirstInMarche: index === 0,
+            currentPartie: partie, // Pass partie for footer context
           });
         });
       });
@@ -657,10 +727,21 @@ function groupTextesByStructure(
     const noPartieTextes = partiesMap.get('no-partie') || [];
     if (noPartieTextes.length > 0) {
       noPartieTextes.forEach((texte, index) => {
+        const marche: MarcheData = {
+          id: texte.marche_nom || 'unknown',
+          nom: texte.marche_nom || texte.marche_ville || '',
+          ville: texte.marche_ville || '',
+          region: texte.marche_region,
+          date: texte.marche_date,
+          ordre: texte.marche_ordre || 0,
+        };
+        
         result.push({
           type: 'texte',
           texte,
+          marche,
           isFirstInMarche: index === 0,
+          // No currentPartie - footer will show marche name
         });
       });
     }
@@ -676,9 +757,19 @@ function groupTextesByStructure(
     
     typeGroups.forEach((typeTextes) => {
       typeTextes.forEach((texte, index) => {
+        const marche: MarcheData = {
+          id: texte.marche_nom || 'unknown',
+          nom: texte.marche_nom || texte.marche_ville || '',
+          ville: texte.marche_ville || '',
+          region: texte.marche_region,
+          date: texte.marche_date,
+          ordre: texte.marche_ordre || 0,
+        };
+        
         result.push({
           type: 'texte',
           texte,
+          marche,
           isFirstInMarche: index === 0,
         });
       });
