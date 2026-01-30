@@ -291,43 +291,46 @@ export const generatePdfStyles = (options: PdfExportOptions): PdfStylesRaw => {
       flexDirection: 'column',
       justifyContent: 'center',
       alignItems: 'center',
-      padding: mmToPoints(25),  // Reduced from 30mm for better fit
+      padding: mmToPoints(20),  // Reduced for single-page fit
     },
     coverContent: {
       textAlign: 'center',
-      maxWidth: '80%',
+      maxWidth: '85%',  // Slightly wider to avoid word breaks
     },
     coverTitle: {
       fontFamily: typography.headingFont,
-      fontSize: titleFontSize * 1.2,
+      fontSize: titleFontSize * 1.6,  // LARGER title (was 1.2)
       fontWeight: 'bold',
       color: colorScheme.primary,
-      marginBottom: mmToPoints(8),
-      letterSpacing: 1,
+      marginBottom: mmToPoints(6),
+      letterSpacing: 0.5,
+      // @ts-ignore - hyphenation control for react-pdf
+      hyphens: 'none',
+      wordBreak: 'keep-all',
     },
     coverSubtitle: {
       fontFamily: typography.headingFont,
-      fontSize: headingFontSize * 0.9,
+      fontSize: headingFontSize * 0.85,
       fontWeight: 'normal',
       fontStyle: 'italic',
       color: colorScheme.secondary,
-      marginBottom: mmToPoints(15),  // Reduced from 20mm
+      marginBottom: mmToPoints(8),  // Reduced from 15mm
     },
     coverAuthor: {
       fontFamily: typography.bodyFont,
       fontSize: headingFontSize,
       color: colorScheme.text,
-      marginTop: mmToPoints(25),  // Reduced from 30mm
+      marginTop: mmToPoints(18),  // Reduced from 25mm
       letterSpacing: 2,
     },
     coverPublisher: {
       fontFamily: typography.bodyFont,
-      fontSize: baseFontSize * 0.9,
+      fontSize: baseFontSize * 0.85,
       color: colorScheme.secondary,
-      marginTop: mmToPoints(25),  // Reduced from 40mm
+      marginTop: mmToPoints(15),  // Reduced from 25mm
     },
     coverDecoration: {
-      marginVertical: mmToPoints(12),  // Reduced from 15mm
+      marginVertical: mmToPoints(8),  // Reduced from 12mm
       width: mmToPoints(40),
       height: 1,
       backgroundColor: colorScheme.accent,
