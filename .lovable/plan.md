@@ -1,143 +1,289 @@
 
-# Plan : Système de Directions Artistiques pour l'EPUB Pro
+# Plan : Export PDF Ultra-Design pour Éditeurs et Lecteurs Partenaires
 
-## Objectif
-Permettre l'application de directions artistiques complètes (palette, typographie, mise en page) via des presets personnalisés, en commençant par "Galerie Fleuve" issu de l'analyse de votre image.
+## Vision
+Créer un système d'export PDF de référence pour la poésie contemporaine du XXIe siècle, capable de produire des documents prêts pour l'impression professionnelle et la distribution aux éditeurs nationaux.
 
-## Analyse de la Direction "Galerie Fleuve"
+## Analyse de l'existant
 
-### Palette de couleurs extraite
-| Role | Couleur | Hex |
-|------|---------|-----|
-| Primary | Noir profond | `#1A1A1A` |
-| Secondary | Gris neutre | `#666666` |
-| Background | Blanc pur | `#FFFFFF` |
-| Text | Gris charbon | `#333333` |
-| Accent | Vert emeraude | `#10B981` |
+### Architecture actuelle
+Le projet dispose déjà d'un système d'export sophistiqué :
+- **EPUB Pro** (`epubExportUtils.ts`) : 1176 lignes avec presets artistiques, génération de chapitres, CSS dynamique
+- **Word** (`wordExportUtils.ts`) : 1543 lignes pour manuscrits éditoriaux
+- **Panel de configuration** (`EpubExportPanel.tsx`) : UI complète avec 7 presets artistiques
 
-### Typographie
-- **Police titres** : Playfair Display (elegant, serieux)
-- **Police corps** : Georgia (classique, lisible)
-- **Taille de base** : 1.1rem
-- **Interligne** : 1.75 (genereux, aere)
+### Atouts à réutiliser
+- Les 7 presets de direction artistique (Galerie Fleuve, Fréquence du Vivant, Dordonia, etc.)
+- La logique de regroupement par Partie/Marche (`groupTextesByPartie`)
+- Le système de métadonnées et génération IA
+- Le parsing HTML vers structure formatée (`parseHtmlContent`)
 
-### Caracteristiques visuelles
-- Style "galerie d'art" : epure, minimaliste, blanc dominant
-- Accents de couleur vive (vert) sur les elements interactifs
-- Badges de localisation colores
-- Icone livre en en-tete de page texte
-- Separateurs discrets
+## Spécifications du PDF "Ultra-Design"
 
-## Modifications techniques
+### Caractéristiques techniques
+- **Format** : A5 (148 x 210 mm) - format standard poésie française
+- **Résolution** : 300 DPI minimum pour impression offset
+- **Polices embarquées** : Conformité PDF/A pour archivage
+- **Marges** : Intérieures/extérieures asymétriques (reliure)
+- **Numérotation** : Romains pour liminaires, arabes pour corps
 
-### 1. Etendre les types pour accepter plus de polices
+### Éléments de mise en page premium
+1. **Page de titre** : Composition typographique sophistiquée
+2. **Page de faux-titre** : Minimaliste, nom + titre seuls
+3. **Achevé d'imprimer** : Colophon professionnel
+4. **Pages de mouvement** : Grandes capitales romaines centrées
+5. **Haïkus** : Centrage vertical + horizontal, espace généreux
+6. **Fables** : Encadrement décoratif subtil
+7. **Index** : Deux colonnes, renvois de pages
 
-**Fichier** : `src/utils/epubExportUtils.ts`
+## Architecture technique proposée
 
-Modifier les types `EpubTypography` pour inclure les polices supplementaires necessaires :
+### Nouvelle dépendance
+```bash
+npm install @react-pdf/renderer
+```
+
+Cette bibliothèque permet un contrôle typographique précis via des composants React, idéal pour la poésie où chaque espace compte.
+
+### Nouveaux fichiers
+
+```text
+src/utils/
+├── pdfExportUtils.ts          # Logique principale (types, presets, génération)
+├── pdfStyleGenerator.ts       # Générateur de styles PDF depuis presets
+└── pdfPageComponents.tsx      # Composants React-PDF (Cover, Toc, Partie, Texte, Index)
+
+src/components/admin/
+├── PdfExportPanel.tsx         # Panel de configuration PDF
+└── PdfPreview.tsx             # Aperçu temps réel du PDF
+```
+
+### Structure de `pdfExportUtils.ts`
 
 ```typescript
-export interface EpubTypography {
-  bodyFont: 'Georgia' | 'Libre Baskerville' | 'EB Garamond' | 'Crimson Pro' | 'Lora' | 'Merriweather';
-  headingFont: 'Playfair Display' | 'Cormorant Garamond' | 'Libre Baskerville' | 'DM Serif Display' | 'Fraunces';
-  baseFontSize: number;
-  lineHeight: number;
+// Types spécifiques PDF (héritant des types EPUB)
+export interface PdfExportOptions extends Omit<EpubExportOptions, 'format'> {
+  format: EpubExportOptions['format'];
+  
+  // Options spécifiques PDF
+  pageSize: 'A5' | 'A4' | 'Letter' | 'Custom';
+  customWidth?: number;
+  customHeight?: number;
+  orientation: 'portrait' | 'landscape';
+  
+  // Marges (mm)
+  marginInner: number;   // Côté reliure
+  marginOuter: number;
+  marginTop: number;
+  marginBottom: number;
+  
+  // Options impression
+  bleed: boolean;        // Fond perdu (3mm)
+  cropMarks: boolean;    // Traits de coupe
+  
+  // Éléments optionnels
+  includeFauxTitre: boolean;
+  includeColophon: boolean;
+  colophonText?: string;
+  
+  // Numérotation
+  pageNumberStyle: 'arabic' | 'roman-preface' | 'none';
+  startPageNumber: number;
 }
-```
 
-### 2. Ajouter le preset "Galerie Fleuve"
-
-**Fichier** : `src/utils/epubExportUtils.ts`
-
-Ajouter le nouveau preset dans `EPUB_PRESETS` :
-
-```typescript
-galerie_fleuve: {
-  id: 'galerie_fleuve',
-  name: 'Galerie Fleuve',
-  description: 'Style galerie d'art epure, accents emeraude',
-  colorScheme: {
-    primary: '#1A1A1A',
-    secondary: '#666666',
-    background: '#FFFFFF',
-    text: '#333333',
-    accent: '#10B981',
+// Presets PDF (étendent les presets EPUB)
+export const PDF_PRESETS = {
+  edition_nationale: {
+    ...EPUB_PRESETS.classique,
+    pageSize: 'A5',
+    marginInner: 25,
+    marginOuter: 20,
+    marginTop: 30,
+    marginBottom: 25,
+    includeFauxTitre: true,
+    includeColophon: true,
   },
-  typography: {
-    bodyFont: 'Georgia',
-    headingFont: 'Playfair Display',
-    baseFontSize: 1.1,
-    lineHeight: 1.75,
+  collection_poche: {
+    ...EPUB_PRESETS.poesie_poche,
+    pageSize: 'Custom',
+    customWidth: 110,
+    customHeight: 178,
+    marginInner: 15,
+    marginOuter: 12,
   },
-},
+  // ... autres presets
+};
 ```
 
-### 3. Etendre le type format
-
-**Fichier** : `src/utils/epubExportUtils.ts`
-
-Modifier le type `format` dans `EpubExportOptions` pour accepter les nouveaux presets :
+### Composants React-PDF
 
 ```typescript
-format: 'classique' | 'poesie_poche' | 'livre_art' | 'contemporain' | 'galerie_fleuve';
+// pdfPageComponents.tsx
+import { Document, Page, Text, View, StyleSheet, Font } from '@react-pdf/renderer';
+
+// Enregistrement des polices (Google Fonts)
+Font.register({
+  family: 'Playfair Display',
+  src: 'https://fonts.gstatic.com/s/playfairdisplay/v30/nuFiD-vYSZviVYUb_rj3ij__anPXJzDwcbmjWBN2PKeiunDYbtU.ttf'
+});
+
+// Composant page de couverture
+const CoverPage = ({ options, colorScheme, typography }) => (
+  <Page size={options.pageSize} style={styles.coverPage}>
+    <View style={styles.coverContent}>
+      <Text style={[styles.coverTitle, { color: colorScheme.primary }]}>
+        {options.title}
+      </Text>
+      {options.subtitle && (
+        <Text style={[styles.coverSubtitle, { color: colorScheme.secondary }]}>
+          {options.subtitle}
+        </Text>
+      )}
+      <Text style={[styles.coverAuthor, { color: colorScheme.text }]}>
+        {options.author}
+      </Text>
+    </View>
+  </Page>
+);
+
+// Composant page de mouvement (Partie)
+const PartiePage = ({ partie, colorScheme }) => (
+  <Page size="A5" style={styles.partiePage}>
+    <View style={styles.partieContent}>
+      <Text style={styles.partieNumeral}>{partie.numeroRomain}</Text>
+      <Text style={styles.partieTitre}>{partie.titre}</Text>
+      {partie.sousTitre && (
+        <Text style={styles.partieSousTitre}>{partie.sousTitre}</Text>
+      )}
+      <Text style={styles.partieSeparator}>───────────────────</Text>
+    </View>
+  </Page>
+);
+
+// Composant texte (avec gestion haïku/fable/poème)
+const TextePage = ({ texte, isHaiku, isFable, colorScheme, pageNumber }) => (
+  <Page size="A5" style={styles.textePage}>
+    <View style={isHaiku ? styles.haikuContainer : styles.texteContainer}>
+      <Text style={styles.texteTitle}>
+        {isFable ? `Fable : ${texte.titre}` : texte.titre}
+      </Text>
+      <Text style={styles.texteContent}>
+        {sanitizeContent(texte.contenu)}
+      </Text>
+    </View>
+    <Text style={styles.pageNumber}>{pageNumber}</Text>
+  </Page>
+);
 ```
 
-### 4. Adapter les renderers pour le style "Galerie Fleuve"
+### Intégration dans l'interface
 
-Les renderers existants utilisent deja dynamiquement `colorScheme` et `typography`, donc ils appliqueront automatiquement le nouveau preset. Cependant, on peut ajouter des variantes specifiques si necessaire.
+Le `PdfExportPanel.tsx` reprendra la structure de `EpubExportPanel.tsx` avec :
 
-**Fichier** : `src/components/admin/livre-vivant/renderers/TexteRenderer.tsx`
+1. **Section Métadonnées** : Identique à l'EPUB (réutilisation)
+2. **Section Direction Artistique** : Mêmes 7 presets + options PDF spécifiques
+3. **Section Format d'impression** :
+   - Choix du format (A5, A4, personnalisé)
+   - Configuration des marges
+   - Options de prépresse (fond perdu, traits de coupe)
+4. **Section Contenu** : Identique à l'EPUB
+5. **Aperçu PDF** : Miniatures des premières pages
 
-Ameliorations optionnelles pour le style Galerie Fleuve :
-- Icone livre en en-tete (deja visible dans l'image)
-- Badges de lieu avec fond colore (accent)
-- Separateur plus discret
+### Position dans ExportationsAdmin.tsx
 
+Ajouter une nouvelle `Card` après l'EPUB Pro :
+
+```tsx
+{/* PDF Export Card - Full Width */}
+<Card className="border-dashed border-2 border-amber-600/30 bg-amber-950/10">
+  <CardHeader>
+    <CardTitle className="flex items-center gap-2">
+      <FileText className="h-5 w-5 text-amber-500" />
+      Export PDF Professionnel
+    </CardTitle>
+    <CardDescription>
+      Créez un PDF ultra-design pour éditeurs et lecteurs partenaires
+    </CardDescription>
+  </CardHeader>
+  <CardContent>
+    <PdfExportPanel
+      textes={filteredTextes}
+      explorationCoverUrl={...}
+      explorationName={...}
+      onRefresh={() => loadData(true)}
+    />
+  </CardContent>
+</Card>
+```
+
+## Fonctionnalités avancées
+
+### Génération côté client
+Comme pour l'EPUB, tout se fait dans le navigateur :
 ```typescript
-// Badge de localisation avec style accent
-<span 
-  className="px-3 py-1 rounded-full text-xs font-medium"
-  style={{ 
-    backgroundColor: colorScheme.accent + '15',
-    color: colorScheme.accent,
-  }}
->
-  {marche.ville}
-</span>
+import { pdf } from '@react-pdf/renderer';
+
+export const downloadPdf = async (textes, options) => {
+  const document = <PdfDocument textes={textes} options={options} />;
+  const blob = await pdf(document).toBlob();
+  saveAs(blob, `${options.title}.pdf`);
+};
 ```
 
-### 5. Mettre a jour le panel de selection
+### Table des matières avec liens internes
+React-PDF supporte les ancres et liens internes pour une ToC cliquable dans le PDF.
 
-**Fichier** : `src/components/admin/EpubExportPanel.tsx`
-
-Le panel utilise deja `Object.values(EPUB_PRESETS)`, donc le nouveau preset apparaitra automatiquement dans la grille de selection.
-
-## Structure pour les 3 directions artistiques
-
-Vous avez mentionne 3 scenarios d'identite. Pour preparer le systeme :
-
+### Gestion des polices
+Chargement dynamique depuis Google Fonts avec mise en cache :
 ```typescript
-// Presets a implementer
-galerie_fleuve: { ... }     // Style 1 - Galerie d'art, vert emeraude
-// style_2: { ... }          // A definir avec l'image suivante
-// style_3: { ... }          // A definir avec l'image suivante
+const loadFonts = async (typography) => {
+  await Font.register({
+    family: typography.bodyFont,
+    src: getFontUrl(typography.bodyFont),
+  });
+  await Font.register({
+    family: typography.headingFont,
+    src: getFontUrl(typography.headingFont),
+  });
+};
 ```
 
-## Resultat attendu
+## Plan d'implémentation
 
-Apres implementation :
-1. Un nouveau bouton "Galerie Fleuve" apparaitra dans la section "Direction artistique"
-2. Cliquer dessus appliquera instantanement :
-   - La palette vert emeraude sur fond blanc
-   - La typographie Playfair Display / Georgia
-   - L'interligne aere (1.75)
-3. Le "Livre Vivant" s'adaptera en temps reel avec ces couleurs
-4. L'export EPUB utilisera ce style
+### Étape 1 : Infrastructure de base
+- Installer `@react-pdf/renderer`
+- Créer `pdfExportUtils.ts` avec types et presets
+- Créer `pdfStyleGenerator.ts` pour convertir les presets EPUB en styles PDF
 
-## Prochaines etapes
+### Étape 2 : Composants de page
+- Créer `pdfPageComponents.tsx` avec :
+  - CoverPage, FauxTitrePage
+  - TocPage (table des matières)
+  - PartiePage (mouvements)
+  - MarchePage (en-tête de marche)
+  - TextePage (textes avec variantes haïku/fable)
+  - IndexPage (lieu/genre)
+  - ColophonPage
 
-Une fois "Galerie Fleuve" implemente, vous pourrez fournir les 2 autres images de direction artistique pour :
-- **Style 2** : A analyser
-- **Style 3** : A analyser
+### Étape 3 : Panel de configuration
+- Créer `PdfExportPanel.tsx` en réutilisant la structure de `EpubExportPanel.tsx`
+- Ajouter les options spécifiques PDF (format, marges, prépresse)
 
-Chacun sera ajoute comme preset supplementaire suivant la meme structure.
+### Étape 4 : Aperçu en temps réel
+- Créer `PdfPreview.tsx` avec rendu miniature des pages
+- Intégrer le composant `@react-pdf/renderer` viewer
+
+### Étape 5 : Intégration finale
+- Ajouter le panel dans `ExportationsAdmin.tsx`
+- Tests de génération avec différents presets
+- Optimisation des performances
+
+## Résultat attendu
+
+Un système d'export PDF qui :
+- Génère des documents prêts pour l'impression professionnelle
+- Respecte les standards typographiques de la poésie française
+- S'adapte aux 7 directions artistiques existantes
+- Produit des fichiers conformes pour soumission aux maisons d'édition nationales
+- Fonctionne entièrement côté client (pas de serveur)
+
