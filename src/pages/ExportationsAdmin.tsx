@@ -1059,10 +1059,10 @@ const ExportationsAdmin: React.FC = () => {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <FileText className="h-5 w-5 text-blue-500" />
-                  Export Word - Textes Littéraires
+                  Export Word - ePUB - PDF
                 </CardTitle>
                 <CardDescription>
-                  Générez un document Word formaté avec vos textes
+                  Générez des documents Word, ePUB et PDF formatés avec vos textes
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">

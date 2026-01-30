@@ -472,7 +472,8 @@ export const generatePdfStyles = (options: PdfExportOptions): PdfStylesRaw => {
       flex: 1,
       justifyContent: 'center',
       alignItems: 'center',
-      paddingVertical: mmToPoints(40),
+      paddingVertical: mmToPoints(20),
+      paddingHorizontal: mmToPoints(15),
     },
     haikuContent: {
       textAlign: 'center',

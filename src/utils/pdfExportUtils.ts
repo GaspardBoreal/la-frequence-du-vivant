@@ -341,8 +341,8 @@ export const formatPageNumber = (
  * Detect if text is a haiku (3 lines, specific syllable pattern)
  */
 export const isHaiku = (texte: TexteExport): boolean => {
-  return texte.type_texte?.toLowerCase() === 'haïku' || 
-         texte.type_texte?.toLowerCase() === 'haiku';
+  const type = texte.type_texte?.toLowerCase() || '';
+  return type === 'haïku' || type === 'haiku' || type === 'senryu' || type === 'senryū';
 };
 
 /**
