@@ -14,6 +14,7 @@ export interface PageRendererProps {
   typography: EpubTypography;
   data?: unknown;
   onNavigate?: (pageIndex: number) => void;
+  onNavigateToPageId?: (pageId: string) => boolean;
   onOpenTraversee?: (mode: string) => void;
   externalLinks?: ExternalLink[];
 }
@@ -49,6 +50,7 @@ export interface TraverseeProps {
   textes: TexteExport[];
   colorScheme: EpubColorScheme;
   onBack?: () => void;
+  onNavigateToTexteId?: (texteId: string) => void;
 }
 
 export type TraverseeCategory = 'visualisation' | 'index' | 'immersion';
@@ -80,6 +82,7 @@ export interface IndexEntry {
   pageRef?: number;
   subEntries?: IndexEntry[];
   count?: number;
+  texteIds?: string[];
 }
 
 export interface IndexType {

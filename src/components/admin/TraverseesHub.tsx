@@ -12,6 +12,7 @@ interface TraverseesHubProps {
     background: string;
     text: string;
   };
+  onNavigateToTexteId?: (texteId: string) => void;
 }
 
 // Use the registry to build modes array
@@ -21,7 +22,7 @@ const modes = TRAVERSEE_MODES_REGISTRY.map(mode => ({
   icon: mode.icon,
 }));
 
-const TraverseesHub: React.FC<TraverseesHubProps> = ({ textes, colorScheme }) => {
+const TraverseesHub: React.FC<TraverseesHubProps> = ({ textes, colorScheme, onNavigateToTexteId }) => {
   const [activeMode, setActiveMode] = useState<string>(modes[0]?.id || 'seismograph');
 
   // Get the active mode's component from the registry
@@ -83,7 +84,11 @@ const TraverseesHub: React.FC<TraverseesHubProps> = ({ textes, colorScheme }) =>
             className="h-full"
           >
             {ActiveComponent && (
-              <ActiveComponent textes={textes} colorScheme={colorScheme} />
+              <ActiveComponent 
+                textes={textes} 
+                colorScheme={colorScheme} 
+                onNavigateToTexteId={onNavigateToTexteId}
+              />
             )}
           </motion.div>
         </AnimatePresence>

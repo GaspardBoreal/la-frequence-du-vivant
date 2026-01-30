@@ -65,6 +65,12 @@ const LivreVivantViewer: React.FC<LivreVivantViewerProps> = ({
     setIsTraverseesOpen(true);
   };
 
+  // Navigation from Traversées (Index Vivant) to a specific texte
+  const handleNavigateToTexteFromTraversees = (texteId: string) => {
+    setIsTraverseesOpen(false);
+    goToPageById(`texte-${texteId}`);
+  };
+
   const { colorScheme, typography } = options;
 
   // Render the current page based on its type
@@ -84,6 +90,7 @@ const LivreVivantViewer: React.FC<LivreVivantViewerProps> = ({
       colorScheme,
       typography,
       onNavigate: goToPage,
+      onNavigateToPageId: goToPageById,
     };
 
     switch (currentPage.type) {
@@ -310,7 +317,11 @@ const LivreVivantViewer: React.FC<LivreVivantViewerProps> = ({
                 </div>
 
                 <div className="p-3">
-                  <TraverseesHub textes={textes} colorScheme={colorScheme} />
+                  <TraverseesHub 
+                    textes={textes} 
+                    colorScheme={colorScheme} 
+                    onNavigateToTexteId={handleNavigateToTexteFromTraversees}
+                  />
                 </div>
               </motion.div>
             </motion.div>
