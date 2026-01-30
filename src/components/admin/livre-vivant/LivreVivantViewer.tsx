@@ -46,6 +46,7 @@ const LivreVivantViewer: React.FC<LivreVivantViewerProps> = ({
     currentPage,
     totalPages,
     goToPage,
+    goToPageById,
     goToNext,
     goToPrevious,
     goToFirst,
@@ -54,6 +55,14 @@ const LivreVivantViewer: React.FC<LivreVivantViewerProps> = ({
     canGoPrevious,
     progress,
   } = useBookNavigation({ pages, onClose });
+
+  // Navigation callbacks for reading modes
+  const handleGoToToc = () => goToPageById('toc');
+  const handleGoToIndex = (type: 'lieu' | 'genre') => goToPageById(`index-${type}`);
+  const handleOpenTraversees = () => {
+    // TODO: Implement traversées modal/view
+    console.log('Traversées Immersives - Coming soon');
+  };
 
   const { colorScheme, typography } = options;
 
@@ -245,7 +254,9 @@ const LivreVivantViewer: React.FC<LivreVivantViewerProps> = ({
           onGoToPrevious={goToPrevious}
           onGoToNext={goToNext}
           onGoToPage={goToPage}
-          onOpenToc={() => setShowToc(true)}
+          onOpenToc={handleGoToToc}
+          onGoToIndex={handleGoToIndex}
+          onOpenTraversees={handleOpenTraversees}
           colorScheme={colorScheme}
         />
       </DialogContent>

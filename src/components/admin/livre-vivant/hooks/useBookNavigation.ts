@@ -11,6 +11,7 @@ interface UseBookNavigationReturn {
   currentPage: BookPage | null;
   totalPages: number;
   goToPage: (index: number) => void;
+  goToPageById: (pageId: string) => boolean;
   goToNext: () => void;
   goToPrevious: () => void;
   goToFirst: () => void;
@@ -57,6 +58,16 @@ export const useBookNavigation = ({
     setCurrentPageIndex(totalPages - 1);
   }, [totalPages]);
 
+  // Navigate to a specific page by its ID
+  const goToPageById = useCallback((pageId: string): boolean => {
+    const index = pages.findIndex(page => page.id === pageId);
+    if (index !== -1) {
+      setCurrentPageIndex(index);
+      return true;
+    }
+    return false;
+  }, [pages]);
+
   // Keyboard navigation
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -100,6 +111,7 @@ export const useBookNavigation = ({
     currentPage,
     totalPages,
     goToPage,
+    goToPageById,
     goToNext,
     goToPrevious,
     goToFirst,
