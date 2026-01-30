@@ -203,10 +203,15 @@ export interface PdfStylesRaw {
   colophonContent: Style;
   colophonText: Style;
   
-  // Page number
+  // Page footer (context + number)
+  pageFooter: Style;
+  pageFooterOdd: Style;
+  pageFooterEven: Style;
+  pageFooterContext: Style;
   pageNumber: Style;
   pageNumberOdd: Style;
   pageNumberEven: Style;
+  pageNumberInline: Style;
   
   // Decorations
   separator: Style;
@@ -631,7 +636,31 @@ export const generatePdfStyles = (options: PdfExportOptions): PdfStylesRaw => {
       color: colorScheme.secondary,
     },
     
-    // =========== PAGE NUMBER ===========
+    // =========== PAGE FOOTER (Context + Page Number) ===========
+    pageFooter: {
+      position: 'absolute',
+      bottom: mmToPoints(10),
+      left: mmToPoints(options.marginInner),
+      right: mmToPoints(options.marginOuter),
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+    },
+    pageFooterOdd: {
+      left: mmToPoints(options.marginInner),
+      right: mmToPoints(options.marginOuter),
+    },
+    pageFooterEven: {
+      left: mmToPoints(options.marginOuter),
+      right: mmToPoints(options.marginInner),
+    },
+    pageFooterContext: {
+      fontFamily: typography.bodyFont,
+      fontSize: baseFontSize * 0.7,
+      color: colorScheme.secondary,
+      fontStyle: 'italic',
+      maxWidth: '70%',
+    },
     pageNumber: {
       position: 'absolute',
       bottom: mmToPoints(12),
@@ -646,6 +675,11 @@ export const generatePdfStyles = (options: PdfExportOptions): PdfStylesRaw => {
     pageNumberEven: {
       left: mmToPoints(options.marginOuter),
       textAlign: 'left',
+    },
+    pageNumberInline: {
+      fontFamily: typography.bodyFont,
+      fontSize: baseFontSize * 0.8,
+      color: colorScheme.secondary,
     },
     
     // =========== DECORATIONS ===========
