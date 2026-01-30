@@ -150,16 +150,16 @@ export const PDF_PRESETS: Record<string, PdfPreset> = {
     includeColophon: true,
   },
   
-  // Galerie Fleuve - Style galerie d'art
+  // Galerie Fleuve - Style galerie d'art (OPTIMIZED margins for space efficiency)
   galerie_fleuve: {
     ...EPUB_PRESETS.galerie_fleuve,
     name: 'Galerie Fleuve',
     description: 'Style galerie d\'art épuré, accents émeraude',
     pageSize: 'A5',
-    marginInner: 24,
-    marginOuter: 18,
-    marginTop: 30,
-    marginBottom: 24,
+    marginInner: 20,  // Was 24mm - reduced for more text area
+    marginOuter: 15,  // Was 18mm - reduced for more text area
+    marginTop: 22,    // Was 30mm - reduced for more text area
+    marginBottom: 18, // Was 24mm - reduced for more text area
     includeFauxTitre: true,
     includeColophon: true,
   },
