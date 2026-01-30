@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, ChevronRight } from 'lucide-react';
 import type { TexteExport } from '@/utils/epubExportUtils';
 import { KEYWORD_CATEGORIES } from '@/utils/wordExportUtils';
 
@@ -13,6 +13,7 @@ interface LivingIndexProps {
     background: string;
     text: string;
   };
+  onNavigateToTexteId?: (texteId: string) => void;
 }
 
 interface WorldData {
@@ -49,9 +50,10 @@ const WORLD_ANIMATIONS: Record<string, WorldData['animation']> = {
   technologies: 'spin',
 };
 
-const LivingIndex: React.FC<LivingIndexProps> = ({ textes, colorScheme }) => {
+const LivingIndex: React.FC<LivingIndexProps> = ({ textes, colorScheme, onNavigateToTexteId }) => {
   const [selectedWorld, setSelectedWorld] = useState<string | null>(null);
   const [hoveredWorld, setHoveredWorld] = useState<string | null>(null);
+  const [selectedKeyword, setSelectedKeyword] = useState<string | null>(null);
 
   // Extraction et agrégation des mots-clés depuis les textes
   const worldsData = useMemo(() => {
@@ -180,8 +182,23 @@ const LivingIndex: React.FC<LivingIndexProps> = ({ textes, colorScheme }) => {
     }
   };
 
+  // Get texte details from ID
+  const getTexteDetails = (texteId: string) => {
+    return textes.find(t => t.id === texteId);
+  };
+
+  // Handle texte click - navigate if callback exists
+  const handleTexteClick = (texteId: string) => {
+    if (onNavigateToTexteId) {
+      onNavigateToTexteId(texteId);
+    }
+  };
+
   // Vue détaillée d'un monde
   const selectedWorldData = worldsData.find(w => w.id === selectedWorld);
+  
+  // Get keyword data for selected keyword
+  const selectedKeywordData = selectedWorldData?.occurrences.get(selectedKeyword || '');
 
   if (textes.length === 0) {
     return (
@@ -205,7 +222,7 @@ const LivingIndex: React.FC<LivingIndexProps> = ({ textes, colorScheme }) => {
         {selectedWorld && selectedWorldData ? (
           // Vue détaillée d'un monde
           <motion.div
-            key="detail"
+            key={selectedKeyword ? `keyword-${selectedKeyword}` : 'detail'}
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.9 }}
@@ -213,101 +230,217 @@ const LivingIndex: React.FC<LivingIndexProps> = ({ textes, colorScheme }) => {
           >
             {/* Header avec retour */}
             <button
-              onClick={() => setSelectedWorld(null)}
+              onClick={() => {
+                if (selectedKeyword) {
+                  setSelectedKeyword(null);
+                } else {
+                  setSelectedWorld(null);
+                }
+              }}
               className="flex items-center gap-2 mb-4 text-sm transition-opacity hover:opacity-80"
               style={{ color: colorScheme.secondary }}
             >
               <ArrowLeft size={16} />
-              Retour au cosmos
+              {selectedKeyword ? `Retour à ${selectedWorldData.label}` : 'Retour au cosmos'}
             </button>
 
-            {/* Titre du monde */}
-            <div className="text-center mb-6">
-              <motion.div
-                className="w-16 h-16 mx-auto mb-3 rounded-full"
-                style={{ backgroundColor: selectedWorldData.color }}
-                animate={{ 
-                  boxShadow: [
-                    `0 0 20px ${selectedWorldData.color}40`,
-                    `0 0 40px ${selectedWorldData.color}60`,
-                    `0 0 20px ${selectedWorldData.color}40`,
-                  ]
-                }}
-                transition={{ duration: 2, repeat: Infinity }}
-              />
-              <h3 
-                className="text-lg font-serif tracking-wide"
-                style={{ color: colorScheme.text }}
-              >
-                {selectedWorldData.label}
-              </h3>
-              <p 
-                className="text-xs mt-1"
-                style={{ color: colorScheme.secondary }}
-              >
-                {selectedWorldData.totalOccurrences} occurrences · {selectedWorldData.texteCount} textes
-              </p>
-            </div>
-
-            {/* Liste des mots-clés trouvés */}
-            <div className="flex-1 overflow-y-auto">
-              <div className="space-y-2">
-                {Array.from(selectedWorldData.occurrences.entries())
-                  .sort((a, b) => b[1].count - a[1].count)
-                  .map(([keyword, data], index) => (
-                    <motion.div
-                      key={keyword}
-                      initial={{ opacity: 0, x: -20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: index * 0.05 }}
-                      className="flex items-center gap-3 px-3 py-2 rounded-lg"
-                      style={{ backgroundColor: `${selectedWorldData.color}15` }}
-                    >
-                      {/* Indicateur de densité */}
-                      <div className="flex gap-0.5">
-                        {Array.from({ length: Math.min(data.count, 5) }).map((_, i) => (
-                          <div
-                            key={i}
-                            className="w-2 h-2 rounded-full"
-                            style={{ backgroundColor: selectedWorldData.color }}
-                          />
-                        ))}
-                        {data.count > 5 && (
-                          <span 
-                            className="text-[10px] ml-1"
-                            style={{ color: selectedWorldData.color }}
-                          >
-                            +{data.count - 5}
-                          </span>
-                        )}
-                      </div>
-                      
-                      <span 
-                        className="font-serif italic flex-1"
-                        style={{ color: colorScheme.text }}
-                      >
-                        {keyword}
-                      </span>
-                      
-                      <span 
-                        className="text-xs"
-                        style={{ color: colorScheme.secondary }}
-                      >
-                        {data.texteIds.length} texte{data.texteIds.length > 1 ? 's' : ''}
-                      </span>
-                    </motion.div>
-                  ))}
-                
-                {selectedWorldData.occurrences.size === 0 && (
+            {selectedKeyword && selectedKeywordData ? (
+              // Vue des textes pour un mot-clé
+              <>
+                <div className="text-center mb-6">
+                  <span 
+                    className="inline-block px-3 py-1 rounded-full text-xs mb-2"
+                    style={{ backgroundColor: `${selectedWorldData.color}20`, color: selectedWorldData.color }}
+                  >
+                    {selectedWorldData.label}
+                  </span>
+                  <h3 
+                    className="text-lg font-serif italic"
+                    style={{ color: colorScheme.text }}
+                  >
+                    « {selectedKeyword} »
+                  </h3>
                   <p 
-                    className="text-center text-sm italic py-8"
+                    className="text-xs mt-1"
                     style={{ color: colorScheme.secondary }}
                   >
-                    Aucune occurrence trouvée dans les textes
+                    {selectedKeywordData.texteIds.length} texte{selectedKeywordData.texteIds.length > 1 ? 's' : ''}
                   </p>
-                )}
-              </div>
-            </div>
+                </div>
+
+                {/* Liste des textes */}
+                <div className="flex-1 overflow-y-auto">
+                  <div className="space-y-2">
+                    {selectedKeywordData.texteIds.map((texteId, index) => {
+                      const texte = getTexteDetails(texteId);
+                      if (!texte) return null;
+
+                      return (
+                        <motion.button
+                          key={texteId}
+                          type="button"
+                          initial={{ opacity: 0, x: -20 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          transition={{ delay: index * 0.05 }}
+                          onClick={() => handleTexteClick(texteId)}
+                          disabled={!onNavigateToTexteId}
+                          className={`w-full text-left flex items-center gap-3 px-3 py-3 rounded-lg transition-all ${
+                            onNavigateToTexteId ? 'hover:bg-opacity-20 cursor-pointer' : 'cursor-default'
+                          }`}
+                          style={{ backgroundColor: `${selectedWorldData.color}10` }}
+                          onMouseEnter={(e) => {
+                            if (onNavigateToTexteId) {
+                              e.currentTarget.style.backgroundColor = `${selectedWorldData.color}25`;
+                            }
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.backgroundColor = `${selectedWorldData.color}10`;
+                          }}
+                        >
+                          <div className="flex-1 min-w-0">
+                            <span 
+                              className="font-medium block truncate"
+                              style={{ color: colorScheme.text }}
+                            >
+                              {texte.titre}
+                            </span>
+                            {texte.marche_ville && (
+                              <span 
+                                className="text-xs"
+                                style={{ color: colorScheme.secondary }}
+                              >
+                                {texte.marche_ville}
+                              </span>
+                            )}
+                          </div>
+                          
+                          {onNavigateToTexteId && (
+                            <ChevronRight 
+                              size={16} 
+                              style={{ color: selectedWorldData.color }}
+                              className="flex-shrink-0"
+                            />
+                          )}
+                        </motion.button>
+                      );
+                    })}
+                  </div>
+
+                  {!onNavigateToTexteId && (
+                    <p 
+                      className="text-center text-xs italic mt-4 px-4"
+                      style={{ color: colorScheme.secondary }}
+                    >
+                      Navigation disponible dans "Lire le Livre Complet"
+                    </p>
+                  )}
+                </div>
+              </>
+            ) : (
+              // Vue des mots-clés du monde
+              <>
+                <div className="text-center mb-6">
+                  <motion.div
+                    className="w-16 h-16 mx-auto mb-3 rounded-full"
+                    style={{ backgroundColor: selectedWorldData.color }}
+                    animate={{ 
+                      boxShadow: [
+                        `0 0 20px ${selectedWorldData.color}40`,
+                        `0 0 40px ${selectedWorldData.color}60`,
+                        `0 0 20px ${selectedWorldData.color}40`,
+                      ]
+                    }}
+                    transition={{ duration: 2, repeat: Infinity }}
+                  />
+                  <h3 
+                    className="text-lg font-serif tracking-wide"
+                    style={{ color: colorScheme.text }}
+                  >
+                    {selectedWorldData.label}
+                  </h3>
+                  <p 
+                    className="text-xs mt-1"
+                    style={{ color: colorScheme.secondary }}
+                  >
+                    {selectedWorldData.totalOccurrences} occurrences · {selectedWorldData.texteCount} textes
+                  </p>
+                </div>
+
+                {/* Liste des mots-clés trouvés - maintenant cliquables */}
+                <div className="flex-1 overflow-y-auto">
+                  <div className="space-y-2">
+                    {Array.from(selectedWorldData.occurrences.entries())
+                      .sort((a, b) => b[1].count - a[1].count)
+                      .map(([keyword, data], index) => (
+                        <motion.button
+                          key={keyword}
+                          type="button"
+                          initial={{ opacity: 0, x: -20 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          transition={{ delay: index * 0.05 }}
+                          onClick={() => setSelectedKeyword(keyword)}
+                          className="w-full text-left flex items-center gap-3 px-3 py-2 rounded-lg transition-all hover:bg-opacity-20 cursor-pointer"
+                          style={{ backgroundColor: `${selectedWorldData.color}15` }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.backgroundColor = `${selectedWorldData.color}25`;
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.backgroundColor = `${selectedWorldData.color}15`;
+                          }}
+                        >
+                          {/* Indicateur de densité */}
+                          <div className="flex gap-0.5 flex-shrink-0">
+                            {Array.from({ length: Math.min(data.count, 5) }).map((_, i) => (
+                              <div
+                                key={i}
+                                className="w-2 h-2 rounded-full"
+                                style={{ backgroundColor: selectedWorldData.color }}
+                              />
+                            ))}
+                            {data.count > 5 && (
+                              <span 
+                                className="text-[10px] ml-1"
+                                style={{ color: selectedWorldData.color }}
+                              >
+                                +{data.count - 5}
+                              </span>
+                            )}
+                          </div>
+                          
+                          <span 
+                            className="font-serif italic flex-1"
+                            style={{ color: colorScheme.text }}
+                          >
+                            {keyword}
+                          </span>
+                          
+                          <span 
+                            className="text-xs flex-shrink-0"
+                            style={{ color: colorScheme.secondary }}
+                          >
+                            {data.texteIds.length} texte{data.texteIds.length > 1 ? 's' : ''}
+                          </span>
+
+                          <ChevronRight 
+                            size={14} 
+                            style={{ color: colorScheme.secondary }}
+                            className="flex-shrink-0"
+                          />
+                        </motion.button>
+                      ))}
+                    
+                    {selectedWorldData.occurrences.size === 0 && (
+                      <p 
+                        className="text-center text-sm italic py-8"
+                        style={{ color: colorScheme.secondary }}
+                      >
+                        Aucune occurrence trouvée dans les textes
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </>
+            )}
           </motion.div>
         ) : (
           // Vue cosmique principale

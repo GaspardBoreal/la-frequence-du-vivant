@@ -15,7 +15,7 @@ const TocRenderer: React.FC<TocRendererProps> = ({
   data,
   colorScheme, 
   typography,
-  onNavigate 
+  onNavigateToPageId 
 }) => {
   const { textes } = data;
   const groupedContent = groupTextesByPartie(textes);
@@ -33,6 +33,26 @@ const TocRenderer: React.FC<TocRendererProps> = ({
     color: colorScheme.primary,
   };
 
+  // Navigation handlers
+  const handlePartieClick = (partieId: string | undefined, firstTexteId: string | undefined) => {
+    if (!onNavigateToPageId) return;
+    
+    // Try partie page first, fallback to first text
+    if (partieId) {
+      const success = onNavigateToPageId(`partie-${partieId}`);
+      if (success) return;
+    }
+    
+    // Fallback to first texte of this partie
+    if (firstTexteId) {
+      onNavigateToPageId(`texte-${firstTexteId}`);
+    }
+  };
+
+  const handleMarcheClick = (firstTexteId: string) => {
+    onNavigateToPageId?.(`texte-${firstTexteId}`);
+  };
+
   return (
     <div 
       className="h-full flex flex-col p-6 md:p-8 overflow-auto"
@@ -46,42 +66,69 @@ const TocRenderer: React.FC<TocRendererProps> = ({
       </h2>
 
       <div className="space-y-4 flex-1 overflow-auto">
-        {groupedContent.map((group, groupIdx) => (
-          <div key={group.partie?.id || `group-${groupIdx}`}>
-            {/* Partie header */}
-            {group.partie && (
-              <div 
-                className="flex items-center gap-2 mb-2 cursor-pointer hover:opacity-80 transition-opacity"
-                style={{ color: colorScheme.primary }}
-                onClick={() => onNavigate?.(groupIdx + 2)} // +2 for cover and toc
-              >
-                <span className="font-bold">{group.partie.numeroRomain}</span>
-                <span className="text-sm uppercase tracking-wide">{group.partie.titre}</span>
-              </div>
-            )}
+        {groupedContent.map((group, groupIdx) => {
+          // Get first texte ID for fallback navigation
+          const firstMarcheTextes = Array.from(group.marches.values())[0]?.textes;
+          const firstTexteId = firstMarcheTextes?.[0]?.id;
 
-            {/* Marches - marches is a Map<string, MarcheGroup> */}
-            <div className="ml-4 space-y-1">
-              {Array.from(group.marches.entries()).map(([marcheKey, marcheData], marcheIdx) => (
-                <div 
-                  key={`${group.partie?.id || 'no-partie'}-${marcheIdx}`}
-                  className="flex items-baseline justify-between gap-2 text-sm"
-                  style={{ color: colorScheme.secondary }}
+          return (
+            <div key={group.partie?.id || `group-${groupIdx}`}>
+              {/* Partie header - clickable */}
+              {group.partie && (
+                <button
+                  type="button"
+                  onClick={() => handlePartieClick(group.partie?.id, firstTexteId)}
+                  className="flex items-center gap-2 mb-2 w-full text-left transition-all hover:opacity-80 group"
+                  style={{ color: colorScheme.primary }}
+                  aria-label={`Aller à la partie ${group.partie.titre}`}
                 >
-                  <span className="truncate">
-                    {marcheKey}
+                  <span className="font-bold">{group.partie.numeroRomain}</span>
+                  <span className="text-sm uppercase tracking-wide group-hover:underline">
+                    {group.partie.titre}
                   </span>
-                  <span 
-                    className="text-xs flex-shrink-0"
-                    style={{ color: colorScheme.accent }}
-                  >
-                    {marcheData.textes.length} texte{marcheData.textes.length > 1 ? 's' : ''}
-                  </span>
-                </div>
-              ))}
+                </button>
+              )}
+
+              {/* Marches - each is clickable */}
+              <div className="ml-4 space-y-1">
+                {Array.from(group.marches.entries()).map(([marcheKey, marcheData], marcheIdx) => {
+                  const marcheFirstTexteId = marcheData.textes[0]?.id;
+                  
+                  if (!marcheFirstTexteId) return null;
+
+                  return (
+                    <button
+                      key={`${group.partie?.id || 'no-partie'}-${marcheIdx}`}
+                      type="button"
+                      onClick={() => handleMarcheClick(marcheFirstTexteId)}
+                      className="flex items-baseline justify-between gap-2 text-sm w-full text-left py-1.5 px-2 rounded transition-all hover:bg-opacity-10 group"
+                      style={{ 
+                        color: colorScheme.secondary,
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.backgroundColor = `${colorScheme.secondary}15`;
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.backgroundColor = 'transparent';
+                      }}
+                      aria-label={`Aller à ${marcheKey}`}
+                    >
+                      <span className="truncate group-hover:underline">
+                        {marcheKey}
+                      </span>
+                      <span 
+                        className="text-xs flex-shrink-0"
+                        style={{ color: colorScheme.accent }}
+                      >
+                        {marcheData.textes.length} texte{marcheData.textes.length > 1 ? 's' : ''}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );

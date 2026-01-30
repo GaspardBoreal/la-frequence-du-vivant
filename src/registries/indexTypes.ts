@@ -26,6 +26,7 @@ const extractIndexByLieu = (textes: TexteExport[]): IndexData => {
     entries: Object.entries(byLieu).map(([label, data]) => ({
       label,
       count: data.count,
+      texteIds: data.texteIds,
     })),
     groupedBy: 'lieu',
   };
@@ -49,6 +50,7 @@ const extractIndexByGenre = (textes: TexteExport[]): IndexData => {
       .map(([label, data]) => ({
         label,
         count: data.count,
+        texteIds: data.texteIds,
       })),
     groupedBy: 'genre',
   };
