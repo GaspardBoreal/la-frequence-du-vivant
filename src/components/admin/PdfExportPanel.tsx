@@ -26,11 +26,12 @@ import {
   type PdfExportOptions,
   type TexteExport,
 } from '@/utils/pdfExportUtils';
-import { PdfDocument, registerFonts } from '@/utils/pdfPageComponents';
+import { PdfDocument, registerFonts, type PartieData } from '@/utils/pdfPageComponents';
 import { generateContextualMetadata } from '@/utils/epubMetadataGenerator';
 
 interface PdfExportPanelProps {
   textes: TexteExport[];
+  parties?: PartieData[];
   explorationCoverUrl?: string;
   explorationName?: string;
   onRefresh?: () => void;
@@ -38,6 +39,7 @@ interface PdfExportPanelProps {
 
 const PdfExportPanel: React.FC<PdfExportPanelProps> = ({
   textes,
+  parties,
   explorationName,
 }) => {
   const [options, setOptions] = useState<PdfExportOptions>(() => {
@@ -95,6 +97,29 @@ const PdfExportPanel: React.FC<PdfExportPanelProps> = ({
     }
   }, []);
 
+  // En mode d'organisation "marche", PdfDocument s'appuie sur une liste de "parties".
+  // Les textes sont déjà enrichis (partie_id / partie_titre / partie_ordre...),
+  // donc on reconstruit la liste si elle n'est pas fournie.
+  const effectiveParties = useMemo<PartieData[]>(() => {
+    if (parties && parties.length > 0) return parties;
+
+    const map = new Map<string, PartieData>();
+    for (const t of textes) {
+      if (!t.partie_id) continue;
+      if (map.has(t.partie_id)) continue;
+
+      map.set(t.partie_id, {
+        id: t.partie_id,
+        numeroRomain: t.partie_numero_romain || '',
+        titre: t.partie_titre || 'Mouvement',
+        sousTitre: t.partie_sous_titre || undefined,
+        ordre: t.partie_ordre ?? 999,
+      });
+    }
+
+    return Array.from(map.values()).sort((a, b) => a.ordre - b.ordre);
+  }, [parties, textes]);
+
   const handleExport = async () => {
     if (textes.length === 0) {
       toast.error('Aucun texte à exporter');
@@ -104,7 +129,7 @@ const PdfExportPanel: React.FC<PdfExportPanelProps> = ({
     setExporting(true);
     try {
       await registerFonts(options);
-      const doc = <PdfDocument textes={textes} options={options} />;
+      const doc = <PdfDocument textes={textes} options={options} parties={effectiveParties} />;
       const blob = await pdf(doc).toBlob();
       const filename = `${options.title.replace(/[^a-zA-Z0-9]/g, '_')}.pdf`;
       saveAs(blob, filename);
