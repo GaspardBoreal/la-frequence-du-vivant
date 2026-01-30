@@ -6,65 +6,69 @@ import { PdfExportOptions, mmToPoints, getPageDimensions, getPageMargins } from 
 // FONT REGISTRATION
 // ============================================================================
 
-// Stable CDN URLs for fonts (using jsDelivr which is more reliable than Google Fonts direct URLs)
+// Stable CDN URLs for fonts.
+// IMPORTANT: @react-pdf/renderer requires TTF/OTF files.
+// We use the jsDelivr "fontsource" endpoint which serves actual .ttf files.
+const FONTSOURCE_CDN = 'https://cdn.jsdelivr.net/fontsource/fonts';
+
 const FONT_URLS: Record<string, { regular: string; bold?: string; italic?: string; boldItalic?: string }> = {
   // Using Lora as fallback for Georgia (similar serif characteristics)
-  'Georgia': {
-    regular: 'https://cdn.jsdelivr.net/npm/@fontsource/lora@latest/files/lora-latin-400-normal.ttf',
-    bold: 'https://cdn.jsdelivr.net/npm/@fontsource/lora@latest/files/lora-latin-700-normal.ttf',
-    italic: 'https://cdn.jsdelivr.net/npm/@fontsource/lora@latest/files/lora-latin-400-italic.ttf',
-    boldItalic: 'https://cdn.jsdelivr.net/npm/@fontsource/lora@latest/files/lora-latin-700-italic.ttf',
+  Georgia: {
+    regular: `${FONTSOURCE_CDN}/lora@latest/latin-400-normal.ttf`,
+    bold: `${FONTSOURCE_CDN}/lora@latest/latin-700-normal.ttf`,
+    italic: `${FONTSOURCE_CDN}/lora@latest/latin-400-italic.ttf`,
+    boldItalic: `${FONTSOURCE_CDN}/lora@latest/latin-700-italic.ttf`,
   },
   'Playfair Display': {
-    regular: 'https://cdn.jsdelivr.net/npm/@fontsource/playfair-display@latest/files/playfair-display-latin-400-normal.ttf',
-    bold: 'https://cdn.jsdelivr.net/npm/@fontsource/playfair-display@latest/files/playfair-display-latin-700-normal.ttf',
-    italic: 'https://cdn.jsdelivr.net/npm/@fontsource/playfair-display@latest/files/playfair-display-latin-400-italic.ttf',
-    boldItalic: 'https://cdn.jsdelivr.net/npm/@fontsource/playfair-display@latest/files/playfair-display-latin-700-italic.ttf',
+    regular: `${FONTSOURCE_CDN}/playfair-display@latest/latin-400-normal.ttf`,
+    bold: `${FONTSOURCE_CDN}/playfair-display@latest/latin-700-normal.ttf`,
+    italic: `${FONTSOURCE_CDN}/playfair-display@latest/latin-400-italic.ttf`,
+    boldItalic: `${FONTSOURCE_CDN}/playfair-display@latest/latin-700-italic.ttf`,
   },
   'Cormorant Garamond': {
-    regular: 'https://cdn.jsdelivr.net/npm/@fontsource/cormorant-garamond@latest/files/cormorant-garamond-latin-400-normal.ttf',
-    bold: 'https://cdn.jsdelivr.net/npm/@fontsource/cormorant-garamond@latest/files/cormorant-garamond-latin-700-normal.ttf',
-    italic: 'https://cdn.jsdelivr.net/npm/@fontsource/cormorant-garamond@latest/files/cormorant-garamond-latin-400-italic.ttf',
-    boldItalic: 'https://cdn.jsdelivr.net/npm/@fontsource/cormorant-garamond@latest/files/cormorant-garamond-latin-700-italic.ttf',
+    regular: `${FONTSOURCE_CDN}/cormorant-garamond@latest/latin-400-normal.ttf`,
+    bold: `${FONTSOURCE_CDN}/cormorant-garamond@latest/latin-700-normal.ttf`,
+    italic: `${FONTSOURCE_CDN}/cormorant-garamond@latest/latin-400-italic.ttf`,
+    boldItalic: `${FONTSOURCE_CDN}/cormorant-garamond@latest/latin-700-italic.ttf`,
   },
-  'Lora': {
-    regular: 'https://cdn.jsdelivr.net/npm/@fontsource/lora@latest/files/lora-latin-400-normal.ttf',
-    bold: 'https://cdn.jsdelivr.net/npm/@fontsource/lora@latest/files/lora-latin-700-normal.ttf',
-    italic: 'https://cdn.jsdelivr.net/npm/@fontsource/lora@latest/files/lora-latin-400-italic.ttf',
-    boldItalic: 'https://cdn.jsdelivr.net/npm/@fontsource/lora@latest/files/lora-latin-700-italic.ttf',
+  Lora: {
+    regular: `${FONTSOURCE_CDN}/lora@latest/latin-400-normal.ttf`,
+    bold: `${FONTSOURCE_CDN}/lora@latest/latin-700-normal.ttf`,
+    italic: `${FONTSOURCE_CDN}/lora@latest/latin-400-italic.ttf`,
+    boldItalic: `${FONTSOURCE_CDN}/lora@latest/latin-700-italic.ttf`,
   },
   'EB Garamond': {
-    regular: 'https://cdn.jsdelivr.net/npm/@fontsource/eb-garamond@latest/files/eb-garamond-latin-400-normal.ttf',
-    bold: 'https://cdn.jsdelivr.net/npm/@fontsource/eb-garamond@latest/files/eb-garamond-latin-700-normal.ttf',
-    italic: 'https://cdn.jsdelivr.net/npm/@fontsource/eb-garamond@latest/files/eb-garamond-latin-400-italic.ttf',
-    boldItalic: 'https://cdn.jsdelivr.net/npm/@fontsource/eb-garamond@latest/files/eb-garamond-latin-700-italic.ttf',
+    regular: `${FONTSOURCE_CDN}/eb-garamond@latest/latin-400-normal.ttf`,
+    bold: `${FONTSOURCE_CDN}/eb-garamond@latest/latin-700-normal.ttf`,
+    italic: `${FONTSOURCE_CDN}/eb-garamond@latest/latin-400-italic.ttf`,
+    boldItalic: `${FONTSOURCE_CDN}/eb-garamond@latest/latin-700-italic.ttf`,
   },
   'Crimson Pro': {
-    regular: 'https://cdn.jsdelivr.net/npm/@fontsource/crimson-pro@latest/files/crimson-pro-latin-400-normal.ttf',
-    bold: 'https://cdn.jsdelivr.net/npm/@fontsource/crimson-pro@latest/files/crimson-pro-latin-700-normal.ttf',
-    italic: 'https://cdn.jsdelivr.net/npm/@fontsource/crimson-pro@latest/files/crimson-pro-latin-400-italic.ttf',
-    boldItalic: 'https://cdn.jsdelivr.net/npm/@fontsource/crimson-pro@latest/files/crimson-pro-latin-700-italic.ttf',
+    regular: `${FONTSOURCE_CDN}/crimson-pro@latest/latin-400-normal.ttf`,
+    bold: `${FONTSOURCE_CDN}/crimson-pro@latest/latin-700-normal.ttf`,
+    italic: `${FONTSOURCE_CDN}/crimson-pro@latest/latin-400-italic.ttf`,
+    boldItalic: `${FONTSOURCE_CDN}/crimson-pro@latest/latin-700-italic.ttf`,
   },
   'Libre Baskerville': {
-    regular: 'https://cdn.jsdelivr.net/npm/@fontsource/libre-baskerville@latest/files/libre-baskerville-latin-400-normal.ttf',
-    bold: 'https://cdn.jsdelivr.net/npm/@fontsource/libre-baskerville@latest/files/libre-baskerville-latin-700-normal.ttf',
-    italic: 'https://cdn.jsdelivr.net/npm/@fontsource/libre-baskerville@latest/files/libre-baskerville-latin-400-italic.ttf',
+    regular: `${FONTSOURCE_CDN}/libre-baskerville@latest/latin-400-normal.ttf`,
+    bold: `${FONTSOURCE_CDN}/libre-baskerville@latest/latin-700-normal.ttf`,
+    italic: `${FONTSOURCE_CDN}/libre-baskerville@latest/latin-400-italic.ttf`,
   },
   'DM Serif Display': {
-    regular: 'https://cdn.jsdelivr.net/npm/@fontsource/dm-serif-display@latest/files/dm-serif-display-latin-400-normal.ttf',
-    italic: 'https://cdn.jsdelivr.net/npm/@fontsource/dm-serif-display@latest/files/dm-serif-display-latin-400-italic.ttf',
+    regular: `${FONTSOURCE_CDN}/dm-serif-display@latest/latin-400-normal.ttf`,
+    italic: `${FONTSOURCE_CDN}/dm-serif-display@latest/latin-400-italic.ttf`,
   },
-  'Fraunces': {
-    regular: 'https://cdn.jsdelivr.net/npm/@fontsource/fraunces@latest/files/fraunces-latin-400-normal.ttf',
-    bold: 'https://cdn.jsdelivr.net/npm/@fontsource/fraunces@latest/files/fraunces-latin-700-normal.ttf',
-    italic: 'https://cdn.jsdelivr.net/npm/@fontsource/fraunces@latest/files/fraunces-latin-400-italic.ttf',
-    boldItalic: 'https://cdn.jsdelivr.net/npm/@fontsource/fraunces@latest/files/fraunces-latin-700-italic.ttf',
+  Fraunces: {
+    regular: `${FONTSOURCE_CDN}/fraunces@latest/latin-400-normal.ttf`,
+    bold: `${FONTSOURCE_CDN}/fraunces@latest/latin-700-normal.ttf`,
+    italic: `${FONTSOURCE_CDN}/fraunces@latest/latin-400-italic.ttf`,
+    boldItalic: `${FONTSOURCE_CDN}/fraunces@latest/latin-700-italic.ttf`,
   },
-  'Merriweather': {
-    regular: 'https://cdn.jsdelivr.net/npm/@fontsource/merriweather@latest/files/merriweather-latin-400-normal.ttf',
-    bold: 'https://cdn.jsdelivr.net/npm/@fontsource/merriweather@latest/files/merriweather-latin-700-normal.ttf',
-    italic: 'https://cdn.jsdelivr.net/npm/@fontsource/merriweather@latest/files/merriweather-latin-400-italic.ttf',
-    boldItalic: 'https://cdn.jsdelivr.net/npm/@fontsource/merriweather@latest/files/merriweather-latin-700-italic.ttf',
+  Merriweather: {
+    regular: `${FONTSOURCE_CDN}/merriweather@latest/latin-400-normal.ttf`,
+    bold: `${FONTSOURCE_CDN}/merriweather@latest/latin-700-normal.ttf`,
+    italic: `${FONTSOURCE_CDN}/merriweather@latest/latin-400-italic.ttf`,
+    boldItalic: `${FONTSOURCE_CDN}/merriweather@latest/latin-700-italic.ttf`,
   },
 };
 
