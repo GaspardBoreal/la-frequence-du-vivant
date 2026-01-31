@@ -386,6 +386,7 @@ export const generatePdfStyles = (options: PdfExportOptions): PdfStylesRaw => {
       color: colorScheme.primary,
       marginTop: mmToPoints(3),
       marginBottom: mmToPoints(1),
+      flexShrink: 1, // ADDED: Prevent overflow on long titles
     },
     tocMarche: {
       fontFamily: typography.bodyFont,
@@ -394,6 +395,7 @@ export const generatePdfStyles = (options: PdfExportOptions): PdfStylesRaw => {
       color: colorScheme.secondary,
       marginTop: mmToPoints(0.5),
       paddingLeft: mmToPoints(3),
+      flexShrink: 1, // ADDED: Prevent overflow on long titles
     },
     tocTexte: {
       fontFamily: typography.bodyFont,
@@ -703,6 +705,8 @@ export const generatePdfStyles = (options: PdfExportOptions): PdfStylesRaw => {
       fontFamily: typography.bodyFont,
       fontSize: baseFontSize * 0.75,
       color: colorScheme.secondary,
+      flexShrink: 1, // ADDED: Allow text to shrink to prevent horizontal overflow
+      maxWidth: mmToPoints(50), // ADDED: Limit width to prevent overflow
     },
     
     // =========== INDEX PAR GENRE (with ornaments) ===========
@@ -814,6 +818,8 @@ export const generatePdfStyles = (options: PdfExportOptions): PdfStylesRaw => {
       fontFamily: typography.bodyFont,
       fontSize: baseFontSize * 0.75,
       color: colorScheme.secondary,
+      flexShrink: 1, // ADDED: Allow text to shrink to prevent horizontal overflow
+      maxWidth: mmToPoints(50), // ADDED: Limit width to prevent overflow
     },
     
     // =========== COLOPHON ===========

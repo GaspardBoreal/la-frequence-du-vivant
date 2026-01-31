@@ -64,6 +64,22 @@ const MAX_PARAGRAPH_LENGTH = 1500;
 // Maximum characters for the first paragraph in wrap={false} blocks (title + first para)
 const MAX_FIRST_PARA_LENGTH = 600;
 
+// Maximum number of page references to display before truncating with "…"
+const MAX_PAGES_DISPLAY = 5;
+
+/**
+ * Format a list of page numbers for index display.
+ * Limits to MAX_PAGES_DISPLAY and adds "…" if truncated.
+ * Prevents horizontal overflow in index entries.
+ */
+const formatPageList = (pages: number[]): string => {
+  if (pages.length <= MAX_PAGES_DISPLAY) {
+    return pages.join(', ');
+  }
+  // Show first 4 pages + "…" to indicate more
+  return `${pages.slice(0, 4).join(', ')}…`;
+};
+
 /**
  * Estimate how many pages a text will occupy based on content length
  */
@@ -361,7 +377,7 @@ export const TocPage: React.FC<TocPageProps> = ({ entries, options, styles }) =>
         </Text>
         
         {entries.map((entry, index) => (
-          <View key={index} style={styles.tocEntry as Style} wrap={false}>
+          <View key={index} style={styles.tocEntry as Style}>
             {entry.type === 'partie' && (
               <Text style={styles.tocPartie as Style}>
                 {entry.partieNumero && `${entry.partieNumero} · `}{entry.title}
@@ -456,7 +472,7 @@ export const HaikuBlock: React.FC<{ texte: TexteExport; styles: PdfStylesRaw; co
     .filter(Boolean);
   
   return (
-    <View style={styles.haikuBlock as Style} wrap={false}>
+    <View style={styles.haikuBlock as Style}>
       <Text style={styles.haikuTitle as Style}>{texte.titre}</Text>
       <View style={styles.haikuSeparator as Style} />
       <View style={{ alignItems: 'center', marginTop: mmToPoints(4) } as Style}>
@@ -696,7 +712,7 @@ export const IndexLieuxPage: React.FC<IndexLieuxPageProps> = ({ entries, options
               return (
                 <View key={mIndex}>
                   {/* Keep marche header + first type together to avoid orphans */}
-                  <View wrap={false} style={styles.indexLieuxMarcheBlock as Style}>
+                  <View style={styles.indexLieuxMarcheBlock as Style}>
                     <Text style={styles.indexLieuxMarcheEntry as Style}>
                       {marche.nom}
                     </Text>
@@ -704,7 +720,7 @@ export const IndexLieuxPage: React.FC<IndexLieuxPageProps> = ({ entries, options
                       <View style={styles.indexLieuxTypeRow as Style}>
                         <Text style={styles.indexLieuxTypeName as Style}>{firstType.type}</Text>
                         <View style={styles.indexLieuxDotLeader as Style} />
-                        <Text style={styles.indexLieuxPages as Style}>{firstType.pages.join(', ')}</Text>
+                        <Text style={styles.indexLieuxPages as Style}>{formatPageList(firstType.pages)}</Text>
                       </View>
                     )}
                   </View>
@@ -713,7 +729,7 @@ export const IndexLieuxPage: React.FC<IndexLieuxPageProps> = ({ entries, options
                     <View key={tIndex} style={styles.indexLieuxTypeRow as Style}>
                       <Text style={styles.indexLieuxTypeName as Style}>{typeEntry.type}</Text>
                       <View style={styles.indexLieuxDotLeader as Style} />
-                      <Text style={styles.indexLieuxPages as Style}>{typeEntry.pages.join(', ')}</Text>
+                      <Text style={styles.indexLieuxPages as Style}>{formatPageList(typeEntry.pages)}</Text>
                     </View>
                   ))}
                 </View>
@@ -773,10 +789,14 @@ export const IndexGenresPage: React.FC<IndexGenresPageProps> = ({ entries, optio
           // which visually overlaps with the next section header (MANIFESTE / POÈME / HAIKU).
           const [first, ...rest] = genreEntry.textes;
 
+          // Truncate long titles to prevent horizontal overflow
+          const truncateTitle = (title: string, maxLen = 60) =>
+            title.length > maxLen ? title.slice(0, maxLen - 1) + '…' : title;
+          
           const renderEntry = (texte: any, key: React.Key) => (
-            <View key={key} style={styles.indexGenreEntryBlock as Style} wrap={false}>
-              {/* Line 1: Title only (bold) */}
-              <Text style={styles.indexGenreTitle as Style}>{texte.titre}</Text>
+            <View key={key} style={styles.indexGenreEntryBlock as Style}>
+              {/* Line 1: Title only (bold) - truncated to prevent overflow */}
+              <Text style={styles.indexGenreTitle as Style}>{truncateTitle(texte.titre)}</Text>
               {/* Line 2: Lieu with dot leader and page */}
               <View style={styles.indexGenreDetailRow as Style}>
                 <Text style={styles.indexGenreLieu as Style}>{texte.lieu}</Text>
@@ -789,7 +809,7 @@ export const IndexGenresPage: React.FC<IndexGenresPageProps> = ({ entries, optio
           return (
             <View key={gIndex}>
               {/* Keep the section header with at least the first entry to avoid lonely headers at the bottom */}
-              <View wrap={false}>
+              <View>
                 <View style={styles.indexGenreSection as Style}>
                   <Text style={styles.indexGenreOrnament as Style}>
                     &  {genreEntry.genre.toUpperCase()}  &
@@ -849,7 +869,7 @@ export const IndexKeywordsPage: React.FC<IndexKeywordsPageProps> = ({ entries, o
           return (
             <View key={cIndex}>
               {/* Category header + first keyword stay together (unbreakable) */}
-              <View wrap={false}>
+              <View>
                 <View style={styles.indexKeywordCategoryBox as Style}>
                   <Text style={styles.indexKeywordCategoryTitle as Style}>{categoryEntry.category}</Text>
                 </View>
@@ -858,7 +878,7 @@ export const IndexKeywordsPage: React.FC<IndexKeywordsPageProps> = ({ entries, o
                   <View style={styles.indexKeywordEntry as Style}>
                     <Text style={styles.indexKeywordName as Style}>{truncateName(firstKeyword.name)}</Text>
                     <View style={styles.indexKeywordDotLeader as Style} />
-                    <Text style={styles.indexKeywordPages as Style}>{firstKeyword.pages.join(', ')}</Text>
+                    <Text style={styles.indexKeywordPages as Style}>{formatPageList(firstKeyword.pages)}</Text>
                   </View>
                 )}
               </View>
@@ -868,7 +888,7 @@ export const IndexKeywordsPage: React.FC<IndexKeywordsPageProps> = ({ entries, o
                 <View key={kIndex} style={styles.indexKeywordEntry as Style}>
                   <Text style={styles.indexKeywordName as Style}>{truncateName(keyword.name)}</Text>
                   <View style={styles.indexKeywordDotLeader as Style} />
-                  <Text style={styles.indexKeywordPages as Style}>{keyword.pages.join(', ')}</Text>
+                  <Text style={styles.indexKeywordPages as Style}>{formatPageList(keyword.pages)}</Text>
                 </View>
               ))}
             </View>
