@@ -64,6 +64,10 @@ interface PageFooterProps {
  * Dynamic footer using @react-pdf/renderer's render prop
  * This ensures the page number reflects the ACTUAL rendered page,
  * not a manually computed counter that doesn't account for text wrapping.
+ * 
+ * Uses a flexbox layout with two separate Text elements to avoid
+ * the "unsupported number" crash caused by text overflow when using
+ * manual spacing (.repeat(40)).
  */
 export const PageFooter: React.FC<PageFooterProps> = ({ 
   styles, 
@@ -75,19 +79,20 @@ export const PageFooter: React.FC<PageFooterProps> = ({
   
   return (
     <View style={styles.pageFooter as Style} fixed>
+      {/* Left element: Context on odd pages, Page Number on even */}
       <Text
-        style={styles.pageFooterDynamic as Style}
+        style={styles.pageFooterContext as Style}
         render={({ pageNumber }) => {
           const isOdd = pageNumber % 2 === 1;
-          const formattedPage = formatPageNumber(pageNumber, options.pageNumberStyle);
-          
-          if (isOdd) {
-            // Odd pages: context on left, page number on right
-            return `${contextText}${contextText ? '     ' : ''}${' '.repeat(40)}${formattedPage}`;
-          } else {
-            // Even pages: page number on left, context on right
-            return `${formattedPage}${' '.repeat(40)}${contextText ? '     ' : ''}${contextText}`;
-          }
+          return isOdd ? contextText : formatPageNumber(pageNumber, options.pageNumberStyle);
+        }}
+      />
+      {/* Right element: Page Number on odd pages, Context on even */}
+      <Text
+        style={styles.pageFooterContext as Style}
+        render={({ pageNumber }) => {
+          const isOdd = pageNumber % 2 === 1;
+          return isOdd ? formatPageNumber(pageNumber, options.pageNumberStyle) : contextText;
         }}
       />
     </View>
