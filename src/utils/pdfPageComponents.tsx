@@ -58,12 +58,12 @@ const mergeStyles = (...styles: (Style | undefined)[]): Style => {
 const CHARS_PER_PAGE = 2000;
 
 // Maximum characters for ANY paragraph to prevent Yoga overflow crash
-// REDUCED from 1500 to 800 for extra safety with complex HTML content
-// like "Constitution de Dordonia" (21k chars with nested HTML)
-const MAX_PARAGRAPH_LENGTH = 800;
+// CRITICAL: Further reduced from 800 to 600 for "Constitution de Dordonia" (21k chars)
+// which has complex nested HTML that can create very long text blocks after sanitization.
+const MAX_PARAGRAPH_LENGTH = 600;
 
 // Maximum characters for the first paragraph in wrap={false} blocks (title + first para)
-const MAX_FIRST_PARA_LENGTH = 400;
+const MAX_FIRST_PARA_LENGTH = 300;
 
 // Maximum number of page references to display before truncating with "…"
 const MAX_PAGES_DISPLAY = 5;
@@ -589,17 +589,27 @@ export const FablePage: React.FC<FablePageProps> = ({ texte, options, styles, co
   // Limit first paragraph to prevent wrap={false} overflow crash
   const { firstParagraph, restParagraphs } = limitFirstParagraph(rawParagraphs);
   
+  // CRITICAL FINAL SAFETY: Force chunk EVERY paragraph to max 600 chars
+  const safeParagraphs = [firstParagraph, ...restParagraphs]
+    .filter(Boolean)
+    .flatMap(para => {
+      if (para.length <= MAX_PARAGRAPH_LENGTH) return [para];
+      return chunkLongText(para, MAX_PARAGRAPH_LENGTH);
+    });
+  
   return (
     <Page size={[dimensions.width, dimensions.height]} style={mergeStyles(styles.page, styles.pageOdd)} wrap>
       <View style={styles.fableContainer as Style}>
         {/* Header with ornament and title - NO wrap={false} to prevent overflow crash */}
         <View style={styles.fableHeader as Style}>
           <Text style={styles.fableHeaderLabel as Style}>❦ FABLE ❦</Text>
-          <Text style={styles.fableTitle as Style} minPresenceAhead={30}>{texte.titre}</Text>
+          <Text style={styles.fableTitle as Style} minPresenceAhead={30}>
+            {softBreakLongTokens(texte.titre)}
+          </Text>
         </View>
         
         {/* All paragraphs flow naturally across pages */}
-        {[firstParagraph, ...restParagraphs].filter(Boolean).map((para, idx) => (
+        {safeParagraphs.map((para, idx) => (
           <Text key={idx} style={styles.fableContent as Style}>{para}</Text>
         ))}
         
@@ -689,6 +699,16 @@ export const TextePage: React.FC<TextePageProps> = ({
   // Limit first paragraph to prevent wrap={false} overflow crash
   const { firstParagraph, restParagraphs } = limitFirstParagraph(rawParagraphs);
   
+  // CRITICAL FINAL SAFETY: Force chunk EVERY paragraph to max 600 chars
+  // This is the last line of defense for documents like "Constitution de Dordonia"
+  // that have complex HTML generating long text blocks even after sanitization
+  const safeParagraphs = [firstParagraph, ...restParagraphs]
+    .filter(Boolean)
+    .flatMap(para => {
+      if (para.length <= MAX_PARAGRAPH_LENGTH) return [para];
+      return chunkLongText(para, MAX_PARAGRAPH_LENGTH);
+    });
+  
   return (
     <Page size={[dimensions.width, dimensions.height]} style={mergeStyles(styles.page, styles.pageOdd)} wrap>
       <View style={styles.textePage as Style}>
@@ -698,10 +718,12 @@ export const TextePage: React.FC<TextePageProps> = ({
         
         <View style={styles.texteContainer as Style}>
           {/* Title alone is kept together - content flows naturally */}
-          <Text style={styles.texteTitle as Style} minPresenceAhead={50}>{texte.titre}</Text>
+          <Text style={styles.texteTitle as Style} minPresenceAhead={50}>
+            {softBreakLongTokens(texte.titre)}
+          </Text>
           
           {/* All paragraphs flow naturally across pages - no wrap={false} to prevent crashes */}
-          {[firstParagraph, ...restParagraphs].filter(Boolean).map((para, idx) => (
+          {safeParagraphs.map((para, idx) => (
             <Text key={idx} style={styles.texteContent as Style}>{para}</Text>
           ))}
           
