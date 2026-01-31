@@ -628,6 +628,10 @@ interface IndexKeywordsPageProps {
 export const IndexKeywordsPage: React.FC<IndexKeywordsPageProps> = ({ entries, options, styles }) => {
   const dimensions = getPageDimensions(options);
   
+  // Truncate long keyword names to avoid horizontal overflow (Yoga crash prevention)
+  const truncateName = (name: string, maxLen = 50) => 
+    name.length > maxLen ? name.slice(0, maxLen - 1) + '…' : name;
+  
   return (
     <Page size={[dimensions.width, dimensions.height]} style={mergeStyles(styles.page, styles.pageOdd)} wrap>
       <View style={styles.indexPage as Style}>
@@ -635,21 +639,38 @@ export const IndexKeywordsPage: React.FC<IndexKeywordsPageProps> = ({ entries, o
           ─────  INDEX THÉMATIQUE  ─────
         </Text>
         
-        {entries.map((categoryEntry, cIndex) => (
-          <View key={cIndex} wrap={false}>
-            <View style={styles.indexKeywordCategoryBox as Style}>
-              <Text style={styles.indexKeywordCategoryTitle as Style}>{categoryEntry.category}</Text>
-            </View>
-            
-            {categoryEntry.keywords.map((keyword, kIndex) => (
-              <View key={kIndex} style={styles.indexKeywordEntry as Style}>
-                <Text style={styles.indexKeywordName as Style}>{keyword.name}</Text>
-                <View style={styles.indexKeywordDotLeader as Style} />
-                <Text style={styles.indexKeywordPages as Style}>{keyword.pages.join(', ')}</Text>
+        {entries.map((categoryEntry, cIndex) => {
+          // Strategy: keep category header with first keyword together, allow rest to wrap
+          const [firstKeyword, ...restKeywords] = categoryEntry.keywords;
+          
+          return (
+            <View key={cIndex}>
+              {/* Category header + first keyword stay together (unbreakable) */}
+              <View wrap={false}>
+                <View style={styles.indexKeywordCategoryBox as Style}>
+                  <Text style={styles.indexKeywordCategoryTitle as Style}>{categoryEntry.category}</Text>
+                </View>
+                
+                {firstKeyword && (
+                  <View style={styles.indexKeywordEntry as Style}>
+                    <Text style={styles.indexKeywordName as Style}>{truncateName(firstKeyword.name)}</Text>
+                    <View style={styles.indexKeywordDotLeader as Style} />
+                    <Text style={styles.indexKeywordPages as Style}>{firstKeyword.pages.join(', ')}</Text>
+                  </View>
+                )}
               </View>
-            ))}
-          </View>
-        ))}
+              
+              {/* Remaining keywords can flow across pages normally */}
+              {restKeywords.map((keyword, kIndex) => (
+                <View key={kIndex} style={styles.indexKeywordEntry as Style}>
+                  <Text style={styles.indexKeywordName as Style}>{truncateName(keyword.name)}</Text>
+                  <View style={styles.indexKeywordDotLeader as Style} />
+                  <Text style={styles.indexKeywordPages as Style}>{keyword.pages.join(', ')}</Text>
+                </View>
+              ))}
+            </View>
+          );
+        })}
       </View>
       
       <PageFooter styles={styles} options={options} />

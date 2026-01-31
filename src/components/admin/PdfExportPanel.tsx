@@ -134,9 +134,17 @@ const PdfExportPanel: React.FC<PdfExportPanelProps> = ({
       const filename = `${options.title.replace(/[^a-zA-Z0-9]/g, '_')}.pdf`;
       saveAs(blob, filename);
       toast.success('PDF généré avec succès !');
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('PDF Export error:', error);
-      toast.error('Erreur lors de la génération du PDF');
+      
+      // Provide detailed error message for layout crashes
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      if (errorMessage.includes('unsupported number')) {
+        console.error('Layout crash detected (Yoga engine overflow). This usually indicates an element that cannot fit on a page.');
+        toast.error('Erreur de mise en page PDF (layout overflow). Vérifiez les index ou contenus trop longs.');
+      } else {
+        toast.error(`Erreur PDF: ${errorMessage.slice(0, 100)}`);
+      }
     } finally {
       setExporting(false);
     }

@@ -260,6 +260,10 @@ export const generatePdfStyles = (options: PdfExportOptions): PdfStylesRaw => {
   const headingFontSize = baseFontSize * 1.5;
   const titleFontSize = baseFontSize * 2.2;
   
+  // STABLE NUMERIC WIDTHS: Avoid percentages which can cause Yoga "unsupported number" crashes
+  const contentWidth = dimensions.width - mmToPoints(40); // Safe content width (numeric, not %)
+  const narrowContentWidth = dimensions.width - mmToPoints(60); // Narrower for index columns
+  
   return {
     // =========== PAGE STYLES ===========
     page: {
@@ -291,11 +295,11 @@ export const generatePdfStyles = (options: PdfExportOptions): PdfStylesRaw => {
       flexDirection: 'column',
       justifyContent: 'center',
       alignItems: 'center',
-      padding: mmToPoints(20),  // Reduced for single-page fit
+      padding: mmToPoints(20),
     },
     coverContent: {
       textAlign: 'center',
-      maxWidth: '85%',  // Slightly wider to avoid word breaks
+      maxWidth: contentWidth, // FIXED: Numeric value instead of '85%'
     },
     coverTitle: {
       fontFamily: typography.headingFont,
@@ -304,9 +308,7 @@ export const generatePdfStyles = (options: PdfExportOptions): PdfStylesRaw => {
       color: colorScheme.primary,
       marginBottom: mmToPoints(6),
       letterSpacing: 0.5,
-      // @ts-ignore - hyphenation control for react-pdf
-      hyphens: 'none',
-      wordBreak: 'keep-all',
+      // REMOVED: hyphens/wordBreak are unsupported by react-pdf and can cause instability
     },
     coverSubtitle: {
       fontFamily: typography.headingFont,
@@ -342,7 +344,7 @@ export const generatePdfStyles = (options: PdfExportOptions): PdfStylesRaw => {
       flexDirection: 'column',
       justifyContent: 'center',
       alignItems: 'center',
-      height: '100%',
+      flexGrow: 1, // FIXED: Use flexGrow instead of height: '100%' for Yoga stability
     },
     fauxTitreContent: {
       textAlign: 'center',
@@ -744,7 +746,7 @@ export const generatePdfStyles = (options: PdfExportOptions): PdfStylesRaw => {
       color: colorScheme.secondary,
       lineHeight: 1.2,
       flexShrink: 1,
-      maxWidth: '70%',
+      maxWidth: narrowContentWidth, // FIXED: Numeric value instead of '70%'
     },
     indexGenreDotLeader: {
       flex: 1,
@@ -792,6 +794,7 @@ export const generatePdfStyles = (options: PdfExportOptions): PdfStylesRaw => {
       fontFamily: typography.bodyFont,
       fontSize: baseFontSize * 0.8,
       color: colorScheme.text,
+      flexShrink: 1, // ADDED: Allow text to shrink to prevent horizontal overflow
     },
     indexKeywordDotLeader: {
       flex: 1,
@@ -812,7 +815,7 @@ export const generatePdfStyles = (options: PdfExportOptions): PdfStylesRaw => {
       display: 'flex',
       flexDirection: 'column',
       justifyContent: 'flex-end',
-      height: '100%',
+      flexGrow: 1, // FIXED: Use flexGrow instead of height: '100%' for Yoga stability
       paddingBottom: mmToPoints(40),
     },
     colophonContent: {
