@@ -1,223 +1,117 @@
 
+# Correction de la Pagination PDF — Numérotation Dynamique
 
-# Plan : Indices Professionnels pour l'Export PDF Pro
+## Problème Identifié
 
-## Synthèse de l'existant (Export Word)
+Le document PDF affiche **58** comme dernier numéro de page alors qu'il contient **157 pages** réelles. 
 
-L'export Word actuel génère **3 types d'index** à la fin du document :
+**Cause racine** : Le système compte 1 page par élément de contenu (`currentPage++`) mais les textes longs (fables, manifestes) s'étalent sur **plusieurs pages** grâce à `wrap={true}`. Le compteur manuel ne reflète pas la pagination réelle générée par @react-pdf/renderer.
 
-| Index | Contenu | Structure |
-|-------|---------|-----------|
-| **Index par Lieu** | Partie > Marche > Textes (titre + type + page) | Hiérarchique géopoétique |
-| **Index par Genre Littéraire** | Haïkus, Senryūs, Fables... avec lieu + page | Par type prédéfini |
-| **Index des Mots-Clés** | 7 familles thématiques (Faune, Hydrologie, Ouvrages, Flore, Temporalités, Poétique, Technologies) | Alphabétique par catégorie |
-
-## État actuel du PDF Pro
-
-- Options `includeIndexLieux` et `includeIndexGenres` présentes dans `PdfExportOptions`
-- Composant `IndexPage` basique existe mais **non utilisé** dans le document final
-- Aucune logique d'extraction de mots-clés
-
-## Proposition : Index Ultra-Design pour lecture papier "Wahou"
-
-### 1. Index par Lieu (Géographique)
-
-```text
-┌─────────────────────────────────────────────────────────────────┐
-│                                                                 │
-│                    ─────  INDEX PAR LIEU  ─────                 │
-│                                                                 │
-│  I. LE CONTRE-COURANT                                           │
-│                                                                 │
-│     La Roque-Gageac (Dordogne)                                  │
-│         Haïkus ........................ 12, 14, 15              │
-│         Fables ........................ 18                      │
-│         Poèmes ........................ 23, 24                  │
-│                                                                 │
-│     Domme (Dordogne)                                            │
-│         Senryūs ....................... 28, 29, 30              │
-│         Prose ......................... 35                      │
-│                                                                 │
-│  II. LA TRAVERSÉE LENTE                                         │
-│     ...                                                         │
-│                                                                 │
-└─────────────────────────────────────────────────────────────────┘
+```
+Logique actuelle :
+├── Couverture → page 1
+├── Faux-titre → page 2  
+├── TDM → page 3
+├── Texte 1 → page 4 (mais peut faire 3 pages réelles !)
+├── Texte 2 → page 5 (mais commence en réalité page 7...)
+└── ...désynchronisation totale
 ```
 
-**Style** : Hiérarchie visuelle avec mouvements en chiffres romains, marches en gras, types indentés avec pointillés vers pages
+## Solution Proposée
 
-### 2. Index par Genre Littéraire
+### Stratégie : Numérotation Dynamique Native
 
-```text
-┌─────────────────────────────────────────────────────────────────┐
-│                                                                 │
-│               ─────  INDEX DES ŒUVRES  ─────                    │
-│                                                                 │
-│                       ✦  HAÏKUS  ✦                              │
-│                                                                 │
-│  Titre du haïku 1 ─ La Roque-Gageac ............... 12          │
-│  Titre du haïku 2 ─ Domme ......................... 14          │
-│  Titre du haïku 3 ─ Bergerac ...................... 15          │
-│                                                                 │
-│                      ✦  SENRYŪS  ✦                              │
-│                                                                 │
-│  Titre 1 ─ Lieu ................................... 28          │
-│  ...                                                            │
-│                                                                 │
-│                       ✦  FABLES  ✦                              │
-│                                                                 │
-│  La Discorde et les cent-vingt témoins ─ Brantôme .. 67         │
-│  ...                                                            │
-│                                                                 │
-└─────────────────────────────────────────────────────────────────┘
+@react-pdf/renderer fournit un **render prop** natif qui injecte automatiquement le numéro de page réel pendant la génération :
+
+```tsx
+<Text render={({ pageNumber, totalPages }) => `${pageNumber}`} fixed />
 ```
 
-**Style** : Titres de genre en petites caps avec ornements, entrées avec titre + lieu + pointillés + page
+### Modifications Techniques
 
-### 3. Index Thématique (Mots-Clés) - NOUVEAU
+#### 1. Refonte du `PageFooter` (prioritaire)
 
-```text
-┌─────────────────────────────────────────────────────────────────┐
-│                                                                 │
-│              ─────  INDEX THÉMATIQUE  ─────                     │
-│                                                                 │
-│  ╭──────────────────────────────────────╮                       │
-│  │   FAUNE FLUVIALE ET MIGRATRICE       │                       │
-│  ╰──────────────────────────────────────╯                       │
-│                                                                 │
-│  Aigrette ................................. 23, 45, 67          │
-│  Anguille ................................. 12                  │
-│  Lamproie ................................. 34, 56, 78          │
-│  Martin-pêcheur ........................... 89, 102             │
-│  Saumon ................................... 15, 23, 45          │
-│                                                                 │
-│  ╭──────────────────────────────────────╮                       │
-│  │   HYDROLOGIE ET DYNAMIQUES           │                       │
-│  ╰──────────────────────────────────────╯                       │
-│                                                                 │
-│  Confluence ............................... 12, 45              │
-│  Étiage ................................... 23, 67              │
-│  Mascaret ................................. 89                  │
-│  ...                                                            │
-│                                                                 │
-└─────────────────────────────────────────────────────────────────┘
+Remplacer le `pageNumber` passé en prop par le render prop dynamique :
+
+```tsx
+// AVANT (erroné)
+<Text>{formatPageNumber(pageNumber, options.pageNumberStyle)}</Text>
+
+// APRÈS (correct)
+<Text 
+  render={({ pageNumber }) => formatPageNumber(pageNumber, options.pageNumberStyle)} 
+  fixed 
+/>
 ```
 
-**Style** : 7 familles encadrées, mots-clés alphabétiques avec pointillés vers pages multiples
+**Fichier** : `src/utils/pdfPageComponents.tsx` (lignes 64-92)
 
-## Architecture technique
+#### 2. Suppression du Compteur Manuel
 
-### Fichiers à modifier
+Retirer la logique `currentPage++` et `contentEndPage++` devenue obsolète :
+- Lignes 797-804 : suppression du calcul de `contentEndPage`
+- Lignes 839, 854, 872, 882, 892, 901 : suppression des incréments
 
-1. **`src/utils/pdfExportUtils.ts`** - Ajouter option `includeIndexKeywords` et catégories
-2. **`src/utils/pdfStyleGenerator.ts`** - Nouveaux styles d'index (titres ornés, pointillés, colonnes)
-3. **`src/utils/pdfPageComponents.tsx`** - Nouveaux composants :
-   - `IndexLieuxPage` - Index géographique hiérarchique
-   - `IndexGenresPage` - Index par type littéraire
-   - `IndexKeywordsPage` - Index thématique par mots-clés
+#### 3. Pages d'Index avec Render Prop
 
-### Nouvelles options dans `PdfExportOptions`
+Les pages d'index (`IndexLieuxPage`, `IndexGenresPage`, `IndexKeywordsPage`, `ColophonPage`) recevront leur numéro via le render prop au lieu d'un prop statique.
 
+#### 4. Limitation Connue : Références dans les Index
+
+**Problème insoluble côté client** : Les numéros de page affichés *dans* les index (ex: "Haïku du matin... p. 7") sont calculés **avant** le rendu, donc resteront approximatifs si des textes longs précèdent.
+
+**Contournement pragmatique** : Améliorer l'estimation en comptant les caractères/lignes pour estimer les pages supplémentaires, ou accepter que les références soient indicatives (pratique courante dans les PDF générés dynamiquement).
+
+---
+
+## Séquence d'Implémentation
+
+| Étape | Fichier | Action |
+|-------|---------|--------|
+| 1 | `pdfPageComponents.tsx` | Modifier `PageFooter` pour utiliser le render prop |
+| 2 | `pdfPageComponents.tsx` | Supprimer tous les `pageNumber={currentPage++}` des composants |
+| 3 | `pdfPageComponents.tsx` | Adapter les pages d'index pour le render prop |
+| 4 | `pdfPageComponents.tsx` | Améliorer `buildPageMapping` avec estimation de longueur |
+
+---
+
+## Résultat Attendu
+
+- **Pieds de page** : Affichent le numéro de page **réel** (1 à 157)
+- **Parité alternée** : La logique pair/impair reste fonctionnelle via le render prop
+- **Index** : Les références de page restent une estimation raisonnable
+
+---
+
+## Section Technique
+
+### Signature du Render Prop (types @react-pdf)
 ```typescript
-// Indexes (existant mais non implémenté)
-includeIndexLieux: boolean;      // Index par Lieu
-includeIndexGenres: boolean;     // Index par Genre Littéraire
-// NOUVEAU
-includeIndexKeywords: boolean;   // Index Thématique
-selectedKeywordCategories?: string[]; // Catégories à inclure
+render?: (props: { 
+  pageNumber: number; 
+  totalPages: number; 
+  subPageNumber: number; 
+  subPageTotalPages: number; 
+}) => React.ReactNode;
 ```
 
-### Nouveaux styles dans `PdfStylesRaw`
+### Gestion de la Parité pour le Footer
+Le contexte (nom du Mouvement/Marche) et la position du numéro de page (gauche/droite) dépendent de la parité. Avec le render prop :
 
+```tsx
+<View fixed>
+  <Text render={({ pageNumber }) => {
+    const isOdd = pageNumber % 2 === 1;
+    // Affichage conditionnel selon parité
+  }} />
+</View>
+```
+
+### Estimation pour les Index (amélioration optionnelle)
+Pour améliorer la précision des références, on peut estimer les pages consommées par texte :
 ```typescript
-// Index styling
-indexLieuxPage: Style;
-indexGenresPage: Style;
-indexKeywordsPage: Style;
-indexSectionTitle: Style;        // "✦ HAÏKUS ✦"
-indexPartieHeader: Style;        // "I. LE CONTRE-COURANT"
-indexMarcheEntry: Style;         // "La Roque-Gageac"
-indexTextEntry: Style;           // Titre + lieu + page
-indexDotLeader: Style;           // Pointillés vers page
-indexCategoryBox: Style;         // Encadré catégorie thématique
-indexKeywordEntry: Style;        // Mot + pages
-```
-
-### Logique de pagination
-
-1. **Calcul des pages réelles** : Parcourir tous les textes et calculer leur page finale
-2. **Regroupement** : 
-   - Par lieu : Partie > Marche > Types (avec pages)
-   - Par genre : Type > Textes (avec lieu + page)
-   - Par mot-clé : Catégorie > Mots (avec pages multiples)
-3. **Rendu** : Générer les pages d'index avec wrap automatique
-
-### Composant `IndexLieuxPage`
-
-```tsx
-interface IndexLieuxPageProps {
-  textes: TexteExport[];
-  parties: PartieData[];
-  options: PdfExportOptions;
-  styles: PdfStylesRaw;
-  pageMapping: Map<string, number>; // texteId -> pageNumber
-  startPage: number;
+function estimateTextPages(texte: TexteExport, charsPerPage: number = 1800): number {
+  const contentLength = sanitizeContentForPdf(texte.contenu).length;
+  return Math.ceil(contentLength / charsPerPage);
 }
 ```
-
-### Composant `IndexGenresPage`
-
-```tsx
-interface IndexGenresPageProps {
-  textes: TexteExport[];
-  options: PdfExportOptions;
-  styles: PdfStylesRaw;
-  pageMapping: Map<string, number>;
-  startPage: number;
-}
-```
-
-### Composant `IndexKeywordsPage`
-
-```tsx
-interface IndexKeywordsPageProps {
-  textes: TexteExport[];
-  selectedCategories: string[];
-  options: PdfExportOptions;
-  styles: PdfStylesRaw;
-  pageMapping: Map<string, number>;
-  startPage: number;
-}
-```
-
-## Séquence de génération finale
-
-```text
-1. Couverture
-2. (Faux-titre - désactivé pour Galerie Fleuve)
-3. Table des Matières (Mouvement > Marche + page)
-4. Contenu (Parties, Textes...)
-5. ─────────────────────────────
-6. Index par Lieu (géographique)
-7. Index des Œuvres (par genre)
-8. Index Thématique (mots-clés) - optionnel
-9. ─────────────────────────────
-10. Colophon
-```
-
-## Bénéfices pour un éditeur national
-
-| Critère | Impact |
-|---------|--------|
-| **Navigation papier** | 3 modes d'accès complémentaires au contenu |
-| **Référencement** | Chaque texte trouvable par lieu, genre OU thème |
-| **Prestige éditorial** | Standards des grandes maisons d'édition |
-| **Cohérence visuelle** | Ornements et typographie alignés sur le reste du livre |
-| **Valeur ajoutée** | Index thématique unique pour recueil géopoétique |
-
-## Fichiers à modifier
-
-1. `src/utils/pdfExportUtils.ts` - Options et types
-2. `src/utils/pdfStyleGenerator.ts` - Styles des index
-3. `src/utils/pdfPageComponents.tsx` - Composants d'index + intégration dans PdfDocument
-
