@@ -30,6 +30,7 @@ import {
 } from '@/utils/pdfExportUtils';
 import { PdfDocument, registerFonts, type PartieData } from '@/utils/pdfPageComponents';
 import { generateContextualMetadata } from '@/utils/epubMetadataGenerator';
+import { summarizePdfDebugChars, type PdfDebugCharSummary } from '@/utils/pdfDebugUtils';
 
 interface PdfExportPanelProps {
   textes: TexteExport[];
@@ -247,13 +248,36 @@ const PdfExportPanel: React.FC<PdfExportPanelProps> = ({
             setDebugProgress(`❌ ${msg}\nAnalyse fine (chunks internes) en cours...`);
             const result = await findProblematicChunkWithinTexte(problematicTexte, options, minimalOpts);
             if (result) {
-              const { chunkIndex1Based, totalChunks, excerpt, stats } = result;
+              const {
+                chunkIndex1Based,
+                totalChunks,
+                excerpt,
+                fullStats,
+                chunkStats,
+                culpritCharIndex1Based,
+                culpritCharCodepoint,
+                culpritWindowExcerpt,
+                culpritWindowStats,
+              } = result;
+              const notableChunk = chunkStats.notable
+                .map((n) => `${n.label}(${n.codepoint})=${n.count}`)
+                .join(', ');
+              const notableWindow = culpritWindowStats.notable
+                .map((n) => `${n.label}(${n.codepoint})=${n.count}`)
+                .join(', ');
               console.error('[PDF DEBUG] Culprit chunk inside texte', result);
               setDebugProgress(
                 `❌ ${msg}\n` +
                   `Chunk fautif: ${chunkIndex1Based}/${totalChunks}\n` +
-                  `Suspicious chars (raw sanitized): control=${stats.asciiControl}, bidi=${stats.bidiControl}, nonBmp=${stats.nonBmp}, surrogates=${stats.surrogates}\n` +
-                  `Extrait: ${excerpt}`
+                  `Suspicious (full sanitized): control=${fullStats.asciiControl}, bidi=${fullStats.bidiControl}, nonBmp=${fullStats.nonBmp}, surrogates=${fullStats.surrogates}\n` +
+                  `Invisibles/typo (chunk): zwsp=${chunkStats.zwsp}, nbsp=${chunkStats.nbsp}, nnbsp=${chunkStats.narrowNbsp}, wj=${chunkStats.wordJoiner}, softHyphen=${chunkStats.softHyphen}, boxDrawing=${chunkStats.boxDrawing}, maxRun=${chunkStats.maxRunWithoutBreak}\n` +
+                  (notableChunk ? `Notables (chunk): ${notableChunk}\n` : '') +
+                  (culpritCharIndex1Based
+                    ? `Seuil (dans chunk): char ${culpritCharIndex1Based}/${Math.max(1, 400)} (${culpritCharCodepoint || 'n/a'})\n`
+                    : 'Seuil (dans chunk): non déterminé (crash non-monotone)\n') +
+                  `Fenêtre: ${culpritWindowExcerpt}\n` +
+                  (notableWindow ? `Notables (fenêtre): ${notableWindow}\n` : '') +
+                  `Extrait (chunk): ${excerpt}`
               );
             } else {
               setDebugProgress(`❌ ${msg}\nAnalyse fine: non concluante (le crash dépend peut-être de la longueur totale).`);
@@ -363,7 +387,12 @@ const PdfExportPanel: React.FC<PdfExportPanelProps> = ({
           chunkIndex1Based: number;
           totalChunks: number;
           excerpt: string;
-          stats: ReturnType<typeof summarizeSuspiciousChars>;
+          fullStats: PdfDebugCharSummary;
+          chunkStats: PdfDebugCharSummary;
+          culpritCharIndex1Based: number | null;
+          culpritCharCodepoint: string | null;
+          culpritWindowExcerpt: string;
+          culpritWindowStats: PdfDebugCharSummary;
         }
       | null
     > => {
@@ -378,7 +407,7 @@ const PdfExportPanel: React.FC<PdfExportPanelProps> = ({
       }
       const totalChunks = Math.max(1, chunks.length);
 
-      const stats = summarizeSuspiciousChars(sanitized);
+      const fullStats = summarizePdfDebugChars(sanitized);
 
       const testPrefix = async (count: number) => {
         const prefixChunks = chunks.slice(0, Math.max(0, count));
@@ -419,14 +448,69 @@ const PdfExportPanel: React.FC<PdfExportPanelProps> = ({
       const culpritChunk = chunks[culpritIndex0] ?? '';
       const excerpt = culpritChunk.replace(/\s+/g, ' ').slice(0, 140);
 
+      // ===== Level 3: bisection intra-chunk (au caractère près), en gardant le prefix “OK” =====
+      const prefixBefore = chunks.slice(0, culpritIndex0).join('\n\n');
+
+      const testCulpritChunkPrefix = async (charCount: number) => {
+        const head = culpritChunk.slice(0, Math.max(0, charCount));
+        const content = [prefixBefore, head].filter(Boolean).join('\n\n');
+        const patchedTexte: TexteExport = { ...texte, contenu: content };
+        const doc = <PdfDocument textes={[patchedTexte]} options={testOptions} parties={effectiveParties} />;
+        await pdf(doc).toBlob();
+      };
+
+      let culpritCharIndex1Based: number | null = null;
+      let culpritCharCodepoint: string | null = null;
+
+      // Ensure the combination really crashes (should be true by construction)
+      try {
+        await testCulpritChunkPrefix(culpritChunk.length);
+        // Non-monotonic edge case: crash depends on total length/layout rather than a specific char
+      } catch {
+        // expected: proceed
+        let lo2 = 1;
+        let hi2 = Math.max(1, culpritChunk.length);
+        while (lo2 < hi2) {
+          const mid2 = Math.floor((lo2 + hi2) / 2);
+          setDebugProgress(`Analyse ultra-fine: test chars ${mid2}/${culpritChunk.length} (chunk ${culpritIndex0 + 1}/${totalChunks})...`);
+          try {
+            await testCulpritChunkPrefix(mid2);
+            lo2 = mid2 + 1;
+          } catch {
+            hi2 = mid2;
+          }
+        }
+
+        culpritCharIndex1Based = Math.min(lo2, culpritChunk.length);
+        const idx0 = Math.max(0, culpritCharIndex1Based - 1);
+        const ch = culpritChunk[idx0] ?? '';
+        const cp = ch ? (ch.codePointAt(0) ?? 0) : 0;
+        culpritCharCodepoint = ch ? `U+${cp.toString(16).toUpperCase().padStart(4, '0')}` : null;
+      }
+
+      const chunkStats = summarizePdfDebugChars(culpritChunk);
+      const windowStart = culpritCharIndex1Based ? Math.max(0, culpritCharIndex1Based - 1 - 80) : 0;
+      const windowEnd = culpritCharIndex1Based ? Math.min(culpritChunk.length, culpritCharIndex1Based - 1 + 80) : Math.min(culpritChunk.length, 160);
+      const culpritWindow = culpritChunk.slice(windowStart, windowEnd);
+      const culpritWindowExcerpt = culpritWindow
+        .replace(/\n/g, ' ⏎ ')
+        .replace(/\t/g, ' ⇥ ')
+        .slice(0, 180);
+      const culpritWindowStats = summarizePdfDebugChars(culpritWindow);
+
       return {
         chunkIndex1Based: culpritIndex0 + 1,
         totalChunks,
         excerpt: excerpt.length < culpritChunk.length ? `${excerpt}…` : excerpt,
-        stats,
+        fullStats,
+        chunkStats,
+        culpritCharIndex1Based,
+        culpritCharCodepoint,
+        culpritWindowExcerpt: culpritWindowExcerpt.length < culpritWindow.length ? `${culpritWindowExcerpt}…` : culpritWindowExcerpt,
+        culpritWindowStats,
       };
     },
-    [effectiveParties, summarizeSuspiciousChars]
+    [effectiveParties]
   );
 
   const stats = useMemo(() => {
