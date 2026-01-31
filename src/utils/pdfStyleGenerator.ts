@@ -852,7 +852,10 @@ export const generatePdfStyles = (options: PdfExportOptions): PdfStylesRaw => {
     },
     
     // =========== PAGE FOOTER (Context + Page Number) ===========
+    // IMPORTANT: Since react-pdf doesn't support `render` on <View>, we use
+    // two independent <Text fixed> elements with absolute positioning.
     pageFooter: {
+      // Kept for backwards compatibility but no longer used directly
       position: 'absolute',
       bottom: mmToPoints(10),
       left: mmToPoints(options.marginInner),
@@ -870,6 +873,10 @@ export const generatePdfStyles = (options: PdfExportOptions): PdfStylesRaw => {
       right: mmToPoints(options.marginInner),
     },
     pageFooterContext: {
+      // Absolute positioning for left-aligned context text
+      position: 'absolute',
+      bottom: mmToPoints(10),
+      left: mmToPoints(options.marginInner),
       fontFamily: typography.bodyFont,
       fontSize: baseFontSize * 0.7,
       color: colorScheme.secondary,
@@ -891,9 +898,14 @@ export const generatePdfStyles = (options: PdfExportOptions): PdfStylesRaw => {
       textAlign: 'left',
     },
     pageNumberInline: {
+      // Absolute positioning for right-aligned page number
+      position: 'absolute',
+      bottom: mmToPoints(10),
+      right: mmToPoints(options.marginOuter),
       fontFamily: typography.bodyFont,
       fontSize: baseFontSize * 0.8,
       color: colorScheme.secondary,
+      textAlign: 'right',
     },
     
     // =========== DECORATIONS ===========

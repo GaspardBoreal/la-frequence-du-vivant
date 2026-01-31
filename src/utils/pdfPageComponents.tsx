@@ -350,14 +350,15 @@ interface PageFooterProps {
 
 /**
  * Dynamic footer using @react-pdf/renderer's render prop
- * This ensures the page number reflects the ACTUAL rendered page,
- * not a manually computed counter that doesn't account for text wrapping.
+ * 
+ * IMPORTANT: react-pdf only supports `render` on <Text> and <Image>, NOT on <View>.
+ * Using render on a <View> causes unpredictable positioning (footer floats in middle of page).
+ * 
+ * Solution: Use two independent <Text fixed> elements with absolute positioning.
  * 
  * Layout rules (agreed upon):
  * - Si présence de Partie: à gauche le nom de la partie / à droite le numéro de page
  * - Si pas de Partie: à gauche le nom de la marche / à droite le numéro de page
- * 
- * Uses a View container with flexbox for proper left-right positioning.
  */
 export const PageFooter: React.FC<PageFooterProps> = ({ 
   styles, 
@@ -369,22 +370,18 @@ export const PageFooter: React.FC<PageFooterProps> = ({
   const contextText = partieName || marcheName || '';
 
   return (
-    <View
-      fixed
-      style={mergeStyles(styles.pageFooter, styles.pageFooterOdd)}
-      render={({ pageNumber }) => (
-        <>
-          {/* Left side: context (partie or marche name) */}
-          <Text style={styles.pageFooterContext}>
-            {contextText}
-          </Text>
-          {/* Right side: page number */}
-          <Text style={styles.pageNumberInline}>
-            {formatPageNumber(pageNumber, options.pageNumberStyle)}
-          </Text>
-        </>
-      )}
-    />
+    <>
+      {/* Left side: context (partie or marche name) - static text, no render needed */}
+      <Text fixed style={styles.pageFooterContext}>
+        {contextText}
+      </Text>
+      {/* Right side: page number - uses render for dynamic page number */}
+      <Text 
+        fixed 
+        style={styles.pageNumberInline}
+        render={({ pageNumber }) => formatPageNumber(pageNumber, options.pageNumberStyle)}
+      />
+    </>
   );
 };
 
