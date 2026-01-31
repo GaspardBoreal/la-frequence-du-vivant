@@ -246,6 +246,9 @@ export interface PdfStylesRaw {
   pageFooterContextInline: Style;
   pageNumberInlineText: Style;
   
+  // NEW: Direct-child approach for page number with render prop (most reliable)
+  pageNumberRenderFixedRight: Style;
+  
   // Decorations
   separator: Style;
   ornament: Style;
@@ -933,6 +936,24 @@ export const generatePdfStyles = (options: PdfExportOptions): PdfStylesRaw => {
     },
     pageNumberInlineText: {
       // NO position:absolute - positioned by parent flexbox
+      fontFamily: typography.bodyFont,
+      fontSize: baseFontSize * 0.8,
+      color: colorScheme.secondary,
+      textAlign: 'right',
+    },
+    
+    // =========== NEW: DIRECT CHILD PAGE NUMBER (Most reliable for render prop) ===========
+    // CRITICAL: When <Text render={...}> is used, Yoga sometimes ignores position:absolute.
+    // The ONLY reliable pattern is:
+    // 1. Make it a DIRECT CHILD of <Page> (no intermediate <View>)
+    // 2. Give it EXPLICIT NUMERIC WIDTH (not 'right:' which can be ignored)
+    // 3. Use textAlign: 'right' to push the number to the right edge
+    pageNumberRenderFixedRight: {
+      position: 'absolute',
+      bottom: mmToPoints(10),
+      left: mmToPoints(options.marginInner),
+      // CRITICAL: Use explicit width instead of 'right:' - Yoga handles this more reliably
+      width: dimensions.width - mmToPoints(options.marginInner) - mmToPoints(options.marginOuter),
       fontFamily: typography.bodyFont,
       fontSize: baseFontSize * 0.8,
       color: colorScheme.secondary,
