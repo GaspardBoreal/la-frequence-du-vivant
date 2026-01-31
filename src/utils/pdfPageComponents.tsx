@@ -351,12 +351,18 @@ interface PageFooterProps {
 /**
  * Dynamic footer using @react-pdf/renderer's render prop
  * 
- * CRITICAL FIX: react-pdf's render prop on <Text> doesn't respect position:absolute.
- * The Text with render floats to where it's inserted in the document flow.
+ * CRITICAL FIX (v3): react-pdf's render prop on <Text> IGNORES position:absolute
+ * even when nested inside a <View fixed>. The <Text render> floats to the 
+ * document flow insertion point (middle of page).
  * 
- * SOLUTION: Use a FIXED <View> container that IS absolutely positioned,
- * then place <Text> children inside using flexbox (space-between).
- * This way, the container handles positioning, and render prop works normally.
+ * SOLUTION: Return TWO FLAT <Text fixed> siblings (React Fragment):
+ * 1. Context text (left) - static, uses pageFooterContext (works fine)
+ * 2. Page number (right) - render prop, uses pageNumberRenderFixedRight
+ *    with EXPLICIT NUMERIC WIDTH instead of 'right:' property
+ * 
+ * The key insight: Yoga respects absolute positioning on <Text fixed>
+ * when it has an EXPLICIT WIDTH constraint. Using 'right:' alone can be
+ * ignored during the render pass.
  * 
  * Layout rules (agreed upon):
  * - Si présence de Partie: à gauche le nom de la partie / à droite le numéro de page
@@ -372,17 +378,19 @@ export const PageFooter: React.FC<PageFooterProps> = ({
   const contextText = partieName || marcheName || '';
 
   return (
-    <View fixed style={styles.pageFooterBar}>
-      {/* Left side: context (partie or marche name) - static text */}
-      <Text style={styles.pageFooterContextInline}>
+    <>
+      {/* Left side: context (partie or marche name) - static text, absolute positioning works */}
+      <Text fixed style={styles.pageFooterContext}>
         {contextText}
       </Text>
-      {/* Right side: page number - uses render for dynamic page number */}
+      {/* Right side: page number - render prop with EXPLICIT WIDTH (not 'right:') */}
+      {/* CRITICAL: This MUST be a direct child of Page with fixed + explicit width */}
       <Text 
-        style={styles.pageNumberInlineText}
+        fixed
+        style={styles.pageNumberRenderFixedRight}
         render={({ pageNumber }) => formatPageNumber(pageNumber, options.pageNumberStyle)}
       />
-    </View>
+    </>
   );
 };
 
