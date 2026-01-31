@@ -56,8 +56,13 @@ const mergeStyles = (...styles: (Style | undefined)[]): Style => {
 // Approximate characters per A5 page after margins (conservative estimate)
 const CHARS_PER_PAGE = 2000;
 
-// Maximum characters for the first paragraph in wrap={false} blocks
-const MAX_FIRST_PARA_LENGTH = 800;
+// Maximum characters for ANY paragraph to prevent Yoga overflow crash
+// Calculation: A5 page ~32 lines × ~60 chars = ~1920 chars max per page
+// We use 1500 as safety margin to account for title, margins, etc.
+const MAX_PARAGRAPH_LENGTH = 1500;
+
+// Maximum characters for the first paragraph in wrap={false} blocks (title + first para)
+const MAX_FIRST_PARA_LENGTH = 600;
 
 /**
  * Estimate how many pages a text will occupy based on content length
@@ -68,57 +73,111 @@ const estimatePages = (texte: TexteExport): number => {
 };
 
 /**
+ * Force-chunk a very long text into pieces that won't exceed maxLen.
+ * Looks for natural cut points (sentence boundaries, then spaces).
+ */
+const chunkLongText = (text: string, maxLen: number): string[] => {
+  if (text.length <= maxLen) {
+    return [text];
+  }
+  
+  const chunks: string[] = [];
+  let remaining = text;
+  
+  while (remaining.length > maxLen) {
+    const searchRange = remaining.slice(0, maxLen);
+    
+    // Try sentence boundary first (. ! ?)
+    let cutPoint = searchRange.lastIndexOf('. ');
+    if (cutPoint < maxLen * 0.3) cutPoint = searchRange.lastIndexOf('! ');
+    if (cutPoint < maxLen * 0.3) cutPoint = searchRange.lastIndexOf('? ');
+    if (cutPoint < maxLen * 0.3) cutPoint = searchRange.lastIndexOf('\n');
+    if (cutPoint < maxLen * 0.3) cutPoint = searchRange.lastIndexOf(' ');
+    if (cutPoint < maxLen * 0.3) cutPoint = maxLen; // Force cut as last resort
+    
+    chunks.push(remaining.slice(0, cutPoint + 1).trim());
+    remaining = remaining.slice(cutPoint + 1).trim();
+  }
+  
+  if (remaining.length > 0) {
+    chunks.push(remaining);
+  }
+  
+  return chunks;
+};
+
+/**
  * Split content into paragraphs for multi-page flow.
- * This function handles the actual HTML-sanitized content which uses single \n separators,
- * NOT double \n\n as originally assumed.
+ * 
+ * CRITICAL: This function now uses AGGRESSIVE CHUNKING to ensure no paragraph
+ * exceeds MAX_PARAGRAPH_LENGTH (1500 chars), which prevents the Yoga layout
+ * engine "unsupported number" crash.
  * 
  * Strategy:
- * - Split on single newlines
- * - For short poems (<=5 lines), keep all together
- * - For long prose, group short consecutive lines (verses) but separate long lines (paragraphs)
+ * 1. Split on newlines
+ * 2. For short poems (<=5 lines AND <500 chars), keep all together
+ * 3. For long prose, group short lines but FORCE CHUNK any line/group > 1500 chars
  */
 const splitIntoParagraphs = (content: string): string[] => {
   const lines = content.split(/\n/).map(l => l.trim()).filter(Boolean);
   
-  // Short poem (haiku, short verse): keep together
-  if (lines.length <= 5) {
+  // Short poem (haiku, short verse): keep together if small enough
+  if (lines.length <= 5 && content.length < 500) {
     return [lines.join('\n')];
   }
   
-  // Long prose: intelligently group lines
+  // Long prose: intelligently group lines with FORCED CHUNKING for safety
   const paragraphs: string[] = [];
   let currentGroup: string[] = [];
+  let currentLength = 0;
   
   for (const line of lines) {
-    if (line.length > 120) {
-      // Long line = standalone paragraph to allow page breaks
+    // If a single line exceeds MAX_PARAGRAPH_LENGTH, chunk it immediately
+    if (line.length > MAX_PARAGRAPH_LENGTH) {
+      // Flush current group first
       if (currentGroup.length > 0) {
         paragraphs.push(currentGroup.join('\n'));
         currentGroup = [];
+        currentLength = 0;
       }
-      paragraphs.push(line);
-    } else {
-      // Short line = group with others (verses, bullet points, etc.)
-      currentGroup.push(line);
-      // Flush group after 5 lines to create natural break points
-      if (currentGroup.length >= 5) {
+      // Chunk the oversized line
+      paragraphs.push(...chunkLongText(line, MAX_PARAGRAPH_LENGTH));
+      continue;
+    }
+    
+    // Would adding this line exceed our limit?
+    if (currentLength + line.length + 1 > MAX_PARAGRAPH_LENGTH) {
+      // Flush current group
+      if (currentGroup.length > 0) {
         paragraphs.push(currentGroup.join('\n'));
-        currentGroup = [];
       }
+      currentGroup = [line];
+      currentLength = line.length;
+    } else {
+      // Add to current group
+      currentGroup.push(line);
+      currentLength += line.length + 1; // +1 for newline
     }
   }
   
   // Flush remaining lines
   if (currentGroup.length > 0) {
-    paragraphs.push(currentGroup.join('\n'));
+    const finalGroup = currentGroup.join('\n');
+    // Even the final group might need chunking
+    if (finalGroup.length > MAX_PARAGRAPH_LENGTH) {
+      paragraphs.push(...chunkLongText(finalGroup, MAX_PARAGRAPH_LENGTH));
+    } else {
+      paragraphs.push(finalGroup);
+    }
   }
   
-  return paragraphs.length > 0 ? paragraphs : [content];
+  return paragraphs.length > 0 ? paragraphs : [content.slice(0, MAX_PARAGRAPH_LENGTH)];
 };
 
 /**
  * Ensure the first paragraph doesn't exceed MAX_FIRST_PARA_LENGTH
- * to prevent wrap={false} blocks from exceeding page height
+ * to prevent wrap={false} blocks (title + first paragraph) from exceeding page height.
+ * This is MORE CONSERVATIVE than MAX_PARAGRAPH_LENGTH because it includes the title.
  */
 const limitFirstParagraph = (
   paragraphs: string[]
@@ -146,6 +205,11 @@ const limitFirstParagraph = (
   // If no sentence boundary, try newline
   if (cutPoint < 100) {
     cutPoint = searchRange.lastIndexOf('\n');
+  }
+  
+  // If still no good cut point, try space
+  if (cutPoint < 100) {
+    cutPoint = searchRange.lastIndexOf(' ');
   }
   
   // Last resort: cut at MAX_FIRST_PARA_LENGTH
@@ -451,17 +515,14 @@ export const FablePage: React.FC<FablePageProps> = ({ texte, options, styles, co
   return (
     <Page size={[dimensions.width, dimensions.height]} style={mergeStyles(styles.page, styles.pageOdd)} wrap>
       <View style={styles.fableContainer as Style}>
-        {/* Header with ornament and title - keep with SAFE first paragraph */}
-        <View wrap={false} style={styles.fableHeader as Style}>
+        {/* Header with ornament and title - NO wrap={false} to prevent overflow crash */}
+        <View style={styles.fableHeader as Style}>
           <Text style={styles.fableHeaderLabel as Style}>❦ FABLE ❦</Text>
-          <Text style={styles.fableTitle as Style}>{texte.titre}</Text>
-          {firstParagraph && (
-            <Text style={styles.fableContent as Style}>{firstParagraph}</Text>
-          )}
+          <Text style={styles.fableTitle as Style} minPresenceAhead={30}>{texte.titre}</Text>
         </View>
         
-        {/* Remaining paragraphs flow naturally across pages */}
-        {restParagraphs.map((para, idx) => (
+        {/* All paragraphs flow naturally across pages */}
+        {[firstParagraph, ...restParagraphs].filter(Boolean).map((para, idx) => (
           <Text key={idx} style={styles.fableContent as Style}>{para}</Text>
         ))}
         
@@ -559,16 +620,11 @@ export const TextePage: React.FC<TextePageProps> = ({
         )}
         
         <View style={styles.texteContainer as Style}>
-          {/* Keep title + SAFE first paragraph together to prevent orphaned titles */}
-          <View wrap={false}>
-            <Text style={styles.texteTitle as Style}>{texte.titre}</Text>
-            {firstParagraph && (
-              <Text style={styles.texteContent as Style}>{firstParagraph}</Text>
-            )}
-          </View>
+          {/* Title alone is kept together - content flows naturally */}
+          <Text style={styles.texteTitle as Style} minPresenceAhead={50}>{texte.titre}</Text>
           
-          {/* Remaining paragraphs flow naturally across pages */}
-          {restParagraphs.map((para, idx) => (
+          {/* All paragraphs flow naturally across pages - no wrap={false} to prevent crashes */}
+          {[firstParagraph, ...restParagraphs].filter(Boolean).map((para, idx) => (
             <Text key={idx} style={styles.texteContent as Style}>{para}</Text>
           ))}
           

@@ -374,26 +374,30 @@ export const sanitizeContentForPdf = (html: string): string => {
   // NOTE:
   // The database sometimes stores poetic lines as:
   //   "ligne 1<div>ligne 2</div><div>ligne 3</div>"
-  // If we only add newlines on closing tags, "ligne 1" and "ligne 2" get glued
-  // together (e.g. "descendreAlors").
-  // We therefore insert a newline BEFORE opening block tags (div/p/section/article)
-  // to reliably preserve line breaks for haïkus/senryūs.
+  // We must handle ALL block-level HTML elements to ensure proper newline insertion.
+  // This includes headings (h1-h6), lists (ul, ol, li), and other block elements
+  // that the "Constitution de Dordonia" manifesto uses extensively.
 
   let text = html.replace(/\r\n/g, '\n');
 
-  // Insert newline BEFORE opening block tags
-  text = text.replace(/<(div|p|section|article)\b[^>]*>/gi, '\n');
+  // ===== STEP 1: Insert newlines BEFORE opening block tags =====
+  // This ensures text before a block doesn't get glued to text inside
+  text = text.replace(/<(div|p|section|article|h[1-6]|ul|ol|li|blockquote|pre|header|footer|aside|nav|main|figure|figcaption|address|details|summary)\b[^>]*>/gi, '\n');
 
-  // Replace <br>, <br/>, <br /> with newlines
+  // ===== STEP 2: Insert DOUBLE newline after closing headings (section breaks) =====
+  // This creates visual paragraph separation between major sections
+  text = text.replace(/<\/(h[1-6])>/gi, '\n\n');
+
+  // ===== STEP 3: Insert newline after closing list/block elements =====
+  text = text.replace(/<\/(ul|ol|li|blockquote|pre|div|p|section|article|header|footer|aside|nav|main|figure|figcaption|address|details|summary)>/gi, '\n');
+
+  // ===== STEP 4: Replace <br> with newlines =====
   text = text.replace(/<br\s*\/?>/gi, '\n');
 
-  // Remove closing block tags (newline already inserted on next opening)
-  text = text.replace(/<\/(div|p|section|article)>/gi, '');
-
-  // Strip all remaining HTML tags
+  // ===== STEP 5: Strip all remaining HTML tags =====
   text = text.replace(/<[^>]+>/g, '');
   
-  // Decode HTML entities
+  // ===== STEP 6: Decode HTML entities =====
   text = text.replace(/&nbsp;/g, ' ');
   text = text.replace(/&amp;/g, '&');
   text = text.replace(/&lt;/g, '<');
@@ -409,11 +413,15 @@ export const sanitizeContentForPdf = (html: string): string => {
   text = text.replace(/&hellip;/g, '…');
   text = text.replace(/&oelig;/g, 'œ');
   text = text.replace(/&OElig;/g, 'Œ');
+  text = text.replace(/&aelig;/g, 'æ');
+  text = text.replace(/&AElig;/g, 'Æ');
+  text = text.replace(/&#(\d+);/g, (_, code) => String.fromCharCode(parseInt(code)));
   
-  // Clean up excessive whitespace while preserving intentional line breaks
+  // ===== STEP 7: Clean up excessive whitespace while preserving intentional line breaks =====
   text = text.replace(/[ \t]+/g, ' ');
   text = text.replace(/\n[ \t]+/g, '\n');
   text = text.replace(/[ \t]+\n/g, '\n');
+  // Reduce excessive newlines to max 2 (paragraph break)
   text = text.replace(/\n{3,}/g, '\n\n');
   
   return text.trim();
