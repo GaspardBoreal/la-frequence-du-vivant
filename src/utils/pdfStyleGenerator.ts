@@ -231,23 +231,18 @@ export interface PdfStylesRaw {
   colophonContent: Style;
   colophonText: Style;
   
-  // Page footer (context + number)
+  // Page footer (context + number) - STATIC APPROACH
+  pageFooterContext: Style;
+  pageNumberStatic: Style;
+  
+  // LEGACY: Kept for backwards compatibility
   pageFooter: Style;
   pageFooterOdd: Style;
   pageFooterEven: Style;
-  pageFooterContext: Style;
   pageNumber: Style;
   pageNumberOdd: Style;
   pageNumberEven: Style;
   pageNumberInline: Style;
-  
-  // NEW: Fixed footer bar (container approach for stable positioning)
-  pageFooterBar: Style;
-  pageFooterContextInline: Style;
-  pageNumberInlineText: Style;
-  
-  // NEW: Direct-child approach for page number with render prop (most reliable)
-  pageNumberRenderFixedRight: Style;
   
   // Decorations
   separator: Style;
@@ -859,8 +854,29 @@ export const generatePdfStyles = (options: PdfExportOptions): PdfStylesRaw => {
       color: colorScheme.secondary,
     },
     
-    // =========== PAGE FOOTER (Context + Page Number) ===========
-    // LEGACY: Kept for backwards compatibility
+    // =========== PAGE FOOTER (Context + Static Page Number) ===========
+    // NEW STATIC APPROACH: No render prop, just static text
+    // This is 100% stable and reliable with Yoga layout engine
+    pageFooterContext: {
+      position: 'absolute',
+      bottom: mmToPoints(10),
+      left: mmToPoints(options.marginInner),
+      fontFamily: typography.bodyFont,
+      fontSize: baseFontSize * 0.7,
+      color: colorScheme.secondary,
+      fontStyle: 'italic',
+    },
+    pageNumberStatic: {
+      position: 'absolute',
+      bottom: mmToPoints(10),
+      right: mmToPoints(options.marginOuter),
+      fontFamily: typography.bodyFont,
+      fontSize: baseFontSize * 0.8,
+      color: colorScheme.secondary,
+      textAlign: 'right',
+    },
+    
+    // =========== LEGACY STYLES (kept for backwards compatibility) ===========
     pageFooter: {
       position: 'absolute',
       bottom: mmToPoints(10),
@@ -878,16 +894,6 @@ export const generatePdfStyles = (options: PdfExportOptions): PdfStylesRaw => {
       left: mmToPoints(options.marginOuter),
       right: mmToPoints(options.marginInner),
     },
-    pageFooterContext: {
-      // LEGACY: Absolute positioning (kept for compatibility)
-      position: 'absolute',
-      bottom: mmToPoints(10),
-      left: mmToPoints(options.marginInner),
-      fontFamily: typography.bodyFont,
-      fontSize: baseFontSize * 0.7,
-      color: colorScheme.secondary,
-      fontStyle: 'italic',
-    },
     pageNumber: {
       position: 'absolute',
       bottom: mmToPoints(12),
@@ -904,56 +910,9 @@ export const generatePdfStyles = (options: PdfExportOptions): PdfStylesRaw => {
       textAlign: 'left',
     },
     pageNumberInline: {
-      // LEGACY: Absolute positioning (kept for compatibility)
       position: 'absolute',
       bottom: mmToPoints(10),
       right: mmToPoints(options.marginOuter),
-      fontFamily: typography.bodyFont,
-      fontSize: baseFontSize * 0.8,
-      color: colorScheme.secondary,
-      textAlign: 'right',
-    },
-    
-    // =========== NEW: FIXED FOOTER BAR (Container approach) ===========
-    // IMPORTANT: react-pdf's render prop on <Text> doesn't respect absolute positioning.
-    // Solution: Use a <View fixed> container that IS absolutely positioned,
-    // then place <Text> children inside with flexbox (no absolute needed on Text).
-    pageFooterBar: {
-      position: 'absolute',
-      bottom: mmToPoints(10),
-      left: mmToPoints(options.marginInner),
-      right: mmToPoints(options.marginOuter),
-      flexDirection: 'row',
-      justifyContent: 'space-between',
-      alignItems: 'flex-end',
-    },
-    pageFooterContextInline: {
-      // NO position:absolute - positioned by parent flexbox
-      fontFamily: typography.bodyFont,
-      fontSize: baseFontSize * 0.7,
-      color: colorScheme.secondary,
-      fontStyle: 'italic',
-    },
-    pageNumberInlineText: {
-      // NO position:absolute - positioned by parent flexbox
-      fontFamily: typography.bodyFont,
-      fontSize: baseFontSize * 0.8,
-      color: colorScheme.secondary,
-      textAlign: 'right',
-    },
-    
-    // =========== NEW: DIRECT CHILD PAGE NUMBER (Most reliable for render prop) ===========
-    // CRITICAL: When <Text render={...}> is used, Yoga sometimes ignores position:absolute.
-    // The ONLY reliable pattern is:
-    // 1. Make it a DIRECT CHILD of <Page> (no intermediate <View>)
-    // 2. Give it EXPLICIT NUMERIC WIDTH (not 'right:' which can be ignored)
-    // 3. Use textAlign: 'right' to push the number to the right edge
-    pageNumberRenderFixedRight: {
-      position: 'absolute',
-      bottom: mmToPoints(10),
-      left: mmToPoints(options.marginInner),
-      // CRITICAL: Use explicit width instead of 'right:' - Yoga handles this more reliably
-      width: dimensions.width - mmToPoints(options.marginInner) - mmToPoints(options.marginOuter),
       fontFamily: typography.bodyFont,
       fontSize: baseFontSize * 0.8,
       color: colorScheme.secondary,
