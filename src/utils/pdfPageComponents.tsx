@@ -58,12 +58,12 @@ const mergeStyles = (...styles: (Style | undefined)[]): Style => {
 const CHARS_PER_PAGE = 2000;
 
 // Maximum characters for ANY paragraph to prevent Yoga overflow crash
-// Calculation: A5 page ~32 lines × ~60 chars = ~1920 chars max per page
-// We use 1500 as safety margin to account for title, margins, etc.
-const MAX_PARAGRAPH_LENGTH = 1500;
+// REDUCED from 1500 to 800 for extra safety with complex HTML content
+// like "Constitution de Dordonia" (21k chars with nested HTML)
+const MAX_PARAGRAPH_LENGTH = 800;
 
 // Maximum characters for the first paragraph in wrap={false} blocks (title + first para)
-const MAX_FIRST_PARA_LENGTH = 600;
+const MAX_FIRST_PARA_LENGTH = 400;
 
 // Maximum number of page references to display before truncating with "…"
 const MAX_PAGES_DISPLAY = 5;
@@ -95,58 +95,91 @@ const estimatePages = (texte: TexteExport): number => {
 /**
  * Force-chunk a very long text into pieces that won't exceed maxLen.
  * Looks for natural cut points (sentence boundaries, then spaces).
+ * 
+ * CRITICAL: This is the last line of defense against Yoga crashes.
+ * For documents like "Constitution de Dordonia", this ensures
+ * every chunk is small enough to render safely.
  */
 const chunkLongText = (text: string, maxLen: number): string[] => {
-  if (text.length <= maxLen) {
-    return [text];
+  // Apply soft break first to prevent unbreakable long words
+  const safeText = softBreakLongTokens(text);
+  
+  if (safeText.length <= maxLen) {
+    return [safeText];
   }
   
   const chunks: string[] = [];
-  let remaining = text;
+  let remaining = safeText;
   
-  while (remaining.length > maxLen) {
+  // Safety counter to prevent infinite loops
+  let iterations = 0;
+  const MAX_ITERATIONS = 500;
+  
+  while (remaining.length > maxLen && iterations < MAX_ITERATIONS) {
+    iterations++;
     const searchRange = remaining.slice(0, maxLen);
     
     // Try sentence boundary first (. ! ?)
     let cutPoint = searchRange.lastIndexOf('. ');
-    if (cutPoint < maxLen * 0.3) cutPoint = searchRange.lastIndexOf('! ');
-    if (cutPoint < maxLen * 0.3) cutPoint = searchRange.lastIndexOf('? ');
-    if (cutPoint < maxLen * 0.3) cutPoint = searchRange.lastIndexOf('\n');
-    if (cutPoint < maxLen * 0.3) cutPoint = searchRange.lastIndexOf(' ');
-    if (cutPoint < maxLen * 0.3) cutPoint = maxLen; // Force cut as last resort
+    if (cutPoint < maxLen * 0.2) cutPoint = searchRange.lastIndexOf('! ');
+    if (cutPoint < maxLen * 0.2) cutPoint = searchRange.lastIndexOf('? ');
+    if (cutPoint < maxLen * 0.2) cutPoint = searchRange.lastIndexOf('\n');
+    if (cutPoint < maxLen * 0.2) cutPoint = searchRange.lastIndexOf(' ');
     
-    chunks.push(remaining.slice(0, cutPoint + 1).trim());
+    // If no good break point found, force cut (but always make progress)
+    if (cutPoint < maxLen * 0.1) {
+      cutPoint = Math.min(maxLen - 1, remaining.length - 1);
+    }
+    
+    const chunk = remaining.slice(0, cutPoint + 1).trim();
+    if (chunk.length > 0) {
+      chunks.push(chunk);
+    }
     remaining = remaining.slice(cutPoint + 1).trim();
   }
   
+  // Add any remaining content
   if (remaining.length > 0) {
-    chunks.push(remaining);
+    // If remaining is still too long (edge case), split it too
+    if (remaining.length > maxLen) {
+      // Force split into maxLen chunks
+      for (let i = 0; i < remaining.length; i += maxLen) {
+        chunks.push(remaining.slice(i, i + maxLen));
+      }
+    } else {
+      chunks.push(remaining);
+    }
   }
   
-  return chunks;
+  return chunks.filter(c => c.length > 0);
 };
 
 /**
  * Split content into paragraphs for multi-page flow.
  * 
- * CRITICAL: This function now uses AGGRESSIVE CHUNKING to ensure no paragraph
- * exceeds MAX_PARAGRAPH_LENGTH (1500 chars), which prevents the Yoga layout
+ * CRITICAL: This function uses AGGRESSIVE CHUNKING to ensure no paragraph
+ * exceeds MAX_PARAGRAPH_LENGTH (800 chars), which prevents the Yoga layout
  * engine "unsupported number" crash.
+ * 
+ * For very long documents like "Constitution de Dordonia" (21k+ chars),
+ * this creates many small, safe paragraphs that flow properly.
  * 
  * Strategy:
  * 1. Split on newlines
- * 2. For short poems (<=5 lines AND <500 chars), keep all together
- * 3. For long prose, group short lines but FORCE CHUNK any line/group > 1500 chars
+ * 2. For short poems (<=5 lines AND <400 chars), keep all together
+ * 3. For long prose, FORCE CHUNK any segment > MAX_PARAGRAPH_LENGTH
  */
 const splitIntoParagraphs = (content: string): string[] => {
-  const lines = content.split(/\n/).map(l => l.trim()).filter(Boolean);
+  // First, apply soft break to prevent any single "word" from being too long
+  const safeContent = softBreakLongTokens(content);
+  const lines = safeContent.split(/\n/).map(l => l.trim()).filter(Boolean);
   
   // Short poem (haiku, short verse): keep together if small enough
-  if (lines.length <= 5 && content.length < 500) {
+  if (lines.length <= 5 && safeContent.length < 400) {
     return [lines.join('\n')];
   }
   
-  // Long prose: intelligently group lines with FORCED CHUNKING for safety
+  // Long prose: aggressively chunk to prevent Yoga crashes
   const paragraphs: string[] = [];
   let currentGroup: string[] = [];
   let currentLength = 0;
@@ -160,7 +193,7 @@ const splitIntoParagraphs = (content: string): string[] => {
         currentGroup = [];
         currentLength = 0;
       }
-      // Chunk the oversized line
+      // Chunk the oversized line aggressively
       paragraphs.push(...chunkLongText(line, MAX_PARAGRAPH_LENGTH));
       continue;
     }
@@ -191,7 +224,12 @@ const splitIntoParagraphs = (content: string): string[] => {
     }
   }
   
-  return paragraphs.length > 0 ? paragraphs : [content.slice(0, MAX_PARAGRAPH_LENGTH)];
+  // Final safety: if we somehow still have nothing, chunk the entire content
+  if (paragraphs.length === 0) {
+    return chunkLongText(safeContent, MAX_PARAGRAPH_LENGTH);
+  }
+  
+  return paragraphs;
 };
 
 /**
