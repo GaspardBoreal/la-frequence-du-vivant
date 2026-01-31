@@ -55,7 +55,8 @@ const mergeStyles = (...styles: (Style | undefined)[]): Style => {
 // ============================================================================
 
 // Approximate characters per A5 page after margins (conservative estimate)
-const CHARS_PER_PAGE = 2000;
+// NOTE: lowered slightly to reduce the risk of Yoga overflow on very long prose.
+const CHARS_PER_PAGE = 1800;
 
 // Maximum characters for ANY paragraph to prevent Yoga overflow crash
 // CRITICAL: Further reduced from 800 to 600 for "Constitution de Dordonia" (21k chars)
@@ -84,12 +85,64 @@ const formatPageList = (pages: number[]): string => {
   return `${pages.slice(0, 4).join(', ')}…`;
 };
 
+const estimateParagraphCost = (para: string): number => {
+  // Newlines tend to force extra line breaks (higher vertical cost), so weight them.
+  const newlines = (para.match(/\n/g) ?? []).length;
+  return para.length + newlines * 60;
+};
+
 /**
- * Estimate how many pages a text will occupy based on content length
+ * Group paragraphs into "manual pages" to avoid relying on react-pdf's auto-wrap
+ * to split a single <Page> into many physical pages (a known crash vector for Yoga
+ * when documents get very large).
+ */
+const paginateParagraphs = (paragraphs: string[], maxCostPerPage: number): string[][] => {
+  const pages: string[][] = [];
+  let current: string[] = [];
+  let currentCost = 0;
+
+  for (const para of paragraphs) {
+    const cost = estimateParagraphCost(para);
+    const separatorCost = current.length > 0 ? 2 : 0;
+
+    if (current.length > 0 && currentCost + separatorCost + cost > maxCostPerPage) {
+      pages.push(current);
+      current = [para];
+      currentCost = cost;
+      continue;
+    }
+
+    current.push(para);
+    currentCost += separatorCost + cost;
+  }
+
+  if (current.length > 0) pages.push(current);
+  return pages.length > 0 ? pages : [[]];
+};
+
+/**
+ * Estimate how many pages a text will occupy.
+ * IMPORTANT: must stay consistent with the real pagination used by TextePage.
  */
 const estimatePages = (texte: TexteExport): number => {
-  const contentLength = sanitizeContentForPdf(texte.contenu).length;
-  return Math.max(1, Math.ceil(contentLength / CHARS_PER_PAGE));
+  if (isHaiku(texte)) return 1;
+
+  const content = sanitizeContentForPdf(texte.contenu);
+  const rawParagraphs = splitIntoParagraphs(content);
+  const { firstParagraph, restParagraphs } = limitFirstParagraph(rawParagraphs);
+  const safeParagraphs = [firstParagraph, ...restParagraphs]
+    .filter(Boolean)
+    .flatMap((para) => {
+      if (para.length <= MAX_PARAGRAPH_LENGTH) return [para];
+      return chunkLongText(para, MAX_PARAGRAPH_LENGTH);
+    });
+
+  // Haiku excluded above; fables currently use a dedicated page component.
+  if (isFable(texte)) {
+    return Math.max(1, Math.ceil(content.length / CHARS_PER_PAGE));
+  }
+
+  return paginateParagraphs(safeParagraphs, CHARS_PER_PAGE).length;
 };
 
 /**
@@ -708,41 +761,60 @@ export const TextePage: React.FC<TextePageProps> = ({
       if (para.length <= MAX_PARAGRAPH_LENGTH) return [para];
       return chunkLongText(para, MAX_PARAGRAPH_LENGTH);
     });
-  
+
+  // Manual pagination: build several <Page> nodes instead of relying on "wrap" to
+  // split one <Page> into many physical pages (observed crash vector).
+  const paginated = paginateParagraphs(safeParagraphs, CHARS_PER_PAGE);
+
   return (
-    <Page size={[dimensions.width, dimensions.height]} style={mergeStyles(styles.page, styles.pageOdd)} wrap>
-      <View style={styles.textePage as Style}>
-        {showMarcheHeader && marche && (
-          <MarcheHeader marche={marche} styles={styles} />
-        )}
-        
-        <View style={styles.texteContainer as Style}>
-          {/* Title alone is kept together - content flows naturally */}
-          <Text style={styles.texteTitle as Style} minPresenceAhead={50}>
-            {softBreakLongTokens(texte.titre)}
-          </Text>
-          
-          {/* All paragraphs flow naturally across pages - no wrap={false} to prevent crashes */}
-          {safeParagraphs.map((para, idx) => (
-            <Text key={idx} style={styles.texteContent as Style}>{para}</Text>
-          ))}
-          
-          {options.includeMetadata && texte.type_texte && (
-            <Text style={styles.texteMetadata as Style}>
-              {texte.type_texte}
-              {texte.marche_ville && ` · ${texte.marche_ville}`}
-            </Text>
-          )}
-        </View>
-      </View>
-      
-      <PageFooter 
-        styles={styles} 
-        options={options}
-        partieName={partieName}
-        marcheName={marcheName}
-      />
-    </Page>
+    <>
+      {paginated.map((pageParagraphs, pageIndex) => {
+        const isFirst = pageIndex === 0;
+        const isLast = pageIndex === paginated.length - 1;
+
+        return (
+          <Page
+            key={`${texte.id}-p${pageIndex}`}
+            size={[dimensions.width, dimensions.height]}
+            style={mergeStyles(styles.page, styles.pageOdd)}
+            // We aim for each page to fit; avoiding auto-wrap reduces Yoga edge cases.
+            wrap={false}
+          >
+            <View style={styles.textePage as Style}>
+              {isFirst && showMarcheHeader && marche && <MarcheHeader marche={marche} styles={styles} />}
+
+              <View style={styles.texteContainer as Style}>
+                {isFirst && (
+                  <Text style={styles.texteTitle as Style} minPresenceAhead={50}>
+                    {softBreakLongTokens(texte.titre)}
+                  </Text>
+                )}
+
+                {pageParagraphs.map((para, idx) => (
+                  <Text key={`${texte.id}-p${pageIndex}-para${idx}`} style={styles.texteContent as Style}>
+                    {para}
+                  </Text>
+                ))}
+
+                {isLast && options.includeMetadata && texte.type_texte && (
+                  <Text style={styles.texteMetadata as Style}>
+                    {texte.type_texte}
+                    {texte.marche_ville && ` · ${texte.marche_ville}`}
+                  </Text>
+                )}
+              </View>
+            </View>
+
+            <PageFooter
+              styles={styles}
+              options={options}
+              partieName={partieName}
+              marcheName={marcheName}
+            />
+          </Page>
+        );
+      })}
+    </>
   );
 };
 
