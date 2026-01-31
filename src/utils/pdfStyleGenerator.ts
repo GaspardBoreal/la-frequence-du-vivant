@@ -504,6 +504,8 @@ export const generatePdfStyles = (options: PdfExportOptions): PdfStylesRaw => {
       lineHeight: typography.lineHeight,
       color: colorScheme.text,
       textAlign: 'left',
+      flexShrink: 1, // Prevent horizontal overflow
+      marginBottom: mmToPoints(2), // Space between paragraphs when split
     },
     texteMetadata: {
       marginTop: mmToPoints(10),
@@ -594,6 +596,8 @@ export const generatePdfStyles = (options: PdfExportOptions): PdfStylesRaw => {
       color: colorScheme.text,
       textAlign: 'left',
       marginTop: mmToPoints(6),
+      flexShrink: 1, // Prevent horizontal overflow
+      marginBottom: mmToPoints(2), // Space between paragraphs when split
     },
     fableMoral: {
       fontFamily: typography.bodyFont,
