@@ -67,6 +67,29 @@ const MAX_FIRST_PARA_LENGTH = 600;
 // Maximum number of page references to display before truncating with "…"
 const MAX_PAGES_DISPLAY = 5;
 
+// Maximum characters before inserting soft breaks (zero-width space)
+const MAX_TOKEN_LENGTH = 25;
+
+/**
+ * Insert soft breaks (zero-width spaces) into long tokens to prevent horizontal overflow.
+ * This prevents Yoga "unsupported number" crashes caused by unbreakable long strings.
+ */
+const softBreakLongTokens = (text: string): string => {
+  if (!text || text.length < MAX_TOKEN_LENGTH) return text || '';
+  
+  // Split by spaces, check each word
+  return text.split(' ').map(word => {
+    if (word.length <= MAX_TOKEN_LENGTH) return word;
+    
+    // Insert zero-width space every 15 chars
+    const chunks: string[] = [];
+    for (let i = 0; i < word.length; i += 15) {
+      chunks.push(word.slice(i, i + 15));
+    }
+    return chunks.join('\u200B');
+  }).join(' ');
+};
+
 /**
  * Format a list of page numbers for index display.
  * Limits to MAX_PAGES_DISPLAY and adds "…" if truncated.
@@ -380,13 +403,13 @@ export const TocPage: React.FC<TocPageProps> = ({ entries, options, styles }) =>
           <View key={index} style={styles.tocEntry as Style}>
             {entry.type === 'partie' && (
               <Text style={styles.tocPartie as Style}>
-                {entry.partieNumero && `${entry.partieNumero} · `}{entry.title}
+                {entry.partieNumero && `${entry.partieNumero} · `}{softBreakLongTokens(entry.title)}
               </Text>
             )}
             {entry.type === 'marche' && (
               <View style={{ flexDirection: 'row', alignItems: 'center' } as Style}>
                 <Text style={styles.tocMarche as Style}>
-                  {entry.title}{entry.ville ? ` (${entry.ville})` : ''}
+                  {softBreakLongTokens(entry.title)}{entry.ville ? ` (${entry.ville})` : ''}
                 </Text>
                 <View style={styles.tocDotLeader as Style} />
                 <Text style={styles.tocPageNumber as Style}>{entry.pageNumber}</Text>
@@ -463,6 +486,10 @@ interface HaikuPageProps {
   content: string;
 }
 
+// Maximum lines/content for haiku before fallback to standard flow
+const MAX_HAIKU_LINES = 8;
+const MAX_HAIKU_CONTENT_LENGTH = 600;
+
 // Haiku/Senryu rendered inline (not as separate page) for space efficiency
 export const HaikuBlock: React.FC<{ texte: TexteExport; styles: PdfStylesRaw; content: string }> = ({ texte, styles, content }) => {
   // Split haiku content into individual lines for proper centering
@@ -471,9 +498,24 @@ export const HaikuBlock: React.FC<{ texte: TexteExport; styles: PdfStylesRaw; co
     .map(line => line.trim())
     .filter(Boolean);
   
+  // GUARD: If content is too long or has too many lines, this will crash Yoga
+  // In this case, the caller (TextePage) should handle it differently
+  // But we still provide a safe fallback here
+  const isSafe = lines.length <= MAX_HAIKU_LINES && content.length <= MAX_HAIKU_CONTENT_LENGTH;
+  
+  if (!isSafe) {
+    // Fallback: render as simple text instead of centered haiku layout
+    return (
+      <View style={{ marginVertical: mmToPoints(4) } as Style}>
+        <Text style={styles.texteTitle as Style}>{softBreakLongTokens(texte.titre)}</Text>
+        <Text style={styles.texteContent as Style}>{content}</Text>
+      </View>
+    );
+  }
+  
   return (
     <View style={styles.haikuBlock as Style}>
-      <Text style={styles.haikuTitle as Style}>{texte.titre}</Text>
+      <Text style={styles.haikuTitle as Style}>{softBreakLongTokens(texte.titre)}</Text>
       <View style={styles.haikuSeparator as Style} />
       <View style={{ alignItems: 'center', marginTop: mmToPoints(4) } as Style}>
         {lines.map((line, idx) => (
@@ -714,11 +756,11 @@ export const IndexLieuxPage: React.FC<IndexLieuxPageProps> = ({ entries, options
                   {/* Keep marche header + first type together to avoid orphans */}
                   <View style={styles.indexLieuxMarcheBlock as Style}>
                     <Text style={styles.indexLieuxMarcheEntry as Style}>
-                      {marche.nom}
+                      {softBreakLongTokens(marche.nom)}
                     </Text>
                     {firstType && (
                       <View style={styles.indexLieuxTypeRow as Style}>
-                        <Text style={styles.indexLieuxTypeName as Style}>{firstType.type}</Text>
+                        <Text style={styles.indexLieuxTypeName as Style}>{softBreakLongTokens(firstType.type)}</Text>
                         <View style={styles.indexLieuxDotLeader as Style} />
                         <Text style={styles.indexLieuxPages as Style}>{formatPageList(firstType.pages)}</Text>
                       </View>
@@ -727,7 +769,7 @@ export const IndexLieuxPage: React.FC<IndexLieuxPageProps> = ({ entries, options
                   {/* Rest of types can flow to next page if needed */}
                   {restTypes.map((typeEntry, tIndex) => (
                     <View key={tIndex} style={styles.indexLieuxTypeRow as Style}>
-                      <Text style={styles.indexLieuxTypeName as Style}>{typeEntry.type}</Text>
+                      <Text style={styles.indexLieuxTypeName as Style}>{softBreakLongTokens(typeEntry.type)}</Text>
                       <View style={styles.indexLieuxDotLeader as Style} />
                       <Text style={styles.indexLieuxPages as Style}>{formatPageList(typeEntry.pages)}</Text>
                     </View>
@@ -795,11 +837,11 @@ export const IndexGenresPage: React.FC<IndexGenresPageProps> = ({ entries, optio
           
           const renderEntry = (texte: any, key: React.Key) => (
             <View key={key} style={styles.indexGenreEntryBlock as Style}>
-              {/* Line 1: Title only (bold) - truncated to prevent overflow */}
-              <Text style={styles.indexGenreTitle as Style}>{truncateTitle(texte.titre)}</Text>
+              {/* Line 1: Title only (bold) - truncated + soft breaks to prevent overflow */}
+              <Text style={styles.indexGenreTitle as Style}>{softBreakLongTokens(truncateTitle(texte.titre))}</Text>
               {/* Line 2: Lieu with dot leader and page */}
               <View style={styles.indexGenreDetailRow as Style}>
-                <Text style={styles.indexGenreLieu as Style}>{texte.lieu}</Text>
+                <Text style={styles.indexGenreLieu as Style}>{softBreakLongTokens(texte.lieu)}</Text>
                 <View style={styles.indexGenreDotLeader as Style} />
                 <Text style={styles.indexGenrePage as Style}>{texte.page}</Text>
               </View>
@@ -871,12 +913,12 @@ export const IndexKeywordsPage: React.FC<IndexKeywordsPageProps> = ({ entries, o
               {/* Category header + first keyword stay together (unbreakable) */}
               <View>
                 <View style={styles.indexKeywordCategoryBox as Style}>
-                  <Text style={styles.indexKeywordCategoryTitle as Style}>{categoryEntry.category}</Text>
+                  <Text style={styles.indexKeywordCategoryTitle as Style}>{softBreakLongTokens(categoryEntry.category)}</Text>
                 </View>
                 
                 {firstKeyword && (
                   <View style={styles.indexKeywordEntry as Style}>
-                    <Text style={styles.indexKeywordName as Style}>{truncateName(firstKeyword.name)}</Text>
+                    <Text style={styles.indexKeywordName as Style}>{softBreakLongTokens(truncateName(firstKeyword.name))}</Text>
                     <View style={styles.indexKeywordDotLeader as Style} />
                     <Text style={styles.indexKeywordPages as Style}>{formatPageList(firstKeyword.pages)}</Text>
                   </View>
@@ -886,7 +928,7 @@ export const IndexKeywordsPage: React.FC<IndexKeywordsPageProps> = ({ entries, o
               {/* Remaining keywords can flow across pages normally */}
               {restKeywords.map((keyword, kIndex) => (
                 <View key={kIndex} style={styles.indexKeywordEntry as Style}>
-                  <Text style={styles.indexKeywordName as Style}>{truncateName(keyword.name)}</Text>
+                  <Text style={styles.indexKeywordName as Style}>{softBreakLongTokens(truncateName(keyword.name))}</Text>
                   <View style={styles.indexKeywordDotLeader as Style} />
                   <Text style={styles.indexKeywordPages as Style}>{formatPageList(keyword.pages)}</Text>
                 </View>

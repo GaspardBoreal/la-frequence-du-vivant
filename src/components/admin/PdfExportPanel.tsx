@@ -16,6 +16,7 @@ import {
   Download,
   Loader2,
   Printer,
+  Bug,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { pdf } from '@react-pdf/renderer';
@@ -50,7 +51,10 @@ const PdfExportPanel: React.FC<PdfExportPanelProps> = ({
   const [metadataOpen, setMetadataOpen] = useState(true);
   const [designOpen, setDesignOpen] = useState(true);
   const [printOpen, setPrintOpen] = useState(false);
+  const [debugOpen, setDebugOpen] = useState(false);
   const [exporting, setExporting] = useState(false);
+  const [debugMode, setDebugMode] = useState(false);
+  const [debugProgress, setDebugProgress] = useState<string | null>(null);
 
   // Synchronize metadata with exploration and textes changes
   useEffect(() => {
@@ -145,6 +149,77 @@ const PdfExportPanel: React.FC<PdfExportPanelProps> = ({
       } else {
         toast.error(`Erreur PDF: ${errorMessage.slice(0, 100)}`);
       }
+    } finally {
+      setExporting(false);
+    }
+  };
+
+  // DEBUG MODE: Step-by-step export to isolate the crash source
+  const handleDebugExport = async () => {
+    if (textes.length === 0) {
+      toast.error('Aucun texte à exporter');
+      return;
+    }
+
+    setExporting(true);
+    setDebugProgress(null);
+    
+    const steps = [
+      { 
+        name: 'Contenu seul', 
+        opts: { includeTableOfContents: false, includeIndexLieux: false, includeIndexGenres: false, includeIndexKeywords: false, includeColophon: false }
+      },
+      { 
+        name: 'Contenu + TOC', 
+        opts: { includeTableOfContents: true, includeIndexLieux: false, includeIndexGenres: false, includeIndexKeywords: false, includeColophon: false }
+      },
+      { 
+        name: 'Contenu + TOC + Index Lieux', 
+        opts: { includeTableOfContents: true, includeIndexLieux: true, includeIndexGenres: false, includeIndexKeywords: false, includeColophon: false }
+      },
+      { 
+        name: 'Contenu + TOC + Index Lieux + Index Œuvres', 
+        opts: { includeTableOfContents: true, includeIndexLieux: true, includeIndexGenres: true, includeIndexKeywords: false, includeColophon: false }
+      },
+      { 
+        name: 'Export complet', 
+        opts: { includeTableOfContents: true, includeIndexLieux: true, includeIndexGenres: true, includeIndexKeywords: true, includeColophon: true }
+      },
+    ];
+
+    try {
+      await registerFonts(options);
+      
+      for (let i = 0; i < steps.length; i++) {
+        const step = steps[i];
+        setDebugProgress(`Essai ${i + 1}/${steps.length}: ${step.name}...`);
+        console.info(`[PDF DEBUG] Step ${i + 1}: ${step.name}...`);
+        
+        try {
+          const testOptions = { ...options, ...step.opts };
+          const doc = <PdfDocument textes={textes} options={testOptions} parties={effectiveParties} />;
+          await pdf(doc).toBlob();
+          console.info(`[PDF DEBUG] Step ${i + 1}: ✅ OK`);
+        } catch (stepError) {
+          console.error(`[PDF DEBUG] Step ${i + 1}: ❌ CRASH dans "${step.name}"`, stepError);
+          toast.error(`Crash identifié dans : ${step.name}`);
+          setDebugProgress(`❌ Crash dans : ${step.name}`);
+          setExporting(false);
+          return;
+        }
+      }
+      
+      // All steps passed - generate final PDF
+      setDebugProgress('✅ Tous les tests passés ! Génération du PDF...');
+      const doc = <PdfDocument textes={textes} options={options} parties={effectiveParties} />;
+      const blob = await pdf(doc).toBlob();
+      const filename = `${options.title.replace(/[^a-zA-Z0-9]/g, '_')}_debug.pdf`;
+      saveAs(blob, filename);
+      toast.success('PDF généré avec succès ! Aucun crash détecté.');
+      setDebugProgress('✅ PDF généré avec succès !');
+    } catch (error) {
+      console.error('Debug export error:', error);
+      toast.error('Erreur pendant le debug');
     } finally {
       setExporting(false);
     }
@@ -361,6 +436,86 @@ const PdfExportPanel: React.FC<PdfExportPanelProps> = ({
                   <Label htmlFor="pdf-crops" className="text-sm">Traits de coupe</Label>
                 </div>
               </div>
+            </CollapsibleContent>
+          </Collapsible>
+
+          <Separator />
+
+          {/* Debug Section */}
+          <Collapsible open={debugOpen} onOpenChange={setDebugOpen}>
+            <CollapsibleTrigger asChild>
+              <Button variant="ghost" className="w-full justify-between p-2 h-auto">
+                <span className="flex items-center gap-2 font-medium text-orange-600">
+                  <Bug className="h-4 w-4" />
+                  Mode Debug (crash PDF)
+                </span>
+                {debugOpen ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+              </Button>
+            </CollapsibleTrigger>
+            <CollapsibleContent className="space-y-3 pt-2">
+              <p className="text-xs text-muted-foreground">
+                Ce mode teste l'export par étapes pour identifier la section qui cause le crash (TOC, Index, etc.)
+              </p>
+              
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <Checkbox
+                    id="pdf-debug-toc"
+                    checked={options.includeTableOfContents}
+                    onCheckedChange={(checked) => updateOption('includeTableOfContents', !!checked)}
+                  />
+                  <Label htmlFor="pdf-debug-toc" className="text-sm">Inclure TOC</Label>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Checkbox
+                    id="pdf-debug-index-lieux"
+                    checked={options.includeIndexLieux}
+                    onCheckedChange={(checked) => updateOption('includeIndexLieux', !!checked)}
+                  />
+                  <Label htmlFor="pdf-debug-index-lieux" className="text-sm">Inclure Index Lieux</Label>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Checkbox
+                    id="pdf-debug-index-genres"
+                    checked={options.includeIndexGenres}
+                    onCheckedChange={(checked) => updateOption('includeIndexGenres', !!checked)}
+                  />
+                  <Label htmlFor="pdf-debug-index-genres" className="text-sm">Inclure Index Œuvres</Label>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Checkbox
+                    id="pdf-debug-index-keywords"
+                    checked={options.includeIndexKeywords}
+                    onCheckedChange={(checked) => updateOption('includeIndexKeywords', !!checked)}
+                  />
+                  <Label htmlFor="pdf-debug-index-keywords" className="text-sm">Inclure Index Thématique</Label>
+                </div>
+              </div>
+              
+              {debugProgress && (
+                <div className="p-2 bg-muted rounded text-xs font-mono">
+                  {debugProgress}
+                </div>
+              )}
+              
+              <Button
+                variant="outline"
+                className="w-full border-orange-500 text-orange-600 hover:bg-orange-50"
+                onClick={handleDebugExport}
+                disabled={exporting || textes.length === 0}
+              >
+                {exporting ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Debug en cours...
+                  </>
+                ) : (
+                  <>
+                    <Bug className="h-4 w-4 mr-2" />
+                    Lancer export debug (étape par étape)
+                  </>
+                )}
+              </Button>
             </CollapsibleContent>
           </Collapsible>
 

@@ -409,7 +409,10 @@ export const generatePdfStyles = (options: PdfExportOptions): PdfStylesRaw => {
       color: colorScheme.secondary,
     },
     tocDotLeader: {
-      flex: 1,
+      // FIXED: Use fixed width instead of flex: 1 to prevent negative width crashes
+      width: mmToPoints(25),
+      flexGrow: 0,
+      flexShrink: 0,
       marginHorizontal: mmToPoints(1),
       borderBottomWidth: 0.5,
       borderBottomStyle: 'dotted',
@@ -694,7 +697,10 @@ export const generatePdfStyles = (options: PdfExportOptions): PdfStylesRaw => {
       flexShrink: 1,
     },
     indexLieuxDotLeader: {
-      flex: 1,
+      // FIXED: Use fixed width instead of flex: 1 to prevent negative width crashes
+      width: mmToPoints(20),
+      flexGrow: 0,
+      flexShrink: 0,
       marginHorizontal: mmToPoints(1.5),
       borderBottomWidth: 0.5,
       borderBottomStyle: 'dotted',
@@ -759,13 +765,15 @@ export const generatePdfStyles = (options: PdfExportOptions): PdfStylesRaw => {
       maxWidth: narrowContentWidth, // FIXED: Numeric value instead of '70%'
     },
     indexGenreDotLeader: {
-      flex: 1,
+      // FIXED: Use fixed width instead of flex: 1 to prevent negative width crashes
+      width: mmToPoints(20),
+      flexGrow: 0,
+      flexShrink: 0,
       marginHorizontal: mmToPoints(2),
       borderBottomWidth: 0.5,
       borderBottomStyle: 'dotted',
       borderBottomColor: colorScheme.secondary,
       marginBottom: 2,
-      minWidth: mmToPoints(10),
     },
     indexGenrePage: {
       fontFamily: typography.bodyFont,
@@ -807,7 +815,10 @@ export const generatePdfStyles = (options: PdfExportOptions): PdfStylesRaw => {
       flexShrink: 1, // ADDED: Allow text to shrink to prevent horizontal overflow
     },
     indexKeywordDotLeader: {
-      flex: 1,
+      // FIXED: Use fixed width instead of flex: 1 to prevent negative width crashes
+      width: mmToPoints(20),
+      flexGrow: 0,
+      flexShrink: 0,
       marginHorizontal: mmToPoints(1.5),
       borderBottomWidth: 0.5,
       borderBottomStyle: 'dotted',
