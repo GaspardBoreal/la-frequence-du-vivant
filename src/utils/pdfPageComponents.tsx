@@ -353,9 +353,11 @@ interface PageFooterProps {
  * This ensures the page number reflects the ACTUAL rendered page,
  * not a manually computed counter that doesn't account for text wrapping.
  * 
- * Uses a flexbox layout with two separate Text elements to avoid
- * the "unsupported number" crash caused by text overflow when using
- * manual spacing (.repeat(40)).
+ * Layout rules (agreed upon):
+ * - Si présence de Partie: à gauche le nom de la partie / à droite le numéro de page
+ * - Si pas de Partie: à gauche le nom de la marche / à droite le numéro de page
+ * 
+ * Uses a View container with flexbox for proper left-right positioning.
  */
 export const PageFooter: React.FC<PageFooterProps> = ({ 
   styles, 
@@ -363,28 +365,26 @@ export const PageFooter: React.FC<PageFooterProps> = ({
   partieName, 
   marcheName 
 }) => {
-  // NOTE: The "unsupported number" crash is thrown by the PDF engine when layout
-  // produces invalid coordinates (often caused by unsupported sizing like % widths
-  // or overflowing text). To make exports robust, we keep the footer strictly to
-  // the dynamic page number using known-safe numeric styles.
+  // Context text: prefer partie name, fallback to marche name
+  const contextText = partieName || marcheName || '';
 
   return (
-    <>
-      <Text
-        fixed
-        style={mergeStyles(styles.pageNumber, styles.pageNumberOdd)}
-        render={({ pageNumber }) =>
-          pageNumber % 2 === 1 ? formatPageNumber(pageNumber, options.pageNumberStyle) : ''
-        }
-      />
-      <Text
-        fixed
-        style={mergeStyles(styles.pageNumber, styles.pageNumberEven)}
-        render={({ pageNumber }) =>
-          pageNumber % 2 === 0 ? formatPageNumber(pageNumber, options.pageNumberStyle) : ''
-        }
-      />
-    </>
+    <View
+      fixed
+      style={mergeStyles(styles.pageFooter, styles.pageFooterOdd)}
+      render={({ pageNumber }) => (
+        <>
+          {/* Left side: context (partie or marche name) */}
+          <Text style={styles.pageFooterContext}>
+            {contextText}
+          </Text>
+          {/* Right side: page number */}
+          <Text style={styles.pageNumberInline}>
+            {formatPageNumber(pageNumber, options.pageNumberStyle)}
+          </Text>
+        </>
+      )}
+    />
   );
 };
 
