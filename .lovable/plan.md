@@ -1,56 +1,89 @@
 
-# Plan de Correction Définitif — Crash "unsupported number"
+# Plan de Correction Définitif — Crash PDF "unsupported number"
 
-## Contexte
+## Diagnostic Technique Approfondi
 
-L'export PDF crashe systématiquement avec l'erreur `unsupported number: -1.3e+21` (Yoga layout engine overflow).
+### Cause Racine Identifiée
 
-**Cause racine identifiée** : Les textes très longs ne sont pas correctement segmentés car le contenu HTML stocké en base utilise des simples sauts de ligne (`\n`) et des balises `<p>` / `<div>` / `<li>`, mais la logique de découpage actuelle cherche des **doubles sauts de ligne** (`\n\n`) qui n'existent pas. Tout le contenu reste donc dans un bloc unique qui dépasse la taille d'une page, ce qui crashe le moteur Yoga.
+Le crash `unsupported number: -1.3e+21` est causé par des blocs de texte trop volumineux qui dépassent les capacités du moteur Yoga de @react-pdf/renderer. L'analyse du contenu HTML révèle plusieurs problèmes cumulatifs :
 
-| Texte problématique | Longueur | Segmentation actuelle |
-|---------------------|----------|----------------------|
-| Constitution de Dordonia | 21 638 car. | 1 seul "paragraphe" (tout le texte) |
-| Épilogue — Le Parlement | 10 377 car. | 1 seul "paragraphe" |
-| La Grand-duc et l'Éolienne | 5 476 car. | 1 seul "paragraphe" |
+| Problème | Impact |
+|----------|--------|
+| `sanitizeContentForPdf` ne gère pas `<h1>`, `<h2>`, `<ul>`, `<li>` | Ces balises ne génèrent pas de saut de ligne, produisant des blocs > 3000 caractères sans coupure |
+| `splitIntoParagraphs` ne découpe pas les lignes très longues | Une "ligne" de 5000+ caractères reste intacte |
+| `limitFirstParagraph` limite à 800 chars mais les paragraphes restants peuvent être massifs | Les `<Text>` suivants peuvent dépasser la hauteur de page |
+| `wrap={false}` sur certains blocs | Même un paragraphe "normal" de 1500+ caractères dans un bloc unbreakable cause un crash |
 
-## Plan d'action
+### Données Concrètes
 
-### 1. Corriger la segmentation des paragraphes (cause principale)
+| Texte | Longueur | Structure HTML |
+|-------|----------|----------------|
+| Constitution de Dordonia | 21 638 car. | `<h1>`, `<h2>`, `<ul><li>`, `<p>` imbriqués |
+| Épilogue — Le Parlement | 10 377 car. | `<div>` multiples |
+| La Grand-duc et l'Éolienne | 5 476 car. | `<div>` multiples |
 
-**Fichier** : `src/utils/pdfPageComponents.tsx` (fonctions `TextePage` et `FablePage`)
+---
 
-**Problème actuel** : Le découpage utilise `content.split(/\n{2,}/)` qui cherche des doubles sauts de ligne. Mais le HTML sanitizé ne contient que des simples `\n`.
+## Plan de Correction (3 Axes)
 
-**Solution** : Découper sur **simples sauts de ligne** (`\n`) au lieu de doubles, et grouper intelligemment les lignes très courtes (haïkus, vers) pour éviter un paragraphe par ligne :
+### Axe 1 : Améliorer sanitizeContentForPdf pour gérer TOUS les blocs HTML
+
+**Fichier** : `src/utils/pdfExportUtils.ts`
+
+**Modification** : Ajouter le traitement des balises `<h1>-<h6>`, `<ul>`, `<ol>`, `<li>`, `<blockquote>`, `<pre>` pour insérer des sauts de ligne.
 
 ```typescript
-// NOUVELLE LOGIQUE DE SEGMENTATION
+// Ajouter saut de ligne AVANT les headings et listes
+text = text.replace(/<(h[1-6]|ul|ol|li|blockquote|pre)\b[^>]*>/gi, '\n');
+
+// Ajouter saut de ligne APRÈS les headings fermants (double saut pour sections)
+text = text.replace(/<\/(h[1-6])>/gi, '\n\n');
+text = text.replace(/<\/(ul|ol|li|blockquote|pre)>/gi, '\n');
+```
+
+### Axe 2 : Forcer le découpage agressif des blocs longs dans splitIntoParagraphs
+
+**Fichier** : `src/utils/pdfPageComponents.tsx`
+
+**Modification** : Implémenter un découpage forcé (chunk) pour tout paragraphe > 1500 caractères :
+
+```typescript
+const MAX_PARAGRAPH_LENGTH = 1500; // ~1 page A5 max
+
 const splitIntoParagraphs = (content: string): string[] => {
-  // Split on any newline
+  // Étape 1 : Découper sur sauts de ligne
   const lines = content.split(/\n/).map(l => l.trim()).filter(Boolean);
   
-  // If very few lines, return as-is (short poems)
-  if (lines.length <= 5) return [lines.join('\n')];
+  // Étape 2 : Pour les poèmes courts, garder ensemble
+  if (lines.length <= 5 && content.length < 500) {
+    return [lines.join('\n')];
+  }
   
-  // For long prose, treat each line as a paragraph to allow page breaks
-  // But group consecutive short lines (under 80 chars) to avoid excessive fragmentation
+  // Étape 3 : Découpage intelligent avec chunking forcé
   const paragraphs: string[] = [];
   let currentGroup: string[] = [];
+  let currentLength = 0;
   
   for (const line of lines) {
-    if (line.length > 120) {
-      // Long line = standalone paragraph
+    // Si une seule ligne dépasse MAX, la découper elle-même
+    if (line.length > MAX_PARAGRAPH_LENGTH) {
+      // Flush current group
       if (currentGroup.length > 0) {
         paragraphs.push(currentGroup.join('\n'));
         currentGroup = [];
+        currentLength = 0;
       }
-      paragraphs.push(line);
+      // Chunk la ligne longue par phrases ou mots
+      paragraphs.push(...chunkLongText(line, MAX_PARAGRAPH_LENGTH));
     } else {
-      // Short line = group with others
-      currentGroup.push(line);
-      if (currentGroup.length >= 5) {
+      // Ajouter au groupe si ça ne dépasse pas
+      if (currentLength + line.length > MAX_PARAGRAPH_LENGTH) {
         paragraphs.push(currentGroup.join('\n'));
-        currentGroup = [];
+        currentGroup = [line];
+        currentLength = line.length;
+      } else {
+        currentGroup.push(line);
+        currentLength += line.length + 1;
       }
     }
   }
@@ -59,114 +92,117 @@ const splitIntoParagraphs = (content: string): string[] => {
     paragraphs.push(currentGroup.join('\n'));
   }
   
-  return paragraphs;
+  return paragraphs.length > 0 ? paragraphs : [content];
 };
-```
 
-### 2. Limiter le contenu dans les blocs `wrap={false}`
-
-**Fichier** : `src/utils/pdfPageComponents.tsx`
-
-**Problème actuel** : Le bloc `<View wrap={false}>` contenant titre + premier paragraphe peut recevoir un paragraphe de 5 000+ caractères, ce qui dépasse la hauteur de page.
-
-**Solution** : Limiter le premier paragraphe à maximum ~800 caractères dans le bloc unbreakable. Si le premier paragraphe est plus long, le découper davantage :
-
-```typescript
-// Dans TextePage et FablePage
-const [rawFirst, ...rest] = paragraphs;
-
-// Si le "premier paragraphe" est trop long pour tenir avec le titre sur une page,
-// on le découpe encore pour éviter le crash
-const MAX_FIRST_PARA_LENGTH = 800;
-let firstParagraph = rawFirst || '';
-let restParagraphs = rest;
-
-if (firstParagraph.length > MAX_FIRST_PARA_LENGTH) {
-  // Trouver un point de coupure naturel (., !, ?)
-  const cutPoint = firstParagraph.slice(0, MAX_FIRST_PARA_LENGTH).lastIndexOf('.');
-  if (cutPoint > 100) {
-    restParagraphs = [firstParagraph.slice(cutPoint + 1).trim(), ...rest];
-    firstParagraph = firstParagraph.slice(0, cutPoint + 1);
-  } else {
-    // Pas de point, couper brutalement
-    restParagraphs = [firstParagraph.slice(MAX_FIRST_PARA_LENGTH), ...rest];
-    firstParagraph = firstParagraph.slice(0, MAX_FIRST_PARA_LENGTH);
+// Nouvelle fonction helper pour découper un texte très long
+const chunkLongText = (text: string, maxLen: number): string[] => {
+  const chunks: string[] = [];
+  let remaining = text;
+  
+  while (remaining.length > maxLen) {
+    // Chercher un point de coupure naturel (., !, ?, puis espace)
+    let cutPoint = remaining.slice(0, maxLen).lastIndexOf('. ');
+    if (cutPoint < maxLen * 0.3) cutPoint = remaining.slice(0, maxLen).lastIndexOf('! ');
+    if (cutPoint < maxLen * 0.3) cutPoint = remaining.slice(0, maxLen).lastIndexOf('? ');
+    if (cutPoint < maxLen * 0.3) cutPoint = remaining.slice(0, maxLen).lastIndexOf(' ');
+    if (cutPoint < maxLen * 0.3) cutPoint = maxLen; // Forcer la coupure
+    
+    chunks.push(remaining.slice(0, cutPoint + 1).trim());
+    remaining = remaining.slice(cutPoint + 1).trim();
   }
-}
+  
+  if (remaining.length > 0) {
+    chunks.push(remaining);
+  }
+  
+  return chunks;
+};
 ```
 
-### 3. Estimation automatique des pages pour TOC/Index
+### Axe 3 : Supprimer `wrap={false}` des blocs pouvant contenir du contenu long
 
 **Fichier** : `src/utils/pdfPageComponents.tsx`
 
-**Fonctions concernées** : `buildTocEntries` et `buildPageMapping`
+**Modifications** :
 
-**Solution** : Estimer le nombre de pages par texte basé sur la longueur du contenu :
+1. **TextePage (ligne 563)** : Retirer `wrap={false}` du bloc titre+premier paragraphe car même 800 caractères peuvent dépasser avec le titre sur certaines polices/tailles.
 
-```typescript
-// Constante : environ 2000 caractères par page A5 après marges
-const CHARS_PER_PAGE = 2000;
+2. **FablePage (ligne 455)** : Même chose pour le header de fable.
 
-const estimatePages = (texte: TexteExport): number => {
-  const contentLength = sanitizeContentForPdf(texte.contenu).length;
-  return Math.max(1, Math.ceil(contentLength / CHARS_PER_PAGE));
-};
+3. **Alternative** : Utiliser `minPresenceAhead={100}` (react-pdf v3+) sur le titre seul pour éviter les orphelins sans bloquer le wrapping.
 
-// Dans buildTocEntries et buildPageMapping :
-// Remplacer pageNumber++ par :
-if (item.type === 'texte' && item.texte) {
-  pageNumber += estimatePages(item.texte);
-} else {
-  pageNumber++;
-}
+**Nouvelle logique sécurisée** :
+
+```tsx
+// TextePage - Version sécurisée sans wrap={false}
+<View style={styles.texteContainer as Style}>
+  <Text style={styles.texteTitle as Style}>{texte.titre}</Text>
+  
+  {/* Tous les paragraphes peuvent wrapper naturellement */}
+  {paragraphs.map((para, idx) => (
+    <Text key={idx} style={styles.texteContent as Style}>{para}</Text>
+  ))}
+  
+  {options.includeMetadata && texte.type_texte && (
+    <Text style={styles.texteMetadata as Style}>
+      {texte.type_texte}
+      {texte.marche_ville && ` · ${texte.marche_ville}`}
+    </Text>
+  )}
+</View>
 ```
 
-## Section technique
+---
 
-### Pourquoi le découpage par `\n\n` échoue
+## Section Technique
 
-Le contenu HTML en base utilise des structures comme :
-```html
-<h1><b>MÉTADONNÉES</b></h1>
-<ul><li><p>Opus: ...</p></li></ul>
-<h2>PRÉAMBULE</h2>
-<p>Dordonia n'est pas un capteur...</p>
-```
+### Pourquoi le crash se produit exactement
 
-La fonction `sanitizeContentForPdf` convertit les balises `<p>`, `<div>`, `<li>` en simples `\n`, produisant :
-```
-MÉTADONNÉES
-Opus: ...
-PRÉAMBULE
-Dordonia n'est pas un capteur...
-```
+1. Le manifeste HTML contient : `<h1>MÉTADONNÉES</h1><ul><li><p>Opus : ...</p></li></ul>`
+2. `sanitizeContentForPdf` ne gère pas `<h1>`, `<ul>`, `<li>` → tout est collé sur quelques "lignes"
+3. Une "ligne" peut ainsi contenir 5000+ caractères
+4. `splitIntoParagraphs` groupe ces lignes car elles font < 120 caractères individuellement (après `split(\n)`)
+5. Le résultat : un "paragraphe" de 8000+ caractères
+6. Ce paragraphe va dans un `<Text>` unique
+7. Yoga calcule des coordonnées astronomiques → crash
 
-Le `.split(/\n{2,}/)` cherche `\n\n` (double saut), mais il n'y en a pas → **le texte entier reste dans un seul bloc**.
+### Calcul de sécurité
 
-### Pourquoi limiter à 800 caractères le premier paragraphe
+- Page A5 : 148×210mm = ~419×595 points
+- Marges : ~80pt en haut, ~60pt en bas = ~455pt de hauteur utile
+- Police 10pt, interligne 1.4 = ~14pt par ligne
+- Lignes par page : 455 / 14 ≈ 32 lignes
+- Caractères par ligne : ~55-65
+- **Caractères par page : 32 × 60 = ~1920 caractères**
 
-Une page A5 (148×210mm) avec marges typiques offre environ 400-500 points de hauteur utile. Avec une police de 10pt et un interligne de 1.4, on peut placer environ 25-30 lignes. À 60 caractères/ligne moyenne, cela donne ~1500-1800 caractères max.
+Donc `MAX_PARAGRAPH_LENGTH = 1500` est sécuritaire (avec marge).
 
-Le titre + décoration prennent ~3-5 lignes, donc le premier paragraphe doit être limité à ~800-1000 caractères pour garantir que le bloc `wrap={false}` tienne toujours sur une page.
+---
 
-## Fichiers à modifier
+## Fichiers à Modifier
 
 | Fichier | Modifications |
 |---------|--------------|
-| `src/utils/pdfPageComponents.tsx` | Nouvelle fonction `splitIntoParagraphs()`, limitation du premier paragraphe à 800 chars, estimation des pages dans `buildTocEntries` et `buildPageMapping` |
+| `src/utils/pdfExportUtils.ts` | Ajouter traitement des balises `<h1-h6>`, `<ul>`, `<ol>`, `<li>`, `<blockquote>` dans `sanitizeContentForPdf` |
+| `src/utils/pdfPageComponents.tsx` | Refactorer `splitIntoParagraphs` avec chunking forcé à 1500 caractères max ; ajouter helper `chunkLongText` ; supprimer `wrap={false}` des conteneurs de texte |
 
-## Résultat attendu
+---
 
-- Zéro crash "unsupported number"
-- Le manifeste "Constitution de Dordonia" (21 638 car.) se répartit sur ~11 pages
-- L'Épilogue (10 377 car.) se répartit sur ~5 pages  
-- La Table des Matières affiche des numéros de page estimés cohérents
-- Les haïkus/senryūs courts restent sur une seule page (pas de sur-découpage)
+## Résultat Attendu
 
-## Critères de validation
+- Zéro crash "unsupported number" quelle que soit la longueur du texte
+- Le manifeste "Constitution de Dordonia" (21 638 caractères) se divise en ~15 paragraphes de ~1400 caractères chacun, répartis sur ~12 pages
+- L'Épilogue (10 377 caractères) se répartit sur ~6 pages
+- Les haïkus/senryūs courts (< 500 caractères) restent sur une seule page sans sur-découpage
+- La numérotation TOC/Index reste cohérente grâce à `estimatePages()`
 
-1. L'export PDF se génère sans erreur console
-2. Le PDF produit contient tous les textes, y compris les très longs
+---
+
+## Critères de Validation
+
+1. Export PDF se génère sans erreur console
+2. Tous les textes, y compris les très longs, apparaissent dans le PDF
 3. Les textes longs s'étalent naturellement sur plusieurs pages
-4. La numérotation de la TOC est cohérente avec le contenu réel
-5. Aucune régression sur les poèmes courts (haïkus centrés sur une page)
+4. Les titres ne sont jamais orphelins (seuls en bas de page)
+5. Les haïkus restent visuellement corrects (pas de découpage artificiel)
