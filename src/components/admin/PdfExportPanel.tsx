@@ -26,6 +26,7 @@ import {
   getDefaultPdfOptions,
   type PdfExportOptions,
   type TexteExport,
+  sanitizeContentForPdf,
 } from '@/utils/pdfExportUtils';
 import { PdfDocument, registerFonts, type PartieData } from '@/utils/pdfPageComponents';
 import { generateContextualMetadata } from '@/utils/epubMetadataGenerator';
@@ -55,6 +56,33 @@ const PdfExportPanel: React.FC<PdfExportPanelProps> = ({
   const [exporting, setExporting] = useState(false);
   const [debugMode, setDebugMode] = useState(false);
   const [debugProgress, setDebugProgress] = useState<string | null>(null);
+
+  const summarizeSuspiciousChars = useCallback((text: string) => {
+    let asciiControl = 0;
+    let bidiControl = 0;
+    let nonBmp = 0;
+    let surrogates = 0;
+
+    for (const ch of text) {
+      const cp = ch.codePointAt(0) ?? 0;
+      if (cp < 0x20 || cp === 0x7f) {
+        if (cp !== 0x0a && cp !== 0x09 && cp !== 0x0d) asciiControl++;
+        continue;
+      }
+      const isBidi =
+        cp === 0x200e ||
+        cp === 0x200f ||
+        cp === 0x061c ||
+        (cp >= 0x202a && cp <= 0x202e) ||
+        (cp >= 0x2066 && cp <= 0x2069) ||
+        cp === 0xfeff;
+      if (isBidi) bidiControl++;
+      if (cp > 0xffff) nonBmp++;
+      if (cp >= 0xd800 && cp <= 0xdfff) surrogates++;
+    }
+
+    return { asciiControl, bidiControl, nonBmp, surrogates };
+  }, []);
 
   // Synchronize metadata with exploration and textes changes
   useEffect(() => {
@@ -213,7 +241,27 @@ const PdfExportPanel: React.FC<PdfExportPanelProps> = ({
           const msg = `Texte fautif trouvé: "${problematicTexte.titre}" (${problematicTexte.id.slice(0, 8)})`;
           console.error('[PDF DEBUG] ' + msg, problematicTexte);
           toast.error(msg);
-          setDebugProgress(`❌ ${msg}`);
+
+          // ===== Level 2 debug: isolate the exact chunk INSIDE the text =====
+          try {
+            setDebugProgress(`❌ ${msg}\nAnalyse fine (chunks internes) en cours...`);
+            const result = await findProblematicChunkWithinTexte(problematicTexte, options, minimalOpts);
+            if (result) {
+              const { chunkIndex1Based, totalChunks, excerpt, stats } = result;
+              console.error('[PDF DEBUG] Culprit chunk inside texte', result);
+              setDebugProgress(
+                `❌ ${msg}\n` +
+                  `Chunk fautif: ${chunkIndex1Based}/${totalChunks}\n` +
+                  `Suspicious chars (raw sanitized): control=${stats.asciiControl}, bidi=${stats.bidiControl}, nonBmp=${stats.nonBmp}, surrogates=${stats.surrogates}\n` +
+                  `Extrait: ${excerpt}`
+              );
+            } else {
+              setDebugProgress(`❌ ${msg}\nAnalyse fine: non concluante (le crash dépend peut-être de la longueur totale).`);
+            }
+          } catch (innerErr) {
+            console.error('[PDF DEBUG] Level2 chunk isolation failed', innerErr);
+            setDebugProgress(`❌ ${msg}\nAnalyse fine: erreur interne (voir console).`);
+          }
         } else {
           toast.error('Crash dans le contenu mais texte fautif non identifié');
           setDebugProgress('❌ Crash dans le contenu (texte non identifié)');
@@ -304,6 +352,82 @@ const PdfExportPanel: React.FC<PdfExportPanelProps> = ({
       return binarySearchProblematicText(firstHalf, opts, minimalOpts);
     }
   };
+
+  const findProblematicChunkWithinTexte = useCallback(
+    async (
+      texte: TexteExport,
+      opts: PdfExportOptions,
+      minimalOpts: Record<string, boolean>
+    ): Promise<
+      | {
+          chunkIndex1Based: number;
+          totalChunks: number;
+          excerpt: string;
+          stats: ReturnType<typeof summarizeSuspiciousChars>;
+        }
+      | null
+    > => {
+      const testOptions = { ...opts, ...minimalOpts };
+      const sanitized = sanitizeContentForPdf(texte.contenu);
+
+      // Build deterministic fixed-size chunks (independent of paragraph logic)
+      const CHUNK_SIZE = 400;
+      const chunks: string[] = [];
+      for (let i = 0; i < sanitized.length; i += CHUNK_SIZE) {
+        chunks.push(sanitized.slice(i, i + CHUNK_SIZE));
+      }
+      const totalChunks = Math.max(1, chunks.length);
+
+      const stats = summarizeSuspiciousChars(sanitized);
+
+      const testPrefix = async (count: number) => {
+        const prefixChunks = chunks.slice(0, Math.max(0, count));
+        const content = prefixChunks.join('\n\n');
+        const patchedTexte: TexteExport = {
+          ...texte,
+          // We pass plain text; sanitizeContentForPdf will run again inside TextePage.
+          contenu: content,
+        };
+
+        const doc = <PdfDocument textes={[patchedTexte]} options={testOptions} parties={effectiveParties} />;
+        await pdf(doc).toBlob();
+      };
+
+      // Ensure there is actually a crash for the full content
+      try {
+        await testPrefix(totalChunks);
+        return null;
+      } catch {
+        // expected
+      }
+
+      // Find smallest prefix length that crashes (monotonic in most cases)
+      let lo = 1;
+      let hi = totalChunks;
+      while (lo < hi) {
+        const mid = Math.floor((lo + hi) / 2);
+        setDebugProgress(`Analyse fine: test prefix ${mid}/${totalChunks}...`);
+        try {
+          await testPrefix(mid);
+          lo = mid + 1;
+        } catch {
+          hi = mid;
+        }
+      }
+
+      const culpritIndex0 = lo - 1;
+      const culpritChunk = chunks[culpritIndex0] ?? '';
+      const excerpt = culpritChunk.replace(/\s+/g, ' ').slice(0, 140);
+
+      return {
+        chunkIndex1Based: culpritIndex0 + 1,
+        totalChunks,
+        excerpt: excerpt.length < culpritChunk.length ? `${excerpt}…` : excerpt,
+        stats,
+      };
+    },
+    [effectiveParties, summarizeSuspiciousChars]
+  );
 
   const stats = useMemo(() => {
     const totalChars = textes.reduce((sum, t) => sum + t.contenu.length, 0);
@@ -572,8 +696,8 @@ const PdfExportPanel: React.FC<PdfExportPanelProps> = ({
                 </div>
               </div>
               
-              {debugProgress && (
-                <div className="p-2 bg-muted rounded text-xs font-mono">
+               {debugProgress && (
+                 <div className="p-2 bg-muted rounded text-xs font-mono whitespace-pre-wrap">
                   {debugProgress}
                 </div>
               )}

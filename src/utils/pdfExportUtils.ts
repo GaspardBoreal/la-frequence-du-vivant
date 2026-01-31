@@ -392,6 +392,95 @@ export const softBreakLongTokens = (text: string): string => {
 };
 
 /**
+ * Remove characters that are known to destabilize @react-pdf/renderer/Yoga.
+ *
+ * In practice, we most often see crashes when:
+ * - numeric HTML entities were decoded into lone UTF-16 surrogates (old fromCharCode)
+ * - bidirectional control chars exist (RLO/LRO/FSI/etc.)
+ * - non-BMP chars (emoji, some symbols) are present but not supported by the registered fonts
+ */
+export const stripUnsafePdfChars = (input: string): string => {
+  if (!input) return '';
+
+  const normalized = input.normalize('NFC');
+  let out = '';
+
+  for (const ch of normalized) {
+    const cp = ch.codePointAt(0) ?? 0;
+
+    // Keep newlines, normalize tabs to spaces
+    if (cp === 0x0a) {
+      out += '\n';
+      continue;
+    }
+    if (cp === 0x09) {
+      out += ' ';
+      continue;
+    }
+    if (cp === 0x0d) {
+      continue; // drop CR
+    }
+
+    // Drop ASCII control chars
+    if (cp < 0x20 || cp === 0x7f) continue;
+
+    // Drop BiDi control characters + BOM
+    const isBidi =
+      cp === 0x200e || // LRM
+      cp === 0x200f || // RLM
+      cp === 0x061c || // ALM
+      (cp >= 0x202a && cp <= 0x202e) || // LRE..RLO, PDF
+      (cp >= 0x2066 && cp <= 0x2069) || // LRI..PDI
+      cp === 0xfeff; // BOM
+    if (isBidi) continue;
+
+    // Drop non-BMP characters (emoji, rare symbols) for maximum font/layout stability
+    if (cp > 0xffff) continue;
+
+    // Drop lone surrogates (can happen after bad entity decoding)
+    if (cp >= 0xd800 && cp <= 0xdfff) continue;
+
+    // Normalize unicode line/paragraph separators to newlines
+    if (cp === 0x2028 || cp === 0x2029) {
+      out += '\n';
+      continue;
+    }
+
+    out += ch;
+  }
+
+  return out;
+};
+
+const decodeNumericEntities = (text: string): string => {
+  // Decimal entities
+  let out = text.replace(/&#(\d+);/g, (_m, code: string) => {
+    const cp = Number.parseInt(code, 10);
+    if (!Number.isFinite(cp) || cp < 0 || cp > 0x10ffff) return '';
+    if (cp >= 0xd800 && cp <= 0xdfff) return '';
+    try {
+      return String.fromCodePoint(cp);
+    } catch {
+      return '';
+    }
+  });
+
+  // Hex entities
+  out = out.replace(/&#x([0-9a-f]+);/gi, (_m, hex: string) => {
+    const cp = Number.parseInt(hex, 16);
+    if (!Number.isFinite(cp) || cp < 0 || cp > 0x10ffff) return '';
+    if (cp >= 0xd800 && cp <= 0xdfff) return '';
+    try {
+      return String.fromCodePoint(cp);
+    } catch {
+      return '';
+    }
+  });
+
+  return out;
+};
+
+/**
  * Clean HTML content for PDF (strip tags, preserve line breaks)
  * 
  * CRITICAL: This function now includes softBreakLongTokens as FINAL step
@@ -444,7 +533,8 @@ export const sanitizeContentForPdf = (html: string): string => {
   text = text.replace(/&OElig;/g, 'Œ');
   text = text.replace(/&aelig;/g, 'æ');
   text = text.replace(/&AElig;/g, 'Æ');
-  text = text.replace(/&#(\d+);/g, (_, code) => String.fromCharCode(parseInt(code)));
+  // IMPORTANT: use fromCodePoint (fromCharCode breaks for codepoints > 0xFFFF)
+  text = decodeNumericEntities(text);
   
   // ===== STEP 7: Clean up excessive whitespace while preserving intentional line breaks =====
   text = text.replace(/[ \t]+/g, ' ');
@@ -452,6 +542,9 @@ export const sanitizeContentForPdf = (html: string): string => {
   text = text.replace(/[ \t]+\n/g, '\n');
   // Reduce excessive newlines to max 2 (paragraph break)
   text = text.replace(/\n{3,}/g, '\n\n');
+
+  // ===== STEP 7b: Strip unicode chars that can destabilize Yoga =====
+  text = stripUnsafePdfChars(text);
   
   // ===== STEP 8: CRITICAL - Break long tokens to prevent Yoga crashes =====
   // This is the final safety net against "unsupported number" layout crashes
