@@ -1,116 +1,156 @@
 
-Contexte / ce qui se passe (factuel)
-- L’erreur affichée “Erreur lors de la génération du PDF” est juste un message générique.
-- Le vrai crash (console) est : `Error: unsupported number: -1.3139137915487854e+21` et il vient de `@react-pdf/renderer` pendant `renderText`.
-- Ce type d’erreur est un crash du moteur de layout (Yoga) : il calcule une coordonnée de placement de texte complètement invalide (énorme valeur négative), généralement à cause d’un bloc impossible à mettre en page (overflow, contraintes incompatibles, pourcentages, éléments “unbreakable” trop grands, etc.).
 
-Do I know what the issue is?
-- Oui, je sais ce qui se passe côté moteur : Yoga “overflow” et part en valeurs astronomiques.
-- Ce que je dois encore verrouiller à 100% : quel bloc exact déclenche ce débordement dans notre document.
-- Mais il y a un coupable très probable dans notre code actuel : dans `IndexKeywordsPage`, chaque catégorie est rendue dans un `<View wrap={false}>` qui englobe potentiellement des dizaines de lignes. Si une catégorie ne tient pas sur une page, elle devient “impossible à poser”, et React-PDF peut crasher avec précisément ce type de “unsupported number”.
-- Deux autres facteurs connus qui aggravent ce crash existent encore chez nous : des `maxWidth: 'xx%'` et des `height: '100%'` dans les styles, qui sont régulièrement cités comme déclencheurs/accélérateurs d’instabilité Yoga sur des documents longs.
+# Plan de Correction — Résoudre définitivement le crash "unsupported number"
 
-Objectif
-- Obtenir à nouveau un export PDF qui se génère systématiquement (zéro crash), puis réintroduire les optimisations typographiques sans valeurs/contraintes instables.
-- Conserver la pagination dynamique (le but initial) et restaurer les index sans rendre le layout “impossible”.
+## Diagnostic Final
 
-Plan de correction (robuste, en 2 passes)
+L'erreur `unsupported number: -1.3e+21` persiste car il reste des contraintes de layout problématiques :
 
-Phase A — Stopper le crash (fix structurel le plus probable)
-1) Corriger `IndexKeywordsPage` pour autoriser les sauts de page à l’intérieur d’une catégorie
-   - Fichier : `src/utils/pdfPageComponents.tsx`
-   - Problème actuel :
-     - `entries.map(... <View key={cIndex} wrap={false}> ... {categoryEntry.keywords.map(...)} </View>)`
-     - Toute la catégorie est “insécable”, donc si elle dépasse une page => layout impossible.
-   - Correction :
-     - Supprimer `wrap={false}` sur le conteneur de catégorie.
-     - Appliquer une stratégie “garder l’en-tête avec au moins la 1ère ligne” (comme on le fait déjà dans `IndexGenresPage`) :
-       - `wrap={false}` sur un petit bloc qui contient :
-         - le `CategoryBox`
-         - + le premier keyword (si présent)
-       - laisser le reste des keywords s’écouler normalement (sans `wrap={false}` global).
-   - Résultat attendu :
-     - Les catégories longues se répartissent sur plusieurs pages au lieu de faire planter Yoga.
+| Problème | Fichier | Ligne | Impact |
+|----------|---------|-------|--------|
+| `height: '100%'` | `pdfStyleGenerator.ts` | 424 | Force Yoga à calculer des hauteurs relatives instables |
+| `wrap={false}` global sur Marche | `pdfPageComponents.tsx` | 503 | Si une Marche contient beaucoup de types de textes, le bloc dépasse une page et crashe |
+| `wrap={false}` sur TocEntry | `pdfPageComponents.tsx` | 187 | Risque mineur si titres très longs |
+| Footer manuel dans TocPage | `pdfPageComponents.tsx` | 207-211 | Incohérence potentielle avec le reste du document |
 
-2) Rendre les lignes “keyword” plus tolérantes aux contenus longs
-   - Fichiers :
-     - `src/utils/pdfStyleGenerator.ts` (styles index)
-     - `src/utils/pdfPageComponents.tsx` (si besoin)
-   - Ajustements :
-     - Donner `flexShrink: 1` au texte de gauche (`indexKeywordName`) pour éviter qu’il force un overflow horizontal.
-     - S’assurer que la colonne “pages” ne pousse pas le layout (garder `flexShrink: 0` côté pages).
-     - Optionnel : tronquer proprement les libellés très longs (rare, mais protège Yoga).
+## Plan d'Action
 
-Phase B — Retirer les patterns connus pour déclencher “unsupported number”
-3) Éliminer les valeurs en pourcentage dans les styles PDF (remplacer par valeurs numériques en points)
-   - Fichier : `src/utils/pdfStyleGenerator.ts`
-   - À corriger :
-     - `coverContent.maxWidth: '85%'`
-     - `indexGenreLieu.maxWidth: '70%'`
-   - Remplacement recommandé :
-     - Calculer une largeur “safe” numérique à partir des dimensions de page déjà disponibles dans `generatePdfStyles()` :
-       - Exemple : `const safeWidth = dimensions.width - mmToPoints(40);`
-     - Utiliser `width: safeWidth` ou `maxWidth: safeWidth` (numérique) au lieu de `%`.
-   - Bénéfice :
-     - Yoga n’a plus à résoudre des % dans des contextes flex/wrap complexes sur 150+ pages.
+### Correction 1 : Remplacer `height: '100%'` dans `partiePage`
 
-4) Remplacer `height: '100%'` par des primitives flex stables
-   - Fichier : `src/utils/pdfStyleGenerator.ts`
-   - À corriger :
-     - `fauxTitrePage.height: '100%'`
-     - `colophonPage.height: '100%'`
-   - Remplacement :
-     - `flexGrow: 1` (ou `flex: 1`) + conserver `justifyContent` / `alignItems`.
-   - Bénéfice :
-     - évite des calculs de hauteur relatifs parfois instables dans Yoga.
+**Fichier** : `src/utils/pdfStyleGenerator.ts`
 
-5) Stabiliser la couverture (optionnel mais fortement conseillé)
-   - Fichier : `src/utils/pdfStyleGenerator.ts`
-   - On a actuellement des propriétés non standards pour React-PDF sur le titre :
-     - `hyphens: 'none'` et `wordBreak: 'keep-all'` (injectées via `@ts-ignore`)
-   - Même si ça “marche parfois”, c’est typiquement le genre de propriété qui peut produire des comportements imprévisibles sur certains contenus/polices.
-   - Correction :
-     - Retirer ces propriétés non supportées.
-     - Assurer la non-coupure de mots d’une autre manière :
-       - imposer une largeur numérique stable au conteneur (étape 3)
-       - et si nécessaire, faire un “line break” manuel dans le titre sur des séparateurs sûrs (`:`, `—`, `-`) plutôt que de demander à Yoga une règle de césure non supportée.
+```typescript
+// AVANT (ligne 419-425)
+partiePage: {
+  display: 'flex',
+  flexDirection: 'column',
+  justifyContent: 'center',
+  alignItems: 'center',
+  height: '100%',  // PROBLÈME
+},
 
-6) Harmoniser la pagination de la table des matières (nettoyage)
-   - Fichier : `src/utils/pdfPageComponents.tsx`
-   - Aujourd’hui `TocPage` n’utilise pas `PageFooter`, mais un `<Text fixed style={styles.pageNumber} .../>` sans `left/right`.
-   - Par prudence :
-     - soit on remplace par `PageFooter` (avec option “preface” si on veut le style romain),
-     - soit on fixe explicitement `left/right` pour éviter toute coordonnée implicite.
-   - Ce point est moins suspect que l’index keywords, mais c’est une source de variabilité inutile.
+// APRÈS
+partiePage: {
+  display: 'flex',
+  flexDirection: 'column',
+  justifyContent: 'center',
+  alignItems: 'center',
+  flexGrow: 1,  // STABLE
+},
+```
 
-Instrumentation (pour ne plus “deviner” si un autre bloc casse)
-7) Améliorer le message d’erreur pour afficher la vraie cause
-   - Fichier : `src/components/admin/PdfExportPanel.tsx`
-   - Actuellement on masque tout derrière “Erreur lors de la génération du PDF”.
-   - Amélioration :
-     - Afficher un toast du type : “PDF: unsupported number (layout). Correction en cours.” + log détaillé console.
-     - (Optionnel) Ajouter un mode diagnostic qui tente un export sans index thématique pour confirmer en 1 clic que c’est bien cette section.
+### Correction 2 : Refactorer `IndexLieuxPage` pour autoriser les sauts de page
 
-Critères d’acceptation (ce que je validerai après implémentation)
-- L’export PDF se génère sans erreur (plus de `unsupported number` dans la console).
-- Le PDF produit s’ouvre et la numérotation de page monte jusqu’à la fin réelle (ex: ~157).
-- L’index thématique :
-  - peut s’étaler sur plusieurs pages
-  - ne coupe pas de façon “sale” le cartouche de catégorie (au minimum, catégorie + 1er item restent ensemble)
-- Aucune régression visuelle majeure sur couverture / faux-titre / colophon.
+**Fichier** : `src/utils/pdfPageComponents.tsx`
 
-Fichiers concernés
-- `src/utils/pdfPageComponents.tsx` (IndexKeywordsPage + éventuellement TocPage)
-- `src/utils/pdfStyleGenerator.ts` (suppression % + suppression height: '100%' + ajustements flexShrink)
-- `src/components/admin/PdfExportPanel.tsx` (meilleur reporting + éventuel mode diagnostic)
+**Problème actuel** : Tout le bloc Marche (nom + tous les types) est `wrap={false}`. Si une Marche a 10+ types, cela peut dépasser une page.
 
-Risques / arbitrages
-- En rendant l’index thématique “wrappable”, la catégorie pourra se retrouver sur 2+ pages (c’est le comportement normal et attendu pour un index volumineux).
-- Si on retire `wordBreak/hyphens` sur la couverture, il faudra éventuellement contrôler les retours à la ligne du titre via largeur numérique et/ou retours manuels sur séparateurs, pour préserver l’intention artistique (sans demander au moteur des propriétés non supportées).
+**Solution** : Appliquer la même stratégie que pour `IndexKeywordsPage` — garder uniquement l'en-tête avec le premier type ensemble, laisser le reste couler normalement.
 
-Ordre d’exécution recommandé
-1) Fix `IndexKeywordsPage` (wrap)
-2) Retirer % + height:'100%'
-3) Nettoyage TocPage (pagination homogène)
-4) Ajustements couverture (hyphens/wordBreak)
-5) Amélioration message d’erreur / mode diagnostic
+```typescript
+// AVANT (ligne 502-518)
+{partieEntry.marches.map((marche, mIndex) => (
+  <View key={mIndex} style={styles.indexLieuxMarcheBlock as Style} wrap={false}>
+    <Text style={styles.indexLieuxMarcheEntry as Style}>{marche.nom}</Text>
+    {marche.types.map((typeEntry, tIndex) => (
+      <View key={tIndex} style={styles.indexLieuxTypeRow as Style}>
+        {/* ... */}
+      </View>
+    ))}
+  </View>
+))}
+
+// APRÈS
+{partieEntry.marches.map((marche, mIndex) => {
+  const [firstType, ...restTypes] = marche.types;
+  return (
+    <View key={mIndex}>
+      {/* Garde le nom de la Marche avec le premier type ensemble */}
+      <View wrap={false} style={styles.indexLieuxMarcheBlock as Style}>
+        <Text style={styles.indexLieuxMarcheEntry as Style}>{marche.nom}</Text>
+        {firstType && (
+          <View style={styles.indexLieuxTypeRow as Style}>
+            <Text style={styles.indexLieuxTypeName as Style}>{firstType.type}</Text>
+            <View style={styles.indexLieuxDotLeader as Style} />
+            <Text style={styles.indexLieuxPages as Style}>{firstType.pages.join(', ')}</Text>
+          </View>
+        )}
+      </View>
+      {/* Le reste des types peut couler normalement */}
+      {restTypes.map((typeEntry, tIndex) => (
+        <View key={tIndex} style={styles.indexLieuxTypeRow as Style}>
+          <Text style={styles.indexLieuxTypeName as Style}>{typeEntry.type}</Text>
+          <View style={styles.indexLieuxDotLeader as Style} />
+          <Text style={styles.indexLieuxPages as Style}>{typeEntry.pages.join(', ')}</Text>
+        </View>
+      ))}
+    </View>
+  );
+})}
+```
+
+### Correction 3 : Ajouter `flexShrink: 1` aux textes de lieu/type (protection overflow horizontal)
+
+**Fichier** : `src/utils/pdfStyleGenerator.ts`
+
+Ajouter `flexShrink: 1` aux styles suivants pour empêcher les textes longs de pousser le layout :
+
+```typescript
+indexLieuxTypeName: {
+  // ... existing styles ...
+  flexShrink: 1,  // AJOUTER
+},
+indexGenreTitle: {
+  // ... existing styles ...
+  flexShrink: 1,  // AJOUTER
+},
+```
+
+### Correction 4 : Harmoniser le footer de TocPage avec PageFooter
+
+**Fichier** : `src/utils/pdfPageComponents.tsx`
+
+Remplacer le `<Text fixed>` manuel par le composant `PageFooter` standard :
+
+```typescript
+// AVANT (lignes 206-211)
+<Text
+  style={styles.pageNumber as Style}
+  fixed
+  render={({ pageNumber }) => formatPageNumber(pageNumber, options.pageNumberStyle, true)}
+/>
+
+// APRÈS
+<PageFooter 
+  styles={styles} 
+  options={{...options, pageNumberStyle: 'roman-lower'}} 
+/>
+```
+
+## Section Technique
+
+### Pourquoi `height: '100%'` cause le crash
+
+Le moteur Yoga (utilisé par `@react-pdf/renderer`) doit résoudre les dimensions de chaque élément. Quand un élément utilise `height: '100%'` dans un contexte flex complexe avec des pages multiples, Yoga peut :
+1. Calculer une hauteur "infinie" s'il n'y a pas de contrainte parente explicite
+2. Propager cette valeur invalide aux coordonnées de placement
+3. Produire des nombres comme `-1.3e+21` qui crashent le moteur de rendu
+
+### Pourquoi `wrap={false}` sur des blocs volumineux crash
+
+`wrap={false}` dit à React-PDF : "Ne coupe pas ce bloc, même s'il dépasse la page". Si le bloc est plus grand que la zone disponible, le moteur tente de le placer quand même et calcule des coordonnées négatives impossibles.
+
+## Fichiers à Modifier
+
+| Fichier | Modifications |
+|---------|--------------|
+| `src/utils/pdfStyleGenerator.ts` | `height: '100%'` → `flexGrow: 1` dans `partiePage` ; ajouter `flexShrink: 1` |
+| `src/utils/pdfPageComponents.tsx` | Refactorer `IndexLieuxPage` pour wrapper uniquement en-tête+premier type ; harmoniser `TocPage` footer |
+
+## Résultat Attendu
+
+- Zéro crash "unsupported number"
+- Les index peuvent s'étaler sur plusieurs pages proprement
+- L'en-tête de chaque section reste collé au premier élément (pas d'orphelins visuels)
+- Cohérence du footer sur tout le document
+
