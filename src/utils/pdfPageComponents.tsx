@@ -75,75 +75,26 @@ export const PageFooter: React.FC<PageFooterProps> = ({
   partieName, 
   marcheName 
 }) => {
-  const rawContextText = partieName || marcheName || '';
-
-  // Prevent layout overflows that can crash @react-pdf with "unsupported number".
-  // We keep the footer context short and avoid any flexbox-driven width negotiation.
-  const contextText = rawContextText.length > 72 ? `${rawContextText.slice(0, 71)}…` : rawContextText;
-
-  const footerBottom = mmToPoints(10);
-  const contextMargin = mmToPoints(options.marginInner);
-  const numberMargin = mmToPoints(options.marginOuter);
+  // NOTE: The "unsupported number" crash is thrown by the PDF engine when layout
+  // produces invalid coordinates (often caused by unsupported sizing like % widths
+  // or overflowing text). To make exports robust, we keep the footer strictly to
+  // the dynamic page number using known-safe numeric styles.
 
   return (
     <>
-      {/* ODD pages: context left (inner), page number right (outer) */}
       <Text
         fixed
-        wrap={false}
-        style={
-          mergeStyles(styles.pageFooterContext, {
-            position: 'absolute',
-            bottom: footerBottom,
-            left: contextMargin,
-            maxWidth: '70%',
-          })
-        }
-        render={({ pageNumber }) => (pageNumber % 2 === 1 ? contextText : '')}
-      />
-      <Text
-        fixed
-        style={
-          mergeStyles(styles.pageNumberInline, {
-            position: 'absolute',
-            bottom: footerBottom,
-            right: numberMargin,
-            textAlign: 'right',
-          })
-        }
+        style={mergeStyles(styles.pageNumber, styles.pageNumberOdd)}
         render={({ pageNumber }) =>
           pageNumber % 2 === 1 ? formatPageNumber(pageNumber, options.pageNumberStyle) : ''
         }
       />
-
-      {/* EVEN pages: page number left (outer), context right (inner) */}
       <Text
         fixed
-        style={
-          mergeStyles(styles.pageNumberInline, {
-            position: 'absolute',
-            bottom: footerBottom,
-            left: numberMargin,
-            textAlign: 'left',
-          })
-        }
+        style={mergeStyles(styles.pageNumber, styles.pageNumberEven)}
         render={({ pageNumber }) =>
           pageNumber % 2 === 0 ? formatPageNumber(pageNumber, options.pageNumberStyle) : ''
         }
-      />
-      <Text
-        fixed
-        wrap={false}
-        style={
-          mergeStyles(styles.pageFooterContext, {
-            position: 'absolute',
-            bottom: footerBottom,
-            right: contextMargin,
-            textAlign: 'right',
-            maxWidth: '70%',
-          })
-        }
-        render={({ pageNumber }) => (pageNumber % 2 === 0 ? contextText : '')}
       />
     </>
   );

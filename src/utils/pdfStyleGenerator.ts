@@ -848,7 +848,6 @@ export const generatePdfStyles = (options: PdfExportOptions): PdfStylesRaw => {
       fontSize: baseFontSize * 0.7,
       color: colorScheme.secondary,
       fontStyle: 'italic',
-      maxWidth: '70%',
     },
     pageNumber: {
       position: 'absolute',
