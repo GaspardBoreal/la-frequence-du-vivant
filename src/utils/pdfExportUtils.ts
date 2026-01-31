@@ -382,12 +382,15 @@ export const softBreakLongTokens = (text: string): string => {
   return text.split(' ').map(word => {
     if (word.length <= MAX_TOKEN_LENGTH) return word;
     
-    // Insert zero-width space every SOFT_BREAK_INTERVAL chars
+    // Insert REGULAR spaces every SOFT_BREAK_INTERVAL chars.
+    // NOTE: We previously used ZWSP (U+200B) to keep the word visually intact,
+    // but this character can be hard to debug and may trigger Yoga layout issues
+    // depending on font/glyph fallback. Regular spaces are more robust.
     const chunks: string[] = [];
     for (let i = 0; i < word.length; i += SOFT_BREAK_INTERVAL) {
       chunks.push(word.slice(i, i + SOFT_BREAK_INTERVAL));
     }
-    return chunks.join('\u200B');
+    return chunks.join(' ');
   }).join(' ');
 };
 
