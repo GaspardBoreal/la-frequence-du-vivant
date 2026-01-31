@@ -338,7 +338,7 @@ const limitFirstParagraph = (
 };
 
 // ============================================================================
-// PAGE FOOTER COMPONENT (Context + Dynamic Page Number via Render Prop)
+// PAGE FOOTER COMPONENT (Context + STATIC Page Number)
 // ============================================================================
 
 interface PageFooterProps {
@@ -346,61 +346,49 @@ interface PageFooterProps {
   options: PdfExportOptions;
   partieName?: string;
   marcheName?: string;
+  pageNumber: number; // REQUIRED: Static page number calculated at document assembly
+  isPrefacePage?: boolean; // For roman numeral style (TOC pages)
 }
 
 /**
- * Dynamic footer using @react-pdf/renderer's render prop
+ * STATIC footer - NO render prop, 100% stable with Yoga layout engine
  * 
- * CRITICAL FIX (v3): react-pdf's render prop on <Text> IGNORES position:absolute
- * even when nested inside a <View fixed>. The <Text render> floats to the 
- * document flow insertion point (middle of page).
+ * This approach calculates page numbers at document assembly time and
+ * passes them as static props, eliminating all instability from the
+ * render prop which caused numbers to "float" in the document flow.
  * 
- * SOLUTION: Return TWO FLAT <Text fixed> siblings (React Fragment):
- * 1. Context text (left) - static, uses pageFooterContext (works fine)
- * 2. Page number (right) - render prop, uses pageNumberRenderFixedRight
- *    with EXPLICIT NUMERIC WIDTH instead of 'right:' property
- * 
- * The key insight: Yoga respects absolute positioning on <Text fixed>
- * when it has an EXPLICIT WIDTH constraint. Using 'right:' alone can be
- * ignored during the render pass.
- * 
- * Layout rules (agreed upon):
- * - Si présence de Partie: à gauche le nom de la partie / à droite le numéro de page
- * - Si pas de Partie: à gauche le nom de la marche / à droite le numéro de page
+ * Layout rules:
+ * - Left: Context (Partie name if exists, otherwise Marche name)
+ * - Right: Static page number (arabic or roman based on options)
  */
 export const PageFooter: React.FC<PageFooterProps> = ({ 
   styles, 
   options, 
   partieName, 
-  marcheName 
+  marcheName,
+  pageNumber,
+  isPrefacePage = false,
 }) => {
   // Context text: prefer partie name, fallback to marche name
   const contextText = partieName || marcheName || '';
+  
+  // Format the page number - use roman for preface pages (TOC)
+  const formattedNumber = isPrefacePage
+    ? formatPageNumber(pageNumber, 'roman-preface')
+    : formatPageNumber(pageNumber, options.pageNumberStyle);
 
   return (
     <>
-      {/* Left side: context (partie or marche name) - static text, absolute positioning works */}
+      {/* Left side: context (partie or marche name) */}
       <Text fixed style={styles.pageFooterContext}>
         {contextText}
       </Text>
-      {/* Right side: page number - render prop with EXPLICIT WIDTH (not 'right:') */}
-      {/* CRITICAL: This MUST be a direct child of Page with fixed + explicit width */}
-      <Text 
-        fixed
-        style={styles.pageNumberRenderFixedRight}
-        render={({ pageNumber }) => formatPageNumber(pageNumber, options.pageNumberStyle)}
-      />
+      {/* Right side: STATIC page number - no render prop */}
+      <Text fixed style={styles.pageNumberStatic}>
+        {formattedNumber}
+      </Text>
     </>
   );
-};
-
-// Legacy PageFooter for components that still pass pageNumber (backwards compatibility)
-interface LegacyPageFooterProps extends PageFooterProps {
-  pageNumber?: number; // Now optional, ignored in favor of render prop
-}
-
-export const LegacyPageFooter: React.FC<LegacyPageFooterProps> = (props) => {
-  return <PageFooter {...props} />;
 };
 
 // ============================================================================
@@ -465,9 +453,10 @@ interface TocPageProps {
   entries: TocEntry[];
   options: PdfExportOptions;
   styles: PdfStylesRaw;
+  pageNumber: number; // Static page number
 }
 
-export const TocPage: React.FC<TocPageProps> = ({ entries, options, styles }) => {
+export const TocPage: React.FC<TocPageProps> = ({ entries, options, styles, pageNumber }) => {
   const dimensions = getPageDimensions(options);
   
   return (
@@ -497,7 +486,12 @@ export const TocPage: React.FC<TocPageProps> = ({ entries, options, styles }) =>
         ))}
       </View>
       
-      <PageFooter styles={styles} options={{...options, pageNumberStyle: 'roman-preface'}} />
+      <PageFooter 
+        styles={styles} 
+        options={options}
+        pageNumber={pageNumber}
+        isPrefacePage={true}
+      />
     </Page>
   );
 };
@@ -510,9 +504,10 @@ interface PartiePageProps {
   partie: PartieData;
   options: PdfExportOptions;
   styles: PdfStylesRaw;
+  pageNumber: number; // Static page number
 }
 
-export const PartiePage: React.FC<PartiePageProps> = ({ partie, options, styles }) => {
+export const PartiePage: React.FC<PartiePageProps> = ({ partie, options, styles, pageNumber }) => {
   const dimensions = getPageDimensions(options);
   
   return (
@@ -527,6 +522,13 @@ export const PartiePage: React.FC<PartiePageProps> = ({ partie, options, styles 
           <Text style={styles.partieSeparator as Style}>───────────────────</Text>
         </View>
       </View>
+      
+      <PageFooter 
+        styles={styles} 
+        options={options}
+        pageNumber={pageNumber}
+        partieName={partie.titre}
+      />
     </Page>
   );
 };
@@ -615,9 +617,10 @@ interface FablePageProps {
   content: string;
   partieName?: string;
   marcheName?: string;
+  pageNumber: number; // Static page number
 }
 
-export const FablePage: React.FC<FablePageProps> = ({ texte, options, styles, content, partieName, marcheName }) => {
+export const FablePage: React.FC<FablePageProps> = ({ texte, options, styles, content, partieName, marcheName, pageNumber }) => {
   const dimensions = getPageDimensions(options);
   
   // Detect and extract moral from content (common patterns: "Morale :", "MORALE", "La morale")
@@ -683,6 +686,7 @@ export const FablePage: React.FC<FablePageProps> = ({ texte, options, styles, co
         options={options}
         partieName={partieName}
         marcheName={marcheName}
+        pageNumber={pageNumber}
       />
     </Page>
   );
@@ -700,6 +704,7 @@ interface TextePageProps {
   marche?: MarcheData;
   partieName?: string;
   marcheName?: string;
+  basePageNumber: number; // Static base page number for this text
 }
 
 export const TextePage: React.FC<TextePageProps> = ({ 
@@ -710,6 +715,7 @@ export const TextePage: React.FC<TextePageProps> = ({
   marche,
   partieName,
   marcheName,
+  basePageNumber,
 }) => {
   const dimensions = getPageDimensions(options);
   const content = sanitizeContentForPdf(texte.contenu);
@@ -733,6 +739,7 @@ export const TextePage: React.FC<TextePageProps> = ({
           options={options}
           partieName={partieName}
           marcheName={marcheName}
+          pageNumber={basePageNumber}
         />
       </Page>
     );
@@ -747,6 +754,7 @@ export const TextePage: React.FC<TextePageProps> = ({
         content={content}
         partieName={partieName}
         marcheName={marcheName}
+        pageNumber={basePageNumber}
       />
     );
   }
@@ -777,6 +785,7 @@ export const TextePage: React.FC<TextePageProps> = ({
       {paginated.map((pageParagraphs, pageIndex) => {
         const isFirst = pageIndex === 0;
         const isLast = pageIndex === paginated.length - 1;
+        const currentPageNumber = basePageNumber + pageIndex;
 
         return (
           <Page
@@ -816,6 +825,7 @@ export const TextePage: React.FC<TextePageProps> = ({
               options={options}
               partieName={partieName}
               marcheName={marcheName}
+              pageNumber={currentPageNumber}
             />
           </Page>
         );
@@ -847,9 +857,10 @@ interface IndexLieuxPageProps {
   entries: IndexLieuxEntry[];
   options: PdfExportOptions;
   styles: PdfStylesRaw;
+  pageNumber: number; // Static page number
 }
 
-export const IndexLieuxPage: React.FC<IndexLieuxPageProps> = ({ entries, options, styles }) => {
+export const IndexLieuxPage: React.FC<IndexLieuxPageProps> = ({ entries, options, styles, pageNumber }) => {
   const dimensions = getPageDimensions(options);
   
   return (
@@ -900,7 +911,7 @@ export const IndexLieuxPage: React.FC<IndexLieuxPageProps> = ({ entries, options
         ))}
       </View>
       
-      <PageFooter styles={styles} options={options} />
+      <PageFooter styles={styles} options={options} pageNumber={pageNumber} />
     </Page>
   );
 };
@@ -922,12 +933,13 @@ interface IndexGenresPageProps {
   entries: IndexGenreEntry[];
   options: PdfExportOptions;
   styles: PdfStylesRaw;
+  pageNumber: number; // Static page number
 }
 
 // Predefined order for genres (matching Word export)
 const GENRE_ORDER = ['Haïku', 'Senryū', 'Fable', 'Poème', 'Manifeste', 'Prose', 'Autre'];
 
-export const IndexGenresPage: React.FC<IndexGenresPageProps> = ({ entries, options, styles }) => {
+export const IndexGenresPage: React.FC<IndexGenresPageProps> = ({ entries, options, styles, pageNumber }) => {
   const dimensions = getPageDimensions(options);
   
   // Sort entries by predefined genre order
@@ -986,7 +998,7 @@ export const IndexGenresPage: React.FC<IndexGenresPageProps> = ({ entries, optio
         })}
       </View>
       
-      <PageFooter styles={styles} options={options} />
+      <PageFooter styles={styles} options={options} pageNumber={pageNumber} />
     </Page>
   );
 };
@@ -1007,9 +1019,10 @@ interface IndexKeywordsPageProps {
   entries: IndexKeywordEntry[];
   options: PdfExportOptions;
   styles: PdfStylesRaw;
+  pageNumber: number; // Static page number
 }
 
-export const IndexKeywordsPage: React.FC<IndexKeywordsPageProps> = ({ entries, options, styles }) => {
+export const IndexKeywordsPage: React.FC<IndexKeywordsPageProps> = ({ entries, options, styles, pageNumber }) => {
   const dimensions = getPageDimensions(options);
   
   // Truncate long keyword names to avoid horizontal overflow (Yoga crash prevention)
@@ -1057,7 +1070,7 @@ export const IndexKeywordsPage: React.FC<IndexKeywordsPageProps> = ({ entries, o
         })}
       </View>
       
-      <PageFooter styles={styles} options={options} />
+      <PageFooter styles={styles} options={options} pageNumber={pageNumber} />
     </Page>
   );
 };
@@ -1199,8 +1212,48 @@ export const PdfDocument: React.FC<PdfDocumentProps> = ({ textes, options, parti
     ? buildIndexKeywordsData(textes, pageMapping, options.selectedKeywordCategories)
     : [];
   
-  // Note: Manual page counting removed - @react-pdf/renderer's render prop 
-  // now handles dynamic page numbering automatically in PageFooter
+  // =========================================================================
+  // STATIC PAGE NUMBER CALCULATION
+  // =========================================================================
+  // Calculate page numbers at document assembly time for stable footer rendering.
+  // This eliminates all instability from react-pdf's render prop.
+  
+  let currentPageNumber = options.startPageNumber;
+  
+  // Cover and Faux-Titre don't have footers
+  if (options.includeCover) currentPageNumber++;
+  if (options.includeFauxTitre) currentPageNumber++;
+  
+  // TOC page number (for preface roman numerals)
+  const tocPageNumber = currentPageNumber;
+  if (options.includeTableOfContents && tocEntries.length > 0) currentPageNumber++;
+  
+  // Build page assignments for each grouped item
+  const pageAssignments: Map<string, number> = new Map();
+  
+  groupedContent.forEach((item) => {
+    if (item.type === 'partie' && item.partie) {
+      pageAssignments.set(`partie-${item.partie.id}`, currentPageNumber);
+      currentPageNumber++;
+    } else if (item.type === 'texte' && item.texte) {
+      pageAssignments.set(`texte-${item.texte.id}`, currentPageNumber);
+      // Add estimated pages for this text
+      const estimatedPages = estimatePages(item.texte);
+      currentPageNumber += estimatedPages;
+    }
+  });
+  
+  // Index page numbers
+  const indexLieuxPageNumber = currentPageNumber;
+  if (options.includeIndexLieux && indexLieuxEntries.length > 0) currentPageNumber++;
+  
+  const indexGenresPageNumber = currentPageNumber;
+  if (options.includeIndexGenres && indexGenresEntries.length > 0) currentPageNumber++;
+  
+  const indexKeywordsPageNumber = currentPageNumber;
+  if (options.includeIndexKeywords && indexKeywordsEntries.length > 0) currentPageNumber++;
+  
+  // Colophon doesn't have footer (optional)
   
   return (
     <Document
@@ -1222,18 +1275,21 @@ export const PdfDocument: React.FC<PdfDocumentProps> = ({ textes, options, parti
         <TocPage 
           entries={tocEntries} 
           options={options} 
-          styles={styles} 
+          styles={styles}
+          pageNumber={tocPageNumber}
         />
       )}
       
       {groupedContent.map((item) => {
         if (item.type === 'partie' && item.partie) {
+          const partiePageNumber = pageAssignments.get(`partie-${item.partie.id}`) || 1;
           return (
             <PartiePage 
               key={`partie-${item.partie.id}`}
               partie={item.partie}
               options={options}
               styles={styles}
+              pageNumber={partiePageNumber}
             />
           );
         }
@@ -1241,6 +1297,7 @@ export const PdfDocument: React.FC<PdfDocumentProps> = ({ textes, options, parti
         if (item.type === 'texte' && item.texte) {
           const partieName = item.currentPartie?.titre;
           const marcheName = item.marche?.nom || item.marche?.ville;
+          const basePageNumber = pageAssignments.get(`texte-${item.texte.id}`) || 1;
           
           return (
             <TextePage
@@ -1252,6 +1309,7 @@ export const PdfDocument: React.FC<PdfDocumentProps> = ({ textes, options, parti
               marche={item.marche}
               partieName={partieName}
               marcheName={marcheName}
+              basePageNumber={basePageNumber}
             />
           );
         }
@@ -1265,6 +1323,7 @@ export const PdfDocument: React.FC<PdfDocumentProps> = ({ textes, options, parti
           entries={indexLieuxEntries}
           options={options}
           styles={styles}
+          pageNumber={indexLieuxPageNumber}
         />
       )}
       
@@ -1274,6 +1333,7 @@ export const PdfDocument: React.FC<PdfDocumentProps> = ({ textes, options, parti
           entries={indexGenresEntries}
           options={options}
           styles={styles}
+          pageNumber={indexGenresPageNumber}
         />
       )}
       
@@ -1283,6 +1343,7 @@ export const PdfDocument: React.FC<PdfDocumentProps> = ({ textes, options, parti
           entries={indexKeywordsEntries}
           options={options}
           styles={styles}
+          pageNumber={indexKeywordsPageNumber}
         />
       )}
       
