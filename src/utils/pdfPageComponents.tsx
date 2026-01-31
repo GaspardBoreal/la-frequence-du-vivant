@@ -351,10 +351,12 @@ interface PageFooterProps {
 /**
  * Dynamic footer using @react-pdf/renderer's render prop
  * 
- * IMPORTANT: react-pdf only supports `render` on <Text> and <Image>, NOT on <View>.
- * Using render on a <View> causes unpredictable positioning (footer floats in middle of page).
+ * CRITICAL FIX: react-pdf's render prop on <Text> doesn't respect position:absolute.
+ * The Text with render floats to where it's inserted in the document flow.
  * 
- * Solution: Use two independent <Text fixed> elements with absolute positioning.
+ * SOLUTION: Use a FIXED <View> container that IS absolutely positioned,
+ * then place <Text> children inside using flexbox (space-between).
+ * This way, the container handles positioning, and render prop works normally.
  * 
  * Layout rules (agreed upon):
  * - Si présence de Partie: à gauche le nom de la partie / à droite le numéro de page
@@ -370,18 +372,17 @@ export const PageFooter: React.FC<PageFooterProps> = ({
   const contextText = partieName || marcheName || '';
 
   return (
-    <>
-      {/* Left side: context (partie or marche name) - static text, no render needed */}
-      <Text fixed style={styles.pageFooterContext}>
+    <View fixed style={styles.pageFooterBar}>
+      {/* Left side: context (partie or marche name) - static text */}
+      <Text style={styles.pageFooterContextInline}>
         {contextText}
       </Text>
       {/* Right side: page number - uses render for dynamic page number */}
       <Text 
-        fixed 
-        style={styles.pageNumberInline}
+        style={styles.pageNumberInlineText}
         render={({ pageNumber }) => formatPageNumber(pageNumber, options.pageNumberStyle)}
       />
-    </>
+    </View>
   );
 };
 

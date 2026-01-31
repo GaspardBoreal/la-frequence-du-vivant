@@ -241,6 +241,11 @@ export interface PdfStylesRaw {
   pageNumberEven: Style;
   pageNumberInline: Style;
   
+  // NEW: Fixed footer bar (container approach for stable positioning)
+  pageFooterBar: Style;
+  pageFooterContextInline: Style;
+  pageNumberInlineText: Style;
+  
   // Decorations
   separator: Style;
   ornament: Style;
@@ -852,10 +857,8 @@ export const generatePdfStyles = (options: PdfExportOptions): PdfStylesRaw => {
     },
     
     // =========== PAGE FOOTER (Context + Page Number) ===========
-    // IMPORTANT: Since react-pdf doesn't support `render` on <View>, we use
-    // two independent <Text fixed> elements with absolute positioning.
+    // LEGACY: Kept for backwards compatibility
     pageFooter: {
-      // Kept for backwards compatibility but no longer used directly
       position: 'absolute',
       bottom: mmToPoints(10),
       left: mmToPoints(options.marginInner),
@@ -873,7 +876,7 @@ export const generatePdfStyles = (options: PdfExportOptions): PdfStylesRaw => {
       right: mmToPoints(options.marginInner),
     },
     pageFooterContext: {
-      // Absolute positioning for left-aligned context text
+      // LEGACY: Absolute positioning (kept for compatibility)
       position: 'absolute',
       bottom: mmToPoints(10),
       left: mmToPoints(options.marginInner),
@@ -898,10 +901,38 @@ export const generatePdfStyles = (options: PdfExportOptions): PdfStylesRaw => {
       textAlign: 'left',
     },
     pageNumberInline: {
-      // Absolute positioning for right-aligned page number
+      // LEGACY: Absolute positioning (kept for compatibility)
       position: 'absolute',
       bottom: mmToPoints(10),
       right: mmToPoints(options.marginOuter),
+      fontFamily: typography.bodyFont,
+      fontSize: baseFontSize * 0.8,
+      color: colorScheme.secondary,
+      textAlign: 'right',
+    },
+    
+    // =========== NEW: FIXED FOOTER BAR (Container approach) ===========
+    // IMPORTANT: react-pdf's render prop on <Text> doesn't respect absolute positioning.
+    // Solution: Use a <View fixed> container that IS absolutely positioned,
+    // then place <Text> children inside with flexbox (no absolute needed on Text).
+    pageFooterBar: {
+      position: 'absolute',
+      bottom: mmToPoints(10),
+      left: mmToPoints(options.marginInner),
+      right: mmToPoints(options.marginOuter),
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'flex-end',
+    },
+    pageFooterContextInline: {
+      // NO position:absolute - positioned by parent flexbox
+      fontFamily: typography.bodyFont,
+      fontSize: baseFontSize * 0.7,
+      color: colorScheme.secondary,
+      fontStyle: 'italic',
+    },
+    pageNumberInlineText: {
+      // NO position:absolute - positioned by parent flexbox
       fontFamily: typography.bodyFont,
       fontSize: baseFontSize * 0.8,
       color: colorScheme.secondary,
