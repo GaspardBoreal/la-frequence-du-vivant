@@ -1,78 +1,70 @@
 
+## Constat (d’après tes captures)
+- Le texte de contexte (Partie/Marche) est bien “collé” en bas à gauche → donc `fixed` + `position: 'absolute'` fonctionne sur ce `<Text>` statique.
+- Le numéro de page reste “dans le flux” au milieu de la page → il se comporte comme si **son `position: 'absolute'` n’était pas pris en compte** (très probablement à cause de la combinaison `render` + positionnement direct sur le `<Text>` dans cette version de `@react-pdf/renderer` / Yoga).
 
-## Probleme identifie
+Autrement dit : **le problème n’est plus la logique “Partie vs Marche”, mais l’ancrage du `<Text render>`**.
 
-Le footer PDF apparait au milieu des pages au lieu d'etre en bas. La cause est technique :
+## Hypothèse technique (la plus plausible)
+`@react-pdf/renderer` gère parfois mal le positionnement absolu d’un `<Text>` quand il utilise `render={() => ...}` (le texte est mesuré/rendu différemment), ce qui fait que le composant se place au point d’insertion dans la page (donc au milieu), malgré `fixed`.
 
-**Dans `@react-pdf/renderer`, la prop `render` n'est supportee que sur les composants `<Text>` et `<Image>`, pas sur `<View>`.**
+## Solution proposée (robuste)
+Revenir à la stratégie “conteneur fixe” (celle qu’on voulait au début), **sans jamais mettre `render` sur `<View>`** :
 
-Le code actuel utilise :
-```jsx
-<View fixed style={...} render={({ pageNumber }) => (...)} />
-```
+- Créer un **`<View fixed>`** ancré en bas (position: absolute, bottom, left, right), qui sert de “barre de footer”.
+- Mettre à l’intérieur :
+  1) un `<Text>` statique à gauche (Partie ou Marche)
+  2) un `<Text>` à droite avec `render={({pageNumber}) => ...}`
 
-Cela provoque un comportement imprevisible ou le contenu du `<View>` "flotte" au milieu de la page au lieu d'etre positionne en bas avec `position: absolute`.
+Ainsi, même si `render` perturbe le positionnement du `<Text>`, **c’est le conteneur** qui fixe la position en bas de page ; le `<Text render>` n’a plus besoin d’être en `absolute`.
 
----
+## Changements à faire (code)
 
-## Solution technique
+### 1) `src/utils/pdfStyleGenerator.ts`
+Objectif : garder les styles existants (compatibilité), mais ajouter des styles “inline” pour le footer en conteneur.
 
-Restructurer le `PageFooter` pour utiliser uniquement des elements `<Text>` avec la prop `render`, tout en conservant le positionnement absolu en bas de page.
+- Ajouter 2 nouveaux styles dans `PdfStylesRaw` (interface) :
+  - `pageFooterBar` (ou réutiliser `pageFooter` mais il est marqué “legacy”; je préfère un nouveau nom clair)
+  - `pageFooterContextInline`
+  - `pageNumberInlineText`
 
-### Architecture proposee
+- Implémenter ces styles dans `generatePdfStyles()` :
 
-Remplacer le `<View>` conteneur par deux elements `<Text fixed>` distincts :
-1. **Texte de contexte** (a gauche) : affiche le nom de la partie ou de la marche
-2. **Numero de page** (a droite) : utilise `render` pour obtenir le numero dynamique
+Exemple d’intention (valeurs exactes à caler sur tes marges existantes) :
+- `pageFooterBar` :
+  - `position: 'absolute'`
+  - `bottom: mmToPoints(10)`
+  - `left: mmToPoints(options.marginInner)`
+  - `right: mmToPoints(options.marginOuter)`
+  - `flexDirection: 'row'`
+  - `justifyContent: 'space-between'`
+  - `alignItems: 'flex-end'` (ou `center` selon rendu typographique)
+- `pageFooterContextInline` :
+  - mêmes attributs typo que `pageFooterContext`, mais **sans** `position/bottom/left`
+- `pageNumberInlineText` :
+  - mêmes attributs typo que `pageNumberInline`, mais **sans** `position/bottom/right`
+  - `textAlign: 'right'`
 
-### Details d'implementation
+### 2) `src/utils/pdfPageComponents.tsx`
+Objectif : modifier `PageFooter` pour utiliser le conteneur fixe.
 
-**Fichier : `src/utils/pdfPageComponents.tsx`**
+Remplacer le return actuel par :
 
-Modification du composant `PageFooter` (lignes 362-389) :
+- `<View fixed style={styles.pageFooterBar}>`
+  - `<Text style={styles.pageFooterContextInline}>{contextText}</Text>`
+  - `<Text style={styles.pageNumberInlineText} render={({pageNumber}) => formatPageNumber(pageNumber, options.pageNumberStyle)} />`
+- `</View>`
 
-```text
-AVANT (problematique) :
-<View fixed style={pageFooter} render={...}>
-  <Text>{context}</Text>
-  <Text>{pageNumber}</Text>
-</View>
+Important :
+- **Pas de `render` sur `<View>`**.
+- Le `<Text>` du numéro **n’a plus** `fixed` nécessairement (le conteneur est fixed), mais on peut le laisser sans danger ; je le laisserai généralement “simple” (non fixed) pour limiter les bizarreries.
 
-APRES (solution) :
-<>
-  <Text fixed style={footerContext}>{contextText}</Text>
-  <Text fixed style={footerNumber} render={...}>{pageNumber}</Text>
-</>
-```
+## Vérifications à faire après correctif (acceptance)
+1) Export PDF Pro → sur plusieurs pages “Texte” (y compris celles générées par pagination manuelle) :
+   - Contexte en bas à gauche
+   - Numéro en bas à droite
+2) Vérifier 2-3 pages au milieu (là où tu voyais le numéro au centre) : le numéro doit être collé au footer.
+3) Vérifier les pages Haïku/Fable + Index : le footer doit rester stable et ne pas remonter au milieu.
 
-**Fichier : `src/utils/pdfStyleGenerator.ts`**
-
-Ajuster les styles pour que les deux elements `<Text>` soient positionnes independamment :
-
-| Style | Position | Alignement |
-|-------|----------|------------|
-| `pageFooterContext` | `position: absolute`, `bottom: 10mm`, `left: marginInner` | Texte a gauche |
-| `pageNumberInline` | `position: absolute`, `bottom: 10mm`, `right: marginOuter` | Texte a droite |
-
----
-
-## Fichiers a modifier
-
-1. **`src/utils/pdfPageComponents.tsx`**
-   - Refactoriser `PageFooter` pour utiliser deux `<Text fixed>` au lieu d'un `<View>`
-   - Le contexte (partie/marche) n'a pas besoin de `render` car c'est une valeur statique
-   - Le numero de page utilise `render` pour obtenir le numero dynamique
-
-2. **`src/utils/pdfStyleGenerator.ts`**
-   - S'assurer que `pageFooterContext` a `position: absolute` + ancrage gauche
-   - S'assurer que `pageNumberInline` a `position: absolute` + ancrage droit
-   - Les deux a `bottom: mmToPoints(10)` pour alignement vertical
-
----
-
-## Resultat attendu
-
-- Le contexte (nom de partie ou marche) apparait en bas a gauche de chaque page
-- Le numero de page apparait en bas a droite de chaque page
-- Les deux elements sont fixes et ne se deplacent pas avec le contenu
-
+## Option bonus (si on veut gérer “odd/even” parfaitement)
+Si tu veux que les marges internes/externes s’inversent selon page paire/impair (style livre), on peut ajouter une version “odd” et “even” du conteneur et n’en afficher qu’une selon `pageNumber` via deux `<Text render>` qui renvoient `''` côté non concerné. Mais je ne le fais pas tant que tu ne le demandes pas explicitement, pour éviter tout risque Yoga supplémentaire.
