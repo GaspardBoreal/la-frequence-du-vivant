@@ -329,17 +329,30 @@ export const FablePage: React.FC<FablePageProps> = ({ texte, options, styles, co
   
   const { main: mainContent, moral } = extractMoral(content);
   
+  // Split long fable content into paragraphs for multi-page flow
+  const paragraphs = mainContent
+    .split(/\n{2,}/)
+    .map(p => p.trim())
+    .filter(Boolean);
+  
+  const [firstParagraph, ...restParagraphs] = paragraphs;
+  
   return (
     <Page size={[dimensions.width, dimensions.height]} style={mergeStyles(styles.page, styles.pageOdd)} wrap>
       <View style={styles.fableContainer as Style}>
-        {/* Header with ornament and title */}
-        <View style={styles.fableHeader as Style}>
+        {/* Header with ornament and title - keep with first paragraph */}
+        <View wrap={false} style={styles.fableHeader as Style}>
           <Text style={styles.fableHeaderLabel as Style}>❦ FABLE ❦</Text>
           <Text style={styles.fableTitle as Style}>{texte.titre}</Text>
+          {firstParagraph && (
+            <Text style={styles.fableContent as Style}>{firstParagraph}</Text>
+          )}
         </View>
         
-        {/* Main content in roman (not italic) */}
-        <Text style={styles.fableContent as Style}>{mainContent}</Text>
+        {/* Remaining paragraphs flow naturally across pages */}
+        {restParagraphs.map((para, idx) => (
+          <Text key={idx} style={styles.fableContent as Style}>{para}</Text>
+        ))}
         
         {/* Moral section if detected */}
         {moral && (
@@ -420,16 +433,35 @@ export const TextePage: React.FC<TextePageProps> = ({
     );
   }
   
+  // Split long content into paragraphs for multi-page flow
+  // This prevents "unsupported number" crash from massive single <Text> blocks
+  const paragraphs = content
+    .split(/\n{2,}/)
+    .map(p => p.trim())
+    .filter(Boolean);
+  
+  const [firstParagraph, ...restParagraphs] = paragraphs;
+  
   return (
-    <Page size={[dimensions.width, dimensions.height]} style={mergeStyles(styles.page, styles.pageOdd)}>
+    <Page size={[dimensions.width, dimensions.height]} style={mergeStyles(styles.page, styles.pageOdd)} wrap>
       <View style={styles.textePage as Style}>
         {showMarcheHeader && marche && (
           <MarcheHeader marche={marche} styles={styles} />
         )}
         
         <View style={styles.texteContainer as Style}>
-          <Text style={styles.texteTitle as Style}>{texte.titre}</Text>
-          <Text style={styles.texteContent as Style}>{content}</Text>
+          {/* Keep title + first paragraph together to prevent orphaned titles */}
+          <View wrap={false}>
+            <Text style={styles.texteTitle as Style}>{texte.titre}</Text>
+            {firstParagraph && (
+              <Text style={styles.texteContent as Style}>{firstParagraph}</Text>
+            )}
+          </View>
+          
+          {/* Remaining paragraphs flow naturally across pages */}
+          {restParagraphs.map((para, idx) => (
+            <Text key={idx} style={styles.texteContent as Style}>{para}</Text>
+          ))}
           
           {options.includeMetadata && texte.type_texte && (
             <Text style={styles.texteMetadata as Style}>
