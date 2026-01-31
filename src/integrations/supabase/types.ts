@@ -2181,6 +2181,74 @@ export type Database = {
         }
         Relationships: []
       }
+      published_exports: {
+        Row: {
+          artistic_direction: string | null
+          author: string | null
+          cover_url: string | null
+          created_at: string | null
+          description: string | null
+          download_count: number | null
+          expires_at: string | null
+          exploration_id: string | null
+          file_size_bytes: number | null
+          file_type: string | null
+          file_url: string
+          id: string
+          published_at: string | null
+          slug: string
+          subtitle: string | null
+          title: string
+          updated_at: string | null
+        }
+        Insert: {
+          artistic_direction?: string | null
+          author?: string | null
+          cover_url?: string | null
+          created_at?: string | null
+          description?: string | null
+          download_count?: number | null
+          expires_at?: string | null
+          exploration_id?: string | null
+          file_size_bytes?: number | null
+          file_type?: string | null
+          file_url: string
+          id?: string
+          published_at?: string | null
+          slug: string
+          subtitle?: string | null
+          title: string
+          updated_at?: string | null
+        }
+        Update: {
+          artistic_direction?: string | null
+          author?: string | null
+          cover_url?: string | null
+          created_at?: string | null
+          description?: string | null
+          download_count?: number | null
+          expires_at?: string | null
+          exploration_id?: string | null
+          file_size_bytes?: number | null
+          file_type?: string | null
+          file_url?: string
+          id?: string
+          published_at?: string | null
+          slug?: string
+          subtitle?: string | null
+          title?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "published_exports_exploration_id_fkey"
+            columns: ["exploration_id"]
+            isOneToOne: false
+            referencedRelation: "explorations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       real_estate_snapshots: {
         Row: {
           avg_price_m2: number | null
@@ -2491,6 +2559,10 @@ export type Database = {
           count: number
           name: string
         }[]
+      }
+      increment_download_count: {
+        Args: { export_slug: string }
+        Returns: undefined
       }
       initialize_first_admin: {
         Args: { new_email: string; new_user_id: string }
