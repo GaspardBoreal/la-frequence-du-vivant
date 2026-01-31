@@ -366,7 +366,36 @@ export const isFable = (texte: TexteExport): boolean => {
 };
 
 /**
+ * Insert soft breaks (zero-width spaces) into long tokens to prevent horizontal overflow.
+ * This prevents Yoga "unsupported number" crashes caused by unbreakable long strings.
+ * 
+ * CRITICAL: This is the primary defense against Yoga layout crashes.
+ * Any word longer than MAX_TOKEN_LENGTH (25 chars) gets zero-width spaces inserted.
+ */
+const MAX_TOKEN_LENGTH = 25;
+const SOFT_BREAK_INTERVAL = 15;
+
+export const softBreakLongTokens = (text: string): string => {
+  if (!text || text.length < MAX_TOKEN_LENGTH) return text || '';
+  
+  // Split by spaces, check each word
+  return text.split(' ').map(word => {
+    if (word.length <= MAX_TOKEN_LENGTH) return word;
+    
+    // Insert zero-width space every SOFT_BREAK_INTERVAL chars
+    const chunks: string[] = [];
+    for (let i = 0; i < word.length; i += SOFT_BREAK_INTERVAL) {
+      chunks.push(word.slice(i, i + SOFT_BREAK_INTERVAL));
+    }
+    return chunks.join('\u200B');
+  }).join(' ');
+};
+
+/**
  * Clean HTML content for PDF (strip tags, preserve line breaks)
+ * 
+ * CRITICAL: This function now includes softBreakLongTokens as FINAL step
+ * to prevent Yoga layout crashes from unbreakable long strings.
  */
 export const sanitizeContentForPdf = (html: string): string => {
   if (!html) return '';
@@ -424,7 +453,11 @@ export const sanitizeContentForPdf = (html: string): string => {
   // Reduce excessive newlines to max 2 (paragraph break)
   text = text.replace(/\n{3,}/g, '\n\n');
   
-  return text.trim();
+  // ===== STEP 8: CRITICAL - Break long tokens to prevent Yoga crashes =====
+  // This is the final safety net against "unsupported number" layout crashes
+  text = softBreakLongTokens(text.trim());
+  
+  return text;
 };
 
 /**

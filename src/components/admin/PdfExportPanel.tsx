@@ -155,6 +155,7 @@ const PdfExportPanel: React.FC<PdfExportPanelProps> = ({
   };
 
   // DEBUG MODE: Step-by-step export to isolate the crash source
+  // If "Contenu seul" crashes, uses binary search to identify the problematic text
   const handleDebugExport = async () => {
     if (textes.length === 0) {
       toast.error('Aucun texte à exporter');
@@ -164,44 +165,83 @@ const PdfExportPanel: React.FC<PdfExportPanelProps> = ({
     setExporting(true);
     setDebugProgress(null);
     
-    const steps = [
-      { 
-        name: 'Contenu seul', 
-        opts: { includeTableOfContents: false, includeIndexLieux: false, includeIndexGenres: false, includeIndexKeywords: false, includeColophon: false }
-      },
-      { 
-        name: 'Contenu + TOC', 
-        opts: { includeTableOfContents: true, includeIndexLieux: false, includeIndexGenres: false, includeIndexKeywords: false, includeColophon: false }
-      },
-      { 
-        name: 'Contenu + TOC + Index Lieux', 
-        opts: { includeTableOfContents: true, includeIndexLieux: true, includeIndexGenres: false, includeIndexKeywords: false, includeColophon: false }
-      },
-      { 
-        name: 'Contenu + TOC + Index Lieux + Index Œuvres', 
-        opts: { includeTableOfContents: true, includeIndexLieux: true, includeIndexGenres: true, includeIndexKeywords: false, includeColophon: false }
-      },
-      { 
-        name: 'Export complet', 
-        opts: { includeTableOfContents: true, includeIndexLieux: true, includeIndexGenres: true, includeIndexKeywords: true, includeColophon: true }
-      },
-    ];
+    const minimalOpts = { 
+      includeTableOfContents: false, 
+      includeIndexLieux: false, 
+      includeIndexGenres: false, 
+      includeIndexKeywords: false, 
+      includeColophon: false,
+      includeCover: false,
+      includeFauxTitre: false,
+      includePartiePages: false,
+    };
 
     try {
       await registerFonts(options);
       
+      // STEP 0: Test with ZERO textes (just structure pages)
+      setDebugProgress('Test 0: Structure seule (sans textes)...');
+      console.info('[PDF DEBUG] Step 0: Testing structure only (no textes)...');
+      try {
+        const testOptions = { ...options, ...minimalOpts, includeCover: true, includeFauxTitre: true };
+        const doc = <PdfDocument textes={[]} options={testOptions} parties={[]} />;
+        await pdf(doc).toBlob();
+        console.info('[PDF DEBUG] Step 0: ✅ Structure OK');
+      } catch {
+        toast.error('Crash dans la structure de base (couverture/faux-titre)');
+        setDebugProgress('❌ Crash dans la structure de base');
+        setExporting(false);
+        return;
+      }
+      
+      // STEP 1: Test "Contenu seul" with all textes
+      setDebugProgress('Test 1: Contenu seul (tous les textes)...');
+      console.info('[PDF DEBUG] Step 1: Testing all textes...');
+      try {
+        const testOptions = { ...options, ...minimalOpts };
+        const doc = <PdfDocument textes={textes} options={testOptions} parties={effectiveParties} />;
+        await pdf(doc).toBlob();
+        console.info('[PDF DEBUG] Step 1: ✅ Contenu OK');
+      } catch (contentError) {
+        console.error('[PDF DEBUG] Step 1: ❌ CRASH dans "Contenu seul" - launching binary search', contentError);
+        setDebugProgress('❌ Crash dans contenu - recherche du texte fautif...');
+        
+        // Binary search to find the problematic text
+        const problematicTexte = await binarySearchProblematicText(textes, options, minimalOpts);
+        
+        if (problematicTexte) {
+          const msg = `Texte fautif trouvé: "${problematicTexte.titre}" (${problematicTexte.id.slice(0, 8)})`;
+          console.error('[PDF DEBUG] ' + msg, problematicTexte);
+          toast.error(msg);
+          setDebugProgress(`❌ ${msg}`);
+        } else {
+          toast.error('Crash dans le contenu mais texte fautif non identifié');
+          setDebugProgress('❌ Crash dans le contenu (texte non identifié)');
+        }
+        setExporting(false);
+        return;
+      }
+      
+      // STEP 2-5: Test with TOC and indexes
+      const steps = [
+        { name: 'Contenu + TOC', opts: { ...minimalOpts, includeTableOfContents: true } },
+        { name: 'Contenu + TOC + Index Lieux', opts: { ...minimalOpts, includeTableOfContents: true, includeIndexLieux: true } },
+        { name: 'Contenu + TOC + Index Lieux + Index Œuvres', opts: { ...minimalOpts, includeTableOfContents: true, includeIndexLieux: true, includeIndexGenres: true } },
+        { name: 'Export complet', opts: { includeTableOfContents: true, includeIndexLieux: true, includeIndexGenres: true, includeIndexKeywords: true, includeColophon: true } },
+      ];
+
       for (let i = 0; i < steps.length; i++) {
         const step = steps[i];
-        setDebugProgress(`Essai ${i + 1}/${steps.length}: ${step.name}...`);
-        console.info(`[PDF DEBUG] Step ${i + 1}: ${step.name}...`);
+        setDebugProgress(`Test ${i + 2}/${steps.length + 1}: ${step.name}...`);
+        console.info(`[PDF DEBUG] Step ${i + 2}: ${step.name}...`);
         
         try {
           const testOptions = { ...options, ...step.opts };
           const doc = <PdfDocument textes={textes} options={testOptions} parties={effectiveParties} />;
           await pdf(doc).toBlob();
-          console.info(`[PDF DEBUG] Step ${i + 1}: ✅ OK`);
+          console.info(`[PDF DEBUG] Step ${i + 2}: ✅ OK`);
         } catch (stepError) {
-          console.error(`[PDF DEBUG] Step ${i + 1}: ❌ CRASH dans "${step.name}"`, stepError);
+          console.error(`[PDF DEBUG] Step ${i + 2}: ❌ CRASH dans "${step.name}"`, stepError);
           toast.error(`Crash identifié dans : ${step.name}`);
           setDebugProgress(`❌ Crash dans : ${step.name}`);
           setExporting(false);
@@ -222,6 +262,46 @@ const PdfExportPanel: React.FC<PdfExportPanelProps> = ({
       toast.error('Erreur pendant le debug');
     } finally {
       setExporting(false);
+    }
+  };
+  
+  // Binary search helper to find the exact problematic text
+  const binarySearchProblematicText = async (
+    allTextes: TexteExport[],
+    opts: PdfExportOptions,
+    minimalOpts: Record<string, boolean>
+  ): Promise<TexteExport | null> => {
+    // Quick test: if single text crashes, that's our culprit
+    if (allTextes.length === 1) {
+      return allTextes[0];
+    }
+    
+    // Test first half
+    const mid = Math.floor(allTextes.length / 2);
+    const firstHalf = allTextes.slice(0, mid);
+    const secondHalf = allTextes.slice(mid);
+    
+    console.info(`[PDF DEBUG] Binary search: testing first ${firstHalf.length} textes...`);
+    setDebugProgress(`Recherche binaire: test ${firstHalf.length} textes...`);
+    
+    try {
+      const testOptions = { ...opts, ...minimalOpts };
+      const doc = <PdfDocument textes={firstHalf} options={testOptions} parties={effectiveParties} />;
+      await pdf(doc).toBlob();
+      console.info('[PDF DEBUG] First half OK, problem is in second half');
+      
+      // First half OK, problem is in second half
+      if (secondHalf.length === 1) {
+        return secondHalf[0];
+      }
+      return binarySearchProblematicText(secondHalf, opts, minimalOpts);
+    } catch {
+      console.info('[PDF DEBUG] First half crashed, problem is in first half');
+      // First half crashed
+      if (firstHalf.length === 1) {
+        return firstHalf[0];
+      }
+      return binarySearchProblematicText(firstHalf, opts, minimalOpts);
     }
   };
 

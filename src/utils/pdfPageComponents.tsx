@@ -5,6 +5,7 @@ import {
   PdfExportOptions, 
   TexteExport, 
   sanitizeContentForPdf, 
+  softBreakLongTokens,
   isHaiku, 
   isFable,
   formatPageNumber,
@@ -67,28 +68,8 @@ const MAX_FIRST_PARA_LENGTH = 600;
 // Maximum number of page references to display before truncating with "…"
 const MAX_PAGES_DISPLAY = 5;
 
-// Maximum characters before inserting soft breaks (zero-width space)
-const MAX_TOKEN_LENGTH = 25;
-
-/**
- * Insert soft breaks (zero-width spaces) into long tokens to prevent horizontal overflow.
- * This prevents Yoga "unsupported number" crashes caused by unbreakable long strings.
- */
-const softBreakLongTokens = (text: string): string => {
-  if (!text || text.length < MAX_TOKEN_LENGTH) return text || '';
-  
-  // Split by spaces, check each word
-  return text.split(' ').map(word => {
-    if (word.length <= MAX_TOKEN_LENGTH) return word;
-    
-    // Insert zero-width space every 15 chars
-    const chunks: string[] = [];
-    for (let i = 0; i < word.length; i += 15) {
-      chunks.push(word.slice(i, i + 15));
-    }
-    return chunks.join('\u200B');
-  }).join(' ');
-};
+// NOTE: softBreakLongTokens is now imported from pdfExportUtils.ts
+// It's also applied inside sanitizeContentForPdf automatically
 
 /**
  * Format a list of page numbers for index display.
