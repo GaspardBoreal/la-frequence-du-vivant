@@ -25,7 +25,12 @@ import {
   RefreshCw,
   Wand2,
   RotateCcw,
-  Lightbulb
+  Lightbulb,
+  Share2,
+  Copy,
+  Check,
+  ExternalLink,
+  Trash2
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { 
@@ -42,7 +47,14 @@ import {
   buildAIPayload,
   type EpubMetadataSuggestion 
 } from '@/utils/epubMetadataGenerator';
+import { 
+  publishExport, 
+  fetchPublishedExports, 
+  deletePublishedExport,
+  type PublishedExport 
+} from '@/utils/publicExportUtils';
 import { supabase } from '@/integrations/supabase/client';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import EpubPreview from './EpubPreview';
 import CoverEditor from './CoverEditor';
 
@@ -79,6 +91,15 @@ const EpubExportPanel: React.FC<EpubExportPanelProps> = ({
   const [exporting, setExporting] = useState(false);
   const [generatingAI, setGeneratingAI] = useState(false);
   const [metadataSource, setMetadataSource] = useState<'contextual' | 'ai' | 'manual'>('contextual');
+  
+  // Publishing states
+  const [publishing, setPublishing] = useState(false);
+  const [showPublishModal, setShowPublishModal] = useState(false);
+  const [lastPublishedUrl, setLastPublishedUrl] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
+  const [publishedExports, setPublishedExports] = useState<PublishedExport[]>([]);
+  const [publishHistoryOpen, setPublishHistoryOpen] = useState(false);
+  const [loadingHistory, setLoadingHistory] = useState(false);
 
   // Update a single option
   const updateOption = useCallback(<K extends keyof EpubExportOptions>(
@@ -139,6 +160,89 @@ const EpubExportPanel: React.FC<EpubExportPanelProps> = ({
       setExporting(false);
     }
   };
+
+  // Publish and Share handler
+  const handlePublishAndShare = async () => {
+    if (textes.length === 0) {
+      toast.error('Aucun texte à publier');
+      return;
+    }
+
+    setPublishing(true);
+    try {
+      // Import exportToEpub to get the blob
+      const { exportToEpub } = await import('@/utils/epubExportUtils');
+      const { blob } = await exportToEpub(textes, options);
+      
+      const published = await publishExport({
+        blob,
+        title: options.title,
+        subtitle: options.subtitle,
+        description: options.description,
+        author: options.author,
+        coverUrl: options.coverImageUrl,
+        artisticDirection: options.format,
+        fileType: 'epub',
+      });
+      
+      setLastPublishedUrl(published.publicUrl);
+      setShowPublishModal(true);
+      toast.success('Publication réussie !');
+      
+      // Refresh history
+      loadPublishHistory();
+    } catch (error) {
+      console.error('Publish error:', error);
+      toast.error(`Erreur lors de la publication: ${error instanceof Error ? error.message : 'Erreur inconnue'}`);
+    } finally {
+      setPublishing(false);
+    }
+  };
+
+  // Copy URL to clipboard
+  const handleCopyUrl = async () => {
+    if (!lastPublishedUrl) return;
+    try {
+      await navigator.clipboard.writeText(lastPublishedUrl);
+      setCopied(true);
+      toast.success('Lien copié !');
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      toast.error('Erreur lors de la copie');
+    }
+  };
+
+  // Load publish history
+  const loadPublishHistory = async () => {
+    setLoadingHistory(true);
+    try {
+      const exports = await fetchPublishedExports();
+      setPublishedExports(exports);
+    } catch (error) {
+      console.error('Error loading history:', error);
+    } finally {
+      setLoadingHistory(false);
+    }
+  };
+
+  // Delete published export
+  const handleDeletePublished = async (slug: string) => {
+    if (!confirm('Supprimer cette publication ? Le lien ne fonctionnera plus.')) return;
+    try {
+      await deletePublishedExport(slug);
+      toast.success('Publication supprimée');
+      loadPublishHistory();
+    } catch (error) {
+      toast.error(`Erreur: ${error instanceof Error ? error.message : 'Erreur inconnue'}`);
+    }
+  };
+
+  // Load history when section opens
+  useEffect(() => {
+    if (publishHistoryOpen && publishedExports.length === 0) {
+      loadPublishHistory();
+    }
+  }, [publishHistoryOpen]);
 
   // Statistics
   // IMPORTANT: Use marche_ville only for counting unique locations to match metadata generator
@@ -613,25 +717,107 @@ const EpubExportPanel: React.FC<EpubExportPanelProps> = ({
 
             <Separator />
 
-            {/* Export Button */}
-            <Button
-              onClick={handleExport}
-              disabled={exporting || textes.length === 0}
-              className="w-full"
-              size="lg"
-            >
-              {exporting ? (
-                <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Génération en cours...
-                </>
-              ) : (
-                <>
-                  <Download className="h-4 w-4 mr-2" />
-                  Générer l'EPUB ({textes.length} textes)
-                </>
-              )}
-            </Button>
+            {/* Export Buttons */}
+            <div className="space-y-3">
+              <Button
+                onClick={handleExport}
+                disabled={exporting || publishing || textes.length === 0}
+                className="w-full"
+                size="lg"
+              >
+                {exporting ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Génération en cours...
+                  </>
+                ) : (
+                  <>
+                    <Download className="h-4 w-4 mr-2" />
+                    Télécharger l'EPUB ({textes.length} textes)
+                  </>
+                )}
+              </Button>
+
+              <Button
+                onClick={handlePublishAndShare}
+                disabled={publishing || exporting || textes.length === 0}
+                variant="outline"
+                className="w-full border-primary/30 hover:bg-primary/10"
+                size="lg"
+              >
+                {publishing ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Publication en cours...
+                  </>
+                ) : (
+                  <>
+                    <Share2 className="h-4 w-4 mr-2" />
+                    Publier & Partager
+                  </>
+                )}
+              </Button>
+            </div>
+
+            {/* Published Exports History */}
+            <Collapsible open={publishHistoryOpen} onOpenChange={setPublishHistoryOpen}>
+              <CollapsibleTrigger asChild>
+                <Button variant="ghost" className="w-full justify-between p-2 h-auto text-muted-foreground">
+                  <span className="flex items-center gap-2 text-sm">
+                    <ExternalLink className="h-4 w-4" />
+                    Publications partagées ({publishedExports.length})
+                  </span>
+                  {publishHistoryOpen ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+                </Button>
+              </CollapsibleTrigger>
+              <CollapsibleContent className="pt-2">
+                {loadingHistory ? (
+                  <div className="flex items-center justify-center py-4">
+                    <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                  </div>
+                ) : publishedExports.length === 0 ? (
+                  <p className="text-sm text-muted-foreground text-center py-4">
+                    Aucune publication pour l'instant
+                  </p>
+                ) : (
+                  <div className="space-y-2 max-h-48 overflow-y-auto">
+                    {publishedExports.slice(0, 10).map((pub) => (
+                      <div
+                        key={pub.id}
+                        className="flex items-center justify-between p-2 bg-muted/50 rounded-md text-sm"
+                      >
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium truncate">{pub.title}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {pub.download_count} téléchargements
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-1 ml-2">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-7 w-7 p-0"
+                            onClick={() => window.open(pub.publicUrl, '_blank')}
+                            title="Ouvrir"
+                          >
+                            <ExternalLink className="h-3 w-3" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-7 w-7 p-0 text-destructive hover:text-destructive"
+                            onClick={() => handleDeletePublished(pub.slug)}
+                            title="Supprimer"
+                          >
+                            <Trash2 className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CollapsibleContent>
+            </Collapsible>
           </CardContent>
         </Card>
       </div>
@@ -646,6 +832,56 @@ const EpubExportPanel: React.FC<EpubExportPanelProps> = ({
           <EpubPreview textes={textes} options={options} />
         </div>
       </div>
+
+      {/* Publish Success Modal */}
+      <Dialog open={showPublishModal} onOpenChange={setShowPublishModal}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Share2 className="h-5 w-5 text-primary" />
+              Publication réussie !
+            </DialogTitle>
+            <DialogDescription>
+              Votre ePUB est maintenant accessible publiquement. Partagez ce lien avec la communauté.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="flex items-center gap-2">
+              <Input
+                value={lastPublishedUrl || ''}
+                readOnly
+                className="flex-1 font-mono text-sm"
+              />
+              <Button
+                onClick={handleCopyUrl}
+                variant="outline"
+                size="sm"
+                className="shrink-0"
+              >
+                {copied ? (
+                  <Check className="h-4 w-4 text-primary" />
+                ) : (
+                  <Copy className="h-4 w-4" />
+                )}
+              </Button>
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button
+                variant="outline"
+                onClick={() => setShowPublishModal(false)}
+              >
+                Fermer
+              </Button>
+              <Button
+                onClick={() => window.open(lastPublishedUrl || '', '_blank')}
+              >
+                <ExternalLink className="h-4 w-4 mr-2" />
+                Ouvrir
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
