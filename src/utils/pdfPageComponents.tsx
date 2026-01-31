@@ -75,27 +75,77 @@ export const PageFooter: React.FC<PageFooterProps> = ({
   partieName, 
   marcheName 
 }) => {
-  const contextText = partieName || marcheName || '';
-  
+  const rawContextText = partieName || marcheName || '';
+
+  // Prevent layout overflows that can crash @react-pdf with "unsupported number".
+  // We keep the footer context short and avoid any flexbox-driven width negotiation.
+  const contextText = rawContextText.length > 72 ? `${rawContextText.slice(0, 71)}…` : rawContextText;
+
+  const footerBottom = mmToPoints(10);
+  const contextMargin = mmToPoints(options.marginInner);
+  const numberMargin = mmToPoints(options.marginOuter);
+
   return (
-    <View style={styles.pageFooter as Style} fixed>
-      {/* Left element: Context on odd pages, Page Number on even */}
+    <>
+      {/* ODD pages: context left (inner), page number right (outer) */}
       <Text
-        style={styles.pageFooterContext as Style}
-        render={({ pageNumber }) => {
-          const isOdd = pageNumber % 2 === 1;
-          return isOdd ? contextText : formatPageNumber(pageNumber, options.pageNumberStyle);
-        }}
+        fixed
+        wrap={false}
+        style={
+          mergeStyles(styles.pageFooterContext, {
+            position: 'absolute',
+            bottom: footerBottom,
+            left: contextMargin,
+            maxWidth: '70%',
+          })
+        }
+        render={({ pageNumber }) => (pageNumber % 2 === 1 ? contextText : '')}
       />
-      {/* Right element: Page Number on odd pages, Context on even */}
       <Text
-        style={styles.pageFooterContext as Style}
-        render={({ pageNumber }) => {
-          const isOdd = pageNumber % 2 === 1;
-          return isOdd ? formatPageNumber(pageNumber, options.pageNumberStyle) : contextText;
-        }}
+        fixed
+        style={
+          mergeStyles(styles.pageNumberInline, {
+            position: 'absolute',
+            bottom: footerBottom,
+            right: numberMargin,
+            textAlign: 'right',
+          })
+        }
+        render={({ pageNumber }) =>
+          pageNumber % 2 === 1 ? formatPageNumber(pageNumber, options.pageNumberStyle) : ''
+        }
       />
-    </View>
+
+      {/* EVEN pages: page number left (outer), context right (inner) */}
+      <Text
+        fixed
+        style={
+          mergeStyles(styles.pageNumberInline, {
+            position: 'absolute',
+            bottom: footerBottom,
+            left: numberMargin,
+            textAlign: 'left',
+          })
+        }
+        render={({ pageNumber }) =>
+          pageNumber % 2 === 0 ? formatPageNumber(pageNumber, options.pageNumberStyle) : ''
+        }
+      />
+      <Text
+        fixed
+        wrap={false}
+        style={
+          mergeStyles(styles.pageFooterContext, {
+            position: 'absolute',
+            bottom: footerBottom,
+            right: contextMargin,
+            textAlign: 'right',
+            maxWidth: '70%',
+          })
+        }
+        render={({ pageNumber }) => (pageNumber % 2 === 0 ? contextText : '')}
+      />
+    </>
   );
 };
 

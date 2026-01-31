@@ -236,7 +236,6 @@ export interface PdfStylesRaw {
   pageFooterOdd: Style;
   pageFooterEven: Style;
   pageFooterContext: Style;
-  pageFooterDynamic: Style; // For dynamic render prop footer
   pageNumber: Style;
   pageNumberOdd: Style;
   pageNumberEven: Style;
@@ -849,6 +848,7 @@ export const generatePdfStyles = (options: PdfExportOptions): PdfStylesRaw => {
       fontSize: baseFontSize * 0.7,
       color: colorScheme.secondary,
       fontStyle: 'italic',
+      maxWidth: '70%',
     },
     pageNumber: {
       position: 'absolute',
