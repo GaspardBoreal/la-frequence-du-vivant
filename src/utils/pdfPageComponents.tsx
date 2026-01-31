@@ -50,6 +50,119 @@ const mergeStyles = (...styles: (Style | undefined)[]): Style => {
 };
 
 // ============================================================================
+// CONTENT SEGMENTATION UTILITIES
+// ============================================================================
+
+// Approximate characters per A5 page after margins (conservative estimate)
+const CHARS_PER_PAGE = 2000;
+
+// Maximum characters for the first paragraph in wrap={false} blocks
+const MAX_FIRST_PARA_LENGTH = 800;
+
+/**
+ * Estimate how many pages a text will occupy based on content length
+ */
+const estimatePages = (texte: TexteExport): number => {
+  const contentLength = sanitizeContentForPdf(texte.contenu).length;
+  return Math.max(1, Math.ceil(contentLength / CHARS_PER_PAGE));
+};
+
+/**
+ * Split content into paragraphs for multi-page flow.
+ * This function handles the actual HTML-sanitized content which uses single \n separators,
+ * NOT double \n\n as originally assumed.
+ * 
+ * Strategy:
+ * - Split on single newlines
+ * - For short poems (<=5 lines), keep all together
+ * - For long prose, group short consecutive lines (verses) but separate long lines (paragraphs)
+ */
+const splitIntoParagraphs = (content: string): string[] => {
+  const lines = content.split(/\n/).map(l => l.trim()).filter(Boolean);
+  
+  // Short poem (haiku, short verse): keep together
+  if (lines.length <= 5) {
+    return [lines.join('\n')];
+  }
+  
+  // Long prose: intelligently group lines
+  const paragraphs: string[] = [];
+  let currentGroup: string[] = [];
+  
+  for (const line of lines) {
+    if (line.length > 120) {
+      // Long line = standalone paragraph to allow page breaks
+      if (currentGroup.length > 0) {
+        paragraphs.push(currentGroup.join('\n'));
+        currentGroup = [];
+      }
+      paragraphs.push(line);
+    } else {
+      // Short line = group with others (verses, bullet points, etc.)
+      currentGroup.push(line);
+      // Flush group after 5 lines to create natural break points
+      if (currentGroup.length >= 5) {
+        paragraphs.push(currentGroup.join('\n'));
+        currentGroup = [];
+      }
+    }
+  }
+  
+  // Flush remaining lines
+  if (currentGroup.length > 0) {
+    paragraphs.push(currentGroup.join('\n'));
+  }
+  
+  return paragraphs.length > 0 ? paragraphs : [content];
+};
+
+/**
+ * Ensure the first paragraph doesn't exceed MAX_FIRST_PARA_LENGTH
+ * to prevent wrap={false} blocks from exceeding page height
+ */
+const limitFirstParagraph = (
+  paragraphs: string[]
+): { firstParagraph: string; restParagraphs: string[] } => {
+  if (paragraphs.length === 0) {
+    return { firstParagraph: '', restParagraphs: [] };
+  }
+  
+  const [rawFirst, ...rest] = paragraphs;
+  
+  if (rawFirst.length <= MAX_FIRST_PARA_LENGTH) {
+    return { firstParagraph: rawFirst, restParagraphs: rest };
+  }
+  
+  // First paragraph too long - find natural cut point
+  const searchRange = rawFirst.slice(0, MAX_FIRST_PARA_LENGTH);
+  
+  // Try sentence boundary first (. ! ?)
+  let cutPoint = Math.max(
+    searchRange.lastIndexOf('. '),
+    searchRange.lastIndexOf('! '),
+    searchRange.lastIndexOf('? ')
+  );
+  
+  // If no sentence boundary, try newline
+  if (cutPoint < 100) {
+    cutPoint = searchRange.lastIndexOf('\n');
+  }
+  
+  // Last resort: cut at MAX_FIRST_PARA_LENGTH
+  if (cutPoint < 100) {
+    cutPoint = MAX_FIRST_PARA_LENGTH;
+  }
+  
+  const firstParagraph = rawFirst.slice(0, cutPoint + 1).trim();
+  const remainder = rawFirst.slice(cutPoint + 1).trim();
+  
+  return {
+    firstParagraph,
+    restParagraphs: remainder ? [remainder, ...rest] : rest,
+  };
+};
+
+// ============================================================================
 // PAGE FOOTER COMPONENT (Context + Dynamic Page Number via Render Prop)
 // ============================================================================
 
@@ -329,18 +442,16 @@ export const FablePage: React.FC<FablePageProps> = ({ texte, options, styles, co
   
   const { main: mainContent, moral } = extractMoral(content);
   
-  // Split long fable content into paragraphs for multi-page flow
-  const paragraphs = mainContent
-    .split(/\n{2,}/)
-    .map(p => p.trim())
-    .filter(Boolean);
+  // Use smart paragraph splitting that handles single \n separators
+  const rawParagraphs = splitIntoParagraphs(mainContent);
   
-  const [firstParagraph, ...restParagraphs] = paragraphs;
+  // Limit first paragraph to prevent wrap={false} overflow crash
+  const { firstParagraph, restParagraphs } = limitFirstParagraph(rawParagraphs);
   
   return (
     <Page size={[dimensions.width, dimensions.height]} style={mergeStyles(styles.page, styles.pageOdd)} wrap>
       <View style={styles.fableContainer as Style}>
-        {/* Header with ornament and title - keep with first paragraph */}
+        {/* Header with ornament and title - keep with SAFE first paragraph */}
         <View wrap={false} style={styles.fableHeader as Style}>
           <Text style={styles.fableHeaderLabel as Style}>❦ FABLE ❦</Text>
           <Text style={styles.fableTitle as Style}>{texte.titre}</Text>
@@ -433,14 +544,12 @@ export const TextePage: React.FC<TextePageProps> = ({
     );
   }
   
-  // Split long content into paragraphs for multi-page flow
+  // Use smart paragraph splitting that handles single \n separators
   // This prevents "unsupported number" crash from massive single <Text> blocks
-  const paragraphs = content
-    .split(/\n{2,}/)
-    .map(p => p.trim())
-    .filter(Boolean);
+  const rawParagraphs = splitIntoParagraphs(content);
   
-  const [firstParagraph, ...restParagraphs] = paragraphs;
+  // Limit first paragraph to prevent wrap={false} overflow crash
+  const { firstParagraph, restParagraphs } = limitFirstParagraph(rawParagraphs);
   
   return (
     <Page size={[dimensions.width, dimensions.height]} style={mergeStyles(styles.page, styles.pageOdd)} wrap>
@@ -450,7 +559,7 @@ export const TextePage: React.FC<TextePageProps> = ({
         )}
         
         <View style={styles.texteContainer as Style}>
-          {/* Keep title + first paragraph together to prevent orphaned titles */}
+          {/* Keep title + SAFE first paragraph together to prevent orphaned titles */}
           <View wrap={false}>
             <Text style={styles.texteTitle as Style}>{texte.titre}</Text>
             {firstParagraph && (
@@ -1104,24 +1213,28 @@ function buildTocEntries(groupedContent: GroupedItem[], options: PdfExportOption
         pageNumber,
         partieNumero: item.partie.numeroRomain,
       });
-    }
-    
-    // Only add marche entry for first text in that marche
-    if (item.type === 'texte' && item.texte && item.isFirstInMarche && item.marche) {
-      const marcheKey = item.marche.nom || item.marche.ville;
-      if (!seenMarches.has(marcheKey)) {
-        seenMarches.add(marcheKey);
-        entries.push({
-          type: 'marche',
-          title: marcheKey,
-          pageNumber,
-          indent: 1,
-          ville: item.marche.ville || undefined, // Add ville for display in ToC
-        });
+      // Partie pages are always single pages
+      pageNumber += 1;
+    } else if (item.type === 'texte' && item.texte) {
+      // Only add marche entry for first text in that marche
+      if (item.isFirstInMarche && item.marche) {
+        const marcheKey = item.marche.nom || item.marche.ville;
+        if (!seenMarches.has(marcheKey)) {
+          seenMarches.add(marcheKey);
+          entries.push({
+            type: 'marche',
+            title: marcheKey,
+            pageNumber,
+            indent: 1,
+            ville: item.marche.ville || undefined,
+          });
+        }
       }
+      
+      // CRITICAL: Estimate pages for long texts (multi-page flow)
+      const estimatedPages = estimatePages(item.texte);
+      pageNumber += estimatedPages;
     }
-    
-    pageNumber++;
   });
   
   return entries;
@@ -1146,10 +1259,17 @@ function buildPageMapping(
   if (options.includeTableOfContents) pageNumber++;
   
   groupedContent.forEach(item => {
-    if (item.type === 'texte' && item.texte) {
+    if (item.type === 'partie') {
+      // Partie pages are always single pages
+      pageNumber += 1;
+    } else if (item.type === 'texte' && item.texte) {
+      // Store the starting page for this text
       mapping.set(item.texte.id, pageNumber);
+      
+      // CRITICAL: Estimate pages for long texts (multi-page flow)
+      const estimatedPages = estimatePages(item.texte);
+      pageNumber += estimatedPages;
     }
-    pageNumber++;
   });
   
   return mapping;
