@@ -1,117 +1,115 @@
 
-# Correction de la Pagination PDF — Numérotation Dynamique
 
-## Problème Identifié
+# Correction de l'Erreur PDF — "unsupported number"
 
-Le document PDF affiche **58** comme dernier numéro de page alors qu'il contient **157 pages** réelles. 
+## Diagnostic
 
-**Cause racine** : Le système compte 1 page par élément de contenu (`currentPage++`) mais les textes longs (fables, manifestes) s'étalent sur **plusieurs pages** grâce à `wrap={true}`. Le compteur manuel ne reflète pas la pagination réelle générée par @react-pdf/renderer.
+L'erreur `unsupported number: -2.3060650366753233e+22` survient lors du rendu PDF car le moteur de calcul génère des coordonnées de positionnement invalides.
+
+**Cause racine identifiée :**
 
 ```
-Logique actuelle :
-├── Couverture → page 1
-├── Faux-titre → page 2  
-├── TDM → page 3
-├── Texte 1 → page 4 (mais peut faire 3 pages réelles !)
-├── Texte 2 → page 5 (mais commence en réalité page 7...)
-└── ...désynchronisation totale
+Footer actuel (problématique) :
+┌────────────────────────────────────────────────────────────────┐
+│ "La Source...        [40 espaces]                        42"  │
+│                    ↑ DÉBORDEMENT → CRASH                      │
+└────────────────────────────────────────────────────────────────┘
 ```
 
-## Solution Proposée
+Le texte concaténé (nom du Mouvement + 40 espaces + numéro de page) dépasse la largeur physique de la page. Le moteur `@react-pdf` tente de centrer ce contenu et calcule des coordonnées négatives astronomiques.
 
-### Stratégie : Numérotation Dynamique Native
+## Solution
 
-@react-pdf/renderer fournit un **render prop** natif qui injecte automatiquement le numéro de page réel pendant la génération :
+Remplacer la technique d'espacement texte par une structure flexbox propre qui laisse le moteur gérer le positionnement :
 
+```
+Footer corrigé (flexbox) :
+┌────────────────────────────────────────────────────────────────┐
+│ [View row justifyContent: space-between]                       │
+│ ├── <Text>La Source...</Text>           <Text>42</Text> ──────│
+│                    ↑ PLACEMENT AUTOMATIQUE                     │
+└────────────────────────────────────────────────────────────────┘
+```
+
+## Modifications Techniques
+
+### 1. Refonte du composant `PageFooter`
+
+**Fichier** : `src/utils/pdfPageComponents.tsx`
+
+**Avant (crash) :**
 ```tsx
-<Text render={({ pageNumber, totalPages }) => `${pageNumber}`} fixed />
-```
-
-### Modifications Techniques
-
-#### 1. Refonte du `PageFooter` (prioritaire)
-
-Remplacer le `pageNumber` passé en prop par le render prop dynamique :
-
-```tsx
-// AVANT (erroné)
-<Text>{formatPageNumber(pageNumber, options.pageNumberStyle)}</Text>
-
-// APRÈS (correct)
-<Text 
-  render={({ pageNumber }) => formatPageNumber(pageNumber, options.pageNumberStyle)} 
-  fixed 
+<Text
+  render={({ pageNumber }) => {
+    return `${contextText}${' '.repeat(40)}${formattedPage}`;
+  }}
 />
 ```
 
-**Fichier** : `src/utils/pdfPageComponents.tsx` (lignes 64-92)
+**Après (stable) :**
+```tsx
+<View style={styles.pageFooter} fixed>
+  <Text 
+    render={({ pageNumber }) => {
+      const isOdd = pageNumber % 2 === 1;
+      return isOdd ? (contextText || '') : formatPageNumber(pageNumber, options.pageNumberStyle);
+    }} 
+  />
+  <Text 
+    render={({ pageNumber }) => {
+      const isOdd = pageNumber % 2 === 1;
+      return isOdd ? formatPageNumber(pageNumber, options.pageNumberStyle) : (contextText || '');
+    }} 
+  />
+</View>
+```
 
-#### 2. Suppression du Compteur Manuel
+### 2. Mise à jour des styles
 
-Retirer la logique `currentPage++` et `contentEndPage++` devenue obsolète :
-- Lignes 797-804 : suppression du calcul de `contentEndPage`
-- Lignes 839, 854, 872, 882, 892, 901 : suppression des incréments
+**Fichier** : `src/utils/pdfStyleGenerator.ts`
 
-#### 3. Pages d'Index avec Render Prop
-
-Les pages d'index (`IndexLieuxPage`, `IndexGenresPage`, `IndexKeywordsPage`, `ColophonPage`) recevront leur numéro via le render prop au lieu d'un prop statique.
-
-#### 4. Limitation Connue : Références dans les Index
-
-**Problème insoluble côté client** : Les numéros de page affichés *dans* les index (ex: "Haïku du matin... p. 7") sont calculés **avant** le rendu, donc resteront approximatifs si des textes longs précèdent.
-
-**Contournement pragmatique** : Améliorer l'estimation en comptant les caractères/lignes pour estimer les pages supplémentaires, ou accepter que les références soient indicatives (pratique courante dans les PDF générés dynamiquement).
-
----
+- Supprimer `pageFooterDynamic` (plus nécessaire)
+- Conserver `pageFooter` avec `flexDirection: 'row'` et `justifyContent: 'space-between'`
+- Ajouter des styles pour les textes gauche et droite du footer
 
 ## Séquence d'Implémentation
 
 | Étape | Fichier | Action |
 |-------|---------|--------|
-| 1 | `pdfPageComponents.tsx` | Modifier `PageFooter` pour utiliser le render prop |
-| 2 | `pdfPageComponents.tsx` | Supprimer tous les `pageNumber={currentPage++}` des composants |
-| 3 | `pdfPageComponents.tsx` | Adapter les pages d'index pour le render prop |
-| 4 | `pdfPageComponents.tsx` | Améliorer `buildPageMapping` avec estimation de longueur |
-
----
+| 1 | `pdfPageComponents.tsx` | Refondre `PageFooter` avec deux éléments `<Text>` distincts |
+| 2 | `pdfStyleGenerator.ts` | Nettoyer les styles — supprimer `pageFooterDynamic`, ajuster `pageFooter` |
 
 ## Résultat Attendu
 
-- **Pieds de page** : Affichent le numéro de page **réel** (1 à 157)
-- **Parité alternée** : La logique pair/impair reste fonctionnelle via le render prop
-- **Index** : Les références de page restent une estimation raisonnable
-
----
+- Le PDF se génère sans erreur de nombre invalide
+- Le pied de page affiche correctement le contexte et le numéro de page aux extrémités
+- La parité (page paire/impaire) détermine la position relative du contexte et du numéro
 
 ## Section Technique
 
-### Signature du Render Prop (types @react-pdf)
-```typescript
-render?: (props: { 
-  pageNumber: number; 
-  totalPages: number; 
-  subPageNumber: number; 
-  subPageTotalPages: number; 
-}) => React.ReactNode;
-```
+### Pourquoi Flexbox est Plus Stable
 
-### Gestion de la Parité pour le Footer
-Le contexte (nom du Mouvement/Marche) et la position du numéro de page (gauche/droite) dépendent de la parité. Avec le render prop :
+`@react-pdf/renderer` gère nativement les layouts flexbox. En utilisant `justifyContent: 'space-between'` sur un `View` contenant deux `Text`, le moteur :
+
+1. Calcule la largeur de chaque élément
+2. Répartit l'espace restant automatiquement
+3. Évite tout débordement ou coordonnées négatives
+
+### Gestion de la Parité
+
+Avec deux éléments `<Text>` séparés qui utilisent chacun un `render` prop, on peut inverser dynamiquement les contenus selon la parité :
 
 ```tsx
-<View fixed>
-  <Text render={({ pageNumber }) => {
-    const isOdd = pageNumber % 2 === 1;
-    // Affichage conditionnel selon parité
-  }} />
-</View>
+// Élément gauche
+<Text render={({ pageNumber }) => {
+  const isOdd = pageNumber % 2 === 1;
+  return isOdd ? contextText : pageNumber.toString();
+}} />
+
+// Élément droit  
+<Text render={({ pageNumber }) => {
+  const isOdd = pageNumber % 2 === 1;
+  return isOdd ? pageNumber.toString() : contextText;
+}} />
 ```
 
-### Estimation pour les Index (amélioration optionnelle)
-Pour améliorer la précision des références, on peut estimer les pages consommées par texte :
-```typescript
-function estimateTextPages(texte: TexteExport, charsPerPage: number = 1800): number {
-  const contentLength = sanitizeContentForPdf(texte.contenu).length;
-  return Math.ceil(contentLength / charsPerPage);
-}
-```
