@@ -203,12 +203,7 @@ export const TocPage: React.FC<TocPageProps> = ({ entries, options, styles }) =>
         ))}
       </View>
       
-      {/* Dynamic page number using render prop */}
-      <Text
-        style={styles.pageNumber as Style}
-        fixed
-        render={({ pageNumber }) => formatPageNumber(pageNumber, options.pageNumberStyle, true)}
-      />
+      <PageFooter styles={styles} options={{...options, pageNumberStyle: 'roman-preface'}} />
     </Page>
   );
 };
@@ -499,23 +494,34 @@ export const IndexLieuxPage: React.FC<IndexLieuxPageProps> = ({ entries, options
               </Text>
             )}
             
-            {partieEntry.marches.map((marche, mIndex) => (
-              <View key={mIndex} style={styles.indexLieuxMarcheBlock as Style} wrap={false}>
-                {/* Line 1: Marche name only (bold) */}
-                <Text style={styles.indexLieuxMarcheEntry as Style}>
-                  {marche.nom}
-                </Text>
-                
-                {/* Types listed below with proper indentation */}
-                {marche.types.map((typeEntry, tIndex) => (
-                  <View key={tIndex} style={styles.indexLieuxTypeRow as Style}>
-                    <Text style={styles.indexLieuxTypeName as Style}>{typeEntry.type}</Text>
-                    <View style={styles.indexLieuxDotLeader as Style} />
-                    <Text style={styles.indexLieuxPages as Style}>{typeEntry.pages.join(', ')}</Text>
+            {partieEntry.marches.map((marche, mIndex) => {
+              const [firstType, ...restTypes] = marche.types;
+              return (
+                <View key={mIndex}>
+                  {/* Keep marche header + first type together to avoid orphans */}
+                  <View wrap={false} style={styles.indexLieuxMarcheBlock as Style}>
+                    <Text style={styles.indexLieuxMarcheEntry as Style}>
+                      {marche.nom}
+                    </Text>
+                    {firstType && (
+                      <View style={styles.indexLieuxTypeRow as Style}>
+                        <Text style={styles.indexLieuxTypeName as Style}>{firstType.type}</Text>
+                        <View style={styles.indexLieuxDotLeader as Style} />
+                        <Text style={styles.indexLieuxPages as Style}>{firstType.pages.join(', ')}</Text>
+                      </View>
+                    )}
                   </View>
-                ))}
-              </View>
-            ))}
+                  {/* Rest of types can flow to next page if needed */}
+                  {restTypes.map((typeEntry, tIndex) => (
+                    <View key={tIndex} style={styles.indexLieuxTypeRow as Style}>
+                      <Text style={styles.indexLieuxTypeName as Style}>{typeEntry.type}</Text>
+                      <View style={styles.indexLieuxDotLeader as Style} />
+                      <Text style={styles.indexLieuxPages as Style}>{typeEntry.pages.join(', ')}</Text>
+                    </View>
+                  ))}
+                </View>
+              );
+            })}
           </View>
         ))}
       </View>

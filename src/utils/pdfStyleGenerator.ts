@@ -421,7 +421,7 @@ export const generatePdfStyles = (options: PdfExportOptions): PdfStylesRaw => {
       flexDirection: 'column',
       justifyContent: 'center',
       alignItems: 'center',
-      height: '100%',
+      flexGrow: 1,
     },
     partieContent: {
       textAlign: 'center',
@@ -685,6 +685,7 @@ export const generatePdfStyles = (options: PdfExportOptions): PdfStylesRaw => {
       fontSize: baseFontSize * 0.75,
       fontStyle: 'italic',
       color: colorScheme.secondary,
+      flexShrink: 1,
     },
     indexLieuxDotLeader: {
       flex: 1,
@@ -732,6 +733,7 @@ export const generatePdfStyles = (options: PdfExportOptions): PdfStylesRaw => {
       // Compact line height for single-line title, but enough to be readable
       lineHeight: 1.25,
       marginBottom: mmToPoints(0.8),
+      flexShrink: 1,
     },
     indexGenreDetailRow: {
       flexDirection: 'row',
