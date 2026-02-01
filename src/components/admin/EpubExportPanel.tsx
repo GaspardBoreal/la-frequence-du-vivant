@@ -784,39 +784,56 @@ const EpubExportPanel: React.FC<EpubExportPanelProps> = ({
                   </p>
                 ) : (
                   <div className="space-y-2 max-h-48 overflow-y-auto">
-                    {publishedExports.slice(0, 10).map((pub) => (
-                      <div
-                        key={pub.id}
-                        className="flex items-center justify-between p-2 bg-muted/50 rounded-md text-sm"
-                      >
-                        <div className="flex-1 min-w-0">
-                          <p className="font-medium truncate">{pub.title}</p>
-                          <p className="text-xs text-muted-foreground">
-                            {pub.download_count} téléchargements
-                          </p>
+                    {publishedExports.slice(0, 10).map((pub) => {
+                      const pubDate = new Date(pub.published_at);
+                      const formattedDate = pubDate.toLocaleDateString('fr-FR', {
+                        day: '2-digit',
+                        month: '2-digit',
+                        year: 'numeric'
+                      }).replace(/\//g, '.');
+                      const formattedTime = pubDate.toLocaleTimeString('fr-FR', {
+                        hour: '2-digit',
+                        minute: '2-digit'
+                      });
+                      
+                      return (
+                        <div
+                          key={pub.id}
+                          className="flex items-center justify-between p-2 bg-muted/50 rounded-md text-sm"
+                        >
+                          <div className="flex-1 min-w-0">
+                            <p className="font-medium truncate">{pub.title}</p>
+                            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                              <span className="font-mono">{formattedDate}</span>
+                              <span className="opacity-50">•</span>
+                              <span className="font-mono">{formattedTime}</span>
+                              <span className="opacity-50">•</span>
+                              <span>{pub.download_count} téléchargements</span>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-1 ml-2">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-7 w-7 p-0"
+                              onClick={() => window.open(pub.publicUrl, '_blank')}
+                              title="Ouvrir"
+                            >
+                              <ExternalLink className="h-3 w-3" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-7 w-7 p-0 text-destructive hover:text-destructive"
+                              onClick={() => handleDeletePublished(pub.slug)}
+                              title="Supprimer"
+                            >
+                              <Trash2 className="h-3 w-3" />
+                            </Button>
+                          </div>
                         </div>
-                        <div className="flex items-center gap-1 ml-2">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="h-7 w-7 p-0"
-                            onClick={() => window.open(pub.publicUrl, '_blank')}
-                            title="Ouvrir"
-                          >
-                            <ExternalLink className="h-3 w-3" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="h-7 w-7 p-0 text-destructive hover:text-destructive"
-                            onClick={() => handleDeletePublished(pub.slug)}
-                            title="Supprimer"
-                          >
-                            <Trash2 className="h-3 w-3" />
-                          </Button>
-                        </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 )}
               </CollapsibleContent>
