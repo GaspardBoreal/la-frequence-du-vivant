@@ -160,6 +160,238 @@ export type Database = {
         }
         Relationships: []
       }
+      crm_contacts: {
+        Row: {
+          created_at: string | null
+          email: string
+          entreprise: string | null
+          fonction: string | null
+          id: string
+          is_subscribed: boolean | null
+          nom: string | null
+          prenom: string | null
+          segment: string | null
+          source: string | null
+          telephone: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          email: string
+          entreprise?: string | null
+          fonction?: string | null
+          id?: string
+          is_subscribed?: boolean | null
+          nom?: string | null
+          prenom?: string | null
+          segment?: string | null
+          source?: string | null
+          telephone?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          email?: string
+          entreprise?: string | null
+          fonction?: string | null
+          id?: string
+          is_subscribed?: boolean | null
+          nom?: string | null
+          prenom?: string | null
+          segment?: string | null
+          source?: string | null
+          telephone?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      crm_email_logs: {
+        Row: {
+          body_preview: string | null
+          contact_id: string | null
+          email_type: string
+          error_message: string | null
+          id: string
+          opportunity_id: string | null
+          recipient_email: string
+          resend_id: string | null
+          sent_at: string | null
+          sent_by: string | null
+          status: string | null
+          subject: string
+        }
+        Insert: {
+          body_preview?: string | null
+          contact_id?: string | null
+          email_type: string
+          error_message?: string | null
+          id?: string
+          opportunity_id?: string | null
+          recipient_email: string
+          resend_id?: string | null
+          sent_at?: string | null
+          sent_by?: string | null
+          status?: string | null
+          subject: string
+        }
+        Update: {
+          body_preview?: string | null
+          contact_id?: string | null
+          email_type?: string
+          error_message?: string | null
+          id?: string
+          opportunity_id?: string | null
+          recipient_email?: string
+          resend_id?: string | null
+          sent_at?: string | null
+          sent_by?: string | null
+          status?: string | null
+          subject?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_email_logs_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "crm_contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_email_logs_opportunity_id_fkey"
+            columns: ["opportunity_id"]
+            isOneToOne: false
+            referencedRelation: "crm_opportunities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      crm_opportunities: {
+        Row: {
+          assigned_to: string | null
+          budget_estime: number | null
+          closed_at: string | null
+          created_at: string | null
+          created_by: string | null
+          date_souhaitee: string | null
+          email: string
+          entreprise: string | null
+          experience_souhaitee: string | null
+          financement_souhaite: string | null
+          fonction: string | null
+          format_souhaite: string | null
+          id: string
+          lieu_prefere: string | null
+          nom: string
+          nombre_participants: number | null
+          notes: string | null
+          objectifs: string | null
+          prenom: string
+          source: string | null
+          statut: string | null
+          telephone: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          assigned_to?: string | null
+          budget_estime?: number | null
+          closed_at?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          date_souhaitee?: string | null
+          email: string
+          entreprise?: string | null
+          experience_souhaitee?: string | null
+          financement_souhaite?: string | null
+          fonction?: string | null
+          format_souhaite?: string | null
+          id?: string
+          lieu_prefere?: string | null
+          nom: string
+          nombre_participants?: number | null
+          notes?: string | null
+          objectifs?: string | null
+          prenom: string
+          source?: string | null
+          statut?: string | null
+          telephone?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          assigned_to?: string | null
+          budget_estime?: number | null
+          closed_at?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          date_souhaitee?: string | null
+          email?: string
+          entreprise?: string | null
+          experience_souhaitee?: string | null
+          financement_souhaite?: string | null
+          fonction?: string | null
+          format_souhaite?: string | null
+          id?: string
+          lieu_prefere?: string | null
+          nom?: string
+          nombre_participants?: number | null
+          notes?: string | null
+          objectifs?: string | null
+          prenom?: string
+          source?: string | null
+          statut?: string | null
+          telephone?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_opportunities_assigned_to_fkey"
+            columns: ["assigned_to"]
+            isOneToOne: false
+            referencedRelation: "team_members"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      crm_opportunity_history: {
+        Row: {
+          action_type: string
+          created_at: string | null
+          id: string
+          new_value: string | null
+          notes: string | null
+          old_value: string | null
+          opportunity_id: string
+          performed_by: string | null
+        }
+        Insert: {
+          action_type: string
+          created_at?: string | null
+          id?: string
+          new_value?: string | null
+          notes?: string | null
+          old_value?: string | null
+          opportunity_id: string
+          performed_by?: string | null
+        }
+        Update: {
+          action_type?: string
+          created_at?: string | null
+          id?: string
+          new_value?: string | null
+          notes?: string | null
+          old_value?: string | null
+          opportunity_id?: string
+          performed_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_opportunity_history_opportunity_id_fkey"
+            columns: ["opportunity_id"]
+            isOneToOne: false
+            referencedRelation: "crm_opportunities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       data_collection_logs: {
         Row: {
           collection_mode: string
@@ -2339,6 +2571,48 @@ export type Database = {
         }
         Relationships: []
       }
+      team_members: {
+        Row: {
+          created_at: string | null
+          email: string | null
+          fonction: string | null
+          id: string
+          is_active: boolean | null
+          nom: string
+          photo_url: string | null
+          prenom: string
+          telephone: string | null
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          email?: string | null
+          fonction?: string | null
+          id?: string
+          is_active?: boolean | null
+          nom: string
+          photo_url?: string | null
+          prenom: string
+          telephone?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          email?: string | null
+          fonction?: string | null
+          id?: string
+          is_active?: boolean | null
+          nom?: string
+          photo_url?: string | null
+          prenom?: string
+          telephone?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       transcription_models: {
         Row: {
           config: Json | null
@@ -2375,6 +2649,27 @@ export type Database = {
           provider?: string
           supports_realtime?: boolean | null
           updated_at?: string | null
+        }
+        Relationships: []
+      }
+      user_roles: {
+        Row: {
+          created_at: string | null
+          id: string
+          role: Database["public"]["Enums"]["crm_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          role?: Database["public"]["Enums"]["crm_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          role?: Database["public"]["Enums"]["crm_role"]
+          user_id?: string
         }
         Relationships: []
       }
@@ -2560,6 +2855,18 @@ export type Database = {
           name: string
         }[]
       }
+      get_user_crm_role: {
+        Args: { _user_id: string }
+        Returns: Database["public"]["Enums"]["crm_role"]
+      }
+      has_any_crm_role: { Args: { _user_id: string }; Returns: boolean }
+      has_crm_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["crm_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
       increment_download_count: {
         Args: { export_slug: string }
         Returns: undefined
@@ -2645,6 +2952,7 @@ export type Database = {
       validate_admin_email_access: { Args: never; Returns: boolean }
     }
     Enums: {
+      crm_role: "admin" | "member" | "walker"
       etude_type: "principale" | "complementaire" | "annexe"
       media_type: "photo" | "audio" | "video" | "document"
     }
@@ -2774,6 +3082,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      crm_role: ["admin", "member", "walker"],
       etude_type: ["principale", "complementaire", "annexe"],
       media_type: ["photo", "audio", "video", "document"],
     },

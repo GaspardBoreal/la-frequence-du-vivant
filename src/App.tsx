@@ -60,6 +60,10 @@ import MarchesDuVivant from './pages/MarchesDuVivant';
 import MarchesDuVivantEntreprises from './pages/MarchesDuVivantEntreprises';
 import MarchesDuVivantPartenaires from './pages/MarchesDuVivantPartenaires';
 import MarchesDuVivantAssociation from './pages/MarchesDuVivantAssociation';
+// CRM Pages
+import CrmDashboard from './pages/CrmDashboard';
+import CrmPipeline from './pages/CrmPipeline';
+import TeamManagement from './pages/TeamManagement';
 
 function App() {
   return (
@@ -185,6 +189,22 @@ function App() {
             <Route path="/admin/opus/:slug" element={
               <AdminAuth>
                 <OpusAdmin />
+              </AdminAuth>
+            } />
+            {/* CRM Routes */}
+            <Route path="/admin/crm" element={
+              <AdminAuth>
+                <CrmDashboard />
+              </AdminAuth>
+            } />
+            <Route path="/admin/crm/pipeline" element={
+              <AdminAuth>
+                <CrmPipeline />
+              </AdminAuth>
+            } />
+            <Route path="/admin/crm/equipe" element={
+              <AdminAuth>
+                <TeamManagement />
               </AdminAuth>
             } />
             <Route path="/admin" element={
