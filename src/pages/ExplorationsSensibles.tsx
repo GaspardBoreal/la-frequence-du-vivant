@@ -2,7 +2,7 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { Waves, TreeDeciduous, Wheat, ExternalLink, MapPin, Compass, Check, Leaf, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import Footer from '@/components/Footer';
 import DecorativeElements from '@/components/DecorativeElements';
 
@@ -71,7 +71,15 @@ const ExplorationsSensibles: React.FC = () => {
       
       {/* Header */}
       <header className="relative z-10 pt-8 pb-4 px-6">
-        <div className="max-w-4xl mx-auto">
+        <div className="max-w-4xl mx-auto relative">
+          {/* Icône retour accueil */}
+          <Link 
+            to="/" 
+            className="absolute left-0 top-0 p-2 rounded-full bg-white/5 hover:bg-white/10 border border-white/10 hover:border-purple-400/30 transition-all duration-300 group"
+            title="Retour à l'accueil"
+          >
+            <Sparkles className="h-5 w-5 text-white/40 group-hover:text-purple-400 transition-colors" />
+          </Link>
           <motion.div
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}

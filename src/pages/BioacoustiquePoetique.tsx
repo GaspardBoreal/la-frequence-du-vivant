@@ -1,9 +1,10 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { toast } from 'sonner';
 import { HelmetProvider } from 'react-helmet-async';
+import { Sparkles } from 'lucide-react';
 import LayerSelector from '../components/LayerSelector';
 import InteractiveMap from '../components/InteractiveMap';
 import Sidebar from '../components/Sidebar';
@@ -133,7 +134,16 @@ const BioacoustiquePoetique = () => {
         <div className="relative z-10">
           {/* Header avec typographie compacte */}
           <header className="bg-card/40 backdrop-blur-lg shadow-2xl border-b border-border/20">
-            <div className="max-w-6xl mx-auto px-6 py-8">
+            <div className="max-w-6xl mx-auto px-6 py-8 relative">
+              {/* Icône retour accueil */}
+              <Link 
+                to="/" 
+                className="absolute left-6 top-1/2 -translate-y-1/2 p-2 rounded-full bg-white/5 hover:bg-white/10 border border-white/10 hover:border-purple-400/30 transition-all duration-300 group"
+                title="Retour à l'accueil"
+              >
+                <Sparkles className="h-5 w-5 text-white/40 group-hover:text-purple-400 transition-colors" />
+              </Link>
+              
               <div className="text-center space-y-2 animate-fade-in">
                 {/* Catégorie avec design exact */}
                 <div className="inline-flex items-center gap-2 px-4 py-2 bg-purple-950/30 border border-purple-500/20 rounded-full">
