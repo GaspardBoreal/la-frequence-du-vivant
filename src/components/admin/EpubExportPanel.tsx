@@ -62,6 +62,7 @@ interface EpubExportPanelProps {
   textes: TexteExport[];
   explorationCoverUrl?: string;
   explorationName?: string;
+  explorationId?: string;
   onRefresh?: () => void;
 }
 
@@ -69,6 +70,7 @@ const EpubExportPanel: React.FC<EpubExportPanelProps> = ({
   textes,
   explorationCoverUrl,
   explorationName,
+  explorationId,
   onRefresh,
 }) => {
   // State for export options
@@ -183,6 +185,7 @@ const EpubExportPanel: React.FC<EpubExportPanelProps> = ({
         coverUrl: options.coverImageUrl,
         artisticDirection: options.format,
         fileType: 'epub',
+        explorationId,
       });
       
       setLastPublishedUrl(published.publicUrl);
