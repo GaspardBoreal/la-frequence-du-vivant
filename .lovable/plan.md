@@ -2,276 +2,235 @@
 
 ## Objectif
 
-Permettre la **publication d'un ePUB Pro sur une URL publique** afin de le partager avec la communauté des lecteurs de Gaspard Boréal, au lieu du téléchargement local uniquement.
+Permettre aux lectrices et lecteurs de consulter les eBooks Pro **directement en ligne** (consultation web responsive Mobile/Tablette/Desktop) selon les trois directions artistiques : **Galerie Fleuve**, **La Frequence du Vivant**, et **Dordonia** - en plus du telechargement du fichier .epub deja disponible.
 
 ---
 
 ## Analyse de l'existant
 
-| Élément | État actuel |
-|---------|-------------|
-| Génération ePUB | Client-side via `epub-gen-memory`, retourne un `Blob` |
-| Téléchargement | `file-saver` déclenche un download local |
-| Stockage Supabase | Buckets existants : `marche-photos`, `marche-videos`, `marche-audio`, `etudes-pdf`, `documents-annexes` |
-| Table exports | `export_keywords` pour mots-clés, mais **aucune table pour les exports publiés** |
-| URLs publiques | Pattern établi : `/lecteurs/exploration/:slug/...` pour le contenu progressif |
+| Composant | Etat actuel |
+|-----------|-------------|
+| **LivreVivantViewer** | Viewer complet avec navigation, renderers modulaires, simulation device (Mobile/Tablette/Desktop), integration Traversees. Actuellement reserve a l'admin dans `/admin/exportations` |
+| **PublicEpubDownload** | Page `/epub/:slug` permettant de telecharger le .epub publie. Affiche couverture, metadata, bouton download |
+| **Directions artistiques** | 3 presets complets definis dans `epubExportUtils.ts` : `galerie_fleuve`, `frequence_vivant`, `dordonia` avec colorSchemes et typographies specifiques |
+| **Table `published_exports`** | Stocke les exports publies avec `artistic_direction` deja enregistree |
+| **Routes lecteurs** | Pattern etabli : `/lecteurs/exploration/:slug/...` |
 
 ---
 
-## Architecture proposée
+## Solution proposee : Double experience lecteur
+
+Offrir aux lecteurs **deux modes de consultation** depuis une page d'accueil enrichie :
 
 ```text
-┌──────────────────────────────────────────────────────────────────────┐
-│                        ADMIN - Export Panel                          │
-│  ┌──────────────┐    ┌──────────────┐    ┌──────────────────────┐    │
-│  │  Générer     │ →  │  Télécharger │    │  Publier & Partager  │    │
-│  │  (existant)  │    │  (existant)  │    │  (NOUVEAU)           │    │
-│  └──────────────┘    └──────────────┘    └──────────────────────┘    │
-│                                                    │                 │
-│                                                    ▼                 │
-│                                          ┌─────────────────┐         │
-│                                          │ Upload Storage  │         │
-│                                          │ public-exports  │         │
-│                                          └────────┬────────┘         │
-│                                                   │                  │
-│                                                   ▼                  │
-│                                          ┌─────────────────┐         │
-│                                          │ Insert DB       │         │
-│                                          │ published_exports│        │
-│                                          └────────┬────────┘         │
-│                                                   │                  │
-└───────────────────────────────────────────────────│──────────────────┘
-                                                    │
-                                                    ▼
-┌──────────────────────────────────────────────────────────────────────┐
-│                      PUBLIC - Lien partageable                       │
-│                                                                      │
-│   https://la-frequence-du-vivant.lovable.app/epub/{unique-slug}     │
-│                                                                      │
-│   → Affiche : Couverture + Titre + Description + Bouton Télécharger │
-└──────────────────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                     PAGE PUBLIQUE /epub/:slug                               │
+│                                                                             │
+│   ┌─────────────────────────────────────────────────────────────────────┐   │
+│   │                    [Couverture]                                      │   │
+│   │                                                                      │   │
+│   │   Frequences de la riviere Dordogne                                  │   │
+│   │   Atlas des Vivants                                                  │   │
+│   │   par Gaspard Boreal                                                 │   │
+│   │                                                                      │   │
+│   │   [Badge: Galerie Fleuve]                                            │   │
+│   │                                                                      │   │
+│   │   ┌─────────────────────┐   ┌─────────────────────┐                  │   │
+│   │   │   📖 Lire en ligne  │   │   ⬇️ Telecharger    │                  │   │
+│   │   │   (Livre Vivant)    │   │   (.epub)          │                  │   │
+│   │   └─────────────────────┘   └─────────────────────┘                  │   │
+│   │                                                                      │   │
+│   │   267 telechargements • 1.2 Mo                                       │   │
+│   └─────────────────────────────────────────────────────────────────────┘   │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+                                    │
+                                    ▼ Clic "Lire en ligne"
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                  PAGE /epub/:slug/lire                                      │
+│                                                                             │
+│   ┌─────────────────────────────────────────────────────────────────────┐   │
+│   │                   LIVRE VIVANT PUBLIC                                │   │
+│   │                                                                      │   │
+│   │   [Desktop] [Tablet] [Mobile]           ← 1/56     Fermer [X]       │   │
+│   │   ─────────────────────────────────────────────────────────────────  │   │
+│   │                                                                      │   │
+│   │              ┌──────────────────────────────────┐                    │   │
+│   │              │                                  │                    │   │
+│   │              │   Frequences de la riviere      │                    │   │
+│   │              │   Dordogne - atlas des vivants  │                    │   │
+│   │              │                                  │                    │   │
+│   │              │   Gaspard Boreal                │                    │   │
+│   │              │   La Comedie des Mondes Hybrides│                    │   │
+│   │              │                                  │                    │   │
+│   │              └──────────────────────────────────┘                    │   │
+│   │                                                                      │   │
+│   │   ─────────────────────────────────────────────────────────────────  │   │
+│   │   🏠 Accueil  📋 Sommaire  📍 Lieux  📖 Genres  🧭 Traversees       │   │
+│   │                                                                      │   │
+│   │   ▓▓▓▓▓▓▓▓▓░░░░░░░░░░░░░░░░░░░░░░  3%                               │   │
+│   │   |◀  ◀  1 / 56  ▶  ▶|                                              │   │
+│   └─────────────────────────────────────────────────────────────────────┘   │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-## Modifications techniques
+## Architecture technique
 
-### 1. Création d'un bucket Supabase `public-exports`
+### 1. Nouvelle table `exploration_ebooks` (optionnel pour phase 2)
 
-**Migration SQL** : `supabase/migrations/xxx_create_public_exports_bucket.sql`
+Pour la **Phase 1**, on reutilise la table `published_exports` existante qui contient deja tout le necessaire.
 
-- Bucket public pour stocker les fichiers ePUB et PDF générés
-- Politique RLS : lecture publique, écriture réservée aux admins authentifiés
-
-```text
--- Créer le bucket
-INSERT INTO storage.buckets (id, name, public) 
-VALUES ('public-exports', 'public-exports', true);
-
--- Politique de lecture publique
-CREATE POLICY "Public can read exports"
-ON storage.objects FOR SELECT
-USING (bucket_id = 'public-exports');
-
--- Politique d'écriture admin
-CREATE POLICY "Authenticated admins can upload exports"
-ON storage.objects FOR INSERT
-WITH CHECK (
-  bucket_id = 'public-exports' 
-  AND auth.role() = 'authenticated'
-  AND public.check_is_admin_user(auth.uid())
-);
-```
-
-### 2. Création de la table `published_exports`
-
-**Migration SQL** : même fichier migration
+Pour une **Phase 2** ulterieure (ebooks pre-generes par direction artistique), on pourrait ajouter :
 
 ```text
-CREATE TABLE public.published_exports (
+CREATE TABLE exploration_ebooks (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  
-  -- Identifiant unique pour URL publique
-  slug text UNIQUE NOT NULL,
-  
-  -- Lien avec exploration (optionnel)
-  exploration_id uuid REFERENCES explorations(id),
-  
-  -- Métadonnées affichées
-  title text NOT NULL,
-  subtitle text,
-  description text,
-  author text DEFAULT 'Gaspard Boréal',
-  cover_url text,
-  
-  -- Fichier stocké
-  file_url text NOT NULL,
-  file_size_bytes bigint,
-  file_type text DEFAULT 'epub',  -- 'epub' | 'pdf'
-  
-  -- Direction artistique utilisée
-  artistic_direction text,  -- 'galerie_fleuve' | 'dordonia' | etc.
-  
-  -- Stats
-  download_count integer DEFAULT 0,
-  
-  -- Dates
-  published_at timestamptz DEFAULT now(),
-  expires_at timestamptz,  -- NULL = permanent
-  
+  exploration_id uuid REFERENCES explorations(id) NOT NULL,
+  artistic_direction text NOT NULL,  -- 'galerie_fleuve' | 'frequence_vivant' | 'dordonia'
+  is_public boolean DEFAULT true,
   created_at timestamptz DEFAULT now(),
-  updated_at timestamptz DEFAULT now()
+  updated_at timestamptz DEFAULT now(),
+  UNIQUE(exploration_id, artistic_direction)
 );
-
--- RLS
-ALTER TABLE published_exports ENABLE ROW LEVEL SECURITY;
-
-CREATE POLICY "Public can view published exports"
-ON published_exports FOR SELECT USING (true);
-
-CREATE POLICY "Admins can manage exports"
-ON published_exports FOR ALL
-USING (public.check_is_admin_user(auth.uid()));
-
--- Index pour lookup par slug
-CREATE INDEX idx_published_exports_slug ON published_exports(slug);
 ```
 
-### 3. Fonction utilitaire `uploadPublicExport`
+### 2. Nouvelle page `PublicLivreVivant.tsx`
 
-**Fichier** : `src/utils/publicExportUtils.ts` (nouveau)
+**Route** : `/epub/:slug/lire`
+
+Cette page :
+1. Recupere le `published_export` via le slug
+2. Recupere les textes de l'exploration associee (via `exploration_id`)
+3. Construit les options EPUB avec la direction artistique stockee
+4. Affiche le **LivreVivantViewer** en mode plein ecran
 
 ```text
-export interface PublishExportOptions {
-  blob: Blob;
-  title: string;
-  subtitle?: string;
-  description?: string;
-  author?: string;
-  coverUrl?: string;
-  explorationId?: string;
-  artisticDirection?: string;
-  fileType: 'epub' | 'pdf';
-}
-
-export interface PublishedExport {
-  id: string;
-  slug: string;
-  publicUrl: string;
-  fileUrl: string;
-}
-
-export const publishExport = async (options: PublishExportOptions): Promise<PublishedExport>
+┌─────────────────────────────────────────────────────────────────────────────┐
+│  PublicLivreVivant.tsx                                                      │
+│                                                                             │
+│  1. useParams() → slug                                                      │
+│  2. SELECT * FROM published_exports WHERE slug = :slug                      │
+│  3. Si exploration_id → useExplorationTexts(exploration_id)                 │
+│  4. Construire EpubExportOptions avec artistic_direction                    │
+│  5. Render <PublicLivreVivantViewer textes={textes} options={options} />    │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
 ```
 
-Logique :
-1. Générer un slug unique (ex: `frequences-dordogne-2025-a3f7`)
-2. Upload le Blob vers `public-exports/{slug}.epub`
-3. Récupérer l'URL publique Storage
-4. Insérer dans `published_exports`
-5. Retourner l'URL de partage
+### 3. Nouveau composant `PublicLivreVivantViewer.tsx`
 
-### 4. Page publique de téléchargement
+Version publique du LivreVivantViewer :
+- **Sans Dialog** : page plein ecran directe (pas de modal)
+- **Bouton retour** : vers `/epub/:slug` au lieu de fermer
+- **Mode responsive natif** : detection automatique du device
+- **Conservation de toutes les fonctionnalites** : navigation, renderers, Traversees
 
-**Route** : `/epub/:slug`
+### 4. Modification de `PublicEpubDownload.tsx`
 
-**Fichier** : `src/pages/PublicEpubDownload.tsx` (nouveau)
+Ajouter un **deuxieme bouton** "Lire en ligne" :
 
-Page élégante avec :
-- Image de couverture (si disponible)
-- Titre et sous-titre
-- Description (quatrième de couverture)
-- Direction artistique (badge visuel)
-- Bouton "Télécharger l'ePUB"
-- Compteur de téléchargements (optionnel)
-- Lien vers l'exploration complète
-
-Design cohérent avec l'identité "Gaspard Boréal" (émeraude, forêt, typographie éditoriale).
-
-### 5. Modification de `EpubExportPanel.tsx`
-
-**Ajouts UI** :
-- Nouveau bouton "Publier & Partager" à côté de "Générer l'EPUB"
-- Modal de confirmation avec aperçu du lien généré
-- Copie du lien dans le presse-papiers
-- Historique des exports publiés (collapsible section)
-
-**États** :
 ```text
-const [publishing, setPublishing] = useState(false);
-const [publishedExports, setPublishedExports] = useState<PublishedExport[]>([]);
-const [showPublishModal, setShowPublishModal] = useState(false);
-const [lastPublishedUrl, setLastPublishedUrl] = useState<string | null>(null);
+<Button variant="outline" size="lg" onClick={() => navigate(`/epub/${slug}/lire`)}>
+  <BookOpen className="h-5 w-5 mr-2" />
+  Lire en ligne
+</Button>
 ```
 
-**Nouveau handler** :
+### 5. Modification de `publicExportUtils.ts`
+
+Ajouter `exploration_id` lors de la publication pour permettre la recuperation des textes :
+
 ```text
-const handlePublishAndShare = async () => {
-  setPublishing(true);
-  const { blob } = await exportToEpub(textes, options);
-  const published = await publishExport({
-    blob,
-    title: options.title,
-    subtitle: options.subtitle,
-    description: options.description,
-    coverUrl: options.coverImageUrl,
-    artisticDirection: options.format,
-    fileType: 'epub',
-  });
-  setLastPublishedUrl(published.publicUrl);
-  setShowPublishModal(true);
-  setPublishing(false);
-};
+export const publishExport = async (options: PublishExportOptions): Promise<PublishedExport> => {
+  // ... existing code ...
+  
+  const { data: insertData } = await supabase
+    .from('published_exports')
+    .insert({
+      // ... existing fields ...
+      exploration_id: options.explorationId,  // ← Ajouter ce champ
+    })
 ```
 
-### 6. Mise à jour du Router
-
-**Fichier** : `src/App.tsx` (ou routes config)
+### 6. Mise a jour du Router
 
 ```text
+// App.tsx
 <Route path="/epub/:slug" element={<PublicEpubDownload />} />
+<Route path="/epub/:slug/lire" element={<PublicLivreVivant />} />  // ← Nouveau
 ```
 
 ---
 
-## Fichiers à créer/modifier
+## Fichiers a creer/modifier
 
-| Fichier | Action |
-|---------|--------|
-| `supabase/migrations/xxx_create_public_exports.sql` | CRÉER - bucket + table |
-| `src/utils/publicExportUtils.ts` | CRÉER - logique publication |
-| `src/pages/PublicEpubDownload.tsx` | CRÉER - page publique |
-| `src/components/admin/EpubExportPanel.tsx` | MODIFIER - ajouter bouton Publier |
-| `src/App.tsx` | MODIFIER - ajouter route /epub/:slug |
-| `src/integrations/supabase/types.ts` | AUTO-GÉNÉRÉ après migration |
-
----
-
-## URL finale générée
-
-Format : `https://la-frequence-du-vivant.lovable.app/epub/{slug}`
-
-Exemple : `https://la-frequence-du-vivant.lovable.app/epub/frequences-dordogne-galerie-fleuve-2025`
+| Fichier | Action | Description |
+|---------|--------|-------------|
+| `src/pages/PublicLivreVivant.tsx` | CREER | Page publique de lecture en ligne |
+| `src/components/public/PublicLivreVivantViewer.tsx` | CREER | Viewer adapte pour les lecteurs publics |
+| `src/pages/PublicEpubDownload.tsx` | MODIFIER | Ajouter bouton "Lire en ligne" |
+| `src/utils/publicExportUtils.ts` | MODIFIER | Ajouter `exploration_id` au workflow de publication |
+| `src/components/admin/EpubExportPanel.tsx` | MODIFIER | Passer `explorationId` a `publishExport()` |
+| `src/App.tsx` | MODIFIER | Ajouter route `/epub/:slug/lire` |
 
 ---
 
-## Avantages
+## Workflow utilisateur
 
-1. **Partage simplifié** : Un lien unique à envoyer à la communauté
-2. **Expérience lecteur** : Page de présentation professionnelle avant téléchargement
-3. **Traçabilité** : Compteur de téléchargements par export
-4. **Flexibilité** : Possibilité d'expirer des liens ou de les supprimer
-5. **Cohérence** : Suit le pattern `/lecteurs/...` déjà établi
-
----
-
-## Vérification (acceptance)
+### Pour l'administrateur :
 
 1. Aller sur `/admin/exportations`
-2. Configurer un export ePUB avec direction artistique
-3. Cliquer "Publier & Partager"
-4. Vérifier que le modal affiche l'URL générée
-5. Ouvrir l'URL dans un nouvel onglet (navigation privée)
-6. Vérifier l'affichage de la page publique avec couverture et métadonnées
-7. Cliquer "Télécharger" et vérifier que le fichier .epub se télécharge
+2. Selectionner une direction artistique (ex: "Galerie Fleuve")
+3. Configurer les metadonnees
+4. Cliquer "Publier & Partager"
+5. Copier le lien public `/epub/{slug}`
+
+### Pour le lecteur :
+
+1. Recevoir le lien `/epub/{slug}`
+2. Voir la page d'accueil avec couverture et description
+3. **Choix 1** : Cliquer "Lire en ligne" → ouverture du Livre Vivant responsive
+4. **Choix 2** : Cliquer "Telecharger" → telechargement du .epub
+
+---
+
+## Avantages de cette approche
+
+1. **Reutilisation maximale** : Le LivreVivantViewer existe deja, seule une adaptation legere est necessaire
+2. **Coherence visuelle** : Les lecteurs voient exactement la meme experience que l'apercu admin
+3. **Respect des directions artistiques** : Chaque publication conserve son theme (couleurs, typographie)
+4. **Mobile-first** : Le viewer est deja responsive
+5. **SEO-friendly** : Les pages publiques sont indexables
+6. **Evolutif** : Permet d'ajouter facilement de nouvelles directions artistiques
+
+---
+
+## Phase 2 (future) : Acces direct par direction depuis Galerie Fleuve
+
+Une fois le systeme valide, on pourra ajouter des liens directs depuis les pages thematiques :
+
+- Galerie Fleuve (`/galerie-fleuve/exploration/:slug`) → bouton "📖 eBook Galerie Fleuve"
+- Bioacoustique → bouton "📖 eBook Frequence du Vivant"
+- Dordonia (`/dordonia`) → bouton "📖 eBook Dordonia"
+
+Ces liens pourraient pointer directement vers `/epub/{slug-specific}/lire` ou generer dynamiquement l'ebook si non publie.
+
+---
+
+## Verification (acceptance)
+
+1. Publier un ePUB depuis `/admin/exportations` avec direction "Galerie Fleuve"
+2. Copier le lien public genere
+3. Ouvrir le lien en navigation privee
+4. Verifier la presence des deux boutons : "Lire en ligne" et "Telecharger"
+5. Cliquer "Lire en ligne"
+6. Verifier :
+   - L'affichage du Livre Vivant avec les couleurs "Galerie Fleuve"
+   - La navigation entre pages fonctionne
+   - Le toggle Mobile/Tablette/Desktop fonctionne
+   - Les Traversees sont accessibles
+7. Tester sur mobile reel pour verifier la responsivite
 
