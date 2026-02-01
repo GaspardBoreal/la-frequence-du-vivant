@@ -4,6 +4,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Palette, Camera, MapPin, Clock, Stars, Waves, Grid3x3, Eye, Heart, Leaf, Flower2 as Flower, Grape } from 'lucide-react';
 import { ExplorationTheme } from '@/utils/explorationThemes';
+import EbookSelectorDialog from './EbookSelectorDialog';
 import { useIsMobile } from '@/hooks/use-mobile';
 
 // Mapping des icônes string vers composants
@@ -314,6 +315,11 @@ const GalerieFleuveWelcome: React.FC<GalerieFluveWelcomeProps> = ({
                <a href="https://www.gaspardboreal.com/conferences" target="_blank" rel="noopener noreferrer" className={`text-white/80 hover:text-white transition-colors ${isMobile ? 'text-sm' : 'text-base'} hover:underline`}>
                  Conférences et formation IA
                </a>
+               <EbookSelectorDialog trigger={
+                 <button className={`text-white/60 hover:text-white/90 transition-colors ${isMobile ? 'text-sm' : 'text-base'} italic`}>
+                   Livre Vivant
+                 </button>
+               } />
              </div>
           </motion.div>
         </div>

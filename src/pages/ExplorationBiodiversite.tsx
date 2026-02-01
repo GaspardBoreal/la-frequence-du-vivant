@@ -14,6 +14,7 @@ import EmblematicSpeciesGallery from '@/components/biodiversity/EmblematicSpecie
 import { BiodiversityMap } from '@/components/biodiversity/BiodiversityMap';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import BiodiversityTestPanel from '@/components/biodiversity/BiodiversityTestPanel';
+import EbookSelectorDialog from '@/components/EbookSelectorDialog';
 
 export default function ExplorationBiodiversite() {
   const { slug } = useParams<{ slug: string }>();
@@ -289,9 +290,17 @@ export default function ExplorationBiodiversite() {
 
       {/* Footer */}
       <footer className="py-6 md:py-8 px-4 bg-slate-950 border-t border-slate-800 text-center">
-        <p className="text-muted-foreground text-xs md:text-sm">
-          Données issues de GBIF, iNaturalist, eBird et Xeno-Canto
-        </p>
+        <div className="flex items-center justify-center gap-4 mb-2 flex-wrap">
+          <p className="text-muted-foreground text-xs md:text-sm">
+            Données issues de GBIF, iNaturalist, eBird et Xeno-Canto
+          </p>
+          <span className="text-muted-foreground/40 hidden sm:inline">·</span>
+          <EbookSelectorDialog trigger={
+            <button className="text-muted-foreground/60 hover:text-muted-foreground transition-colors text-xs italic">
+              Livre Vivant
+            </button>
+          } />
+        </div>
         <p className="text-muted-foreground/60 text-xs mt-2">
           © 2025 - 2026 La Fréquence du Vivant
         </p>
