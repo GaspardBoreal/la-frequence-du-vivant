@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Waves } from 'lucide-react';
+import EbookSelectorDialog from '../EbookSelectorDialog';
 
 interface DordoniaWelcomeProps {
   onContinue: () => void;
@@ -114,8 +115,13 @@ const DordoniaWelcome: React.FC<DordoniaWelcomeProps> = ({ onContinue }) => {
         initial={{ opacity: 0 }}
         animate={{ opacity: 0.4 }}
         transition={{ duration: 2, delay: 3 }}
-        className="absolute bottom-4 left-0 right-0 flex justify-center"
+        className="absolute bottom-4 left-0 right-0 flex flex-col items-center gap-2"
       >
+        <EbookSelectorDialog trigger={
+          <button className="text-muted-foreground/40 hover:text-cyan-400/60 transition-colors text-xs tracking-wider uppercase">
+            Livre Vivant
+          </button>
+        } />
         <p className="font-crimson text-sm tracking-wide text-muted-foreground/60 italic text-center">
           © 2026 Gaspard Boréal / Contenus sous licence CC BY-NC-SA 4.0
         </p>
