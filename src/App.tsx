@@ -55,6 +55,7 @@ import ExplorationsSensibles from './pages/ExplorationsSensibles';
 import MaterielPedagogique from './pages/MaterielPedagogique';
 import Dordonia from './pages/Dordonia';
 import PublicEpubDownload from './pages/PublicEpubDownload';
+import PublicEpubRead from './pages/PublicEpubRead';
 
 function App() {
   return (
@@ -197,6 +198,7 @@ function App() {
               </AdminAuth>
             } />
             <Route path="/favicon-test" element={<FaviconTest />} />
+            <Route path="/epub/:slug/lire" element={<PublicEpubRead />} />
             <Route path="/epub/:slug" element={<PublicEpubDownload />} />
             <Route path="/meteo-historique" element={<WeatherCalendar />} />
             <Route path="/atlas-climatique" element={<AtlasClimatique />} />

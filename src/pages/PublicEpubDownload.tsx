@@ -32,6 +32,7 @@ interface PublishedExportData {
   file_type: string;
   artistic_direction: string | null;
   download_count: number;
+  exploration_id: string | null;
   published_at: string;
 }
 
@@ -247,6 +248,19 @@ const PublicEpubDownload: React.FC = () => {
               {/* Download Button */}
               <Card className="bg-primary/5 border-primary/20">
                 <CardContent className="p-6">
+                  <div className="space-y-3">
+                    {exportData.exploration_id && (
+                      <Link to={`/epub/${exportData.slug}/lire`} className="block">
+                        <Button
+                          variant="secondary"
+                          size="lg"
+                          className="w-full text-lg py-6"
+                        >
+                          <BookOpen className="h-5 w-5 mr-2" />
+                          Lire en ligne
+                        </Button>
+                      </Link>
+                    )}
                   <Button
                     onClick={handleDownload}
                     disabled={downloading}
@@ -265,9 +279,15 @@ const PublicEpubDownload: React.FC = () => {
                       </>
                     )}
                   </Button>
+                  </div>
                   <p className="text-xs text-muted-foreground text-center mt-3">
                     Fichier {exportData.file_type.toUpperCase()} compatible avec tous les lecteurs
                   </p>
+                  {exportData.exploration_id && (
+                    <p className="text-xs text-muted-foreground text-center mt-2">
+                      Lecture immersive (Livre Vivant)
+                    </p>
+                  )}
                 </CardContent>
               </Card>
             </div>
