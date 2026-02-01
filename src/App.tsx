@@ -56,6 +56,10 @@ import MaterielPedagogique from './pages/MaterielPedagogique';
 import Dordonia from './pages/Dordonia';
 import PublicEpubDownload from './pages/PublicEpubDownload';
 import PublicLivreVivant from './pages/PublicLivreVivant';
+import MarchesDuVivant from './pages/MarchesDuVivant';
+import MarchesDuVivantEntreprises from './pages/MarchesDuVivantEntreprises';
+import MarchesDuVivantPartenaires from './pages/MarchesDuVivantPartenaires';
+import MarchesDuVivantAssociation from './pages/MarchesDuVivantAssociation';
 
 function App() {
   return (
@@ -74,6 +78,12 @@ function App() {
             <Route path="/explorations-sensibles" element={<ExplorationsSensibles />} />
             <Route path="/materiel-pedagogique" element={<MaterielPedagogique />} />
             <Route path="/dordonia" element={<Dordonia />} />
+            
+            {/* Routes Les Marches du Vivant */}
+            <Route path="/marches-du-vivant" element={<MarchesDuVivant />} />
+            <Route path="/marches-du-vivant/entreprises" element={<MarchesDuVivantEntreprises />} />
+            <Route path="/marches-du-vivant/partenaires" element={<MarchesDuVivantPartenaires />} />
+            <Route path="/marches-du-vivant/association" element={<MarchesDuVivantAssociation />} />
             
             {/* Routes explorations */}
             <Route path="/explorations" element={<ExplorationsList />} />
