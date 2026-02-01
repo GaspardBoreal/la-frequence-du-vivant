@@ -1506,8 +1506,11 @@ const ExportationsAdmin: React.FC = () => {
           <CardContent>
             <EpubExportPanel
               textes={filteredTextes}
-              explorationCoverUrl={explorations.find(e => selectedExplorations.has(e.id))?.id ? undefined : undefined}
+              explorationCoverUrl={undefined}
               explorationName={explorations.find(e => selectedExplorations.has(e.id))?.name}
+              explorationId={selectedExplorations.size === 1 
+                ? Array.from(selectedExplorations)[0] 
+                : undefined}
               onRefresh={() => loadData(true)}
             />
           </CardContent>
