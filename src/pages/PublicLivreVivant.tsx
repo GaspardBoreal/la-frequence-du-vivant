@@ -63,7 +63,7 @@ const PublicLivreVivant: React.FC = () => {
         return;
       }
 
-      // 2. Fetch texts from exploration with join through exploration_marches
+      // 2. Fetch exploration_marches with parties
       const { data: explorationMarches, error: marchesError } = await supabase
         .from('exploration_marches')
         .select(`
@@ -73,15 +73,7 @@ const PublicLivreVivant: React.FC = () => {
           marches!inner(
             id,
             ville,
-            nom_marche,
-            marche_textes(
-              id,
-              titre,
-              contenu,
-              type_texte,
-              ordre,
-              metadata
-            )
+            nom_marche
           ),
           exploration_parties(
             id,
@@ -98,7 +90,35 @@ const PublicLivreVivant: React.FC = () => {
       if (cancelled) return;
 
       if (marchesError) {
-        console.error('Error fetching textes:', marchesError);
+        console.error('Error fetching exploration_marches:', marchesError);
+        setState({
+          status: 'error',
+          message: 'Erreur lors du chargement des marches.',
+        });
+        return;
+      }
+
+      // 3. Get all marche_ids and fetch textes separately (no FK on marche_textes)
+      const marcheIds = (explorationMarches || []).map(em => (em.marches as any)?.id).filter(Boolean);
+      
+      if (marcheIds.length === 0) {
+        setState({
+          status: 'error',
+          message: 'Aucune marche publiée pour cette exploration.',
+        });
+        return;
+      }
+
+      const { data: allTextes, error: textesError } = await supabase
+        .from('marche_textes')
+        .select('id, titre, contenu, type_texte, ordre, metadata, marche_id')
+        .in('marche_id', marcheIds)
+        .order('ordre', { ascending: true });
+
+      if (cancelled) return;
+
+      if (textesError) {
+        console.error('Error fetching textes:', textesError);
         setState({
           status: 'error',
           message: 'Erreur lors du chargement des textes.',
@@ -106,30 +126,51 @@ const PublicLivreVivant: React.FC = () => {
         return;
       }
 
-      // 3. Transform data into TexteExport format
-      const textes: TexteExport[] = [];
-      
+      // 4. Build a map of marche_id -> marche info for quick lookup
+      const marcheMap = new Map<string, { ville: string; nom: string; partie: any; ordre: number }>();
       for (const em of explorationMarches || []) {
         const marche = em.marches as any;
-        const partie = em.exploration_parties as any;
-        const marcheTextes = marche?.marche_textes || [];
+        if (marche?.id) {
+          marcheMap.set(marche.id, {
+            ville: marche.ville || '',
+            nom: marche.nom_marche || marche.ville || '',
+            partie: em.exploration_parties as any,
+            ordre: em.ordre ?? 0,
+          });
+        }
+      }
 
-        for (const texte of marcheTextes) {
+      // 5. Transform data into TexteExport format
+      const textes: TexteExport[] = [];
+      
+      for (const texte of allTextes || []) {
+        const marcheInfo = marcheMap.get(texte.marche_id);
+        if (marcheInfo) {
           textes.push({
             id: texte.id,
             titre: texte.titre,
             contenu: texte.contenu,
             type_texte: texte.type_texte,
             ordre: texte.ordre ?? 1,
-            marche_ville: marche?.ville || '',
-            marche_nom: marche?.nom_marche || marche?.ville || '',
-            partie_id: partie?.id || undefined,
-            partie_titre: partie?.titre || undefined,
-            partie_numero_romain: partie?.numero_romain || undefined,
-            partie_ordre: partie?.ordre || undefined,
+            marche_ville: marcheInfo.ville,
+            marche_nom: marcheInfo.nom,
+            partie_id: marcheInfo.partie?.id || undefined,
+            partie_titre: marcheInfo.partie?.titre || undefined,
+            partie_numero_romain: marcheInfo.partie?.numero_romain || undefined,
+            partie_ordre: marcheInfo.partie?.ordre || undefined,
           });
         }
       }
+
+      // Sort textes by marche ordre then texte ordre
+      textes.sort((a, b) => {
+        const marcheA = marcheMap.get((allTextes || []).find(t => t.id === a.id)?.marche_id || '');
+        const marcheB = marcheMap.get((allTextes || []).find(t => t.id === b.id)?.marche_id || '');
+        const ordreA = marcheA?.ordre ?? 0;
+        const ordreB = marcheB?.ordre ?? 0;
+        if (ordreA !== ordreB) return ordreA - ordreB;
+        return (a.ordre ?? 0) - (b.ordre ?? 0);
+      });
 
       if (textes.length === 0) {
         setState({
