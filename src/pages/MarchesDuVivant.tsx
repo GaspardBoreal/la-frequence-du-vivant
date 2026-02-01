@@ -114,7 +114,7 @@ const MarchesDuVivant = () => {
                   </div>
                   
                   <h2 className="font-crimson text-2xl text-foreground mb-3">
-                    Pour les Entreprises
+                    Pour les Entreprises et Collectivités
                   </h2>
                   
                   <div className="flex flex-wrap gap-2 mb-4">
