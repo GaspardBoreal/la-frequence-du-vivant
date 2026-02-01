@@ -57,6 +57,11 @@ const Footer = () => {
               <Link 
                 to="/marches-du-vivant" 
                 className="flex items-center gap-2 text-muted-foreground hover:text-[#4ade80] transition-colors font-medium"
+                onClick={() => {
+                  setTimeout(() => {
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                  }, 100);
+                }}
               >
                 <Leaf size={16} />
                 <span>Les Marches du Vivant</span>
