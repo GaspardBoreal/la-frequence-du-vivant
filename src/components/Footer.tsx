@@ -54,6 +54,13 @@ const Footer = () => {
               Explorer les fréquences
             </a>
             <div className="space-y-2">
+              <Link 
+                to="/marches-du-vivant" 
+                className="flex items-center gap-2 text-muted-foreground hover:text-[#4ade80] transition-colors font-medium"
+              >
+                <Leaf size={16} />
+                <span>Les Marches du Vivant</span>
+              </Link>
               <a 
                 href="/bioacoustique/la-ou-elle-se-jette-je-me-redresse-a-bec-dambes--bec-dambes-gauriac" 
                 className="flex items-center gap-2 text-muted-foreground hover:text-[#4ade80] transition-colors"
