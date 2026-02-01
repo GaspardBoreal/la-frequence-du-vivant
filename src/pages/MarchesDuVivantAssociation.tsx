@@ -16,11 +16,18 @@ import {
 // Équipe fondatrice
 const contributeurs: ContributeurData[] = [
   {
+    nom: 'Laurent Tripied',
+    role: 'Président - CEO bziiit & Piloterra',
+    bio: 'IA frugale & responsable | Agriculture + création | Dispositifs utiles, sobres, désirables | Ateliers, formations, conférences.',
+    linkedin: 'https://www.linkedin.com/in/laurenttripied/',
+    couleur: 'emerald',
+  },
+  {
     nom: 'Laurence Karki',
-    role: 'Présidente',
+    role: 'Vice-Présidente - Consultante RH',
     bio: 'Consultante RH chez Lee Hecht Harrison-Altedia. Passionnée par l\'accompagnement des transitions professionnelles et territoriales.',
     linkedin: 'https://www.linkedin.com/in/laurence-karki-43153620/',
-    couleur: 'emerald',
+    couleur: 'blue',
   },
   {
     nom: 'Victor Boixeda',
@@ -28,13 +35,6 @@ const contributeurs: ContributeurData[] = [
     bio: 'Étudiant en 1ère année à l\'ISEG, curieux, motivé et passionné de sport et de sciences. En recherche d\'expériences professionnelles.',
     linkedin: 'https://www.linkedin.com/in/victor-boixeda-a70b8138b/',
     couleur: 'orange',
-  },
-  {
-    nom: 'Laurent Tripied',
-    role: 'CEO bziiit & Piloterra',
-    bio: 'IA frugale & responsable | Agriculture + création | Dispositifs utiles, sobres, désirables | Ateliers, formations, conférences.',
-    linkedin: 'https://www.linkedin.com/in/laurenttripied/',
-    couleur: 'blue',
   },
   {
     nom: 'Gaspard Boréal',
