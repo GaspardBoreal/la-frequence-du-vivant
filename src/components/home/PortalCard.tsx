@@ -25,8 +25,12 @@ export default function PortalCard({
   const navigate = useNavigate();
 
   const handleClick = () => {
-    navigate(href);
-    window.scrollTo({ top: 0, behavior: 'instant' });
+    if (href.startsWith('http')) {
+      window.open(href, '_blank', 'noopener,noreferrer');
+    } else {
+      navigate(href);
+      window.scrollTo({ top: 0, behavior: 'instant' });
+    }
   };
 
   return (
