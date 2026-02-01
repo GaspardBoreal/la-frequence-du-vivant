@@ -13,7 +13,7 @@ export default function PoetryPortal() {
       <PortalCard
         title="POÉSIE"
         description="Fragments du vivant, vers éphémères à l'intersection de l'art et de la science"
-        href="/dordonia"
+        href="https://la-frequence-du-vivant.com/epub/frequences-de-la-riviere-dordogne-atlas-des-vivant-2026-02-01-5257/lire"
         accentColor="#E879F9"
         glowColor="#F9A8D4"
         delay={0.3}
