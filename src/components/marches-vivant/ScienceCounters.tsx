@@ -2,6 +2,8 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { Leaf, Camera, MapPin, Database } from 'lucide-react';
 import { useBiodiversityStats } from '@/hooks/useBiodiversityStats';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
 
 interface CounterItemProps {
   icon: React.ReactNode;
@@ -35,9 +37,21 @@ interface ScienceCountersProps {
 }
 
 const ScienceCounters: React.FC<ScienceCountersProps> = ({ className = '' }) => {
-  const { data: stats, isLoading } = useBiodiversityStats();
+  const { data: stats } = useBiodiversityStats();
+  
+  // Requête séparée pour le nombre réel de marches
+  const { data: marchesCount } = useQuery({
+    queryKey: ['marches-count'],
+    queryFn: async () => {
+      const { count, error } = await supabase
+        .from('marches')
+        .select('*', { count: 'exact', head: true });
+      if (error) throw error;
+      return count || 0;
+    },
+    staleTime: 1000 * 60 * 30,
+  });
 
-  // Valeurs par défaut basées sur les données actuelles
   const counters = [
     { 
       icon: <Leaf className="w-5 h-5 text-emerald-400" />, 
@@ -46,12 +60,12 @@ const ScienceCounters: React.FC<ScienceCountersProps> = ({ className = '' }) => 
     },
     { 
       icon: <Camera className="w-5 h-5 text-amber-400" />, 
-      value: 241, // Valeur fixe basée sur la requête
+      value: 241,
       label: 'Photos collectées' 
     },
     { 
       icon: <MapPin className="w-5 h-5 text-blue-400" />, 
-      value: stats?.totalSnapshots || 33, 
+      value: marchesCount || 32, 
       label: 'Marches documentées' 
     },
   ];
