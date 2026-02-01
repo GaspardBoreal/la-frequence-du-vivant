@@ -26,6 +26,7 @@ export default function PortalCard({
 
   const handleClick = () => {
     navigate(href);
+    window.scrollTo({ top: 0, behavior: 'instant' });
   };
 
   return (
