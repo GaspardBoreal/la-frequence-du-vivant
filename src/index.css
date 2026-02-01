@@ -532,3 +532,22 @@
     color: transparent;
   }
 }
+
+/* Portal animations for homepage */
+@keyframes border-glow-rotate {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+@keyframes ring-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 hsla(var(--accent), 0.4); }
+  50% { box-shadow: 0 0 0 12px hsla(var(--accent), 0); }
+}
+
+@keyframes leaf-fall {
+  0% { transform: translateY(-10%) rotate(0deg); opacity: 0; }
+  10% { opacity: 0.6; }
+  90% { opacity: 0.6; }
+  100% { transform: translateY(110%) rotate(180deg); opacity: 0; }
+}

@@ -4,12 +4,12 @@ import DecorativeElements from '../components/DecorativeElements';
 import Footer from '../components/Footer';
 import SEOHead from '../components/SEOHead';
 import { RegionalTheme, REGIONAL_THEMES } from '../utils/regionalThemes';
-import { Button } from '../components/ui/button';
-import { useNavigate } from 'react-router-dom';
+import BioacousticPortal from '../components/home/BioacousticPortal';
+import TerritoryPortal from '../components/home/TerritoryPortal';
+import PoetryPortal from '../components/home/PoetryPortal';
 
 const Index = () => {
   const [theme, setTheme] = useState<RegionalTheme>(REGIONAL_THEMES['nouvelle-aquitaine']);
-  const navigate = useNavigate();
 
   useEffect(() => {
     document.documentElement.style.setProperty('--theme-primary', theme.colors.primary);
@@ -18,13 +18,8 @@ const Index = () => {
     document.documentElement.style.setProperty('--theme-background', theme.colors.background);
   }, [theme]);
 
-  const handleExploreClick = () => {
-    navigate('/bioacoustique-poetique');
-  };
-
-
-
-  return <HelmetProvider>
+  return (
+    <HelmetProvider>
       <div className="min-h-screen bg-background relative overflow-hidden">
         <SEOHead />
         
@@ -50,9 +45,7 @@ const Index = () => {
                 {/* Titre principal - structure exacte avec couleurs spécifiques */}
                 <h1 className="font-crimson font-normal leading-tight text-7xl md:text-8xl lg:text-9xl">
                   <span className="text-white">La Fréquence</span><br />
-                  <span style={{
-                  color: '#4ade80'
-                }}>du Vivant</span>
+                  <span style={{ color: '#4ade80' }}>du Vivant</span>
                 </h1>
                 
                 {/* Sous-titre */}
@@ -64,48 +57,16 @@ const Index = () => {
                 <div className="flex items-center justify-center space-x-4 pt-8">
                   <span className="text-white text-base">2025 - 2026 • Gaspard Boréal</span>
                 </div>
-
-                <div className="pt-8">
-                  <Button onClick={handleExploreClick} className="bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white px-8 py-4 text-lg font-medium rounded-full transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl">Explorons les Fréquences du Vivant ...</Button>
-                </div>
               </div>
             </div>
           </header>
 
-          {/* Content Section */}
+          {/* Les Trois Portails du Vivant */}
           <div className="max-w-6xl mx-auto px-6 py-24">
-            <div className="text-center space-y-12">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                <div className="gaspard-card rounded-xl p-8 space-y-4 hover:scale-105 transition-all duration-300 hover:shadow-2xl border-0 bg-transparent w-full">
-                  <div className="w-12 h-12 bg-gradient-to-r from-green-500 to-emerald-500 rounded-full flex items-center justify-center mx-auto">
-                    <span className="text-white text-xl">🎵</span>
-                  </div>
-                  <h3 className="text-xl font-semibold text-white">Bioacoustique</h3>
-                  <p className="text-gray-300">
-                    Exploration des paysages sonores et des fréquences du vivant
-                  </p>
-                </div>
-
-                <div className="gaspard-card rounded-xl p-8 space-y-4 hover:scale-105 transition-all duration-300 hover:shadow-2xl border-0 bg-transparent w-full">
-                  <div className="w-12 h-12 bg-gradient-to-r from-green-500 to-emerald-500 rounded-full flex items-center justify-center mx-auto">
-                    <span className="text-white text-xl">🌱</span>
-                  </div>
-                  <h3 className="text-xl font-semibold text-white">Territoires</h3>
-                  <p className="text-gray-300">
-                    Cartographie interactive des marches techno-sensibles
-                  </p>
-                </div>
-
-                <div className="gaspard-card rounded-xl p-8 space-y-4 hover:scale-105 transition-all duration-300 hover:shadow-2xl border-0 bg-transparent w-full">
-                  <div className="w-12 h-12 bg-gradient-to-r from-green-500 to-emerald-500 rounded-full flex items-center justify-center mx-auto">
-                    <span className="text-white text-xl">📖</span>
-                  </div>
-                  <h3 className="text-xl font-semibold text-white">Poésie</h3>
-                  <p className="text-gray-300">
-                    Création poétique à l'intersection de l'art et de la science
-                  </p>
-                </div>
-              </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+              <BioacousticPortal />
+              <TerritoryPortal />
+              <PoetryPortal />
             </div>
           </div>
 
@@ -116,7 +77,8 @@ const Index = () => {
         {/* Overlay d'ambiance vert émeraude */}
         <div className="fixed inset-0 bg-primary/5 pointer-events-none z-0"></div>
       </div>
-    </HelmetProvider>;
+    </HelmetProvider>
+  );
 };
 
 export default Index;
