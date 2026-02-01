@@ -1,223 +1,284 @@
 
+# Evolution "WAHOU" de la Page d'Accueil
 
-## Acces discret aux eBooks "Livre Vivant" depuis les pages d'exploration
+## Vision Creatrice
 
-### Contexte
-
-Les lecteurs naviguant sur les pages d'exploration publiques n'ont actuellement aucun moyen d'acceder aux versions eBook interactives ("Livre Vivant") publiees selon differentes directions artistiques. L'objectif est d'ajouter un acces discret, elegant et non prioritaire vers ces trois versions.
-
-### Pages concernees
-
-| Page | URL | Emplacement du lien discret |
-|------|-----|----------------------------|
-| Galerie Fleuve Welcome | `/galerie-fleuve/exploration/:slug` | Footer (zone "Gaspard Boreal") |
-| Biodiversite | `/galerie-fleuve/exploration/:slug/biodiversite` | Footer existant |
-| Dordonia Welcome | `/dordonia` | Footer existant |
-
-### Solution proposee
-
-Creer un composant reutilisable `EbookSelectorDialog` qui :
-1. S'ouvre via un lien textuel discret dans le footer de chaque page
-2. Presente les trois directions artistiques de maniere elegante
-3. Redirige vers l'URL de lecture correspondante
+Transformer les trois vignettes statiques (Bioacoustique, Territoires, Poesie) en **Portails Vivants** - des cartes interactives qui respirent, reagissent et invitent a l'immersion dans l'univers de La Frequence du Vivant.
 
 ---
 
-### Architecture technique
+## Concept : Les Trois Portails du Vivant
+
+Chaque vignette devient un **micro-ecosysteme anime** avec sa propre signature visuelle et comportementale :
 
 ```text
-Composant EbookSelectorDialog
-┌─────────────────────────────────────────────────────────────┐
-│                  Lire le Livre Vivant                       │
-│                                                             │
-│  Choisissez votre experience de lecture                     │
-├─────────────────────────────────────────────────────────────┤
-│                                                             │
-│  ┌───────────────┐  ┌───────────────┐  ┌───────────────┐   │
-│  │ Emeraude      │  │ Foret         │  │ Cyan          │   │
-│  │ ■             │  │ ■             │  │ ■             │   │
-│  │               │  │               │  │               │   │
-│  │ Galerie Fleuve│  │ Frequence     │  │ Dordonia      │   │
-│  │               │  │ du Vivant     │  │               │   │
-│  │ Style epure   │  │ Theme nocturne│  │ Theme riviere │   │
-│  │ fond blanc    │  │ foret         │  │ nuit          │   │
-│  └───────────────┘  └───────────────┘  └───────────────┘   │
-│                                                             │
-└─────────────────────────────────────────────────────────────┘
+┌────────────────────────────────────────────────────────────────────────────────┐
+│                                                                                │
+│   ┌─────────────────┐   ┌─────────────────┐   ┌─────────────────┐             │
+│   │ ♪ ♫ ♪ ♫ ♪ ♫ ♪   │   │    ·  ·  ·     │   │   ~ ~ ~ ~ ~     │             │
+│   │   ▃▅▇▅▃▅▇▅▃     │   │   /  \  /  \   │   │  ✦ haiku ✦      │             │
+│   │   ▃▅▇▅▃▅▇▅▃     │   │  ·    ·    ·   │   │   flottant      │             │
+│   │ BIOACOUSTIQUE   │   │  TERRITOIRES   │   │    POESIE       │             │
+│   │  Frequences     │   │  Cartographie  │   │   Fragments     │             │
+│   │  organiques     │   │  floue         │   │   ephemeres     │             │
+│   └─────────────────┘   └─────────────────┘   └─────────────────┘             │
+│                                                                                │
+│   ← Hover : Zoom + Glow                       Click : Transition fluide →     │
+│                                                                                │
+└────────────────────────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-### Fichiers a creer/modifier
+## Les Trois Portails
 
-| Fichier | Action | Description |
-|---------|--------|-------------|
-| `src/components/EbookSelectorDialog.tsx` | CREER | Dialog de selection des 3 directions artistiques |
-| `src/components/GalerieFleuveWelcome.tsx` | MODIFIER | Ajouter le lien discret dans le footer |
-| `src/pages/ExplorationBiodiversite.tsx` | MODIFIER | Ajouter le lien discret dans le footer |
-| `src/components/dordonia/DordoniaWelcome.tsx` | MODIFIER | Ajouter le lien discret dans le footer |
+### 1. BIOACOUSTIQUE - "L'Onde Vivante"
+
+**Signature visuelle** : Visualiseur audio ambient permanent
+
+- **Animation** : Barres verticales qui oscillent en continu (simulation de frequences)
+- **Couleur** : Gradient cyan-emeraude (couleurs de l'eau)
+- **Hover** : Les barres s'intensifient, glow cyan pulse
+- **Element unique** : Cercles concentriques qui emanent du centre (comme des ondes sonores)
+
+```text
+┌─────────────────────────────────────┐
+│                                     │
+│        ◌   ◌   ◌   ◌   ◌           │  ← Cercles concentriques animees
+│      ◌                   ◌          │
+│    ◌    ▃ ▅ ▇ █ ▇ ▅ ▃    ◌        │  ← Visualiseur audio
+│      ◌                   ◌          │
+│        ◌   ◌   ◌   ◌   ◌           │
+│                                     │
+│   ✧ BIOACOUSTIQUE ✧                │
+│   Ecouter les frequences            │
+│   du monde vivant                   │
+│                                     │
+│   ─────────────────────             │  ← Ligne de progression animee
+└─────────────────────────────────────┘
+```
+
+### 2. TERRITOIRES - "La Carte Floue"
+
+**Signature visuelle** : Reseau de points interconnectes (comme une constellation ou une carte neuronale)
+
+- **Animation** : Points qui flottent lentement, lignes de connexion qui apparaissent/disparaissent
+- **Couleur** : Gradient ambre-dore (couleurs de la terre)
+- **Hover** : Les connexions se densifient, revele une "carte cachee"
+- **Element unique** : Petit curseur qui "marche" le long des chemins
+
+```text
+┌─────────────────────────────────────┐
+│                                     │
+│       ·━━━·         ·               │
+│      ╱    ╲       ╱ │               │
+│     ·      ·━━━━·   ·               │  ← Reseau de points connectes
+│      ╲    ╱       ╲                 │
+│       ·━━·━━━━━━━━·                 │
+│           ↑                         │  ← Marcheur anime
+│                                     │
+│   ✧ TERRITOIRES ✧                  │
+│   Marcher les cartes                │
+│   sensibles                         │
+│                                     │
+└─────────────────────────────────────┘
+```
+
+### 3. POESIE - "Le Fragment Ephemere"
+
+**Signature visuelle** : Haikus flottants avec effet de machine a ecrire
+
+- **Animation** : Vers qui apparaissent/disparaissent en fondu, rotation lente de fragments poetiques
+- **Couleur** : Gradient rose-violet (couleurs de l'aube)
+- **Hover** : Le texte actuel se "cristallise" (devient plus net), nouveaux vers emergent
+- **Element unique** : Plumes/feuilles qui tombent doucement en arriere-plan
+
+```text
+┌─────────────────────────────────────┐
+│                                     │
+│     🍂        ✧        🍂          │  ← Feuilles qui tombent
+│                                     │
+│    « La riviere murmure            │
+│      des mots que seuls            │  ← Haiku en apparition
+│      les arbres entendent »         │
+│                                     │
+│           ─ ─ ─ ─ ─                 │  ← Tirets typographiques animes
+│                                     │
+│   ✧ POESIE ✧                       │
+│   Fragments du vivant               │
+│                                     │
+└─────────────────────────────────────┘
+```
 
 ---
 
-### Details techniques
+## Architecture Technique
 
-#### 1. Composant `EbookSelectorDialog`
+### Nouveaux composants a creer
 
-Props :
-- `explorationId?: string` - Pour charger dynamiquement les publications disponibles (optionnel)
-- `trigger: React.ReactNode` - Element declencheur personnalisable
+| Composant | Description |
+|-----------|-------------|
+| `src/components/home/PortalCard.tsx` | Wrapper commun avec hover/glow/transitions |
+| `src/components/home/BioacousticPortal.tsx` | Portail avec visualiseur audio anime |
+| `src/components/home/TerritoryPortal.tsx` | Portail avec reseau de points connectes |
+| `src/components/home/PoetryPortal.tsx` | Portail avec haikus flottants |
+| `src/components/home/SoundWaveVisualizer.tsx` | Visualiseur de frequences ambient |
+| `src/components/home/ConstellationNetwork.tsx` | Reseau de points anime |
+| `src/components/home/FloatingHaiku.tsx` | Fragment poetique avec machine a ecrire |
 
-Comportement :
-- Au clic sur le trigger, ouvre un Dialog Radix UI
-- Affiche les trois cartes cliquables avec preview de couleur
-- Redirige vers `/epub/:slug/lire` au clic sur une carte
+### Fichier modifie
+
+| Fichier | Modifications |
+|---------|---------------|
+| `src/pages/Index.tsx` | Remplacer les cartes statiques par les 3 portails |
+
+---
+
+## Details Techniques
+
+### 1. `PortalCard.tsx` - Conteneur Magique
+
+Base commune pour les trois portails :
+- Glassmorphism avec `backdrop-blur-xl`
+- Bordure animee avec gradient rotatif (border glow)
+- Transition `scale(1.03)` et `shadow-2xl` au hover
+- Ring lumineux pulse au hover
+- Cursor personalise (pointer avec glow)
 
 ```text
-interface EbookDirection {
-  key: 'galerie_fleuve' | 'frequence_vivant' | 'dordonia';
-  label: string;
-  description: string;
-  colorPreview: string;  // Couleur d'accent pour preview
-  url: string;           // URL directe vers le livre
+Structure :
+┌────────────────────────────────────────┐
+│  ↻ Gradient border rotatif             │
+│  ┌──────────────────────────────────┐  │
+│  │  Contenu anime (enfant)          │  │
+│  │                                  │  │
+│  │  ─────────────────               │  │
+│  │  Titre + Description             │  │
+│  │                                  │  │
+│  │  [Indicateur hover: → Entrer]    │  │
+│  └──────────────────────────────────┘  │
+└────────────────────────────────────────┘
+```
+
+### 2. `SoundWaveVisualizer.tsx` - Frequences Vivantes
+
+Inspire du `EcoAudioVisualizer.tsx` existant mais en mode "ambient" (toujours anime) :
+
+- 24 barres verticales avec hauteurs aleatoires
+- Animation continue avec `setInterval` (200ms)
+- Vitesse douce, amplitude moderee (pas agressif)
+- Gradient vertical : base emeraude → pointe cyan
+- Au hover : amplitude x1.5, couleurs plus vives
+
+### 3. `ConstellationNetwork.tsx` - Carte Vivante
+
+Reseau de points connectes anime en canvas ou SVG :
+
+- 12-15 points positionnes aleatoirement
+- Lignes de connexion entre points proches (<150px)
+- Points qui derivent lentement (dx, dy aleatoires)
+- Au hover : nouvelles connexions apparaissent (seuil de distance augmente)
+- Un "marcheur" (point plus gros) qui se deplace de noeud en noeud
+
+### 4. `FloatingHaiku.tsx` - Poesie Ephemere
+
+Rotation de fragments poetiques :
+
+- Pool de 5-6 haikus/vers courts
+- Un vers affiche a la fois, change toutes les 6 secondes
+- Effet machine a ecrire pour l'apparition
+- Fade out doux avant le changement
+- Petites particules (feuilles/plumes stylisees) qui tombent en arriere-plan
+
+---
+
+## Animations CSS a ajouter
+
+```text
+@keyframes border-glow-rotate {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
 }
 
-const EBOOK_DIRECTIONS: EbookDirection[] = [
-  {
-    key: 'galerie_fleuve',
-    label: 'Galerie Fleuve',
-    description: 'Style galerie d\'art epure, fond blanc, accents emeraude',
-    colorPreview: '#10B981',
-    url: '/epub/frequences-de-la-riviere-dordogne-atlas-des-vivant-2026-02-01-5257/lire'
-  },
-  {
-    key: 'frequence_vivant',
-    label: 'Frequence du Vivant',
-    description: 'Theme nocturne foret, fond sombre, accents menthe',
-    colorPreview: '#22C55E',
-    url: '/epub/frequences-de-la-riviere-dordogne-atlas-des-vivant-2026-02-01-ukcu/lire'
-  },
-  {
-    key: 'dordonia',
-    label: 'Dordonia',
-    description: 'Theme nocturne riviere, fond bleu nuit, accents cyan',
-    colorPreview: '#22D3EE',
-    url: '/epub/frequences-de-la-riviere-dordogne-atlas-des-vivant-2026-02-01-nwj6/lire'
-  }
-];
+@keyframes ring-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.4); }
+  50% { box-shadow: 0 0 0 12px rgba(16, 185, 129, 0); }
+}
+
+@keyframes typewriter {
+  from { width: 0; }
+  to { width: 100%; }
+}
+
+@keyframes leaf-fall {
+  0% { transform: translateY(-10%) rotate(0deg); opacity: 0; }
+  10% { opacity: 0.6; }
+  90% { opacity: 0.6; }
+  100% { transform: translateY(110%) rotate(180deg); opacity: 0; }
+}
 ```
-
-Design du dialog :
-- Fond avec backdrop blur leger
-- Titre discret : "Lire le Livre Vivant"
-- Sous-titre : "Choisissez votre experience de lecture"
-- 3 cartes cote a cote (responsive : 1 colonne sur mobile)
-- Chaque carte :
-  - Bandeau de couleur en haut (accent du theme)
-  - Nom de la direction artistique
-  - Description courte en texte muted
-  - Hover avec legere elevation et glow
-
-#### 2. Modification de `GalerieFleuveWelcome.tsx`
-
-Dans le footer existant (lignes 304-318), ajouter un lien discret :
-
-```text
-Avant:
-  <a href="...">Decouvrir l'auteur</a>
-  <a href="...">Conferences et formation IA</a>
-
-Apres:
-  <a href="...">Decouvrir l'auteur</a>
-  <a href="...">Conferences et formation IA</a>
-  <EbookSelectorDialog trigger={
-    <button className="text-white/60 hover:text-white/90 transition-colors text-sm italic">
-      Livre Vivant
-    </button>
-  } />
-```
-
-Style du lien :
-- Opacite reduite (60%)
-- Italique
-- Meme typographie que les autres liens
-- Pas d'icone pour rester discret
-- Hover subtil vers opacite 90%
-
-#### 3. Modification de `ExplorationBiodiversite.tsx`
-
-Dans le footer existant (lignes 290-298), ajouter avant le copyright :
-
-```text
-Avant:
-  <p>Donnees issues de GBIF...</p>
-  <p>© 2025 - 2026...</p>
-
-Apres:
-  <div className="flex items-center justify-center gap-4 mb-2">
-    <p>Donnees issues de GBIF...</p>
-    <span className="text-muted-foreground/40">·</span>
-    <EbookSelectorDialog trigger={
-      <button className="text-muted-foreground/60 hover:text-muted-foreground transition-colors text-xs italic">
-        Livre Vivant
-      </button>
-    } />
-  </div>
-  <p>© 2025 - 2026...</p>
-```
-
-#### 4. Modification de `DordoniaWelcome.tsx`
-
-Dans le footer existant (lignes 112-122), integrer discretement :
-
-```text
-Avant:
-  <p>© 2026 Gaspard Boreal / Contenus sous licence CC BY-NC-SA 4.0</p>
-
-Apres:
-  <div className="flex flex-col items-center gap-2">
-    <EbookSelectorDialog trigger={
-      <button className="text-muted-foreground/40 hover:text-cyan-400/60 transition-colors text-xs tracking-wider uppercase">
-        Livre Vivant
-      </button>
-    } />
-    <p>© 2026 Gaspard Boreal / Contenus sous licence CC BY-NC-SA 4.0</p>
-  </div>
-```
-
-Style adapte a Dordonia :
-- Texte tres discret (opacite 40%)
-- Hover vers cyan (couleur signature Dordonia)
-- Uppercase avec tracking pour coherence visuelle
 
 ---
 
-### Rendu visuel attendu
+## Experience Utilisateur
 
-**Sur Galerie Fleuve Welcome :**
-Le lien "Livre Vivant" apparait en dernier dans la rangee de liens du footer, en italique et legerement plus transparent que les autres liens.
+### Entree sur la page
 
-**Sur Biodiversite :**
-Le lien apparait a cote de la mention des sources de donnees, separe par un point median, en taille xs.
+1. Les trois portails apparaissent avec un leger decalage (stagger animation)
+2. Les animations internes demarrent progressivement
+3. Atmosphere immediate de "monde vivant" qui respire
 
-**Sur Dordonia :**
-Le lien apparait au-dessus du copyright, en majuscules tres discretes avec tracking large, dans l'esprit contemplatif de l'interface.
+### Interaction hover
+
+1. Portail s'eleve legerement (`translateY(-8px)`)
+2. Glow intensifie autour de la carte
+3. Animation interne s'accelere/s'intensifie
+4. Texte "Entrer dans ce monde" apparait en fondu
+5. Cursor devient plus lumineux
+
+### Click/Tap
+
+1. Effet "ripple" depuis le point de clic
+2. Le portail s'agrandit legerement puis transition vers la page cible
+3. Les autres portails s'effacent doucement
 
 ---
 
-### Accessibilite
+## Responsive Design
 
-- Tous les boutons ont des roles implicites corrects
-- Le Dialog a un `DialogTitle` pour les lecteurs d'ecran
-- Les cartes sont focusables au clavier
-- Les hovers ont des transitions douces
+**Desktop (3 colonnes)** :
+- Portails cote a cote, taille genereuse
+- Animations completes
+
+**Tablet (2 colonnes)** :
+- 2 portails en haut, 1 centre en bas
+- Animations maintenues
+
+**Mobile (1 colonne)** :
+- Portails empiles verticalement
+- Animations simplifiees (performance)
+- Touch : tap-to-reveal puis tap-to-enter
 
 ---
 
-### Verification
+## Haikus pour le Portail Poesie
 
-1. Aller sur `/galerie-fleuve/exploration/remontee-dordogne-atlas-eaux-vivantes-2025-2045`
-2. Scroller jusqu'au footer et reperer le lien "Livre Vivant"
-3. Cliquer : le dialog s'ouvre avec les 3 options
-4. Cliquer sur "Dordonia" : redirection vers `/epub/.../lire` avec theme cyan
-5. Repeter sur `/dordonia` et sur la page biodiversite
+Exemples de fragments poetiques a faire tourner :
 
+1. *« La riviere murmure / des mots que seuls les arbres / savent ecouter »*
+2. *« Sous l'ecorce ancienne / mille vies invisibles / tissent leur silence »*
+3. *« Le heron s'envole / emportant dans son reflet / un morceau de ciel »*
+4. *« Feuilles de chene / tombant sur l'eau sombre / lettres de la foret »*
+5. *« Entre deux rives / la Dordogne chante / ce que nous oublions »*
+
+---
+
+## Verification
+
+1. Ouvrir la page d'accueil (`/`)
+2. Observer les trois portails avec leurs animations distinctes
+3. Hover sur chaque portail : verifier l'intensification des effets
+4. Cliquer : verifier la transition fluide
+5. Tester sur mobile : verifier les adaptations responsive
+6. Verifier les performances (pas de lag meme avec animations)
