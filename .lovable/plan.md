@@ -1,199 +1,378 @@
 
+# Plan CRM Association - Intégration Admin Hub
 
-# Stratégie de Conversion : Transformer votre Patrimoine Data en Machine à Leads B2B
+## Analyse de l'Existant
 
-## Vision Stratégique
+### Structure actuelle
+- **Hub Admin** : `/access-admin-gb2025` → `AdminAccess.tsx` (5 modules existants)
+- **Authentification** : `AdminAuth.tsx` + `useAuth.ts` avec vérification admin via RPC `is_admin_user`
+- **Table admin_users** : Stocke `user_id`, `email`, `role` (actuellement 1 admin : gpied@gaspardboreal.com)
+- **Tables de contacts existantes** : `gaspard_messages`, `gaspard_reservations` (base pour opportunités)
 
-Votre patrimoine de 32 marches, 41K espèces et 241 photos est une **preuve de crédibilité scientifique exceptionnelle**. Le problème : vous l'affichez comme un compteur mort au lieu de le transformer en **levier de conversion émotionnel et rationnel**.
-
-L'objectif est de créer une **"Social Proof Scientifique"** qui répond aux 3 objections majeures des acheteurs B2B :
-1. "Est-ce sérieux ?" → Données GBIF, protocoles certifiés
-2. "Ça marche vraiment ?" → Témoignages visuels des 32 marches
-3. "C'est adapté à mon entreprise ?" → Diversité territoriale prouvée
+### Points clés de sécurité identifiés
+- Le système utilise déjà une table `admin_users` séparée avec un champ `role` (text)
+- Fonctions RPC sécurisées : `is_admin_user()`, `check_is_admin_user()`
+- Pas d'intégration email métier (Resend) - seulement Supabase Auth
 
 ---
 
-## Architecture de Conversion Proposée
+## Architecture Proposée
 
 ```text
-┌─────────────────────────────────────────────────────────────────────┐
-│                     PAGE ENTREPRISES ACTUELLE                       │
-│                                                                     │
-│  ┌─────────────────────────────────────────────────────────────┐   │
-│  │  NOUVEAU : "Proof Bar" Scientifique (Hero Section)          │   │
-│  │  ─────────────────────────────────────────────────────────  │   │
-│  │  "32 marches · 41 257 espèces · 6 régions · 241 preuves"   │   │
-│  │  + Animation compteur live + Lien "Explorer les preuves"    │   │
-│  └─────────────────────────────────────────────────────────────┘   │
-│                              ↓                                      │
-│  ┌─────────────────────────────────────────────────────────────┐   │
-│  │  NOUVEAU : "Galerie des Preuves" Interactive                 │   │
-│  │  ─────────────────────────────────────────────────────────  │   │
-│  │  Carousel horizontal avec 3 marches "vedettes"              │   │
-│  │  - Photo hero + nom poétique                                │   │
-│  │  - Mini-stats : X espèces / Y photos / Z audios             │   │
-│  │  - Bouton "Découvrir cette marche"                          │   │
-│  │  - CTA flottant : "Organisez une marche similaire"          │   │
-│  └─────────────────────────────────────────────────────────────┘   │
-│                              ↓                                      │
-│  ┌─────────────────────────────────────────────────────────────┐   │
-│  │  NOUVEAU : "Carte des Territoires Couverts"                  │   │
-│  │  ─────────────────────────────────────────────────────────  │   │
-│  │  Mini-carte France avec les 6 régions colorées              │   │
-│  │  Hover = affiche le nombre de marches par région            │   │
-│  │  Message : "Nous intervenons sur tout le territoire"        │   │
-│  └─────────────────────────────────────────────────────────────┘   │
-│                              ↓                                      │
-│              [Formations existantes + Formulaire]                   │
-└─────────────────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────────────┐
+│                    /access-admin-gb2025 - Hub Principal                  │
+│                                                                         │
+│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐    │
+│  │   Marches   │  │ Explorations│  │ Exportations│  │ Automations │    │
+│  └─────────────┘  └─────────────┘  └─────────────┘  └─────────────┘    │
+│                                                                         │
+│  ┌─────────────┐  ┌─────────────────────────────────────────────────┐  │
+│  │  Marcheurs  │  │              NOUVEAU : CRM Module               │  │
+│  └─────────────┘  │  ┌─────────┐ ┌──────────┐ ┌─────────────────┐   │  │
+│                    │  │ Équipe  │ │ Pipeline │ │ Tableau de Bord │   │  │
+│                    │  └─────────┘ └──────────┘ └─────────────────┘   │  │
+│                    └─────────────────────────────────────────────────┘  │
+└─────────────────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-## Composants à Créer
+## 1. Gestion des Rôles et Permissions
 
-### 1. ProofBar - Barre de Crédibilité Scientifique
+### Évolution du système de rôles
 
-**Objectif** : Remplacer les compteurs statiques par une barre d'impact visuel dans le Hero.
+**Rôles requis :**
 
-**Contenu** :
-- 4 métriques animées : Marches (32) · Espèces (41K+) · Régions (6) · Photos (241)
-- Badge "Données certifiées GBIF" cliquable
-- Animation de comptage au scroll (effet "wow")
-- Sous-texte : "Chaque marche produit de la donnée RSE opposable"
+| Rôle | Accès |
+|------|-------|
+| `admin` | Tout (CRM, Marches, Explorations, Équipe, Paramètres) |
+| `member` | CRM + Marches (création/gestion) + Explorations (lecture) |
+| `walker` | Marches uniquement (création/gestion de ses propres marches) |
 
-**Placement** : Juste après le H1 de la page Entreprises.
+### Modifications base de données
 
----
+**Table `user_roles` (sécurité standard) :**
 
-### 2. MarchesShowcase - Galerie des Preuves Visuelles
+```sql
+-- Enum pour les rôles
+CREATE TYPE public.crm_role AS ENUM ('admin', 'member', 'walker');
 
-**Objectif** : Transformer vos 32 marches en témoignages visuels qui créent de l'envie.
+-- Table des rôles utilisateur
+CREATE TABLE public.user_roles (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+    role crm_role NOT NULL DEFAULT 'walker',
+    UNIQUE (user_id, role)
+);
 
-**Contenu** :
-- Carousel horizontal avec 3-5 marches "vedettes" (les plus photogéniques)
-- Chaque carte affiche :
-  - Photo hero plein format
-  - Nom poétique de la marche ("La mue de la légende")
-  - Lieu + Date
-  - Mini-badges : X espèces · Y photos · Audio disponible
-  - Bouton "Découvrir" → lien vers MarcheDetail
-- CTA sticky : "Organisez une expérience similaire pour vos équipes"
+-- Fonction de vérification sécurisée
+CREATE OR REPLACE FUNCTION public.has_crm_role(_user_id uuid, _role crm_role)
+RETURNS boolean
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = public
+AS $$
+  SELECT EXISTS (
+    SELECT 1 FROM public.user_roles
+    WHERE user_id = _user_id AND role = _role
+  )
+$$;
+```
 
-**Données utilisées** : 
-- Table `marches` (nom_marche, ville, region, latitude, longitude)
-- Table `biodiversity_snapshots` (total_species, birds_count, plants_count)
-- Table `marche_photos` (comptage)
+**Table `team_members` (profils enrichis) :**
 
----
-
-### 3. TerritorialCoverageMap - Mini-carte des Régions
-
-**Objectif** : Prouver votre capacité d'intervention nationale.
-
-**Contenu** :
-- Carte stylisée de France (SVG simple, pas Leaflet)
-- 6 régions colorées avec le nombre de marches
-- Tooltip au hover : "Nouvelle-Aquitaine : 18 marches documentées"
-- Message : "Intervention sur tout le territoire · Marches sur-mesure"
-
----
-
-### 4. CSRDProofSection - Argument "Data RSE Opposable"
-
-**Objectif** : Adresser directement le besoin CSRD des Responsables RSE.
-
-**Contenu** :
-- Encart premium avec icône Database
-- Titre : "Chaque marche = de la donnée CSRD"
-- Liste à puces :
-  - "Protocoles connectés au GBIF (référentiel mondial)"
-  - "Géolocalisation et horodatage certifiés"
-  - "Export format compatible rapports extra-financiers"
-- Bouton : "En savoir plus sur nos protocoles data"
-
----
-
-## Flux Utilisateur Optimisé
-
-```text
-1. ARRIVÉE SUR /entreprises
-   └── Voit immédiatement les chiffres clés (ProofBar)
-   └── Comprend : "C'est sérieux, il y a des preuves"
-
-2. SCROLL VERS LA GALERIE
-   └── Découvre les photos des vraies marches
-   └── Lit les noms poétiques → Émotion
-   └── Voit les stats biodiversité → Crédibilité
-   └── Pense : "Je veux ça pour mon équipe"
-
-3. VOIT LA CARTE TERRITORIALE
-   └── Comprend : "Ils peuvent venir chez nous"
-   └── Rassurance géographique
-
-4. ENCART CSRD
-   └── Responsable RSE : "Parfait, ça répond à mes obligations"
-
-5. FORMATIONS
-   └── Choix éclairé entre les 5 modules
-
-6. FORMULAIRE
-   └── Conversion facilitée par la confiance accumulée
+```sql
+CREATE TABLE public.team_members (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL UNIQUE,
+    prenom TEXT NOT NULL,
+    nom TEXT NOT NULL,
+    fonction TEXT,
+    telephone TEXT,
+    photo_url TEXT,
+    is_active BOOLEAN DEFAULT true,
+    created_at TIMESTAMPTZ DEFAULT now(),
+    updated_at TIMESTAMPTZ DEFAULT now()
+);
 ```
 
 ---
 
-## Données Techniques à Exploiter
+## 2. Pipeline Commercial (Opportunités)
 
-| Source | Champ | Usage |
-|--------|-------|-------|
-| `marches` | nom_marche | Titres poétiques dans la galerie |
-| `marches` | ville, region, departement | Carte territoriale |
-| `marches` | latitude, longitude | Positionnement carte |
-| `biodiversity_snapshots` | total_species, birds_count, plants_count | Stats par marche |
-| `marche_photos` | COUNT(*) par marche_id | Nombre de photos |
-| `marche_audio` | COUNT(*) par marche_id | Badge "Audio disponible" |
+### Table `crm_opportunities`
+
+```sql
+CREATE TABLE public.crm_opportunities (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    -- Informations contact
+    prenom TEXT NOT NULL,
+    nom TEXT NOT NULL,
+    entreprise TEXT,
+    fonction TEXT,
+    telephone TEXT,
+    email TEXT NOT NULL,
+    -- Détails projet
+    experience_souhaitee TEXT, -- 'team_building', 'formation', 'seminaire'
+    format_souhaite TEXT,       -- 'demi_journee', 'journee', 'sur_mesure'
+    date_souhaitee DATE,
+    lieu_prefere TEXT,
+    objectifs TEXT,
+    financement_souhaite TEXT,  -- 'direct', 'opco', 'autre'
+    budget_estime INTEGER,
+    -- Pipeline
+    statut TEXT DEFAULT 'a_contacter', -- a_contacter, relance_1, relance_2, relance_3, pas_interesse, gagne, perdu
+    notes TEXT,
+    -- Métadonnées
+    assigned_to UUID REFERENCES public.team_members(id),
+    source TEXT, -- 'formulaire_b2b', 'linkedin', 'recommandation', 'salon', 'autre'
+    created_at TIMESTAMPTZ DEFAULT now(),
+    updated_at TIMESTAMPTZ DEFAULT now(),
+    closed_at TIMESTAMPTZ
+);
+```
+
+### Statuts du Kanban
+
+```text
+┌────────────┐ ┌────────────┐ ┌────────────┐ ┌────────────┐ ┌────────────┐ ┌────────────┐
+│ À contacter│→│ Relance 1  │→│ Relance 2  │→│ Relance 3  │→│ Pas intéré │ │   Gagné    │
+│     12     │ │     5      │ │     3      │ │     2      │ │      8     │ │     15     │
+└────────────┘ └────────────┘ └────────────┘ └────────────┘ └────────────┘ └────────────┘
+```
 
 ---
 
-## Hooks à Créer/Modifier
+## 3. Module Email (via Resend)
 
-1. **useFeaturedMarches** : Récupère les 5 marches les plus "complètes" (photos + audio + textes)
-2. **useMarchesStats** : Agrège les stats par marche pour l'affichage galerie
-3. **useRegionalCoverage** : Compte les marches par région pour la carte
+### Edge Function `send-crm-email`
+
+**Fonctionnalités :**
+- Envoi de devis personnalisé (template HTML)
+- Envoi de newsletters (base de contacts segmentée)
+- Historique des envois dans `crm_email_logs`
+
+### Table `crm_email_logs`
+
+```sql
+CREATE TABLE public.crm_email_logs (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    opportunity_id UUID REFERENCES crm_opportunities(id),
+    email_type TEXT NOT NULL, -- 'devis', 'relance', 'newsletter'
+    recipient_email TEXT NOT NULL,
+    subject TEXT NOT NULL,
+    sent_at TIMESTAMPTZ DEFAULT now(),
+    status TEXT DEFAULT 'sent', -- 'sent', 'failed', 'opened'
+    resend_id TEXT
+);
+```
+
+### Table `crm_contacts` (pour newsletters)
+
+```sql
+CREATE TABLE public.crm_contacts (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    email TEXT NOT NULL UNIQUE,
+    prenom TEXT,
+    nom TEXT,
+    entreprise TEXT,
+    segment TEXT DEFAULT 'general', -- 'entreprise', 'association', 'partenaire'
+    is_subscribed BOOLEAN DEFAULT true,
+    created_at TIMESTAMPTZ DEFAULT now()
+);
+```
 
 ---
 
-## Fichiers à Modifier
+## 4. Interface Utilisateur
 
-| Fichier | Action |
-|---------|--------|
-| `src/pages/MarchesDuVivantEntreprises.tsx` | Intégrer les 4 nouveaux composants |
-| `src/components/marches-vivant/ScienceCounters.tsx` | Transformer en ProofBar premium |
-| **Nouveau** `src/components/marches-vivant/MarchesShowcase.tsx` | Galerie des preuves |
-| **Nouveau** `src/components/marches-vivant/TerritorialCoverageMap.tsx` | Mini-carte régions |
-| **Nouveau** `src/components/marches-vivant/CSRDProofSection.tsx` | Encart data RSE |
-| **Nouveau** `src/hooks/useFeaturedMarches.ts` | Hook marches vedettes |
+### Nouvelles pages à créer
+
+| Route | Composant | Accès |
+|-------|-----------|-------|
+| `/admin/crm` | `CrmDashboard.tsx` | admin, member |
+| `/admin/crm/pipeline` | `CrmPipeline.tsx` | admin, member |
+| `/admin/crm/opportunities/:id` | `OpportunityDetail.tsx` | admin, member |
+| `/admin/crm/equipe` | `TeamManagement.tsx` | admin uniquement |
+| `/admin/crm/emails` | `EmailCenter.tsx` | admin, member |
+| `/admin/crm/contacts` | `ContactsList.tsx` | admin, member |
+
+### Composants principaux
+
+**CrmDashboard.tsx - Tableau de bord**
+- KPIs : Opportunités actives, Taux de conversion, CA potentiel
+- Graphique pipeline par statut
+- Dernières activités
+- Prochaines relances
+
+**CrmPipeline.tsx - Vue Kanban**
+- Colonnes drag & drop (dnd-kit déjà installé)
+- Cartes d'opportunités avec infos clés
+- Toggle vue Kanban / Liste
+- Filtres par assigné, source, date
+
+**OpportunityDetail.tsx - Fiche détaillée**
+- Formulaire d'édition complet
+- Historique des actions
+- Boutons : Envoyer devis, Programmer relance
+- Notes et commentaires
+
+**TeamManagement.tsx - Gestion équipe**
+- Liste des membres avec rôles
+- Ajout/suppression de membres
+- Attribution des rôles (admin uniquement)
+
+**EmailCenter.tsx - Centre d'emails**
+- Composer un email personnalisé
+- Templates de devis
+- Historique des envois
+
+---
+
+## 5. Structure des Fichiers
+
+```text
+src/
+├── pages/
+│   ├── CrmDashboard.tsx
+│   ├── CrmPipeline.tsx
+│   ├── OpportunityDetail.tsx
+│   ├── TeamManagement.tsx
+│   ├── EmailCenter.tsx
+│   └── ContactsList.tsx
+├── components/
+│   └── crm/
+│       ├── OpportunityCard.tsx
+│       ├── KanbanColumn.tsx
+│       ├── KanbanBoard.tsx
+│       ├── OpportunityForm.tsx
+│       ├── TeamMemberCard.tsx
+│       ├── EmailComposer.tsx
+│       ├── DevisTemplate.tsx
+│       ├── DashboardKPIs.tsx
+│       ├── PipelineChart.tsx
+│       └── ActivityFeed.tsx
+├── hooks/
+│   ├── useCrmOpportunities.ts
+│   ├── useTeamMembers.ts
+│   ├── useCrmStats.ts
+│   └── useCrmRole.ts
+└── types/
+    └── crm.ts
+
+supabase/
+└── functions/
+    └── send-crm-email/
+        └── index.ts
+```
+
+---
+
+## 6. Intégration au Hub Admin
+
+### Modification de `AdminAccess.tsx`
+
+Ajout d'une nouvelle carte CRM avec sous-navigation :
+
+```text
+┌────────────────────────────────────────────────────┐
+│  📊  CRM & Commercial                              │
+│  ─────────────────────────────────────────────     │
+│  Gérer le pipeline commercial, les opportunités    │
+│  et les communications avec les prospects.         │
+│                                                    │
+│  [Pipeline]  [Tableau de Bord]  [Emails]          │
+└────────────────────────────────────────────────────┘
+```
+
+---
+
+## 7. Sécurisation RLS
+
+### Policies pour `crm_opportunities`
+
+```sql
+-- Les admins et membres peuvent voir toutes les opportunités
+CREATE POLICY "CRM access for admins and members" ON crm_opportunities
+FOR ALL USING (
+    public.has_crm_role(auth.uid(), 'admin') OR 
+    public.has_crm_role(auth.uid(), 'member')
+);
+```
+
+### Policies pour `team_members`
+
+```sql
+-- Seuls les admins peuvent gérer l'équipe
+CREATE POLICY "Only admins manage team" ON team_members
+FOR ALL USING (public.has_crm_role(auth.uid(), 'admin'));
+
+-- Les membres peuvent voir l'équipe
+CREATE POLICY "Members can view team" ON team_members
+FOR SELECT USING (
+    public.has_crm_role(auth.uid(), 'admin') OR 
+    public.has_crm_role(auth.uid(), 'member')
+);
+```
+
+---
+
+## 8. Plan d'Implémentation
+
+### Phase 1 : Fondations (Tables + Rôles)
+1. Créer les tables : `user_roles`, `team_members`, `crm_opportunities`, `crm_contacts`, `crm_email_logs`
+2. Créer les fonctions RPC de vérification de rôles
+3. Configurer les policies RLS
+4. Migrer l'admin existant vers le nouveau système
+
+### Phase 2 : Interface Pipeline
+5. Créer le hook `useCrmRole` pour la gestion des permissions
+6. Créer les composants Kanban (KanbanBoard, KanbanColumn, OpportunityCard)
+7. Implémenter la page `CrmPipeline.tsx` avec drag & drop
+8. Ajouter la vue Liste alternative
+
+### Phase 3 : Gestion Équipe
+9. Créer la page `TeamManagement.tsx`
+10. Implémenter l'ajout/suppression de membres
+11. Créer l'interface d'attribution des rôles
+
+### Phase 4 : Dashboard
+12. Créer les hooks de statistiques (`useCrmStats`)
+13. Implémenter les KPIs et graphiques
+14. Ajouter le fil d'activités
+
+### Phase 5 : Emails
+15. Configurer le secret `RESEND_API_KEY`
+16. Créer l'edge function `send-crm-email`
+17. Implémenter l'EmailCenter et les templates de devis
+
+### Phase 6 : Intégration Hub
+18. Modifier `AdminAccess.tsx` pour ajouter le module CRM
+19. Ajouter les routes dans `App.tsx`
+20. Créer le guard de permission par rôle
+
+---
+
+## Prérequis Utilisateur
+
+Avant de commencer l'implémentation, vous devrez :
+
+1. **Créer un compte Resend** : https://resend.com
+2. **Valider votre domaine** : https://resend.com/domains
+3. **Créer une clé API** : https://resend.com/api-keys
+4. **Me fournir la clé** pour que je l'ajoute aux secrets Supabase
 
 ---
 
 ## Résultat Attendu
 
-**Avant** : Page catalogue de formations avec des chiffres morts en bas de page.
+**Avant :** Hub admin avec 5 modules techniques (Marches, Explorations, etc.)
 
-**Après** : Page de conversion qui :
-1. Impressionne dès l'arrivée (ProofBar animée)
-2. Crée de l'envie (galerie photos immersive)
-3. Rassure sur la couverture géographique (carte)
-4. Adresse le besoin RSE/CSRD (encart data)
-5. Guide naturellement vers le formulaire
-
----
-
-## Métriques de Succès
-
-- Temps passé sur page : +40%
-- Scroll depth moyen : >80%
-- Taux de conversion formulaire : +25%
-- Clics sur "Découvrir une marche" : Nouveau KPI
-
+**Après :** Hub admin enrichi avec :
+- Module CRM complet avec pipeline Kanban
+- Gestion de l'équipe interne (Laurence, Victor, Laurent...)
+- Système de rôles à 3 niveaux
+- Envoi d'emails personnalisés (devis, relances)
+- Tableau de bord commercial
+- Base de contacts pour newsletters futures
