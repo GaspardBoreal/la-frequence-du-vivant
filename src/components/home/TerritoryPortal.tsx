@@ -13,7 +13,7 @@ export default function TerritoryPortal() {
       <PortalCard
         title="TERRITOIRES"
         description="Marcher les cartes sensibles et cartographier les chemins du vivant"
-        href="/galerie-fleuve"
+        href="/explorations-sensibles"
         accentColor="#FBBF24"
         glowColor="#F59E0B"
         delay={0.15}
