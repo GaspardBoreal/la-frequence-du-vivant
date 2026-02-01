@@ -101,7 +101,7 @@ const MarchesDuVivant = () => {
           <div className="max-w-5xl mx-auto">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* Card Entreprises */}
-              <Link to="/marches-du-vivant/entreprises">
+              <Link to="/marches-du-vivant/entreprises" onClick={() => window.scrollTo(0, 0)}>
                 <motion.div
                   initial={{ opacity: 0, x: -20 }}
                   whileInView={{ opacity: 1, x: 0 }}
@@ -142,7 +142,7 @@ const MarchesDuVivant = () => {
               </Link>
 
               {/* Card Grand Public */}
-              <Link to="/marches-du-vivant/association">
+              <Link to="/marches-du-vivant/association" onClick={() => window.scrollTo(0, 0)}>
                 <motion.div
                   initial={{ opacity: 0, x: 20 }}
                   whileInView={{ opacity: 1, x: 0 }}
