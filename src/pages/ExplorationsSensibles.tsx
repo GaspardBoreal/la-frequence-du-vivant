@@ -72,22 +72,35 @@ const ExplorationsSensibles: React.FC = () => {
       {/* Header */}
       <header className="relative z-10 pt-8 pb-4 px-6">
         <div className="max-w-4xl mx-auto relative">
-          {/* Icône retour accueil */}
+          {/* Icône retour accueil - positionnée à gauche du container */}
           <Link 
             to="/" 
-            className="absolute left-0 top-0 p-2 rounded-full bg-white/5 hover:bg-white/10 border border-white/10 hover:border-purple-400/30 transition-all duration-300 group"
+            className="absolute -left-12 top-2 p-2 rounded-full bg-white/5 hover:bg-white/10 border border-white/10 hover:border-purple-400/30 transition-all duration-300 group hidden lg:flex"
             title="Retour à l'accueil"
           >
             <Sparkles className="h-5 w-5 text-white/40 group-hover:text-purple-400 transition-colors" />
           </Link>
-          <motion.div
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-purple-950/30 border border-purple-500/20 mb-6"
+          
+          {/* Version mobile : icône en haut à droite */}
+          <Link 
+            to="/" 
+            className="absolute right-0 top-2 p-2 rounded-full bg-white/5 hover:bg-white/10 border border-white/10 hover:border-purple-400/30 transition-all duration-300 group lg:hidden"
+            title="Retour à l'accueil"
           >
-            <Compass className="h-4 w-4 text-purple-400" />
-            <span className="text-sm text-purple-300">Explorations Sensibles</span>
-          </motion.div>
+            <Sparkles className="h-5 w-5 text-white/40 group-hover:text-purple-400 transition-colors" />
+          </Link>
+          
+          {/* Badge centré */}
+          <div className="flex justify-center">
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-purple-950/30 border border-purple-500/20 mb-6"
+            >
+              <Compass className="h-4 w-4 text-purple-400" />
+              <span className="text-sm text-purple-300">Explorations Sensibles</span>
+            </motion.div>
+          </div>
           
           <motion.h1
             initial={{ opacity: 0, y: 20 }}
