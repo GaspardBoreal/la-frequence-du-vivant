@@ -85,8 +85,17 @@ const ContributeurCard: React.FC<ContributeurCardProps> = ({
               rel="noopener noreferrer"
               className="inline-flex items-center gap-1.5 mt-3 text-xs text-muted-foreground hover:text-foreground transition-colors"
             >
-              <Linkedin className="w-4 h-4" />
-              <span>LinkedIn</span>
+              {contributeur.linkedin.includes('linkedin.com') ? (
+                <>
+                  <Linkedin className="w-4 h-4" />
+                  <span>LinkedIn</span>
+                </>
+              ) : (
+                <>
+                  <ExternalLink className="w-4 h-4" />
+                  <span>Site de l'auteur</span>
+                </>
+              )}
               <ExternalLink className="w-3 h-3" />
             </a>
           )}
