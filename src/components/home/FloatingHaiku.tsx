@@ -1,12 +1,14 @@
 import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
+// Vrais haïkus et senryūs de Gaspard Boréal - extraits des marches sur la Dordogne
 const HAIKUS = [
-  "« La rivière murmure\ndes mots que seuls les arbres\nsavent écouter »",
-  "« Sous l'écorce ancienne\nmille vies invisibles\ntissent leur silence »",
-  "« Le héron s'envole\nemportant dans son reflet\nun morceau de ciel »",
-  "« Feuilles de chêne\ntombant sur l'eau sombre\nlettres de la forêt »",
-  "« Entre deux rives\nla Dordogne chante\nce que nous oublions »",
+  "« Suspend ton verdict\nTant que tu n'auras pas vu\nNaître la libellule »",
+  "« La gabarre s'en va\nScies d'acier en coulisses\nEntre les deux piliers »",
+  "« Fleuve ou rivière ?\nPlace-toi rue du Corridor\nÉcoute la réponse »",
+  "« Pourquoi descendre\nAlors qu'on peut remonter\nLe fil de nos vies »",
+  "« Voûte cobalt\nLa nuit boit nos utopies\nLa pierre respire »",
+  "« Je l'imagine\nElle apprend pas à pas\nQue deviendra-t-elle ? »",
 ];
 
 interface FloatingHaikuProps {
