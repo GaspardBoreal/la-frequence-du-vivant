@@ -2,21 +2,17 @@ import React, { useState } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { 
-  ArrowLeft, 
-  Database, 
-  Mic2, 
-  Sparkles, 
-  Leaf, 
-  Heart,
-  Download,
-  Calendar
-} from 'lucide-react';
+import { ArrowLeft, Download, Calendar } from 'lucide-react';
 import Footer from '@/components/Footer';
 import TrustBar from '@/components/marches-vivant/TrustBar';
 import FormationCard, { FormationData } from '@/components/marches-vivant/FormationCard';
 import ContactFormB2B from '@/components/marches-vivant/ContactFormB2B';
+import ProofBar from '@/components/marches-vivant/ProofBar';
+import MarchesShowcase from '@/components/marches-vivant/MarchesShowcase';
+import TerritorialCoverageMap from '@/components/marches-vivant/TerritorialCoverageMap';
+import CSRDProofSection from '@/components/marches-vivant/CSRDProofSection';
 import { Button } from '@/components/ui/button';
+import { Database, Mic2, Sparkles, Leaf, Heart } from 'lucide-react';
 
 // Données des formations
 const formations: FormationData[] = [
@@ -82,7 +78,10 @@ const MarchesDuVivantEntreprises = () => {
 
   const handleContactFormation = (formationId: string) => {
     setSelectedFormation(formationId);
-    // Scroll vers le formulaire
+    document.getElementById('contact-form')?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  const scrollToContact = () => {
     document.getElementById('contact-form')?.scrollIntoView({ behavior: 'smooth' });
   };
 
@@ -116,7 +115,7 @@ const MarchesDuVivantEntreprises = () => {
         </header>
 
         {/* Hero */}
-        <section className="py-16 px-6 border-b border-border/20">
+        <section className="py-16 px-6">
           <div className="max-w-4xl mx-auto text-center">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -144,8 +143,26 @@ const MarchesDuVivantEntreprises = () => {
           </div>
         </section>
 
+        {/* ProofBar - Social Proof Scientifique */}
+        <ProofBar className="border-y border-border/20 bg-card/20" />
+
+        {/* MarchesShowcase - Galerie des Preuves */}
+        <MarchesShowcase 
+          className="bg-gradient-to-b from-background to-card/20" 
+          onContactClick={scrollToContact}
+        />
+
+        {/* Carte Territoriale */}
+        <TerritorialCoverageMap className="border-y border-border/20" />
+
+        {/* Encart CSRD */}
+        <CSRDProofSection 
+          className="bg-gradient-to-b from-card/20 to-background"
+          onLearnMore={scrollToContact}
+        />
+
         {/* Argument Massue */}
-        <section className="py-8 px-6 bg-emerald-950/20 border-b border-emerald-500/20">
+        <section className="py-8 px-6 bg-emerald-950/20 border-y border-emerald-500/20">
           <div className="max-w-4xl mx-auto text-center">
             <p className="text-lg md:text-xl text-emerald-300 font-medium">
               "Vos équipes produisent de la donnée RSE opposable (CSRD) grâce à nos protocoles connectés."
@@ -234,7 +251,7 @@ const MarchesDuVivantEntreprises = () => {
                 </p>
                 <Button 
                   variant="outline"
-                  onClick={() => document.getElementById('contact-form')?.scrollIntoView({ behavior: 'smooth' })}
+                  onClick={scrollToContact}
                 >
                   Prendre contact
                 </Button>
