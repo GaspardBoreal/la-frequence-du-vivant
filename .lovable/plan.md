@@ -1,378 +1,346 @@
 
-# Plan CRM Association - Intégration Admin Hub
+# Plan : Export ÉDITEUR - Format Soumission Manuscrit
 
-## Analyse de l'Existant
+## Contexte et Analyse du Retour Éditeur
 
-### Structure actuelle
-- **Hub Admin** : `/access-admin-gb2025` → `AdminAccess.tsx` (5 modules existants)
-- **Authentification** : `AdminAuth.tsx` + `useAuth.ts` avec vérification admin via RPC `is_admin_user`
-- **Table admin_users** : Stocke `user_id`, `email`, `role` (actuellement 1 admin : gpied@gaspardboreal.com)
-- **Tables de contacts existantes** : `gaspard_messages`, `gaspard_reservations` (base pour opportunités)
+Le retour de l'éditeur identifie **deux freins majeurs** :
 
-### Points clés de sécurité identifiés
-- Le système utilise déjà une table `admin_users` séparée avec un champ `role` (text)
-- Fonctions RPC sécurisées : `is_admin_user()`, `check_is_admin_user()`
-- Pas d'intégration email métier (Resend) - seulement Supabase Auth
+### A) La forme "livre maquetté" vs "manuscrit inédit"
+- Le PDF actuel ressemble à un livre **déjà achevé** (colophon, mentions d'éditeur, maquette sophistiquée)
+- Signal perçu : "autopublication" ou "projet bouclé" → rejet automatique avant lecture
+- **Solution** : Créer un format **sobre, neutre, professionnel** spécifique aux soumissions
 
----
-
-## Architecture Proposée
-
-```text
-┌─────────────────────────────────────────────────────────────────────────┐
-│                    /access-admin-gb2025 - Hub Principal                  │
-│                                                                         │
-│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐    │
-│  │   Marches   │  │ Explorations│  │ Exportations│  │ Automations │    │
-│  └─────────────┘  └─────────────┘  └─────────────┘  └─────────────┘    │
-│                                                                         │
-│  ┌─────────────┐  ┌─────────────────────────────────────────────────┐  │
-│  │  Marcheurs  │  │              NOUVEAU : CRM Module               │  │
-│  └─────────────┘  │  ┌─────────┐ ┌──────────┐ ┌─────────────────┐   │  │
-│                    │  │ Équipe  │ │ Pipeline │ │ Tableau de Bord │   │  │
-│                    │  └─────────┘ └──────────┘ └─────────────────┘   │  │
-│                    └─────────────────────────────────────────────────┘  │
-└─────────────────────────────────────────────────────────────────────────┘
-```
+### B) Les erreurs typographiques
+- Césures malheureuses sur noms propres ("Dor-dogne", "Aci-penser stu-rio")
+- Mots coupés incorrectement ("applaudisseme nts", "Écoute r")
+- Espaces avant ponctuation ("cohabitation .")
+- Incohérences micro-typographiques
 
 ---
 
-## 1. Gestion des Rôles et Permissions
+## Architecture Proposée : EditorExportPanel
 
-### Évolution du système de rôles
+### Nouveau composant dédié
+Un panneau d'export **séparé et spécialisé** qui génère un document Word (.docx) conforme aux attentes des comités de lecture nationaux.
 
-**Rôles requis :**
+### Positionnement UI
+Dans `ExportationsAdmin.tsx`, ajout d'une **nouvelle carte** après les exports existants :
 
-| Rôle | Accès |
-|------|-------|
-| `admin` | Tout (CRM, Marches, Explorations, Équipe, Paramètres) |
-| `member` | CRM + Marches (création/gestion) + Explorations (lecture) |
-| `walker` | Marches uniquement (création/gestion de ses propres marches) |
-
-### Modifications base de données
-
-**Table `user_roles` (sécurité standard) :**
-
-```sql
--- Enum pour les rôles
-CREATE TYPE public.crm_role AS ENUM ('admin', 'member', 'walker');
-
--- Table des rôles utilisateur
-CREATE TABLE public.user_roles (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
-    role crm_role NOT NULL DEFAULT 'walker',
-    UNIQUE (user_id, role)
-);
-
--- Fonction de vérification sécurisée
-CREATE OR REPLACE FUNCTION public.has_crm_role(_user_id uuid, _role crm_role)
-RETURNS boolean
-LANGUAGE sql
-STABLE
-SECURITY DEFINER
-SET search_path = public
-AS $$
-  SELECT EXISTS (
-    SELECT 1 FROM public.user_roles
-    WHERE user_id = _user_id AND role = _role
-  )
-$$;
 ```
-
-**Table `team_members` (profils enrichis) :**
-
-```sql
-CREATE TABLE public.team_members (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL UNIQUE,
-    prenom TEXT NOT NULL,
-    nom TEXT NOT NULL,
-    fonction TEXT,
-    telephone TEXT,
-    photo_url TEXT,
-    is_active BOOLEAN DEFAULT true,
-    created_at TIMESTAMPTZ DEFAULT now(),
-    updated_at TIMESTAMPTZ DEFAULT now()
-);
+┌────────────────────────────────────────────────────────────────┐
+│  📜  Export ÉDITEUR                                            │
+│  ───────────────────────────────────────────────────────────   │
+│  Format manuscrit sobre pour soumission aux éditeurs           │
+│  de poésie nationaux (Cheyne, Gallimard, Bruno Doucey, etc.)   │
+│                                                                │
+│  [Configuration]  [Aperçu]  [Télécharger]                      │
+└────────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-## 2. Pipeline Commercial (Opportunités)
+## 1. Spécifications du Format Manuscrit
 
-### Table `crm_opportunities`
+### Principe directeur
+> "L'éditeur doit lire le texte, pas la maquette."
 
-```sql
-CREATE TABLE public.crm_opportunities (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    -- Informations contact
-    prenom TEXT NOT NULL,
-    nom TEXT NOT NULL,
-    entreprise TEXT,
-    fonction TEXT,
-    telephone TEXT,
-    email TEXT NOT NULL,
-    -- Détails projet
-    experience_souhaitee TEXT, -- 'team_building', 'formation', 'seminaire'
-    format_souhaite TEXT,       -- 'demi_journee', 'journee', 'sur_mesure'
-    date_souhaitee DATE,
-    lieu_prefere TEXT,
-    objectifs TEXT,
-    financement_souhaite TEXT,  -- 'direct', 'opco', 'autre'
-    budget_estime INTEGER,
-    -- Pipeline
-    statut TEXT DEFAULT 'a_contacter', -- a_contacter, relance_1, relance_2, relance_3, pas_interesse, gagne, perdu
-    notes TEXT,
-    -- Métadonnées
-    assigned_to UUID REFERENCES public.team_members(id),
-    source TEXT, -- 'formulaire_b2b', 'linkedin', 'recommandation', 'salon', 'autre'
-    created_at TIMESTAMPTZ DEFAULT now(),
-    updated_at TIMESTAMPTZ DEFAULT now(),
-    closed_at TIMESTAMPTZ
-);
+### Page de titre sobre
+
+| Élément | Format |
+|---------|--------|
+| Titre | Times New Roman 16pt, gras, centré |
+| Sous-titre | Times 12pt, italique, centré |
+| Auteur | Times 14pt, centré |
+| Mention | "Manuscrit inédit" en italique |
+| Contact | Email/téléphone discret en bas |
+
+**Ce qui est retiré** :
+- Mentions "Éditions...", "Achevé d'imprimer..."
+- Design graphique (filets, couleurs, ornements)
+- Colophon éditorial
+- Logos et identité visuelle
+
+### Typographie neutralisée
+
+| Paramètre | Valeur |
+|-----------|--------|
+| Police | Times New Roman ou Georgia |
+| Taille corps | 12pt |
+| Interligne | 1.5 ou double |
+| Marges | 2.5cm uniformes |
+| Alignement | Gauche (fer à gauche) - pas justifié |
+| Césure | **Désactivée complètement** |
+
+### Corrections typographiques automatiques
+
+Le système appliquera un **nettoyage systématique** :
+
+1. **Suppression des césures** : Aucun mot coupé
+2. **Espaces avant ponctuation** : Correction automatique (` .` → `.`)
+3. **Espaces insécables** : `;`, `?`, `!`, `:` précédés d'espace fine insécable
+4. **Guillemets français** : `"..."` → `« ... »`
+5. **Apostrophes typographiques** : `'` → `'`
+6. **Tirets** : Normalisation `-` / `–` / `—`
+
+### Table des matières
+
+- Format simple : Titre du texte + numéro de page
+- Sans ornement, sans couleur
+- Génération automatique via champs Word (TOC)
+
+### Corps du texte
+
+- **Pas de distinction visuelle par type** (haïku, fable, prose)
+- Titre du texte en gras, taille 12pt
+- Lieu/date en italique sous le titre (optionnel)
+- Contenu en romain standard
+- Saut de page entre chaque texte (option activable)
+
+---
+
+## 2. Options de Configuration
+
+### Métadonnées éditeur
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│ Titre du manuscrit          [Fréquences de la rivière...]  │
+│ Sous-titre (optionnel)      [Carnet de remontée poétique]  │
+│ Nom de l'auteur             [Gaspard Boréal               ]│
+│ Email de contact            [gpied@gaspardboreal.com      ]│
+│ Téléphone (optionnel)       [                             ]│
+│ ☐ Afficher les coordonnées sur la page de titre           │
+└─────────────────────────────────────────────────────────────┘
 ```
 
-### Statuts du Kanban
+### Contenu
 
-```text
-┌────────────┐ ┌────────────┐ ┌────────────┐ ┌────────────┐ ┌────────────┐ ┌────────────┐
-│ À contacter│→│ Relance 1  │→│ Relance 2  │→│ Relance 3  │→│ Pas intéré │ │   Gagné    │
-│     12     │ │     5      │ │     3      │ │     2      │ │      8     │ │     15     │
-└────────────┘ └────────────┘ └────────────┘ └────────────┘ └────────────┘ └────────────┘
+```
+┌─────────────────────────────────────────────────────────────┐
+│ ☑ Page de titre sobre                                       │
+│ ☑ Table des matières simple                                 │
+│ ☐ Mentions de lieu/date sous les titres                     │
+│ ☑ Saut de page entre chaque texte                          │
+│ ☐ Numérotation des pages (déconseillé : Word l'ajoute)     │
+│ ☐ Inclure les index (recommandé : non pour 1ère soumission)│
+└─────────────────────────────────────────────────────────────┘
+```
+
+### Nettoyage typographique
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│ ☑ Désactiver toutes les césures                            │
+│ ☑ Corriger les espaces avant ponctuation                   │
+│ ☑ Normaliser les guillemets français                       │
+│ ☑ Normaliser les apostrophes                               │
+│ ☑ Protéger les noms propres (Dordogne, Acipenser...)       │
+│ ☑ Supprimer les caractères invisibles problématiques       │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### Mode sélection éditeur (optionnel, Niveau 2)
+
+Pour la recommandation "couper 15-25% des textes les plus faibles" :
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│ Mode sélection : ☐ Inclure tous les textes                 │
+│                  ☑ Exclure certains textes manuellement    │
+│                                                            │
+│ [Liste des textes avec cases à cocher]                     │
+│ ☐ Haïku #12 - "Silence des berges" (faible impact ?)      │
+│ ☑ Fable #3 - "La trompette dans les vignes"               │
+│ ...                                                        │
+└─────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-## 3. Module Email (via Resend)
+## 3. Structure des Fichiers
 
-### Edge Function `send-crm-email`
+### Nouveaux fichiers à créer
 
-**Fonctionnalités :**
-- Envoi de devis personnalisé (template HTML)
-- Envoi de newsletters (base de contacts segmentée)
-- Historique des envois dans `crm_email_logs`
-
-### Table `crm_email_logs`
-
-```sql
-CREATE TABLE public.crm_email_logs (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    opportunity_id UUID REFERENCES crm_opportunities(id),
-    email_type TEXT NOT NULL, -- 'devis', 'relance', 'newsletter'
-    recipient_email TEXT NOT NULL,
-    subject TEXT NOT NULL,
-    sent_at TIMESTAMPTZ DEFAULT now(),
-    status TEXT DEFAULT 'sent', -- 'sent', 'failed', 'opened'
-    resend_id TEXT
-);
 ```
-
-### Table `crm_contacts` (pour newsletters)
-
-```sql
-CREATE TABLE public.crm_contacts (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    email TEXT NOT NULL UNIQUE,
-    prenom TEXT,
-    nom TEXT,
-    entreprise TEXT,
-    segment TEXT DEFAULT 'general', -- 'entreprise', 'association', 'partenaire'
-    is_subscribed BOOLEAN DEFAULT true,
-    created_at TIMESTAMPTZ DEFAULT now()
-);
-```
-
----
-
-## 4. Interface Utilisateur
-
-### Nouvelles pages à créer
-
-| Route | Composant | Accès |
-|-------|-----------|-------|
-| `/admin/crm` | `CrmDashboard.tsx` | admin, member |
-| `/admin/crm/pipeline` | `CrmPipeline.tsx` | admin, member |
-| `/admin/crm/opportunities/:id` | `OpportunityDetail.tsx` | admin, member |
-| `/admin/crm/equipe` | `TeamManagement.tsx` | admin uniquement |
-| `/admin/crm/emails` | `EmailCenter.tsx` | admin, member |
-| `/admin/crm/contacts` | `ContactsList.tsx` | admin, member |
-
-### Composants principaux
-
-**CrmDashboard.tsx - Tableau de bord**
-- KPIs : Opportunités actives, Taux de conversion, CA potentiel
-- Graphique pipeline par statut
-- Dernières activités
-- Prochaines relances
-
-**CrmPipeline.tsx - Vue Kanban**
-- Colonnes drag & drop (dnd-kit déjà installé)
-- Cartes d'opportunités avec infos clés
-- Toggle vue Kanban / Liste
-- Filtres par assigné, source, date
-
-**OpportunityDetail.tsx - Fiche détaillée**
-- Formulaire d'édition complet
-- Historique des actions
-- Boutons : Envoyer devis, Programmer relance
-- Notes et commentaires
-
-**TeamManagement.tsx - Gestion équipe**
-- Liste des membres avec rôles
-- Ajout/suppression de membres
-- Attribution des rôles (admin uniquement)
-
-**EmailCenter.tsx - Centre d'emails**
-- Composer un email personnalisé
-- Templates de devis
-- Historique des envois
-
----
-
-## 5. Structure des Fichiers
-
-```text
 src/
-├── pages/
-│   ├── CrmDashboard.tsx
-│   ├── CrmPipeline.tsx
-│   ├── OpportunityDetail.tsx
-│   ├── TeamManagement.tsx
-│   ├── EmailCenter.tsx
-│   └── ContactsList.tsx
 ├── components/
-│   └── crm/
-│       ├── OpportunityCard.tsx
-│       ├── KanbanColumn.tsx
-│       ├── KanbanBoard.tsx
-│       ├── OpportunityForm.tsx
-│       ├── TeamMemberCard.tsx
-│       ├── EmailComposer.tsx
-│       ├── DevisTemplate.tsx
-│       ├── DashboardKPIs.tsx
-│       ├── PipelineChart.tsx
-│       └── ActivityFeed.tsx
-├── hooks/
-│   ├── useCrmOpportunities.ts
-│   ├── useTeamMembers.ts
-│   ├── useCrmStats.ts
-│   └── useCrmRole.ts
-└── types/
-    └── crm.ts
+│   └── admin/
+│       └── EditorExportPanel.tsx    # Panneau de configuration
+├── utils/
+│   └── editorExportUtils.ts         # Logique de génération Word sobre
+```
 
-supabase/
-└── functions/
-    └── send-crm-email/
-        └── index.ts
+### Modifications mineures
+
+| Fichier | Modification |
+|---------|--------------|
+| `ExportationsAdmin.tsx` | Ajout de la carte "Export ÉDITEUR" |
+
+---
+
+## 4. Logique de Nettoyage Typographique
+
+### Fonction `sanitizeForEditor()`
+
+Cette fonction sera le cœur du nettoyage :
+
+```typescript
+function sanitizeForEditor(content: string, options: EditorSanitizeOptions): string {
+  let result = content;
+  
+  // 1. Suppression caractères invisibles problématiques
+  result = removeInvisibleChars(result);
+  
+  // 2. Correction espaces avant ponctuation
+  result = fixPunctuationSpacing(result);
+  
+  // 3. Normalisation guillemets
+  result = normalizeQuotes(result);
+  
+  // 4. Normalisation apostrophes
+  result = normalizeApostrophes(result);
+  
+  // 5. Protection noms propres (non-breaking spaces)
+  result = protectProperNouns(result, PROTECTED_WORDS);
+  
+  // 6. Nettoyage césures résiduelles (soft hyphens, etc.)
+  result = removeSoftHyphens(result);
+  
+  return result;
+}
+
+const PROTECTED_WORDS = [
+  'Dordogne', 'Acipenser', 'sturio', 'Dordonia',
+  'Gaspard', 'Boréal', 'Périgord', 'Garonne',
+  // ... liste extensible
+];
+```
+
+### Détection et rapport
+
+Avant export, affichage d'un **rapport de pré-vol** :
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│ ✓ 3 espaces avant ponctuation corrigés                     │
+│ ✓ 12 guillemets normalisés                                  │
+│ ✓ 2 caractères invisibles supprimés (ZWSP)                 │
+│ ⚠ 1 césure détectée dans un titre (vérifier manuellement)  │
+└─────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-## 6. Intégration au Hub Admin
+## 5. Workflow d'Export
 
-### Modification de `AdminAccess.tsx`
+### Étapes utilisateur
 
-Ajout d'une nouvelle carte CRM avec sous-navigation :
+1. **Sélection des textes** (via les filtres existants)
+2. **Configuration** (métadonnées, options)
+3. **Pré-visualisation** du rapport de nettoyage
+4. **Génération** du fichier .docx
+5. **Téléchargement**
 
-```text
-┌────────────────────────────────────────────────────┐
-│  📊  CRM & Commercial                              │
-│  ─────────────────────────────────────────────     │
-│  Gérer le pipeline commercial, les opportunités    │
-│  et les communications avec les prospects.         │
-│                                                    │
-│  [Pipeline]  [Tableau de Bord]  [Emails]          │
-└────────────────────────────────────────────────────┘
+### Nom du fichier généré
+
+Format : `MANUSCRIT_[Titre]_[Date].docx`
+Exemple : `MANUSCRIT_Frequences_Dordogne_2026-02-05.docx`
+
+---
+
+## 6. Éléments Visuels de l'Interface
+
+### Badge distinctif
+
+L'Export ÉDITEUR aura un badge visuel différent des autres exports :
+
+```
+┌────────────────────────────────────────────────────────────┐
+│  📜  Export ÉDITEUR                    🏷️ RECOMMANDÉ      │
+│  ───────────────────────────────────────────────────────   │
+│  Format manuscrit conforme aux exigences des comités       │
+│  de lecture : sobre, nettoyé, sans maquette.               │
+│                                                            │
+│  Éditeurs cibles : Cheyne, Gallimard, Bruno Doucey,       │
+│  Le Castor Astral, Lanskine, Tarabuste, Wildproject       │
+└────────────────────────────────────────────────────────────┘
 ```
 
----
+### Couleur thématique
 
-## 7. Sécurisation RLS
-
-### Policies pour `crm_opportunities`
-
-```sql
--- Les admins et membres peuvent voir toutes les opportunités
-CREATE POLICY "CRM access for admins and members" ON crm_opportunities
-FOR ALL USING (
-    public.has_crm_role(auth.uid(), 'admin') OR 
-    public.has_crm_role(auth.uid(), 'member')
-);
-```
-
-### Policies pour `team_members`
-
-```sql
--- Seuls les admins peuvent gérer l'équipe
-CREATE POLICY "Only admins manage team" ON team_members
-FOR ALL USING (public.has_crm_role(auth.uid(), 'admin'));
-
--- Les membres peuvent voir l'équipe
-CREATE POLICY "Members can view team" ON team_members
-FOR SELECT USING (
-    public.has_crm_role(auth.uid(), 'admin') OR 
-    public.has_crm_role(auth.uid(), 'member')
-);
-```
+- Fond : `bg-slate-50` (gris très clair, sobre)
+- Bordure : `border-slate-300`
+- Icône : `📜` ou `ScrollText` (Lucide)
+- Accent : Bleu sobre `text-slate-700`
 
 ---
 
-## 8. Plan d'Implémentation
+## 7. Plan d'Implémentation
 
-### Phase 1 : Fondations (Tables + Rôles)
-1. Créer les tables : `user_roles`, `team_members`, `crm_opportunities`, `crm_contacts`, `crm_email_logs`
-2. Créer les fonctions RPC de vérification de rôles
-3. Configurer les policies RLS
-4. Migrer l'admin existant vers le nouveau système
+### Phase 1 : Utilitaires de nettoyage
+1. Créer `editorExportUtils.ts` avec les fonctions de sanitization
+2. Implémenter `sanitizeForEditor()` et ses sous-fonctions
+3. Créer la liste extensible des mots protégés
 
-### Phase 2 : Interface Pipeline
-5. Créer le hook `useCrmRole` pour la gestion des permissions
-6. Créer les composants Kanban (KanbanBoard, KanbanColumn, OpportunityCard)
-7. Implémenter la page `CrmPipeline.tsx` avec drag & drop
-8. Ajouter la vue Liste alternative
+### Phase 2 : Génération Word sobre
+4. Créer `generateEditorManuscript()` dans `editorExportUtils.ts`
+5. Implémenter la page de titre sobre
+6. Implémenter la table des matières simple
+7. Implémenter le formatage neutre des textes
 
-### Phase 3 : Gestion Équipe
-9. Créer la page `TeamManagement.tsx`
-10. Implémenter l'ajout/suppression de membres
-11. Créer l'interface d'attribution des rôles
+### Phase 3 : Interface utilisateur
+8. Créer `EditorExportPanel.tsx`
+9. Ajouter les options de configuration
+10. Implémenter le rapport de pré-vol
 
-### Phase 4 : Dashboard
-12. Créer les hooks de statistiques (`useCrmStats`)
-13. Implémenter les KPIs et graphiques
-14. Ajouter le fil d'activités
-
-### Phase 5 : Emails
-15. Configurer le secret `RESEND_API_KEY`
-16. Créer l'edge function `send-crm-email`
-17. Implémenter l'EmailCenter et les templates de devis
-
-### Phase 6 : Intégration Hub
-18. Modifier `AdminAccess.tsx` pour ajouter le module CRM
-19. Ajouter les routes dans `App.tsx`
-20. Créer le guard de permission par rôle
+### Phase 4 : Intégration
+11. Ajouter la carte dans `ExportationsAdmin.tsx`
+12. Connecter les filtres existants
 
 ---
 
-## Prérequis Utilisateur
+## 8. Résultat Attendu
 
-Avant de commencer l'implémentation, vous devrez :
+### Avant (PDF Pro actuel)
+- Maquetté, design "livre achevé"
+- Colophon, mentions éditeur
+- Césures automatiques
+- Signal : "déjà publié / autopub"
 
-1. **Créer un compte Resend** : https://resend.com
-2. **Valider votre domaine** : https://resend.com/domains
-3. **Créer une clé API** : https://resend.com/api-keys
-4. **Me fournir la clé** pour que je l'ajoute aux secrets Supabase
+### Après (Export ÉDITEUR)
+- Format manuscrit sobre (Times 12pt, interligne 1.5)
+- Page de titre "Manuscrit inédit"
+- Typographie corrigée automatiquement
+- Aucune césure
+- Signal : "texte inédit prêt à être lu"
 
 ---
 
-## Résultat Attendu
+## 9. Compatibilité avec les Éditeurs Cibles
 
-**Avant :** Hub admin avec 5 modules techniques (Marches, Explorations, etc.)
+| Éditeur | Format demandé | Compatibilité |
+|---------|----------------|---------------|
+| Cheyne | Papier uniquement | ✓ Imprimer le .docx |
+| Le Castor Astral | PDF par email | ✓ Export PDF depuis Word |
+| Bruno Doucey | PDF par email | ✓ Export PDF depuis Word |
+| Gallimard | PDF/Word/ODT | ✓ Direct |
+| Lanskine | Email | ✓ Joindre le .docx |
+| Tarabuste | Papier | ✓ Imprimer |
+| Wildproject | PDF + présentation | ✓ Compatible |
+| La rumeur libre | Papier | ✓ Imprimer |
 
-**Après :** Hub admin enrichi avec :
-- Module CRM complet avec pipeline Kanban
-- Gestion de l'équipe interne (Laurence, Victor, Laurent...)
-- Système de rôles à 3 niveaux
-- Envoi d'emails personnalisés (devis, relances)
-- Tableau de bord commercial
-- Base de contacts pour newsletters futures
+---
+
+## Notes Techniques
+
+### Dépendances
+- Réutilisation de la librairie `docx` déjà installée
+- Aucune nouvelle dépendance requise
+
+### Réutilisation du code existant
+- Les fonctions de parsing HTML (`parseHtmlContent`, `parseFormattedText`) de `wordExportUtils.ts` seront réutilisées
+- Le système de filtres existant est conservé tel quel
+
+### Points d'attention
+- Les haïkus/senryūs gardent leur structure multiligne mais sans mise en page "artistique"
+- L'option de saut de page entre textes permet de réduire la pagination si nécessaire
