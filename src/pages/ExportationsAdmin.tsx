@@ -1541,7 +1541,7 @@ const ExportationsAdmin: React.FC = () => {
         <Card className="border-2 border-slate-400 bg-slate-50 dark:bg-slate-900/50">
           <CardHeader>
             <div className="flex items-center justify-between">
-              <CardTitle className="flex items-center gap-2">
+              <CardTitle className="flex items-center gap-2 text-slate-900 dark:text-slate-100">
                 <ScrollText className="h-5 w-5 text-slate-700 dark:text-slate-300" />
                 Export ÉDITEUR
               </CardTitle>
