@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowLeft, FileDown, FileText, Table, Download, Filter, Loader2, ChevronDown, ChevronRight, MapPin, BookOpen, AlertTriangle, AlertCircle, ExternalLink, BarChart3, Sparkles, Plus, X } from 'lucide-react';
+import { ArrowLeft, FileDown, FileText, Table, Download, Filter, Loader2, ChevronDown, ChevronRight, MapPin, BookOpen, AlertTriangle, AlertCircle, ExternalLink, BarChart3, Sparkles, Plus, X, ScrollText } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -20,6 +20,7 @@ import { exportMarchesStatsToWord } from '@/utils/marchesStatsExport';
 import WordExportPreview from '@/components/admin/WordExportPreview';
 import EpubExportPanel from '@/components/admin/EpubExportPanel';
 import PdfExportPanel from '@/components/admin/PdfExportPanel';
+import EditorExportPanel from '@/components/admin/EditorExportPanel';
 import { Input } from '@/components/ui/input';
 interface Exploration {
   id: string;
@@ -1532,6 +1533,31 @@ const ExportationsAdmin: React.FC = () => {
               textes={filteredTextes}
               explorationName={explorations.find(e => selectedExplorations.has(e.id))?.name}
               onRefresh={() => loadData(true)}
+            />
+          </CardContent>
+        </Card>
+
+        {/* Editor Export Card - Full Width - RECOMMANDÉ */}
+        <Card className="border-2 border-slate-400 bg-slate-50 dark:bg-slate-900/50">
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <CardTitle className="flex items-center gap-2">
+                <ScrollText className="h-5 w-5 text-slate-700 dark:text-slate-300" />
+                Export ÉDITEUR
+              </CardTitle>
+              <Badge className="bg-green-600 text-white hover:bg-green-600">
+                RECOMMANDÉ
+              </Badge>
+            </div>
+            <CardDescription>
+              Format manuscrit sobre pour soumission aux éditeurs de poésie nationaux (Cheyne, Gallimard, Bruno Doucey, Le Castor Astral, Lanskine, Tarabuste, Wildproject)
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <EditorExportPanel
+              textes={filteredTextes}
+              defaultTitle={explorations.find(e => selectedExplorations.has(e.id))?.name || 'Manuscrit poétique'}
+              defaultAuthor="Gaspard Boréal"
             />
           </CardContent>
         </Card>
