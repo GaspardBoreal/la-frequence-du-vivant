@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { ScrollText, Download, Loader2, CheckCircle2, AlertTriangle, Info } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -30,6 +30,11 @@ const EditorExportPanel: React.FC<EditorExportPanelProps> = ({
   
   // Metadata state
   const [title, setTitle] = useState(defaultTitle);
+  
+  // Sync title with filter changes
+  useEffect(() => {
+    setTitle(defaultTitle);
+  }, [defaultTitle]);
   const [subtitle, setSubtitle] = useState('Carnet de remontée poétique');
   const [author, setAuthor] = useState(defaultAuthor);
   const [email, setEmail] = useState('');
@@ -143,7 +148,7 @@ const EditorExportPanel: React.FC<EditorExportPanelProps> = ({
       
       {/* Stats */}
       <div className="flex flex-wrap gap-2">
-        <Badge variant="outline" className="gap-1">
+        <Badge className="gap-1 bg-slate-700 text-white">
           <ScrollText className="h-3 w-3" />
           {textes.length} textes
         </Badge>
