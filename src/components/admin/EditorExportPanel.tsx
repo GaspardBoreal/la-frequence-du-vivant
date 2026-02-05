@@ -165,7 +165,7 @@ const EditorExportPanel: React.FC<EditorExportPanelProps> = ({
         
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="space-y-2">
-            <Label htmlFor="title">Titre du manuscrit</Label>
+            <Label htmlFor="title" className="text-slate-700 dark:text-slate-300">Titre du manuscrit</Label>
             <Input
               id="title"
               value={title}
@@ -175,7 +175,7 @@ const EditorExportPanel: React.FC<EditorExportPanelProps> = ({
           </div>
           
           <div className="space-y-2">
-            <Label htmlFor="subtitle">Sous-titre (optionnel)</Label>
+            <Label htmlFor="subtitle" className="text-slate-700 dark:text-slate-300">Sous-titre (optionnel)</Label>
             <Input
               id="subtitle"
               value={subtitle}
@@ -185,7 +185,7 @@ const EditorExportPanel: React.FC<EditorExportPanelProps> = ({
           </div>
           
           <div className="space-y-2">
-            <Label htmlFor="author">Nom de l'auteur</Label>
+            <Label htmlFor="author" className="text-slate-700 dark:text-slate-300">Nom de l'auteur</Label>
             <Input
               id="author"
               value={author}
@@ -195,7 +195,7 @@ const EditorExportPanel: React.FC<EditorExportPanelProps> = ({
           </div>
           
           <div className="space-y-2">
-            <Label htmlFor="email">Email de contact</Label>
+            <Label htmlFor="email" className="text-slate-700 dark:text-slate-300">Email de contact</Label>
             <Input
               id="email"
               type="email"
@@ -206,7 +206,7 @@ const EditorExportPanel: React.FC<EditorExportPanelProps> = ({
           </div>
           
           <div className="space-y-2">
-            <Label htmlFor="phone">Téléphone (optionnel)</Label>
+            <Label htmlFor="phone" className="text-slate-700 dark:text-slate-300">Téléphone (optionnel)</Label>
             <Input
               id="phone"
               type="tel"
@@ -222,7 +222,7 @@ const EditorExportPanel: React.FC<EditorExportPanelProps> = ({
               checked={showContactOnCover}
               onCheckedChange={(checked) => setShowContactOnCover(!!checked)}
             />
-            <Label htmlFor="showContact" className="text-sm cursor-pointer">
+            <Label htmlFor="showContact" className="text-sm cursor-pointer text-slate-700 dark:text-slate-300">
               Afficher les coordonnées sur la page de titre
             </Label>
           </div>
@@ -244,7 +244,7 @@ const EditorExportPanel: React.FC<EditorExportPanelProps> = ({
               checked={includeCoverPage}
               onCheckedChange={(checked) => setIncludeCoverPage(!!checked)}
             />
-            <Label htmlFor="coverPage" className="text-sm cursor-pointer">
+            <Label htmlFor="coverPage" className="text-sm cursor-pointer text-slate-700 dark:text-slate-300">
               Page de titre sobre
             </Label>
           </div>
@@ -255,7 +255,7 @@ const EditorExportPanel: React.FC<EditorExportPanelProps> = ({
               checked={includeTableOfContents}
               onCheckedChange={(checked) => setIncludeTableOfContents(!!checked)}
             />
-            <Label htmlFor="toc" className="text-sm cursor-pointer">
+            <Label htmlFor="toc" className="text-sm cursor-pointer text-slate-700 dark:text-slate-300">
               Table des matières simple
             </Label>
           </div>
@@ -266,7 +266,7 @@ const EditorExportPanel: React.FC<EditorExportPanelProps> = ({
               checked={showLocationDate}
               onCheckedChange={(checked) => setShowLocationDate(!!checked)}
             />
-            <Label htmlFor="locationDate" className="text-sm cursor-pointer">
+            <Label htmlFor="locationDate" className="text-sm cursor-pointer text-slate-700 dark:text-slate-300">
               Mentions de lieu/date sous les titres
             </Label>
           </div>
@@ -277,7 +277,7 @@ const EditorExportPanel: React.FC<EditorExportPanelProps> = ({
               checked={pageBreakBetweenTexts}
               onCheckedChange={(checked) => setPageBreakBetweenTexts(!!checked)}
             />
-            <Label htmlFor="pageBreak" className="text-sm cursor-pointer">
+            <Label htmlFor="pageBreak" className="text-sm cursor-pointer text-slate-700 dark:text-slate-300">
               Saut de page entre chaque texte
             </Label>
           </div>
@@ -299,7 +299,7 @@ const EditorExportPanel: React.FC<EditorExportPanelProps> = ({
               checked={disableHyphenation}
               onCheckedChange={(checked) => setDisableHyphenation(!!checked)}
             />
-            <Label htmlFor="hyphenation" className="text-sm cursor-pointer">
+            <Label htmlFor="hyphenation" className="text-sm cursor-pointer text-slate-700 dark:text-slate-300">
               Désactiver toutes les césures
             </Label>
           </div>
@@ -310,7 +310,7 @@ const EditorExportPanel: React.FC<EditorExportPanelProps> = ({
               checked={fixPunctuationSpacing}
               onCheckedChange={(checked) => setFixPunctuationSpacing(!!checked)}
             />
-            <Label htmlFor="punctuation" className="text-sm cursor-pointer">
+            <Label htmlFor="punctuation" className="text-sm cursor-pointer text-slate-700 dark:text-slate-300">
               Corriger les espaces avant ponctuation
             </Label>
           </div>
@@ -321,7 +321,7 @@ const EditorExportPanel: React.FC<EditorExportPanelProps> = ({
               checked={normalizeQuotes}
               onCheckedChange={(checked) => setNormalizeQuotes(!!checked)}
             />
-            <Label htmlFor="quotes" className="text-sm cursor-pointer">
+            <Label htmlFor="quotes" className="text-sm cursor-pointer text-slate-700 dark:text-slate-300">
               Normaliser les guillemets français
             </Label>
           </div>
@@ -332,7 +332,7 @@ const EditorExportPanel: React.FC<EditorExportPanelProps> = ({
               checked={normalizeApostrophes}
               onCheckedChange={(checked) => setNormalizeApostrophes(!!checked)}
             />
-            <Label htmlFor="apostrophes" className="text-sm cursor-pointer">
+            <Label htmlFor="apostrophes" className="text-sm cursor-pointer text-slate-700 dark:text-slate-300">
               Normaliser les apostrophes
             </Label>
           </div>
@@ -343,7 +343,7 @@ const EditorExportPanel: React.FC<EditorExportPanelProps> = ({
               checked={protectProperNouns}
               onCheckedChange={(checked) => setProtectProperNouns(!!checked)}
             />
-            <Label htmlFor="properNouns" className="text-sm cursor-pointer">
+            <Label htmlFor="properNouns" className="text-sm cursor-pointer text-slate-700 dark:text-slate-300">
               Protéger les noms propres (Dordogne, Acipenser...)
             </Label>
           </div>
@@ -354,7 +354,7 @@ const EditorExportPanel: React.FC<EditorExportPanelProps> = ({
               checked={removeInvisibleChars}
               onCheckedChange={(checked) => setRemoveInvisibleChars(!!checked)}
             />
-            <Label htmlFor="invisibleChars" className="text-sm cursor-pointer">
+            <Label htmlFor="invisibleChars" className="text-sm cursor-pointer text-slate-700 dark:text-slate-300">
               Supprimer les caractères invisibles
             </Label>
           </div>
