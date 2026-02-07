@@ -41,6 +41,8 @@ interface ExportOptions {
   selectedKeywordCategories?: string[];
   customKeywords?: string[];
   categorizedCustomKeywords?: { keyword: string; category: string }[];
+  contactEmail?: string;
+  contactPhone?: string;
 }
 
 // ============================================================================
@@ -280,6 +282,16 @@ const stripAllTags = (text: string): string => {
 /**
  * Convert parsed paragraphs to Word Paragraph objects
  */
+/**
+ * Convert a string to Title Case, respecting French hyphens and apostrophes
+ */
+const toTitleCase = (str: string): string => {
+  return str.toLowerCase().replace(
+    /(?:^|\s|[-'])\S/g,
+    (char) => char.toUpperCase()
+  );
+};
+
 const createParagraphsFromParsed = (
   parsedParagraphs: ParsedParagraph[],
   baseSpacing: number = 100,
@@ -291,7 +303,7 @@ const createParagraphsFromParsed = (
     const textRuns = para.runs.map(run => 
       new TextRun({
         text: run.text,
-        size: 22,
+        size: 24,
         italics: run.italic,
         bold: run.bold,
       })
@@ -346,7 +358,7 @@ const createPageRef = (bookmarkId: string): SimpleField => {
   return new SimpleField(`PAGEREF ${bookmarkId} \\h`);
 };
 
-const createCoverPage = (title: string, textCount: number, subtitle?: string): Paragraph[] => {
+const createCoverPage = (title: string, textCount: number, subtitle?: string, contactEmail?: string, contactPhone?: string): Paragraph[] => {
   const currentDate = new Date().toLocaleDateString('fr-FR', {
     year: 'numeric',
     month: 'long',
@@ -424,6 +436,31 @@ const createCoverPage = (title: string, textCount: number, subtitle?: string): P
       alignment: AlignmentType.CENTER,
       spacing: { after: 3000 },
     }),
+    // Contact info (if provided)
+    ...(contactEmail || contactPhone ? [
+      ...(contactEmail ? [new Paragraph({
+        children: [
+          new TextRun({
+            text: contactEmail,
+            size: 20,
+            color: '888888',
+          }),
+        ],
+        alignment: AlignmentType.CENTER,
+        spacing: { after: contactPhone ? 60 : 200 },
+      })] : []),
+      ...(contactPhone ? [new Paragraph({
+        children: [
+          new TextRun({
+            text: contactPhone,
+            size: 20,
+            color: '888888',
+          }),
+        ],
+        alignment: AlignmentType.CENTER,
+        spacing: { after: 200 },
+      })] : []),
+    ] : []),
     // Date at bottom
     new Paragraph({
       children: [
@@ -655,21 +692,26 @@ const createTexteEntry = (texte: TexteExport, includeMetadata: boolean): Paragra
 
   // Metadata (location) - only for non-haiku/senryu, and kept minimal
   // For haikus/senryus: no metadata at all (context is in the march header)
-  // For other types: just the city name in italics, no region, no CAPS
+  // For other types: just the city name in Title Case italics, no region
+  // Skip if ville is already contained in the marche_nom header
   if (includeMetadata && !isHaikuOrSenryu && texte.marche_ville) {
-    paragraphs.push(
-      new Paragraph({
-        children: [
-          new TextRun({
-            text: texte.marche_ville,
-            italics: true,
-            size: 20,
-            color: '888888',
-          }),
-        ],
-        spacing: { after: 200 },
-      })
-    );
+    const villeAlreadyInHeader = texte.marche_nom && 
+      texte.marche_nom.toLowerCase().includes(texte.marche_ville.toLowerCase());
+    if (!villeAlreadyInHeader) {
+      paragraphs.push(
+        new Paragraph({
+          children: [
+            new TextRun({
+              text: toTitleCase(texte.marche_ville),
+              italics: true,
+              size: 22,
+              color: '888888',
+            }),
+          ],
+          spacing: { after: 200 },
+        })
+      );
+    }
   }
 
   // Content - parse HTML and create properly formatted paragraphs
@@ -682,7 +724,7 @@ const createTexteEntry = (texte: TexteExport, includeMetadata: boolean): Paragra
       const textRuns = para.runs.map(run => 
         new TextRun({
           text: run.text,
-          size: 22,
+          size: 24,
           italics: true, // Haiku lines in italic
           bold: run.bold,
         })
@@ -694,24 +736,31 @@ const createTexteEntry = (texte: TexteExport, includeMetadata: boolean): Paragra
       });
     });
     paragraphs.push(...haikuParagraphs);
+    
+    // Haiku/Senryu: page break AFTER to isolate on its own page (no separator)
+    paragraphs.push(
+      new Paragraph({
+        children: [new PageBreak()],
+      })
+    );
   } else {
     paragraphs.push(...createParagraphsFromParsed(parsedContent, 100, 300));
-  }
 
-  // Separator
-  paragraphs.push(
-    new Paragraph({
-      children: [
-        new TextRun({
-          text: '• • •',
-          size: 18,
-          color: 'aaaaaa',
-        }),
-      ],
-      alignment: AlignmentType.CENTER,
-      spacing: { before: 200, after: 400 },
-    })
-  );
+    // Separator (only for non-haiku/senryu texts)
+    paragraphs.push(
+      new Paragraph({
+        children: [
+          new TextRun({
+            text: '• • •',
+            size: 18,
+            color: 'aaaaaa',
+          }),
+        ],
+        alignment: AlignmentType.CENTER,
+        spacing: { before: 200, after: 400 },
+      })
+    );
+  }
 
   return paragraphs;
 };
@@ -1424,9 +1473,16 @@ export const exportTextesToWord = async (
 ): Promise<void> => {
   const children: Paragraph[] = [];
 
-  // Cover page
+  // Cover page — split title on " — " for proper main title + subtitle
   if (options.includeCoverPage) {
-    children.push(...createCoverPage(options.title, textes.length));
+    let mainTitle = options.title;
+    let subtitle: string | undefined;
+    if (options.title.includes(' — ')) {
+      const parts = options.title.split(' — ');
+      mainTitle = parts[0];
+      subtitle = parts.slice(1).join(' — ');
+    }
+    children.push(...createCoverPage(mainTitle, textes.length, subtitle, options.contactEmail, options.contactPhone));
   }
 
   // Table of contents
@@ -1454,8 +1510,12 @@ export const exportTextesToWord = async (
         children.push(...createTexteEntry(texte, options.includeMetadata));
       });
 
-      // Page break between sections
-      children.push(new Paragraph({ children: [new PageBreak()] }));
+      // Page break between sections — skip if last text was haiku/senryu
+      const lastTexte = groupTextes[groupTextes.length - 1];
+      const lastIsHaiku = lastTexte && (lastTexte.type_texte === 'haiku' || lastTexte.type_texte === 'senryu');
+      if (!lastIsHaiku) {
+        children.push(new Paragraph({ children: [new PageBreak()] }));
+      }
     }
   } else {
     // Check if textes have partie assignments
@@ -1481,8 +1541,12 @@ export const exportTextesToWord = async (
             children.push(...createTexteEntry(texte, options.includeMetadata));
           });
 
-          // Page break between sections
-          children.push(new Paragraph({ children: [new PageBreak()] }));
+          // Page break between sections — skip if last text was haiku/senryu (already has its own PageBreak)
+          const lastTexte = groupTextes[groupTextes.length - 1];
+          const lastIsHaiku = lastTexte && (lastTexte.type_texte === 'haiku' || lastTexte.type_texte === 'senryu');
+          if (!lastIsHaiku) {
+            children.push(new Paragraph({ children: [new PageBreak()] }));
+          }
         }
       }
     } else {
@@ -1496,8 +1560,12 @@ export const exportTextesToWord = async (
           children.push(...createTexteEntry(texte, options.includeMetadata));
         });
 
-        // Page break between sections
-        children.push(new Paragraph({ children: [new PageBreak()] }));
+        // Page break between sections — skip if last text was haiku/senryu
+        const lastTexte = groupTextes[groupTextes.length - 1];
+        const lastIsHaiku = lastTexte && (lastTexte.type_texte === 'haiku' || lastTexte.type_texte === 'senryu');
+        if (!lastIsHaiku) {
+          children.push(new Paragraph({ children: [new PageBreak()] }));
+        }
       }
     }
   }
