@@ -1,143 +1,162 @@
 
 
-# Plan : Haiku seul sur sa page + Parties centrées en hauteur
+# Audit editorial du tapuscrit - Corrections pour soumission aux editeurs
 
-## Diagnostic
+## Diagnostic : regard d'un editeur de poesie national
 
-### 1. Haiku : situation actuelle par format
-
-| Format | Page isolée ? | Centré verticalement ? |
-|--------|--------------|----------------------|
-| **PDF** | Oui (chaque haiku a sa propre `<Page>`) | Non - `textePage` utilise `justifyContent: 'flex-start'` |
-| **EPUB** | Non - `page-break-inside: avoid` seulement | Non - centré horizontalement mais pas verticalement |
-| **Word** | Non - rendu identique aux autres textes | Non - pas de traitement specifique |
-
-### 2. Parties : situation actuelle par format
-
-| Format | Page isolée ? | Centré verticalement ? |
-|--------|--------------|----------------------|
-| **PDF** | Oui (composant `PartiePage` dedie) | Partiellement - `partiePage` a `justifyContent: 'center'` mais est imbriquee dans le layout de page |
-| **EPUB** | Oui (`page-break-before/after: always`) | Non - utilise `padding-top: 35%` (decalage fixe, pas un vrai centrage) |
-| **Word** | Oui (page break avant/apres) | Approximatif - `spacing: { before: 3000 }` (spacer fixe) |
+Apres analyse complete du document exporte, voici les problemes identifies qui provoqueraient un rejet ou une impression d'amateurisme aupres d'editeurs comme Cheyne, Gallimard Poesie, Bruno Doucey ou Le Castor Astral.
 
 ---
 
-## Corrections a apporter
+## PROBLEMES CRITIQUES (rejet immediat)
 
-### A. PDF (`pdfPageComponents.tsx` + `pdfStyleGenerator.ts`)
+### 1. Titre generique "Textes Litteraires - Gaspard Boreal"
+La page de couverture affiche un titre technique qui evoque un dossier administratif, pas une oeuvre litteraire. Un editeur veut voir le titre de l'oeuvre : **"Frequences de la riviere Dordogne"** ou un titre d'auteur.
 
-**Haiku** : Le haiku a deja sa propre page, mais il n'est pas centre verticalement. Le probleme vient du style `textePage` qui est `justifyContent: 'flex-start'`. La correction consiste a utiliser `haikuContainer` (qui a `flex: 1, justifyContent: 'center'`) comme wrapper au lieu de `textePage` quand on rend un haiku.
+**Cause technique** : La fonction `createCoverPage` dans `wordExportUtils.ts` utilise `options.title` mais celui-ci n'est pas synchronise avec l'exploration selectionnee dans l'export Word standard.
 
-Dans `pdfPageComponents.tsx`, modifier le rendu haiku dans `TextePage` :
-- Remplacer le wrapper `styles.textePage` par `styles.haikuContainer` pour les haikus
-- Cela active `justifyContent: 'center'` et `alignItems: 'center'`
+### 2. Pollution de metadonnees sur chaque texte
+Chaque haiku et chaque texte affiche :
+- Le nom complet de la marche (ex: "La ou elle se jette, je me redresse a Bec d'Ambes")
+- Le nom de ville en MAJUSCULES ("BEC D'AMBES - GAURIAC")
+- La region en MAJUSCULES ("NOUVELLE-AQUITAINE")
 
-**Partie** : Le style est deja correct (`justifyContent: 'center'`). Verifier que `flexGrow: 1` fonctionne bien avec le layout de page. Si necessaire, ajouter `flex: 1` pour s'assurer que le conteneur prend toute la hauteur disponible.
+C'est un rendu de base de donnees, pas un manuscrit. Un editeur veut lire de la poesie, pas des fiches techniques.
 
-### B. EPUB (`epubExportUtils.ts`)
+### 3. Mention "Textes Litteraires" redondante sur la couverture
+La couverture affiche trois fois l'auteur/le titre de facon redondante. C'est du bruit visuel.
 
-**Haiku** : Ajouter des regles CSS pour forcer chaque haiku sur sa propre page et le centrer verticalement :
-- `page-break-before: always` et `page-break-after: always` sur `.haiku-container`
-- Utiliser `display: flex; align-items: center; justify-content: center; min-height: 80vh` pour le centrage vertical
-
-**Partie** : Remplacer le `padding-top: 35%` par un vrai centrage vertical flex :
-- `display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 90vh`
-
-### C. Word (`wordExportUtils.ts`)
-
-**Haiku** : Le Word est plus complexe car la librairie `docx` ne supporte pas nativement le centrage vertical de contenu. La strategie est :
-- Ajouter un `PageBreak` avant chaque haiku pour l'isoler sur sa page
-- Utiliser la propriete `verticalAlign: VerticalAlign.CENTER` sur la section, ou a defaut, ajouter un spacer `spacing: { before: 4000 }` genereux pour simuler le centrage
-- Ajouter un `PageBreak` apres le contenu du haiku
-
-**Partie** : Le spacer actuel de `3000` twips est insuffisant. Augmenter a environ `4500` twips pour mieux centrer sur une page A4, ou utiliser `verticalAlign` si possible.
+### 4. "51 textes" sur la couverture
+Mention administrative qui n'a pas sa place. Un editeur veut un nombre de pages ou un nombre de signes, pas un decompte de fiches.
 
 ---
 
-## Details techniques des modifications
+## PROBLEMES IMPORTANTS (impression non professionnelle)
 
-### Fichier 1 : `src/utils/pdfPageComponents.tsx`
+### 5. Absence de mention "Manuscrit inedit"
+Indispensable pour toute premiere soumission. Signale a l'editeur que le texte n'a jamais ete publie.
 
-**Haiku** (lignes ~727-745) : Remplacer `styles.textePage` par `styles.haikuContainer` dans le wrapper View du rendu haiku. Cela change le layout de `flex-start` a `center` verticalement.
+### 6. Absence de coordonnees de contact
+Pas d'email ni de telephone sur la page de titre. Un editeur qui souhaite repondre ne sait pas comment joindre l'auteur.
+
+### 7. Absence de mention de genre
+Il manque une indication du type "Poesie / Recit geopoetique" ou "Poesie et prose" pour situer l'oeuvre.
+
+### 8. Pages blanches parasites
+Les pages 2, 22, 29 sont vides (pages de transition entre mouvements). Dans un manuscrit, cela ressemble a une erreur d'impression.
+
+### 9. Police Garamond au lieu de Times New Roman
+La convention editoriale francaise pour les manuscrits est Times New Roman 12pt, interligne 1.5. Garamond est elegant mais signale un auteur qui "fait sa maquette" au lieu de soumettre un texte brut.
+
+---
+
+## PLAN DE CORRECTIONS
+
+### A. Refonte de la page de couverture (`wordExportUtils.ts` - `createCoverPage`)
+
+Remplacer la couverture actuelle par un format sobre et professionnel :
 
 ```text
-Avant:
-  <View style={styles.textePage}>
-    {marcheHeader}
-    <HaikuBlock ... />
-  </View>
+[haut de page - espace vertical]
 
-Apres:
-  <View style={styles.haikuContainer}>
-    <HaikuBlock ... />
-  </View>
+GASPARD BOREAL
+
+FREQUENCES DE LA RIVIERE DORDOGNE
+Carnet de remontee poetique
+
+Poesie et prose geopoetique
+
+Manuscrit inedit — 51 textes
+
+[bas de page]
+contact@email.com
++33 6 XX XX XX XX
+Fevrier 2026
 ```
 
-Note : Le `MarcheHeader` est retire du rendu haiku pour ne pas perturber le centrage vertical. L'identite du lieu est conservee dans le footer.
+Modifications :
+- Remplacer "Textes Litteraires" par le vrai titre de l'oeuvre (= `options.title` deja passe)
+- Ajouter la mention "Manuscrit inedit"
+- Ajouter une indication de genre ("Poesie et prose geopoetique")
+- Deplacer la date en bas de page
+- Supprimer la mention redondante "Textes Litteraires"
 
-### Fichier 2 : `src/utils/pdfStyleGenerator.ts`
+### B. Nettoyage des metadonnees texte par texte (`wordExportUtils.ts` - `createTexteEntry`)
 
-Verifier que `partiePage` a bien `flex: 1` en plus de `flexGrow: 1` pour garantir l'occupation de toute la hauteur disponible.
+Pour un haiku, le rendu actuel est :
 
-### Fichier 3 : `src/utils/epubExportUtils.ts`
+```text
+Haiku du matin
+La ou elle se jette, je me redresse a Bec d'Ambes – BEC D'AMBES - GAURIAC
+NOUVELLE-AQUITAINE
 
-**CSS Haiku** : Modifier les styles `.haiku-container` :
-```css
-.haiku-container {
-  text-align: center;
-  max-width: 80%;
-  margin: 0 auto;
-  page-break-before: always;
-  page-break-after: always;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  min-height: 80vh;
-}
+Pourquoi descendre
+Alors qu'on peut remonter
+Le fil de nos vies
 ```
 
-**CSS Partie** : Modifier `.partie-cover` :
-```css
-.partie-cover {
-  page-break-before: always;
-  page-break-after: always;
-  text-align: center;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  min-height: 90vh;
-}
+Le rendu attendu par un editeur :
+
+```text
+Haiku du matin
+
+Pourquoi descendre
+Alors qu'on peut remonter
+Le fil de nos vies
 ```
-(Remplacement du `padding-top: 35%` par un vrai centrage flex)
 
-### Fichier 4 : `src/utils/wordExportUtils.ts`
+Modifications dans `createTexteEntry` :
+- **Supprimer l'affichage de `marche_region`** (ligne "NOUVELLE-AQUITAINE") : aucun interet litteraire
+- **Supprimer la ville en MAJUSCULES** : le lieu est deja indique dans l'en-tete de marche
+- Quand `includeMetadata` est true, reduire a une seule ligne discrete : le nom de la ville en italique, sans la region, sans les CAPS
+- Pour les haikus/senryus specifiquement : **aucune metadata** sous le titre (le contexte est donne par l'en-tete de marche)
 
-**Haiku** : Modifier `createTexteEntry` pour detecter les haikus et ajouter :
-1. Un `PageBreak` avant le contenu
-2. Un spacer vertical (`spacing: { before: 4500 }`) pour simuler le centrage
-3. Un alignement centre pour le contenu
-4. Un `PageBreak` apres le separateur
+### C. Nettoyage des en-tetes de marche (`wordExportUtils.ts` - `createSectionHeader`)
 
-**Partie** : Ajuster le spacer dans `createPartieCoverPage` de `3000` a `4500` twips pour un meilleur centrage visuel.
+L'en-tete actuel affiche le nombre de textes entre parentheses. Meme quand `showCount` est false, le format reste technique.
+
+Modifications :
+- S'assurer que le titre de la marche est affiche sans compteur
+- La date doit rester en italique sous le titre (c'est un repere de marche, pas une fiche)
+
+### D. Suppression des pages blanches parasites
+
+Les pages vides entre les mouvements sont causees par des doubles sauts de page (un a la fin de la partie precedente + un en debut de couverture de partie).
+
+Modification dans `createPartieCoverPage` :
+- Le saut de page initial est suffisant, pas besoin de page blanche intermediaire
+- Verifier qu'il n'y a pas de double `PageBreak` consecutifs dans l'assemblage du document
+
+### E. Police et mise en page du document
+
+Modifier la section de configuration du `Document` :
+- **Font par defaut** : `Times New Roman` au lieu de `Garamond`
+- **Taille** : 24 half-points (= 12pt)
+- **Interligne** : 360 (= 1.5 lignes)
+- **Marges** : conserver 1 inch (1440 twips) de chaque cote
+
+### F. Synchronisation du titre avec les filtres
+
+S'assurer que quand l'utilisateur selectionne une exploration dans les filtres, le titre de l'export Word standard reprend automatiquement le nom de cette exploration (meme mecanisme que le fix applique au panneau Editeur).
 
 ---
 
 ## Recapitulatif des fichiers modifies
 
-| Fichier | Modification |
+| Fichier | Modifications |
 |---------|--------------|
-| `src/utils/pdfPageComponents.tsx` | Wrapper haiku : `textePage` remplace par `haikuContainer` pour centrage vertical |
-| `src/utils/pdfStyleGenerator.ts` | Verification `flex: 1` sur `partiePage` |
-| `src/utils/epubExportUtils.ts` | CSS haiku : page isolee + centrage flex. CSS partie : centrage flex |
-| `src/utils/wordExportUtils.ts` | Haiku : page break + spacer centrage. Partie : spacer augmente |
+| `src/utils/wordExportUtils.ts` | Couverture sobre, metadonnees nettoyees, haiku sans metadata, police Times New Roman, suppression pages blanches |
+| `src/pages/ExportationsAdmin.tsx` | Synchronisation du titre avec l'exploration pour l'export Word standard |
 
 ---
 
 ## Resultat attendu
 
-- **Haiku/Senryu** : Toujours isole sur une page dediee, contenu centre verticalement dans les 3 formats
-- **Parties** : Titre toujours positionne au centre vertical de la page dans les 3 formats
-- Pas d'impact sur les autres types de textes (fables, prose, poemes longs)
+Un tapuscrit conforme aux usages editoriaux francais :
+- Page de titre sobre avec titre, auteur, mention "Manuscrit inedit", contact
+- Textes lisibles sans pollution de base de donnees
+- Haikus isoles, centres, sans metadonnees
+- Pages de mouvement (Parties) centrees et elegantes
+- Police Times New Roman 12pt, interligne 1.5
+- Pret a etre envoye tel quel a Cheyne, Gallimard, Bruno Doucey, Le Castor Astral, Lanskine, Tarabuste, Wildproject ou La rumeur libre
 
