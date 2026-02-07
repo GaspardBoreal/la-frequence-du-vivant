@@ -346,67 +346,89 @@ const createPageRef = (bookmarkId: string): SimpleField => {
   return new SimpleField(`PAGEREF ${bookmarkId} \\h`);
 };
 
-const createCoverPage = (title: string, textCount: number): Paragraph[] => {
+const createCoverPage = (title: string, textCount: number, subtitle?: string): Paragraph[] => {
+  const currentDate = new Date().toLocaleDateString('fr-FR', {
+    year: 'numeric',
+    month: 'long',
+  });
+  // Capitalize first letter of month
+  const formattedDate = currentDate.charAt(0).toUpperCase() + currentDate.slice(1);
+
   return [
+    // Top spacer
     new Paragraph({
       children: [],
-      spacing: { before: 4000, after: 400 },
+      spacing: { before: 4000, after: 600 },
     }),
+    // Author name
     new Paragraph({
       children: [
         new TextRun({
           text: 'GASPARD BORÉAL',
           bold: true,
           size: 28,
-          color: '666666',
         }),
       ],
       alignment: AlignmentType.CENTER,
-      spacing: { after: 800 },
+      spacing: { after: 1200 },
     }),
+    // Title of the work
     new Paragraph({
       children: [
         new TextRun({
-          text: title,
+          text: title.toUpperCase(),
           bold: true,
-          size: 56,
-          color: '1a1a1a',
+          size: 40,
         }),
       ],
       alignment: AlignmentType.CENTER,
-      spacing: { after: 400 },
+      spacing: { after: subtitle ? 200 : 400 },
     }),
+    // Subtitle if provided
+    ...(subtitle ? [
+      new Paragraph({
+        children: [
+          new TextRun({
+            text: subtitle,
+            italics: true,
+            size: 26,
+            color: '555555',
+          }),
+        ],
+        alignment: AlignmentType.CENTER,
+        spacing: { after: 400 },
+      }),
+    ] : []),
+    // Genre indication
     new Paragraph({
       children: [
         new TextRun({
-          text: 'Textes Littéraires',
+          text: 'Poésie et prose géopoétique',
           italics: true,
-          size: 32,
-          color: '888888',
-        }),
-      ],
-      alignment: AlignmentType.CENTER,
-      spacing: { after: 800 },
-    }),
-    new Paragraph({
-      children: [
-        new TextRun({
-          text: `${textCount} textes`,
           size: 24,
           color: '666666',
         }),
       ],
       alignment: AlignmentType.CENTER,
-      spacing: { after: 200 },
+      spacing: { after: 800 },
     }),
+    // Manuscrit inédit mention
     new Paragraph({
       children: [
         new TextRun({
-          text: new Date().toLocaleDateString('fr-FR', {
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric',
-          }),
+          text: `Manuscrit inédit — ${textCount} textes`,
+          size: 22,
+          color: '666666',
+        }),
+      ],
+      alignment: AlignmentType.CENTER,
+      spacing: { after: 3000 },
+    }),
+    // Date at bottom
+    new Paragraph({
+      children: [
+        new TextRun({
+          text: formattedDate,
           size: 20,
           color: '888888',
         }),
@@ -510,14 +532,10 @@ const createPartieCoverPage = (
   sousTitre?: string
 ): Paragraph[] => {
   const paragraphs: Paragraph[] = [
-    // Page break before
-    new Paragraph({
-      children: [new PageBreak()],
-    }),
-    // Spacer for vertical centering effect
+    // Spacer for vertical centering effect (page break is handled by previous section)
     new Paragraph({
       children: [],
-      spacing: { before: 4500 },
+      spacing: { before: 5500 },
     }),
     // Roman numeral
     new Paragraph({
@@ -635,48 +653,23 @@ const createTexteEntry = (texte: TexteExport, includeMetadata: boolean): Paragra
     })
   );
 
-  // Metadata (location) - improved formatting
-  if (includeMetadata && (texte.marche_nom || texte.marche_ville)) {
-    const locationParts: string[] = [];
-    
-    // Format location nicely
-    if (texte.marche_nom) {
-      locationParts.push(texte.marche_nom);
-    }
-    if (texte.marche_ville && texte.marche_ville !== texte.marche_nom) {
-      locationParts.push(texte.marche_ville);
-    }
-
+  // Metadata (location) - only for non-haiku/senryu, and kept minimal
+  // For haikus/senryus: no metadata at all (context is in the march header)
+  // For other types: just the city name in italics, no region, no CAPS
+  if (includeMetadata && !isHaikuOrSenryu && texte.marche_ville) {
     paragraphs.push(
       new Paragraph({
         children: [
           new TextRun({
-            text: locationParts.join(' – '),
+            text: texte.marche_ville,
             italics: true,
             size: 20,
-            color: '666666',
+            color: '888888',
           }),
         ],
-        spacing: { after: texte.marche_region ? 50 : 200 },
+        spacing: { after: 200 },
       })
     );
-
-    // Region on separate line if available
-    if (texte.marche_region) {
-      paragraphs.push(
-        new Paragraph({
-          children: [
-            new TextRun({
-              text: texte.marche_region,
-              italics: true,
-              size: 18,
-              color: '888888',
-            }),
-          ],
-          spacing: { after: 200 },
-        })
-      );
-    }
   }
 
   // Content - parse HTML and create properly formatted paragraphs
@@ -1531,8 +1524,11 @@ export const exportTextesToWord = async (
           id: 'Normal',
           name: 'Normal',
           run: {
-            font: 'Garamond',
+            font: 'Times New Roman',
             size: 24,
+          },
+          paragraph: {
+            spacing: { line: 360 },
           },
         },
       ],

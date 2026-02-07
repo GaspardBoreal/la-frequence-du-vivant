@@ -659,8 +659,18 @@ const ExportationsAdmin: React.FC = () => {
 
     setExporting(true);
     try {
+      // Determine export title: use exploration name if exactly one is selected
+      let exportTitle = 'Textes Littéraires - Gaspard Boréal';
+      if (selectedExplorations.size === 1) {
+        const selectedExpId = Array.from(selectedExplorations)[0];
+        const selectedExp = explorations.find(e => e.id === selectedExpId);
+        if (selectedExp) {
+          exportTitle = selectedExp.name;
+        }
+      }
+
       await exportTextesToWord(filteredTextes, {
-        title: 'Textes Littéraires - Gaspard Boréal',
+        title: exportTitle,
         includeCoverPage,
         includeTableOfContents,
         includeMetadata,
