@@ -380,9 +380,13 @@ p {
 /* Partie (Movement) cover pages */
 .partie-cover {
   page-break-before: always;
-  text-align: center;
-  padding-top: 35%;
   page-break-after: always;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 90vh;
 }
 
 .partie-numeral {
@@ -468,9 +472,15 @@ p {
 /* Haiku specific styling */
 .haiku-container {
   text-align: center;
-  margin: 2rem auto;
   max-width: 80%;
-  page-break-inside: avoid;
+  margin: 0 auto;
+  page-break-before: always;
+  page-break-after: always;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 80vh;
 }
 
 .haiku-container .texte-contenu {

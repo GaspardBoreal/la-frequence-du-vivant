@@ -430,6 +430,7 @@ export const generatePdfStyles = (options: PdfExportOptions): PdfStylesRaw => {
       flexDirection: 'column',
       justifyContent: 'center',
       alignItems: 'center',
+      flex: 1,
       flexGrow: 1,
     },
     partieContent: {
