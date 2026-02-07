@@ -727,10 +727,7 @@ export const TextePage: React.FC<TextePageProps> = ({
   if (isHaikuText) {
     return (
       <Page size={[dimensions.width, dimensions.height]} style={mergeStyles(styles.page, styles.pageOdd)}>
-        <View style={styles.textePage as Style}>
-          {showMarcheHeader && marche && (
-            <MarcheHeader marche={marche} styles={styles} />
-          )}
+        <View style={styles.haikuContainer as Style}>
           <HaikuBlock texte={texte} styles={styles} content={content} />
         </View>
         

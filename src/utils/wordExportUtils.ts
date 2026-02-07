@@ -517,7 +517,7 @@ const createPartieCoverPage = (
     // Spacer for vertical centering effect
     new Paragraph({
       children: [],
-      spacing: { before: 3000 },
+      spacing: { before: 4500 },
     }),
     // Roman numeral
     new Paragraph({
@@ -589,6 +589,25 @@ const createPartieCoverPage = (
 const createTexteEntry = (texte: TexteExport, includeMetadata: boolean): Paragraph[] => {
   const paragraphs: Paragraph[] = [];
   const bookmarkId = generateBookmarkId(texte);
+  
+  const isHaikuOrSenryu = texte.type_texte === 'haiku' || texte.type_texte === 'senryu';
+
+  // Haiku/Senryu: isolate on its own page with vertical centering
+  if (isHaikuOrSenryu) {
+    // Page break before
+    paragraphs.push(
+      new Paragraph({
+        children: [new PageBreak()],
+      })
+    );
+    // Spacer for vertical centering effect (simulate center of A4 page)
+    paragraphs.push(
+      new Paragraph({
+        children: [],
+        spacing: { before: 4500 },
+      })
+    );
+  }
 
   // Construire le titre avec préfixe pour les fables uniquement
   const displayTitle = texte.type_texte === 'fable' 
@@ -605,13 +624,14 @@ const createTexteEntry = (texte: TexteExport, includeMetadata: boolean): Paragra
             new TextRun({
               text: displayTitle,
               bold: true,
-              size: 26,
+              size: isHaikuOrSenryu ? 24 : 26,
             }),
           ],
         }),
       ],
       heading: HeadingLevel.HEADING_2,
-      spacing: { before: 300, after: 100 },
+      alignment: isHaikuOrSenryu ? AlignmentType.CENTER : undefined,
+      spacing: { before: isHaikuOrSenryu ? 200 : 300, after: 100 },
     })
   );
 
@@ -661,7 +681,29 @@ const createTexteEntry = (texte: TexteExport, includeMetadata: boolean): Paragra
 
   // Content - parse HTML and create properly formatted paragraphs
   const parsedContent = parseHtmlContent(texte.contenu);
-  paragraphs.push(...createParagraphsFromParsed(parsedContent, 100, 300));
+  
+  if (isHaikuOrSenryu) {
+    // Haiku/Senryu: centered content with specific styling
+    const haikuParagraphs = parsedContent.map((para, index) => {
+      const isLast = index === parsedContent.length - 1;
+      const textRuns = para.runs.map(run => 
+        new TextRun({
+          text: run.text,
+          size: 22,
+          italics: true, // Haiku lines in italic
+          bold: run.bold,
+        })
+      );
+      return new Paragraph({
+        children: textRuns,
+        alignment: AlignmentType.CENTER,
+        spacing: { after: isLast ? 300 : 80 },
+      });
+    });
+    paragraphs.push(...haikuParagraphs);
+  } else {
+    paragraphs.push(...createParagraphsFromParsed(parsedContent, 100, 300));
+  }
 
   // Separator
   paragraphs.push(
