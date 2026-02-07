@@ -126,6 +126,10 @@ const ExportationsAdmin: React.FC = () => {
   const [includeMetadata, setIncludeMetadata] = useState(true);
   const [organizationMode, setOrganizationMode] = useState<'type' | 'marche'>('type');
   
+  // Contact info state (for cover page)
+  const [contactEmail, setContactEmail] = useState('');
+  const [contactPhone, setContactPhone] = useState('');
+
   // Keyword index state
   const [includeKeywordIndex, setIncludeKeywordIndex] = useState(true);
   const [selectedKeywordCategories, setSelectedKeywordCategories] = useState<Set<string>>(
@@ -679,6 +683,8 @@ const ExportationsAdmin: React.FC = () => {
         selectedKeywordCategories: Array.from(selectedKeywordCategories),
         customKeywords: getCustomKeywordsArray(),
         categorizedCustomKeywords: savedKeywords,
+        contactEmail: contactEmail.trim() || undefined,
+        contactPhone: contactPhone.trim() || undefined,
       });
       toast.success(`${filteredTextes.length} textes exportés au format Word`);
     } catch (error) {
@@ -1135,6 +1141,31 @@ const ExportationsAdmin: React.FC = () => {
                       </div>
                     </RadioGroup>
                   </div>
+                </div>
+
+                {/* Contact info for cover page */}
+                <Separator />
+                <div className="space-y-3">
+                  <Label className="text-sm font-medium">Coordonnées de contact (couverture)</Label>
+                  <div className="grid sm:grid-cols-2 gap-3">
+                    <Input
+                      placeholder="Email de contact"
+                      value={contactEmail}
+                      onChange={(e) => setContactEmail(e.target.value)}
+                      className="text-sm"
+                      type="email"
+                    />
+                    <Input
+                      placeholder="Téléphone"
+                      value={contactPhone}
+                      onChange={(e) => setContactPhone(e.target.value)}
+                      className="text-sm"
+                      type="tel"
+                    />
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Optionnel — affiché en bas de la page de couverture pour les éditeurs
+                  </p>
                 </div>
 
                 {/* Keyword Index Section */}
