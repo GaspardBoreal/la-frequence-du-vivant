@@ -1,122 +1,67 @@
-# Plaquette "Devenez Marcheur du Vivant"
 
-Page web imprimable sur `/marches-du-vivant/explorer` — remplace le placeholder actuel.
+# Nouvelle section : "Vivez l'experience -- Exemple d'une Marche"
 
-## Concept de design
+## Objectif
 
-Une page-plaquette elegante, pensee pour etre partagee (lien direct) et imprimee (CSS `@media print`). Le design s'inspire d'une brochure haut de gamme : beaucoup de blanc (respiration), typographie serif (Crimson Text), couleurs naturelles.
+Inserer une section immersive et narrative qui repond a la question concrete des lecteurs : **"Comment ca se passe, concretement, une Marche du Vivant ?"** Cette section doit donner envie de s'inscrire au calendrier de lancement en rendant l'experience tangible et vivante.
 
-La page est structuree en sections verticales claires, sans animation excessive (pour l'impression), avec un rythme narratif : **Pourquoi -> Comment ca marche -> Les 3 piliers -> Votre progression -> Calendrier -> CTA**.
+## Emplacement
 
-## Structure de la page (sections)
+La section s'insere **entre "Les zones blanches" et le "Calendrier de lancement"**, juste avant le SectionDivider qui precede le calendrier (apres la ligne 352). C'est l'endroit narratif ideal : le lecteur a compris le "pourquoi" et le "comment gamifie", il a maintenant besoin de se projeter dans l'experience reelle avant de voir les dates.
 
-### 1. En-tete de navigation
+## Structure de la section
 
-Barre sobre avec lien retour "Les Marches du Vivant" (comme la page Association).
+### En-tete
+- Etiquette : "L'experience sur le terrain"
+- Titre : "Plongez dans la Frequence"
+- Sous-titre : "L'exemple d'une marche a la confluence Isle / Dordogne"
+- Texte d'introduction inspire du contenu fourni, expliquant qu'une Marche du Vivant est une offensive poetique et scientifique.
 
-### 2. Hero / Couverture de plaquette
+### Timeline immersive -- 4 etapes
 
-- Badge : "Gratuit - Ouvert a tous"
-- Titre : "Devenez Marcheur du Vivant"
-- Sous-titre : "Chaque pas est un acte poetique et scientifique"
-- Texte d'accroche : "Vous n'allez pas collecter des donnees. Vous allez ecouter, nommer, temoigner. Et chaque kilometre parcouru enrichira votre connaissance du vivant."
+Presentation en timeline verticale (style similaire au calendrier mais plus riche), avec pour chaque etape :
+- Un horaire stylise en badge
+- Un emoji/icone evocateur
+- Un titre accrocheur
+- Un texte descriptif inspire du contenu fourni
 
-### 3. "Pourquoi marcher pour le vivant ?"
+**Etape 1 -- 09h | L'Accordage**
+- Icone : Sparkles (ou Music)
+- Accueil, cadre de l'experience, choix du Kigo (mot de saison), croisement poesie et donnees ecologiques locales
 
-Trois cards cote a cote representant les 3 piliers de l'ecosysteme :
+**Etape 2 -- 10h | La Marche des Capteurs**
+- Icone : Headphones (ou Radio)
+- Depart, activation des sens, captation de la Frequence du Vivant, chaque son devient une donnee
 
-**Card 1 — Geopoetique du Vivant** (couleur emerald)
+**Etape 3 -- 11h | L'Eclosion Geopoetique**
+- Icone : PenTool (ou BookOpen)
+- Halte creative, carnet en main, poesie contemporaine, pas besoin d'etre ecrivain
 
-- Icone : Leaf
-- "La marche n'est pas un sport, c'est une experience du territoire. Chaque pas est un acte poetique et scientifique. Le marcheur ne collecte pas des donnees : il ecoute, il nomme, il temoigne."
+**Etape 4 -- Fin de matinee | Le Banquet des Retours**
+- Icone : Heart (ou Wine/PartyPopper)
+- Partage convivial, celebration du groupe, souvenirs poetiques et comprehension renouvelee
 
-**Card 2 — Technologie Frugale** (couleur blue)
+### Design
 
-- Icone : Cpu
-- "Pas de surconsommation de donnees. L'application traite ce que le marcheur rapporte avec sobriete et precision. L'IA est au service du vivant, pas l'inverse."
+- Fond avec un leger degrade immersif (plus marque que les autres sections pour creer un "moment" visuel)
+- Cards de timeline avec bordure gauche coloree (gradient emerald) pour un effet "journal de bord"
+- Chaque etape a un badge horaire avec un style distinctif (rond, fond emerald clair)
+- Ornements botaniques discrets
+- Animation fadeUp sur chaque etape pour un effet de defilement narratif
 
-**Card 3 — Science Participative** (couleur amber)
+### Phrase de transition vers le calendrier
 
-- Icone : Users
-- "Chaque observation rejoint une base de connaissance collective. Vous contribuez a la cartographie du vivant, pour les scientifiques et pour les generations futures."
+Apres les 4 etapes, une phrase de conclusion motivante en italique serif :
+*"Prets a vivre cette experience ? Voici les prochains rendez-vous."*
+Avec une fleche visuelle vers le calendrier en dessous.
 
-### 4. "Comment ca marche ?" — Le systeme gamifie
+## Fichier modifie
 
-Explication visuelle en 3 etapes numerotees :
+`src/pages/MarchesDuVivantExplorer.tsx` uniquement :
+- Ajout d'imports d'icones supplementaires (Headphones, PenTool, Music ou equivalents disponibles dans lucide-react)
+- Insertion de la nouvelle section entre le SectionDivider post-zones-blanches et le SectionDivider pre-calendrier
+- Aucun nouveau composant ni fichier supplementaire
 
-**Etape 1 — Marchez**  
-"Choisissez un sentier, une forêt, une rivière, un parc, ouvrez l'application, marchez. Chaque kilometre vous rapporte des Frequences (points)."
+## Compatibilite impression
 
-**Etape 2 — Explorez les zones blanches**
-"Les zones pauvres en donnees rapportent jusqu'a 4x plus de Frequences. Devenez eclaireur du vivant."
-
-**Etape 3 — Progressez**
-"Maintenez votre serie hebdomadaire, montez dans le classement, debloquez de nouveaux roles."
-
-### 5. Systeme de progression (Roles)
-
-Affichage horizontal de la progression :
-
-- **Marcheur** : Premiere marche, decouverte de l'ecoute active
-- **Eclaireur** : 5 zones blanches explorees
-- **Ambassadeur** : Formation + animation de groupes
-- **Sentinelle** : Referent territorial, formateur de futurs ambassadeurs
-
-### 6. "Les zones blanches : le coeur du defi"
-
-Section explicative avec une mise en page editoriale :
-
-- Texte expliquant que les zones blanches sont des territoires ou la biodiversite n'a pas encore ete ecoutee
-- Tableau simple des multiplicateurs : Zone frequentee (x1), Peu frequentee (x2), Zone blanche (x4)
-
-### 7. Calendrier de lancement
-
-Timeline verticale elegante :
-
-- **8-9 mars 2026** : Premier test — Printemps des Poetes (comite reduit)
-- **24-25 mai 2026** : Second test — Fete de la Nature (comite elargi)
-- **21 juin 2026** : Lancement officiel — Solstice d'ete
-
-### 8. CTA final
-
-- "Rejoignez les premiers Marcheurs du Vivant"
-- Bouton contact vers la-frequence-du-vivant.com/contact
-- Mention "Gratuit, intergenerationnel, ouvert a tous"
-
-### 9. Footer existant (composant Footer)
-
-## Aspects techniques
-
-### Fichier modifie : `src/pages/MarchesDuVivantExplorer.tsx`
-
-Remplacement complet du placeholder par la page-plaquette.
-
-### CSS d'impression
-
-Ajout d'un bloc `@media print` dans `src/index.css` pour :
-
-- Masquer le header de navigation et le footer
-- Forcer les backgrounds blancs et texte noir
-- Supprimer les ombres et bordures decoratives
-- Forcer les sauts de page entre sections majeures
-
-### Pas de nouveau fichier de composant
-
-Tout est dans la page elle-meme pour garder la plaquette auto-contenue et facile a maintenir. Les animations framer-motion sont conservees pour le web mais ignorees a l'impression.
-
-### Bouton "Imprimer / Partager"
-
-Un bouton discret en haut a droite de la page (masque a l'impression) avec `window.print()` et un bouton de copie du lien pour le partage.
-
-## Renaming strategique : "Points" -> "Frequences"
-
-Dans la proposition de Victor, le systeme utilise des "points". Pour ancrer l'identite dans l'univers de Gaspard Boreal et de "La Frequence du Vivant", les points seront rebaptises **"Frequences"** dans toute la plaquette. Cela cree une coherence de marque totale : le marcheur "capte des frequences" du vivant, il ne "gagne des points".
-
-## Resultat attendu
-
-- Une page web elegante, sobre, lisible par tous (intergenerationnel)
-- Imprimable en PDF propre via le navigateur (Ctrl+P)
-- Partageable par lien direct
-- Integrant les 3 piliers (geopoetique, IA frugale, science participative)
-- Valorisant le systeme gamifie de Victor (points/frequences, zones, series, roles)
-- Prete a etre montree a Victor comme preuve d'integration de son travail
+La section suivra les memes regles que le reste : animations ignorees a l'impression, fond blanc force, texte noir.
