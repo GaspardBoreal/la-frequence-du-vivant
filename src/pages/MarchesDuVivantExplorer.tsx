@@ -172,7 +172,7 @@ const MarchesDuVivantExplorer = () => {
               <div className="h-px w-24 bg-gradient-to-r from-transparent via-emerald-400/50 to-transparent" />
             </div>
             
-            <p className="font-crimson text-xl md:text-2xl italic leading-relaxed mb-10" style={{ color: '#6b7280' }}>
+            <p className="font-crimson text-xl md:text-2xl italic leading-relaxed mb-10 text-center" style={{ color: '#6b7280' }}>
               « Chaque pas est un acte poétique et scientifique »
             </p>
             
