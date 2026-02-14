@@ -1,67 +1,62 @@
 
-# Nouvelle section : "Vivez l'experience -- Exemple d'une Marche"
+# Popup "Rejoindre l'aventure" -- Inscription immersive et intergenerationnelle
 
 ## Objectif
 
-Inserer une section immersive et narrative qui repond a la question concrete des lecteurs : **"Comment ca se passe, concretement, une Marche du Vivant ?"** Cette section doit donner envie de s'inscrire au calendrier de lancement en rendant l'experience tangible et vivante.
+Transformer le clic sur "Rejoindre l'aventure" en un moment memorable : au lieu de rediriger vers /contact, une popup elegante s'ouvre avec le calendrier des 3 prochaines marches, un texte inspirant et un formulaire d'inscription leger. L'experience doit seduire aussi bien un adolescent curieux qu'un retraite amoureux de la nature.
 
-## Emplacement
+## Design de la popup
 
-La section s'insere **entre "Les zones blanches" et le "Calendrier de lancement"**, juste avant le SectionDivider qui precede le calendrier (apres la ligne 352). C'est l'endroit narratif ideal : le lecteur a compris le "pourquoi" et le "comment gamifie", il a maintenant besoin de se projeter dans l'experience reelle avant de voir les dates.
+### Structure visuelle
+- **Dialog Radix** plein ecran sur mobile, centree sur desktop (max-w-xl)
+- Fond avec degrade subtil emerald/teal et ornement botanique en filigrane
+- Animation d'entree douce (scale + fade)
 
-## Structure de la section
+### Contenu de la popup (de haut en bas)
 
-### En-tete
-- Etiquette : "L'experience sur le terrain"
-- Titre : "Plongez dans la Frequence"
-- Sous-titre : "L'exemple d'une marche a la confluence Isle / Dordogne"
-- Texte d'introduction inspire du contenu fourni, expliquant qu'une Marche du Vivant est une offensive poetique et scientifique.
+**1. En-tete emotionnel**
+- Icone Sparkles animee (pulse doux)
+- Titre serif : *"Votre premiere Frequence vous attend"*
+- Sous-titre : *"Choisissez votre rendez-vous avec le vivant"*
 
-### Timeline immersive -- 4 etapes
+**2. Les 3 dates du calendrier -- Cards cliquables**
+Chaque date est une card selectionnable (radio-style) :
+- **8-9 mars 2026** -- "Printemps des Poetes" -- Badge "Comite reduit" -- Icone flocon/bourgeon
+- **24-25 mai 2026** -- "Fete de la Nature" -- Badge "Comite elargi" -- Icone fleur
+- **21 juin 2026** -- "Solstice d'ete" -- Badge "Lancement officiel" -- Icone soleil -- Mise en avant avec bordure doree
 
-Presentation en timeline verticale (style similaire au calendrier mais plus riche), avec pour chaque etape :
-- Un horaire stylise en badge
-- Un emoji/icone evocateur
-- Un titre accrocheur
-- Un texte descriptif inspire du contenu fourni
+Chaque card affiche un petit texte evocateur et l'indication "Gratuit -- Ouvert a tous".
 
-**Etape 1 -- 09h | L'Accordage**
-- Icone : Sparkles (ou Music)
-- Accueil, cadre de l'experience, choix du Kigo (mot de saison), croisement poesie et donnees ecologiques locales
+**3. Phrase de reassurance intergenerationnelle**
+Texte en italique serif :
+*"Aucune condition d'age, de forme physique ou de connaissance prealable. Venez comme vous etes, repartez transformes."*
 
-**Etape 2 -- 10h | La Marche des Capteurs**
-- Icone : Headphones (ou Radio)
-- Depart, activation des sens, captation de la Frequence du Vivant, chaque son devient une donnee
+**4. Formulaire minimaliste**
+- Champ prenom (obligatoire)
+- Champ email (obligatoire)
+- Bouton "Je m'inscris" avec gradient emerald et animation hover
+- Mention discrete : "Nous vous enverrons uniquement les informations de la marche choisie."
 
-**Etape 3 -- 11h | L'Eclosion Geopoetique**
-- Icone : PenTool (ou BookOpen)
-- Halte creative, carnet en main, poesie contemporaine, pas besoin d'etre ecrivain
+**5. Pied de popup**
+- Lien discret "En savoir plus sur les Marches" vers le haut de la page
+- Bouton fermer (X) elegant en haut a droite
 
-**Etape 4 -- Fin de matinee | Le Banquet des Retours**
-- Icone : Heart (ou Wine/PartyPopper)
-- Partage convivial, celebration du groupe, souvenirs poetiques et comprehension renouvelee
+### Interactions
+- Au clic sur une card de date, elle se selectionne visuellement (bordure emerald, fond leger)
+- Au submit, un toast de confirmation s'affiche : "Bienvenue parmi les Marcheurs du Vivant !"
+- Le formulaire ne fait pas d'appel backend (pas de Supabase connecte) : il affiche juste le toast de confirmation
 
-### Design
+## Modification technique
 
-- Fond avec un leger degrade immersif (plus marque que les autres sections pour creer un "moment" visuel)
-- Cards de timeline avec bordure gauche coloree (gradient emerald) pour un effet "journal de bord"
-- Chaque etape a un badge horaire avec un style distinctif (rond, fond emerald clair)
-- Ornements botaniques discrets
-- Animation fadeUp sur chaque etape pour un effet de defilement narratif
+### Fichier modifie
+`src/pages/MarchesDuVivantExplorer.tsx` uniquement
 
-### Phrase de transition vers le calendrier
+### Changements
+1. **Imports** : Ajouter `Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription` depuis `@/components/ui/dialog`, plus les icones `Sun, Flower2, Snowflake` de lucide-react
+2. **State** : Ajouter `useState` pour `popupOpen` (boolean), `selectedDate` (string | null), `prenom` (string), `email` (string)
+3. **Bouton CTA** : Transformer le `<a>` "Rejoindre l'aventure" (ligne 561-571) en `<button>` qui ouvre la popup via `setPopupOpen(true)` au lieu de naviguer vers /contact
+4. **Composant Dialog** : Inserer le Dialog juste avant la fermeture du composant, contenant toute la structure decrite ci-dessus
+5. **Gestion submit** : Au submit, afficher un toast Sonner de bienvenue et fermer la popup
 
-Apres les 4 etapes, une phrase de conclusion motivante en italique serif :
-*"Prets a vivre cette experience ? Voici les prochains rendez-vous."*
-Avec une fleche visuelle vers le calendrier en dessous.
-
-## Fichier modifie
-
-`src/pages/MarchesDuVivantExplorer.tsx` uniquement :
-- Ajout d'imports d'icones supplementaires (Headphones, PenTool, Music ou equivalents disponibles dans lucide-react)
-- Insertion de la nouvelle section entre le SectionDivider post-zones-blanches et le SectionDivider pre-calendrier
-- Aucun nouveau composant ni fichier supplementaire
-
-## Compatibilite impression
-
-La section suivra les memes regles que le reste : animations ignorees a l'impression, fond blanc force, texte noir.
+### Compatibilite impression
+La popup n'apparait pas a l'impression (comportement natif du Dialog Radix qui utilise un portal).
