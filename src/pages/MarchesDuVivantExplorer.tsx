@@ -431,9 +431,6 @@ const MarchesDuVivantExplorer = () => {
                 <ChevronRight className="w-4 h-4" />
               </a>
               
-              <p className="mt-5 text-xs text-stone-400 font-medium tracking-wide">
-                la-frequence-du-vivant.lovable.app/contact
-              </p>
             </motion.div>
           </div>
         </section>
