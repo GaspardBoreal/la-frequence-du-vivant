@@ -62,7 +62,7 @@ const MarchesDuVivantExplorer = () => {
       bg: 'bg-gradient-to-br from-emerald-50/80 to-teal-50/60',
       border: 'border-emerald-200/60',
       iconBg: 'bg-emerald-100/80 text-emerald-700',
-      texte: "La marche n'est pas un sport, c'est une expérience du territoire. Chaque pas est un acte poétique et scientifique. Le marcheur ne collecte pas des données\u00A0: il écoute, il nomme, il témoigne."
+      texte: "La marche n'est pas un sport, c'est une expérience du territoire. Chaque pas est un acte poétique et scientifique. Le marcheur écoute, ressens, nomme, témoigne."
     },
     {
       icon: <Cpu className="w-6 h-6" />,
