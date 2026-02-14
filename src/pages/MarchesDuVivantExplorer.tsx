@@ -415,7 +415,7 @@ const MarchesDuVivantExplorer = () => {
                 </span>
               </h2>
               
-              <p className="text-stone-500 mb-6 text-sm tracking-wide">
+              <p className="text-stone-500 mb-6 text-sm tracking-wide text-center">
                 Gratuit · Intergénérationnel · Ouvert à tous
               </p>
               
