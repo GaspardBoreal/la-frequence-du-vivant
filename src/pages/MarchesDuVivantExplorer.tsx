@@ -387,7 +387,7 @@ const MarchesDuVivantExplorer = () => {
               className="rounded-2xl p-6 md:p-8 mb-10 max-w-3xl mx-auto"
               style={{ background: 'rgba(255,255,255,0.65)', border: '1px solid rgba(214,211,199,0.3)', backdropFilter: 'blur(8px)' }}>
               <p className="font-crimson text-base md:text-lg leading-[1.85] text-stone-600 text-left">
-                Rejoindre une Marche du Vivant, c'est participer à une véritable <strong className="text-emerald-700">offensive de communication en faveur de la nature</strong> et des beaux projets de nos territoires. Ici, nous ne faisons pas que nous promener&nbsp;: nous nous mettons à l'écoute d'un monde en pleine transition.
+                Rejoindre une Marche du Vivant, c'est participer à une véritable <strong className="text-emerald-700">expérience en faveur de la nature</strong> et des beaux projets de nos territoires. Ici, nous ne faisons pas que nous promener&nbsp;: nous nous mettons à l'écoute d'un monde en pleine transition.
               </p>
               <p className="font-crimson text-base md:text-lg leading-[1.85] text-stone-600 mt-4 text-left">
                 Avant même le premier pas, notre guide vous rassemble pour un <em>«&nbsp;Accordage&nbsp;»</em> d'une vingtaine de minutes. Nous partageons les fondamentaux de la biodiversité locale et les secrets de la bioacoustique, puis, inspirés par la tradition japonaise des marches <em>Kigo</em> du XVI<sup>e</sup>&nbsp;siècle, nous définissons ensemble le <strong className="text-emerald-700">mot de saison</strong> qui servira de boussole poétique à notre exploration.
