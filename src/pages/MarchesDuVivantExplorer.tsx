@@ -474,7 +474,7 @@ const MarchesDuVivantExplorer = () => {
             {/* Transition vers calendrier */}
             <motion.div variants={fadeUp} initial="hidden" whileInView="visible" viewport={{ once: true }} custom={6}
               className="text-center mt-12 md:mt-16">
-              <p className="font-crimson text-lg md:text-xl italic text-stone-500 mb-4">
+               <p className="font-crimson text-lg md:text-xl italic text-stone-500 mb-4 text-center">
                 «&nbsp;Prêts à vivre cette expérience&nbsp;? Voici les prochains rendez-vous.&nbsp;»
               </p>
               <motion.div 
