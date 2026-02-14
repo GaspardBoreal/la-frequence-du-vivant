@@ -565,7 +565,84 @@
     background: linear-gradient(180deg, #0c2a1a 0%, #134e3a 40%, #0f3d3e 100%) !important;
   }
 
-  /* Masquer nav, footer, popup, boutons d'action */
+  /* ===== NOYAU DUR : forcer TOUT texte en clair ===== */
+  .print-plaquette h1,
+  .print-plaquette h2,
+  .print-plaquette h3,
+  .print-plaquette h4,
+  .print-plaquette h5,
+  .print-plaquette h6,
+  .print-plaquette p,
+  .print-plaquette span,
+  .print-plaquette em,
+  .print-plaquette strong,
+  .print-plaquette li,
+  .print-plaquette label,
+  .print-plaquette a,
+  .print-plaquette div {
+    color: #f0f7f4 !important;
+    -webkit-text-fill-color: #f0f7f4 !important;
+  }
+
+  /* Surcharger les inline styles (style="color:...") */
+  .print-plaquette [style*="color"] {
+    color: #f0f7f4 !important;
+    -webkit-text-fill-color: #f0f7f4 !important;
+  }
+
+  /* Titres h1 : blanc pur */
+  .print-plaquette h1 {
+    font-size: 2.5rem !important;
+    color: #ffffff !important;
+    -webkit-text-fill-color: #ffffff !important;
+    text-shadow: 0 2px 8px rgba(0,0,0,0.4);
+  }
+
+  /* Titres h2 */
+  .print-plaquette h2 {
+    font-size: 1.75rem !important;
+    color: #ffffff !important;
+    -webkit-text-fill-color: #ffffff !important;
+    page-break-after: avoid;
+    text-shadow: 0 1px 6px rgba(0,0,0,0.3);
+  }
+
+  /* h3/h4 : vert menthe clair */
+  .print-plaquette h3,
+  .print-plaquette h4 {
+    color: #d1fae5 !important;
+    -webkit-text-fill-color: #d1fae5 !important;
+    page-break-after: avoid;
+  }
+
+  /* Accents : strong = menthe, em = vert pâle */
+  .print-plaquette strong {
+    color: #86efac !important;
+    -webkit-text-fill-color: #86efac !important;
+  }
+  .print-plaquette em {
+    color: #bbf7d0 !important;
+    -webkit-text-fill-color: #bbf7d0 !important;
+  }
+
+  /* Sous-titres tracking wide */
+  .print-plaquette .tracking-\[0\.2em\],
+  .print-plaquette .tracking-\[0\.15em\] {
+    color: #86efac !important;
+    -webkit-text-fill-color: #86efac !important;
+  }
+
+  /* Gradient text → couleur solide menthe */
+  .print-plaquette .bg-clip-text,
+  .print-plaquette [class*="bg-clip-text"] {
+    -webkit-text-fill-color: #86efac !important;
+    background: none !important;
+    background-clip: unset !important;
+    -webkit-background-clip: unset !important;
+    color: #86efac !important;
+  }
+
+  /* ===== Masquage ===== */
   .print-plaquette nav,
   .print-plaquette footer,
   .print-plaquette .footer-wrapper,
@@ -582,81 +659,38 @@
     background: transparent !important;
   }
 
-  /* Titres */
-  .print-plaquette h1 {
-    font-size: 2.5rem !important;
-    color: #ffffff !important;
-    text-shadow: 0 1px 6px rgba(0,0,0,0.3);
-  }
-  .print-plaquette h2 {
-    font-size: 1.75rem !important;
-    color: #f0f7f4 !important;
-    page-break-after: avoid;
-    text-shadow: 0 1px 4px rgba(0,0,0,0.2);
-  }
-  .print-plaquette h3,
-  .print-plaquette h4 {
-    color: #d1fae5 !important;
-    page-break-after: avoid;
-  }
-
-  /* Sous-titres et labels */
-  .print-plaquette .tracking-\\[0\\.2em\\] {
-    color: #86efac !important;
-  }
-
-  /* Texte courant */
-  .print-plaquette p,
-  .print-plaquette span {
-    color: #d1d5db !important;
-  }
-  .print-plaquette strong {
-    color: #86efac !important;
-  }
-  .print-plaquette em {
-    color: #bbf7d0 !important;
-  }
-
-  /* Gradient text → couleur solide en print */
-  .print-plaquette .bg-clip-text {
-    -webkit-text-fill-color: #86efac !important;
-    background: none !important;
-    color: #86efac !important;
-  }
-
-  /* Cards & encadrés */
+  /* ===== Cards & encadrés ===== */
   .print-plaquette .print-card,
-  .print-plaquette .rounded-2xl[style*="background"] {
-    background: rgba(255,255,255,0.08) !important;
-    border: 1px solid rgba(134,239,172,0.2) !important;
+  .print-plaquette .rounded-2xl[style*="background"],
+  .print-plaquette .rounded-xl[style*="background"] {
+    background: rgba(255,255,255,0.12) !important;
+    border: 1px solid rgba(134,239,172,0.25) !important;
     box-shadow: none !important;
     backdrop-filter: none !important;
   }
 
-  /* Pilier cards — icônes et texte */
+  /* Pilier icon boxes */
   .print-plaquette .print-icon-box {
-    background: rgba(134,239,172,0.15) !important;
+    background: rgba(134,239,172,0.2) !important;
     color: #bbf7d0 !important;
+    -webkit-text-fill-color: #bbf7d0 !important;
   }
 
   /* Timeline vertical line */
   .print-plaquette .w-px {
-    background: rgba(187,247,208,0.3) !important;
+    background: rgba(187,247,208,0.4) !important;
   }
 
   /* Timeline step boxes */
-  .print-plaquette .rounded-2xl .flex-shrink-0[style*="background"] {
-    background: rgba(134,239,172,0.15) !important;
-    border: 1px solid rgba(134,239,172,0.3) !important;
-  }
-  .print-plaquette .rounded-2xl .flex-shrink-0 span {
-    color: #86efac !important;
+  .print-plaquette .flex-shrink-0[style*="background"] {
+    background: rgba(134,239,172,0.2) !important;
+    border: 1px solid rgba(134,239,172,0.35) !important;
   }
 
   /* Timeline content cards — left border */
-  .print-plaquette .rounded-2xl[style*="borderLeft"] {
-    border-left-color: rgba(134,239,172,0.5) !important;
-    background: rgba(255,255,255,0.06) !important;
+  .print-plaquette [style*="borderLeft"] {
+    border-left-color: rgba(134,239,172,0.6) !important;
+    background: rgba(255,255,255,0.1) !important;
   }
 
   /* Zones blanches bars */
@@ -669,39 +703,51 @@
 
   /* Badges */
   .print-plaquette .rounded-full[style*="background"] {
-    background: rgba(134,239,172,0.12) !important;
-    border: 1px solid rgba(134,239,172,0.25) !important;
-    color: #86efac !important;
+    background: rgba(134,239,172,0.15) !important;
+    border: 1px solid rgba(134,239,172,0.3) !important;
   }
 
-  /* Role cards */
+  /* Tailwind text-color overrides */
   .print-plaquette .text-emerald-600,
+  .print-plaquette .text-emerald-700,
   .print-plaquette .text-teal-600,
   .print-plaquette .text-sky-600,
-  .print-plaquette .text-amber-600 {
+  .print-plaquette .text-sky-700,
+  .print-plaquette .text-amber-600,
+  .print-plaquette .text-amber-700 {
     color: #86efac !important;
+    -webkit-text-fill-color: #86efac !important;
   }
 
-  /* Calendrier */
-  .print-plaquette .text-emerald-700 {
-    color: #86efac !important;
-  }
   .print-plaquette .text-stone-800,
   .print-plaquette .text-stone-700 {
     color: #f0f7f4 !important;
+    -webkit-text-fill-color: #f0f7f4 !important;
   }
   .print-plaquette .text-stone-600 {
-    color: #d1d5db !important;
+    color: #e5e7eb !important;
+    -webkit-text-fill-color: #e5e7eb !important;
   }
   .print-plaquette .text-stone-500,
   .print-plaquette .text-stone-400 {
-    color: #9ca3af !important;
+    color: #d1d5db !important;
+    -webkit-text-fill-color: #d1d5db !important;
   }
 
-  /* CTA final — inversion */
+  /* SVG icons */
+  .print-plaquette svg {
+    color: #86efac !important;
+  }
+  .print-plaquette .text-white svg,
+  .print-plaquette svg.text-white {
+    color: #ffffff !important;
+  }
+
+  /* CTA final — inversion blanc/vert */
   .print-plaquette button[style*="background: linear-gradient"] {
     background: #ffffff !important;
     color: #065f46 !important;
+    -webkit-text-fill-color: #065f46 !important;
     border: 2px solid #ffffff !important;
     box-shadow: none !important;
   }
@@ -709,7 +755,7 @@
     color: #065f46 !important;
   }
 
-  /* SectionDivider — crème sur fond sombre */
+  /* SectionDivider */
   .print-plaquette .print-divider-line {
     background: rgba(187,247,208,0.3) !important;
   }
@@ -723,7 +769,7 @@
     display: block !important;
   }
 
-  /* Botanical ornaments — visible en filigrane crème */
+  /* Botanical ornaments */
   .print-plaquette .print-botanical {
     display: block !important;
     opacity: 0.12 !important;
@@ -735,12 +781,15 @@
     background: transparent !important;
   }
 
-  /* Sparkles icon box */
-  .print-plaquette .w-12.h-12.rounded-xl[style*="background"] {
+  /* Role card bg */
+  .print-plaquette .bg-gradient-to-br.from-stone-50 {
     background: rgba(134,239,172,0.15) !important;
-    border: 1px solid rgba(134,239,172,0.3) !important;
   }
-  .print-plaquette .text-emerald-600 {
-    color: #86efac !important;
+
+  /* Drop-shadow text */
+  .print-plaquette .drop-shadow-sm {
+    filter: none !important;
+    color: #ffffff !important;
+    -webkit-text-fill-color: #ffffff !important;
   }
 }
