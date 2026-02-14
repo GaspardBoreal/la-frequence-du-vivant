@@ -78,7 +78,7 @@ const MarchesDuVivant = () => {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.2 }}
-              className="text-xl md:text-2xl text-muted-foreground max-w-2xl mx-auto mb-12"
+              className="text-xl md:text-2xl text-muted-foreground max-w-2xl mx-auto mb-12 text-center"
             >
               Science Participative, Team Building & Exploration Gamifiée
             </motion.p>
@@ -88,7 +88,7 @@ const MarchesDuVivant = () => {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.3 }}
-              className="text-base text-muted-foreground/80 max-w-xl mx-auto mb-12"
+              className="text-base text-muted-foreground/80 max-w-xl mx-auto mb-12 text-center"
             >
               La preuve par l'expérience : ne pas "parler" de biodiversité, 
               mais la mesurer et l'écouter en temps réel.
