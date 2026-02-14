@@ -155,15 +155,15 @@ const MarchesDuVivant = () => {
                   </div>
                   
                   <h2 className="font-crimson text-2xl text-foreground mb-3">
-                    Explorez & Collectez
+                    Devenez Marcheur du Vivant
                   </h2>
                   
                   <div className="flex flex-wrap gap-2 mb-4">
+                    <span className="px-2 py-1 text-xs bg-emerald-950/30 border border-emerald-500/20 rounded-full text-emerald-300">
+                      Gratuit
+                    </span>
                     <span className="px-2 py-1 text-xs bg-cyan-950/30 border border-cyan-500/20 rounded-full text-cyan-300">
                       Gamifié
-                    </span>
-                    <span className="px-2 py-1 text-xs bg-violet-950/30 border border-violet-500/20 rounded-full text-violet-300">
-                      Classement
                     </span>
                     <span className="px-2 py-1 text-xs bg-teal-950/30 border border-teal-500/20 rounded-full text-teal-300">
                       Zones Blanches
@@ -171,12 +171,12 @@ const MarchesDuVivant = () => {
                   </div>
                   
                   <p className="text-muted-foreground text-sm mb-6">
-                    Marchez, explorez les zones blanches, gagnez des points. 
-                    Chaque kilomètre compte pour la biodiversité.
+                    Explorez les zones blanches, gagnez des points, montez dans le classement. 
+                    Chaque kilomètre parcouru enrichit la connaissance du vivant.
                   </p>
                   
                   <div className="flex items-center gap-2 text-cyan-400 group-hover:text-cyan-300 transition-colors">
-                    <span className="text-sm font-medium">Découvrir le défi</span>
+                    <span className="text-sm font-medium">Rejoindre l'aventure</span>
                     <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
                   </div>
                 </motion.div>
