@@ -438,7 +438,9 @@ const MarchesDuVivantExplorer = () => {
           </div>
         </section>
 
-        <Footer />
+        <div className="bg-[hsl(160,30%,12%)]">
+          <Footer />
+        </div>
       </div>
     </>
   );
