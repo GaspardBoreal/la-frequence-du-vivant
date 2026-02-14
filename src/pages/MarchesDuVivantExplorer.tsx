@@ -177,7 +177,7 @@ const MarchesDuVivantExplorer = () => {
             </p>
             
             <p className="text-base md:text-lg leading-[1.8] max-w-xl mx-auto" style={{ color: '#4b5563', textAlign: 'justify' }}>
-              Vous n'allez pas collecter des données. Vous allez écouter, nommer, témoigner. 
+              Vous allez écouter, apprendre à reconnaître, nommer, témoigner. 
               Et chaque kilomètre parcouru enrichira votre connaissance du vivant.
             </p>
           </motion.div>
