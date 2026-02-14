@@ -1,14 +1,17 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { Link } from 'react-router-dom';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { 
   ArrowLeft, Leaf, Cpu, Users, Footprints, Map, TrendingUp,
   Printer, Share2, Calendar, ChevronRight, Sparkles, Eye, Shield, Heart,
-  Headphones, PenTool, ArrowDown
+  Headphones, PenTool, ArrowDown, Sun, Flower2, Snowflake, X
 } from 'lucide-react';
 import Footer from '@/components/Footer';
 import { toast } from 'sonner';
+import { Dialog, DialogContent, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import * as VisuallyHidden from '@radix-ui/react-visually-hidden';
 
 const fadeUp = {
   hidden: { opacity: 0, y: 24 },
@@ -42,6 +45,33 @@ const SectionDivider = () => (
 );
 
 const MarchesDuVivantExplorer = () => {
+  const [popupOpen, setPopupOpen] = useState(false);
+  const [selectedDate, setSelectedDate] = useState<string | null>(null);
+  const [prenom, setPrenom] = useState('');
+  const [email, setEmail] = useState('');
+
+  const popupDates = [
+    { id: 'mars', date: '8-9 mars 2026', titre: 'Printemps des Poètes', badge: 'Comité réduit', icon: <Snowflake className="w-5 h-5" />, desc: 'L\'éveil du printemps, quand la nature murmure ses premiers secrets.', highlight: false },
+    { id: 'mai', date: '24-25 mai 2026', titre: 'Fête de la Nature', badge: 'Comité élargi', icon: <Flower2 className="w-5 h-5" />, desc: 'La nature en pleine effervescence, les sens en éveil total.', highlight: false },
+    { id: 'juin', date: '21 juin 2026', titre: 'Solstice d\'été', badge: 'Lancement officiel', icon: <Sun className="w-5 h-5" />, desc: 'Le jour le plus long, la lumière à son apogée. L\'aventure commence.', highlight: true },
+  ];
+
+  const handleInscription = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedDate) {
+      toast.error('Choisissez une date pour votre première marche');
+      return;
+    }
+    toast.success('Bienvenue parmi les Marcheurs du Vivant ! 🌿', {
+      description: `${prenom}, nous vous contacterons pour la marche choisie.`,
+      duration: 5000,
+    });
+    setPopupOpen(false);
+    setPrenom('');
+    setEmail('');
+    setSelectedDate(null);
+  };
+
   const handlePrint = () => window.print();
   const handleShare = async () => {
     const url = window.location.href;
@@ -558,9 +588,9 @@ const MarchesDuVivantExplorer = () => {
                 Gratuit · Intergénérationnel · Ouvert à tous
               </p>
               
-              <a
-                href="https://la-frequence-du-vivant.lovable.app/contact"
-                className="inline-flex items-center gap-2.5 px-9 py-4 rounded-full text-white font-medium text-sm transition-all duration-300 hover:shadow-xl hover:-translate-y-0.5 print:shadow-none print:border print:border-gray-400 print:bg-white print:text-gray-900"
+              <button
+                onClick={() => setPopupOpen(true)}
+                className="inline-flex items-center gap-2.5 px-9 py-4 rounded-full text-white font-medium text-sm transition-all duration-300 hover:shadow-xl hover:-translate-y-0.5 print:shadow-none print:border print:border-gray-400 print:bg-white print:text-gray-900 cursor-pointer"
                 style={{ 
                   background: 'linear-gradient(135deg, #047857 0%, #0d9488 100%)',
                   boxShadow: '0 8px 32px rgba(16,185,129,0.25), 0 2px 8px rgba(16,185,129,0.15)'
@@ -568,7 +598,7 @@ const MarchesDuVivantExplorer = () => {
               >
                 Rejoindre l'aventure
                 <ChevronRight className="w-4 h-4" />
-              </a>
+              </button>
               
             </motion.div>
           </div>
@@ -578,6 +608,173 @@ const MarchesDuVivantExplorer = () => {
           <Footer />
         </div>
       </div>
+
+      {/* === POPUP INSCRIPTION === */}
+      <Dialog open={popupOpen} onOpenChange={setPopupOpen}>
+        <DialogContent className="max-w-xl w-[95vw] max-h-[90vh] overflow-y-auto p-0 border-0 rounded-2xl shadow-2xl bg-transparent">
+          <VisuallyHidden.Root>
+            <DialogTitle>Inscription aux Marches du Vivant</DialogTitle>
+            <DialogDescription>Choisissez une date et inscrivez-vous</DialogDescription>
+          </VisuallyHidden.Root>
+          
+          <div className="relative overflow-hidden rounded-2xl" style={{
+            background: 'linear-gradient(160deg, #ecfdf5 0%, #f0fdfa 25%, #fefdfb 60%, #ecfdf5 100%)'
+          }}>
+            {/* Botanical watermark */}
+            <div className="absolute -top-10 -right-10 w-40 h-40 opacity-[0.06]">
+              <BotanicalLeaf className="w-full h-full text-emerald-800" flip />
+            </div>
+            <div className="absolute -bottom-8 -left-8 w-32 h-32 opacity-[0.04]">
+              <BotanicalLeaf className="w-full h-full text-emerald-800" />
+            </div>
+
+            {/* Close button */}
+            <button
+              onClick={() => setPopupOpen(false)}
+              className="absolute top-4 right-4 z-20 w-8 h-8 rounded-full flex items-center justify-center transition-all hover:bg-stone-200/50 text-stone-400 hover:text-stone-600"
+            >
+              <X className="w-4 h-4" />
+            </button>
+
+            <div className="relative p-6 md:p-8 space-y-6">
+              {/* Header */}
+              <div className="text-center pt-2">
+                <motion.div
+                  animate={{ scale: [1, 1.15, 1] }}
+                  transition={{ repeat: Infinity, duration: 3, ease: 'easeInOut' }}
+                  className="inline-flex items-center justify-center w-12 h-12 rounded-full mb-4"
+                  style={{ background: 'linear-gradient(135deg, rgba(16,185,129,0.15) 0%, rgba(20,184,166,0.1) 100%)' }}
+                >
+                  <Sparkles className="w-6 h-6 text-emerald-600" />
+                </motion.div>
+                <h2 className="font-crimson text-2xl md:text-3xl font-semibold mb-2" style={{ color: '#1a1a18' }}>
+                  Votre première{' '}
+                  <span className="bg-gradient-to-r from-emerald-700 to-teal-600 bg-clip-text text-transparent">
+                    Fréquence
+                  </span>
+                  {' '}vous attend
+                </h2>
+                <p className="text-stone-500 text-sm">Choisissez votre rendez-vous avec le vivant</p>
+              </div>
+
+              {/* Date cards */}
+              <div className="space-y-3">
+                {popupDates.map((d) => (
+                  <button
+                    key={d.id}
+                    type="button"
+                    onClick={() => setSelectedDate(d.id)}
+                    className={`w-full text-left p-4 rounded-xl transition-all duration-300 cursor-pointer group ${
+                      selectedDate === d.id
+                        ? 'ring-2 ring-emerald-500 shadow-md'
+                        : 'hover:shadow-sm'
+                    } ${d.highlight && selectedDate !== d.id ? 'ring-1 ring-amber-300/60' : ''}`}
+                    style={{
+                      background: selectedDate === d.id
+                        ? 'linear-gradient(135deg, rgba(16,185,129,0.08) 0%, rgba(20,184,166,0.05) 100%)'
+                        : 'rgba(255,255,255,0.7)',
+                      border: selectedDate === d.id
+                        ? 'none'
+                        : d.highlight
+                          ? '1px solid rgba(251,191,36,0.3)'
+                          : '1px solid rgba(214,211,199,0.4)',
+                    }}
+                  >
+                    <div className="flex items-start gap-3">
+                      <div className={`flex-shrink-0 w-10 h-10 rounded-lg flex items-center justify-center transition-colors ${
+                        selectedDate === d.id ? 'bg-emerald-100 text-emerald-700' : d.highlight ? 'bg-amber-50 text-amber-600' : 'bg-stone-100 text-stone-500 group-hover:text-emerald-600'
+                      }`}>
+                        {d.icon}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap mb-1">
+                          <span className="font-semibold text-sm text-stone-800">{d.date}</span>
+                          <span className={`text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full ${
+                            d.highlight
+                              ? 'bg-gradient-to-r from-amber-100 to-amber-50 text-amber-700 border border-amber-200/60'
+                              : 'bg-emerald-50 text-emerald-700 border border-emerald-200/40'
+                          }`}>
+                            {d.badge}
+                          </span>
+                        </div>
+                        <p className="font-medium text-sm text-stone-700 mb-0.5">{d.titre}</p>
+                        <p className="text-xs text-stone-400 leading-relaxed">{d.desc}</p>
+                        <p className="text-[10px] text-emerald-600/70 font-medium mt-1 uppercase tracking-wider">Gratuit · Ouvert à tous</p>
+                      </div>
+                      {/* Selection indicator */}
+                      <div className={`flex-shrink-0 w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all mt-0.5 ${
+                        selectedDate === d.id ? 'border-emerald-500 bg-emerald-500' : 'border-stone-300'
+                      }`}>
+                        {selectedDate === d.id && (
+                          <motion.div
+                            initial={{ scale: 0 }}
+                            animate={{ scale: 1 }}
+                            className="w-2 h-2 rounded-full bg-white"
+                          />
+                        )}
+                      </div>
+                    </div>
+                  </button>
+                ))}
+              </div>
+
+              {/* Reassurance */}
+              <p className="font-crimson text-sm italic text-stone-400 text-center leading-relaxed px-4">
+                «&nbsp;Aucune condition d'âge, de forme physique ou de connaissance préalable.
+                Venez comme vous êtes, repartez transformés.&nbsp;»
+              </p>
+
+              {/* Form */}
+              <form onSubmit={handleInscription} className="space-y-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <Input
+                    placeholder="Votre prénom"
+                    value={prenom}
+                    onChange={(e) => setPrenom(e.target.value)}
+                    required
+                    className="h-11 rounded-xl border-stone-200/60 bg-white/80 focus:border-emerald-400 focus:ring-emerald-400/20 placeholder:text-stone-400"
+                  />
+                  <Input
+                    type="email"
+                    placeholder="Votre email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                    className="h-11 rounded-xl border-stone-200/60 bg-white/80 focus:border-emerald-400 focus:ring-emerald-400/20 placeholder:text-stone-400"
+                  />
+                </div>
+                <button
+                  type="submit"
+                  className="w-full h-12 rounded-xl text-white font-semibold text-sm tracking-wide transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5 cursor-pointer"
+                  style={{
+                    background: 'linear-gradient(135deg, #047857 0%, #0d9488 100%)',
+                    boxShadow: '0 4px 20px rgba(16,185,129,0.25)'
+                  }}
+                >
+                  Je m'inscris ✨
+                </button>
+                <p className="text-[11px] text-stone-400 text-center">
+                  Nous vous enverrons uniquement les informations de la marche choisie.
+                </p>
+              </form>
+
+              {/* Footer link */}
+              <div className="text-center pb-1">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setPopupOpen(false);
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                  }}
+                  className="text-xs text-stone-400 hover:text-emerald-600 transition-colors underline underline-offset-2 cursor-pointer"
+                >
+                  En savoir plus sur les Marches
+                </button>
+              </div>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </>
   );
 };
