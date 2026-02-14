@@ -2,11 +2,11 @@ import React, { useState } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
+import {
   ArrowLeft, Leaf, Cpu, Users, Footprints, Map, TrendingUp,
   Printer, Share2, Calendar, ChevronRight, Sparkles, Eye, Shield, Heart,
-  Headphones, PenTool, ArrowDown, Sun, Flower2, Snowflake, X
-} from 'lucide-react';
+  Headphones, PenTool, ArrowDown, Sun, Flower2, Snowflake, X } from
+'lucide-react';
 import Footer from '@/components/Footer';
 import { toast } from 'sonner';
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from '@/components/ui/dialog';
@@ -22,27 +22,27 @@ const fadeUp = {
 };
 
 /* Decorative botanical leaf SVG — used as background ornament */
-const BotanicalLeaf = ({ className = '', flip = false }: { className?: string; flip?: boolean }) => (
-  <svg className={className} viewBox="0 0 120 200" fill="none" xmlns="http://www.w3.org/2000/svg"
-    style={{ transform: flip ? 'scaleX(-1)' : undefined }}>
-    <path d="M60 10C60 10 20 60 20 120C20 160 40 190 60 190C80 190 100 160 100 120C100 60 60 10 60 10Z" 
-      fill="currentColor" opacity="0.06" />
+const BotanicalLeaf = ({ className = '', flip = false }: {className?: string;flip?: boolean;}) =>
+<svg className={className} viewBox="0 0 120 200" fill="none" xmlns="http://www.w3.org/2000/svg"
+style={{ transform: flip ? 'scaleX(-1)' : undefined }}>
+    <path d="M60 10C60 10 20 60 20 120C20 160 40 190 60 190C80 190 100 160 100 120C100 60 60 10 60 10Z"
+  fill="currentColor" opacity="0.06" />
     <path d="M60 30C60 30 60 190 60 190" stroke="currentColor" strokeWidth="0.8" opacity="0.12" />
     <path d="M60 60C45 70 30 90 28 110" stroke="currentColor" strokeWidth="0.5" opacity="0.08" fill="none" />
     <path d="M60 80C75 90 90 100 92 120" stroke="currentColor" strokeWidth="0.5" opacity="0.08" fill="none" />
     <path d="M60 110C42 118 32 135 30 150" stroke="currentColor" strokeWidth="0.5" opacity="0.08" fill="none" />
     <path d="M60 130C78 138 88 148 90 160" stroke="currentColor" strokeWidth="0.5" opacity="0.08" fill="none" />
-  </svg>
-);
+  </svg>;
+
 
 /* Delicate divider with botanical dot */
-const SectionDivider = () => (
-  <div className="flex items-center justify-center gap-4 py-2">
+const SectionDivider = () =>
+<div className="flex items-center justify-center gap-4 py-2">
     <div className="h-px w-16 bg-gradient-to-r from-transparent to-emerald-300/40" />
     <div className="w-1.5 h-1.5 rounded-full bg-emerald-400/50" />
     <div className="h-px w-16 bg-gradient-to-l from-transparent to-emerald-300/40" />
-  </div>
-);
+  </div>;
+
 
 const MarchesDuVivantExplorer = () => {
   const [popupOpen, setPopupOpen] = useState(false);
@@ -51,10 +51,10 @@ const MarchesDuVivantExplorer = () => {
   const [email, setEmail] = useState('');
 
   const popupDates = [
-    { id: 'mars', date: '8-9 mars 2026', titre: 'Printemps des Poètes', badge: 'Comité réduit', icon: <Snowflake className="w-5 h-5" />, desc: 'L\'éveil du printemps, quand la nature murmure ses premiers secrets.', highlight: false },
-    { id: 'mai', date: '24-25 mai 2026', titre: 'Fête de la Nature', badge: 'Comité élargi', icon: <Flower2 className="w-5 h-5" />, desc: 'La nature en pleine effervescence, les sens en éveil total.', highlight: false },
-    { id: 'juin', date: '21 juin 2026', titre: 'Solstice d\'été', badge: 'Lancement officiel', icon: <Sun className="w-5 h-5" />, desc: 'Le jour le plus long, la lumière à son apogée. L\'aventure commence.', highlight: true },
-  ];
+  { id: 'mars', date: '8-9 mars 2026', titre: 'Printemps des Poètes', badge: 'Comité réduit', icon: <Snowflake className="w-5 h-5" />, desc: 'L\'éveil du printemps, quand la nature murmure ses premiers secrets.', highlight: false },
+  { id: 'mai', date: '24-25 mai 2026', titre: 'Fête de la Nature', badge: 'Comité élargi', icon: <Flower2 className="w-5 h-5" />, desc: 'La nature en pleine effervescence, les sens en éveil total.', highlight: false },
+  { id: 'juin', date: '21 juin 2026', titre: 'Solstice d\'été', badge: 'Lancement officiel', icon: <Sun className="w-5 h-5" />, desc: 'Le jour le plus long, la lumière à son apogée. L\'aventure commence.', highlight: true }];
+
 
   const handleInscription = (e: React.FormEvent) => {
     e.preventDefault();
@@ -64,7 +64,7 @@ const MarchesDuVivantExplorer = () => {
     }
     toast.success('Bienvenue parmi les Marcheurs du Vivant ! 🌿', {
       description: `${prenom}, nous vous contacterons pour la marche choisie.`,
-      duration: 5000,
+      duration: 5000
     });
     setPopupOpen(false);
     setPrenom('');
@@ -82,63 +82,63 @@ const MarchesDuVivantExplorer = () => {
         await navigator.clipboard.writeText(url);
         toast.success('Lien copié dans le presse-papier');
       }
-    } catch { /* user cancelled */ }
+    } catch {/* user cancelled */}
   };
 
   const piliers = [
-    {
-      icon: <Leaf className="w-6 h-6" />,
-      titre: 'Géopoétique du Vivant',
-      accent: 'from-emerald-600 to-teal-600',
-      bg: 'bg-gradient-to-br from-emerald-50/80 to-teal-50/60',
-      border: 'border-emerald-200/60',
-      iconBg: 'bg-emerald-100/80 text-emerald-700',
-      texte: "La marche n'est pas un sport, c'est une expérience du territoire. Chaque pas est un acte poétique et scientifique. Le marcheur écoute, ressens, nomme, témoigne."
-    },
-    {
-      icon: <Users className="w-6 h-6" />,
-      titre: 'Science Participative',
-      accent: 'from-amber-600 to-orange-600',
-      bg: 'bg-gradient-to-br from-amber-50/80 to-orange-50/60',
-      border: 'border-amber-200/60',
-      iconBg: 'bg-amber-100/80 text-amber-700',
-      texte: "Chaque observation rejoint une base de connaissance collective. Vous contribuez à la cartographie du vivant, pour les scientifiques et pour les générations futures."
-    },
-    {
-      icon: <Cpu className="w-6 h-6" />,
-      titre: 'Technologie Frugale',
-      accent: 'from-sky-600 to-indigo-600',
-      bg: 'bg-gradient-to-br from-sky-50/80 to-indigo-50/60',
-      border: 'border-sky-200/60',
-      iconBg: 'bg-sky-100/80 text-sky-700',
-      texte: "Pas de surconsommation de données. L'application traite ce que le marcheur rapporte avec sobriété et précision. L'IA est au service du vivant, pas l'inverse."
-    }
-  ];
+  {
+    icon: <Leaf className="w-6 h-6" />,
+    titre: 'Géopoétique du Vivant',
+    accent: 'from-emerald-600 to-teal-600',
+    bg: 'bg-gradient-to-br from-emerald-50/80 to-teal-50/60',
+    border: 'border-emerald-200/60',
+    iconBg: 'bg-emerald-100/80 text-emerald-700',
+    texte: "La marche n'est pas un sport, c'est une expérience du territoire. Chaque pas est un acte poétique et scientifique. Le marcheur écoute, ressens, nomme, témoigne."
+  },
+  {
+    icon: <Users className="w-6 h-6" />,
+    titre: 'Science Participative',
+    accent: 'from-amber-600 to-orange-600',
+    bg: 'bg-gradient-to-br from-amber-50/80 to-orange-50/60',
+    border: 'border-amber-200/60',
+    iconBg: 'bg-amber-100/80 text-amber-700',
+    texte: "Chaque observation rejoint une base de connaissance collective. Vous contribuez à la cartographie du vivant, pour les scientifiques et pour les générations futures."
+  },
+  {
+    icon: <Cpu className="w-6 h-6" />,
+    titre: 'Technologie Frugale',
+    accent: 'from-sky-600 to-indigo-600',
+    bg: 'bg-gradient-to-br from-sky-50/80 to-indigo-50/60',
+    border: 'border-sky-200/60',
+    iconBg: 'bg-sky-100/80 text-sky-700',
+    texte: "Pas de surconsommation de données. L'application traite ce que le marcheur rapporte avec sobriété et précision. L'IA est au service du vivant, pas l'inverse."
+  }];
+
 
   const etapes = [
-    { num: '01', icon: <Footprints className="w-5 h-5" />, titre: 'Marchez', texte: "Choisissez un sentier, une forêt, une rivière, un parc, ouvrez l'application, marchez. Chaque kilomètre vous rapporte des Fréquences." },
-    { num: '02', icon: <Map className="w-5 h-5" />, titre: 'Explorez les zones blanches', texte: "Les zones pauvres en données rapportent jusqu'à 4× plus de Fréquences. Devenez éclaireur du vivant." },
-    { num: '03', icon: <TrendingUp className="w-5 h-5" />, titre: 'Progressez', texte: "Maintenez votre série hebdomadaire, montez dans le classement, débloquez de nouveaux rôles." },
-  ];
+  { num: '01', icon: <Footprints className="w-5 h-5" />, titre: 'Marchez', texte: "Choisissez un sentier, une forêt, une rivière, un parc, ouvrez l'application, marchez. Chaque kilomètre vous rapporte des Fréquences." },
+  { num: '02', icon: <Map className="w-5 h-5" />, titre: 'Explorez les zones blanches', texte: "Les zones pauvres en données rapportent jusqu'à 4× plus de Fréquences. Devenez éclaireur du vivant." },
+  { num: '03', icon: <TrendingUp className="w-5 h-5" />, titre: 'Progressez', texte: "Maintenez votre série hebdomadaire, montez dans le classement, débloquez de nouveaux rôles." }];
+
 
   const roles = [
-    { nom: 'Marcheur', desc: 'Première marche, découverte de l\'écoute active', icon: <Footprints className="w-5 h-5" />, color: 'text-emerald-600' },
-    { nom: 'Éclaireur', desc: '5 zones blanches explorées', icon: <Eye className="w-5 h-5" />, color: 'text-teal-600' },
-    { nom: 'Ambassadeur', desc: 'Formation + animation de groupes', icon: <Heart className="w-5 h-5" />, color: 'text-sky-600' },
-    { nom: 'Sentinelle', desc: 'Référent territorial, formateur', icon: <Shield className="w-5 h-5" />, color: 'text-amber-600' },
-  ];
+  { nom: 'Marcheur', desc: 'Première marche, découverte de l\'écoute active', icon: <Footprints className="w-5 h-5" />, color: 'text-emerald-600' },
+  { nom: 'Éclaireur', desc: '5 zones blanches explorées', icon: <Eye className="w-5 h-5" />, color: 'text-teal-600' },
+  { nom: 'Ambassadeur', desc: 'Formation + animation de groupes', icon: <Heart className="w-5 h-5" />, color: 'text-sky-600' },
+  { nom: 'Sentinelle', desc: 'Référent territorial, formateur', icon: <Shield className="w-5 h-5" />, color: 'text-amber-600' }];
+
 
   const calendrier = [
-    { date: '8-9 mars 2026', label: 'Premier test', desc: 'Printemps des Poètes — comité réduit', status: 'upcoming' },
-    { date: '24-25 mai 2026', label: 'Second test', desc: 'Fête de la Nature — comité élargi', status: 'planned' },
-    { date: '21 juin 2026', label: 'Lancement officiel', desc: 'Solstice d\'été — ouverture à tous', status: 'launch' },
-  ];
+  { date: '8-9 mars 2026', label: 'Premier test', desc: 'Printemps des Poètes — comité réduit', status: 'upcoming' },
+  { date: '24-25 mai 2026', label: 'Second test', desc: 'Fête de la Nature — comité élargi', status: 'planned' },
+  { date: '21 juin 2026', label: 'Lancement officiel', desc: 'Solstice d\'été — ouverture à tous', status: 'launch' }];
+
 
   const zones = [
-    { zone: 'Zone fréquentée', mult: '×1', pct: 25 },
-    { zone: 'Peu fréquentée', mult: '×2', pct: 50 },
-    { zone: 'Zone blanche', mult: '×4', pct: 100 },
-  ];
+  { zone: 'Zone fréquentée', mult: '×1', pct: 25 },
+  { zone: 'Peu fréquentée', mult: '×2', pct: 50 },
+  { zone: 'Zone blanche', mult: '×4', pct: 100 }];
+
 
   return (
     <>
@@ -180,19 +180,19 @@ const MarchesDuVivantExplorer = () => {
           }} />
 
           <motion.div variants={fadeUp} initial="hidden" animate="visible" custom={0} className="relative max-w-3xl mx-auto">
-            <motion.span 
-              initial={{ opacity: 0, scale: 0.9 }} 
-              animate={{ opacity: 1, scale: 1 }} 
+            <motion.span
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
               transition={{ delay: 0.2, duration: 0.5 }}
               className="inline-flex items-center gap-2 px-5 py-2 rounded-full text-xs font-semibold tracking-wider uppercase mb-6"
-              style={{ background: 'linear-gradient(135deg, rgba(16,185,129,0.1) 0%, rgba(20,184,166,0.08) 100%)', color: '#047857', border: '1px solid rgba(16,185,129,0.2)' }}
-            >
+              style={{ background: 'linear-gradient(135deg, rgba(16,185,129,0.1) 0%, rgba(20,184,166,0.08) 100%)', color: '#047857', border: '1px solid rgba(16,185,129,0.2)' }}>
+
               <Sparkles className="w-3.5 h-3.5" />
               Gratuit · Ouvert à tous
             </motion.span>
             
-            <h1 className="font-crimson text-4xl md:text-6xl lg:text-7xl font-semibold leading-[1.05] mb-5" 
-              style={{ color: '#1a1a18' }}>
+            <h1 className="font-crimson text-4xl md:text-6xl lg:text-7xl font-semibold leading-[1.05] mb-5"
+            style={{ color: '#1a1a18' }}>
               Devenez<br />
               <span className="bg-gradient-to-r from-emerald-700 via-teal-600 to-emerald-700 bg-clip-text text-transparent">
                 Marcheur du Vivant
@@ -230,12 +230,12 @@ const MarchesDuVivantExplorer = () => {
             </motion.div>
             
             <div className="grid md:grid-cols-3 gap-5 md:gap-6">
-              {piliers.map((p, i) => (
-                <motion.div key={p.titre} variants={fadeUp} initial="hidden" whileInView="visible" viewport={{ once: true }} custom={i + 1}
-                  className={`relative rounded-2xl border ${p.border} ${p.bg} p-5 md:p-6 print-card backdrop-blur-sm overflow-hidden group`}>
+              {piliers.map((p, i) =>
+              <motion.div key={p.titre} variants={fadeUp} initial="hidden" whileInView="visible" viewport={{ once: true }} custom={i + 1}
+              className={`relative rounded-2xl border ${p.border} ${p.bg} p-5 md:p-6 print-card backdrop-blur-sm overflow-hidden group`}>
                   {/* Subtle corner ornament */}
                   <div className="absolute top-0 right-0 w-24 h-24 opacity-[0.04] print:hidden"
-                    style={{ background: `radial-gradient(circle at 100% 0%, currentColor 0%, transparent 70%)` }} />
+                style={{ background: `radial-gradient(circle at 100% 0%, currentColor 0%, transparent 70%)` }} />
                   
                   <div className={`w-10 h-10 rounded-lg flex items-center justify-center mb-4 ${p.iconBg} shadow-sm`}>
                     {p.icon}
@@ -245,7 +245,7 @@ const MarchesDuVivantExplorer = () => {
                   </h3>
                   <p className="text-sm leading-[1.7] text-stone-600 text-left">{p.texte}</p>
                 </motion.div>
-              ))}
+              )}
             </div>
           </div>
         </section>
@@ -270,12 +270,12 @@ const MarchesDuVivantExplorer = () => {
             </motion.div>
             
             <div className="space-y-4">
-              {etapes.map((e, i) => (
-                <motion.div key={e.num} variants={fadeUp} initial="hidden" whileInView="visible" viewport={{ once: true }} custom={i + 1}
-                  className="flex gap-4 md:gap-5 items-start p-4 md:p-5 rounded-xl transition-colors"
-                  style={{ background: 'rgba(255,255,255,0.6)', border: '1px solid rgba(214,211,199,0.3)' }}>
+              {etapes.map((e, i) =>
+              <motion.div key={e.num} variants={fadeUp} initial="hidden" whileInView="visible" viewport={{ once: true }} custom={i + 1}
+              className="flex gap-4 md:gap-5 items-start p-4 md:p-5 rounded-xl transition-colors"
+              style={{ background: 'rgba(255,255,255,0.6)', border: '1px solid rgba(214,211,199,0.3)' }}>
                   <div className="flex-shrink-0 w-12 h-12 rounded-xl flex items-center justify-center shadow-sm"
-                    style={{ background: 'linear-gradient(135deg, #ecfdf5 0%, #f0fdfa 100%)', border: '1px solid rgba(16,185,129,0.15)' }}>
+                style={{ background: 'linear-gradient(135deg, #ecfdf5 0%, #f0fdfa 100%)', border: '1px solid rgba(16,185,129,0.15)' }}>
                     <span className="bg-gradient-to-br from-emerald-700 to-teal-600 bg-clip-text text-transparent font-bold text-lg">{e.num}</span>
                   </div>
                   <div className="flex-1">
@@ -286,7 +286,7 @@ const MarchesDuVivantExplorer = () => {
                     <p className="text-stone-600 text-sm leading-[1.7] text-left">{e.texte}</p>
                   </div>
                 </motion.div>
-              ))}
+              )}
             </div>
           </div>
         </section>
@@ -307,25 +307,25 @@ const MarchesDuVivantExplorer = () => {
             </motion.div>
             
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-5">
-              {roles.map((r, i) => (
-                <motion.div key={r.nom} variants={fadeUp} initial="hidden" whileInView="visible" viewport={{ once: true }} custom={i + 1}
-                  className="relative text-center p-5 md:p-6 rounded-2xl print-card group transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5"
-                  style={{ background: 'rgba(255,255,255,0.7)', border: '1px solid rgba(214,211,199,0.35)', backdropFilter: 'blur(8px)' }}>
+              {roles.map((r, i) =>
+              <motion.div key={r.nom} variants={fadeUp} initial="hidden" whileInView="visible" viewport={{ once: true }} custom={i + 1}
+              className="relative text-center p-5 md:p-6 rounded-2xl print-card group transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5"
+              style={{ background: 'rgba(255,255,255,0.7)', border: '1px solid rgba(214,211,199,0.35)', backdropFilter: 'blur(8px)' }}>
                   <div className={`w-10 h-10 rounded-lg ${r.color} bg-gradient-to-br from-stone-50 to-white flex items-center justify-center mx-auto mb-3 shadow-sm`}
-                    style={{ border: '1px solid rgba(214,211,199,0.3)' }}>
+                style={{ border: '1px solid rgba(214,211,199,0.3)' }}>
                     {r.icon}
                   </div>
                   <h4 className="font-semibold text-base mb-1.5 text-stone-800">{r.nom}</h4>
                   <p className="text-xs text-stone-500 leading-relaxed">{r.desc}</p>
                   
                   {/* Connecting arrow between cards */}
-                  {i < roles.length - 1 && (
-                    <div className="absolute -right-3 top-1/2 -translate-y-1/2 hidden md:flex items-center z-10 print:hidden">
+                  {i < roles.length - 1 &&
+                <div className="absolute -right-3 top-1/2 -translate-y-1/2 hidden md:flex items-center z-10 print:hidden">
                       <ChevronRight className="w-5 h-5 text-emerald-400/50" />
                     </div>
-                  )}
+                }
                 </motion.div>
-              ))}
+              )}
             </div>
           </div>
         </section>
@@ -348,8 +348,8 @@ const MarchesDuVivantExplorer = () => {
             </motion.div>
             
             <motion.div variants={fadeUp} initial="hidden" whileInView="visible" viewport={{ once: true }} custom={1}
-              className="rounded-2xl p-6 md:p-8 mb-8"
-              style={{ background: 'rgba(255,255,255,0.65)', border: '1px solid rgba(214,211,199,0.3)', backdropFilter: 'blur(8px)' }}>
+            className="rounded-2xl p-6 md:p-8 mb-8"
+            style={{ background: 'rgba(255,255,255,0.65)', border: '1px solid rgba(214,211,199,0.3)', backdropFilter: 'blur(8px)' }}>
               <p className="text-stone-600 text-base leading-[1.8] text-left font-crimson text-lg">
                 Les zones blanches sont des territoires où la biodiversité n'a pas encore été écoutée. 
                 Aucune donnée, aucun témoignage. En vous y rendant, vous devenez le <em>premier éclaireur</em>. 
@@ -358,24 +358,24 @@ const MarchesDuVivantExplorer = () => {
             </motion.div>
             
             <div className="max-w-lg mx-auto space-y-3">
-              {zones.map((z, i) => (
-                <motion.div key={z.zone} variants={fadeUp} initial="hidden" whileInView="visible" viewport={{ once: true }} custom={i + 2}
-                  className="flex items-center gap-5">
+              {zones.map((z, i) =>
+              <motion.div key={z.zone} variants={fadeUp} initial="hidden" whileInView="visible" viewport={{ once: true }} custom={i + 2}
+              className="flex items-center gap-5">
                   <span className="text-sm text-stone-600 w-36 text-right font-medium">{z.zone}</span>
                   <div className="flex-1 h-8 rounded-lg overflow-hidden" style={{ background: 'rgba(214,211,199,0.2)', border: '1px solid rgba(214,211,199,0.2)' }}>
-                    <motion.div 
-                      initial={{ width: 0 }} 
-                      whileInView={{ width: `${z.pct}%` }} 
-                      viewport={{ once: true }}
-                      transition={{ delay: 0.3 + i * 0.15, duration: 0.8, ease: [0.22, 1, 0.36, 1] as const }}
-                      className="h-full rounded-lg flex items-center justify-end pr-3"
-                      style={{ background: `linear-gradient(135deg, #10b981 0%, #0d9488 100%)` }}
-                    >
+                    <motion.div
+                    initial={{ width: 0 }}
+                    whileInView={{ width: `${z.pct}%` }}
+                    viewport={{ once: true }}
+                    transition={{ delay: 0.3 + i * 0.15, duration: 0.8, ease: [0.22, 1, 0.36, 1] as const }}
+                    className="h-full rounded-lg flex items-center justify-end pr-3"
+                    style={{ background: `linear-gradient(135deg, #10b981 0%, #0d9488 100%)` }}>
+
                       <span className="text-xs font-bold text-white drop-shadow-sm">{z.mult}</span>
                     </motion.div>
                   </div>
                 </motion.div>
-              ))}
+              )}
             </div>
           </div>
         </section>
@@ -397,7 +397,7 @@ const MarchesDuVivantExplorer = () => {
             {/* Header */}
             <motion.div variants={fadeUp} initial="hidden" whileInView="visible" viewport={{ once: true }} custom={0} className="text-center mb-6">
               <span className="inline-flex items-center gap-2 px-5 py-2 rounded-full text-xs font-semibold tracking-[0.15em] uppercase mb-5"
-                style={{ background: 'linear-gradient(135deg, rgba(16,185,129,0.12) 0%, rgba(20,184,166,0.08) 100%)', color: '#047857', border: '1px solid rgba(16,185,129,0.2)' }}>
+              style={{ background: 'linear-gradient(135deg, rgba(16,185,129,0.12) 0%, rgba(20,184,166,0.08) 100%)', color: '#047857', border: '1px solid rgba(16,185,129,0.2)' }}>
                 <Sparkles className="w-3.5 h-3.5" />
                 L'expérience sur le terrain
               </span>
@@ -414,10 +414,10 @@ const MarchesDuVivantExplorer = () => {
 
             {/* Introduction */}
             <motion.div variants={fadeUp} initial="hidden" whileInView="visible" viewport={{ once: true }} custom={1}
-              className="rounded-2xl p-6 md:p-8 mb-10 max-w-3xl mx-auto"
-              style={{ background: 'rgba(255,255,255,0.65)', border: '1px solid rgba(214,211,199,0.3)', backdropFilter: 'blur(8px)' }}>
-              <p className="font-crimson text-base md:text-lg leading-[1.85] text-stone-600 text-left">
-                Rejoindre une Marche du Vivant, c'est participer à une véritable <strong className="text-emerald-700">expérience en faveur de la nature</strong> et des beaux projets de nos territoires. Ici, nous ne faisons pas que nous promener&nbsp;: nous nous mettons à l'écoute d'un monde en pleine transition.
+            className="rounded-2xl p-6 md:p-8 mb-10 max-w-3xl mx-auto"
+            style={{ background: 'rgba(255,255,255,0.65)', border: '1px solid rgba(214,211,199,0.3)', backdropFilter: 'blur(8px)' }}>
+              <p className="font-crimson text-base md:text-lg leading-[1.85] text-stone-600 text-left">Rejoindre une Marche du Vivant, c'est participer à une véritable expérience en faveur de la nature et de nos territoires. Ici, nous ne faisons pas que nous promener : nous nous mettons à l'écoute d'un monde en pleine transition.
+                <strong className="text-emerald-700">expérience en faveur de la nature</strong> et des beaux projets de nos territoires. Ici, nous ne faisons pas que nous promener&nbsp;: nous nous mettons à l'écoute d'un monde en pleine transition.
               </p>
               <p className="font-crimson text-base md:text-lg leading-[1.85] text-stone-600 mt-4 text-left">
                 Avant même le premier pas, notre guide vous rassemble pour un <em>«&nbsp;Accordage&nbsp;»</em> d'une vingtaine de minutes. Nous partageons les fondamentaux de la biodiversité locale et les secrets de la bioacoustique, puis, inspirés par la tradition japonaise des marches <em>Kigo</em> du XVI<sup>e</sup>&nbsp;siècle, nous définissons ensemble le <strong className="text-emerald-700">mot de saison</strong> qui servira de boussole poétique à notre exploration.
@@ -428,19 +428,19 @@ const MarchesDuVivantExplorer = () => {
             <div className="relative max-w-3xl mx-auto">
               {/* Vertical line */}
               <div className="absolute left-7 md:left-9 top-0 bottom-0 w-px print:bg-gray-300"
-                style={{ background: 'linear-gradient(to bottom, rgba(16,185,129,0.4), rgba(20,184,166,0.15))' }} />
+              style={{ background: 'linear-gradient(to bottom, rgba(16,185,129,0.4), rgba(20,184,166,0.15))' }} />
 
               <div className="space-y-6 md:space-y-8">
                 {/* Étape 1 */}
                 <motion.div variants={fadeUp} initial="hidden" whileInView="visible" viewport={{ once: true }} custom={2}
-                  className="flex gap-5 md:gap-6 items-start relative">
+                className="flex gap-5 md:gap-6 items-start relative">
                   <div className="flex-shrink-0 w-14 h-14 md:w-[4.5rem] md:h-[4.5rem] rounded-2xl flex flex-col items-center justify-center z-10 shadow-md"
-                    style={{ background: 'linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%)', border: '1px solid rgba(16,185,129,0.25)' }}>
+                  style={{ background: 'linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%)', border: '1px solid rgba(16,185,129,0.25)' }}>
                     <Sparkles className="w-5 h-5 text-emerald-600 mb-0.5" />
                     <span className="text-[10px] font-bold text-emerald-700 tracking-tight">09h</span>
                   </div>
                   <div className="pt-1 flex-1 rounded-2xl p-5 md:p-6 transition-all"
-                    style={{ background: 'rgba(255,255,255,0.7)', border: '1px solid rgba(214,211,199,0.3)', borderLeft: '3px solid #10b981' }}>
+                  style={{ background: 'rgba(255,255,255,0.7)', border: '1px solid rgba(214,211,199,0.3)', borderLeft: '3px solid #10b981' }}>
                     <h3 className="font-semibold text-lg md:text-xl mb-2 text-stone-800">L'Accordage</h3>
                     <p className="text-sm md:text-base leading-[1.8] text-stone-600 text-left">
                       Accueil au bord de l'eau, dans la brume matinale. Le guide pose le cadre&nbsp;: le silence devient concentration stratégique. Nous croisons la poésie avec des relevés locaux pour comprendre l'évolution des sols et les dynamiques de l'écosystème. Ensemble, nous choisissons notre <em>Kigo</em> du jour&nbsp;: <em>«&nbsp;le givre sur le roseau&nbsp;»</em> ou <em>«&nbsp;le premier vol du héron&nbsp;»</em>.
@@ -450,14 +450,14 @@ const MarchesDuVivantExplorer = () => {
 
                 {/* Étape 2 */}
                 <motion.div variants={fadeUp} initial="hidden" whileInView="visible" viewport={{ once: true }} custom={3}
-                  className="flex gap-5 md:gap-6 items-start relative">
+                className="flex gap-5 md:gap-6 items-start relative">
                   <div className="flex-shrink-0 w-14 h-14 md:w-[4.5rem] md:h-[4.5rem] rounded-2xl flex flex-col items-center justify-center z-10 shadow-md"
-                    style={{ background: 'linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%)', border: '1px solid rgba(16,185,129,0.25)' }}>
+                  style={{ background: 'linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%)', border: '1px solid rgba(16,185,129,0.25)' }}>
                     <Headphones className="w-5 h-5 text-emerald-600 mb-0.5" />
                     <span className="text-[10px] font-bold text-emerald-700 tracking-tight">10h</span>
                   </div>
                   <div className="pt-1 flex-1 rounded-2xl p-5 md:p-6 transition-all"
-                    style={{ background: 'rgba(255,255,255,0.7)', border: '1px solid rgba(214,211,199,0.3)', borderLeft: '3px solid #0d9488' }}>
+                  style={{ background: 'rgba(255,255,255,0.7)', border: '1px solid rgba(214,211,199,0.3)', borderLeft: '3px solid #0d9488' }}>
                     <h3 className="font-semibold text-lg md:text-xl mb-2 text-stone-800">La Marche des Capteurs</h3>
                     <p className="text-sm md:text-base leading-[1.8] text-stone-600 text-left">
                       Le départ est donné. C'est l'heure d'ouvrir grand les oreilles et d'activer nos sens. Écouter à l'œil nu ou s'appuyer sur des outils de captation innovants&nbsp;: nous traquons la <strong className="text-emerald-700">Fréquence du Vivant</strong>. Le chant des oiseaux, la stridulation des insectes, le clapotis de la Dordogne… chaque son devient une donnée précieuse.
@@ -467,14 +467,14 @@ const MarchesDuVivantExplorer = () => {
 
                 {/* Étape 3 */}
                 <motion.div variants={fadeUp} initial="hidden" whileInView="visible" viewport={{ once: true }} custom={4}
-                  className="flex gap-5 md:gap-6 items-start relative">
+                className="flex gap-5 md:gap-6 items-start relative">
                   <div className="flex-shrink-0 w-14 h-14 md:w-[4.5rem] md:h-[4.5rem] rounded-2xl flex flex-col items-center justify-center z-10 shadow-md"
-                    style={{ background: 'linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%)', border: '1px solid rgba(16,185,129,0.25)' }}>
+                  style={{ background: 'linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%)', border: '1px solid rgba(16,185,129,0.25)' }}>
                     <PenTool className="w-5 h-5 text-emerald-600 mb-0.5" />
                     <span className="text-[10px] font-bold text-emerald-700 tracking-tight">11h</span>
                   </div>
                   <div className="pt-1 flex-1 rounded-2xl p-5 md:p-6 transition-all"
-                    style={{ background: 'rgba(255,255,255,0.7)', border: '1px solid rgba(214,211,199,0.3)', borderLeft: '3px solid #14b8a6' }}>
+                  style={{ background: 'rgba(255,255,255,0.7)', border: '1px solid rgba(214,211,199,0.3)', borderLeft: '3px solid #14b8a6' }}>
                     <h3 className="font-semibold text-lg md:text-xl mb-2 text-stone-800">L'Éclosion Géopoétique</h3>
                     <p className="text-sm md:text-base leading-[1.8] text-stone-600 text-left">
                       Halte créative sur une berge sauvage. Inspirés par notre <em>Kigo</em> et les fréquences captées, nous prenons le temps de traduire l'expérience. Carnet en main, c'est le moment de noter, dessiner ou formuler quelques lignes de poésie contemporaine. Pas besoin d'être écrivain&nbsp;: la force du groupe et la beauté du cadre suffisent.
@@ -484,14 +484,14 @@ const MarchesDuVivantExplorer = () => {
 
                 {/* Étape 4 */}
                 <motion.div variants={fadeUp} initial="hidden" whileInView="visible" viewport={{ once: true }} custom={5}
-                  className="flex gap-5 md:gap-6 items-start relative">
+                className="flex gap-5 md:gap-6 items-start relative">
                   <div className="flex-shrink-0 w-14 h-14 md:w-[4.5rem] md:h-[4.5rem] rounded-2xl flex flex-col items-center justify-center z-10 shadow-md"
-                    style={{ background: 'linear-gradient(135deg, #10b981 0%, #0d9488 100%)' }}>
+                  style={{ background: 'linear-gradient(135deg, #10b981 0%, #0d9488 100%)' }}>
                     <Heart className="w-5 h-5 text-white mb-0.5" />
                     <span className="text-[10px] font-bold text-white tracking-tight">12h</span>
                   </div>
                   <div className="pt-1 flex-1 rounded-2xl p-5 md:p-6 transition-all"
-                    style={{ background: 'rgba(255,255,255,0.7)', border: '1px solid rgba(214,211,199,0.3)', borderLeft: '3px solid #047857' }}>
+                  style={{ background: 'rgba(255,255,255,0.7)', border: '1px solid rgba(214,211,199,0.3)', borderLeft: '3px solid #047857' }}>
                     <h3 className="font-semibold text-lg md:text-xl mb-2 text-stone-800">Le Banquet des Retours</h3>
                     <p className="text-sm md:text-base leading-[1.8] text-stone-600 text-left">
                       Fin de la boucle et partage des ressentis autour d'un moment convivial. On célèbre l'énergie du groupe et les découvertes de la matinée. Les marcheurs repartent avec des souvenirs poétiques plein la tête et une <strong className="text-emerald-700">compréhension renouvelée</strong> des initiatives écologiques qui font vibrer le territoire.
@@ -503,15 +503,15 @@ const MarchesDuVivantExplorer = () => {
 
             {/* Transition vers calendrier */}
             <motion.div variants={fadeUp} initial="hidden" whileInView="visible" viewport={{ once: true }} custom={6}
-              className="text-center mt-12 md:mt-16">
+            className="text-center mt-12 md:mt-16">
                <p className="font-crimson text-lg md:text-xl italic text-stone-500 mb-4 text-center">
                 «&nbsp;Prêts à vivre cette expérience&nbsp;? Voici les prochains rendez-vous.&nbsp;»
               </p>
-              <motion.div 
-                animate={{ y: [0, 6, 0] }} 
+              <motion.div
+                animate={{ y: [0, 6, 0] }}
                 transition={{ repeat: Infinity, duration: 2, ease: 'easeInOut' }}
-                className="print:hidden"
-              >
+                className="print:hidden">
+
                 <ArrowDown className="w-5 h-5 text-emerald-500/60 mx-auto" />
               </motion.div>
             </motion.div>
@@ -535,19 +535,19 @@ const MarchesDuVivantExplorer = () => {
             
             <div className="relative">
               <div className="absolute left-7 md:left-9 top-0 bottom-0 w-px print:bg-gray-300"
-                style={{ background: 'linear-gradient(to bottom, rgba(16,185,129,0.3), rgba(16,185,129,0.1))' }} />
+              style={{ background: 'linear-gradient(to bottom, rgba(16,185,129,0.3), rgba(16,185,129,0.1))' }} />
               
               <div className="space-y-6">
-                {calendrier.map((c, i) => (
-                  <motion.div key={c.date} variants={fadeUp} initial="hidden" whileInView="visible" viewport={{ once: true }} custom={i + 1}
-                    className="flex gap-6 items-start relative">
+                {calendrier.map((c, i) =>
+                <motion.div key={c.date} variants={fadeUp} initial="hidden" whileInView="visible" viewport={{ once: true }} custom={i + 1}
+                className="flex gap-6 items-start relative">
                     <div className="flex-shrink-0 w-12 h-12 md:w-14 md:h-14 rounded-xl flex items-center justify-center z-10 shadow-sm"
-                      style={{ 
-                        background: c.status === 'launch' 
-                          ? 'linear-gradient(135deg, #10b981 0%, #0d9488 100%)' 
-                          : 'linear-gradient(135deg, #ecfdf5 0%, #f0fdfa 100%)',
-                        border: c.status === 'launch' ? 'none' : '1px solid rgba(16,185,129,0.2)'
-                      }}>
+                  style={{
+                    background: c.status === 'launch' ?
+                    'linear-gradient(135deg, #10b981 0%, #0d9488 100%)' :
+                    'linear-gradient(135deg, #ecfdf5 0%, #f0fdfa 100%)',
+                    border: c.status === 'launch' ? 'none' : '1px solid rgba(16,185,129,0.2)'
+                  }}>
                       <Calendar className={`w-5 h-5 md:w-6 md:h-6 ${c.status === 'launch' ? 'text-white' : 'text-emerald-700'}`} />
                     </div>
                     <div className="pt-1.5 flex-1">
@@ -556,7 +556,7 @@ const MarchesDuVivantExplorer = () => {
                       <p className="text-sm text-stone-500">{c.desc}</p>
                     </div>
                   </motion.div>
-                ))}
+                )}
               </div>
             </div>
           </div>
@@ -573,7 +573,7 @@ const MarchesDuVivantExplorer = () => {
           <div className="max-w-3xl mx-auto text-center relative">
             <motion.div variants={fadeUp} initial="hidden" whileInView="visible" viewport={{ once: true }} custom={0}>
               <div className="w-12 h-12 rounded-xl mx-auto mb-6 flex items-center justify-center shadow-sm"
-                style={{ background: 'linear-gradient(135deg, #ecfdf5 0%, #f0fdfa 100%)', border: '1px solid rgba(16,185,129,0.15)' }}>
+              style={{ background: 'linear-gradient(135deg, #ecfdf5 0%, #f0fdfa 100%)', border: '1px solid rgba(16,185,129,0.15)' }}>
                 <Sparkles className="w-6 h-6 text-emerald-600" />
               </div>
               
@@ -591,11 +591,11 @@ const MarchesDuVivantExplorer = () => {
               <button
                 onClick={() => setPopupOpen(true)}
                 className="inline-flex items-center gap-2.5 px-9 py-4 rounded-full text-white font-medium text-sm transition-all duration-300 hover:shadow-xl hover:-translate-y-0.5 print:shadow-none print:border print:border-gray-400 print:bg-white print:text-gray-900 cursor-pointer"
-                style={{ 
+                style={{
                   background: 'linear-gradient(135deg, #047857 0%, #0d9488 100%)',
                   boxShadow: '0 8px 32px rgba(16,185,129,0.25), 0 2px 8px rgba(16,185,129,0.15)'
-                }}
-              >
+                }}>
+
                 Rejoindre l'aventure
                 <ChevronRight className="w-4 h-4" />
               </button>
@@ -631,8 +631,8 @@ const MarchesDuVivantExplorer = () => {
             {/* Close button */}
             <button
               onClick={() => setPopupOpen(false)}
-              className="absolute top-4 right-4 z-20 w-8 h-8 rounded-full flex items-center justify-center transition-all hover:bg-stone-200/50 text-stone-400 hover:text-stone-600"
-            >
+              className="absolute top-4 right-4 z-20 w-8 h-8 rounded-full flex items-center justify-center transition-all hover:bg-stone-200/50 text-stone-400 hover:text-stone-600">
+
               <X className="w-4 h-4" />
             </button>
 
@@ -643,8 +643,8 @@ const MarchesDuVivantExplorer = () => {
                   animate={{ scale: [1, 1.15, 1] }}
                   transition={{ repeat: Infinity, duration: 3, ease: 'easeInOut' }}
                   className="inline-flex items-center justify-center w-12 h-12 rounded-full mb-4"
-                  style={{ background: 'linear-gradient(135deg, rgba(16,185,129,0.15) 0%, rgba(20,184,166,0.1) 100%)' }}
-                >
+                  style={{ background: 'linear-gradient(135deg, rgba(16,185,129,0.15) 0%, rgba(20,184,166,0.1) 100%)' }}>
+
                   <Sparkles className="w-6 h-6 text-emerald-600" />
                 </motion.div>
                 <h2 className="font-crimson text-2xl md:text-3xl font-semibold mb-2" style={{ color: '#1a1a18' }}>
@@ -659,41 +659,41 @@ const MarchesDuVivantExplorer = () => {
 
               {/* Date cards */}
               <div className="space-y-3">
-                {popupDates.map((d) => (
-                  <button
-                    key={d.id}
-                    type="button"
-                    onClick={() => setSelectedDate(d.id)}
-                    className={`w-full text-left p-4 rounded-xl transition-all duration-300 cursor-pointer group ${
-                      selectedDate === d.id
-                        ? 'ring-2 ring-emerald-500 shadow-md'
-                        : 'hover:shadow-sm'
-                    } ${d.highlight && selectedDate !== d.id ? 'ring-1 ring-amber-300/60' : ''}`}
-                    style={{
-                      background: selectedDate === d.id
-                        ? 'linear-gradient(135deg, rgba(16,185,129,0.08) 0%, rgba(20,184,166,0.05) 100%)'
-                        : 'rgba(255,255,255,0.7)',
-                      border: selectedDate === d.id
-                        ? 'none'
-                        : d.highlight
-                          ? '1px solid rgba(251,191,36,0.3)'
-                          : '1px solid rgba(214,211,199,0.4)',
-                    }}
-                  >
+                {popupDates.map((d) =>
+                <button
+                  key={d.id}
+                  type="button"
+                  onClick={() => setSelectedDate(d.id)}
+                  className={`w-full text-left p-4 rounded-xl transition-all duration-300 cursor-pointer group ${
+                  selectedDate === d.id ?
+                  'ring-2 ring-emerald-500 shadow-md' :
+                  'hover:shadow-sm'} ${
+                  d.highlight && selectedDate !== d.id ? 'ring-1 ring-amber-300/60' : ''}`}
+                  style={{
+                    background: selectedDate === d.id ?
+                    'linear-gradient(135deg, rgba(16,185,129,0.08) 0%, rgba(20,184,166,0.05) 100%)' :
+                    'rgba(255,255,255,0.7)',
+                    border: selectedDate === d.id ?
+                    'none' :
+                    d.highlight ?
+                    '1px solid rgba(251,191,36,0.3)' :
+                    '1px solid rgba(214,211,199,0.4)'
+                  }}>
+
                     <div className="flex items-start gap-3">
                       <div className={`flex-shrink-0 w-10 h-10 rounded-lg flex items-center justify-center transition-colors ${
-                        selectedDate === d.id ? 'bg-emerald-100 text-emerald-700' : d.highlight ? 'bg-amber-50 text-amber-600' : 'bg-stone-100 text-stone-500 group-hover:text-emerald-600'
-                      }`}>
+                    selectedDate === d.id ? 'bg-emerald-100 text-emerald-700' : d.highlight ? 'bg-amber-50 text-amber-600' : 'bg-stone-100 text-stone-500 group-hover:text-emerald-600'}`
+                    }>
                         {d.icon}
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 flex-wrap mb-1">
                           <span className="font-semibold text-sm text-stone-800">{d.date}</span>
                           <span className={`text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full ${
-                            d.highlight
-                              ? 'bg-gradient-to-r from-amber-100 to-amber-50 text-amber-700 border border-amber-200/60'
-                              : 'bg-emerald-50 text-emerald-700 border border-emerald-200/40'
-                          }`}>
+                        d.highlight ?
+                        'bg-gradient-to-r from-amber-100 to-amber-50 text-amber-700 border border-amber-200/60' :
+                        'bg-emerald-50 text-emerald-700 border border-emerald-200/40'}`
+                        }>
                             {d.badge}
                           </span>
                         </div>
@@ -703,19 +703,19 @@ const MarchesDuVivantExplorer = () => {
                       </div>
                       {/* Selection indicator */}
                       <div className={`flex-shrink-0 w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all mt-0.5 ${
-                        selectedDate === d.id ? 'border-emerald-500 bg-emerald-500' : 'border-stone-300'
-                      }`}>
-                        {selectedDate === d.id && (
-                          <motion.div
-                            initial={{ scale: 0 }}
-                            animate={{ scale: 1 }}
-                            className="w-2 h-2 rounded-full bg-white"
-                          />
-                        )}
+                    selectedDate === d.id ? 'border-emerald-500 bg-emerald-500' : 'border-stone-300'}`
+                    }>
+                        {selectedDate === d.id &&
+                      <motion.div
+                        initial={{ scale: 0 }}
+                        animate={{ scale: 1 }}
+                        className="w-2 h-2 rounded-full bg-white" />
+
+                      }
                       </div>
                     </div>
                   </button>
-                ))}
+                )}
               </div>
 
               {/* Reassurance */}
@@ -732,16 +732,16 @@ const MarchesDuVivantExplorer = () => {
                     value={prenom}
                     onChange={(e) => setPrenom(e.target.value)}
                     required
-                    className="h-11 rounded-xl border-stone-200/60 bg-white/80 focus:border-emerald-400 focus:ring-emerald-400/20 placeholder:text-stone-400"
-                  />
+                    className="h-11 rounded-xl border-stone-200/60 bg-white/80 focus:border-emerald-400 focus:ring-emerald-400/20 placeholder:text-stone-400" />
+
                   <Input
                     type="email"
                     placeholder="Votre email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     required
-                    className="h-11 rounded-xl border-stone-200/60 bg-white/80 focus:border-emerald-400 focus:ring-emerald-400/20 placeholder:text-stone-400"
-                  />
+                    className="h-11 rounded-xl border-stone-200/60 bg-white/80 focus:border-emerald-400 focus:ring-emerald-400/20 placeholder:text-stone-400" />
+
                 </div>
                 <button
                   type="submit"
@@ -749,8 +749,8 @@ const MarchesDuVivantExplorer = () => {
                   style={{
                     background: 'linear-gradient(135deg, #047857 0%, #0d9488 100%)',
                     boxShadow: '0 4px 20px rgba(16,185,129,0.25)'
-                  }}
-                >
+                  }}>
+
                   Je m'inscris ✨
                 </button>
                 <p className="text-[11px] text-stone-400 text-center">
@@ -766,8 +766,8 @@ const MarchesDuVivantExplorer = () => {
                     setPopupOpen(false);
                     window.scrollTo({ top: 0, behavior: 'smooth' });
                   }}
-                  className="text-xs text-stone-400 hover:text-emerald-600 transition-colors underline underline-offset-2 cursor-pointer"
-                >
+                  className="text-xs text-stone-400 hover:text-emerald-600 transition-colors underline underline-offset-2 cursor-pointer">
+
                   En savoir plus sur les Marches
                 </button>
               </div>
@@ -775,8 +775,8 @@ const MarchesDuVivantExplorer = () => {
           </div>
         </DialogContent>
       </Dialog>
-    </>
-  );
+    </>);
+
 };
 
 export default MarchesDuVivantExplorer;
