@@ -193,7 +193,7 @@ const MarchesDuVivantExplorer = () => {
               <h2 className="font-crimson text-2xl md:text-4xl font-semibold mb-3" style={{ color: '#1a1a18' }}>
                 Pourquoi marcher pour le vivant&nbsp;?
               </h2>
-              <p className="text-stone-500 max-w-lg mx-auto text-sm leading-relaxed">
+              <p className="text-stone-500 max-w-lg mx-auto text-sm leading-relaxed text-center">
                 Trois piliers fondateurs, un seul objectif&nbsp;: relier l'humain au territoire.
               </p>
             </motion.div>
