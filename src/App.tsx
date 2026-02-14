@@ -60,6 +60,7 @@ import MarchesDuVivant from './pages/MarchesDuVivant';
 import MarchesDuVivantEntreprises from './pages/MarchesDuVivantEntreprises';
 import MarchesDuVivantPartenaires from './pages/MarchesDuVivantPartenaires';
 import MarchesDuVivantAssociation from './pages/MarchesDuVivantAssociation';
+import MarchesDuVivantExplorer from './pages/MarchesDuVivantExplorer';
 // CRM Pages
 import CrmDashboard from './pages/CrmDashboard';
 import CrmPipeline from './pages/CrmPipeline';
@@ -88,6 +89,7 @@ function App() {
             <Route path="/marches-du-vivant/entreprises" element={<MarchesDuVivantEntreprises />} />
             <Route path="/marches-du-vivant/partenaires" element={<MarchesDuVivantPartenaires />} />
             <Route path="/marches-du-vivant/association" element={<MarchesDuVivantAssociation />} />
+            <Route path="/marches-du-vivant/explorer" element={<MarchesDuVivantExplorer />} />
             
             {/* Routes explorations */}
             <Route path="/explorations" element={<ExplorationsList />} />

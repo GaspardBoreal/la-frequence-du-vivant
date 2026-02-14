@@ -2,7 +2,7 @@ import React from 'react';
 import { Helmet } from 'react-helmet-async';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Building2, Users, ArrowRight, Waves, Leaf, Mic2, Sparkles } from 'lucide-react';
+import { Building2, Users, Heart, Trophy, ArrowRight, Waves, Leaf, Mic2, Sparkles } from 'lucide-react';
 import Footer from '@/components/Footer';
 import TrustBar from '@/components/marches-vivant/TrustBar';
 import ScienceCounters from '@/components/marches-vivant/ScienceCounters';
@@ -11,14 +11,14 @@ const MarchesDuVivant = () => {
   return (
     <>
       <Helmet>
-        <title>Les Marches du Vivant - Team Building Scientifique & Bioacoustique Dordogne</title>
+        <title>Les Marches du Vivant - Science Participative, Team Building & Exploration Gamifiée</title>
         <meta 
           name="description" 
-          content="Formations Qualiopi et team building bioacoustique en Nouvelle-Aquitaine. Science participative, biodiversité et leadership. Reconnectez vos équipes au vivant." 
+          content="Science participative, formations Qualiopi, team building bioacoustique et exploration gamifiée en Nouvelle-Aquitaine. Entreprises, grand public et association. Reconnectez-vous au vivant." 
         />
         <meta 
           name="keywords" 
-          content="team building scientifique, bioacoustique entreprise, formation Qualiopi RSE, séminaire biodiversité, Dordogne, science participative" 
+          content="team building scientifique, bioacoustique entreprise, formation Qualiopi RSE, séminaire biodiversité, Dordogne, science participative, gamification, zones blanches, classement marcheurs, exploration" 
         />
         <link rel="canonical" href="https://la-frequence-du-vivant.com/marches-du-vivant" />
       </Helmet>
@@ -58,7 +58,7 @@ const MarchesDuVivant = () => {
             >
               <Waves className="w-4 h-4 text-emerald-400" />
               <span className="font-mono text-xs uppercase tracking-wide text-emerald-300">
-                Team Building & Formations
+                Entreprises · Grand Public · Association
               </span>
             </motion.div>
 
@@ -80,7 +80,7 @@ const MarchesDuVivant = () => {
               transition={{ delay: 0.2 }}
               className="text-xl md:text-2xl text-muted-foreground max-w-2xl mx-auto mb-12"
             >
-              Team Building Scientifique & Bioacoustique
+              Science Participative, Team Building & Exploration Gamifiée
             </motion.p>
 
             {/* Proposition de valeur */}
@@ -99,7 +99,7 @@ const MarchesDuVivant = () => {
         {/* Split Screen - Choix de parcours */}
         <section className="py-16 px-6">
           <div className="max-w-5xl mx-auto">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               {/* Card Entreprises */}
               <Link to="/marches-du-vivant/entreprises" onClick={() => window.scrollTo(0, 0)}>
                 <motion.div
@@ -141,7 +141,48 @@ const MarchesDuVivant = () => {
                 </motion.div>
               </Link>
 
-              {/* Card Grand Public */}
+              {/* Card Grand Public B2C */}
+              <Link to="/marches-du-vivant/explorer" onClick={() => window.scrollTo(0, 0)}>
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  whileHover={{ scale: 1.02 }}
+                  className="group bg-card/40 backdrop-blur-sm border border-border/30 hover:border-cyan-500/50 rounded-2xl p-8 h-full transition-all duration-300"
+                >
+                  <div className="w-14 h-14 rounded-xl bg-cyan-950/50 border border-cyan-500/30 flex items-center justify-center mb-6">
+                    <Trophy className="w-7 h-7 text-cyan-400" />
+                  </div>
+                  
+                  <h2 className="font-crimson text-2xl text-foreground mb-3">
+                    Explorez & Collectez
+                  </h2>
+                  
+                  <div className="flex flex-wrap gap-2 mb-4">
+                    <span className="px-2 py-1 text-xs bg-cyan-950/30 border border-cyan-500/20 rounded-full text-cyan-300">
+                      Gamifié
+                    </span>
+                    <span className="px-2 py-1 text-xs bg-violet-950/30 border border-violet-500/20 rounded-full text-violet-300">
+                      Classement
+                    </span>
+                    <span className="px-2 py-1 text-xs bg-teal-950/30 border border-teal-500/20 rounded-full text-teal-300">
+                      Zones Blanches
+                    </span>
+                  </div>
+                  
+                  <p className="text-muted-foreground text-sm mb-6">
+                    Marchez, explorez les zones blanches, gagnez des points. 
+                    Chaque kilomètre compte pour la biodiversité.
+                  </p>
+                  
+                  <div className="flex items-center gap-2 text-cyan-400 group-hover:text-cyan-300 transition-colors">
+                    <span className="text-sm font-medium">Découvrir le défi</span>
+                    <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                  </div>
+                </motion.div>
+              </Link>
+
+              {/* Card Association */}
               <Link to="/marches-du-vivant/association" onClick={() => window.scrollTo(0, 0)}>
                 <motion.div
                   initial={{ opacity: 0, x: 20 }}
@@ -151,29 +192,29 @@ const MarchesDuVivant = () => {
                   className="group bg-card/40 backdrop-blur-sm border border-border/30 hover:border-amber-500/50 rounded-2xl p-8 h-full transition-all duration-300"
                 >
                   <div className="w-14 h-14 rounded-xl bg-amber-950/50 border border-amber-500/30 flex items-center justify-center mb-6">
-                    <Users className="w-7 h-7 text-amber-400" />
+                    <Heart className="w-7 h-7 text-amber-400" />
                   </div>
                   
                   <h2 className="font-crimson text-2xl text-foreground mb-3">
-                    Grand Public et Association
+                    L'Association
                   </h2>
                   
                   <div className="flex flex-wrap gap-2 mb-4">
                     <span className="px-2 py-1 text-xs bg-amber-950/30 border border-amber-500/20 rounded-full text-amber-300">
-                      Science Participative
+                      Mission
                     </span>
                     <span className="px-2 py-1 text-xs bg-purple-950/30 border border-purple-500/20 rounded-full text-purple-300">
-                      Émerveillement
+                      Équipe
                     </span>
                   </div>
                   
                   <p className="text-muted-foreground text-sm mb-6">
-                    Rejoignez la communauté des Marcheurs du Vivant. 
-                    Devenez ambassadeur et transmettez l'art de l'écoute.
+                    Découvrez l'équipe fondatrice, la vision et comment 
+                    rejoindre l'aventure des Marches du Vivant.
                   </p>
                   
                   <div className="flex items-center gap-2 text-amber-400 group-hover:text-amber-300 transition-colors">
-                    <span className="text-sm font-medium">Rejoindre la communauté</span>
+                    <span className="text-sm font-medium">Découvrir l'association</span>
                     <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
                   </div>
                 </motion.div>
@@ -202,7 +243,7 @@ const MarchesDuVivant = () => {
               </p>
             </motion.div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
               {[
                 {
                   icon: <Sparkles className="w-6 h-6 text-blue-400" />,
@@ -221,6 +262,12 @@ const MarchesDuVivant = () => {
                   title: 'Science Participative',
                   description: 'Chaque marche contribue à la connaissance collective de la biodiversité.',
                   color: 'amber',
+                },
+                {
+                  icon: <Trophy className="w-6 h-6 text-cyan-400" />,
+                  title: 'Exploration Gamifiée',
+                  description: 'Gagnez des points, explorez les zones blanches, montez dans le classement.',
+                  color: 'cyan',
                 },
               ].map((item, index) => (
                 <motion.div
