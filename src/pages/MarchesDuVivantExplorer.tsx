@@ -4,7 +4,8 @@ import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { 
   ArrowLeft, Leaf, Cpu, Users, Footprints, Map, TrendingUp,
-  Printer, Share2, Calendar, ChevronRight, Sparkles, Eye, Shield, Heart
+  Printer, Share2, Calendar, ChevronRight, Sparkles, Eye, Shield, Heart,
+  Headphones, PenTool, ArrowDown
 } from 'lucide-react';
 import Footer from '@/components/Footer';
 import { toast } from 'sonner';
@@ -346,6 +347,144 @@ const MarchesDuVivantExplorer = () => {
                 </motion.div>
               ))}
             </div>
+          </div>
+        </section>
+
+        <SectionDivider />
+
+        {/* === VIVEZ L'EXPÉRIENCE === */}
+        <section className="py-12 md:py-20 px-6 relative overflow-hidden print:bg-white" style={{
+          background: 'linear-gradient(180deg, rgba(236,253,245,0.4) 0%, rgba(240,253,250,0.5) 30%, rgba(254,253,251,1) 100%)'
+        }}>
+          {/* Immersive glow */}
+          <div className="absolute inset-0 print:hidden" style={{
+            background: 'radial-gradient(ellipse 70% 50% at 30% 20%, rgba(16,185,129,0.07) 0%, transparent 60%), radial-gradient(ellipse 50% 40% at 80% 70%, rgba(20,184,166,0.05) 0%, transparent 60%)'
+          }} />
+          <BotanicalLeaf className="absolute top-12 right-6 md:right-16 w-20 md:w-28 text-emerald-700 opacity-40 print:hidden" flip />
+          <BotanicalLeaf className="absolute bottom-16 left-4 md:left-12 w-16 text-emerald-700 opacity-30 print:hidden" />
+
+          <div className="max-w-4xl mx-auto relative">
+            {/* Header */}
+            <motion.div variants={fadeUp} initial="hidden" whileInView="visible" viewport={{ once: true }} custom={0} className="text-center mb-6">
+              <span className="inline-flex items-center gap-2 px-5 py-2 rounded-full text-xs font-semibold tracking-[0.15em] uppercase mb-5"
+                style={{ background: 'linear-gradient(135deg, rgba(16,185,129,0.12) 0%, rgba(20,184,166,0.08) 100%)', color: '#047857', border: '1px solid rgba(16,185,129,0.2)' }}>
+                <Sparkles className="w-3.5 h-3.5" />
+                L'expérience sur le terrain
+              </span>
+              <h2 className="font-crimson text-2xl md:text-4xl lg:text-5xl font-semibold mb-3" style={{ color: '#1a1a18' }}>
+                Plongez dans la{' '}
+                <span className="bg-gradient-to-r from-emerald-700 via-teal-600 to-emerald-700 bg-clip-text text-transparent">
+                  Fréquence
+                </span>
+              </h2>
+              <p className="font-crimson text-lg md:text-xl italic text-stone-500 mb-4">
+                L'exemple d'une marche à la confluence Isle&nbsp;/&nbsp;Dordogne
+              </p>
+            </motion.div>
+
+            {/* Introduction */}
+            <motion.div variants={fadeUp} initial="hidden" whileInView="visible" viewport={{ once: true }} custom={1}
+              className="rounded-2xl p-6 md:p-8 mb-10 max-w-3xl mx-auto"
+              style={{ background: 'rgba(255,255,255,0.65)', border: '1px solid rgba(214,211,199,0.3)', backdropFilter: 'blur(8px)' }}>
+              <p className="font-crimson text-base md:text-lg leading-[1.85] text-stone-600 text-left">
+                Rejoindre une Marche du Vivant, c'est participer à une véritable <strong className="text-emerald-700">offensive de communication en faveur de la nature</strong> et des beaux projets de nos territoires. Ici, nous ne faisons pas que nous promener&nbsp;: nous nous mettons à l'écoute d'un monde en pleine transition.
+              </p>
+              <p className="font-crimson text-base md:text-lg leading-[1.85] text-stone-600 mt-4 text-left">
+                Avant même le premier pas, notre guide vous rassemble pour un <em>«&nbsp;Accordage&nbsp;»</em> d'une vingtaine de minutes. Nous partageons les fondamentaux de la biodiversité locale et les secrets de la bioacoustique, puis, inspirés par la tradition japonaise des marches <em>Kigo</em> du XVI<sup>e</sup>&nbsp;siècle, nous définissons ensemble le <strong className="text-emerald-700">mot de saison</strong> qui servira de boussole poétique à notre exploration.
+              </p>
+            </motion.div>
+
+            {/* Timeline */}
+            <div className="relative max-w-3xl mx-auto">
+              {/* Vertical line */}
+              <div className="absolute left-7 md:left-9 top-0 bottom-0 w-px print:bg-gray-300"
+                style={{ background: 'linear-gradient(to bottom, rgba(16,185,129,0.4), rgba(20,184,166,0.15))' }} />
+
+              <div className="space-y-6 md:space-y-8">
+                {/* Étape 1 */}
+                <motion.div variants={fadeUp} initial="hidden" whileInView="visible" viewport={{ once: true }} custom={2}
+                  className="flex gap-5 md:gap-6 items-start relative">
+                  <div className="flex-shrink-0 w-14 h-14 md:w-[4.5rem] md:h-[4.5rem] rounded-2xl flex flex-col items-center justify-center z-10 shadow-md"
+                    style={{ background: 'linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%)', border: '1px solid rgba(16,185,129,0.25)' }}>
+                    <Sparkles className="w-5 h-5 text-emerald-600 mb-0.5" />
+                    <span className="text-[10px] font-bold text-emerald-700 tracking-tight">09h</span>
+                  </div>
+                  <div className="pt-1 flex-1 rounded-2xl p-5 md:p-6 transition-all"
+                    style={{ background: 'rgba(255,255,255,0.7)', border: '1px solid rgba(214,211,199,0.3)', borderLeft: '3px solid #10b981' }}>
+                    <h3 className="font-semibold text-lg md:text-xl mb-2 text-stone-800">L'Accordage</h3>
+                    <p className="text-sm md:text-base leading-[1.8] text-stone-600 text-left">
+                      Accueil au bord de l'eau, dans la brume matinale. Le guide pose le cadre&nbsp;: le silence devient concentration stratégique. Nous croisons la poésie avec des relevés locaux pour comprendre l'évolution des sols et les dynamiques de l'écosystème. Ensemble, nous choisissons notre <em>Kigo</em> du jour&nbsp;: <em>«&nbsp;le givre sur le roseau&nbsp;»</em> ou <em>«&nbsp;le premier vol du héron&nbsp;»</em>.
+                    </p>
+                  </div>
+                </motion.div>
+
+                {/* Étape 2 */}
+                <motion.div variants={fadeUp} initial="hidden" whileInView="visible" viewport={{ once: true }} custom={3}
+                  className="flex gap-5 md:gap-6 items-start relative">
+                  <div className="flex-shrink-0 w-14 h-14 md:w-[4.5rem] md:h-[4.5rem] rounded-2xl flex flex-col items-center justify-center z-10 shadow-md"
+                    style={{ background: 'linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%)', border: '1px solid rgba(16,185,129,0.25)' }}>
+                    <Headphones className="w-5 h-5 text-emerald-600 mb-0.5" />
+                    <span className="text-[10px] font-bold text-emerald-700 tracking-tight">10h</span>
+                  </div>
+                  <div className="pt-1 flex-1 rounded-2xl p-5 md:p-6 transition-all"
+                    style={{ background: 'rgba(255,255,255,0.7)', border: '1px solid rgba(214,211,199,0.3)', borderLeft: '3px solid #0d9488' }}>
+                    <h3 className="font-semibold text-lg md:text-xl mb-2 text-stone-800">La Marche des Capteurs</h3>
+                    <p className="text-sm md:text-base leading-[1.8] text-stone-600 text-left">
+                      Le départ est donné. C'est l'heure d'ouvrir grand les oreilles et d'activer nos sens. Écouter à l'œil nu ou s'appuyer sur des outils de captation innovants&nbsp;: nous traquons la <strong className="text-emerald-700">Fréquence du Vivant</strong>. Le chant des oiseaux, la stridulation des insectes, le clapotis de la Dordogne… chaque son devient une donnée précieuse.
+                    </p>
+                  </div>
+                </motion.div>
+
+                {/* Étape 3 */}
+                <motion.div variants={fadeUp} initial="hidden" whileInView="visible" viewport={{ once: true }} custom={4}
+                  className="flex gap-5 md:gap-6 items-start relative">
+                  <div className="flex-shrink-0 w-14 h-14 md:w-[4.5rem] md:h-[4.5rem] rounded-2xl flex flex-col items-center justify-center z-10 shadow-md"
+                    style={{ background: 'linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%)', border: '1px solid rgba(16,185,129,0.25)' }}>
+                    <PenTool className="w-5 h-5 text-emerald-600 mb-0.5" />
+                    <span className="text-[10px] font-bold text-emerald-700 tracking-tight">11h</span>
+                  </div>
+                  <div className="pt-1 flex-1 rounded-2xl p-5 md:p-6 transition-all"
+                    style={{ background: 'rgba(255,255,255,0.7)', border: '1px solid rgba(214,211,199,0.3)', borderLeft: '3px solid #14b8a6' }}>
+                    <h3 className="font-semibold text-lg md:text-xl mb-2 text-stone-800">L'Éclosion Géopoétique</h3>
+                    <p className="text-sm md:text-base leading-[1.8] text-stone-600 text-left">
+                      Halte créative sur une berge sauvage. Inspirés par notre <em>Kigo</em> et les fréquences captées, nous prenons le temps de traduire l'expérience. Carnet en main, c'est le moment de noter, dessiner ou formuler quelques lignes de poésie contemporaine. Pas besoin d'être écrivain&nbsp;: la force du groupe et la beauté du cadre suffisent.
+                    </p>
+                  </div>
+                </motion.div>
+
+                {/* Étape 4 */}
+                <motion.div variants={fadeUp} initial="hidden" whileInView="visible" viewport={{ once: true }} custom={5}
+                  className="flex gap-5 md:gap-6 items-start relative">
+                  <div className="flex-shrink-0 w-14 h-14 md:w-[4.5rem] md:h-[4.5rem] rounded-2xl flex flex-col items-center justify-center z-10 shadow-md"
+                    style={{ background: 'linear-gradient(135deg, #10b981 0%, #0d9488 100%)' }}>
+                    <Heart className="w-5 h-5 text-white mb-0.5" />
+                    <span className="text-[10px] font-bold text-white tracking-tight">12h</span>
+                  </div>
+                  <div className="pt-1 flex-1 rounded-2xl p-5 md:p-6 transition-all"
+                    style={{ background: 'rgba(255,255,255,0.7)', border: '1px solid rgba(214,211,199,0.3)', borderLeft: '3px solid #047857' }}>
+                    <h3 className="font-semibold text-lg md:text-xl mb-2 text-stone-800">Le Banquet des Retours</h3>
+                    <p className="text-sm md:text-base leading-[1.8] text-stone-600 text-left">
+                      Fin de la boucle et partage des ressentis autour d'un moment convivial. On célèbre l'énergie du groupe et les découvertes de la matinée. Les marcheurs repartent comblés, avec des souvenirs poétiques plein la tête et une <strong className="text-emerald-700">compréhension renouvelée</strong> des initiatives écologiques qui font vibrer le territoire.
+                    </p>
+                  </div>
+                </motion.div>
+              </div>
+            </div>
+
+            {/* Transition vers calendrier */}
+            <motion.div variants={fadeUp} initial="hidden" whileInView="visible" viewport={{ once: true }} custom={6}
+              className="text-center mt-12 md:mt-16">
+              <p className="font-crimson text-lg md:text-xl italic text-stone-500 mb-4">
+                «&nbsp;Prêts à vivre cette expérience&nbsp;? Voici les prochains rendez-vous.&nbsp;»
+              </p>
+              <motion.div 
+                animate={{ y: [0, 6, 0] }} 
+                transition={{ repeat: Infinity, duration: 2, ease: 'easeInOut' }}
+                className="print:hidden"
+              >
+                <ArrowDown className="w-5 h-5 text-emerald-500/60 mx-auto" />
+              </motion.div>
+            </motion.div>
           </div>
         </section>
 
