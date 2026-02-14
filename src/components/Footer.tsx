@@ -55,6 +55,20 @@ const Footer = () => {
             </a>
             <div className="space-y-2">
               <Link 
+                to="/explorations-sensibles" 
+                className="flex items-center gap-2 text-muted-foreground hover:text-[#4ade80] transition-colors"
+              >
+                <Leaf size={16} />
+                <span>Explorations Sensibles</span>
+              </Link>
+              <a 
+                href="/bioacoustique/la-ou-elle-se-jette-je-me-redresse-a-bec-dambes--bec-dambes-gauriac" 
+                className="flex items-center gap-2 text-muted-foreground hover:text-[#4ade80] transition-colors"
+              >
+                <MapPin size={16} />
+                <span>Marches Sensibles</span>
+              </a>
+              <Link 
                 to="/marches-du-vivant" 
                 className="flex items-center gap-2 text-muted-foreground hover:text-[#4ade80] transition-colors font-medium"
                 onClick={() => {
@@ -66,25 +80,10 @@ const Footer = () => {
                 <Leaf size={16} />
                 <span>Les Marches du Vivant</span>
               </Link>
-              <a 
-                href="/bioacoustique/la-ou-elle-se-jette-je-me-redresse-a-bec-dambes--bec-dambes-gauriac" 
-                className="flex items-center gap-2 text-muted-foreground hover:text-[#4ade80] transition-colors"
-              >
-                <MapPin size={16} />
-                <span>Marches Sensibles</span>
-              </a>
-              <Link 
-                to="/explorations-sensibles" 
-                className="flex items-center gap-2 text-muted-foreground hover:text-[#4ade80] transition-colors"
-              >
-                <Leaf size={16} />
-                <span>Explorations Sensibles</span>
-              </Link>
               <Link 
                 to="/bioacoustique-poetique" 
                 className="flex items-center gap-2 text-muted-foreground hover:text-[#4ade80] transition-colors"
                 onClick={() => {
-                  // Scroll to top when navigating
                   setTimeout(() => {
                     window.scrollTo({ top: 0, behavior: 'smooth' });
                   }, 100);
