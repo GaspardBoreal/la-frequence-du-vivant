@@ -38,9 +38,9 @@ style={{ transform: flip ? 'scaleX(-1)' : undefined }}>
 /* Delicate divider with botanical dot */
 const SectionDivider = () =>
 <div className="flex items-center justify-center gap-4 py-2">
-    <div className="h-px w-16 bg-gradient-to-r from-transparent to-emerald-300/40" />
-    <div className="w-1.5 h-1.5 rounded-full bg-emerald-400/50" />
-    <div className="h-px w-16 bg-gradient-to-l from-transparent to-emerald-300/40" />
+    <div className="h-px w-16 bg-gradient-to-r from-transparent to-emerald-300/40 print-divider-line" />
+    <div className="w-1.5 h-1.5 rounded-full bg-emerald-400/50 print-divider-dot" />
+    <div className="h-px w-16 bg-gradient-to-l from-transparent to-emerald-300/40 print-divider-line" />
   </div>;
 
 
@@ -149,6 +149,18 @@ const MarchesDuVivantExplorer = () => {
 
       <div className="min-h-screen print-plaquette" style={{ background: 'linear-gradient(180deg, #fefdfb 0%, #f8f6f0 30%, #fefdfb 60%, #f5f3ed 100%)' }}>
 
+        {/* === PRINT-ONLY HEADER === */}
+        <div className="print-only-header hidden" style={{ padding: '1.5rem 2rem 1rem', borderBottom: '1px solid rgba(134,239,172,0.2)' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span style={{ fontFamily: "'Crimson Text', serif", fontSize: '1.1rem', fontWeight: 600, color: '#86efac', letterSpacing: '0.05em' }}>
+              🌿 Les Marches du Vivant
+            </span>
+            <span style={{ fontSize: '0.75rem', color: '#9ca3af', letterSpacing: '0.1em' }}>
+              la-frequence-du-vivant.lovable.app
+            </span>
+          </div>
+        </div>
+
         {/* === NAV === */}
         <nav className="print:hidden sticky top-0 z-50 backdrop-blur-md border-b border-stone-200/50" style={{ background: 'rgba(254,253,251,0.92)' }}>
           <div className="max-w-5xl mx-auto px-6 h-14 flex items-center justify-between">
@@ -170,9 +182,9 @@ const MarchesDuVivantExplorer = () => {
         {/* === HERO === */}
         <section className="relative pt-10 pb-10 md:pt-16 md:pb-14 px-6 text-center overflow-hidden">
           {/* Botanical ornaments */}
-          <BotanicalLeaf className="absolute top-8 left-4 md:left-16 w-20 md:w-28 text-emerald-800 print:hidden" />
-          <BotanicalLeaf className="absolute top-12 right-4 md:right-16 w-16 md:w-24 text-emerald-800 print:hidden" flip />
-          <BotanicalLeaf className="absolute bottom-0 left-1/4 w-14 text-emerald-700 opacity-50 print:hidden" />
+          <BotanicalLeaf className="absolute top-8 left-4 md:left-16 w-20 md:w-28 text-emerald-800 print-botanical" />
+          <BotanicalLeaf className="absolute top-12 right-4 md:right-16 w-16 md:w-24 text-emerald-800 print-botanical" flip />
+          <BotanicalLeaf className="absolute bottom-0 left-1/4 w-14 text-emerald-700 opacity-50 print-botanical" />
           
           {/* Soft radial glow */}
           <div className="absolute inset-0 print:hidden" style={{
@@ -237,7 +249,7 @@ const MarchesDuVivantExplorer = () => {
                   <div className="absolute top-0 right-0 w-24 h-24 opacity-[0.04] print:hidden"
                 style={{ background: `radial-gradient(circle at 100% 0%, currentColor 0%, transparent 70%)` }} />
                   
-                  <div className={`w-10 h-10 rounded-lg flex items-center justify-center mb-4 ${p.iconBg} shadow-sm`}>
+                  <div className={`w-10 h-10 rounded-lg flex items-center justify-center mb-4 ${p.iconBg} shadow-sm print-icon-box`}>
                     {p.icon}
                   </div>
                   <h3 className={`font-semibold text-base md:text-lg mb-3 bg-gradient-to-r ${p.accent} bg-clip-text text-transparent`}>
@@ -337,7 +349,7 @@ const MarchesDuVivantExplorer = () => {
           <div className="absolute inset-0 print:hidden" style={{
             background: 'linear-gradient(180deg, rgba(245,243,237,0.5) 0%, rgba(254,253,251,1) 100%)'
           }} />
-          <BotanicalLeaf className="absolute bottom-4 right-8 w-20 text-emerald-700 opacity-40 print:hidden" flip />
+          <BotanicalLeaf className="absolute bottom-4 right-8 w-20 text-emerald-700 opacity-40 print-botanical" flip />
 
           <div className="max-w-4xl mx-auto relative">
             <motion.div variants={fadeUp} initial="hidden" whileInView="visible" viewport={{ once: true }} custom={0} className="text-center mb-8">
@@ -390,8 +402,8 @@ const MarchesDuVivantExplorer = () => {
           <div className="absolute inset-0 print:hidden" style={{
             background: 'radial-gradient(ellipse 70% 50% at 30% 20%, rgba(16,185,129,0.07) 0%, transparent 60%), radial-gradient(ellipse 50% 40% at 80% 70%, rgba(20,184,166,0.05) 0%, transparent 60%)'
           }} />
-          <BotanicalLeaf className="absolute top-12 right-6 md:right-16 w-20 md:w-28 text-emerald-700 opacity-40 print:hidden" flip />
-          <BotanicalLeaf className="absolute bottom-16 left-4 md:left-12 w-16 text-emerald-700 opacity-30 print:hidden" />
+          <BotanicalLeaf className="absolute top-12 right-6 md:right-16 w-20 md:w-28 text-emerald-700 opacity-40 print-botanical" flip />
+          <BotanicalLeaf className="absolute bottom-16 left-4 md:left-12 w-16 text-emerald-700 opacity-30 print-botanical" />
 
           <div className="max-w-4xl mx-auto relative">
             {/* Header */}
@@ -562,12 +574,12 @@ const MarchesDuVivantExplorer = () => {
         </section>
 
         {/* === CTA FINAL === */}
-        <section className="py-14 md:py-20 px-6 relative overflow-hidden print:bg-white print:border-t print:border-gray-200">
+        <section className="py-14 md:py-20 px-6 relative overflow-hidden">
           <div className="absolute inset-0 print:hidden" style={{
             background: 'linear-gradient(135deg, rgba(16,185,129,0.06) 0%, rgba(245,243,237,0.9) 40%, rgba(20,184,166,0.04) 100%)'
           }} />
-          <BotanicalLeaf className="absolute top-8 left-8 w-16 text-emerald-700 opacity-40 print:hidden" />
-          <BotanicalLeaf className="absolute bottom-4 right-12 w-20 text-emerald-700 opacity-30 print:hidden" flip />
+          <BotanicalLeaf className="absolute top-8 left-8 w-16 text-emerald-700 opacity-40 print-botanical" />
+          <BotanicalLeaf className="absolute bottom-4 right-12 w-20 text-emerald-700 opacity-30 print-botanical" flip />
 
           <div className="max-w-3xl mx-auto text-center relative">
             <motion.div variants={fadeUp} initial="hidden" whileInView="visible" viewport={{ once: true }} custom={0}>
@@ -603,8 +615,16 @@ const MarchesDuVivantExplorer = () => {
           </div>
         </section>
 
-        <div className="bg-[hsl(160,30%,12%)]">
+        <div className="footer-wrapper bg-[hsl(160,30%,12%)]">
           <Footer />
+        </div>
+
+        {/* === PRINT-ONLY FOOTER === */}
+        <div className="print-only-footer hidden" style={{ padding: '1.5rem 2rem', borderTop: '1px solid rgba(134,239,172,0.2)', marginTop: '2rem' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.7rem', color: '#9ca3af' }}>
+            <span>La Fréquence du Vivant — Association loi 1901</span>
+            <span>contact@lafrequenceduvivant.fr · la-frequence-du-vivant.lovable.app</span>
+          </div>
         </div>
       </div>
 

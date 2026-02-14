@@ -552,43 +552,195 @@
   100% { transform: translateY(110%) rotate(180deg); opacity: 0; }
 }
 
-/* === PLAQUETTE PRINT STYLES === */
+/* === PLAQUETTE PRINT STYLES — Fond vert dégradé "Fréquence du Vivant" === */
 @media print {
-  .print-plaquette {
-    font-family: 'Crimson Text', Georgia, serif !important;
-    color: #111 !important;
-    background: white !important;
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
   }
 
+  .print-plaquette {
+    font-family: 'Crimson Text', Georgia, serif !important;
+    color: #f0f7f4 !important;
+    background: linear-gradient(180deg, #0c2a1a 0%, #134e3a 40%, #0f3d3e 100%) !important;
+  }
+
+  /* Masquer nav, footer, popup, boutons d'action */
   .print-plaquette nav,
   .print-plaquette footer,
-  .print:hidden {
+  .print-plaquette .footer-wrapper,
+  [data-radix-dialog-overlay],
+  [data-radix-dialog-content] {
     display: none !important;
   }
 
+  /* Sections */
   .print-plaquette section {
     page-break-inside: avoid;
-    padding-top: 2rem !important;
-    padding-bottom: 2rem !important;
+    padding-top: 1.5rem !important;
+    padding-bottom: 1.5rem !important;
+    background: transparent !important;
   }
 
-  .print-plaquette .print-card {
-    border: 1px solid #ddd !important;
-    background: white !important;
+  /* Titres */
+  .print-plaquette h1 {
+    font-size: 2.5rem !important;
+    color: #ffffff !important;
+    text-shadow: 0 1px 6px rgba(0,0,0,0.3);
+  }
+  .print-plaquette h2 {
+    font-size: 1.75rem !important;
+    color: #f0f7f4 !important;
+    page-break-after: avoid;
+    text-shadow: 0 1px 4px rgba(0,0,0,0.2);
+  }
+  .print-plaquette h3,
+  .print-plaquette h4 {
+    color: #d1fae5 !important;
+    page-break-after: avoid;
+  }
+
+  /* Sous-titres et labels */
+  .print-plaquette .tracking-\\[0\\.2em\\] {
+    color: #86efac !important;
+  }
+
+  /* Texte courant */
+  .print-plaquette p,
+  .print-plaquette span {
+    color: #d1d5db !important;
+  }
+  .print-plaquette strong {
+    color: #86efac !important;
+  }
+  .print-plaquette em {
+    color: #bbf7d0 !important;
+  }
+
+  /* Gradient text → couleur solide en print */
+  .print-plaquette .bg-clip-text {
+    -webkit-text-fill-color: #86efac !important;
+    background: none !important;
+    color: #86efac !important;
+  }
+
+  /* Cards & encadrés */
+  .print-plaquette .print-card,
+  .print-plaquette .rounded-2xl[style*="background"] {
+    background: rgba(255,255,255,0.08) !important;
+    border: 1px solid rgba(134,239,172,0.2) !important;
+    box-shadow: none !important;
+    backdrop-filter: none !important;
+  }
+
+  /* Pilier cards — icônes et texte */
+  .print-plaquette .print-icon-box {
+    background: rgba(134,239,172,0.15) !important;
+    color: #bbf7d0 !important;
+  }
+
+  /* Timeline vertical line */
+  .print-plaquette .w-px {
+    background: rgba(187,247,208,0.3) !important;
+  }
+
+  /* Timeline step boxes */
+  .print-plaquette .rounded-2xl .flex-shrink-0[style*="background"] {
+    background: rgba(134,239,172,0.15) !important;
+    border: 1px solid rgba(134,239,172,0.3) !important;
+  }
+  .print-plaquette .rounded-2xl .flex-shrink-0 span {
+    color: #86efac !important;
+  }
+
+  /* Timeline content cards — left border */
+  .print-plaquette .rounded-2xl[style*="borderLeft"] {
+    border-left-color: rgba(134,239,172,0.5) !important;
+    background: rgba(255,255,255,0.06) !important;
+  }
+
+  /* Zones blanches bars */
+  .print-plaquette .h-8.rounded-lg {
+    background: rgba(255,255,255,0.1) !important;
+  }
+  .print-plaquette .h-full.rounded-lg[style*="background"] {
+    background: linear-gradient(135deg, #10b981 0%, #34d399 100%) !important;
+  }
+
+  /* Badges */
+  .print-plaquette .rounded-full[style*="background"] {
+    background: rgba(134,239,172,0.12) !important;
+    border: 1px solid rgba(134,239,172,0.25) !important;
+    color: #86efac !important;
+  }
+
+  /* Role cards */
+  .print-plaquette .text-emerald-600,
+  .print-plaquette .text-teal-600,
+  .print-plaquette .text-sky-600,
+  .print-plaquette .text-amber-600 {
+    color: #86efac !important;
+  }
+
+  /* Calendrier */
+  .print-plaquette .text-emerald-700 {
+    color: #86efac !important;
+  }
+  .print-plaquette .text-stone-800,
+  .print-plaquette .text-stone-700 {
+    color: #f0f7f4 !important;
+  }
+  .print-plaquette .text-stone-600 {
+    color: #d1d5db !important;
+  }
+  .print-plaquette .text-stone-500,
+  .print-plaquette .text-stone-400 {
+    color: #9ca3af !important;
+  }
+
+  /* CTA final — inversion */
+  .print-plaquette button[style*="background: linear-gradient"] {
+    background: #ffffff !important;
+    color: #065f46 !important;
+    border: 2px solid #ffffff !important;
     box-shadow: none !important;
   }
+  .print-plaquette button[style*="background: linear-gradient"] svg {
+    color: #065f46 !important;
+  }
 
-  .print-plaquette h1 { font-size: 2.5rem !important; }
-  .print-plaquette h2 { font-size: 1.75rem !important; page-break-after: avoid; }
-  .print-plaquette h3, .print-plaquette h4 { page-break-after: avoid; }
+  /* SectionDivider — crème sur fond sombre */
+  .print-plaquette .print-divider-line {
+    background: rgba(187,247,208,0.3) !important;
+  }
+  .print-plaquette .print-divider-dot {
+    background: rgba(187,247,208,0.5) !important;
+  }
 
-  .print\\:bg-white { background: white !important; }
-  .print\\:border-t { border-top: 1px solid #ddd !important; }
-  .print\\:border-gray-200 { border-color: #e5e7eb !important; }
-  .print\\:shadow-none { box-shadow: none !important; }
-  .print\\:border { border: 1px solid #9ca3af !important; }
-  .print\\:border-gray-400 { border-color: #9ca3af !important; }
-  .print\\:bg-white { background: white !important; }
-  .print\\:text-gray-900 { color: #111827 !important; }
-  .print\\:bg-gray-300 { background: #d1d5db !important; }
+  /* Print-only header & footer */
+  .print-only-header,
+  .print-only-footer {
+    display: block !important;
+  }
+
+  /* Botanical ornaments — visible en filigrane crème */
+  .print-plaquette .print-botanical {
+    display: block !important;
+    opacity: 0.12 !important;
+    color: #bbf7d0 !important;
+  }
+
+  /* Radial glows hidden */
+  .print-plaquette div[style*="radial-gradient"] {
+    background: transparent !important;
+  }
+
+  /* Sparkles icon box */
+  .print-plaquette .w-12.h-12.rounded-xl[style*="background"] {
+    background: rgba(134,239,172,0.15) !important;
+    border: 1px solid rgba(134,239,172,0.3) !important;
+  }
+  .print-plaquette .text-emerald-600 {
+    color: #86efac !important;
+  }
 }
