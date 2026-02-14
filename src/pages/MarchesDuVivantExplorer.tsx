@@ -377,7 +377,7 @@ const MarchesDuVivantExplorer = () => {
                   Fréquence
                 </span>
               </h2>
-              <p className="font-crimson text-lg md:text-xl italic text-stone-500 mb-4">
+              <p className="font-crimson text-lg md:text-xl italic text-stone-500 mb-4 text-center">
                 L'exemple d'une marche à la confluence Isle&nbsp;/&nbsp;Dordogne
               </p>
             </motion.div>
