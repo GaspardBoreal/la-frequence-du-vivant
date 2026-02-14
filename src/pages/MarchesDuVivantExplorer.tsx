@@ -65,15 +65,6 @@ const MarchesDuVivantExplorer = () => {
       texte: "La marche n'est pas un sport, c'est une expérience du territoire. Chaque pas est un acte poétique et scientifique. Le marcheur écoute, ressens, nomme, témoigne."
     },
     {
-      icon: <Cpu className="w-6 h-6" />,
-      titre: 'Technologie Frugale',
-      accent: 'from-sky-600 to-indigo-600',
-      bg: 'bg-gradient-to-br from-sky-50/80 to-indigo-50/60',
-      border: 'border-sky-200/60',
-      iconBg: 'bg-sky-100/80 text-sky-700',
-      texte: "Pas de surconsommation de données. L'application traite ce que le marcheur rapporte avec sobriété et précision. L'IA est au service du vivant, pas l'inverse."
-    },
-    {
       icon: <Users className="w-6 h-6" />,
       titre: 'Science Participative',
       accent: 'from-amber-600 to-orange-600',
@@ -81,6 +72,15 @@ const MarchesDuVivantExplorer = () => {
       border: 'border-amber-200/60',
       iconBg: 'bg-amber-100/80 text-amber-700',
       texte: "Chaque observation rejoint une base de connaissance collective. Vous contribuez à la cartographie du vivant, pour les scientifiques et pour les générations futures."
+    },
+    {
+      icon: <Cpu className="w-6 h-6" />,
+      titre: 'Technologie Frugale',
+      accent: 'from-sky-600 to-indigo-600',
+      bg: 'bg-gradient-to-br from-sky-50/80 to-indigo-50/60',
+      border: 'border-sky-200/60',
+      iconBg: 'bg-sky-100/80 text-sky-700',
+      texte: "Pas de surconsommation de données. L'application traite ce que le marcheur rapporte avec sobriété et précision. L'IA est au service du vivant, pas l'inverse."
     }
   ];
 
