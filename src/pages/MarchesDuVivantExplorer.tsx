@@ -464,7 +464,7 @@ const MarchesDuVivantExplorer = () => {
                     style={{ background: 'rgba(255,255,255,0.7)', border: '1px solid rgba(214,211,199,0.3)', borderLeft: '3px solid #047857' }}>
                     <h3 className="font-semibold text-lg md:text-xl mb-2 text-stone-800">Le Banquet des Retours</h3>
                     <p className="text-sm md:text-base leading-[1.8] text-stone-600 text-left">
-                      Fin de la boucle et partage des ressentis autour d'un moment convivial. On célèbre l'énergie du groupe et les découvertes de la matinée. Les marcheurs repartent comblés, avec des souvenirs poétiques plein la tête et une <strong className="text-emerald-700">compréhension renouvelée</strong> des initiatives écologiques qui font vibrer le territoire.
+                      Fin de la boucle et partage des ressentis autour d'un moment convivial. On célèbre l'énergie du groupe et les découvertes de la matinée. Les marcheurs repartent avec des souvenirs poétiques plein la tête et une <strong className="text-emerald-700">compréhension renouvelée</strong> des initiatives écologiques qui font vibrer le territoire.
                     </p>
                   </div>
                 </motion.div>
