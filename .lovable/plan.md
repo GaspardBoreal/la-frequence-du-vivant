@@ -1,62 +1,78 @@
 
-# Popup "Rejoindre l'aventure" -- Inscription immersive et intergenerationnelle
+# Refonte complete du PDF imprimable -- Plaquette marketing "La Frequence du Vivant"
 
 ## Objectif
 
-Transformer le clic sur "Rejoindre l'aventure" en un moment memorable : au lieu de rediriger vers /contact, une popup elegante s'ouvre avec le calendrier des 3 prochaines marches, un texte inspirant et un formulaire d'inscription leger. L'experience doit seduire aussi bien un adolescent curieux qu'un retraite amoureux de la nature.
+Transformer le rendu PDF/impression de la page `/marches-du-vivant/explorer` : passer d'un fond blanc generique a une veritable plaquette marketing professionnelle sur fond vert degrade, fidele a l'identite visuelle de La Frequence du Vivant.
 
-## Design de la popup
+## Concept visuel
 
-### Structure visuelle
-- **Dialog Radix** plein ecran sur mobile, centree sur desktop (max-w-xl)
-- Fond avec degrade subtil emerald/teal et ornement botanique en filigrane
-- Animation d'entree douce (scale + fade)
+Le PDF imprime utilisera un degrade de verts profonds (foret sombre vers emeraude) comme fond principal, avec du texte clair (blanc casse, creme) et des accents dores/ambre. L'esprit : un document que l'on poserait sur la table d'un conseil municipal ou d'une direction RSE, et qui inspire immediatement confiance et emerveillement.
 
-### Contenu de la popup (de haut en bas)
+## Modifications techniques
 
-**1. En-tete emotionnel**
-- Icone Sparkles animee (pulse doux)
-- Titre serif : *"Votre premiere Frequence vous attend"*
-- Sous-titre : *"Choisissez votre rendez-vous avec le vivant"*
+### 1. Fichier `src/index.css` -- Refonte complete du bloc `@media print`
 
-**2. Les 3 dates du calendrier -- Cards cliquables**
-Chaque date est une card selectionnable (radio-style) :
-- **8-9 mars 2026** -- "Printemps des Poetes" -- Badge "Comite reduit" -- Icone flocon/bourgeon
-- **24-25 mai 2026** -- "Fete de la Nature" -- Badge "Comite elargi" -- Icone fleur
-- **21 juin 2026** -- "Solstice d'ete" -- Badge "Lancement officiel" -- Icone soleil -- Mise en avant avec bordure doree
+**Fond et couleurs globales :**
+- Fond principal : degrade vertical du vert foret profond (`#0c2a1a`) vers emeraude sombre (`#134e3a`) puis vers teal nuit (`#0f3d3e`)
+- Texte principal : blanc casse (`#f0f7f4`) au lieu du noir
+- Activation de `-webkit-print-color-adjust: exact` et `print-color-adjust: exact` pour forcer les navigateurs a imprimer les couleurs de fond
 
-Chaque card affiche un petit texte evocateur et l'indication "Gratuit -- Ouvert a tous".
+**Titres et hierarchie :**
+- `h1`, `h2` : blanc pur ou creme clair avec un leger text-shadow pour la lisibilite
+- Sous-titres et labels : teinte menthe/emeraude claire (`#86efac`)
+- Texte courant : gris tres clair (`#d1d5db`) pour le contraste sur fond sombre
 
-**3. Phrase de reassurance intergenerationnelle**
-Texte en italique serif :
-*"Aucune condition d'age, de forme physique ou de connaissance prealable. Venez comme vous etes, repartez transformes."*
+**Cards et encadres (`.print-card`) :**
+- Fond semi-transparent vert clair (`rgba(255,255,255,0.08)`) avec bordure fine emeraude (`rgba(134,239,172,0.2)`)
+- Pas de fond blanc force
 
-**4. Formulaire minimaliste**
-- Champ prenom (obligatoire)
-- Champ email (obligatoire)
-- Bouton "Je m'inscris" avec gradient emerald et animation hover
-- Mention discrete : "Nous vous enverrons uniquement les informations de la marche choisie."
+**Badges et accents :**
+- Les badges conservent des teintes emeraude/ambre claires adaptees au fond sombre
 
-**5. Pied de popup**
-- Lien discret "En savoir plus sur les Marches" vers le haut de la page
-- Bouton fermer (X) elegant en haut a droite
+**CTA "Rejoindre l'aventure" :**
+- Version print : fond blanc, texte vert fonce, bordure blanche -- pour ressortir sur le fond sombre
 
-### Interactions
-- Au clic sur une card de date, elle se selectionne visuellement (bordure emerald, fond leger)
-- Au submit, un toast de confirmation s'affiche : "Bienvenue parmi les Marcheurs du Vivant !"
-- Le formulaire ne fait pas d'appel backend (pas de Supabase connecte) : il affiche juste le toast de confirmation
+**Ligne verticale de timeline :**
+- Blanc/creme semi-transparent au lieu du gris
 
-## Modification technique
+**Elements caches :**
+- Nav, footer, popup, boutons d'action : toujours masques a l'impression
+- Les ornements botaniques SVG : rendus visibles en print avec une opacite augmentee en blanc/creme pour enrichir le fond vert
 
-### Fichier modifie
-`src/pages/MarchesDuVivantExplorer.tsx` uniquement
+### 2. Fichier `src/pages/MarchesDuVivantExplorer.tsx` -- Ajustements print
 
-### Changements
-1. **Imports** : Ajouter `Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription` depuis `@/components/ui/dialog`, plus les icones `Sun, Flower2, Snowflake` de lucide-react
-2. **State** : Ajouter `useState` pour `popupOpen` (boolean), `selectedDate` (string | null), `prenom` (string), `email` (string)
-3. **Bouton CTA** : Transformer le `<a>` "Rejoindre l'aventure" (ligne 561-571) en `<button>` qui ouvre la popup via `setPopupOpen(true)` au lieu de naviguer vers /contact
-4. **Composant Dialog** : Inserer le Dialog juste avant la fermeture du composant, contenant toute la structure decrite ci-dessus
-5. **Gestion submit** : Au submit, afficher un toast Sonner de bienvenue et fermer la popup
+**Classes print ajoutees sur les elements cles :**
+- Sections : ajout de classes `print:` pour adapter les couleurs de texte (blanc sur fond sombre)
+- Cards des piliers : classes `print:` pour basculer texte et icones en clair
+- Timeline (etapes de l'experience) : bordures et textes adaptes au fond sombre
+- Bars de zones blanches : visibles sur fond sombre
+- Calendrier : texte clair
+- CTA final : inversion des couleurs pour impression
 
-### Compatibilite impression
-La popup n'apparait pas a l'impression (comportement natif du Dialog Radix qui utilise un portal).
+**Ornements botaniques :**
+- Retrait du `print:hidden` sur les SVG botaniques pour qu'ils apparaissent en filigrane creme/vert clair sur le PDF
+
+**Ajout d'un en-tete print-only :**
+- Un bandeau discret en haut de la premiere page avec le nom "Les Marches du Vivant" et le site web, visible uniquement a l'impression (`hidden print:block`)
+
+**Ajout d'un pied de page print-only :**
+- Coordonnees, site web, mention "Association loi 1901" -- visible uniquement a l'impression
+
+### 3. Resume des sections du PDF
+
+Le document imprime contiendra dans l'ordre :
+1. **Couverture** : Titre "Devenez Marcheur du Vivant", baseline poetique, mention "Gratuit -- Ouvert a tous"
+2. **Les fondations** : 3 piliers (Geopoetique, Science Participative, Technologie Frugale)
+3. **Comment ca marche** : 3 etapes numerotees
+4. **Votre progression** : 4 roles (Marcheur > Eclaireur > Ambassadeur > Sentinelle)
+5. **Les zones blanches** : Explication + barres de multiplicateurs
+6. **Vivez l'experience** : Recit immersif en 4 temps (09h-12h)
+7. **Calendrier de lancement** : 3 dates
+8. **CTA de cloture** : "Rejoignez les premiers Marcheurs du Vivant"
+
+### 4. Contraintes techniques
+
+- `print-color-adjust: exact` est necessaire sur Chrome/Edge pour forcer l'impression du fond colore
+- Les degrades CSS fonctionnent a l'impression sur les navigateurs modernes
+- Les textes en `bg-clip-text text-transparent` (gradient text) seront remplaces par une couleur solide claire en print via des classes utilitaires Tailwind
