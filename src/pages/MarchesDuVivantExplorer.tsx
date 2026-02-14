@@ -442,7 +442,7 @@ const MarchesDuVivantExplorer = () => {
                   style={{ background: 'rgba(255,255,255,0.7)', border: '1px solid rgba(214,211,199,0.3)', borderLeft: '3px solid #10b981' }}>
                     <h3 className="font-semibold text-lg md:text-xl mb-2 text-stone-800">L'Accordage</h3>
                     <p className="text-sm md:text-base leading-[1.8] text-stone-600 text-left">
-                      Accueil au bord de l'eau, dans la brume matinale. Le guide pose le cadre&nbsp;: le silence devient concentration stratégique. Nous croisons la poésie avec des relevés locaux pour comprendre l'évolution des sols et les dynamiques de l'écosystème. Ensemble, nous choisissons notre <em>Kigo</em> du jour&nbsp;: <em>«&nbsp;le givre sur le roseau&nbsp;»</em> ou <em>«&nbsp;le premier vol du héron&nbsp;»</em>.
+                      Accueil au bord de l'eau, dans la brume matinale. Le guide pose le cadre&nbsp;: le silence devient concentration stratégique. Nous croisons la poésie avec des relevés locaux pour comprendre l'évolution des sols et les dynamiques de l'écosystème. Ensemble, nous choisissons notre <em>Kigo</em> du jour&nbsp;: <em>«&nbsp;le givre sur le roseau&nbsp;»</em>, <em>«&nbsp;le premier vol du héron&nbsp;»</em>, ...
                     </p>
                   </div>
                 </motion.div>
@@ -774,7 +774,8 @@ const MarchesDuVivantExplorer = () => {
           </div>
         </DialogContent>
       </Dialog>
-    </>;
+    </>
+  );
 };
 
 export default MarchesDuVivantExplorer;
