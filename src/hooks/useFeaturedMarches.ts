@@ -28,18 +28,25 @@ export interface FeaturedMarche {
  * Hook to fetch the most "complete" marches for the showcase
  * Completeness = photos + audio + biodiversity data
  */
-export const useFeaturedMarches = (limit: number = 5, includeAll: boolean = false) => {
+export const useFeaturedMarches = (limit: number = 5, includeAll: boolean = false, specificIds?: string[]) => {
   return useQuery({
-    queryKey: ['featured-marches', limit, includeAll],
+    queryKey: ['featured-marches', limit, includeAll, specificIds],
     queryFn: async (): Promise<FeaturedMarche[]> => {
-      // Fetch only marches visible to readers (linked to an exploration with proper status)
-      const { data: visibleLinks } = await supabase
-        .from('exploration_marches')
-        .select('marche_id')
-        .in('publication_status', ['published_public', 'published_readers']);
+      let allowedIds: string[];
 
-      const allowedIds = [...new Set((visibleLinks || []).map(l => l.marche_id))];
-      if (allowedIds.length === 0) return [];
+      if (specificIds && specificIds.length > 0) {
+        // Use the specific IDs directly, no visibility check needed
+        allowedIds = specificIds;
+      } else {
+        // Fetch only marches visible to readers (linked to an exploration with proper status)
+        const { data: visibleLinks } = await supabase
+          .from('exploration_marches')
+          .select('marche_id')
+          .in('publication_status', ['published_public', 'published_readers']);
+
+        allowedIds = [...new Set((visibleLinks || []).map(l => l.marche_id))];
+        if (allowedIds.length === 0) return [];
+      }
 
       // Fetch marches with basic info (only allowed ones)
       const { data: marchesData, error: marchesError } = await supabase
@@ -131,6 +138,12 @@ export const useFeaturedMarches = (limit: number = 5, includeAll: boolean = fals
           completeness_score: completenessScore
         };
       });
+
+      // If specific IDs were requested, preserve their order
+      if (specificIds && specificIds.length > 0) {
+        const byId = new Map(featuredMarches.map(m => [m.id, m]));
+        return specificIds.map(id => byId.get(id)).filter(Boolean) as FeaturedMarche[];
+      }
 
       // Sort by completeness and return top N (or all if includeAll)
       const filtered = featuredMarches

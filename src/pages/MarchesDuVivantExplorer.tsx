@@ -51,7 +51,12 @@ const MarchesDuVivantExplorer = () => {
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [prenom, setPrenom] = useState('');
   const [email, setEmail] = useState('');
-  const { data: featuredMarches } = useFeaturedMarches(3);
+  const EXPLORER_MARCHE_IDS = [
+    'b88f774b-3131-4ff5-8f2a-1dd682f8b6de', // Bec d'Ambès
+    '8ab7818c-f8d0-4432-9093-12c65a3db117', // Gintrac
+    'fd99ffe8-edf4-4cdd-99f4-66c3dd2d9d57', // Bergerac
+  ];
+  const { data: featuredMarches } = useFeaturedMarches(3, false, EXPLORER_MARCHE_IDS);
 
   const popupDates = [
   { id: 'mars', date: '8-9 mars 2026', titre: 'Printemps des Poètes', badge: 'Comité réduit', icon: <Snowflake className="w-5 h-5" />, desc: 'L\'éveil du printemps, quand la nature murmure ses premiers secrets.', highlight: false },
