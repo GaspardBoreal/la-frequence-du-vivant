@@ -1,54 +1,53 @@
 
 
-# Incitation vers les Carnets de Terrain depuis la page Explorer
+# Carte Carnet de Terrain -- Variante "Lumiere" pour la page Explorer
 
-## Positionnement strategique
+## Probleme
 
-L'emplacement ideal est **entre la section "Vivez l'experience" (timeline) et le "Calendrier de lancement"** (entre les lignes 530 et 532 du fichier actuel).
+Le composant `CarnetTerrainCard` actuel est concu pour un fond sombre (page galerie). Sur la page Explorer (fond creme/clair), les textes et badges sont peu lisibles car ils utilisent des couleurs claires (`text-foreground`, `text-emerald-400/80`, etc.) pensees pour un fond noir.
 
-**Pourquoi ici ?** Le lecteur vient de vivre mentalement une marche complete (Accordage, Capteurs, Eclosion, Banquet). Il est en immersion. C'est le moment parfait pour lui montrer que **d'autres l'ont deja fait** -- la preuve par l'image. Cela cree un effet de validation sociale juste avant le calendrier et le CTA d'inscription.
+Image 1 (Explorer, fond clair) : textes quasi invisibles, badges decolores.
+Image 2 (Galerie, fond sombre) : rendu correct et lisible.
 
-## Concept : "Les Traces de Ceux qui ont Marche"
+## Solution
 
-Une section editoriale elegante avec :
+Creer un composant **`CarnetTerrainCardLight`** dedie a la page Explorer, avec une palette adaptee au fond clair :
 
-- Un titre poetique : *"Ils ont marche. Voici leurs traces."*
-- **2 a 3 cartes de Carnets de Terrain** (les plus riches en donnees, chargees dynamiquement via `useFeaturedMarches`)
-- Un lien d'appel discret mais seduisant vers la galerie complete
+### Differences visuelles par rapport a la version sombre
 
-## Design de la section
+| Element | Version sombre (galerie) | Version lumiere (Explorer) |
+|---|---|---|
+| Fond carte | `bg-white/[0.06]` glassmorphe | `bg-white` avec ombre douce |
+| Bordure | `border-emerald-500/10` | `border-stone-200` hover `border-emerald-400/40` |
+| Titre | `text-foreground` (clair) | `text-stone-800` hover `text-emerald-700` |
+| Lieu | `text-muted-foreground` | `text-stone-500` |
+| Badge especes | `text-emerald-400/80 bg-emerald-500/10` | `text-emerald-700 bg-emerald-50` |
+| Badge photos | `text-sky-400/80 bg-sky-500/10` | `text-sky-700 bg-sky-50` |
+| Badge audio | `text-amber-400/80 bg-amber-500/10` | `text-amber-700 bg-amber-50` |
+| Region chip | `bg-amber-500/20 text-amber-200` | `bg-emerald-600/80 text-white` |
+| Date chip | `bg-black/30 text-white/70` | `bg-white/70 text-stone-600` |
+| Ombre hover | glow emeraude | ombre stone douce |
 
-### Layout
-- Fond subtil avec radial gradient emeraude tres leger (coherent avec le reste de la page)
-- Ornement botanique en filigrane
-- Titre en Crimson Text, sous-titre en italique
-- Grille de 1 a 3 cartes responsive (1 col mobile, 2-3 cols desktop)
-- Chaque carte reprend le style `CarnetTerrainCard` existant mais adapte au fond clair de la page Explorer (bordures stone au lieu de emeraude, fond blanc semi-transparent)
+### Rendu attendu
 
-### Les cartes
-- Photo de couverture avec overlay
-- Nom poetique de la marche
-- Lieu + badges (especes, photos, audio)
-- Lien cliquable vers la fiche individuelle
-
-### Lien vers la galerie
-- Sous les cartes : un lien elegant centre
-- Style : texte emeraude avec chevron, hover avec underline
-- Texte : *"Decouvrir tous les carnets de terrain"* avec une fleche
+Cartes blanches epurees avec coins arrondis, ombre portee subtile, badges aux couleurs saturees lisibles sur fond clair, typographie Crimson Text en stone fonce. Coherent avec l'esthetique editorial de la page Explorer.
 
 ## Modifications techniques
 
-### Fichier unique : `src/pages/MarchesDuVivantExplorer.tsx`
+### 1. Nouveau fichier : `src/components/carnets/CarnetTerrainCardLight.tsx`
 
-1. Importer `useFeaturedMarches` et `Link` (deja importe)
-2. Importer `CarnetTerrainCard` depuis `@/components/carnets/CarnetTerrainCard`
-3. Importer les icones supplementaires necessaires (`BookOpen`)
-4. Appeler `useFeaturedMarches(3)` pour charger les 3 marches les plus riches
-5. Inserer une nouvelle section entre "Vivez l'experience" et le `SectionDivider` qui precede le Calendrier
-6. La section contient : titre, sous-titre, grille de cartes, lien galerie
-7. Gerer le cas de chargement (skeleton ou rien) et le cas vide (section masquee)
+- Copie structurelle de `CarnetTerrainCard` (meme interface, meme logique de slug/date)
+- Palette entierement remappee pour fond clair (voir tableau ci-dessus)
+- Ombre CSS : `shadow-sm hover:shadow-lg` au lieu de glow emeraude
+- Meme ratio 4/3, meme layout de badges, meme animation framer-motion
 
-### Pas de nouveau fichier
+### 2. Modifier `src/pages/MarchesDuVivantExplorer.tsx`
 
-Le composant `CarnetTerrainCard` existant sera reutilise tel quel. La section est ajoutee directement dans la page.
+- Remplacer l'import de `CarnetTerrainCard` par `CarnetTerrainCardLight`
+- Utiliser `CarnetTerrainCardLight` dans la grille de la section "Carnets de terrain"
+- Aucun autre changement
+
+### Aucun impact sur la galerie
+
+Le composant `CarnetTerrainCard` original reste inchange. La page `/marches-du-vivant/carnets-de-terrain` continue d'utiliser la version sombre.
 
