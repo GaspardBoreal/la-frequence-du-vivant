@@ -61,7 +61,7 @@ const CarnetTerrainHero: React.FC<CarnetTerrainHeroProps> = ({ totalMarches, tot
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.3 }}
-          className="text-muted-foreground text-lg md:text-xl max-w-xl mx-auto mb-10 font-serif italic"
+          className="text-muted-foreground text-lg md:text-xl max-w-xl mx-auto mb-10 font-serif italic text-center"
         >
           Chaque marche est un acte de présence au vivant.
           <br />
