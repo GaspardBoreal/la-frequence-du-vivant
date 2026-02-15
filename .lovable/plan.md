@@ -1,53 +1,45 @@
 
 
-# Carte Carnet de Terrain -- Variante "Lumiere" pour la page Explorer
+# Remplacer les 3 marches de la galerie light par des marches specifiques
 
-## Probleme
+## Objectif
 
-Le composant `CarnetTerrainCard` actuel est concu pour un fond sombre (page galerie). Sur la page Explorer (fond creme/clair), les textes et badges sont peu lisibles car ils utilisent des couleurs claires (`text-foreground`, `text-emerald-400/80`, etc.) pensees pour un fond noir.
+Au lieu de charger dynamiquement les 3 marches les plus "completes" via `useFeaturedMarches(3)`, afficher exactement ces 3 marches :
 
-Image 1 (Explorer, fond clair) : textes quasi invisibles, badges decolores.
-Image 2 (Galerie, fond sombre) : rendu correct et lisible.
+1. La ou elle se jette, je me redresse a Bec d'Ambes
+2. L'arbre a papillon du moulin Grand de Gintrac
+3. Un moment sauvage a la sortie de Bergerac
 
-## Solution
+## Approche technique
 
-Creer un composant **`CarnetTerrainCardLight`** dedie a la page Explorer, avec une palette adaptee au fond clair :
+### Fichier a modifier : `src/hooks/useFeaturedMarches.ts`
 
-### Differences visuelles par rapport a la version sombre
+Ajouter un parametre optionnel `specificIds` au hook. Quand des IDs sont fournis, le hook charge uniquement ces marches (dans l'ordre donne) au lieu de trier par completude.
 
-| Element | Version sombre (galerie) | Version lumiere (Explorer) |
-|---|---|---|
-| Fond carte | `bg-white/[0.06]` glassmorphe | `bg-white` avec ombre douce |
-| Bordure | `border-emerald-500/10` | `border-stone-200` hover `border-emerald-400/40` |
-| Titre | `text-foreground` (clair) | `text-stone-800` hover `text-emerald-700` |
-| Lieu | `text-muted-foreground` | `text-stone-500` |
-| Badge especes | `text-emerald-400/80 bg-emerald-500/10` | `text-emerald-700 bg-emerald-50` |
-| Badge photos | `text-sky-400/80 bg-sky-500/10` | `text-sky-700 bg-sky-50` |
-| Badge audio | `text-amber-400/80 bg-amber-500/10` | `text-amber-700 bg-amber-50` |
-| Region chip | `bg-amber-500/20 text-amber-200` | `bg-emerald-600/80 text-white` |
-| Date chip | `bg-black/30 text-white/70` | `bg-white/70 text-stone-600` |
-| Ombre hover | glow emeraude | ombre stone douce |
+### Fichier a modifier : `src/pages/MarchesDuVivantExplorer.tsx`
 
-### Rendu attendu
+Passer les 3 IDs en dur au hook :
 
-Cartes blanches epurees avec coins arrondis, ombre portee subtile, badges aux couleurs saturees lisibles sur fond clair, typographie Crimson Text en stone fonce. Coherent avec l'esthetique editorial de la page Explorer.
+```
+const EXPLORER_MARCHE_IDS = [
+  'b88f774b-3131-4ff5-8f2a-1dd682f8b6de', // Bec d'Ambes
+  '8ab7818c-f8d0-4432-9093-12c65a3db117', // Gintrac
+  'fd99ffe8-edf4-4cdd-99f4-66c3dd2d9d57', // Bergerac
+];
 
-## Modifications techniques
+const { data: featuredMarches } = useFeaturedMarches(3, false, EXPLORER_MARCHE_IDS);
+```
 
-### 1. Nouveau fichier : `src/components/carnets/CarnetTerrainCardLight.tsx`
+### Detail du changement dans le hook
 
-- Copie structurelle de `CarnetTerrainCard` (meme interface, meme logique de slug/date)
-- Palette entierement remappee pour fond clair (voir tableau ci-dessus)
-- Ombre CSS : `shadow-sm hover:shadow-lg` au lieu de glow emeraude
-- Meme ratio 4/3, meme layout de badges, meme animation framer-motion
+Dans `useFeaturedMarches.ts` :
+- Ajouter le parametre `specificIds?: string[]`
+- L'inclure dans la `queryKey`
+- Si `specificIds` est fourni et non vide, remplacer la requete initiale sur `exploration_marches` par un filtre `.in('id', specificIds)` directement sur `marches`
+- Conserver l'ordre des IDs fournis (pas de tri par completude)
+- Toute la logique existante (photos, audio, biodiversite) reste inchangee
 
-### 2. Modifier `src/pages/MarchesDuVivantExplorer.tsx`
+### Aucun impact sur la galerie principale
 
-- Remplacer l'import de `CarnetTerrainCard` par `CarnetTerrainCardLight`
-- Utiliser `CarnetTerrainCardLight` dans la grille de la section "Carnets de terrain"
-- Aucun autre changement
-
-### Aucun impact sur la galerie
-
-Le composant `CarnetTerrainCard` original reste inchange. La page `/marches-du-vivant/carnets-de-terrain` continue d'utiliser la version sombre.
+La page `/marches-du-vivant/carnets-de-terrain` continue d'appeler `useFeaturedMarches(5)` sans `specificIds`, donc son comportement est inchange.
 
