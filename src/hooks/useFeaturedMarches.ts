@@ -28,9 +28,9 @@ export interface FeaturedMarche {
  * Hook to fetch the most "complete" marches for the showcase
  * Completeness = photos + audio + biodiversity data
  */
-export const useFeaturedMarches = (limit: number = 5) => {
+export const useFeaturedMarches = (limit: number = 5, includeAll: boolean = false) => {
   return useQuery({
-    queryKey: ['featured-marches', limit],
+    queryKey: ['featured-marches', limit, includeAll],
     queryFn: async (): Promise<FeaturedMarche[]> => {
       // Fetch marches with basic info
       const { data: marchesData, error: marchesError } = await supabase
@@ -122,11 +122,11 @@ export const useFeaturedMarches = (limit: number = 5) => {
         };
       });
 
-      // Sort by completeness and return top N
-      return featuredMarches
-        .filter(m => m.photos_count > 0 || m.total_species > 0) // Only marches with some content
-        .sort((a, b) => b.completeness_score - a.completeness_score)
-        .slice(0, limit);
+      // Sort by completeness and return top N (or all if includeAll)
+      const filtered = featuredMarches
+        .filter(m => includeAll || m.photos_count > 0 || m.total_species > 0)
+        .sort((a, b) => b.completeness_score - a.completeness_score);
+      return includeAll ? filtered : filtered.slice(0, limit);
     },
     staleTime: 1000 * 60 * 30, // 30 minutes
     gcTime: 1000 * 60 * 60 * 2, // 2 hours

@@ -61,7 +61,8 @@ import MarchesDuVivantEntreprises from './pages/MarchesDuVivantEntreprises';
 import MarchesDuVivantPartenaires from './pages/MarchesDuVivantPartenaires';
 import MarchesDuVivantAssociation from './pages/MarchesDuVivantAssociation';
 import MarchesDuVivantExplorer from './pages/MarchesDuVivantExplorer';
-// CRM Pages
+import CarnetsDeTerrainGalerie from './pages/CarnetsDeTerrainGalerie';
+import CarnetDeTerrain from './pages/CarnetDeTerrain';
 import CrmDashboard from './pages/CrmDashboard';
 import CrmPipeline from './pages/CrmPipeline';
 import TeamManagement from './pages/TeamManagement';
@@ -90,6 +91,8 @@ function App() {
             <Route path="/marches-du-vivant/partenaires" element={<MarchesDuVivantPartenaires />} />
             <Route path="/marches-du-vivant/association" element={<MarchesDuVivantAssociation />} />
             <Route path="/marches-du-vivant/explorer" element={<MarchesDuVivantExplorer />} />
+            <Route path="/marches-du-vivant/carnets-de-terrain" element={<CarnetsDeTerrainGalerie />} />
+            <Route path="/marches-du-vivant/carnets-de-terrain/:slug" element={<CarnetDeTerrain />} />
             
             {/* Routes explorations */}
             <Route path="/explorations" element={<ExplorationsList />} />
