@@ -1,62 +1,50 @@
 
 
-# Navigation Précédent / Suivant — Carnets de Terrain
+# Filtrage des Carnets de Terrain -- Marches visibles aux lecteurs uniquement
 
-## Concept Design
+## Probleme
 
-Un composant de navigation **"swipe-inspired"** mobile-first, elegant et coherent avec l'esthetique geopoetique :
+Le hook `useFeaturedMarches` charge toutes les marches de la table `marches` sans verifier :
+1. Si elles sont associees a une exploration (table `exploration_marches`)
+2. Si leur statut de publication est "Visible aux lecteurs" (`published_public` ou `published_readers`)
 
-### Mobile (prioritaire)
-- **Barre fixe en bas de l'ecran** (sticky bottom), semi-transparente avec backdrop-blur (glassmorphisme)
-- Deux zones tactiles larges : fleche gauche (precedent) + fleche droite (suivant)
-- Au centre : nom abrege de la marche courante + indicateur de position ("3 / 15")
-- Quand on maintient/survole une fleche : le nom de la marche precedente/suivante apparait en slide-up subtil
-- Hauteur : 60px, suffisamment large pour les pouces
-- Disparait au scroll vers le bas (lecture), reapparait au scroll vers le haut (navigation)
+Resultat : des marches orphelines et des brouillons apparaissent dans la galerie et les fiches.
 
-### Desktop
-- Meme barre mais plus raffinee : le nom complet des marches prev/next est toujours visible
-- Layout : `← Nom precedent | 3/15 | Nom suivant →`
-- Max-width 4xl, centree, coins arrondis, legere elevation
+## Solution
 
-### Interaction
-- Le tri suit l'ordre par "score de completude" (identique a la galerie) pour coherence
-- Si premiere marche : fleche gauche desactivee (opacite reduite)
-- Si derniere marche : fleche droite desactivee
-- Transition de page en fade (deja geree par le router)
+### Fichier unique a modifier : `src/hooks/useFeaturedMarches.ts`
 
-## Modifications techniques
+Ajouter une requete prealable sur `exploration_marches` pour ne garder que les marches visibles :
 
-### Fichier `src/pages/CarnetDeTerrain.tsx`
+1. **Charger les marches autorisees** : Requeter `exploration_marches` filtree sur `publication_status IN ('published_public', 'published_readers')` pour obtenir la liste des `marche_id` eligibles
+2. **Filtrer les marches** : Utiliser `.in('id', allowedMarcheIds)` sur la requete principale `marches` au lieu de charger toutes les marches
+3. **Cas vide** : Si aucune marche autorisee, retourner un tableau vide immediatement
 
-1. **Calculer prev/next** a partir de `allMarches` (deja charge) :
-   - Trier par `completeness_score` descendant (meme ordre que la galerie)
-   - Trouver l'index de la marche courante
-   - Extraire `prevMarche` et `nextMarche`
+### Changement concret
 
-2. **Ajouter le composant de navigation** juste avant le `<Footer />` :
-   - Barre sticky `fixed bottom-0` avec `bg-background/80 backdrop-blur-lg border-t border-emerald-500/10`
-   - Deux `<Link>` (prev/next) avec les slugs calcules
-   - Indicateur central : position / total
-   - Classes responsive : sur mobile, noms tronques ; sur desktop, noms complets
-   - Z-index eleve pour rester au-dessus du contenu
-   - Padding-bottom sur le contenu principal pour compenser la barre fixe
+Avant la requete existante sur `marches`, ajouter :
 
-3. **Auto-hide au scroll** :
-   - Un petit hook `useScrollDirection` qui detecte scroll up vs down
-   - La barre se translate vers le bas (cachee) au scroll down, remonte au scroll up
-   - Transition CSS `transform 0.3s ease`
+```
+// Fetch only marches visible to readers (linked to an exploration with proper status)
+const { data: visibleLinks } = await supabase
+  .from('exploration_marches')
+  .select('marche_id')
+  .in('publication_status', ['published_public', 'published_readers']);
 
-### Aucun nouveau fichier necessaire
+const allowedIds = [...new Set((visibleLinks || []).map(l => l.marche_id))];
+if (allowedIds.length === 0) return [];
+```
 
-Tout le code sera integre directement dans `CarnetDeTerrain.tsx` pour rester simple : le hook scroll direction (quelques lignes) + le JSX de la barre de navigation.
+Puis modifier la requete `marches` existante pour ajouter `.in('id', allowedIds)`.
 
-### Style visuel
+### Impact
 
-- Fond : `bg-background/80 backdrop-blur-xl`
-- Bordure superieure : `border-t border-emerald-500/15`
-- Fleches : icones `ChevronLeft` / `ChevronRight` en emeraude
-- Noms des marches : `font-crimson` en `text-foreground/80`, tronques avec `truncate` sur mobile
-- Indicateur : `text-xs text-muted-foreground font-mono`
-- Desactivee : `opacity-30 pointer-events-none`
+- **Galerie** (`/marches-du-vivant/carnets-de-terrain`) : N'affiche que les marches visibles aux lecteurs
+- **Fiches individuelles** : La navigation prev/next ne propose que des marches visibles
+- **Compteurs hero** : Refletent uniquement les marches publiees
+- Aucun changement sur les autres pages qui utilisent d'autres hooks
+
+### Pas de nouveau fichier, pas de migration
+
+Une seule modification dans le hook existant, environ 8 lignes ajoutees.
 
