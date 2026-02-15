@@ -13,7 +13,7 @@ import { Dialog, DialogContent, DialogTitle, DialogDescription } from '@/compone
 import { Input } from '@/components/ui/input';
 import * as VisuallyHidden from '@radix-ui/react-visually-hidden';
 import { useFeaturedMarches } from '@/hooks/useFeaturedMarches';
-import CarnetTerrainCard from '@/components/carnets/CarnetTerrainCard';
+import CarnetTerrainCardLight from '@/components/carnets/CarnetTerrainCardLight';
 
 const fadeUp = {
   hidden: { opacity: 0, y: 24 },
@@ -559,7 +559,7 @@ const MarchesDuVivantExplorer = () => {
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-5 md:gap-6">
                   {featuredMarches.map((marche, index) => (
-                    <CarnetTerrainCard key={marche.id} marche={marche} index={index} />
+                    <CarnetTerrainCardLight key={marche.id} marche={marche} index={index} />
                   ))}
                 </div>
 
