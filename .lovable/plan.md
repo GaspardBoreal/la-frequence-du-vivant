@@ -1,52 +1,126 @@
 
-# Correction du PDF imprimable -- Texte invisible sur fond vert
+# Carnets de Terrain -- Galerie des Marches et Fiches Ambassadeur
 
-## Diagnostic
+## Concept et Naming
 
-Le PDF imprime un fond vert degrade correctement, mais presque tout le texte est invisible car :
+Le nom retenu pour les fiches individuelles est **"Carnet de Terrain"** (au singulier pour chaque fiche). La galerie s'intitule **"Carnets de Terrain"**. Ce nom evoque l'authenticite du travail de terrain, la dimension scientifique (carnet de notes) et poetique (carnet de voyage) -- parfait pour inspirer ambassadeurs et marcheurs.
 
-1. **Inline styles non surcharges** : Les titres h1, h2 utilisent `style={{ color: '#1a1a18' }}` (quasi-noir). Les CSS print ne peuvent pas surcharger des styles inline sans cibler directement les elements avec `!important` sur des selecteurs plus specifiques ou universels.
-2. **Selecteurs CSS trop etroits** : Le print CSS cible `.print-plaquette .text-stone-600` mais beaucoup de textes utilisent des inline styles ou des classes non couvertes.
-3. **Cards avec fond blanc semi-transparent** : Les `rgba(255,255,255,0.65)` sur les cards sont trop transparents sur fond sombre, rendant le texte illisible.
+## Les 3 marches emblematiques selectionnees
 
-## Solution
+Basees sur la richesse des donnees (photos, audio, biodiversite, recits) :
 
-### Fichier `src/index.css` -- Selecteurs print agressifs
+1. **"Confluence Dore et Dogne, la ou tout commence"** -- Mont-Dore, Puy-de-Dome (27 photos, 5 audios, 250 especes) -- La marche la plus complete, un sommet geopoetique en Auvergne
+2. **"Archeologie d'un Non-Pont"** -- Beynac-et-Cazenac, Dordogne (13 photos, 2 audios, 264 especes) -- Un titre enigmatique, un territoire iconique de la vallee de la Dordogne
+3. **"Contempler le genie humain face a la puissance de la Dordogne"** -- Bort-les-Orgues, Correze (12 photos, 2 audios, 232 especes) -- La rencontre entre l'infrastructure humaine et la force du vivant
 
-Remplacer les selecteurs print actuels (lignes 555-746) par une approche "noyau dur" :
+## Architecture technique
 
-- **Forcer TOUS les textes en clair** : `.print-plaquette h1, .print-plaquette h2, .print-plaquette h3, .print-plaquette h4, .print-plaquette p, .print-plaquette span, .print-plaquette em, .print-plaquette strong, .print-plaquette li, .print-plaquette label` avec `color: #f0f7f4 !important` en regle universelle
-- **Cibler specifiquement les inline styles** : Ajouter des attributs-selecteurs comme `.print-plaquette [style*="color"]` pour forcer la couleur claire meme sur les elements avec style inline
-- **Titres h1/h2** : `color: #ffffff !important` (blanc pur)
-- **Accents (strong, em, labels)** : `color: #86efac !important` (menthe)
-- **Cards** : Augmenter l'opacite du fond a `rgba(255,255,255,0.12)` pour creer un contraste subtil mais suffisant
+### Nouveaux fichiers a creer
 
-### Fichier `src/pages/MarchesDuVivantExplorer.tsx` -- Retirer les inline styles pour le print
+**1. `src/pages/CarnetsDeTerrainGalerie.tsx`** -- Page galerie
+- Route : `/marches-du-vivant/carnets-de-terrain`
+- Design : grille immersive de cartes avec filtres (region, saison, richesse biodiversite)
+- Chaque carte montre : photo de couverture, nom poetique, lieu, date, badges (especes, photos, audio)
+- Filtres : par region (chips), par saison (printemps/ete/automne/hiver), tri par richesse ou date
+- Utilise le hook `useFeaturedMarches` enrichi pour charger les donnees
+- Style : fond vert degrade profond (coherent avec l'identite La Frequence du Vivant), cards en glassmorphisme blanc semi-transparent
 
-Approche complementaire et plus fiable :
+**2. `src/pages/CarnetDeTerrain.tsx`** -- Page fiche individuelle
+- Route : `/marches-du-vivant/carnets-de-terrain/:slug`
+- Design editorial en sections verticales inspirees du format "Trame Ambassadeur"
 
-- **Titres (h1, h2)** : Ajouter des classes `print:!text-white` sur les elements qui utilisent `style={{ color: '#1a1a18' }}`
-- **Paragraphes** : Ajouter `print:!text-gray-200` sur les elements `text-stone-600`, `text-stone-500`
-- **Gradient text** (`bg-clip-text text-transparent`) : Ajouter `print:!bg-none print:!text-emerald-300` pour que le texte soit lisible en print
-- **Cards de timeline** : Ajouter `print:!bg-white/10 print:!border-emerald-400/30` pour un contraste subtil sur fond sombre
-- **Roles / piliers** : Ajouter `print:!text-gray-100` sur les descriptions
+**3. `src/components/carnets/CarnetTerrainCard.tsx`** -- Composant carte pour la galerie
+- Photo de couverture avec overlay gradient
+- Nom poetique de la marche en typographie Crimson
+- Lieu (ville + departement) avec icone MapPin
+- Badges : nombre d'especes, photos, audio
+- Region en chip colore
+- Effet hover avec scale subtil et elevation
 
-## Recapitulatif des corrections par section PDF
+**4. `src/components/carnets/CarnetTerrainFilters.tsx`** -- Barre de filtres
+- Chips de regions cliquables
+- Filtre saison (4 boutons icones)
+- Tri : "Plus riches" / "Plus recentes"
 
-| Section | Probleme | Correction |
-|---------|----------|------------|
-| Couverture (p.1) | Texte visible sauf baseline | Classe `print:!text-gray-200` sur paragraphes |
-| Piliers (p.1-2) | Tout invisible | Classes `print:!text-white` sur titres, `print:!text-gray-200` sur texte, `print:!bg-none print:!text-emerald-300` sur gradient text |
-| Comment ca marche (p.2) | Tout invisible | Idem + cards avec `print:!bg-white/10` |
-| Progression (p.2) | Tout invisible | Roles + descriptions en clair |
-| Zones blanches (p.2-3) | Tout invisible | Texte explicatif + barres en clair |
-| Timeline experience (p.3) | Tout invisible sauf ligne | Titres h3 + paragraphes en clair, time boxes adaptees |
-| Calendrier (p.4) | Partiellement visible | Deja presque bon, ajuster les labels |
-| CTA (p.4) | Visible | Pas de changement necessaire |
+**5. `src/components/carnets/CarnetTerrainHero.tsx`** -- Hero de la galerie
+- Titre "Carnets de Terrain" avec typographie Crimson
+- Sous-titre geopoetique
+- Compteurs animes (nombre total de marches, especes, photos)
 
-## Strategie technique
+### Fichiers a modifier
 
-La double approche (CSS universels + classes Tailwind `print:`) garantit que :
-- Les inline styles sont surcharges par les selecteurs CSS agressifs
-- Les classes Tailwind `print:!` servent de "filet de securite" element par element
-- Le rendu est coherent sur Chrome, Firefox et Safari
+**6. `src/App.tsx`** -- Ajout des 2 nouvelles routes
+```
+/marches-du-vivant/carnets-de-terrain  --> CarnetsDeTerrainGalerie
+/marches-du-vivant/carnets-de-terrain/:slug  --> CarnetDeTerrain
+```
+
+**7. `src/hooks/useFeaturedMarches.ts`** -- Extension optionnelle
+- Ajouter un parametre `includeAll` pour retourner toutes les marches avec donnees (pas seulement le top N)
+
+## Design de la Fiche "Carnet de Terrain" (page individuelle)
+
+Structure verticale inspiree de la Trame Ambassadeur :
+
+### Section 1 -- Hero immersif
+- Photo de couverture plein ecran (ou demi-ecran) avec overlay gradient vert sombre
+- Titre poetique (nom_marche) en blanc, grand, typographie Crimson
+- Lieu + date + badges (especes, photos, audio) superposes sur l'image
+- Bouton retour vers la galerie
+
+### Section 2 -- "Le Territoire" (contexte geographique)
+- Mini-carte Leaflet centree sur les coordonnees
+- Region, departement, coordonnees
+- Badge biodiversite (nombre d'especes)
+- Descriptif court si disponible
+
+### Section 3 -- "La Trame" (protocole Ambassadeur adapte)
+- Timeline verticale en 4 temps (09h-12h) reprenant la structure Accordage / Marche des Capteurs / Eclosion Geopoetique / Banquet des Retours
+- Adaptation du contenu au contexte specifique de la marche (paysage, saison)
+- 5 suggestions de Kigo adaptes au lieu et a la saison de la marche
+
+### Section 4 -- "Les Traces" (galerie photo + audio)
+- Grille masonry des photos de la marche
+- Lecteurs audio integres si des fichiers audio existent
+- Lien vers la page de detail existante (`/marche/:slug`)
+
+### Section 5 -- "Les Especes" (biodiversite)
+- Compteurs animes : total especes, oiseaux, plantes, champignons
+- Visualisation simple (barres horizontales ou cercles)
+
+### Section 6 -- CTA Ambassadeur
+- "Reproduisez cette marche dans votre territoire"
+- Lien vers la page B2C (`/marches-du-vivant/explorer`)
+- Lien vers le formulaire de contact B2B
+
+## Design de la Galerie
+
+### Layout
+- Header hero avec titre + compteurs
+- Barre de filtres sticky sous le hero
+- Grille responsive : 1 col mobile, 2 cols tablette, 3 cols desktop
+- Cards avec ratio 4:3 pour la photo, contenu en dessous
+- Infinite scroll ou pagination douce
+
+### Filtres disponibles
+- **Region** : chips extraites dynamiquement des donnees (Nouvelle-Aquitaine, Auvergne-Rhone-Alpes, Bretagne, Corse...)
+- **Saison** : Printemps (mars-mai), Ete (juin-aout), Automne (sept-nov), Hiver (dec-fev) -- calcule depuis la date
+- **Tri** : "Plus riches en donnees" (score de completude) / "Plus recentes"
+- **Recherche textuelle** : filtre sur nom_marche + ville
+
+### Style visuel (DA geopoetique)
+- Fond : degrade du vert foret profond (#0c2a1a) vers emeraude (#134e3a) -- coherent avec le print
+- Cards : glassmorphisme (fond blanc a 8% opacite, bordure emeraude subtile, backdrop-blur)
+- Typographie : Crimson Text pour les titres, sans-serif pour le corps
+- Accents : emeraude (#10b981), ambre (#f59e0b) pour les highlights, blanc casse (#f0f7f4)
+- Ornements botaniques SVG en filigrane (reutilisation du composant BotanicalLeaf)
+- Animations : fade-up au scroll (framer-motion), scale subtil au hover sur les cards
+
+## Contraintes et coherence
+
+- Reutilisation maximale des composants existants (BotanicalLeaf, SectionDivider, Footer, SEOHead)
+- Reutilisation du hook `useFeaturedMarches` enrichi et du `createSlug` existant
+- Navigation coherente : lien depuis le hub `/marches-du-vivant` et depuis la page B2C `/marches-du-vivant/explorer`
+- Les fiches individuelles pointent vers les pages de detail existantes (`/marche/:slug`) pour les contenus approfondis
+- Responsive mobile-first
+- SEO : balises meta dynamiques par fiche
