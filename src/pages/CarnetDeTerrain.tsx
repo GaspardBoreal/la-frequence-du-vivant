@@ -1,8 +1,8 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState, useEffect, useCallback } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { HelmetProvider } from 'react-helmet-async';
 import { motion } from 'framer-motion';
-import { ArrowLeft, MapPin, Calendar, Leaf, Camera, Headphones, Bird, Flower2, TreeDeciduous, Clock } from 'lucide-react';
+import { ArrowLeft, MapPin, Calendar, Leaf, Camera, Headphones, Bird, Flower2, TreeDeciduous, Clock, ChevronLeft, ChevronRight } from 'lucide-react';
 import SEOHead from '@/components/SEOHead';
 import Footer from '@/components/Footer';
 import BotanicalLeaf from '@/components/carnets/BotanicalLeaf';
@@ -12,6 +12,27 @@ import { supabase } from '@/integrations/supabase/client';
 import { createSlug } from '@/utils/slugGenerator';
 import { getSeasonFromDate, getKigoSuggestions } from '@/components/carnets/carnetUtils';
 import { Loader2 } from 'lucide-react';
+
+/* ── Scroll direction hook ── */
+function useScrollDirection() {
+  const [visible, setVisible] = useState(true);
+  const [lastY, setLastY] = useState(0);
+
+  const onScroll = useCallback(() => {
+    const y = window.scrollY;
+    if (y < 100) { setVisible(true); }
+    else if (y > lastY + 10) { setVisible(false); }
+    else if (y < lastY - 10) { setVisible(true); }
+    setLastY(y);
+  }, [lastY]);
+
+  useEffect(() => {
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, [onScroll]);
+
+  return visible;
+}
 
 /* ── Trame Ambassadeur data ── */
 const TRAME_STEPS = [
@@ -79,6 +100,21 @@ const CarnetDeTerrain: React.FC = () => {
     return allMarches.find(m => createSlug(m.nom_marche || '', m.ville) === slug);
   }, [allMarches, slug]);
 
+  // Compute prev/next marches
+  const { prevMarche, nextMarche, currentIndex, total } = useMemo(() => {
+    if (!allMarches || !marche) return { prevMarche: null, nextMarche: null, currentIndex: -1, total: 0 };
+    const sorted = [...allMarches].sort((a, b) => b.completeness_score - a.completeness_score);
+    const idx = sorted.findIndex(m => m.id === marche.id);
+    return {
+      prevMarche: idx > 0 ? sorted[idx - 1] : null,
+      nextMarche: idx < sorted.length - 1 ? sorted[idx + 1] : null,
+      currentIndex: idx,
+      total: sorted.length,
+    };
+  }, [allMarches, marche]);
+
+  const navVisible = useScrollDirection();
+
   // Fetch photos + audio for this marche
   const { data: photos } = useQuery({
     queryKey: ['carnet-photos', marche?.id],
@@ -138,7 +174,7 @@ const CarnetDeTerrain: React.FC = () => {
 
   return (
     <HelmetProvider>
-      <div className="min-h-screen bg-background">
+      <div className="min-h-screen bg-background pb-16">
         <SEOHead
           title={`${displayName} — Carnet de Terrain`}
           description={marche.descriptif_court || `Carnet de terrain : ${displayName}, ${marche.ville}. ${marche.total_species} espèces, ${marche.photos_count} photos.`}
@@ -405,6 +441,58 @@ const CarnetDeTerrain: React.FC = () => {
         </section>
 
         <Footer />
+
+        {/* ═══ Navigation Précédent / Suivant ═══ */}
+        <nav
+          className={`fixed bottom-0 left-0 right-0 z-50 transition-transform duration-300 ease-in-out ${
+            navVisible ? 'translate-y-0' : 'translate-y-full'
+          }`}
+        >
+          <div className="bg-background/80 backdrop-blur-xl border-t border-emerald-500/15">
+            <div className="max-w-4xl mx-auto flex items-center h-[60px]">
+              {/* Prev */}
+              {prevMarche ? (
+                <Link
+                  to={`/marches-du-vivant/carnets-de-terrain/${createSlug(prevMarche.nom_marche || '', prevMarche.ville)}`}
+                  className="flex items-center gap-2 px-4 h-full flex-1 min-w-0 group transition-colors hover:bg-white/[0.04]"
+                >
+                  <ChevronLeft className="w-5 h-5 text-emerald-500 shrink-0" />
+                  <span className="font-crimson text-foreground/80 truncate text-sm hidden md:block">
+                    {prevMarche.nom_marche || prevMarche.ville}
+                  </span>
+                </Link>
+              ) : (
+                <div className="flex items-center gap-2 px-4 h-full flex-1 opacity-30 pointer-events-none">
+                  <ChevronLeft className="w-5 h-5 text-muted-foreground shrink-0" />
+                </div>
+              )}
+
+              {/* Center indicator */}
+              <div className="shrink-0 px-3 text-center">
+                <span className="text-xs text-muted-foreground font-mono">
+                  {currentIndex + 1} / {total}
+                </span>
+              </div>
+
+              {/* Next */}
+              {nextMarche ? (
+                <Link
+                  to={`/marches-du-vivant/carnets-de-terrain/${createSlug(nextMarche.nom_marche || '', nextMarche.ville)}`}
+                  className="flex items-center justify-end gap-2 px-4 h-full flex-1 min-w-0 group transition-colors hover:bg-white/[0.04]"
+                >
+                  <span className="font-crimson text-foreground/80 truncate text-sm hidden md:block">
+                    {nextMarche.nom_marche || nextMarche.ville}
+                  </span>
+                  <ChevronRight className="w-5 h-5 text-emerald-500 shrink-0" />
+                </Link>
+              ) : (
+                <div className="flex items-center justify-end gap-2 px-4 h-full flex-1 opacity-30 pointer-events-none">
+                  <ChevronRight className="w-5 h-5 text-muted-foreground shrink-0" />
+                </div>
+              )}
+            </div>
+          </div>
+        </nav>
       </div>
     </HelmetProvider>
   );
