@@ -32,10 +32,20 @@ export const useFeaturedMarches = (limit: number = 5, includeAll: boolean = fals
   return useQuery({
     queryKey: ['featured-marches', limit, includeAll],
     queryFn: async (): Promise<FeaturedMarche[]> => {
-      // Fetch marches with basic info
+      // Fetch only marches visible to readers (linked to an exploration with proper status)
+      const { data: visibleLinks } = await supabase
+        .from('exploration_marches')
+        .select('marche_id')
+        .in('publication_status', ['published_public', 'published_readers']);
+
+      const allowedIds = [...new Set((visibleLinks || []).map(l => l.marche_id))];
+      if (allowedIds.length === 0) return [];
+
+      // Fetch marches with basic info (only allowed ones)
       const { data: marchesData, error: marchesError } = await supabase
         .from('marches')
-        .select('id, nom_marche, ville, region, departement, date, descriptif_court, latitude, longitude');
+        .select('id, nom_marche, ville, region, departement, date, descriptif_court, latitude, longitude')
+        .in('id', allowedIds);
 
       if (marchesError) throw marchesError;
       if (!marchesData || marchesData.length === 0) return [];
