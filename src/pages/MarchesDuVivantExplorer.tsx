@@ -5,13 +5,15 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   ArrowLeft, Leaf, Cpu, Users, Footprints, Map, TrendingUp,
   Printer, Share2, Calendar, ChevronRight, Sparkles, Eye, Shield, Heart,
-  Headphones, PenTool, ArrowDown, Sun, Flower2, Snowflake, X } from
+  Headphones, PenTool, ArrowDown, Sun, Flower2, Snowflake, X, BookOpen } from
 'lucide-react';
 import Footer from '@/components/Footer';
 import { toast } from 'sonner';
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import * as VisuallyHidden from '@radix-ui/react-visually-hidden';
+import { useFeaturedMarches } from '@/hooks/useFeaturedMarches';
+import CarnetTerrainCard from '@/components/carnets/CarnetTerrainCard';
 
 const fadeUp = {
   hidden: { opacity: 0, y: 24 },
@@ -49,6 +51,7 @@ const MarchesDuVivantExplorer = () => {
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [prenom, setPrenom] = useState('');
   const [email, setEmail] = useState('');
+  const { data: featuredMarches } = useFeaturedMarches(3);
 
   const popupDates = [
   { id: 'mars', date: '8-9 mars 2026', titre: 'Printemps des Poètes', badge: 'Comité réduit', icon: <Snowflake className="w-5 h-5" />, desc: 'L\'éveil du printemps, quand la nature murmure ses premiers secrets.', highlight: false },
@@ -528,6 +531,54 @@ const MarchesDuVivantExplorer = () => {
             </motion.div>
           </div>
         </section>
+
+        {/* === CARNETS DE TERRAIN — Social Proof === */}
+        {featuredMarches && featuredMarches.length > 0 && (
+          <>
+            <SectionDivider />
+            <section className="py-10 md:py-16 px-6 relative overflow-hidden">
+              {/* Subtle radial glow */}
+              <div className="absolute inset-0 print:hidden" style={{
+                background: 'radial-gradient(ellipse 70% 50% at 50% 50%, rgba(16,185,129,0.04) 0%, transparent 70%)'
+              }} />
+              <BotanicalLeaf className="absolute -bottom-10 -right-6 w-32 text-emerald-700 opacity-30 print:hidden" flip />
+
+              <div className="max-w-5xl mx-auto relative">
+                <motion.div variants={fadeUp} initial="hidden" whileInView="visible" viewport={{ once: true }} custom={0} className="text-center mb-10">
+                  <p className="text-xs font-semibold tracking-[0.2em] uppercase text-emerald-600/70 mb-4 flex items-center justify-center gap-2">
+                    <BookOpen className="w-3.5 h-3.5" />
+                    Carnets de terrain
+                  </p>
+                  <h2 className="font-crimson text-2xl md:text-4xl font-semibold mb-3" style={{ color: '#1a1a18' }}>
+                    Ils ont marché. Voici leurs traces.
+                  </h2>
+                  <p className="font-crimson text-base md:text-lg italic text-stone-500 max-w-lg mx-auto leading-relaxed">
+                    Photos, sons, espèces observées — chaque carnet raconte un territoire à hauteur de pas.
+                  </p>
+                </motion.div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-5 md:gap-6">
+                  {featuredMarches.map((marche, index) => (
+                    <CarnetTerrainCard key={marche.id} marche={marche} index={index} />
+                  ))}
+                </div>
+
+                <motion.div variants={fadeUp} initial="hidden" whileInView="visible" viewport={{ once: true }} custom={4}
+                  className="text-center mt-8">
+                  <Link
+                    to="/marches-du-vivant/carnets-de-terrain"
+                    className="inline-flex items-center gap-2 text-emerald-700 hover:text-emerald-800 font-medium text-sm group transition-colors"
+                  >
+                    <span className="border-b border-emerald-300/0 group-hover:border-emerald-500 transition-all pb-0.5">
+                      Découvrir tous les carnets de terrain
+                    </span>
+                    <ChevronRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
+                  </Link>
+                </motion.div>
+              </div>
+            </section>
+          </>
+        )}
 
         <SectionDivider />
 
