@@ -94,18 +94,29 @@ async function getGbifSample(lat: number, lng: number, radiusKm: number, limit =
   }
 }
 
-async function reverseGeocode(lat: number, lng: number): Promise<string> {
+async function reverseGeocode(lat: number, lng: number, retry = true): Promise<string> {
+  const fallback = `${lat.toFixed(3)}, ${lng.toFixed(3)}`;
   try {
     const resp = await fetch(
       `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=14&addressdetails=1`,
       { headers: { 'User-Agent': 'LaFrequenceDuVivant/1.0' } }
     );
-    if (!resp.ok) return `${lat.toFixed(3)}, ${lng.toFixed(3)}`;
+    if (!resp.ok) {
+      if (retry) {
+        await new Promise(r => setTimeout(r, 600));
+        return reverseGeocode(lat, lng, false);
+      }
+      return fallback;
+    }
     const data = await resp.json();
     const addr = data.address;
-    return addr?.hamlet || addr?.village || addr?.town || addr?.city || addr?.municipality || data.display_name?.split(',')[0] || `${lat.toFixed(3)}, ${lng.toFixed(3)}`;
+    return addr?.hamlet || addr?.village || addr?.town || addr?.city || addr?.municipality || data.display_name?.split(',')[0] || fallback;
   } catch {
-    return `${lat.toFixed(3)}, ${lng.toFixed(3)}`;
+    if (retry) {
+      await new Promise(r => setTimeout(r, 600));
+      return reverseGeocode(lat, lng, false);
+    }
+    return fallback;
   }
 }
 
