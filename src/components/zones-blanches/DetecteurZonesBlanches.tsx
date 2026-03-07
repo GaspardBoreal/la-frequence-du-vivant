@@ -11,6 +11,15 @@ import 'leaflet/dist/leaflet.css';
 
 const ITEMS_PER_PAGE = 4;
 
+// Detect if a label is just raw GPS coordinates (geocoding failed)
+function getDisplayLabel(zone: ZoneResult): string {
+  const label = zone.label;
+  if (!label) return 'Lieu-dit non référencé';
+  // Matches patterns like "46.521, 0.297" or "-1.234, 45.678"
+  if (/^-?\d+\.\d+,\s*-?\d+\.\d+$/.test(label.trim())) return 'Lieu-dit non référencé';
+  return label;
+}
+
 // ─── Intensity spectrum ───
 interface IntensityLevel {
   level: number;
