@@ -471,7 +471,7 @@ const DetecteurZonesBlanches = () => {
                             >
                               <Tooltip direction="top" offset={[0, -8]}>
                                 <div className="text-xs leading-tight">
-                                  <strong>{zone.label || `${zone.lat.toFixed(3)}, ${zone.lng.toFixed(3)}`}</strong>
+                                  <strong>{getDisplayLabel(zone)}</strong>
                                   <br />
                                   <span style={{ color: intensity.color }}>{intensity.name}</span> · {zone.distance_km} km · <span className="text-stone-400">{zone.resolution === 'nano' ? '🔬 100m' : zone.resolution === 'zoom' ? '🔍 200m' : '📡 600m'}</span>
                                   <br />
