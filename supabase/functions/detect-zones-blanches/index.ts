@@ -94,7 +94,7 @@ async function getGbifSample(lat: number, lng: number, radiusKm: number, limit =
   }
 }
 
-async function reverseGeocode(lat: number, lng: number, retry = true): Promise<string> {
+async function reverseGeocode(lat: number, lng: number, retriesLeft = 2): Promise<string> {
   const fallback = `${lat.toFixed(3)}, ${lng.toFixed(3)}`;
   try {
     const resp = await fetch(
@@ -102,19 +102,20 @@ async function reverseGeocode(lat: number, lng: number, retry = true): Promise<s
       { headers: { 'User-Agent': 'LaFrequenceDuVivant/1.0' } }
     );
     if (!resp.ok) {
-      if (retry) {
-        await new Promise(r => setTimeout(r, 600));
-        return reverseGeocode(lat, lng, false);
+      if (retriesLeft > 0) {
+        await new Promise(r => setTimeout(r, 1000));
+        return reverseGeocode(lat, lng, retriesLeft - 1);
       }
       return fallback;
     }
     const data = await resp.json();
     const addr = data.address;
-    return addr?.hamlet || addr?.village || addr?.town || addr?.city || addr?.municipality || data.display_name?.split(',')[0] || fallback;
+    const name = addr?.hamlet || addr?.village || addr?.town || addr?.city || addr?.municipality || data.display_name?.split(',')[0];
+    return name || fallback;
   } catch {
-    if (retry) {
-      await new Promise(r => setTimeout(r, 600));
-      return reverseGeocode(lat, lng, false);
+    if (retriesLeft > 0) {
+      await new Promise(r => setTimeout(r, 1000));
+      return reverseGeocode(lat, lng, retriesLeft - 1);
     }
     return fallback;
   }
