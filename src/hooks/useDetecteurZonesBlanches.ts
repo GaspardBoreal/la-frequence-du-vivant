@@ -58,12 +58,12 @@ export const useDetecteurZonesBlanches = () => {
 
     setIsLoading(true);
     setResults(null);
-    setScanPhase('Phase 1/3 — Radar (2km)…');
+    setScanPhase('Phase 1/3 — Maillage (600m)…');
 
     try {
       // Simulate phase updates via timing (edge function runs all phases server-side)
-      const phaseTimer1 = setTimeout(() => setScanPhase('Phase 2/3 — Loupe (500m)…'), 4000);
-      const phaseTimer2 = setTimeout(() => setScanPhase('Phase 3/3 — Microscope (200m)…'), 9000);
+      const phaseTimer1 = setTimeout(() => setScanPhase('Phase 2/3 — Zoom (200m)…'), 5000);
+      const phaseTimer2 = setTimeout(() => setScanPhase('Phase 3/3 — Nano (100m)…'), 12000);
 
       const { data, error } = await supabase.functions.invoke('detect-zones-blanches', {
         body: { latitude, longitude },

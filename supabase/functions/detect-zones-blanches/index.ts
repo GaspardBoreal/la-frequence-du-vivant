@@ -5,21 +5,22 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
 };
 
-// 8 cardinal directions in radians
-const DIRECTIONS_8 = [
-  0, Math.PI / 4, Math.PI / 2, 3 * Math.PI / 4,
-  Math.PI, 5 * Math.PI / 4, 3 * Math.PI / 2, 7 * Math.PI / 4,
-];
-
-// 4 cardinal directions for sub-scans
 const DIRECTIONS_4 = [0, Math.PI / 2, Math.PI, 3 * Math.PI / 2];
 
-const RADAR_DISTANCES_KM = [5, 10, 20];
-const RADAR_RADIUS_KM = 2;
-const LOUPE_OFFSET_KM = 1.5;
-const LOUPE_RADIUS_KM = 0.5;
-const MICRO_OFFSET_KM = 0.5;
-const MICRO_RADIUS_KM = 0.2;
+// Phase 1: 5×5 grid, 3km spacing, 0.3km scan radius
+const GRID_SIZE = 5;
+const GRID_SPACING_KM = 3;
+const MAILLAGE_RADIUS_KM = 0.3;
+
+// Phase 2: 8 weakest → 4 sub-points at 0.8km, 0.1km scan radius
+const ZOOM_OFFSET_KM = 0.8;
+const ZOOM_RADIUS_KM = 0.1;
+const ZOOM_WEAK_COUNT = 8;
+
+// Phase 3: 6 weakest → 4 nano-points at 0.3km, 0.05km scan radius
+const NANO_OFFSET_KM = 0.3;
+const NANO_RADIUS_KM = 0.05;
+const NANO_WEAK_COUNT = 6;
 
 const KM_TO_DEG_LAT = 0.009;
 
@@ -108,7 +109,7 @@ async function reverseGeocode(lat: number, lng: number): Promise<string> {
   }
 }
 
-type Resolution = 'radar' | 'loupe' | 'microscope';
+type Resolution = 'maillage' | 'zoom' | 'nano';
 
 interface ZoneResult {
   lat: number;
@@ -147,6 +148,28 @@ async function scanPoints(
   );
 }
 
+function generateGrid(centerLat: number, centerLng: number): { lat: number; lng: number }[] {
+  const points: { lat: number; lng: number }[] = [];
+  const half = Math.floor(GRID_SIZE / 2);
+  for (let row = -half; row <= half; row++) {
+    for (let col = -half; col <= half; col++) {
+      const dLatKm = row * GRID_SPACING_KM;
+      const dLngKm = col * GRID_SPACING_KM;
+      const dLat = dLatKm * KM_TO_DEG_LAT;
+      const dLng = dLat / Math.cos(centerLat * Math.PI / 180) * (dLngKm / (dLatKm || 1));
+      // Use proper offset for non-zero
+      if (row === 0 && col === 0) {
+        points.push({ lat: centerLat, lng: centerLng });
+      } else {
+        const bearing = Math.atan2(dLngKm, dLatKm);
+        const dist = Math.sqrt(dLatKm ** 2 + dLngKm ** 2);
+        points.push(offsetCoord(centerLat, centerLng, bearing, dist));
+      }
+    }
+  }
+  return points;
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -160,69 +183,63 @@ serve(async (req) => {
       });
     }
 
-    // ═══ PHASE 1 — RADAR (25 points: center + 24 around) ═══
-    const radarPoints: { lat: number; lng: number }[] = [{ lat: latitude, lng: longitude }];
-    for (const dist of RADAR_DISTANCES_KM) {
-      for (const dir of DIRECTIONS_8) {
-        radarPoints.push(offsetCoord(latitude, longitude, dir, dist));
-      }
-    }
-
-    const results: ZoneResult[] = await scanPoints(radarPoints, latitude, longitude, RADAR_RADIUS_KM, 'radar');
-    let currentPhase = 1;
+    // ═══ PHASE 1 — MAILLAGE (grille 5×5, rayon 0.3km) ═══
+    const gridPoints = generateGrid(latitude, longitude);
+    const results: ZoneResult[] = await scanPoints(gridPoints, latitude, longitude, MAILLAGE_RADIUS_KM, 'maillage');
     let totalPhases = 1;
 
-    // ═══ PHASE 2 — LOUPE (zoom into 6 weakest radar zones) ═══
-    const radarBlankCount = results.filter(z => z.is_blank).length;
-    // Always run loupe to find finer detail
-    const weakestRadar = [...results]
-      .sort((a, b) => a.observations - b.observations)
-      .slice(0, 6);
-
-    const loupePoints: { lat: number; lng: number }[] = [];
-    for (const zone of weakestRadar) {
-      for (const dir of DIRECTIONS_4) {
-        loupePoints.push(offsetCoord(zone.lat, zone.lng, dir, LOUPE_OFFSET_KM));
-      }
-    }
-
-    totalPhases = 2;
-    currentPhase = 2;
-    const loupeResults = await scanPoints(loupePoints, latitude, longitude, LOUPE_RADIUS_KM, 'loupe');
-    results.push(...loupeResults);
-
-    // ═══ PHASE 3 — MICROSCOPE (if still no silence, zoom into 4 weakest loupe zones) ═══
-    const totalBlankAfterLoupe = results.filter(z => z.is_blank).length;
-    if (totalBlankAfterLoupe === 0) {
-      const weakestLoupe = [...loupeResults]
+    // ═══ PHASE 2 — ZOOM (8 weakest → 4 sub-points, rayon 0.1km) ═══
+    const blankAfterPhase1 = results.filter(z => z.is_blank).length;
+    if (blankAfterPhase1 === 0) {
+      const weakest = [...results]
         .sort((a, b) => a.observations - b.observations)
-        .slice(0, 4);
+        .slice(0, ZOOM_WEAK_COUNT);
 
-      const microPoints: { lat: number; lng: number }[] = [];
-      for (const zone of weakestLoupe) {
+      const zoomPoints: { lat: number; lng: number }[] = [];
+      for (const zone of weakest) {
         for (const dir of DIRECTIONS_4) {
-          microPoints.push(offsetCoord(zone.lat, zone.lng, dir, MICRO_OFFSET_KM));
+          zoomPoints.push(offsetCoord(zone.lat, zone.lng, dir, ZOOM_OFFSET_KM));
         }
       }
 
-      totalPhases = 3;
-      currentPhase = 3;
-      const microResults = await scanPoints(microPoints, latitude, longitude, MICRO_RADIUS_KM, 'microscope');
-      results.push(...microResults);
+      totalPhases = 2;
+      const zoomResults = await scanPoints(zoomPoints, latitude, longitude, ZOOM_RADIUS_KM, 'zoom');
+      results.push(...zoomResults);
+
+      // ═══ PHASE 3 — NANO (6 weakest zoom → 4 nano-points, rayon 0.05km) ═══
+      const blankAfterPhase2 = results.filter(z => z.is_blank).length;
+      if (blankAfterPhase2 === 0) {
+        const weakestZoom = [...zoomResults]
+          .sort((a, b) => a.observations - b.observations)
+          .slice(0, NANO_WEAK_COUNT);
+
+        const nanoPoints: { lat: number; lng: number }[] = [];
+        for (const zone of weakestZoom) {
+          for (const dir of DIRECTIONS_4) {
+            nanoPoints.push(offsetCoord(zone.lat, zone.lng, dir, NANO_OFFSET_KM));
+          }
+        }
+
+        totalPhases = 3;
+        const nanoResults = await scanPoints(nanoPoints, latitude, longitude, NANO_RADIUS_KM, 'nano');
+        results.push(...nanoResults);
+      }
     }
 
     // Sort by distance
     results.sort((a, b) => a.distance_km - b.distance_km);
 
-    // ═══ ENRICHMENT: geocode + species sample for interesting zones ═══
-    const nonBlankZones = results
+    // ═══ ENRICHMENT: geocode blanks + 5 weakest; species sample for interesting zones ═══
+    const blanks = results.filter(z => z.is_blank);
+    const weakestNonBlank = results
       .filter(z => z.observations > 0)
       .sort((a, b) => a.observations - b.observations)
-      .slice(0, 8);
+      .slice(0, 5);
+    const toGeocode = [...blanks, ...weakestNonBlank];
 
     await Promise.all([
-      ...results.map(async (z) => { z.label = await reverseGeocode(z.lat, z.lng); }),
-      ...nonBlankZones.map(async (z) => { z.sample_species = await getGbifSample(z.lat, z.lng, z.scan_radius_km, 5); }),
+      ...toGeocode.map(async (z) => { z.label = await reverseGeocode(z.lat, z.lng); }),
+      ...weakestNonBlank.map(async (z) => { z.sample_species = await getGbifSample(z.lat, z.lng, z.scan_radius_km, 5); }),
     ]);
 
     const response = {

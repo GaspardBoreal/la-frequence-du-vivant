@@ -584,9 +584,9 @@ const ZoneListItem = ({ zone, index, getIntensity }: { zone: ZoneResult; index: 
           <p className="text-sm font-semibold text-stone-700 truncate group-hover:text-stone-900 transition-colors">
             {zone.label || `${zone.lat.toFixed(3)}, ${zone.lng.toFixed(3)}`}
           </p>
-          {zone.resolution && zone.resolution !== 'radar' && (
+          {zone.resolution && zone.resolution !== 'maillage' && (
             <span className="shrink-0 text-[9px] px-1.5 py-0.5 rounded-md bg-stone-100 text-stone-400 font-medium">
-              {zone.resolution === 'microscope' ? '🔬 200m' : '🔍 500m'}
+              {zone.resolution === 'nano' ? '🔬 100m' : '🔍 200m'}
             </span>
           )}
         </div>
