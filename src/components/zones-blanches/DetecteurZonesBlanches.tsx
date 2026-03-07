@@ -443,7 +443,8 @@ const DetecteurZonesBlanches = () => {
                         {sortedZones.map((zone) => {
                           const intensity = getIntensity(zone.observations);
                           const isFiltered = activeFilters.size > 0 && !activeFilters.has(intensity.level);
-                          const radius = getProportionalRadius(zone.observations, maxObs);
+                          const radius = getProportionalRadius(zone.observations, maxObs, zone.resolution);
+                          const dashArray = zone.resolution === 'microscope' ? '2 3' : zone.resolution === 'loupe' ? '4 3' : undefined;
                           return (
                             <CircleMarker
                               key={`${zone.lat}-${zone.lng}`}
