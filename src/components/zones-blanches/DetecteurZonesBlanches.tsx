@@ -513,13 +513,11 @@ const DetecteurZonesBlanches = () => {
                         <div className="w-2.5 h-2.5 rounded-full" style={{ background: '#3b82f6' }} />
                         <span className="text-[11px] text-stone-400">Votre position</span>
                       </div>
-                      {results.phases_completed >= 2 && (
-                        <div className="flex items-center gap-3 ml-2 pl-2 border-l border-stone-200">
-                          <span className="text-[10px] text-stone-400">📡 2km</span>
-                          <span className="text-[10px] text-stone-400">🔍 500m</span>
-                          {results.phases_completed >= 3 && <span className="text-[10px] text-stone-400">🔬 200m</span>}
-                        </div>
-                      )}
+                      <div className="flex items-center gap-3 ml-2 pl-2 border-l border-stone-200">
+                        <span className="text-[10px] text-stone-400">📡 600m</span>
+                        {results.phases_completed >= 2 && <span className="text-[10px] text-stone-400">🔍 200m</span>}
+                        {results.phases_completed >= 3 && <span className="text-[10px] text-stone-400">🔬 100m</span>}
+                      </div>
                     </div>
                   </motion.div>
                 )}
