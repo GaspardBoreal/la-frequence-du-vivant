@@ -398,6 +398,9 @@ const MarchesDuVivantExplorer = () => {
                 </motion.div>
               )}
             </div>
+
+            {/* Détecteur de zones blanches */}
+            <DetecteurZonesBlanches />
           </div>
         </section>
 
