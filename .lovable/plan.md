@@ -1,45 +1,42 @@
 
 
-# Remplacer les 3 marches de la galerie light par des marches specifiques
+# Fix: noms de ville manquants sur les tooltips (toutes zones)
 
-## Objectif
+## Cause racine
 
-Au lieu de charger dynamiquement les 3 marches les plus "completes" via `useFeaturedMarches(3)`, afficher exactement ces 3 marches :
+Le code edge function envoie **8 requetes Nominatim en parallele** par batch (`batchSize = 8`). Or Nominatim impose une limite stricte de **1 requete par seconde**. Les requetes excedentaires sont rejetees (HTTP 429 ou timeout), et la fonction `reverseGeocode` retourne alors les coordonnees brutes (`46.513, 0.414`) au lieu du nom de ville.
 
-1. La ou elle se jette, je me redresse a Bec d'Ambes
-2. L'arbre a papillon du moulin Grand de Gintrac
-3. Un moment sauvage a la sortie de Bergerac
+Avec 57 zones, ca fait ~7 batchs de 8 requetes simultanees. La majorite echouent silencieusement.
 
-## Approche technique
+## Correctif
 
-### Fichier a modifier : `src/hooks/useFeaturedMarches.ts`
+### `supabase/functions/detect-zones-blanches/index.ts`
 
-Ajouter un parametre optionnel `specificIds` au hook. Quand des IDs sont fournis, le hook charge uniquement ces marches (dans l'ordre donne) au lieu de trier par completude.
+1. **Reduire `batchSize` de 8 a 2** dans `batchGeocode` — Nominatim tolere 1-2 requetes concurrentes
+2. **Augmenter le delai inter-batch a 1200ms** pour respecter la politique d'usage
+3. **Ajouter un retry** : si une requete echoue, retenter une fois apres 500ms avant de tomber sur le fallback coordonnees
+4. **Executer le geocoding AVANT les species samples** (pas en `Promise.all`) pour eviter que les requetes GBIF interferent avec le timing Nominatim
 
-### Fichier a modifier : `src/pages/MarchesDuVivantExplorer.tsx`
+### Impact performance
 
-Passer les 3 IDs en dur au hook :
+- 57 zones / 2 par batch = ~29 batchs × 1.2s = ~35s de geocoding
+- C'est trop long. Alternative : **batch de 3 avec 1.1s de delai** = ~21 batchs × 1.1s = ~23s — acceptable vu que le scan GBIF prend deja 10-15s
+- Ou mieux : **exécuter geocoding en parallèle du scan GBIF des phases 2/3** pour masquer la latence
 
+### Structure finale du bloc enrichissement
+
+```text
+// 1. Geocode ALL zones (batch de 3, 1.1s delai, 1 retry)
+await batchGeocode(results, 3);
+
+// 2. PUIS species sampling (blanks + 5 weakest) — en parallele entre eux
+await Promise.all([
+  ...blanks.map(z => getGbifSample(...)),
+  ...weakestNonBlank.map(z => getGbifSample(...)),
+]);
 ```
-const EXPLORER_MARCHE_IDS = [
-  'b88f774b-3131-4ff5-8f2a-1dd682f8b6de', // Bec d'Ambes
-  '8ab7818c-f8d0-4432-9093-12c65a3db117', // Gintrac
-  'fd99ffe8-edf4-4cdd-99f4-66c3dd2d9d57', // Bergerac
-];
 
-const { data: featuredMarches } = useFeaturedMarches(3, false, EXPLORER_MARCHE_IDS);
-```
+### Redeploy necessaire
 
-### Detail du changement dans le hook
-
-Dans `useFeaturedMarches.ts` :
-- Ajouter le parametre `specificIds?: string[]`
-- L'inclure dans la `queryKey`
-- Si `specificIds` est fourni et non vide, remplacer la requete initiale sur `exploration_marches` par un filtre `.in('id', specificIds)` directement sur `marches`
-- Conserver l'ordre des IDs fournis (pas de tri par completude)
-- Toute la logique existante (photos, audio, biodiversite) reste inchangee
-
-### Aucun impact sur la galerie principale
-
-La page `/marches-du-vivant/carnets-de-terrain` continue d'appeler `useFeaturedMarches(5)` sans `specificIds`, donc son comportement est inchange.
+La edge function devra etre redeployee apres modification.
 
