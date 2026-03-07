@@ -578,6 +578,17 @@ const ZonePopupContent = ({ zone }: { zone: ZoneResult }) => {
         {zone.observations > 0 && (
           <p className="text-stone-500">{zone.observations.toLocaleString('fr-FR')} observation{zone.observations > 1 ? 's' : ''} GBIF</p>
         )}
+        {zone.sample_species && zone.sample_species.length > 0 && (
+          <div className="border-t border-stone-100 pt-1.5 mt-1.5">
+            <p className="text-[10px] uppercase tracking-wider text-stone-400 mb-1">Espèces observées</p>
+            {zone.sample_species.map((sp, i) => (
+              <p key={i} className="text-[11px] text-stone-600">
+                🌿 <span className="font-medium">{sp.commonName || sp.scientificName}</span>
+                {sp.commonName && <span className="text-stone-400 italic ml-1">({sp.scientificName})</span>}
+              </p>
+            ))}
+          </div>
+        )}
         <p className="text-[10px] text-stone-300 pt-0.5">{zone.lat.toFixed(4)}, {zone.lng.toFixed(4)}</p>
       </div>
     </div>
