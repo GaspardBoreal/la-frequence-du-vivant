@@ -67,3 +67,6 @@ verify_jwt = false
 
 [functions.generate-epub-metadata]
 verify_jwt = false
+
+[functions.detect-zones-blanches]
+verify_jwt = false
