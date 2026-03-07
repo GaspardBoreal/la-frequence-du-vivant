@@ -591,7 +591,7 @@ const ZoneListItem = ({ zone, index, getIntensity }: { zone: ZoneResult; index: 
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-1.5">
           <p className="text-sm font-semibold text-stone-700 truncate group-hover:text-stone-900 transition-colors">
-            {zone.label || `${zone.lat.toFixed(3)}, ${zone.lng.toFixed(3)}`}
+            {getDisplayLabel(zone)}
           </p>
           {zone.resolution && zone.resolution !== 'maillage' && (
             <span className="shrink-0 text-[9px] px-1.5 py-0.5 rounded-md bg-stone-100 text-stone-400 font-medium">
