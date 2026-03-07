@@ -1,58 +1,45 @@
 
 
-# Le Pouls du Vivant — Gradient d'Intensité Biodiversité
+# Remplacer les 3 marches de la galerie light par des marches specifiques
 
-## Concept créatif
+## Objectif
 
-Transformer l'affichage binaire (blanc / documenté) en un **spectre de 5 niveaux d'intensité** inspiré d'un signal sonore — cohérent avec l'univers "Fréquence du Vivant". Chaque zone scannée reçoit un **niveau poétique** basé sur le nombre d'observations GBIF :
+Au lieu de charger dynamiquement les 3 marches les plus "completes" via `useFeaturedMarches(3)`, afficher exactement ces 3 marches :
 
-| Observations | Niveau | Nom poétique | Couleur | Icône |
-|---|---|---|---|---|
-| 0 | 0 | **Silence** | Ambre | Signal vide |
-| 1–50 | 1 | **Murmure** | Vert pâle | 1 barre |
-| 51–500 | 2 | **Souffle** | Vert | 2 barres |
-| 501–5000 | 3 | **Chœur** | Vert profond | 3 barres |
-| 5000+ | 4 | **Symphonie** | Émeraude doré | 4 barres |
+1. La ou elle se jette, je me redresse a Bec d'Ambes
+2. L'arbre a papillon du moulin Grand de Gintrac
+3. Un moment sauvage a la sortie de Bergerac
 
-## Nouvelles visualisations
+## Approche technique
 
-### 1. Barre de synthèse "Spectre du Vivant"
+### Fichier a modifier : `src/hooks/useFeaturedMarches.ts`
 
-En haut des résultats, un **bar chart horizontal segmenté** montrant la répartition des 16 zones par niveau. Chaque segment est coloré et cliquable (filtre la liste). L'ambassadeur voit immédiatement : "8 zones en Silence, 3 en Murmure, 2 en Souffle, 2 en Chœur, 1 en Symphonie."
+Ajouter un parametre optionnel `specificIds` au hook. Quand des IDs sont fournis, le hook charge uniquement ces marches (dans l'ordre donne) au lieu de trier par completude.
 
-### 2. Indicateur de signal sur chaque zone (liste)
+### Fichier a modifier : `src/pages/MarchesDuVivantExplorer.tsx`
 
-Remplacer le simple dot vert/ambre par un **indicateur de signal à 4 barres** (style réception téléphone). Les barres s'allument progressivement selon le niveau. Le "Silence" montre 0 barre allumée avec un petit pulse ambre animé.
+Passer les 3 IDs en dur au hook :
 
-### 3. Carte : cercles proportionnels + dégradé de couleur
+```
+const EXPLORER_MARCHE_IDS = [
+  'b88f774b-3131-4ff5-8f2a-1dd682f8b6de', // Bec d'Ambes
+  '8ab7818c-f8d0-4432-9093-12c65a3db117', // Gintrac
+  'fd99ffe8-edf4-4cdd-99f4-66c3dd2d9d57', // Bergerac
+];
 
-Sur la carte Leaflet, les CircleMarkers utilisent un **rayon proportionnel au log des observations** et un dégradé de couleur du spectre. Les zones "Silence" pulsent doucement en ambre (animation CSS).
+const { data: featuredMarches } = useFeaturedMarches(3, false, EXPLORER_MARCHE_IDS);
+```
 
-### 4. Tooltip enrichi "Fiche de terrain"
+### Detail du changement dans le hook
 
-Au hover/clic (carte et liste), un mini-widget affiche :
-- Nom du lieu + distance
-- **Nom poétique du niveau** ("Murmure du vivant")
-- Barre de signal visuelle
-- Phrase contextuelle : *"Ce territoire attend ses premiers explorateurs"* (Silence) ou *"Un chœur d'espèces résonne ici — 2 340 observations"* (Chœur)
+Dans `useFeaturedMarches.ts` :
+- Ajouter le parametre `specificIds?: string[]`
+- L'inclure dans la `queryKey`
+- Si `specificIds` est fourni et non vide, remplacer la requete initiale sur `exploration_marches` par un filtre `.in('id', specificIds)` directement sur `marches`
+- Conserver l'ordre des IDs fournis (pas de tri par completude)
+- Toute la logique existante (photos, audio, biodiversite) reste inchangee
 
-## Modifications techniques
+### Aucun impact sur la galerie principale
 
-### Fichier : `src/components/zones-blanches/DetecteurZonesBlanches.tsx`
-
-- Ajouter une fonction utilitaire `getIntensityLevel(observations)` retournant `{ level, name, color, phrase }`
-- Nouveau composant `SignalBars` — 4 barres SVG avec remplissage conditionnel
-- Nouveau composant `SpectreSynthese` — barre segmentée horizontale en haut des résultats
-- Refactorer `ZoneListItem` pour intégrer SignalBars + nom poétique
-- Refactorer `ZonePopupContent` pour intégrer la fiche enrichie
-- Carte : rayon et couleur des CircleMarkers basés sur le niveau d'intensité
-- Ajout d'une animation CSS `pulse` sur les zones Silence (carte)
-
-### Aucun changement backend
-
-L'edge function retourne déjà le nombre d'observations par zone. Tout le classement se fait côté client.
-
-### Un seul fichier modifié
-
-`src/components/zones-blanches/DetecteurZonesBlanches.tsx`
+La page `/marches-du-vivant/carnets-de-terrain` continue d'appeler `useFeaturedMarches(5)` sans `specificIds`, donc son comportement est inchange.
 
