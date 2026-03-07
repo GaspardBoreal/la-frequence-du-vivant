@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -15,6 +15,8 @@ import * as VisuallyHidden from '@radix-ui/react-visually-hidden';
 import { useFeaturedMarches } from '@/hooks/useFeaturedMarches';
 import CarnetTerrainCardLight from '@/components/carnets/CarnetTerrainCardLight';
 import DetecteurZonesBlanches from '@/components/zones-blanches/DetecteurZonesBlanches';
+import GuideDeMarche from '@/components/zones-blanches/GuideDeMarche';
+import { DetectionResult } from '@/hooks/useDetecteurZonesBlanches';
 
 const fadeUp = {
   hidden: { opacity: 0, y: 24 },
@@ -52,6 +54,8 @@ const MarchesDuVivantExplorer = () => {
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [prenom, setPrenom] = useState('');
   const [email, setEmail] = useState('');
+  const [zonesResults, setZonesResults] = useState<DetectionResult | null>(null);
+  const handleZonesReady = useCallback((results: DetectionResult) => setZonesResults(results), []);
   const EXPLORER_MARCHE_IDS = [
     'b88f774b-3131-4ff5-8f2a-1dd682f8b6de', // Bec d'Ambès
     '8ab7818c-f8d0-4432-9093-12c65a3db117', // Gintrac
@@ -400,7 +404,7 @@ const MarchesDuVivantExplorer = () => {
             </div>
 
             {/* Détecteur de zones blanches */}
-            <DetecteurZonesBlanches />
+            <DetecteurZonesBlanches onResultsReady={handleZonesReady} />
           </div>
         </section>
 
@@ -678,6 +682,9 @@ const MarchesDuVivantExplorer = () => {
         <div className="footer-wrapper bg-[hsl(160,30%,12%)]">
           <Footer />
         </div>
+
+        {/* Chatbot Guide de Marche - visible uniquement après un scan */}
+        {zonesResults && <GuideDeMarche zonesContext={zonesResults} />}
 
         {/* === PRINT-ONLY FOOTER === */}
         <div className="print-only-footer hidden" style={{ padding: '1.5rem 2rem', borderTop: '1px solid rgba(134,239,172,0.2)', marginTop: '2rem' }}>
