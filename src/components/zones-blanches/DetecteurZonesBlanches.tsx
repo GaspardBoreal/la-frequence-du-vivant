@@ -520,6 +520,24 @@ const ZoneListItem = ({ zone, index }: { zone: ZoneResult; index: number }) => {
               : `${zone.observations.toLocaleString('fr-FR')} observation${zone.observations > 1 ? 's' : ''}`}
           </span>
         </p>
+        {zone.sample_species && zone.sample_species.length > 0 && (
+          <div className="flex flex-wrap gap-1 mt-1.5">
+            {zone.sample_species.map((sp, i) => (
+              <span
+                key={i}
+                className="inline-flex items-center text-[10px] px-2 py-0.5 rounded-full border"
+                style={{
+                  background: `${intensity.color}08`,
+                  borderColor: `${intensity.color}25`,
+                  color: intensity.color,
+                }}
+                title={sp.commonName ? `${sp.commonName} (${sp.scientificName})` : sp.scientificName}
+              >
+                🌿 {sp.commonName || sp.scientificName}
+              </span>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Distance pill */}
