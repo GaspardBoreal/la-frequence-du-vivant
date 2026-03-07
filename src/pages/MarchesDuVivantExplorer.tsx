@@ -683,6 +683,9 @@ const MarchesDuVivantExplorer = () => {
           <Footer />
         </div>
 
+        {/* Chatbot Guide de Marche - visible uniquement après un scan */}
+        {zonesResults && <GuideDeMarche zonesContext={zonesResults} />}
+
         {/* === PRINT-ONLY FOOTER === */}
         <div className="print-only-footer hidden" style={{ padding: '1.5rem 2rem', borderTop: '1px solid rgba(134,239,172,0.2)', marginTop: '2rem' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.7rem', color: '#9ca3af' }}>
