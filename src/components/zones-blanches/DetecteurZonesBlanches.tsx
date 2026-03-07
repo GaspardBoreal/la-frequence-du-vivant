@@ -4,6 +4,7 @@ import { MapPin, Search, Loader2, Compass, List, Map as MapIcon, ChevronLeft, Ch
 import { useDetecteurZonesBlanches, ZoneResult, SpeciesSample } from '@/hooks/useDetecteurZonesBlanches';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
+import { Switch } from '@/components/ui/switch';
 import { MapContainer, TileLayer, CircleMarker, Popup, Tooltip, Marker, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -18,15 +19,14 @@ interface IntensityLevel {
   bgLight: string;
   borderLight: string;
   phrase: string;
-  mapRadius: number;
 }
 
 const INTENSITY_LEVELS: IntensityLevel[] = [
-  { level: 0, name: 'Silence', color: '#f59e0b', bgLight: 'rgba(254,243,199,0.3)', borderLight: 'rgba(251,191,36,0.2)', phrase: 'Ce territoire attend ses premiers explorateurs', mapRadius: 10 },
-  { level: 1, name: 'Murmure', color: '#84cc16', bgLight: 'rgba(236,252,203,0.3)', borderLight: 'rgba(132,204,22,0.2)', phrase: 'Un léger frémissement de données — tout reste à découvrir', mapRadius: 8 },
-  { level: 2, name: 'Souffle', color: '#22c55e', bgLight: 'rgba(220,252,231,0.3)', borderLight: 'rgba(34,197,94,0.2)', phrase: 'Le vivant commence à se manifester ici', mapRadius: 9 },
-  { level: 3, name: 'Chœur', color: '#059669', bgLight: 'rgba(209,250,229,0.25)', borderLight: 'rgba(5,150,105,0.18)', phrase: 'Un chœur d\'espèces résonne sur ce territoire', mapRadius: 11 },
-  { level: 4, name: 'Symphonie', color: '#047857', bgLight: 'rgba(167,243,208,0.2)', borderLight: 'rgba(4,120,87,0.15)', phrase: 'Une symphonie du vivant — richement documenté', mapRadius: 13 },
+  { level: 0, name: 'Silence', color: '#f59e0b', bgLight: 'rgba(254,243,199,0.3)', borderLight: 'rgba(251,191,36,0.2)', phrase: 'Ce territoire attend ses premiers explorateurs' },
+  { level: 1, name: 'Murmure', color: '#84cc16', bgLight: 'rgba(236,252,203,0.3)', borderLight: 'rgba(132,204,22,0.2)', phrase: 'Un léger frémissement de données — tout reste à découvrir' },
+  { level: 2, name: 'Souffle', color: '#22c55e', bgLight: 'rgba(220,252,231,0.3)', borderLight: 'rgba(34,197,94,0.2)', phrase: 'Le vivant commence à se manifester ici' },
+  { level: 3, name: 'Chœur', color: '#059669', bgLight: 'rgba(209,250,229,0.25)', borderLight: 'rgba(5,150,105,0.18)', phrase: 'Un chœur d\'espèces résonne sur ce territoire' },
+  { level: 4, name: 'Symphonie', color: '#047857', bgLight: 'rgba(167,243,208,0.2)', borderLight: 'rgba(4,120,87,0.15)', phrase: 'Une symphonie du vivant — richement documenté' },
 ];
 
 function getIntensityLevel(observations: number): IntensityLevel {
@@ -35,6 +35,23 @@ function getIntensityLevel(observations: number): IntensityLevel {
   if (observations <= 500) return INTENSITY_LEVELS[2];
   if (observations <= 5000) return INTENSITY_LEVELS[3];
   return INTENSITY_LEVELS[4];
+}
+
+function getRelativeIntensityLevel(observations: number, min: number, max: number): IntensityLevel {
+  if (observations === 0) return INTENSITY_LEVELS[0];
+  if (max === min) return INTENSITY_LEVELS[2];
+  const ratio = (observations - min) / (max - min);
+  if (ratio <= 0.15) return INTENSITY_LEVELS[1];
+  if (ratio <= 0.35) return INTENSITY_LEVELS[2];
+  if (ratio <= 0.65) return INTENSITY_LEVELS[3];
+  return INTENSITY_LEVELS[4];
+}
+
+function getProportionalRadius(observations: number, maxObs: number): number {
+  if (observations === 0) return 8;
+  if (maxObs <= 0) return 10;
+  const ratio = Math.max(0.15, observations / maxObs);
+  return 6 + ratio * 12; // 6px to 18px
 }
 
 // ─── Signal bars SVG ───
@@ -65,12 +82,12 @@ const SignalBars = ({ level, size = 20 }: { level: number; size?: number }) => {
 };
 
 // ─── Spectre de synthèse ───
-const SpectreSynthese = ({ zones, activeFilters, onToggle, onReset }: { zones: ZoneResult[]; activeFilters: Set<number>; onToggle: (level: number) => void; onReset: () => void }) => {
+const SpectreSynthese = ({ zones, activeFilters, onToggle, onReset, getIntensity }: { zones: ZoneResult[]; activeFilters: Set<number>; onToggle: (level: number) => void; onReset: () => void; getIntensity: (obs: number) => IntensityLevel }) => {
   const distribution = useMemo(() => {
     const counts = [0, 0, 0, 0, 0];
-    zones.forEach(z => { counts[getIntensityLevel(z.observations).level]++; });
+    zones.forEach(z => { counts[getIntensity(z.observations).level]++; });
     return counts;
-  }, [zones]);
+  }, [zones, getIntensity]);
 
   const total = zones.length;
   const allActive = activeFilters.size === 0;
@@ -78,7 +95,6 @@ const SpectreSynthese = ({ zones, activeFilters, onToggle, onReset }: { zones: Z
   return (
     <div className="mb-5">
       <p className="text-[11px] uppercase tracking-widest text-stone-400 mb-2.5 font-medium">Spectre du vivant</p>
-      {/* Segmented bar */}
       <div className="flex rounded-xl overflow-hidden h-8 border border-stone-200/50 shadow-sm">
         {distribution.map((count, i) => {
           if (count === 0) return null;
@@ -103,9 +119,7 @@ const SpectreSynthese = ({ zones, activeFilters, onToggle, onReset }: { zones: Z
           );
         })}
       </div>
-      {/* Interactive chips */}
       <div className="flex flex-wrap items-center gap-2 mt-3">
-        {/* "Tous" chip */}
         <button
           onClick={onReset}
           className={`px-3 py-1 rounded-full text-[11px] font-medium border transition-all duration-200 ${
@@ -141,9 +155,9 @@ const SpectreSynthese = ({ zones, activeFilters, onToggle, onReset }: { zones: Z
 };
 
 // ─── Recenter helper ───
-const RecenterMap = ({ lat, lng }: { lat: number; lng: number }) => {
+const RecenterMap = ({ lat, lng, zoom }: { lat: number; lng: number; zoom: number }) => {
   const map = useMap();
-  React.useEffect(() => { map.setView([lat, lng], 11); }, [lat, lng, map]);
+  React.useEffect(() => { map.setView([lat, lng], zoom); }, [lat, lng, zoom, map]);
   return null;
 };
 
@@ -160,6 +174,7 @@ const DetecteurZonesBlanches = () => {
   const [viewMode, setViewMode] = useState<'list' | 'map'>('list');
   const [page, setPage] = useState(0);
   const [activeFilters, setActiveFilters] = useState<Set<number>>(new Set());
+  const [relativeMode, setRelativeMode] = useState(false);
   const { results, isLoading, remainingSearches, searchByGPS, searchByAddress } = useDetecteurZonesBlanches();
 
   const handleAddressSearch = (e: React.FormEvent) => {
@@ -197,10 +212,28 @@ const DetecteurZonesBlanches = () => {
     return [...results.zones].sort((a, b) => a.distance_km - b.distance_km);
   }, [results]);
 
+  // Compute min/max for relative mode
+  const { minObs, maxObs } = useMemo(() => {
+    if (!sortedZones.length) return { minObs: 0, maxObs: 0 };
+    const nonZero = sortedZones.filter(z => z.observations > 0);
+    if (!nonZero.length) return { minObs: 0, maxObs: 0 };
+    return {
+      minObs: Math.min(...nonZero.map(z => z.observations)),
+      maxObs: Math.max(...nonZero.map(z => z.observations)),
+    };
+  }, [sortedZones]);
+
+  const getIntensity = useMemo(() => {
+    return (observations: number): IntensityLevel => {
+      if (relativeMode) return getRelativeIntensityLevel(observations, minObs, maxObs);
+      return getIntensityLevel(observations);
+    };
+  }, [relativeMode, minObs, maxObs]);
+
   const filteredZones = useMemo(() => {
     if (activeFilters.size === 0) return sortedZones;
-    return sortedZones.filter(z => activeFilters.has(getIntensityLevel(z.observations).level));
-  }, [sortedZones, activeFilters]);
+    return sortedZones.filter(z => activeFilters.has(getIntensity(z.observations).level));
+  }, [sortedZones, activeFilters, getIntensity]);
 
   const totalPages = Math.ceil(filteredZones.length / ITEMS_PER_PAGE);
   const pagedZones = filteredZones.slice(page * ITEMS_PER_PAGE, (page + 1) * ITEMS_PER_PAGE);
@@ -227,7 +260,7 @@ const DetecteurZonesBlanches = () => {
           <h3 className="font-crimson text-lg font-bold tracking-tight" style={{ color: '#1a1a18' }}>
             Détecteur de zones blanches
           </h3>
-          <p className="text-xs text-stone-400 leading-tight">Trouvez les territoires inexplorés près de vous</p>
+          <p className="text-xs text-stone-400 leading-tight">Cartographiez l'intensité du vivant autour de vous</p>
         </div>
       </div>
 
@@ -237,7 +270,7 @@ const DetecteurZonesBlanches = () => {
             <Eye className="w-5 h-5 text-amber-500" />
           </div>
           <p className="font-crimson text-stone-600 text-base italic leading-relaxed max-w-sm mx-auto">
-            Vos trois explorations ont été lancées.<br />
+            Vos explorations ont été lancées.<br />
             Les territoires silencieux vous attendent — revenez bientôt pour de nouvelles découvertes.
           </p>
         </div>
@@ -282,7 +315,7 @@ const DetecteurZonesBlanches = () => {
               <div className="w-12 h-12 rounded-full border-2 border-emerald-100" />
               <Loader2 className="w-12 h-12 text-emerald-500 animate-spin absolute inset-0" />
             </div>
-            <span className="text-sm text-stone-500 font-crimson italic">Exploration des territoires en cours…</span>
+            <span className="text-sm text-stone-500 font-crimson italic">Exploration de 24 points en cours…</span>
           </motion.div>
         )}
       </AnimatePresence>
@@ -293,35 +326,59 @@ const DetecteurZonesBlanches = () => {
           <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.4 }}>
             <div className="border-t border-stone-200/60 pt-5 mt-2">
               {/* Spectre de synthèse */}
-              <SpectreSynthese zones={sortedZones} activeFilters={activeFilters} onToggle={toggleFilter} onReset={resetFilters} />
+              <SpectreSynthese zones={sortedZones} activeFilters={activeFilters} onToggle={toggleFilter} onReset={resetFilters} getIntensity={getIntensity} />
 
-              {/* Summary + Toggle */}
-              <div className="flex items-center justify-between mb-4">
-                <p className="text-sm text-stone-600">
-                  <strong className="text-amber-600 text-base">{results.blank_count}</strong>{' '}
-                  <span className="text-stone-500 font-crimson italic">silence{results.blank_count > 1 ? 's' : ''}</span>
-                  <span className="text-stone-300 mx-1.5">·</span>
-                  <span className="text-stone-400">{results.total_scanned} points</span>
-                  {activeFilters.size > 0 && (
-                    <button onClick={resetFilters} className="ml-2 text-[10px] text-emerald-600 underline underline-offset-2 hover:text-emerald-700">
-                      tout afficher
-                    </button>
-                  )}
-                </p>
+              {/* Summary + Toggle + Relative mode */}
+              <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
+                <div className="flex items-center gap-3">
+                  <p className="text-sm text-stone-600">
+                    <strong className="text-amber-600 text-base">{results.blank_count}</strong>{' '}
+                    <span className="text-stone-500 font-crimson italic">silence{results.blank_count > 1 ? 's' : ''}</span>
+                    <span className="text-stone-300 mx-1.5">·</span>
+                    <span className="text-stone-400">{results.total_scanned} points</span>
+                    {activeFilters.size > 0 && (
+                      <button onClick={resetFilters} className="ml-2 text-[10px] text-emerald-600 underline underline-offset-2 hover:text-emerald-700">
+                        tout afficher
+                      </button>
+                    )}
+                  </p>
+                </div>
 
-                {/* View toggle */}
-                <div className="flex rounded-xl overflow-hidden border border-stone-200" style={{ background: 'rgba(245,245,244,0.6)' }}>
-                  <ToggleBtn active={viewMode === 'list'} onClick={() => setViewMode('list')} icon={<List className="w-3.5 h-3.5" />} label="Liste" />
-                  <ToggleBtn active={viewMode === 'map'} onClick={() => setViewMode('map')} icon={<MapIcon className="w-3.5 h-3.5" />} label="Carte" />
+                <div className="flex items-center gap-3">
+                  {/* Relative mode toggle */}
+                  <label className="flex items-center gap-2 cursor-pointer select-none">
+                    <span className="text-[11px] text-stone-400 font-medium">Relatif</span>
+                    <Switch
+                      checked={relativeMode}
+                      onCheckedChange={(checked) => {
+                        setRelativeMode(checked);
+                        setActiveFilters(new Set());
+                        setPage(0);
+                      }}
+                    />
+                  </label>
+
+                  {/* View toggle */}
+                  <div className="flex rounded-xl overflow-hidden border border-stone-200" style={{ background: 'rgba(245,245,244,0.6)' }}>
+                    <ToggleBtn active={viewMode === 'list'} onClick={() => setViewMode('list')} icon={<List className="w-3.5 h-3.5" />} label="Liste" />
+                    <ToggleBtn active={viewMode === 'map'} onClick={() => setViewMode('map')} icon={<MapIcon className="w-3.5 h-3.5" />} label="Carte" />
+                  </div>
                 </div>
               </div>
+
+              {/* Relative mode explanation */}
+              {relativeMode && (
+                <p className="text-[11px] text-stone-400 italic mb-3 -mt-1">
+                  Mode relatif : les niveaux sont calculés par rapport aux min/max locaux ({minObs.toLocaleString('fr-FR')} – {maxObs.toLocaleString('fr-FR')} obs.)
+                </p>
+              )}
 
               <AnimatePresence mode="wait">
                 {viewMode === 'list' ? (
                   <motion.div key="list" initial={{ opacity: 0, x: -12 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 12 }} transition={{ duration: 0.25 }}>
                     <div className="space-y-2">
                       {pagedZones.map((zone, i) => (
-                        <ZoneListItem key={`${zone.lat}-${zone.lng}`} zone={zone} index={i} />
+                        <ZoneListItem key={`${zone.lat}-${zone.lng}`} zone={zone} index={i} getIntensity={getIntensity} />
                       ))}
                     </div>
 
@@ -365,12 +422,12 @@ const DetecteurZonesBlanches = () => {
                     <div className="rounded-xl overflow-hidden border border-stone-200 shadow-sm" style={{ height: 'clamp(300px, 50vw, 420px)' }}>
                       <MapContainer
                         center={[results.center.lat, results.center.lng]}
-                        zoom={11}
+                        zoom={10}
                         scrollWheelZoom={false}
                         style={{ height: '100%', width: '100%' }}
                         attributionControl={false}
                       >
-                        <RecenterMap lat={results.center.lat} lng={results.center.lng} />
+                        <RecenterMap lat={results.center.lat} lng={results.center.lng} zoom={10} />
                         <TileLayer url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png" />
 
                         {/* Center marker */}
@@ -382,13 +439,14 @@ const DetecteurZonesBlanches = () => {
 
                         {/* Zone markers */}
                         {sortedZones.map((zone) => {
-                          const intensity = getIntensityLevel(zone.observations);
+                          const intensity = getIntensity(zone.observations);
                           const isFiltered = activeFilters.size > 0 && !activeFilters.has(intensity.level);
+                          const radius = getProportionalRadius(zone.observations, maxObs);
                           return (
                             <CircleMarker
                               key={`${zone.lat}-${zone.lng}`}
                               center={[zone.lat, zone.lng]}
-                              radius={intensity.mapRadius}
+                              radius={radius}
                               pathOptions={{
                                 fillColor: intensity.color,
                                 color: 'white',
@@ -403,10 +461,14 @@ const DetecteurZonesBlanches = () => {
                                   <strong>{zone.label || `${zone.lat.toFixed(3)}, ${zone.lng.toFixed(3)}`}</strong>
                                   <br />
                                   <span style={{ color: intensity.color }}>{intensity.name}</span> · {zone.distance_km} km
+                                  <br />
+                                  <span className="font-bold" style={{ color: intensity.color }}>
+                                    {zone.observations === 0 ? 'Aucune observation' : `${zone.observations.toLocaleString('fr-FR')} obs.`}
+                                  </span>
                                 </div>
                               </Tooltip>
                               <Popup>
-                                <ZonePopupContent zone={zone} />
+                                <ZonePopupContent zone={zone} getIntensity={getIntensity} />
                               </Popup>
                             </CircleMarker>
                           );
@@ -491,8 +553,8 @@ const ToggleBtn = ({ active, onClick, icon, label }: { active: boolean; onClick:
 );
 
 // ─── List item ───
-const ZoneListItem = ({ zone, index }: { zone: ZoneResult; index: number }) => {
-  const intensity = getIntensityLevel(zone.observations);
+const ZoneListItem = ({ zone, index, getIntensity }: { zone: ZoneResult; index: number; getIntensity: (obs: number) => IntensityLevel }) => {
+  const intensity = getIntensity(zone.observations);
   return (
     <motion.div
       initial={{ opacity: 0, y: 8 }}
@@ -555,8 +617,8 @@ const ZoneListItem = ({ zone, index }: { zone: ZoneResult; index: number }) => {
 };
 
 // ─── Map popup content ───
-const ZonePopupContent = ({ zone }: { zone: ZoneResult }) => {
-  const intensity = getIntensityLevel(zone.observations);
+const ZonePopupContent = ({ zone, getIntensity }: { zone: ZoneResult; getIntensity: (obs: number) => IntensityLevel }) => {
+  const intensity = getIntensity(zone.observations);
   return (
     <div className="min-w-[200px] p-1">
       <div className="flex items-center gap-2.5 mb-2.5">
@@ -572,12 +634,14 @@ const ZonePopupContent = ({ zone }: { zone: ZoneResult }) => {
       </div>
       <div className="space-y-1.5 text-xs text-stone-500 border-t border-stone-100 pt-2">
         <p>📍 {zone.distance_km} km du point de recherche</p>
+        {zone.observations > 0 && (
+          <p className="font-bold text-sm" style={{ color: intensity.color }}>
+            {zone.observations.toLocaleString('fr-FR')} observation{zone.observations > 1 ? 's' : ''}
+          </p>
+        )}
         <p className="italic text-stone-400" style={{ fontSize: 11 }}>
           « {intensity.phrase} »
         </p>
-        {zone.observations > 0 && (
-          <p className="text-stone-500">{zone.observations.toLocaleString('fr-FR')} observation{zone.observations > 1 ? 's' : ''} GBIF</p>
-        )}
         {zone.sample_species && zone.sample_species.length > 0 && (
           <div className="border-t border-stone-100 pt-1.5 mt-1.5">
             <p className="text-[10px] uppercase tracking-wider text-stone-400 mb-1">Espèces observées</p>
