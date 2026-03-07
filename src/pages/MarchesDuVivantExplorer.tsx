@@ -54,6 +54,8 @@ const MarchesDuVivantExplorer = () => {
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [prenom, setPrenom] = useState('');
   const [email, setEmail] = useState('');
+  const [zonesResults, setZonesResults] = useState<DetectionResult | null>(null);
+  const handleZonesReady = useCallback((results: DetectionResult) => setZonesResults(results), []);
   const EXPLORER_MARCHE_IDS = [
     'b88f774b-3131-4ff5-8f2a-1dd682f8b6de', // Bec d'Ambès
     '8ab7818c-f8d0-4432-9093-12c65a3db117', // Gintrac
