@@ -94,7 +94,7 @@ async function getGbifSample(lat: number, lng: number, radiusKm: number, limit =
   }
 }
 
-async function reverseGeocode(lat: number, lng: number, retry = true): Promise<string> {
+async function reverseGeocode(lat: number, lng: number, retriesLeft = 2): Promise<string> {
   const fallback = `${lat.toFixed(3)}, ${lng.toFixed(3)}`;
   try {
     const resp = await fetch(
@@ -102,19 +102,20 @@ async function reverseGeocode(lat: number, lng: number, retry = true): Promise<s
       { headers: { 'User-Agent': 'LaFrequenceDuVivant/1.0' } }
     );
     if (!resp.ok) {
-      if (retry) {
-        await new Promise(r => setTimeout(r, 600));
-        return reverseGeocode(lat, lng, false);
+      if (retriesLeft > 0) {
+        await new Promise(r => setTimeout(r, 1000));
+        return reverseGeocode(lat, lng, retriesLeft - 1);
       }
       return fallback;
     }
     const data = await resp.json();
     const addr = data.address;
-    return addr?.hamlet || addr?.village || addr?.town || addr?.city || addr?.municipality || data.display_name?.split(',')[0] || fallback;
+    const name = addr?.hamlet || addr?.village || addr?.town || addr?.city || addr?.municipality || data.display_name?.split(',')[0];
+    return name || fallback;
   } catch {
-    if (retry) {
-      await new Promise(r => setTimeout(r, 600));
-      return reverseGeocode(lat, lng, false);
+    if (retriesLeft > 0) {
+      await new Promise(r => setTimeout(r, 1000));
+      return reverseGeocode(lat, lng, retriesLeft - 1);
     }
     return fallback;
   }
@@ -240,19 +241,26 @@ serve(async (req) => {
     // Sort by distance
     results.sort((a, b) => a.distance_km - b.distance_km);
 
-    // ═══ ENRICHMENT: geocode ALL zones sequentially in small batches to respect Nominatim rate limit ═══
-    async function batchGeocode(zones: ZoneResult[], batchSize = 3) {
-      for (let i = 0; i < zones.length; i += batchSize) {
-        const batch = zones.slice(i, i + batchSize);
-        await Promise.all(batch.map(async (z) => { z.label = await reverseGeocode(z.lat, z.lng); }));
-        if (i + batchSize < zones.length) {
-          await new Promise(r => setTimeout(r, 1200));
-        }
-      }
-    }
+    // ═══ ENRICHMENT: sequential geocoding with spatial cache (strict 1 req/s) ═══
+    const geocodeCache: { lat: number; lng: number; label: string }[] = [];
+    const CACHE_RADIUS_KM = 2;
 
-    // 1. Geocode ALL zones first (batch of 3, 1.2s delay, with retry)
-    await batchGeocode(results, 3);
+    for (const zone of results) {
+      // Check spatial cache first
+      const cached = geocodeCache.find(c => haversineKm(zone.lat, zone.lng, c.lat, c.lng) < CACHE_RADIUS_KM);
+      if (cached) {
+        zone.label = cached.label;
+        continue;
+      }
+      // No cache hit → call Nominatim (one at a time)
+      zone.label = await reverseGeocode(zone.lat, zone.lng);
+      // Only cache if we got a real name (not coordinate fallback)
+      if (zone.label && !/^\d+\.\d+,\s*\d+\.\d+$/.test(zone.label) && !/^-?\d+\.\d+,\s*-?\d+\.\d+$/.test(zone.label)) {
+        geocodeCache.push({ lat: zone.lat, lng: zone.lng, label: zone.label });
+      }
+      // Respect Nominatim rate limit: 1 request per second
+      await new Promise(r => setTimeout(r, 1100));
+    }
 
     // 2. THEN species sampling for blanks + 5 weakest (parallel between themselves)
     const blanks = results.filter(z => z.is_blank);

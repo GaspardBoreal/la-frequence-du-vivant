@@ -11,6 +11,15 @@ import 'leaflet/dist/leaflet.css';
 
 const ITEMS_PER_PAGE = 4;
 
+// Detect if a label is just raw GPS coordinates (geocoding failed)
+function getDisplayLabel(zone: ZoneResult): string {
+  const label = zone.label;
+  if (!label) return 'Lieu-dit non référencé';
+  // Matches patterns like "46.521, 0.297" or "-1.234, 45.678"
+  if (/^-?\d+\.\d+,\s*-?\d+\.\d+$/.test(label.trim())) return 'Lieu-dit non référencé';
+  return label;
+}
+
 // ─── Intensity spectrum ───
 interface IntensityLevel {
   level: number;
@@ -462,7 +471,7 @@ const DetecteurZonesBlanches = () => {
                             >
                               <Tooltip direction="top" offset={[0, -8]}>
                                 <div className="text-xs leading-tight">
-                                  <strong>{zone.label || `${zone.lat.toFixed(3)}, ${zone.lng.toFixed(3)}`}</strong>
+                                  <strong>{getDisplayLabel(zone)}</strong>
                                   <br />
                                   <span style={{ color: intensity.color }}>{intensity.name}</span> · {zone.distance_km} km · <span className="text-stone-400">{zone.resolution === 'nano' ? '🔬 100m' : zone.resolution === 'zoom' ? '🔍 200m' : '📡 600m'}</span>
                                   <br />
@@ -582,7 +591,7 @@ const ZoneListItem = ({ zone, index, getIntensity }: { zone: ZoneResult; index: 
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-1.5">
           <p className="text-sm font-semibold text-stone-700 truncate group-hover:text-stone-900 transition-colors">
-            {zone.label || `${zone.lat.toFixed(3)}, ${zone.lng.toFixed(3)}`}
+            {getDisplayLabel(zone)}
           </p>
           {zone.resolution && zone.resolution !== 'maillage' && (
             <span className="shrink-0 text-[9px] px-1.5 py-0.5 rounded-md bg-stone-100 text-stone-400 font-medium">
@@ -641,7 +650,7 @@ const ZonePopupContent = ({ zone, getIntensity }: { zone: ZoneResult; getIntensi
         <SignalBars level={intensity.level} size={20} />
         <div>
           <span className="font-semibold text-sm text-stone-800 block leading-tight">
-            {zone.label || `${zone.lat.toFixed(3)}, ${zone.lng.toFixed(3)}`}
+            {getDisplayLabel(zone)}
           </span>
           <span className="text-[11px] font-medium" style={{ color: intensity.color }}>
             {intensity.name} du vivant
