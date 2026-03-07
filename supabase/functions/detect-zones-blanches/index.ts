@@ -114,25 +114,12 @@ serve(async (req) => {
       })
     );
 
-    // Sort: blanks first, then by distance
-    results.sort((a, b) => {
-      if (a.is_blank && !b.is_blank) return -1;
-      if (!a.is_blank && b.is_blank) return 1;
-      return a.distance_km - b.distance_km;
-    });
+    // Sort by distance ascending
+    results.sort((a, b) => a.distance_km - b.distance_km);
 
-    // Reverse geocode the top 3 blank zones
-    const blanks = results.filter(z => z.is_blank).slice(0, 3);
+    // Reverse geocode ALL 16 points in parallel
     await Promise.all(
-      blanks.map(async (z) => {
-        z.label = await reverseGeocode(z.lat, z.lng);
-      })
-    );
-
-    // Also label a few non-blank for context
-    const nonBlanks = results.filter(z => !z.is_blank).slice(0, 2);
-    await Promise.all(
-      nonBlanks.map(async (z) => {
+      results.map(async (z) => {
         z.label = await reverseGeocode(z.lat, z.lng);
       })
     );
