@@ -10,6 +10,126 @@ import 'leaflet/dist/leaflet.css';
 
 const ITEMS_PER_PAGE = 4;
 
+// ─── Intensity spectrum ───
+interface IntensityLevel {
+  level: number;
+  name: string;
+  color: string;
+  bgLight: string;
+  borderLight: string;
+  phrase: string;
+  mapRadius: number;
+}
+
+const INTENSITY_LEVELS: IntensityLevel[] = [
+  { level: 0, name: 'Silence', color: '#f59e0b', bgLight: 'rgba(254,243,199,0.3)', borderLight: 'rgba(251,191,36,0.2)', phrase: 'Ce territoire attend ses premiers explorateurs', mapRadius: 10 },
+  { level: 1, name: 'Murmure', color: '#84cc16', bgLight: 'rgba(236,252,203,0.3)', borderLight: 'rgba(132,204,22,0.2)', phrase: 'Un léger frémissement de données — tout reste à découvrir', mapRadius: 8 },
+  { level: 2, name: 'Souffle', color: '#22c55e', bgLight: 'rgba(220,252,231,0.3)', borderLight: 'rgba(34,197,94,0.2)', phrase: 'Le vivant commence à se manifester ici', mapRadius: 9 },
+  { level: 3, name: 'Chœur', color: '#059669', bgLight: 'rgba(209,250,229,0.25)', borderLight: 'rgba(5,150,105,0.18)', phrase: 'Un chœur d\'espèces résonne sur ce territoire', mapRadius: 11 },
+  { level: 4, name: 'Symphonie', color: '#047857', bgLight: 'rgba(167,243,208,0.2)', borderLight: 'rgba(4,120,87,0.15)', phrase: 'Une symphonie du vivant — richement documenté', mapRadius: 13 },
+];
+
+function getIntensityLevel(observations: number): IntensityLevel {
+  if (observations === 0) return INTENSITY_LEVELS[0];
+  if (observations <= 50) return INTENSITY_LEVELS[1];
+  if (observations <= 500) return INTENSITY_LEVELS[2];
+  if (observations <= 5000) return INTENSITY_LEVELS[3];
+  return INTENSITY_LEVELS[4];
+}
+
+// ─── Signal bars SVG ───
+const SignalBars = ({ level, size = 20 }: { level: number; size?: number }) => {
+  const barHeights = [0.3, 0.5, 0.75, 1];
+  const intensity = INTENSITY_LEVELS[level];
+  return (
+    <div className="relative flex items-end gap-[2px]" style={{ width: size, height: size }}>
+      {barHeights.map((h, i) => {
+        const active = i < level;
+        const isSilence = level === 0;
+        return (
+          <div
+            key={i}
+            className={isSilence && i === 0 ? 'animate-pulse' : ''}
+            style={{
+              width: size / 5.5,
+              height: `${h * 100}%`,
+              borderRadius: 2,
+              background: active ? intensity.color : isSilence ? 'rgba(245,158,11,0.2)' : 'rgba(214,211,199,0.35)',
+              transition: 'background 0.3s',
+            }}
+          />
+        );
+      })}
+    </div>
+  );
+};
+
+// ─── Spectre de synthèse ───
+const SpectreSynthese = ({ zones, onFilterLevel, activeFilter }: { zones: ZoneResult[]; onFilterLevel: (level: number | null) => void; activeFilter: number | null }) => {
+  const distribution = useMemo(() => {
+    const counts = [0, 0, 0, 0, 0];
+    zones.forEach(z => { counts[getIntensityLevel(z.observations).level]++; });
+    return counts;
+  }, [zones]);
+
+  const total = zones.length;
+
+  return (
+    <div className="mb-5">
+      <p className="text-[11px] uppercase tracking-widest text-stone-400 mb-2.5 font-medium">Spectre du vivant</p>
+      <div className="flex rounded-xl overflow-hidden h-8 border border-stone-200/50 shadow-sm">
+        {distribution.map((count, i) => {
+          if (count === 0) return null;
+          const info = INTENSITY_LEVELS[i];
+          const pct = (count / total) * 100;
+          const isActive = activeFilter === i;
+          return (
+            <button
+              key={i}
+              onClick={() => onFilterLevel(isActive ? null : i)}
+              className="relative flex items-center justify-center transition-all duration-200 group"
+              style={{
+                width: `${pct}%`,
+                background: info.color,
+                opacity: activeFilter !== null && !isActive ? 0.35 : 1,
+                minWidth: count > 0 ? 32 : 0,
+              }}
+              title={`${info.name} — ${count} zone${count > 1 ? 's' : ''}`}
+            >
+              <span className="text-white text-[11px] font-bold drop-shadow-sm">{count}</span>
+              {isActive && (
+                <motion.div
+                  layoutId="spectreActive"
+                  className="absolute inset-0 border-2 border-white rounded-sm"
+                  transition={{ type: 'spring', stiffness: 500, damping: 35 }}
+                />
+              )}
+            </button>
+          );
+        })}
+      </div>
+      {/* Legend row */}
+      <div className="flex flex-wrap gap-x-4 gap-y-1 mt-2.5">
+        {INTENSITY_LEVELS.map((info) => {
+          const count = distribution[info.level];
+          if (count === 0) return null;
+          return (
+            <button
+              key={info.level}
+              onClick={() => onFilterLevel(activeFilter === info.level ? null : info.level)}
+              className={`flex items-center gap-1.5 text-[11px] transition-opacity ${activeFilter !== null && activeFilter !== info.level ? 'opacity-40' : 'opacity-100'}`}
+            >
+              <div className="w-2 h-2 rounded-full" style={{ background: info.color }} />
+              <span className="text-stone-500">{info.name}</span>
+              <span className="text-stone-300">({count})</span>
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+};
+
 // ─── Recenter helper ───
 const RecenterMap = ({ lat, lng }: { lat: number; lng: number }) => {
   const map = useMap();
@@ -29,17 +149,25 @@ const DetecteurZonesBlanches = () => {
   const [address, setAddress] = useState('');
   const [viewMode, setViewMode] = useState<'list' | 'map'>('list');
   const [page, setPage] = useState(0);
+  const [filterLevel, setFilterLevel] = useState<number | null>(null);
   const { results, isLoading, remainingSearches, searchByGPS, searchByAddress } = useDetecteurZonesBlanches();
 
   const handleAddressSearch = (e: React.FormEvent) => {
     e.preventDefault();
     setPage(0);
+    setFilterLevel(null);
     searchByAddress(address);
   };
 
   const handleGPS = () => {
     setPage(0);
+    setFilterLevel(null);
     searchByGPS();
+  };
+
+  const handleFilterLevel = (level: number | null) => {
+    setFilterLevel(level);
+    setPage(0);
   };
 
   const exhausted = remainingSearches <= 0;
@@ -49,8 +177,13 @@ const DetecteurZonesBlanches = () => {
     return [...results.zones].sort((a, b) => a.distance_km - b.distance_km);
   }, [results]);
 
-  const totalPages = Math.ceil(sortedZones.length / ITEMS_PER_PAGE);
-  const pagedZones = sortedZones.slice(page * ITEMS_PER_PAGE, (page + 1) * ITEMS_PER_PAGE);
+  const filteredZones = useMemo(() => {
+    if (filterLevel === null) return sortedZones;
+    return sortedZones.filter(z => getIntensityLevel(z.observations).level === filterLevel);
+  }, [sortedZones, filterLevel]);
+
+  const totalPages = Math.ceil(filteredZones.length / ITEMS_PER_PAGE);
+  const pagedZones = filteredZones.slice(page * ITEMS_PER_PAGE, (page + 1) * ITEMS_PER_PAGE);
 
   return (
     <motion.div
@@ -139,13 +272,21 @@ const DetecteurZonesBlanches = () => {
         {results && !isLoading && (
           <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.4 }}>
             <div className="border-t border-stone-200/60 pt-5 mt-2">
+              {/* Spectre de synthèse */}
+              <SpectreSynthese zones={sortedZones} onFilterLevel={handleFilterLevel} activeFilter={filterLevel} />
+
               {/* Summary + Toggle */}
               <div className="flex items-center justify-between mb-4">
                 <p className="text-sm text-stone-600">
-                  <strong className="text-emerald-700 text-base">{results.blank_count}</strong>{' '}
-                  <span className="text-stone-500">zone{results.blank_count > 1 ? 's' : ''} blanche{results.blank_count > 1 ? 's' : ''}</span>
+                  <strong className="text-amber-600 text-base">{results.blank_count}</strong>{' '}
+                  <span className="text-stone-500 font-crimson italic">silence{results.blank_count > 1 ? 's' : ''}</span>
                   <span className="text-stone-300 mx-1.5">·</span>
-                  <span className="text-stone-400">{results.total_scanned} points scannés</span>
+                  <span className="text-stone-400">{results.total_scanned} points</span>
+                  {filterLevel !== null && (
+                    <button onClick={() => handleFilterLevel(null)} className="ml-2 text-[10px] text-emerald-600 underline underline-offset-2 hover:text-emerald-700">
+                      tout afficher
+                    </button>
+                  )}
                 </p>
 
                 {/* View toggle */}
@@ -220,39 +361,51 @@ const DetecteurZonesBlanches = () => {
                         </Marker>
 
                         {/* Zone markers */}
-                        {sortedZones.map((zone) => (
-                          <CircleMarker
-                            key={`${zone.lat}-${zone.lng}`}
-                            center={[zone.lat, zone.lng]}
-                            radius={zone.is_blank ? 10 : 7}
-                            pathOptions={{
-                              fillColor: zone.is_blank ? '#f59e0b' : '#10b981',
-                              color: 'white',
-                              weight: 2.5,
-                              opacity: 1,
-                              fillOpacity: 0.85,
-                            }}
-                          >
-                            <Tooltip direction="top" offset={[0, -8]}>
-                              <div className="text-xs leading-tight">
-                                <strong>{zone.label || `${zone.lat.toFixed(3)}, ${zone.lng.toFixed(3)}`}</strong>
-                                <br />
-                                {zone.distance_km} km
-                              </div>
-                            </Tooltip>
-                            <Popup>
-                              <ZonePopupContent zone={zone} />
-                            </Popup>
-                          </CircleMarker>
-                        ))}
+                        {sortedZones.map((zone) => {
+                          const intensity = getIntensityLevel(zone.observations);
+                          const isFiltered = filterLevel !== null && intensity.level !== filterLevel;
+                          return (
+                            <CircleMarker
+                              key={`${zone.lat}-${zone.lng}`}
+                              center={[zone.lat, zone.lng]}
+                              radius={intensity.mapRadius}
+                              pathOptions={{
+                                fillColor: intensity.color,
+                                color: 'white',
+                                weight: 2.5,
+                                opacity: isFiltered ? 0.3 : 1,
+                                fillOpacity: isFiltered ? 0.2 : 0.85,
+                                className: intensity.level === 0 && !isFiltered ? 'zone-silence-pulse' : '',
+                              }}
+                            >
+                              <Tooltip direction="top" offset={[0, -8]}>
+                                <div className="text-xs leading-tight">
+                                  <strong>{zone.label || `${zone.lat.toFixed(3)}, ${zone.lng.toFixed(3)}`}</strong>
+                                  <br />
+                                  <span style={{ color: intensity.color }}>{intensity.name}</span> · {zone.distance_km} km
+                                </div>
+                              </Tooltip>
+                              <Popup>
+                                <ZonePopupContent zone={zone} />
+                              </Popup>
+                            </CircleMarker>
+                          );
+                        })}
                       </MapContainer>
                     </div>
 
                     {/* Legend */}
-                    <div className="flex items-center gap-5 mt-3 px-1">
-                      <LegendDot color="#f59e0b" label="Zone blanche" />
-                      <LegendDot color="#10b981" label="Documentée" />
-                      <LegendDot color="#3b82f6" label="Votre position" />
+                    <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-3 px-1">
+                      {INTENSITY_LEVELS.map((info) => (
+                        <div key={info.level} className="flex items-center gap-1.5">
+                          <div className="w-2.5 h-2.5 rounded-full" style={{ background: info.color }} />
+                          <span className="text-[11px] text-stone-400">{info.name}</span>
+                        </div>
+                      ))}
+                      <div className="flex items-center gap-1.5">
+                        <div className="w-2.5 h-2.5 rounded-full" style={{ background: '#3b82f6' }} />
+                        <span className="text-[11px] text-stone-400">Votre position</span>
+                      </div>
                     </div>
                   </motion.div>
                 )}
@@ -261,6 +414,17 @@ const DetecteurZonesBlanches = () => {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Pulse animation for silence zones on map */}
+      <style>{`
+        @keyframes silencePulse {
+          0%, 100% { opacity: 0.85; }
+          50% { opacity: 0.4; }
+        }
+        .zone-silence-pulse {
+          animation: silencePulse 2.5s ease-in-out infinite;
+        }
+      `}</style>
     </motion.div>
   );
 };
@@ -286,75 +450,79 @@ const ToggleBtn = ({ active, onClick, icon, label }: { active: boolean; onClick:
 );
 
 // ─── List item ───
-const ZoneListItem = ({ zone, index }: { zone: ZoneResult; index: number }) => (
-  <motion.div
-    initial={{ opacity: 0, y: 8 }}
-    animate={{ opacity: 1, y: 0 }}
-    transition={{ delay: index * 0.06, duration: 0.3 }}
-    className="group flex items-center gap-3 rounded-xl px-4 py-3.5 transition-all duration-200 hover:shadow-md cursor-default"
-    style={{
-      background: zone.is_blank ? 'rgba(254,243,199,0.25)' : 'rgba(209,250,229,0.2)',
-      border: `1px solid ${zone.is_blank ? 'rgba(251,191,36,0.18)' : 'rgba(16,185,129,0.15)'}`,
-    }}
-  >
-    {/* Status dot */}
-    <div
-      className="w-3 h-3 rounded-full shrink-0 shadow-sm"
+const ZoneListItem = ({ zone, index }: { zone: ZoneResult; index: number }) => {
+  const intensity = getIntensityLevel(zone.observations);
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: index * 0.06, duration: 0.3 }}
+      className="group flex items-center gap-3 rounded-xl px-4 py-3.5 transition-all duration-200 hover:shadow-md cursor-default"
       style={{
-        background: zone.is_blank ? '#f59e0b' : '#10b981',
-        boxShadow: zone.is_blank ? '0 0 8px rgba(245,158,11,0.3)' : '0 0 8px rgba(16,185,129,0.3)',
-      }}
-    />
-
-    {/* Content */}
-    <div className="flex-1 min-w-0">
-      <p className="text-sm font-semibold text-stone-700 truncate group-hover:text-stone-900 transition-colors">
-        {zone.label || `${zone.lat.toFixed(3)}, ${zone.lng.toFixed(3)}`}
-      </p>
-      <p className="text-[11px] text-stone-400 mt-0.5">
-        {zone.is_blank ? 'Aucune observation recensée' : `${zone.observations} observation${zone.observations > 1 ? 's' : ''}`}
-      </p>
-    </div>
-
-    {/* Distance pill */}
-    <span
-      className="shrink-0 text-xs font-bold px-3 py-1 rounded-full"
-      style={{
-        background: zone.is_blank ? 'rgba(245,158,11,0.12)' : 'rgba(16,185,129,0.1)',
-        color: zone.is_blank ? '#b45309' : '#047857',
+        background: intensity.bgLight,
+        border: `1px solid ${intensity.borderLight}`,
       }}
     >
-      {zone.distance_km} km
-    </span>
-  </motion.div>
-);
+      {/* Signal bars */}
+      <SignalBars level={intensity.level} size={22} />
+
+      {/* Content */}
+      <div className="flex-1 min-w-0">
+        <p className="text-sm font-semibold text-stone-700 truncate group-hover:text-stone-900 transition-colors">
+          {zone.label || `${zone.lat.toFixed(3)}, ${zone.lng.toFixed(3)}`}
+        </p>
+        <p className="text-[11px] mt-0.5" style={{ color: intensity.color }}>
+          <span className="font-medium">{intensity.name}</span>
+          <span className="text-stone-400 ml-1">
+            — {zone.observations === 0
+              ? intensity.phrase
+              : `${zone.observations.toLocaleString('fr-FR')} observation${zone.observations > 1 ? 's' : ''}`}
+          </span>
+        </p>
+      </div>
+
+      {/* Distance pill */}
+      <span
+        className="shrink-0 text-xs font-bold px-3 py-1 rounded-full"
+        style={{
+          background: `${intensity.color}18`,
+          color: intensity.color,
+        }}
+      >
+        {zone.distance_km} km
+      </span>
+    </motion.div>
+  );
+};
 
 // ─── Map popup content ───
-const ZonePopupContent = ({ zone }: { zone: ZoneResult }) => (
-  <div className="min-w-[180px] p-1">
-    <div className="flex items-center gap-2 mb-2">
-      <div
-        className="w-2.5 h-2.5 rounded-full"
-        style={{ background: zone.is_blank ? '#f59e0b' : '#10b981' }}
-      />
-      <span className="font-semibold text-sm text-stone-800">
-        {zone.label || `${zone.lat.toFixed(3)}, ${zone.lng.toFixed(3)}`}
-      </span>
+const ZonePopupContent = ({ zone }: { zone: ZoneResult }) => {
+  const intensity = getIntensityLevel(zone.observations);
+  return (
+    <div className="min-w-[200px] p-1">
+      <div className="flex items-center gap-2.5 mb-2.5">
+        <SignalBars level={intensity.level} size={20} />
+        <div>
+          <span className="font-semibold text-sm text-stone-800 block leading-tight">
+            {zone.label || `${zone.lat.toFixed(3)}, ${zone.lng.toFixed(3)}`}
+          </span>
+          <span className="text-[11px] font-medium" style={{ color: intensity.color }}>
+            {intensity.name} du vivant
+          </span>
+        </div>
+      </div>
+      <div className="space-y-1.5 text-xs text-stone-500 border-t border-stone-100 pt-2">
+        <p>📍 {zone.distance_km} km du point de recherche</p>
+        <p className="italic text-stone-400" style={{ fontSize: 11 }}>
+          « {intensity.phrase} »
+        </p>
+        {zone.observations > 0 && (
+          <p className="text-stone-500">{zone.observations.toLocaleString('fr-FR')} observation{zone.observations > 1 ? 's' : ''} GBIF</p>
+        )}
+        <p className="text-[10px] text-stone-300 pt-0.5">{zone.lat.toFixed(4)}, {zone.lng.toFixed(4)}</p>
+      </div>
     </div>
-    <div className="space-y-1 text-xs text-stone-500">
-      <p>📍 {zone.distance_km} km du point de recherche</p>
-      <p>{zone.is_blank ? '⚠️ Aucune observation recensée' : `✅ ${zone.observations} observation${zone.observations > 1 ? 's' : ''}`}</p>
-      <p className="text-[10px] text-stone-300 pt-1">{zone.lat.toFixed(4)}, {zone.lng.toFixed(4)}</p>
-    </div>
-  </div>
-);
-
-// ─── Legend dot ───
-const LegendDot = ({ color, label }: { color: string; label: string }) => (
-  <div className="flex items-center gap-1.5">
-    <div className="w-2.5 h-2.5 rounded-full" style={{ background: color }} />
-    <span className="text-[11px] text-stone-400">{label}</span>
-  </div>
-);
+  );
+};
 
 export default DetecteurZonesBlanches;
