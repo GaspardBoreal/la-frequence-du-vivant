@@ -1,45 +1,40 @@
 
 
-# Remplacer les 3 marches de la galerie light par des marches specifiques
+# Fix: geocoding still failing for many zones — robust solution
 
-## Objectif
+## Root cause (confirmed from response data)
 
-Au lieu de charger dynamiquement les 3 marches les plus "completes" via `useFeaturedMarches(3)`, afficher exactement ces 3 marches :
+Looking at the actual API response, zones like `"label":"46.521, 0.297"`, `"label":"46.548, 0.258"` etc. show the fallback coordinate format. With 57 zones and `batchSize=3`, we send **3 concurrent requests** every 1.2s. Nominatim's policy is **strictly 1 request per second** — sending 3 in parallel still triggers rate limiting/blocking for 2 out of 3 requests.
 
-1. La ou elle se jette, je me redresse a Bec d'Ambes
-2. L'arbre a papillon du moulin Grand de Gintrac
-3. Un moment sauvage a la sortie de Bergerac
+## Solution: two-pronged approach
 
-## Approche technique
+### 1. Edge function: sequential geocoding + spatial cache
 
-### Fichier a modifier : `src/hooks/useFeaturedMarches.ts`
+**Process ONE zone at a time** (not 3 in parallel) with a 1.1s delay between each. To keep total time acceptable, use a **spatial cache**: if a previously geocoded point is within 2km, reuse its label instead of calling Nominatim again.
 
-Ajouter un parametre optionnel `specificIds` au hook. Quand des IDs sont fournis, le hook charge uniquement ces marches (dans l'ordre donne) au lieu de trier par completude.
+With 57 zones spread across ~12km, many points cluster near the same village. Estimated unique geocode calls: ~15-20 instead of 57. At 1.1s each = ~17-22s total — acceptable.
 
-### Fichier a modifier : `src/pages/MarchesDuVivantExplorer.tsx`
+Changes in `supabase/functions/detect-zones-blanches/index.ts`:
 
-Passer les 3 IDs en dur au hook :
+1. Replace `batchGeocode` with `sequentialGeocodeWithCache`:
+   - Maintain a cache array of `{lat, lng, label}` 
+   - Before calling Nominatim, check if any cached point is within 2km (using `haversineKm`)
+   - If cache hit → reuse label, no API call
+   - If cache miss → call `reverseGeocode` ONE at a time, wait 1.1s, store in cache
+2. Add a second retry with 1s delay in `reverseGeocode` (currently only 600ms)
+3. Keep species sampling unchanged
 
-```
-const EXPLORER_MARCHE_IDS = [
-  'b88f774b-3131-4ff5-8f2a-1dd682f8b6de', // Bec d'Ambes
-  '8ab7818c-f8d0-4432-9093-12c65a3db117', // Gintrac
-  'fd99ffe8-edf4-4cdd-99f4-66c3dd2d9d57', // Bergerac
-];
+### 2. Client-side fallback in the UI component
 
-const { data: featuredMarches } = useFeaturedMarches(3, false, EXPLORER_MARCHE_IDS);
-```
+As a safety net, if the edge function still returns a coordinate-format label (matches pattern `XX.XXX, X.XXX`), the tooltip should display "Zone non identifiée" or attempt a client-side reverse geocode. This ensures the UI never shows raw GPS coordinates.
 
-### Detail du changement dans le hook
+Changes in `src/components/zones-blanches/DetecteurZonesBlanches.tsx`:
+- Add a helper `isCoordinateLabel(label)` that detects the fallback format
+- In tooltip rendering, if coordinate label detected, show "Lieu-dit non référencé" instead
 
-Dans `useFeaturedMarches.ts` :
-- Ajouter le parametre `specificIds?: string[]`
-- L'inclure dans la `queryKey`
-- Si `specificIds` est fourni et non vide, remplacer la requete initiale sur `exploration_marches` par un filtre `.in('id', specificIds)` directement sur `marches`
-- Conserver l'ordre des IDs fournis (pas de tri par completude)
-- Toute la logique existante (photos, audio, biodiversite) reste inchangee
+## Performance estimate
 
-### Aucun impact sur la galerie principale
-
-La page `/marches-du-vivant/carnets-de-terrain` continue d'appeler `useFeaturedMarches(5)` sans `specificIds`, donc son comportement est inchange.
+- ~20 unique Nominatim calls × 1.1s = ~22s geocoding
+- GBIF scan phases: ~10-15s  
+- Total: ~30-35s — acceptable for a deep scan
 
