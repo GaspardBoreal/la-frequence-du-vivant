@@ -14,6 +14,7 @@ import { Input } from '@/components/ui/input';
 import * as VisuallyHidden from '@radix-ui/react-visually-hidden';
 import { useFeaturedMarches } from '@/hooks/useFeaturedMarches';
 import CarnetTerrainCardLight from '@/components/carnets/CarnetTerrainCardLight';
+import DetecteurZonesBlanches from '@/components/zones-blanches/DetecteurZonesBlanches';
 
 const fadeUp = {
   hidden: { opacity: 0, y: 24 },
