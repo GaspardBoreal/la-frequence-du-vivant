@@ -6,6 +6,12 @@ import { toast } from 'sonner';
 const SESSION_KEY = 'zones-blanches-searches';
 const MAX_SEARCHES = 10;
 
+export interface SpeciesSample {
+  scientificName: string;
+  commonName?: string;
+  date?: string;
+}
+
 export interface ZoneResult {
   lat: number;
   lng: number;
@@ -13,6 +19,7 @@ export interface ZoneResult {
   observations: number;
   is_blank: boolean;
   label: string;
+  sample_species?: SpeciesSample[];
 }
 
 export interface DetectionResult {

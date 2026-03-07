@@ -19,6 +19,8 @@ const DIRECTIONS = [
 
 const DISTANCES_KM = [5, 10];
 const SCAN_RADIUS_KM = 2;
+// ~0.018° per km of latitude
+const KM_TO_DEG_LAT = 0.009;
 
 function offsetCoord(lat: number, lng: number, bearingRad: number, distanceKm: number) {
   const R = 6371;
@@ -48,8 +50,16 @@ function haversineKm(lat1: number, lng1: number, lat2: number, lng2: number) {
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
+function buildBboxParams(lat: number, lng: number, radiusKm: number): string {
+  const dLat = radiusKm * KM_TO_DEG_LAT;
+  const dLng = dLat / Math.cos(lat * Math.PI / 180);
+  return `decimalLatitude=${(lat - dLat).toFixed(4)},${(lat + dLat).toFixed(4)}&decimalLongitude=${(lng - dLng).toFixed(4)},${(lng + dLng).toFixed(4)}`;
+}
+
+// Phase 1: count only (limit=0)
 async function getGbifCount(lat: number, lng: number, radiusKm: number): Promise<number> {
-  const url = `https://api.gbif.org/v1/occurrence/search?limit=0&decimalLatitude=${lat.toFixed(4)}&decimalLongitude=${lng.toFixed(4)}&geoDistance=${lat.toFixed(4)},${lng.toFixed(4)},${radiusKm}km`;
+  const bbox = buildBboxParams(lat, lng, radiusKm);
+  const url = `https://api.gbif.org/v1/occurrence/search?${bbox}&limit=0`;
   try {
     const resp = await fetch(url, { headers: { 'Accept': 'application/json' } });
     if (!resp.ok) return -1;
@@ -57,6 +67,39 @@ async function getGbifCount(lat: number, lng: number, radiusKm: number): Promise
     return data.count ?? -1;
   } catch {
     return -1;
+  }
+}
+
+// Phase 2: sample top species (limit=5, unique species names)
+interface SpeciesSample {
+  scientificName: string;
+  commonName?: string;
+  date?: string;
+}
+
+async function getGbifSample(lat: number, lng: number, radiusKm: number, limit = 5): Promise<SpeciesSample[]> {
+  const bbox = buildBboxParams(lat, lng, radiusKm);
+  const url = `https://api.gbif.org/v1/occurrence/search?${bbox}&limit=${limit * 3}&hasCoordinate=true&fields=species,vernacularName,eventDate,genericName`;
+  try {
+    const resp = await fetch(url, { headers: { 'Accept': 'application/json' } });
+    if (!resp.ok) return [];
+    const data = await resp.json();
+    const seen = new Set<string>();
+    const samples: SpeciesSample[] = [];
+    for (const r of data.results ?? []) {
+      const name = r.species || r.genericName;
+      if (!name || seen.has(name)) continue;
+      seen.add(name);
+      samples.push({
+        scientificName: name,
+        commonName: r.vernacularName || undefined,
+        date: r.eventDate || undefined,
+      });
+      if (samples.length >= limit) break;
+    }
+    return samples;
+  } catch {
+    return [];
   }
 }
 
@@ -99,7 +142,7 @@ serve(async (req) => {
       }
     }
 
-    // Query GBIF for all points in parallel
+    // ═══ PHASE 1: Count observations for all 16 points (limit=0, ultra-frugal) ═══
     const results = await Promise.all(
       points.map(async (p) => {
         const observations = await getGbifCount(p.lat, p.lng, SCAN_RADIUS_KM);
@@ -110,6 +153,7 @@ serve(async (req) => {
           observations,
           is_blank: observations === 0,
           label: '',
+          sample_species: [] as SpeciesSample[],
         };
       })
     );
@@ -117,12 +161,24 @@ serve(async (req) => {
     // Sort by distance ascending
     results.sort((a, b) => a.distance_km - b.distance_km);
 
-    // Reverse geocode ALL 16 points in parallel
-    await Promise.all(
-      results.map(async (z) => {
+    // ═══ PHASE 2: Sample species for the 4 most interesting non-blank zones ═══
+    // Priority: zones with fewest observations first (frontier zones near silence)
+    const nonBlankZones = results
+      .filter(z => z.observations > 0)
+      .sort((a, b) => a.observations - b.observations)
+      .slice(0, 4);
+
+    // Reverse geocode ALL + sample species in parallel
+    await Promise.all([
+      // Geocode all 16 points
+      ...results.map(async (z) => {
         z.label = await reverseGeocode(z.lat, z.lng);
-      })
-    );
+      }),
+      // Sample species for 4 frontier zones
+      ...nonBlankZones.map(async (z) => {
+        z.sample_species = await getGbifSample(z.lat, z.lng, SCAN_RADIUS_KM, 5);
+      }),
+    ]);
 
     const response = {
       center: { lat: latitude, lng: longitude },
