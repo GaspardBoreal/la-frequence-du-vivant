@@ -180,7 +180,11 @@ const centerIcon = new L.DivIcon({
   iconAnchor: [9, 9],
 });
 
-const DetecteurZonesBlanches = () => {
+interface DetecteurProps {
+  onResultsReady?: (results: import('@/hooks/useDetecteurZonesBlanches').DetectionResult) => void;
+}
+
+const DetecteurZonesBlanches: React.FC<DetecteurProps> = ({ onResultsReady }) => {
   const [address, setAddress] = useState('');
   const [viewMode, setViewMode] = useState<'list' | 'map'>('list');
   const [page, setPage] = useState(0);
