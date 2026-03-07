@@ -17,7 +17,7 @@ const DIRECTIONS = [
   7 * Math.PI / 4,// NW
 ];
 
-const DISTANCES_KM = [5, 10];
+const DISTANCES_KM = [5, 10, 20];
 const SCAN_RADIUS_KM = 2;
 // ~0.018° per km of latitude
 const KM_TO_DEG_LAT = 0.009;
