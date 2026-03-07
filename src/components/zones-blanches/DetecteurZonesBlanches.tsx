@@ -65,7 +65,7 @@ const SignalBars = ({ level, size = 20 }: { level: number; size?: number }) => {
 };
 
 // ─── Spectre de synthèse ───
-const SpectreSynthese = ({ zones, onFilterLevel, activeFilter }: { zones: ZoneResult[]; onFilterLevel: (level: number | null) => void; activeFilter: number | null }) => {
+const SpectreSynthese = ({ zones, activeFilters, onToggle, onReset }: { zones: ZoneResult[]; activeFilters: Set<number>; onToggle: (level: number) => void; onReset: () => void }) => {
   const distribution = useMemo(() => {
     const counts = [0, 0, 0, 0, 0];
     zones.forEach(z => { counts[getIntensityLevel(z.observations).level]++; });
@@ -73,55 +73,65 @@ const SpectreSynthese = ({ zones, onFilterLevel, activeFilter }: { zones: ZoneRe
   }, [zones]);
 
   const total = zones.length;
+  const allActive = activeFilters.size === 0;
 
   return (
     <div className="mb-5">
       <p className="text-[11px] uppercase tracking-widest text-stone-400 mb-2.5 font-medium">Spectre du vivant</p>
+      {/* Segmented bar */}
       <div className="flex rounded-xl overflow-hidden h-8 border border-stone-200/50 shadow-sm">
         {distribution.map((count, i) => {
           if (count === 0) return null;
           const info = INTENSITY_LEVELS[i];
           const pct = (count / total) * 100;
-          const isActive = activeFilter === i;
+          const isActive = allActive || activeFilters.has(i);
           return (
             <button
               key={i}
-              onClick={() => onFilterLevel(isActive ? null : i)}
+              onClick={() => onToggle(i)}
               className="relative flex items-center justify-center transition-all duration-200 group"
               style={{
                 width: `${pct}%`,
                 background: info.color,
-                opacity: activeFilter !== null && !isActive ? 0.35 : 1,
+                opacity: isActive ? 1 : 0.3,
                 minWidth: count > 0 ? 32 : 0,
               }}
               title={`${info.name} — ${count} zone${count > 1 ? 's' : ''}`}
             >
               <span className="text-white text-[11px] font-bold drop-shadow-sm">{count}</span>
-              {isActive && (
-                <motion.div
-                  layoutId="spectreActive"
-                  className="absolute inset-0 border-2 border-white rounded-sm"
-                  transition={{ type: 'spring', stiffness: 500, damping: 35 }}
-                />
-              )}
             </button>
           );
         })}
       </div>
-      {/* Legend row */}
-      <div className="flex flex-wrap gap-x-4 gap-y-1 mt-2.5">
+      {/* Interactive chips */}
+      <div className="flex flex-wrap items-center gap-2 mt-3">
+        {/* "Tous" chip */}
+        <button
+          onClick={onReset}
+          className={`px-3 py-1 rounded-full text-[11px] font-medium border transition-all duration-200 ${
+            allActive
+              ? 'bg-stone-700 text-white border-stone-700 shadow-sm'
+              : 'bg-transparent text-stone-400 border-stone-200 hover:border-stone-300 hover:text-stone-500'
+          }`}
+        >
+          Tous
+        </button>
         {INTENSITY_LEVELS.map((info) => {
           const count = distribution[info.level];
           if (count === 0) return null;
+          const isActive = activeFilters.has(info.level);
           return (
             <button
               key={info.level}
-              onClick={() => onFilterLevel(activeFilter === info.level ? null : info.level)}
-              className={`flex items-center gap-1.5 text-[11px] transition-opacity ${activeFilter !== null && activeFilter !== info.level ? 'opacity-40' : 'opacity-100'}`}
+              onClick={() => onToggle(info.level)}
+              className="px-3 py-1 rounded-full text-[11px] font-medium border transition-all duration-200 hover:shadow-sm"
+              style={{
+                background: isActive ? info.color : 'transparent',
+                color: isActive ? 'white' : info.color,
+                borderColor: isActive ? info.color : `${info.color}40`,
+              }}
             >
-              <div className="w-2 h-2 rounded-full" style={{ background: info.color }} />
-              <span className="text-stone-500">{info.name}</span>
-              <span className="text-stone-300">({count})</span>
+              {info.name} ({count})
             </button>
           );
         })}
