@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { MapPin, Search, Loader2, Compass, List, Map as MapIcon, ChevronLeft, ChevronRight, Eye } from 'lucide-react';
-import { useDetecteurZonesBlanches, ZoneResult, SpeciesSample, ZoneResolution, ZoneResolution } from '@/hooks/useDetecteurZonesBlanches';
+import { useDetecteurZonesBlanches, ZoneResult, SpeciesSample, ZoneResolution, ZoneResolution, ZoneResolution } from '@/hooks/useDetecteurZonesBlanches';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
@@ -174,7 +174,7 @@ const DetecteurZonesBlanches = () => {
   const [viewMode, setViewMode] = useState<'list' | 'map'>('list');
   const [page, setPage] = useState(0);
   const [activeFilters, setActiveFilters] = useState<Set<number>>(new Set());
-  const [relativeMode, setRelativeMode] = useState(false);
+  const [relativeMode, setRelativeMode] = useState(false)scanPhase, ;
   const { resuscanPhase, lts, isLoading, remainingSearches, searchByGPS, searchByAddress } = useDetecteurZonesBlanches();
 
   const handleAddressSearch = (e: React.FormEvent) => {
@@ -315,7 +315,7 @@ const DetecteurZonesBlanches = () => {
               <div className="w-12 h-12 rounded-full border-2 border-emerald-100" />
               <Loader2 className="w-12 h-12 text-emerald-500 animate-spin absolute inset-0" />
             </div>
-            <span className="text-sm text-stone-500 font-crimson italic">Exploration de 24 points en cours…</span>
+            <span className="text-sm text-ston{scanPhase || 'Exploration en cours…'}on de 24 points en cours…</span>
           </motion.div>
         )}
       </AnimatePresence>
