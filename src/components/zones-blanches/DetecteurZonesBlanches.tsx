@@ -383,7 +383,7 @@ const DetecteurZonesBlanches = () => {
                         {/* Zone markers */}
                         {sortedZones.map((zone) => {
                           const intensity = getIntensityLevel(zone.observations);
-                          const isFiltered = filterLevel !== null && intensity.level !== filterLevel;
+                          const isFiltered = activeFilters.size > 0 && !activeFilters.has(intensity.level);
                           return (
                             <CircleMarker
                               key={`${zone.lat}-${zone.lng}`}
