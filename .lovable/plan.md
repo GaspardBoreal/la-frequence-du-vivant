@@ -1,45 +1,65 @@
 
 
-# Remplacer les 3 marches de la galerie light par des marches specifiques
+# Analyse des resultats — Poitiers, 16 zones scannees
 
-## Objectif
+## Diagnostic
 
-Au lieu de charger dynamiquement les 3 marches les plus "completes" via `useFeaturedMarches(3)`, afficher exactement ces 3 marches :
+J'ai appele la fonction edge en direct avec les coordonnees de Poitiers (46.58, 0.34). Voici les **resultats reels** :
 
-1. La ou elle se jette, je me redresse a Bec d'Ambes
-2. L'arbre a papillon du moulin Grand de Gintrac
-3. Un moment sauvage a la sortie de Bergerac
-
-## Approche technique
-
-### Fichier a modifier : `src/hooks/useFeaturedMarches.ts`
-
-Ajouter un parametre optionnel `specificIds` au hook. Quand des IDs sont fournis, le hook charge uniquement ces marches (dans l'ordre donne) au lieu de trier par completude.
-
-### Fichier a modifier : `src/pages/MarchesDuVivantExplorer.tsx`
-
-Passer les 3 IDs en dur au hook :
-
-```
-const EXPLORER_MARCHE_IDS = [
-  'b88f774b-3131-4ff5-8f2a-1dd682f8b6de', // Bec d'Ambes
-  '8ab7818c-f8d0-4432-9093-12c65a3db117', // Gintrac
-  'fd99ffe8-edf4-4cdd-99f4-66c3dd2d9d57', // Bergerac
-];
-
-const { data: featuredMarches } = useFeaturedMarches(3, false, EXPLORER_MARCHE_IDS);
+```text
+Zone                    | Distance | Observations | Niveau
+------------------------|----------|-------------|----------
+Poitiers (N)            |   5 km   |    8 920    | Symphonie
+Buxerolles (NE)         |   5 km   |    3 810    | Chœur
+Poitiers (E)            |   5 km   |    5 917    | Symphonie
+Mignaloux-Beauvoir (SE) |   5 km   |   10 890    | Symphonie
+Smarves (S)             |   5 km   |    9 083    | Symphonie
+Croutelle (SO)          |   5 km   |    6 761    | Symphonie
+Vouneuil-sous-Biard (O) |   5 km   |   10 619    | Symphonie
+Migne-Auxances (NO)     |   5 km   |    6 947    | Symphonie
+Chasseneuil-du-Poitou   |  10 km   |    2 192    | Chœur
+Montamise               |  10 km   |    5 278    | Symphonie
+Sevres-Anxaumont        |  10 km   |   31 668    | Symphonie
+Nouaille-Maupertuis     |  10 km   |    4 130    | Chœur
+Smarves (S loin)        |  10 km   |    4 546    | Chœur
+Liguge                  |  10 km   |    7 811    | Symphonie
+Beruges                 |  10 km   |   13 465    | Symphonie
+Cisse                   |  10 km   |    6 485    | Symphonie
 ```
 
-### Detail du changement dans le hook
+**Resultat : 0 Silence, 4 Choeur, 12 Symphonie.** C'est correct ! Poitiers est une zone tres bien documentee sur GBIF. Il n'y a logiquement aucune zone blanche a proximite.
 
-Dans `useFeaturedMarches.ts` :
-- Ajouter le parametre `specificIds?: string[]`
-- L'inclure dans la `queryKey`
-- Si `specificIds` est fourni et non vide, remplacer la requete initiale sur `exploration_marches` par un filtre `.in('id', specificIds)` directement sur `marches`
-- Conserver l'ordre des IDs fournis (pas de tri par completude)
-- Toute la logique existante (photos, audio, biodiversite) reste inchangee
+## Le vrai probleme : la valeur pour l'ambassadeur
 
-### Aucun impact sur la galerie principale
+Le detecteur fonctionne, mais quand tout est vert fonce, il n'apporte pas grand-chose. Voici les ameliorations a apporter :
 
-La page `/marches-du-vivant/carnets-de-terrain` continue d'appeler `useFeaturedMarches(5)` sans `specificIds`, donc son comportement est inchange.
+### 1. Afficher les compteurs d'observations sur chaque point
+
+Actuellement on voit juste des ronds verts identiques. Afficher le nombre d'observations dans le tooltip/popup ET varier la **taille du marqueur** proportionnellement (cercle proportionnel) pour reveler les contrastes meme entre zones riches.
+
+### 2. Montrer le gradient relatif (pas seulement absolu)
+
+Ajouter un mode "relatif" : au lieu de seuils fixes (0/50/500/5000), normaliser par rapport au min/max de la zone scannee. Chasseneuil (2192) apparaitrait alors comme une zone plus "faible" comparee a Sevres-Anxaumont (31668). Cela cree de la valeur meme sans zones blanches.
+
+### 3. Enrichir les especes echantillons
+
+Actuellement seules 2 zones sur 16 ont des especes (les 4 avec le moins d'observations). Afficher les especes pour TOUTES les zones enrichirait le contenu narratif.
+
+### 4. Scanner plus loin pour trouver le silence
+
+Ajouter un 3e rayon a 20km (8 points supplementaires) pour augmenter les chances de trouver des zones moins documentees en peripherie.
+
+## Plan d'implementation
+
+### Fichier : `supabase/functions/detect-zones-blanches/index.ts`
+- Ajouter `DISTANCES_KM = [5, 10, 20]` (24 points au total)
+- Augmenter le sampling a 6 zones frontier au lieu de 4
+
+### Fichier : `src/components/zones-blanches/DetecteurZonesBlanches.tsx`
+- **Taille proportionnelle des marqueurs** : `mapRadius` calcule dynamiquement entre 6 et 16 pixels en fonction du ratio `observations / maxObservations`
+- **Afficher le compteur** dans le tooltip au hover (deja present dans le popup, l'ajouter en gros dans la bulle)
+- **Mode relatif** : ajouter un toggle "Absolu / Relatif" qui recalcule les niveaux d'intensite par rapport au min/max local au lieu des seuils fixes
+- **Afficher les especes** pour toutes les zones qui en ont (pas seulement 4)
+
+Cela transforme le detecteur d'un simple "detecteur de vide" en un **outil de cartographie comparative de la connaissance du vivant**, utile meme dans les zones bien documentees.
 
