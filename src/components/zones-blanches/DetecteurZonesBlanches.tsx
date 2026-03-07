@@ -464,7 +464,7 @@ const DetecteurZonesBlanches = () => {
                                 <div className="text-xs leading-tight">
                                   <strong>{zone.label || `${zone.lat.toFixed(3)}, ${zone.lng.toFixed(3)}`}</strong>
                                   <br />
-                                  <span style={{ color: intensity.color }}>{intensity.name}</span> · {zone.distance_km} km · <span className="text-stone-400">{zone.resolution === 'microscope' ? '🔬 200m' : zone.resolution === 'loupe' ? '🔍 500m' : '📡 2km'}</span>
+                                  <span style={{ color: intensity.color }}>{intensity.name}</span> · {zone.distance_km} km · <span className="text-stone-400">{zone.resolution === 'nano' ? '🔬 100m' : zone.resolution === 'zoom' ? '🔍 200m' : '📡 600m'}</span>
                                   <br />
                                   <span className="font-bold" style={{ color: intensity.color }}>
                                     {zone.observations === 0 ? 'Aucune observation' : `${zone.observations.toLocaleString('fr-FR')} obs.`}
