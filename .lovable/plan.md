@@ -1,65 +1,45 @@
 
 
-# Deux modes d'affichage pour le Detecteur de Zones Blanches
+# Remplacer les 3 marches de la galerie light par des marches specifiques
 
-## Probleme
+## Objectif
 
-Le detecteur scanne 16 points mais n'en affiche que 5 zones blanches, sans montrer l'ensemble des resultats. Il manque une vue complete et une vue cartographique.
+Au lieu de charger dynamiquement les 3 marches les plus "completes" via `useFeaturedMarches(3)`, afficher exactement ces 3 marches :
 
-## Solution
+1. La ou elle se jette, je me redresse a Bec d'Ambes
+2. L'arbre a papillon du moulin Grand de Gintrac
+3. Un moment sauvage a la sortie de Bergerac
 
-Refondre la section resultats du composant `DetecteurZonesBlanches` avec deux modes : **Liste paginee** et **Carte interactive**, selectionnables via un toggle elegant.
+## Approche technique
 
-### Mode Liste
+### Fichier a modifier : `src/hooks/useFeaturedMarches.ts`
 
-- Affiche **toutes les 16 zones** (blanches ET documentees), triees par distance croissante depuis le point GPS
-- Pagination de 4 elements par page avec controles Previous/Next
-- Chaque ligne affiche : indicateur couleur (ambre = zone blanche, emeraude = documentee), nom du lieu, distance en km, nombre d'observations
-- Les zones blanches ont un fond ambre subtil, les documentees un fond emeraude subtil
+Ajouter un parametre optionnel `specificIds` au hook. Quand des IDs sont fournis, le hook charge uniquement ces marches (dans l'ordre donne) au lieu de trier par completude.
 
-### Mode Carte
+### Fichier a modifier : `src/pages/MarchesDuVivantExplorer.tsx`
 
-- Carte Leaflet (react-leaflet, deja installe) centree sur le point de recherche
-- Marqueur central bleu pour la position de l'utilisateur
-- CircleMarkers : ambre pour zones blanches, emeraude pour documentees
-- **Tooltip au hover** : nom du lieu, distance, observations
-- **Popup au clic** : widget enrichi avec nom, distance, particularite ("Aucune observation recensee" ou "X observations"), coordonnees GPS
+Passer les 3 IDs en dur au hook :
 
-### Toggle Liste/Carte
+```
+const EXPLORER_MARCHE_IDS = [
+  'b88f774b-3131-4ff5-8f2a-1dd682f8b6de', // Bec d'Ambes
+  '8ab7818c-f8d0-4432-9093-12c65a3db117', // Gintrac
+  'fd99ffe8-edf4-4cdd-99f4-66c3dd2d9d57', // Bergerac
+];
 
-- Deux icones (List, Map) dans un toggle group style "segmented control"
-- Transition animee entre les vues via framer-motion
+const { data: featuredMarches } = useFeaturedMarches(3, false, EXPLORER_MARCHE_IDS);
+```
 
-### Edge function : reverse geocoder toutes les zones
+### Detail du changement dans le hook
 
-Actuellement seules 3 zones blanches + 2 documentees sont reverse geocodees. Il faut labelliser les 16 points pour que les deux modes affichent des noms partout.
+Dans `useFeaturedMarches.ts` :
+- Ajouter le parametre `specificIds?: string[]`
+- L'inclure dans la `queryKey`
+- Si `specificIds` est fourni et non vide, remplacer la requete initiale sur `exploration_marches` par un filtre `.in('id', specificIds)` directement sur `marches`
+- Conserver l'ordre des IDs fournis (pas de tri par completude)
+- Toute la logique existante (photos, audio, biodiversite) reste inchangee
 
-## Modifications techniques
+### Aucun impact sur la galerie principale
 
-### 1. `supabase/functions/detect-zones-blanches/index.ts`
-
-- Reverse geocoder **tous les 16 points** (au lieu de 5). Les appels Nominatim sont paralleles et rapides (~50ms chacun).
-- Trier par distance croissante (au lieu de blanches d'abord) -- le tri sera fait cote client selon le mode.
-
-### 2. `src/components/zones-blanches/DetecteurZonesBlanches.tsx`
-
-Refonte complete de la section resultats :
-
-- Ajouter un state `viewMode: 'list' | 'map'` et un state `page` pour la pagination
-- **Barre de resultats** : resume (X zones blanches sur Y scannees) + toggle List/Map
-- **Vue Liste** : toutes les zones triees par distance, pagination 4/page, composant `ZoneListItem` avec design soigne (icone directionnelle, fond conditionnel, typographie Crimson)
-- **Vue Carte** : composant `ZonesBlanchesMap` avec Leaflet, CircleMarkers colores, Tooltips et Popups enrichis
-- Composants internes : `ZoneListItem`, `ZonesBlanchesMap`, `PaginationControls`
-
-### 3. Aucun autre fichier a modifier
-
-Le hook et la page Explorer restent inchanges.
-
-## Design UX/UI
-
-- Toggle segmented control avec fond emeraude sur l'element actif, coins arrondis, transition smooth
-- Liste : cartes avec micro-ombre, hover avec elevation, badge de distance en pill arrondi, separateurs subtils
-- Carte : tiles CartoDB Voyager (claires, elegantes), marqueurs avec bordure blanche et ombre, popup avec fond blanc arrondi et fleche
-- Animations : stagger sur les items de liste, fade sur le changement de mode
-- Responsive : la carte prend toute la largeur, hauteur 320px mobile / 400px desktop
+La page `/marches-du-vivant/carnets-de-terrain` continue d'appeler `useFeaturedMarches(5)` sans `specificIds`, donc son comportement est inchange.
 
