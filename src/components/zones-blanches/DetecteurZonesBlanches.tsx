@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { MapPin, Search, Loader2, Compass, List, Map as MapIcon, ChevronLeft, ChevronRight, Eye } from 'lucide-react';
-import { useDetecteurZonesBlanches, ZoneResult } from '@/hooks/useDetecteurZonesBlanches';
+import { useDetecteurZonesBlanches, ZoneResult, SpeciesSample } from '@/hooks/useDetecteurZonesBlanches';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { MapContainer, TileLayer, CircleMarker, Popup, Tooltip, Marker, useMap } from 'react-leaflet';
@@ -520,6 +520,24 @@ const ZoneListItem = ({ zone, index }: { zone: ZoneResult; index: number }) => {
               : `${zone.observations.toLocaleString('fr-FR')} observation${zone.observations > 1 ? 's' : ''}`}
           </span>
         </p>
+        {zone.sample_species && zone.sample_species.length > 0 && (
+          <div className="flex flex-wrap gap-1 mt-1.5">
+            {zone.sample_species.map((sp, i) => (
+              <span
+                key={i}
+                className="inline-flex items-center text-[10px] px-2 py-0.5 rounded-full border"
+                style={{
+                  background: `${intensity.color}08`,
+                  borderColor: `${intensity.color}25`,
+                  color: intensity.color,
+                }}
+                title={sp.commonName ? `${sp.commonName} (${sp.scientificName})` : sp.scientificName}
+              >
+                🌿 {sp.commonName || sp.scientificName}
+              </span>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Distance pill */}
@@ -559,6 +577,17 @@ const ZonePopupContent = ({ zone }: { zone: ZoneResult }) => {
         </p>
         {zone.observations > 0 && (
           <p className="text-stone-500">{zone.observations.toLocaleString('fr-FR')} observation{zone.observations > 1 ? 's' : ''} GBIF</p>
+        )}
+        {zone.sample_species && zone.sample_species.length > 0 && (
+          <div className="border-t border-stone-100 pt-1.5 mt-1.5">
+            <p className="text-[10px] uppercase tracking-wider text-stone-400 mb-1">Espèces observées</p>
+            {zone.sample_species.map((sp, i) => (
+              <p key={i} className="text-[11px] text-stone-600">
+                🌿 <span className="font-medium">{sp.commonName || sp.scientificName}</span>
+                {sp.commonName && <span className="text-stone-400 italic ml-1">({sp.scientificName})</span>}
+              </p>
+            ))}
+          </div>
         )}
         <p className="text-[10px] text-stone-300 pt-0.5">{zone.lat.toFixed(4)}, {zone.lng.toFixed(4)}</p>
       </div>
