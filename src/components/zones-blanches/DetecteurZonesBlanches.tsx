@@ -26,7 +26,7 @@ const INTENSITY_LEVELS: IntensityLevel[] = [
   { level: 1, name: 'Murmure', color: '#84cc16', bgLight: 'rgba(236,252,203,0.3)', borderLight: 'rgba(132,204,22,0.2)', phrase: 'Un léger frémissement de données — tout reste à découvrir' },
   { level: 2, name: 'Souffle', color: '#22c55e', bgLight: 'rgba(220,252,231,0.3)', borderLight: 'rgba(34,197,94,0.2)', phrase: 'Le vivant commence à se manifester ici' },
   { level: 3, name: 'Chœur', color: '#059669', bgLight: 'rgba(209,250,229,0.25)', borderLight: 'rgba(5,150,105,0.18)', phrase: 'Un chœur d\'espèces résonne sur ce territoire' },
-  { level: 4, name: 'Symphonie', color: '#047857', bgLight: 'rgba(167,243,208,0.2)', borderLight: 'rgba(4,120,87,0.15)', phrase: 'Une symphonie du vivant — richement documenté' },
+  { level: 4, name: 'Symphonie', color: '#1a3a2a', bgLight: 'rgba(26,58,42,0.08)', borderLight: 'rgba(26,58,42,0.12)', phrase: 'Une symphonie du vivant — richement documenté' },
 ];
 
 function getIntensityLevel(observations: number): IntensityLevel {
