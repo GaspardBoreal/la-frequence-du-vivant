@@ -48,9 +48,9 @@ function getRelativeIntensityLevel(observations: number, min: number, max: numbe
 }
 
 function getProportionalRadius(observations: number, maxObs: number, resolution?: ZoneResolution): number {
-  const baseMax = resolution === 'microscope' ? 10 : resolution === 'loupe' ? 13 : 18;
-  const baseMin = resolution === 'microscope' ? 4 : resolution === 'loupe' ? 5 : 6;
-  if (observations === 0) return resolution === 'microscope' ? 5 : resolution === 'loupe' ? 6 : 8;
+  const baseMax = resolution === 'nano' ? 10 : resolution === 'zoom' ? 13 : 18;
+  const baseMin = resolution === 'nano' ? 4 : resolution === 'zoom' ? 5 : 6;
+  if (observations === 0) return resolution === 'nano' ? 5 : resolution === 'zoom' ? 6 : 8;
   if (maxObs <= 0) return baseMin + 2;
   const ratio = Math.max(0.15, observations / maxObs);
   return baseMin + ratio * (baseMax - baseMin);
