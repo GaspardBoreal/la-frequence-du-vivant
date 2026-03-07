@@ -1,33 +1,45 @@
 
 
-# Fix: city names missing for high-observation zones (Choeur, Symphonie)
+# Remplacer les 3 marches de la galerie light par des marches specifiques
 
-## Root cause
+## Objectif
 
-In `supabase/functions/detect-zones-blanches/index.ts` (lines 232-243), only **blank zones + the 5 weakest non-blank zones** are geocoded via Nominatim. All other zones (Souffle, Choeur, Symphonie) keep their label as an empty string `''`, which is why the tooltip shows raw coordinates like "46.629, 0.414" instead of a city name.
+Au lieu de charger dynamiquement les 3 marches les plus "completes" via `useFeaturedMarches(3)`, afficher exactement ces 3 marches :
 
-## Fix
+1. La ou elle se jette, je me redresse a Bec d'Ambes
+2. L'arbre a papillon du moulin Grand de Gintrac
+3. Un moment sauvage a la sortie de Bergerac
 
-**Geocode ALL zones**, not just blanks + weakest. To respect Nominatim's rate limit (1 req/sec), process geocoding in batches of 8 with a 1-second delay between batches.
+## Approche technique
 
-### `supabase/functions/detect-zones-blanches/index.ts`
+### Fichier a modifier : `src/hooks/useFeaturedMarches.ts`
 
-Replace the selective geocoding block (lines 232-243) with:
-1. A helper function `batchGeocode(zones, batchSize=8)` that processes zones in batches with 1s delay between batches
-2. Call `batchGeocode(results)` to geocode ALL zones
-3. Keep species sampling only for blanks + 5 weakest (unchanged)
+Ajouter un parametre optionnel `specificIds` au hook. Quand des IDs sont fournis, le hook charge uniquement ces marches (dans l'ordre donne) au lieu de trier par completude.
 
-### `src/components/zones-blanches/DetecteurZonesBlanches.tsx`
+### Fichier a modifier : `src/pages/MarchesDuVivantExplorer.tsx`
 
-No changes needed — the tooltip already displays `zone.label`, it just receives empty strings for non-geocoded zones.
+Passer les 3 IDs en dur au hook :
 
-### `src/hooks/useDetecteurZonesBlanches.ts`
+```
+const EXPLORER_MARCHE_IDS = [
+  'b88f774b-3131-4ff5-8f2a-1dd682f8b6de', // Bec d'Ambes
+  '8ab7818c-f8d0-4432-9093-12c65a3db117', // Gintrac
+  'fd99ffe8-edf4-4cdd-99f4-66c3dd2d9d57', // Bergerac
+];
 
-No changes needed.
+const { data: featuredMarches } = useFeaturedMarches(3, false, EXPLORER_MARCHE_IDS);
+```
 
-## Impact
+### Detail du changement dans le hook
 
-- All zones will display their city/village name regardless of observation count
-- Worst case: 81 zones = ~10 batches = ~10 seconds of geocoding (acceptable since scan itself takes 10-15s)
-- Edge function deployment required
+Dans `useFeaturedMarches.ts` :
+- Ajouter le parametre `specificIds?: string[]`
+- L'inclure dans la `queryKey`
+- Si `specificIds` est fourni et non vide, remplacer la requete initiale sur `exploration_marches` par un filtre `.in('id', specificIds)` directement sur `marches`
+- Conserver l'ordre des IDs fournis (pas de tri par completude)
+- Toute la logique existante (photos, audio, biodiversite) reste inchangee
+
+### Aucun impact sur la galerie principale
+
+La page `/marches-du-vivant/carnets-de-terrain` continue d'appeler `useFeaturedMarches(5)` sans `specificIds`, donc son comportement est inchange.
 
