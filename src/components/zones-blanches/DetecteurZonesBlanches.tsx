@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { MapPin, Search, Loader2, Compass, List, Map as MapIcon, ChevronLeft, ChevronRight, Eye } from 'lucide-react';
-import { useDetecteurZonesBlanches, ZoneResult, SpeciesSample, ZoneResolution } from '@/hooks/useDetecteurZonesBlanches';
+import { useDetecteurZonesBlanches, ZoneResult, SpeciesSample, ZoneResolution, ZoneResolution } from '@/hooks/useDetecteurZonesBlanches';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
@@ -175,7 +175,7 @@ const DetecteurZonesBlanches = () => {
   const [page, setPage] = useState(0);
   const [activeFilters, setActiveFilters] = useState<Set<number>>(new Set());
   const [relativeMode, setRelativeMode] = useState(false);
-  const { results, isLoading, remainingSearches, searchByGPS, searchByAddress } = useDetecteurZonesBlanches();
+  const { resuscanPhase, lts, isLoading, remainingSearches, searchByGPS, searchByAddress } = useDetecteurZonesBlanches();
 
   const handleAddressSearch = (e: React.FormEvent) => {
     e.preventDefault();
