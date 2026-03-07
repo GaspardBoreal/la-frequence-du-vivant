@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { MapPin, Search, Loader2, Compass, List, Map as MapIcon, ChevronLeft, ChevronRight, Eye } from 'lucide-react';
-import { useDetecteurZonesBlanches, ZoneResult, SpeciesSample } from '@/hooks/useDetecteurZonesBlanches';
+import { useDetecteurZonesBlanches, ZoneResult, SpeciesSample, ZoneResolution } from '@/hooks/useDetecteurZonesBlanches';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
@@ -47,11 +47,13 @@ function getRelativeIntensityLevel(observations: number, min: number, max: numbe
   return INTENSITY_LEVELS[4];
 }
 
-function getProportionalRadius(observations: number, maxObs: number): number {
-  if (observations === 0) return 8;
-  if (maxObs <= 0) return 10;
+function getProportionalRadius(observations: number, maxObs: number, resolution?: ZoneResolution): number {
+  const baseMax = resolution === 'microscope' ? 10 : resolution === 'loupe' ? 13 : 18;
+  const baseMin = resolution === 'microscope' ? 4 : resolution === 'loupe' ? 5 : 6;
+  if (observations === 0) return resolution === 'microscope' ? 5 : resolution === 'loupe' ? 6 : 8;
+  if (maxObs <= 0) return baseMin + 2;
   const ratio = Math.max(0.15, observations / maxObs);
-  return 6 + ratio * 12; // 6px to 18px
+  return baseMin + ratio * (baseMax - baseMin);
 }
 
 // ─── Signal bars SVG ───
@@ -175,7 +177,7 @@ const DetecteurZonesBlanches = () => {
   const [page, setPage] = useState(0);
   const [activeFilters, setActiveFilters] = useState<Set<number>>(new Set());
   const [relativeMode, setRelativeMode] = useState(false);
-  const { results, isLoading, remainingSearches, searchByGPS, searchByAddress } = useDetecteurZonesBlanches();
+  const { results, isLoading, scanPhase, remainingSearches, searchByGPS, searchByAddress } = useDetecteurZonesBlanches();
 
   const handleAddressSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -315,7 +317,7 @@ const DetecteurZonesBlanches = () => {
               <div className="w-12 h-12 rounded-full border-2 border-emerald-100" />
               <Loader2 className="w-12 h-12 text-emerald-500 animate-spin absolute inset-0" />
             </div>
-            <span className="text-sm text-stone-500 font-crimson italic">Exploration de 24 points en cours…</span>
+            <span className="text-sm text-stone-500 font-crimson italic">{scanPhase || 'Exploration en cours…'}</span>
           </motion.div>
         )}
       </AnimatePresence>
@@ -441,7 +443,8 @@ const DetecteurZonesBlanches = () => {
                         {sortedZones.map((zone) => {
                           const intensity = getIntensity(zone.observations);
                           const isFiltered = activeFilters.size > 0 && !activeFilters.has(intensity.level);
-                          const radius = getProportionalRadius(zone.observations, maxObs);
+                          const radius = getProportionalRadius(zone.observations, maxObs, zone.resolution);
+                          const dashArray = zone.resolution === 'microscope' ? '2 3' : zone.resolution === 'loupe' ? '4 3' : undefined;
                           return (
                             <CircleMarker
                               key={`${zone.lat}-${zone.lng}`}
@@ -449,10 +452,11 @@ const DetecteurZonesBlanches = () => {
                               radius={radius}
                               pathOptions={{
                                 fillColor: intensity.color,
-                                color: 'white',
-                                weight: 2.5,
+                                color: zone.resolution === 'microscope' ? intensity.color : 'white',
+                                weight: zone.resolution === 'microscope' ? 1.5 : 2.5,
                                 opacity: isFiltered ? 0.3 : 1,
-                                fillOpacity: isFiltered ? 0.2 : 0.85,
+                                fillOpacity: isFiltered ? 0.2 : zone.resolution === 'microscope' ? 0.65 : 0.85,
+                                dashArray,
                                 className: intensity.level === 0 && !isFiltered ? 'zone-silence-pulse' : '',
                               }}
                             >
@@ -460,7 +464,7 @@ const DetecteurZonesBlanches = () => {
                                 <div className="text-xs leading-tight">
                                   <strong>{zone.label || `${zone.lat.toFixed(3)}, ${zone.lng.toFixed(3)}`}</strong>
                                   <br />
-                                  <span style={{ color: intensity.color }}>{intensity.name}</span> · {zone.distance_km} km
+                                  <span style={{ color: intensity.color }}>{intensity.name}</span> · {zone.distance_km} km · <span className="text-stone-400">{zone.resolution === 'microscope' ? '🔬 200m' : zone.resolution === 'loupe' ? '🔍 500m' : '📡 2km'}</span>
                                   <br />
                                   <span className="font-bold" style={{ color: intensity.color }}>
                                     {zone.observations === 0 ? 'Aucune observation' : `${zone.observations.toLocaleString('fr-FR')} obs.`}
@@ -509,6 +513,13 @@ const DetecteurZonesBlanches = () => {
                         <div className="w-2.5 h-2.5 rounded-full" style={{ background: '#3b82f6' }} />
                         <span className="text-[11px] text-stone-400">Votre position</span>
                       </div>
+                      {results.phases_completed >= 2 && (
+                        <div className="flex items-center gap-3 ml-2 pl-2 border-l border-stone-200">
+                          <span className="text-[10px] text-stone-400">📡 2km</span>
+                          <span className="text-[10px] text-stone-400">🔍 500m</span>
+                          {results.phases_completed >= 3 && <span className="text-[10px] text-stone-400">🔬 200m</span>}
+                        </div>
+                      )}
                     </div>
                   </motion.div>
                 )}
@@ -571,9 +582,16 @@ const ZoneListItem = ({ zone, index, getIntensity }: { zone: ZoneResult; index: 
 
       {/* Content */}
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-semibold text-stone-700 truncate group-hover:text-stone-900 transition-colors">
-          {zone.label || `${zone.lat.toFixed(3)}, ${zone.lng.toFixed(3)}`}
-        </p>
+        <div className="flex items-center gap-1.5">
+          <p className="text-sm font-semibold text-stone-700 truncate group-hover:text-stone-900 transition-colors">
+            {zone.label || `${zone.lat.toFixed(3)}, ${zone.lng.toFixed(3)}`}
+          </p>
+          {zone.resolution && zone.resolution !== 'radar' && (
+            <span className="shrink-0 text-[9px] px-1.5 py-0.5 rounded-md bg-stone-100 text-stone-400 font-medium">
+              {zone.resolution === 'microscope' ? '🔬 200m' : '🔍 500m'}
+            </span>
+          )}
+        </div>
         <p className="text-[11px] mt-0.5" style={{ color: intensity.color }}>
           <span className="font-medium">{intensity.name}</span>
           <span className="text-stone-400 ml-1">

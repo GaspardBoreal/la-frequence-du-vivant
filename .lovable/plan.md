@@ -1,49 +1,45 @@
 
 
-# Strategie "Microscope" — Detecteur de zones blanches a resolution adaptative
+# Remplacer les 3 marches de la galerie light par des marches specifiques
 
-## Le probleme actuel
+## Objectif
 
-Chaque point est scanne avec un rayon de **2km** (bbox ~16 km²). Meme en pleine campagne charentaise, une zone de 16 km² capte quasi toujours quelques observations GBIF (oiseaux migrateurs, atlas botaniques departementaux). Le maillage est trop grossier pour detecter les vrais vides.
+Au lieu de charger dynamiquement les 3 marches les plus "completes" via `useFeaturedMarches(3)`, afficher exactement ces 3 marches :
 
-## Proposition : scan multi-resolution en 3 phases
+1. La ou elle se jette, je me redresse a Bec d'Ambes
+2. L'arbre a papillon du moulin Grand de Gintrac
+3. Un moment sauvage a la sortie de Bergerac
 
-```text
-Phase 1 — RADAR (existant)
-  24 points × bbox 2km = vue d'ensemble
-  ↓
-Phase 2 — LOUPE
-  Les 6 zones les plus faibles → 4 micro-points autour de chacune
-  24 micro-points × bbox 0.5km (0.8 km²)
-  ↓
-Phase 3 — MICROSCOPE (si toujours 0 silence)
-  Les 4 micro-zones les plus faibles → 4 nano-points
-  16 nano-points × bbox 0.2km (0.13 km²)
+## Approche technique
+
+### Fichier a modifier : `src/hooks/useFeaturedMarches.ts`
+
+Ajouter un parametre optionnel `specificIds` au hook. Quand des IDs sont fournis, le hook charge uniquement ces marches (dans l'ordre donne) au lieu de trier par completude.
+
+### Fichier a modifier : `src/pages/MarchesDuVivantExplorer.tsx`
+
+Passer les 3 IDs en dur au hook :
+
+```
+const EXPLORER_MARCHE_IDS = [
+  'b88f774b-3131-4ff5-8f2a-1dd682f8b6de', // Bec d'Ambes
+  '8ab7818c-f8d0-4432-9093-12c65a3db117', // Gintrac
+  'fd99ffe8-edf4-4cdd-99f4-66c3dd2d9d57', // Bergerac
+];
+
+const { data: featuredMarches } = useFeaturedMarches(3, false, EXPLORER_MARCHE_IDS);
 ```
 
-A 0.2km de rayon, on scanne des parcelles de ~500m × 500m. La probabilite de trouver de vrais vides explose, meme en zone rurale.
+### Detail du changement dans le hook
 
-## Changements
+Dans `useFeaturedMarches.ts` :
+- Ajouter le parametre `specificIds?: string[]`
+- L'inclure dans la `queryKey`
+- Si `specificIds` est fourni et non vide, remplacer la requete initiale sur `exploration_marches` par un filtre `.in('id', specificIds)` directement sur `marches`
+- Conserver l'ordre des IDs fournis (pas de tri par completude)
+- Toute la logique existante (photos, audio, biodiversite) reste inchangee
 
-### `supabase/functions/detect-zones-blanches/index.ts`
+### Aucun impact sur la galerie principale
 
-1. **Apres la Phase 1 (24 points, rayon 2km)** : trier par nombre d'observations croissant, prendre les 6 zones les plus faibles
-2. **Phase 2 — LOUPE** : pour chacune des 6 zones faibles, generer 4 sous-points a 1.5km dans les 4 directions cardinales (N/E/S/O). Scanner avec `SCAN_RADIUS = 0.5km`. Total : 24 appels supplementaires
-3. **Phase 3 — MICROSCOPE** (conditionnelle, si toujours 0 silence) : prendre les 4 micro-zones les plus faibles, generer 4 nano-points a 0.5km, scanner avec `SCAN_RADIUS = 0.2km`. Total : 16 appels supplementaires
-4. **Taguer chaque zone** avec sa `resolution` (`radar` | `loupe` | `microscope`) pour que le front puisse les distinguer visuellement
-5. **Supprimer le scan adaptatif 40km** — remplace par cette strategie plus fine et plus pertinente
-6. **Scanner aussi le point central** (la position de l'utilisateur) avec rayon 2km
-
-### `src/components/zones-blanches/DetecteurZonesBlanches.tsx`
-
-1. **Marqueurs differencies par resolution** : les points `loupe` en cercle plus petit, les points `microscope` en losange ou cercle encore plus petit, avec opacite differente
-2. **Legende enrichie** : afficher "Radar (2km)" / "Loupe (500m)" / "Microscope (200m)" pour expliquer la precision
-3. **Indicateur de progression** : comme le scan prend plus de temps (3 phases sequentielles), afficher l'etape en cours ("Phase 1/3 — Radar...", "Phase 2/3 — Loupe sur zones faibles...")
-
-### Budget API total
-
-- Phase 1 : 24 appels (existant) + 1 centre = 25
-- Phase 2 : 24 appels (6 × 4)
-- Phase 3 : 16 appels (4 × 4, conditionnel)
-- **Max : 65 appels** `limit=0` — reste leger car ce sont des comptages sans donnees
+La page `/marches-du-vivant/carnets-de-terrain` continue d'appeler `useFeaturedMarches(5)` sans `specificIds`, donc son comportement est inchange.
 

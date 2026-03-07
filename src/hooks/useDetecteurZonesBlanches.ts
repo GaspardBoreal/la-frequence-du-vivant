@@ -12,6 +12,8 @@ export interface SpeciesSample {
   date?: string;
 }
 
+export type ZoneResolution = 'radar' | 'loupe' | 'microscope';
+
 export interface ZoneResult {
   lat: number;
   lng: number;
@@ -19,6 +21,8 @@ export interface ZoneResult {
   observations: number;
   is_blank: boolean;
   label: string;
+  resolution: ZoneResolution;
+  scan_radius_km: number;
   sample_species?: SpeciesSample[];
 }
 
@@ -27,6 +31,7 @@ export interface DetectionResult {
   zones: ZoneResult[];
   blank_count: number;
   total_scanned: number;
+  phases_completed: number;
 }
 
 function getSearchCount(): number {
@@ -42,21 +47,30 @@ function incrementSearchCount(): number {
 export const useDetecteurZonesBlanches = () => {
   const [results, setResults] = useState<DetectionResult | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [scanPhase, setScanPhase] = useState<string | null>(null);
   const [remainingSearches, setRemainingSearches] = useState(MAX_SEARCHES - getSearchCount());
 
   const doSearch = useCallback(async (latitude: number, longitude: number) => {
     if (getSearchCount() >= MAX_SEARCHES) {
-      toast.error('Vous avez utilisé vos 3 recherches pour cette session.');
+      toast.error('Vous avez utilisé vos recherches pour cette session.');
       return;
     }
 
     setIsLoading(true);
     setResults(null);
+    setScanPhase('Phase 1/3 — Radar (2km)…');
 
     try {
+      // Simulate phase updates via timing (edge function runs all phases server-side)
+      const phaseTimer1 = setTimeout(() => setScanPhase('Phase 2/3 — Loupe (500m)…'), 4000);
+      const phaseTimer2 = setTimeout(() => setScanPhase('Phase 3/3 — Microscope (200m)…'), 9000);
+
       const { data, error } = await supabase.functions.invoke('detect-zones-blanches', {
         body: { latitude, longitude },
       });
+
+      clearTimeout(phaseTimer1);
+      clearTimeout(phaseTimer2);
 
       if (error) throw new Error(error.message);
 
@@ -68,6 +82,7 @@ export const useDetecteurZonesBlanches = () => {
       toast.error('Erreur lors de la détection. Réessayez.');
     } finally {
       setIsLoading(false);
+      setScanPhase(null);
     }
   }, []);
 
@@ -109,6 +124,7 @@ export const useDetecteurZonesBlanches = () => {
   return {
     results,
     isLoading,
+    scanPhase,
     remainingSearches,
     searchByGPS,
     searchByAddress,
