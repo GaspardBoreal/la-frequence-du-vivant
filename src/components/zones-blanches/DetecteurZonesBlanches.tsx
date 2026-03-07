@@ -650,7 +650,7 @@ const ZonePopupContent = ({ zone, getIntensity }: { zone: ZoneResult; getIntensi
         <SignalBars level={intensity.level} size={20} />
         <div>
           <span className="font-semibold text-sm text-stone-800 block leading-tight">
-            {zone.label || `${zone.lat.toFixed(3)}, ${zone.lng.toFixed(3)}`}
+            {getDisplayLabel(zone)}
           </span>
           <span className="text-[11px] font-medium" style={{ color: intensity.color }}>
             {intensity.name} du vivant
