@@ -404,7 +404,7 @@ const MarchesDuVivantExplorer = () => {
             </div>
 
             {/* Détecteur de zones blanches */}
-            <DetecteurZonesBlanches />
+            <DetecteurZonesBlanches onResultsReady={handleZonesReady} />
           </div>
         </section>
 
