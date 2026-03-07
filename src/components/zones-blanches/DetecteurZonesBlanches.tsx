@@ -452,10 +452,10 @@ const DetecteurZonesBlanches = () => {
                               radius={radius}
                               pathOptions={{
                                 fillColor: intensity.color,
-                                color: zone.resolution === 'microscope' ? intensity.color : 'white',
-                                weight: zone.resolution === 'microscope' ? 1.5 : 2.5,
+                                color: zone.resolution === 'nano' ? intensity.color : 'white',
+                                weight: zone.resolution === 'nano' ? 1.5 : 2.5,
                                 opacity: isFiltered ? 0.3 : 1,
-                                fillOpacity: isFiltered ? 0.2 : zone.resolution === 'microscope' ? 0.65 : 0.85,
+                                fillOpacity: isFiltered ? 0.2 : zone.resolution === 'nano' ? 0.65 : 0.85,
                                 dashArray,
                                 className: intensity.level === 0 && !isFiltered ? 'zone-silence-pulse' : '',
                               }}
