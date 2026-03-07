@@ -166,7 +166,7 @@ serve(async (req) => {
     const nonBlankZones = results
       .filter(z => z.observations > 0)
       .sort((a, b) => a.observations - b.observations)
-      .slice(0, 4);
+      .slice(0, 8);
 
     // Reverse geocode ALL + sample species in parallel
     await Promise.all([
