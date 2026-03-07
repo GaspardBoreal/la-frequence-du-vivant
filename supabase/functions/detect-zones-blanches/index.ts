@@ -94,18 +94,29 @@ async function getGbifSample(lat: number, lng: number, radiusKm: number, limit =
   }
 }
 
-async function reverseGeocode(lat: number, lng: number): Promise<string> {
+async function reverseGeocode(lat: number, lng: number, retry = true): Promise<string> {
+  const fallback = `${lat.toFixed(3)}, ${lng.toFixed(3)}`;
   try {
     const resp = await fetch(
       `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=14&addressdetails=1`,
       { headers: { 'User-Agent': 'LaFrequenceDuVivant/1.0' } }
     );
-    if (!resp.ok) return `${lat.toFixed(3)}, ${lng.toFixed(3)}`;
+    if (!resp.ok) {
+      if (retry) {
+        await new Promise(r => setTimeout(r, 600));
+        return reverseGeocode(lat, lng, false);
+      }
+      return fallback;
+    }
     const data = await resp.json();
     const addr = data.address;
-    return addr?.hamlet || addr?.village || addr?.town || addr?.city || addr?.municipality || data.display_name?.split(',')[0] || `${lat.toFixed(3)}, ${lng.toFixed(3)}`;
+    return addr?.hamlet || addr?.village || addr?.town || addr?.city || addr?.municipality || data.display_name?.split(',')[0] || fallback;
   } catch {
-    return `${lat.toFixed(3)}, ${lng.toFixed(3)}`;
+    if (retry) {
+      await new Promise(r => setTimeout(r, 600));
+      return reverseGeocode(lat, lng, false);
+    }
+    return fallback;
   }
 }
 
@@ -229,17 +240,21 @@ serve(async (req) => {
     // Sort by distance
     results.sort((a, b) => a.distance_km - b.distance_km);
 
-    // ═══ ENRICHMENT: geocode ALL zones (batched); species sample for blanks + 5 weakest ═══
-    async function batchGeocode(zones: ZoneResult[], batchSize = 8) {
+    // ═══ ENRICHMENT: geocode ALL zones sequentially in small batches to respect Nominatim rate limit ═══
+    async function batchGeocode(zones: ZoneResult[], batchSize = 3) {
       for (let i = 0; i < zones.length; i += batchSize) {
         const batch = zones.slice(i, i + batchSize);
         await Promise.all(batch.map(async (z) => { z.label = await reverseGeocode(z.lat, z.lng); }));
         if (i + batchSize < zones.length) {
-          await new Promise(r => setTimeout(r, 1000));
+          await new Promise(r => setTimeout(r, 1200));
         }
       }
     }
 
+    // 1. Geocode ALL zones first (batch of 3, 1.2s delay, with retry)
+    await batchGeocode(results, 3);
+
+    // 2. THEN species sampling for blanks + 5 weakest (parallel between themselves)
     const blanks = results.filter(z => z.is_blank);
     const weakestNonBlank = results
       .filter(z => z.observations > 0)
@@ -247,7 +262,6 @@ serve(async (req) => {
       .slice(0, 5);
 
     await Promise.all([
-      batchGeocode(results),
       ...blanks.map(async (z) => { z.sample_species = await getGbifSample(z.lat, z.lng, z.scan_radius_km, 5); }),
       ...weakestNonBlank.map(async (z) => { z.sample_species = await getGbifSample(z.lat, z.lng, z.scan_radius_km, 5); }),
     ]);
