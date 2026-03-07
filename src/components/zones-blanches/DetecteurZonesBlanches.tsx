@@ -293,7 +293,7 @@ const DetecteurZonesBlanches = () => {
           <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.4 }}>
             <div className="border-t border-stone-200/60 pt-5 mt-2">
               {/* Spectre de synthèse */}
-              <SpectreSynthese zones={sortedZones} onFilterLevel={handleFilterLevel} activeFilter={filterLevel} />
+              <SpectreSynthese zones={sortedZones} activeFilters={activeFilters} onToggle={toggleFilter} onReset={resetFilters} />
 
               {/* Summary + Toggle */}
               <div className="flex items-center justify-between mb-4">
