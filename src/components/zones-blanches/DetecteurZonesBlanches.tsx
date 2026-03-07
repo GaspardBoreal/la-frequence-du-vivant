@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { MapPin, Search, Loader2, Compass, List, Map as MapIcon, ChevronLeft, ChevronRight, Eye } from 'lucide-react';
-import { useDetecteurZonesBlanches, ZoneResult, SpeciesSample, ZoneResolution, ZoneResolution, ZoneResolution } from '@/hooks/useDetecteurZonesBlanches';
+import { useDetecteurZonesBlanches, ZoneResult, SpeciesSample, ZoneResolution } from '@/hooks/useDetecteurZonesBlanches';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
