@@ -48,9 +48,9 @@ function getRelativeIntensityLevel(observations: number, min: number, max: numbe
 }
 
 function getProportionalRadius(observations: number, maxObs: number, resolution?: ZoneResolution): number {
-  const baseMax = resolution === 'microscope' ? 10 : resolution === 'loupe' ? 13 : 18;
-  const baseMin = resolution === 'microscope' ? 4 : resolution === 'loupe' ? 5 : 6;
-  if (observations === 0) return resolution === 'microscope' ? 5 : resolution === 'loupe' ? 6 : 8;
+  const baseMax = resolution === 'nano' ? 10 : resolution === 'zoom' ? 13 : 18;
+  const baseMin = resolution === 'nano' ? 4 : resolution === 'zoom' ? 5 : 6;
+  if (observations === 0) return resolution === 'nano' ? 5 : resolution === 'zoom' ? 6 : 8;
   if (maxObs <= 0) return baseMin + 2;
   const ratio = Math.max(0.15, observations / maxObs);
   return baseMin + ratio * (baseMax - baseMin);
@@ -444,7 +444,7 @@ const DetecteurZonesBlanches = () => {
                           const intensity = getIntensity(zone.observations);
                           const isFiltered = activeFilters.size > 0 && !activeFilters.has(intensity.level);
                           const radius = getProportionalRadius(zone.observations, maxObs, zone.resolution);
-                          const dashArray = zone.resolution === 'microscope' ? '2 3' : zone.resolution === 'loupe' ? '4 3' : undefined;
+                          const dashArray = zone.resolution === 'nano' ? '2 3' : zone.resolution === 'zoom' ? '4 3' : undefined;
                           return (
                             <CircleMarker
                               key={`${zone.lat}-${zone.lng}`}
@@ -452,10 +452,10 @@ const DetecteurZonesBlanches = () => {
                               radius={radius}
                               pathOptions={{
                                 fillColor: intensity.color,
-                                color: zone.resolution === 'microscope' ? intensity.color : 'white',
-                                weight: zone.resolution === 'microscope' ? 1.5 : 2.5,
+                                color: zone.resolution === 'nano' ? intensity.color : 'white',
+                                weight: zone.resolution === 'nano' ? 1.5 : 2.5,
                                 opacity: isFiltered ? 0.3 : 1,
-                                fillOpacity: isFiltered ? 0.2 : zone.resolution === 'microscope' ? 0.65 : 0.85,
+                                fillOpacity: isFiltered ? 0.2 : zone.resolution === 'nano' ? 0.65 : 0.85,
                                 dashArray,
                                 className: intensity.level === 0 && !isFiltered ? 'zone-silence-pulse' : '',
                               }}
@@ -464,7 +464,7 @@ const DetecteurZonesBlanches = () => {
                                 <div className="text-xs leading-tight">
                                   <strong>{zone.label || `${zone.lat.toFixed(3)}, ${zone.lng.toFixed(3)}`}</strong>
                                   <br />
-                                  <span style={{ color: intensity.color }}>{intensity.name}</span> · {zone.distance_km} km · <span className="text-stone-400">{zone.resolution === 'microscope' ? '🔬 200m' : zone.resolution === 'loupe' ? '🔍 500m' : '📡 2km'}</span>
+                                  <span style={{ color: intensity.color }}>{intensity.name}</span> · {zone.distance_km} km · <span className="text-stone-400">{zone.resolution === 'nano' ? '🔬 100m' : zone.resolution === 'zoom' ? '🔍 200m' : '📡 600m'}</span>
                                   <br />
                                   <span className="font-bold" style={{ color: intensity.color }}>
                                     {zone.observations === 0 ? 'Aucune observation' : `${zone.observations.toLocaleString('fr-FR')} obs.`}
@@ -513,13 +513,11 @@ const DetecteurZonesBlanches = () => {
                         <div className="w-2.5 h-2.5 rounded-full" style={{ background: '#3b82f6' }} />
                         <span className="text-[11px] text-stone-400">Votre position</span>
                       </div>
-                      {results.phases_completed >= 2 && (
-                        <div className="flex items-center gap-3 ml-2 pl-2 border-l border-stone-200">
-                          <span className="text-[10px] text-stone-400">📡 2km</span>
-                          <span className="text-[10px] text-stone-400">🔍 500m</span>
-                          {results.phases_completed >= 3 && <span className="text-[10px] text-stone-400">🔬 200m</span>}
-                        </div>
-                      )}
+                      <div className="flex items-center gap-3 ml-2 pl-2 border-l border-stone-200">
+                        <span className="text-[10px] text-stone-400">📡 600m</span>
+                        {results.phases_completed >= 2 && <span className="text-[10px] text-stone-400">🔍 200m</span>}
+                        {results.phases_completed >= 3 && <span className="text-[10px] text-stone-400">🔬 100m</span>}
+                      </div>
                     </div>
                   </motion.div>
                 )}
@@ -586,9 +584,9 @@ const ZoneListItem = ({ zone, index, getIntensity }: { zone: ZoneResult; index: 
           <p className="text-sm font-semibold text-stone-700 truncate group-hover:text-stone-900 transition-colors">
             {zone.label || `${zone.lat.toFixed(3)}, ${zone.lng.toFixed(3)}`}
           </p>
-          {zone.resolution && zone.resolution !== 'radar' && (
+          {zone.resolution && zone.resolution !== 'maillage' && (
             <span className="shrink-0 text-[9px] px-1.5 py-0.5 rounded-md bg-stone-100 text-stone-400 font-medium">
-              {zone.resolution === 'microscope' ? '🔬 200m' : '🔍 500m'}
+              {zone.resolution === 'nano' ? '🔬 100m' : '🔍 200m'}
             </span>
           )}
         </div>
