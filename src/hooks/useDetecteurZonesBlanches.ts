@@ -12,7 +12,7 @@ export interface SpeciesSample {
   date?: string;
 }
 
-export type ZoneResolution = 'radar' | 'loupe' | 'microscope';
+export type ZoneResolution = 'maillage' | 'zoom' | 'nano';
 
 export interface ZoneResult {
   lat: number;
