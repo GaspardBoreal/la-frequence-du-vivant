@@ -159,24 +159,34 @@ const DetecteurZonesBlanches = () => {
   const [address, setAddress] = useState('');
   const [viewMode, setViewMode] = useState<'list' | 'map'>('list');
   const [page, setPage] = useState(0);
-  const [filterLevel, setFilterLevel] = useState<number | null>(null);
+  const [activeFilters, setActiveFilters] = useState<Set<number>>(new Set());
   const { results, isLoading, remainingSearches, searchByGPS, searchByAddress } = useDetecteurZonesBlanches();
 
   const handleAddressSearch = (e: React.FormEvent) => {
     e.preventDefault();
     setPage(0);
-    setFilterLevel(null);
+    setActiveFilters(new Set());
     searchByAddress(address);
   };
 
   const handleGPS = () => {
     setPage(0);
-    setFilterLevel(null);
+    setActiveFilters(new Set());
     searchByGPS();
   };
 
-  const handleFilterLevel = (level: number | null) => {
-    setFilterLevel(level);
+  const toggleFilter = (level: number) => {
+    setActiveFilters(prev => {
+      const next = new Set(prev);
+      if (next.has(level)) next.delete(level);
+      else next.add(level);
+      return next;
+    });
+    setPage(0);
+  };
+
+  const resetFilters = () => {
+    setActiveFilters(new Set());
     setPage(0);
   };
 
