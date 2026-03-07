@@ -414,15 +414,36 @@ const DetecteurZonesBlanches = () => {
                       </MapContainer>
                     </div>
 
-                    {/* Legend */}
-                    <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-3 px-1">
-                      {INTENSITY_LEVELS.map((info) => (
-                        <div key={info.level} className="flex items-center gap-1.5">
-                          <div className="w-2.5 h-2.5 rounded-full" style={{ background: info.color }} />
-                          <span className="text-[11px] text-stone-400">{info.name}</span>
-                        </div>
-                      ))}
-                      <div className="flex items-center gap-1.5">
+                    {/* Interactive legend */}
+                    <div className="flex flex-wrap items-center gap-2 mt-3 px-1">
+                      <button
+                        onClick={resetFilters}
+                        className={`px-2.5 py-0.5 rounded-full text-[11px] font-medium border transition-all duration-200 ${
+                          activeFilters.size === 0
+                            ? 'bg-stone-700 text-white border-stone-700'
+                            : 'bg-transparent text-stone-400 border-stone-200 hover:border-stone-300'
+                        }`}
+                      >
+                        Tous
+                      </button>
+                      {INTENSITY_LEVELS.map((info) => {
+                        const isActive = activeFilters.has(info.level);
+                        return (
+                          <button
+                            key={info.level}
+                            onClick={() => toggleFilter(info.level)}
+                            className="px-2.5 py-0.5 rounded-full text-[11px] font-medium border transition-all duration-200 hover:shadow-sm"
+                            style={{
+                              background: isActive ? info.color : 'transparent',
+                              color: isActive ? 'white' : info.color,
+                              borderColor: isActive ? info.color : `${info.color}40`,
+                            }}
+                          >
+                            {info.name}
+                          </button>
+                        );
+                      })}
+                      <div className="flex items-center gap-1.5 ml-1">
                         <div className="w-2.5 h-2.5 rounded-full" style={{ background: '#3b82f6' }} />
                         <span className="text-[11px] text-stone-400">Votre position</span>
                       </div>
