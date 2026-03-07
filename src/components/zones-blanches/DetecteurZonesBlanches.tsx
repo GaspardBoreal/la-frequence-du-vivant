@@ -302,8 +302,8 @@ const DetecteurZonesBlanches = () => {
                   <span className="text-stone-500 font-crimson italic">silence{results.blank_count > 1 ? 's' : ''}</span>
                   <span className="text-stone-300 mx-1.5">·</span>
                   <span className="text-stone-400">{results.total_scanned} points</span>
-                  {filterLevel !== null && (
-                    <button onClick={() => handleFilterLevel(null)} className="ml-2 text-[10px] text-emerald-600 underline underline-offset-2 hover:text-emerald-700">
+                  {activeFilters.size > 0 && (
+                    <button onClick={resetFilters} className="ml-2 text-[10px] text-emerald-600 underline underline-offset-2 hover:text-emerald-700">
                       tout afficher
                     </button>
                   )}
