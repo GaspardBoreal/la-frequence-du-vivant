@@ -240,17 +240,21 @@ serve(async (req) => {
     // Sort by distance
     results.sort((a, b) => a.distance_km - b.distance_km);
 
-    // ═══ ENRICHMENT: geocode ALL zones (batched); species sample for blanks + 5 weakest ═══
-    async function batchGeocode(zones: ZoneResult[], batchSize = 8) {
+    // ═══ ENRICHMENT: geocode ALL zones sequentially in small batches to respect Nominatim rate limit ═══
+    async function batchGeocode(zones: ZoneResult[], batchSize = 3) {
       for (let i = 0; i < zones.length; i += batchSize) {
         const batch = zones.slice(i, i + batchSize);
         await Promise.all(batch.map(async (z) => { z.label = await reverseGeocode(z.lat, z.lng); }));
         if (i + batchSize < zones.length) {
-          await new Promise(r => setTimeout(r, 1000));
+          await new Promise(r => setTimeout(r, 1200));
         }
       }
     }
 
+    // 1. Geocode ALL zones first (batch of 3, 1.2s delay, with retry)
+    await batchGeocode(results, 3);
+
+    // 2. THEN species sampling for blanks + 5 weakest (parallel between themselves)
     const blanks = results.filter(z => z.is_blank);
     const weakestNonBlank = results
       .filter(z => z.observations > 0)
@@ -258,7 +262,6 @@ serve(async (req) => {
       .slice(0, 5);
 
     await Promise.all([
-      batchGeocode(results),
       ...blanks.map(async (z) => { z.sample_species = await getGbifSample(z.lat, z.lng, z.scan_radius_km, 5); }),
       ...weakestNonBlank.map(async (z) => { z.sample_species = await getGbifSample(z.lat, z.lng, z.scan_radius_km, 5); }),
     ]);
