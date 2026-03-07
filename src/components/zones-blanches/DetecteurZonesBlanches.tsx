@@ -65,7 +65,7 @@ const SignalBars = ({ level, size = 20 }: { level: number; size?: number }) => {
 };
 
 // ─── Spectre de synthèse ───
-const SpectreSynthese = ({ zones, onFilterLevel, activeFilter }: { zones: ZoneResult[]; onFilterLevel: (level: number | null) => void; activeFilter: number | null }) => {
+const SpectreSynthese = ({ zones, activeFilters, onToggle, onReset }: { zones: ZoneResult[]; activeFilters: Set<number>; onToggle: (level: number) => void; onReset: () => void }) => {
   const distribution = useMemo(() => {
     const counts = [0, 0, 0, 0, 0];
     zones.forEach(z => { counts[getIntensityLevel(z.observations).level]++; });
@@ -73,55 +73,65 @@ const SpectreSynthese = ({ zones, onFilterLevel, activeFilter }: { zones: ZoneRe
   }, [zones]);
 
   const total = zones.length;
+  const allActive = activeFilters.size === 0;
 
   return (
     <div className="mb-5">
       <p className="text-[11px] uppercase tracking-widest text-stone-400 mb-2.5 font-medium">Spectre du vivant</p>
+      {/* Segmented bar */}
       <div className="flex rounded-xl overflow-hidden h-8 border border-stone-200/50 shadow-sm">
         {distribution.map((count, i) => {
           if (count === 0) return null;
           const info = INTENSITY_LEVELS[i];
           const pct = (count / total) * 100;
-          const isActive = activeFilter === i;
+          const isActive = allActive || activeFilters.has(i);
           return (
             <button
               key={i}
-              onClick={() => onFilterLevel(isActive ? null : i)}
+              onClick={() => onToggle(i)}
               className="relative flex items-center justify-center transition-all duration-200 group"
               style={{
                 width: `${pct}%`,
                 background: info.color,
-                opacity: activeFilter !== null && !isActive ? 0.35 : 1,
+                opacity: isActive ? 1 : 0.3,
                 minWidth: count > 0 ? 32 : 0,
               }}
               title={`${info.name} — ${count} zone${count > 1 ? 's' : ''}`}
             >
               <span className="text-white text-[11px] font-bold drop-shadow-sm">{count}</span>
-              {isActive && (
-                <motion.div
-                  layoutId="spectreActive"
-                  className="absolute inset-0 border-2 border-white rounded-sm"
-                  transition={{ type: 'spring', stiffness: 500, damping: 35 }}
-                />
-              )}
             </button>
           );
         })}
       </div>
-      {/* Legend row */}
-      <div className="flex flex-wrap gap-x-4 gap-y-1 mt-2.5">
+      {/* Interactive chips */}
+      <div className="flex flex-wrap items-center gap-2 mt-3">
+        {/* "Tous" chip */}
+        <button
+          onClick={onReset}
+          className={`px-3 py-1 rounded-full text-[11px] font-medium border transition-all duration-200 ${
+            allActive
+              ? 'bg-stone-700 text-white border-stone-700 shadow-sm'
+              : 'bg-transparent text-stone-400 border-stone-200 hover:border-stone-300 hover:text-stone-500'
+          }`}
+        >
+          Tous
+        </button>
         {INTENSITY_LEVELS.map((info) => {
           const count = distribution[info.level];
           if (count === 0) return null;
+          const isActive = activeFilters.has(info.level);
           return (
             <button
               key={info.level}
-              onClick={() => onFilterLevel(activeFilter === info.level ? null : info.level)}
-              className={`flex items-center gap-1.5 text-[11px] transition-opacity ${activeFilter !== null && activeFilter !== info.level ? 'opacity-40' : 'opacity-100'}`}
+              onClick={() => onToggle(info.level)}
+              className="px-3 py-1 rounded-full text-[11px] font-medium border transition-all duration-200 hover:shadow-sm"
+              style={{
+                background: isActive ? info.color : 'transparent',
+                color: isActive ? 'white' : info.color,
+                borderColor: isActive ? info.color : `${info.color}40`,
+              }}
             >
-              <div className="w-2 h-2 rounded-full" style={{ background: info.color }} />
-              <span className="text-stone-500">{info.name}</span>
-              <span className="text-stone-300">({count})</span>
+              {info.name} ({count})
             </button>
           );
         })}
@@ -149,24 +159,34 @@ const DetecteurZonesBlanches = () => {
   const [address, setAddress] = useState('');
   const [viewMode, setViewMode] = useState<'list' | 'map'>('list');
   const [page, setPage] = useState(0);
-  const [filterLevel, setFilterLevel] = useState<number | null>(null);
+  const [activeFilters, setActiveFilters] = useState<Set<number>>(new Set());
   const { results, isLoading, remainingSearches, searchByGPS, searchByAddress } = useDetecteurZonesBlanches();
 
   const handleAddressSearch = (e: React.FormEvent) => {
     e.preventDefault();
     setPage(0);
-    setFilterLevel(null);
+    setActiveFilters(new Set());
     searchByAddress(address);
   };
 
   const handleGPS = () => {
     setPage(0);
-    setFilterLevel(null);
+    setActiveFilters(new Set());
     searchByGPS();
   };
 
-  const handleFilterLevel = (level: number | null) => {
-    setFilterLevel(level);
+  const toggleFilter = (level: number) => {
+    setActiveFilters(prev => {
+      const next = new Set(prev);
+      if (next.has(level)) next.delete(level);
+      else next.add(level);
+      return next;
+    });
+    setPage(0);
+  };
+
+  const resetFilters = () => {
+    setActiveFilters(new Set());
     setPage(0);
   };
 
@@ -178,9 +198,9 @@ const DetecteurZonesBlanches = () => {
   }, [results]);
 
   const filteredZones = useMemo(() => {
-    if (filterLevel === null) return sortedZones;
-    return sortedZones.filter(z => getIntensityLevel(z.observations).level === filterLevel);
-  }, [sortedZones, filterLevel]);
+    if (activeFilters.size === 0) return sortedZones;
+    return sortedZones.filter(z => activeFilters.has(getIntensityLevel(z.observations).level));
+  }, [sortedZones, activeFilters]);
 
   const totalPages = Math.ceil(filteredZones.length / ITEMS_PER_PAGE);
   const pagedZones = filteredZones.slice(page * ITEMS_PER_PAGE, (page + 1) * ITEMS_PER_PAGE);
@@ -273,7 +293,7 @@ const DetecteurZonesBlanches = () => {
           <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.4 }}>
             <div className="border-t border-stone-200/60 pt-5 mt-2">
               {/* Spectre de synthèse */}
-              <SpectreSynthese zones={sortedZones} onFilterLevel={handleFilterLevel} activeFilter={filterLevel} />
+              <SpectreSynthese zones={sortedZones} activeFilters={activeFilters} onToggle={toggleFilter} onReset={resetFilters} />
 
               {/* Summary + Toggle */}
               <div className="flex items-center justify-between mb-4">
@@ -282,8 +302,8 @@ const DetecteurZonesBlanches = () => {
                   <span className="text-stone-500 font-crimson italic">silence{results.blank_count > 1 ? 's' : ''}</span>
                   <span className="text-stone-300 mx-1.5">·</span>
                   <span className="text-stone-400">{results.total_scanned} points</span>
-                  {filterLevel !== null && (
-                    <button onClick={() => handleFilterLevel(null)} className="ml-2 text-[10px] text-emerald-600 underline underline-offset-2 hover:text-emerald-700">
+                  {activeFilters.size > 0 && (
+                    <button onClick={resetFilters} className="ml-2 text-[10px] text-emerald-600 underline underline-offset-2 hover:text-emerald-700">
                       tout afficher
                     </button>
                   )}
@@ -363,7 +383,7 @@ const DetecteurZonesBlanches = () => {
                         {/* Zone markers */}
                         {sortedZones.map((zone) => {
                           const intensity = getIntensityLevel(zone.observations);
-                          const isFiltered = filterLevel !== null && intensity.level !== filterLevel;
+                          const isFiltered = activeFilters.size > 0 && !activeFilters.has(intensity.level);
                           return (
                             <CircleMarker
                               key={`${zone.lat}-${zone.lng}`}
@@ -394,15 +414,36 @@ const DetecteurZonesBlanches = () => {
                       </MapContainer>
                     </div>
 
-                    {/* Legend */}
-                    <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-3 px-1">
-                      {INTENSITY_LEVELS.map((info) => (
-                        <div key={info.level} className="flex items-center gap-1.5">
-                          <div className="w-2.5 h-2.5 rounded-full" style={{ background: info.color }} />
-                          <span className="text-[11px] text-stone-400">{info.name}</span>
-                        </div>
-                      ))}
-                      <div className="flex items-center gap-1.5">
+                    {/* Interactive legend */}
+                    <div className="flex flex-wrap items-center gap-2 mt-3 px-1">
+                      <button
+                        onClick={resetFilters}
+                        className={`px-2.5 py-0.5 rounded-full text-[11px] font-medium border transition-all duration-200 ${
+                          activeFilters.size === 0
+                            ? 'bg-stone-700 text-white border-stone-700'
+                            : 'bg-transparent text-stone-400 border-stone-200 hover:border-stone-300'
+                        }`}
+                      >
+                        Tous
+                      </button>
+                      {INTENSITY_LEVELS.map((info) => {
+                        const isActive = activeFilters.has(info.level);
+                        return (
+                          <button
+                            key={info.level}
+                            onClick={() => toggleFilter(info.level)}
+                            className="px-2.5 py-0.5 rounded-full text-[11px] font-medium border transition-all duration-200 hover:shadow-sm"
+                            style={{
+                              background: isActive ? info.color : 'transparent',
+                              color: isActive ? 'white' : info.color,
+                              borderColor: isActive ? info.color : `${info.color}40`,
+                            }}
+                          >
+                            {info.name}
+                          </button>
+                        );
+                      })}
+                      <div className="flex items-center gap-1.5 ml-1">
                         <div className="w-2.5 h-2.5 rounded-full" style={{ background: '#3b82f6' }} />
                         <span className="text-[11px] text-stone-400">Votre position</span>
                       </div>

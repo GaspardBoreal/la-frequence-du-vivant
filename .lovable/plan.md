@@ -1,33 +1,45 @@
 
 
-# Légende interactive multi-sélection pour la carte
+# Remplacer les 3 marches de la galerie light par des marches specifiques
 
-## Problème
+## Objectif
 
-La légende de la carte affiche les 5 niveaux (Silence, Murmure, Souffle, Chœur, Symphonie) mais ils ne sont pas cliquables. De plus, le filtre actuel (`filterLevel: number | null`) ne permet de sélectionner qu'un seul niveau à la fois — impossible de combiner Silence + Souffle par exemple.
+Au lieu de charger dynamiquement les 3 marches les plus "completes" via `useFeaturedMarches(3)`, afficher exactement ces 3 marches :
 
-## Solution
+1. La ou elle se jette, je me redresse a Bec d'Ambes
+2. L'arbre a papillon du moulin Grand de Gintrac
+3. Un moment sauvage a la sortie de Bergerac
 
-1. **Remplacer `filterLevel: number | null` par `activeFilters: Set<number>`** — vide = tout afficher, sinon affiche uniquement les niveaux sélectionnés. Gère toutes les combinaisons possibles.
+## Approche technique
 
-2. **Transformer la légende de la carte en chips cliquables** — chaque niveau est un bouton pill avec un état actif/inactif. Design : fond coloré quand actif, fond grisé transparent quand inactif, transition smooth. Un bouton "Tous" pour réinitialiser.
+### Fichier a modifier : `src/hooks/useFeaturedMarches.ts`
 
-3. **Adapter le SpectreSynthese** au même système multi-sélection (clic = toggle dans le Set).
+Ajouter un parametre optionnel `specificIds` au hook. Quand des IDs sont fournis, le hook charge uniquement ces marches (dans l'ordre donne) au lieu de trier par completude.
 
-4. **Appliquer le filtre partout** : liste paginée ET carte (opacité réduite pour les marqueurs filtrés, comme déjà fait mais avec le Set).
+### Fichier a modifier : `src/pages/MarchesDuVivantExplorer.tsx`
 
-## Changements dans `DetecteurZonesBlanches.tsx`
+Passer les 3 IDs en dur au hook :
 
-- State : `filterLevel: number | null` → `activeFilters: Set<number>`
-- `handleFilterLevel` → `toggleFilter(level)` : toggle un niveau dans le Set
-- `filteredZones` : si Set vide → tout, sinon filtre par Set
-- `SpectreSynthese` : accepte `activeFilters: Set<number>` au lieu de `activeFilter: number | null`, multi-clic
-- Légende carte (lignes 398-409) : remplacée par des **chips interactives** avec :
-  - Fond rempli de la couleur du niveau quand actif, bordure + texte coloré quand inactif
-  - Compteur de zones entre parenthèses
-  - Bouton "Tous" avec style distinct
-  - Coins arrondis pill, micro-shadow au hover, transition 200ms
-- Carte : `isFiltered` vérifie `activeFilters.size > 0 && !activeFilters.has(level)`
+```
+const EXPLORER_MARCHE_IDS = [
+  'b88f774b-3131-4ff5-8f2a-1dd682f8b6de', // Bec d'Ambes
+  '8ab7818c-f8d0-4432-9093-12c65a3db117', // Gintrac
+  'fd99ffe8-edf4-4cdd-99f4-66c3dd2d9d57', // Bergerac
+];
 
-Un seul fichier modifié.
+const { data: featuredMarches } = useFeaturedMarches(3, false, EXPLORER_MARCHE_IDS);
+```
+
+### Detail du changement dans le hook
+
+Dans `useFeaturedMarches.ts` :
+- Ajouter le parametre `specificIds?: string[]`
+- L'inclure dans la `queryKey`
+- Si `specificIds` est fourni et non vide, remplacer la requete initiale sur `exploration_marches` par un filtre `.in('id', specificIds)` directement sur `marches`
+- Conserver l'ordre des IDs fournis (pas de tri par completude)
+- Toute la logique existante (photos, audio, biodiversite) reste inchangee
+
+### Aucun impact sur la galerie principale
+
+La page `/marches-du-vivant/carnets-de-terrain` continue d'appeler `useFeaturedMarches(5)` sans `specificIds`, donc son comportement est inchange.
 
