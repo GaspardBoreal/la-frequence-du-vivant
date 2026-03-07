@@ -192,6 +192,13 @@ const DetecteurZonesBlanches: React.FC<DetecteurProps> = ({ onResultsReady }) =>
   const [relativeMode, setRelativeMode] = useState(false);
   const { results, isLoading, scanPhase, remainingSearches, searchByGPS, searchByAddress } = useDetecteurZonesBlanches();
 
+  // Notify parent when results are available
+  React.useEffect(() => {
+    if (results && onResultsReady) {
+      onResultsReady(results);
+    }
+  }, [results, onResultsReady]);
+
   const handleAddressSearch = (e: React.FormEvent) => {
     e.preventDefault();
     setPage(0);
