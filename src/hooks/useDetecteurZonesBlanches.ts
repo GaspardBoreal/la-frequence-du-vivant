@@ -4,7 +4,7 @@ import { geocodeAddress } from '@/utils/geocoding';
 import { toast } from 'sonner';
 
 const SESSION_KEY = 'zones-blanches-searches';
-const MAX_SEARCHES = 10;
+const MAX_SEARCHES = 50;
 
 export interface SpeciesSample {
   scientificName: string;
