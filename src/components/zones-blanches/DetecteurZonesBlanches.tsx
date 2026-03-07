@@ -174,8 +174,8 @@ const DetecteurZonesBlanches = () => {
   const [viewMode, setViewMode] = useState<'list' | 'map'>('list');
   const [page, setPage] = useState(0);
   const [activeFilters, setActiveFilters] = useState<Set<number>>(new Set());
-  const [relativeMode, setRelativeMode] = useState(false)scanPhase, ;
-  const { resuscanPhase, lts, isLoading, remainingSearches, searchByGPS, searchByAddress } = useDetecteurZonesBlanches();
+  const [relativeMode, setRelativeMode] = useState(false);
+  const { results, isLoading, scanPhase, remainingSearches, searchByGPS, searchByAddress } = useDetecteurZonesBlanches();
 
   const handleAddressSearch = (e: React.FormEvent) => {
     e.preventDefault();
