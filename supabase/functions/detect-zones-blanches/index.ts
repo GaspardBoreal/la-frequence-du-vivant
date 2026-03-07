@@ -17,7 +17,7 @@ const DIRECTIONS = [
   7 * Math.PI / 4,// NW
 ];
 
-const DISTANCES_KM = [5, 10];
+const DISTANCES_KM = [5, 10, 20];
 const SCAN_RADIUS_KM = 2;
 // ~0.018° per km of latitude
 const KM_TO_DEG_LAT = 0.009;
@@ -166,7 +166,7 @@ serve(async (req) => {
     const nonBlankZones = results
       .filter(z => z.observations > 0)
       .sort((a, b) => a.observations - b.observations)
-      .slice(0, 4);
+      .slice(0, 8);
 
     // Reverse geocode ALL + sample species in parallel
     await Promise.all([
