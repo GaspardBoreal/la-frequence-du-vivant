@@ -158,10 +158,35 @@ serve(async (req) => {
       })
     );
 
+    // ═══ ADAPTIVE PHASE: if no silence found, scan 40km ring ═══
+    const blankCount = results.filter(z => z.is_blank).length;
+    if (blankCount === 0) {
+      const extraPoints: { lat: number; lng: number; distanceKm: number }[] = [];
+      for (const dir of DIRECTIONS) {
+        const p = offsetCoord(latitude, longitude, dir, 40);
+        extraPoints.push({ ...p, distanceKm: haversineKm(latitude, longitude, p.lat, p.lng) });
+      }
+      const extraResults = await Promise.all(
+        extraPoints.map(async (p) => {
+          const observations = await getGbifCount(p.lat, p.lng, SCAN_RADIUS_KM);
+          return {
+            lat: Math.round(p.lat * 10000) / 10000,
+            lng: Math.round(p.lng * 10000) / 10000,
+            distance_km: Math.round(p.distanceKm * 10) / 10,
+            observations,
+            is_blank: observations === 0,
+            label: '',
+            sample_species: [] as SpeciesSample[],
+          };
+        })
+      );
+      results.push(...extraResults);
+    }
+
     // Sort by distance ascending
     results.sort((a, b) => a.distance_km - b.distance_km);
 
-    // ═══ PHASE 2: Sample species for the 4 most interesting non-blank zones ═══
+    // ═══ PHASE 2: Sample species for the 8 most interesting non-blank zones ═══
     // Priority: zones with fewest observations first (frontier zones near silence)
     const nonBlankZones = results
       .filter(z => z.observations > 0)
@@ -170,11 +195,9 @@ serve(async (req) => {
 
     // Reverse geocode ALL + sample species in parallel
     await Promise.all([
-      // Geocode all 16 points
       ...results.map(async (z) => {
         z.label = await reverseGeocode(z.lat, z.lng);
       }),
-      // Sample species for 4 frontier zones
       ...nonBlankZones.map(async (z) => {
         z.sample_species = await getGbifSample(z.lat, z.lng, SCAN_RADIUS_KM, 5);
       }),
