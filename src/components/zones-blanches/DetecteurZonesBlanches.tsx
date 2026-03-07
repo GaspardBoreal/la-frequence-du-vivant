@@ -198,9 +198,9 @@ const DetecteurZonesBlanches = () => {
   }, [results]);
 
   const filteredZones = useMemo(() => {
-    if (filterLevel === null) return sortedZones;
-    return sortedZones.filter(z => getIntensityLevel(z.observations).level === filterLevel);
-  }, [sortedZones, filterLevel]);
+    if (activeFilters.size === 0) return sortedZones;
+    return sortedZones.filter(z => activeFilters.has(getIntensityLevel(z.observations).level));
+  }, [sortedZones, activeFilters]);
 
   const totalPages = Math.ceil(filteredZones.length / ITEMS_PER_PAGE);
   const pagedZones = filteredZones.slice(page * ITEMS_PER_PAGE, (page + 1) * ITEMS_PER_PAGE);
