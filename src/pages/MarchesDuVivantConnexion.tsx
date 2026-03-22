@@ -98,6 +98,14 @@ const MarchesDuVivantConnexion = () => {
     e.preventDefault();
     setIsSubmitting(true);
     try {
+      const exists = await checkEmailExists(email);
+      if (!exists) {
+        toast.info('Aucun compte ne correspond à cet email. Rejoignez l\'aventure ! 🌿', {
+          duration: 4000,
+        });
+        setTimeout(() => setMode('register'), 1500);
+        return;
+      }
       await resetPassword(email);
       toast.success('Email de réinitialisation envoyé ! 📧');
       setMode('login');
