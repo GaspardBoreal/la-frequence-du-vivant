@@ -38,7 +38,7 @@ const contributeurs: ContributeurData[] = [
   },
   {
     nom: 'Gaspard Boréal',
-    role: 'Auteur & Explorateur Sonore',
+    role: 'Auteur, Explorateur Sonore & Créateur des Marches du Vivant',
     bio: 'Ateliers d\'écoute du vivant | Soundwalks & récit de territoire | Outils numériques sobres | Résidences, conférences, collaborations.',
     linkedin: 'https://www.gaspardboreal.com/',
     couleur: 'purple',
