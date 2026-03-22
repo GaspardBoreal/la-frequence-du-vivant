@@ -50,7 +50,7 @@ const Index = () => {
                 
                 {/* Sous-titre */}
                 <p className="gaspard-subtitle max-w-2xl mx-auto text-center text-2xl">
-                  Marche techno-sensible entre vivant, humain et machine
+                  Marche techno-sensible entre poésie et science participative
                 </p>
                 
                 {/* Meta informations */}
