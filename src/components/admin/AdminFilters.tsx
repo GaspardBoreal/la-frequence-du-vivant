@@ -276,6 +276,7 @@ const AdminFilters: React.FC<AdminFiltersProps> = ({ marches, onFilterChange }) 
     setWithoutAudio(false);
     setWithoutTexts(false);
     setExplorationFilter('');
+    setOrganisateurFilter('');
     setExplorationMarchesIds([]);
     setExplorationMarchesLoaded(false);
     onFilterChange(marches);
