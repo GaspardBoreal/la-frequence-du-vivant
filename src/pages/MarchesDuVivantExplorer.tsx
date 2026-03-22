@@ -65,10 +65,6 @@ const MarchesDuVivantExplorer = () => {
   ];
   const { data: featuredMarches } = useFeaturedMarches(3, false, EXPLORER_MARCHE_IDS);
 
-  const popupDates = [
-  { id: 'mars', date: '8-9 mars 2026', titre: 'Printemps des Poètes', badge: 'Comité réduit', icon: <Snowflake className="w-5 h-5" />, desc: 'L\'éveil du printemps, quand la nature murmure ses premiers secrets.', highlight: false },
-  { id: 'mai', date: '24-25 mai 2026', titre: 'Fête de la Nature', badge: 'Comité élargi', icon: <Flower2 className="w-5 h-5" />, desc: 'La nature en pleine effervescence, les sens en éveil total.', highlight: false },
-  { id: 'juin', date: '21 juin 2026', titre: 'Solstice d\'été', badge: 'Lancement officiel', icon: <Sun className="w-5 h-5" />, desc: 'Le jour le plus long, la lumière à son apogée. L\'aventure commence.', highlight: true }];
 
 
   const handleInscription = (e: React.FormEvent) => {
@@ -77,8 +73,9 @@ const MarchesDuVivantExplorer = () => {
       toast.error('Choisissez une date pour votre première marche');
       return;
     }
+    const selectedEvent = upcomingEvents.find(e => e.id === selectedDate);
     toast.success('Bienvenue parmi les Marcheurs du Vivant ! 🌿', {
-      description: `${prenom}, nous vous contacterons pour la marche choisie.`,
+      description: `${prenom}, nous vous contacterons pour « ${selectedEvent?.title || 'la marche choisie'} ».`,
       duration: 5000
     });
     setPopupOpen(false);
@@ -855,62 +852,78 @@ const MarchesDuVivantExplorer = () => {
 
               {/* Date cards */}
               <div className="space-y-3">
-                {popupDates.map((d) =>
-                <button
-                  key={d.id}
-                  type="button"
-                  onClick={() => setSelectedDate(d.id)}
-                  className={`w-full text-left p-4 rounded-xl transition-all duration-300 cursor-pointer group ${
-                  selectedDate === d.id ?
-                  'ring-2 ring-emerald-500 shadow-md' :
-                  'hover:shadow-sm'} ${
-                  d.highlight && selectedDate !== d.id ? 'ring-1 ring-amber-300/60' : ''}`}
-                  style={{
-                    background: selectedDate === d.id ?
-                    'linear-gradient(135deg, rgba(16,185,129,0.08) 0%, rgba(20,184,166,0.05) 100%)' :
-                    'rgba(255,255,255,0.7)',
-                    border: selectedDate === d.id ?
-                    'none' :
-                    d.highlight ?
-                    '1px solid rgba(251,191,36,0.3)' :
-                    '1px solid rgba(214,211,199,0.4)'
-                  }}>
+                {upcomingEvents.length === 0 ? (
+                  <div className="text-center py-8">
+                    <Leaf className="w-8 h-8 text-emerald-300 mx-auto mb-3" />
+                    <p className="text-stone-400 text-sm italic">Les prochaines marches se préparent…</p>
+                  </div>
+                ) : (
+                  upcomingEvents.map((event) => {
+                    const dateFormatted = new Intl.DateTimeFormat('fr-FR', {
+                      day: 'numeric', month: 'long', year: 'numeric'
+                    }).format(new Date(event.date_marche));
+                    const countdown = getCountdown(event.date_marche);
+                    const icon = getSeasonIcon(event.date_marche);
 
-                    <div className="flex items-start gap-3">
-                      <div className={`flex-shrink-0 w-10 h-10 rounded-lg flex items-center justify-center transition-colors ${
-                    selectedDate === d.id ? 'bg-emerald-100 text-emerald-700' : d.highlight ? 'bg-amber-50 text-amber-600' : 'bg-stone-100 text-stone-500 group-hover:text-emerald-600'}`
-                    }>
-                        {d.icon}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 flex-wrap mb-1">
-                          <span className="font-semibold text-sm text-stone-800">{d.date}</span>
-                          <span className={`text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full ${
-                        d.highlight ?
-                        'bg-gradient-to-r from-amber-100 to-amber-50 text-amber-700 border border-amber-200/60' :
-                        'bg-emerald-50 text-emerald-700 border border-emerald-200/40'}`
-                        }>
-                            {d.badge}
-                          </span>
+                    return (
+                      <button
+                        key={event.id}
+                        type="button"
+                        onClick={() => setSelectedDate(event.id)}
+                        className={`w-full text-left p-4 rounded-xl transition-all duration-300 cursor-pointer group ${
+                          selectedDate === event.id
+                            ? 'ring-2 ring-emerald-500 shadow-md'
+                            : 'hover:shadow-sm'
+                        }`}
+                        style={{
+                          background: selectedDate === event.id
+                            ? 'linear-gradient(135deg, rgba(16,185,129,0.08) 0%, rgba(20,184,166,0.05) 100%)'
+                            : 'rgba(255,255,255,0.7)',
+                          border: selectedDate === event.id
+                            ? 'none'
+                            : '1px solid rgba(214,211,199,0.4)'
+                        }}
+                      >
+                        <div className="flex items-start gap-3">
+                          <div className={`flex-shrink-0 w-10 h-10 rounded-lg flex items-center justify-center transition-colors ${
+                            selectedDate === event.id
+                              ? 'bg-emerald-100 text-emerald-700'
+                              : 'bg-stone-100 text-stone-500 group-hover:text-emerald-600'
+                          }`}>
+                            {icon}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 flex-wrap mb-1">
+                              <span className="font-semibold text-sm text-stone-800">{dateFormatted}</span>
+                              <span className="text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200/40">
+                                {countdown}
+                              </span>
+                            </div>
+                            <p className="font-medium text-sm text-stone-700 mb-0.5">{event.title}</p>
+                            {event.lieu && (
+                              <p className="text-xs text-emerald-600 mb-0.5">{event.lieu}</p>
+                            )}
+                            {event.description && (
+                              <p className="text-xs text-stone-400 leading-relaxed">{event.description}</p>
+                            )}
+                            <p className="text-[10px] text-emerald-600/70 font-medium mt-1 uppercase tracking-wider">Gratuit · Ouvert à tous</p>
+                          </div>
+                          {/* Selection indicator */}
+                          <div className={`flex-shrink-0 w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all mt-0.5 ${
+                            selectedDate === event.id ? 'border-emerald-500 bg-emerald-500' : 'border-stone-300'
+                          }`}>
+                            {selectedDate === event.id && (
+                              <motion.div
+                                initial={{ scale: 0 }}
+                                animate={{ scale: 1 }}
+                                className="w-2 h-2 rounded-full bg-white"
+                              />
+                            )}
+                          </div>
                         </div>
-                        <p className="font-medium text-sm text-stone-700 mb-0.5">{d.titre}</p>
-                        <p className="text-xs text-stone-400 leading-relaxed">{d.desc}</p>
-                        <p className="text-[10px] text-emerald-600/70 font-medium mt-1 uppercase tracking-wider">Gratuit · Ouvert à tous</p>
-                      </div>
-                      {/* Selection indicator */}
-                      <div className={`flex-shrink-0 w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all mt-0.5 ${
-                    selectedDate === d.id ? 'border-emerald-500 bg-emerald-500' : 'border-stone-300'}`
-                    }>
-                        {selectedDate === d.id &&
-                      <motion.div
-                        initial={{ scale: 0 }}
-                        animate={{ scale: 1 }}
-                        className="w-2 h-2 rounded-full bg-white" />
-
-                      }
-                      </div>
-                    </div>
-                  </button>
+                      </button>
+                    );
+                  })
                 )}
               </div>
 
