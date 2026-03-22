@@ -220,6 +220,16 @@ function App() {
                 <TeamManagement />
               </AdminAuth>
             } />
+            <Route path="/admin/marche-events" element={
+              <AdminAuth>
+                <MarcheEventsAdmin />
+              </AdminAuth>
+            } />
+            <Route path="/admin/community" element={
+              <AdminAuth>
+                <CommunityProfilesAdmin />
+              </AdminAuth>
+            } />
             <Route path="/admin" element={
               <AdminAuth>
                 <AdminAccess />
