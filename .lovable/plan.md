@@ -1,46 +1,31 @@
 
 
-# Verifier l'existence du compte avant reinitialisation du mot de passe
+# Ajouter un picto de connexion dans le bandeau haut de /marches-du-vivant/explorer
 
-## Probleme
+## Modification
 
-Supabase `resetPasswordForEmail` ne revele pas si le compte existe (securite par defaut). L'utilisateur recoit un message de succes meme si l'email n'est pas enregistre.
+### `src/pages/MarchesDuVivantExplorer.tsx` (lignes 184-191)
 
-## Solution
+Ajouter un bouton/lien vers `/marches-du-vivant/connexion` dans le groupe de boutons a droite du bandeau nav, avant les boutons Partager et Imprimer.
 
-### 1. Fonction SQL (migration)
+- Icone : `UserCircle` (import depuis lucide-react) — evoque l'espace personnel / connexion
+- Style : identique aux boutons existants (`p-2.5 rounded-xl hover:bg-stone-100 text-stone-400 hover:text-stone-600`)
+- Mobile first : meme taille tactile que les autres pictos (44px zone de tap via `p-2.5`), visible sur toutes les tailles d'ecran
+- `title="Connexion / Mon espace"`
 
-Creer une fonction `check_email_exists(email text)` en `SECURITY DEFINER` qui interroge `auth.users` et retourne un booleen. Cette fonction est appelee cote client via `supabase.rpc()`.
-
-```sql
-create or replace function public.check_email_exists(_email text)
-returns boolean
-language sql
-stable
-security definer
-set search_path = public
-as $$
-  select exists (
-    select 1 from auth.users where email = lower(_email)
-  )
-$$;
+```tsx
+<Link to="/marches-du-vivant/connexion" className="p-2.5 rounded-xl hover:bg-emerald-50 transition-colors text-emerald-600 hover:text-emerald-800" title="Connexion / Mon espace">
+  <UserCircle className="w-4 h-4" />
+</Link>
 ```
 
-### 2. Modifier `handleForgotPassword` dans `MarchesDuVivantConnexion.tsx` (lignes 97-109)
+### Import
 
-- Avant d'appeler `resetPassword`, appeler `supabase.rpc('check_email_exists', { _email: email })`
-- Si `false` : afficher un toast elegant avec un message du type "Aucun compte ne correspond a cet email. Rejoignez l'aventure !" puis basculer vers l'onglet inscription (`setMode('register')`) apres un court delai
-- Si `true` : proceder normalement avec `resetPassword`
+Ajouter `UserCircle` a l'import lucide-react existant (ligne 6-9).
 
-### 3. Modifier `useCommunityAuth.ts`
-
-Ajouter une methode `checkEmailExists(email: string): Promise<boolean>` qui encapsule l'appel RPC, exportee dans le hook.
-
-## Fichiers
+## Fichier concerne
 
 | Fichier | Action |
 |---------|--------|
-| Migration SQL | Creer `check_email_exists` |
-| `src/hooks/useCommunityAuth.ts` | Ajouter `checkEmailExists` |
-| `src/pages/MarchesDuVivantConnexion.tsx` | Modifier `handleForgotPassword` |
+| `src/pages/MarchesDuVivantExplorer.tsx` | Modifier (import + 1 lien dans la nav) |
 
