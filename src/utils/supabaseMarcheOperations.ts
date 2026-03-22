@@ -31,6 +31,7 @@ export interface MarcheFormData {
   theme?: string;
   adresse?: string;
   lienGoogleDrive?: string;
+  organisateurId?: string;
 }
 
 // Fonction pour nettoyer les données du formulaire et les mapper aux champs de la base de données
