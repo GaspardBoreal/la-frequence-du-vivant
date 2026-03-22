@@ -182,6 +182,9 @@ const MarchesDuVivantExplorer = () => {
               <span className="font-medium">Les Marches du Vivant</span>
             </Link>
             <div className="flex items-center gap-1">
+              <Link to="/marches-du-vivant/connexion" className="p-2.5 rounded-xl hover:bg-emerald-50 transition-colors text-emerald-600 hover:text-emerald-800" title="Connexion / Mon espace">
+                <UserCircle className="w-4 h-4" />
+              </Link>
               <button onClick={handleShare} className="p-2.5 rounded-xl hover:bg-stone-100 transition-colors text-stone-400 hover:text-stone-600" title="Partager">
                 <Share2 className="w-4 h-4" />
               </button>
