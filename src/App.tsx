@@ -66,6 +66,9 @@ import CarnetDeTerrain from './pages/CarnetDeTerrain';
 import CrmDashboard from './pages/CrmDashboard';
 import CrmPipeline from './pages/CrmPipeline';
 import TeamManagement from './pages/TeamManagement';
+import MarchesDuVivantConnexion from './pages/MarchesDuVivantConnexion';
+import MarchesDuVivantMonEspace from './pages/MarchesDuVivantMonEspace';
+import MarchesDuVivantValiderPresence from './pages/MarchesDuVivantValiderPresence';
 
 function App() {
   return (
