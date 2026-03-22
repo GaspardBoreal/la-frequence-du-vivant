@@ -90,8 +90,17 @@ const AdminFilters: React.FC<AdminFiltersProps> = ({ marches, onFilterChange }) 
   // Fetch organisateurs on mount
   useEffect(() => {
     const fetchOrganisateurs = async () => {
-      const { data } = await supabase.from('marche_organisateurs').select('id, nom').order('nom');
-      if (data) setOrganisateurs(data);
+      const [orgResult, marchesResult] = await Promise.all([
+        supabase.from('marche_organisateurs').select('id, nom').order('nom'),
+        supabase.from('marches').select('organisateur_id')
+      ]);
+      if (orgResult.data) {
+        const counts: Record<string, number> = {};
+        marchesResult.data?.forEach((m: any) => {
+          if (m.organisateur_id) counts[m.organisateur_id] = (counts[m.organisateur_id] || 0) + 1;
+        });
+        setOrganisateurs(orgResult.data.map(o => ({ ...o, marches_count: counts[o.id] || 0 })));
+      }
     };
     fetchOrganisateurs();
   }, []);
