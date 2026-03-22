@@ -1,36 +1,97 @@
 
 
-# Correction : page "Mon espace" bloquee sur "Chargement..."
+# Table organisateurs + association aux marches
 
-## Diagnostic
+## 1. Migration SQL — Creer la table `marche_organisateurs`
 
-Le compte `gaspard.boreal@gmail.com` est un compte **admin** cree avant le systeme communautaire. Il n'a donc **aucune ligne dans `community_profiles`**.
+```sql
+CREATE TABLE public.marche_organisateurs (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  nom text NOT NULL,
+  adresse text,
+  code_postal text,
+  ville text,
+  pays text DEFAULT 'France',
+  email text,
+  telephone text,
+  site_web text,
+  logo_url text,
+  description text,
+  type_structure text DEFAULT 'association',  -- association, entreprise, collectif, individu
+  domaines text[] DEFAULT '{}',               -- ex: ['poesie', 'agroecologie', 'bioacoustique']
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now()
+);
 
-Dans `MarchesDuVivantMonEspace.tsx` (ligne 26), la condition `!profile` maintient l'ecran de chargement indefiniment quand le profil est `null` apres le chargement.
+ALTER TABLE public.marche_organisateurs ENABLE ROW LEVEL SECURITY;
 
-## Solution
+-- Lecture publique
+CREATE POLICY "Public can view organisateurs"
+  ON public.marche_organisateurs FOR SELECT TO public USING (true);
 
-Deux corrections complementaires :
+-- Ecriture admin only
+CREATE POLICY "Admins can manage organisateurs"
+  ON public.marche_organisateurs FOR ALL TO authenticated
+  USING (check_is_admin_user(auth.uid()))
+  WITH CHECK (check_is_admin_user(auth.uid()));
 
-### 1. `src/pages/MarchesDuVivantMonEspace.tsx` — Gerer l'absence de profil
+-- Ajouter colonne organisateur_id sur marches
+ALTER TABLE public.marches
+  ADD COLUMN organisateur_id uuid REFERENCES public.marche_organisateurs(id);
+```
 
-Remplacer la condition de chargement (ligne 26) pour distinguer "loading" de "pas de profil" :
+## 2. Insertion des 4 organisateurs initiaux (via insert tool)
 
-- Ajouter un etat derive : si `!loading && user && !profile` → afficher un ecran invitant a completer son profil (avec bouton qui cree le profil minimal automatiquement)
-- Concretement : apres le bloc `if (loading)`, ajouter un bloc `if (!profile)` qui affiche un message "Votre profil communautaire n'existe pas encore" avec un bouton "Creer mon profil" qui insere une ligne dans `community_profiles` avec les infos minimales (prenom depuis l'email ou vide)
+```sql
+INSERT INTO marche_organisateurs (nom, adresse, code_postal, ville, pays, type_structure, domaines) VALUES
+  ('Gaspard Boréal', '4 rue du Champ de Foire', '16190', 'DEVIAT', 'France', 'individu', ARRAY['poesie','bioacoustique','exploration_sonore']),
+  ('La Comédie des Mondes Hybrides', '4 rue du Champ de Foire', '16190', 'DEVIAT', 'France', 'association', ARRAY['theatre','narration','mondes_hybrides']),
+  ('La Fréquence du Vivant', '4 rue du Champ de Foire', '16190', 'DEVIAT', 'France', 'association', ARRAY['agroecologie','poesie','bioacoustique','data']),
+  ('Mouton Village Événements', '1 Place du 25 Août', '79340', 'VASLES', 'France', 'association', ARRAY['transhumance','evenementiel','pastoralisme']);
 
-### 2. `src/hooks/useCommunityAuth.ts` — Ajouter une methode `createProfile`
+-- Associer toutes les marches existantes a Gaspard Boreal
+UPDATE marches SET organisateur_id = (
+  SELECT id FROM marche_organisateurs WHERE nom = 'Gaspard Boréal' LIMIT 1
+);
+```
 
-Ajouter une fonction `createProfile(userId, prenom, nom)` qui fait un `upsert` dans `community_profiles` et rafraichit le profil. Utilisee par le bouton ci-dessus.
+## 3. Page admin organisateurs `src/pages/OrganisateursAdmin.tsx`
 
-### 3. Securiser le loading state
+- Liste des organisateurs avec nom, ville, nombre de marches associees
+- Formulaire creation/edition : nom, adresse, cp, ville, pays, type_structure, domaines, email, telephone, site_web
+- Suppression avec confirmation
 
-Separer `loading` (auth en cours) de `profileLoading` (profil en cours de fetch) dans le hook pour eviter les etats incoherents. Ou plus simplement, dans la page, ne bloquer sur "Chargement" que si `loading` est true, et traiter `!profile` comme un cas distinct.
+## 4. Selecteur organisateur dans le formulaire marche
+
+- Dans la page `/admin/marches`, ajouter un `<Select>` pour choisir l'organisateur lors de la creation/edition d'une marche
+
+## 5. Routes et navigation
+
+- **`src/App.tsx`** : ajouter route `/admin/organisateurs` → `OrganisateursAdmin`
+- **`src/pages/AdminAccess.tsx`** : ajouter carte "Organisateurs" dans le grid admin
+
+## Champs strategiques du modele `domaines`
+
+Le champ `domaines` (array de tags) permet de typer chaque organisateur selon les axes cles de La Frequence du Vivant :
+- `poesie` — creation litteraire, narration geopoetique
+- `bioacoustique` — ecoute du vivant, paysages sonores
+- `agroecologie` — sols, biodiversite, pratiques regeneratives
+- `data` — science des donnees appliquee au vivant
+- `transhumance` — mobilite, pastoralisme
+- `theatre` / `narration` — arts vivants
+- `evenementiel` — logistique, accueil
+- `education` — formation, transmission
+
+Ce referentiel permet a terme de filtrer les marches par angle thematique et de construire des parcours croises (ex: "marches bioacoustique + agroecologie en Nouvelle-Aquitaine").
 
 ## Fichiers concernes
 
 | Fichier | Action |
 |---------|--------|
-| `src/pages/MarchesDuVivantMonEspace.tsx` | Modifier (gerer `!profile` separement) |
-| `src/hooks/useCommunityAuth.ts` | Modifier (ajouter `createProfile`) |
+| Migration SQL | Creer table + FK |
+| Insert SQL | 4 organisateurs + UPDATE marches |
+| `src/pages/OrganisateursAdmin.tsx` | Creer |
+| `src/pages/AdminAccess.tsx` | Modifier (carte) |
+| `src/App.tsx` | Modifier (route) |
+| Formulaire marche (admin) | Modifier (select organisateur) |
 
