@@ -104,7 +104,7 @@ const AdminFilters: React.FC<AdminFiltersProps> = ({ marches, onFilterChange }) 
   }, [explorationMarchesIds]);
 
   // Fonction sécurisée pour filtrer les marches
-  const applyFilters = (ville: string, region: string, departement: string, tags: string, search: string, noPhotos: boolean, noAudio: boolean, noTexts: boolean, exploration: string) => {
+  const applyFilters = (ville: string, region: string, departement: string, tags: string, search: string, noPhotos: boolean, noAudio: boolean, noTexts: boolean, exploration: string, organisateur: string = '') => {
     if (!marches || marches.length === 0) {
       onFilterChange([]);
       return;
