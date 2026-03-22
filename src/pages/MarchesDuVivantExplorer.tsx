@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   ArrowLeft, Leaf, Cpu, Users, Footprints, Map, TrendingUp,
   Printer, Share2, Calendar, ChevronRight, Sparkles, Eye, Shield, Heart,
-  Headphones, PenTool, ArrowDown, Sun, Flower2, Snowflake, X, BookOpen } from
+  Headphones, PenTool, ArrowDown, Sun, Flower2, Snowflake, X, BookOpen, UserCircle } from
 'lucide-react';
 import Footer from '@/components/Footer';
 import { toast } from 'sonner';
@@ -182,6 +182,9 @@ const MarchesDuVivantExplorer = () => {
               <span className="font-medium">Les Marches du Vivant</span>
             </Link>
             <div className="flex items-center gap-1">
+              <Link to="/marches-du-vivant/connexion" className="p-2.5 rounded-xl hover:bg-emerald-50 transition-colors text-emerald-600 hover:text-emerald-800" title="Connexion / Mon espace">
+                <UserCircle className="w-4 h-4" />
+              </Link>
               <button onClick={handleShare} className="p-2.5 rounded-xl hover:bg-stone-100 transition-colors text-stone-400 hover:text-stone-600" title="Partager">
                 <Share2 className="w-4 h-4" />
               </button>
