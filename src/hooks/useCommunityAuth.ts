@@ -129,6 +129,15 @@ export function useCommunityAuth() {
     if (error) throw error;
   };
 
+  const checkEmailExists = async (email: string): Promise<boolean> => {
+    const { data, error } = await supabase.rpc('check_email_exists', { _email: email });
+    if (error) {
+      console.error('Error checking email:', error);
+      return false;
+    }
+    return !!data;
+  };
+
   return {
     session,
     user,
@@ -138,6 +147,7 @@ export function useCommunityAuth() {
     signIn,
     signOut,
     resetPassword,
+    checkEmailExists,
     refreshProfile: () => user && fetchProfile(user.id),
   };
 }

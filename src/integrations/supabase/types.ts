@@ -2903,6 +2903,7 @@ export type Database = {
         Returns: boolean
       }
       can_initialize_admin_system: { Args: never; Returns: boolean }
+      check_email_exists: { Args: { _email: string }; Returns: boolean }
       check_is_admin_user: { Args: { check_user_id: string }; Returns: boolean }
       check_system_initialization_safe: { Args: never; Returns: boolean }
       confirm_admin_email: { Args: { target_email: string }; Returns: boolean }
