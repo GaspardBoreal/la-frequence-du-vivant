@@ -135,7 +135,7 @@ const MarchesDuVivantConnexion = () => {
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.7 }}
-            className="w-full max-w-lg"
+            className="w-full max-w-lg mx-auto"
           >
             {/* Logo */}
             <div className="text-center mb-8">
