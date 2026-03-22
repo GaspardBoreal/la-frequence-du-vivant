@@ -69,6 +69,8 @@ import TeamManagement from './pages/TeamManagement';
 import MarchesDuVivantConnexion from './pages/MarchesDuVivantConnexion';
 import MarchesDuVivantMonEspace from './pages/MarchesDuVivantMonEspace';
 import MarchesDuVivantValiderPresence from './pages/MarchesDuVivantValiderPresence';
+import MarcheEventsAdmin from './pages/MarcheEventsAdmin';
+import CommunityProfilesAdmin from './pages/CommunityProfilesAdmin';
 
 function App() {
   return (
@@ -216,6 +218,16 @@ function App() {
             <Route path="/admin/crm/equipe" element={
               <AdminAuth>
                 <TeamManagement />
+              </AdminAuth>
+            } />
+            <Route path="/admin/marche-events" element={
+              <AdminAuth>
+                <MarcheEventsAdmin />
+              </AdminAuth>
+            } />
+            <Route path="/admin/community" element={
+              <AdminAuth>
+                <CommunityProfilesAdmin />
               </AdminAuth>
             } />
             <Route path="/admin" element={

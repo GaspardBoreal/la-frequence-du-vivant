@@ -377,7 +377,7 @@ const MarchesDuVivantAssociation = () => {
         {/* Compteurs */}
         <ScienceCounters className="border-t border-border/20" />
 
-        {/* CTA */}
+        {/* CTA Communauté */}
         <section className="py-16 px-6 bg-emerald-950/20 border-t border-emerald-500/20">
           <div className="max-w-2xl mx-auto text-center">
             <motion.div
@@ -387,21 +387,27 @@ const MarchesDuVivantAssociation = () => {
               className="space-y-6"
             >
               <h2 className="font-crimson text-3xl text-foreground">
-                Prêt à rejoindre l'aventure ?
+                Rejoignez la communauté des Marcheurs du Vivant
               </h2>
               <p className="text-muted-foreground">
-                Contactez-nous pour participer à une première marche découverte 
-                ou en savoir plus sur le parcours ambassadeur.
+                Créez votre compte pour participer à votre première marche, 
+                progresser dans les rôles et contribuer à la connaissance du vivant.
               </p>
-              <a 
-                href="https://www.gaspardboreal.com/contact" 
-                target="_blank" 
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 px-6 py-3 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg transition-colors"
-              >
-                Nous contacter
-                <ArrowRight className="w-4 h-4" />
-              </a>
+              <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                <Link 
+                  to="/marches-du-vivant/connexion"
+                  className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg transition-colors"
+                >
+                  Créer mon compte
+                  <ArrowRight className="w-4 h-4" />
+                </Link>
+                <Link 
+                  to="/marches-du-vivant/connexion"
+                  className="inline-flex items-center justify-center gap-2 px-6 py-3 border border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/10 rounded-lg transition-colors"
+                >
+                  J'ai déjà un compte
+                </Link>
+              </div>
             </motion.div>
           </div>
         </section>
