@@ -218,47 +218,52 @@ const AdminFilters: React.FC<AdminFiltersProps> = ({ marches, onFilterChange }) 
   // Gestionnaires d'événements
   const handleVilleChange = (value: string) => {
     setVilleFilter(value);
-    applyFilters(value, regionFilter, departementFilter, tagsFilter, searchText, withoutPhotos, withoutAudio, withoutTexts, explorationFilter);
+    applyFilters(value, regionFilter, departementFilter, tagsFilter, searchText, withoutPhotos, withoutAudio, withoutTexts, explorationFilter, organisateurFilter);
   };
 
   const handleRegionChange = (value: string) => {
     setRegionFilter(value);
-    applyFilters(villeFilter, value, departementFilter, tagsFilter, searchText, withoutPhotos, withoutAudio, withoutTexts, explorationFilter);
+    applyFilters(villeFilter, value, departementFilter, tagsFilter, searchText, withoutPhotos, withoutAudio, withoutTexts, explorationFilter, organisateurFilter);
   };
 
   const handleDepartementChange = (value: string) => {
     setDepartementFilter(value);
-    applyFilters(villeFilter, regionFilter, value, tagsFilter, searchText, withoutPhotos, withoutAudio, withoutTexts, explorationFilter);
+    applyFilters(villeFilter, regionFilter, value, tagsFilter, searchText, withoutPhotos, withoutAudio, withoutTexts, explorationFilter, organisateurFilter);
   };
 
   const handleTagsChange = (value: string) => {
     setTagsFilter(value);
-    applyFilters(villeFilter, regionFilter, departementFilter, value, searchText, withoutPhotos, withoutAudio, withoutTexts, explorationFilter);
+    applyFilters(villeFilter, regionFilter, departementFilter, value, searchText, withoutPhotos, withoutAudio, withoutTexts, explorationFilter, organisateurFilter);
   };
 
   const handleSearchChange = (value: string) => {
     setSearchText(value);
-    applyFilters(villeFilter, regionFilter, departementFilter, tagsFilter, value, withoutPhotos, withoutAudio, withoutTexts, explorationFilter);
+    applyFilters(villeFilter, regionFilter, departementFilter, tagsFilter, value, withoutPhotos, withoutAudio, withoutTexts, explorationFilter, organisateurFilter);
   };
 
   const handleWithoutPhotosChange = (checked: boolean) => {
     setWithoutPhotos(checked);
-    applyFilters(villeFilter, regionFilter, departementFilter, tagsFilter, searchText, checked, withoutAudio, withoutTexts, explorationFilter);
+    applyFilters(villeFilter, regionFilter, departementFilter, tagsFilter, searchText, checked, withoutAudio, withoutTexts, explorationFilter, organisateurFilter);
   };
 
   const handleWithoutAudioChange = (checked: boolean) => {
     setWithoutAudio(checked);
-    applyFilters(villeFilter, regionFilter, departementFilter, tagsFilter, searchText, withoutPhotos, checked, withoutTexts, explorationFilter);
+    applyFilters(villeFilter, regionFilter, departementFilter, tagsFilter, searchText, withoutPhotos, checked, withoutTexts, explorationFilter, organisateurFilter);
   };
 
   const handleWithoutTextsChange = (checked: boolean) => {
     setWithoutTexts(checked);
-    applyFilters(villeFilter, regionFilter, departementFilter, tagsFilter, searchText, withoutPhotos, withoutAudio, checked, explorationFilter);
+    applyFilters(villeFilter, regionFilter, departementFilter, tagsFilter, searchText, withoutPhotos, withoutAudio, checked, explorationFilter, organisateurFilter);
   };
 
   const handleExplorationChange = (value: string) => {
     setExplorationFilter(value);
-    applyFilters(villeFilter, regionFilter, departementFilter, tagsFilter, searchText, withoutPhotos, withoutAudio, withoutTexts, value);
+    applyFilters(villeFilter, regionFilter, departementFilter, tagsFilter, searchText, withoutPhotos, withoutAudio, withoutTexts, value, organisateurFilter);
+  };
+
+  const handleOrganisateurChange = (value: string) => {
+    setOrganisateurFilter(value);
+    applyFilters(villeFilter, regionFilter, departementFilter, tagsFilter, searchText, withoutPhotos, withoutAudio, withoutTexts, explorationFilter, value);
   };
 
   const clearFilters = () => {
