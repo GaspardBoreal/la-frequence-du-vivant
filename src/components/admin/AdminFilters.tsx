@@ -207,6 +207,11 @@ const AdminFilters: React.FC<AdminFiltersProps> = ({ marches, onFilterChange }) 
       });
     }
 
+    // Filtre par organisateur
+    if (organisateur && organisateur !== 'all') {
+      filtered = filtered.filter(marche => marche?.organisateur_id === organisateur);
+    }
+
     onFilterChange(filtered);
   };
 
