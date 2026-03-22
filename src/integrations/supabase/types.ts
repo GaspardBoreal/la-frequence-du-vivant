@@ -1849,6 +1849,60 @@ export type Database = {
           },
         ]
       }
+      marche_organisateurs: {
+        Row: {
+          adresse: string | null
+          code_postal: string | null
+          created_at: string
+          description: string | null
+          domaines: string[] | null
+          email: string | null
+          id: string
+          logo_url: string | null
+          nom: string
+          pays: string | null
+          site_web: string | null
+          telephone: string | null
+          type_structure: string | null
+          updated_at: string
+          ville: string | null
+        }
+        Insert: {
+          adresse?: string | null
+          code_postal?: string | null
+          created_at?: string
+          description?: string | null
+          domaines?: string[] | null
+          email?: string | null
+          id?: string
+          logo_url?: string | null
+          nom: string
+          pays?: string | null
+          site_web?: string | null
+          telephone?: string | null
+          type_structure?: string | null
+          updated_at?: string
+          ville?: string | null
+        }
+        Update: {
+          adresse?: string | null
+          code_postal?: string | null
+          created_at?: string
+          description?: string | null
+          domaines?: string[] | null
+          email?: string | null
+          id?: string
+          logo_url?: string | null
+          nom?: string
+          pays?: string | null
+          site_web?: string | null
+          telephone?: string | null
+          type_structure?: string | null
+          updated_at?: string
+          ville?: string | null
+        }
+        Relationships: []
+      }
       marche_participations: {
         Row: {
           created_at: string
@@ -2107,6 +2161,7 @@ export type Database = {
           lien_google_drive: string | null
           longitude: number | null
           nom_marche: string | null
+          organisateur_id: string | null
           region: string | null
           sous_themes: string[] | null
           temperature: number | null
@@ -2127,6 +2182,7 @@ export type Database = {
           lien_google_drive?: string | null
           longitude?: number | null
           nom_marche?: string | null
+          organisateur_id?: string | null
           region?: string | null
           sous_themes?: string[] | null
           temperature?: number | null
@@ -2147,6 +2203,7 @@ export type Database = {
           lien_google_drive?: string | null
           longitude?: number | null
           nom_marche?: string | null
+          organisateur_id?: string | null
           region?: string | null
           sous_themes?: string[] | null
           temperature?: number | null
@@ -2154,7 +2211,15 @@ export type Database = {
           updated_at?: string
           ville?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "marches_organisateur_id_fkey"
+            columns: ["organisateur_id"]
+            isOneToOne: false
+            referencedRelation: "marche_organisateurs"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       marcheur_observations: {
         Row: {
