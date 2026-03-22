@@ -87,10 +87,19 @@ const AdminFilters: React.FC<AdminFiltersProps> = ({ marches, onFilterChange }) 
     }
   }, [explorationFilter]);
 
+  // Fetch organisateurs on mount
+  useEffect(() => {
+    const fetchOrganisateurs = async () => {
+      const { data } = await supabase.from('marche_organisateurs').select('id, nom').order('nom');
+      if (data) setOrganisateurs(data);
+    };
+    fetchOrganisateurs();
+  }, []);
+
   // Effet pour réappliquer les filtres quand explorationMarchesIds change
   useEffect(() => {
     if (explorationFilter && explorationFilter !== 'all') {
-      applyFilters(villeFilter, regionFilter, departementFilter, tagsFilter, searchText, withoutPhotos, withoutAudio, withoutTexts, explorationFilter);
+      applyFilters(villeFilter, regionFilter, departementFilter, tagsFilter, searchText, withoutPhotos, withoutAudio, withoutTexts, explorationFilter, organisateurFilter);
     }
   }, [explorationMarchesIds]);
 
