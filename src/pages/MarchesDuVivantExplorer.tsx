@@ -680,20 +680,31 @@ const MarchesDuVivantExplorer = () => {
         </section>
 
         {/* CTA Communauté */}
-        <section className="py-16 px-6 bg-emerald-950/30 border-t border-emerald-500/20">
-          <div className="max-w-2xl mx-auto text-center space-y-6">
-            <Footprints className="h-10 w-10 text-emerald-400 mx-auto" />
-            <h2 className="font-crimson text-3xl text-foreground">
+        <section className="relative py-20 px-6 overflow-hidden"
+          style={{
+            background: 'linear-gradient(135deg, rgba(6,78,59,0.95) 0%, rgba(13,148,136,0.85) 50%, rgba(6,78,59,0.95) 100%)'
+          }}>
+          <div className="absolute inset-0 overflow-hidden">
+            <div className="absolute -top-20 -right-20 w-64 h-64 rounded-full bg-emerald-400/5 blur-3xl" />
+            <div className="absolute -bottom-20 -left-20 w-64 h-64 rounded-full bg-teal-400/5 blur-3xl" />
+          </div>
+          <div className="relative max-w-2xl mx-auto text-center space-y-6">
+            <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-emerald-400/10 ring-1 ring-emerald-400/30 mx-auto">
+              <Footprints className="h-8 w-8 text-emerald-300" />
+            </div>
+            <h2 className="font-crimson text-3xl text-white">
               Devenez Marcheur du Vivant
             </h2>
-            <p className="text-muted-foreground">
-              Créez votre compte, participez à une marche et commencez votre parcours 
+            <p className="text-emerald-200/80 max-w-lg mx-auto">
+              Créez votre compte, participez à une marche et commencez votre parcours
               du premier pas jusqu'à la transmission.
             </p>
-            <Link
-              to="/marches-du-vivant/connexion"
-              className="inline-flex items-center gap-2 px-6 py-3 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg transition-colors"
-            >
+            <Link to="/marches-du-vivant/connexion"
+              className="inline-flex items-center gap-2 px-8 py-3.5 text-white font-medium rounded-full transition-all duration-300 hover:scale-105"
+              style={{
+                background: 'linear-gradient(135deg, #059669 0%, #0d9488 100%)',
+                boxShadow: '0 8px 32px rgba(16,185,129,0.3), 0 2px 8px rgba(16,185,129,0.2)'
+              }}>
               Rejoindre la communauté
               <ChevronRight className="w-4 h-4" />
             </Link>
