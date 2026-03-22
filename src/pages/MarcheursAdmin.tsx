@@ -141,7 +141,9 @@ const MarcheursAdmin: React.FC = () => {
         </Card>
 
         {/* Marcheurs Manager */}
-        {selectedExplorationId ? (
+        {selectedExplorationId === '__all__' ? (
+          <AllMarcheursView />
+        ) : selectedExplorationId ? (
           <div className="space-y-4">
             <div className="flex items-center gap-2">
               <h2 className="text-xl font-semibold text-foreground">
