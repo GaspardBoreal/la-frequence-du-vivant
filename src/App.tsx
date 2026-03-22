@@ -69,6 +69,8 @@ import TeamManagement from './pages/TeamManagement';
 import MarchesDuVivantConnexion from './pages/MarchesDuVivantConnexion';
 import MarchesDuVivantMonEspace from './pages/MarchesDuVivantMonEspace';
 import MarchesDuVivantValiderPresence from './pages/MarchesDuVivantValiderPresence';
+import MarcheEventsAdmin from './pages/MarcheEventsAdmin';
+import CommunityProfilesAdmin from './pages/CommunityProfilesAdmin';
 
 function App() {
   return (
