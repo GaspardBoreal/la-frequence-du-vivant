@@ -96,7 +96,10 @@ function App() {
             <Route path="/marches-du-vivant/explorer" element={<MarchesDuVivantExplorer />} />
             <Route path="/marches-du-vivant/carnets-de-terrain" element={<CarnetsDeTerrainGalerie />} />
             <Route path="/marches-du-vivant/carnets-de-terrain/:slug" element={<CarnetDeTerrain />} />
-            
+            <Route path="/marches-du-vivant/connexion" element={<MarchesDuVivantConnexion />} />
+            <Route path="/marches-du-vivant/mon-espace" element={<MarchesDuVivantMonEspace />} />
+            <Route path="/marches-du-vivant/valider-presence/:qrCode" element={<MarchesDuVivantValiderPresence />} />
+
             {/* Routes explorations */}
             <Route path="/explorations" element={<ExplorationsList />} />
             <Route path="/galerie-fleuve" element={<GalerieFleuvePage />} />
