@@ -464,7 +464,7 @@ const AdminFilters: React.FC<AdminFiltersProps> = ({ marches, onFilterChange }) 
                     </SelectItem>
                     {organisateurs.map((org) => (
                       <SelectItem key={org.id} value={org.id} className="text-gray-900 hover:bg-gray-100">
-                        {org.nom}
+                        {org.nom} ({org.marches_count})
                       </SelectItem>
                     ))}
                   </SelectContent>
