@@ -1,31 +1,31 @@
 
 
-# Ajouter l'option "Tous les marcheurs" au filtre de la page /admin/marcheurs
+# Aligner les 4 roles dans la page /marches-du-vivant/association
 
-## Objectif
+## Contexte
 
-Permettre de consulter tous les marcheurs/marcheuses de toutes les explorations en une seule vue, en ajoutant une option "Toutes les explorations" dans le selecteur existant.
+La page `/marches-du-vivant/explorer` definit deja les 4 roles officiels (Marcheur, Eclaireur, Ambassadeur, Sentinelle). La page `/marches-du-vivant/association` affiche encore l'ancien parcours a 3 niveaux (Marcheur, Ambassadeur, Animateur). Il faut les aligner.
 
 ## Modifications
 
-### `src/pages/MarcheursAdmin.tsx`
+### `src/pages/MarchesDuVivantAssociation.tsx`
 
-1. Ajouter une option `__all__` dans le `<Select>` au-dessus des explorations individuelles : "Toutes les explorations (X marcheurs)"
-2. Quand `selectedExplorationId === '__all__'`, afficher un nouveau composant `AllMarcheursView` au lieu de `MarcheursManager`
-3. Initialiser le state a `'__all__'` par defaut pour que la vue globale s'affiche directement
+1. **Remplacer le tableau `parcoursAmbassadeur`** (lignes 83-100) par 4 entrees alignees sur les roles de la page explorer, avec icones et couleurs distinctes :
 
-### Nouveau composant `src/components/admin/AllMarcheursView.tsx`
+| # | Role | Description | Prerequis | Icone | Couleur |
+|---|------|-------------|-----------|-------|---------|
+| 1 | Marcheur | Participez a une premiere marche et decouvrez l'ecoute active du territoire | Aucun | Footprints | emerald |
+| 2 | Eclaireur | Explorez les zones blanches de biodiversite et devenez le premier temoin de ces territoires oublies | 5 zones blanches explorees | Eye | teal |
+| 3 | Ambassadeur | Formez-vous a l'animation de groupes, aux outils de reconnaissance d'especes et a la transmission | Formation 1 jour + 3 marches animees | Heart | sky |
+| 4 | Sentinelle | Devenez referent territorial, formez les futurs ambassadeurs et ancrez les Marches dans votre region | Certification + 5 animations supervisees | Shield | amber |
 
-1. Requete Supabase qui recupere TOUS les `exploration_marcheurs` avec une jointure sur `explorations` pour avoir le nom de l'exploration
-2. Jointure sur `marcheur_observations` pour compter les especes par marcheur
-3. Affichage en grille (meme style que `MarcheursManager`) avec en plus un badge indiquant le nom de l'exploration d'appartenance sur chaque carte
-4. Barre de recherche textuelle (filtre par nom/prenom) en haut
-5. Filtre par role (dropdown multi-select ou chips)
-6. Les actions edit/delete/observations restent fonctionnelles (redirigent vers le contexte de l'exploration concernee)
+2. **Adapter le rendu des vignettes** (lignes 311-346) :
+   - Ajouter l'icone au-dessus du numero dans chaque carte
+   - Appliquer la couleur specifique a chaque role (bordure et icone)
+   - Passer la grille a `md:grid-cols-4` au lieu de `md:flex-row` pour accueillir 4 cartes proprement
+   - Conserver les fleches entre les etapes
 
-### Details techniques
+3. **Mettre a jour le titre de section** : "Devenir Ambassadeur" → "Quatre roles a incarner" pour refleter le nouveau parcours complet
 
-- La requete recupere `exploration_marcheurs` avec `select('*, explorations(name)')` pour obtenir le nom de l'exploration en une seule requete
-- Les observations sont comptees via une sous-requete sur `marcheur_observations`
-- Le composant est en lecture + actions (edit ouvre le dialog avec le bon `exploration_id`)
+4. **Imports** : ajouter `Footprints`, `Eye`, `Heart`, `Shield` depuis lucide-react
 
