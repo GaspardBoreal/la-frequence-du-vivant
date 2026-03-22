@@ -51,6 +51,7 @@ const cleanFormData = (formData: MarcheFormData) => {
     theme_principal: formData.themesPrincipaux?.[0] || formData.theme || null,
     sous_themes: formData.sousThemes && formData.sousThemes.length > 0 ? formData.sousThemes : null,
     lien_google_drive: formData.lienGoogleDrive || null,
+    organisateur_id: formData.organisateurId || null,
     coordonnees: formData.latitude && formData.longitude 
       ? `(${formData.longitude},${formData.latitude})` 
       : null

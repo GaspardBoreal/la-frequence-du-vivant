@@ -135,7 +135,8 @@ const MarcheForm: React.FC<MarcheFormProps> = ({
         lienGoogleDrive: data.lienGoogleDrive,
         sousThemes: data.sousThemes ? data.sousThemes.split(',').map(t => t.trim()) : [],
         tags: data.tags ? data.tags.split(',').map(t => t.trim()) : [],
-        themesPrincipaux: [themePrincipalRichText].filter(Boolean)
+        themesPrincipaux: [themePrincipalRichText].filter(Boolean),
+        organisateurId: selectedOrganisateurId || undefined
       };
       
       console.log('📦 Données API préparées:', apiData);
