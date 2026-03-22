@@ -91,7 +91,7 @@ const parcoursAmbassadeur = [
   },
   {
     niveau: 'Éclaireur',
-    description: 'Explorez les zones blanches de biodiversité et devenez le premier témoin de ces territoires oubliés.',
+    description: 'Explorez les zones blanches de biodiversité et devenez le premier témoin de ces territoires non connus.',
     prerequis: '5 zones blanches explorées',
     icon: Eye,
     color: 'teal',
