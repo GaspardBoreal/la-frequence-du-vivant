@@ -231,6 +231,11 @@ function App() {
                 <CommunityProfilesAdmin />
               </AdminAuth>
             } />
+            <Route path="/admin/organisateurs" element={
+              <AdminAuth>
+                <OrganisateursAdmin />
+              </AdminAuth>
+            } />
             <Route path="/admin" element={
               <AdminAuth>
                 <AdminAccess />
