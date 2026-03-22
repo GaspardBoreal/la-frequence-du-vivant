@@ -2,7 +2,7 @@ import React from 'react';
 import { Helmet } from 'react-helmet-async';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { ArrowLeft, Heart, Lightbulb, Compass, Users, ChevronDown, ArrowRight } from 'lucide-react';
+import { ArrowLeft, Heart, Lightbulb, Compass, Users, ChevronDown, ArrowRight, Footprints, Eye, Shield } from 'lucide-react';
 import Footer from '@/components/Footer';
 import ContributeurCard, { ContributeurData } from '@/components/marches-vivant/ContributeurCard';
 import ScienceCounters from '@/components/marches-vivant/ScienceCounters';
