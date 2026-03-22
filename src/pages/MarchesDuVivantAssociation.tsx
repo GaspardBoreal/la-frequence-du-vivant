@@ -303,7 +303,7 @@ const MarchesDuVivantAssociation = () => {
               <h2 className="font-crimson text-3xl text-foreground mb-4">
                 Devenir Ambassadeur
               </h2>
-              <p className="text-muted-foreground">
+              <p className="text-muted-foreground text-center">
                 Un parcours progressif pour transmettre l'art de l'écoute du vivant
               </p>
             </motion.div>
