@@ -14,6 +14,7 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import MarcheursManager from '@/components/admin/MarcheursManager';
+import AllMarcheursView from '@/components/admin/AllMarcheursView';
 
 interface ExplorationWithCount {
   id: string;
@@ -23,7 +24,7 @@ interface ExplorationWithCount {
 }
 
 const MarcheursAdmin: React.FC = () => {
-  const [selectedExplorationId, setSelectedExplorationId] = useState<string>('');
+  const [selectedExplorationId, setSelectedExplorationId] = useState<string>('__all__');
 
   // Fetch explorations with marcheurs count
   const { data: explorations, isLoading: loadingExplorations } = useQuery({
@@ -113,6 +114,14 @@ const MarcheursAdmin: React.FC = () => {
                   <SelectValue placeholder="Choisir une exploration..." />
                 </SelectTrigger>
                 <SelectContent>
+                  <SelectItem value="__all__">
+                    <div className="flex items-center gap-2 w-full">
+                      <span>Toutes les explorations</span>
+                      <Badge variant="outline" className="ml-2">
+                        {totalMarcheurs} marcheur{totalMarcheurs > 1 ? 's' : ''}
+                      </Badge>
+                    </div>
+                  </SelectItem>
                   {explorations?.map((exp) => (
                     <SelectItem key={exp.id} value={exp.id}>
                       <div className="flex items-center justify-between gap-4 w-full">
@@ -132,7 +141,9 @@ const MarcheursAdmin: React.FC = () => {
         </Card>
 
         {/* Marcheurs Manager */}
-        {selectedExplorationId ? (
+        {selectedExplorationId === '__all__' ? (
+          <AllMarcheursView />
+        ) : selectedExplorationId ? (
           <div className="space-y-4">
             <div className="flex items-center gap-2">
               <h2 className="text-xl font-semibold text-foreground">
