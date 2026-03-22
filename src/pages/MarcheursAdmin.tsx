@@ -24,7 +24,7 @@ interface ExplorationWithCount {
 }
 
 const MarcheursAdmin: React.FC = () => {
-  const [selectedExplorationId, setSelectedExplorationId] = useState<string>('');
+  const [selectedExplorationId, setSelectedExplorationId] = useState<string>('__all__');
 
   // Fetch explorations with marcheurs count
   const { data: explorations, isLoading: loadingExplorations } = useQuery({
