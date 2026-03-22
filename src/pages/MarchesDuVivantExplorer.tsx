@@ -142,9 +142,9 @@ const MarchesDuVivantExplorer = () => {
 
 
   const calendrier = [
-  { date: '8-9 mars 2026', label: 'Premier test', desc: 'Printemps des Poètes — comité réduit', status: 'upcoming' },
-  { date: '24-25 mai 2026', label: 'Second test', desc: 'Fête de la Nature — comité élargi', status: 'planned' },
-  { date: '21 juin 2026', label: 'Lancement officiel', desc: 'Solstice d\'été — ouverture à tous', status: 'launch' }];
+  { date: '28 - 29 mars 2026', label: 'La transhumance de Mouton Village édition 2026', desc: 'Deux jours de randonnée et de convivialité en bonne compagnie : moutons, chiens de berger, ânes, chevaux', status: 'upcoming' },
+  { date: '11 avril 2026', label: 'Le Réveil de la Terre : Marcher sur un sol qui respire', desc: 'DEVIAT — Charente', status: 'planned' },
+  { date: '24 - 25 mai 2026', label: 'Les Arbres Gardiens : De l\'ombre et de l\'eau pour nos champs', desc: 'Lors de la fête de la nature — Dordogne', status: 'launch' }];
 
 
   const zones = [
@@ -602,13 +602,10 @@ const MarchesDuVivantExplorer = () => {
         <section className="py-10 md:py-16 px-6">
           <div className="max-w-3xl mx-auto">
             <motion.div variants={fadeUp} initial="hidden" whileInView="visible" viewport={{ once: true }} custom={0} className="text-center mb-8">
-              <p className="text-xs font-semibold tracking-[0.2em] uppercase text-emerald-600/70 mb-4">Les rendez-vous</p>
-              <h2 className="font-crimson text-2xl md:text-4xl font-semibold mb-3" style={{ color: '#1a1a18' }}>
-                Calendrier de lancement
-              </h2>
-              <p className="text-stone-500 max-w-md mx-auto text-sm leading-relaxed">
-                Trois temps forts pour construire ensemble.
-              </p>
+               <p className="text-xs font-semibold tracking-[0.2em] uppercase text-emerald-600/70 mb-4">Les rendez-vous</p>
+               <h2 className="font-crimson text-2xl md:text-4xl font-semibold mb-3" style={{ color: '#1a1a18' }}>
+                 Prochaines marches collectives
+               </h2>
             </motion.div>
             
             <div className="relative">
