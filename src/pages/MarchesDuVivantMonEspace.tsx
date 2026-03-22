@@ -101,7 +101,7 @@ const MarchesDuVivantMonEspace = () => {
             <h1 className="text-2xl font-bold text-white mb-1">
               Bienvenue, {profile.prenom} 🌿
             </h1>
-            <p className="text-emerald-200/60 text-sm">
+            <p className="text-emerald-200/60 text-sm text-center mx-auto">
               {profile.kigo_accueil === 'parle_aux_arbres' && 'Les arbres vous saluent en retour.'}
               {profile.kigo_accueil === 'transition_beton' && 'Le béton est derrière vous, la forêt devant.'}
               {profile.kigo_accueil === 'curieux_vivant' && 'La curiosité est le premier pas du marcheur.'}
