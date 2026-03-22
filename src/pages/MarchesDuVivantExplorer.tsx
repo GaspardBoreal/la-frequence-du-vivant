@@ -65,10 +65,6 @@ const MarchesDuVivantExplorer = () => {
   ];
   const { data: featuredMarches } = useFeaturedMarches(3, false, EXPLORER_MARCHE_IDS);
 
-  const popupDates = [
-  { id: 'mars', date: '8-9 mars 2026', titre: 'Printemps des Poètes', badge: 'Comité réduit', icon: <Snowflake className="w-5 h-5" />, desc: 'L\'éveil du printemps, quand la nature murmure ses premiers secrets.', highlight: false },
-  { id: 'mai', date: '24-25 mai 2026', titre: 'Fête de la Nature', badge: 'Comité élargi', icon: <Flower2 className="w-5 h-5" />, desc: 'La nature en pleine effervescence, les sens en éveil total.', highlight: false },
-  { id: 'juin', date: '21 juin 2026', titre: 'Solstice d\'été', badge: 'Lancement officiel', icon: <Sun className="w-5 h-5" />, desc: 'Le jour le plus long, la lumière à son apogée. L\'aventure commence.', highlight: true }];
 
 
   const handleInscription = (e: React.FormEvent) => {
