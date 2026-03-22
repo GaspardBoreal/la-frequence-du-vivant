@@ -25,6 +25,8 @@ const AdminFilters: React.FC<AdminFiltersProps> = ({ marches, onFilterChange }) 
   const [withoutAudio, setWithoutAudio] = useState(false);
   const [withoutTexts, setWithoutTexts] = useState(false);
   const [explorationFilter, setExplorationFilter] = useState('');
+  const [organisateurFilter, setOrganisateurFilter] = useState('');
+  const [organisateurs, setOrganisateurs] = useState<Array<{id: string, nom: string}>>([]);
   const [explorationMarchesIds, setExplorationMarchesIds] = useState<string[]>([]);
   const [explorationMarchesLoaded, setExplorationMarchesLoaded] = useState(false);
 
