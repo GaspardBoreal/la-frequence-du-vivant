@@ -103,10 +103,12 @@ const MarcheForm: React.FC<MarcheFormProps> = ({
         adresse: marche.adresse || '',
         lienGoogleDrive: marche.lien || '',
         sousThemes: marche.sousThemes?.join(', ') || '',
-        tags: marche.supabaseTags?.join(', ') || ''
+        tags: marche.supabaseTags?.join(', ') || '',
+        organisateurId: (marche as any).organisateur_id || ''
       };
       
       reset(formData);
+      setSelectedOrganisateurId((marche as any).organisateur_id || '');
       setThemePrincipalRichText(marche.theme || '');
       setDescriptifCourtRichText(marche.descriptifCourt || '');
       setDescriptifLongRichText(marche.descriptifLong || '');
