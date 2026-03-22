@@ -602,13 +602,10 @@ const MarchesDuVivantExplorer = () => {
         <section className="py-10 md:py-16 px-6">
           <div className="max-w-3xl mx-auto">
             <motion.div variants={fadeUp} initial="hidden" whileInView="visible" viewport={{ once: true }} custom={0} className="text-center mb-8">
-              <p className="text-xs font-semibold tracking-[0.2em] uppercase text-emerald-600/70 mb-4">Les rendez-vous</p>
-              <h2 className="font-crimson text-2xl md:text-4xl font-semibold mb-3" style={{ color: '#1a1a18' }}>
-                Calendrier de lancement
-              </h2>
-              <p className="text-stone-500 max-w-md mx-auto text-sm leading-relaxed">
-                Trois temps forts pour construire ensemble.
-              </p>
+               <p className="text-xs font-semibold tracking-[0.2em] uppercase text-emerald-600/70 mb-4">Les rendez-vous</p>
+               <h2 className="font-crimson text-2xl md:text-4xl font-semibold mb-3" style={{ color: '#1a1a18' }}>
+                 Prochaines marches collectives
+               </h2>
             </motion.div>
             
             <div className="relative">
