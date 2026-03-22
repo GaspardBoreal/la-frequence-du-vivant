@@ -64,6 +64,7 @@ export const transformSupabaseToLegacyFormat = (marche: MarcheComplete): MarcheT
     supabaseTags: marche.tags.map(tag => tag.tag),
     sousThemes: marche.sous_themes || undefined,
     adresse: marche.adresse || undefined,
+    organisateur_id: marche.organisateur_id || undefined,
     textes: marche.textes.map(texte => ({
       id: texte.id,
       titre: texte.titre,
