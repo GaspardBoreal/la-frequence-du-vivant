@@ -14,6 +14,7 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import MarcheursManager from '@/components/admin/MarcheursManager';
+import AllMarcheursView from '@/components/admin/AllMarcheursView';
 
 interface ExplorationWithCount {
   id: string;
