@@ -59,7 +59,17 @@ const MarcheForm: React.FC<MarcheFormProps> = ({
   const [themePrincipalRichText, setThemePrincipalRichText] = useState('');
   const [descriptifCourtRichText, setDescriptifCourtRichText] = useState('');
   const [descriptifLongRichText, setDescriptifLongRichText] = useState('');
-  
+  const [selectedOrganisateurId, setSelectedOrganisateurId] = useState<string>('');
+
+  // Fetch organisateurs
+  const { data: organisateurs = [] } = useQuery({
+    queryKey: ['organisateurs'],
+    queryFn: async () => {
+      const { data, error } = await supabase.from('marche_organisateurs').select('id, nom').order('nom');
+      if (error) throw error;
+      return data;
+    }
+  });
   const {
     register,
     handleSubmit,
