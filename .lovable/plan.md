@@ -1,33 +1,50 @@
 
 
-# Inserer les evenements a venir dans `marche_events`
+# Popup "Rejoindre l'aventure" : remplacer les dates statiques par les evenements dynamiques
 
-## Diagnostic
+## Probleme
 
-La table `marche_events` est vide. Le code dynamique fait une requete `SELECT ... WHERE date_marche >= today` qui retourne 0 lignes, d'ou l'affichage de l'etat vide.
+La popup d'inscription affiche 3 dates codees en dur (`popupDates` ligne 68-71 : "Printemps des Poetes", "Fete de la Nature", "Solstice d'ete") qui ne correspondent pas aux vrais evenements de la table `marche_events`. Le fetch `upcomingEvents` existe deja (ligne 146-158) mais n'est utilise que dans la section cartes immersives, pas dans la popup.
 
 ## Solution
 
-Inserer les 3 evenements du calendrier 2026 via une migration SQL :
+Remplacer `popupDates` par `upcomingEvents` dans la popup, en reutilisant les helpers `getSeasonIcon` et `getCountdown` deja presents.
 
-```sql
-INSERT INTO marche_events (title, description, date_marche, lieu) VALUES
-  ('La transhumance de Mouton Village édition 2026',
-   'Deux jours de randonnée et de convivialité en bonne compagnie : moutons, chiens de berger, ânes, chevaux (Vouillé dans la Vienne vers Mouton Village dans les Deux-Sèvres)',
-   '2026-03-28', 'Vouillé (Vienne) → Mouton Village (Deux-Sèvres)'),
-  ('Le Réveil de la Terre : Marcher sur un sol qui respire',
-   'Lieu (DEVIAT - Charente)',
-   '2026-04-11', 'DEVIAT - Charente'),
-  ('Les Arbres Gardiens : De l''ombre et de l''eau pour nos champs',
-   'Lors de la fête de la nature (Dordogne)',
-   '2026-05-24', 'Dordogne');
+### `src/pages/MarchesDuVivantExplorer.tsx`
+
+1. **Supprimer** le tableau statique `popupDates` (lignes 68-71)
+
+2. **Remplacer la boucle de la popup** (lignes 857-914) : au lieu de `popupDates.map((d) => ...)`, iterer sur `upcomingEvents` avec un design repense :
+
+```tsx
+{upcomingEvents.map((event, index) => {
+  const dateFormatted = new Intl.DateTimeFormat('fr-FR', { 
+    day: 'numeric', month: 'long', year: 'numeric' 
+  }).format(new Date(event.date_marche));
+  const countdown = getCountdown(event.date_marche);
+  const icon = getSeasonIcon(event.date_marche);
+  
+  return (
+    <button key={event.id} onClick={() => setSelectedDate(event.id)} ...>
+      {/* icon + date + countdown badge + titre + lieu + description */}
+    </button>
+  );
+})}
 ```
+
+3. **Design des cartes** : conserver l'esthetique glassmorphism actuelle (fond blanc/70, bordure subtile, indicateur radio) mais enrichir avec :
+   - Badge countdown dynamique ("Dans 6 jours") en haut a droite au lieu du badge statique "Comite reduit"
+   - Lieu affiche en `text-emerald-600` sous le titre
+   - Icone saisonniere contextuelle (deja implementee via `getSeasonIcon`)
+   - Etat vide elegant si aucun evenement
+
+4. **Adapter le state `selectedDate`** : passer de `string | null` a stocker l'`id` (uuid) de l'evenement selectionne au lieu des anciens ids "mars"/"mai"/"juin"
+
+5. **Adapter `handleInscription`** : utiliser `selectedDate` pour retrouver le titre de l'evenement selectionne dans `upcomingEvents` au lieu de chercher dans `popupDates`
 
 ## Fichier concerne
 
 | Fichier | Action |
 |---------|--------|
-| Migration SQL | Insert 3 evenements dans `marche_events` |
-
-Aucune modification de code necessaire — le fetch dynamique existant affichera automatiquement les evenements une fois inseres.
+| `src/pages/MarchesDuVivantExplorer.tsx` | Modifier (supprimer popupDates, utiliser upcomingEvents dans la popup) |
 
