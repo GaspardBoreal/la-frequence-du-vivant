@@ -1,4 +1,6 @@
 import React, { useState, useCallback } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
 import { Helmet } from 'react-helmet-async';
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -141,10 +143,49 @@ const MarchesDuVivantExplorer = () => {
   { nom: 'Sentinelle', desc: 'Référent territorial, formateur', icon: <Shield className="w-5 h-5" />, color: 'text-amber-600' }];
 
 
-  const calendrier = [
-  { date: '28 - 29 mars 2026', label: 'La transhumance de Mouton Village édition 2026', desc: 'Deux jours de randonnée et de convivialité en bonne compagnie : moutons, chiens de berger, ânes, chevaux — Vouillé (Vienne) vers Mouton Village (Deux-Sèvres)', status: 'upcoming' },
-  { date: '11 avril 2026', label: 'Le Réveil de la Terre : Marcher sur un sol qui respire', desc: 'DEVIAT — Charente', status: 'planned' },
-  { date: '24 - 25 mai 2026', label: 'Les Arbres Gardiens : De l\'ombre et de l\'eau pour nos champs', desc: 'Lors de la fête de la nature — Dordogne', status: 'launch' }];
+  const { data: upcomingEvents = [] } = useQuery({
+    queryKey: ['upcoming-marche-events'],
+    queryFn: async () => {
+      const today = new Date().toISOString().split('T')[0];
+      const { data } = await supabase
+        .from('marche_events')
+        .select('id, title, description, date_marche, lieu')
+        .gte('date_marche', today)
+        .order('date_marche', { ascending: true })
+        .limit(6);
+      return data || [];
+    }
+  });
+
+  const getSeasonIcon = (dateStr: string) => {
+    const month = new Date(dateStr).getMonth();
+    if (month >= 2 && month <= 4) return <Flower2 className="w-5 h-5" />;
+    if (month >= 5 && month <= 7) return <Sun className="w-5 h-5" />;
+    if (month >= 8 && month <= 10) return <Leaf className="w-5 h-5" />;
+    return <Snowflake className="w-5 h-5" />;
+  };
+
+  const getCountdown = (dateStr: string) => {
+    const now = new Date();
+    const target = new Date(dateStr);
+    const diffMs = target.getTime() - now.getTime();
+    const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+    if (diffDays <= 0) return 'Aujourd\'hui';
+    if (diffDays === 1) return 'Demain';
+    if (diffDays < 7) return `Dans ${diffDays} jours`;
+    if (diffDays < 30) return `Dans ${Math.ceil(diffDays / 7)} sem.`;
+    return `Dans ${Math.ceil(diffDays / 30)} mois`;
+  };
+
+  const formatDateFr = (dateStr: string) => {
+    return new Intl.DateTimeFormat('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' }).format(new Date(dateStr));
+  };
+
+  const seasonGradients = [
+    'linear-gradient(135deg, rgba(16,185,129,0.08), rgba(20,184,166,0.06))',
+    'linear-gradient(135deg, rgba(245,158,11,0.08), rgba(251,191,36,0.06))',
+    'linear-gradient(135deg, rgba(59,130,246,0.08), rgba(99,102,241,0.06))',
+  ];
 
 
   const zones = [
@@ -598,42 +639,79 @@ const MarchesDuVivantExplorer = () => {
 
         <SectionDivider />
 
-        {/* === CALENDRIER === */}
+        {/* === CALENDRIER DYNAMIQUE === */}
         <section className="py-10 md:py-16 px-6">
-          <div className="max-w-3xl mx-auto">
-            <motion.div variants={fadeUp} initial="hidden" whileInView="visible" viewport={{ once: true }} custom={0} className="text-center mb-8">
+          <div className="max-w-5xl mx-auto">
+            <motion.div variants={fadeUp} initial="hidden" whileInView="visible" viewport={{ once: true }} custom={0} className="text-center mb-10">
                <p className="text-xs font-semibold tracking-[0.2em] uppercase text-emerald-600/70 mb-4">Les rendez-vous</p>
                <h2 className="font-crimson text-2xl md:text-4xl font-semibold mb-3" style={{ color: '#1a1a18' }}>
                  Prochaines marches collectives
                </h2>
             </motion.div>
-            
-            <div className="relative">
-              <div className="absolute left-7 md:left-9 top-0 bottom-0 w-px print:bg-gray-300"
-              style={{ background: 'linear-gradient(to bottom, rgba(16,185,129,0.3), rgba(16,185,129,0.1))' }} />
-              
-              <div className="space-y-6">
-                {calendrier.map((c, i) =>
-                <motion.div key={c.date} variants={fadeUp} initial="hidden" whileInView="visible" viewport={{ once: true }} custom={i + 1}
-                className="flex gap-6 items-start relative">
-                    <div className="flex-shrink-0 w-12 h-12 md:w-14 md:h-14 rounded-xl flex items-center justify-center z-10 shadow-sm"
-                  style={{
-                    background: c.status === 'launch' ?
-                    'linear-gradient(135deg, #10b981 0%, #0d9488 100%)' :
-                    'linear-gradient(135deg, #ecfdf5 0%, #f0fdfa 100%)',
-                    border: c.status === 'launch' ? 'none' : '1px solid rgba(16,185,129,0.2)'
-                  }}>
-                      <Calendar className={`w-5 h-5 md:w-6 md:h-6 ${c.status === 'launch' ? 'text-white' : 'text-emerald-700'}`} />
+
+            {upcomingEvents.length === 0 ? (
+              <motion.div variants={fadeUp} initial="hidden" whileInView="visible" viewport={{ once: true }} custom={1}
+                className="text-center py-12">
+                <div className="w-16 h-16 rounded-full bg-emerald-50 flex items-center justify-center mx-auto mb-4">
+                  <Leaf className="w-7 h-7 text-emerald-400" />
+                </div>
+                <p className="font-crimson text-xl text-stone-400 italic">Les prochaines marches se préparent en silence…</p>
+                <p className="text-sm text-stone-400 mt-2">Revenez bientôt pour découvrir les rendez-vous à venir.</p>
+              </motion.div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                {upcomingEvents.map((evt, i) => (
+                  <motion.div
+                    key={evt.id}
+                    variants={fadeUp}
+                    initial="hidden"
+                    whileInView="visible"
+                    viewport={{ once: true }}
+                    custom={i + 1}
+                    className="group relative rounded-2xl border border-emerald-100/60 p-6 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl cursor-default"
+                    style={{
+                      background: seasonGradients[i % seasonGradients.length],
+                      backdropFilter: 'blur(8px)',
+                    }}
+                  >
+                    {/* Countdown badge */}
+                    <div className="absolute top-4 right-4">
+                      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-semibold uppercase tracking-wider bg-emerald-600/10 text-emerald-700 border border-emerald-200/40">
+                        {getCountdown(evt.date_marche)}
+                      </span>
                     </div>
-                    <div className="pt-1.5 flex-1">
-                      <p className="text-xs font-semibold text-emerald-700 uppercase tracking-wider mb-1">{c.date}</p>
-                      <h4 className="font-semibold text-lg text-stone-800 mb-0.5">{c.label}</h4>
-                      <p className="text-sm text-stone-500">{c.desc}</p>
+
+                    {/* Season icon */}
+                    <div className="w-10 h-10 rounded-xl flex items-center justify-center mb-4 bg-white/70 border border-emerald-100/50 shadow-sm text-emerald-600">
+                      {getSeasonIcon(evt.date_marche)}
                     </div>
+
+                    {/* Date */}
+                    <p className="text-xs font-semibold text-emerald-700 uppercase tracking-wider mb-2">
+                      {formatDateFr(evt.date_marche)}
+                    </p>
+
+                    {/* Title */}
+                    <h4 className="font-crimson text-xl font-semibold text-stone-800 mb-2 leading-tight group-hover:text-emerald-800 transition-colors">
+                      {evt.title}
+                    </h4>
+
+                    {/* Lieu */}
+                    {evt.lieu && (
+                      <p className="text-sm text-emerald-700/80 mb-2 flex items-center gap-1.5">
+                        <Map className="w-3.5 h-3.5 flex-shrink-0" />
+                        {evt.lieu}
+                      </p>
+                    )}
+
+                    {/* Description */}
+                    {evt.description && (
+                      <p className="text-sm text-stone-500 leading-relaxed line-clamp-3">{evt.description}</p>
+                    )}
                   </motion.div>
-                )}
+                ))}
               </div>
-            </div>
+            )}
           </div>
         </section>
 
