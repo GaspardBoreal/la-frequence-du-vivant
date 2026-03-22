@@ -2,7 +2,7 @@ import React from 'react';
 import { Helmet } from 'react-helmet-async';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { ArrowLeft, Heart, Lightbulb, Compass, Users, ChevronDown, ArrowRight } from 'lucide-react';
+import { ArrowLeft, Heart, Lightbulb, Compass, Users, ChevronDown, ArrowRight, Footprints, Eye, Shield } from 'lucide-react';
 import Footer from '@/components/Footer';
 import ContributeurCard, { ContributeurData } from '@/components/marches-vivant/ContributeurCard';
 import ScienceCounters from '@/components/marches-vivant/ScienceCounters';
@@ -80,22 +80,35 @@ const cercleOr = {
   },
 };
 
-// Parcours Ambassadeur
+// Parcours — Quatre rôles à incarner
 const parcoursAmbassadeur = [
   {
     niveau: 'Marcheur',
-    description: 'Participez à une première marche du vivant et découvrez l\'écoute active du territoire.',
+    description: 'Participez à une première marche et découvrez l\'écoute active du territoire.',
     prerequis: 'Aucun',
+    icon: Footprints,
+    color: 'emerald',
+  },
+  {
+    niveau: 'Éclaireur',
+    description: 'Explorez les zones blanches de biodiversité et devenez le premier témoin de ces territoires oubliés.',
+    prerequis: '5 zones blanches explorées',
+    icon: Eye,
+    color: 'teal',
   },
   {
     niveau: 'Ambassadeur',
-    description: 'Formez-vous à l\'animation de petits groupes et aux outils de reconnaissance d\'espèces.',
-    prerequis: '3 marches + formation 1 jour',
+    description: 'Formez-vous à l\'animation de groupes, aux outils de reconnaissance d\'espèces et à la transmission.',
+    prerequis: 'Formation 1 jour + 3 marches animées',
+    icon: Heart,
+    color: 'sky',
   },
   {
-    niveau: 'Animateur',
-    description: 'Animez des marches en autonomie et contribuez à former les futurs ambassadeurs.',
+    niveau: 'Sentinelle',
+    description: 'Devenez référent territorial, formez les futurs ambassadeurs et ancrez les Marches dans votre région.',
     prerequis: 'Certification + 5 animations supervisées',
+    icon: Shield,
+    color: 'amber',
   },
 ];
 
@@ -301,48 +314,62 @@ const MarchesDuVivantAssociation = () => {
               className="text-center mb-12"
             >
               <h2 className="font-crimson text-3xl text-foreground mb-4">
-                Devenir Ambassadeur
+                Quatre rôles à incarner
               </h2>
               <p className="text-muted-foreground text-center">
                 Un parcours progressif pour transmettre l'art de l'écoute du vivant
               </p>
             </motion.div>
 
-            <div className="flex flex-col md:flex-row gap-6 items-stretch">
-              {parcoursAmbassadeur.map((etape, index) => (
-                <motion.div
-                  key={etape.niveau}
-                  initial={{ opacity: 0, y: 20 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  transition={{ delay: index * 0.1 }}
-                  viewport={{ once: true }}
-                  className="flex-1 relative"
-                >
-                  <div className="bg-card/40 border border-border/30 rounded-xl p-6 h-full">
-                    <div className="text-center mb-4">
-                      <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-emerald-950/50 border border-emerald-500/30 text-emerald-400 font-mono text-sm mb-2">
-                        {index + 1}
-                      </span>
-                      <h3 className="font-crimson text-xl text-foreground">
-                        {etape.niveau}
-                      </h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
+              {parcoursAmbassadeur.map((etape, index) => {
+                const Icon = etape.icon;
+                const colorMap: Record<string, { bg: string; border: string; text: string }> = {
+                  emerald: { bg: 'bg-emerald-950/50', border: 'border-emerald-500/30', text: 'text-emerald-400' },
+                  teal: { bg: 'bg-teal-950/50', border: 'border-teal-500/30', text: 'text-teal-400' },
+                  sky: { bg: 'bg-sky-950/50', border: 'border-sky-500/30', text: 'text-sky-400' },
+                  amber: { bg: 'bg-amber-950/50', border: 'border-amber-500/30', text: 'text-amber-400' },
+                };
+                const c = colorMap[etape.color] || colorMap.emerald;
+
+                return (
+                  <motion.div
+                    key={etape.niveau}
+                    initial={{ opacity: 0, y: 20 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    transition={{ delay: index * 0.1 }}
+                    viewport={{ once: true }}
+                    className="relative"
+                  >
+                    <div className={`bg-card/40 border ${c.border} rounded-xl p-6 h-full`}>
+                      <div className="text-center mb-4">
+                        <div className={`inline-flex items-center justify-center w-12 h-12 rounded-full ${c.bg} ${c.border} border mb-3`}>
+                          <Icon className={`h-6 w-6 ${c.text}`} />
+                        </div>
+                        <span className={`block font-mono text-xs ${c.text} mb-1`}>
+                          {index + 1}
+                        </span>
+                        <h3 className="font-crimson text-xl text-foreground">
+                          {etape.niveau}
+                        </h3>
+                      </div>
+                      <p className="text-sm text-muted-foreground text-center mb-4">
+                        {etape.description}
+                      </p>
+                      <div className="text-xs text-center text-muted-foreground/70">
+                        <span className="font-medium">Prérequis :</span> {etape.prerequis}
+                      </div>
                     </div>
-                    <p className="text-sm text-muted-foreground text-center mb-4">
-                      {etape.description}
-                    </p>
-                    <div className="text-xs text-center text-muted-foreground/70">
-                      <span className="font-medium">Prérequis :</span> {etape.prerequis}
-                    </div>
-                  </div>
-                  
-                  {/* Flèche entre les étapes */}
-                  {index < parcoursAmbassadeur.length - 1 && (
-                    <div className="hidden md:flex absolute right-0 top-1/2 -translate-y-1/2 translate-x-1/2 z-10">
-                      <ArrowRight className="w-6 h-6 text-muted-foreground/50" />
-                    </div>
-                  )}
-                </motion.div>
-              ))}
+
+                    {/* Flèche entre les étapes (desktop) */}
+                    {index < parcoursAmbassadeur.length - 1 && (
+                      <div className="hidden md:flex absolute right-0 top-1/2 -translate-y-1/2 translate-x-1/2 z-10">
+                        <ArrowRight className="w-5 h-5 text-muted-foreground/50" />
+                      </div>
+                    )}
+                  </motion.div>
+                );
+              })}
             </div>
           </div>
         </section>
