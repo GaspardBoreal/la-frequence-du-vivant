@@ -143,10 +143,49 @@ const MarchesDuVivantExplorer = () => {
   { nom: 'Sentinelle', desc: 'Référent territorial, formateur', icon: <Shield className="w-5 h-5" />, color: 'text-amber-600' }];
 
 
-  const calendrier = [
-  { date: '28 - 29 mars 2026', label: 'La transhumance de Mouton Village édition 2026', desc: 'Deux jours de randonnée et de convivialité en bonne compagnie : moutons, chiens de berger, ânes, chevaux — Vouillé (Vienne) vers Mouton Village (Deux-Sèvres)', status: 'upcoming' },
-  { date: '11 avril 2026', label: 'Le Réveil de la Terre : Marcher sur un sol qui respire', desc: 'DEVIAT — Charente', status: 'planned' },
-  { date: '24 - 25 mai 2026', label: 'Les Arbres Gardiens : De l\'ombre et de l\'eau pour nos champs', desc: 'Lors de la fête de la nature — Dordogne', status: 'launch' }];
+  const { data: upcomingEvents = [] } = useQuery({
+    queryKey: ['upcoming-marche-events'],
+    queryFn: async () => {
+      const today = new Date().toISOString().split('T')[0];
+      const { data } = await supabase
+        .from('marche_events')
+        .select('id, title, description, date_marche, lieu')
+        .gte('date_marche', today)
+        .order('date_marche', { ascending: true })
+        .limit(6);
+      return data || [];
+    }
+  });
+
+  const getSeasonIcon = (dateStr: string) => {
+    const month = new Date(dateStr).getMonth();
+    if (month >= 2 && month <= 4) return <Flower2 className="w-5 h-5" />;
+    if (month >= 5 && month <= 7) return <Sun className="w-5 h-5" />;
+    if (month >= 8 && month <= 10) return <Leaf className="w-5 h-5" />;
+    return <Snowflake className="w-5 h-5" />;
+  };
+
+  const getCountdown = (dateStr: string) => {
+    const now = new Date();
+    const target = new Date(dateStr);
+    const diffMs = target.getTime() - now.getTime();
+    const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+    if (diffDays <= 0) return 'Aujourd\'hui';
+    if (diffDays === 1) return 'Demain';
+    if (diffDays < 7) return `Dans ${diffDays} jours`;
+    if (diffDays < 30) return `Dans ${Math.ceil(diffDays / 7)} sem.`;
+    return `Dans ${Math.ceil(diffDays / 30)} mois`;
+  };
+
+  const formatDateFr = (dateStr: string) => {
+    return new Intl.DateTimeFormat('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' }).format(new Date(dateStr));
+  };
+
+  const seasonGradients = [
+    'linear-gradient(135deg, rgba(16,185,129,0.08), rgba(20,184,166,0.06))',
+    'linear-gradient(135deg, rgba(245,158,11,0.08), rgba(251,191,36,0.06))',
+    'linear-gradient(135deg, rgba(59,130,246,0.08), rgba(99,102,241,0.06))',
+  ];
 
 
   const zones = [
