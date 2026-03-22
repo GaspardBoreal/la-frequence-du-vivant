@@ -296,31 +296,6 @@ const MarchesDuVivant = () => {
         {/* Compteurs Science Participative */}
         <ScienceCounters className="border-t border-border/20" />
 
-        {/* CTA vers partenaires */}
-        <section className="py-16 px-6 bg-card/20">
-          <div className="max-w-3xl mx-auto text-center">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-            >
-              <h2 className="font-crimson text-3xl text-foreground mb-4">
-                7 lieux partenaires le long de la Dordogne
-              </h2>
-              <p className="text-muted-foreground mb-8">
-                Organisez votre séminaire ou team building dans des hébergements partenaires, 
-                au cœur de territoires riches en biodiversité.
-              </p>
-              <Link 
-                to="/marches-du-vivant/partenaires"
-                className="inline-flex items-center gap-2 px-6 py-3 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg transition-colors"
-              >
-                Découvrir les lieux
-                <ArrowRight className="w-4 h-4" />
-              </Link>
-            </motion.div>
-          </div>
-        </section>
 
         <Footer />
       </div>
