@@ -1,31 +1,36 @@
 
 
-# Ajouter un picto de connexion dans le bandeau haut de /marches-du-vivant/explorer
+# Correction : page "Mon espace" bloquee sur "Chargement..."
 
-## Modification
+## Diagnostic
 
-### `src/pages/MarchesDuVivantExplorer.tsx` (lignes 184-191)
+Le compte `gaspard.boreal@gmail.com` est un compte **admin** cree avant le systeme communautaire. Il n'a donc **aucune ligne dans `community_profiles`**.
 
-Ajouter un bouton/lien vers `/marches-du-vivant/connexion` dans le groupe de boutons a droite du bandeau nav, avant les boutons Partager et Imprimer.
+Dans `MarchesDuVivantMonEspace.tsx` (ligne 26), la condition `!profile` maintient l'ecran de chargement indefiniment quand le profil est `null` apres le chargement.
 
-- Icone : `UserCircle` (import depuis lucide-react) — evoque l'espace personnel / connexion
-- Style : identique aux boutons existants (`p-2.5 rounded-xl hover:bg-stone-100 text-stone-400 hover:text-stone-600`)
-- Mobile first : meme taille tactile que les autres pictos (44px zone de tap via `p-2.5`), visible sur toutes les tailles d'ecran
-- `title="Connexion / Mon espace"`
+## Solution
 
-```tsx
-<Link to="/marches-du-vivant/connexion" className="p-2.5 rounded-xl hover:bg-emerald-50 transition-colors text-emerald-600 hover:text-emerald-800" title="Connexion / Mon espace">
-  <UserCircle className="w-4 h-4" />
-</Link>
-```
+Deux corrections complementaires :
 
-### Import
+### 1. `src/pages/MarchesDuVivantMonEspace.tsx` — Gerer l'absence de profil
 
-Ajouter `UserCircle` a l'import lucide-react existant (ligne 6-9).
+Remplacer la condition de chargement (ligne 26) pour distinguer "loading" de "pas de profil" :
 
-## Fichier concerne
+- Ajouter un etat derive : si `!loading && user && !profile` → afficher un ecran invitant a completer son profil (avec bouton qui cree le profil minimal automatiquement)
+- Concretement : apres le bloc `if (loading)`, ajouter un bloc `if (!profile)` qui affiche un message "Votre profil communautaire n'existe pas encore" avec un bouton "Creer mon profil" qui insere une ligne dans `community_profiles` avec les infos minimales (prenom depuis l'email ou vide)
+
+### 2. `src/hooks/useCommunityAuth.ts` — Ajouter une methode `createProfile`
+
+Ajouter une fonction `createProfile(userId, prenom, nom)` qui fait un `upsert` dans `community_profiles` et rafraichit le profil. Utilisee par le bouton ci-dessus.
+
+### 3. Securiser le loading state
+
+Separer `loading` (auth en cours) de `profileLoading` (profil en cours de fetch) dans le hook pour eviter les etats incoherents. Ou plus simplement, dans la page, ne bloquer sur "Chargement" que si `loading` est true, et traiter `!profile` comme un cas distinct.
+
+## Fichiers concernes
 
 | Fichier | Action |
 |---------|--------|
-| `src/pages/MarchesDuVivantExplorer.tsx` | Modifier (import + 1 lien dans la nav) |
+| `src/pages/MarchesDuVivantMonEspace.tsx` | Modifier (gerer `!profile` separement) |
+| `src/hooks/useCommunityAuth.ts` | Modifier (ajouter `createProfile`) |
 
