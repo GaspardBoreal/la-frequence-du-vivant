@@ -36,7 +36,7 @@ const INTIMITE_OPTIONS = [
 
 const MarchesDuVivantConnexion = () => {
   const navigate = useNavigate();
-  const { signUp, signIn, resetPassword } = useCommunityAuth();
+  const { signUp, signIn, resetPassword, checkEmailExists } = useCommunityAuth();
   const [mode, setMode] = useState<'login' | 'register' | 'forgot'>('login');
   const [showPassword, setShowPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
