@@ -113,6 +113,32 @@ const AdminAccess: React.FC = () => {
             </Link>
           </Card>
 
+          {/* Événements & Communauté */}
+          <Card className="gaspard-card p-6 hover:shadow-lg transition-shadow border-2 border-emerald-500/20 bg-emerald-500/5">
+            <div className="flex items-center mb-4">
+              <Users className="h-8 w-8 text-emerald-500 mr-3" />
+              <h2 className="text-xl font-semibold text-foreground">Événements & Communauté</h2>
+            </div>
+            <p className="text-muted-foreground mb-4">
+              Créer des événements de marche, gérer les QR codes de présence
+              et suivre la progression des marcheurs.
+            </p>
+            <div className="flex gap-2">
+              <Link to="/admin/marche-events" className="flex-1">
+                <Button variant="outline" className="w-full">
+                  <Map className="h-4 w-4 mr-2" />
+                  Événements
+                </Button>
+              </Link>
+              <Link to="/admin/community" className="flex-1">
+                <Button variant="outline" className="w-full">
+                  <Users className="h-4 w-4 mr-2" />
+                  Communauté
+                </Button>
+              </Link>
+            </div>
+          </Card>
+
           {/* CRM Card */}
           <Card className="gaspard-card p-6 hover:shadow-lg transition-shadow border-2 border-primary/20 bg-primary/5">
             <div className="flex items-center mb-4">

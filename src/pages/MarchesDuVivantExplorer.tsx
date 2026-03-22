@@ -679,6 +679,27 @@ const MarchesDuVivantExplorer = () => {
           </div>
         </section>
 
+        {/* CTA Communauté */}
+        <section className="py-16 px-6 bg-emerald-950/30 border-t border-emerald-500/20">
+          <div className="max-w-2xl mx-auto text-center space-y-6">
+            <Footprints className="h-10 w-10 text-emerald-400 mx-auto" />
+            <h2 className="font-crimson text-3xl text-foreground">
+              Devenez Marcheur du Vivant
+            </h2>
+            <p className="text-muted-foreground">
+              Créez votre compte, participez à une marche et commencez votre parcours 
+              du premier pas jusqu'à la transmission.
+            </p>
+            <Link
+              to="/marches-du-vivant/connexion"
+              className="inline-flex items-center gap-2 px-6 py-3 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg transition-colors"
+            >
+              Rejoindre la communauté
+              <ChevronRight className="w-4 h-4" />
+            </Link>
+          </div>
+        </section>
+
         <div className="footer-wrapper bg-[hsl(160,30%,12%)]">
           <Footer />
         </div>
