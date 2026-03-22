@@ -115,7 +115,7 @@ const MarchesDuVivantConnexion = () => {
         <meta name="description" content="Créez votre compte pour participer aux Marches du Vivant et progresser du Marcheur à la Sentinelle." />
       </Helmet>
 
-      <div className="min-h-screen bg-gradient-to-br from-emerald-950 via-emerald-900 to-teal-900 relative overflow-hidden">
+      <div className="min-h-screen bg-gradient-to-br from-emerald-950 via-emerald-900 to-teal-900 relative overflow-hidden flex flex-col">
         {/* Decorative elements */}
         <div className="absolute inset-0 opacity-10">
           <div className="absolute top-20 left-10 w-64 h-64 rounded-full bg-emerald-400 blur-[100px]" />
@@ -130,7 +130,7 @@ const MarchesDuVivantConnexion = () => {
           </Link>
         </div>
 
-        <div className="relative z-10 flex items-center justify-center px-4 pb-16">
+        <div className="relative z-10 flex flex-1 items-center justify-center px-4 pb-16">
           <motion.div
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
