@@ -210,6 +210,19 @@ const MarcheForm: React.FC<MarcheFormProps> = ({
 
           <TabsContent value="general" className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
+              <div className="col-span-2">
+                <Label>Organisateur</Label>
+                <Select value={selectedOrganisateurId} onValueChange={v => setSelectedOrganisateurId(v)}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Sélectionnez un organisateur" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {organisateurs.map(org => (
+                      <SelectItem key={org.id} value={org.id}>{org.nom}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
               <div>
                 <Label htmlFor="ville">Ville *</Label>
                 <Input id="ville" {...register('ville', {
