@@ -138,6 +138,18 @@ export function useCommunityAuth() {
     return !!data;
   };
 
+  const createProfile = async (userId: string, prenom: string, nom: string) => {
+    const { error } = await supabase
+      .from('community_profiles')
+      .upsert({
+        user_id: userId,
+        prenom,
+        nom,
+      }, { onConflict: 'user_id' });
+    if (error) throw error;
+    await fetchProfile(userId);
+  };
+
   return {
     session,
     user,
@@ -148,6 +160,7 @@ export function useCommunityAuth() {
     signOut,
     resetPassword,
     checkEmailExists,
+    createProfile,
     refreshProfile: () => user && fetchProfile(user.id),
   };
 }
