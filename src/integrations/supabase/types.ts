@@ -160,6 +160,69 @@ export type Database = {
         }
         Relationships: []
       }
+      community_profiles: {
+        Row: {
+          avatar_url: string | null
+          certification_validee: boolean
+          created_at: string
+          date_naissance: string | null
+          formation_validee: boolean
+          id: string
+          kigo_accueil: string | null
+          marches_count: number
+          motivation: string | null
+          niveau_intimite_vivant: string | null
+          nom: string
+          prenom: string
+          role: Database["public"]["Enums"]["community_role"]
+          superpouvoir_sensoriel: string | null
+          telephone: string | null
+          updated_at: string
+          user_id: string
+          ville: string | null
+        }
+        Insert: {
+          avatar_url?: string | null
+          certification_validee?: boolean
+          created_at?: string
+          date_naissance?: string | null
+          formation_validee?: boolean
+          id?: string
+          kigo_accueil?: string | null
+          marches_count?: number
+          motivation?: string | null
+          niveau_intimite_vivant?: string | null
+          nom: string
+          prenom: string
+          role?: Database["public"]["Enums"]["community_role"]
+          superpouvoir_sensoriel?: string | null
+          telephone?: string | null
+          updated_at?: string
+          user_id: string
+          ville?: string | null
+        }
+        Update: {
+          avatar_url?: string | null
+          certification_validee?: boolean
+          created_at?: string
+          date_naissance?: string | null
+          formation_validee?: boolean
+          id?: string
+          kigo_accueil?: string | null
+          marches_count?: number
+          motivation?: string | null
+          niveau_intimite_vivant?: string | null
+          nom?: string
+          prenom?: string
+          role?: Database["public"]["Enums"]["community_role"]
+          superpouvoir_sensoriel?: string | null
+          telephone?: string | null
+          updated_at?: string
+          user_id?: string
+          ville?: string | null
+        }
+        Relationships: []
+      }
       crm_contacts: {
         Row: {
           created_at: string | null
@@ -1730,6 +1793,97 @@ export type Database = {
           },
         ]
       }
+      marche_events: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          date_marche: string
+          description: string | null
+          exploration_id: string | null
+          id: string
+          latitude: number | null
+          lieu: string | null
+          longitude: number | null
+          max_participants: number | null
+          qr_code: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          date_marche: string
+          description?: string | null
+          exploration_id?: string | null
+          id?: string
+          latitude?: number | null
+          lieu?: string | null
+          longitude?: number | null
+          max_participants?: number | null
+          qr_code?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          date_marche?: string
+          description?: string | null
+          exploration_id?: string | null
+          id?: string
+          latitude?: number | null
+          lieu?: string | null
+          longitude?: number | null
+          max_participants?: number | null
+          qr_code?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "marche_events_exploration_id_fkey"
+            columns: ["exploration_id"]
+            isOneToOne: false
+            referencedRelation: "explorations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      marche_participations: {
+        Row: {
+          created_at: string
+          id: string
+          marche_event_id: string
+          user_id: string
+          validated_at: string | null
+          validation_method: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          marche_event_id: string
+          user_id: string
+          validated_at?: string | null
+          validation_method?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          marche_event_id?: string
+          user_id?: string
+          validated_at?: string | null
+          validation_method?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "marche_participations_marche_event_id_fkey"
+            columns: ["marche_event_id"]
+            isOneToOne: false
+            referencedRelation: "marche_events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       marche_photo_tags: {
         Row: {
           categorie: string | null
@@ -2952,6 +3106,12 @@ export type Database = {
       validate_admin_email_access: { Args: never; Returns: boolean }
     }
     Enums: {
+      community_role:
+        | "marcheur_en_devenir"
+        | "marcheur"
+        | "eclaireur"
+        | "ambassadeur"
+        | "sentinelle"
       crm_role: "admin" | "member" | "walker"
       etude_type: "principale" | "complementaire" | "annexe"
       media_type: "photo" | "audio" | "video" | "document"
@@ -3082,6 +3242,13 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      community_role: [
+        "marcheur_en_devenir",
+        "marcheur",
+        "eclaireur",
+        "ambassadeur",
+        "sentinelle",
+      ],
       crm_role: ["admin", "member", "walker"],
       etude_type: ["principale", "complementaire", "annexe"],
       media_type: ["photo", "audio", "video", "document"],
