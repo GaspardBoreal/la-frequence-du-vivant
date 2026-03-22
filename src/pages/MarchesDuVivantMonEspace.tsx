@@ -1,8 +1,8 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { ArrowLeft, Leaf, LogOut, Calendar, MapPin, CheckCircle2, Clock, QrCode } from 'lucide-react';
+import { ArrowLeft, Leaf, LogOut, Calendar, MapPin, CheckCircle2, Clock, QrCode, UserPlus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useCommunityAuth } from '@/hooks/useCommunityAuth';
 import { useCommunityParticipations, CommunityRoleKey } from '@/hooks/useCommunityProfile';
@@ -11,11 +11,13 @@ import RoleBadge from '@/components/community/RoleBadge';
 import Footer from '@/components/Footer';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
+import { toast } from 'sonner';
 
 const MarchesDuVivantMonEspace = () => {
   const navigate = useNavigate();
-  const { user, profile, loading, signOut } = useCommunityAuth();
+  const { user, profile, loading, signOut, createProfile } = useCommunityAuth();
   const { data: participations = [] } = useCommunityParticipations(user?.id);
+  const [creatingProfile, setCreatingProfile] = useState(false);
 
   useEffect(() => {
     if (!loading && !user) {
@@ -23,13 +25,51 @@ const MarchesDuVivantMonEspace = () => {
     }
   }, [loading, user, navigate]);
 
-  if (loading || !user || !profile) {
+  if (loading || !user) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-emerald-950 via-emerald-900 to-teal-900 flex items-center justify-center">
         <div className="text-emerald-200 animate-pulse flex items-center gap-2">
           <Leaf className="w-5 h-5 animate-spin" />
           Chargement...
         </div>
+      </div>
+    );
+  }
+
+  if (!profile) {
+    const handleCreateProfile = async () => {
+      setCreatingProfile(true);
+      try {
+        const emailPrefix = user.email?.split('@')[0] || '';
+        const prenom = emailPrefix.split('.')[0] || 'Marcheur';
+        const nom = emailPrefix.split('.')[1] || '';
+        await createProfile(user.id, prenom.charAt(0).toUpperCase() + prenom.slice(1), nom.charAt(0).toUpperCase() + nom.slice(1));
+        toast.success('Profil communautaire créé ! 🌿');
+      } catch (e: any) {
+        toast.error(e.message || 'Erreur lors de la création du profil');
+      } finally {
+        setCreatingProfile(false);
+      }
+    };
+
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-emerald-950 via-emerald-900 to-teal-900 flex items-center justify-center px-4">
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-center space-y-6 max-w-md">
+          <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-emerald-400/10 ring-1 ring-emerald-400/30 mx-auto">
+            <UserPlus className="w-8 h-8 text-emerald-300" />
+          </div>
+          <h1 className="text-2xl font-bold text-white">Bienvenue parmi les marcheurs 🌿</h1>
+          <p className="text-emerald-200/70">
+            Votre profil communautaire n'existe pas encore. Créez-le en un clic pour accéder à votre espace.
+          </p>
+          <Button
+            onClick={handleCreateProfile}
+            disabled={creatingProfile}
+            className="bg-emerald-600 hover:bg-emerald-500 text-white px-8 py-3 rounded-full"
+          >
+            {creatingProfile ? 'Création en cours...' : 'Créer mon profil'}
+          </Button>
+        </motion.div>
       </div>
     );
   }
