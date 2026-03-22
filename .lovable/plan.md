@@ -1,45 +1,31 @@
 
 
-# Remplacer les 3 marches de la galerie light par des marches specifiques
+# Ajouter l'option "Tous les marcheurs" au filtre de la page /admin/marcheurs
 
 ## Objectif
 
-Au lieu de charger dynamiquement les 3 marches les plus "completes" via `useFeaturedMarches(3)`, afficher exactement ces 3 marches :
+Permettre de consulter tous les marcheurs/marcheuses de toutes les explorations en une seule vue, en ajoutant une option "Toutes les explorations" dans le selecteur existant.
 
-1. La ou elle se jette, je me redresse a Bec d'Ambes
-2. L'arbre a papillon du moulin Grand de Gintrac
-3. Un moment sauvage a la sortie de Bergerac
+## Modifications
 
-## Approche technique
+### `src/pages/MarcheursAdmin.tsx`
 
-### Fichier a modifier : `src/hooks/useFeaturedMarches.ts`
+1. Ajouter une option `__all__` dans le `<Select>` au-dessus des explorations individuelles : "Toutes les explorations (X marcheurs)"
+2. Quand `selectedExplorationId === '__all__'`, afficher un nouveau composant `AllMarcheursView` au lieu de `MarcheursManager`
+3. Initialiser le state a `'__all__'` par defaut pour que la vue globale s'affiche directement
 
-Ajouter un parametre optionnel `specificIds` au hook. Quand des IDs sont fournis, le hook charge uniquement ces marches (dans l'ordre donne) au lieu de trier par completude.
+### Nouveau composant `src/components/admin/AllMarcheursView.tsx`
 
-### Fichier a modifier : `src/pages/MarchesDuVivantExplorer.tsx`
+1. Requete Supabase qui recupere TOUS les `exploration_marcheurs` avec une jointure sur `explorations` pour avoir le nom de l'exploration
+2. Jointure sur `marcheur_observations` pour compter les especes par marcheur
+3. Affichage en grille (meme style que `MarcheursManager`) avec en plus un badge indiquant le nom de l'exploration d'appartenance sur chaque carte
+4. Barre de recherche textuelle (filtre par nom/prenom) en haut
+5. Filtre par role (dropdown multi-select ou chips)
+6. Les actions edit/delete/observations restent fonctionnelles (redirigent vers le contexte de l'exploration concernee)
 
-Passer les 3 IDs en dur au hook :
+### Details techniques
 
-```
-const EXPLORER_MARCHE_IDS = [
-  'b88f774b-3131-4ff5-8f2a-1dd682f8b6de', // Bec d'Ambes
-  '8ab7818c-f8d0-4432-9093-12c65a3db117', // Gintrac
-  'fd99ffe8-edf4-4cdd-99f4-66c3dd2d9d57', // Bergerac
-];
-
-const { data: featuredMarches } = useFeaturedMarches(3, false, EXPLORER_MARCHE_IDS);
-```
-
-### Detail du changement dans le hook
-
-Dans `useFeaturedMarches.ts` :
-- Ajouter le parametre `specificIds?: string[]`
-- L'inclure dans la `queryKey`
-- Si `specificIds` est fourni et non vide, remplacer la requete initiale sur `exploration_marches` par un filtre `.in('id', specificIds)` directement sur `marches`
-- Conserver l'ordre des IDs fournis (pas de tri par completude)
-- Toute la logique existante (photos, audio, biodiversite) reste inchangee
-
-### Aucun impact sur la galerie principale
-
-La page `/marches-du-vivant/carnets-de-terrain` continue d'appeler `useFeaturedMarches(5)` sans `specificIds`, donc son comportement est inchange.
+- La requete recupere `exploration_marcheurs` avec `select('*, explorations(name)')` pour obtenir le nom de l'exploration en une seule requete
+- Les observations sont comptees via une sous-requete sur `marcheur_observations`
+- Le composant est en lecture + actions (edit ouvre le dialog avec le bon `exploration_id`)
 
