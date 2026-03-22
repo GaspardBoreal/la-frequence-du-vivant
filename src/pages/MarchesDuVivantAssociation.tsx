@@ -80,22 +80,35 @@ const cercleOr = {
   },
 };
 
-// Parcours Ambassadeur
+// Parcours — Quatre rôles à incarner
 const parcoursAmbassadeur = [
   {
     niveau: 'Marcheur',
-    description: 'Participez à une première marche du vivant et découvrez l\'écoute active du territoire.',
+    description: 'Participez à une première marche et découvrez l\'écoute active du territoire.',
     prerequis: 'Aucun',
+    icon: Footprints,
+    color: 'emerald',
+  },
+  {
+    niveau: 'Éclaireur',
+    description: 'Explorez les zones blanches de biodiversité et devenez le premier témoin de ces territoires oubliés.',
+    prerequis: '5 zones blanches explorées',
+    icon: Eye,
+    color: 'teal',
   },
   {
     niveau: 'Ambassadeur',
-    description: 'Formez-vous à l\'animation de petits groupes et aux outils de reconnaissance d\'espèces.',
-    prerequis: '3 marches + formation 1 jour',
+    description: 'Formez-vous à l\'animation de groupes, aux outils de reconnaissance d\'espèces et à la transmission.',
+    prerequis: 'Formation 1 jour + 3 marches animées',
+    icon: Heart,
+    color: 'sky',
   },
   {
-    niveau: 'Animateur',
-    description: 'Animez des marches en autonomie et contribuez à former les futurs ambassadeurs.',
+    niveau: 'Sentinelle',
+    description: 'Devenez référent territorial, formez les futurs ambassadeurs et ancrez les Marches dans votre région.',
     prerequis: 'Certification + 5 animations supervisées',
+    icon: Shield,
+    color: 'amber',
   },
 ];
 
