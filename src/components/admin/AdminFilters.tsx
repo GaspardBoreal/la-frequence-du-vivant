@@ -441,6 +441,28 @@ const AdminFilters: React.FC<AdminFiltersProps> = ({ marches, onFilterChange }) 
               </div>
             )}
 
+            {/* Filtre par organisateur */}
+            {organisateurs.length > 0 && (
+              <div className="space-y-2">
+                <label className="text-white text-sm font-medium">Organisateur</label>
+                <Select value={organisateurFilter} onValueChange={handleOrganisateurChange}>
+                  <SelectTrigger className="bg-white/10 border-white/20 text-white">
+                    <SelectValue placeholder="Tous les organisateurs" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-white border border-gray-200 shadow-lg z-50 max-h-60 overflow-y-auto">
+                    <SelectItem value="all" className="text-gray-900 hover:bg-gray-100">
+                      Tous les organisateurs
+                    </SelectItem>
+                    {organisateurs.map((org) => (
+                      <SelectItem key={org.id} value={org.id} className="text-gray-900 hover:bg-gray-100">
+                        {org.nom}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+
             {/* Filtre par ville */}
             <div className="space-y-2">
               <label className="text-white text-sm font-medium">Ville</label>
