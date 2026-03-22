@@ -73,8 +73,9 @@ const MarchesDuVivantExplorer = () => {
       toast.error('Choisissez une date pour votre première marche');
       return;
     }
+    const selectedEvent = upcomingEvents.find(e => e.id === selectedDate);
     toast.success('Bienvenue parmi les Marcheurs du Vivant ! 🌿', {
-      description: `${prenom}, nous vous contacterons pour la marche choisie.`,
+      description: `${prenom}, nous vous contacterons pour « ${selectedEvent?.title || 'la marche choisie'} ».`,
       duration: 5000
     });
     setPopupOpen(false);
