@@ -17,6 +17,7 @@ export interface MarcheSupabase {
   latitude?: number; // Ajouter latitude
   longitude?: number; // Ajouter longitude
   adresse?: string; // Ajouter adresse
+  organisateur_id?: string;
   created_at: string;
   updated_at: string;
 }
