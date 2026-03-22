@@ -114,6 +114,14 @@ const MarcheursAdmin: React.FC = () => {
                   <SelectValue placeholder="Choisir une exploration..." />
                 </SelectTrigger>
                 <SelectContent>
+                  <SelectItem value="__all__">
+                    <div className="flex items-center gap-2 w-full">
+                      <span>Toutes les explorations</span>
+                      <Badge variant="outline" className="ml-2">
+                        {totalMarcheurs} marcheur{totalMarcheurs > 1 ? 's' : ''}
+                      </Badge>
+                    </div>
+                  </SelectItem>
                   {explorations?.map((exp) => (
                     <SelectItem key={exp.id} value={exp.id}>
                       <div className="flex items-center justify-between gap-4 w-full">
