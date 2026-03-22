@@ -41,6 +41,7 @@ interface FormData {
   lienGoogleDrive: string;
   sousThemes: string;
   tags: string;
+  organisateurId: string;
 }
 
 const MarcheForm: React.FC<MarcheFormProps> = ({
