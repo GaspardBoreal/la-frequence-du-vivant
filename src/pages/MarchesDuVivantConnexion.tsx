@@ -199,7 +199,7 @@ const MarchesDuVivantConnexion = () => {
                       Mot de passe oublié ?
                     </button>
                     <Button type="submit" disabled={isSubmitting} className="w-full bg-emerald-500 hover:bg-emerald-400 text-white">
-                      {isSubmitting ? 'Connexion...' : 'Entrer dans la forêt 🌿'}
+                      {isSubmitting ? 'Connexion...' : 'Rejoignez la communauté des marcheurs du vivant'}
                     </Button>
                   </motion.form>
                 )}
