@@ -3,7 +3,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { Card } from '../components/ui/card';
 import { Button } from '../components/ui/button';
-import { Settings, Map, Sparkles, ArrowLeft, FileDown, Zap, Users, Briefcase, BarChart3, Kanban } from 'lucide-react';
+import { Settings, Map, Sparkles, ArrowLeft, FileDown, Zap, Users, Briefcase, BarChart3, Kanban, Building2 } from 'lucide-react';
 
 const AdminAccess: React.FC = () => {
   return (
@@ -171,6 +171,23 @@ const AdminAccess: React.FC = () => {
                 </Link>
               </div>
             </div>
+          </Card>
+
+          {/* Organisateurs */}
+          <Card className="gaspard-card p-6 hover:shadow-lg transition-shadow">
+            <div className="flex items-center mb-4">
+              <Building2 className="h-8 w-8 text-accent mr-3" />
+              <h2 className="text-xl font-semibold text-foreground">Organisateurs</h2>
+            </div>
+            <p className="text-muted-foreground mb-4">
+              Gérer les organisateurs des marches : associations, collectifs, individus.
+            </p>
+            <Link to="/admin/organisateurs">
+              <Button variant="outline" className="w-full">
+                <Building2 className="h-4 w-4 mr-2" />
+                Accéder aux Organisateurs
+              </Button>
+            </Link>
           </Card>
         </div>
 

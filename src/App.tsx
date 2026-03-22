@@ -71,6 +71,7 @@ import MarchesDuVivantMonEspace from './pages/MarchesDuVivantMonEspace';
 import MarchesDuVivantValiderPresence from './pages/MarchesDuVivantValiderPresence';
 import MarcheEventsAdmin from './pages/MarcheEventsAdmin';
 import CommunityProfilesAdmin from './pages/CommunityProfilesAdmin';
+import OrganisateursAdmin from './pages/OrganisateursAdmin';
 
 function App() {
   return (
@@ -228,6 +229,11 @@ function App() {
             <Route path="/admin/community" element={
               <AdminAuth>
                 <CommunityProfilesAdmin />
+              </AdminAuth>
+            } />
+            <Route path="/admin/organisateurs" element={
+              <AdminAuth>
+                <OrganisateursAdmin />
               </AdminAuth>
             } />
             <Route path="/admin" element={

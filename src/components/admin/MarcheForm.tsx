@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Textarea } from '../ui/textarea';
@@ -41,6 +43,7 @@ interface FormData {
   lienGoogleDrive: string;
   sousThemes: string;
   tags: string;
+  organisateurId: string;
 }
 
 const MarcheForm: React.FC<MarcheFormProps> = ({
@@ -58,7 +61,17 @@ const MarcheForm: React.FC<MarcheFormProps> = ({
   const [themePrincipalRichText, setThemePrincipalRichText] = useState('');
   const [descriptifCourtRichText, setDescriptifCourtRichText] = useState('');
   const [descriptifLongRichText, setDescriptifLongRichText] = useState('');
-  
+  const [selectedOrganisateurId, setSelectedOrganisateurId] = useState<string>('');
+
+  // Fetch organisateurs
+  const { data: organisateurs = [] } = useQuery({
+    queryKey: ['organisateurs'],
+    queryFn: async () => {
+      const { data, error } = await supabase.from('marche_organisateurs').select('id, nom').order('nom');
+      if (error) throw error;
+      return data;
+    }
+  });
   const {
     register,
     handleSubmit,
@@ -90,10 +103,12 @@ const MarcheForm: React.FC<MarcheFormProps> = ({
         adresse: marche.adresse || '',
         lienGoogleDrive: marche.lien || '',
         sousThemes: marche.sousThemes?.join(', ') || '',
-        tags: marche.supabaseTags?.join(', ') || ''
+        tags: marche.supabaseTags?.join(', ') || '',
+        organisateurId: (marche as any).organisateur_id || ''
       };
       
       reset(formData);
+      setSelectedOrganisateurId((marche as any).organisateur_id || '');
       setThemePrincipalRichText(marche.theme || '');
       setDescriptifCourtRichText(marche.descriptifCourt || '');
       setDescriptifLongRichText(marche.descriptifLong || '');
@@ -120,7 +135,8 @@ const MarcheForm: React.FC<MarcheFormProps> = ({
         lienGoogleDrive: data.lienGoogleDrive,
         sousThemes: data.sousThemes ? data.sousThemes.split(',').map(t => t.trim()) : [],
         tags: data.tags ? data.tags.split(',').map(t => t.trim()) : [],
-        themesPrincipaux: [themePrincipalRichText].filter(Boolean)
+        themesPrincipaux: [themePrincipalRichText].filter(Boolean),
+        organisateurId: selectedOrganisateurId || undefined
       };
       
       console.log('📦 Données API préparées:', apiData);
@@ -194,6 +210,19 @@ const MarcheForm: React.FC<MarcheFormProps> = ({
 
           <TabsContent value="general" className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
+              <div className="col-span-2">
+                <Label>Organisateur</Label>
+                <Select value={selectedOrganisateurId} onValueChange={v => setSelectedOrganisateurId(v)}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Sélectionnez un organisateur" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {organisateurs.map(org => (
+                      <SelectItem key={org.id} value={org.id}>{org.nom}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
               <div>
                 <Label htmlFor="ville">Ville *</Label>
                 <Input id="ville" {...register('ville', {
