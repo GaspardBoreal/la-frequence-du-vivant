@@ -95,6 +95,7 @@ export interface MarcheTechnoSensible {
   supabaseTags?: string[];
   sousThemes?: string[];
   adresse?: string;
+  organisateur_id?: string;
   textes?: Array<{
     id: string;
     titre: string;
