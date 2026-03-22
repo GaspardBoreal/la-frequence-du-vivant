@@ -135,7 +135,7 @@ const MarchesDuVivantConnexion = () => {
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.7 }}
-            className="w-full max-w-lg"
+            className="w-full max-w-lg mx-auto"
           >
             {/* Logo */}
             <div className="text-center mb-8">
@@ -148,7 +148,7 @@ const MarchesDuVivantConnexion = () => {
                 {mode === 'register' && 'Rejoindre l\'aventure'}
                 {mode === 'forgot' && 'Mot de passe oublié'}
               </h1>
-              <p className="text-emerald-200/60 text-sm mt-1">
+              <p className="text-emerald-200/60 text-sm mt-1 text-center">
                 {mode === 'login' && 'Les sentiers vous attendent'}
                 {mode === 'register' && 'Premier pas vers l\'écoute du vivant'}
                 {mode === 'forgot' && 'Nous vous enverrons un lien de réinitialisation'}
