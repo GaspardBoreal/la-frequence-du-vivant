@@ -1,60 +1,33 @@
 
 
-# Section "Prochaines marches" dynamique et immersive
+# Inserer les evenements a venir dans `marche_events`
 
-## Concept
+## Diagnostic
 
-Remplacer le calendrier statique code en dur par une requete sur `marche_events` (table deja existante avec `date_marche`, `title`, `description`, `lieu`) filtrant les evenements a venir (`date_marche >= today`), triés par date croissante. L'affichage passe d'une simple timeline a des **cartes immersives** avec :
+La table `marche_events` est vide. Le code dynamique fait une requete `SELECT ... WHERE date_marche >= today` qui retourne 0 lignes, d'ou l'affichage de l'etat vide.
 
-- Fond gradient individuel par carte avec un effet glassmorphism
-- Countdown dynamique ("Dans 6 jours", "Dans 2 mois") affiche en badge
-- Icone saisonniere contextuelle (printemps/ete/automne/hiver) basee sur la date
-- Animation d'entree en cascade (stagger framer-motion)
-- Nom de l'organisateur affiche sous chaque evenement (join sur `marche_organisateurs` via les marches)
-- Etat vide elegant si aucun evenement a venir ("Les prochaines marches se preparent...")
+## Solution
 
-## Modifications
+Inserer les 3 evenements du calendrier 2026 via une migration SQL :
 
-### 1. `src/pages/MarchesDuVivantExplorer.tsx`
-
-**Supprimer** le tableau `calendrier` statique (lignes 144-147).
-
-**Ajouter** un fetch des evenements a venir :
-
-```ts
-const { data: upcomingEvents = [] } = useQuery({
-  queryKey: ['upcoming-marche-events'],
-  queryFn: async () => {
-    const today = new Date().toISOString().split('T')[0];
-    const { data } = await supabase
-      .from('marche_events')
-      .select('id, title, description, date_marche, lieu')
-      .gte('date_marche', today)
-      .order('date_marche', { ascending: true })
-      .limit(6);
-    return data || [];
-  }
-});
+```sql
+INSERT INTO marche_events (title, description, date_marche, lieu) VALUES
+  ('La transhumance de Mouton Village édition 2026',
+   'Deux jours de randonnée et de convivialité en bonne compagnie : moutons, chiens de berger, ânes, chevaux (Vouillé dans la Vienne vers Mouton Village dans les Deux-Sèvres)',
+   '2026-03-28', 'Vouillé (Vienne) → Mouton Village (Deux-Sèvres)'),
+  ('Le Réveil de la Terre : Marcher sur un sol qui respire',
+   'Lieu (DEVIAT - Charente)',
+   '2026-04-11', 'DEVIAT - Charente'),
+  ('Les Arbres Gardiens : De l''ombre et de l''eau pour nos champs',
+   'Lors de la fête de la nature (Dordogne)',
+   '2026-05-24', 'Dordogne');
 ```
-
-**Remplacer** la section calendrier (lignes 601-638) par des cartes immersives :
-
-- Chaque carte : fond glassmorphism (`bg-white/60 backdrop-blur-sm`), bordure emeraude subtile, ombre diffuse
-- Badge countdown en haut a droite ("Dans X jours" / "Dans X semaines")
-- Date formatee en francais (`Intl.DateTimeFormat`)
-- Icone saisonniere (Sun pour ete, Flower2 pour printemps, Leaf pour automne, Snowflake pour hiver)
-- Titre en `font-crimson text-xl`, lieu en `text-emerald-700`, description en `text-stone-500`
-- Hover : legere elevation (`hover:-translate-y-1 hover:shadow-xl`)
-- Layout : grille responsive `grid-cols-1 md:grid-cols-2 lg:grid-cols-3` au lieu de la timeline verticale
-- Etat vide : illustration minimaliste avec message poetique
-
-### 2. Import
-
-Ajouter `useQuery` de `@tanstack/react-query` et `supabase` client.
 
 ## Fichier concerne
 
 | Fichier | Action |
 |---------|--------|
-| `src/pages/MarchesDuVivantExplorer.tsx` | Modifier (fetch dynamique + redesign cartes) |
+| Migration SQL | Insert 3 evenements dans `marche_events` |
+
+Aucune modification de code necessaire — le fetch dynamique existant affichera automatiquement les evenements une fois inseres.
 
