@@ -373,7 +373,7 @@ const AdminFilters: React.FC<AdminFiltersProps> = ({ marches, onFilterChange }) 
   const uniqueRegions = getUniqueRegions();
   const uniqueDepartements = getUniqueDepartements();
   const uniqueTagsWithCount = getUniqueTagsWithCount();
-  const hasActiveFilters = villeFilter || regionFilter || departementFilter || tagsFilter || searchText || withoutPhotos || withoutAudio || withoutTexts || explorationFilter;
+  const hasActiveFilters = villeFilter || regionFilter || departementFilter || tagsFilter || searchText || withoutPhotos || withoutAudio || withoutTexts || explorationFilter || organisateurFilter;
 
   return (
     <div className="mb-6">
