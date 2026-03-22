@@ -1,44 +1,42 @@
 
 
-# Ajouter le filtre par Organisateur dans AdminFilters
+# Afficher le nombre de marches par organisateur dans le filtre
 
-## Approche
+## Modification unique
 
-Ajouter un filtre `Select` "Organisateur" dans la grille de filtres existante, entre le filtre Exploration et le filtre Ville.
+### `src/components/admin/AdminFilters.tsx`
 
-## Modifications
+1. **Modifier le fetch** (ligne 93) : remplacer la requete par un fetch qui compte aussi les marches par organisateur. Deux approches possibles — la plus simple : fetcher separement les marches avec `organisateur_id` et compter cote client (comme deja fait dans `OrganisateursAdmin.tsx`).
 
-### 1. `src/utils/supabaseDataTransformer.ts`
-
-Ajouter `organisateur_id` au format legacy transforme (ligne ~66, apres `adresse`) :
+Concretement, dans le `useEffect` (lignes 91-97) :
 
 ```ts
-organisateur_id: marche.organisateur_id || undefined,
+const fetchOrganisateurs = async () => {
+  const [orgResult, marchesResult] = await Promise.all([
+    supabase.from('marche_organisateurs').select('id, nom').order('nom'),
+    supabase.from('marches').select('organisateur_id')
+  ]);
+  if (orgResult.data) {
+    const counts: Record<string, number> = {};
+    marchesResult.data?.forEach((m: any) => {
+      if (m.organisateur_id) counts[m.organisateur_id] = (counts[m.organisateur_id] || 0) + 1;
+    });
+    setOrganisateurs(orgResult.data.map(o => ({ ...o, marches_count: counts[o.id] || 0 })));
+  }
+};
 ```
 
-Et ajouter le champ dans le type `MarcheTechnoSensible` (dans `googleSheetsApi.ts`).
+2. **Mettre a jour le type** du state `organisateurs` pour inclure `marches_count: number`.
 
-### 2. `src/utils/googleSheetsApi.ts` — type `MarcheTechnoSensible`
+3. **Afficher le compte** dans le `SelectItem` (ligne 457-458) :
 
-Ajouter le champ optionnel `organisateur_id?: string`.
+```tsx
+{org.nom} ({org.marches_count})
+```
 
-### 3. `src/components/admin/AdminFilters.tsx`
-
-- Ajouter un state `organisateurFilter`
-- Fetcher la liste des organisateurs depuis `marche_organisateurs` via `supabase.from('marche_organisateurs').select('id, nom')`
-- Ajouter un `Select` "Organisateur" dans la grille (apres Exploration)
-- Ajouter le filtre dans `applyFilters` : comparer `marche.organisateur_id === organisateurFilter`
-- Ajouter handler `handleOrganisateurChange` et integrer dans `clearFilters` et `hasActiveFilters`
-
-### 4. `src/utils/supabaseApi.ts`
-
-Verifier que `fetchMarchesFromSupabase` inclut `organisateur_id` dans le select (il devrait deja etre inclus via `*`).
-
-## Fichiers concernes
+## Fichier concerne
 
 | Fichier | Action |
 |---------|--------|
-| `src/utils/googleSheetsApi.ts` | Ajouter champ `organisateur_id` au type |
-| `src/utils/supabaseDataTransformer.ts` | Mapper `organisateur_id` |
-| `src/components/admin/AdminFilters.tsx` | Ajouter filtre Select Organisateur |
+| `src/components/admin/AdminFilters.tsx` | Modifier (fetch + affichage) |
 
