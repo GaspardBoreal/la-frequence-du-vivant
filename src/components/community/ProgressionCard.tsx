@@ -11,6 +11,7 @@ interface ProgressionCardProps {
   marchesCount: number;
   formationValidee: boolean;
   certificationValidee: boolean;
+  pendingCount?: number;
 }
 
 const ALL_ROLES: CommunityRoleKey[] = ['marcheur_en_devenir', 'marcheur', 'eclaireur', 'ambassadeur', 'sentinelle'];
@@ -29,6 +30,7 @@ const ProgressionCard: React.FC<ProgressionCardProps> = ({
   marchesCount,
   formationValidee,
   certificationValidee,
+  pendingCount = 0,
 }) => {
   const config = ROLE_CONFIG[role];
   const dark = DARK_COLORS[role];
@@ -65,7 +67,15 @@ const ProgressionCard: React.FC<ProgressionCardProps> = ({
         </div>
       </div>
 
-      <p className="text-sm text-emerald-200/60 italic">{config.description}</p>
+      <p className="text-sm text-emerald-200/60 italic">
+        {role === 'marcheur_en_devenir' && pendingCount === 1
+          ? 'Bravo, votre première marche vous attend ! Chaque pas compte — explorez d\'autres sentiers pour enrichir votre parcours.'
+          : role === 'marcheur_en_devenir' && pendingCount > 1
+          ? `Magnifique, ${pendingCount} marches vous attendent ! Vous êtes déjà sur le chemin du Vivant.`
+          : pendingCount > 0 && config.nextRole
+          ? `${pendingCount} marche${pendingCount > 1 ? 's' : ''} en approche — continuez sur cette belle lancée !`
+          : config.description}
+      </p>
 
       {config.nextRole && (
         <div className="space-y-2">

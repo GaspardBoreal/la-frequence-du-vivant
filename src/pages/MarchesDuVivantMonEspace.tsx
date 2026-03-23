@@ -173,6 +173,7 @@ const MarchesDuVivantMonEspace = () => {
               marchesCount={profile.marches_count}
               formationValidee={profile.formation_validee}
               certificationValidee={profile.certification_validee}
+              pendingCount={participations.filter(p => !p.validated_at).length}
             />
           </motion.div>
 
