@@ -130,7 +130,7 @@ const MarchesDuVivantMonEspace = () => {
   }
 
   const role = (profile.role || 'marcheur_en_devenir') as CommunityRoleKey;
-  const registeredEventIds = new Set(participations.map(p => (p as any).marche_event_id || ''));
+  const registeredEventIds = new Set(participations.map(p => p.marche_event_id));
 
   return (
     <>
