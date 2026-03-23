@@ -30,6 +30,7 @@ const ProgressionCard: React.FC<ProgressionCardProps> = ({
   marchesCount,
   formationValidee,
   certificationValidee,
+  pendingCount = 0,
 }) => {
   const config = ROLE_CONFIG[role];
   const dark = DARK_COLORS[role];
