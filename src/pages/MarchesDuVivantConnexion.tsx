@@ -157,7 +157,7 @@ const MarchesDuVivantConnexion = () => {
                 {mode === 'forgot' && 'Mot de passe oublié'}
               </h1>
               <p className="text-emerald-200/60 text-sm mt-1 text-center">
-                {mode === 'login' && 'Les sentiers vous attendent'}
+                {mode === 'login' && 'Le Vivant vous attend'}
                 {mode === 'register' && 'Premier pas vers l\'écoute du vivant'}
                 {mode === 'forgot' && 'Nous vous enverrons un lien de réinitialisation'}
               </p>
