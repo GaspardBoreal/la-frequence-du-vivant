@@ -1,29 +1,47 @@
 
 
-# Mettre en valeur les marches inscrites dans "Prochaines marches"
+# Texte dynamique selon les inscriptions dans ProgressionCard
 
-## Concept
+## Probleme
 
-Les cartes des marches ou le marcheur est inscrit recevront un traitement visuel distinct : bordure emeraude lumineuse, fond legerement plus lumineux, et un badge "Inscrit" plus prominent avec une animation subtile de pulse. Les cartes non inscrites restent dans le style actuel, creant un contraste naturel.
+Le texte descriptif sous le role est statique (`config.description`). Quand un marcheur s'inscrit a une marche mais n'a pas encore de participation validee, il voit toujours "Inscrivez-vous a votre premiere marche pour devenir Marcheur" — ce qui est decourageant.
 
-## Modification unique
+## Solution
 
-### `src/pages/MarchesDuVivantMonEspace.tsx` — lignes 197-237
+Passer le nombre d'inscriptions en cours (non validees) au `ProgressionCard` et afficher un texte contextuel different quand le marcheur a des inscriptions.
 
-**Carte inscrite** :
-- Bordure : `border-emerald-400/50` au lieu de `border-white/20`
-- Fond : `bg-emerald-500/15` au lieu de `bg-white/10`
-- Ajout d'un liseré gauche lumineux : `border-l-2 border-l-emerald-400`
-- Badge "Inscrit" agrandi avec icone animee (pulse doux), fond `bg-emerald-500/20 rounded-full px-3 py-1`
-- Texte du titre en `text-emerald-100` (plus lumineux)
+### 1. `src/components/community/ProgressionCard.tsx`
 
-**Carte non inscrite** : inchangee (style actuel `bg-white/10 border-white/20`)
+Ajouter une prop optionnelle `pendingCount?: number` (nombre d'inscriptions non encore validees).
 
-**Tri** : placer les marches inscrites en premier dans la liste pour une visibilite immediate
+Dans le rendu, remplacer le `config.description` statique par une logique contextuelle :
 
-## Fichier concerne
+- **Role `marcheur_en_devenir`** :
+  - Si `pendingCount > 0` et `pendingCount === 1` : *"Bravo, votre premiere marche vous attend ! Chaque pas compte — explorez d'autres sentiers pour enrichir votre parcours."*
+  - Si `pendingCount > 1` : *"Magnifique, {pendingCount} marches vous attendent ! Vous etes deja sur le chemin du Vivant."*
+  - Si `pendingCount === 0` : texte actuel (config.description)
+- **Autres roles** : logique similaire adaptee au seuil suivant, ou texte par defaut si aucune inscription en attente
+
+### 2. `src/pages/MarchesDuVivantMonEspace.tsx`
+
+Calculer `pendingCount` = nombre de participations sans `validated_at` et le passer au composant :
+
+```tsx
+const pendingCount = participations.filter(p => !p.validated_at).length;
+
+<ProgressionCard
+  role={role}
+  marchesCount={profile.marches_count}
+  pendingCount={pendingCount}
+  formationValidee={...}
+  certificationValidee={...}
+/>
+```
+
+## Fichiers concernes
 
 | Fichier | Action |
 |---------|--------|
-| `src/pages/MarchesDuVivantMonEspace.tsx` | Modifier styles conditionnels + tri |
+| `src/components/community/ProgressionCard.tsx` | Ajouter prop `pendingCount`, texte contextuel |
+| `src/pages/MarchesDuVivantMonEspace.tsx` | Calculer et passer `pendingCount` |
 
