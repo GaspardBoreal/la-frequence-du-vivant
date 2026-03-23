@@ -79,11 +79,15 @@ export function useCommunityAuth() {
   }, [fetchProfile]);
 
   const signUp = async (data: SignUpData) => {
+    const baseUrl = window.location.hostname === 'localhost'
+      ? window.location.origin
+      : 'https://la-frequence-du-vivant.com';
+
     const { data: authData, error: authError } = await supabase.auth.signUp({
       email: data.email,
       password: data.password,
       options: {
-        emailRedirectTo: window.location.origin + '/marches-du-vivant/mon-espace',
+        emailRedirectTo: baseUrl + '/marches-du-vivant/connexion',
       }
     });
 
