@@ -2,10 +2,12 @@ import React, { useEffect, useState } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { ArrowLeft, Leaf, LogOut, Calendar, MapPin, CheckCircle2, Clock, QrCode, UserPlus } from 'lucide-react';
+import { ArrowLeft, Leaf, LogOut, Calendar, MapPin, CheckCircle2, Clock, QrCode, UserPlus, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useCommunityAuth } from '@/hooks/useCommunityAuth';
 import { useCommunityParticipations, CommunityRoleKey } from '@/hooks/useCommunityProfile';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
 import ProgressionCard from '@/components/community/ProgressionCard';
 import RoleBadge from '@/components/community/RoleBadge';
 import Footer from '@/components/Footer';
@@ -13,17 +15,70 @@ import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { toast } from 'sonner';
 
+const getCountdown = (dateStr: string) => {
+  const now = new Date();
+  const target = new Date(dateStr);
+  const diffMs = target.getTime() - now.getTime();
+  const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+  if (diffDays <= 0) return "Aujourd'hui";
+  if (diffDays === 1) return 'Demain';
+  if (diffDays < 7) return `Dans ${diffDays} jours`;
+  if (diffDays < 30) return `Dans ${Math.ceil(diffDays / 7)} sem.`;
+  return `Dans ${Math.ceil(diffDays / 30)} mois`;
+};
+
 const MarchesDuVivantMonEspace = () => {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const { user, profile, loading, signOut, createProfile } = useCommunityAuth();
   const { data: participations = [] } = useCommunityParticipations(user?.id);
   const [creatingProfile, setCreatingProfile] = useState(false);
+  const [registeringId, setRegisteringId] = useState<string | null>(null);
+
+  const { data: upcomingEvents = [] } = useQuery({
+    queryKey: ['upcoming-marche-events-mon-espace'],
+    queryFn: async () => {
+      const today = new Date().toISOString().split('T')[0];
+      const { data } = await supabase
+        .from('marche_events')
+        .select('id, title, description, date_marche, lieu')
+        .gte('date_marche', today)
+        .order('date_marche', { ascending: true })
+        .limit(6);
+      return data || [];
+    },
+    enabled: !!user,
+  });
 
   useEffect(() => {
     if (!loading && !user) {
       navigate('/marches-du-vivant/connexion');
     }
   }, [loading, user, navigate]);
+
+  const handleRegister = async (eventId: string) => {
+    if (!user) return;
+    setRegisteringId(eventId);
+    try {
+      const { error } = await supabase
+        .from('marche_participations')
+        .insert({ user_id: user.id, marche_event_id: eventId });
+      if (error) {
+        if (error.code === '23505') {
+          toast.info('Vous êtes déjà inscrit à cette marche 🌿');
+        } else {
+          throw error;
+        }
+      } else {
+        toast.success('Inscription confirmée ! 🌿 À bientôt sur les sentiers');
+        queryClient.invalidateQueries({ queryKey: ['community-participations'] });
+      }
+    } catch (e: any) {
+      toast.error(e.message || "Erreur lors de l'inscription");
+    } finally {
+      setRegisteringId(null);
+    }
+  };
 
   if (loading || !user) {
     return (
@@ -75,6 +130,7 @@ const MarchesDuVivantMonEspace = () => {
   }
 
   const role = (profile.role || 'marcheur_en_devenir') as CommunityRoleKey;
+  const registeredEventIds = new Set(participations.map(p => p.marche_event_id));
 
   return (
     <>
@@ -120,8 +176,74 @@ const MarchesDuVivantMonEspace = () => {
             />
           </motion.div>
 
+          {/* Upcoming Events - Registration */}
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }}>
+            <h2 className="text-lg font-semibold text-white mb-3 flex items-center gap-2">
+              <Sparkles className="w-5 h-5 text-emerald-300" />
+              Prochaines marches
+            </h2>
+
+            {upcomingEvents.length === 0 ? (
+              <div className="bg-white/5 rounded-xl border border-white/10 p-8 text-center">
+                <p className="text-emerald-200/60 text-sm">Les prochaines marches se préparent…</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {upcomingEvents.map((event, index) => {
+                  const isRegistered = registeredEventIds.has(event.id);
+                  const countdown = getCountdown(event.date_marche);
+                  const dateFormatted = format(new Date(event.date_marche), 'dd MMMM yyyy', { locale: fr });
+
+                  return (
+                    <motion.div
+                      key={event.id}
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: 0.2 + index * 0.08 }}
+                      className="bg-white/10 backdrop-blur-sm rounded-xl border border-white/20 p-4 space-y-3"
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex-1 min-w-0">
+                          <p className="text-white font-medium text-sm leading-snug">{event.title}</p>
+                          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1.5">
+                            <span className="text-emerald-300/80 text-xs">{dateFormatted}</span>
+                            {event.lieu && (
+                              <span className="text-emerald-200/50 text-xs flex items-center gap-1">
+                                <MapPin className="w-3 h-3" />
+                                {event.lieu}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                        <span className="text-[10px] px-2 py-1 rounded-full bg-emerald-500/20 text-emerald-300 whitespace-nowrap flex-shrink-0">
+                          {countdown}
+                        </span>
+                      </div>
+
+                      {isRegistered ? (
+                        <div className="flex items-center gap-2 text-emerald-400 text-xs">
+                          <CheckCircle2 className="w-4 h-4" />
+                          <span className="font-medium">Inscrit</span>
+                        </div>
+                      ) : (
+                        <Button
+                          size="sm"
+                          onClick={() => handleRegister(event.id)}
+                          disabled={registeringId === event.id}
+                          className="w-full bg-emerald-600/80 hover:bg-emerald-500 text-white text-xs rounded-lg h-8"
+                        >
+                          {registeringId === event.id ? 'Inscription...' : "S'inscrire à cette marche"}
+                        </Button>
+                      )}
+                    </motion.div>
+                  );
+                })}
+              </div>
+            )}
+          </motion.div>
+
           {/* QR Scanner CTA */}
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 }}>
             <Link to="/marches-du-vivant/explorer">
               <div className="bg-white/10 backdrop-blur-sm rounded-xl border border-white/20 p-4 flex items-center gap-4 hover:bg-white/15 transition-colors cursor-pointer">
                 <div className="w-12 h-12 rounded-full bg-emerald-500/20 flex items-center justify-center">

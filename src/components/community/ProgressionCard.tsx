@@ -15,6 +15,15 @@ interface ProgressionCardProps {
 
 const ALL_ROLES: CommunityRoleKey[] = ['marcheur_en_devenir', 'marcheur', 'eclaireur', 'ambassadeur', 'sentinelle'];
 
+// Dark-theme color mapping for each role
+const DARK_COLORS: Record<CommunityRoleKey, { text: string; bg: string; border: string }> = {
+  marcheur_en_devenir: { text: 'text-emerald-200/80', bg: 'bg-white/10', border: 'border-white/20' },
+  marcheur: { text: 'text-emerald-300', bg: 'bg-emerald-500/15', border: 'border-emerald-400/30' },
+  eclaireur: { text: 'text-teal-300', bg: 'bg-teal-500/15', border: 'border-teal-400/30' },
+  ambassadeur: { text: 'text-sky-300', bg: 'bg-sky-500/15', border: 'border-sky-400/30' },
+  sentinelle: { text: 'text-amber-300', bg: 'bg-amber-500/15', border: 'border-amber-400/30' },
+};
+
 const ProgressionCard: React.FC<ProgressionCardProps> = ({
   role,
   marchesCount,
@@ -22,13 +31,12 @@ const ProgressionCard: React.FC<ProgressionCardProps> = ({
   certificationValidee,
 }) => {
   const config = ROLE_CONFIG[role];
+  const dark = DARK_COLORS[role];
   const currentIndex = ALL_ROLES.indexOf(role);
 
-  // Calculate progress to next role
   let progressPercent = 100;
   let progressLabel = '';
   if (config.nextRole && config.nextThreshold) {
-    const prevThreshold = currentIndex > 0 ? (ROLE_CONFIG[ALL_ROLES[currentIndex]]?.nextThreshold || 0) : 0;
     const needed = config.nextThreshold;
     progressPercent = Math.min(100, Math.round((marchesCount / needed) * 100));
     progressLabel = `${marchesCount}/${needed} marches`;
@@ -45,32 +53,32 @@ const ProgressionCard: React.FC<ProgressionCardProps> = ({
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      className={`rounded-2xl border-2 ${config.borderColor} ${config.bgColor} p-6 space-y-4`}
+      className={`rounded-2xl border-2 ${dark.border} bg-white/10 backdrop-blur-sm p-6 space-y-4`}
     >
       <div className="flex items-center justify-between">
         <div>
-          <p className="text-sm text-muted-foreground mb-1">Votre rôle actuel</p>
-          <RoleBadge role={role} size="lg" />
+          <p className="text-sm text-emerald-200/70 mb-1">Votre rôle actuel</p>
+          <RoleBadge role={role} size="lg" darkMode />
         </div>
-        <div className={`text-4xl font-bold ${config.color}`}>
+        <div className={`text-4xl font-bold ${dark.text}`}>
           {marchesCount}
         </div>
       </div>
 
-      <p className="text-sm text-muted-foreground italic">{config.description}</p>
+      <p className="text-sm text-emerald-200/60 italic">{config.description}</p>
 
       {config.nextRole && (
         <div className="space-y-2">
-          <div className="flex items-center justify-between text-xs text-muted-foreground">
+          <div className="flex items-center justify-between text-xs text-emerald-200/70">
             <span>{progressLabel}</span>
             <span className="flex items-center gap-1">
               <ArrowRight className="w-3 h-3" />
               {ROLE_CONFIG[config.nextRole].label}
             </span>
           </div>
-          <div className="h-2 bg-white/50 rounded-full overflow-hidden">
+          <div className="h-2 bg-white/20 rounded-full overflow-hidden">
             <motion.div
-              className={`h-full rounded-full bg-gradient-to-r from-emerald-400 to-teal-500`}
+              className="h-full rounded-full bg-gradient-to-r from-emerald-400 to-teal-500"
               initial={{ width: 0 }}
               animate={{ width: `${progressPercent}%` }}
               transition={{ duration: 1, ease: 'easeOut' }}
@@ -82,21 +90,22 @@ const ProgressionCard: React.FC<ProgressionCardProps> = ({
       {/* Timeline of all roles */}
       <div className="flex items-center justify-between pt-2">
         {ALL_ROLES.map((r, i) => {
+          const rDark = DARK_COLORS[r];
           const rConfig = ROLE_CONFIG[r];
           const Icon = ICONS[rConfig.icon];
           const isActive = i <= currentIndex;
           return (
             <React.Fragment key={r}>
-              <div className={`flex flex-col items-center gap-1 ${isActive ? rConfig.color : 'text-gray-300'}`}>
-                <div className={`w-8 h-8 rounded-full flex items-center justify-center ${isActive ? rConfig.bgColor : 'bg-gray-100'} border ${isActive ? rConfig.borderColor : 'border-gray-200'}`}>
+              <div className={`flex flex-col items-center gap-1 ${isActive ? rDark.text : 'text-emerald-200/30'}`}>
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center ${isActive ? rDark.bg : 'bg-white/5'} border ${isActive ? rDark.border : 'border-white/10'}`}>
                   <Icon className="w-4 h-4" />
                 </div>
-                <span className="text-[10px] font-medium text-center leading-tight max-w-[60px]">
+                <span className="text-[10px] font-medium text-center leading-tight max-w-[60px] text-emerald-100/80">
                   {rConfig.label}
                 </span>
               </div>
               {i < ALL_ROLES.length - 1 && (
-                <ChevronRight className={`w-3 h-3 flex-shrink-0 ${i < currentIndex ? 'text-emerald-400' : 'text-gray-200'}`} />
+                <ChevronRight className={`w-3 h-3 flex-shrink-0 ${i < currentIndex ? 'text-emerald-400' : 'text-emerald-200/20'}`} />
               )}
             </React.Fragment>
           );

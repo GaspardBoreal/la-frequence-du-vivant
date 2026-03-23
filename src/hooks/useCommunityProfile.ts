@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 
 interface Participation {
   id: string;
+  marche_event_id: string;
   validated_at: string | null;
   validation_method: string | null;
   created_at: string;
@@ -20,7 +21,7 @@ export function useCommunityParticipations(userId: string | undefined) {
       if (!userId) return [];
       const { data, error } = await supabase
         .from('marche_participations')
-        .select('id, validated_at, validation_method, created_at, marche_events(title, date_marche, lieu)')
+        .select('id, marche_event_id, validated_at, validation_method, created_at, marche_events(title, date_marche, lieu)')
         .eq('user_id', userId)
         .order('created_at', { ascending: false });
 
