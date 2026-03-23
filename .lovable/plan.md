@@ -1,53 +1,29 @@
 
 
-# Corrections Mon Espace : lisibilite + inscription aux marches a venir
+# Mettre en valeur les marches inscrites dans "Prochaines marches"
 
-## Probleme 1 : Textes illisibles dans le widget progression
+## Concept
 
-Le `ProgressionCard` utilise des couleurs claires de theme light (`bg-gray-100`, `text-gray-500`, `bg-emerald-50`, `text-muted-foreground`) sur le fond sombre emeraude de la page. Les textes et fonds sont quasi invisibles.
+Les cartes des marches ou le marcheur est inscrit recevront un traitement visuel distinct : bordure emeraude lumineuse, fond legerement plus lumineux, et un badge "Inscrit" plus prominent avec une animation subtile de pulse. Les cartes non inscrites restent dans le style actuel, creant un contraste naturel.
 
-## Probleme 2 : Pas de moyen de s'inscrire aux marches a venir
+## Modification unique
 
-Le marcheur voit "Aucune participation" avec un lien vers `/explorer`, mais aucune section ne lui montre directement les evenements a venir ni ne lui permet de s'y inscrire depuis son espace.
+### `src/pages/MarchesDuVivantMonEspace.tsx` — lignes 197-237
 
----
+**Carte inscrite** :
+- Bordure : `border-emerald-400/50` au lieu de `border-white/20`
+- Fond : `bg-emerald-500/15` au lieu de `bg-white/10`
+- Ajout d'un liseré gauche lumineux : `border-l-2 border-l-emerald-400`
+- Badge "Inscrit" agrandi avec icone animee (pulse doux), fond `bg-emerald-500/20 rounded-full px-3 py-1`
+- Texte du titre en `text-emerald-100` (plus lumineux)
 
-## Solution
+**Carte non inscrite** : inchangee (style actuel `bg-white/10 border-white/20`)
 
-### 1. Adapter `ProgressionCard` au theme sombre
+**Tri** : placer les marches inscrites en premier dans la liste pour une visibilite immediate
 
-**Fichier** : `src/components/community/ProgressionCard.tsx`
-
-- Remplacer le fond `config.bgColor` (ex: `bg-gray-100`, `bg-emerald-50`) par `bg-white/10 backdrop-blur-sm`
-- Remplacer la bordure `config.borderColor` par `border-white/20`
-- Remplacer `text-muted-foreground` par `text-emerald-200/70`
-- Remplacer les couleurs d'icones/textes `config.color` par des variantes claires adaptees au fond sombre
-- Barre de progression : remplacer `bg-white/50` par `bg-white/20`
-- Timeline des roles : remplacer `text-gray-300`, `bg-gray-100`, `border-gray-200` par des equivalents sombres (`text-emerald-200/30`, `bg-white/10`, `border-white/15`)
-- Labels des roles : `text-emerald-100/80` au lieu du defaut sombre
-
-### 2. Ajouter une section "Prochaines marches" avec inscription directe
-
-**Fichier** : `src/pages/MarchesDuVivantMonEspace.tsx`
-
-Ajouter une nouvelle section entre le QR Scanner CTA et "Mes marches" :
-
-- Fetch des evenements a venir depuis `marche_events` (meme requete que Explorer : `date_marche >= today`, tri croissant, limit 3)
-- Afficher des cartes compactes mobile-first pour chaque evenement :
-  - Date formatee en francais + badge countdown ("Dans X jours")
-  - Titre + lieu
-  - Bouton "S'inscrire" qui insere une participation dans `marche_participations`
-  - Si deja inscrit : afficher "Inscrit" avec check vert au lieu du bouton
-- Design glassmorphism coherent avec la page (`bg-white/10 backdrop-blur-sm border border-white/20`)
-- Etat vide elegant si aucun evenement a venir
-- Verification des inscriptions existantes via les `participations` deja fetchees
-
-Le bouton d'inscription execute un `supabase.from('marche_participations').insert({ user_id, marche_event_id })` avec toast de confirmation.
-
-## Fichiers concernes
+## Fichier concerne
 
 | Fichier | Action |
 |---------|--------|
-| `src/components/community/ProgressionCard.tsx` | Adapter les couleurs pour theme sombre |
-| `src/pages/MarchesDuVivantMonEspace.tsx` | Ajouter section "Prochaines marches" avec inscription |
+| `src/pages/MarchesDuVivantMonEspace.tsx` | Modifier styles conditionnels + tri |
 
