@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Waves, TreeDeciduous, Wheat, ExternalLink, MapPin, Compass, Check, Leaf, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
