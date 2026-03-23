@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 
 interface Participation {
   id: string;
+  marche_event_id: string;
   validated_at: string | null;
   validation_method: string | null;
   created_at: string;
