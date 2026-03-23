@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Waves, TreeDeciduous, Wheat, ExternalLink, MapPin, Compass, Check, Leaf, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -52,6 +52,10 @@ const ThemeCard: React.FC<ThemeCardProps> = ({
 
 const ExplorationsSensibles: React.FC = () => {
   const navigate = useNavigate();
+
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'instant' });
+  }, []);
 
   const handleEnterExploration = () => {
     window.open(DORDOGNE_URL, '_blank', 'noopener,noreferrer');
