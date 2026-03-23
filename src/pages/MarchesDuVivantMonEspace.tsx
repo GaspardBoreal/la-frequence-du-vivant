@@ -189,7 +189,13 @@ const MarchesDuVivantMonEspace = () => {
               </div>
             ) : (
               <div className="space-y-3">
-                {upcomingEvents.map((event, index) => {
+                {[...upcomingEvents]
+                  .sort((a, b) => {
+                    const aReg = registeredEventIds.has(a.id) ? 0 : 1;
+                    const bReg = registeredEventIds.has(b.id) ? 0 : 1;
+                    return aReg - bReg;
+                  })
+                  .map((event, index) => {
                   const isRegistered = registeredEventIds.has(event.id);
                   const countdown = getCountdown(event.date_marche);
                   const dateFormatted = format(new Date(event.date_marche), 'dd MMMM yyyy', { locale: fr });
@@ -200,11 +206,15 @@ const MarchesDuVivantMonEspace = () => {
                       initial={{ opacity: 0, x: -20 }}
                       animate={{ opacity: 1, x: 0 }}
                       transition={{ delay: 0.2 + index * 0.08 }}
-                      className="bg-white/10 backdrop-blur-sm rounded-xl border border-white/20 p-4 space-y-3"
+                      className={`backdrop-blur-sm rounded-xl p-4 space-y-3 transition-all duration-300 ${
+                        isRegistered
+                          ? 'bg-emerald-500/15 border border-emerald-400/50 border-l-2 border-l-emerald-400 shadow-[0_0_15px_-3px_rgba(52,211,153,0.15)]'
+                          : 'bg-white/10 border border-white/20'
+                      }`}
                     >
                       <div className="flex items-start justify-between gap-3">
                         <div className="flex-1 min-w-0">
-                          <p className="text-white font-medium text-sm leading-snug">{event.title}</p>
+                          <p className={`font-medium text-sm leading-snug ${isRegistered ? 'text-emerald-100' : 'text-white'}`}>{event.title}</p>
                           <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1.5">
                             <span className="text-emerald-300/80 text-xs">{dateFormatted}</span>
                             {event.lieu && (
@@ -221,9 +231,9 @@ const MarchesDuVivantMonEspace = () => {
                       </div>
 
                       {isRegistered ? (
-                        <div className="flex items-center gap-2 text-emerald-400 text-xs">
+                        <div className="flex items-center gap-2 text-emerald-400 text-xs bg-emerald-500/20 rounded-full px-3 py-1.5 w-fit animate-[pulse_3s_ease-in-out_infinite]">
                           <CheckCircle2 className="w-4 h-4" />
-                          <span className="font-medium">Inscrit</span>
+                          <span className="font-semibold">Inscrit — On vous attend !</span>
                         </div>
                       ) : (
                         <Button
