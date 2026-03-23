@@ -53,6 +53,10 @@ const ThemeCard: React.FC<ThemeCardProps> = ({
 const ExplorationsSensibles: React.FC = () => {
   const navigate = useNavigate();
 
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'instant' });
+  }, []);
+
   const handleEnterExploration = () => {
     window.open(DORDOGNE_URL, '_blank', 'noopener,noreferrer');
   };
