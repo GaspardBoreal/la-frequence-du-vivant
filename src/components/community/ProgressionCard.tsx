@@ -11,6 +11,7 @@ interface ProgressionCardProps {
   marchesCount: number;
   formationValidee: boolean;
   certificationValidee: boolean;
+  pendingCount?: number;
 }
 
 const ALL_ROLES: CommunityRoleKey[] = ['marcheur_en_devenir', 'marcheur', 'eclaireur', 'ambassadeur', 'sentinelle'];
