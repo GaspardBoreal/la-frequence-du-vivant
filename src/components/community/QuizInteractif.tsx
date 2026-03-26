@@ -185,7 +185,7 @@ const QuizInteractif: React.FC<QuizInteractifProps> = ({ niveau, userId, onCompl
         </div>
 
         <p className="text-emerald-200/70 text-sm leading-relaxed">
-          Testez vos connaissances sur les trois piliers du vivant. Chaque bonne réponse vous rapporte des <span className="text-emerald-300 font-medium">Fréquences</span> bonus !
+          Testez vos connaissances sur les trois piliers des Marches du Vivant. Chaque bonne réponse vous rapporte des <span className="text-emerald-300 font-medium">Fréquences</span> bonus !
         </p>
 
         <div className="flex items-center gap-2 text-xs text-emerald-300/60">
