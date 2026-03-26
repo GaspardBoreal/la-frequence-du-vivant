@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Home, Map, Brain, BookOpen, Volume2, Flower2, Globe } from 'lucide-react';
+import { Home, Radar, Map, Brain, BookOpen, Volume2, Flower2, Globe } from 'lucide-react';
 import { CommunityRoleKey } from '@/hooks/useCommunityProfile';
 import { useIsMobile } from '@/hooks/use-mobile';
 
