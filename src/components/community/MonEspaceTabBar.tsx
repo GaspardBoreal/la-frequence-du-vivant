@@ -4,10 +4,11 @@ import { Home, Radar, Map, Brain, BookOpen, Volume2, Flower2, Globe } from 'luci
 import { CommunityRoleKey } from '@/hooks/useCommunityProfile';
 import { useIsMobile } from '@/hooks/use-mobile';
 
-export type TabKey = 'accueil' | 'marches' | 'quiz' | 'carnet' | 'sons' | 'kigo' | 'territoire';
+export type TabKey = 'accueil' | 'zones' | 'marches' | 'quiz' | 'carnet' | 'sons' | 'kigo' | 'territoire';
 
 const TAB_META: Record<TabKey, { label: string; icon: React.ElementType }> = {
   accueil: { label: 'Accueil', icon: Home },
+  zones: { label: 'Zones', icon: Radar },
   marches: { label: 'Marches', icon: Map },
   quiz: { label: 'Quiz', icon: Brain },
   carnet: { label: 'Carnet', icon: BookOpen },
