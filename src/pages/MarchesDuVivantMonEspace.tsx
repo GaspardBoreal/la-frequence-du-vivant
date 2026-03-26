@@ -9,6 +9,7 @@ import { useCommunityParticipations, CommunityRoleKey } from '@/hooks/useCommuni
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import ProgressionCard from '@/components/community/ProgressionCard';
+import QuizInteractif from '@/components/community/QuizInteractif';
 import RoleBadge from '@/components/community/RoleBadge';
 import Footer from '@/components/Footer';
 import { format } from 'date-fns';
@@ -174,6 +175,19 @@ const MarchesDuVivantMonEspace = () => {
               formationValidee={profile.formation_validee}
               certificationValidee={profile.certification_validee}
               pendingCount={participations.filter(p => !p.validated_at).length}
+            />
+          </motion.div>
+
+          {/* Quiz Éveil Sensoriel */}
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.12 }}>
+            <QuizInteractif
+              niveau={role === 'marcheur_en_devenir' ? 'marcheur' : role}
+              userId={user.id}
+              onComplete={(score, total, frequences) => {
+                if (frequences > 0) {
+                  toast.success(`+${frequences} Fréquences gagnées ! 🌟`);
+                }
+              }}
             />
           </motion.div>
 
