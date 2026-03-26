@@ -181,6 +181,7 @@ const MarchesDuVivantMonEspace = () => {
               {renderTab()}
             </motion.div>
           </AnimatePresence>
+          </div>
         </main>
       </div>
     </>
