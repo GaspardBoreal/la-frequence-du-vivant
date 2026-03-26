@@ -1,118 +1,130 @@
 
 
-# Grille de fonctionnalites progressives — Web App "Les Marches du Vivant"
+# Refonte UX/UI de "Mon Espace" — Architecture app-like avec navigation par onglets
 
-Synthese croisee du protocole de marche, du dossier partenaires v1.2 et de l'application existante.
+## Vision
 
----
+Transformer la page monolithique scrollable actuelle en une **mini-application immersive** avec un header de profil persistant et une navigation par onglets. L'objectif : une UX digne d'une app native, mobile-first, qui pourra accueillir les dizaines de fonctionnalites prevues pour les 5 niveaux.
 
-## Architecture par role
+## Architecture proposee
 
-Chaque role debloque des capacites supplementaires sur les trois volets (Biodiversite, Bioacoustique, Geopoetique). Le principe : **effet wahou immediat, zero friction**.
+```text
+┌─────────────────────────────────────┐
+│  HEADER PROFIL (persistant)         │
+│  Avatar · Prenom · RoleBadge        │
+│  Frequences: ★ 42  · ⚙ Settings    │
+├─────────────────────────────────────┤
+│  TABS (sticky, scrollable mobile)   │
+│  🏠 Accueil │ 🗺 Marches │ 🧠 Quiz  │
+│  📖 Carnet  │ 🎵 Sons   │ 🌸 Kigo  │
+├─────────────────────────────────────┤
+│                                     │
+│  CONTENU DE L'ONGLET ACTIF          │
+│  (zone scrollable independante)     │
+│                                     │
+└─────────────────────────────────────┘
+```
 
----
+### Header profil
 
-### 1. MARCHEUR — "Premier pas, premier emerveillement"
+- **Bande superieure glassmorphism** (fixe) avec :
+  - Avatar genere (initiales sur fond gradient du role)
+  - Prenom + role badge anime
+  - Compteur de Frequences (score total, anime au gain)
+  - Bouton engrenage → slide-over profil (nom, email, ville, deconnexion)
+- Design : fond `bg-emerald-950/80 backdrop-blur-xl`, bordure basse lumineuse selon le role
 
-| Fonctionnalite | Volet | Description |
-|---|---|---|
-| **S'inscrire a des marches** | Transversal | Inscription en 1 clic depuis Mon Espace (existe deja) |
-| **Carnet de terrain personnel** | Biodiversite | Apres chaque marche, le marcheur retrouve son carnet : photos, especes observees, carte du parcours — genere automatiquement par l'IA a partir des donnees collectees |
-| **Mon premier sonogramme** | Bioacoustique | Pendant la marche, enregistre un son (oiseau, insecte, riviere). L'IA identifie l'espece et genere un sonogramme visuel colore que le marcheur peut partager comme une "carte postale sonore" |
-| **Kigo du jour** | Geopoetique | A la fin de chaque marche, le marcheur choisit son mot de saison (kigo). L'IA lui propose un haiku genere a partir de son kigo + les especes observees. Il peut l'editer, le garder, le partager |
-| **Partage social natif** | Transversal | Chaque marche a une URL unique partageable. Bouton "Inviter un ami" qui genere un lien personnalise avec le prenom du marcheur ("Rejoins [Prenom] pour la prochaine marche !") |
-| **Quiz "Eveil sensoriel"** | Pedagogique | Apres l'Accordage, quiz interactif de 5 questions visuelles (photos d'especes locales, sons a reconnaitre, kigo a associer). Gagne des Frequences bonus |
+### Navigation par onglets
 
-**Idees wahhhh supplementaires :**
-- **"Ma Frequence du jour"** : un score poetique quotidien — combinaison du nombre d'especes vues + sons captes + mots ecrits — affiche comme une onde sonore animee dans Mon Espace
-- **"Graine plantee"** : apres validation de la marche, le marcheur photographie sa graine plantee. La photo apparait sur une carte collaborative des graines plantees par tous les marcheurs
+- **Mobile** : barre horizontale scrollable en bas de l'ecran (bottom tab bar style iOS)
+- **Desktop** : tabs horizontaux sous le header
+- Onglets visibles conditionnes par le role :
+  - **Marcheur** : Accueil, Marches, Quiz
+  - **Eclaireur** : + Carnet, Sons
+  - **Ambassadeur** : + Kigo, Creer
+  - **Sentinelle** : + Territoire
+  - **Admin** : + Admin
+- Icones + labels courts, badge de notification (ex: marche demain)
 
----
+### Onglets et contenu
 
-### 2. ECLAIREUR — "Explorateur des territoires inconnus"
+| Onglet | Contenu | Existe deja |
+|--------|---------|-------------|
+| **Accueil** | ProgressionCard + message contextuel + "Ma Frequence du jour" (onde animee) + raccourcis rapides | Oui (a reorganiser) |
+| **Marches** | Prochaines marches (inscription) + historique participations + QR scanner | Oui (a deplacer) |
+| **Quiz** | QuizInteractif + historique scores + badges debloques | Oui (a deplacer) |
+| **Carnet** | Carnets de terrain (futur) — placeholder elegant | Non |
+| **Sons** | Bibliotheque sonore (futur) — placeholder | Non |
+| **Kigo** | Kigo du jour + galerie haikus (futur) — placeholder | Non |
 
-| Fonctionnalite | Volet | Description |
-|---|---|---|
-| **5 zones blanches explorees** | Biodiversite | Badge debloque automatiquement. Visualisation de ses zones explorees sur une carte personnelle avec gradient de couleurs |
-| **Comparateur de marches** | Biodiversite | Interface split-screen pour comparer biodiversite, sons et textes entre 2+ marches. "Qu'est-ce qui change entre la Dordogne en aout et en mars ?" |
-| **Bibliotheque sonore personnelle** | Bioacoustique | Collection de tous ses enregistrements avec spectrogrammes, classement par espece/saison/lieu. Peut creer des "playlists du vivant" |
-| **Atelier haibun** | Geopoetique | Deblocage de la forme longue (haibun = prose + haiku). L'IA aide a tisser les observations scientifiques dans un recit poetique |
-| **Quiz "Eclaireur"** | Pedagogique | Quiz avance : identification sonore d'oiseaux (extraits Xeno-Canto), reconnaissance de zones ecologiques, association kigo-saison. 10 questions, chronometre |
+### "Ma Frequence du jour" (widget hero sur Accueil)
 
-**Idees wahhhh supplementaires :**
-- **"Defi Silence"** : l'eclaireur est invite a explorer une zone "Silence" (0 observation). S'il y decouvre une espece, il la "revele" — animation spectaculaire dans l'app + notification a tous les marcheurs du secteur
-- **"Duo poetique"** : l'IA propose un exercice collaboratif — 2 eclaireurs de marches differentes echangent leurs kigos et doivent ecrire un haiku croise. Le resultat est publie dans la galerie communautaire
+Widget visuel en haut de l'onglet Accueil : une **onde sonore animee** (barres SVG pulsantes) representant le score du marcheur. Couleur selon le role. Cliquable pour voir le detail.
 
----
+## Details techniques
 
-### 3. AMBASSADEUR — "Animateur et createur d'experiences"
+### Structure des fichiers
 
-| Fonctionnalite | Volet | Description |
-|---|---|---|
-| **Creation de marches** | Transversal | Interface guidee : choisir un lieu (carte + detecteur zones blanches), definir le parcours, inviter des marcheurs. L'IA genere automatiquement la fiche pedagogique (sequences de 15 min selon le protocole) |
-| **Creation d'explorations** | Transversal | Regroupement de plusieurs marches en exploration thematique (ex: "Frequences de la riviere Dordogne"). Vue timeline, parties/mouvements |
-| **Synthese biodiversite post-marche** | Biodiversite | Dashboard automatique genere apres chaque marche : especes identifiees, comparaison avec le GBIF, zones blanches comblees, graphiques de diversite |
-| **Studio bioacoustique** | Bioacoustique | Outil de montage leger pour assembler les meilleurs enregistrements d'une marche en un "portrait sonore du territoire" de 3 minutes |
-| **Guide geopoetique** | Geopoetique | L'ambassadeur recoit un kit d'animation : exemples de kigos par saison, exercices de haiku adaptes au public (enfants, seniors, entreprises), fiches imprimables |
-| **Quiz "Formateur"** | Pedagogique | Quiz de certification : 20 questions sur les 3 piliers. Reussir debloque le droit d'animer des marches labellisees |
+| Fichier | Action |
+|---------|--------|
+| `src/pages/MarchesDuVivantMonEspace.tsx` | Refactoriser : extraire header + tabs + contenu par onglet |
+| `src/components/community/MonEspaceHeader.tsx` | **Nouveau** — Header profil persistant |
+| `src/components/community/MonEspaceTabBar.tsx` | **Nouveau** — Navigation onglets (responsive) |
+| `src/components/community/tabs/AccueilTab.tsx` | **Nouveau** — Contenu onglet Accueil |
+| `src/components/community/tabs/MarchesTab.tsx` | **Nouveau** — Contenu onglet Marches |
+| `src/components/community/tabs/QuizTab.tsx` | **Nouveau** — Contenu onglet Quiz |
+| `src/components/community/tabs/PlaceholderTab.tsx` | **Nouveau** — Onglets futurs (Carnet, Sons, Kigo) |
+| `src/components/community/FrequenceWave.tsx` | **Nouveau** — Widget onde animee SVG |
 
-**Idees wahhhh supplementaires :**
-- **"Recit de marche"** : a la fin de chaque marche animee, l'IA genere un recit immersif complet (texte + photos + sons + carte) publiable en un clic comme "Carnet de Terrain" sur le site
-- **"Tableau vivant"** : visualisation temps reel pendant la marche — projection possible sur un ecran mobile — montrant les especes detectees par le groupe en direct, avec spectrogrammes et kigos collectifs
+### Logique de tabs conditionnels par role
 
----
+```typescript
+const TABS_BY_ROLE = {
+  marcheur_en_devenir: ['accueil', 'marches', 'quiz'],
+  marcheur: ['accueil', 'marches', 'quiz'],
+  eclaireur: ['accueil', 'marches', 'quiz', 'carnet', 'sons'],
+  ambassadeur: ['accueil', 'marches', 'quiz', 'carnet', 'sons', 'kigo'],
+  sentinelle: ['accueil', 'marches', 'quiz', 'carnet', 'sons', 'kigo', 'territoire'],
+};
+```
 
-### 4. SENTINELLE — "Gardien de territoire, formateur de formateurs"
+### Mobile-first bottom bar
 
-| Fonctionnalite | Volet | Description |
-|---|---|---|
-| **Creation de territoires** | Transversal | Regroupement d'explorations en "Territoire" (ex: "Vallee de la Dordogne"). Vue meta avec indicateurs de biodiversite agreges, evolution temporelle |
-| **Referent territorial** | Biodiversite | Acces a un dashboard territorial : evolution des especes sur son territoire annee apres annee, alertes sur especes invasives ou en declin |
-| **Archives sonores territoriales** | Bioacoustique | Conservateur d'une banque de sons du territoire. Peut taguer, annoter, publier des collections thematiques (ex: "Chants d'aube en Dordogne") |
-| **Anthologie geopoetique** | Geopoetique | Curation des meilleurs textes des marcheurs de son territoire. Publication d'anthologies numeriques (type mini-recueil) |
-| **Quiz "Sentinelle"** | Pedagogique | Parcours de formation avance : modules video + quiz sur la formation d'ambassadeurs, protocoles scientifiques, animation de groupes |
+- Position `fixed bottom-0` sur mobile, `sticky top` sur desktop
+- Safe area padding pour iOS (`pb-safe`)
+- Active tab : icone + label en couleur du role, indicateur dot anime
+- Inactive : icone grisee
 
-**Idees wahhhh supplementaires :**
-- **"Memoire du territoire"** : timeline interactive montrant l'evolution d'un territoire sur plusieurs annees — superposition des donnees biodiversite, sons et textes. Un "film" du vivant sur son territoire
-- **"Mentorat"** : la sentinelle peut parrainer un marcheur. Notifications mutuelles, progression partagee, echange de kigos. Un lien humain inscrit dans l'app
+### Compteur de Frequences
 
----
+Query `frequences_log` pour calculer le total :
+```sql
+SELECT COALESCE(SUM(points), 0) FROM frequences_log WHERE user_id = ?
+```
 
-### 5. ADMINISTRATEUR — "Pilotage global"
+### Slide-over profil (Settings)
 
-| Fonctionnalite | Volet | Description |
-|---|---|---|
-| **Peut tout faire** | Transversal | Acces total : gestion des profils, evenements, validations, formations, certifications (existe deja via CommunityProfilesAdmin + MarcheEventsAdmin) |
-| **Dashboard partenaires** | Transversal | Vue dediee pour chaque partenaire : impact sur leurs zones, metriques CSRD, export PDF |
-| **Defis territoriaux** | Transversal | Creation et pilotage de defis orientes par les partenaires (zones prioritaires, multiplicateurs de Frequences) |
-| **Quiz builder** | Pedagogique | Creation de quiz personnalises par niveau, par saison, par territoire |
+Panel lateral qui glisse depuis la droite (mobile) avec :
+- Photo/avatar editable
+- Prenom, nom, ville
+- Email (lecture seule)
+- Kigo d'accueil
+- Bouton deconnexion
+- Bouton "Supprimer mon compte" (futur)
 
-**Idees wahhhh supplementaires :**
-- **"Pulse du vivant"** : dashboard temps reel montrant toutes les marches en cours en France, avec flux de donnees live (especes, sons, textes). La "salle de controle" du vivant
-- **"Export impact"** : generation automatique de rapports d'impact par partenaire (PDF brande) avec metriques verifiables pour le reporting CSRD/RSE
+### Animations
 
----
+- Transition entre onglets : `AnimatePresence` avec fade + slide lateral subtil
+- Header : parallax leger au scroll
+- FrequenceWave : barres SVG avec `motion.rect` et delays decales
 
-## Contraintes transversales respectees
+## Phase d'implementation
 
-| Contrainte | Solution |
-|---|---|
-| **Partage d'URLs** | Chaque marche/exploration/territoire a une URL unique. Bouton "Inviter" avec message personnalise. Incitation via Frequences bonus |
-| **Multi-marcheurs par marche** | Deja supporte (marche_participations). Ajouter une vue "Qui participe ?" visible par les inscrits |
-| **IA collaborative** | L'IA du vivant propose des exercices croises entre marcheurs (haiku croise, defi duo, comparaisons). Jamais prescriptive, toujours suggestive |
-| **Supports pedagogiques** | Quiz visuels interactifs a chaque niveau (5 → 10 → 20 questions), adaptes au volet concerne, avec feedback immediat et gain de Frequences |
-| **3 volets equilibres** | Chaque role a au minimum 1 fonctionnalite dediee par volet (Biodiversite, Bioacoustique, Geopoetique) |
+Cette refonte se fait en **une seule passe** :
+1. Creer les composants header, tab bar, wave
+2. Creer les 3 tabs de contenu (Accueil, Marches, Quiz) en deplacant le code existant
+3. Creer les placeholders elegants pour les onglets futurs
+4. Refactoriser `MarchesDuVivantMonEspace.tsx` comme orchestrateur
 
----
-
-## Implementation technique
-
-Les fonctionnalites existantes (inscription, profils, participations, ProgressionCard, detecteur zones blanches, carnets de terrain, Guide de Marche IA) constituent le socle. Les ajouts principaux :
-
-- **Nouvelles tables Supabase** : `quiz_questions`, `quiz_responses`, `sound_recordings`, `kigo_entries`, `territories`, `exploration_groups`
-- **Edge Functions** : generation de carnets post-marche, identification sonore, generation haiku IA
-- **Composants React** : `QuizInteractif`, `CartePostaleSonore`, `KigoDuJour`, `ComparateurMarches`, `DashboardTerritorial`
-- **Partage** : Web Share API (deja en place) + liens personnalises avec metadata OpenGraph dynamiques
-
-Cette grille est progressive : chaque niveau s'appuie sur les acquis du precedent, sans jamais submerger le nouvel arrivant.
+Le code existant (ProgressionCard, QuizInteractif, RoleBadge, logique d'inscription) est preserve intact — seul le layout change.
 
