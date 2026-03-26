@@ -49,7 +49,7 @@ const FrequenceWave: React.FC<FrequenceWaveProps> = ({ totalFrequences, role }) 
         ))}
       </div>
       <div className="relative mt-3 flex items-center justify-between">
-        <span className="text-xs text-emerald-200/50">Ma Fréquence du jour</span>
+        <span className="text-xs text-white/70">Ma Fréquence du jour</span>
         <motion.span
           key={totalFrequences}
           initial={{ scale: 1.3, color: c1 }}

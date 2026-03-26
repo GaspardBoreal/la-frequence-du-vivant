@@ -46,7 +46,7 @@ const MonEspaceTabBar: React.FC<MonEspaceTabBarProps> = ({ role, activeTab, onTa
                 key={key}
                 onClick={() => onTabChange(key)}
                 className={`flex flex-col items-center gap-0.5 py-1 px-2 rounded-lg transition-colors relative ${
-                  isActive ? 'text-emerald-300' : 'text-emerald-200/40'
+                  isActive ? 'text-emerald-300' : 'text-white/50'
                 }`}
               >
                 {isActive && (
