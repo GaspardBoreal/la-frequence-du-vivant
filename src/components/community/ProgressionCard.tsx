@@ -79,7 +79,7 @@ const ProgressionCard: React.FC<ProgressionCardProps> = ({
 
       {config.nextRole && (
         <div className="space-y-2">
-          <div className="flex items-center justify-between text-xs text-emerald-200/70">
+          <div className="flex items-center justify-between text-xs text-white/70">
             <span>{progressLabel}</span>
             <span className="flex items-center gap-1">
               <ArrowRight className="w-3 h-3" />
