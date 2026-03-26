@@ -178,6 +178,19 @@ const MarchesDuVivantMonEspace = () => {
             />
           </motion.div>
 
+          {/* Quiz Éveil Sensoriel */}
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.12 }}>
+            <QuizInteractif
+              niveau={role === 'marcheur_en_devenir' ? 'marcheur' : role}
+              userId={user.id}
+              onComplete={(score, total, frequences) => {
+                if (frequences > 0) {
+                  toast.success(`+${frequences} Fréquences gagnées ! 🌟`);
+                }
+              }}
+            />
+          </motion.div>
+
           {/* Upcoming Events - Registration */}
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }}>
             <h2 className="text-lg font-semibold text-white mb-3 flex items-center gap-2">
