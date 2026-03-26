@@ -9,6 +9,7 @@ import { useCommunityParticipations, CommunityRoleKey } from '@/hooks/useCommuni
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import ProgressionCard from '@/components/community/ProgressionCard';
+import QuizInteractif from '@/components/community/QuizInteractif';
 import RoleBadge from '@/components/community/RoleBadge';
 import Footer from '@/components/Footer';
 import { format } from 'date-fns';
