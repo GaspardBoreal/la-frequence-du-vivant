@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Map, Brain, Sparkles } from 'lucide-react';
+import { Map, Brain, Radar } from 'lucide-react';
 import FrequenceWave from '../FrequenceWave';
 import ProgressionCard from '../ProgressionCard';
 import { CommunityRoleKey } from '@/hooks/useCommunityProfile';
