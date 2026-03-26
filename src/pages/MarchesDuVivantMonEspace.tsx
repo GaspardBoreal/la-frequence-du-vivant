@@ -128,6 +128,8 @@ const MarchesDuVivantMonEspace = () => {
             onNavigate={setActiveTab}
           />
         );
+      case 'zones':
+        return <ZonesTab />;
       case 'marches':
         return (
           <MarchesTab

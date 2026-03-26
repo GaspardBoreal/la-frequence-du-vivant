@@ -18,11 +18,11 @@ const TAB_META: Record<TabKey, { label: string; icon: React.ElementType }> = {
 };
 
 const TABS_BY_ROLE: Record<CommunityRoleKey, TabKey[]> = {
-  marcheur_en_devenir: ['accueil', 'marches', 'quiz'],
-  marcheur: ['accueil', 'marches', 'quiz'],
-  eclaireur: ['accueil', 'marches', 'quiz', 'carnet', 'sons'],
-  ambassadeur: ['accueil', 'marches', 'quiz', 'carnet', 'sons', 'kigo'],
-  sentinelle: ['accueil', 'marches', 'quiz', 'carnet', 'sons', 'kigo', 'territoire'],
+  marcheur_en_devenir: ['accueil', 'zones', 'marches', 'quiz'],
+  marcheur: ['accueil', 'zones', 'marches', 'quiz'],
+  eclaireur: ['accueil', 'zones', 'marches', 'quiz', 'carnet', 'sons'],
+  ambassadeur: ['accueil', 'zones', 'marches', 'quiz', 'carnet', 'sons', 'kigo'],
+  sentinelle: ['accueil', 'zones', 'marches', 'quiz', 'carnet', 'sons', 'kigo', 'territoire'],
 };
 
 interface MonEspaceTabBarProps {
