@@ -1,130 +1,70 @@
 
 
-# Refonte UX/UI de "Mon Espace" — Architecture app-like avec navigation par onglets
+# Palette de couleurs enrichie — Sortir du "tout vert"
 
-## Vision
+## Probleme
 
-Transformer la page monolithique scrollable actuelle en une **mini-application immersive** avec un header de profil persistant et une navigation par onglets. L'objectif : une UX digne d'une app native, mobile-first, qui pourra accueillir les dizaines de fonctionnalites prevues pour les 5 niveaux.
+Tout est vert-sur-vert fonce : header, fond, cartes, textes, badges, tabs. L'interface manque de contraste et de respiration visuelle.
 
-## Architecture proposee
+## Strategie design
+
+Introduire des surfaces **blanc translucide / gris clair** pour les cartes de contenu, tout en gardant le fond sombre emeraude comme toile de fond. L'effet : les cartes "flottent" avec elegance sur le fond naturel.
 
 ```text
-┌─────────────────────────────────────┐
-│  HEADER PROFIL (persistant)         │
-│  Avatar · Prenom · RoleBadge        │
-│  Frequences: ★ 42  · ⚙ Settings    │
-├─────────────────────────────────────┤
-│  TABS (sticky, scrollable mobile)   │
-│  🏠 Accueil │ 🗺 Marches │ 🧠 Quiz  │
-│  📖 Carnet  │ 🎵 Sons   │ 🌸 Kigo  │
-├─────────────────────────────────────┤
-│                                     │
-│  CONTENU DE L'ONGLET ACTIF          │
-│  (zone scrollable independante)     │
-│                                     │
-└─────────────────────────────────────┘
+AVANT                          APRES
+┌──────────────────┐          ┌──────────────────┐
+│ ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓ │          │ ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓ │  ← header sombre (inchange)
+│ ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓ │          │ ░░░░░░░░░░░░░░░ │  ← tabs sur fond plus clair
+│ ▓▓ carte verte ▓▓ │          │ ████████████████ │  ← carte blanche/frost
+│ ▓▓ carte verte ▓▓ │          │ ████████████████ │  ← carte blanche/frost
+│ ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓ │          │ ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓ │
+└──────────────────┘          └──────────────────┘
 ```
 
-### Header profil
+## Changements par composant
 
-- **Bande superieure glassmorphism** (fixe) avec :
-  - Avatar genere (initiales sur fond gradient du role)
-  - Prenom + role badge anime
-  - Compteur de Frequences (score total, anime au gain)
-  - Bouton engrenage → slide-over profil (nom, email, ville, deconnexion)
-- Design : fond `bg-emerald-950/80 backdrop-blur-xl`, bordure basse lumineuse selon le role
+### 1. FrequenceWave — Carte "frost" lumineuse
+- Fond : `bg-white/[0.08]` → `bg-white/[0.12] border-white/20`
+- Texte "Ma Frequence du jour" : `text-emerald-200/50` → `text-white/70`
+- Score : `text-white font-bold`
 
-### Navigation par onglets
+### 2. ProgressionCard — Surface blanche elevee
+- Fond : `bg-white/10` → `bg-white/[0.14] backdrop-blur-lg`
+- Bordure : plus prononcee `border-white/25`
+- Titre "Votre role actuel" : `text-white/80`
+- Texte description : `text-white/60` (au lieu de emerald-200/60)
+- Barre de progression : fond `bg-white/25` au lieu de `bg-white/20`
+- Labels timeline : `text-white/70`
 
-- **Mobile** : barre horizontale scrollable en bas de l'ecran (bottom tab bar style iOS)
-- **Desktop** : tabs horizontaux sous le header
-- Onglets visibles conditionnes par le role :
-  - **Marcheur** : Accueil, Marches, Quiz
-  - **Eclaireur** : + Carnet, Sons
-  - **Ambassadeur** : + Kigo, Creer
-  - **Sentinelle** : + Territoire
-  - **Admin** : + Admin
-- Icones + labels courts, badge de notification (ex: marche demain)
+### 3. Quick Actions (Accueil) — Boutons bicolores
+- Bouton "Mes marches" : fond `bg-white/[0.08]` border `border-white/15`, texte `text-white/80`
+- Bouton "Quiz" : fond `bg-cyan-500/[0.08]` border `border-cyan-400/20`, texte `text-white/80`
+- Hover : eleve a `bg-white/15`
 
-### Onglets et contenu
+### 4. MonEspaceTabBar (Desktop)
+- Tabs inactifs : `text-white/40` → `text-white/50`
+- Tab actif : conserver `text-emerald-300` mais indicateur blanc `bg-white/80` au lieu de `bg-emerald-400`
 
-| Onglet | Contenu | Existe deja |
-|--------|---------|-------------|
-| **Accueil** | ProgressionCard + message contextuel + "Ma Frequence du jour" (onde animee) + raccourcis rapides | Oui (a reorganiser) |
-| **Marches** | Prochaines marches (inscription) + historique participations + QR scanner | Oui (a deplacer) |
-| **Quiz** | QuizInteractif + historique scores + badges debloques | Oui (a deplacer) |
-| **Carnet** | Carnets de terrain (futur) — placeholder elegant | Non |
-| **Sons** | Bibliotheque sonore (futur) — placeholder | Non |
-| **Kigo** | Kigo du jour + galerie haikus (futur) — placeholder | Non |
+### 5. MonEspaceHeader — Touches de blanc
+- Prenom : rester `text-white` (ok)
+- Kigo accueil : `text-white/50` au lieu de `text-emerald-200/40`
+- Compteur frequences : fond `bg-white/10 border-white/20` avec texte `text-white`
 
-### "Ma Frequence du jour" (widget hero sur Accueil)
+### 6. Page principale fond
+- Fond de la zone de contenu (main) : ajouter un `bg-gradient-to-b from-white/[0.02] to-transparent` pour creer une zone de respiration sous les tabs
 
-Widget visuel en haut de l'onglet Accueil : une **onde sonore animee** (barres SVG pulsantes) representant le score du marcheur. Couleur selon le role. Cliquable pour voir le detail.
+## Fichiers modifies
 
-## Details techniques
+| Fichier | Modifications |
+|---------|--------------|
+| `FrequenceWave.tsx` | Fond + textes vers blanc/frost |
+| `ProgressionCard.tsx` | Surface, textes, barre vers blanc eleve |
+| `AccueilTab.tsx` | Quick actions bicolores, textes blancs |
+| `MonEspaceTabBar.tsx` | Indicateur blanc, textes ajustes |
+| `MonEspaceHeader.tsx` | Touches de blanc sur kigo + compteur |
+| `MarchesDuVivantMonEspace.tsx` | Gradient subtil sur main |
 
-### Structure des fichiers
+## Resultat
 
-| Fichier | Action |
-|---------|--------|
-| `src/pages/MarchesDuVivantMonEspace.tsx` | Refactoriser : extraire header + tabs + contenu par onglet |
-| `src/components/community/MonEspaceHeader.tsx` | **Nouveau** — Header profil persistant |
-| `src/components/community/MonEspaceTabBar.tsx` | **Nouveau** — Navigation onglets (responsive) |
-| `src/components/community/tabs/AccueilTab.tsx` | **Nouveau** — Contenu onglet Accueil |
-| `src/components/community/tabs/MarchesTab.tsx` | **Nouveau** — Contenu onglet Marches |
-| `src/components/community/tabs/QuizTab.tsx` | **Nouveau** — Contenu onglet Quiz |
-| `src/components/community/tabs/PlaceholderTab.tsx` | **Nouveau** — Onglets futurs (Carnet, Sons, Kigo) |
-| `src/components/community/FrequenceWave.tsx` | **Nouveau** — Widget onde animee SVG |
-
-### Logique de tabs conditionnels par role
-
-```typescript
-const TABS_BY_ROLE = {
-  marcheur_en_devenir: ['accueil', 'marches', 'quiz'],
-  marcheur: ['accueil', 'marches', 'quiz'],
-  eclaireur: ['accueil', 'marches', 'quiz', 'carnet', 'sons'],
-  ambassadeur: ['accueil', 'marches', 'quiz', 'carnet', 'sons', 'kigo'],
-  sentinelle: ['accueil', 'marches', 'quiz', 'carnet', 'sons', 'kigo', 'territoire'],
-};
-```
-
-### Mobile-first bottom bar
-
-- Position `fixed bottom-0` sur mobile, `sticky top` sur desktop
-- Safe area padding pour iOS (`pb-safe`)
-- Active tab : icone + label en couleur du role, indicateur dot anime
-- Inactive : icone grisee
-
-### Compteur de Frequences
-
-Query `frequences_log` pour calculer le total :
-```sql
-SELECT COALESCE(SUM(points), 0) FROM frequences_log WHERE user_id = ?
-```
-
-### Slide-over profil (Settings)
-
-Panel lateral qui glisse depuis la droite (mobile) avec :
-- Photo/avatar editable
-- Prenom, nom, ville
-- Email (lecture seule)
-- Kigo d'accueil
-- Bouton deconnexion
-- Bouton "Supprimer mon compte" (futur)
-
-### Animations
-
-- Transition entre onglets : `AnimatePresence` avec fade + slide lateral subtil
-- Header : parallax leger au scroll
-- FrequenceWave : barres SVG avec `motion.rect` et delays decales
-
-## Phase d'implementation
-
-Cette refonte se fait en **une seule passe** :
-1. Creer les composants header, tab bar, wave
-2. Creer les 3 tabs de contenu (Accueil, Marches, Quiz) en deplacant le code existant
-3. Creer les placeholders elegants pour les onglets futurs
-4. Refactoriser `MarchesDuVivantMonEspace.tsx` comme orchestrateur
-
-Le code existant (ProgressionCard, QuizInteractif, RoleBadge, logique d'inscription) est preserve intact — seul le layout change.
+L'identite naturelle emeraude du fond est preservee, mais les surfaces de contenu gagnent en luminosite et lisibilite grace a des fonds frost/blanc translucide. Le contraste apporte de l'elegance sans casser l'univers visuel.
 
