@@ -1388,6 +1388,39 @@ export type Database = {
         }
         Relationships: []
       }
+      frequences_log: {
+        Row: {
+          action: string
+          created_at: string
+          frequences: number
+          id: string
+          multiplicateur: number
+          reference_id: string | null
+          reference_type: string | null
+          user_id: string
+        }
+        Insert: {
+          action: string
+          created_at?: string
+          frequences?: number
+          id?: string
+          multiplicateur?: number
+          reference_id?: string | null
+          reference_type?: string | null
+          user_id: string
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          frequences?: number
+          id?: string
+          multiplicateur?: number
+          reference_id?: string | null
+          reference_type?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       gaspard_events: {
         Row: {
           created_at: string
@@ -1546,6 +1579,56 @@ export type Database = {
             columns: ["exploration_id"]
             isOneToOne: false
             referencedRelation: "explorations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      kigo_entries: {
+        Row: {
+          created_at: string
+          especes_associees: Json | null
+          haiku: string | null
+          haiku_ia_suggestion: string | null
+          id: string
+          is_public: boolean
+          kigo: string
+          marche_event_id: string | null
+          saison: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          especes_associees?: Json | null
+          haiku?: string | null
+          haiku_ia_suggestion?: string | null
+          id?: string
+          is_public?: boolean
+          kigo: string
+          marche_event_id?: string | null
+          saison?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          especes_associees?: Json | null
+          haiku?: string | null
+          haiku_ia_suggestion?: string | null
+          id?: string
+          is_public?: boolean
+          kigo?: string
+          marche_event_id?: string | null
+          saison?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "kigo_entries_marche_event_id_fkey"
+            columns: ["marche_event_id"]
+            isOneToOne: false
+            referencedRelation: "marche_events"
             referencedColumns: ["id"]
           },
         ]
@@ -2700,6 +2783,98 @@ export type Database = {
           },
         ]
       }
+      quiz_questions: {
+        Row: {
+          created_at: string
+          explication: string | null
+          frequences_bonus: number
+          id: string
+          image_url: string | null
+          is_active: boolean
+          niveau: string
+          options: Json
+          ordre: number | null
+          question: string
+          sound_url: string | null
+          type_question: string
+          updated_at: string
+          volet: string
+        }
+        Insert: {
+          created_at?: string
+          explication?: string | null
+          frequences_bonus?: number
+          id?: string
+          image_url?: string | null
+          is_active?: boolean
+          niveau?: string
+          options?: Json
+          ordre?: number | null
+          question: string
+          sound_url?: string | null
+          type_question?: string
+          updated_at?: string
+          volet?: string
+        }
+        Update: {
+          created_at?: string
+          explication?: string | null
+          frequences_bonus?: number
+          id?: string
+          image_url?: string | null
+          is_active?: boolean
+          niveau?: string
+          options?: Json
+          ordre?: number | null
+          question?: string
+          sound_url?: string | null
+          type_question?: string
+          updated_at?: string
+          volet?: string
+        }
+        Relationships: []
+      }
+      quiz_responses: {
+        Row: {
+          answer: Json
+          created_at: string
+          frequences_earned: number
+          id: string
+          is_correct: boolean
+          quiz_question_id: string
+          session_key: string | null
+          user_id: string
+        }
+        Insert: {
+          answer?: Json
+          created_at?: string
+          frequences_earned?: number
+          id?: string
+          is_correct?: boolean
+          quiz_question_id: string
+          session_key?: string | null
+          user_id: string
+        }
+        Update: {
+          answer?: Json
+          created_at?: string
+          frequences_earned?: number
+          id?: string
+          is_correct?: boolean
+          quiz_question_id?: string
+          session_key?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quiz_responses_quiz_question_id_fkey"
+            columns: ["quiz_question_id"]
+            isOneToOne: false
+            referencedRelation: "quiz_questions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       real_estate_snapshots: {
         Row: {
           avg_price_m2: number | null
@@ -2753,6 +2928,62 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      sound_recordings: {
+        Row: {
+          created_at: string
+          description: string | null
+          duree_secondes: number | null
+          espece_identifiee: string | null
+          id: string
+          is_public: boolean
+          marche_event_id: string | null
+          metadata: Json | null
+          spectrogramme_url: string | null
+          titre: string | null
+          updated_at: string
+          url_supabase: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          duree_secondes?: number | null
+          espece_identifiee?: string | null
+          id?: string
+          is_public?: boolean
+          marche_event_id?: string | null
+          metadata?: Json | null
+          spectrogramme_url?: string | null
+          titre?: string | null
+          updated_at?: string
+          url_supabase: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          duree_secondes?: number | null
+          espece_identifiee?: string | null
+          id?: string
+          is_public?: boolean
+          marche_event_id?: string | null
+          metadata?: Json | null
+          spectrogramme_url?: string | null
+          titre?: string | null
+          updated_at?: string
+          url_supabase?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sound_recordings_marche_event_id_fkey"
+            columns: ["marche_event_id"]
+            isOneToOne: false
+            referencedRelation: "marche_events"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       species_translations: {
         Row: {
@@ -2831,6 +3062,84 @@ export type Database = {
           user_id?: string | null
         }
         Relationships: []
+      }
+      territories: {
+        Row: {
+          created_at: string
+          description: string | null
+          geometrie: Json | null
+          id: string
+          indicateurs: Json | null
+          is_public: boolean
+          nom: string
+          responsable_user_id: string | null
+          slug: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          geometrie?: Json | null
+          id?: string
+          indicateurs?: Json | null
+          is_public?: boolean
+          nom: string
+          responsable_user_id?: string | null
+          slug: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          geometrie?: Json | null
+          id?: string
+          indicateurs?: Json | null
+          is_public?: boolean
+          nom?: string
+          responsable_user_id?: string | null
+          slug?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      territory_explorations: {
+        Row: {
+          created_at: string
+          exploration_id: string
+          id: string
+          ordre: number | null
+          territory_id: string
+        }
+        Insert: {
+          created_at?: string
+          exploration_id: string
+          id?: string
+          ordre?: number | null
+          territory_id: string
+        }
+        Update: {
+          created_at?: string
+          exploration_id?: string
+          id?: string
+          ordre?: number | null
+          territory_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "territory_explorations_exploration_id_fkey"
+            columns: ["exploration_id"]
+            isOneToOne: false
+            referencedRelation: "explorations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "territory_explorations_territory_id_fkey"
+            columns: ["territory_id"]
+            isOneToOne: false
+            referencedRelation: "territories"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       transcription_models: {
         Row: {
