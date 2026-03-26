@@ -78,15 +78,15 @@ const MonEspaceTabBar: React.FC<MonEspaceTabBarProps> = ({ role, activeTab, onTa
               key={key}
               onClick={() => onTabChange(key)}
               className={`relative flex items-center gap-1.5 px-3 py-2.5 text-sm font-medium transition-colors whitespace-nowrap ${
-                isActive ? 'text-emerald-300' : 'text-emerald-200/40 hover:text-emerald-200/70'
-              }`}
+                  isActive ? 'text-emerald-300' : 'text-white/50 hover:text-white/70'
+                }`}
             >
               <Icon className="w-4 h-4" />
               {label}
               {isActive && (
                 <motion.div
                   layoutId="tab-indicator-desktop"
-                  className="absolute bottom-0 left-2 right-2 h-0.5 rounded-full bg-emerald-400"
+                  className="absolute bottom-0 left-2 right-2 h-0.5 rounded-full bg-white/80"
                   transition={{ type: 'spring', stiffness: 400, damping: 30 }}
                 />
               )}
