@@ -1,40 +1,30 @@
 import React, { useEffect, useState } from 'react';
 import { Helmet } from 'react-helmet-async';
-import { Link, useNavigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
-import { ArrowLeft, Leaf, LogOut, Calendar, MapPin, CheckCircle2, Clock, QrCode, UserPlus, Sparkles } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Leaf, UserPlus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useCommunityAuth } from '@/hooks/useCommunityAuth';
 import { useCommunityParticipations, CommunityRoleKey } from '@/hooks/useCommunityProfile';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import ProgressionCard from '@/components/community/ProgressionCard';
-import QuizInteractif from '@/components/community/QuizInteractif';
-import RoleBadge from '@/components/community/RoleBadge';
-import Footer from '@/components/Footer';
-import { format } from 'date-fns';
-import { fr } from 'date-fns/locale';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { toast } from 'sonner';
 
-const getCountdown = (dateStr: string) => {
-  const now = new Date();
-  const target = new Date(dateStr);
-  const diffMs = target.getTime() - now.getTime();
-  const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
-  if (diffDays <= 0) return "Aujourd'hui";
-  if (diffDays === 1) return 'Demain';
-  if (diffDays < 7) return `Dans ${diffDays} jours`;
-  if (diffDays < 30) return `Dans ${Math.ceil(diffDays / 7)} sem.`;
-  return `Dans ${Math.ceil(diffDays / 30)} mois`;
-};
+import MonEspaceHeader from '@/components/community/MonEspaceHeader';
+import MonEspaceTabBar, { TabKey } from '@/components/community/MonEspaceTabBar';
+import AccueilTab from '@/components/community/tabs/AccueilTab';
+import MarchesTab from '@/components/community/tabs/MarchesTab';
+import QuizTab from '@/components/community/tabs/QuizTab';
+import PlaceholderTab from '@/components/community/tabs/PlaceholderTab';
 
 const MarchesDuVivantMonEspace = () => {
   const navigate = useNavigate();
-  const queryClient = useQueryClient();
   const { user, profile, loading, signOut, createProfile } = useCommunityAuth();
   const { data: participations = [] } = useCommunityParticipations(user?.id);
   const [creatingProfile, setCreatingProfile] = useState(false);
-  const [registeringId, setRegisteringId] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<TabKey>('accueil');
+  const isMobile = useIsMobile();
 
   const { data: upcomingEvents = [] } = useQuery({
     queryKey: ['upcoming-marche-events-mon-espace'],
@@ -51,35 +41,24 @@ const MarchesDuVivantMonEspace = () => {
     enabled: !!user,
   });
 
+  const { data: totalFrequences = 0 } = useQuery({
+    queryKey: ['total-frequences', user?.id],
+    queryFn: async () => {
+      if (!user) return 0;
+      const { data } = await supabase
+        .from('frequences_log')
+        .select('frequences')
+        .eq('user_id', user.id);
+      return (data || []).reduce((sum, r) => sum + (r.frequences || 0), 0);
+    },
+    enabled: !!user,
+  });
+
   useEffect(() => {
     if (!loading && !user) {
       navigate('/marches-du-vivant/connexion');
     }
   }, [loading, user, navigate]);
-
-  const handleRegister = async (eventId: string) => {
-    if (!user) return;
-    setRegisteringId(eventId);
-    try {
-      const { error } = await supabase
-        .from('marche_participations')
-        .insert({ user_id: user.id, marche_event_id: eventId });
-      if (error) {
-        if (error.code === '23505') {
-          toast.info('Vous êtes déjà inscrit à cette marche 🌿');
-        } else {
-          throw error;
-        }
-      } else {
-        toast.success('Inscription confirmée ! 🌿 À bientôt sur les sentiers');
-        queryClient.invalidateQueries({ queryKey: ['community-participations'] });
-      }
-    } catch (e: any) {
-      toast.error(e.message || "Erreur lors de l'inscription");
-    } finally {
-      setRegisteringId(null);
-    }
-  };
 
   if (loading || !user) {
     return (
@@ -116,7 +95,7 @@ const MarchesDuVivantMonEspace = () => {
           </div>
           <h1 className="text-2xl font-bold text-white">Bienvenue parmi les marcheurs du Vivant 🌿</h1>
           <p className="text-emerald-200/70 text-center">
-            Votre profil communautaire n'existe pas encore. Créez-le en un clic pour accéder à votre espace de marche et d'exploration.
+            Votre profil communautaire n'existe pas encore. Créez-le en un clic pour accéder à votre espace.
           </p>
           <Button
             onClick={handleCreateProfile}
@@ -132,6 +111,42 @@ const MarchesDuVivantMonEspace = () => {
 
   const role = (profile.role || 'marcheur_en_devenir') as CommunityRoleKey;
   const registeredEventIds = new Set(participations.map(p => p.marche_event_id));
+  const pendingCount = participations.filter(p => !p.validated_at).length;
+
+  const renderTab = () => {
+    switch (activeTab) {
+      case 'accueil':
+        return (
+          <AccueilTab
+            role={role}
+            marchesCount={profile.marches_count}
+            formationValidee={profile.formation_validee}
+            certificationValidee={profile.certification_validee}
+            pendingCount={pendingCount}
+            totalFrequences={totalFrequences}
+            onNavigate={setActiveTab}
+          />
+        );
+      case 'marches':
+        return (
+          <MarchesTab
+            userId={user.id}
+            upcomingEvents={upcomingEvents}
+            participations={participations}
+            registeredEventIds={registeredEventIds}
+          />
+        );
+      case 'quiz':
+        return <QuizTab role={role} userId={user.id} />;
+      case 'carnet':
+      case 'sons':
+      case 'kigo':
+      case 'territoire':
+        return <PlaceholderTab type={activeTab} />;
+      default:
+        return null;
+    }
+  };
 
   return (
     <>
@@ -140,215 +155,32 @@ const MarchesDuVivantMonEspace = () => {
       </Helmet>
 
       <div className="min-h-screen bg-gradient-to-br from-emerald-950 via-emerald-900 to-teal-900">
-        {/* Header */}
-        <div className="px-6 py-4 flex items-center justify-between">
-          <Link to="/marches-du-vivant" className="inline-flex items-center gap-2 text-emerald-200/70 hover:text-emerald-100 transition-colors">
-            <ArrowLeft className="w-4 h-4" />
-            <span className="text-sm">Retour</span>
-          </Link>
-          <Button variant="ghost" size="sm" onClick={signOut} className="text-emerald-200/70 hover:text-white hover:bg-white/10">
-            <LogOut className="w-4 h-4 mr-2" />
-            Déconnexion
-          </Button>
-        </div>
+        <MonEspaceHeader
+          prenom={profile.prenom}
+          nom={profile.nom}
+          email={user.email || ''}
+          ville={profile.ville}
+          role={role}
+          totalFrequences={totalFrequences}
+          kigoAccueil={profile.kigo_accueil}
+          onSignOut={signOut}
+        />
 
-        <div className="max-w-2xl mx-auto px-4 pb-16 space-y-6">
-          {/* Welcome */}
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-center">
-            <h1 className="text-2xl font-bold text-white mb-1">
-              Bienvenue, {profile.prenom} 🌿
-            </h1>
-            <p className="text-emerald-200/60 text-sm text-center mx-auto">
-              {profile.kigo_accueil === 'parle_aux_arbres' && 'Les arbres vous saluent en retour.'}
-              {profile.kigo_accueil === 'transition_beton' && 'Le béton est derrière vous, la forêt devant.'}
-              {profile.kigo_accueil === 'curieux_vivant' && 'La curiosité est le premier pas du marcheur.'}
-              {profile.kigo_accueil === 'expert_canape' && 'Le canapé comprendra. Les sentiers vous appellent.'}
-              {!profile.kigo_accueil && 'Votre parcours de marcheur continue.'}
-            </p>
-          </motion.div>
+        <MonEspaceTabBar role={role} activeTab={activeTab} onTabChange={setActiveTab} />
 
-          {/* Progression Card */}
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
-            <ProgressionCard
-              role={role}
-              marchesCount={profile.marches_count}
-              formationValidee={profile.formation_validee}
-              certificationValidee={profile.certification_validee}
-              pendingCount={participations.filter(p => !p.validated_at).length}
-            />
-          </motion.div>
-
-          {/* Quiz Éveil Sensoriel */}
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.12 }}>
-            <QuizInteractif
-              niveau={role === 'marcheur_en_devenir' ? 'marcheur' : role}
-              userId={user.id}
-              onComplete={(score, total, frequences) => {
-                if (frequences > 0) {
-                  toast.success(`+${frequences} Fréquences gagnées ! 🌟`);
-                }
-              }}
-            />
-          </motion.div>
-
-          {/* Upcoming Events - Registration */}
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }}>
-            <h2 className="text-lg font-semibold text-white mb-3 flex items-center gap-2">
-              <Sparkles className="w-5 h-5 text-emerald-300" />
-              Prochaines marches
-            </h2>
-
-            {upcomingEvents.length === 0 ? (
-              <div className="bg-white/5 rounded-xl border border-white/10 p-8 text-center">
-                <p className="text-emerald-200/60 text-sm">Les prochaines marches se préparent…</p>
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {[...upcomingEvents]
-                  .sort((a, b) => {
-                    const aReg = registeredEventIds.has(a.id) ? 0 : 1;
-                    const bReg = registeredEventIds.has(b.id) ? 0 : 1;
-                    return aReg - bReg;
-                  })
-                  .map((event, index) => {
-                  const isRegistered = registeredEventIds.has(event.id);
-                  const countdown = getCountdown(event.date_marche);
-                  const dateFormatted = format(new Date(event.date_marche), 'dd MMMM yyyy', { locale: fr });
-
-                  return (
-                    <motion.div
-                      key={event.id}
-                      initial={{ opacity: 0, x: -20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: 0.2 + index * 0.08 }}
-                      className={`backdrop-blur-sm rounded-xl p-4 space-y-3 transition-all duration-300 ${
-                        isRegistered
-                          ? 'bg-emerald-500/15 border border-emerald-400/50 border-l-2 border-l-emerald-400 shadow-[0_0_15px_-3px_rgba(52,211,153,0.15)]'
-                          : 'bg-white/10 border border-white/20'
-                      }`}
-                    >
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="flex-1 min-w-0">
-                          <p className={`font-medium text-sm leading-snug ${isRegistered ? 'text-emerald-100' : 'text-white'}`}>{event.title}</p>
-                          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1.5">
-                            <span className="text-emerald-300/80 text-xs">{dateFormatted}</span>
-                            {event.lieu && (
-                              <span className="text-emerald-200/50 text-xs flex items-center gap-1">
-                                <MapPin className="w-3 h-3" />
-                                {event.lieu}
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                        <span className="text-[10px] px-2 py-1 rounded-full bg-emerald-500/20 text-emerald-300 whitespace-nowrap flex-shrink-0">
-                          {countdown}
-                        </span>
-                      </div>
-
-                      {isRegistered ? (
-                        <div className="flex items-center gap-2 text-emerald-400 text-xs bg-emerald-500/20 rounded-full px-3 py-1.5 w-fit animate-[pulse_3s_ease-in-out_infinite]">
-                          <CheckCircle2 className="w-4 h-4" />
-                          <span className="font-semibold">Inscrit — On vous attend !</span>
-                        </div>
-                      ) : (
-                        <Button
-                          size="sm"
-                          onClick={() => handleRegister(event.id)}
-                          disabled={registeringId === event.id}
-                          className="w-full bg-emerald-600/80 hover:bg-emerald-500 text-white text-xs rounded-lg h-8"
-                        >
-                          {registeringId === event.id ? 'Inscription...' : "S'inscrire à cette marche"}
-                        </Button>
-                      )}
-                    </motion.div>
-                  );
-                })}
-              </div>
-            )}
-          </motion.div>
-
-          {/* QR Scanner CTA */}
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 }}>
-            <Link to="/marches-du-vivant/explorer">
-              <div className="bg-white/10 backdrop-blur-sm rounded-xl border border-white/20 p-4 flex items-center gap-4 hover:bg-white/15 transition-colors cursor-pointer">
-                <div className="w-12 h-12 rounded-full bg-emerald-500/20 flex items-center justify-center">
-                  <QrCode className="w-6 h-6 text-emerald-300" />
-                </div>
-                <div>
-                  <p className="text-white font-medium">Valider une participation</p>
-                  <p className="text-emerald-200/60 text-sm">Scannez le QR code sur le lieu de la marche</p>
-                </div>
-              </div>
-            </Link>
-          </motion.div>
-
-          {/* Participations history */}
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
-            <h2 className="text-lg font-semibold text-white mb-3 flex items-center gap-2">
-              <Calendar className="w-5 h-5 text-emerald-300" />
-              Mes marches
-            </h2>
-
-            {participations.length === 0 ? (
-              <div className="bg-white/5 rounded-xl border border-white/10 p-8 text-center">
-                <p className="text-emerald-200/60 text-sm">Aucune participation pour le moment</p>
-                <Link to="/marches-du-vivant/explorer" className="text-emerald-300 text-sm mt-2 inline-block hover:underline">
-                  Découvrir les prochaines marches →
-                </Link>
-              </div>
-            ) : (
-              <div className="space-y-2">
-                {participations.map((p) => (
-                  <div key={p.id} className="bg-white/5 rounded-xl border border-white/10 p-4 flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      {p.validated_at ? (
-                        <CheckCircle2 className="w-5 h-5 text-emerald-400" />
-                      ) : (
-                        <Clock className="w-5 h-5 text-amber-400" />
-                      )}
-                      <div>
-                        <p className="text-white text-sm font-medium">
-                          {p.marche_events?.title || 'Marche'}
-                        </p>
-                        <div className="flex items-center gap-2 text-xs text-emerald-200/50">
-                          {p.marche_events?.date_marche && (
-                            <span>{format(new Date(p.marche_events.date_marche), 'dd MMM yyyy', { locale: fr })}</span>
-                          )}
-                          {p.marche_events?.lieu && (
-                            <span className="flex items-center gap-1">
-                              <MapPin className="w-3 h-3" />
-                              {p.marche_events.lieu}
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                    <span className={`text-xs px-2 py-1 rounded-full ${p.validated_at ? 'bg-emerald-500/20 text-emerald-300' : 'bg-amber-500/20 text-amber-300'}`}>
-                      {p.validated_at ? 'Validée' : 'En attente'}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            )}
-          </motion.div>
-
-          {/* Profile info */}
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }}>
-            <div className="bg-white/5 rounded-xl border border-white/10 p-4 space-y-2">
-              <h3 className="text-sm font-medium text-emerald-200/80">Mon profil</h3>
-              <div className="grid grid-cols-2 gap-2 text-sm">
-                <div className="text-emerald-200/50">Nom</div>
-                <div className="text-white">{profile.prenom} {profile.nom}</div>
-                {profile.ville && <>
-                  <div className="text-emerald-200/50">Ville</div>
-                  <div className="text-white">{profile.ville}</div>
-                </>}
-                <div className="text-emerald-200/50">Email</div>
-                <div className="text-white text-xs">{user.email}</div>
-              </div>
-            </div>
-          </motion.div>
-        </div>
+        <main className={`max-w-2xl mx-auto px-4 py-5 ${isMobile ? 'pb-24' : 'pb-12'}`}>
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={activeTab}
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -20 }}
+              transition={{ duration: 0.2 }}
+            >
+              {renderTab()}
+            </motion.div>
+          </AnimatePresence>
+        </main>
       </div>
     </>
   );
