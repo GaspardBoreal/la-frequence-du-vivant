@@ -26,8 +26,7 @@ const FrequenceWave: React.FC<FrequenceWaveProps> = ({ totalFrequences, role }) 
   });
 
   return (
-    <div className="relative rounded-2xl bg-white/[0.12] border border-white/20 backdrop-blur-lg p-5 overflow-hidden">
-      <div className="absolute inset-0 bg-gradient-to-br from-white/[0.05] to-transparent" />
+    <div className="relative rounded-2xl bg-white shadow-lg shadow-emerald-500/5 border border-gray-100 p-5 overflow-hidden">
       <div className="relative flex items-end justify-center gap-[3px] h-16">
         {heights.map((h, i) => (
           <motion.div
@@ -49,11 +48,11 @@ const FrequenceWave: React.FC<FrequenceWaveProps> = ({ totalFrequences, role }) 
         ))}
       </div>
       <div className="relative mt-3 flex items-center justify-between">
-        <span className="text-xs text-white/70">Ma Fréquence du jour</span>
+        <span className="text-xs text-gray-500">Ma Fréquence du jour</span>
         <motion.span
           key={totalFrequences}
           initial={{ scale: 1.3, color: c1 }}
-          animate={{ scale: 1, color: '#d1fae5' }}
+          animate={{ scale: 1, color: '#047857' }}
           className="text-lg font-bold"
         >
           ★ {totalFrequences}

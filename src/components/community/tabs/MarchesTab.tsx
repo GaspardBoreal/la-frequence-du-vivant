@@ -73,26 +73,26 @@ const MarchesTab: React.FC<MarchesTabProps> = ({ userId, upcomingEvents, partici
     <div className="space-y-6">
       {/* QR CTA */}
       <Link to="/marches-du-vivant/explorer">
-        <div className="bg-white/10 backdrop-blur-sm rounded-xl border border-white/20 p-4 flex items-center gap-4 hover:bg-white/15 transition-colors">
-          <div className="w-12 h-12 rounded-full bg-emerald-500/20 flex items-center justify-center flex-shrink-0">
-            <QrCode className="w-6 h-6 text-emerald-300" />
+        <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-4 flex items-center gap-4 hover:shadow-md transition-shadow">
+          <div className="w-12 h-12 rounded-full bg-emerald-50 flex items-center justify-center flex-shrink-0">
+            <QrCode className="w-6 h-6 text-emerald-600" />
           </div>
           <div>
-            <p className="text-white font-medium text-sm">Valider une participation</p>
-            <p className="text-emerald-200/50 text-xs">Scannez le QR code sur le lieu de la marche</p>
+            <p className="text-gray-900 font-medium text-sm">Valider une participation</p>
+            <p className="text-gray-400 text-xs">Scannez le QR code sur le lieu de la marche</p>
           </div>
         </div>
       </Link>
 
       {/* Upcoming */}
       <div>
-        <h2 className="text-base font-semibold text-white mb-3 flex items-center gap-2">
-          <Sparkles className="w-4 h-4 text-emerald-300" />
+        <h2 className="text-base font-semibold text-gray-900 mb-3 flex items-center gap-2">
+          <Sparkles className="w-4 h-4 text-emerald-500" />
           Prochaines marches
         </h2>
         {upcomingEvents.length === 0 ? (
-          <div className="bg-white/5 rounded-xl border border-white/10 p-6 text-center">
-            <p className="text-emerald-200/50 text-sm">Les prochaines marches se préparent…</p>
+          <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-6 text-center">
+            <p className="text-gray-400 text-sm">Les prochaines marches se préparent…</p>
           </div>
         ) : (
           <div className="space-y-2.5">
@@ -108,30 +108,30 @@ const MarchesTab: React.FC<MarchesTabProps> = ({ userId, upcomingEvents, partici
                     transition={{ delay: i * 0.06 }}
                     className={`rounded-xl p-3.5 space-y-2.5 transition-all ${
                       isRegistered
-                        ? 'bg-emerald-500/15 border border-emerald-400/40 shadow-[0_0_12px_-4px_rgba(52,211,153,0.15)]'
-                        : 'bg-white/5 border border-white/10'
+                        ? 'bg-emerald-50 border border-emerald-200 shadow-sm'
+                        : 'bg-white border border-gray-100 shadow-sm'
                     }`}
                   >
                     <div className="flex items-start justify-between gap-2">
                       <div className="min-w-0">
-                        <p className="text-white text-sm font-medium leading-snug">{event.title}</p>
+                        <p className="text-gray-900 text-sm font-medium leading-snug">{event.title}</p>
                         <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 mt-1">
-                          <span className="text-emerald-300/70 text-xs">
+                          <span className="text-emerald-600 text-xs font-medium">
                             {format(new Date(event.date_marche), 'dd MMM yyyy', { locale: fr })}
                           </span>
                           {event.lieu && (
-                            <span className="text-emerald-200/40 text-xs flex items-center gap-0.5">
+                            <span className="text-gray-400 text-xs flex items-center gap-0.5">
                               <MapPin className="w-3 h-3" />{event.lieu}
                             </span>
                           )}
                         </div>
                       </div>
-                      <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 flex-shrink-0">
+                      <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 flex-shrink-0 font-medium">
                         {getCountdown(event.date_marche)}
                       </span>
                     </div>
                     {isRegistered ? (
-                      <div className="flex items-center gap-1.5 text-emerald-400 text-xs bg-emerald-500/15 rounded-full px-2.5 py-1 w-fit">
+                      <div className="flex items-center gap-1.5 text-emerald-600 text-xs bg-emerald-100 rounded-full px-2.5 py-1 w-fit">
                         <CheckCircle2 className="w-3.5 h-3.5" />
                         <span className="font-medium">Inscrit</span>
                       </div>
@@ -140,7 +140,7 @@ const MarchesTab: React.FC<MarchesTabProps> = ({ userId, upcomingEvents, partici
                         size="sm"
                         onClick={() => handleRegister(event.id)}
                         disabled={registeringId === event.id}
-                        className="w-full bg-emerald-600/80 hover:bg-emerald-500 text-white text-xs rounded-lg h-8"
+                        className="w-full bg-emerald-600 hover:bg-emerald-500 text-white text-xs rounded-lg h-8"
                       >
                         {registeringId === event.id ? 'Inscription...' : "S'inscrire"}
                       </Button>
@@ -154,27 +154,27 @@ const MarchesTab: React.FC<MarchesTabProps> = ({ userId, upcomingEvents, partici
 
       {/* History */}
       <div>
-        <h2 className="text-base font-semibold text-white mb-3 flex items-center gap-2">
-          <Calendar className="w-4 h-4 text-emerald-300" />
+        <h2 className="text-base font-semibold text-gray-900 mb-3 flex items-center gap-2">
+          <Calendar className="w-4 h-4 text-emerald-500" />
           Historique
         </h2>
         {participations.length === 0 ? (
-          <div className="bg-white/5 rounded-xl border border-white/10 p-6 text-center">
-            <p className="text-emerald-200/50 text-sm">Aucune participation encore</p>
+          <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-6 text-center">
+            <p className="text-gray-400 text-sm">Aucune participation encore</p>
           </div>
         ) : (
           <div className="space-y-1.5">
             {participations.map((p) => (
-              <div key={p.id} className="bg-white/5 rounded-lg border border-white/10 p-3 flex items-center justify-between">
+              <div key={p.id} className="bg-white rounded-lg border border-gray-100 shadow-sm p-3 flex items-center justify-between">
                 <div className="flex items-center gap-2.5 min-w-0">
                   {p.validated_at ? (
-                    <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0" />
+                    <CheckCircle2 className="w-4 h-4 text-emerald-500 flex-shrink-0" />
                   ) : (
-                    <Clock className="w-4 h-4 text-amber-400 flex-shrink-0" />
+                    <Clock className="w-4 h-4 text-amber-500 flex-shrink-0" />
                   )}
                   <div className="min-w-0">
-                    <p className="text-white text-xs font-medium truncate">{p.marche_events?.title || 'Marche'}</p>
-                    <div className="flex items-center gap-1.5 text-[10px] text-emerald-200/40">
+                    <p className="text-gray-900 text-xs font-medium truncate">{p.marche_events?.title || 'Marche'}</p>
+                    <div className="flex items-center gap-1.5 text-[10px] text-gray-400">
                       {p.marche_events?.date_marche && (
                         <span>{format(new Date(p.marche_events.date_marche), 'dd MMM yy', { locale: fr })}</span>
                       )}
@@ -184,8 +184,8 @@ const MarchesTab: React.FC<MarchesTabProps> = ({ userId, upcomingEvents, partici
                     </div>
                   </div>
                 </div>
-                <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${
-                  p.validated_at ? 'bg-emerald-500/20 text-emerald-300' : 'bg-amber-500/20 text-amber-300'
+                <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${
+                  p.validated_at ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'
                 }`}>
                   {p.validated_at ? 'Validée' : 'En attente'}
                 </span>
