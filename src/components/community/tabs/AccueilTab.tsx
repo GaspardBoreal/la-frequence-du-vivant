@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Map, Brain, Sparkles } from 'lucide-react';
+import { Map, Brain, Radar } from 'lucide-react';
 import FrequenceWave from '../FrequenceWave';
 import ProgressionCard from '../ProgressionCard';
 import { CommunityRoleKey } from '@/hooks/useCommunityProfile';
@@ -40,7 +40,7 @@ const AccueilTab: React.FC<AccueilTabProps> = ({
         initial={{ opacity: 0, y: 15 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.15 }}
-        className="grid grid-cols-2 gap-3"
+        className="grid grid-cols-3 gap-3"
       >
         <button
           onClick={() => onNavigate('marches')}
@@ -50,6 +50,16 @@ const AccueilTab: React.FC<AccueilTabProps> = ({
             <Map className="w-5 h-5 text-emerald-300" />
           </div>
           <span className="text-xs text-white/80 font-medium">Mes marches</span>
+        </button>
+
+        <button
+          onClick={() => onNavigate('zones')}
+          className="bg-amber-500/[0.08] hover:bg-amber-500/[0.15] border border-amber-400/20 rounded-xl p-4 flex flex-col items-center gap-2 transition-colors group"
+        >
+          <div className="w-10 h-10 rounded-full bg-amber-500/15 flex items-center justify-center group-hover:bg-amber-500/25 transition-colors">
+            <Radar className="w-5 h-5 text-amber-300" />
+          </div>
+          <span className="text-xs text-white/80 font-medium">Zones ×4</span>
         </button>
 
         <button
