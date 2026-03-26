@@ -1,89 +1,70 @@
 
 
-# Fond clair premium pour la zone de contenu
+# Palette de couleurs enrichie — Sortir du "tout vert"
 
-## Concept
+## Probleme
 
-Passer d'un "tout vert sombre" a un split design : **header + tabs restent sombres** (identite forte), la **zone de contenu passe en fond blanc/gris tres clair** avec des cartes a ombres douces. Effet "app mobile premium" immediat.
+Tout est vert-sur-vert fonce : header, fond, cartes, textes, badges, tabs. L'interface manque de contraste et de respiration visuelle.
+
+## Strategie design
+
+Introduire des surfaces **blanc translucide / gris clair** pour les cartes de contenu, tout en gardant le fond sombre emeraude comme toile de fond. L'effet : les cartes "flottent" avec elegance sur le fond naturel.
 
 ```text
-┌──────────────────────────────┐
-│ ██ HEADER SOMBRE (inchange) ██│  bg-emerald-950
-├──────────────────────────────┤
-│ ██ TABS SOMBRES (inchange)  ██│  bg-emerald-950/60
-├──────────────────────────────┤
-│                              │
-│  ┌────────────────────────┐  │
-│  │  Carte blanche ombre   │  │  bg-white rounded-2xl shadow
-│  └────────────────────────┘  │
-│  ┌────────────────────────┐  │  bg-slate-50/gray-50
-│  │  Carte blanche ombre   │  │
-│  └────────────────────────┘  │
-│                              │
-└──────────────────────────────┘
+AVANT                          APRES
+┌──────────────────┐          ┌──────────────────┐
+│ ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓ │          │ ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓ │  ← header sombre (inchange)
+│ ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓ │          │ ░░░░░░░░░░░░░░░ │  ← tabs sur fond plus clair
+│ ▓▓ carte verte ▓▓ │          │ ████████████████ │  ← carte blanche/frost
+│ ▓▓ carte verte ▓▓ │          │ ████████████████ │  ← carte blanche/frost
+│ ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓ │          │ ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓ │
+└──────────────────┘          └──────────────────┘
 ```
 
-## Changements
+## Changements par composant
 
-### 1. `MarchesDuVivantMonEspace.tsx` — Zone main
-- Fond principal : garder le gradient emerald **uniquement sur header+tabs**
-- Zone `<main>` : `bg-gray-50 rounded-t-3xl -mt-1` pour creer un effet de "panneau clair" qui glisse sous les tabs sombres
+### 1. FrequenceWave — Carte "frost" lumineuse
+- Fond : `bg-white/[0.08]` → `bg-white/[0.12] border-white/20`
+- Texte "Ma Frequence du jour" : `text-emerald-200/50` → `text-white/70`
+- Score : `text-white font-bold`
 
-### 2. `FrequenceWave.tsx` — Carte sur fond clair
-- Fond : `bg-white shadow-lg shadow-emerald-500/5 border border-gray-100`
-- Textes : `text-gray-500` (label), `text-gray-900 font-bold` (score)
-- Barres SVG : conserver les gradients de couleur role (contraste sur blanc)
+### 2. ProgressionCard — Surface blanche elevee
+- Fond : `bg-white/10` → `bg-white/[0.14] backdrop-blur-lg`
+- Bordure : plus prononcee `border-white/25`
+- Titre "Votre role actuel" : `text-white/80`
+- Texte description : `text-white/60` (au lieu de emerald-200/60)
+- Barre de progression : fond `bg-white/25` au lieu de `bg-white/20`
+- Labels timeline : `text-white/70`
 
-### 3. `ProgressionCard.tsx` — Carte blanche elegante
-- Fond : `bg-white shadow-lg shadow-emerald-500/5 border border-gray-100`
-- Textes : `text-gray-500` (labels), `text-gray-900` (titre role), `text-gray-600` (description)
-- Barre progression : fond `bg-gray-200`, fill gradient emerald (inchange)
-- Timeline roles : icones avec fonds pastel (`bg-emerald-50`, `bg-teal-50`, etc.)
-- Textes timeline : `text-gray-600`
+### 3. Quick Actions (Accueil) — Boutons bicolores
+- Bouton "Mes marches" : fond `bg-white/[0.08]` border `border-white/15`, texte `text-white/80`
+- Bouton "Quiz" : fond `bg-cyan-500/[0.08]` border `border-cyan-400/20`, texte `text-white/80`
+- Hover : eleve a `bg-white/15`
 
-### 4. `AccueilTab.tsx` — Boutons d'action sur fond clair
-- Fond boutons : `bg-white border border-gray-200 shadow-sm hover:shadow-md`
-- Icones : garder les couleurs emerald/cyan sur fond pastel
-- Textes : `text-gray-700`
+### 4. MonEspaceTabBar (Desktop)
+- Tabs inactifs : `text-white/40` → `text-white/50`
+- Tab actif : conserver `text-emerald-300` mais indicateur blanc `bg-white/80` au lieu de `bg-emerald-400`
 
-### 5. `MarchesTab.tsx` — Cartes marches sur fond clair
-- QR CTA : `bg-white border border-gray-200 shadow-sm`
-- Cartes marches : `bg-white border border-gray-100 shadow-sm` (non inscrit), `bg-emerald-50 border border-emerald-200` (inscrit)
-- Textes : `text-gray-900` (titres), `text-gray-500` (meta), `text-emerald-600` (dates)
-- Bouton inscription : `bg-emerald-600 hover:bg-emerald-500` (inchange)
-- Titres de section : `text-gray-900`
+### 5. MonEspaceHeader — Touches de blanc
+- Prenom : rester `text-white` (ok)
+- Kigo accueil : `text-white/50` au lieu de `text-emerald-200/40`
+- Compteur frequences : fond `bg-white/10 border-white/20` avec texte `text-white`
 
-### 6. `QuizInteractif.tsx` — Adaptation fond clair
-- Conteneur : `bg-white rounded-2xl shadow-lg border border-gray-100`
-- Textes questions : `text-gray-900`
-- Options : `bg-gray-50 border border-gray-200 hover:border-emerald-400`
-- Correct : `bg-emerald-50 border-emerald-400`
-- Incorrect : `bg-red-50 border-red-300`
-
-### 7. `PlaceholderTab.tsx` — Placeholders elegants
-- Fond : `bg-white border border-gray-100 shadow-sm`
-- Icone : fond pastel selon le type (`bg-emerald-50`, `bg-cyan-50`, etc.)
-- Textes : `text-gray-900` (titre), `text-gray-500` (description)
-- Badge "Bientot" : `bg-gray-100 text-gray-400`
-
-### 8. `MonEspaceTabBar.tsx` — Mobile bottom bar
-- Mobile : rester sombre (c'est un element de navigation systeme)
-- Desktop tabs : rester sombres (colles au header)
-- Aucun changement necessaire
+### 6. Page principale fond
+- Fond de la zone de contenu (main) : ajouter un `bg-gradient-to-b from-white/[0.02] to-transparent` pour creer une zone de respiration sous les tabs
 
 ## Fichiers modifies
 
-| Fichier | Nature |
-|---------|--------|
-| `MarchesDuVivantMonEspace.tsx` | Main zone fond clair avec `rounded-t-3xl` |
-| `FrequenceWave.tsx` | Carte blanche, textes sombres |
-| `ProgressionCard.tsx` | Carte blanche, timeline pastel |
-| `AccueilTab.tsx` | Boutons blancs ombrés |
-| `MarchesTab.tsx` | Cartes blanches, textes sombres |
-| `QuizInteractif.tsx` | Conteneur blanc, options claires |
-| `PlaceholderTab.tsx` | Fond blanc, accents pastel |
+| Fichier | Modifications |
+|---------|--------------|
+| `FrequenceWave.tsx` | Fond + textes vers blanc/frost |
+| `ProgressionCard.tsx` | Surface, textes, barre vers blanc eleve |
+| `AccueilTab.tsx` | Quick actions bicolores, textes blancs |
+| `MonEspaceTabBar.tsx` | Indicateur blanc, textes ajustes |
+| `MonEspaceHeader.tsx` | Touches de blanc sur kigo + compteur |
+| `MarchesDuVivantMonEspace.tsx` | Gradient subtil sur main |
 
 ## Resultat
 
-Contraste fort header sombre / contenu clair. Les cartes blanches avec ombres douces creent un effet "app native iOS/Android" premium. Les couleurs emerald deviennent des accents precieux sur fond clair au lieu de se noyer dans le vert.
+L'identite naturelle emeraude du fond est preservee, mais les surfaces de contenu gagnent en luminosite et lisibilite grace a des fonds frost/blanc translucide. Le contraste apporte de l'elegance sans casser l'univers visuel.
 

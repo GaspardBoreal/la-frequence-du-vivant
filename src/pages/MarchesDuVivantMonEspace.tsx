@@ -168,8 +168,7 @@ const MarchesDuVivantMonEspace = () => {
 
         <MonEspaceTabBar role={role} activeTab={activeTab} onTabChange={setActiveTab} />
 
-        <main className={`bg-gray-50 rounded-t-3xl -mt-1 min-h-[70vh] shadow-[0_-4px_20px_rgba(0,0,0,0.1)]`}>
-          <div className={`max-w-2xl mx-auto px-4 py-6 ${isMobile ? 'pb-24' : 'pb-12'}`}>
+        <main className={`max-w-2xl mx-auto px-4 py-5 bg-gradient-to-b from-white/[0.02] to-transparent ${isMobile ? 'pb-24' : 'pb-12'}`}>
           <AnimatePresence mode="wait">
             <motion.div
               key={activeTab}
@@ -181,7 +180,6 @@ const MarchesDuVivantMonEspace = () => {
               {renderTab()}
             </motion.div>
           </AnimatePresence>
-          </div>
         </main>
       </div>
     </>
