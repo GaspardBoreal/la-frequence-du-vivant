@@ -168,7 +168,7 @@ const MarchesDuVivantMonEspace = () => {
 
         <MonEspaceTabBar role={role} activeTab={activeTab} onTabChange={setActiveTab} />
 
-        <main className={`max-w-2xl mx-auto px-4 py-5 ${isMobile ? 'pb-24' : 'pb-12'}`}>
+        <main className={`max-w-2xl mx-auto px-4 py-5 bg-gradient-to-b from-white/[0.02] to-transparent ${isMobile ? 'pb-24' : 'pb-12'}`}>
           <AnimatePresence mode="wait">
             <motion.div
               key={activeTab}

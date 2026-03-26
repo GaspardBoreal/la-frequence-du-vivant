@@ -60,7 +60,7 @@ const MonEspaceHeader: React.FC<MonEspaceHeaderProps> = ({
                 <RoleBadge role={role} size="sm" darkMode />
               </div>
               <div className="flex items-center gap-3 mt-0.5">
-                <span className="text-emerald-200/40 text-xs truncate">
+                <span className="text-white/50 text-xs truncate">
                   {kigoAccueil === 'parle_aux_arbres' ? '🌳 Parle aux arbres' :
                    kigoAccueil === 'transition_beton' ? '🏙️ En transition' :
                    kigoAccueil === 'curieux_vivant' ? '🔍 Curieux du vivant' :
@@ -72,10 +72,10 @@ const MonEspaceHeader: React.FC<MonEspaceHeaderProps> = ({
               key={totalFrequences}
               initial={{ scale: 1.2 }}
               animate={{ scale: 1 }}
-              className="flex items-center gap-1 bg-emerald-500/15 border border-emerald-400/20 rounded-full px-3 py-1.5 flex-shrink-0"
+              className="flex items-center gap-1 bg-white/10 border border-white/20 rounded-full px-3 py-1.5 flex-shrink-0"
             >
               <span className="text-amber-400 text-xs">★</span>
-              <span className="text-emerald-200 text-sm font-bold">{totalFrequences}</span>
+              <span className="text-white text-sm font-bold">{totalFrequences}</span>
             </motion.div>
           </div>
         </div>

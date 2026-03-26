@@ -44,22 +44,22 @@ const AccueilTab: React.FC<AccueilTabProps> = ({
       >
         <button
           onClick={() => onNavigate('marches')}
-          className="bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl p-4 flex flex-col items-center gap-2 transition-colors group"
+          className="bg-white/[0.08] hover:bg-white/[0.15] border border-white/15 rounded-xl p-4 flex flex-col items-center gap-2 transition-colors group"
         >
           <div className="w-10 h-10 rounded-full bg-emerald-500/15 flex items-center justify-center group-hover:bg-emerald-500/25 transition-colors">
             <Map className="w-5 h-5 text-emerald-300" />
           </div>
-          <span className="text-xs text-emerald-200/70 font-medium">Mes marches</span>
+          <span className="text-xs text-white/80 font-medium">Mes marches</span>
         </button>
 
         <button
           onClick={() => onNavigate('quiz')}
-          className="bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl p-4 flex flex-col items-center gap-2 transition-colors group"
+          className="bg-cyan-500/[0.08] hover:bg-cyan-500/[0.15] border border-cyan-400/20 rounded-xl p-4 flex flex-col items-center gap-2 transition-colors group"
         >
           <div className="w-10 h-10 rounded-full bg-cyan-500/15 flex items-center justify-center group-hover:bg-cyan-500/25 transition-colors">
             <Brain className="w-5 h-5 text-cyan-300" />
           </div>
-          <span className="text-xs text-emerald-200/70 font-medium">Quiz éveil</span>
+          <span className="text-xs text-white/80 font-medium">Quiz éveil</span>
         </button>
       </motion.div>
     </div>
