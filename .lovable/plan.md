@@ -1,70 +1,86 @@
 
 
-# Palette de couleurs enrichie — Sortir du "tout vert"
+# Integration du Detecteur de Zones Blanches dans Mon Espace
 
 ## Probleme
 
-Tout est vert-sur-vert fonce : header, fond, cartes, textes, badges, tabs. L'interface manque de contraste et de respiration visuelle.
+Le detecteur de zones blanches — fonctionnalite cle du projet — n'est accessible que depuis `/marches-du-vivant/explorer`. Les marcheurs connectes doivent quitter leur espace pour y acceder. Or c'est un outil quotidien de tous les niveaux.
 
-## Strategie design
+## Solution
 
-Introduire des surfaces **blanc translucide / gris clair** pour les cartes de contenu, tout en gardant le fond sombre emeraude comme toile de fond. L'effet : les cartes "flottent" avec elegance sur le fond naturel.
+Ajouter un nouvel onglet **"Zones"** dans la tab bar de Mon Espace, disponible pour **tous les roles** (y compris `marcheur_en_devenir`). Cet onglet embarque le composant `DetecteurZonesBlanches` existant dans un ecrin adapte a l'univers Mon Espace, avec un widget d'accroche sur l'onglet Accueil.
 
 ```text
-AVANT                          APRES
-┌──────────────────┐          ┌──────────────────┐
-│ ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓ │          │ ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓ │  ← header sombre (inchange)
-│ ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓ │          │ ░░░░░░░░░░░░░░░ │  ← tabs sur fond plus clair
-│ ▓▓ carte verte ▓▓ │          │ ████████████████ │  ← carte blanche/frost
-│ ▓▓ carte verte ▓▓ │          │ ████████████████ │  ← carte blanche/frost
-│ ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓ │          │ ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓ │
-└──────────────────┘          └──────────────────┘
+AVANT (tabs marcheur)              APRES
+Accueil · Marches · Quiz           Accueil · Zones · Marches · Quiz
+                                          ↑ NEW
 ```
 
-## Changements par composant
+## Changements
 
-### 1. FrequenceWave — Carte "frost" lumineuse
-- Fond : `bg-white/[0.08]` → `bg-white/[0.12] border-white/20`
-- Texte "Ma Frequence du jour" : `text-emerald-200/50` → `text-white/70`
-- Score : `text-white font-bold`
+### 1. Nouvel onglet "Zones" — `src/components/community/tabs/ZonesTab.tsx`
 
-### 2. ProgressionCard — Surface blanche elevee
-- Fond : `bg-white/10` → `bg-white/[0.14] backdrop-blur-lg`
-- Bordure : plus prononcee `border-white/25`
-- Titre "Votre role actuel" : `text-white/80`
-- Texte description : `text-white/60` (au lieu de emerald-200/60)
-- Barre de progression : fond `bg-white/25` au lieu de `bg-white/20`
-- Labels timeline : `text-white/70`
+- Carte d'introduction "frost" avec le pitch zones blanches et les multiplicateurs (x1, x2, x4)
+- Embed du composant `DetecteurZonesBlanches` existant (pas de duplication)
+- Adaptation des styles : le detecteur a un fond sombre qui s'integre naturellement dans l'emeraude de Mon Espace
 
-### 3. Quick Actions (Accueil) — Boutons bicolores
-- Bouton "Mes marches" : fond `bg-white/[0.08]` border `border-white/15`, texte `text-white/80`
-- Bouton "Quiz" : fond `bg-cyan-500/[0.08]` border `border-cyan-400/20`, texte `text-white/80`
-- Hover : eleve a `bg-white/15`
+### 2. Tab bar — `src/components/community/MonEspaceTabBar.tsx`
 
-### 4. MonEspaceTabBar (Desktop)
-- Tabs inactifs : `text-white/40` → `text-white/50`
-- Tab actif : conserver `text-emerald-300` mais indicateur blanc `bg-white/80` au lieu de `bg-emerald-400`
+- Ajouter `'zones'` au type `TabKey`
+- Ajouter l'entree dans `TAB_META` avec icone `Radar` (lucide)
+- Inserer `'zones'` en 2e position dans **tous** les roles de `TABS_BY_ROLE` (apres accueil)
 
-### 5. MonEspaceHeader — Touches de blanc
-- Prenom : rester `text-white` (ok)
-- Kigo accueil : `text-white/50` au lieu de `text-emerald-200/40`
-- Compteur frequences : fond `bg-white/10 border-white/20` avec texte `text-white`
+### 3. Orchestrateur — `src/pages/MarchesDuVivantMonEspace.tsx`
 
-### 6. Page principale fond
-- Fond de la zone de contenu (main) : ajouter un `bg-gradient-to-b from-white/[0.02] to-transparent` pour creer une zone de respiration sous les tabs
+- Importer `ZonesTab`
+- Ajouter le `case 'zones'` dans `renderTab()`
 
-## Fichiers modifies
+### 4. Widget d'accroche sur Accueil — `src/components/community/tabs/AccueilTab.tsx`
 
-| Fichier | Modifications |
-|---------|--------------|
-| `FrequenceWave.tsx` | Fond + textes vers blanc/frost |
-| `ProgressionCard.tsx` | Surface, textes, barre vers blanc eleve |
-| `AccueilTab.tsx` | Quick actions bicolores, textes blancs |
-| `MonEspaceTabBar.tsx` | Indicateur blanc, textes ajustes |
-| `MonEspaceHeader.tsx` | Touches de blanc sur kigo + compteur |
-| `MarchesDuVivantMonEspace.tsx` | Gradient subtil sur main |
+- Ajouter un 3e bouton d'action rapide "Zones blanches" avec icone `Radar`, couleur ambre/or (rappel du multiplicateur x4)
+- Click → `onNavigate('zones')`
+- Passer la grille de 2 colonnes a 3 colonnes pour les 3 boutons
 
-## Resultat
+## Details techniques
 
-L'identite naturelle emeraude du fond est preservee, mais les surfaces de contenu gagnent en luminosite et lisibilite grace a des fonds frost/blanc translucide. Le contraste apporte de l'elegance sans casser l'univers visuel.
+### ZonesTab — Structure
+
+```tsx
+const ZonesTab = () => (
+  <div className="space-y-4">
+    {/* Carte multiplicateurs */}
+    <div className="bg-white/[0.12] backdrop-blur-lg border border-white/20 rounded-xl p-5">
+      <h3>Multiplicateurs de Frequences</h3>
+      <div className="grid grid-cols-3 gap-2">
+        <Badge>Zone frequentee ×1</Badge>
+        <Badge>Peu frequentee ×2</Badge>
+        <Badge>Zone blanche ×4</Badge>
+      </div>
+      <p>Scannez votre territoire pour trouver les zones inexplorees</p>
+    </div>
+    
+    {/* Detecteur existant */}
+    <DetecteurZonesBlanches />
+  </div>
+);
+```
+
+### TABS_BY_ROLE mis a jour
+
+```typescript
+marcheur_en_devenir: ['accueil', 'zones', 'marches', 'quiz'],
+marcheur: ['accueil', 'zones', 'marches', 'quiz'],
+eclaireur: ['accueil', 'zones', 'marches', 'quiz', 'carnet', 'sons'],
+ambassadeur: ['accueil', 'zones', 'marches', 'quiz', 'carnet', 'sons', 'kigo'],
+sentinelle: ['accueil', 'zones', 'marches', 'quiz', 'carnet', 'sons', 'kigo', 'territoire'],
+```
+
+## Fichiers concernes
+
+| Fichier | Action |
+|---------|--------|
+| `src/components/community/tabs/ZonesTab.tsx` | **Nouveau** — Onglet zones blanches |
+| `src/components/community/MonEspaceTabBar.tsx` | Ajouter `zones` au type + meta + roles |
+| `src/pages/MarchesDuVivantMonEspace.tsx` | Importer et router ZonesTab |
+| `src/components/community/tabs/AccueilTab.tsx` | Ajouter bouton rapide "Zones blanches" |
 
