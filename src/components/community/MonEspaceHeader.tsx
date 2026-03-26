@@ -60,7 +60,7 @@ const MonEspaceHeader: React.FC<MonEspaceHeaderProps> = ({
                 <RoleBadge role={role} size="sm" darkMode />
               </div>
               <div className="flex items-center gap-3 mt-0.5">
-                <span className="text-emerald-200/40 text-xs truncate">
+                <span className="text-white/50 text-xs truncate">
                   {kigoAccueil === 'parle_aux_arbres' ? '🌳 Parle aux arbres' :
                    kigoAccueil === 'transition_beton' ? '🏙️ En transition' :
                    kigoAccueil === 'curieux_vivant' ? '🔍 Curieux du vivant' :
