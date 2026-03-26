@@ -26,8 +26,8 @@ const FrequenceWave: React.FC<FrequenceWaveProps> = ({ totalFrequences, role }) 
   });
 
   return (
-    <div className="relative rounded-2xl bg-white/5 border border-white/10 backdrop-blur-sm p-5 overflow-hidden">
-      <div className="absolute inset-0 bg-gradient-to-br from-white/[0.03] to-transparent" />
+    <div className="relative rounded-2xl bg-white/[0.12] border border-white/20 backdrop-blur-lg p-5 overflow-hidden">
+      <div className="absolute inset-0 bg-gradient-to-br from-white/[0.05] to-transparent" />
       <div className="relative flex items-end justify-center gap-[3px] h-16">
         {heights.map((h, i) => (
           <motion.div
