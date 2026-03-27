@@ -1,16 +1,20 @@
 
 
-# Supprimer la sous-ligne "kigo" du header
+# Supprimer le prénom du header
 
 ## Constat
 
-La ligne 54-59 affiche le kigo d'accueil sous le prénom (ex: "🌿 Marcheur"). Cette info prend de la place et crée de la confusion avec le badge de rôle "Marcheur en devenir" qui est déjà affiché via `RoleBadge`.
+Le prénom ("Gas...") est tronqué sur mobile et illisible. L'avatar avec les initiales (GB) identifie déjà l'utilisateur.
 
 ## Modification
 
 **Fichier** : `src/components/community/MonEspaceHeader.tsx`
 
-Supprimer le `<span>` des lignes 54-59 qui affiche le kigo d'accueil. Le badge `RoleBadge` (ligne 52) qui affiche "Marcheur en devenir" est conservé intact.
+- Supprimer le `<h1>` du prénom (ligne 51)
+- Le `RoleBadge` reste seul dans le bloc central
 
-Le bloc `<div className="flex-1 min-w-0">` ne contiendra plus que la ligne prénom + badge rôle.
+Layout résultant :
+```text
+[←] [GB] [Marcheur en devenir] [★ 0] [⚙️]
+```
 
