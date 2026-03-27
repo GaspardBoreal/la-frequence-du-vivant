@@ -65,7 +65,7 @@ const CITATIONS: Citation[] = [
     texte: "Les forêts précèdent les peuples, les déserts les suivent.",
     auteur: "Chateaubriand",
     oeuvre: "Mémoires d'outre-tombe, t. IV (1848)",
-    url: "https://gallica.bnf.fr/ark:/12148/bpt6k2078627",
+    url: "https://gallica.bnf.fr/essentiels/chateaubriand/memoires-outre-tombe",
   },
   {
     texte: "On protège ce qu'on aime. On aime ce qu'on connaît.",
