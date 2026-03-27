@@ -89,8 +89,8 @@ const QuizInteractif: React.FC<QuizInteractifProps> = ({ niveau, userId, onCompl
     setLoading(false);
   };
 
-  const unansweredQuestions = questions.filter(q => !alreadyAnswered.has(q.id));
-  const currentQuestion = unansweredQuestions[currentIndex];
+  const activeQuestions = isRevisionMode ? questions : questions.filter(q => !alreadyAnswered.has(q.id));
+  const currentQuestion = activeQuestions[currentIndex];
 
   const handleAnswer = async (optionIndex: number) => {
     if (showResult || !currentQuestion) return;
