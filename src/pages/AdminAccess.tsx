@@ -158,13 +158,13 @@ const AdminAccess: React.FC = () => {
               </Link>
               <div className="flex gap-2">
                 <Link to="/admin/crm/pipeline" className="flex-1">
-                  <Button variant="outline" className="w-full">
+                  <Button variant="outline" className="w-full text-sm">
                     <Kanban className="h-4 w-4 mr-2" />
                     Pipeline
                   </Button>
                 </Link>
                 <Link to="/admin/crm/equipe" className="flex-1">
-                  <Button variant="outline" className="w-full">
+                  <Button variant="outline" className="w-full text-sm">
                     <Users className="h-4 w-4 mr-2" />
                     Équipe
                   </Button>
