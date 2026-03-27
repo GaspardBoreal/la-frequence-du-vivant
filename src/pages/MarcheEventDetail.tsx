@@ -122,12 +122,6 @@ const MarcheEventDetail: React.FC = () => {
       });
       if (error) throw error;
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['marche-events'] });
-      toast.success('Événement créé avec succès');
-      navigate('/admin/marche-events');
-    },
-    onError: () => toast.error('Erreur lors de la création'),
   });
 
   const updateEvent = useMutation({
@@ -144,23 +138,12 @@ const MarcheEventDetail: React.FC = () => {
       }).eq('id', id!);
       if (error) throw error;
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['marche-events'] });
-      queryClient.invalidateQueries({ queryKey: ['marche-event', id] });
-      toast.success('Événement mis à jour');
-    },
-    onError: () => toast.error('Erreur lors de la mise à jour'),
   });
 
   const deleteEvent = useMutation({
     mutationFn: async () => {
       const { error } = await supabase.from('marche_events').delete().eq('id', id!);
       if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['marche-events'] });
-      toast.success('Événement supprimé');
-      navigate('/admin/marche-events');
     },
   });
 
@@ -174,14 +157,6 @@ const MarcheEventDetail: React.FC = () => {
       });
       if (error) throw error;
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['marche-participations', id] });
-      queryClient.invalidateQueries({ queryKey: ['marche-participation-counts'] });
-      setShowAddParticipant(false);
-      setParticipantSearch('');
-      toast.success('Participant ajouté avec succès');
-    },
-    onError: () => toast.error("Erreur lors de l'ajout du participant"),
   });
 
   const printQR = (qrCode: string, title: string) => {
