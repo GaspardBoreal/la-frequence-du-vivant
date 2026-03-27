@@ -167,7 +167,7 @@ const CITATIONS: Citation[] = [
     texte: "Nous n'héritons pas de la terre de nos ancêtres, nous l'empruntons à nos enfants.",
     auteur: "Antoine de Saint-Exupéry",
     oeuvre: "Terre des hommes (1939)",
-    url: "https://gallica.bnf.fr/ark:/12148/bpt6k4802771w",
+    url: "https://www.worldcat.org/title/1738850",
   },
 ];
 
