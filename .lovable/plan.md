@@ -1,78 +1,72 @@
 
 
-# Refonte inspirante de l'onglet "Marches"
+# Compagnon IA pédagogique dans l'onglet Quiz
 
-## Constat
+## Problème
 
-L'onglet Marches est une liste plate et utilitaire : des cartes identiques avec titre + date + lieu + bouton "S'inscrire". Aucune narration, aucun contexte sur ce que le marcheur va découvrir, rien qui donne envie. Le bloc QR "Valider une participation" occupe la première place alors qu'il ne concerne que le jour J.
+Quand le marcheur a terminé le quiz, il voit un écran mort : "Quiz complété ! De nouvelles questions arrivent bientôt !" — aucune suite, aucune interaction, aucun moyen de progresser. L'écran gaspille l'élan d'apprentissage.
 
-## Vision
+## Solution
 
-Transformer cet onglet en un **carnet d'aventures à venir** qui raconte une histoire, éduque et motive.
+Remplacer l'écran "Quiz complété" par un **espace d'apprentissage vivant** avec un compagnon IA intégré, en réutilisant l'infrastructure existante (Lovable AI Gateway via une edge function dédiée).
 
-## Propositions
-
-### 1. Cartes enrichies avec teaser thématique
-
-Chaque `marche_event` a un champ `description` et un `exploration_id` (lien vers une exploration). Actuellement ces données ne sont pas affichées. On les exploite :
-
-- **Description** : afficher 2 lignes du descriptif sous le titre (line-clamp-2) pour donner envie
-- **Exploration associée** : récupérer le nom de l'exploration liée et l'afficher comme tag thématique (ex: "🌍 Dordogne — Paysages sonores")
-- **Piliers** : ajouter des micro-icones colorées indiquant les piliers abordés (🎵 Bioacoustique, 🌿 Biodiversité, ✍️ Géopoétique) — hardcodées par mots-clés dans le titre/description
-
-### 2. Section "Ce que vous allez découvrir" par marche
-
-Pour les marches non encore inscrites, ajouter sous la description 2-3 micro-tags éducatifs tirés de mots-clés du titre/description :
-- "Écoute des sols", "Mesure du vivant", "Poésie du territoire"...
-Cela transforme le CTA d'inscription en promesse d'apprentissage.
-
-### 3. Réorganiser la hiérarchie visuelle
+### Layout proposé
 
 ```text
-┌─────────────────────────────────────┐
-│ ✨ Votre prochaine aventure         │
-│                                     │
-│ ┌─────────────────────────────────┐ │
-│ │ Le Réveil de la Terre    3 sem. │ │
-│ │ Marcher sur un sol qui respire  │ │
-│ │ 11 avr · DEVIAT · 🌍 Charente  │ │
-│ │ 🌿 Biodiversité  🎵 Écoute     │ │
-│ │         ✅ Inscrit               │ │
-│ └─────────────────────────────────┘ │
-│                                     │
-│ ┌─────────────────────────────────┐ │
-│ │ La Transhumance       Demain    │ │
-│ │ Suivre les pas des bergers...   │ │
-│ │ 28 mars · Vouillé → Mouton V.  │ │
-│ │ 🌿 Biodiversité  ✍️ Récit      │ │
-│ │      [ S'inscrire → ]           │ │
-│ └─────────────────────────────────┘ │
-│                                     │
-│ 📱 Jour J ? Scanner le QR code →   │
-│                                     │
-│ 📜 Historique (1 participation)     │
-│ └ Le Réveil... · 11 avr · Validée  │
-└─────────────────────────────────────┘
+┌──────────────────────────────────────┐
+│ 🏆 Bravo ! Quiz maîtrisé            │
+│                                      │
+│ ┌──────────────────────────────────┐ │
+│ │ 🔄 Réviser ce quiz              │ │
+│ │ Refaire les questions en mode   │ │
+│ │ entraînement (sans Fréquences)  │ │
+│ └──────────────────────────────────┘ │
+│                                      │
+│ ┌──────────────────────────────────┐ │
+│ │ 🌿 Votre compagnon d'éveil      │ │
+│ │                                  │ │
+│ │ Que souhaitez-vous explorer ?    │ │
+│ │                                  │ │
+│ │ [Identifier les chants oiseaux]  │ │
+│ │ [Comprendre un écosystème]       │ │
+│ │ [Écrire de la géopoétique]      │ │
+│ │                                  │ │
+│ │ ┌────────────────────────────┐   │ │
+│ │ │ 💬 Posez votre question... │   │ │
+│ │ └────────────────────────────┘   │ │
+│ │                                  │ │
+│ │ (conversation IA ici)            │ │
+│ └──────────────────────────────────┘ │
+└──────────────────────────────────────┘
 ```
 
-**Changements clés** :
-- Le QR "Valider" descend en bas (action jour J, pas quotidienne) — rendu plus compact sur une ligne
-- Le titre de section passe de "Prochaines marches" à "Votre prochaine aventure" (personnel, engageant)
-- Les cartes inscrites restent en haut mais avec une bordure dorée subtile
+## Fonctionnalités
 
-### 4. Message motivant contextuel si toutes les marches sont inscrites
-
-Si le marcheur est inscrit à toutes les marches à venir, afficher un message de type :
-> "Vous êtes prêt pour l'aventure ! Chaque marche est une exploration unique du vivant."
+1. **Mode révision** : Bouton pour refaire le quiz sans regagner de Fréquences — reset l'état `alreadyAnswered` localement
+2. **Suggestions thématiques** : 3 boutons rapides alignés sur les piliers (biodiversité, bioacoustique, géopoétique) qui pré-remplissent le chat
+3. **Mini-chat IA** : Conversation avec un compagnon pédagogique spécialisé dans les 3 piliers, qui peut recommander des marches à venir et des axes d'apprentissage
 
 ## Modifications techniques
 
-**Fichiers modifiés** :
-
 | Fichier | Changement |
 |---------|-----------|
-| `src/pages/MarchesDuVivantMonEspace.tsx` | Enrichir la query pour inclure `exploration_id, explorations(name)` en plus des champs actuels |
-| `src/components/community/tabs/MarchesTab.tsx` | Refonte complète : description visible, tags piliers, QR déplacé en bas, titre de section personnalisé, message motivant |
+| `supabase/functions/quiz-companion-chat/index.ts` | **Nouveau** — Edge function avec system prompt pédagogique spécialisé biodiversité/bioacoustique/géopoétique, streaming SSE via Lovable AI Gateway |
+| `src/hooks/useQuizCompanion.ts` | **Nouveau** — Hook de chat streaming (pattern identique à `useGuideDeMarche.ts`) |
+| `src/components/community/QuizCompanion.tsx` | **Nouveau** — Widget chat compact avec suggestions rapides et historique de conversation |
+| `src/components/community/QuizInteractif.tsx` | Remplacer l'écran "Quiz complété" (lignes 155-164) par le bouton révision + le composant `QuizCompanion` |
+| `src/components/community/tabs/QuizTab.tsx` | Aucun changement nécessaire |
+| `supabase/config.toml` | Ajouter la config de la nouvelle edge function |
 
-**Données** : tout vient de champs existants (`description`, `exploration_id` → `explorations.name`). Pas de nouvelle table ni migration.
+### System prompt du compagnon
+
+Le prompt inclura :
+- Expertise sur les 3 piliers (biodiversité, bioacoustique, géopoétique)
+- Connaissance des marches du Vivant et de leur format pédagogique (les 4 temps)
+- Capacité à recommander des axes d'apprentissage personnalisés
+- Ton inspirant et poétique, cohérent avec l'esprit du projet
+- Réponses courtes et engageantes (max 150 mots)
+
+### Mode révision
+
+Simple reset de l'état local `alreadyAnswered` avec un flag `isRevisionMode` qui empêche l'enregistrement de nouvelles `quiz_responses` et l'attribution de Fréquences.
 
