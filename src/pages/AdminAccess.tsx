@@ -33,7 +33,7 @@ const AdminAccess: React.FC = () => {
               <Map className="h-8 w-8 text-accent mr-3" />
               <h2 className="text-xl font-semibold text-foreground">Gestion des Marches</h2>
             </div>
-            <p className="mb-4 text-muted-foreground font-light text-base">
+            <p className="mb-4 text-muted-foreground font-light text-base min-h-[4rem]">
               Créer, modifier et supprimer les marches techno-sensibles. 
               Gérer les médias, photos et fichiers audio.
             </p>
@@ -50,7 +50,7 @@ const AdminAccess: React.FC = () => {
               <Sparkles className="h-8 w-8 text-accent mr-3" />
               <h2 className="text-xl font-semibold text-foreground">Gestion des Explorations</h2>
             </div>
-            <p className="text-muted-foreground mb-4">
+            <p className="text-muted-foreground mb-4 min-h-[4rem]">
               Créer, modifier et publier les explorations poétiques.
               Gérer les contenus multimédias et narratifs.
             </p>
@@ -67,7 +67,7 @@ const AdminAccess: React.FC = () => {
               <FileDown className="h-8 w-8 text-accent mr-3" />
               <h2 className="text-xl font-semibold text-foreground">Exportations & Rapports</h2>
             </div>
-            <p className="text-muted-foreground mb-4">
+            <p className="text-muted-foreground mb-4 min-h-[4rem]">
               Exporter les textes littéraires au format Word, JSON ou CSV.
               Générer des rapports de contenus.
             </p>
@@ -84,7 +84,7 @@ const AdminAccess: React.FC = () => {
               <Zap className="h-8 w-8 text-accent mr-3" />
               <h2 className="text-xl font-semibold text-foreground">Automations & Intégrations</h2>
             </div>
-            <p className="text-muted-foreground mb-4">
+            <p className="text-muted-foreground mb-4 min-h-[4rem]">
               Gérer les connexions externes : Google Calendar, n8n workflows.
               Tester et monitorer les synchronisations.
             </p>
@@ -101,7 +101,7 @@ const AdminAccess: React.FC = () => {
               <Users className="h-8 w-8 text-accent mr-3" />
               <h2 className="text-xl font-semibold text-foreground">Gestion des Marcheurs</h2>
             </div>
-            <p className="text-muted-foreground mb-4">
+            <p className="text-muted-foreground mb-4 min-h-[4rem]">
               Gérer les équipages des explorations. Ajouter des marcheurs 
               et associer leurs observations aux espèces.
             </p>
@@ -119,18 +119,18 @@ const AdminAccess: React.FC = () => {
               <Users className="h-8 w-8 text-emerald-500 mr-3" />
               <h2 className="text-xl font-semibold text-foreground">Événements & Communauté</h2>
             </div>
-            <p className="text-muted-foreground mb-4">
+            <p className="text-muted-foreground mb-4 min-h-[4rem]">
               Créer des événements de marche, gérer les QR codes de présence
               et suivre la progression des marcheurs.
             </p>
-            <div className="flex gap-2">
-              <Link to="/admin/marche-events" className="flex-1">
+            <div className="flex flex-col gap-2">
+              <Link to="/admin/marche-events">
                 <Button variant="outline" className="w-full">
                   <Map className="h-4 w-4 mr-2" />
                   Événements
                 </Button>
               </Link>
-              <Link to="/admin/community" className="flex-1">
+              <Link to="/admin/community">
                 <Button variant="outline" className="w-full">
                   <Users className="h-4 w-4 mr-2" />
                   Communauté
@@ -145,7 +145,7 @@ const AdminAccess: React.FC = () => {
               <Briefcase className="h-8 w-8 text-primary mr-3" />
               <h2 className="text-xl font-semibold text-foreground">CRM & Commercial</h2>
             </div>
-            <p className="text-muted-foreground mb-4">
+            <p className="text-muted-foreground mb-4 min-h-[4rem]">
               Gérer le pipeline commercial, les opportunités B2B 
               et les communications avec les prospects.
             </p>
@@ -158,13 +158,13 @@ const AdminAccess: React.FC = () => {
               </Link>
               <div className="flex gap-2">
                 <Link to="/admin/crm/pipeline" className="flex-1">
-                  <Button variant="outline" className="w-full">
+                  <Button variant="outline" className="w-full text-sm">
                     <Kanban className="h-4 w-4 mr-2" />
                     Pipeline
                   </Button>
                 </Link>
                 <Link to="/admin/crm/equipe" className="flex-1">
-                  <Button variant="outline" className="w-full">
+                  <Button variant="outline" className="w-full text-sm">
                     <Users className="h-4 w-4 mr-2" />
                     Équipe
                   </Button>
@@ -179,7 +179,7 @@ const AdminAccess: React.FC = () => {
               <Building2 className="h-8 w-8 text-accent mr-3" />
               <h2 className="text-xl font-semibold text-foreground">Organisateurs</h2>
             </div>
-            <p className="text-muted-foreground mb-4">
+            <p className="text-muted-foreground mb-4 min-h-[4rem]">
               Gérer les organisateurs des marches : associations, collectifs, individus.
             </p>
             <Link to="/admin/organisateurs">
