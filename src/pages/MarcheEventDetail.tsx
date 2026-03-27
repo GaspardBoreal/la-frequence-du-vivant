@@ -327,7 +327,7 @@ const MarcheEventDetail: React.FC = () => {
                         key={profile.user_id}
                         onClick={() => addParticipant.mutate(profile.user_id)}
                         disabled={addParticipant.isPending}
-                        className="w-full text-left px-3 py-2 rounded-md text-sm hover:bg-accent transition-colors flex items-center justify-between"
+                        className="w-full text-left px-3 py-2 rounded-md text-sm hover:bg-accent hover:text-accent-foreground transition-colors flex items-center justify-between"
                       >
                         <span>{profile.prenom} {profile.nom}</span>
                         <Plus className="h-3.5 w-3.5 text-muted-foreground" />
