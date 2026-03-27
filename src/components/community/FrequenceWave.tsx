@@ -101,7 +101,7 @@ const CITATIONS: Citation[] = [
     texte: "Le monde se révèle à ceux qui marchent.",
     auteur: "Jean-Jacques Rousseau",
     oeuvre: "Les Confessions, Livre IV (1782)",
-    url: "https://gallica.bnf.fr/ark:/12148/bpt6k5818556v",
+    url: "https://gallica.bnf.fr/essentiels/rousseau/confessions",
   },
   {
     texte: "La géopoétique est l'art d'habiter la Terre en poète.",
