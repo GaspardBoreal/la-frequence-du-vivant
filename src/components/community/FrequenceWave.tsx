@@ -35,7 +35,7 @@ const CITATIONS: Citation[] = [
     texte: "Le vrai voyage de découverte ne consiste pas à chercher de nouveaux paysages, mais à avoir de nouveaux yeux.",
     auteur: "Marcel Proust",
     oeuvre: "La Prisonnière (1923)",
-    url: "https://gallica.bnf.fr/ark:/12148/bpt6k6570926h",
+    url: "https://gallica.bnf.fr/ark:/12148/bpt6k1049554b",
   },
   {
     texte: "La nature ne se presse jamais, et pourtant tout est accompli.",
@@ -65,7 +65,7 @@ const CITATIONS: Citation[] = [
     texte: "Les forêts précèdent les peuples, les déserts les suivent.",
     auteur: "Chateaubriand",
     oeuvre: "Mémoires d'outre-tombe, t. IV (1848)",
-    url: "https://gallica.bnf.fr/ark:/12148/bpt6k2078627",
+    url: "https://gallica.bnf.fr/essentiels/chateaubriand/memoires-outre-tombe",
   },
   {
     texte: "On protège ce qu'on aime. On aime ce qu'on connaît.",
@@ -101,7 +101,7 @@ const CITATIONS: Citation[] = [
     texte: "Le monde se révèle à ceux qui marchent.",
     auteur: "Jean-Jacques Rousseau",
     oeuvre: "Les Confessions, Livre IV (1782)",
-    url: "https://gallica.bnf.fr/ark:/12148/bpt6k5818556v",
+    url: "https://gallica.bnf.fr/essentiels/rousseau/confessions",
   },
   {
     texte: "La géopoétique est l'art d'habiter la Terre en poète.",
@@ -167,7 +167,7 @@ const CITATIONS: Citation[] = [
     texte: "Nous n'héritons pas de la terre de nos ancêtres, nous l'empruntons à nos enfants.",
     auteur: "Antoine de Saint-Exupéry",
     oeuvre: "Terre des hommes (1939)",
-    url: "https://gallica.bnf.fr/ark:/12148/bpt6k4802771w",
+    url: "https://www.worldcat.org/title/1738850",
   },
 ];
 
