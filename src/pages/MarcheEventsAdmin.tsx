@@ -40,7 +40,7 @@ const MarcheEventsAdmin: React.FC = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('marche_events')
-        .select('*')
+        .select('*, explorations(name)')
         .order('date_marche', { ascending: false });
       if (error) throw error;
       return data;
