@@ -1,86 +1,29 @@
 
 
-# Integration du Detecteur de Zones Blanches dans Mon Espace
+# Fix du debordement des boutons et mise en coherence de la page Admin
 
 ## Probleme
 
-Le detecteur de zones blanches — fonctionnalite cle du projet — n'est accessible que depuis `/marches-du-vivant/explorer`. Les marcheurs connectes doivent quitter leur espace pour y acceder. Or c'est un outil quotidien de tous les niveaux.
+Dans la carte "Evenements & Communaute", les deux boutons cote a cote debordent du widget car le texte + icone ne tient pas dans l'espace `flex-1`. Le meme risque existe sur la carte CRM avec ses boutons Pipeline/Equipe.
 
-## Solution
+## Corrections
 
-Ajouter un nouvel onglet **"Zones"** dans la tab bar de Mon Espace, disponible pour **tous les roles** (y compris `marcheur_en_devenir`). Cet onglet embarque le composant `DetecteurZonesBlanches` existant dans un ecrin adapte a l'univers Mon Espace, avec un widget d'accroche sur l'onglet Accueil.
+### 1. Carte "Evenements & Communaute" (lignes 126-139)
 
-```text
-AVANT (tabs marcheur)              APRES
-Accueil · Marches · Quiz           Accueil · Zones · Marches · Quiz
-                                          ↑ NEW
-```
+Passer les deux boutons en **layout vertical** (`flex-col`) comme la carte CRM, avec des boutons `w-full` empiles. Cela elimine le debordement et aligne le style avec les autres cartes multi-boutons.
 
-## Changements
+### 2. Carte CRM (lignes 152-173)
 
-### 1. Nouvel onglet "Zones" — `src/components/community/tabs/ZonesTab.tsx`
+Deja en `flex-col` pour le bouton principal, mais les sous-boutons Pipeline/Equipe sont en `flex gap-2` horizontal. Garder tel quel car les labels sont courts, mais ajouter `text-sm` pour securiser.
 
-- Carte d'introduction "frost" avec le pitch zones blanches et les multiplicateurs (x1, x2, x4)
-- Embed du composant `DetecteurZonesBlanches` existant (pas de duplication)
-- Adaptation des styles : le detecteur a un fond sombre qui s'integre naturellement dans l'emeraude de Mon Espace
+### 3. Coherence globale des cartes
 
-### 2. Tab bar — `src/components/community/MonEspaceTabBar.tsx`
+- Uniformiser la hauteur des descriptions avec `min-h-[4rem]` sur tous les `<p>` pour que les boutons s'alignent verticalement dans la grille.
+- Retirer le `border-2 border-emerald-500/20 bg-emerald-500/5` de la carte Evenements pour qu'elle ait le meme style que les autres (ou le garder mais avec la meme base que CRM — je propose de le conserver pour distinguer les sections cles).
 
-- Ajouter `'zones'` au type `TabKey`
-- Ajouter l'entree dans `TAB_META` avec icone `Radar` (lucide)
-- Inserer `'zones'` en 2e position dans **tous** les roles de `TABS_BY_ROLE` (apres accueil)
+### Fichier modifie
 
-### 3. Orchestrateur — `src/pages/MarchesDuVivantMonEspace.tsx`
-
-- Importer `ZonesTab`
-- Ajouter le `case 'zones'` dans `renderTab()`
-
-### 4. Widget d'accroche sur Accueil — `src/components/community/tabs/AccueilTab.tsx`
-
-- Ajouter un 3e bouton d'action rapide "Zones blanches" avec icone `Radar`, couleur ambre/or (rappel du multiplicateur x4)
-- Click → `onNavigate('zones')`
-- Passer la grille de 2 colonnes a 3 colonnes pour les 3 boutons
-
-## Details techniques
-
-### ZonesTab — Structure
-
-```tsx
-const ZonesTab = () => (
-  <div className="space-y-4">
-    {/* Carte multiplicateurs */}
-    <div className="bg-white/[0.12] backdrop-blur-lg border border-white/20 rounded-xl p-5">
-      <h3>Multiplicateurs de Frequences</h3>
-      <div className="grid grid-cols-3 gap-2">
-        <Badge>Zone frequentee ×1</Badge>
-        <Badge>Peu frequentee ×2</Badge>
-        <Badge>Zone blanche ×4</Badge>
-      </div>
-      <p>Scannez votre territoire pour trouver les zones inexplorees</p>
-    </div>
-    
-    {/* Detecteur existant */}
-    <DetecteurZonesBlanches />
-  </div>
-);
-```
-
-### TABS_BY_ROLE mis a jour
-
-```typescript
-marcheur_en_devenir: ['accueil', 'zones', 'marches', 'quiz'],
-marcheur: ['accueil', 'zones', 'marches', 'quiz'],
-eclaireur: ['accueil', 'zones', 'marches', 'quiz', 'carnet', 'sons'],
-ambassadeur: ['accueil', 'zones', 'marches', 'quiz', 'carnet', 'sons', 'kigo'],
-sentinelle: ['accueil', 'zones', 'marches', 'quiz', 'carnet', 'sons', 'kigo', 'territoire'],
-```
-
-## Fichiers concernes
-
-| Fichier | Action |
-|---------|--------|
-| `src/components/community/tabs/ZonesTab.tsx` | **Nouveau** — Onglet zones blanches |
-| `src/components/community/MonEspaceTabBar.tsx` | Ajouter `zones` au type + meta + roles |
-| `src/pages/MarchesDuVivantMonEspace.tsx` | Importer et router ZonesTab |
-| `src/components/community/tabs/AccueilTab.tsx` | Ajouter bouton rapide "Zones blanches" |
+| Fichier | Changement |
+|---------|-----------|
+| `src/pages/AdminAccess.tsx` | Boutons Evenements en vertical, `min-h` sur descriptions, `text-sm` sur boutons compacts |
 
