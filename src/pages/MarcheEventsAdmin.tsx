@@ -142,6 +142,18 @@ const MarcheEventsAdmin: React.FC = () => {
               <div><Label>Latitude</Label><Input value={form.latitude} onChange={e => setForm(f => ({ ...f, latitude: e.target.value }))} /></div>
               <div><Label>Longitude</Label><Input value={form.longitude} onChange={e => setForm(f => ({ ...f, longitude: e.target.value }))} /></div>
               <div className="md:col-span-2"><Label>Description</Label><Input value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} /></div>
+              <div>
+                <Label>Exploration associée</Label>
+                <Select value={form.exploration_id} onValueChange={v => setForm(f => ({ ...f, exploration_id: v === 'none' ? '' : v }))}>
+                  <SelectTrigger><SelectValue placeholder="Aucune exploration" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">Aucune</SelectItem>
+                    {explorations?.map(e => (
+                      <SelectItem key={e.id} value={e.id}>{e.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
             <Button onClick={() => createEvent.mutate()} disabled={!form.title || !form.date_marche} className="mt-4">
               Créer l'événement
