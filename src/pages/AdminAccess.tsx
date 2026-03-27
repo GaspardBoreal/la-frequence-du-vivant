@@ -101,7 +101,7 @@ const AdminAccess: React.FC = () => {
               <Users className="h-8 w-8 text-accent mr-3" />
               <h2 className="text-xl font-semibold text-foreground">Gestion des Marcheurs</h2>
             </div>
-            <p className="text-muted-foreground mb-4">
+            <p className="text-muted-foreground mb-4 min-h-[4rem]">
               Gérer les équipages des explorations. Ajouter des marcheurs 
               et associer leurs observations aux espèces.
             </p>
