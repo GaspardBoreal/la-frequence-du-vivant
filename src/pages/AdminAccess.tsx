@@ -50,7 +50,7 @@ const AdminAccess: React.FC = () => {
               <Sparkles className="h-8 w-8 text-accent mr-3" />
               <h2 className="text-xl font-semibold text-foreground">Gestion des Explorations</h2>
             </div>
-            <p className="text-muted-foreground mb-4">
+            <p className="text-muted-foreground mb-4 min-h-[4rem]">
               Créer, modifier et publier les explorations poétiques.
               Gérer les contenus multimédias et narratifs.
             </p>
