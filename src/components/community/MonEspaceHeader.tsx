@@ -34,49 +34,42 @@ const MonEspaceHeader: React.FC<MonEspaceHeaderProps> = ({
   return (
     <>
       <div className={`sticky top-0 z-40 bg-emerald-950/80 backdrop-blur-xl border-b border-white/10 ${ROLE_GLOW[role]}`}>
-        <div className="max-w-2xl mx-auto px-4 py-3">
-          {/* Top row: back + settings */}
-          <div className="flex items-center justify-between mb-2">
-            <Link to="/marches-du-vivant" className="text-emerald-200/50 hover:text-emerald-100 transition-colors">
+        <div className="max-w-2xl mx-auto px-4 py-2">
+          <div className="flex items-center gap-2">
+            <Link to="/marches-du-vivant" className="text-emerald-200/50 hover:text-emerald-100 transition-colors flex-shrink-0">
               <ArrowLeft className="w-4 h-4" />
             </Link>
-            <button onClick={() => setSettingsOpen(true)} className="text-emerald-200/50 hover:text-emerald-100 transition-colors p-1">
-              <Settings className="w-4 h-4" />
-            </button>
-          </div>
-
-          {/* Profile row */}
-          <div className="flex items-center gap-3">
             <motion.div
               initial={{ scale: 0.8, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
-              className="w-11 h-11 rounded-full bg-gradient-to-br from-emerald-500/40 to-teal-600/40 border border-emerald-400/30 flex items-center justify-center text-emerald-100 font-bold text-sm flex-shrink-0"
+              className="w-9 h-9 rounded-full bg-gradient-to-br from-emerald-500/40 to-teal-600/40 border border-emerald-400/30 flex items-center justify-center text-emerald-100 font-bold text-xs flex-shrink-0"
             >
               {initials}
             </motion.div>
             <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2 flex-wrap">
-                <h1 className="text-white font-semibold text-base truncate">{prenom}</h1>
+              <div className="flex items-center gap-1.5">
+                <h1 className="text-white font-semibold text-sm truncate">{prenom}</h1>
                 <RoleBadge role={role} size="sm" darkMode />
               </div>
-              <div className="flex items-center gap-3 mt-0.5">
-                <span className="text-white/50 text-xs truncate">
-                  {kigoAccueil === 'parle_aux_arbres' ? '🌳 Parle aux arbres' :
-                   kigoAccueil === 'transition_beton' ? '🏙️ En transition' :
-                   kigoAccueil === 'curieux_vivant' ? '🔍 Curieux du vivant' :
-                   kigoAccueil === 'expert_canape' ? '🛋️ Expert canapé' : '🌿 Marcheur'}
-                </span>
-              </div>
+              <span className="text-white/50 text-[10px] truncate block">
+                {kigoAccueil === 'parle_aux_arbres' ? '🌳 Parle aux arbres' :
+                 kigoAccueil === 'transition_beton' ? '🏙️ En transition' :
+                 kigoAccueil === 'curieux_vivant' ? '🔍 Curieux du vivant' :
+                 kigoAccueil === 'expert_canape' ? '🛋️ Expert canapé' : '🌿 Marcheur'}
+              </span>
             </div>
             <motion.div
               key={totalFrequences}
               initial={{ scale: 1.2 }}
               animate={{ scale: 1 }}
-              className="flex items-center gap-1 bg-white/10 border border-white/20 rounded-full px-3 py-1.5 flex-shrink-0"
+              className="flex items-center gap-1 bg-white/10 border border-white/20 rounded-full px-2 py-1 flex-shrink-0"
             >
-              <span className="text-amber-400 text-xs">★</span>
-              <span className="text-white text-sm font-bold">{totalFrequences}</span>
+              <span className="text-amber-400 text-[10px]">★</span>
+              <span className="text-white text-xs font-bold">{totalFrequences}</span>
             </motion.div>
+            <button onClick={() => setSettingsOpen(true)} className="text-emerald-200/50 hover:text-emerald-100 transition-colors p-1 flex-shrink-0">
+              <Settings className="w-4 h-4" />
+            </button>
           </div>
         </div>
       </div>
