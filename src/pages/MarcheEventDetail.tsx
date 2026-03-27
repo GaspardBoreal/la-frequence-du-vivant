@@ -69,19 +69,37 @@ const MarcheEventDetail: React.FC = () => {
     },
   });
 
-  // Participations
+  // Participations (raw)
   const { data: participations } = useQuery({
     queryKey: ['marche-participations', id],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('marche_participations')
-        .select('*, community_profiles:user_id(prenom, nom, role)')
+        .select('*')
         .eq('marche_event_id', id!);
       if (error) throw error;
       return data;
     },
     enabled: !isNew && !!id,
   });
+
+  // Participant profiles (separate query)
+  const participantUserIds = useMemo(() => participations?.map(p => p.user_id) ?? [], [participations]);
+  const { data: participantProfiles } = useQuery({
+    queryKey: ['participant-profiles', participantUserIds],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('community_profiles')
+        .select('user_id, prenom, nom, role')
+        .in('user_id', participantUserIds);
+      if (error) throw error;
+      return data;
+    },
+    enabled: participantUserIds.length > 0,
+  });
+
+  const getParticipantProfile = (userId: string) =>
+    participantProfiles?.find(p => p.user_id === userId);
 
   // All profiles for retroactive add
   const { data: allProfiles } = useQuery({
