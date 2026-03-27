@@ -84,7 +84,7 @@ const AdminAccess: React.FC = () => {
               <Zap className="h-8 w-8 text-accent mr-3" />
               <h2 className="text-xl font-semibold text-foreground">Automations & Intégrations</h2>
             </div>
-            <p className="text-muted-foreground mb-4">
+            <p className="text-muted-foreground mb-4 min-h-[4rem]">
               Gérer les connexions externes : Google Calendar, n8n workflows.
               Tester et monitorer les synchronisations.
             </p>
