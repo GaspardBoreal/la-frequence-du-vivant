@@ -80,6 +80,54 @@ const MarcheEventsAdmin: React.FC = () => {
     enabled: !!selectedEventId,
   });
 
+  const { data: allProfiles } = useQuery({
+    queryKey: ['community-profiles-all'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('community_profiles')
+        .select('user_id, prenom, nom')
+        .order('nom');
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  const [showAddParticipant, setShowAddParticipant] = useState(false);
+  const [participantSearch, setParticipantSearch] = useState('');
+
+  const availableProfiles = useMemo(() => {
+    if (!allProfiles) return [];
+    const existingUserIds = new Set(participations?.map((p: any) => p.user_id) || []);
+    let filtered = allProfiles.filter(p => !existingUserIds.has(p.user_id));
+    if (participantSearch.trim()) {
+      const term = participantSearch.toLowerCase();
+      filtered = filtered.filter(p =>
+        `${p.prenom} ${p.nom}`.toLowerCase().includes(term)
+      );
+    }
+    return filtered;
+  }, [allProfiles, participations, participantSearch]);
+
+  const addParticipant = useMutation({
+    mutationFn: async (userId: string) => {
+      const { error } = await supabase.from('marche_participations').insert({
+        user_id: userId,
+        marche_event_id: selectedEventId!,
+        validated_at: new Date().toISOString(),
+        validation_method: 'admin_retroactif',
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['marche-participations', selectedEventId] });
+      queryClient.invalidateQueries({ queryKey: ['marche-participation-counts'] });
+      setShowAddParticipant(false);
+      setParticipantSearch('');
+      toast.success('Participant ajouté avec succès');
+    },
+    onError: () => toast.error("Erreur lors de l'ajout du participant"),
+  });
+
   const filteredAndSortedEvents = useMemo(() => {
     if (!events) return [];
     let filtered = events;
