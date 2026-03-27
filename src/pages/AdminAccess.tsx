@@ -67,7 +67,7 @@ const AdminAccess: React.FC = () => {
               <FileDown className="h-8 w-8 text-accent mr-3" />
               <h2 className="text-xl font-semibold text-foreground">Exportations & Rapports</h2>
             </div>
-            <p className="text-muted-foreground mb-4">
+            <p className="text-muted-foreground mb-4 min-h-[4rem]">
               Exporter les textes littéraires au format Word, JSON ou CSV.
               Générer des rapports de contenus.
             </p>
