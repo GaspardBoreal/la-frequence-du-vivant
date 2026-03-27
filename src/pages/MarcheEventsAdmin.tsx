@@ -174,6 +174,11 @@ const MarcheEventsAdmin: React.FC = () => {
                       <span className="text-xs px-2 py-1 rounded-full bg-emerald-500/10 text-emerald-400">
                         {event.qr_code?.slice(0, 8)}...
                       </span>
+                      {(event as any).explorations?.name && (
+                        <span className="text-xs px-2 py-1 rounded-full bg-primary/10 text-primary flex items-center gap-1">
+                          <Compass className="h-3 w-3" />{(event as any).explorations.name}
+                        </span>
+                      )}
                     </div>
                     <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
                       <span className="flex items-center gap-1">
