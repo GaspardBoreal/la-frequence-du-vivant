@@ -1,21 +1,35 @@
 
 
-# Fix : URLs cassées dans les citations
+# Optimiser le widget "Ma Fréquence du jour" : layout compact
 
-## Problème
+## Constat
 
-Les 4 URLs Gallica sont toutes des ARK malformés (erreur 400). Les identifiants ont été inventés par l'IA.
+Sur mobile (390px), le widget empile verticalement : citation (3-4 lignes) + onde (h-20) + footer = environ 220px. Trop haut, il pousse la carte de progression et les actions rapides sous le fold.
 
-## Corrections
+## Solution : layout horizontal citation + onde
+
+Fusionner la citation et l'onde sur la même rangée au lieu de les empiler. La citation occupe la gauche (~60%), l'onde la droite (~40%). Le footer reste en bas mais plus compact.
+
+```text
+┌──────────────────────────────────────┐
+│ « Vieil étang — une      │ ▎▍▌▋█▊▉ │
+│   grenouille plonge... » │ █▋▌▍▎▏▎ │
+│   — Bashō 🔗             │ ▍▌▋█▊▉█ │
+│──────────────────────────────────────│
+│ Ma Fréquence du jour            ★ 9 │
+└──────────────────────────────────────┘
+```
+
+## Changements
 
 **Fichier** : `src/components/community/FrequenceWave.tsx`
 
-| Citation | URL actuelle (cassée) | URL corrigée |
-|----------|----------------------|-------------|
-| Proust, *La Prisonnière* | `gallica.bnf.fr/ark:/12148/bpt6k6570926h` | `https://gallica.bnf.fr/ark:/12148/bpt6k1049554b` |
-| Chateaubriand, *Mémoires d'outre-tombe* | `gallica.bnf.fr/ark:/12148/bpt6k2078627` | `https://gallica.bnf.fr/essentiels/chateaubriand/memoires-outre-tombe` |
-| Rousseau, *Les Confessions* | `gallica.bnf.fr/ark:/12148/bpt6k5818556v` | `https://gallica.bnf.fr/essentiels/rousseau/confessions` |
-| Saint-Exupéry, *Terre des hommes* | `gallica.bnf.fr/ark:/12148/bpt6k4802771w` | `https://www.worldcat.org/title/1738850` (pas trouvé sur Gallica, remplacement par WorldCat) |
+1. Wrapper citation + onde dans un `flex flex-row` au lieu du layout vertical actuel
+2. Citation : `flex-1`, texte aligné à gauche, `text-xs` au lieu de `text-sm`, réduire le padding
+3. Onde : largeur fixe (~120px), réduire la hauteur de `h-20` à `h-14`, moins de barres (16 au lieu de 24)
+4. Réduire le padding global de `p-5` à `p-3`
+5. Supprimer le `mb-4` entre citation et onde (ils sont côte à côte)
+6. Footer : `mt-2` au lieu de `mt-3`
 
-4 lignes à modifier dans le tableau `CITATIONS`.
+Gain estimé : ~80px de hauteur, la carte de progression sera visible sans scroller.
 
