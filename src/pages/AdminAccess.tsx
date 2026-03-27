@@ -179,7 +179,7 @@ const AdminAccess: React.FC = () => {
               <Building2 className="h-8 w-8 text-accent mr-3" />
               <h2 className="text-xl font-semibold text-foreground">Organisateurs</h2>
             </div>
-            <p className="text-muted-foreground mb-4">
+            <p className="text-muted-foreground mb-4 min-h-[4rem]">
               Gérer les organisateurs des marches : associations, collectifs, individus.
             </p>
             <Link to="/admin/organisateurs">
