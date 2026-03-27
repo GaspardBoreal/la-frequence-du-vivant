@@ -119,18 +119,18 @@ const AdminAccess: React.FC = () => {
               <Users className="h-8 w-8 text-emerald-500 mr-3" />
               <h2 className="text-xl font-semibold text-foreground">Événements & Communauté</h2>
             </div>
-            <p className="text-muted-foreground mb-4">
+            <p className="text-muted-foreground mb-4 min-h-[4rem]">
               Créer des événements de marche, gérer les QR codes de présence
               et suivre la progression des marcheurs.
             </p>
-            <div className="flex gap-2">
-              <Link to="/admin/marche-events" className="flex-1">
+            <div className="flex flex-col gap-2">
+              <Link to="/admin/marche-events">
                 <Button variant="outline" className="w-full">
                   <Map className="h-4 w-4 mr-2" />
                   Événements
                 </Button>
               </Link>
-              <Link to="/admin/community" className="flex-1">
+              <Link to="/admin/community">
                 <Button variant="outline" className="w-full">
                   <Users className="h-4 w-4 mr-2" />
                   Communauté
