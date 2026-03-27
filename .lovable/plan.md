@@ -1,61 +1,34 @@
 
 
-# Associer les marcheurs a une Exploration ET a des Marches
+# Enrichissement de la page Admin Evenements de Marche
 
-## Situation actuelle
+## Ajouts
 
-Deux systemes deconnectes :
-- **`exploration_marcheurs`** : equipe editoriale manuelle (Gaspard Boreal & co), liee a une **exploration**, non liee a `auth.users`
-- **`marche_participations`** : marcheurs communautaires (inscrits via connexion), lies a des **marche_events**, sans lien avec une exploration
+### 1. Barre de filtre et tri (entre le header et la liste)
 
-Le chainon manquant : `marche_events` n'a pas de colonne `exploration_id`. On ne sait pas a quelle exploration appartient un evenement de marche.
+- **Champ de recherche** : `Input` avec icone `Search`, filtre en temps reel (debounce 300ms) sur tous les champs texte d'un evenement (`title`, `description`, `lieu`, nom d'exploration, `qr_code`)
+- **Selecteur de tri** : `Select` avec deux options — "Date decroissante" (defaut) et "Date croissante". Le tri s'applique cote client sur les evenements deja charges
 
-## Solution
+### 2. Affichage en cartes enrichies
 
-Ajouter `exploration_id` a la table `marche_events`. Ainsi, quand un marcheur s'inscrit a un evenement, il est automatiquement lie a la marche ET a l'exploration.
+Les cartes actuelles sont deja en `Card`, mais on les ameliore :
+- **Badge de statut temporel** : "A venir" (vert) si `date_marche > now`, "Passee" (gris) sinon
+- **Compteur de participants** en temps reel (count depuis `marche_participations`) affiche sur la carte sans avoir a cliquer
+- **Meilleure hierarchie visuelle** : date en gros, titre en dessous, lieu + exploration en badges
 
-```text
-exploration
-  └── marche_events (via exploration_id)  ← NOUVEAU
-        └── marche_participations (via marche_event_id)
-              └── community_profiles (via user_id)
-```
+### 3. Implementation technique
 
-## Changements
+Tout dans **un seul fichier** `MarcheEventsAdmin.tsx` :
 
-### 1. Migration DB
+- Ajouter deux states : `searchTerm` (string) et `sortOrder` ('desc' | 'asc')
+- Utiliser `useDebounce` existant pour le filtre
+- Filtrer et trier avec `useMemo` sur `events`
+- Ajouter une query pour compter les participations par event (`marche_participations` groupees)
+- Afficher un compteur de resultats "X evenement(s) sur Y"
 
-```sql
-ALTER TABLE marche_events 
-  ADD COLUMN exploration_id uuid REFERENCES explorations(id);
-```
+### Fichier modifie
 
-Pas de NOT NULL pour ne pas casser les evenements existants.
-
-### 2. Admin — `MarcheEventsAdmin.tsx`
-
-Ajouter un selecteur d'exploration lors de la creation/edition d'un evenement de marche. Champ optionnel.
-
-### 3. Espace marcheur — `MarchesTab.tsx`
-
-Afficher le nom de l'exploration a cote de chaque evenement (si renseignee). Permet au marcheur de voir a quelle exploration il contribue.
-
-### 4. `useCommunityProfile.ts`
-
-Enrichir la requete des participations pour inclure `marche_events(title, date_marche, lieu, exploration_id, explorations(name))` — afficher l'exploration associee.
-
-## Fichiers concernes
-
-| Fichier | Action |
-|---------|--------|
-| Migration SQL | Ajouter `exploration_id` a `marche_events` |
-| `src/pages/MarcheEventsAdmin.tsx` | Selecteur exploration dans le formulaire |
-| `src/components/community/tabs/MarchesTab.tsx` | Afficher nom exploration |
-| `src/hooks/useCommunityProfile.ts` | Enrichir select avec exploration |
-
-## Ce que cela ne change PAS
-
-- `exploration_marcheurs` reste intact pour l'equipe editoriale
-- `community_profiles` reste inchange
-- Les participations existantes continuent de fonctionner (colonne nullable)
+| Fichier | Changement |
+|---------|-----------|
+| `src/pages/MarcheEventsAdmin.tsx` | Ajout barre recherche + tri + badges statut + compteur participants |
 
