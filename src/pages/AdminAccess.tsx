@@ -33,7 +33,7 @@ const AdminAccess: React.FC = () => {
               <Map className="h-8 w-8 text-accent mr-3" />
               <h2 className="text-xl font-semibold text-foreground">Gestion des Marches</h2>
             </div>
-            <p className="mb-4 text-muted-foreground font-light text-base">
+            <p className="mb-4 text-muted-foreground font-light text-base min-h-[4rem]">
               Créer, modifier et supprimer les marches techno-sensibles. 
               Gérer les médias, photos et fichiers audio.
             </p>
