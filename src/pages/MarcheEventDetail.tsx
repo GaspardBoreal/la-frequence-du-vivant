@@ -69,19 +69,37 @@ const MarcheEventDetail: React.FC = () => {
     },
   });
 
-  // Participations
+  // Participations (raw)
   const { data: participations } = useQuery({
     queryKey: ['marche-participations', id],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('marche_participations')
-        .select('*, community_profiles:user_id(prenom, nom, role)')
+        .select('*')
         .eq('marche_event_id', id!);
       if (error) throw error;
       return data;
     },
     enabled: !isNew && !!id,
   });
+
+  // Participant profiles (separate query)
+  const participantUserIds = useMemo(() => participations?.map(p => p.user_id) ?? [], [participations]);
+  const { data: participantProfiles } = useQuery({
+    queryKey: ['participant-profiles', participantUserIds],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('community_profiles')
+        .select('user_id, prenom, nom, role')
+        .in('user_id', participantUserIds);
+      if (error) throw error;
+      return data;
+    },
+    enabled: participantUserIds.length > 0,
+  });
+
+  const getParticipantProfile = (userId: string) =>
+    participantProfiles?.find(p => p.user_id === userId);
 
   // All profiles for retroactive add
   const { data: allProfiles } = useQuery({
@@ -311,6 +329,7 @@ const MarcheEventDetail: React.FC = () => {
                         onClick={() => addParticipant.mutate(profile.user_id, {
                           onSuccess: () => {
                             queryClient.invalidateQueries({ queryKey: ['marche-participations', id] });
+                            queryClient.invalidateQueries({ queryKey: ['participant-profiles'] });
                             queryClient.invalidateQueries({ queryKey: ['marche-participation-counts'] });
                             setShowAddParticipant(false);
                             setParticipantSearch('');
@@ -351,22 +370,25 @@ const MarcheEventDetail: React.FC = () => {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {participations.map((p: any) => (
-                    <TableRow key={p.id}>
-                      <TableCell>{p.community_profiles?.prenom} {p.community_profiles?.nom}</TableCell>
-                      <TableCell className="capitalize">{p.community_profiles?.role?.replace(/_/g, ' ')}</TableCell>
-                      <TableCell>{p.validated_at ? format(new Date(p.validated_at), 'Pp', { locale: fr }) : '—'}</TableCell>
-                      <TableCell>
-                        {p.validation_method === 'admin_retroactif' ? (
-                          <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-500">
-                            rétroactif
-                          </span>
-                        ) : (
-                          p.validation_method || '—'
-                        )}
-                      </TableCell>
-                    </TableRow>
-                  ))}
+                  {participations.map((p: any) => {
+                    const profile = getParticipantProfile(p.user_id);
+                    return (
+                      <TableRow key={p.id}>
+                        <TableCell>{profile?.prenom} {profile?.nom}</TableCell>
+                        <TableCell className="capitalize">{profile?.role?.replace(/_/g, ' ') || '—'}</TableCell>
+                        <TableCell>{p.validated_at ? format(new Date(p.validated_at), 'Pp', { locale: fr }) : '—'}</TableCell>
+                        <TableCell>
+                          {p.validation_method === 'admin_retroactif' ? (
+                            <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-500">
+                              rétroactif
+                            </span>
+                          ) : (
+                            p.validation_method || '—'
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
                 </TableBody>
               </Table>
             ) : (
