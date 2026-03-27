@@ -20,7 +20,19 @@ const MarcheEventsAdmin: React.FC = () => {
   const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
   const [form, setForm] = useState({
     title: '', description: '', date_marche: '', lieu: '',
-    latitude: '', longitude: '', max_participants: '20',
+    latitude: '', longitude: '', max_participants: '20', exploration_id: '',
+  });
+
+  const { data: explorations } = useQuery({
+    queryKey: ['explorations-list'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('explorations')
+        .select('id, name')
+        .order('name');
+      if (error) throw error;
+      return data;
+    },
   });
 
   const { data: events, isLoading } = useQuery({
