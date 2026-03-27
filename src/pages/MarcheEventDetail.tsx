@@ -369,22 +369,25 @@ const MarcheEventDetail: React.FC = () => {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {participations.map((p: any) => (
-                    <TableRow key={p.id}>
-                      <TableCell>{p.community_profiles?.prenom} {p.community_profiles?.nom}</TableCell>
-                      <TableCell className="capitalize">{p.community_profiles?.role?.replace(/_/g, ' ')}</TableCell>
-                      <TableCell>{p.validated_at ? format(new Date(p.validated_at), 'Pp', { locale: fr }) : '—'}</TableCell>
-                      <TableCell>
-                        {p.validation_method === 'admin_retroactif' ? (
-                          <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-500">
-                            rétroactif
-                          </span>
-                        ) : (
-                          p.validation_method || '—'
-                        )}
-                      </TableCell>
-                    </TableRow>
-                  ))}
+                  {participations.map((p: any) => {
+                    const profile = getParticipantProfile(p.user_id);
+                    return (
+                      <TableRow key={p.id}>
+                        <TableCell>{profile?.prenom} {profile?.nom}</TableCell>
+                        <TableCell className="capitalize">{profile?.role?.replace(/_/g, ' ') || '—'}</TableCell>
+                        <TableCell>{p.validated_at ? format(new Date(p.validated_at), 'Pp', { locale: fr }) : '—'}</TableCell>
+                        <TableCell>
+                          {p.validation_method === 'admin_retroactif' ? (
+                            <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-500">
+                              rétroactif
+                            </span>
+                          ) : (
+                            p.validation_method || '—'
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
                 </TableBody>
               </Table>
             ) : (
