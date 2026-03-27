@@ -1,55 +1,61 @@
 
 
-# Ajout rétroactif de participants aux événements de marche
+# Refactoring Admin Evenements : Liste + Fiche detail
 
 ## Probleme
 
-Certaines marches ont eu lieu avant que le système d'inscription communautaire existe. Il faut pouvoir associer manuellement un utilisateur (via son email ou son profil communautaire) à un événement passé, avec option de marquer la participation comme validée.
+Tout est entasse dans une seule page de 473 lignes : liste, formulaire de creation, details participants, ajout retroactif, QR code. L'UX est confuse — on ouvre/ferme des panneaux inline sans navigation claire.
 
 ## Solution
 
-Ajouter un bouton **"+ Ajouter un participant"** dans le panneau de détail d'un événement (quand on clique sur une carte). Ce bouton ouvre un sélecteur qui :
+Separer en **deux routes** avec une navigation propre :
 
-1. Charge la liste des `community_profiles` existants
-2. Permet de chercher par nom/prénom/email (via `auth.users` lié au `user_id`)
-3. Insère une ligne dans `marche_participations` avec `validated_at = now()` (participation rétroactive = déjà validée)
+1. **`/admin/marche-events`** — Liste des evenements (recherche, tri, cartes compactes)
+2. **`/admin/marche-events/:id`** — Fiche evenement (lecture, modification, participants, QR)
+3. **`/admin/marche-events/nouveau`** — Creation (meme composant fiche, mode creation)
 
-## Implementation
+## Architecture fichiers
 
-### Fichier modifié : `src/pages/MarcheEventsAdmin.tsx`
+| Fichier | Role |
+|---------|------|
+| `src/pages/MarcheEventsAdmin.tsx` | **Refactorise** — Liste seule (recherche, tri, cartes cliquables) |
+| `src/pages/MarcheEventDetail.tsx` | **Nouveau** — Fiche complete (CRUD + participants + QR) |
+| `src/App.tsx` | Ajouter les 2 nouvelles routes |
 
-Dans le panneau qui s'affiche quand `selectedEventId` est défini (là où on voit déjà la liste des participants) :
+## Detail des pages
 
-- Ajouter un bouton "Ajouter un participant"
-- Au clic, afficher un `Select` searchable listant les `community_profiles` (prenom + nom)
-- Exclure les utilisateurs déjà inscrits à cet événement
-- À la sélection, insérer dans `marche_participations` avec :
-  - `user_id` = celui du profil sélectionné
-  - `marche_event_id` = l'événement en cours
-  - `validated_at` = `new Date().toISOString()` (considéré validé car rétroactif)
-  - `validation_method` = `'admin_retroactif'`
-- Invalider le cache pour rafraîchir la liste
+### Page Liste (`/admin/marche-events`)
 
-### Requête pour charger les profils disponibles
+- Header avec bouton "Nouvel evenement" → navigue vers `/admin/marche-events/nouveau`
+- Barre de recherche + tri (existante, conservee)
+- Cartes compactes cliquables : clic sur la carte → navigue vers `/admin/marche-events/:id`
+- Retirer : formulaire inline, panneau participants, panneau ajout retroactif
+- Les cartes gardent : badge statut, date, titre, lieu, exploration, compteur participants
 
-```typescript
-const { data } = await supabase
-  .from('community_profiles')
-  .select('user_id, prenom, nom')
-  .order('nom');
-```
+### Page Fiche (`/admin/marche-events/:id` ou `/admin/marche-events/nouveau`)
 
-Puis filtrer côté client pour exclure ceux déjà dans `participations`.
+Organisee en sections claires :
 
-## Fichier concerné
+1. **Header** : Bouton retour + titre de l'evenement (ou "Nouvel evenement")
+2. **Section infos** : Formulaire editable (titre, date, lieu, lat/lng, max participants, description, exploration). Boutons "Enregistrer" / "Supprimer"
+3. **Section QR Code** : Apercu QR + URL + bouton imprimer (uniquement en mode edition)
+4. **Section Participants** : Tableau des participants valides + bouton ajout retroactif avec recherche (uniquement en mode edition)
 
-| Fichier | Changement |
-|---------|-----------|
-| `src/pages/MarcheEventsAdmin.tsx` | Bouton + sélecteur d'ajout rétroactif dans le panneau participants |
+En mode **creation** : formulaire vide, pas de sections QR/participants.
+En mode **lecture/edition** : toutes les sections visibles, champs pre-remplis.
 
-## UX
+## Implementation technique
 
-- Le bouton est visible uniquement quand un événement est sélectionné
-- Badge `admin_retroactif` affiché à côté des participations ajoutées manuellement pour les distinguer
-- Toast de confirmation après ajout
+- Utiliser `useParams()` pour recuperer l'ID et `useNavigate()` pour la navigation
+- Mode creation detecte via `id === 'nouveau'` ou absence de data
+- Mutation `update` a ajouter (actuellement seul `create` existe) via `supabase.from('marche_events').update(...).eq('id', id)`
+- Deplacer les queries `participations`, `allProfiles`, `addParticipant` dans la page fiche
+- Conserver `events`, `participationCounts`, `filteredAndSortedEvents` dans la page liste
+
+## Resultat UX
+
+- Navigation claire : liste → fiche → retour
+- Chaque page a une responsabilite unique
+- La fiche permet de voir et modifier tout au meme endroit sans accordeons inline
+- La liste reste legere et scannable
 
