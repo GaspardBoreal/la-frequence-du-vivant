@@ -145,7 +145,7 @@ const AdminAccess: React.FC = () => {
               <Briefcase className="h-8 w-8 text-primary mr-3" />
               <h2 className="text-xl font-semibold text-foreground">CRM & Commercial</h2>
             </div>
-            <p className="text-muted-foreground mb-4">
+            <p className="text-muted-foreground mb-4 min-h-[4rem]">
               Gérer le pipeline commercial, les opportunités B2B 
               et les communications avec les prospects.
             </p>
