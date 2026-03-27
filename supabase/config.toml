@@ -73,3 +73,6 @@ verify_jwt = false
 
 [functions.guide-marche-chat]
 verify_jwt = false
+
+[functions.quiz-companion-chat]
+verify_jwt = false

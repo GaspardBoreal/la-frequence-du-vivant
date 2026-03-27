@@ -153,14 +153,35 @@ const QuizInteractif: React.FC<QuizInteractifProps> = ({ niveau, userId, onCompl
     return null; // No quiz questions available
   }
 
-  if (unansweredQuestions.length === 0) {
+  if (unansweredQuestions.length === 0 && !quizStarted) {
     return (
-      <div className="bg-gradient-to-br from-emerald-500/10 to-teal-500/10 rounded-xl border border-emerald-400/20 p-6 text-center space-y-3">
-        <Trophy className="w-8 h-8 text-amber-400 mx-auto" />
-        <p className="text-white font-medium">Quiz complété ! 🎉</p>
-        <p className="text-emerald-200/60 text-sm">
-          Vous avez répondu à toutes les questions de ce niveau. De nouvelles questions arrivent bientôt !
-        </p>
+      <div className="space-y-4">
+        <div className="bg-gradient-to-br from-emerald-500/10 to-amber-500/5 rounded-xl border border-emerald-400/20 p-4 space-y-3">
+          <div className="flex items-center gap-2">
+            <Trophy className="w-5 h-5 text-amber-400" />
+            <span className="text-white font-medium text-sm">Quiz maîtrisé ! 🎉</span>
+          </div>
+
+          <Button
+            onClick={() => {
+              setAlreadyAnswered(new Set());
+              setQuizStarted(true);
+              setCurrentIndex(0);
+              setScore(0);
+              setTotalFrequences(0);
+              setSelectedAnswer(null);
+              setShowResult(false);
+            }}
+            variant="outline"
+            className="w-full border-emerald-400/20 text-emerald-200 hover:bg-emerald-500/10 rounded-lg h-9 text-xs"
+          >
+            <ChevronRight className="w-3.5 h-3.5 mr-1.5" />
+            Réviser en mode entraînement
+          </Button>
+          <p className="text-emerald-200/40 text-[10px] text-center">Sans regagner de Fréquences</p>
+        </div>
+
+        <QuizCompanion />
       </div>
     );
   }
