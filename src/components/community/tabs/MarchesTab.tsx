@@ -23,7 +23,12 @@ interface Participation {
   validated_at: string | null;
   validation_method: string | null;
   created_at: string;
-  marche_events: { title: string; date_marche: string; lieu: string | null } | null;
+  marche_events: {
+    title: string;
+    date_marche: string;
+    lieu: string | null;
+    explorations?: { name: string } | null;
+  } | null;
 }
 
 interface MarchesTabProps {
