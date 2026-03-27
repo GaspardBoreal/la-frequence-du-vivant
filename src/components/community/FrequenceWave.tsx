@@ -191,7 +191,7 @@ interface FrequenceWaveProps {
 const FrequenceWave: React.FC<FrequenceWaveProps> = ({ totalFrequences, role }) => {
   const [c1, c2] = ROLE_GRADIENT[role];
   const citation = getCitationDuJour();
-  const bars = 24;
+  const bars = 16;
   const heights = Array.from({ length: bars }, (_, i) => {
     const x = i / (bars - 1);
     const base = Math.sin(x * Math.PI) * 0.7 + 0.3;
@@ -200,69 +200,73 @@ const FrequenceWave: React.FC<FrequenceWaveProps> = ({ totalFrequences, role }) 
   });
 
   return (
-    <div className="relative rounded-2xl bg-white/[0.12] border border-white/20 backdrop-blur-lg p-5 overflow-hidden">
+    <div className="relative rounded-2xl bg-white/[0.12] border border-white/20 backdrop-blur-lg p-3 overflow-hidden">
       <div className="absolute inset-0 bg-gradient-to-br from-white/[0.05] to-transparent" />
 
-      {/* Citation du jour */}
-      <AnimatePresence mode="wait">
-        <motion.div
-          key={citation.texte}
-          initial={{ opacity: 0, y: 8 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -8 }}
-          transition={{ duration: 0.6, ease: 'easeOut' }}
-          className="relative text-center mb-4 px-2"
-        >
-          <p className="italic text-white/90 text-sm leading-relaxed">
-            « {citation.texte} »
-          </p>
-          <span className="text-white/50 text-xs mt-1.5 inline-flex items-center gap-1.5">
-            — {citation.auteur}, <em>{citation.oeuvre}</em>
-            {citation.url && (
-              <a
-                href={citation.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-white/30 hover:text-white/60 transition-colors"
-                onClick={(e) => e.stopPropagation()}
-                aria-label="Vérifier la source"
-              >
-                <ExternalLink className="w-3 h-3" />
-              </a>
-            )}
-          </span>
-        </motion.div>
-      </AnimatePresence>
-
-      {/* Onde bioacoustique */}
-      <div className="relative flex items-end justify-center gap-[3px] h-20">
-        {heights.map((h, i) => (
+      {/* Citation + Onde côte à côte */}
+      <div className="relative flex flex-row items-center gap-3">
+        {/* Citation */}
+        <AnimatePresence mode="wait">
           <motion.div
-            key={i}
-            className="w-[3px] rounded-full origin-bottom"
-            style={{ background: `linear-gradient(to top, ${c1}, ${c2})` }}
-            initial={{ scaleY: 0 }}
-            animate={{
-              scaleY: [h * 0.6, h, h * 0.75, h * 0.9, h * 0.6],
-            }}
-            transition={{
-              duration: 3 + Math.random() * 2,
-              repeat: Infinity,
-              ease: 'easeInOut',
-              delay: i * 0.06,
-            }}
-            whileHover={{ scaleY: 1.2 }}
-          />
-        ))}
+            key={citation.texte}
+            initial={{ opacity: 0, y: 6 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -6 }}
+            transition={{ duration: 0.5, ease: 'easeOut' }}
+            className="flex-1 min-w-0 text-left"
+          >
+            <p className="italic text-white/90 text-xs leading-relaxed line-clamp-3">
+              « {citation.texte} »
+            </p>
+            <span className="text-white/50 text-[10px] mt-1 inline-flex items-center gap-1">
+              — {citation.auteur}
+              {citation.url && (
+                <a
+                  href={citation.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-white/30 hover:text-white/60 transition-colors"
+                  onClick={(e) => e.stopPropagation()}
+                  aria-label="Vérifier la source"
+                >
+                  <ExternalLink className="w-2.5 h-2.5" />
+                </a>
+              )}
+            </span>
+          </motion.div>
+        </AnimatePresence>
+
+        {/* Onde bioacoustique */}
+        <div className="flex items-end justify-center gap-[2px] h-14 w-[100px] shrink-0">
+          {heights.map((h, i) => (
+            <motion.div
+              key={i}
+              className="w-[3px] rounded-full origin-bottom"
+              style={{ background: `linear-gradient(to top, ${c1}, ${c2})` }}
+              initial={{ scaleY: 0 }}
+              animate={{
+                scaleY: [h * 0.6, h, h * 0.75, h * 0.9, h * 0.6],
+              }}
+              transition={{
+                duration: 3 + Math.random() * 2,
+                repeat: Infinity,
+                ease: 'easeInOut',
+                delay: i * 0.07,
+              }}
+              whileHover={{ scaleY: 1.2 }}
+            />
+          ))}
+        </div>
       </div>
 
-      <div className="relative mt-3 flex items-center justify-between">
-        <span className="text-xs text-white/70">Ma Fréquence du jour</span>
+      {/* Footer */}
+      <div className="relative mt-2 flex items-center justify-between">
+        <span className="text-[10px] text-white/70">Ma Fréquence du jour</span>
         <motion.span
           key={totalFrequences}
           initial={{ scale: 1.3, color: c1 }}
           animate={{ scale: 1, color: '#d1fae5' }}
-          className="text-lg font-bold"
+          className="text-sm font-bold"
         >
           ★ {totalFrequences}
         </motion.span>
