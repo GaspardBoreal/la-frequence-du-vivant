@@ -203,6 +203,11 @@ const FrequenceWave: React.FC<FrequenceWaveProps> = ({ totalFrequences, role }) 
     <div className="relative rounded-2xl bg-white/[0.12] border border-white/20 backdrop-blur-lg p-3 overflow-hidden">
       <div className="absolute inset-0 bg-gradient-to-br from-white/[0.05] to-transparent" />
 
+      {/* Titre en haut à gauche */}
+      <div className="relative mb-2">
+        <span className="text-[10px] text-white/70 font-medium tracking-wide uppercase">Ma Fréquence du jour</span>
+      </div>
+
       {/* Citation + Onde côte à côte */}
       <div className="relative flex flex-row items-center gap-3">
         {/* Citation */}
@@ -218,21 +223,23 @@ const FrequenceWave: React.FC<FrequenceWaveProps> = ({ totalFrequences, role }) 
             <p className="italic text-white/90 text-xs leading-relaxed line-clamp-3">
               « {citation.texte} »
             </p>
-            <span className="text-white/50 text-[10px] mt-1 inline-flex items-center gap-1">
-              — {citation.auteur}
-              {citation.url && (
-                <a
-                  href={citation.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-white/30 hover:text-white/60 transition-colors"
-                  onClick={(e) => e.stopPropagation()}
-                  aria-label="Vérifier la source"
-                >
-                  <ExternalLink className="w-2.5 h-2.5" />
-                </a>
-              )}
-            </span>
+            <div className="flex justify-end mt-1">
+              <span className="text-white/50 text-[10px] inline-flex items-center gap-1">
+                — {citation.auteur}
+                {citation.url && (
+                  <a
+                    href={citation.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-white/30 hover:text-white/60 transition-colors"
+                    onClick={(e) => e.stopPropagation()}
+                    aria-label="Vérifier la source"
+                  >
+                    <ExternalLink className="w-2.5 h-2.5" />
+                  </a>
+                )}
+              </span>
+            </div>
           </motion.div>
         </AnimatePresence>
 
@@ -257,19 +264,6 @@ const FrequenceWave: React.FC<FrequenceWaveProps> = ({ totalFrequences, role }) 
             />
           ))}
         </div>
-      </div>
-
-      {/* Footer */}
-      <div className="relative mt-2 flex items-center justify-between">
-        <span className="text-[10px] text-white/70">Ma Fréquence du jour</span>
-        <motion.span
-          key={totalFrequences}
-          initial={{ scale: 1.3, color: c1 }}
-          animate={{ scale: 1, color: '#d1fae5' }}
-          className="text-sm font-bold"
-        >
-          ★ {totalFrequences}
-        </motion.span>
       </div>
     </div>
   );
