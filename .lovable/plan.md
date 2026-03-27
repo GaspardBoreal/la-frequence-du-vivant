@@ -1,34 +1,55 @@
 
 
-# Enrichissement de la page Admin Evenements de Marche
+# Ajout rétroactif de participants aux événements de marche
 
-## Ajouts
+## Probleme
 
-### 1. Barre de filtre et tri (entre le header et la liste)
+Certaines marches ont eu lieu avant que le système d'inscription communautaire existe. Il faut pouvoir associer manuellement un utilisateur (via son email ou son profil communautaire) à un événement passé, avec option de marquer la participation comme validée.
 
-- **Champ de recherche** : `Input` avec icone `Search`, filtre en temps reel (debounce 300ms) sur tous les champs texte d'un evenement (`title`, `description`, `lieu`, nom d'exploration, `qr_code`)
-- **Selecteur de tri** : `Select` avec deux options — "Date decroissante" (defaut) et "Date croissante". Le tri s'applique cote client sur les evenements deja charges
+## Solution
 
-### 2. Affichage en cartes enrichies
+Ajouter un bouton **"+ Ajouter un participant"** dans le panneau de détail d'un événement (quand on clique sur une carte). Ce bouton ouvre un sélecteur qui :
 
-Les cartes actuelles sont deja en `Card`, mais on les ameliore :
-- **Badge de statut temporel** : "A venir" (vert) si `date_marche > now`, "Passee" (gris) sinon
-- **Compteur de participants** en temps reel (count depuis `marche_participations`) affiche sur la carte sans avoir a cliquer
-- **Meilleure hierarchie visuelle** : date en gros, titre en dessous, lieu + exploration en badges
+1. Charge la liste des `community_profiles` existants
+2. Permet de chercher par nom/prénom/email (via `auth.users` lié au `user_id`)
+3. Insère une ligne dans `marche_participations` avec `validated_at = now()` (participation rétroactive = déjà validée)
 
-### 3. Implementation technique
+## Implementation
 
-Tout dans **un seul fichier** `MarcheEventsAdmin.tsx` :
+### Fichier modifié : `src/pages/MarcheEventsAdmin.tsx`
 
-- Ajouter deux states : `searchTerm` (string) et `sortOrder` ('desc' | 'asc')
-- Utiliser `useDebounce` existant pour le filtre
-- Filtrer et trier avec `useMemo` sur `events`
-- Ajouter une query pour compter les participations par event (`marche_participations` groupees)
-- Afficher un compteur de resultats "X evenement(s) sur Y"
+Dans le panneau qui s'affiche quand `selectedEventId` est défini (là où on voit déjà la liste des participants) :
 
-### Fichier modifie
+- Ajouter un bouton "Ajouter un participant"
+- Au clic, afficher un `Select` searchable listant les `community_profiles` (prenom + nom)
+- Exclure les utilisateurs déjà inscrits à cet événement
+- À la sélection, insérer dans `marche_participations` avec :
+  - `user_id` = celui du profil sélectionné
+  - `marche_event_id` = l'événement en cours
+  - `validated_at` = `new Date().toISOString()` (considéré validé car rétroactif)
+  - `validation_method` = `'admin_retroactif'`
+- Invalider le cache pour rafraîchir la liste
+
+### Requête pour charger les profils disponibles
+
+```typescript
+const { data } = await supabase
+  .from('community_profiles')
+  .select('user_id, prenom, nom')
+  .order('nom');
+```
+
+Puis filtrer côté client pour exclure ceux déjà dans `participations`.
+
+## Fichier concerné
 
 | Fichier | Changement |
 |---------|-----------|
-| `src/pages/MarcheEventsAdmin.tsx` | Ajout barre recherche + tri + badges statut + compteur participants |
+| `src/pages/MarcheEventsAdmin.tsx` | Bouton + sélecteur d'ajout rétroactif dans le panneau participants |
+
+## UX
+
+- Le bouton est visible uniquement quand un événement est sélectionné
+- Badge `admin_retroactif` affiché à côté des participations ajoutées manuellement pour les distinguer
+- Toast de confirmation après ajout
 
