@@ -225,17 +225,25 @@ const MarcheEventDetail: React.FC = () => {
 
           <div className="flex gap-3 mt-6">
             {isNew ? (
-              <Button onClick={() => createEvent.mutate()} disabled={!form.title || !form.date_marche || createEvent.isPending}>
+              <Button onClick={() => createEvent.mutate(undefined, {
+                onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['marche-events'] }); toast.success('Événement créé avec succès'); navigate('/admin/marche-events'); },
+                onError: () => toast.error('Erreur lors de la création'),
+              })} disabled={!form.title || !form.date_marche || createEvent.isPending}>
                 <Plus className="h-4 w-4 mr-2" />Créer l'événement
               </Button>
             ) : (
               <>
-                <Button onClick={() => updateEvent.mutate()} disabled={!form.title || !form.date_marche || updateEvent.isPending}>
+                <Button onClick={() => updateEvent.mutate(undefined, {
+                  onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['marche-events'] }); queryClient.invalidateQueries({ queryKey: ['marche-event', id] }); toast.success('Événement mis à jour'); },
+                  onError: () => toast.error('Erreur lors de la mise à jour'),
+                })} disabled={!form.title || !form.date_marche || updateEvent.isPending}>
                   <Save className="h-4 w-4 mr-2" />Enregistrer
                 </Button>
                 <Button
                   variant="destructive"
-                  onClick={() => { if (confirm('Supprimer cet événement ?')) deleteEvent.mutate(); }}
+                  onClick={() => { if (confirm('Supprimer cet événement ?')) deleteEvent.mutate(undefined, {
+                    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['marche-events'] }); toast.success('Événement supprimé'); navigate('/admin/marche-events'); },
+                  }); }}
                   disabled={deleteEvent.isPending}
                 >
                   <Trash2 className="h-4 w-4 mr-2" />Supprimer
