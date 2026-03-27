@@ -1,19 +1,53 @@
 
 
-# Widget "Fréquence du jour" : Citation vivante + onde bioacoustique
+# Fix : Citations vérifiées avec sources traçables
 
-## Concept
+## Problème
 
-Transformer le widget vide en une expérience poétique quotidienne : une citation inspirante (biodiversité, bioacoustique, géopoétique) qui pulse avec l'onde sonore animée, changeant chaque jour automatiquement.
+Les 30 citations actuelles sont hardcodées sans vérification. Plusieurs sont des fausses attributions, des paraphrases ou des citations apocryphes. Pour un projet éducatif sérieux, chaque citation doit être traçable.
 
-## Design
+## Solution
+
+1. **Ajouter un champ `source`** (titre du livre/œuvre) et **`url`** (lien vers la référence) à chaque citation
+2. **Remplacer les citations douteuses** par des citations vérifiées avec leur œuvre source
+3. **Afficher la source** : un petit lien cliquable sous l'auteur permet de vérifier
+4. **Réutiliser le composant `SourceTooltip`** existant ou un simple lien discret
+
+## Nouvelle structure de données
+
+```ts
+type Citation = {
+  texte: string;
+  auteur: string;
+  oeuvre: string;        // Ex: "Silent Spring (1962)"
+  url: string;           // Lien vers la source vérifiable
+};
+```
+
+## Citations vérifiées (exemples)
+
+| Citation | Auteur | Œuvre source | URL |
+|----------|--------|-------------|-----|
+| "Dans chaque promenade avec la nature, on reçoit bien plus que ce qu'on cherche." | John Muir | *Unpublished Journals (1938)* | vault.sierraclub.org |
+| "Vieil étang — une grenouille plonge, bruit de l'eau." | Bashō | *Furu ike ya (1686)* | wikisource |
+| "Le vrai voyage de découverte..." | Marcel Proust | *La Prisonnière (1923)* | gallica.bnf.fr |
+| "La nature ne se presse jamais..." | Lao Tseu | *Tao Te King, ch. 73* | sacred-texts.com |
+| "Un grand paysage sonore est une composition..." | R. Murray Schafer | *The Soundscape (1977)* | ISBN ref |
+| "Le grand orchestre animal..." | Bernie Krause | *The Great Animal Orchestra (2012)* | ISBN ref |
+
+## Citations à supprimer (non vérifiables / apocryphes)
+
+- "Chef Seattle" — texte écrit par Ted Perry en 1971, pas par Chef Seattle
+- "Ian Malcolm" — personnage fictif
+- Citations paraphrasées sans source exacte (Morizot, Terrasson, Krause paraphrases)
+
+## Affichage dans le widget
 
 ```text
 ┌─────────────────────────────────────┐
-│  « Le chant du merle noir dessine   │
-│    la carte d'un territoire         │
-│    invisible. »                     │
-│         — Rachel Carson             │
+│  « Vieil étang — une grenouille     │
+│    plonge, bruit de l'eau. »        │
+│    — Bashō, Furu ike ya (1686) 🔗   │
 │                                     │
 │  ▎▍▌▋█▊▉█▋▌▍▎▏▎▍▌▋█▊▉█▋▌▍▎      │
 │                                     │
@@ -21,30 +55,15 @@ Transformer le widget vide en une expérience poétique quotidienne : une citati
 └─────────────────────────────────────┘
 ```
 
-- Citation en italique, police Crimson, fondu enchaîné élégant
-- L'onde animée reste en dessous, plus haute (h-20 au lieu de h-16) pour plus d'impact
-- Rotation quotidienne basée sur `dayOfYear % nbCitations`
-- ~30 citations couvrant les 3 piliers : biodiversité, bioacoustique, géopoétique
+Le lien 🔗 est discret (icône ExternalLink en `text-white/30`, 12px) et ouvre la source dans un nouvel onglet.
 
-## Exemples de citations
-
-- *"Le chant du merle noir dessine la carte d'un territoire invisible."* — Rachel Carson
-- *"Écouter la forêt, c'est lire un livre dont chaque page est un son."* — Bernie Krause
-- *"La terre a une peau, et cette peau a des maladies. L'une de ces maladies s'appelle l'homme."* — Nietzsche
-- *"Chaque promenade dans la nature est une prière."* — John Muir
-- *"Le silence de la nature est sa plus belle conversation."* — Bashō
-
-## Modifications
+## Fichier modifié
 
 | Fichier | Changement |
 |---------|-----------|
-| `src/components/community/FrequenceWave.tsx` | Ajouter un tableau de ~30 citations avec auteur et pilier, sélection par jour, affichage animé au-dessus de l'onde, augmenter la hauteur des barres |
+| `src/components/community/FrequenceWave.tsx` | Restructurer le tableau de citations avec `oeuvre` + `url`, remplacer les citations non vérifiées, afficher le lien source |
 
-## Détails techniques
+## Approche de vérification
 
-- Sélection déterministe : `new Date().getFullYear() * 366 + dayOfYear` modulo nombre de citations
-- Animation Framer Motion : `AnimatePresence` avec fondu sur la citation
-- Citation en `font-crimson italic text-white/90 text-sm text-center`
-- Auteur en `text-white/50 text-xs`
-- Pas de dépendance externe ni de requête réseau
+Je rechercherai chaque citation sur le web pour confirmer son authenticité avant de l'inclure. Les citations conservées seront uniquement celles traçables à une œuvre publiée spécifique.
 
