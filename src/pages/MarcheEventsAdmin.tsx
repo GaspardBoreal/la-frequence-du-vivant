@@ -80,6 +80,54 @@ const MarcheEventsAdmin: React.FC = () => {
     enabled: !!selectedEventId,
   });
 
+  const { data: allProfiles } = useQuery({
+    queryKey: ['community-profiles-all'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('community_profiles')
+        .select('user_id, prenom, nom')
+        .order('nom');
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  const [showAddParticipant, setShowAddParticipant] = useState(false);
+  const [participantSearch, setParticipantSearch] = useState('');
+
+  const availableProfiles = useMemo(() => {
+    if (!allProfiles) return [];
+    const existingUserIds = new Set(participations?.map((p: any) => p.user_id) || []);
+    let filtered = allProfiles.filter(p => !existingUserIds.has(p.user_id));
+    if (participantSearch.trim()) {
+      const term = participantSearch.toLowerCase();
+      filtered = filtered.filter(p =>
+        `${p.prenom} ${p.nom}`.toLowerCase().includes(term)
+      );
+    }
+    return filtered;
+  }, [allProfiles, participations, participantSearch]);
+
+  const addParticipant = useMutation({
+    mutationFn: async (userId: string) => {
+      const { error } = await supabase.from('marche_participations').insert({
+        user_id: userId,
+        marche_event_id: selectedEventId!,
+        validated_at: new Date().toISOString(),
+        validation_method: 'admin_retroactif',
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['marche-participations', selectedEventId] });
+      queryClient.invalidateQueries({ queryKey: ['marche-participation-counts'] });
+      setShowAddParticipant(false);
+      setParticipantSearch('');
+      toast.success('Participant ajouté avec succès');
+    },
+    onError: () => toast.error("Erreur lors de l'ajout du participant"),
+  });
+
   const filteredAndSortedEvents = useMemo(() => {
     if (!events) return [];
     let filtered = events;
@@ -327,7 +375,52 @@ const MarcheEventsAdmin: React.FC = () => {
                   {/* Participants */}
                   {selectedEventId === event.id && (
                     <div className="mt-4 border-t border-border pt-4">
-                      <h4 className="text-sm font-medium mb-2">Participants validés</h4>
+                      <div className="flex items-center justify-between mb-3">
+                        <h4 className="text-sm font-medium">Participants validés ({participations?.length || 0})</h4>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setShowAddParticipant(!showAddParticipant)}
+                        >
+                          <Plus className="h-3.5 w-3.5 mr-1" />
+                          Ajouter un participant
+                        </Button>
+                      </div>
+
+                      {/* Add participant panel */}
+                      {showAddParticipant && (
+                        <Card className="p-4 mb-4 border-dashed border-primary/30 bg-primary/5">
+                          <p className="text-xs text-muted-foreground mb-2">
+                            Recherchez un profil communautaire pour l'associer rétroactivement à cet événement.
+                          </p>
+                          <Input
+                            placeholder="Chercher par nom ou prénom..."
+                            value={participantSearch}
+                            onChange={e => setParticipantSearch(e.target.value)}
+                            className="mb-2"
+                          />
+                          {availableProfiles.length > 0 ? (
+                            <div className="max-h-40 overflow-y-auto space-y-1">
+                              {availableProfiles.map(profile => (
+                                <button
+                                  key={profile.user_id}
+                                  onClick={() => addParticipant.mutate(profile.user_id)}
+                                  disabled={addParticipant.isPending}
+                                  className="w-full text-left px-3 py-2 rounded-md text-sm hover:bg-accent transition-colors flex items-center justify-between"
+                                >
+                                  <span>{profile.prenom} {profile.nom}</span>
+                                  <Plus className="h-3.5 w-3.5 text-muted-foreground" />
+                                </button>
+                              ))}
+                            </div>
+                          ) : (
+                            <p className="text-xs text-muted-foreground">
+                              {participantSearch ? 'Aucun profil trouvé.' : 'Tous les profils sont déjà inscrits.'}
+                            </p>
+                          )}
+                        </Card>
+                      )}
+
                       {participations && participations.length > 0 ? (
                         <Table>
                           <TableHeader>
@@ -344,7 +437,15 @@ const MarcheEventsAdmin: React.FC = () => {
                                 <TableCell>{p.community_profiles?.prenom} {p.community_profiles?.nom}</TableCell>
                                 <TableCell className="capitalize">{p.community_profiles?.role?.replace(/_/g, ' ')}</TableCell>
                                 <TableCell>{p.validated_at ? format(new Date(p.validated_at), 'Pp', { locale: fr }) : '—'}</TableCell>
-                                <TableCell>{p.validation_method || '—'}</TableCell>
+                                <TableCell>
+                                  {p.validation_method === 'admin_retroactif' ? (
+                                    <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-500">
+                                      rétroactif
+                                    </span>
+                                  ) : (
+                                    p.validation_method || '—'
+                                  )}
+                                </TableCell>
                               </TableRow>
                             ))}
                           </TableBody>
