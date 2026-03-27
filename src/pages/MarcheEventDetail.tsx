@@ -308,7 +308,16 @@ const MarcheEventDetail: React.FC = () => {
                     {availableProfiles.map(profile => (
                       <button
                         key={profile.user_id}
-                        onClick={() => addParticipant.mutate(profile.user_id)}
+                        onClick={() => addParticipant.mutate(profile.user_id, {
+                          onSuccess: () => {
+                            queryClient.invalidateQueries({ queryKey: ['marche-participations', id] });
+                            queryClient.invalidateQueries({ queryKey: ['marche-participation-counts'] });
+                            setShowAddParticipant(false);
+                            setParticipantSearch('');
+                            toast.success('Participant ajouté avec succès');
+                          },
+                          onError: () => toast.error("Erreur lors de l'ajout du participant"),
+                        })}
                         disabled={addParticipant.isPending}
                         className="w-full text-left px-3 py-2 rounded-md text-sm hover:bg-accent hover:text-accent-foreground transition-colors flex items-center justify-between"
                       >
