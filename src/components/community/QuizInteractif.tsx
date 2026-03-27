@@ -4,6 +4,7 @@ import { Brain, CheckCircle2, XCircle, Sparkles, ChevronRight, Trophy, Leaf, Vol
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import QuizCompanion from './QuizCompanion';
 
 interface QuizQuestion {
   id: string;
@@ -47,6 +48,7 @@ const QuizInteractif: React.FC<QuizInteractifProps> = ({ niveau, userId, onCompl
   const [loading, setLoading] = useState(true);
   const [sessionKey] = useState(() => crypto.randomUUID());
   const [alreadyAnswered, setAlreadyAnswered] = useState<Set<string>>(new Set());
+  const [isRevisionMode, setIsRevisionMode] = useState(false);
 
   useEffect(() => {
     loadQuestions();
@@ -87,8 +89,8 @@ const QuizInteractif: React.FC<QuizInteractifProps> = ({ niveau, userId, onCompl
     setLoading(false);
   };
 
-  const unansweredQuestions = questions.filter(q => !alreadyAnswered.has(q.id));
-  const currentQuestion = unansweredQuestions[currentIndex];
+  const activeQuestions = isRevisionMode ? questions : questions.filter(q => !alreadyAnswered.has(q.id));
+  const currentQuestion = activeQuestions[currentIndex];
 
   const handleAnswer = async (optionIndex: number) => {
     if (showResult || !currentQuestion) return;
@@ -103,33 +105,34 @@ const QuizInteractif: React.FC<QuizInteractifProps> = ({ niveau, userId, onCompl
       setTotalFrequences(prev => prev + frequencesEarned);
     }
 
-    // Save response
-    await supabase.from('quiz_responses').insert({
-      user_id: userId,
-      quiz_question_id: currentQuestion.id,
-      answer: { selected: optionIndex, label: currentQuestion.options[optionIndex]?.label },
-      is_correct: isCorrect,
-      frequences_earned: frequencesEarned,
-      session_key: sessionKey,
-    });
-
-    // Log frequences if correct
-    if (isCorrect && frequencesEarned > 0) {
-      await supabase.from('frequences_log').insert({
+    // Save response only if NOT in revision mode
+    if (!isRevisionMode) {
+      await supabase.from('quiz_responses').insert({
         user_id: userId,
-        action: 'quiz_reponse',
-        frequences: frequencesEarned,
-        multiplicateur: 1.0,
-        reference_id: currentQuestion.id,
-        reference_type: 'quiz_question',
+        quiz_question_id: currentQuestion.id,
+        answer: { selected: optionIndex, label: currentQuestion.options[optionIndex]?.label },
+        is_correct: isCorrect,
+        frequences_earned: frequencesEarned,
+        session_key: sessionKey,
       });
+
+      if (isCorrect && frequencesEarned > 0) {
+        await supabase.from('frequences_log').insert({
+          user_id: userId,
+          action: 'quiz_reponse',
+          frequences: frequencesEarned,
+          multiplicateur: 1.0,
+          reference_id: currentQuestion.id,
+          reference_type: 'quiz_question',
+        });
+      }
     }
   };
 
   const handleNext = () => {
-    if (currentIndex + 1 >= unansweredQuestions.length) {
+    if (currentIndex + 1 >= activeQuestions.length) {
       setQuizFinished(true);
-      onComplete?.(score, unansweredQuestions.length, totalFrequences);
+      onComplete?.(score, activeQuestions.length, totalFrequences);
     } else {
       setCurrentIndex(prev => prev + 1);
       setSelectedAnswer(null);
@@ -152,14 +155,36 @@ const QuizInteractif: React.FC<QuizInteractifProps> = ({ niveau, userId, onCompl
     return null; // No quiz questions available
   }
 
-  if (unansweredQuestions.length === 0) {
+  if (activeQuestions.length === 0 && !quizStarted) {
     return (
-      <div className="bg-gradient-to-br from-emerald-500/10 to-teal-500/10 rounded-xl border border-emerald-400/20 p-6 text-center space-y-3">
-        <Trophy className="w-8 h-8 text-amber-400 mx-auto" />
-        <p className="text-white font-medium">Quiz complété ! 🎉</p>
-        <p className="text-emerald-200/60 text-sm">
-          Vous avez répondu à toutes les questions de ce niveau. De nouvelles questions arrivent bientôt !
-        </p>
+      <div className="space-y-4">
+        <div className="bg-gradient-to-br from-emerald-500/10 to-amber-500/5 rounded-xl border border-emerald-400/20 p-4 space-y-3">
+          <div className="flex items-center gap-2">
+            <Trophy className="w-5 h-5 text-amber-400" />
+            <span className="text-white font-medium text-sm">Quiz maîtrisé ! 🎉</span>
+          </div>
+
+          <Button
+            onClick={() => {
+              setIsRevisionMode(true);
+              setAlreadyAnswered(new Set());
+              setQuizStarted(true);
+              setCurrentIndex(0);
+              setScore(0);
+              setTotalFrequences(0);
+              setSelectedAnswer(null);
+              setShowResult(false);
+            }}
+            variant="outline"
+            className="w-full border-emerald-400/20 text-emerald-200 hover:bg-emerald-500/10 rounded-lg h-9 text-xs"
+          >
+            <ChevronRight className="w-3.5 h-3.5 mr-1.5" />
+            Réviser en mode entraînement
+          </Button>
+          <p className="text-emerald-200/40 text-[10px] text-center">Sans regagner de Fréquences</p>
+        </div>
+
+        <QuizCompanion />
       </div>
     );
   }
@@ -179,7 +204,7 @@ const QuizInteractif: React.FC<QuizInteractifProps> = ({ niveau, userId, onCompl
           <div>
             <h3 className="text-white font-semibold">Quiz Éveil Sensoriel</h3>
             <p className="text-emerald-200/60 text-sm">
-              {unansweredQuestions.length} question{unansweredQuestions.length > 1 ? 's' : ''} • Biodiversité, Bioacoustique, Géopoétique
+              {activeQuestions.length} question{activeQuestions.length > 1 ? 's' : ''} • Biodiversité, Bioacoustique, Géopoétique
             </p>
           </div>
         </div>
@@ -190,7 +215,7 @@ const QuizInteractif: React.FC<QuizInteractifProps> = ({ niveau, userId, onCompl
 
         <div className="flex items-center gap-2 text-xs text-emerald-300/60">
           <Sparkles className="w-4 h-4" />
-          <span>Jusqu'à {unansweredQuestions.reduce((acc, q) => acc + q.frequences_bonus, 0)} Fréquences à gagner</span>
+          <span>Jusqu'à {activeQuestions.reduce((acc, q) => acc + q.frequences_bonus, 0)} Fréquences à gagner</span>
         </div>
 
         <Button
@@ -206,7 +231,7 @@ const QuizInteractif: React.FC<QuizInteractifProps> = ({ niveau, userId, onCompl
 
   // Finished screen
   if (quizFinished) {
-    const percentage = Math.round((score / unansweredQuestions.length) * 100);
+    const percentage = Math.round((score / activeQuestions.length) * 100);
     return (
       <motion.div
         initial={{ opacity: 0, scale: 0.95 }}
@@ -226,7 +251,7 @@ const QuizInteractif: React.FC<QuizInteractifProps> = ({ niveau, userId, onCompl
             {percentage >= 80 ? 'Exceptionnel ! 🌟' : percentage >= 60 ? 'Bravo ! 🌿' : 'Bien joué ! 🌱'}
           </h3>
           <p className="text-emerald-200/70 text-sm mt-1">
-            {score}/{unansweredQuestions.length} bonnes réponses ({percentage}%)
+            {score}/{activeQuestions.length} bonnes réponses ({percentage}%)
           </p>
         </div>
 
@@ -275,7 +300,7 @@ const QuizInteractif: React.FC<QuizInteractifProps> = ({ niveau, userId, onCompl
         <motion.div
           className="h-full bg-gradient-to-r from-emerald-500 to-cyan-400"
           initial={{ width: 0 }}
-          animate={{ width: `${((currentIndex + 1) / unansweredQuestions.length) * 100}%` }}
+          animate={{ width: `${((currentIndex + 1) / activeQuestions.length) * 100}%` }}
           transition={{ duration: 0.5 }}
         />
       </div>
@@ -289,7 +314,7 @@ const QuizInteractif: React.FC<QuizInteractifProps> = ({ niveau, userId, onCompl
              currentQuestion.volet === 'bioacoustique' ? 'Bioacoustique' : 'Géopoétique'}
           </span>
           <span className="text-emerald-200/40 text-xs">
-            {currentIndex + 1}/{unansweredQuestions.length}
+            {currentIndex + 1}/{activeQuestions.length}
           </span>
         </div>
 
@@ -369,7 +394,7 @@ const QuizInteractif: React.FC<QuizInteractifProps> = ({ niveau, userId, onCompl
                 onClick={handleNext}
                 className="w-full bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl h-10 text-sm"
               >
-                {currentIndex + 1 >= unansweredQuestions.length ? 'Voir mes résultats' : 'Question suivante'}
+                {currentIndex + 1 >= activeQuestions.length ? 'Voir mes résultats' : 'Question suivante'}
                 <ChevronRight className="w-4 h-4 ml-1" />
               </Button>
             </motion.div>
