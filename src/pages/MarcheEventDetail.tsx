@@ -122,12 +122,6 @@ const MarcheEventDetail: React.FC = () => {
       });
       if (error) throw error;
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['marche-events'] });
-      toast.success('Événement créé avec succès');
-      navigate('/admin/marche-events');
-    },
-    onError: () => toast.error('Erreur lors de la création'),
   });
 
   const updateEvent = useMutation({
@@ -144,23 +138,12 @@ const MarcheEventDetail: React.FC = () => {
       }).eq('id', id!);
       if (error) throw error;
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['marche-events'] });
-      queryClient.invalidateQueries({ queryKey: ['marche-event', id] });
-      toast.success('Événement mis à jour');
-    },
-    onError: () => toast.error('Erreur lors de la mise à jour'),
   });
 
   const deleteEvent = useMutation({
     mutationFn: async () => {
       const { error } = await supabase.from('marche_events').delete().eq('id', id!);
       if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['marche-events'] });
-      toast.success('Événement supprimé');
-      navigate('/admin/marche-events');
     },
   });
 
@@ -174,14 +157,6 @@ const MarcheEventDetail: React.FC = () => {
       });
       if (error) throw error;
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['marche-participations', id] });
-      queryClient.invalidateQueries({ queryKey: ['marche-participation-counts'] });
-      setShowAddParticipant(false);
-      setParticipantSearch('');
-      toast.success('Participant ajouté avec succès');
-    },
-    onError: () => toast.error("Erreur lors de l'ajout du participant"),
   });
 
   const printQR = (qrCode: string, title: string) => {
@@ -250,17 +225,25 @@ const MarcheEventDetail: React.FC = () => {
 
           <div className="flex gap-3 mt-6">
             {isNew ? (
-              <Button onClick={() => createEvent.mutate()} disabled={!form.title || !form.date_marche || createEvent.isPending}>
+              <Button onClick={() => createEvent.mutate(undefined, {
+                onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['marche-events'] }); toast.success('Événement créé avec succès'); navigate('/admin/marche-events'); },
+                onError: () => toast.error('Erreur lors de la création'),
+              })} disabled={!form.title || !form.date_marche || createEvent.isPending}>
                 <Plus className="h-4 w-4 mr-2" />Créer l'événement
               </Button>
             ) : (
               <>
-                <Button onClick={() => updateEvent.mutate()} disabled={!form.title || !form.date_marche || updateEvent.isPending}>
+                <Button onClick={() => updateEvent.mutate(undefined, {
+                  onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['marche-events'] }); queryClient.invalidateQueries({ queryKey: ['marche-event', id] }); toast.success('Événement mis à jour'); },
+                  onError: () => toast.error('Erreur lors de la mise à jour'),
+                })} disabled={!form.title || !form.date_marche || updateEvent.isPending}>
                   <Save className="h-4 w-4 mr-2" />Enregistrer
                 </Button>
                 <Button
                   variant="destructive"
-                  onClick={() => { if (confirm('Supprimer cet événement ?')) deleteEvent.mutate(); }}
+                  onClick={() => { if (confirm('Supprimer cet événement ?')) deleteEvent.mutate(undefined, {
+                    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['marche-events'] }); toast.success('Événement supprimé'); navigate('/admin/marche-events'); },
+                  }); }}
                   disabled={deleteEvent.isPending}
                 >
                   <Trash2 className="h-4 w-4 mr-2" />Supprimer
@@ -325,7 +308,16 @@ const MarcheEventDetail: React.FC = () => {
                     {availableProfiles.map(profile => (
                       <button
                         key={profile.user_id}
-                        onClick={() => addParticipant.mutate(profile.user_id)}
+                        onClick={() => addParticipant.mutate(profile.user_id, {
+                          onSuccess: () => {
+                            queryClient.invalidateQueries({ queryKey: ['marche-participations', id] });
+                            queryClient.invalidateQueries({ queryKey: ['marche-participation-counts'] });
+                            setShowAddParticipant(false);
+                            setParticipantSearch('');
+                            toast.success('Participant ajouté avec succès');
+                          },
+                          onError: () => toast.error("Erreur lors de l'ajout du participant"),
+                        })}
                         disabled={addParticipant.isPending}
                         className="w-full text-left px-3 py-2 rounded-md text-sm hover:bg-accent hover:text-accent-foreground transition-colors flex items-center justify-between"
                       >
