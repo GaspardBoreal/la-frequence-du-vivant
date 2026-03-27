@@ -329,6 +329,7 @@ const MarcheEventDetail: React.FC = () => {
                         onClick={() => addParticipant.mutate(profile.user_id, {
                           onSuccess: () => {
                             queryClient.invalidateQueries({ queryKey: ['marche-participations', id] });
+                            queryClient.invalidateQueries({ queryKey: ['participant-profiles'] });
                             queryClient.invalidateQueries({ queryKey: ['marche-participation-counts'] });
                             setShowAddParticipant(false);
                             setParticipantSearch('');
