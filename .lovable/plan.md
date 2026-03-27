@@ -1,24 +1,16 @@
 
 
-# Header Mon Espace : tout sur une seule ligne
+# Supprimer la sous-ligne "kigo" du header
 
-## Changement
+## Constat
 
-Fusionner les deux lignes du header en une seule rangée flex. Supprimer le bloc "Top row" séparé.
-
-## Layout cible
-
-```text
-[←] [GB] [Gaspard + badge + kigo] [★ 0] [⚙️]
-```
+La ligne 54-59 affiche le kigo d'accueil sous le prénom (ex: "🌿 Marcheur"). Cette info prend de la place et crée de la confusion avec le badge de rôle "Marcheur en devenir" qui est déjà affiché via `RoleBadge`.
 
 ## Modification
 
 **Fichier** : `src/components/community/MonEspaceHeader.tsx`
 
-- Supprimer le bloc `{/* Top row: back + settings */}` (le div avec `mb-2` contenant ArrowLeft et Settings)
-- Intégrer `ArrowLeft` comme premier élément de la rangée profil (avant l'avatar)
-- Intégrer `Settings` comme dernier élément de la rangée profil (après le compteur fréquences)
-- Supprimer le `mb-2` pour récupérer l'espace vertical
-- Réduire le padding vertical du container si nécessaire (`py-3` → `py-2`)
+Supprimer le `<span>` des lignes 54-59 qui affiche le kigo d'accueil. Le badge `RoleBadge` (ligne 52) qui affiche "Marcheur en devenir" est conservé intact.
+
+Le bloc `<div className="flex-1 min-w-0">` ne contiendra plus que la ligne prénom + badge rôle.
 
