@@ -35,7 +35,7 @@ const CITATIONS: Citation[] = [
     texte: "Le vrai voyage de découverte ne consiste pas à chercher de nouveaux paysages, mais à avoir de nouveaux yeux.",
     auteur: "Marcel Proust",
     oeuvre: "La Prisonnière (1923)",
-    url: "https://gallica.bnf.fr/ark:/12148/bpt6k6570926h",
+    url: "https://gallica.bnf.fr/ark:/12148/bpt6k1049554b",
   },
   {
     texte: "La nature ne se presse jamais, et pourtant tout est accompli.",
