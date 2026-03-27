@@ -130,9 +130,9 @@ const QuizInteractif: React.FC<QuizInteractifProps> = ({ niveau, userId, onCompl
   };
 
   const handleNext = () => {
-    if (currentIndex + 1 >= unansweredQuestions.length) {
+    if (currentIndex + 1 >= activeQuestions.length) {
       setQuizFinished(true);
-      onComplete?.(score, unansweredQuestions.length, totalFrequences);
+      onComplete?.(score, activeQuestions.length, totalFrequences);
     } else {
       setCurrentIndex(prev => prev + 1);
       setSelectedAnswer(null);
@@ -155,7 +155,7 @@ const QuizInteractif: React.FC<QuizInteractifProps> = ({ niveau, userId, onCompl
     return null; // No quiz questions available
   }
 
-  if (unansweredQuestions.length === 0 && !quizStarted) {
+  if (activeQuestions.length === 0 && !quizStarted) {
     return (
       <div className="space-y-4">
         <div className="bg-gradient-to-br from-emerald-500/10 to-amber-500/5 rounded-xl border border-emerald-400/20 p-4 space-y-3">
@@ -203,7 +203,7 @@ const QuizInteractif: React.FC<QuizInteractifProps> = ({ niveau, userId, onCompl
           <div>
             <h3 className="text-white font-semibold">Quiz Éveil Sensoriel</h3>
             <p className="text-emerald-200/60 text-sm">
-              {unansweredQuestions.length} question{unansweredQuestions.length > 1 ? 's' : ''} • Biodiversité, Bioacoustique, Géopoétique
+              {activeQuestions.length} question{activeQuestions.length > 1 ? 's' : ''} • Biodiversité, Bioacoustique, Géopoétique
             </p>
           </div>
         </div>
@@ -214,7 +214,7 @@ const QuizInteractif: React.FC<QuizInteractifProps> = ({ niveau, userId, onCompl
 
         <div className="flex items-center gap-2 text-xs text-emerald-300/60">
           <Sparkles className="w-4 h-4" />
-          <span>Jusqu'à {unansweredQuestions.reduce((acc, q) => acc + q.frequences_bonus, 0)} Fréquences à gagner</span>
+          <span>Jusqu'à {activeQuestions.reduce((acc, q) => acc + q.frequences_bonus, 0)} Fréquences à gagner</span>
         </div>
 
         <Button
@@ -230,7 +230,7 @@ const QuizInteractif: React.FC<QuizInteractifProps> = ({ niveau, userId, onCompl
 
   // Finished screen
   if (quizFinished) {
-    const percentage = Math.round((score / unansweredQuestions.length) * 100);
+    const percentage = Math.round((score / activeQuestions.length) * 100);
     return (
       <motion.div
         initial={{ opacity: 0, scale: 0.95 }}
@@ -250,7 +250,7 @@ const QuizInteractif: React.FC<QuizInteractifProps> = ({ niveau, userId, onCompl
             {percentage >= 80 ? 'Exceptionnel ! 🌟' : percentage >= 60 ? 'Bravo ! 🌿' : 'Bien joué ! 🌱'}
           </h3>
           <p className="text-emerald-200/70 text-sm mt-1">
-            {score}/{unansweredQuestions.length} bonnes réponses ({percentage}%)
+            {score}/{activeQuestions.length} bonnes réponses ({percentage}%)
           </p>
         </div>
 
@@ -299,7 +299,7 @@ const QuizInteractif: React.FC<QuizInteractifProps> = ({ niveau, userId, onCompl
         <motion.div
           className="h-full bg-gradient-to-r from-emerald-500 to-cyan-400"
           initial={{ width: 0 }}
-          animate={{ width: `${((currentIndex + 1) / unansweredQuestions.length) * 100}%` }}
+          animate={{ width: `${((currentIndex + 1) / activeQuestions.length) * 100}%` }}
           transition={{ duration: 0.5 }}
         />
       </div>
@@ -313,7 +313,7 @@ const QuizInteractif: React.FC<QuizInteractifProps> = ({ niveau, userId, onCompl
              currentQuestion.volet === 'bioacoustique' ? 'Bioacoustique' : 'Géopoétique'}
           </span>
           <span className="text-emerald-200/40 text-xs">
-            {currentIndex + 1}/{unansweredQuestions.length}
+            {currentIndex + 1}/{activeQuestions.length}
           </span>
         </div>
 
@@ -393,7 +393,7 @@ const QuizInteractif: React.FC<QuizInteractifProps> = ({ niveau, userId, onCompl
                 onClick={handleNext}
                 className="w-full bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl h-10 text-sm"
               >
-                {currentIndex + 1 >= unansweredQuestions.length ? 'Voir mes résultats' : 'Question suivante'}
+                {currentIndex + 1 >= activeQuestions.length ? 'Voir mes résultats' : 'Question suivante'}
                 <ChevronRight className="w-4 h-4 ml-1" />
               </Button>
             </motion.div>
