@@ -4,6 +4,7 @@ import { Brain, CheckCircle2, XCircle, Sparkles, ChevronRight, Trophy, Leaf, Vol
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import QuizCompanion from './QuizCompanion';
 
 interface QuizQuestion {
   id: string;
