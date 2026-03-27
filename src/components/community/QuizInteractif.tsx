@@ -48,6 +48,7 @@ const QuizInteractif: React.FC<QuizInteractifProps> = ({ niveau, userId, onCompl
   const [loading, setLoading] = useState(true);
   const [sessionKey] = useState(() => crypto.randomUUID());
   const [alreadyAnswered, setAlreadyAnswered] = useState<Set<string>>(new Set());
+  const [isRevisionMode, setIsRevisionMode] = useState(false);
 
   useEffect(() => {
     loadQuestions();
