@@ -51,12 +51,6 @@ const MonEspaceHeader: React.FC<MonEspaceHeaderProps> = ({
                 <h1 className="text-white font-semibold text-sm truncate">{prenom}</h1>
                 <RoleBadge role={role} size="sm" darkMode />
               </div>
-              <span className="text-white/50 text-[10px] truncate block">
-                {kigoAccueil === 'parle_aux_arbres' ? '🌳 Parle aux arbres' :
-                 kigoAccueil === 'transition_beton' ? '🏙️ En transition' :
-                 kigoAccueil === 'curieux_vivant' ? '🔍 Curieux du vivant' :
-                 kigoAccueil === 'expert_canape' ? '🛋️ Expert canapé' : '🌿 Marcheur'}
-              </span>
             </div>
             <motion.div
               key={totalFrequences}
