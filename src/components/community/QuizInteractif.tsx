@@ -166,6 +166,7 @@ const QuizInteractif: React.FC<QuizInteractifProps> = ({ niveau, userId, onCompl
 
           <Button
             onClick={() => {
+              setIsRevisionMode(true);
               setAlreadyAnswered(new Set());
               setQuizStarted(true);
               setCurrentIndex(0);
