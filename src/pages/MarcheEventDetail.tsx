@@ -316,7 +316,13 @@ const MarcheEventDetail: React.FC = () => {
                             setParticipantSearch('');
                             toast.success('Participant ajouté avec succès');
                           },
-                          onError: () => toast.error("Erreur lors de l'ajout du participant"),
+                          onError: (error: any) => {
+                            if (error?.message?.includes('unique') || error?.message?.includes('duplicate')) {
+                              toast.error('Ce participant est déjà inscrit à cet événement');
+                            } else {
+                              toast.error("Erreur lors de l'ajout du participant");
+                            }
+                          },
                         })}
                         disabled={addParticipant.isPending}
                         className="w-full text-left px-3 py-2 rounded-md text-sm hover:bg-accent hover:text-accent-foreground transition-colors flex items-center justify-between"
