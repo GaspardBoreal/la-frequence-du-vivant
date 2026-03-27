@@ -11,6 +11,7 @@ interface Participation {
     title: string;
     date_marche: string;
     lieu: string | null;
+    explorations: { name: string } | null;
   } | null;
 }
 
@@ -21,7 +22,7 @@ export function useCommunityParticipations(userId: string | undefined) {
       if (!userId) return [];
       const { data, error } = await supabase
         .from('marche_participations')
-        .select('id, marche_event_id, validated_at, validation_method, created_at, marche_events(title, date_marche, lieu)')
+        .select('id, marche_event_id, validated_at, validation_method, created_at, marche_events(title, date_marche, lieu, explorations(name))')
         .eq('user_id', userId)
         .order('created_at', { ascending: false });
 

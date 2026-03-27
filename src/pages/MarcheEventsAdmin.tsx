@@ -7,7 +7,8 @@ import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { ArrowLeft, Plus, Trash2, Users, QrCode, Printer, CalendarDays, MapPin } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { ArrowLeft, Plus, Trash2, Users, QrCode, Printer, CalendarDays, MapPin, Compass } from 'lucide-react';
 import { toast } from 'sonner';
 import { QRCodeSVG } from 'qrcode.react';
 import { format } from 'date-fns';
@@ -19,7 +20,19 @@ const MarcheEventsAdmin: React.FC = () => {
   const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
   const [form, setForm] = useState({
     title: '', description: '', date_marche: '', lieu: '',
-    latitude: '', longitude: '', max_participants: '20',
+    latitude: '', longitude: '', max_participants: '20', exploration_id: '',
+  });
+
+  const { data: explorations } = useQuery({
+    queryKey: ['explorations-list'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('explorations')
+        .select('id, name')
+        .order('name');
+      if (error) throw error;
+      return data;
+    },
   });
 
   const { data: events, isLoading } = useQuery({
@@ -27,7 +40,7 @@ const MarcheEventsAdmin: React.FC = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('marche_events')
-        .select('*')
+        .select('*, explorations(name)')
         .order('date_marche', { ascending: false });
       if (error) throw error;
       return data;
@@ -60,13 +73,14 @@ const MarcheEventsAdmin: React.FC = () => {
         longitude: form.longitude ? parseFloat(form.longitude) : null,
         max_participants: parseInt(form.max_participants) || 20,
         created_by: user?.id || null,
+        exploration_id: form.exploration_id || null,
       });
       if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['marche-events'] });
       setShowForm(false);
-      setForm({ title: '', description: '', date_marche: '', lieu: '', latitude: '', longitude: '', max_participants: '20' });
+      setForm({ title: '', description: '', date_marche: '', lieu: '', latitude: '', longitude: '', max_participants: '20', exploration_id: '' });
       toast.success('Événement créé avec succès');
     },
     onError: () => toast.error('Erreur lors de la création'),
@@ -128,6 +142,18 @@ const MarcheEventsAdmin: React.FC = () => {
               <div><Label>Latitude</Label><Input value={form.latitude} onChange={e => setForm(f => ({ ...f, latitude: e.target.value }))} /></div>
               <div><Label>Longitude</Label><Input value={form.longitude} onChange={e => setForm(f => ({ ...f, longitude: e.target.value }))} /></div>
               <div className="md:col-span-2"><Label>Description</Label><Input value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} /></div>
+              <div>
+                <Label>Exploration associée</Label>
+                <Select value={form.exploration_id} onValueChange={v => setForm(f => ({ ...f, exploration_id: v === 'none' ? '' : v }))}>
+                  <SelectTrigger><SelectValue placeholder="Aucune exploration" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">Aucune</SelectItem>
+                    {explorations?.map(e => (
+                      <SelectItem key={e.id} value={e.id}>{e.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
             <Button onClick={() => createEvent.mutate()} disabled={!form.title || !form.date_marche} className="mt-4">
               Créer l'événement
@@ -148,6 +174,11 @@ const MarcheEventsAdmin: React.FC = () => {
                       <span className="text-xs px-2 py-1 rounded-full bg-emerald-500/10 text-emerald-400">
                         {event.qr_code?.slice(0, 8)}...
                       </span>
+                      {(event as any).explorations?.name && (
+                        <span className="text-xs px-2 py-1 rounded-full bg-primary/10 text-primary flex items-center gap-1">
+                          <Compass className="h-3 w-3" />{(event as any).explorations.name}
+                        </span>
+                      )}
                     </div>
                     <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
                       <span className="flex items-center gap-1">

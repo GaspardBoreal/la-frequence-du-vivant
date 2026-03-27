@@ -23,7 +23,12 @@ interface Participation {
   validated_at: string | null;
   validation_method: string | null;
   created_at: string;
-  marche_events: { title: string; date_marche: string; lieu: string | null } | null;
+  marche_events: {
+    title: string;
+    date_marche: string;
+    lieu: string | null;
+    explorations?: { name: string } | null;
+  } | null;
 }
 
 interface MarchesTabProps {
@@ -172,7 +177,7 @@ const MarchesTab: React.FC<MarchesTabProps> = ({ userId, upcomingEvents, partici
                   ) : (
                     <Clock className="w-4 h-4 text-amber-400 flex-shrink-0" />
                   )}
-                  <div className="min-w-0">
+                    <div className="min-w-0">
                     <p className="text-white text-xs font-medium truncate">{p.marche_events?.title || 'Marche'}</p>
                     <div className="flex items-center gap-1.5 text-[10px] text-emerald-200/40">
                       {p.marche_events?.date_marche && (
@@ -180,6 +185,9 @@ const MarchesTab: React.FC<MarchesTabProps> = ({ userId, upcomingEvents, partici
                       )}
                       {p.marche_events?.lieu && (
                         <span className="flex items-center gap-0.5"><MapPin className="w-2.5 h-2.5" />{p.marche_events.lieu}</span>
+                      )}
+                      {p.marche_events?.explorations?.name && (
+                        <span className="text-sky-300/60">• {p.marche_events.explorations.name}</span>
                       )}
                     </div>
                   </div>
