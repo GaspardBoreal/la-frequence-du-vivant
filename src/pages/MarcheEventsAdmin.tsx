@@ -73,6 +73,7 @@ const MarcheEventsAdmin: React.FC = () => {
         longitude: form.longitude ? parseFloat(form.longitude) : null,
         max_participants: parseInt(form.max_participants) || 20,
         created_by: user?.id || null,
+        exploration_id: form.exploration_id || null,
       });
       if (error) throw error;
     },
