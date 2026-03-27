@@ -105,26 +105,27 @@ const QuizInteractif: React.FC<QuizInteractifProps> = ({ niveau, userId, onCompl
       setTotalFrequences(prev => prev + frequencesEarned);
     }
 
-    // Save response
-    await supabase.from('quiz_responses').insert({
-      user_id: userId,
-      quiz_question_id: currentQuestion.id,
-      answer: { selected: optionIndex, label: currentQuestion.options[optionIndex]?.label },
-      is_correct: isCorrect,
-      frequences_earned: frequencesEarned,
-      session_key: sessionKey,
-    });
-
-    // Log frequences if correct
-    if (isCorrect && frequencesEarned > 0) {
-      await supabase.from('frequences_log').insert({
+    // Save response only if NOT in revision mode
+    if (!isRevisionMode) {
+      await supabase.from('quiz_responses').insert({
         user_id: userId,
-        action: 'quiz_reponse',
-        frequences: frequencesEarned,
-        multiplicateur: 1.0,
-        reference_id: currentQuestion.id,
-        reference_type: 'quiz_question',
+        quiz_question_id: currentQuestion.id,
+        answer: { selected: optionIndex, label: currentQuestion.options[optionIndex]?.label },
+        is_correct: isCorrect,
+        frequences_earned: frequencesEarned,
+        session_key: sessionKey,
       });
+
+      if (isCorrect && frequencesEarned > 0) {
+        await supabase.from('frequences_log').insert({
+          user_id: userId,
+          action: 'quiz_reponse',
+          frequences: frequencesEarned,
+          multiplicateur: 1.0,
+          reference_id: currentQuestion.id,
+          reference_type: 'quiz_question',
+        });
+      }
     }
   };
 
