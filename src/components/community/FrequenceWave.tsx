@@ -203,68 +203,64 @@ const FrequenceWave: React.FC<FrequenceWaveProps> = ({ totalFrequences, role }) 
     <div className="relative rounded-2xl bg-white/[0.12] border border-white/20 backdrop-blur-lg p-3 overflow-hidden">
       <div className="absolute inset-0 bg-gradient-to-br from-white/[0.05] to-transparent" />
 
-      {/* Titre en haut à gauche */}
-      <div className="relative mb-2">
-        <span className="text-[10px] text-white/70 font-medium tracking-wide uppercase">Ma Fréquence du jour</span>
-      </div>
-
-      {/* Citation + Onde côte à côte */}
-      <div className="relative flex flex-row items-center gap-3">
-        {/* Citation */}
-        <AnimatePresence mode="wait">
+      {/* Onde en fond absolu */}
+      <div className="absolute bottom-0 left-0 right-0 flex items-end justify-center gap-[2px] h-12 px-3 opacity-20">
+        {heights.map((h, i) => (
           <motion.div
-            key={citation.texte}
-            initial={{ opacity: 0, y: 6 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -6 }}
-            transition={{ duration: 0.5, ease: 'easeOut' }}
-            className="flex-1 min-w-0 text-left"
-          >
-            <p className="italic text-white/90 text-xs leading-relaxed line-clamp-3">
-              « {citation.texte} »
-            </p>
-            <div className="flex justify-end mt-1">
-              <span className="text-white/50 text-[10px] inline-flex items-center gap-1">
-                — {citation.auteur}
-                {citation.url && (
-                  <a
-                    href={citation.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-white/30 hover:text-white/60 transition-colors"
-                    onClick={(e) => e.stopPropagation()}
-                    aria-label="Vérifier la source"
-                  >
-                    <ExternalLink className="w-2.5 h-2.5" />
-                  </a>
-                )}
-              </span>
-            </div>
-          </motion.div>
-        </AnimatePresence>
-
-        {/* Onde bioacoustique */}
-        <div className="flex items-end justify-center gap-[2px] h-14 w-[100px] shrink-0">
-          {heights.map((h, i) => (
-            <motion.div
-              key={i}
-              className="w-[3px] rounded-full origin-bottom"
-              style={{ background: `linear-gradient(to top, ${c1}, ${c2})` }}
-              initial={{ scaleY: 0 }}
-              animate={{
-                scaleY: [h * 0.6, h, h * 0.75, h * 0.9, h * 0.6],
-              }}
-              transition={{
-                duration: 3 + Math.random() * 2,
-                repeat: Infinity,
-                ease: 'easeInOut',
-                delay: i * 0.07,
-              }}
-              whileHover={{ scaleY: 1.2 }}
-            />
-          ))}
-        </div>
+            key={i}
+            className="flex-1 rounded-full origin-bottom"
+            style={{ background: `linear-gradient(to top, ${c1}, ${c2})` }}
+            initial={{ scaleY: 0 }}
+            animate={{
+              scaleY: [h * 0.6, h, h * 0.75, h * 0.9, h * 0.6],
+            }}
+            transition={{
+              duration: 3 + Math.random() * 2,
+              repeat: Infinity,
+              ease: 'easeInOut',
+              delay: i * 0.07,
+            }}
+          />
+        ))}
       </div>
+
+      {/* Titre */}
+      <div className="relative mb-1.5">
+        <span className="text-[10px] text-white/60 font-medium tracking-wide uppercase">Ma Fréquence du jour</span>
+      </div>
+
+      {/* Citation pleine largeur */}
+      <AnimatePresence mode="wait">
+        <motion.div
+          key={citation.texte}
+          initial={{ opacity: 0, y: 6 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -6 }}
+          transition={{ duration: 0.5, ease: 'easeOut' }}
+          className="relative text-left"
+        >
+          <p className="italic text-white/90 text-xs leading-relaxed">
+            « {citation.texte} »
+          </p>
+          <div className="flex justify-end mt-1.5">
+            <span className="text-white/50 text-[10px] inline-flex items-center gap-1">
+              — {citation.auteur}
+              {citation.url && (
+                <a
+                  href={citation.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-white/30 hover:text-white/60 transition-colors"
+                  onClick={(e) => e.stopPropagation()}
+                  aria-label="Vérifier la source"
+                >
+                  <ExternalLink className="w-2.5 h-2.5" />
+                </a>
+              )}
+            </span>
+          </div>
+        </motion.div>
+      </AnimatePresence>
     </div>
   );
 };
