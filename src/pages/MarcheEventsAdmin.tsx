@@ -80,7 +80,7 @@ const MarcheEventsAdmin: React.FC = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['marche-events'] });
       setShowForm(false);
-      setForm({ title: '', description: '', date_marche: '', lieu: '', latitude: '', longitude: '', max_participants: '20' });
+      setForm({ title: '', description: '', date_marche: '', lieu: '', latitude: '', longitude: '', max_participants: '20', exploration_id: '' });
       toast.success('Événement créé avec succès');
     },
     onError: () => toast.error('Erreur lors de la création'),
