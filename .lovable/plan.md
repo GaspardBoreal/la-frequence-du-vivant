@@ -1,38 +1,66 @@
 
 
-# Fix : empêcher l'ajout d'un participant déjà inscrit
+# Fix : Participants affichés à 0 malgré des données en base
 
 ## Cause racine
 
-La contrainte `UNIQUE (user_id, marche_event_id)` sur `marche_participations` rejette l'insertion quand le participant existe déjà. Le participant zephyrine a bien été ajouté (présent en base), mais comme la liste ne se rafraîchissait pas (bug précédent), l'utilisateur a retenté, provoquant une violation de contrainte unique.
+La requête Supabase utilise une jointure embarquée :
+```ts
+.select('*, community_profiles:user_id(prenom, nom, role)')
+```
+
+Or il n'existe **aucune clé étrangère directe** entre `marche_participations.user_id` et `community_profiles.user_id`. Les deux pointent vers `auth.users`, mais PostgREST ne peut pas résoudre cette relation indirecte. La requête échoue silencieusement ou retourne une erreur, et `participations` reste `undefined` — d'où le `(0)`.
 
 ## Correction
 
-Dans `src/pages/MarcheEventDetail.tsx`, filtrer les profils communautaires affichés dans le sélecteur d'ajout rétroactif pour **exclure ceux déjà participants** :
+Séparer en **deux requêtes** dans `MarcheEventDetail.tsx` :
+
+1. **Requête participations** : `select('*')` sans jointure embarquée
+2. **Requête profils des participants** : récupérer les `community_profiles` correspondants via les `user_id` obtenus
 
 ```tsx
-const availableProfiles = allProfiles?.filter(
-  (p) => !participations?.some((part) => part.user_id === p.user_id)
-) ?? [];
+// 1. Participations brutes
+const { data: participations } = useQuery({
+  queryKey: ['marche-participations', id],
+  queryFn: async () => {
+    const { data, error } = await supabase
+      .from('marche_participations')
+      .select('*')
+      .eq('marche_event_id', id!);
+    if (error) throw error;
+    return data;
+  },
+  enabled: !isNew && !!id,
+});
+
+// 2. Profils des participants
+const participantUserIds = participations?.map(p => p.user_id) ?? [];
+const { data: participantProfiles } = useQuery({
+  queryKey: ['participant-profiles', participantUserIds],
+  queryFn: async () => {
+    const { data, error } = await supabase
+      .from('community_profiles')
+      .select('user_id, prenom, nom, role')
+      .in('user_id', participantUserIds);
+    if (error) throw error;
+    return data;
+  },
+  enabled: participantUserIds.length > 0,
+});
 ```
 
-Utiliser `availableProfiles` au lieu de `filteredProfiles` (qui ne filtre que par recherche textuelle) dans le rendu du sélecteur. Combiner les deux filtres : d'abord exclure les participants existants, puis appliquer le filtre de recherche.
-
-De plus, améliorer le message d'erreur pour distinguer un doublon d'une autre erreur :
-
+Puis dans le rendu, fusionner les deux :
 ```tsx
-onError: (error) => {
-  if (error.message?.includes('unique') || error.message?.includes('duplicate')) {
-    toast.error('Ce participant est déjà inscrit à cet événement');
-  } else {
-    toast.error("Erreur lors de l'ajout du participant");
-  }
-}
+const getProfile = (userId: string) =>
+  participantProfiles?.find(p => p.user_id === userId);
+
+// Dans le TableRow :
+<TableCell>{getProfile(p.user_id)?.prenom} {getProfile(p.user_id)?.nom}</TableCell>
 ```
 
 ## Fichier modifié
 
 | Fichier | Changement |
 |---------|-----------|
-| `src/pages/MarcheEventDetail.tsx` | Filtrer les profils déjà participants + message d'erreur spécifique doublon |
+| `src/pages/MarcheEventDetail.tsx` | Séparer la requête participations en 2 (données + profils), fusionner à l'affichage |
 
