@@ -11,6 +11,7 @@ interface Participation {
     title: string;
     date_marche: string;
     lieu: string | null;
+    explorations: { name: string } | null;
   } | null;
 }
 
