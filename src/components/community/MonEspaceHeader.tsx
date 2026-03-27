@@ -47,10 +47,7 @@ const MonEspaceHeader: React.FC<MonEspaceHeaderProps> = ({
               {initials}
             </motion.div>
             <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-1.5">
-                <h1 className="text-white font-semibold text-sm truncate">{prenom}</h1>
-                <RoleBadge role={role} size="sm" darkMode />
-              </div>
+              <RoleBadge role={role} size="sm" darkMode />
             </div>
             <motion.div
               key={totalFrequences}
