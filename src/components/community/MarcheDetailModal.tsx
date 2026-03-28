@@ -319,7 +319,7 @@ const VivantTab: React.FC<{ marcheId: string; userId: string; marcheSlug?: strin
   return (
     <div className="space-y-4">
       {/* ── Couche 1 : Le Territoire ── */}
-      {hasTerritory && snapshot && (
+      {hasTerritory && territoryData && (
         <div className="space-y-2">
           <div className="flex items-center gap-2">
             <Globe className="w-3.5 h-3.5 text-emerald-400" />
