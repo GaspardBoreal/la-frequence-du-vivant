@@ -757,9 +757,6 @@ const MarcheDetailModal: React.FC<MarcheDetailModalProps> = ({
   const [activeTab, setActiveTab] = useState<TabKey>('voir');
   const [activeStepIndex, setActiveStepIndex] = useState(0);
 
-  // Stats for badge indicators
-  const { data: stats } = useMarcheurStats(marcheEventId, userId, activeMarcheId);
-
   const { data: explorationMarches } = useQuery({
     queryKey: ['marche-detail-steps', marcheEventId],
     queryFn: async () => {
@@ -779,6 +776,9 @@ const MarcheDetailModal: React.FC<MarcheDetailModalProps> = ({
   const activeMarcheId = explorationMarches?.[activeStepIndex]?.id;
   const activeMarche = explorationMarches?.[activeStepIndex];
   const activeMarcheSlug = activeMarche ? createSlug(activeMarche.nom_marche || activeMarche.ville, activeMarche.ville) : undefined;
+
+  // Stats for badge indicators (must be after activeMarcheId is derived)
+  const { data: stats } = useMarcheurStats(marcheEventId, userId, activeMarcheId);
 
   const tabCounts: Record<TabKey, number> = {
     voir: stats?.medias || 0,
