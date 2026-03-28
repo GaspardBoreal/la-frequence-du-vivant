@@ -260,8 +260,6 @@ const MarchesTab: React.FC<MarchesTabProps> = ({ userId, upcomingEvents, partici
         </div>
       </Link>
 
-      {/* Section 3 — Mon carnet vivant */}
-      <CarnetVivant userId={userId} participations={participations} />
     </div>
   );
 };

@@ -127,8 +127,6 @@ const MarchesDuVivantMonEspace = () => {
             onNavigate={setActiveTab}
           />
         );
-      case 'zones':
-        return <ZonesTab />;
       case 'marches':
         return (
           <MarchesTab
@@ -138,13 +136,12 @@ const MarchesDuVivantMonEspace = () => {
             registeredEventIds={registeredEventIds}
           />
         );
-      case 'quiz':
-        return <QuizTab role={role} userId={user.id} />;
       case 'carnet':
-      case 'sons':
-      case 'kigo':
+        return <CarnetTab userId={user.id} participations={participations} />;
+      case 'outils':
+        return <OutilsTab role={role} userId={user.id} />;
       case 'territoire':
-        return <PlaceholderTab type={activeTab} />;
+        return <PlaceholderTab type="territoire" />;
       default:
         return null;
     }
