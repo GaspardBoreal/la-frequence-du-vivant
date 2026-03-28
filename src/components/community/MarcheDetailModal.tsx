@@ -60,6 +60,7 @@ const EmptyState: React.FC<{ message: string; sub?: string }> = ({ message, sub 
 const VoirTab: React.FC<{ marcheId: string; userId: string; marcheEventId: string }> = ({ marcheId, userId, marcheEventId }) => {
   const [sort, setSort] = useState<'desc' | 'asc'>('desc');
   const [showUpload, setShowUpload] = useState(false);
+  const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
 
   // Admin photos from the marche
   const { data: adminPhotos } = useQuery({
@@ -86,8 +87,36 @@ const VoirTab: React.FC<{ marcheId: string; userId: string; marcheEventId: strin
   const myMedias = userMedias?.filter(m => m.user_id === userId) || [];
   const othersMedias = userMedias?.filter(m => m.user_id !== userId && m.is_public) || [];
 
+  // Build unified lightbox items array
+  const lightboxItems: LightboxItem[] = React.useMemo(() => {
+    const items: LightboxItem[] = [];
+    // Admin photos
+    (adminPhotos || []).forEach(p => items.push({
+      url: p.url_supabase, type: 'photo', titre: p.titre, isPublic: true, isOwner: false,
+    }));
+    // My contributions
+    myMedias.forEach(m => {
+      const url = m.url_fichier || m.external_url;
+      if (url) items.push({ url, type: m.type_media, titre: m.titre, isPublic: m.is_public, isOwner: true, createdAt: m.created_at });
+    });
+    // Others' public contributions
+    othersMedias.forEach(m => {
+      const url = m.url_fichier || m.external_url;
+      if (url) items.push({ url, type: m.type_media, titre: m.titre, isPublic: true, isOwner: false, createdAt: m.created_at });
+    });
+    return items;
+  }, [adminPhotos, myMedias, othersMedias]);
+
+  // Track offset for each section to compute lightbox index
+  const adminCount = adminPhotos?.length || 0;
+  const myCount = myMedias.length;
+
   return (
     <div className="space-y-4">
+      {lightboxIndex !== null && (
+        <MediaLightbox items={lightboxItems} startIndex={lightboxIndex} onClose={() => setLightboxIndex(null)} />
+      )}
+
       {/* Upload zone */}
       <div className="flex items-center justify-between">
         <button
@@ -125,8 +154,12 @@ const VoirTab: React.FC<{ marcheId: string; userId: string; marcheEventId: strin
             <span className="text-emerald-200/40 text-[10px] uppercase tracking-wider">De l'exploration</span>
           </div>
           <div className="grid grid-cols-3 gap-1.5">
-            {adminPhotos.map(photo => (
-              <div key={photo.id} className="aspect-square rounded-lg overflow-hidden bg-white/5">
+            {adminPhotos.map((photo, i) => (
+              <div
+                key={photo.id}
+                className="aspect-square rounded-lg overflow-hidden bg-white/5 cursor-pointer active:scale-95 transition-transform"
+                onClick={() => setLightboxIndex(i)}
+              >
                 <img src={photo.url_supabase} alt={photo.titre || ''} className="w-full h-full object-cover" loading="lazy" />
               </div>
             ))}
@@ -142,7 +175,7 @@ const VoirTab: React.FC<{ marcheId: string; userId: string; marcheEventId: strin
             <span className="text-amber-300/60 text-[10px] uppercase tracking-wider">Mes contributions ({myMedias.length})</span>
           </div>
           <div className="grid grid-cols-2 gap-2">
-            {myMedias.map(m => (
+            {myMedias.map((m, i) => (
               <ContributionItem
                 key={m.id}
                 id={m.id}
@@ -156,6 +189,7 @@ const VoirTab: React.FC<{ marcheId: string; userId: string; marcheEventId: strin
                 createdAt={m.created_at}
                 onUpdate={(id, updates) => updateContrib.mutate({ table: 'marcheur_medias', id, updates })}
                 onDelete={(id) => deleteContrib.mutate({ table: 'marcheur_medias', id, storageUrl: m.url_fichier || undefined })}
+                onClick={() => setLightboxIndex(adminCount + i)}
               />
             ))}
           </div>
@@ -170,7 +204,7 @@ const VoirTab: React.FC<{ marcheId: string; userId: string; marcheEventId: strin
             <span className="text-blue-300/60 text-[10px] uppercase tracking-wider">Des marcheurs ({othersMedias.length})</span>
           </div>
           <div className="grid grid-cols-2 gap-2">
-            {othersMedias.map(m => (
+            {othersMedias.map((m, i) => (
               <ContributionItem
                 key={m.id}
                 id={m.id}
@@ -181,6 +215,7 @@ const VoirTab: React.FC<{ marcheId: string; userId: string; marcheEventId: strin
                 isPublic={m.is_public}
                 isOwner={false}
                 createdAt={m.created_at}
+                onClick={() => setLightboxIndex(adminCount + myCount + i)}
               />
             ))}
           </div>
