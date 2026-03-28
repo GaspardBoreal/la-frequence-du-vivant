@@ -20,7 +20,7 @@ const AccueilTab: React.FC<AccueilTabProps> = ({
   role, marchesCount, formationValidee, certificationValidee, pendingCount, totalFrequences, onNavigate,
 }) => {
   return (
-    <div className="space-y-5">
+    <div className="space-y-3">
       <motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }}>
         <FrequenceWave totalFrequences={totalFrequences} role={role} />
       </motion.div>
