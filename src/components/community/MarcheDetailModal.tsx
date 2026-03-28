@@ -272,20 +272,45 @@ const VivantTab: React.FC<{ marcheId: string; userId: string; marcheSlug?: strin
     enabled: !!userId,
   });
 
-  // Extraire les top espèces depuis species_data
-  const speciesProcessed = snapshot?.species_data ? processSpeciesData(snapshot.species_data as any) : null;
+  // Extraire les top espèces depuis species_data (format snapshot ou edge function)
   const topSpecies: { nom: string; type: string }[] = [];
-  if (speciesProcessed) {
-    speciesProcessed.flore.slice(0, 3).forEach(s => topSpecies.push({ nom: s.nom_commun, type: '🌿' }));
-    Object.values(speciesProcessed.faune).flat().slice(0, 3).forEach((s: any) => topSpecies.push({ nom: s.nom_commun, type: '🐦' }));
+  if (territoryData?.species_data) {
+    if (snapshot) {
+      // Format snapshot DB (via processSpeciesData)
+      const speciesProcessed = processSpeciesData(territoryData.species_data as any);
+      if (speciesProcessed) {
+        speciesProcessed.flore.slice(0, 3).forEach(s => topSpecies.push({ nom: s.nom_commun, type: '🌿' }));
+        Object.values(speciesProcessed.faune).flat().slice(0, 3).forEach((s: any) => topSpecies.push({ nom: s.nom_commun, type: '🐦' }));
+      }
+    } else if (Array.isArray(territoryData.species_data)) {
+      // Format edge function (array of species objects)
+      const species = territoryData.species_data as any[];
+      species
+        .filter((s: any) => s.kingdom === 'Animalia')
+        .slice(0, 3)
+        .forEach((s: any) => topSpecies.push({ nom: s.commonName || s.scientificName, type: '🐦' }));
+      species
+        .filter((s: any) => s.kingdom === 'Plantae')
+        .slice(0, 3)
+        .forEach((s: any) => topSpecies.push({ nom: s.commonName || s.scientificName, type: '🌿' }));
+    }
   }
 
   // Construire le lien vers la page bioacoustique
   const explorerLink = marcheSlug ? `/bioacoustique/${marcheSlug}` : null;
 
-  const hasTerritory = !!snapshot;
+  const hasTerritory = !!territoryData;
   const hasCommunity = (communityPhotos?.length || 0) + (communityAudio?.length || 0) + (communityTexts?.length || 0) > 0;
   const hasMyData = (myKigos?.length || 0) > 0;
+
+  if (isLoadingTerritory) {
+    return (
+      <div className="flex flex-col items-center justify-center py-8 text-center">
+        <div className="w-6 h-6 border-2 border-emerald-400/30 border-t-emerald-400 rounded-full animate-spin mb-2" />
+        <p className="text-emerald-200/40 text-xs">Chargement des données du vivant…</p>
+      </div>
+    );
+  }
 
   if (!hasTerritory && !hasCommunity && !hasMyData) {
     return <EmptyState message="Aucune donnée de biodiversité pour cette marche" />;
