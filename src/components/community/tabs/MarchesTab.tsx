@@ -272,7 +272,11 @@ const MarchesTab: React.FC<MarchesTabProps> = ({ userId, upcomingEvents, partici
           </div>
         ) : (
           <div className="space-y-1">
-            {participations.map((p) => (
+            {participations.slice().sort((a, b) => {
+              const dateA = a.marche_events?.date_marche ? new Date(a.marche_events.date_marche).getTime() : 0;
+              const dateB = b.marche_events?.date_marche ? new Date(b.marche_events.date_marche).getTime() : 0;
+              return dateB - dateA;
+            }).map((p) => (
               <div key={p.id} className="bg-white/5 rounded-lg border border-white/10 px-3 py-2 flex items-center justify-between">
                 <div className="flex items-center gap-2 min-w-0">
                   {p.validated_at ? (
