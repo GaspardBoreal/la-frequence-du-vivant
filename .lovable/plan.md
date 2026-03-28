@@ -1,63 +1,51 @@
 
 
-# Reorganisation des menus : "Les 4 Temps du Marcheur"
+# Le Carnet Vivant — Navigation par marches au sein de l'événement
 
 ## Constat
 
-Aujourd'hui la barre affiche jusqu'a 8 onglets plats (Accueil, Zones, Marches, Quiz, Carnet, Sons, Kigo, Territoire). Sur mobile 390px, 8 icones = illisible. Et chaque nouvel outil (Boussole, Meteo, Phenologie...) aggraverait le probleme.
+Actuellement, quand le marcheur ouvre la modale d'un événement, les données sont agrégées en vrac depuis toutes les marches de l'exploration associée. Le marcheur ne peut pas distinguer ce qu'il a vécu lors de la marche 1 vs la marche 2 d'un même événement (ex: la transhumance de 2 jours a 2 marches distinctes).
 
-## Proposition : 4 piliers permanents + 1 evolutif
+## Proposition : Le Chemin des Étapes
 
-Organiser l'experience autour de ce que fait concretement un marcheur :
+La modale devient un **parcours narratif** où chaque marche de l'exploration est une étape que le marcheur peut feuilleter, comme les pages d'un carnet de voyage.
 
 ```text
-  ┌─────────┬──────────┬──────────┬──────────┐
-  │ Accueil  │ Marches  │ Carnet   │ Outils   │
-  │   Home   │   Map    │ BookHeart│ Compass  │
-  └─────────┴──────────┴──────────┴──────────┘
-        + Territoire (sentinelle uniquement)
+  ╔═══════════════════════════════════╗
+  ║  NOUAILLE-MAUPERTUIS              ║
+  ║  07 mars 2026 · Flore sauvage    ║
+  ║                                   ║
+  ║  ┌───────────────────────────┐    ║
+  ║  │  Étape 1/2                │    ║
+  ║  │  🌿 Nous deux entre vers  │    ║
+  ║  │  ◄          ●  ○         ►│    ║
+  ║  └───────────────────────────┘    ║
+  ║                                   ║
+  ║  ┌────┬────────┬──────┬──────┐   ║
+  ║  │Voir│Écouter │ Lire │Vivant│   ║
+  ║  └────┴────────┴──────┴──────┘   ║
+  ║                                   ║
+  ║   [galerie photos de cette       ║
+  ║    marche spécifique]            ║
+  ╚═══════════════════════════════════╝
 ```
 
-### 1. Accueil (Home)
-Tableau de bord personnel — inchange.
+### Fonctionnement
 
-### 2. Marches (Map)
-Les evenements : s'inscrire, decouvrir, mes aventures a venir. Inchange.
+1. A l'ouverture de la modale, on charge les marches liées via `marche_events.exploration_id` → `exploration_marches` → `marches`
+2. Un **sélecteur d'étape** (swipeable ou flèches gauche/droite) permet de naviguer entre les marches, avec des dots indicateurs
+3. Chaque étape affiche le nom de la marche et ses 4 onglets sensoriels (Voir/Écouter/Lire/Vivant) filtrés sur le `marche_id` spécifique
+4. Si l'exploration ne contient qu'une seule marche, le sélecteur d'étape est masqué (comportement actuel)
+5. Un **résumé de l'exploration** en en-tête montre les totaux cumulés (ex: "12 photos · 3 sons · 2 textes · 14 espèces")
 
-### 3. Carnet (BookHeart)
-Le Carnet Vivant — extrait de MarchesTab, devient un onglet de premier rang. Frise des saisons, modale sensorielle. C'est la memoire du marcheur.
+### Données filtrées par marche
 
-### 4. Outils (Compass)
-Hub regroupant tous les instruments pedagogiques et pratiques. Au tap, affiche une grille de tuiles :
+Les requêtes actuelles (VoirTab, EcouterTab, etc.) récupèrent déjà par `marche_id`. Il suffit de passer le `marche_id` sélectionné au lieu de tous les marche_ids de l'exploration.
 
-| Tuile | Icone | Disponible | Description courte |
-|-------|-------|------------|-------------------|
-| Zones | Radar | Tous | Cartographie des zones de marche |
-| Quiz | Brain | Tous | Testez vos connaissances |
-| Sons | Volume2 | Eclaireur+ | Ecoute bioacoustique |
-| Kigo | Flower2 | Ambassadeur+ | Mots de saison japonais |
-| Boussole | Compass | *a venir* | Orientation terrain |
-| Meteo | CloudSun | *a venir* | Conditions & phenologie |
-
-Les tuiles verrouillees (role insuffisant ou "a venir") apparaissent en filigrane avec un petit cadenas — cela cree du desir et montre la progression possible.
-
-### 5. Territoire (Globe) — sentinelle uniquement
-Reste un onglet dedie car c'est un espace de gouvernance, pas un outil.
-
-## Avantages
-
-- **Mobile** : 4 icones max (5 pour sentinelle) au lieu de 8 — lisible, aere
-- **Scalable** : chaque nouvel outil s'ajoute comme tuile dans "Outils" sans toucher la nav
-- **Desir** : les tuiles verrouillees motivent la progression de role
-- **Carnet promu** : le Carnet Vivant obtient la place qu'il merite
-
-## Fichiers impactes
+## Fichiers impactés
 
 | Fichier | Changement |
 |---------|-----------|
-| `src/components/community/MonEspaceTabBar.tsx` | Reduire TabKey a 5 valeurs (accueil, marches, carnet, outils, territoire). Adapter TABS_BY_ROLE |
-| `src/components/community/tabs/OutilsTab.tsx` | **Nouveau** — Grille de tuiles avec sous-navigation interne (zones, quiz, sons, kigo) et tuiles verrouillees |
-| `src/components/community/tabs/MarchesTab.tsx` | Retirer la section CarnetVivant (migree vers l'onglet Carnet) |
-| `src/components/community/tabs/CarnetTab.tsx` | **Nouveau** — Wrapper du CarnetVivant comme onglet autonome |
-| `src/pages/MarchesDuVivantMonEspace.tsx` | Adapter le renderTab() pour les nouveaux onglets |
+| `src/components/community/MarcheDetailModal.tsx` | Ajouter la couche de navigation par étapes : charger les marches de l'exploration, sélecteur d'étape avec dots, passer le `marche_id` actif aux onglets au lieu de charger tout en vrac |
+| `src/hooks/useMarcheCollectedData.ts` | Aucun changement (agrège déjà par event) |
 
