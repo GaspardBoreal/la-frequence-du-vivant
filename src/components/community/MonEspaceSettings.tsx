@@ -26,7 +26,7 @@ const MonEspaceSettings: React.FC<MonEspaceSettingsProps> = ({
       <SheetContent side="right" className="bg-emerald-950 border-l border-white/10 text-white w-80">
         <SheetHeader>
           <SheetTitle className="text-white">Mon profil</SheetTitle>
-          <SheetDescription className="text-emerald-200/50">Vos informations personnelles</SheetDescription>
+          <SheetDescription className="text-emerald-200/50 text-center">Vos informations personnelles</SheetDescription>
         </SheetHeader>
 
         <div className="mt-6 space-y-6">
