@@ -2304,6 +2304,118 @@ export type Database = {
           },
         ]
       }
+      marcheur_audio: {
+        Row: {
+          created_at: string
+          description: string | null
+          duree_secondes: number | null
+          id: string
+          is_public: boolean
+          marche_event_id: string
+          ordre: number | null
+          taille_octets: number | null
+          titre: string | null
+          updated_at: string
+          url_fichier: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          duree_secondes?: number | null
+          id?: string
+          is_public?: boolean
+          marche_event_id: string
+          ordre?: number | null
+          taille_octets?: number | null
+          titre?: string | null
+          updated_at?: string
+          url_fichier: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          duree_secondes?: number | null
+          id?: string
+          is_public?: boolean
+          marche_event_id?: string
+          ordre?: number | null
+          taille_octets?: number | null
+          titre?: string | null
+          updated_at?: string
+          url_fichier?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "marcheur_audio_marche_event_id_fkey"
+            columns: ["marche_event_id"]
+            isOneToOne: false
+            referencedRelation: "marche_events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      marcheur_medias: {
+        Row: {
+          created_at: string
+          description: string | null
+          duree_secondes: number | null
+          external_url: string | null
+          id: string
+          is_public: boolean
+          marche_event_id: string
+          ordre: number | null
+          taille_octets: number | null
+          titre: string | null
+          type_media: string
+          updated_at: string
+          url_fichier: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          duree_secondes?: number | null
+          external_url?: string | null
+          id?: string
+          is_public?: boolean
+          marche_event_id: string
+          ordre?: number | null
+          taille_octets?: number | null
+          titre?: string | null
+          type_media: string
+          updated_at?: string
+          url_fichier?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          duree_secondes?: number | null
+          external_url?: string | null
+          id?: string
+          is_public?: boolean
+          marche_event_id?: string
+          ordre?: number | null
+          taille_octets?: number | null
+          titre?: string | null
+          type_media?: string
+          updated_at?: string
+          url_fichier?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "marcheur_medias_marche_event_id_fkey"
+            columns: ["marche_event_id"]
+            isOneToOne: false
+            referencedRelation: "marche_events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       marcheur_observations: {
         Row: {
           created_at: string | null
@@ -2348,6 +2460,53 @@ export type Database = {
             columns: ["marcheur_id"]
             isOneToOne: false
             referencedRelation: "exploration_marcheurs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      marcheur_textes: {
+        Row: {
+          contenu: string
+          created_at: string
+          id: string
+          is_public: boolean
+          marche_event_id: string
+          ordre: number | null
+          titre: string | null
+          type_texte: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          contenu?: string
+          created_at?: string
+          id?: string
+          is_public?: boolean
+          marche_event_id: string
+          ordre?: number | null
+          titre?: string | null
+          type_texte?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          contenu?: string
+          created_at?: string
+          id?: string
+          is_public?: boolean
+          marche_event_id?: string
+          ordre?: number | null
+          titre?: string | null
+          type_texte?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "marcheur_textes_marche_event_id_fkey"
+            columns: ["marche_event_id"]
+            isOneToOne: false
+            referencedRelation: "marche_events"
             referencedColumns: ["id"]
           },
         ]
