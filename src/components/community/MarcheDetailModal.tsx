@@ -7,6 +7,7 @@ import { fr } from 'date-fns/locale';
 import { Eye, Headphones, BookOpen, Leaf, MapPin, Music, ChevronLeft, ChevronRight, Camera, FileText, Globe, Users, User, ExternalLink } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { processSpeciesData } from '@/utils/speciesDataUtils';
+import { createSlug } from '@/utils/slugGenerator';
 
 interface MarcheDetailModalProps {
   open: boolean;
