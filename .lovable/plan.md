@@ -1,77 +1,63 @@
 
 
-# Le Carnet Vivant — Mémoire immersive des marches
+# Reorganisation des menus : "Les 4 Temps du Marcheur"
 
-## Vision
+## Constat
 
-Quand un marcheur a vécu 20 marches, sa liste actuelle (11px, lignes compressées) devient un cimetière de dates. Il faut transformer le "Mon carnet de route" en une **mémoire vivante et sensorielle** — un objet que le marcheur a envie de rouvrir, comme un album photo qu'on feuillette au coin du feu.
+Aujourd'hui la barre affiche jusqu'a 8 onglets plats (Accueil, Zones, Marches, Quiz, Carnet, Sons, Kigo, Territoire). Sur mobile 390px, 8 icones = illisible. Et chaque nouvel outil (Boussole, Meteo, Phenologie...) aggraverait le probleme.
 
-## Concept : La Frise des Saisons
+## Proposition : 4 piliers permanents + 1 evolutif
 
-Le carnet de route devient une **frise chronologique verticale** organisée par saisons. Chaque marche est une "perle" sur un fil du temps, avec un aperçu visuel immédiat de ce qui a été récolté.
+Organiser l'experience autour de ce que fait concretement un marcheur :
 
 ```text
-  ╔══════════════════════════════╗
-  ║   🌿 Mon carnet vivant (8)  ║
-  ║   ─── Printemps 2026 ───    ║
-  ║                              ║
-  ║   ┌──────────────────────┐   ║
-  ║   │ 📍 Beynac · 15 mars  │   ║
-  ║   │ ┌────┬────┬────┐     │   ║
-  ║   │ │ 🖼 │ 🎵 │ ✍️ │     │   ║
-  ║   │ │ 12 │  3 │  1 │     │   ║
-  ║   │ └────┴────┴────┘     │   ║
-  ║   │ 🦅 14 espèces · Kigo │   ║
-  ║   └──────────────────────┘   ║
-  ║              │               ║
-  ║   ┌──────────────────────┐   ║
-  ║   │ 📍 Nouaille · 8 mars │   ║
-  ║   │ ...                  │   ║
-  ║   └──────────────────────┘   ║
-  ║                              ║
-  ║   ─── Hiver 2025-26 ───     ║
-  ║   ...                        ║
-  ╚══════════════════════════════╝
+  ┌─────────┬──────────┬──────────┬──────────┐
+  │ Accueil  │ Marches  │ Carnet   │ Outils   │
+  │   Home   │   Map    │ BookHeart│ Compass  │
+  └─────────┴──────────┴──────────┴──────────┘
+        + Territoire (sentinelle uniquement)
 ```
 
-### Chaque carte-marche affiche en un coup d'œil :
+### 1. Accueil (Home)
+Tableau de bord personnel — inchange.
 
-1. **Lieu + date** (titre principal)
-2. **3 pastilles-compteurs** : Photos · Sons · Textes — avec icônes et nombres
-3. **Ligne biodiversité** : nombre d'espèces observées (depuis `biodiversity_snapshots`)
-4. **Kigo** : le mot de saison choisi ce jour-là (depuis `kigo_entries`)
-5. **Au tap** → ouvre une **fiche détaillée** de la marche
+### 2. Marches (Map)
+Les evenements : s'inscrire, decouvrir, mes aventures a venir. Inchange.
 
-### La fiche détaillée (modale ou sous-page)
+### 3. Carnet (BookHeart)
+Le Carnet Vivant — extrait de MarchesTab, devient un onglet de premier rang. Frise des saisons, modale sensorielle. C'est la memoire du marcheur.
 
-Quand le marcheur tape sur une carte, il accède à un écran organisé en **4 onglets sensoriels** (cohérent avec les 4 temps de la marche) :
+### 4. Outils (Compass)
+Hub regroupant tous les instruments pedagogiques et pratiques. Au tap, affiche une grille de tuiles :
 
-| Onglet | Contenu | Source |
-|--------|---------|--------|
-| **Voir** | Galerie photos/vidéos en grille | `marche_photos`, `marche_videos` |
-| **Écouter** | Lecteur audio + spectrogramme | `sound_recordings`, `marche_audio` |
-| **Lire** | Kigo + haïku + textes libres | `kigo_entries`, `marche_textes` |
-| **Vivant** | Biodiversité : espèces, index, météo | `biodiversity_snapshots`, `weather_snapshots` |
+| Tuile | Icone | Disponible | Description courte |
+|-------|-------|------------|-------------------|
+| Zones | Radar | Tous | Cartographie des zones de marche |
+| Quiz | Brain | Tous | Testez vos connaissances |
+| Sons | Volume2 | Eclaireur+ | Ecoute bioacoustique |
+| Kigo | Flower2 | Ambassadeur+ | Mots de saison japonais |
+| Boussole | Compass | *a venir* | Orientation terrain |
+| Meteo | CloudSun | *a venir* | Conditions & phenologie |
 
-## Intégration dans l'espace
+Les tuiles verrouillees (role insuffisant ou "a venir") apparaissent en filigrane avec un petit cadenas — cela cree du desir et montre la progression possible.
 
-Deux options complémentaires :
+### 5. Territoire (Globe) — sentinelle uniquement
+Reste un onglet dedie car c'est un espace de gouvernance, pas un outil.
 
-1. **Dans l'onglet Marches** : remplacer la section "Mon carnet de route" actuelle par cette frise (les participations validées uniquement)
-2. **L'onglet Carnet** (déjà prévu pour les éclaireurs+) : y placer la version complète avec filtres par saison, recherche par lieu, et statistiques cumulées
+## Avantages
 
-Pour la Phase 1, on transforme uniquement la section dans l'onglet Marches — l'onglet Carnet dédié viendra ensuite.
+- **Mobile** : 4 icones max (5 pour sentinelle) au lieu de 8 — lisible, aere
+- **Scalable** : chaque nouvel outil s'ajoute comme tuile dans "Outils" sans toucher la nav
+- **Desir** : les tuiles verrouillees motivent la progression de role
+- **Carnet promu** : le Carnet Vivant obtient la place qu'il merite
 
-## Fichiers impactés
+## Fichiers impactes
 
 | Fichier | Changement |
 |---------|-----------|
-| `src/components/community/tabs/MarchesTab.tsx` | Remplacer la section carnet de route par le composant `CarnetVivant` |
-| `src/components/community/CarnetVivant.tsx` | **Nouveau** — Frise chronologique par saison avec cartes-résumé |
-| `src/components/community/MarcheDetailModal.tsx` | **Nouveau** — Modale 4 onglets (Voir/Écouter/Lire/Vivant) |
-| `src/hooks/useMarcheCollectedData.ts` | **Nouveau** — Hook agrégateur qui charge photos, sons, kigos, biodiv pour une marche donnée |
-
-## Données déjà disponibles
-
-Toutes les tables nécessaires existent : `marche_photos`, `marche_audio`, `marche_videos`, `marche_textes`, `sound_recordings`, `kigo_entries`, `biodiversity_snapshots`, `weather_snapshots`. Les relations passent par `marche_id` ou `marche_event_id`. Aucune migration nécessaire.
+| `src/components/community/MonEspaceTabBar.tsx` | Reduire TabKey a 5 valeurs (accueil, marches, carnet, outils, territoire). Adapter TABS_BY_ROLE |
+| `src/components/community/tabs/OutilsTab.tsx` | **Nouveau** — Grille de tuiles avec sous-navigation interne (zones, quiz, sons, kigo) et tuiles verrouillees |
+| `src/components/community/tabs/MarchesTab.tsx` | Retirer la section CarnetVivant (migree vers l'onglet Carnet) |
+| `src/components/community/tabs/CarnetTab.tsx` | **Nouveau** — Wrapper du CarnetVivant comme onglet autonome |
+| `src/pages/MarchesDuVivantMonEspace.tsx` | Adapter le renderTab() pour les nouveaux onglets |
 
