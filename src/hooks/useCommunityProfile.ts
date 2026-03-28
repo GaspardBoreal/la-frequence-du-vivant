@@ -35,7 +35,7 @@ export function useCommunityParticipations(userId: string | undefined) {
 
 export const ROLE_CONFIG = {
   marcheur_en_devenir: {
-    label: 'Marcheur en devenir',
+    label: 'En devenir',
     icon: 'Footprints' as const,
     color: 'text-gray-500',
     bgColor: 'bg-gray-100',
