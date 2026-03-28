@@ -55,11 +55,11 @@ const ProgressionCard: React.FC<ProgressionCardProps> = ({
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      className={`rounded-2xl border-2 ${dark.border} bg-white/[0.14] backdrop-blur-lg pt-2.5 pb-4 px-4 space-y-2`}
+      className={`rounded-2xl border-2 ${dark.border} bg-white/[0.14] backdrop-blur-lg p-6 space-y-4`}
     >
-      <div className="flex items-end justify-between">
+      <div className="flex items-center justify-between">
         <div>
-          <p className="text-[11px] text-white/60 font-medium tracking-wide uppercase mb-0.5">Votre rôle actuel</p>
+          <p className="text-sm text-white/80 mb-1">Votre rôle actuel</p>
           <RoleBadge role={role} size="lg" darkMode />
         </div>
         <div className={`text-4xl font-bold ${dark.text}`}>
@@ -67,7 +67,7 @@ const ProgressionCard: React.FC<ProgressionCardProps> = ({
         </div>
       </div>
 
-      <p className="text-sm text-white/60 italic line-clamp-2">
+      <p className="text-sm text-white/60 italic">
         {role === 'marcheur_en_devenir' && pendingCount === 1
           ? 'Bravo, votre première marche vous attend ! Chaque pas compte — explorez d\'autres sentiers pour enrichir votre parcours.'
           : role === 'marcheur_en_devenir' && pendingCount > 1
@@ -98,7 +98,7 @@ const ProgressionCard: React.FC<ProgressionCardProps> = ({
       )}
 
       {/* Timeline of all roles */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between pt-2">
         {ALL_ROLES.map((r, i) => {
           const rDark = DARK_COLORS[r];
           const rConfig = ROLE_CONFIG[r];
@@ -106,9 +106,9 @@ const ProgressionCard: React.FC<ProgressionCardProps> = ({
           const isActive = i <= currentIndex;
           return (
             <React.Fragment key={r}>
-              <div className={`flex flex-col items-center gap-0.5 ${isActive ? rDark.text : 'text-emerald-200/30'}`}>
-                <div className={`w-6 h-6 rounded-full flex items-center justify-center ${isActive ? rDark.bg : 'bg-white/5'} ${isActive ? 'border-2' : 'border'} ${isActive ? rDark.border : 'border-white/10'}`}>
-                  <Icon className="w-3 h-3" />
+              <div className={`flex flex-col items-center gap-1 ${isActive ? rDark.text : 'text-emerald-200/30'}`}>
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center ${isActive ? rDark.bg : 'bg-white/5'} border ${isActive ? rDark.border : 'border-white/10'}`}>
+                  <Icon className="w-4 h-4" />
                 </div>
                 <span className="text-[10px] font-medium text-center leading-tight max-w-[60px] text-white/70">
                   {rConfig.label}

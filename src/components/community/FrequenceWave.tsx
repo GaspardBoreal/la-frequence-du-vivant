@@ -225,7 +225,7 @@ const FrequenceWave: React.FC<FrequenceWaveProps> = ({ totalFrequences, role }) 
       </div>
 
       {/* Titre */}
-      <div className="relative mb-1">
+      <div className="relative mb-1.5">
         <span className="text-[10px] text-white/60 font-medium tracking-wide uppercase">Ma Fréquence du jour</span>
       </div>
 
