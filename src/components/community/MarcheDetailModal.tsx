@@ -845,9 +845,9 @@ const MarcheDetailModal: React.FC<MarcheDetailModalProps> = ({
               exit={{ opacity: 0, y: -4 }}
               transition={{ duration: 0.15 }}
             >
-              {activeTab === 'voir' && <VoirTab marcheId={activeMarcheId || ''} userId={userId} marcheEventId={marcheEventId} />}
-              {activeTab === 'ecouter' && <EcouterTab marcheId={activeMarcheId || ''} userId={userId} marcheEventId={marcheEventId} />}
-              {activeTab === 'lire' && <LireTab userId={userId} marcheEventId={marcheEventId} />}
+              {activeTab === 'voir' && <VoirTab marcheId={activeMarcheId || ''} userId={userId} marcheEventId={marcheEventId} activeMarcheId={activeMarcheId} />}
+              {activeTab === 'ecouter' && <EcouterTab marcheId={activeMarcheId || ''} userId={userId} marcheEventId={marcheEventId} activeMarcheId={activeMarcheId} />}
+              {activeTab === 'lire' && <LireTab userId={userId} marcheEventId={marcheEventId} activeMarcheId={activeMarcheId} />}
               {activeTab === 'vivant' && <VivantTab marcheId={activeMarcheId || ''} userId={userId} marcheSlug={activeMarcheSlug} />}
             </motion.div>
           </AnimatePresence>
