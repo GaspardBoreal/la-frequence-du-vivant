@@ -255,9 +255,65 @@ const MarcheEventDetail: React.FC = () => {
                 </SelectContent>
               </Select>
             </div>
-          </div>
+            </div>
 
-          <div className="flex gap-3 mt-6">
+            {/* Marches de l'exploration */}
+            {form.exploration_id && explorationMarches && explorationMarches.length > 0 && (
+              <div className="md:col-span-2 mt-2">
+                <div className="rounded-lg border border-border bg-muted/30 p-4">
+                  <p className="text-sm font-medium text-foreground mb-3">
+                    Marches de cette exploration ({explorationMarches.length})
+                  </p>
+                  <div className="space-y-2">
+                    {explorationMarches.map((em: any, idx: number) => {
+                      const marche = em.marches;
+                      const partie = em.exploration_parties;
+                      const statusMap: Record<string, { label: string; variant: 'default' | 'secondary' | 'outline' }> = {
+                        published_public: { label: 'Publiée', variant: 'default' },
+                        published_readers: { label: 'Lecteurs', variant: 'secondary' },
+                        draft: { label: 'Brouillon', variant: 'outline' },
+                      };
+                      const status = statusMap[em.publication_status] || { label: em.publication_status, variant: 'outline' as const };
+
+                      return (
+                        <div key={idx} className="flex items-start gap-3 rounded-md border border-border bg-card p-3">
+                          <span className="flex-shrink-0 w-6 h-6 rounded-full bg-primary/10 text-primary text-xs font-bold flex items-center justify-center">
+                            {em.ordre ?? idx + 1}
+                          </span>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium text-foreground truncate">
+                              {marche?.nom_marche || marche?.ville || 'Marche sans nom'}
+                            </p>
+                            <div className="flex items-center gap-3 mt-1 text-xs text-muted-foreground">
+                              {marche?.ville && (
+                                <span className="flex items-center gap-1">
+                                  <MapPin className="h-3 w-3" />
+                                  {marche.ville}{marche.departement ? ` · ${marche.departement}` : ''}
+                                </span>
+                              )}
+                              {marche?.theme_principal && (
+                                <span className="flex items-center gap-1">
+                                  <Tag className="h-3 w-3" />
+                                  {marche.theme_principal}
+                                </span>
+                              )}
+                            </div>
+                            {partie?.titre && (
+                              <p className="text-[10px] text-muted-foreground mt-1 italic">
+                                Partie : {partie.titre}
+                              </p>
+                            )}
+                          </div>
+                          <Badge variant={status.variant} className="text-[10px] flex-shrink-0">
+                            {status.label}
+                          </Badge>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+            )}
             {isNew ? (
               <Button onClick={() => createEvent.mutate(undefined, {
                 onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['marche-events'] }); toast.success('Événement créé avec succès'); navigate('/admin/marche-events'); },
