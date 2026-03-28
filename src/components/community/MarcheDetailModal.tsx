@@ -139,8 +139,8 @@ const VoirTab: React.FC<{ marcheId: string; userId: string; marcheEventId: strin
             onFilesSelected={(files, isPublic) => {
               const photos = files.filter(f => f.type.startsWith('image/'));
               const videos = files.filter(f => f.type.startsWith('video/'));
-              if (photos.length) uploadMedias.mutate({ files: photos, marcheEventId, isPublic, typeMedia: 'photo' });
-              if (videos.length) uploadMedias.mutate({ files: videos, marcheEventId, isPublic, typeMedia: 'video' });
+              if (photos.length) uploadMedias.mutate({ files: photos, marcheEventId, isPublic, typeMedia: 'photo', marcheId: activeMarcheId });
+              if (videos.length) uploadMedias.mutate({ files: videos, marcheEventId, isPublic, typeMedia: 'video', marcheId: activeMarcheId });
             }}
           />
         </motion.div>
