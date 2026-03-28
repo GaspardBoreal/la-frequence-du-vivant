@@ -543,7 +543,10 @@ const VivantTab: React.FC<{ marcheId: string; userId: string; marcheSlug?: strin
 
   const territoryData = snapshot || realtimeData;
   const isLoading = snapshotLoading || realtimeLoading;
-  const topSpecies = territoryData?.species_data ? processSpeciesData(territoryData.species_data).slice(0, 6) : [];
+  const processedSpecies = territoryData?.species_data ? processSpeciesData(territoryData.species_data) : null;
+  const topSpecies = processedSpecies
+    ? [...processedSpecies.flore, ...Object.values(processedSpecies.faune).flat()].slice(0, 6)
+    : [];
 
   // Community data
   const { data: communityPhotos } = useQuery({
