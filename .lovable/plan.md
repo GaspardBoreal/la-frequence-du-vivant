@@ -1,51 +1,41 @@
 
 
-# Corriger l'absence de données dans le Carnet Vivant
+# Harmoniser les données entre la page Bioacoustique et le Carnet Vivant
 
 ## Diagnostic
 
-Le probleme est un **decalage de source de donnees** :
+La difference vient du **rayon de recherche** :
 
-- La page **bioacoustique** (COPIE 1) appelle l'edge function `biodiversity-data` en temps reel avec les coordonnees GPS de la marche → elle recupere bien les donnees GBIF/iNaturalist/eBird
-- Le **Carnet Vivant** (COPIE 2) cherche dans la table `biodiversity_snapshots` avec `marche_id` → cette table est **vide** pour cette marche (aucun snapshot n'a ete genere)
+- **Page Bioacoustique** (COPIE 1) : rayon = **500m** (slider visible en bas) → 42 especes
+- **Carnet Vivant** (COPIE 2) : rayon = **5000m** (code en dur dans le fallback edge function) → 264 especes, 89 oiseaux, etc.
 
-La marche "Nous deux a Nouaille" a bien des coordonnees (lat: 46.51, lng: 0.41) mais personne n'a lance la collecte de snapshots pour elle. Les snapshots existent uniquement pour les marches historiques de la Dordogne.
+Le meme endpoint `biodiversity-data` est appele, mais avec un rayon 10x plus grand dans le carnet, d'ou les chiffres gonfles.
 
-## Solution
+## Proposition
 
-Plutot que d'exiger un snapshot pre-calcule, le VivantTab doit **appeler l'edge function `biodiversity-data` en fallback** quand aucun snapshot n'existe. Cela reproduit exactement ce que fait la page bioacoustique.
+### 1. Aligner le rayon par defaut a 500m dans le Carnet Vivant
 
-### Logique
+Modifier l'appel edge function dans `VivantTab` : `radius: 500` au lieu de `5000`. Ainsi les chiffres correspondent exactement a ce que le marcheur voit sur la page bioacoustique.
 
-1. Query `biodiversity_snapshots` par `marche_id` (comme actuellement)
-2. Si aucun snapshot → charger les coordonnees de la marche depuis `marches`
-3. Appeler `biodiversity-data` edge function avec lat/lng
-4. Afficher les resultats dans le meme format (especes, index, top especes)
+### 2. Ajouter un lien "Explorer sur le territoire" dans le Carnet
 
-### Avantage
+Sous les stats du Territoire, afficher un petit lien cliquable qui ouvre la page bioacoustique de cette marche. Le marcheur peut alors ajuster le rayon, filtrer par espece, etc. Le carnet reste un resume compact ; la page bioacoustique est l'outil de fouille.
 
-- Zero migration, zero nouvelle table
-- Le marcheur voit les memes donnees que sur la page bioacoustique
-- Si un snapshot existe (marches plus anciennes), on l'utilise directement (plus rapide)
+```text
+  ┌───────────────────────────────┐
+  │  🌍 LE TERRITOIRE             │
+  │  42 especes · 26 plantes ...  │
+  │  [top especes]                │
+  │                               │
+  │  🔗 Explorer sur le territoire│
+  └───────────────────────────────┘
+```
+
+Le lien existe deja dans le code (`explorerLink`) mais n'est rendu que si `marcheSlug` est fourni. Il faut s'assurer que le slug est bien transmis.
 
 ## Fichier modifie
 
 | Fichier | Changement |
 |---------|-----------|
-| `src/components/community/MarcheDetailModal.tsx` | Dans `VivantTab` : ajouter une query de fallback qui charge les coords de la marche puis appelle l'edge function `biodiversity-data` quand `snapshot` est null. Adapter l'affichage pour accepter les deux formats de donnees (snapshot table vs reponse edge function) |
-
-## Detail technique
-
-```text
-VivantTab(marcheId)
-  │
-  ├─ Query 1: biodiversity_snapshots WHERE marche_id = X
-  │   └─ snapshot trouvé? → afficher directement
-  │
-  └─ Query 2 (enabled si !snapshot):
-      ├─ Charger marches.latitude/longitude WHERE id = X
-      └─ Appeler edge function biodiversity-data(lat, lng, radius: 5000)
-          └─ Transformer la reponse en format affichable
-              (total_species, birds, plants, top species avec photos)
-```
+| `src/components/community/MarcheDetailModal.tsx` | Ligne ~183 : changer `radius: 5000` en `radius: 500`. Verifier que `marcheSlug` est bien passe au `VivantTab` pour que le lien "Explorer" fonctionne. |
 
