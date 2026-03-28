@@ -383,7 +383,7 @@ const LireTab: React.FC<{ userId: string; marcheEventId: string; activeMarcheId?
     },
   });
 
-  const { data: userTextes } = useMarcheurTextes(marcheEventId, userId, sort);
+  const { data: userTextes } = useMarcheurTextes(marcheEventId, userId, sort, activeMarcheId);
   const createTexte = useCreateTexte(userId);
   const updateContrib = useUpdateContribution();
   const deleteContrib = useDeleteContribution();
