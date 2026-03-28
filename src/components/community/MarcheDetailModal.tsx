@@ -153,11 +153,13 @@ const VivantTab: React.FC<{ marcheId: string; userId: string; marcheSlug?: strin
     queryFn: async () => {
       const { data } = await supabase
         .from('biodiversity_snapshots')
-        .select('total_species, birds_count, plants_count, fungi_count, others_count, biodiversity_index, species_data')
+        .select('total_species, birds_count, plants_count, fungi_count, others_count, biodiversity_index, species_data, radius_meters')
         .eq('marche_id', marcheId)
         .order('snapshot_date', { ascending: false })
         .limit(1)
         .maybeSingle();
+      // Mode hybride strict : ignorer le snapshot si rayon ≠ ~500m
+      if (data && data.radius_meters > 600) return null;
       return data;
     },
     enabled: !!marcheId,
