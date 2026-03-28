@@ -60,7 +60,7 @@ const ContributionItem: React.FC<ContributionItemProps> = ({
     <div className="bg-white/5 rounded-lg border border-white/10 overflow-hidden group">
       {/* Preview zone */}
       {type === 'photo' && displayUrl && (
-        <div className="aspect-video w-full overflow-hidden bg-black/20">
+        <div className="aspect-video w-full overflow-hidden bg-black/20 cursor-pointer" onClick={onClick}>
           <img src={displayUrl} alt={titre || ''} className="w-full h-full object-cover" loading="lazy" />
         </div>
       )}
