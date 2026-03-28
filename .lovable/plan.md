@@ -1,58 +1,51 @@
 
 
-# Connecter le Vivant aux vraies donnees et distinguer 3 regards
+# Corriger l'absence de données dans le Carnet Vivant
 
 ## Diagnostic
 
-Le probleme est double :
+Le probleme est un **decalage de source de donnees** :
 
-1. **Bug technique** : `VivantTab` cherche les `biodiversity_snapshots` par proximite lat/lng de l'evenement, mais les snapshots sont indexes par `marche_id`. Resultat : aucune donnee ne remonte.
+- La page **bioacoustique** (COPIE 1) appelle l'edge function `biodiversity-data` en temps reel avec les coordonnees GPS de la marche → elle recupere bien les donnees GBIF/iNaturalist/eBird
+- Le **Carnet Vivant** (COPIE 2) cherche dans la table `biodiversity_snapshots` avec `marche_id` → cette table est **vide** pour cette marche (aucun snapshot n'a ete genere)
 
-2. **Manque conceptuel** : le marcheur ne peut pas distinguer les donnees de la plateforme (iNaturalist/eBird), les contributions des autres marcheurs, et les siennes.
+La marche "Nous deux a Nouaille" a bien des coordonnees (lat: 46.51, lng: 0.41) mais personne n'a lance la collecte de snapshots pour elle. Les snapshots existent uniquement pour les marches historiques de la Dordogne.
 
-## Solution : Le Vivant en 3 couches
+## Solution
 
-Transformer l'onglet **Vivant** pour qu'il utilise le `marche_id` actif (deja disponible via le step selector) et afficher 3 sous-sections visuellement distinctes :
+Plutot que d'exiger un snapshot pre-calcule, le VivantTab doit **appeler l'edge function `biodiversity-data` en fallback** quand aucun snapshot n'existe. Cela reproduit exactement ce que fait la page bioacoustique.
 
-```text
-  ┌─────────────────────────────────┐
-  │  🌿 Vivant                      │
-  │                                 │
-  │  ── Le territoire ──────────── │
-  │  42 especes · Indice 7.2       │
-  │  🐦 16 oiseaux  🌿 26 plantes │
-  │  [Top 6 especes avec photos]   │
-  │                                 │
-  │  ── Les marcheurs ─────────── │
-  │  3 photos · 1 son · 2 textes  │
-  │  [miniatures partagees]        │
-  │                                 │
-  │  ── Mon regard ────────────── │
-  │  1 photo · 0 son · 1 texte    │
-  │  [mes contributions]           │
-  └─────────────────────────────────┘
-```
+### Logique
 
-### Couche 1 — Le Territoire (donnees open data)
-- Query `biodiversity_snapshots` par `marche_id` (pas par lat/lng)
-- Affiche stats globales + top especes extraites de `species_data` avec photos
-- Lien "Explorer tout" vers la page bioacoustique existante
+1. Query `biodiversity_snapshots` par `marche_id` (comme actuellement)
+2. Si aucun snapshot → charger les coordonnees de la marche depuis `marches`
+3. Appeler `biodiversity-data` edge function avec lat/lng
+4. Afficher les resultats dans le meme format (especes, index, top especes)
 
-### Couche 2 — Les Marcheurs (contributions communautaires)
-- Photos, sons, textes de TOUS les participants pour cette marche
-- Query `marche_photos`, `marche_audio`, `marche_textes` par `marche_id`
-- Apercu compact (3 miniatures max + compteur "+N")
+### Avantage
 
-### Couche 3 — Mon Regard (mes contributions)
-- Memes tables filtrees par `user_id` du marcheur connecte
-- Mise en valeur avec bordure doree
+- Zero migration, zero nouvelle table
+- Le marcheur voit les memes donnees que sur la page bioacoustique
+- Si un snapshot existe (marches plus anciennes), on l'utilise directement (plus rapide)
 
-### Simplification UX
-Les onglets Voir/Ecouter/Lire/Vivant actuels decoupent par type de media. La proposition les fusionne dans un seul flux vertical par couche (territoire → communaute → moi), ce qui est plus naturel pour repondre a "qu'est-ce qui s'est passe ici ?". On garde les 4 onglets mais on enrichit Vivant pour qu'il devienne le vrai tableau de bord de la marche.
-
-## Fichiers impactes
+## Fichier modifie
 
 | Fichier | Changement |
 |---------|-----------|
-| `src/components/community/MarcheDetailModal.tsx` | Refactorer `VivantTab` : recevoir `marcheId` au lieu de `marcheEventId`, query par `marche_id`, ajouter les 3 sous-sections (territoire/marcheurs/mon regard) avec top especes |
+| `src/components/community/MarcheDetailModal.tsx` | Dans `VivantTab` : ajouter une query de fallback qui charge les coords de la marche puis appelle l'edge function `biodiversity-data` quand `snapshot` est null. Adapter l'affichage pour accepter les deux formats de donnees (snapshot table vs reponse edge function) |
+
+## Detail technique
+
+```text
+VivantTab(marcheId)
+  │
+  ├─ Query 1: biodiversity_snapshots WHERE marche_id = X
+  │   └─ snapshot trouvé? → afficher directement
+  │
+  └─ Query 2 (enabled si !snapshot):
+      ├─ Charger marches.latitude/longitude WHERE id = X
+      └─ Appeler edge function biodiversity-data(lat, lng, radius: 5000)
+          └─ Transformer la reponse en format affichable
+              (total_species, birds, plants, top species avec photos)
+```
 
