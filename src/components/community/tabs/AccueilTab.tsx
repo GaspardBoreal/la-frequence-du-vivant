@@ -20,7 +20,7 @@ const AccueilTab: React.FC<AccueilTabProps> = ({
   role, marchesCount, formationValidee, certificationValidee, pendingCount, totalFrequences, onNavigate,
 }) => {
   return (
-    <div className="space-y-5">
+    <div className="space-y-3">
       <motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }}>
         <FrequenceWave totalFrequences={totalFrequences} role={role} />
       </motion.div>
@@ -40,34 +40,34 @@ const AccueilTab: React.FC<AccueilTabProps> = ({
         initial={{ opacity: 0, y: 15 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.15 }}
-        className="grid grid-cols-3 gap-3"
+        className="grid grid-cols-3 gap-2"
       >
         <button
           onClick={() => onNavigate('marches')}
-          className="bg-white/[0.08] hover:bg-white/[0.15] border border-white/15 rounded-xl p-4 flex flex-col items-center gap-2 transition-colors group"
+          className="bg-white/[0.08] hover:bg-white/[0.15] border border-white/15 rounded-xl p-3 flex flex-col items-center gap-1.5 transition-colors group"
         >
-          <div className="w-10 h-10 rounded-full bg-emerald-500/15 flex items-center justify-center group-hover:bg-emerald-500/25 transition-colors">
-            <Map className="w-5 h-5 text-emerald-300" />
+          <div className="w-8 h-8 rounded-full bg-emerald-500/15 flex items-center justify-center group-hover:bg-emerald-500/25 transition-colors">
+            <Map className="w-4 h-4 text-emerald-300" />
           </div>
           <span className="text-xs text-white/80 font-medium">Mes marches</span>
         </button>
 
         <button
           onClick={() => onNavigate('zones')}
-          className="bg-amber-500/[0.08] hover:bg-amber-500/[0.15] border border-amber-400/20 rounded-xl p-4 flex flex-col items-center gap-2 transition-colors group"
+          className="bg-amber-500/[0.08] hover:bg-amber-500/[0.15] border border-amber-400/20 rounded-xl p-3 flex flex-col items-center gap-1.5 transition-colors group"
         >
-          <div className="w-10 h-10 rounded-full bg-amber-500/15 flex items-center justify-center group-hover:bg-amber-500/25 transition-colors">
-            <Radar className="w-5 h-5 text-amber-300" />
+          <div className="w-8 h-8 rounded-full bg-amber-500/15 flex items-center justify-center group-hover:bg-amber-500/25 transition-colors">
+            <Radar className="w-4 h-4 text-amber-300" />
           </div>
           <span className="text-xs text-white/80 font-medium">Zones ×4</span>
         </button>
 
         <button
           onClick={() => onNavigate('quiz')}
-          className="bg-cyan-500/[0.08] hover:bg-cyan-500/[0.15] border border-cyan-400/20 rounded-xl p-4 flex flex-col items-center gap-2 transition-colors group"
+          className="bg-cyan-500/[0.08] hover:bg-cyan-500/[0.15] border border-cyan-400/20 rounded-xl p-3 flex flex-col items-center gap-1.5 transition-colors group"
         >
-          <div className="w-10 h-10 rounded-full bg-cyan-500/15 flex items-center justify-center group-hover:bg-cyan-500/25 transition-colors">
-            <Brain className="w-5 h-5 text-cyan-300" />
+          <div className="w-8 h-8 rounded-full bg-cyan-500/15 flex items-center justify-center group-hover:bg-cyan-500/25 transition-colors">
+            <Brain className="w-4 h-4 text-cyan-300" />
           </div>
           <span className="text-xs text-white/80 font-medium">Quiz éveil</span>
         </button>
