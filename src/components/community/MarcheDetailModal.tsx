@@ -532,7 +532,7 @@ const MarcheDetailModal: React.FC<MarcheDetailModalProps> = ({
               {activeTab === 'voir' && <VoirTab marcheId={activeMarcheId || ''} />}
               {activeTab === 'ecouter' && <EcouterTab marcheId={activeMarcheId || ''} />}
               {activeTab === 'lire' && <LireTab userId={userId} marcheEventId={marcheEventId} />}
-              {activeTab === 'vivant' && <VivantTab marcheEventId={marcheEventId} />}
+              {activeTab === 'vivant' && <VivantTab marcheId={activeMarcheId || ''} userId={userId} />}
             </motion.div>
           </AnimatePresence>
         </div>
