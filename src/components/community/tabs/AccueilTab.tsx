@@ -53,7 +53,7 @@ const AccueilTab: React.FC<AccueilTabProps> = ({
         </button>
 
         <button
-          onClick={() => onNavigate('zones')}
+          onClick={() => onNavigate('outils')}
           className="bg-amber-500/[0.08] hover:bg-amber-500/[0.15] border border-amber-400/20 rounded-xl p-4 flex flex-col items-center gap-2 transition-colors group"
         >
           <div className="w-10 h-10 rounded-full bg-amber-500/15 flex items-center justify-center group-hover:bg-amber-500/25 transition-colors">
@@ -63,7 +63,7 @@ const AccueilTab: React.FC<AccueilTabProps> = ({
         </button>
 
         <button
-          onClick={() => onNavigate('quiz')}
+          onClick={() => onNavigate('outils')}
           className="bg-cyan-500/[0.08] hover:bg-cyan-500/[0.15] border border-cyan-400/20 rounded-xl p-4 flex flex-col items-center gap-2 transition-colors group"
         >
           <div className="w-10 h-10 rounded-full bg-cyan-500/15 flex items-center justify-center group-hover:bg-cyan-500/25 transition-colors">
