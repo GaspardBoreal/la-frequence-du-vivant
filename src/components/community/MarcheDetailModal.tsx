@@ -758,7 +758,7 @@ const MarcheDetailModal: React.FC<MarcheDetailModalProps> = ({
   const [activeStepIndex, setActiveStepIndex] = useState(0);
 
   // Stats for badge indicators
-  const { data: stats } = useMarcheurStats(marcheEventId, userId);
+  const { data: stats } = useMarcheurStats(marcheEventId, userId, activeMarcheId);
 
   const { data: explorationMarches } = useQuery({
     queryKey: ['marche-detail-steps', marcheEventId],
