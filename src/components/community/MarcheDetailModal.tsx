@@ -180,7 +180,7 @@ const VivantTab: React.FC<{ marcheId: string; userId: string; marcheSlug?: strin
         body: {
           latitude: marche.latitude,
           longitude: marche.longitude,
-          radius: 5000,
+          radius: 500,
           dateFilter: 'medium',
         }
       });
