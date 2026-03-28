@@ -107,7 +107,7 @@ const ProgressionCard: React.FC<ProgressionCardProps> = ({
           return (
             <React.Fragment key={r}>
               <div className={`flex flex-col items-center gap-0.5 ${isActive ? rDark.text : 'text-emerald-200/30'}`}>
-                <div className={`w-6 h-6 rounded-full flex items-center justify-center ${isActive ? rDark.bg : 'bg-white/5'} border ${isActive ? rDark.border : 'border-white/10'}`}>
+                <div className={`w-6 h-6 rounded-full flex items-center justify-center ${isActive ? rDark.bg : 'bg-white/5'} ${isActive ? 'border-2' : 'border'} ${isActive ? rDark.border : 'border-white/10'}`}>
                   <Icon className="w-3 h-3" />
                 </div>
                 <span className="text-[10px] font-medium text-center leading-tight max-w-[60px] text-white/70">
