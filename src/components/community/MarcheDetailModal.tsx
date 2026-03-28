@@ -545,6 +545,8 @@ const MarcheDetailModal: React.FC<MarcheDetailModalProps> = ({
 
   const hasMultipleSteps = (explorationMarches?.length ?? 0) > 1;
   const activeMarcheId = explorationMarches?.[activeStepIndex]?.id;
+  const activeMarche = explorationMarches?.[activeStepIndex];
+  const activeMarcheSlug = activeMarche ? createSlug(activeMarche.nom_marche || activeMarche.ville, activeMarche.ville) : undefined;
 
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
