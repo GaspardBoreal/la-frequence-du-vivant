@@ -275,19 +275,17 @@ export function useCreateTexte(userId: string) {
       isPublic: boolean;
       marcheId?: string;
     }) => {
-      const insertData: Record<string, any> = {
-        user_id: userId,
-        marche_event_id: marcheEventId,
-        titre,
-        contenu,
-        type_texte: typeTexte,
-        is_public: isPublic,
-      };
-      if (marcheId) insertData.marche_id = marcheId;
-      
       const { data, error } = await supabase
         .from('marcheur_textes')
-        .insert(insertData)
+        .insert({
+          user_id: userId,
+          marche_event_id: marcheEventId,
+          titre,
+          contenu,
+          type_texte: typeTexte,
+          is_public: isPublic,
+          ...(marcheId ? { marche_id: marcheId } : {}),
+        })
         .select()
         .single();
       if (error) throw error;
