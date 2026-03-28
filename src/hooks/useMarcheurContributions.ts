@@ -7,6 +7,7 @@ export interface MarcheurMedia {
   id: string;
   user_id: string;
   marche_event_id: string;
+  marche_id: string | null;
   type_media: 'photo' | 'video';
   url_fichier: string | null;
   external_url: string | null;
@@ -24,6 +25,7 @@ export interface MarcheurAudio {
   id: string;
   user_id: string;
   marche_event_id: string;
+  marche_id: string | null;
   url_fichier: string;
   titre: string | null;
   description: string | null;
@@ -39,6 +41,7 @@ export interface MarcheurTexte {
   id: string;
   user_id: string;
   marche_event_id: string;
+  marche_id: string | null;
   type_texte: string;
   titre: string | null;
   contenu: string;
@@ -69,15 +72,22 @@ async function uploadFile(userId: string, file: File, folder: string): Promise<s
 }
 
 // ─── Medias (photos + vidéos) ───
-export function useMarcheurMedias(marcheEventId: string, userId: string, sort: SortOrder = 'desc') {
+export function useMarcheurMedias(marcheEventId: string, userId: string, sort: SortOrder = 'desc', marcheId?: string) {
   return useQuery({
-    queryKey: ['marcheur-medias', marcheEventId, userId, sort],
+    queryKey: ['marcheur-medias', marcheEventId, userId, sort, marcheId],
     queryFn: async () => {
-      const { data, error } = await supabase
+      let query = supabase
         .from('marcheur_medias')
         .select('*')
-        .eq('marche_event_id', marcheEventId)
         .order('created_at', { ascending: sort === 'asc' });
+      
+      if (marcheId) {
+        query = query.eq('marche_id', marcheId);
+      } else {
+        query = query.eq('marche_event_id', marcheEventId);
+      }
+      
+      const { data, error } = await query;
       if (error) throw error;
       return (data || []) as MarcheurMedia[];
     },
@@ -89,11 +99,12 @@ export function useUploadMedias(userId: string) {
   const qc = useQueryClient();
   
   return useMutation({
-    mutationFn: async ({ files, marcheEventId, isPublic, typeMedia }: {
+    mutationFn: async ({ files, marcheEventId, isPublic, typeMedia, marcheId }: {
       files: File[];
       marcheEventId: string;
       isPublic: boolean;
       typeMedia: 'photo' | 'video';
+      marcheId?: string;
     }) => {
       const results: MarcheurMedia[] = [];
       for (const file of files) {
@@ -110,6 +121,7 @@ export function useUploadMedias(userId: string) {
             titre: file.name.replace(/\.[^.]+$/, ''),
             is_public: isPublic,
             taille_octets: file.size,
+            ...(marcheId ? { marche_id: marcheId } : {}),
           })
           .select()
           .single();
@@ -131,21 +143,23 @@ export function useAddExternalVideo(userId: string) {
   const qc = useQueryClient();
   
   return useMutation({
-    mutationFn: async ({ marcheEventId, externalUrl, titre, isPublic }: {
+    mutationFn: async ({ marcheEventId, externalUrl, titre, isPublic, marcheId }: {
       marcheEventId: string;
       externalUrl: string;
       titre: string;
       isPublic: boolean;
+      marcheId?: string;
     }) => {
       const { data, error } = await supabase
         .from('marcheur_medias')
         .insert({
           user_id: userId,
           marche_event_id: marcheEventId,
-          type_media: 'video',
+          type_media: 'video' as const,
           external_url: externalUrl,
           titre,
           is_public: isPublic,
+          ...(marcheId ? { marche_id: marcheId } : {}),
         })
         .select()
         .single();
@@ -161,15 +175,22 @@ export function useAddExternalVideo(userId: string) {
 }
 
 // ─── Audio ───
-export function useMarcheurAudio(marcheEventId: string, userId: string, sort: SortOrder = 'desc') {
+export function useMarcheurAudio(marcheEventId: string, userId: string, sort: SortOrder = 'desc', marcheId?: string) {
   return useQuery({
-    queryKey: ['marcheur-audio', marcheEventId, userId, sort],
+    queryKey: ['marcheur-audio', marcheEventId, userId, sort, marcheId],
     queryFn: async () => {
-      const { data, error } = await supabase
+      let query = supabase
         .from('marcheur_audio')
         .select('*')
-        .eq('marche_event_id', marcheEventId)
         .order('created_at', { ascending: sort === 'asc' });
+      
+      if (marcheId) {
+        query = query.eq('marche_id', marcheId);
+      } else {
+        query = query.eq('marche_event_id', marcheEventId);
+      }
+      
+      const { data, error } = await query;
       if (error) throw error;
       return (data || []) as MarcheurAudio[];
     },
@@ -181,10 +202,11 @@ export function useUploadAudio(userId: string) {
   const qc = useQueryClient();
   
   return useMutation({
-    mutationFn: async ({ files, marcheEventId, isPublic }: {
+    mutationFn: async ({ files, marcheEventId, isPublic, marcheId }: {
       files: File[];
       marcheEventId: string;
       isPublic: boolean;
+      marcheId?: string;
     }) => {
       const results: MarcheurAudio[] = [];
       for (const file of files) {
@@ -199,6 +221,7 @@ export function useUploadAudio(userId: string) {
             titre: file.name.replace(/\.[^.]+$/, ''),
             is_public: isPublic,
             taille_octets: file.size,
+            ...(marcheId ? { marche_id: marcheId } : {}),
           })
           .select()
           .single();
@@ -217,15 +240,22 @@ export function useUploadAudio(userId: string) {
 }
 
 // ─── Textes ───
-export function useMarcheurTextes(marcheEventId: string, userId: string, sort: SortOrder = 'desc') {
+export function useMarcheurTextes(marcheEventId: string, userId: string, sort: SortOrder = 'desc', marcheId?: string) {
   return useQuery({
-    queryKey: ['marcheur-textes', marcheEventId, userId, sort],
+    queryKey: ['marcheur-textes', marcheEventId, userId, sort, marcheId],
     queryFn: async () => {
-      const { data, error } = await supabase
+      let query = supabase
         .from('marcheur_textes')
         .select('*')
-        .eq('marche_event_id', marcheEventId)
         .order('created_at', { ascending: sort === 'asc' });
+      
+      if (marcheId) {
+        query = query.eq('marche_id', marcheId);
+      } else {
+        query = query.eq('marche_event_id', marcheEventId);
+      }
+      
+      const { data, error } = await query;
       if (error) throw error;
       return (data || []) as MarcheurTexte[];
     },
@@ -237,12 +267,13 @@ export function useCreateTexte(userId: string) {
   const qc = useQueryClient();
   
   return useMutation({
-    mutationFn: async ({ marcheEventId, titre, contenu, typeTexte, isPublic }: {
+    mutationFn: async ({ marcheEventId, titre, contenu, typeTexte, isPublic, marcheId }: {
       marcheEventId: string;
       titre: string;
       contenu: string;
       typeTexte: string;
       isPublic: boolean;
+      marcheId?: string;
     }) => {
       const { data, error } = await supabase
         .from('marcheur_textes')
@@ -253,6 +284,7 @@ export function useCreateTexte(userId: string) {
           contenu,
           type_texte: typeTexte,
           is_public: isPublic,
+          ...(marcheId ? { marche_id: marcheId } : {}),
         })
         .select()
         .single();
@@ -302,7 +334,6 @@ export function useDeleteContribution() {
       id: string;
       storageUrl?: string;
     }) => {
-      // Delete file from storage if needed
       if (storageUrl && storageUrl.includes('marcheur-uploads')) {
         const path = storageUrl.split('/marcheur-uploads/')[1];
         if (path) {
@@ -324,14 +355,17 @@ export function useDeleteContribution() {
 }
 
 // ─── Stats ───
-export function useMarcheurStats(marcheEventId: string, userId: string) {
+export function useMarcheurStats(marcheEventId: string, userId: string, marcheId?: string) {
   return useQuery({
-    queryKey: ['marcheur-stats', marcheEventId, userId],
+    queryKey: ['marcheur-stats', marcheEventId, userId, marcheId],
     queryFn: async () => {
+      const filterCol = marcheId ? 'marche_id' : 'marche_event_id';
+      const filterVal = marcheId || marcheEventId;
+      
       const [medias, audio, textes] = await Promise.all([
-        supabase.from('marcheur_medias').select('id', { count: 'exact', head: true }).eq('marche_event_id', marcheEventId).eq('user_id', userId),
-        supabase.from('marcheur_audio').select('id', { count: 'exact', head: true }).eq('marche_event_id', marcheEventId).eq('user_id', userId),
-        supabase.from('marcheur_textes').select('id', { count: 'exact', head: true }).eq('marche_event_id', marcheEventId).eq('user_id', userId),
+        supabase.from('marcheur_medias').select('id', { count: 'exact', head: true }).eq(filterCol, filterVal).eq('user_id', userId),
+        supabase.from('marcheur_audio').select('id', { count: 'exact', head: true }).eq(filterCol, filterVal).eq('user_id', userId),
+        supabase.from('marcheur_textes').select('id', { count: 'exact', head: true }).eq(filterCol, filterVal).eq('user_id', userId),
       ]);
       return {
         medias: medias.count || 0,

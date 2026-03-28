@@ -2312,6 +2312,7 @@ export type Database = {
           id: string
           is_public: boolean
           marche_event_id: string
+          marche_id: string | null
           ordre: number | null
           taille_octets: number | null
           titre: string | null
@@ -2326,6 +2327,7 @@ export type Database = {
           id?: string
           is_public?: boolean
           marche_event_id: string
+          marche_id?: string | null
           ordre?: number | null
           taille_octets?: number | null
           titre?: string | null
@@ -2340,6 +2342,7 @@ export type Database = {
           id?: string
           is_public?: boolean
           marche_event_id?: string
+          marche_id?: string | null
           ordre?: number | null
           taille_octets?: number | null
           titre?: string | null
@@ -2355,6 +2358,13 @@ export type Database = {
             referencedRelation: "marche_events"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "marcheur_audio_marche_id_fkey"
+            columns: ["marche_id"]
+            isOneToOne: false
+            referencedRelation: "marches"
+            referencedColumns: ["id"]
+          },
         ]
       }
       marcheur_medias: {
@@ -2366,6 +2376,7 @@ export type Database = {
           id: string
           is_public: boolean
           marche_event_id: string
+          marche_id: string | null
           ordre: number | null
           taille_octets: number | null
           titre: string | null
@@ -2382,6 +2393,7 @@ export type Database = {
           id?: string
           is_public?: boolean
           marche_event_id: string
+          marche_id?: string | null
           ordre?: number | null
           taille_octets?: number | null
           titre?: string | null
@@ -2398,6 +2410,7 @@ export type Database = {
           id?: string
           is_public?: boolean
           marche_event_id?: string
+          marche_id?: string | null
           ordre?: number | null
           taille_octets?: number | null
           titre?: string | null
@@ -2412,6 +2425,13 @@ export type Database = {
             columns: ["marche_event_id"]
             isOneToOne: false
             referencedRelation: "marche_events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "marcheur_medias_marche_id_fkey"
+            columns: ["marche_id"]
+            isOneToOne: false
+            referencedRelation: "marches"
             referencedColumns: ["id"]
           },
         ]
@@ -2471,6 +2491,7 @@ export type Database = {
           id: string
           is_public: boolean
           marche_event_id: string
+          marche_id: string | null
           ordre: number | null
           titre: string | null
           type_texte: string
@@ -2483,6 +2504,7 @@ export type Database = {
           id?: string
           is_public?: boolean
           marche_event_id: string
+          marche_id?: string | null
           ordre?: number | null
           titre?: string | null
           type_texte?: string
@@ -2495,6 +2517,7 @@ export type Database = {
           id?: string
           is_public?: boolean
           marche_event_id?: string
+          marche_id?: string | null
           ordre?: number | null
           titre?: string | null
           type_texte?: string
@@ -2507,6 +2530,13 @@ export type Database = {
             columns: ["marche_event_id"]
             isOneToOne: false
             referencedRelation: "marche_events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "marcheur_textes_marche_id_fkey"
+            columns: ["marche_id"]
+            isOneToOne: false
+            referencedRelation: "marches"
             referencedColumns: ["id"]
           },
         ]

@@ -57,7 +57,7 @@ const EmptyState: React.FC<{ message: string; sub?: string }> = ({ message, sub 
 );
 
 // ─── Voir Tab (photos + vidéos + user contributions) ───
-const VoirTab: React.FC<{ marcheId: string; userId: string; marcheEventId: string }> = ({ marcheId, userId, marcheEventId }) => {
+const VoirTab: React.FC<{ marcheId: string; userId: string; marcheEventId: string; activeMarcheId?: string }> = ({ marcheId, userId, marcheEventId, activeMarcheId }) => {
   const [sort, setSort] = useState<'desc' | 'asc'>('desc');
   const [showUpload, setShowUpload] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
@@ -78,7 +78,7 @@ const VoirTab: React.FC<{ marcheId: string; userId: string; marcheEventId: strin
   });
 
   // User contributions
-  const { data: userMedias } = useMarcheurMedias(marcheEventId, userId, sort);
+  const { data: userMedias } = useMarcheurMedias(marcheEventId, userId, sort, activeMarcheId);
   const uploadMedias = useUploadMedias(userId);
   const addExtVideo = useAddExternalVideo(userId);
   const updateContrib = useUpdateContribution();
@@ -139,8 +139,8 @@ const VoirTab: React.FC<{ marcheId: string; userId: string; marcheEventId: strin
             onFilesSelected={(files, isPublic) => {
               const photos = files.filter(f => f.type.startsWith('image/'));
               const videos = files.filter(f => f.type.startsWith('video/'));
-              if (photos.length) uploadMedias.mutate({ files: photos, marcheEventId, isPublic, typeMedia: 'photo' });
-              if (videos.length) uploadMedias.mutate({ files: videos, marcheEventId, isPublic, typeMedia: 'video' });
+              if (photos.length) uploadMedias.mutate({ files: photos, marcheEventId, isPublic, typeMedia: 'photo', marcheId: activeMarcheId });
+              if (videos.length) uploadMedias.mutate({ files: videos, marcheEventId, isPublic, typeMedia: 'video', marcheId: activeMarcheId });
             }}
           />
         </motion.div>
@@ -230,7 +230,7 @@ const VoirTab: React.FC<{ marcheId: string; userId: string; marcheEventId: strin
 };
 
 // ─── Écouter Tab ───
-const EcouterTab: React.FC<{ marcheId: string; userId: string; marcheEventId: string }> = ({ marcheId, userId, marcheEventId }) => {
+const EcouterTab: React.FC<{ marcheId: string; userId: string; marcheEventId: string; activeMarcheId?: string }> = ({ marcheId, userId, marcheEventId, activeMarcheId }) => {
   const [sort, setSort] = useState<'desc' | 'asc'>('desc');
   const [showUpload, setShowUpload] = useState(false);
 
@@ -248,7 +248,7 @@ const EcouterTab: React.FC<{ marcheId: string; userId: string; marcheEventId: st
     enabled: !!marcheId,
   });
 
-  const { data: userAudio } = useMarcheurAudio(marcheEventId, userId, sort);
+  const { data: userAudio } = useMarcheurAudio(marcheEventId, userId, sort, activeMarcheId);
   const uploadAudio = useUploadAudio(userId);
   const updateContrib = useUpdateContribution();
   const deleteContrib = useDeleteContribution();
@@ -276,7 +276,7 @@ const EcouterTab: React.FC<{ marcheId: string; userId: string; marcheEventId: st
             label="Enregistrements sonores"
             icon={<Music className="w-6 h-6 text-violet-400/60" />}
             isUploading={uploadAudio.isPending}
-            onFilesSelected={(files, isPublic) => uploadAudio.mutate({ files, marcheEventId, isPublic })}
+            onFilesSelected={(files, isPublic) => uploadAudio.mutate({ files, marcheEventId, isPublic, marcheId: activeMarcheId })}
           />
         </motion.div>
       )}
@@ -362,7 +362,7 @@ const EcouterTab: React.FC<{ marcheId: string; userId: string; marcheEventId: st
 };
 
 // ─── Lire Tab ───
-const LireTab: React.FC<{ userId: string; marcheEventId: string }> = ({ userId, marcheEventId }) => {
+const LireTab: React.FC<{ userId: string; marcheEventId: string; activeMarcheId?: string }> = ({ userId, marcheEventId, activeMarcheId }) => {
   const [sort, setSort] = useState<'desc' | 'asc'>('desc');
   const [showNew, setShowNew] = useState(false);
   const [newTitre, setNewTitre] = useState('');
@@ -383,7 +383,7 @@ const LireTab: React.FC<{ userId: string; marcheEventId: string }> = ({ userId, 
     },
   });
 
-  const { data: userTextes } = useMarcheurTextes(marcheEventId, userId, sort);
+  const { data: userTextes } = useMarcheurTextes(marcheEventId, userId, sort, activeMarcheId);
   const createTexte = useCreateTexte(userId);
   const updateContrib = useUpdateContribution();
   const deleteContrib = useDeleteContribution();
@@ -399,6 +399,7 @@ const LireTab: React.FC<{ userId: string; marcheEventId: string }> = ({ userId, 
       contenu: newContenu,
       typeTexte: newType,
       isPublic: newIsPublic,
+      marcheId: activeMarcheId,
     });
     setNewTitre('');
     setNewContenu('');
@@ -756,9 +757,6 @@ const MarcheDetailModal: React.FC<MarcheDetailModalProps> = ({
   const [activeTab, setActiveTab] = useState<TabKey>('voir');
   const [activeStepIndex, setActiveStepIndex] = useState(0);
 
-  // Stats for badge indicators
-  const { data: stats } = useMarcheurStats(marcheEventId, userId);
-
   const { data: explorationMarches } = useQuery({
     queryKey: ['marche-detail-steps', marcheEventId],
     queryFn: async () => {
@@ -778,6 +776,9 @@ const MarcheDetailModal: React.FC<MarcheDetailModalProps> = ({
   const activeMarcheId = explorationMarches?.[activeStepIndex]?.id;
   const activeMarche = explorationMarches?.[activeStepIndex];
   const activeMarcheSlug = activeMarche ? createSlug(activeMarche.nom_marche || activeMarche.ville, activeMarche.ville) : undefined;
+
+  // Stats for badge indicators (must be after activeMarcheId is derived)
+  const { data: stats } = useMarcheurStats(marcheEventId, userId, activeMarcheId);
 
   const tabCounts: Record<TabKey, number> = {
     voir: stats?.medias || 0,
@@ -844,9 +845,9 @@ const MarcheDetailModal: React.FC<MarcheDetailModalProps> = ({
               exit={{ opacity: 0, y: -4 }}
               transition={{ duration: 0.15 }}
             >
-              {activeTab === 'voir' && <VoirTab marcheId={activeMarcheId || ''} userId={userId} marcheEventId={marcheEventId} />}
-              {activeTab === 'ecouter' && <EcouterTab marcheId={activeMarcheId || ''} userId={userId} marcheEventId={marcheEventId} />}
-              {activeTab === 'lire' && <LireTab userId={userId} marcheEventId={marcheEventId} />}
+              {activeTab === 'voir' && <VoirTab marcheId={activeMarcheId || ''} userId={userId} marcheEventId={marcheEventId} activeMarcheId={activeMarcheId} />}
+              {activeTab === 'ecouter' && <EcouterTab marcheId={activeMarcheId || ''} userId={userId} marcheEventId={marcheEventId} activeMarcheId={activeMarcheId} />}
+              {activeTab === 'lire' && <LireTab userId={userId} marcheEventId={marcheEventId} activeMarcheId={activeMarcheId} />}
               {activeTab === 'vivant' && <VivantTab marcheId={activeMarcheId || ''} userId={userId} marcheSlug={activeMarcheSlug} />}
             </motion.div>
           </AnimatePresence>
