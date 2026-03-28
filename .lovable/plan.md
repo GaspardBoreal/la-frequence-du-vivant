@@ -1,35 +1,18 @@
 
 
-# Restructuration de l'onglet Marches en 3 sections distinctes
+# Tri du carnet de route par date d'événement décroissante
 
-## Constat
+## Problème
 
-Actuellement, tous les evenements sont dans une liste plate triee (inscrits d'abord, puis par date). Un marcheur inscrit a 2 marches et voyant 1 marche disponible voit 3 cartes identiques sous le meme titre "Votre prochaine aventure". Aucune hierarchie visuelle ne distingue ce qui le concerne directement de ce qu'il peut encore decouvrir.
+Les participations dans "Mon carnet de route" sont triées par `created_at` (date d'inscription), pas par `date_marche` (date de l'événement). Un marcheur inscrit tôt à un événement lointain le verra en haut, ce qui n'est pas logique.
 
-## Structure proposee : 3 sections narratives
+## Solution
 
-### Section 1 — "Mes aventures" (evenements inscrits)
-- Cartes avec bordure doree/ambre lumineuse, fond plus chaud
-- Countdown prominent, badge "Inscrit" deja present
-- Titre de section : "Mes aventures a venir" avec icone Sparkles
-- Si aucune inscription : message incitatif "Aucune marche au programme — explorez les sentiers ci-dessous"
+Dans `MarchesTab.tsx`, trier localement le tableau `participations` par `date_marche` décroissant avant le `.map()` du carnet de route. On ne modifie pas la query du hook (utilisée ailleurs) — on fait un `.slice().sort()` côté affichage.
 
-### Section 2 — "Sentiers a explorer" (evenements a venir, non inscrits)
-- Cartes neutres (style actuel bg-white/5)
-- Bouton CTA "S'inscrire" bien visible
-- Titre de section : "Sentiers a explorer" avec icone Compass
-- Message contextuel si tout est deja inscrit : "Vous etes inscrit a toutes les marches — bravo !"
-
-### Section 3 — "Mon carnet de route" (historique des participations)
-- Reste tel quel, compact
-- Titre renomme "Mon carnet de route" au lieu de "Historique"
-
-### QR Code
-- Reste en bas, entre sections 2 et 3
-
-## Fichier modifie
+## Fichier modifié
 
 | Fichier | Changement |
 |---------|-----------|
-| `src/components/community/tabs/MarchesTab.tsx` | Separer `sortedEvents` en deux listes (`myEvents` / `discoverEvents`), creer 3 blocs visuels distincts avec titres et messages adaptatifs |
+| `src/components/community/tabs/MarchesTab.tsx` | Ligne ~274 : créer `sortedParticipations` trié par `date_marche` desc, utiliser dans le `.map()` |
 
