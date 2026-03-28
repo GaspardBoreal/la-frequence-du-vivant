@@ -70,6 +70,21 @@ const MarcheEventDetail: React.FC = () => {
     },
   });
 
+  // Marches of selected exploration
+  const { data: explorationMarches } = useQuery({
+    queryKey: ['exploration-marches-preview', form.exploration_id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('exploration_marches')
+        .select('ordre, publication_status, marche_id, partie_id, marches(nom_marche, ville, departement, theme_principal), exploration_parties(titre)')
+        .eq('exploration_id', form.exploration_id)
+        .order('ordre');
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!form.exploration_id,
+  });
+
   // Participations (raw)
   const { data: participations } = useQuery({
     queryKey: ['marche-participations', id],
