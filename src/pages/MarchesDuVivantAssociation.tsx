@@ -387,7 +387,7 @@ const MarchesDuVivantAssociation = () => {
               className="space-y-6"
             >
               <h2 className="font-crimson text-3xl text-foreground">
-                Rejoignez la communauté des Marcheurs du Vivant
+                Rejoindre la communauté
               </h2>
               <p className="text-muted-foreground">
                 Créez votre compte pour participer à votre première marche, 
