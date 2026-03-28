@@ -4,7 +4,7 @@ import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 
-interface ContributionItemProps {
+export interface ContributionItemProps {
   id: string;
   type: 'photo' | 'video' | 'audio' | 'texte';
   titre: string | null;
@@ -18,6 +18,7 @@ interface ContributionItemProps {
   createdAt: string;
   onUpdate?: (id: string, updates: Record<string, any>) => void;
   onDelete?: (id: string) => void;
+  onClick?: () => void;
 }
 
 const typeIcons = {
@@ -36,7 +37,7 @@ const typeColors = {
 
 const ContributionItem: React.FC<ContributionItemProps> = ({
   id, type, titre, description, url, externalUrl, contenu, typeTexte,
-  isPublic, isOwner, createdAt, onUpdate, onDelete,
+  isPublic, isOwner, createdAt, onUpdate, onDelete, onClick,
 }) => {
   const [editing, setEditing] = useState(false);
   const [editTitre, setEditTitre] = useState(titre || '');
@@ -59,7 +60,7 @@ const ContributionItem: React.FC<ContributionItemProps> = ({
     <div className="bg-white/5 rounded-lg border border-white/10 overflow-hidden group">
       {/* Preview zone */}
       {type === 'photo' && displayUrl && (
-        <div className="aspect-video w-full overflow-hidden bg-black/20">
+        <div className="aspect-video w-full overflow-hidden bg-black/20 cursor-pointer" onClick={onClick}>
           <img src={displayUrl} alt={titre || ''} className="w-full h-full object-cover" loading="lazy" />
         </div>
       )}
