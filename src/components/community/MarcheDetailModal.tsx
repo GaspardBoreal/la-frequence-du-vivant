@@ -399,6 +399,7 @@ const LireTab: React.FC<{ userId: string; marcheEventId: string; activeMarcheId?
       contenu: newContenu,
       typeTexte: newType,
       isPublic: newIsPublic,
+      marcheId: activeMarcheId,
     });
     setNewTitre('');
     setNewContenu('');
