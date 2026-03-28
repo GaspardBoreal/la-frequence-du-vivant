@@ -276,7 +276,7 @@ const EcouterTab: React.FC<{ marcheId: string; userId: string; marcheEventId: st
             label="Enregistrements sonores"
             icon={<Music className="w-6 h-6 text-violet-400/60" />}
             isUploading={uploadAudio.isPending}
-            onFilesSelected={(files, isPublic) => uploadAudio.mutate({ files, marcheEventId, isPublic })}
+            onFilesSelected={(files, isPublic) => uploadAudio.mutate({ files, marcheEventId, isPublic, marcheId: activeMarcheId })}
           />
         </motion.div>
       )}
