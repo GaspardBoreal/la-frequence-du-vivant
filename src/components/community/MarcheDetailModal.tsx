@@ -230,7 +230,7 @@ const VoirTab: React.FC<{ marcheId: string; userId: string; marcheEventId: strin
 };
 
 // ─── Écouter Tab ───
-const EcouterTab: React.FC<{ marcheId: string; userId: string; marcheEventId: string }> = ({ marcheId, userId, marcheEventId }) => {
+const EcouterTab: React.FC<{ marcheId: string; userId: string; marcheEventId: string; activeMarcheId?: string }> = ({ marcheId, userId, marcheEventId, activeMarcheId }) => {
   const [sort, setSort] = useState<'desc' | 'asc'>('desc');
   const [showUpload, setShowUpload] = useState(false);
 
