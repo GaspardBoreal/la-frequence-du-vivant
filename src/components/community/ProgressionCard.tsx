@@ -57,9 +57,9 @@ const ProgressionCard: React.FC<ProgressionCardProps> = ({
       animate={{ opacity: 1, y: 0 }}
       className={`rounded-2xl border-2 ${dark.border} bg-white/[0.14] backdrop-blur-lg p-4 space-y-2`}
     >
-      <div className="flex items-center justify-between">
+      <div className="flex items-end justify-between">
         <div>
-          <p className="text-sm text-white/80 mb-1">Votre rôle actuel</p>
+          <p className="text-sm text-white/80 mb-0.5">Votre rôle actuel</p>
           <RoleBadge role={role} size="lg" darkMode />
         </div>
         <div className={`text-4xl font-bold ${dark.text}`}>
@@ -107,7 +107,7 @@ const ProgressionCard: React.FC<ProgressionCardProps> = ({
           return (
             <React.Fragment key={r}>
               <div className={`flex flex-col items-center gap-0.5 ${isActive ? rDark.text : 'text-emerald-200/30'}`}>
-                <div className={`w-6 h-6 rounded-full flex items-center justify-center ${isActive ? rDark.bg : 'bg-white/5'} border ${isActive ? rDark.border : 'border-white/10'}`}>
+                <div className={`w-6 h-6 rounded-full flex items-center justify-center ${isActive ? rDark.bg : 'bg-white/5'} ${isActive ? 'border-2' : 'border'} ${isActive ? rDark.border : 'border-white/10'}`}>
                   <Icon className="w-3 h-3" />
                 </div>
                 <span className="text-[10px] font-medium text-center leading-tight max-w-[60px] text-white/70">
