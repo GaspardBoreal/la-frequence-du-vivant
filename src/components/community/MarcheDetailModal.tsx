@@ -328,20 +328,20 @@ const VivantTab: React.FC<{ marcheId: string; userId: string; marcheSlug?: strin
           </div>
 
           {/* Indice */}
-          {snapshot.biodiversity_index != null && (
+          {territoryData.biodiversity_index != null && (
             <div className="bg-gradient-to-r from-emerald-500/15 to-sky-500/10 rounded-xl border border-emerald-500/20 p-3 text-center">
               <p className="text-emerald-200/50 text-[10px] mb-0.5">Indice de biodiversité</p>
-              <p className="text-emerald-300 text-xl font-bold">{Number(snapshot.biodiversity_index).toFixed(1)}</p>
+              <p className="text-emerald-300 text-xl font-bold">{Number(territoryData.biodiversity_index).toFixed(1)}</p>
             </div>
           )}
 
           {/* Stats grid */}
           <div className="grid grid-cols-4 gap-1.5">
             {[
-              { label: 'Espèces', value: snapshot.total_species, color: 'text-emerald-400' },
-              { label: 'Oiseaux', value: snapshot.birds_count, color: 'text-sky-400' },
-              { label: 'Plantes', value: snapshot.plants_count, color: 'text-green-400' },
-              { label: 'Autres', value: (snapshot.fungi_count || 0) + (snapshot.others_count || 0), color: 'text-amber-400' },
+              { label: 'Espèces', value: territoryData.total_species, color: 'text-emerald-400' },
+              { label: 'Oiseaux', value: territoryData.birds_count, color: 'text-sky-400' },
+              { label: 'Plantes', value: territoryData.plants_count, color: 'text-green-400' },
+              { label: 'Autres', value: (territoryData.fungi_count || 0) + (territoryData.others_count || 0), color: 'text-amber-400' },
             ].map(s => (
               <div key={s.label} className="bg-white/5 rounded-lg border border-white/10 p-2 text-center">
                 <p className={`text-sm font-bold ${s.color}`}>{s.value}</p>
