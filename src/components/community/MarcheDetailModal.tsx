@@ -4,7 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
-import { Eye, Headphones, BookOpen, Leaf, MapPin, Camera, Music, FileText, X } from 'lucide-react';
+import { Eye, Headphones, BookOpen, Leaf, MapPin, Music, ChevronLeft, ChevronRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 interface MarcheDetailModalProps {
@@ -33,38 +33,19 @@ const EmptyState: React.FC<{ message: string }> = ({ message }) => (
   </div>
 );
 
-const VoirTab: React.FC<{ marcheEventId: string }> = ({ marcheEventId }) => {
-  // For now, try to find photos via exploration link
-  const { data: event } = useQuery({
-    queryKey: ['marche-detail-event', marcheEventId],
-    queryFn: async () => {
-      const { data } = await supabase
-        .from('marche_events')
-        .select('exploration_id')
-        .eq('id', marcheEventId)
-        .single();
-      return data;
-    },
-  });
-
+// ─── Voir ───
+const VoirTab: React.FC<{ marcheId: string }> = ({ marcheId }) => {
   const { data: photos } = useQuery({
-    queryKey: ['marche-detail-photos', event?.exploration_id],
+    queryKey: ['marche-detail-photos', marcheId],
     queryFn: async () => {
-      if (!event?.exploration_id) return [];
-      const { data: links } = await supabase
-        .from('exploration_marches')
-        .select('marche_id')
-        .eq('exploration_id', event.exploration_id);
-      if (!links?.length) return [];
       const { data } = await supabase
         .from('marche_photos')
         .select('id, url_supabase, titre, description')
-        .in('marche_id', links.map(l => l.marche_id))
+        .eq('marche_id', marcheId)
         .order('ordre')
         .limit(20);
       return data || [];
     },
-    enabled: !!event?.exploration_id,
   });
 
   if (!photos?.length) return <EmptyState message="Aucune photo pour cette marche" />;
@@ -85,37 +66,19 @@ const VoirTab: React.FC<{ marcheEventId: string }> = ({ marcheEventId }) => {
   );
 };
 
-const EcouterTab: React.FC<{ marcheEventId: string }> = ({ marcheEventId }) => {
-  const { data: event } = useQuery({
-    queryKey: ['marche-detail-event-audio', marcheEventId],
-    queryFn: async () => {
-      const { data } = await supabase
-        .from('marche_events')
-        .select('exploration_id')
-        .eq('id', marcheEventId)
-        .single();
-      return data;
-    },
-  });
-
+// ─── Écouter ───
+const EcouterTab: React.FC<{ marcheId: string }> = ({ marcheId }) => {
   const { data: audioFiles } = useQuery({
-    queryKey: ['marche-detail-audio', event?.exploration_id],
+    queryKey: ['marche-detail-audio', marcheId],
     queryFn: async () => {
-      if (!event?.exploration_id) return [];
-      const { data: links } = await supabase
-        .from('exploration_marches')
-        .select('marche_id')
-        .eq('exploration_id', event.exploration_id);
-      if (!links?.length) return [];
       const { data } = await supabase
         .from('marche_audio')
         .select('id, url_supabase, titre, duree_secondes, type_audio')
-        .in('marche_id', links.map(l => l.marche_id))
+        .eq('marche_id', marcheId)
         .order('ordre')
         .limit(20);
       return data || [];
     },
-    enabled: !!event?.exploration_id,
   });
 
   if (!audioFiles?.length) return <EmptyState message="Aucun enregistrement sonore" />;
@@ -144,6 +107,7 @@ const EcouterTab: React.FC<{ marcheEventId: string }> = ({ marcheEventId }) => {
   );
 };
 
+// ─── Lire ───
 const LireTab: React.FC<{ userId: string; marcheEventId: string }> = ({ userId, marcheEventId }) => {
   const { data: kigos } = useQuery({
     queryKey: ['marche-detail-kigos', marcheEventId, userId],
@@ -179,6 +143,7 @@ const LireTab: React.FC<{ userId: string; marcheEventId: string }> = ({ userId, 
   );
 };
 
+// ─── Vivant ───
 const VivantTab: React.FC<{ marcheEventId: string }> = ({ marcheEventId }) => {
   const { data: event } = useQuery({
     queryKey: ['marche-detail-event-biodiv', marcheEventId],
@@ -228,7 +193,6 @@ const VivantTab: React.FC<{ marcheEventId: string }> = ({ marcheEventId }) => {
           <p className="text-emerald-300 text-2xl font-bold">{Number(snapshot.biodiversity_index).toFixed(1)}</p>
         </div>
       )}
-
       <div className="grid grid-cols-2 gap-2">
         {stats.map(s => (
           <div key={s.label} className="bg-white/5 rounded-lg border border-white/10 p-3 text-center">
@@ -241,10 +205,106 @@ const VivantTab: React.FC<{ marcheEventId: string }> = ({ marcheEventId }) => {
   );
 };
 
+// ─── Step Selector ───
+interface StepSelectorProps {
+  marches: { id: string; nom_marche: string | null; ville: string }[];
+  activeIndex: number;
+  onSelect: (index: number) => void;
+}
+
+const StepSelector: React.FC<StepSelectorProps> = ({ marches, activeIndex, onSelect }) => {
+  const current = marches[activeIndex];
+  return (
+    <div className="bg-gradient-to-r from-emerald-500/10 to-amber-500/5 rounded-xl border border-emerald-400/15 p-3 mx-1">
+      <div className="flex items-center justify-between">
+        <button
+          onClick={() => onSelect(activeIndex - 1)}
+          disabled={activeIndex === 0}
+          className="w-7 h-7 rounded-full bg-white/5 flex items-center justify-center disabled:opacity-20 hover:bg-white/10 transition-colors"
+        >
+          <ChevronLeft className="w-4 h-4 text-emerald-300" />
+        </button>
+
+        <div className="text-center flex-1 min-w-0 px-2">
+          <p className="text-emerald-300/60 text-[10px] font-medium">
+            Étape {activeIndex + 1}/{marches.length}
+          </p>
+          <p className="text-white text-sm font-medium truncate">
+            🌿 {current.nom_marche || current.ville}
+          </p>
+        </div>
+
+        <button
+          onClick={() => onSelect(activeIndex + 1)}
+          disabled={activeIndex === marches.length - 1}
+          className="w-7 h-7 rounded-full bg-white/5 flex items-center justify-center disabled:opacity-20 hover:bg-white/10 transition-colors"
+        >
+          <ChevronRight className="w-4 h-4 text-emerald-300" />
+        </button>
+      </div>
+
+      {/* Dots */}
+      <div className="flex justify-center gap-1.5 mt-2">
+        {marches.map((_, i) => (
+          <button
+            key={i}
+            onClick={() => onSelect(i)}
+            className={`w-2 h-2 rounded-full transition-all ${
+              i === activeIndex ? 'bg-emerald-400 scale-125' : 'bg-white/20 hover:bg-white/30'
+            }`}
+          />
+        ))}
+      </div>
+    </div>
+  );
+};
+
+// ─── Main Modal ───
 const MarcheDetailModal: React.FC<MarcheDetailModalProps> = ({
   open, onClose, userId, marcheEventId, eventTitle, eventDate, eventLieu,
 }) => {
   const [activeTab, setActiveTab] = useState<TabKey>('voir');
+  const [activeStepIndex, setActiveStepIndex] = useState(0);
+
+  // Load exploration marches linked to this event
+  const { data: explorationMarches } = useQuery({
+    queryKey: ['marche-detail-steps', marcheEventId],
+    queryFn: async () => {
+      // Get exploration_id from the event
+      const { data: event } = await supabase
+        .from('marche_events')
+        .select('exploration_id')
+        .eq('id', marcheEventId)
+        .single();
+
+      if (!event?.exploration_id) return [];
+
+      // Get all marches linked to this exploration
+      const { data: links } = await supabase
+        .from('exploration_marches')
+        .select('marche_id, ordre')
+        .eq('exploration_id', event.exploration_id)
+        .order('ordre');
+
+      if (!links?.length) return [];
+
+      // Get marche details
+      const { data: marches } = await supabase
+        .from('marches')
+        .select('id, nom_marche, ville')
+        .in('id', links.map(l => l.marche_id));
+
+      if (!marches?.length) return [];
+
+      // Sort by the exploration_marches ordre
+      const ordreMap = new Map(links.map(l => [l.marche_id, l.ordre ?? 0]));
+      return marches.sort((a, b) => (ordreMap.get(a.id) ?? 0) - (ordreMap.get(b.id) ?? 0));
+    },
+    enabled: open,
+  });
+
+  const hasMultipleSteps = (explorationMarches?.length ?? 0) > 1;
+  const activeMarcheId = explorationMarches?.[activeStepIndex]?.id;
 
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
@@ -263,6 +323,17 @@ const MarcheDetailModal: React.FC<MarcheDetailModalProps> = ({
             )}
           </div>
         </div>
+
+        {/* Step Selector — only if multiple marches */}
+        {hasMultipleSteps && explorationMarches && (
+          <div className="px-3 pb-2">
+            <StepSelector
+              marches={explorationMarches}
+              activeIndex={activeStepIndex}
+              onSelect={(i) => setActiveStepIndex(i)}
+            />
+          </div>
+        )}
 
         {/* Tabs */}
         <div className="flex border-b border-white/10 px-2">
@@ -294,14 +365,14 @@ const MarcheDetailModal: React.FC<MarcheDetailModalProps> = ({
         <div className="flex-1 overflow-y-auto p-4">
           <AnimatePresence mode="wait">
             <motion.div
-              key={activeTab}
+              key={`${activeTab}-${activeMarcheId || marcheEventId}`}
               initial={{ opacity: 0, y: 4 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -4 }}
               transition={{ duration: 0.15 }}
             >
-              {activeTab === 'voir' && <VoirTab marcheEventId={marcheEventId} />}
-              {activeTab === 'ecouter' && <EcouterTab marcheEventId={marcheEventId} />}
+              {activeTab === 'voir' && <VoirTab marcheId={activeMarcheId || ''} />}
+              {activeTab === 'ecouter' && <EcouterTab marcheId={activeMarcheId || ''} />}
               {activeTab === 'lire' && <LireTab userId={userId} marcheEventId={marcheEventId} />}
               {activeTab === 'vivant' && <VivantTab marcheEventId={marcheEventId} />}
             </motion.div>
