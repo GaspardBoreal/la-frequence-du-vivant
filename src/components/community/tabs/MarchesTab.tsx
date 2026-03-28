@@ -261,52 +261,8 @@ const MarchesTab: React.FC<MarchesTabProps> = ({ userId, upcomingEvents, partici
         </div>
       </Link>
 
-      {/* Section 3 — Mon carnet de route */}
-      <div>
-        <h2 className="text-sm font-semibold text-white mb-2 flex items-center gap-2">
-          <Calendar className="w-3.5 h-3.5 text-emerald-300/70" />
-          Mon carnet de route ({participations.length})
-        </h2>
-        {participations.length === 0 ? (
-          <div className="bg-white/5 rounded-lg border border-white/10 p-4 text-center">
-            <p className="text-emerald-200/50 text-xs">Aucune participation encore</p>
-          </div>
-        ) : (
-          <div className="space-y-1">
-            {participations.slice().sort((a, b) => {
-              const dateA = a.marche_events?.date_marche ? new Date(a.marche_events.date_marche).getTime() : 0;
-              const dateB = b.marche_events?.date_marche ? new Date(b.marche_events.date_marche).getTime() : 0;
-              return dateB - dateA;
-            }).map((p) => (
-              <div key={p.id} className="bg-white/5 rounded-lg border border-white/10 px-3 py-2 flex items-center justify-between">
-                <div className="flex items-center gap-2 min-w-0">
-                  {p.validated_at ? (
-                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 flex-shrink-0" />
-                  ) : (
-                    <Clock className="w-3.5 h-3.5 text-amber-400 flex-shrink-0" />
-                  )}
-                  <div className="min-w-0">
-                    <p className="text-white text-[11px] font-medium truncate">{p.marche_events?.title || 'Marche'}</p>
-                    <div className="flex items-center gap-1.5 text-[10px] text-emerald-200/40">
-                      {p.marche_events?.date_marche && (
-                        <span>{format(new Date(p.marche_events.date_marche), 'dd MMM yy', { locale: fr })}</span>
-                      )}
-                      {p.marche_events?.lieu && (
-                        <span className="flex items-center gap-0.5"><MapPin className="w-2.5 h-2.5" />{p.marche_events.lieu}</span>
-                      )}
-                    </div>
-                  </div>
-                </div>
-                <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${
-                  p.validated_at ? 'bg-emerald-500/20 text-emerald-300' : 'bg-amber-500/20 text-amber-300'
-                }`}>
-                  {p.validated_at ? 'Validée' : 'En attente'}
-                </span>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
+      {/* Section 3 — Mon carnet vivant */}
+      <CarnetVivant userId={userId} participations={participations} />
     </div>
   );
 };
