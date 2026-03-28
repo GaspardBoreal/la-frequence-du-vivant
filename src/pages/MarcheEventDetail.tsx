@@ -314,6 +314,9 @@ const MarcheEventDetail: React.FC = () => {
                 </div>
               </div>
             )}
+          </div>
+
+          <div className="flex gap-3 mt-6">
             {isNew ? (
               <Button onClick={() => createEvent.mutate(undefined, {
                 onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['marche-events'] }); toast.success('Événement créé avec succès'); navigate('/admin/marche-events'); },
