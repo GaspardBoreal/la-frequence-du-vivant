@@ -55,11 +55,11 @@ const ProgressionCard: React.FC<ProgressionCardProps> = ({
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      className={`rounded-2xl border-2 ${dark.border} bg-white/[0.14] backdrop-blur-lg p-4 space-y-2`}
+      className={`rounded-2xl border-2 ${dark.border} bg-white/[0.14] backdrop-blur-lg pt-2.5 pb-4 px-4 space-y-2`}
     >
       <div className="flex items-end justify-between">
         <div>
-          <p className="text-sm text-white/80 mb-0.5">Votre rôle actuel</p>
+          <p className="text-[11px] text-white/60 font-medium tracking-wide uppercase mb-0.5">Votre rôle actuel</p>
           <RoleBadge role={role} size="lg" darkMode />
         </div>
         <div className={`text-4xl font-bold ${dark.text}`}>
