@@ -8,6 +8,7 @@ import { Eye, Headphones, BookOpen, Leaf, MapPin, Music, ChevronLeft, ChevronRig
 import MediaLightbox, { type LightboxItem } from './contributions/MediaLightbox';
 import { motion, AnimatePresence } from 'framer-motion';
 import { processSpeciesData } from '@/utils/speciesDataUtils';
+import { useBiodiversityData } from '@/hooks/useBiodiversityData';
 import { createSlug } from '@/utils/slugGenerator';
 import FileUploadZone from './contributions/FileUploadZone';
 import ContributionItem from './contributions/ContributionItem';
@@ -542,56 +543,35 @@ const LireTab: React.FC<{ userId: string; marcheEventId: string; activeMarcheId?
 
 // ─── Vivant (3 couches) ───
 const VivantTab: React.FC<{ marcheId: string; userId: string; marcheSlug?: string }> = ({ marcheId, userId, marcheSlug }) => {
-  const { data: snapshot, isLoading: snapshotLoading } = useQuery({
-    queryKey: ['marche-detail-biodiv-by-marche', marcheId],
+  // Fetch lat/lng for this marche
+  const { data: coords } = useQuery({
+    queryKey: ['marche-coords', marcheId],
     queryFn: async () => {
       const { data } = await supabase
-        .from('biodiversity_snapshots')
-        .select('total_species, birds_count, plants_count, fungi_count, others_count, biodiversity_index, species_data, radius_meters')
-        .eq('marche_id', marcheId)
-        .order('snapshot_date', { ascending: false })
-        .limit(1)
-        .maybeSingle();
-      if (data && data.radius_meters > 600) return null;
+        .from('marches')
+        .select('latitude, longitude')
+        .eq('id', marcheId)
+        .single();
       return data;
     },
     enabled: !!marcheId,
   });
 
-  const { data: realtimeData, isLoading: realtimeLoading } = useQuery({
-    queryKey: ['marche-detail-biodiv-realtime', marcheId],
-    queryFn: async () => {
-      const { data: marche } = await supabase
-        .from('marches')
-        .select('latitude, longitude')
-        .eq('id', marcheId)
-        .single();
-      if (!marche?.latitude || !marche?.longitude) return null;
-      const { data, error } = await supabase.functions.invoke('biodiversity-data', {
-        body: { latitude: marche.latitude, longitude: marche.longitude, radius: 0.5, dateFilter: 'recent' }
-      });
-      if (error || !data) return null;
-      // Normaliser la réponse edge function au format snapshot
-      return {
-        total_species: data.summary?.totalSpecies ?? 0,
-        birds_count: data.summary?.birds ?? 0,
-        plants_count: data.summary?.plants ?? 0,
-        fungi_count: data.summary?.fungi ?? 0,
-        others_count: data.summary?.others ?? 0,
-        recent_observations: data.summary?.recentObservations ?? 0,
-        species_data: data.species ?? [],
-        radius_meters: 500,
-        snapshot_date: new Date().toISOString(),
-      };
-    },
-    enabled: !!marcheId,
-    staleTime: 1000 * 60 * 60,
-    retry: 1,
+  // Use the same hook as the web bioacoustic pages
+  const { data: biodiversityData, isLoading } = useBiodiversityData({
+    latitude: coords?.latitude ?? 0,
+    longitude: coords?.longitude ?? 0,
+    radius: 0.5,
+    dateFilter: 'recent',
   });
 
-  const territoryData = snapshot || realtimeData;
-  const isLoading = snapshotLoading || realtimeLoading;
-  const processedSpecies = territoryData?.species_data ? processSpeciesData(territoryData.species_data) : null;
+  const territoryData = biodiversityData ? {
+    total_species: biodiversityData.summary?.totalSpecies ?? 0,
+    birds_count: biodiversityData.summary?.birds ?? 0,
+    plants_count: biodiversityData.summary?.plants ?? 0,
+  } : null;
+
+  const processedSpecies = biodiversityData?.species ? processSpeciesData(biodiversityData.species) : null;
   const topSpecies = processedSpecies
     ? [...processedSpecies.flore, ...Object.values(processedSpecies.faune).flat()].slice(0, 6)
     : [];
