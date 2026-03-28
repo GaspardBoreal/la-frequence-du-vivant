@@ -255,7 +255,6 @@ const MarcheEventDetail: React.FC = () => {
                 </SelectContent>
               </Select>
             </div>
-            </div>
 
             {/* Marches de l'exploration */}
             {form.exploration_id && explorationMarches && explorationMarches.length > 0 && (
