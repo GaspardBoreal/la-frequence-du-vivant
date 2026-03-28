@@ -24,11 +24,28 @@ const MediaLightbox: React.FC<MediaLightboxProps> = ({ items, startIndex, onClos
   const touchStartX = useRef(0);
   const touchStartY = useRef(0);
 
-  const item = items[index];
-  if (!item) return null;
-
   const goNext = useCallback(() => setIndex(i => Math.min(i + 1, items.length - 1)), [items.length]);
   const goPrev = useCallback(() => setIndex(i => Math.max(i - 1, 0)), []);
+
+  // Keyboard navigation
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === 'ArrowRight') goNext();
+      else if (e.key === 'ArrowLeft') goPrev();
+      else if (e.key === 'Escape') onClose();
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [goNext, goPrev, onClose]);
+
+  // Lock body scroll
+  useEffect(() => {
+    document.body.style.overflow = 'hidden';
+    return () => { document.body.style.overflow = ''; };
+  }, []);
+
+  const item = items[index];
+  if (!item) return null;
 
   // Keyboard navigation
   useEffect(() => {
