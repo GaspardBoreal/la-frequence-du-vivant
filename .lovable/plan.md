@@ -1,51 +1,57 @@
 
 
-# Le Carnet Vivant — Navigation par marches au sein de l'événement
+# Visualiser les marches de l'exploration dans la fiche événement admin
 
 ## Constat
 
-Actuellement, quand le marcheur ouvre la modale d'un événement, les données sont agrégées en vrac depuis toutes les marches de l'exploration associée. Le marcheur ne peut pas distinguer ce qu'il a vécu lors de la marche 1 vs la marche 2 d'un même événement (ex: la transhumance de 2 jours a 2 marches distinctes).
+Dans `MarcheEventDetail.tsx`, le champ "Exploration associée" permet de lier un événement à une exploration, mais l'admin ne voit pas quelles marches composent cette exploration. Il doit aller ailleurs pour le savoir.
 
-## Proposition : Le Chemin des Étapes
+## Solution
 
-La modale devient un **parcours narratif** où chaque marche de l'exploration est une étape que le marcheur peut feuilleter, comme les pages d'un carnet de voyage.
+Ajouter un bloc **conditionnel** (visible uniquement quand une exploration est sélectionnée) juste sous le sélecteur d'exploration, dans la Card "Informations". Ce bloc affiche la liste des marches rattachées via `exploration_marches`, avec leurs infos clés.
 
 ```text
-  ╔═══════════════════════════════════╗
-  ║  NOUAILLE-MAUPERTUIS              ║
-  ║  07 mars 2026 · Flore sauvage    ║
-  ║                                   ║
-  ║  ┌───────────────────────────┐    ║
-  ║  │  Étape 1/2                │    ║
-  ║  │  🌿 Nous deux entre vers  │    ║
-  ║  │  ◄          ●  ○         ►│    ║
-  ║  └───────────────────────────┘    ║
-  ║                                   ║
-  ║  ┌────┬────────┬──────┬──────┐   ║
-  ║  │Voir│Écouter │ Lire │Vivant│   ║
-  ║  └────┴────────┴──────┴──────┘   ║
-  ║                                   ║
-  ║   [galerie photos de cette       ║
-  ║    marche spécifique]            ║
-  ╚═══════════════════════════════════╝
+  ┌─────────────────────────────────────────┐
+  │ Exploration associée: [Les Arbres Gard▾]│
+  │                                         │
+  │ ┌─ Marches de cette exploration (3) ──┐ │
+  │ │                                     │ │
+  │ │  1. Nous deux entre vers            │ │
+  │ │     📍 Beynac · Dordogne            │ │
+  │ │     🏷 Biodiversité · brouillon     │ │
+  │ │                                     │ │
+  │ │  2. Le souffle des arbres           │ │
+  │ │     📍 Sarlat · Dordogne            │ │
+  │ │     🏷 Forêt · publiée             │ │
+  │ │                                     │ │
+  │ │  3. L'eau qui chante               │ │
+  │ │     📍 Domme · Dordogne             │ │
+  │ │     🏷 Rivière · en cours           │ │
+  │ └─────────────────────────────────────┘ │
+  └─────────────────────────────────────────┘
 ```
 
-### Fonctionnement
+### Détails de chaque carte-marche
 
-1. A l'ouverture de la modale, on charge les marches liées via `marche_events.exploration_id` → `exploration_marches` → `marches`
-2. Un **sélecteur d'étape** (swipeable ou flèches gauche/droite) permet de naviguer entre les marches, avec des dots indicateurs
-3. Chaque étape affiche le nom de la marche et ses 4 onglets sensoriels (Voir/Écouter/Lire/Vivant) filtrés sur le `marche_id` spécifique
-4. Si l'exploration ne contient qu'une seule marche, le sélecteur d'étape est masqué (comportement actuel)
-5. Un **résumé de l'exploration** en en-tête montre les totaux cumulés (ex: "12 photos · 3 sons · 2 textes · 14 espèces")
+- **Numéro d'ordre** (champ `ordre` de `exploration_marches`)
+- **Nom** (`nom_marche` ou ville en fallback)
+- **Lieu** (ville, département)
+- **Thème principal** + **statut de publication** (badge coloré : brouillon/en cours/publiée)
+- **Partie** (si rattachée à une `exploration_parties`, afficher le titre en sous-label)
 
-### Données filtrées par marche
+### Requête
 
-Les requêtes actuelles (VoirTab, EcouterTab, etc.) récupèrent déjà par `marche_id`. Il suffit de passer le `marche_id` sélectionné au lieu de tous les marche_ids de l'exploration.
+Quand `form.exploration_id` change, une query charge :
+```
+exploration_marches (exploration_id = X)
+  → marches (nom_marche, ville, departement, theme_principal)
+  → exploration_parties (titre) via partie_id
+```
+Triée par `ordre`.
 
-## Fichiers impactés
+## Fichier modifié
 
 | Fichier | Changement |
 |---------|-----------|
-| `src/components/community/MarcheDetailModal.tsx` | Ajouter la couche de navigation par étapes : charger les marches de l'exploration, sélecteur d'étape avec dots, passer le `marche_id` actif aux onglets au lieu de charger tout en vrac |
-| `src/hooks/useMarcheCollectedData.ts` | Aucun changement (agrège déjà par event) |
+| `src/pages/MarcheEventDetail.tsx` | Ajouter une query `exploration-marches-preview` conditionnelle sur `form.exploration_id`, et un bloc visuel sous le sélecteur d'exploration affichant les marches en liste compacte avec badges de statut |
 
