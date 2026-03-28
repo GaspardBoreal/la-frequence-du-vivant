@@ -8,6 +8,7 @@ import { Eye, Headphones, BookOpen, Leaf, MapPin, Music, ChevronLeft, ChevronRig
 import MediaLightbox, { type LightboxItem } from './contributions/MediaLightbox';
 import { motion, AnimatePresence } from 'framer-motion';
 import { processSpeciesData } from '@/utils/speciesDataUtils';
+import { useBiodiversityData } from '@/hooks/useBiodiversityData';
 import { createSlug } from '@/utils/slugGenerator';
 import FileUploadZone from './contributions/FileUploadZone';
 import ContributionItem from './contributions/ContributionItem';
