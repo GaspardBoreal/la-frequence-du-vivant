@@ -1,26 +1,26 @@
 
 
-# Corriger l'onglet Vivant : format de donnees incompatible
+# Fix: Vivant tab not refreshing when switching walk steps
 
-## Diagnostic
+## Root cause
 
-Le VivantTab a deux sources de donnees :
-1. **Snapshot** (table `biodiversity_snapshots`) : champs `total_species`, `birds_count`, `plants_count`, `species_data`
-2. **Realtime** (edge function `biodiversity-data`) : champs `summary.totalSpecies`, `summary.birds`, `summary.plants`, `species`
+The `realtimeData` query has this `enabled` condition:
+```
+enabled: !!marcheId && !snapshotLoading && !snapshot
+```
 
-Quand aucun snapshot valide n'existe (radius <= 600m), le fallback realtime est appele. Mais le code lit ensuite `territoryData.total_species` et `territoryData.species_data` — des noms de colonnes snapshot qui n'existent pas sur la reponse realtime. Resultat : tout affiche 0 ou rien.
+This creates a sequential dependency: realtime waits for snapshot to finish. When switching steps via AnimatePresence, there's a timing window where React Query's state transitions (`isLoading` → `false`, `data` → `null`) don't trigger a re-evaluation of `enabled` in time, leaving the realtime query permanently disabled for the new step.
 
-## Solution
+## Fix
 
-Normaliser les donnees realtime au format attendu avant de les stocker dans `territoryData`. Transformer la reponse edge function en un objet compatible snapshot.
+Decouple the two queries. Always fetch realtime data independently (both queries run in parallel). The display logic picks the best source: snapshot if valid, otherwise realtime.
 
-## Fichier modifie
+## File: `src/components/community/MarcheDetailModal.tsx`
 
-| Fichier | Changement |
-|---------|-----------|
-| `src/components/community/MarcheDetailModal.tsx` | Dans la `queryFn` du `realtimeData` query (ligne ~570-574), transformer la reponse : `{ total_species: data.summary.totalSpecies, birds_count: data.summary.birds, plants_count: data.summary.plants, fungi_count: data.summary.fungi, others_count: data.summary.others, species_data: data.species }`. Cela garantit que `territoryData.total_species` et `territoryData.species_data` fonctionnent identiquement quelle que soit la source. |
+| Change | Detail |
+|--------|--------|
+| Line 587 | Change `enabled` to `!!marcheId` — remove dependency on `snapshotLoading` and `snapshot` |
+| Line 592 | Keep `const territoryData = snapshot \|\| realtimeData;` — snapshot still takes priority when available |
 
-## Resultat attendu
-
-L'onglet Vivant affichera les memes chiffres (42 especes, N oiseaux, N plantes) que la page bioacoustique publique, avec le meme rayon de 500m et le meme filtre temporel 2 ans.
+This is a one-line fix. The realtime query will always fire when `marcheId` is present. Since both marches share the same GPS coordinates, the edge function returns the same data. The snapshot is still preferred when it exists.
 
