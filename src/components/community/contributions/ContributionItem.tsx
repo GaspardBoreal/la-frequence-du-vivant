@@ -37,7 +37,7 @@ const typeColors = {
 
 const ContributionItem: React.FC<ContributionItemProps> = ({
   id, type, titre, description, url, externalUrl, contenu, typeTexte,
-  isPublic, isOwner, createdAt, onUpdate, onDelete,
+  isPublic, isOwner, createdAt, onUpdate, onDelete, onClick,
 }) => {
   const [editing, setEditing] = useState(false);
   const [editTitre, setEditTitre] = useState(titre || '');
