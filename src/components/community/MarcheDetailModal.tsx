@@ -4,8 +4,9 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
-import { Eye, Headphones, BookOpen, Leaf, MapPin, Music, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Eye, Headphones, BookOpen, Leaf, MapPin, Music, ChevronLeft, ChevronRight, Camera, FileText, Globe, Users, User, ExternalLink } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { processSpeciesData } from '@/utils/speciesDataUtils';
 
 interface MarcheDetailModalProps {
   open: boolean;
@@ -143,64 +144,221 @@ const LireTab: React.FC<{ userId: string; marcheEventId: string }> = ({ userId, 
   );
 };
 
-// ─── Vivant ───
-const VivantTab: React.FC<{ marcheEventId: string }> = ({ marcheEventId }) => {
-  const { data: event } = useQuery({
-    queryKey: ['marche-detail-event-biodiv', marcheEventId],
-    queryFn: async () => {
-      const { data } = await supabase
-        .from('marche_events')
-        .select('latitude, longitude')
-        .eq('id', marcheEventId)
-        .single();
-      return data;
-    },
-  });
-
+// ─── Vivant (3 couches) ───
+const VivantTab: React.FC<{ marcheId: string; userId: string; marcheSlug?: string }> = ({ marcheId, userId, marcheSlug }) => {
+  // Couche 1: Le Territoire — biodiversity_snapshots par marche_id
   const { data: snapshot } = useQuery({
-    queryKey: ['marche-detail-biodiv', event?.latitude, event?.longitude],
+    queryKey: ['marche-detail-biodiv-by-marche', marcheId],
     queryFn: async () => {
-      if (!event?.latitude || !event?.longitude) return null;
       const { data } = await supabase
         .from('biodiversity_snapshots')
-        .select('total_species, birds_count, plants_count, fungi_count, biodiversity_index, species_data')
-        .gte('latitude', Number(event.latitude) - 0.01)
-        .lte('latitude', Number(event.latitude) + 0.01)
-        .gte('longitude', Number(event.longitude) - 0.01)
-        .lte('longitude', Number(event.longitude) + 0.01)
+        .select('total_species, birds_count, plants_count, fungi_count, others_count, biodiversity_index, species_data')
+        .eq('marche_id', marcheId)
         .order('snapshot_date', { ascending: false })
         .limit(1)
         .maybeSingle();
       return data;
     },
-    enabled: !!(event?.latitude && event?.longitude),
+    enabled: !!marcheId,
   });
 
-  if (!snapshot) return <EmptyState message="Aucune donnée de biodiversité" />;
+  // Couche 2: Les Marcheurs — toutes les contributions pour cette marche
+  const { data: communityPhotos } = useQuery({
+    queryKey: ['marche-vivant-community-photos', marcheId],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('marche_photos')
+        .select('id, url_supabase, titre')
+        .eq('marche_id', marcheId)
+        .order('created_at', { ascending: false })
+        .limit(6);
+      return data || [];
+    },
+    enabled: !!marcheId,
+  });
 
-  const stats = [
-    { label: 'Espèces totales', value: snapshot.total_species, color: 'text-emerald-400' },
-    { label: 'Oiseaux', value: snapshot.birds_count, color: 'text-sky-400' },
-    { label: 'Plantes', value: snapshot.plants_count, color: 'text-green-400' },
-    { label: 'Champignons', value: snapshot.fungi_count, color: 'text-amber-400' },
-  ];
+  const { data: communityAudio } = useQuery({
+    queryKey: ['marche-vivant-community-audio', marcheId],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('marche_audio')
+        .select('id')
+        .eq('marche_id', marcheId);
+      return data || [];
+    },
+    enabled: !!marcheId,
+  });
+
+  const { data: communityTexts } = useQuery({
+    queryKey: ['marche-vivant-community-texts', marcheId],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('marche_textes')
+        .select('id')
+        .eq('marche_id', marcheId);
+      return data || [];
+    },
+    enabled: !!marcheId,
+  });
+
+  // Couche 3: Mon Regard — mes contributions (kigos liés à l'événement)
+  // Note: marche_photos/audio/textes n'ont pas de user_id, 
+  // donc "Mon regard" montre les kigos de l'utilisateur
+  const { data: myKigos } = useQuery({
+    queryKey: ['marche-vivant-my-kigos', marcheId, userId],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('kigo_entries')
+        .select('id, kigo, haiku, saison')
+        .eq('user_id', userId);
+      return data || [];
+    },
+    enabled: !!userId,
+  });
+
+  // Extraire les top espèces depuis species_data
+  const speciesProcessed = snapshot?.species_data ? processSpeciesData(snapshot.species_data as any) : null;
+  const topSpecies: { nom: string; type: string }[] = [];
+  if (speciesProcessed) {
+    speciesProcessed.flore.slice(0, 3).forEach(s => topSpecies.push({ nom: s.nom_commun, type: '🌿' }));
+    Object.values(speciesProcessed.faune).flat().slice(0, 3).forEach((s: any) => topSpecies.push({ nom: s.nom_commun, type: '🐦' }));
+  }
+
+  // Construire le lien vers la page bioacoustique
+  const explorerLink = marcheSlug ? `/bioacoustique/${marcheSlug}` : null;
+
+  const hasTerritory = !!snapshot;
+  const hasCommunity = (communityPhotos?.length || 0) + (communityAudio?.length || 0) + (communityTexts?.length || 0) > 0;
+  const hasMyData = (myKigos?.length || 0) > 0;
+
+  if (!hasTerritory && !hasCommunity && !hasMyData) {
+    return <EmptyState message="Aucune donnée de biodiversité pour cette marche" />;
+  }
 
   return (
-    <div className="space-y-3">
-      {snapshot.biodiversity_index != null && (
-        <div className="bg-gradient-to-r from-emerald-500/15 to-sky-500/10 rounded-xl border border-emerald-500/20 p-4 text-center">
-          <p className="text-emerald-200/50 text-[10px] mb-1">Indice de biodiversité</p>
-          <p className="text-emerald-300 text-2xl font-bold">{Number(snapshot.biodiversity_index).toFixed(1)}</p>
+    <div className="space-y-4">
+      {/* ── Couche 1 : Le Territoire ── */}
+      {hasTerritory && snapshot && (
+        <div className="space-y-2">
+          <div className="flex items-center gap-2">
+            <Globe className="w-3.5 h-3.5 text-emerald-400" />
+            <h3 className="text-emerald-300 text-xs font-semibold tracking-wide uppercase">Le Territoire</h3>
+            <div className="flex-1 h-px bg-emerald-500/15" />
+          </div>
+
+          {/* Indice */}
+          {snapshot.biodiversity_index != null && (
+            <div className="bg-gradient-to-r from-emerald-500/15 to-sky-500/10 rounded-xl border border-emerald-500/20 p-3 text-center">
+              <p className="text-emerald-200/50 text-[10px] mb-0.5">Indice de biodiversité</p>
+              <p className="text-emerald-300 text-xl font-bold">{Number(snapshot.biodiversity_index).toFixed(1)}</p>
+            </div>
+          )}
+
+          {/* Stats grid */}
+          <div className="grid grid-cols-4 gap-1.5">
+            {[
+              { label: 'Espèces', value: snapshot.total_species, color: 'text-emerald-400' },
+              { label: 'Oiseaux', value: snapshot.birds_count, color: 'text-sky-400' },
+              { label: 'Plantes', value: snapshot.plants_count, color: 'text-green-400' },
+              { label: 'Autres', value: (snapshot.fungi_count || 0) + (snapshot.others_count || 0), color: 'text-amber-400' },
+            ].map(s => (
+              <div key={s.label} className="bg-white/5 rounded-lg border border-white/10 p-2 text-center">
+                <p className={`text-sm font-bold ${s.color}`}>{s.value}</p>
+                <p className="text-emerald-200/40 text-[9px]">{s.label}</p>
+              </div>
+            ))}
+          </div>
+
+          {/* Top espèces */}
+          {topSpecies.length > 0 && (
+            <div className="flex flex-wrap gap-1.5">
+              {topSpecies.slice(0, 6).map((sp, i) => (
+                <span key={i} className="bg-white/5 border border-white/10 rounded-full px-2 py-0.5 text-[10px] text-emerald-200/70">
+                  {sp.type} {sp.nom}
+                </span>
+              ))}
+            </div>
+          )}
+
+          {/* Lien Explorer tout */}
+          {explorerLink && (
+            <a href={explorerLink} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-emerald-400/70 hover:text-emerald-300 text-[10px] transition-colors">
+              <ExternalLink className="w-3 h-3" />
+              Explorer toutes les données
+            </a>
+          )}
         </div>
       )}
-      <div className="grid grid-cols-2 gap-2">
-        {stats.map(s => (
-          <div key={s.label} className="bg-white/5 rounded-lg border border-white/10 p-3 text-center">
-            <p className={`text-lg font-bold ${s.color}`}>{s.value}</p>
-            <p className="text-emerald-200/40 text-[10px]">{s.label}</p>
+
+      {/* ── Couche 2 : Les Marcheurs ── */}
+      {hasCommunity && (
+        <div className="space-y-2">
+          <div className="flex items-center gap-2">
+            <Users className="w-3.5 h-3.5 text-violet-400" />
+            <h3 className="text-violet-300 text-xs font-semibold tracking-wide uppercase">Les Marcheurs</h3>
+            <div className="flex-1 h-px bg-violet-500/15" />
           </div>
-        ))}
-      </div>
+
+          {/* Compteurs */}
+          <div className="flex gap-3 text-[10px] text-emerald-200/50">
+            {(communityPhotos?.length || 0) > 0 && (
+              <span className="flex items-center gap-1"><Camera className="w-3 h-3" /> {communityPhotos?.length} photo{(communityPhotos?.length || 0) > 1 ? 's' : ''}</span>
+            )}
+            {(communityAudio?.length || 0) > 0 && (
+              <span className="flex items-center gap-1"><Headphones className="w-3 h-3" /> {communityAudio?.length} son{(communityAudio?.length || 0) > 1 ? 's' : ''}</span>
+            )}
+            {(communityTexts?.length || 0) > 0 && (
+              <span className="flex items-center gap-1"><FileText className="w-3 h-3" /> {communityTexts?.length} texte{(communityTexts?.length || 0) > 1 ? 's' : ''}</span>
+            )}
+          </div>
+
+          {/* Miniatures photos */}
+          {communityPhotos && communityPhotos.length > 0 && (
+            <div className="flex gap-1.5">
+              {communityPhotos.slice(0, 3).map(p => (
+                <div key={p.id} className="w-16 h-16 rounded-lg overflow-hidden bg-white/5 border border-white/10">
+                  <img src={p.url_supabase} alt={p.titre || ''} className="w-full h-full object-cover" loading="lazy" />
+                </div>
+              ))}
+              {communityPhotos.length > 3 && (
+                <div className="w-16 h-16 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center">
+                  <span className="text-emerald-300/60 text-xs font-medium">+{communityPhotos.length - 3}</span>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ── Couche 3 : Mon Regard ── */}
+      {hasMyData && (
+        <div className="space-y-2">
+          <div className="flex items-center gap-2">
+            <User className="w-3.5 h-3.5 text-amber-400" />
+            <h3 className="text-amber-300 text-xs font-semibold tracking-wide uppercase">Mon Regard</h3>
+            <div className="flex-1 h-px bg-amber-500/15" />
+          </div>
+
+          {myKigos && myKigos.length > 0 && (
+            <div className="space-y-1.5">
+              {myKigos.slice(0, 3).map(k => (
+                <div key={k.id} className="bg-gradient-to-r from-amber-500/10 to-emerald-500/5 rounded-lg border border-amber-400/25 p-2.5">
+                  <div className="flex items-center gap-2">
+                    <span className="text-amber-300 text-sm">🌿</span>
+                    <span className="text-white text-xs font-medium">{k.kigo}</span>
+                    <span className="text-emerald-300/40 text-[9px] ml-auto">{k.saison}</span>
+                  </div>
+                  {k.haiku && (
+                    <p className="text-emerald-100/60 text-[10px] italic mt-1 pl-5 border-l border-amber-400/15">
+                      {k.haiku}
+                    </p>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 };
@@ -374,7 +532,7 @@ const MarcheDetailModal: React.FC<MarcheDetailModalProps> = ({
               {activeTab === 'voir' && <VoirTab marcheId={activeMarcheId || ''} />}
               {activeTab === 'ecouter' && <EcouterTab marcheId={activeMarcheId || ''} />}
               {activeTab === 'lire' && <LireTab userId={userId} marcheEventId={marcheEventId} />}
-              {activeTab === 'vivant' && <VivantTab marcheEventId={marcheEventId} />}
+              {activeTab === 'vivant' && <VivantTab marcheId={activeMarcheId || ''} userId={userId} />}
             </motion.div>
           </AnimatePresence>
         </div>
