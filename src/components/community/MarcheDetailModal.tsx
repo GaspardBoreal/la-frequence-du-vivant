@@ -183,7 +183,7 @@ const VivantTab: React.FC<{ marcheId: string; userId: string; marcheSlug?: strin
         body: {
           latitude: marche.latitude,
           longitude: marche.longitude,
-          radius: 500,
+          radius: 0.5,
           dateFilter: 'recent',
         }
       });
