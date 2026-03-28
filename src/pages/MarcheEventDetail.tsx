@@ -8,7 +8,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ArrowLeft, Save, Trash2, Plus, Printer, Users } from 'lucide-react';
+import { ArrowLeft, Save, Trash2, Plus, Printer, Users, MapPin, Tag } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 import { QRCodeSVG } from 'qrcode.react';
 import { format } from 'date-fns';
@@ -67,6 +68,21 @@ const MarcheEventDetail: React.FC = () => {
       if (error) throw error;
       return data;
     },
+  });
+
+  // Marches of selected exploration
+  const { data: explorationMarches } = useQuery({
+    queryKey: ['exploration-marches-preview', form.exploration_id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('exploration_marches')
+        .select('ordre, publication_status, marche_id, partie_id, marches(nom_marche, ville, departement, theme_principal), exploration_parties(titre)')
+        .eq('exploration_id', form.exploration_id)
+        .order('ordre');
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!form.exploration_id,
   });
 
   // Participations (raw)
@@ -239,6 +255,64 @@ const MarcheEventDetail: React.FC = () => {
                 </SelectContent>
               </Select>
             </div>
+
+            {/* Marches de l'exploration */}
+            {form.exploration_id && explorationMarches && explorationMarches.length > 0 && (
+              <div className="md:col-span-2 mt-2">
+                <div className="rounded-lg border border-border bg-muted/30 p-4">
+                  <p className="text-sm font-medium text-foreground mb-3">
+                    Marches de cette exploration ({explorationMarches.length})
+                  </p>
+                  <div className="space-y-2">
+                    {explorationMarches.map((em: any, idx: number) => {
+                      const marche = em.marches;
+                      const partie = em.exploration_parties;
+                      const statusMap: Record<string, { label: string; variant: 'default' | 'secondary' | 'outline' }> = {
+                        published_public: { label: 'Publiée', variant: 'default' },
+                        published_readers: { label: 'Lecteurs', variant: 'secondary' },
+                        draft: { label: 'Brouillon', variant: 'outline' },
+                      };
+                      const status = statusMap[em.publication_status] || { label: em.publication_status, variant: 'outline' as const };
+
+                      return (
+                        <div key={idx} className="flex items-start gap-3 rounded-md border border-border bg-card p-3">
+                          <span className="flex-shrink-0 w-6 h-6 rounded-full bg-primary/10 text-primary text-xs font-bold flex items-center justify-center">
+                            {em.ordre ?? idx + 1}
+                          </span>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium text-foreground truncate">
+                              {marche?.nom_marche || marche?.ville || 'Marche sans nom'}
+                            </p>
+                            <div className="flex items-center gap-3 mt-1 text-xs text-muted-foreground">
+                              {marche?.ville && (
+                                <span className="flex items-center gap-1">
+                                  <MapPin className="h-3 w-3" />
+                                  {marche.ville}{marche.departement ? ` · ${marche.departement}` : ''}
+                                </span>
+                              )}
+                              {marche?.theme_principal && (
+                                <span className="flex items-center gap-1">
+                                  <Tag className="h-3 w-3" />
+                                  {marche.theme_principal}
+                                </span>
+                              )}
+                            </div>
+                            {partie?.titre && (
+                              <p className="text-[10px] text-muted-foreground mt-1 italic">
+                                Partie : {partie.titre}
+                              </p>
+                            )}
+                          </div>
+                          <Badge variant={status.variant} className="text-[10px] flex-shrink-0">
+                            {status.label}
+                          </Badge>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
 
           <div className="flex gap-3 mt-6">
