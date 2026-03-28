@@ -147,7 +147,7 @@ const LireTab: React.FC<{ userId: string; marcheEventId: string }> = ({ userId, 
 // ─── Vivant (3 couches) ───
 const VivantTab: React.FC<{ marcheId: string; userId: string; marcheSlug?: string }> = ({ marcheId, userId, marcheSlug }) => {
   // Couche 1: Le Territoire — biodiversity_snapshots par marche_id
-  const { data: snapshot } = useQuery({
+  const { data: snapshot, isLoading: snapshotLoading } = useQuery({
     queryKey: ['marche-detail-biodiv-by-marche', marcheId],
     queryFn: async () => {
       const { data } = await supabase
@@ -161,6 +161,62 @@ const VivantTab: React.FC<{ marcheId: string; userId: string; marcheSlug?: strin
     },
     enabled: !!marcheId,
   });
+
+  // Fallback: si aucun snapshot, charger les coords et appeler l'edge function
+  const { data: realtimeData, isLoading: realtimeLoading } = useQuery({
+    queryKey: ['marche-detail-biodiv-realtime', marcheId],
+    queryFn: async () => {
+      // 1. Charger les coordonnées de la marche
+      const { data: marche } = await supabase
+        .from('marches')
+        .select('latitude, longitude')
+        .eq('id', marcheId)
+        .single();
+
+      if (!marche?.latitude || !marche?.longitude) return null;
+
+      // 2. Appeler l'edge function biodiversity-data
+      const { data, error } = await supabase.functions.invoke('biodiversity-data', {
+        body: {
+          latitude: marche.latitude,
+          longitude: marche.longitude,
+          radius: 5000,
+          dateFilter: 'medium',
+        }
+      });
+
+      if (error) {
+        console.error('❌ Vivant fallback edge function error:', error);
+        return null;
+      }
+
+      return data;
+    },
+    enabled: !!marcheId && !snapshotLoading && !snapshot,
+    staleTime: 1000 * 60 * 60, // 1h cache
+    retry: 1,
+  });
+
+  // Normaliser les données (snapshot DB ou réponse edge function)
+  const territoryData = snapshot ? {
+    total_species: snapshot.total_species,
+    birds_count: snapshot.birds_count,
+    plants_count: snapshot.plants_count,
+    fungi_count: snapshot.fungi_count || 0,
+    others_count: snapshot.others_count || 0,
+    biodiversity_index: snapshot.biodiversity_index,
+    species_data: snapshot.species_data,
+  } : realtimeData ? {
+    total_species: realtimeData.summary?.totalSpecies || 0,
+    birds_count: realtimeData.summary?.birds || 0,
+    plants_count: realtimeData.summary?.plants || 0,
+    fungi_count: realtimeData.summary?.fungi || 0,
+    others_count: realtimeData.summary?.others || 0,
+    biodiversity_index: null,
+    species_data: realtimeData.species || null,
+  } : null;
+
+  const isLoadingTerritory = snapshotLoading || (!snapshot && realtimeLoading);
 
   // Couche 2: Les Marcheurs — toutes les contributions pour cette marche
   const { data: communityPhotos } = useQuery({
@@ -216,20 +272,45 @@ const VivantTab: React.FC<{ marcheId: string; userId: string; marcheSlug?: strin
     enabled: !!userId,
   });
 
-  // Extraire les top espèces depuis species_data
-  const speciesProcessed = snapshot?.species_data ? processSpeciesData(snapshot.species_data as any) : null;
+  // Extraire les top espèces depuis species_data (format snapshot ou edge function)
   const topSpecies: { nom: string; type: string }[] = [];
-  if (speciesProcessed) {
-    speciesProcessed.flore.slice(0, 3).forEach(s => topSpecies.push({ nom: s.nom_commun, type: '🌿' }));
-    Object.values(speciesProcessed.faune).flat().slice(0, 3).forEach((s: any) => topSpecies.push({ nom: s.nom_commun, type: '🐦' }));
+  if (territoryData?.species_data) {
+    if (snapshot) {
+      // Format snapshot DB (via processSpeciesData)
+      const speciesProcessed = processSpeciesData(territoryData.species_data as any);
+      if (speciesProcessed) {
+        speciesProcessed.flore.slice(0, 3).forEach(s => topSpecies.push({ nom: s.nom_commun, type: '🌿' }));
+        Object.values(speciesProcessed.faune).flat().slice(0, 3).forEach((s: any) => topSpecies.push({ nom: s.nom_commun, type: '🐦' }));
+      }
+    } else if (Array.isArray(territoryData.species_data)) {
+      // Format edge function (array of species objects)
+      const species = territoryData.species_data as any[];
+      species
+        .filter((s: any) => s.kingdom === 'Animalia')
+        .slice(0, 3)
+        .forEach((s: any) => topSpecies.push({ nom: s.commonName || s.scientificName, type: '🐦' }));
+      species
+        .filter((s: any) => s.kingdom === 'Plantae')
+        .slice(0, 3)
+        .forEach((s: any) => topSpecies.push({ nom: s.commonName || s.scientificName, type: '🌿' }));
+    }
   }
 
   // Construire le lien vers la page bioacoustique
   const explorerLink = marcheSlug ? `/bioacoustique/${marcheSlug}` : null;
 
-  const hasTerritory = !!snapshot;
+  const hasTerritory = !!territoryData;
   const hasCommunity = (communityPhotos?.length || 0) + (communityAudio?.length || 0) + (communityTexts?.length || 0) > 0;
   const hasMyData = (myKigos?.length || 0) > 0;
+
+  if (isLoadingTerritory) {
+    return (
+      <div className="flex flex-col items-center justify-center py-8 text-center">
+        <div className="w-6 h-6 border-2 border-emerald-400/30 border-t-emerald-400 rounded-full animate-spin mb-2" />
+        <p className="text-emerald-200/40 text-xs">Chargement des données du vivant…</p>
+      </div>
+    );
+  }
 
   if (!hasTerritory && !hasCommunity && !hasMyData) {
     return <EmptyState message="Aucune donnée de biodiversité pour cette marche" />;
@@ -238,7 +319,7 @@ const VivantTab: React.FC<{ marcheId: string; userId: string; marcheSlug?: strin
   return (
     <div className="space-y-4">
       {/* ── Couche 1 : Le Territoire ── */}
-      {hasTerritory && snapshot && (
+      {hasTerritory && territoryData && (
         <div className="space-y-2">
           <div className="flex items-center gap-2">
             <Globe className="w-3.5 h-3.5 text-emerald-400" />
@@ -247,20 +328,20 @@ const VivantTab: React.FC<{ marcheId: string; userId: string; marcheSlug?: strin
           </div>
 
           {/* Indice */}
-          {snapshot.biodiversity_index != null && (
+          {territoryData.biodiversity_index != null && (
             <div className="bg-gradient-to-r from-emerald-500/15 to-sky-500/10 rounded-xl border border-emerald-500/20 p-3 text-center">
               <p className="text-emerald-200/50 text-[10px] mb-0.5">Indice de biodiversité</p>
-              <p className="text-emerald-300 text-xl font-bold">{Number(snapshot.biodiversity_index).toFixed(1)}</p>
+              <p className="text-emerald-300 text-xl font-bold">{Number(territoryData.biodiversity_index).toFixed(1)}</p>
             </div>
           )}
 
           {/* Stats grid */}
           <div className="grid grid-cols-4 gap-1.5">
             {[
-              { label: 'Espèces', value: snapshot.total_species, color: 'text-emerald-400' },
-              { label: 'Oiseaux', value: snapshot.birds_count, color: 'text-sky-400' },
-              { label: 'Plantes', value: snapshot.plants_count, color: 'text-green-400' },
-              { label: 'Autres', value: (snapshot.fungi_count || 0) + (snapshot.others_count || 0), color: 'text-amber-400' },
+              { label: 'Espèces', value: territoryData.total_species, color: 'text-emerald-400' },
+              { label: 'Oiseaux', value: territoryData.birds_count, color: 'text-sky-400' },
+              { label: 'Plantes', value: territoryData.plants_count, color: 'text-green-400' },
+              { label: 'Autres', value: (territoryData.fungi_count || 0) + (territoryData.others_count || 0), color: 'text-amber-400' },
             ].map(s => (
               <div key={s.label} className="bg-white/5 rounded-lg border border-white/10 p-2 text-center">
                 <p className={`text-sm font-bold ${s.color}`}>{s.value}</p>
