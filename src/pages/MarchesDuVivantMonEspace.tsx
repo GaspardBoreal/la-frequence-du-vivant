@@ -17,6 +17,7 @@ import AccueilTab from '@/components/community/tabs/AccueilTab';
 import MarchesTab from '@/components/community/tabs/MarchesTab';
 import CarnetTab from '@/components/community/tabs/CarnetTab';
 import OutilsTab from '@/components/community/tabs/OutilsTab';
+import PlaceholderTab from '@/components/community/tabs/PlaceholderTab';
 
 const MarchesDuVivantMonEspace = () => {
   const navigate = useNavigate();
