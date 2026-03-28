@@ -1,52 +1,56 @@
 
 
-# Corriger definitivement l'ecart de donnees : erreur d'unite du rayon
+# Visionneuse plein ecran avec navigation swipe pour mobile
 
-## Diagnostic definitif
+## Objectif
 
-J'ai appele l'edge function `biodiversity-data` avec les deux valeurs de rayon et compare les resultats :
+Permettre au marcheur de visualiser chaque media (photo/video) en grand sur mobile, avec navigation precedent/suivant par swipe ou boutons, tout en respectant la visibilite public/prive.
 
-- `radius: 0.5` → **42 especes** (identique a la page bioacoustique)
-- `radius: 500` → **254 especes** (ce que le Carnet Vivant affiche)
+## Approche
 
-Le probleme est une **erreur d'unite**. L'edge function interprete le rayon en **kilometres** :
-- La page bioacoustique envoie `radius: 0.5` = 0,5 km = 500 metres
-- Le Carnet Vivant envoie `radius: 500` = 500 km (!)
-
-La correction precedente a change `5000` en `500`, mais le bon chiffre est `0.5`.
-
-## Solution (mode hybride strict choisi)
-
-### Etape 1 : Corriger le rayon dans le fallback realtime
-
-Ligne 184 de `MarcheDetailModal.tsx` : changer `radius: 500` en `radius: 0.5`.
-
-### Etape 2 : Mode hybride strict pour les snapshots
-
-Avant d'utiliser un snapshot de la table `biodiversity_snapshots`, verifier que ses parametres correspondent :
-- `radius_meters` du snapshot doit etre proche de 500 (= 0.5 km)
-- Sinon, ignorer le snapshot et appeler l'edge function en temps reel
-
-Cela garantit que si un snapshot a ete genere avec un rayon different (ex: batch a 5km), il ne sera pas utilise a la place des donnees temps reel a 500m.
-
-## Detail technique
+Creer un composant `MediaLightbox` leger et immersif :
 
 ```text
-VivantTab(marcheId)
-  │
-  ├─ Query 1: biodiversity_snapshots WHERE marche_id = X
-  │   └─ snapshot.radius_meters ≈ 500 ? → utiliser
-  │   └─ sinon → ignorer (passer au fallback)
-  │
-  └─ Query 2 (fallback):
-      ├─ Charger marches.latitude/longitude
-      └─ Appeler edge function avec radius: 0.5, dateFilter: 'recent'
-          └─ 42 especes (identique au site web)
+┌─────────────────────────────┐
+│  ✕                   2 / 8  │  ← compteur + fermer
+│                             │
+│                             │
+│    ◀   [ PHOTO PLEIN ]  ▶   │  ← swipe ou tap bords
+│                             │
+│                             │
+│  "Lever de brume"           │  ← titre optionnel
+│  🔒 Privé · 12 mars 2026   │  ← badge visibilite + date
+└─────────────────────────────┘
 ```
 
-## Fichier modifie
+- **Swipe gauche/droite** (touch) pour naviguer sur mobile
+- **Fleches clavier** sur desktop
+- **Boutons chevron** semi-transparents sur les bords
+- **Fond noir** avec media centre (object-contain)
+- **Badge public/prive** discret en bas
+- Videos : lecteur natif avec controls
+
+## Integration dans VoirTab
+
+Chaque section (exploration, mes contributions, marcheurs) alimente un **tableau unique ordonne** de medias visibles. Quand l'utilisateur tape sur une miniature, le lightbox s'ouvre a l'index correspondant dans ce tableau. La navigation parcourt tous les medias autorises de la marche en cours.
+
+Regles de visibilite dans le tableau :
+- Admin photos → toujours inclus
+- Mes contributions → toujours inclus (meme prives)
+- Contributions des autres → uniquement `is_public = true`
+
+## Fichiers impactes
 
 | Fichier | Changement |
 |---------|-----------|
-| `src/components/community/MarcheDetailModal.tsx` | Ligne 184 : `radius: 500` → `radius: 0.5`. Ligne 196 : ajouter condition `snapshot?.radius_meters <= 600` pour valider le snapshot avant utilisation (hybride strict). |
+| `src/components/community/contributions/MediaLightbox.tsx` | **Nouveau** — composant fullscreen avec swipe (touch events), fleches, compteur, badge visibilite, titre |
+| `src/components/community/MarcheDetailModal.tsx` | Dans `VoirTab` : construire le tableau de medias visibles, passer `onClick` sur chaque miniature pour ouvrir le lightbox a l'index, rendre le lightbox conditionnellement |
+
+## Details techniques
+
+- Swipe : `onTouchStart` / `onTouchEnd` natifs (delta X > 50px = navigation), zero dependance
+- Le lightbox recoit `items: Array<{url, type, titre, isPublic, isOwner}>` + `startIndex`
+- Animation entree/sortie via framer-motion (fade + scale)
+- `position: fixed inset-0 z-[60]` pour passer au-dessus de la modale
+- Sur mobile, les boutons chevron sont caches au profit du swipe ; sur desktop, ils sont visibles au hover
 
