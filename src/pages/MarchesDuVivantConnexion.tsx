@@ -206,8 +206,8 @@ const MarchesDuVivantConnexion = () => {
                     <button type="button" onClick={() => setMode('forgot')} className="text-xs text-emerald-300/60 hover:text-emerald-200 transition-colors">
                       Mot de passe oublié ?
                     </button>
-                    <Button type="submit" disabled={isSubmitting} className="w-full bg-emerald-500 hover:bg-emerald-400 text-white">
-                      {isSubmitting ? 'Connexion...' : 'Rejoignez la communauté des marcheurs du vivant'}
+                    <Button type="submit" disabled={isSubmitting} className="w-full bg-emerald-500 hover:bg-emerald-400 text-white whitespace-normal text-center text-sm">
+                      {isSubmitting ? 'Connexion...' : 'Se connecter'}
                     </Button>
                   </motion.form>
                 )}
