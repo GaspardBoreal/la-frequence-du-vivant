@@ -15,9 +15,8 @@ import MonEspaceHeader from '@/components/community/MonEspaceHeader';
 import MonEspaceTabBar, { TabKey } from '@/components/community/MonEspaceTabBar';
 import AccueilTab from '@/components/community/tabs/AccueilTab';
 import MarchesTab from '@/components/community/tabs/MarchesTab';
-import QuizTab from '@/components/community/tabs/QuizTab';
-import PlaceholderTab from '@/components/community/tabs/PlaceholderTab';
-import ZonesTab from '@/components/community/tabs/ZonesTab';
+import CarnetTab from '@/components/community/tabs/CarnetTab';
+import OutilsTab from '@/components/community/tabs/OutilsTab';
 
 const MarchesDuVivantMonEspace = () => {
   const navigate = useNavigate();
