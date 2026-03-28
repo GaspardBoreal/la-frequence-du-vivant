@@ -78,7 +78,7 @@ const VoirTab: React.FC<{ marcheId: string; userId: string; marcheEventId: strin
   });
 
   // User contributions
-  const { data: userMedias } = useMarcheurMedias(marcheEventId, userId, sort);
+  const { data: userMedias } = useMarcheurMedias(marcheEventId, userId, sort, activeMarcheId);
   const uploadMedias = useUploadMedias(userId);
   const addExtVideo = useAddExternalVideo(userId);
   const updateContrib = useUpdateContribution();
