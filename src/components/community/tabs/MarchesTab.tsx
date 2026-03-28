@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Sparkles, MapPin, CheckCircle2, Clock, QrCode, Leaf, Music, PenLine, ChevronRight, Compass } from 'lucide-react';
-import CarnetVivant from '@/components/community/CarnetVivant';
 import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
 import { format, differenceInCalendarDays } from 'date-fns';
