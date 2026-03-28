@@ -212,19 +212,17 @@ export function useUploadAudio(userId: string) {
       for (const file of files) {
         const url = await uploadFile(userId, file, 'audio');
         
-        const insertData: Record<string, any> = {
-          user_id: userId,
-          marche_event_id: marcheEventId,
-          url_fichier: url,
-          titre: file.name.replace(/\.[^.]+$/, ''),
-          is_public: isPublic,
-          taille_octets: file.size,
-        };
-        if (marcheId) insertData.marche_id = marcheId;
-        
         const { data, error } = await supabase
           .from('marcheur_audio')
-          .insert(insertData)
+          .insert({
+            user_id: userId,
+            marche_event_id: marcheEventId,
+            url_fichier: url,
+            titre: file.name.replace(/\.[^.]+$/, ''),
+            is_public: isPublic,
+            taille_octets: file.size,
+            ...(marcheId ? { marche_id: marcheId } : {}),
+          })
           .select()
           .single();
         
