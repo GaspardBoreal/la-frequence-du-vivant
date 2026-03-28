@@ -362,7 +362,7 @@ const EcouterTab: React.FC<{ marcheId: string; userId: string; marcheEventId: st
 };
 
 // ─── Lire Tab ───
-const LireTab: React.FC<{ userId: string; marcheEventId: string }> = ({ userId, marcheEventId }) => {
+const LireTab: React.FC<{ userId: string; marcheEventId: string; activeMarcheId?: string }> = ({ userId, marcheEventId, activeMarcheId }) => {
   const [sort, setSort] = useState<'desc' | 'asc'>('desc');
   const [showNew, setShowNew] = useState(false);
   const [newTitre, setNewTitre] = useState('');
