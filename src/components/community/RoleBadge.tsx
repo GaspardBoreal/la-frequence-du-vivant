@@ -30,7 +30,7 @@ const RoleBadge: React.FC<RoleBadgeProps> = ({ role, size = 'md', showLabel = tr
   return (
     <div className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border ${colors.bg} ${colors.border} ${colors.text}`}>
       <Icon className={sizeClasses[size]} />
-      {showLabel && <span className={`font-medium ${textSizes[size]}`}>{config.label}</span>}
+      {showLabel && <span className={`font-bold ${textSizes[size]}`}>{config.label}</span>}
     </div>
   );
 };
