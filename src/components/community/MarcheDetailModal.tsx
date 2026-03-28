@@ -248,7 +248,7 @@ const EcouterTab: React.FC<{ marcheId: string; userId: string; marcheEventId: st
     enabled: !!marcheId,
   });
 
-  const { data: userAudio } = useMarcheurAudio(marcheEventId, userId, sort);
+  const { data: userAudio } = useMarcheurAudio(marcheEventId, userId, sort, activeMarcheId);
   const uploadAudio = useUploadAudio(userId);
   const updateContrib = useUpdateContribution();
   const deleteContrib = useDeleteContribution();
