@@ -110,7 +110,7 @@ const ProgressionCard: React.FC<ProgressionCardProps> = ({
                 <div className={`w-8 h-8 rounded-full flex items-center justify-center ${isActive ? rDark.bg : 'bg-white/5'} border ${isActive ? rDark.border : 'border-white/10'}`}>
                   <Icon className="w-4 h-4" />
                 </div>
-                <span className="text-[10px] font-medium text-center leading-tight max-w-[60px] text-white/70">
+                <span className={`text-[10px] text-center leading-tight whitespace-nowrap text-white/70 ${r === role ? 'font-bold' : 'font-medium'}`}>
                   {rConfig.label}
                 </span>
               </div>
