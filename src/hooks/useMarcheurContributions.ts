@@ -111,20 +111,18 @@ export function useUploadMedias(userId: string) {
         const folder = typeMedia === 'photo' ? 'photos' : 'videos';
         const url = await uploadFile(userId, file, folder);
         
-        const insertData: Record<string, any> = {
-          user_id: userId,
-          marche_event_id: marcheEventId,
-          type_media: typeMedia,
-          url_fichier: url,
-          titre: file.name.replace(/\.[^.]+$/, ''),
-          is_public: isPublic,
-          taille_octets: file.size,
-        };
-        if (marcheId) insertData.marche_id = marcheId;
-        
         const { data, error } = await supabase
           .from('marcheur_medias')
-          .insert(insertData)
+          .insert({
+            user_id: userId,
+            marche_event_id: marcheEventId,
+            type_media: typeMedia,
+            url_fichier: url,
+            titre: file.name.replace(/\.[^.]+$/, ''),
+            is_public: isPublic,
+            taille_octets: file.size,
+            ...(marcheId ? { marche_id: marcheId } : {}),
+          })
           .select()
           .single();
         
