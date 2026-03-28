@@ -584,7 +584,7 @@ const VivantTab: React.FC<{ marcheId: string; userId: string; marcheSlug?: strin
         snapshot_date: new Date().toISOString(),
       };
     },
-    enabled: !!marcheId && !snapshotLoading && !snapshot,
+    enabled: !!marcheId,
     staleTime: 1000 * 60 * 60,
     retry: 1,
   });
