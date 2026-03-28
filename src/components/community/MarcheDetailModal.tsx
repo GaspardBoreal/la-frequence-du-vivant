@@ -570,8 +570,19 @@ const VivantTab: React.FC<{ marcheId: string; userId: string; marcheSlug?: strin
       const { data, error } = await supabase.functions.invoke('biodiversity-data', {
         body: { latitude: marche.latitude, longitude: marche.longitude, radius: 0.5, dateFilter: 'recent' }
       });
-      if (error) return null;
-      return data;
+      if (error || !data) return null;
+      // Normaliser la réponse edge function au format snapshot
+      return {
+        total_species: data.summary?.totalSpecies ?? 0,
+        birds_count: data.summary?.birds ?? 0,
+        plants_count: data.summary?.plants ?? 0,
+        fungi_count: data.summary?.fungi ?? 0,
+        others_count: data.summary?.others ?? 0,
+        recent_observations: data.summary?.recentObservations ?? 0,
+        species_data: data.species ?? [],
+        radius_meters: 500,
+        snapshot_date: new Date().toISOString(),
+      };
     },
     enabled: !!marcheId && !snapshotLoading && !snapshot,
     staleTime: 1000 * 60 * 60,
