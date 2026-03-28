@@ -4,7 +4,7 @@ import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 
-interface ContributionItemProps {
+export interface ContributionItemProps {
   id: string;
   type: 'photo' | 'video' | 'audio' | 'texte';
   titre: string | null;
@@ -18,6 +18,7 @@ interface ContributionItemProps {
   createdAt: string;
   onUpdate?: (id: string, updates: Record<string, any>) => void;
   onDelete?: (id: string) => void;
+  onClick?: () => void;
 }
 
 const typeIcons = {
