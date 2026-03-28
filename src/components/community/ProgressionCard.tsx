@@ -55,7 +55,7 @@ const ProgressionCard: React.FC<ProgressionCardProps> = ({
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      className={`rounded-2xl border-2 ${dark.border} bg-white/[0.14] backdrop-blur-lg p-6 space-y-4`}
+      className={`rounded-2xl border-2 ${dark.border} bg-white/[0.14] backdrop-blur-lg p-4 space-y-2`}
     >
       <div className="flex items-center justify-between">
         <div>
