@@ -147,7 +147,7 @@ const LireTab: React.FC<{ userId: string; marcheEventId: string }> = ({ userId, 
 // ─── Vivant (3 couches) ───
 const VivantTab: React.FC<{ marcheId: string; userId: string; marcheSlug?: string }> = ({ marcheId, userId, marcheSlug }) => {
   // Couche 1: Le Territoire — biodiversity_snapshots par marche_id
-  const { data: snapshot } = useQuery({
+  const { data: snapshot, isLoading: snapshotLoading } = useQuery({
     queryKey: ['marche-detail-biodiv-by-marche', marcheId],
     queryFn: async () => {
       const { data } = await supabase
@@ -161,6 +161,62 @@ const VivantTab: React.FC<{ marcheId: string; userId: string; marcheSlug?: strin
     },
     enabled: !!marcheId,
   });
+
+  // Fallback: si aucun snapshot, charger les coords et appeler l'edge function
+  const { data: realtimeData, isLoading: realtimeLoading } = useQuery({
+    queryKey: ['marche-detail-biodiv-realtime', marcheId],
+    queryFn: async () => {
+      // 1. Charger les coordonnées de la marche
+      const { data: marche } = await supabase
+        .from('marches')
+        .select('latitude, longitude')
+        .eq('id', marcheId)
+        .single();
+
+      if (!marche?.latitude || !marche?.longitude) return null;
+
+      // 2. Appeler l'edge function biodiversity-data
+      const { data, error } = await supabase.functions.invoke('biodiversity-data', {
+        body: {
+          latitude: marche.latitude,
+          longitude: marche.longitude,
+          radius: 5000,
+          dateFilter: 'medium',
+        }
+      });
+
+      if (error) {
+        console.error('❌ Vivant fallback edge function error:', error);
+        return null;
+      }
+
+      return data;
+    },
+    enabled: !!marcheId && !snapshotLoading && !snapshot,
+    staleTime: 1000 * 60 * 60, // 1h cache
+    retry: 1,
+  });
+
+  // Normaliser les données (snapshot DB ou réponse edge function)
+  const territoryData = snapshot ? {
+    total_species: snapshot.total_species,
+    birds_count: snapshot.birds_count,
+    plants_count: snapshot.plants_count,
+    fungi_count: snapshot.fungi_count || 0,
+    others_count: snapshot.others_count || 0,
+    biodiversity_index: snapshot.biodiversity_index,
+    species_data: snapshot.species_data,
+  } : realtimeData ? {
+    total_species: realtimeData.summary?.totalSpecies || 0,
+    birds_count: realtimeData.summary?.birds || 0,
+    plants_count: realtimeData.summary?.plants || 0,
+    fungi_count: realtimeData.summary?.fungi || 0,
+    others_count: realtimeData.summary?.others || 0,
+    biodiversity_index: null,
+    species_data: realtimeData.species || null,
+  } : null;
+
+  const isLoadingTerritory = snapshotLoading || (!snapshot && realtimeLoading);
 
   // Couche 2: Les Marcheurs — toutes les contributions pour cette marche
   const { data: communityPhotos } = useQuery({
