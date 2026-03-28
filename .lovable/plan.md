@@ -1,22 +1,35 @@
 
 
-# Fix : Bouton "Rejoignez la communauté" qui déborde
+# Restructuration de l'onglet Marches en 3 sections distinctes
 
-## Problème
+## Constat
 
-Le bouton de connexion affiche le texte long "Rejoignez la communauté des marcheurs du vivant" qui déborde horizontalement du conteneur sur mobile (390px). Ce texte est trop long pour un bouton de soumission de formulaire de connexion.
+Actuellement, tous les evenements sont dans une liste plate triee (inscrits d'abord, puis par date). Un marcheur inscrit a 2 marches et voyant 1 marche disponible voit 3 cartes identiques sous le meme titre "Votre prochaine aventure". Aucune hierarchie visuelle ne distingue ce qui le concerne directement de ce qu'il peut encore decouvrir.
 
-## Solution
+## Structure proposee : 3 sections narratives
 
-Deux corrections combinées :
+### Section 1 — "Mes aventures" (evenements inscrits)
+- Cartes avec bordure doree/ambre lumineuse, fond plus chaud
+- Countdown prominent, badge "Inscrit" deja present
+- Titre de section : "Mes aventures a venir" avec icone Sparkles
+- Si aucune inscription : message incitatif "Aucune marche au programme — explorez les sentiers ci-dessous"
 
-1. **Raccourcir le texte du bouton connexion** : remplacer par "Se connecter" — c'est un formulaire de connexion, pas d'inscription. Le texte actuel est confus en plus d'être trop long.
+### Section 2 — "Sentiers a explorer" (evenements a venir, non inscrits)
+- Cartes neutres (style actuel bg-white/5)
+- Bouton CTA "S'inscrire" bien visible
+- Titre de section : "Sentiers a explorer" avec icone Compass
+- Message contextuel si tout est deja inscrit : "Vous etes inscrit a toutes les marches — bravo !"
 
-2. **Ajouter `whitespace-nowrap` → `whitespace-normal` et `text-center`** sur le bouton comme filet de sécurité pour tout texte long futur, avec un `text-sm` pour réduire la taille si nécessaire.
+### Section 3 — "Mon carnet de route" (historique des participations)
+- Reste tel quel, compact
+- Titre renomme "Mon carnet de route" au lieu de "Historique"
 
-## Fichier modifié
+### QR Code
+- Reste en bas, entre sections 2 et 3
+
+## Fichier modifie
 
 | Fichier | Changement |
 |---------|-----------|
-| `src/pages/MarchesDuVivantConnexion.tsx` | Ligne 210 : changer le label du bouton connexion en "Se connecter" |
+| `src/components/community/tabs/MarchesTab.tsx` | Separer `sortedEvents` en deux listes (`myEvents` / `discoverEvents`), creer 3 blocs visuels distincts avec titres et messages adaptatifs |
 
