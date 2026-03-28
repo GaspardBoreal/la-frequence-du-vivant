@@ -7,6 +7,7 @@ import { fr } from 'date-fns/locale';
 import { Eye, Headphones, BookOpen, Leaf, MapPin, Music, ChevronLeft, ChevronRight, Camera, FileText, Globe, Users, User, ExternalLink } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { processSpeciesData } from '@/utils/speciesDataUtils';
+import { createSlug } from '@/utils/slugGenerator';
 
 interface MarcheDetailModalProps {
   open: boolean;
@@ -180,7 +181,7 @@ const VivantTab: React.FC<{ marcheId: string; userId: string; marcheSlug?: strin
         body: {
           latitude: marche.latitude,
           longitude: marche.longitude,
-          radius: 5000,
+          radius: 500,
           dateFilter: 'medium',
         }
       });
@@ -544,6 +545,8 @@ const MarcheDetailModal: React.FC<MarcheDetailModalProps> = ({
 
   const hasMultipleSteps = (explorationMarches?.length ?? 0) > 1;
   const activeMarcheId = explorationMarches?.[activeStepIndex]?.id;
+  const activeMarche = explorationMarches?.[activeStepIndex];
+  const activeMarcheSlug = activeMarche ? createSlug(activeMarche.nom_marche || activeMarche.ville, activeMarche.ville) : undefined;
 
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
@@ -613,7 +616,7 @@ const MarcheDetailModal: React.FC<MarcheDetailModalProps> = ({
               {activeTab === 'voir' && <VoirTab marcheId={activeMarcheId || ''} />}
               {activeTab === 'ecouter' && <EcouterTab marcheId={activeMarcheId || ''} />}
               {activeTab === 'lire' && <LireTab userId={userId} marcheEventId={marcheEventId} />}
-              {activeTab === 'vivant' && <VivantTab marcheId={activeMarcheId || ''} userId={userId} />}
+              {activeTab === 'vivant' && <VivantTab marcheId={activeMarcheId || ''} userId={userId} marcheSlug={activeMarcheSlug} />}
             </motion.div>
           </AnimatePresence>
         </div>
