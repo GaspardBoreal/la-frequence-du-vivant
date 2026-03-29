@@ -91,11 +91,11 @@ const MarchesDuVivantMonEspace = () => {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center px-4">
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-center space-y-6 max-w-md">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-emerald-400/10 ring-1 ring-emerald-400/30 mx-auto">
-            <UserPlus className="w-8 h-8 text-emerald-300" />
+          <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-primary/10 ring-1 ring-primary/30 mx-auto">
+            <UserPlus className="w-8 h-8 text-primary" />
           </div>
-          <h1 className="text-2xl font-bold text-white">Bienvenue parmi les marcheurs du Vivant 🌿</h1>
-          <p className="text-emerald-200/70 text-center">
+          <h1 className="text-2xl font-bold text-foreground">Bienvenue parmi les marcheurs du Vivant 🌿</h1>
+          <p className="text-muted-foreground text-center">
             Votre profil communautaire n'existe pas encore. Créez-le en un clic pour accéder à votre espace.
           </p>
           <Button
