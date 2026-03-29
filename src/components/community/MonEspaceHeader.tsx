@@ -54,10 +54,10 @@ const MonEspaceHeader: React.FC<MonEspaceHeaderProps> = ({
               key={totalFrequences}
               initial={{ scale: 1.2 }}
               animate={{ scale: 1 }}
-              className="flex items-center gap-1 bg-white/10 border border-white/20 rounded-full px-2 py-1 flex-shrink-0"
+              className="flex items-center gap-1 bg-secondary border border-border rounded-full px-2 py-1 flex-shrink-0"
             >
-              <span className="text-amber-400 text-[10px]">★</span>
-              <span className="text-white text-xs font-bold">{totalFrequences}</span>
+              <span className="text-amber-500 dark:text-amber-400 text-[10px]">★</span>
+              <span className="text-foreground text-xs font-bold">{totalFrequences}</span>
             </motion.div>
             <button onClick={() => setSettingsOpen(true)} className="text-emerald-200/50 hover:text-emerald-100 transition-colors p-1 flex-shrink-0">
               <Settings className="w-4 h-4" />
