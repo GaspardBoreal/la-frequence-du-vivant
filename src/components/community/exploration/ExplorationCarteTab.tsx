@@ -174,7 +174,7 @@ const ExplorationCarteTab: React.FC<ExplorationCarteTabProps> = ({
           .eq('is_public', true),
         supabase
           .from('marcheur_medias')
-          .select('marche_id, file_url')
+          .select('marche_id, url_fichier')
           .in('marche_id', marcheIds)
           .eq('is_public', true)
           .eq('type_media', 'photo')
