@@ -115,7 +115,7 @@ const ProgressionCard: React.FC<ProgressionCardProps> = ({
                 </span>
               </div>
               {i < ALL_ROLES.length - 1 && (
-                <ChevronRight className={`w-3 h-3 flex-shrink-0 ${i < currentIndex ? 'text-emerald-400' : 'text-emerald-200/20'}`} />
+                <ChevronRight className={`w-3 h-3 flex-shrink-0 ${i < currentIndex ? 'text-emerald-500 dark:text-emerald-400' : 'text-gray-300 dark:text-emerald-200/20'}`} />
               )}
             </React.Fragment>
           );

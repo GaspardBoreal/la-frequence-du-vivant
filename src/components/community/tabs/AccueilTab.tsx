@@ -44,32 +44,32 @@ const AccueilTab: React.FC<AccueilTabProps> = ({
       >
         <button
           onClick={() => onNavigate('marches')}
-          className="bg-white/[0.08] hover:bg-white/[0.15] border border-white/15 rounded-xl p-4 flex flex-col items-center gap-2 transition-colors group"
+          className="bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 dark:bg-white/[0.08] dark:hover:bg-white/[0.15] dark:border-white/15 rounded-xl p-4 flex flex-col items-center gap-2 transition-colors group"
         >
-          <div className="w-10 h-10 rounded-full bg-emerald-500/15 flex items-center justify-center group-hover:bg-emerald-500/25 transition-colors">
-            <Map className="w-5 h-5 text-emerald-300" />
+          <div className="w-10 h-10 rounded-full bg-emerald-100 dark:bg-emerald-500/15 flex items-center justify-center group-hover:bg-emerald-200 dark:group-hover:bg-emerald-500/25 transition-colors">
+            <Map className="w-5 h-5 text-emerald-600 dark:text-emerald-300" />
           </div>
-          <span className="text-xs text-white/80 font-medium">Mes marches</span>
+          <span className="text-xs text-foreground font-medium">Mes marches</span>
         </button>
 
         <button
           onClick={() => onNavigate('outils')}
-          className="bg-amber-500/[0.08] hover:bg-amber-500/[0.15] border border-amber-400/20 rounded-xl p-4 flex flex-col items-center gap-2 transition-colors group"
+          className="bg-amber-50 hover:bg-amber-100 border border-amber-200 dark:bg-amber-500/[0.08] dark:hover:bg-amber-500/[0.15] dark:border-amber-400/20 rounded-xl p-4 flex flex-col items-center gap-2 transition-colors group"
         >
-          <div className="w-10 h-10 rounded-full bg-amber-500/15 flex items-center justify-center group-hover:bg-amber-500/25 transition-colors">
-            <Radar className="w-5 h-5 text-amber-300" />
+          <div className="w-10 h-10 rounded-full bg-amber-100 dark:bg-amber-500/15 flex items-center justify-center group-hover:bg-amber-200 dark:group-hover:bg-amber-500/25 transition-colors">
+            <Radar className="w-5 h-5 text-amber-600 dark:text-amber-300" />
           </div>
-          <span className="text-xs text-white/80 font-medium">Zones ×4</span>
+          <span className="text-xs text-foreground font-medium">Zones ×4</span>
         </button>
 
         <button
           onClick={() => onNavigate('outils')}
-          className="bg-cyan-500/[0.08] hover:bg-cyan-500/[0.15] border border-cyan-400/20 rounded-xl p-4 flex flex-col items-center gap-2 transition-colors group"
+          className="bg-cyan-50 hover:bg-cyan-100 border border-cyan-200 dark:bg-cyan-500/[0.08] dark:hover:bg-cyan-500/[0.15] dark:border-cyan-400/20 rounded-xl p-4 flex flex-col items-center gap-2 transition-colors group"
         >
-          <div className="w-10 h-10 rounded-full bg-cyan-500/15 flex items-center justify-center group-hover:bg-cyan-500/25 transition-colors">
-            <Brain className="w-5 h-5 text-cyan-300" />
+          <div className="w-10 h-10 rounded-full bg-cyan-100 dark:bg-cyan-500/15 flex items-center justify-center group-hover:bg-cyan-200 dark:group-hover:bg-cyan-500/25 transition-colors">
+            <Brain className="w-5 h-5 text-cyan-600 dark:text-cyan-300" />
           </div>
-          <span className="text-xs text-white/80 font-medium">Quiz éveil</span>
+          <span className="text-xs text-foreground font-medium">Quiz éveil</span>
         </button>
       </motion.div>
     </div>

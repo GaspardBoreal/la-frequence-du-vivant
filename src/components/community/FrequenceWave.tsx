@@ -239,18 +239,18 @@ const FrequenceWave: React.FC<FrequenceWaveProps> = ({ totalFrequences, role }) 
           transition={{ duration: 0.5, ease: 'easeOut' }}
           className="relative text-left"
         >
-          <p className="italic text-white/90 text-xs leading-relaxed">
+          <p className="italic text-foreground text-xs leading-relaxed">
             « {citation.texte} »
           </p>
           <div className="flex justify-end mt-1.5">
-            <span className="text-white/50 text-[10px] inline-flex items-center gap-1">
+            <span className="text-muted-foreground text-[10px] inline-flex items-center gap-1">
               — {citation.auteur}
               {citation.url && (
                 <a
                   href={citation.url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-white/30 hover:text-white/60 transition-colors"
+                  className="text-muted-foreground/50 hover:text-foreground/60 transition-colors"
                   onClick={(e) => e.stopPropagation()}
                   aria-label="Vérifier la source"
                 >
