@@ -676,6 +676,9 @@ const MarcheursTab: React.FC<MarcheursTabProps> = ({ explorationId, marcheEventI
             isExpanded={expandedId === m.id}
             onToggle={() => setExpandedId(prev => prev === m.id ? null : m.id)}
             marcheEventId={marcheEventId}
+            explorationId={explorationId}
+            explorationMarcheIds={explorationMarcheIds}
+            totalMarchesCount={explorationMarcheIds.length}
           />
         ))}
       </div>
