@@ -1,57 +1,42 @@
 
 
-# Fix: Boutons modifier/supprimer — diagnostic approfondi
+# Fix: Upload HEIC echoue sur Android — fallback au lieu de bloquer
 
-## Analyse
+## Probleme
 
-Le correctif CSS precedent (`sm:opacity-0 sm:group-hover:opacity-100`) est syntaxiquement correct : sur mobile (< 640px), les prefixes `sm:` ne s'appliquent pas, donc l'opacite par defaut (1) est utilisee — les boutons devraient etre visibles.
+Quand Laurence uploade une photo depuis Android, si le fichier est detecte comme HEIC/HEIF (par extension ou MIME type), `heic2any` tente de le convertir en JPEG. Sur Android Chrome, cette librairie WebAssembly echoue souvent (memoire, timeout, incompatibilite). Le `catch` actuel **bloque completement l'upload** en lançant une erreur fatale.
 
-Cependant, le probleme reside potentiellement dans un **comportement CSS implicite**. Sans `opacity-100` explicite, certains navigateurs ou certaines cascades CSS pourraient ne pas appliquer l'opacite attendue, surtout avec `transition-opacity` present.
+## Solution
 
-### Problemes identifies
+Au lieu de bloquer l'upload quand la conversion HEIC echoue, **uploader le fichier original tel quel** en fallback. Le fichier sera stocke et visible au minimum sur Safari et les navigateurs recents. Un toast d'avertissement informera que la conversion n'a pas pu etre faite.
 
-1. **Opacite implicite sur mobile** : La classe `transition-opacity` est presente mais sans valeur d'opacite explicite sur mobile. Il faut ajouter `opacity-100` comme valeur de base pour garantir la visibilite.
+De plus, sur Android, les photos prises par l'appareil sont generalement en JPEG meme si le MIME type signale parfois `image/heic` a tort. Donc uploader le fichier brut fonctionnera dans la majorite des cas.
 
-2. **Pas de `userId` guard dans les tabs** : `userId` est `string | undefined` (ligne 72 de ExplorationMarcheurPage). Il est passe directement aux VoirTab/EcouterTab/LireTab qui attendent `string`. Si undefined :
-   - `useMarcheurMedias` a `enabled: !!userId` → false → aucun media ne charge
-   - Les contributions de l'utilisateur sont invisibles
-   - Il faut ajouter un guard `userId || ''` avec une gestion correcte
+## Changement
 
-## Correctifs
+**Fichier : `src/hooks/useMarcheurContributions.ts`** (lignes 76-79)
 
-### Fichier 1 : `src/components/community/contributions/ContributionItem.tsx`
-
-Ligne 171 — Ajouter `opacity-100` explicite :
-```
-// Avant
-<div className="flex gap-1 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
-
-// Apres
-<div className="flex gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
-```
-
-### Fichier 2 : `src/components/community/ExplorationMarcheurPage.tsx`
-
-Lignes 316-326 — Ajouter un guard pour `userId` afin que les tabs ne soient rendus que quand l'utilisateur est connecte (sinon impossible de determiner `isOwner`) :
+Remplacer le `throw` dans le catch par un fallback silencieux :
 
 ```typescript
 // Avant
-{activeSensoryTab === 'voir' && (
-  <VoirTab marcheId={activeMarcheId || ''} userId={userId} ... />
-)}
+} catch (err) {
+  console.error('❌ Conversion HEIC échouée:', err);
+  throw new Error('Format HEIC non supporté...');
+}
 
-// Apres
-{activeSensoryTab === 'voir' && userId && (
-  <VoirTab marcheId={activeMarcheId || ''} userId={userId} ... />
-)}
+// Après
+} catch (err) {
+  console.warn('⚠️ Conversion HEIC échouée, upload du fichier original:', err);
+  // Fallback: on uploade le fichier original sans conversion
+}
 ```
 
-Ajouter le meme guard pour `ecouter`, `lire` et `vivant`. Si `userId` n'est pas encore charge, afficher un message "Connectez-vous pour voir et gerer vos contributions".
+Le `processedFile` reste le fichier original, et l'upload continue normalement.
 
-## Fichiers impactes
+## Fichier impacte
 
 | Fichier | Action |
 |---|---|
-| `src/components/community/contributions/ContributionItem.tsx` | Ajouter `opacity-100` explicite sur les boutons owner |
-| `src/components/community/ExplorationMarcheurPage.tsx` | Guard `userId` avant rendu des tabs sensoriels |
+| `src/hooks/useMarcheurContributions.ts` | Remplacer le throw par un fallback (upload du fichier brut) |
 
