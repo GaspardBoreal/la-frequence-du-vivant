@@ -44,9 +44,9 @@ export class ImageOptimizer {
     let wasCompressed = false;
 
     try {
-      // Étape 1: Vérifier et convertir le format si nécessaire
+      // Étape 1: Vérifier le format (ne plus bloquer, juste avertir)
       if (!isSupportedPhotoFormat(file)) {
-        throw new Error(`Format non supporté: ${file.type}`);
+        console.warn(`⚠️ [ImageOptimizer] Format non standard: ${file.type || 'inconnu'} (${file.name})`);
       }
 
       // Convertir HEIC/HEIF en JPEG
