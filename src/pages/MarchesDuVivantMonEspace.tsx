@@ -63,7 +63,7 @@ const MarchesDuVivantMonEspace = () => {
 
   if (loading || !user) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-emerald-950 via-emerald-900 to-teal-900 flex items-center justify-center">
+      <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-emerald-200 animate-pulse flex items-center gap-2">
           <Leaf className="w-5 h-5 animate-spin" />
           Chargement...
