@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Globe, Lock, Trash2, Pencil, Check, X, Music, Camera, Video, FileText } from 'lucide-react';
+import React, { useState, useCallback } from 'react';
+import { Globe, Lock, Trash2, Pencil, Check, X, Music, Camera, Video, FileText, Download } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
@@ -66,7 +66,7 @@ const ContributionItem: React.FC<ContributionItemProps> = ({
       >
         <div className="aspect-[3/4] relative bg-black/20">
           {type === 'photo' && displayUrl && (
-            <img src={displayUrl} alt={titre || ''} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" loading="lazy" />
+            <img src={displayUrl} alt={titre || ''} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" loading="lazy" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; (e.target as HTMLImageElement).parentElement!.innerHTML = '<div class="w-full h-full flex items-center justify-center bg-black/30"><span class="text-white/60 text-xs">HEIC</span></div>'; }} />
           )}
           {type === 'video' && displayUrl && (
             <div className="w-full h-full flex items-center justify-center bg-black/30">
@@ -93,7 +93,7 @@ const ContributionItem: React.FC<ContributionItemProps> = ({
       {/* Preview zone */}
       {type === 'photo' && displayUrl && (
         <div className="aspect-video w-full overflow-hidden bg-black/20 cursor-pointer" onClick={onClick}>
-          <img src={displayUrl} alt={titre || ''} className="w-full h-full object-cover" loading="lazy" />
+          <img src={displayUrl} alt={titre || ''} className="w-full h-full object-cover" loading="lazy" onError={(e) => { const el = e.target as HTMLImageElement; el.style.display = 'none'; const fallback = document.createElement('div'); fallback.className = 'w-full h-full flex flex-col items-center justify-center bg-black/20 gap-2 p-4'; fallback.innerHTML = `<span class="text-white/50 text-xs">Aperçu non disponible (HEIC)</span><a href="${displayUrl}" target="_blank" rel="noopener noreferrer" class="text-blue-400 text-xs underline">Télécharger</a>`; el.parentElement!.appendChild(fallback); }} />
         </div>
       )}
       {type === 'video' && externalUrl && (

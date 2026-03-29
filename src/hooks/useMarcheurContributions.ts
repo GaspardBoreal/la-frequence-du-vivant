@@ -59,7 +59,7 @@ async function uploadFile(userId: string, file: File, folder: string): Promise<s
   let processedFile = file;
 
   // Convert HEIF/HEIC to JPEG for browser compatibility (dynamic import to avoid blocking on Android)
-  if (file.name.match(/\.(heif|heic)$/i) || file.type === 'image/heif' || file.type === 'image/heic') {
+  if (file.name.match(/\.(heif|heic)$/i) || (file.type || '').toLowerCase().includes('heic') || (file.type || '').toLowerCase().includes('heif')) {
     try {
       const { default: heic2any } = await import('heic2any');
       const convertPromise = heic2any({ blob: file, toType: 'image/jpeg', quality: 0.85 });

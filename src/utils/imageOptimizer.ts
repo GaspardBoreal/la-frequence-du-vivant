@@ -44,16 +44,18 @@ export class ImageOptimizer {
     let wasCompressed = false;
 
     try {
-      // Étape 1: Vérifier et convertir le format si nécessaire
+      // Étape 1: Vérifier le format (ne plus bloquer, juste avertir)
       if (!isSupportedPhotoFormat(file)) {
-        throw new Error(`Format non supporté: ${file.type}`);
+        console.warn(`⚠️ [ImageOptimizer] Format non standard: ${file.type || 'inconnu'} (${file.name})`);
       }
 
       // Convertir HEIC/HEIF en JPEG
-      if (file.name.toLowerCase().endsWith('.heic') || file.name.toLowerCase().endsWith('.heif')) {
+      if (file.name.toLowerCase().endsWith('.heic') || file.name.toLowerCase().endsWith('.heif') ||
+          file.type?.includes('heic') || file.type?.includes('heif')) {
         console.log('🔄 [ImageOptimizer] Conversion HEIC vers JPEG...');
-        processedFile = await convertHeicToJpeg(file);
-        wasConverted = true;
+        const converted = await convertHeicToJpeg(file);
+        wasConverted = converted !== file;
+        processedFile = converted;
       }
 
       // Étape 2: Compression si nécessaire

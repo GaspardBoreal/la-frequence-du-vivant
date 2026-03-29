@@ -28,21 +28,29 @@ export const SUPPORTED_PHOTO_FORMATS = [
   'image/webp',
   'image/heic',
   'image/heif',
+  'image/heic-sequence',
+  'image/heif-sequence',
   'image/tiff',
   'image/bmp'
 ];
 
-// Vérifier si le format est supporté
+// Vérifier si le format est supporté (détection large)
 export const isSupportedPhotoFormat = (file: File): boolean => {
-  return SUPPORTED_PHOTO_FORMATS.includes(file.type) || 
-         file.name.toLowerCase().endsWith('.heic') ||
-         file.name.toLowerCase().endsWith('.heif');
+  if (SUPPORTED_PHOTO_FORMATS.includes(file.type)) return true;
+  if (file.type?.startsWith('image/')) return true;
+  const ext = file.name.toLowerCase();
+  return ext.endsWith('.heic') || ext.endsWith('.heif') || 
+         ext.endsWith('.jpg') || ext.endsWith('.jpeg') ||
+         ext.endsWith('.png') || ext.endsWith('.webp') ||
+         ext.endsWith('.gif') || ext.endsWith('.tiff') || ext.endsWith('.bmp');
 };
 
 // Convertir HEIC/HEIF en JPEG
 export const convertHeicToJpeg = async (file: File): Promise<File> => {
-  if (!file.type.includes('heic') && !file.type.includes('heif') && 
-      !file.name.toLowerCase().endsWith('.heic') && !file.name.toLowerCase().endsWith('.heif')) {
+  const ext = file.name.toLowerCase();
+  const mime = (file.type || '').toLowerCase();
+  if (!mime.includes('heic') && !mime.includes('heif') && 
+      !ext.endsWith('.heic') && !ext.endsWith('.heif')) {
     return file;
   }
 
@@ -68,8 +76,8 @@ export const convertHeicToJpeg = async (file: File): Promise<File> => {
     console.log('✅ Conversion HEIC terminée:', convertedFile.name);
     return convertedFile;
   } catch (error) {
-    console.error('❌ Erreur conversion HEIC:', error);
-    throw new Error('Impossible de convertir le fichier HEIC');
+    console.warn('⚠️ Conversion HEIC échouée, fichier original conservé:', error);
+    return file; // Fallback: retourner le fichier original au lieu de bloquer
   }
 };
 
@@ -124,12 +132,12 @@ export const generateThumbnail = async (file: File, maxWidth: number = 150): Pro
 export const processPhoto = async (file: File): Promise<ProcessedPhoto> => {
   console.log('🔄 Traitement photo:', file.name);
   
-  // Vérifier le format
+  // Accepter tous les formats image courants + HEIC/HEIF sans bloquer
   if (!isSupportedPhotoFormat(file)) {
-    throw new Error(`Format non supporté: ${file.type}`);
+    console.warn(`⚠️ Format non standard détecté: ${file.type || 'inconnu'} (${file.name}), tentative de traitement...`);
   }
 
-  // Convertir HEIC si nécessaire
+  // Convertir HEIC si nécessaire (fallback silencieux si échec)
   const processedFile = await convertHeicToJpeg(file);
   
   // Extraire métadonnées
