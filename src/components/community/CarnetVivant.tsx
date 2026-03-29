@@ -111,9 +111,9 @@ const MarcheCard: React.FC<{
           {/* Data badges */}
           {summary && (
             <div className="flex gap-1.5">
-              <CountBadge icon={Camera} count={summary.photos_count} label="Photos" color="text-sky-400" />
-              <CountBadge icon={Music} count={summary.audio_count} label="Sons" color="text-violet-400" />
-              <CountBadge icon={PenLine} count={summary.textes_count} label="Textes" color="text-amber-400" />
+              <CountBadge icon={Camera} count={summary.photos_count} label="Photos" color="text-sky-400" lightColor="text-sky-600" />
+              <CountBadge icon={Music} count={summary.audio_count} label="Sons" color="text-violet-400" lightColor="text-violet-600" />
+              <CountBadge icon={PenLine} count={summary.textes_count} label="Textes" color="text-amber-400" lightColor="text-amber-600" />
             </div>
           )}
 
