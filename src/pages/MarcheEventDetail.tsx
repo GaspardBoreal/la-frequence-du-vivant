@@ -456,15 +456,23 @@ const MarcheEventDetail: React.FC = () => {
                         <TableCell className="capitalize">{profile?.role?.replace(/_/g, ' ') || '—'}</TableCell>
                         <TableCell>{p.validated_at ? format(new Date(p.validated_at), 'Pp', { locale: fr }) : '—'}</TableCell>
                         <TableCell>
-                          {p.validation_method === 'admin_retroactif' ? (
-                            <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-500">
-                              rétroactif
-                            </span>
-                          ) : (
-                            p.validation_method || '—'
-                          )}
-                        </TableCell>
-                      </TableRow>
+                           {p.validation_method === 'admin_retroactif' ? (
+                             <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-500">
+                               rétroactif
+                             </span>
+                           ) : (
+                             p.validation_method || '—'
+                           )}
+                         </TableCell>
+                         <TableCell>
+                           <button
+                             onClick={() => setDeletingParticipation({ id: p.id, name: `${profile?.prenom || ''} ${profile?.nom || ''}`.trim() || 'ce participant' })}
+                             className="p-1.5 rounded-md text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
+                           >
+                             <Trash2 className="h-3.5 w-3.5" />
+                           </button>
+                         </TableCell>
+                       </TableRow>
                     );
                   })}
                 </TableBody>
