@@ -168,7 +168,7 @@ const ContributionItem: React.FC<ContributionItemProps> = ({
               </div>
 
               {isOwner && (
-                <div className="flex gap-1 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
+                <div className="flex gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
                   <button
                     onClick={() => onUpdate?.(id, { is_public: !isPublic })}
                     className="p-1 rounded hover:bg-white/10 transition-colors"
