@@ -89,9 +89,9 @@ const OutilsTab: React.FC<OutilsTabProps> = ({ role, userId }) => {
                 </div>
               )}
               <div className={`w-11 h-11 rounded-xl flex items-center justify-center ${
-                locked ? 'bg-white/5' : 'bg-emerald-400/10'
+                locked ? 'bg-gray-100 dark:bg-white/5' : 'bg-emerald-100 dark:bg-emerald-400/10'
               }`}>
-                <Icon className={`w-5 h-5 ${locked ? 'text-white/30' : 'text-emerald-400'}`} />
+                <Icon className={`w-5 h-5 ${locked ? 'text-gray-400 dark:text-white/30' : 'text-emerald-600 dark:text-emerald-400'}`} />
               </div>
               <div>
                 <p className={`text-sm font-medium ${locked ? 'text-white/30' : 'text-white'}`}>{tool.label}</p>
