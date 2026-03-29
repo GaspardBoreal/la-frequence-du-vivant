@@ -198,7 +198,12 @@ const CarnetVivant: React.FC<CarnetVivantProps> = ({ userId, participations }) =
     });
   };
 
-  const selectedParticipation = participations.find(p => p.marche_event_id === selectedEventId);
+  const handleOpenExploration = (participation: Participation) => {
+    const explorationId = participation.marche_events?.exploration_id;
+    if (explorationId) {
+      navigate(`/marches-du-vivant/mon-espace/exploration/${explorationId}`);
+    }
+  };
 
   return (
     <div className="space-y-1">
@@ -250,7 +255,7 @@ const CarnetVivant: React.FC<CarnetVivantProps> = ({ userId, participations }) =
                         participation={p}
                         summary={collectedData?.[p.marche_event_id]}
                         index={i}
-                        onOpen={() => setSelectedEventId(p.marche_event_id)}
+                        onOpen={() => handleOpenExploration(p)}
                       />
                     ))}
                   </div>
@@ -259,19 +264,6 @@ const CarnetVivant: React.FC<CarnetVivantProps> = ({ userId, participations }) =
             );
           })}
         </div>
-      )}
-
-      {/* Detail modal */}
-      {selectedEventId && selectedParticipation && (
-        <MarcheDetailModal
-          open={!!selectedEventId}
-          onClose={() => setSelectedEventId(null)}
-          userId={userId}
-          marcheEventId={selectedEventId}
-          eventTitle={selectedParticipation.marche_events?.title || 'Marche'}
-          eventDate={selectedParticipation.marche_events?.date_marche || ''}
-          eventLieu={selectedParticipation.marche_events?.lieu || null}
-        />
       )}
     </div>
   );
