@@ -202,6 +202,8 @@ const CarnetVivant: React.FC<CarnetVivantProps> = ({ userId, participations }) =
     const explorationId = participation.marche_events?.exploration_id;
     if (explorationId) {
       navigate(`/marches-du-vivant/mon-espace/exploration/${explorationId}`);
+    } else {
+      navigate(`/marches-du-vivant/mon-espace/exploration/event-${participation.marche_event_id}`);
     }
   };
 
