@@ -203,11 +203,11 @@ const CarnetVivant: React.FC<CarnetVivantProps> = ({ userId, participations }) =
     <div className="space-y-1">
       {/* Header */}
       <div className="flex items-center gap-2 mb-3">
-        <Book className="w-4 h-4 text-amber-300" />
-        <h2 className="text-sm font-semibold text-white">
+        <Book className="w-4 h-4 text-amber-600 dark:text-amber-300" />
+        <h2 className="text-sm font-semibold text-foreground">
           Mon carnet vivant
         </h2>
-        <span className="text-emerald-300/50 text-xs">({participations.length})</span>
+        <span className="text-muted-foreground text-xs">({participations.length})</span>
       </div>
 
       {participations.length === 0 ? (
