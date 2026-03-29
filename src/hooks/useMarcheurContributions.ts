@@ -74,8 +74,8 @@ async function uploadFile(userId: string, file: File, folder: string): Promise<s
         { type: 'image/jpeg' }
       );
     } catch (err) {
-      console.error('❌ Conversion HEIC échouée:', err);
-      throw new Error('Format HEIC non supporté. Veuillez convertir l\'image en JPEG avant de l\'uploader.');
+      console.warn('⚠️ Conversion HEIC échouée, upload du fichier original:', err);
+      // Fallback: on uploade le fichier original sans conversion
     }
   }
 
