@@ -167,6 +167,13 @@ const VoirTab: React.FC<{ marcheId: string; userId: string; marcheEventId: strin
         <SortToggle sort={sort} onToggle={() => setSort(s => s === 'desc' ? 'asc' : 'desc')} />
       </div>
 
+      {/* Skeleton loading state */}
+      {(isLoadingAdmin || isLoadingUser) && !adminPhotos && !userMedias && (
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.2 }}>
+          <MediaSkeletonGrid count={6} mode={viewMode} />
+        </motion.div>
+      )}
+
       {showUpload && (
         <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="space-y-2">
           <FileUploadZone
