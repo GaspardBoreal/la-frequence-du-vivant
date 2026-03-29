@@ -1,52 +1,34 @@
 
 
-# Fix: Upload bloque sur Android — `heic2any` bloque le thread
+# Fix: Boutons modifier/supprimer invisibles sur mobile
 
 ## Diagnostic
 
-Le module `heic2any` est importe **statiquement** (top-level `import`) dans `useMarcheurContributions.ts` et `photoUtils.ts`. Cette librairie fait ~2MB et utilise du WebAssembly. Sur certains navigateurs Android (Chrome mobile), le chargement du module peut **bloquer ou echouer silencieusement**, empechant la resolution de la Promise de mutation. Le `isPending` reste `true` indefiniment → "Upload en cours" tourne en boucle.
+Les boutons d'edition et suppression dans `ContributionItem.tsx` (ligne 171) utilisent `opacity-0 group-hover:opacity-100`. Sur les appareils mobiles/tactiles (Laurence utilise Android), **il n'y a pas d'etat hover**, donc les boutons restent invisibles en permanence. Gaspard voit les boutons car il utilise un navigateur desktop.
 
-Meme si le fichier selectionne est un JPEG normal (pas HEIC), le simple fait d'importer `heic2any` au top-level peut causer des problemes sur mobile.
+Le RLS et la logique de donnees sont corrects — le probleme est purement CSS/UX.
 
 ## Correctif
 
-### 1. Import dynamique de `heic2any` — uniquement quand necessaire
+### Fichier : `src/components/community/contributions/ContributionItem.tsx`
 
-Dans `src/hooks/useMarcheurContributions.ts` et `src/utils/photoUtils.ts` :
+1. **Rendre les boutons toujours visibles sur mobile** : remplacer `opacity-0 group-hover:opacity-100` par `opacity-100 sm:opacity-0 sm:group-hover:opacity-100`. Sur ecrans larges (desktop), le comportement hover est conserve. Sur mobile, les boutons sont toujours visibles.
 
-- **Supprimer** `import heic2any from 'heic2any'` du top-level
-- **Importer dynamiquement** uniquement quand un fichier HEIC est detecte :
+2. **Appliquer le meme correctif au mode immersion** (ligne 91-93) pour l'indicateur de visibilite.
 
-```typescript
-if (isHeic) {
-  const heic2any = (await import('heic2any')).default;
-  // conversion...
-}
-```
-
-### 2. Ajouter un timeout de securite
-
-Wrapper l'appel `heic2any()` dans un `Promise.race` avec un timeout de 30 secondes. Si la conversion depasse ce delai, lancer une erreur explicite au lieu de bloquer indefiniment.
-
-```typescript
-const convertWithTimeout = Promise.race([
-  heic2any({ blob: file, toType: 'image/jpeg', quality: 0.85 }),
-  new Promise((_, reject) => setTimeout(() => reject(new Error('Conversion HEIC timeout')), 30000))
-]);
-```
-
-### 3. Ajouter un try-catch avec toast d'erreur
-
-Si la conversion echoue (timeout ou erreur), afficher un message explicite a l'utilisateur au lieu de rester bloque :
+### Changement
 
 ```
-"Format non supporte. Veuillez convertir l'image en JPEG avant de l'uploader."
+// Avant (ligne 171)
+<div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+
+// Apres
+<div className="flex gap-1 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
 ```
 
-## Fichiers impactes
+## Fichier impacte
 
 | Fichier | Action |
 |---|---|
-| `src/hooks/useMarcheurContributions.ts` | Import dynamique + timeout sur heic2any |
-| `src/utils/photoUtils.ts` | Import dynamique + timeout sur heic2any |
+| `src/components/community/contributions/ContributionItem.tsx` | Rendre les boutons owner visibles sur mobile |
 
