@@ -89,7 +89,7 @@ const MarchesDuVivantMonEspace = () => {
     };
 
     return (
-      <div className="min-h-screen bg-gradient-to-br from-emerald-950 via-emerald-900 to-teal-900 flex items-center justify-center px-4">
+      <div className="min-h-screen bg-background flex items-center justify-center px-4">
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-center space-y-6 max-w-md">
           <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-emerald-400/10 ring-1 ring-emerald-400/30 mx-auto">
             <UserPlus className="w-8 h-8 text-emerald-300" />
