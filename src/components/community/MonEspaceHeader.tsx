@@ -59,7 +59,8 @@ const MonEspaceHeader: React.FC<MonEspaceHeaderProps> = ({
               <span className="text-amber-500 dark:text-amber-400 text-[10px]">★</span>
               <span className="text-foreground text-xs font-bold">{totalFrequences}</span>
             </motion.div>
-            <button onClick={() => setSettingsOpen(true)} className="text-emerald-200/50 hover:text-emerald-100 transition-colors p-1 flex-shrink-0">
+            <ThemeToggle />
+            <button onClick={() => setSettingsOpen(true)} className="text-muted-foreground hover:text-foreground transition-colors p-1 flex-shrink-0">
               <Settings className="w-4 h-4" />
             </button>
           </div>

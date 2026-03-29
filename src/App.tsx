@@ -277,6 +277,7 @@ function App() {
           </BrowserRouter>
         </AudioProvider>
       </LanguageProvider>
+      </ThemeProvider>
     </QueryClientProvider>
   );
 }
