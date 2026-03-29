@@ -1,6 +1,12 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 
+export interface SpeciesObservation {
+  scientificName: string;
+  photoUrl?: string;
+  observationDate?: string;
+}
+
 export interface MarcheurWithStats {
   id: string;
   prenom: string;
@@ -17,6 +23,7 @@ export interface MarcheurWithStats {
     speciesCount: number;
   };
   totalContributions: number;
+  speciesObserved: SpeciesObservation[];
 }
 
 export function useExplorationParticipants(explorationId?: string, marcheEventId?: string) {
