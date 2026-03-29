@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -65,8 +65,13 @@ const VoirTab: React.FC<{ marcheId: string; userId: string; marcheEventId: strin
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
   const [viewMode, setViewMode] = useState<'immersion' | 'fiche'>(() => {
     const stored = localStorage.getItem('voir-tab-view');
-    return stored === 'immersion' || stored === 'fiche' ? stored : 'fiche';
+    return stored === 'immersion' || stored === 'fiche' ? stored : 'immersion';
   });
+
+  useEffect(() => {
+    setViewMode('immersion');
+    localStorage.setItem('voir-tab-view', 'immersion');
+  }, [marcheEventId]);
 
   // Admin photos from the marche
   const { data: adminPhotos } = useQuery({
