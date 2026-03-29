@@ -59,7 +59,7 @@ const EmptyState: React.FC<{ message: string; sub?: string }> = ({ message, sub 
 
 // ─── Voir Tab (photos + vidéos + user contributions) ───
 const VoirTab: React.FC<{ marcheId: string; userId: string; marcheEventId: string; activeMarcheId?: string }> = ({ marcheId, userId, marcheEventId, activeMarcheId }) => {
-  const [sort, setSort] = useState<'desc' | 'asc'>('desc');
+  const [sort, setSort] = useState<'desc' | 'asc'>('asc');
   const [showUpload, setShowUpload] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
 
@@ -232,7 +232,7 @@ const VoirTab: React.FC<{ marcheId: string; userId: string; marcheEventId: strin
 
 // ─── Écouter Tab ───
 const EcouterTab: React.FC<{ marcheId: string; userId: string; marcheEventId: string; activeMarcheId?: string }> = ({ marcheId, userId, marcheEventId, activeMarcheId }) => {
-  const [sort, setSort] = useState<'desc' | 'asc'>('desc');
+  const [sort, setSort] = useState<'desc' | 'asc'>('asc');
   const [showUpload, setShowUpload] = useState(false);
 
   const { data: adminAudio } = useQuery({
@@ -364,7 +364,7 @@ const EcouterTab: React.FC<{ marcheId: string; userId: string; marcheEventId: st
 
 // ─── Lire Tab ───
 const LireTab: React.FC<{ userId: string; marcheEventId: string; activeMarcheId?: string }> = ({ userId, marcheEventId, activeMarcheId }) => {
-  const [sort, setSort] = useState<'desc' | 'asc'>('desc');
+  const [sort, setSort] = useState<'desc' | 'asc'>('asc');
   const [showNew, setShowNew] = useState(false);
   const [newTitre, setNewTitre] = useState('');
   const [newContenu, setNewContenu] = useState('');
