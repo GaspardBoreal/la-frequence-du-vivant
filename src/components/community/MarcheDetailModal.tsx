@@ -63,6 +63,10 @@ const VoirTab: React.FC<{ marcheId: string; userId: string; marcheEventId: strin
   const [sort, setSort] = useState<'desc' | 'asc'>('asc');
   const [showUpload, setShowUpload] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
+  const [viewMode, setViewMode] = useState<'immersion' | 'fiche'>(() => {
+    const stored = localStorage.getItem('voir-tab-view');
+    return stored === 'immersion' || stored === 'fiche' ? stored : 'fiche';
+  });
 
   // Admin photos from the marche
   const { data: adminPhotos } = useQuery({
@@ -119,8 +123,8 @@ const VoirTab: React.FC<{ marcheId: string; userId: string; marcheEventId: strin
         <MediaLightbox items={lightboxItems} startIndex={lightboxIndex} onClose={() => setLightboxIndex(null)} />
       )}
 
-      {/* Upload zone */}
-      <div className="flex items-center justify-between">
+      {/* Action bar */}
+      <div className="flex items-center gap-2 flex-wrap">
         <button
           onClick={() => setShowUpload(!showUpload)}
           className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-300 text-xs hover:bg-emerald-500/20 transition-colors"
@@ -128,6 +132,32 @@ const VoirTab: React.FC<{ marcheId: string; userId: string; marcheEventId: strin
           <Plus className="w-3.5 h-3.5" />
           Ajouter
         </button>
+        <div className="flex-1" />
+        {/* View mode toggle */}
+        <div className="flex rounded-lg overflow-hidden border border-white/10 dark:border-white/10 border-stone-300/60">
+          <button
+            onClick={() => { setViewMode('immersion'); localStorage.setItem('voir-tab-view', 'immersion'); }}
+            className={`flex items-center gap-1 px-2.5 py-1 text-[10px] font-medium transition-all ${
+              viewMode === 'immersion'
+                ? 'bg-emerald-500/20 text-emerald-300 dark:bg-emerald-500/20 dark:text-emerald-300'
+                : 'text-foreground/50 hover:bg-white/5 dark:text-white/40 dark:hover:bg-white/5'
+            }`}
+          >
+            <Grid3X3 className="w-3 h-3" />
+            Immersion
+          </button>
+          <button
+            onClick={() => { setViewMode('fiche'); localStorage.setItem('voir-tab-view', 'fiche'); }}
+            className={`flex items-center gap-1 px-2.5 py-1 text-[10px] font-medium transition-all ${
+              viewMode === 'fiche'
+                ? 'bg-emerald-500/20 text-emerald-300 dark:bg-emerald-500/20 dark:text-emerald-300'
+                : 'text-foreground/50 hover:bg-white/5 dark:text-white/40 dark:hover:bg-white/5'
+            }`}
+          >
+            <LayoutList className="w-3 h-3" />
+            Fiche
+          </button>
+        </div>
         <SortToggle sort={sort} onToggle={() => setSort(s => s === 'desc' ? 'asc' : 'desc')} />
       </div>
 
@@ -155,14 +185,21 @@ const VoirTab: React.FC<{ marcheId: string; userId: string; marcheEventId: strin
             <Globe className="w-3 h-3 text-emerald-400/50" />
             <span className="text-emerald-200/40 text-[10px] uppercase tracking-wider">De l'exploration</span>
           </div>
-          <div className="grid grid-cols-3 gap-1.5">
+          <div className={`grid ${viewMode === 'immersion' ? 'grid-cols-3 gap-1' : 'grid-cols-3 gap-1.5'}`}>
             {adminPhotos.map((photo, i) => (
               <div
                 key={photo.id}
-                className="aspect-square rounded-lg overflow-hidden bg-white/5 cursor-pointer active:scale-95 transition-transform"
+                className={`${viewMode === 'immersion' ? 'aspect-[3/4]' : 'aspect-square'} rounded-lg overflow-hidden bg-white/5 cursor-pointer active:scale-95 transition-transform group relative`}
                 onClick={() => setLightboxIndex(i)}
               >
-                <img src={photo.url_supabase} alt={photo.titre || ''} className="w-full h-full object-cover" loading="lazy" />
+                <img src={photo.url_supabase} alt={photo.titre || ''} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" loading="lazy" />
+                {viewMode === 'immersion' && (
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                    {photo.titre && (
+                      <span className="absolute bottom-2 left-2 right-2 text-white text-[10px] font-medium truncate">{photo.titre}</span>
+                    )}
+                  </div>
+                )}
               </div>
             ))}
           </div>
@@ -176,7 +213,7 @@ const VoirTab: React.FC<{ marcheId: string; userId: string; marcheEventId: strin
             <User className="w-3 h-3 text-amber-400" />
             <span className="text-amber-300/60 text-[10px] uppercase tracking-wider">Mes contributions ({myMedias.length})</span>
           </div>
-          <div className="grid grid-cols-2 gap-2">
+          <div className={`grid ${viewMode === 'immersion' ? 'grid-cols-3 gap-1' : 'grid-cols-2 gap-2'}`}>
             {myMedias.map((m, i) => (
               <ContributionItem
                 key={m.id}
@@ -189,6 +226,7 @@ const VoirTab: React.FC<{ marcheId: string; userId: string; marcheEventId: strin
                 isPublic={m.is_public}
                 isOwner={true}
                 createdAt={m.created_at}
+                viewMode={viewMode}
                 onUpdate={(id, updates) => updateContrib.mutate({ table: 'marcheur_medias', id, updates })}
                 onDelete={(id) => deleteContrib.mutate({ table: 'marcheur_medias', id, storageUrl: m.url_fichier || undefined })}
                 onClick={() => setLightboxIndex(adminCount + i)}
@@ -205,7 +243,7 @@ const VoirTab: React.FC<{ marcheId: string; userId: string; marcheEventId: strin
             <Users className="w-3 h-3 text-blue-400" />
             <span className="text-blue-300/60 text-[10px] uppercase tracking-wider">Des marcheurs ({othersMedias.length})</span>
           </div>
-          <div className="grid grid-cols-2 gap-2">
+          <div className={`grid ${viewMode === 'immersion' ? 'grid-cols-3 gap-1' : 'grid-cols-2 gap-2'}`}>
             {othersMedias.map((m, i) => (
               <ContributionItem
                 key={m.id}
@@ -217,6 +255,7 @@ const VoirTab: React.FC<{ marcheId: string; userId: string; marcheEventId: strin
                 isPublic={m.is_public}
                 isOwner={false}
                 createdAt={m.created_at}
+                viewMode={viewMode}
                 onClick={() => setLightboxIndex(adminCount + myCount + i)}
               />
             ))}

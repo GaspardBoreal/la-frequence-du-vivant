@@ -16,6 +16,7 @@ export interface ContributionItemProps {
   isPublic: boolean;
   isOwner: boolean;
   createdAt: string;
+  viewMode?: 'immersion' | 'fiche';
   onUpdate?: (id: string, updates: Record<string, any>) => void;
   onDelete?: (id: string) => void;
   onClick?: () => void;
@@ -37,7 +38,7 @@ const typeColors = {
 
 const ContributionItem: React.FC<ContributionItemProps> = ({
   id, type, titre, description, url, externalUrl, contenu, typeTexte,
-  isPublic, isOwner, createdAt, onUpdate, onDelete, onClick,
+  isPublic, isOwner, createdAt, viewMode = 'fiche', onUpdate, onDelete, onClick,
 }) => {
   const [editing, setEditing] = useState(false);
   const [editTitre, setEditTitre] = useState(titre || '');
@@ -56,6 +57,37 @@ const ContributionItem: React.FC<ContributionItemProps> = ({
     setEditing(false);
   };
 
+  // ─── Immersion mode: photo/video only, minimal chrome ───
+  if (viewMode === 'immersion' && (type === 'photo' || type === 'video')) {
+    return (
+      <div
+        className="relative overflow-hidden rounded-xl cursor-pointer group"
+        onClick={onClick}
+      >
+        <div className="aspect-[3/4] relative bg-black/20">
+          {type === 'photo' && displayUrl && (
+            <img src={displayUrl} alt={titre || ''} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" loading="lazy" />
+          )}
+          {type === 'video' && displayUrl && (
+            <div className="w-full h-full flex items-center justify-center bg-black/30">
+              <Video className="w-8 h-8 text-white/40" />
+            </div>
+          )}
+          {/* Hover overlay */}
+          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+          <div className="absolute bottom-0 left-0 right-0 p-2 translate-y-1 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-300">
+            <span className="text-white text-[10px] font-medium truncate block">{titre || 'Sans titre'}</span>
+          </div>
+          {/* Visibility indicator */}
+          <div className="absolute top-1.5 right-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
+            {isPublic ? <Globe className="w-2.5 h-2.5 text-blue-300/80" /> : <Lock className="w-2.5 h-2.5 text-white/40" />}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ─── Fiche mode (default): full info ───
   return (
     <div className="bg-white/5 rounded-lg border border-white/10 overflow-hidden group">
       {/* Preview zone */}
