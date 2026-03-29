@@ -1,61 +1,52 @@
 
 
-# Fix: Images HEIF non affichees dans le navigateur
+# Fix: Upload bloque sur Android — `heic2any` bloque le thread
 
 ## Diagnostic
 
-Les 4 dernieres photos uploadees par Laurence Karki sont au format **HEIF** (`.heif`). Ce format n'est **pas supporte par Chrome, Firefox ni Edge** — seul Safari le gere nativement. Les images apparaissent dans la base de donnees avec les bonnes metadonnees (`is_public: true`, bon `marche_id`), mais le navigateur ne peut pas les afficher.
+Le module `heic2any` est importe **statiquement** (top-level `import`) dans `useMarcheurContributions.ts` et `photoUtils.ts`. Cette librairie fait ~2MB et utilise du WebAssembly. Sur certains navigateurs Android (Chrome mobile), le chargement du module peut **bloquer ou echouer silencieusement**, empechant la resolution de la Promise de mutation. Le `isPending` reste `true` indefiniment → "Upload en cours" tourne en boucle.
 
-Ses premieres photos (`.jpeg`, `.jpg`) s'affichent correctement.
+Meme si le fichier selectionne est un JPEG normal (pas HEIC), le simple fait d'importer `heic2any` au top-level peut causer des problemes sur mobile.
 
-## Correctif propose
+## Correctif
 
-### Approche : Conversion cote client au moment de l'upload
+### 1. Import dynamique de `heic2any` — uniquement quand necessaire
 
-Convertir automatiquement les fichiers HEIF/HEIC en JPEG **avant** l'upload vers Supabase Storage. Utiliser un `<canvas>` pour la conversion (fonctionne si le navigateur supporte le decodage, sinon utiliser la librairie `heic2any`).
+Dans `src/hooks/useMarcheurContributions.ts` et `src/utils/photoUtils.ts` :
 
-### Fichier : `src/hooks/useMarcheurContributions.ts`
-
-1. Installer la dependance `heic2any` (conversion HEIF → JPEG en JS)
-2. Modifier la fonction `uploadFile` pour detecter les extensions `.heif` et `.heic`
-3. Convertir en JPEG via `heic2any` avant d'uploader
-4. Changer l'extension du fichier stocke en `.jpeg`
-
-### Code simplifie
+- **Supprimer** `import heic2any from 'heic2any'` du top-level
+- **Importer dynamiquement** uniquement quand un fichier HEIC est detecte :
 
 ```typescript
-import heic2any from 'heic2any';
-
-async function uploadFile(userId: string, file: File, folder: string): Promise<string> {
-  let processedFile = file;
-  
-  // Convert HEIF/HEIC to JPEG
-  if (file.name.match(/\.(heif|heic)$/i) || file.type === 'image/heif' || file.type === 'image/heic') {
-    const blob = await heic2any({ blob: file, toType: 'image/jpeg', quality: 0.85 });
-    const jpegBlob = Array.isArray(blob) ? blob[0] : blob;
-    processedFile = new File([jpegBlob], file.name.replace(/\.(heif|heic)$/i, '.jpeg'), { type: 'image/jpeg' });
-  }
-  
-  const ext = processedFile.name.split('.').pop() || 'bin';
-  // ... rest of upload logic
+if (isHeic) {
+  const heic2any = (await import('heic2any')).default;
+  // conversion...
 }
 ```
 
-### Bug mineur secondaire
+### 2. Ajouter un timeout de securite
 
-Ligne 163 de `ExplorationMarcheurPage.tsx` : `lire: stats?.textes` devrait etre `lire: stats?.totalTextes` pour la coherence avec les autres badges.
+Wrapper l'appel `heic2any()` dans un `Promise.race` avec un timeout de 30 secondes. Si la conversion depasse ce delai, lancer une erreur explicite au lieu de bloquer indefiniment.
+
+```typescript
+const convertWithTimeout = Promise.race([
+  heic2any({ blob: file, toType: 'image/jpeg', quality: 0.85 }),
+  new Promise((_, reject) => setTimeout(() => reject(new Error('Conversion HEIC timeout')), 30000))
+]);
+```
+
+### 3. Ajouter un try-catch avec toast d'erreur
+
+Si la conversion echoue (timeout ou erreur), afficher un message explicite a l'utilisateur au lieu de rester bloque :
+
+```
+"Format non supporte. Veuillez convertir l'image en JPEG avant de l'uploader."
+```
 
 ## Fichiers impactes
 
 | Fichier | Action |
 |---|---|
-| `package.json` | Ajouter `heic2any` |
-| `src/hooks/useMarcheurContributions.ts` | Convertir HEIF → JPEG dans `uploadFile` |
-| `src/components/community/ExplorationMarcheurPage.tsx` | Fix badge `lire` |
-
-## Limitation
-
-Les 4 fichiers HEIF deja uploades resteront non-affichables. Options :
-- Les re-uploader manuellement en JPEG
-- Ou ajouter un script de migration qui les convertit (plus complexe)
+| `src/hooks/useMarcheurContributions.ts` | Import dynamique + timeout sur heic2any |
+| `src/utils/photoUtils.ts` | Import dynamique + timeout sur heic2any |
 
