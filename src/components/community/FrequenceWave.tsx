@@ -200,8 +200,8 @@ const FrequenceWave: React.FC<FrequenceWaveProps> = ({ totalFrequences, role }) 
   });
 
   return (
-    <div className="relative rounded-2xl bg-white/[0.12] border border-white/20 backdrop-blur-lg p-3 overflow-hidden">
-      <div className="absolute inset-0 bg-gradient-to-br from-white/[0.05] to-transparent" />
+    <div className="relative rounded-2xl bg-emerald-50 border border-emerald-200 dark:bg-white/[0.12] dark:border-white/20 backdrop-blur-lg p-3 overflow-hidden">
+      <div className="absolute inset-0 bg-gradient-to-br from-emerald-100/50 to-transparent dark:from-white/[0.05] dark:to-transparent" />
 
       {/* Onde en fond absolu */}
       <div className="absolute bottom-0 left-0 right-0 flex items-end justify-center gap-[2px] h-12 px-3 opacity-20">
