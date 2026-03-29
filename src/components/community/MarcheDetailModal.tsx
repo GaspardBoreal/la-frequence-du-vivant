@@ -598,7 +598,7 @@ const VivantTab: React.FC<{ marcheId: string; userId: string; marcheSlug?: strin
 
   const processedSpecies = biodiversityData?.species ? processSpeciesData(biodiversityData.species) : null;
   const topSpecies = processedSpecies
-    ? [...processedSpecies.flore, ...Object.values(processedSpecies.faune).flat()].slice(0, 6)
+    ? [...processedSpecies.flore, ...Object.values(processedSpecies.faune).flat()].slice(0, 9)
     : [];
 
   // Community data
