@@ -19,6 +19,7 @@ interface SpeciesCardWithPhotoProps {
   getKingdomColor: (kingdom: string) => string;
   getKingdomEmoji: (kingdom: string) => string;
   index: number;
+  viewMode?: 'immersion' | 'fiche';
 }
 
 const SpeciesCardWithPhoto: React.FC<SpeciesCardWithPhotoProps> = ({
@@ -27,17 +28,68 @@ const SpeciesCardWithPhoto: React.FC<SpeciesCardWithPhotoProps> = ({
   getKingdomColor,
   getKingdomEmoji,
   index,
+  viewMode = 'immersion',
 }) => {
-  // Only fetch from iNaturalist if no photos already exist
   const shouldFetch = !species.photos || species.photos.length === 0;
   const { data: photoData, isLoading } = useSpeciesPhoto(
     shouldFetch ? species.scientificName : undefined
   );
 
-  // Priority: 1. Existing photo (from marcheur/snapshot), 2. iNaturalist, 3. Placeholder
   const photoUrl = species.photos?.[0] || photoData?.photos?.[0];
   const hasPhoto = !!photoUrl;
 
+  if (viewMode === 'immersion') {
+    return (
+      <motion.div
+        layout
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        exit={{ opacity: 0, scale: 0.95 }}
+        transition={{ delay: Math.min(index * 0.02, 0.5) }}
+        className="group"
+      >
+        <div
+          className="relative overflow-hidden rounded-2xl cursor-pointer shadow-md hover:shadow-2xl transition-all duration-500 hover:scale-[1.03]"
+          onClick={onClick}
+        >
+          <div className="aspect-[3/4] relative">
+            {isLoading && shouldFetch ? (
+              <div className={`w-full h-full flex items-center justify-center bg-gradient-to-br ${getKingdomColor(species.kingdom)}`}>
+                <Loader2 className="h-6 w-6 animate-spin text-white/40" />
+              </div>
+            ) : hasPhoto ? (
+              <img
+                src={photoUrl}
+                alt={species.commonNameFr || species.name}
+                className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                loading="lazy"
+                onError={(e) => {
+                  const target = e.target as HTMLImageElement;
+                  target.style.display = 'none';
+                }}
+              />
+            ) : (
+              <div className={`w-full h-full flex items-center justify-center bg-gradient-to-br ${getKingdomColor(species.kingdom)}`}>
+                <span className="text-4xl md:text-5xl opacity-60">{getKingdomEmoji(species.kingdom)}</span>
+              </div>
+            )}
+
+            {/* Hover-only overlay */}
+            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+
+            {/* Hover-only name */}
+            <div className="absolute bottom-0 left-0 right-0 p-3 translate-y-2 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-500">
+              <h3 className="font-semibold text-sm text-white leading-tight truncate">
+                {species.commonNameFr || species.name}
+              </h3>
+            </div>
+          </div>
+        </div>
+      </motion.div>
+    );
+  }
+
+  // Mode "fiche"
   return (
     <motion.div
       layout
@@ -53,7 +105,6 @@ const SpeciesCardWithPhoto: React.FC<SpeciesCardWithPhotoProps> = ({
         hover:scale-105 cursor-pointer`}
         onClick={onClick}
       >
-        {/* Photo or placeholder */}
         <div className="aspect-square relative">
           {isLoading && shouldFetch ? (
             <div className="w-full h-full flex items-center justify-center bg-white/20">
@@ -62,14 +113,12 @@ const SpeciesCardWithPhoto: React.FC<SpeciesCardWithPhotoProps> = ({
           ) : hasPhoto ? (
             <img
               src={photoUrl}
-              alt={species.name}
+              alt={species.commonNameFr || species.name}
               className="w-full h-full object-cover"
               loading="lazy"
               onError={(e) => {
-                // Fallback to placeholder on error
                 const target = e.target as HTMLImageElement;
                 target.style.display = 'none';
-                target.parentElement?.classList.add('photo-error');
               }}
             />
           ) : (
@@ -78,15 +127,14 @@ const SpeciesCardWithPhoto: React.FC<SpeciesCardWithPhotoProps> = ({
             </div>
           )}
           
-          {/* Overlay gradient */}
-          <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
+          {/* Lighter overlay */}
+          <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-black/10 to-transparent" />
           
-          {/* Content - Display French name if available, otherwise English */}
+          {/* Common name only */}
           <div className="absolute bottom-0 left-0 right-0 p-2 md:p-3 text-white">
             <h3 className="font-bold text-xs md:text-sm truncate">
               {species.commonNameFr || species.name}
             </h3>
-            <p className="text-[10px] md:text-xs text-white/70 italic truncate">{species.scientificName}</p>
           </div>
 
           {/* Badge */}

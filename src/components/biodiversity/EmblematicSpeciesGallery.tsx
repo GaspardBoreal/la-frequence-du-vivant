@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { AnimatePresence } from 'framer-motion';
-import { Filter, Search, X, Bird, TreePine, Flower2, Bug, MapPin } from 'lucide-react';
+import { Filter, Search, X, Bird, TreePine, Flower2, Bug, MapPin, Grid3X3, LayoutList } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
@@ -46,6 +46,17 @@ const EmblematicSpeciesGallery: React.FC<EmblematicSpeciesGalleryProps> = ({
   const [displayLimit, setDisplayLimit] = useState(50);
   const [localSelectedMarcheurs, setLocalSelectedMarcheurs] = useState<string[]>([]);
   const [selectedSpecies, setSelectedSpecies] = useState<TopSpecies | null>(null);
+  const [viewMode, setViewMode] = useState<'immersion' | 'fiche'>(() => {
+    if (typeof window !== 'undefined') {
+      return (localStorage.getItem('species-gallery-view') as 'immersion' | 'fiche') || 'immersion';
+    }
+    return 'immersion';
+  });
+
+  const handleViewModeChange = (mode: 'immersion' | 'fiche') => {
+    setViewMode(mode);
+    localStorage.setItem('species-gallery-view', mode);
+  };
 
   // Use external state if provided, otherwise use local state
   const activeMarcheurIds = onMarcheurSelectionChange ? selectedMarcheurIds : localSelectedMarcheurs;
@@ -224,16 +235,46 @@ const EmblematicSpeciesGallery: React.FC<EmblematicSpeciesGalleryProps> = ({
               />
             )}
 
-            {/* Results count */}
-            <div className="flex items-center gap-2 text-sm text-slate-400">
-              <Filter className="h-4 w-4" />
-              <span>{displayedSpecies.length} / {filteredSpecies.length} espèces affichées</span>
+            {/* Results count + view toggle */}
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2 text-sm text-slate-400">
+                <Filter className="h-4 w-4" />
+                <span>{displayedSpecies.length} / {filteredSpecies.length} espèces affichées</span>
+              </div>
+              <div className="flex items-center gap-1 bg-slate-900/50 rounded-lg p-1">
+                <button
+                  onClick={() => handleViewModeChange('immersion')}
+                  className={`p-1.5 rounded-md transition-all ${
+                    viewMode === 'immersion' 
+                      ? 'bg-emerald-600 text-white shadow-sm' 
+                      : 'text-slate-400 hover:text-white'
+                  }`}
+                  title="Mode Immersion"
+                >
+                  <Grid3X3 className="h-4 w-4" />
+                </button>
+                <button
+                  onClick={() => handleViewModeChange('fiche')}
+                  className={`p-1.5 rounded-md transition-all ${
+                    viewMode === 'fiche' 
+                      ? 'bg-emerald-600 text-white shadow-sm' 
+                      : 'text-slate-400 hover:text-white'
+                  }`}
+                  title="Mode Fiche"
+                >
+                  <LayoutList className="h-4 w-4" />
+                </button>
+              </div>
             </div>
           </div>
         </motion.div>
 
         {/* Species grid - Responsive */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 md:gap-4">
+        <div className={`grid ${
+          viewMode === 'immersion' 
+            ? 'grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2' 
+            : 'grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 md:gap-4'
+        }`}>
           <AnimatePresence mode="popLayout">
             {displayedSpecies.map((species, index) => (
               <SpeciesCardWithPhoto
@@ -243,6 +284,7 @@ const EmblematicSpeciesGallery: React.FC<EmblematicSpeciesGalleryProps> = ({
                 getKingdomColor={getKingdomColor}
                 getKingdomEmoji={getKingdomEmoji}
                 index={index}
+                viewMode={viewMode}
               />
             ))}
           </AnimatePresence>
