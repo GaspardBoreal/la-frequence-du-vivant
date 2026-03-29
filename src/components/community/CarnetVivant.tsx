@@ -127,7 +127,7 @@ const MarcheCard: React.FC<{
                 </span>
               )}
               {summary.kigo_text && (
-                <span className="text-amber-300/60 italic">
+                <span className="text-amber-600 dark:text-amber-300/60 italic">
                   « {summary.kigo_text} »
                 </span>
               )}
