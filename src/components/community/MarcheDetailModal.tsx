@@ -68,6 +68,11 @@ const VoirTab: React.FC<{ marcheId: string; userId: string; marcheEventId: strin
     return stored === 'immersion' || stored === 'fiche' ? stored : 'immersion';
   });
 
+  useEffect(() => {
+    setViewMode('immersion');
+    localStorage.setItem('voir-tab-view', 'immersion');
+  }, [marcheEventId]);
+
   // Admin photos from the marche
   const { data: adminPhotos } = useQuery({
     queryKey: ['marche-detail-photos', marcheId],
