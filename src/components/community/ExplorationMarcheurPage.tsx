@@ -10,6 +10,7 @@ import { createSlug } from '@/utils/slugGenerator';
 import { useMarcheurStats } from '@/hooks/useMarcheurContributions';
 import MediaSkeletonGrid from './contributions/MediaSkeletonGrid';
 import MarcheursTab from './exploration/MarcheursTab';
+import ExplorationCarteTab from './exploration/ExplorationCarteTab';
 
 // Import tab components from MarcheDetailModal
 import { VoirTab, EcouterTab, LireTab, VivantTab, StepSelector } from './MarcheDetailModal';
@@ -136,7 +137,7 @@ const ExplorationMarcheurPage: React.FC = () => {
       if (!links?.length) return [];
       const { data: marches } = await supabase
         .from('marches')
-        .select('id, nom_marche, ville')
+        .select('id, nom_marche, ville, latitude, longitude')
         .in('id', links.map(l => l.marche_id));
       if (!marches?.length) return [];
       const ordreMap: Record<string, number> = {};
@@ -339,12 +340,21 @@ const ExplorationMarcheurPage: React.FC = () => {
           )}
 
           {activeGlobalTab === 'carte' && (
-            <ComingSoonPlaceholder
-              key="carte"
-              icon={Map}
-              title="Carte de l'exploration"
-              description="Visualisez le parcours de chaque marche et la progression temporelle de l'exploration sur la carte."
-            />
+            <motion.div key="carte" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+              <ExplorationCarteTab
+                explorationId={effectiveExplorationId || undefined}
+                marches={(explorationMarches || []).map((m, i) => ({
+                  ...m,
+                  latitude: (m as any).latitude ?? null,
+                  longitude: (m as any).longitude ?? null,
+                  ordre: i,
+                }))}
+                onSelectStep={(index) => {
+                  setActiveStepIndex(index);
+                  setActiveGlobalTab('marches');
+                }}
+              />
+            </motion.div>
           )}
 
           {activeGlobalTab === 'messages' && (
