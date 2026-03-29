@@ -138,7 +138,8 @@ const ExplorationMarcheurPage: React.FC = () => {
       const { data: marches } = await supabase
         .from('marches')
         .select('id, nom_marche, ville, latitude, longitude')
-        .in('id', links.map(l => l.marche_id));
+        .in('id', links.map(l => l.marche_id))
+        .returns<{ id: string; nom_marche: string | null; ville: string; latitude: number | null; longitude: number | null }[]>();
       if (!marches?.length) return [];
       const ordreMap: Record<string, number> = {};
       links.forEach(l => { ordreMap[l.marche_id] = l.ordre ?? 0; });
