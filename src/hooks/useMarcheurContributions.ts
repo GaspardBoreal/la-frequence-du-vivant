@@ -362,15 +362,21 @@ export function useMarcheurStats(marcheEventId: string, userId: string, marcheId
       const filterCol = marcheId ? 'marche_id' : 'marche_event_id';
       const filterVal = marcheId || marcheEventId;
       
-      const [medias, audio, textes] = await Promise.all([
+      const [myMedias, myAudio, myTextes, totalMedias, totalAudio, totalTextes] = await Promise.all([
         supabase.from('marcheur_medias').select('id', { count: 'exact', head: true }).eq(filterCol, filterVal).eq('user_id', userId),
         supabase.from('marcheur_audio').select('id', { count: 'exact', head: true }).eq(filterCol, filterVal).eq('user_id', userId),
         supabase.from('marcheur_textes').select('id', { count: 'exact', head: true }).eq(filterCol, filterVal).eq('user_id', userId),
+        supabase.from('marcheur_medias').select('id', { count: 'exact', head: true }).eq(filterCol, filterVal).or(`user_id.eq.${userId},is_public.eq.true`),
+        supabase.from('marcheur_audio').select('id', { count: 'exact', head: true }).eq(filterCol, filterVal).or(`user_id.eq.${userId},is_public.eq.true`),
+        supabase.from('marcheur_textes').select('id', { count: 'exact', head: true }).eq(filterCol, filterVal).or(`user_id.eq.${userId},is_public.eq.true`),
       ]);
       return {
-        medias: medias.count || 0,
-        audio: audio.count || 0,
-        textes: textes.count || 0,
+        medias: myMedias.count || 0,
+        audio: myAudio.count || 0,
+        textes: myTextes.count || 0,
+        totalMedias: totalMedias.count || 0,
+        totalAudio: totalAudio.count || 0,
+        totalTextes: totalTextes.count || 0,
       };
     },
     enabled: !!marcheEventId && !!userId,
