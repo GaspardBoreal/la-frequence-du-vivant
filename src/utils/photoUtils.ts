@@ -68,8 +68,8 @@ export const convertHeicToJpeg = async (file: File): Promise<File> => {
     console.log('✅ Conversion HEIC terminée:', convertedFile.name);
     return convertedFile;
   } catch (error) {
-    console.error('❌ Erreur conversion HEIC:', error);
-    throw new Error('Impossible de convertir le fichier HEIC');
+    console.warn('⚠️ Conversion HEIC échouée, fichier original conservé:', error);
+    return file; // Fallback: retourner le fichier original au lieu de bloquer
   }
 };
 
