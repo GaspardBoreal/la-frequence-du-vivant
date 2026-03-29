@@ -94,8 +94,8 @@ const MarcheCard: React.FC<{
           {/* Header: lieu + date */}
           <div className="flex items-start justify-between gap-2">
             <div className="flex items-center gap-1.5 min-w-0">
-              <MapPin className="w-3.5 h-3.5 text-emerald-400 flex-shrink-0" />
-              <span className="text-white text-sm font-medium truncate">
+              <MapPin className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 flex-shrink-0" />
+              <span className="text-foreground text-sm font-medium truncate">
                 {event.lieu || event.title}
               </span>
             </div>
