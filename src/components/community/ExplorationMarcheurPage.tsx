@@ -161,7 +161,7 @@ const ExplorationMarcheurPage: React.FC = () => {
     vivant: 0,
   };
 
-  if (!explorationId) {
+  if (!rawParam) {
     navigate('/marches-du-vivant/mon-espace');
     return null;
   }
