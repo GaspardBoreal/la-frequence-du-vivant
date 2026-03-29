@@ -124,12 +124,12 @@ export const generateThumbnail = async (file: File, maxWidth: number = 150): Pro
 export const processPhoto = async (file: File): Promise<ProcessedPhoto> => {
   console.log('🔄 Traitement photo:', file.name);
   
-  // Vérifier le format
+  // Accepter tous les formats image courants + HEIC/HEIF sans bloquer
   if (!isSupportedPhotoFormat(file)) {
-    throw new Error(`Format non supporté: ${file.type}`);
+    console.warn(`⚠️ Format non standard détecté: ${file.type || 'inconnu'} (${file.name}), tentative de traitement...`);
   }
 
-  // Convertir HEIC si nécessaire
+  // Convertir HEIC si nécessaire (fallback silencieux si échec)
   const processedFile = await convertHeicToJpeg(file);
   
   // Extraire métadonnées
