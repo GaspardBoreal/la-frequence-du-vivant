@@ -121,7 +121,7 @@ const MarcheCard: React.FC<{
           {(summary?.species_count || summary?.kigo_text) && (
             <div className="flex items-center gap-2 text-[11px]">
               {summary.species_count > 0 && (
-                <span className="flex items-center gap-1 text-emerald-300/70">
+                <span className="flex items-center gap-1 text-emerald-700 dark:text-emerald-300/70">
                   <Leaf className="w-3 h-3" />
                   {summary.species_count} espèces
                 </span>
