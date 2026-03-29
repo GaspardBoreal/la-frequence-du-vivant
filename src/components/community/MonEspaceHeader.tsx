@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Settings, ArrowLeft } from 'lucide-react';
+import ThemeToggle from './ThemeToggle';
 import { Link } from 'react-router-dom';
 import RoleBadge from './RoleBadge';
 import { CommunityRoleKey } from '@/hooks/useCommunityProfile';
