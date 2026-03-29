@@ -1,58 +1,41 @@
 
 
-# Galerie d'especes : deux modes d'affichage inspirants
+# Ajouter le toggle Immersion/Fiche dans l'onglet Vivant de mon-espace
 
-## Constat
+## Probleme
 
-Les vignettes actuelles sont encombrees : nom commun + nom scientifique + badge d'observations + gradient sombre occupent ~40% de la surface photo. Sur une grille dense, l'effet est plus "fiche technique" qu'immersion dans le vivant.
+Le toggle de mode d'affichage (Immersion / Fiche) n'existe que sur la page `/exploration-biodiversite` via `EmblematicSpeciesGallery`. L'onglet **Vivant** dans `MarcheDetailModal` (mon-espace) affiche les especes sous forme de simples pilules textuelles — pas de photos, pas de toggle.
 
-## Solution : deux modes de visualisation avec bascule elegante
+## Solution
 
-### Mode 1 — "Immersion" (nouveau, par defaut)
+Remplacer la liste de pilules textuelles (lignes 633-641 de `MarcheDetailModal.tsx`) par une mini-galerie de photos d'especes utilisant `SpeciesCardWithPhoto` avec le toggle Immersion/Fiche.
 
-- **Photo plein cadre** sans aucun texte ni badge visible
-- Ratio `aspect-[3/4]` (portrait) pour des vignettes plus hautes et immersives
-- Coins arrondis genereux (`rounded-2xl`)
-- Au **hover** uniquement : micro-overlay avec le nom qui apparait en fondu depuis le bas (subtil, 2 lignes max)
-- Grille plus serree : `gap-2` au lieu de `gap-3/4`
-- Effet : une mosaique photographique vivante, comme un mur d'images naturalistes
+## Fichier : `src/components/community/MarcheDetailModal.tsx` — VivantTab
 
-### Mode 2 — "Fiche" (mode actuel, simplifie)
+| Changement | Detail |
+|------------|--------|
+| Imports | Ajouter `SpeciesCardWithPhoto`, `Grid3X3`, `LayoutList` depuis les bons modules |
+| State | Ajouter `viewMode` state avec persistence `localStorage` (cle `vivant-tab-view`) |
+| Toggle UI | Deux boutons icones (Grid3X3 / LayoutList) places a droite du titre "Le Territoire" |
+| Grille especes | Remplacer les pilules `<span>` par une grille de `SpeciesCardWithPhoto` avec le prop `viewMode` |
+| Grille responsive | Immersion : `grid-cols-3 gap-1.5` / Fiche : `grid-cols-2 gap-2` (adapte a l'espace restreint du modal) |
+| Nombre d'especes | Passer de 6 a 9 pour mieux remplir la grille |
 
-- Garde la structure actuelle mais retire le nom scientifique (trop long, pas inspirant)
-- Ne conserve que le nom commun francais (1 ligne, tronque) + badge observations
-- Gradient overlay plus leger (`from-black/50` au lieu de `from-black/70`)
+## Rendu attendu
 
-### Toggle de bascule
-
-- Deux petites icones dans la barre de filtres existante (a cote du compteur d'especes) :
-  - `Grid3X3` (lucide) pour le mode Immersion
-  - `LayoutList` (lucide) pour le mode Fiche
-- Etat persiste dans `localStorage`
-- Transition animee entre les deux modes via `AnimatePresence`
-
-## Fichiers impactes
-
-| Fichier | Modification |
-|---------|-------------|
-| `src/components/biodiversity/SpeciesCardWithPhoto.tsx` | Ajouter prop `viewMode: 'immersion' \| 'fiche'`. Mode immersion : pas d'overlay texte, hover reveal. Mode fiche : nom commun uniquement, pas de nom scientifique |
-| `src/components/biodiversity/EmblematicSpeciesGallery.tsx` | Ajouter state `viewMode`, toggle dans la barre de filtres, passer le mode aux cards, ajuster la grille (portrait ratio + gap plus serre en mode immersion) |
-
-## Detail technique — SpeciesCardWithPhoto
-
+```text
+┌─ Le Territoire ──────────── [▣] [≡] ─┐
+│                                        │
+│  Mode Immersion:    Mode Fiche:        │
+│  ┌────┐┌────┐┌────┐ ┌──────┐┌──────┐  │
+│  │foto││foto││foto│ │foto  ││foto  │  │
+│  │    ││    ││    │ │Merle ││Chêne │  │
+│  └────┘└────┘└────┘ │ 12obs││ 8obs │  │
+│  ┌────┐┌────┐┌────┐ └──────┘└──────┘  │
+│  │foto││foto││foto│                    │
+│  └────┘└────┘└────┘                    │
+└────────────────────────────────────────┘
 ```
-Mode immersion:
-- aspect-[3/4] au lieu de aspect-square
-- Pas de gradient overlay par defaut
-- Pas de texte par defaut
-- Hover: gradient subtil from-black/40 + nom commun en fadeIn
-- Badge obs. masque
-- Photo source badge masque
 
-Mode fiche:
-- aspect-square (inchange)
-- Gradient leger from-black/50
-- Nom commun uniquement (1 ligne)
-- Badge obs. visible
-```
+Le mode sombre reste inchange — les couleurs existantes du VivantTab sont deja dark-first.
 
