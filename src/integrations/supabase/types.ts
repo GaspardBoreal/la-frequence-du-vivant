@@ -3577,6 +3577,7 @@ export type Database = {
         Args: { _user_id: string }
         Returns: Database["public"]["Enums"]["crm_role"]
       }
+      get_user_event_ids: { Args: { _user_id: string }; Returns: string[] }
       has_any_crm_role: { Args: { _user_id: string }; Returns: boolean }
       has_crm_role: {
         Args: {
