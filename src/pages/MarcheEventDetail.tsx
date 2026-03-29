@@ -482,6 +482,15 @@ const MarcheEventDetail: React.FC = () => {
             )}
           </Card>
         )}
+
+        <ConfirmDeleteDialog
+          open={!!deletingParticipation}
+          onOpenChange={(open) => { if (!open) setDeletingParticipation(null); }}
+          title="Retirer ce participant"
+          description={`Voulez-vous vraiment retirer ${deletingParticipation?.name || ''} de cet événement ?`}
+          onConfirm={handleDeleteParticipant}
+          loading={deleteLoading}
+        />
       </div>
     </div>
   );
