@@ -4,7 +4,8 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
-import { Eye, Headphones, BookOpen, Leaf, MapPin, Music, ChevronLeft, ChevronRight, Camera, FileText, Globe, Users, User, ExternalLink, Video, Plus } from 'lucide-react';
+import { Eye, Headphones, BookOpen, Leaf, MapPin, Music, ChevronLeft, ChevronRight, Camera, FileText, Globe, Users, User, ExternalLink, Video, Plus, Grid3X3, LayoutList } from 'lucide-react';
+import SpeciesCardWithPhoto from '@/components/biodiversity/SpeciesCardWithPhoto';
 import MediaLightbox, { type LightboxItem } from './contributions/MediaLightbox';
 import { motion, AnimatePresence } from 'framer-motion';
 import { processSpeciesData } from '@/utils/speciesDataUtils';
@@ -543,6 +544,30 @@ const LireTab: React.FC<{ userId: string; marcheEventId: string; activeMarcheId?
 
 // ─── Vivant (3 couches) ───
 const VivantTab: React.FC<{ marcheId: string; userId: string; marcheSlug?: string }> = ({ marcheId, userId, marcheSlug }) => {
+  const [viewMode, setViewMode] = useState<'immersion' | 'fiche'>(() => {
+    return (localStorage.getItem('vivant-tab-view') as 'immersion' | 'fiche') || 'immersion';
+  });
+  const handleViewMode = (mode: 'immersion' | 'fiche') => {
+    setViewMode(mode);
+    localStorage.setItem('vivant-tab-view', mode);
+  };
+
+  const getKingdomColor = (kingdom: string) => {
+    switch (kingdom) {
+      case 'Plantae': return 'from-lime-600 to-emerald-700';
+      case 'Animalia': return 'from-sky-600 to-blue-700';
+      case 'Fungi': return 'from-amber-600 to-orange-700';
+      default: return 'from-emerald-600 to-teal-700';
+    }
+  };
+  const getKingdomEmoji = (kingdom: string) => {
+    switch (kingdom) {
+      case 'Plantae': return '🌿';
+      case 'Animalia': return '🦅';
+      case 'Fungi': return '🍄';
+      default: return '🌍';
+    }
+  };
   // Fetch lat/lng for this marche
   const { data: coords } = useQuery({
     queryKey: ['marche-coords', marcheId],
@@ -573,7 +598,7 @@ const VivantTab: React.FC<{ marcheId: string; userId: string; marcheSlug?: strin
 
   const processedSpecies = biodiversityData?.species ? processSpeciesData(biodiversityData.species) : null;
   const topSpecies = processedSpecies
-    ? [...processedSpecies.flore, ...Object.values(processedSpecies.faune).flat()].slice(0, 6)
+    ? [...processedSpecies.flore, ...Object.values(processedSpecies.faune).flat()].slice(0, 9)
     : [];
 
   // Community data
@@ -616,6 +641,22 @@ const VivantTab: React.FC<{ marcheId: string; userId: string; marcheSlug?: strin
             <Leaf className="w-3.5 h-3.5 text-emerald-400" />
             <h3 className="text-emerald-300 text-xs font-semibold tracking-wide uppercase">Le Territoire</h3>
             <div className="flex-1 h-px bg-emerald-500/15" />
+            {topSpecies.length > 0 && (
+              <div className="flex gap-0.5">
+                <button
+                  onClick={() => handleViewMode('immersion')}
+                  className={`p-1.5 rounded-md transition-colors ${viewMode === 'immersion' ? 'bg-emerald-500/20 text-emerald-300' : 'text-emerald-500/40 hover:text-emerald-400'}`}
+                >
+                  <Grid3X3 className="w-3.5 h-3.5" />
+                </button>
+                <button
+                  onClick={() => handleViewMode('fiche')}
+                  className={`p-1.5 rounded-md transition-colors ${viewMode === 'fiche' ? 'bg-emerald-500/20 text-emerald-300' : 'text-emerald-500/40 hover:text-emerald-400'}`}
+                >
+                  <LayoutList className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            )}
           </div>
           <div className="grid grid-cols-3 gap-2">
             {[
@@ -631,13 +672,35 @@ const VivantTab: React.FC<{ marcheId: string; userId: string; marcheSlug?: strin
           </div>
 
           {topSpecies.length > 0 && (
-            <div className="flex flex-wrap gap-1.5">
-              {topSpecies.map((sp: any, i: number) => (
-                <span key={i} className="px-2 py-0.5 bg-emerald-500/10 border border-emerald-500/15 rounded-full text-emerald-200/70 text-[10px]">
-                  {sp.commonName || sp.scientificName}
-                </span>
-              ))}
-            </div>
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={viewMode}
+                initial={{ opacity: 0, scale: 0.98 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.98 }}
+                transition={{ duration: 0.2 }}
+                className={`grid ${viewMode === 'immersion' ? 'grid-cols-3 gap-1.5' : 'grid-cols-2 gap-2'}`}
+              >
+                {topSpecies.map((sp: any, i: number) => (
+                  <SpeciesCardWithPhoto
+                    key={sp.scientificName || i}
+                    species={{
+                      name: sp.scientificName || sp.commonName || 'Inconnu',
+                      scientificName: sp.scientificName || '',
+                      commonNameFr: sp.commonName || sp.commonNameFr || null,
+                      count: sp.count || 0,
+                      kingdom: sp.kingdom || 'Unknown',
+                      photos: sp.photos || [],
+                    }}
+                    onClick={() => {}}
+                    getKingdomColor={getKingdomColor}
+                    getKingdomEmoji={getKingdomEmoji}
+                    index={i}
+                    viewMode={viewMode}
+                  />
+                ))}
+              </motion.div>
+            </AnimatePresence>
           )}
 
           {explorerLink && (
