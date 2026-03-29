@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Camera, Mic, BookOpen, Leaf, Copy, Share2, Users, Sprout, ChevronDown, ExternalLink } from 'lucide-react';
+import { Camera, Mic, BookOpen, Leaf, Copy, Share2, Users, Sprout, ChevronDown, ExternalLink, Eye, Image, FileText } from 'lucide-react';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { useExplorationParticipants, MarcheurWithStats, SpeciesObservation } from '@/hooks/useExplorationParticipants';
 import { useSpeciesTranslationBatch } from '@/hooks/useSpeciesTranslation';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
 interface MarcheursTabProps {
@@ -29,21 +31,107 @@ const StatBadge: React.FC<{ icon: React.ElementType; count: number; label: strin
   );
 };
 
+// --- Photo gallery in drawer for community members ---
+const ContributionsGallery: React.FC<{ userId: string; marcheEventId?: string; stats: MarcheurWithStats['stats']; prenom: string }> = ({ userId, marcheEventId, stats, prenom }) => {
+  const { data: recentPhotos, isLoading } = useQuery({
+    queryKey: ['marcheur-gallery', userId, marcheEventId],
+    queryFn: async () => {
+      let query = supabase
+        .from('marcheur_medias')
+        .select('id, url_fichier, external_url, titre, type_media')
+        .eq('user_id', userId)
+        .eq('is_public', true)
+        .in('type_media', ['photo', 'video'])
+        .order('created_at', { ascending: false })
+        .limit(6);
+      if (marcheEventId) query = query.eq('marche_event_id', marcheEventId);
+      const { data } = await query;
+      return data || [];
+    },
+    staleTime: 60_000,
+  });
+
+  const totalContribs = stats.photos + stats.videos + stats.sons + stats.textes;
+  if (totalContribs === 0) return null;
+
+  const photos = recentPhotos || [];
+
+  return (
+    <div className="px-3 pt-3 pb-1 space-y-3">
+      {/* Contribution summary */}
+      <div className="flex items-center gap-2 flex-wrap">
+        <p className="text-xs font-medium text-foreground">
+          Contributions de {prenom}
+        </p>
+        <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
+          {(stats.photos + stats.videos) > 0 && (
+            <span className="flex items-center gap-0.5">
+              <Camera className="w-3 h-3" /> {stats.photos + stats.videos}
+            </span>
+          )}
+          {stats.sons > 0 && (
+            <span className="flex items-center gap-0.5">
+              <Mic className="w-3 h-3" /> {stats.sons}
+            </span>
+          )}
+          {stats.textes > 0 && (
+            <span className="flex items-center gap-0.5">
+              <BookOpen className="w-3 h-3" /> {stats.textes}
+            </span>
+          )}
+        </div>
+      </div>
+
+      {/* Photo gallery */}
+      {photos.length > 0 && (
+        <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
+          {photos.map((photo, i) => {
+            const url = photo.url_fichier || photo.external_url;
+            if (!url) return null;
+            return (
+              <motion.div
+                key={photo.id}
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: i * 0.05 }}
+                className="flex-shrink-0"
+              >
+                <img
+                  src={url}
+                  alt={photo.titre || `Photo ${i + 1}`}
+                  className="w-12 h-12 rounded-xl object-cover ring-1 ring-border/50 hover:ring-emerald-500/40 transition-all"
+                />
+              </motion.div>
+            );
+          })}
+          {(stats.photos + stats.videos) > photos.length && (
+            <div className="w-12 h-12 rounded-xl bg-muted/60 flex items-center justify-center flex-shrink-0">
+              <span className="text-[10px] font-semibold text-muted-foreground">
+                +{(stats.photos + stats.videos) - photos.length}
+              </span>
+            </div>
+          )}
+        </div>
+      )}
+
+      {isLoading && (
+        <div className="flex gap-2">
+          {[...Array(3)].map((_, i) => (
+            <div key={i} className="w-12 h-12 rounded-xl bg-muted animate-pulse flex-shrink-0" />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
 const SpeciesDrawer: React.FC<{ marcheur: MarcheurWithStats }> = ({ marcheur }) => {
   const species = marcheur.speciesObserved || [];
   const speciesForTranslation = species.map(s => ({ scientificName: s.scientificName }));
   const { data: translations } = useSpeciesTranslationBatch(speciesForTranslation);
   const translationMap = new Map(translations?.map(t => [t.scientificName, t]) || []);
 
-  if (species.length === 0) {
-    return (
-      <div className="px-4 py-5 text-center">
-        <p className="text-xs text-muted-foreground italic">
-          Aucune espèce identifiée pour l'instant — explorez l'onglet Vivant pour découvrir la biodiversité locale
-        </p>
-      </div>
-    );
-  }
+  if (species.length === 0) return null;
 
   return (
     <div className="px-3 pb-3 space-y-3">
@@ -94,46 +182,52 @@ const SpeciesDrawer: React.FC<{ marcheur: MarcheurWithStats }> = ({ marcheur }) 
           );
         })}
       </div>
-
-      {/* CTA Science Participative */}
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 0.2 }}
-        className="mt-3 p-3 rounded-xl bg-gradient-to-br from-emerald-500/5 to-amber-500/5 border border-emerald-500/15"
-      >
-        <p className="text-[11px] font-medium text-foreground mb-1">
-          🔬 Devenez contributeur citoyen !
-        </p>
-        <p className="text-[10px] text-muted-foreground mb-2.5 leading-relaxed">
-          Chaque observation nourrit la connaissance du vivant. Créez un compte pour que vos découvertes comptent dans la science mondiale.
-        </p>
-        <div className="flex gap-2">
-          <a
-            href="https://www.inaturalist.org/signup"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[10px] font-semibold bg-emerald-600/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 hover:bg-emerald-600/20 transition-colors"
-          >
-            iNaturalist <ExternalLink className="w-2.5 h-2.5" />
-          </a>
-          <a
-            href="https://ebird.org/register"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[10px] font-semibold bg-blue-600/10 text-blue-600 dark:text-blue-400 border border-blue-500/20 hover:bg-blue-600/20 transition-colors"
-          >
-            eBird <ExternalLink className="w-2.5 h-2.5" />
-          </a>
-        </div>
-      </motion.div>
     </div>
   );
 };
 
-const MarcheurCard: React.FC<{ marcheur: MarcheurWithStats; index: number; isExpanded: boolean; onToggle: () => void }> = ({ marcheur, index, isExpanded, onToggle }) => {
+// CTA Science block (shared)
+const CitizenScienceCTA: React.FC = () => (
+  <motion.div
+    initial={{ opacity: 0 }}
+    animate={{ opacity: 1 }}
+    transition={{ delay: 0.2 }}
+    className="mx-3 mb-3 p-3 rounded-xl bg-gradient-to-br from-emerald-500/5 to-amber-500/5 border border-emerald-500/15"
+  >
+    <p className="text-[11px] font-medium text-foreground mb-1">
+      🔬 Devenez contributeur citoyen !
+    </p>
+    <p className="text-[10px] text-muted-foreground mb-2.5 leading-relaxed">
+      Chaque observation nourrit la connaissance du vivant. Créez un compte pour que vos découvertes comptent dans la science mondiale.
+    </p>
+    <div className="flex gap-2">
+      <a
+        href="https://www.inaturalist.org/signup"
+        target="_blank"
+        rel="noopener noreferrer"
+        className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[10px] font-semibold bg-emerald-600/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 hover:bg-emerald-600/20 transition-colors"
+      >
+        iNaturalist <ExternalLink className="w-2.5 h-2.5" />
+      </a>
+      <a
+        href="https://ebird.org/register"
+        target="_blank"
+        rel="noopener noreferrer"
+        className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[10px] font-semibold bg-blue-600/10 text-blue-600 dark:text-blue-400 border border-blue-500/20 hover:bg-blue-600/20 transition-colors"
+      >
+        eBird <ExternalLink className="w-2.5 h-2.5" />
+      </a>
+    </div>
+  </motion.div>
+);
+
+const MarcheurCard: React.FC<{ marcheur: MarcheurWithStats; index: number; isExpanded: boolean; onToggle: () => void; marcheEventId?: string }> = ({ marcheur, index, isExpanded, onToggle, marcheEventId }) => {
   const initials = `${marcheur.prenom?.[0] || ''}${marcheur.nom?.[0] || ''}`.toUpperCase();
   const hasSpecies = (marcheur.speciesObserved || []).length > 0;
+  const totalContribs = marcheur.totalContributions || 0;
+  const hasContent = totalContribs > 0 || hasSpecies;
+  const isCommunity = marcheur.source === 'community';
+  const userId = isCommunity ? marcheur.id.replace('community-', '') : null;
 
   return (
     <motion.div
@@ -143,8 +237,8 @@ const MarcheurCard: React.FC<{ marcheur: MarcheurWithStats; index: number; isExp
       className="rounded-xl bg-card border border-border hover:border-emerald-500/30 transition-colors overflow-hidden"
     >
       <button
-        onClick={onToggle}
-        className="flex items-center gap-3 p-3 w-full text-left group"
+        onClick={hasContent ? onToggle : undefined}
+        className={`flex items-center gap-3 p-3 w-full text-left group ${hasContent ? 'cursor-pointer' : 'cursor-default'}`}
       >
         <Avatar className="w-10 h-10 ring-2 ring-offset-1 ring-offset-background" style={{ '--tw-ring-color': marcheur.couleur } as React.CSSProperties}>
           {marcheur.avatarUrl ? (
@@ -174,7 +268,7 @@ const MarcheurCard: React.FC<{ marcheur: MarcheurWithStats; index: number; isExp
           <StatBadge icon={Leaf} count={marcheur.stats.speciesCount} label="Espèces" delay={0.25 + index * 0.06} />
         </div>
 
-        {(hasSpecies || marcheur.source === 'crew') && (
+        {hasContent && (
           <motion.div
             animate={{ rotate: isExpanded ? 180 : 0 }}
             transition={{ duration: 0.2 }}
@@ -185,6 +279,22 @@ const MarcheurCard: React.FC<{ marcheur: MarcheurWithStats; index: number; isExp
         )}
       </button>
 
+      {/* Hint banner — only visible when collapsed and has contributions */}
+      {!isExpanded && hasContent && (
+        <motion.button
+          onClick={onToggle}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.3 + index * 0.06 }}
+          className="w-full px-3 pb-2.5 pt-0 flex items-center gap-1.5 text-[10px] text-emerald-600 dark:text-emerald-400 hover:text-emerald-500 transition-colors"
+        >
+          <Eye className="w-3 h-3 animate-pulse" />
+          <span className="font-medium">
+            Voir ses contributions · {totalContribs} partage{totalContribs > 1 ? 's' : ''}
+          </span>
+        </motion.button>
+      )}
+
       <AnimatePresence initial={false}>
         {isExpanded && (
           <motion.div
@@ -194,7 +304,30 @@ const MarcheurCard: React.FC<{ marcheur: MarcheurWithStats; index: number; isExp
             transition={{ duration: 0.25, ease: 'easeInOut' }}
             className="overflow-hidden border-t border-emerald-500/10"
           >
+            {/* Section A: contributions gallery (community members) */}
+            {isCommunity && userId && (
+              <ContributionsGallery
+                userId={userId}
+                marcheEventId={marcheEventId}
+                stats={marcheur.stats}
+                prenom={marcheur.prenom}
+              />
+            )}
+
+            {/* Section B: species observations */}
             <SpeciesDrawer marcheur={marcheur} />
+
+            {/* CTA if has any content */}
+            {hasContent && <CitizenScienceCTA />}
+
+            {/* Empty encouragement for community with no species */}
+            {isCommunity && !hasSpecies && totalContribs > 0 && (
+              <div className="px-4 py-3 text-center">
+                <p className="text-[10px] text-muted-foreground italic">
+                  Identifiez les espèces rencontrées lors de vos marches via l'onglet Vivant 🌿
+                </p>
+              </div>
+            )}
           </motion.div>
         )}
       </AnimatePresence>
@@ -292,6 +425,7 @@ const MarcheursTab: React.FC<MarcheursTabProps> = ({ explorationId, marcheEventI
             index={i}
             isExpanded={expandedId === m.id}
             onToggle={() => setExpandedId(prev => prev === m.id ? null : m.id)}
+            marcheEventId={marcheEventId}
           />
         ))}
       </div>
