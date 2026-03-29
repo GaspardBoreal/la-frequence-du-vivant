@@ -1,34 +1,49 @@
 
 
-# Fix: Suppression de participant bloquee par RLS
+# Fix: Permettre aux marcheurs de voir les co-participants
 
 ## Diagnostic
 
-La table `marche_participations` n'a **aucune policy RLS pour DELETE**. Quand le code appelle `.delete().eq('id', ...)`, Supabase retourne 0 rows affected sans erreur -- la suppression echoue silencieusement.
-
-Policies actuelles : SELECT, INSERT, UPDATE uniquement. Pas de DELETE.
+La policy SELECT sur `marche_participations` ne permet a chaque utilisateur de voir **que sa propre participation**. Laurence ne voit donc pas les autres marcheurs inscrits a la meme marche.
 
 ## Correctif
 
-### 1. Migration SQL -- Ajouter une DELETE policy
+### Migration SQL — Remplacer la policy SELECT
+
+Supprimer l'ancienne policy et la remplacer par une policy qui autorise :
+1. Les **admins** a tout voir (inchange)
+2. Chaque **participant** a voir tous les autres participants **du meme evenement** auquel il participe
 
 ```sql
-CREATE POLICY "Admins can delete marche_participations"
-ON public.marche_participations FOR DELETE
+DROP POLICY "Users can read own participations" ON public.marche_participations;
+
+CREATE POLICY "Users can read co-participants"
+ON public.marche_participations FOR SELECT
 TO authenticated
-USING (public.check_is_admin_user(auth.uid()));
+USING (
+  public.check_is_admin_user(auth.uid())
+  OR
+  marche_event_id IN (
+    SELECT mp.marche_event_id 
+    FROM public.marche_participations mp 
+    WHERE mp.user_id = auth.uid()
+  )
+);
 ```
 
-Seuls les admins pourront supprimer des participations (c'est une action admin depuis `/admin/marche-events`).
+**Logique** : si tu participes a un evenement, tu peux voir tous les participants de cet evenement. Tu ne peux pas voir les participants d'evenements auxquels tu n'es pas inscrit.
 
-### 2. Code -- Verifier le resultat de la suppression
+### Securite
 
-Dans `handleDeleteParticipant`, ajouter une verification que la suppression a reellement eu lieu via `.select()` count ou en verifiant `data`/`count` retourne par Supabase. Optionnel mais recommande pour detecter les echecs silencieux a l'avenir.
+- Pas de fuite de donnees : on ne voit que les co-participants, pas tous les inscrits de toutes les marches
+- La sous-requete utilise `user_id = auth.uid()` comme filtre, donc pas d'escalade possible
+- Les policies INSERT/UPDATE/DELETE restent inchangees
 
-## Fichiers impactes
+## Fichier impacte
 
 | Fichier | Action |
 |---|---|
-| Migration SQL | Ajouter policy DELETE pour admins |
-| `src/pages/MarcheEventDetail.tsx` | (optionnel) Ajouter `{ count: 'exact' }` au delete pour verifier |
+| Migration SQL | Remplacer la policy SELECT sur `marche_participations` |
+
+Aucun changement de code cote frontend — le probleme est 100% RLS.
 
