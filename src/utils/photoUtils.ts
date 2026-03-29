@@ -28,15 +28,21 @@ export const SUPPORTED_PHOTO_FORMATS = [
   'image/webp',
   'image/heic',
   'image/heif',
+  'image/heic-sequence',
+  'image/heif-sequence',
   'image/tiff',
   'image/bmp'
 ];
 
-// Vérifier si le format est supporté
+// Vérifier si le format est supporté (détection large)
 export const isSupportedPhotoFormat = (file: File): boolean => {
-  return SUPPORTED_PHOTO_FORMATS.includes(file.type) || 
-         file.name.toLowerCase().endsWith('.heic') ||
-         file.name.toLowerCase().endsWith('.heif');
+  if (SUPPORTED_PHOTO_FORMATS.includes(file.type)) return true;
+  if (file.type?.startsWith('image/')) return true;
+  const ext = file.name.toLowerCase();
+  return ext.endsWith('.heic') || ext.endsWith('.heif') || 
+         ext.endsWith('.jpg') || ext.endsWith('.jpeg') ||
+         ext.endsWith('.png') || ext.endsWith('.webp') ||
+         ext.endsWith('.gif') || ext.endsWith('.tiff') || ext.endsWith('.bmp');
 };
 
 // Convertir HEIC/HEIF en JPEG
