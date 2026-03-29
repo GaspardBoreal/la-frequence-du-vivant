@@ -60,7 +60,7 @@ const EmptyState: React.FC<{ message: string; sub?: string }> = ({ message, sub 
 );
 
 // ─── Voir Tab (photos + vidéos + user contributions) ───
-const VoirTab: React.FC<{ marcheId: string; userId: string; marcheEventId: string; activeMarcheId?: string }> = ({ marcheId, userId, marcheEventId, activeMarcheId }) => {
+export const VoirTab: React.FC<{ marcheId: string; userId: string; marcheEventId: string; activeMarcheId?: string }> = ({ marcheId, userId, marcheEventId, activeMarcheId }) => {
   const [sort, setSort] = useState<'desc' | 'asc'>('asc');
   const [showUpload, setShowUpload] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
@@ -284,7 +284,7 @@ const VoirTab: React.FC<{ marcheId: string; userId: string; marcheEventId: strin
 };
 
 // ─── Écouter Tab ───
-const EcouterTab: React.FC<{ marcheId: string; userId: string; marcheEventId: string; activeMarcheId?: string }> = ({ marcheId, userId, marcheEventId, activeMarcheId }) => {
+export const EcouterTab: React.FC<{ marcheId: string; userId: string; marcheEventId: string; activeMarcheId?: string }> = ({ marcheId, userId, marcheEventId, activeMarcheId }) => {
   const [sort, setSort] = useState<'desc' | 'asc'>('asc');
   const [showUpload, setShowUpload] = useState(false);
 
@@ -416,7 +416,7 @@ const EcouterTab: React.FC<{ marcheId: string; userId: string; marcheEventId: st
 };
 
 // ─── Lire Tab ───
-const LireTab: React.FC<{ userId: string; marcheEventId: string; activeMarcheId?: string }> = ({ userId, marcheEventId, activeMarcheId }) => {
+export const LireTab: React.FC<{ userId: string; marcheEventId: string; activeMarcheId?: string }> = ({ userId, marcheEventId, activeMarcheId }) => {
   const [sort, setSort] = useState<'desc' | 'asc'>('asc');
   const [showNew, setShowNew] = useState(false);
   const [newTitre, setNewTitre] = useState('');
@@ -595,7 +595,7 @@ const LireTab: React.FC<{ userId: string; marcheEventId: string; activeMarcheId?
 };
 
 // ─── Vivant (3 couches) ───
-const VivantTab: React.FC<{ marcheId: string; userId: string; marcheSlug?: string }> = ({ marcheId, userId, marcheSlug }) => {
+export const VivantTab: React.FC<{ marcheId: string; userId: string; marcheSlug?: string }> = ({ marcheId, userId, marcheSlug }) => {
   const [viewMode, setViewMode] = useState<'immersion' | 'fiche'>(() => {
     return (localStorage.getItem('vivant-tab-view') as 'immersion' | 'fiche') || 'immersion';
   });
@@ -824,7 +824,7 @@ const VivantTab: React.FC<{ marcheId: string; userId: string; marcheSlug?: strin
 };
 
 // ─── Step Selector ───
-const StepSelector: React.FC<{
+export const StepSelector: React.FC<{
   marches: { id: string; nom_marche: string | null; ville: string }[];
   activeIndex: number;
   onSelect: (index: number) => void;

@@ -1,10 +1,10 @@
 import React, { useState, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Book, MapPin, Camera, Music, PenLine, Leaf, ChevronDown, ChevronUp } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { useMarcheCollectedData, MarcheCollectedSummary } from '@/hooks/useMarcheCollectedData';
-import MarcheDetailModal from './MarcheDetailModal';
 
 interface Participation {
   id: string;
@@ -16,6 +16,7 @@ interface Participation {
     title: string;
     date_marche: string;
     lieu: string | null;
+    exploration_id?: string | null;
     explorations?: { name: string } | null;
   } | null;
 }
@@ -146,8 +147,8 @@ const MarcheCard: React.FC<{
 };
 
 const CarnetVivant: React.FC<CarnetVivantProps> = ({ userId, participations }) => {
+  const navigate = useNavigate();
   const [expandedSeasons, setExpandedSeasons] = useState<Set<string>>(new Set());
-  const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
 
   const eventIds = useMemo(
     () => participations.map(p => p.marche_event_id),
@@ -197,7 +198,12 @@ const CarnetVivant: React.FC<CarnetVivantProps> = ({ userId, participations }) =
     });
   };
 
-  const selectedParticipation = participations.find(p => p.marche_event_id === selectedEventId);
+  const handleOpenExploration = (participation: Participation) => {
+    const explorationId = participation.marche_events?.exploration_id;
+    if (explorationId) {
+      navigate(`/marches-du-vivant/mon-espace/exploration/${explorationId}`);
+    }
+  };
 
   return (
     <div className="space-y-1">
@@ -249,7 +255,7 @@ const CarnetVivant: React.FC<CarnetVivantProps> = ({ userId, participations }) =
                         participation={p}
                         summary={collectedData?.[p.marche_event_id]}
                         index={i}
-                        onOpen={() => setSelectedEventId(p.marche_event_id)}
+                        onOpen={() => handleOpenExploration(p)}
                       />
                     ))}
                   </div>
@@ -258,19 +264,6 @@ const CarnetVivant: React.FC<CarnetVivantProps> = ({ userId, participations }) =
             );
           })}
         </div>
-      )}
-
-      {/* Detail modal */}
-      {selectedEventId && selectedParticipation && (
-        <MarcheDetailModal
-          open={!!selectedEventId}
-          onClose={() => setSelectedEventId(null)}
-          userId={userId}
-          marcheEventId={selectedEventId}
-          eventTitle={selectedParticipation.marche_events?.title || 'Marche'}
-          eventDate={selectedParticipation.marche_events?.date_marche || ''}
-          eventLieu={selectedParticipation.marche_events?.lieu || null}
-        />
       )}
     </div>
   );
