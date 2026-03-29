@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
+import { ConfirmDeleteDialog } from '@/components/ui/confirm-delete-dialog';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
