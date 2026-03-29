@@ -121,6 +121,29 @@ function FitBounds({ positions }: { positions: [number, number][] }) {
   return null;
 }
 
+// Custom zoom controls
+function ZoomControls() {
+  const map = useMap();
+  return (
+    <div className="absolute bottom-20 right-4 z-[1000] flex flex-col gap-1.5">
+      <button
+        onClick={() => map.zoomIn()}
+        className="w-10 h-10 rounded-xl bg-white/10 backdrop-blur-md border border-white/20 text-white flex items-center justify-center hover:bg-emerald-500/20 hover:border-emerald-500/30 transition-all duration-200 active:scale-95"
+        aria-label="Zoomer"
+      >
+        <Plus className="w-4 h-4" />
+      </button>
+      <button
+        onClick={() => map.zoomOut()}
+        className="w-10 h-10 rounded-xl bg-white/10 backdrop-blur-md border border-white/20 text-white flex items-center justify-center hover:bg-emerald-500/20 hover:border-emerald-500/30 transition-all duration-200 active:scale-95"
+        aria-label="Dézoomer"
+      >
+        <Minus className="w-4 h-4" />
+      </button>
+    </div>
+  );
+}
+
 const ExplorationCarteTab: React.FC<ExplorationCarteTabProps> = ({
   explorationId,
   marches,
