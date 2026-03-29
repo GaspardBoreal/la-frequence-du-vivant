@@ -105,7 +105,7 @@ const MarcheCard: React.FC<{
           </div>
 
           {event.lieu && event.lieu !== event.title && (
-            <p className="text-emerald-200/50 text-[11px] truncate pl-5">{event.title}</p>
+            <p className="text-muted-foreground text-[11px] truncate pl-5">{event.title}</p>
           )}
 
           {/* Data badges */}
