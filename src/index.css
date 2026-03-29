@@ -4,57 +4,58 @@
 
 @layer base {
   :root {
-    --background: 140 25% 8%;      /* Vert émeraude moins foncé */
-    --foreground: 45 20% 95%;      /* Beige plus clair */
+    /* === MODE CLAIR — Crème papier, encre sombre, émeraude profond === */
+    --background: 42 30% 96%;         /* Crème papier #FAF8F3 */
+    --foreground: 0 0% 10%;           /* Encre sombre #1a1a1a */
 
-    --card: 140 30% 12%;           /* Cartes vert émeraude moins foncé */
-    --card-foreground: 45 20% 95%;
+    --card: 0 0% 100%;                /* Blanc pur */
+    --card-foreground: 0 0% 12%;
 
-    --popover: 140 30% 12%;
-    --popover-foreground: 45 20% 95%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 0 0% 12%;
 
-    --primary: 140 35% 15%;        /* Vert émeraude principal moins foncé */
-    --primary-foreground: 45 20% 95%;
+    --primary: 165 80% 24%;           /* Émeraude profond #0D6B58 */
+    --primary-foreground: 0 0% 100%;
 
-    --secondary: 140 28% 18%;      /* Vert émeraude secondaire moins foncé */
-    --secondary-foreground: 45 20% 95%;
+    --secondary: 42 20% 92%;          /* Beige subtil */
+    --secondary-foreground: 0 0% 20%;
 
-    --muted: 140 25% 20%;          /* Vert émeraude muted moins foncé */
-    --muted-foreground: 45 15% 75%;
+    --muted: 42 15% 90%;              /* Gris chaud clair */
+    --muted-foreground: 0 0% 40%;
 
-    --accent: 45 85% 85%;          /* Beige doré plus lumineux pour meilleur contraste */
-    --accent-foreground: 140 25% 8%;
+    --accent: 165 60% 30%;            /* Émeraude accent */
+    --accent-foreground: 0 0% 100%;
 
     /* Couleurs spéciales pour les indicateurs */
-    --success: 120 100% 85%;       /* Vert clair très lumineux pour les indicateurs de succès */
-    --success-foreground: 140 25% 8%;
+    --success: 142 70% 40%;
+    --success-foreground: 0 0% 100%;
     
-    --warning: 45 100% 80%;        /* Jaune/orange clair lumineux */
-    --warning-foreground: 140 25% 8%;
+    --warning: 38 92% 50%;
+    --warning-foreground: 0 0% 100%;
 
-    --info: 200 100% 85%;          /* Bleu clair lumineux */  
-    --info-foreground: 140 25% 8%;
+    --info: 200 80% 50%;
+    --info-foreground: 0 0% 100%;
 
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
 
-    --border: 140 30% 18%;         /* Bordures moins foncées */
-    --input: 140 30% 15%;          /* Inputs moins foncés */
-    --ring: 45 85% 75%;            /* Ring beige doré */
+    --border: 42 15% 85%;             /* Bordures gris chaud */
+    --input: 42 15% 88%;
+    --ring: 165 60% 30%;
 
     /* Paper/Ink tokens for readable white surface */
     --paper: 0 0% 100%;
     --ink: 0 0% 0%;
     
-    /* Technology type colors - high contrast for badges */
-    --tech-biomimicry: 140 70% 45%;     /* Emerald green */
-    --tech-biomimicry-bg: 140 70% 95%;  /* Very light emerald */
-    --tech-lowtech: 25 85% 50%;         /* Warm orange */
-    --tech-lowtech-bg: 25 85% 95%;      /* Very light orange */
-    --tech-openhardware: 200 85% 50%;   /* Electric blue */
-    --tech-openhardware-bg: 200 85% 95%; /* Very light blue */
-    --tech-generic: 270 60% 55%;        /* Modern purple */
-    --tech-generic-bg: 270 60% 95%;     /* Very light purple */
+    /* Technology type colors */
+    --tech-biomimicry: 140 70% 45%;
+    --tech-biomimicry-bg: 140 70% 95%;
+    --tech-lowtech: 25 85% 50%;
+    --tech-lowtech-bg: 25 85% 95%;
+    --tech-openhardware: 200 85% 50%;
+    --tech-openhardware-bg: 200 85% 95%;
+    --tech-generic: 270 60% 55%;
+    --tech-generic-bg: 270 60% 95%;
 
     --radius: 0.5rem;
   }
