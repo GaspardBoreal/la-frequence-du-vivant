@@ -75,7 +75,7 @@ const VoirTab: React.FC<{ marcheId: string; userId: string; marcheEventId: strin
   }, [marcheEventId]);
 
   // Admin photos from the marche
-  const { data: adminPhotos } = useQuery({
+  const { data: adminPhotos, isLoading: isLoadingAdmin } = useQuery({
     queryKey: ['marche-detail-photos', marcheId],
     queryFn: async () => {
       const { data } = await supabase
