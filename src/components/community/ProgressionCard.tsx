@@ -59,7 +59,7 @@ const ProgressionCard: React.FC<ProgressionCardProps> = ({
     >
       <div className="flex items-start justify-between">
         <div>
-          <p className="text-sm text-white/80 mb-2">Votre rôle actuel</p>
+          <p className="text-sm text-muted-foreground mb-2">Votre rôle actuel</p>
           <RoleBadge role={role} size="lg" darkMode />
         </div>
         <div className={`text-4xl font-bold ${dark.text} mt-6`}>
