@@ -84,7 +84,7 @@ const MonEspaceTabBar: React.FC<MonEspaceTabBarProps> = ({ role, activeTab, onTa
               {isActive && (
                 <motion.div
                   layoutId="tab-indicator-desktop"
-                  className="absolute bottom-0 left-2 right-2 h-0.5 rounded-full bg-white/80"
+                  className="absolute bottom-0 left-2 right-2 h-0.5 rounded-full bg-primary"
                   transition={{ type: 'spring', stiffness: 400, damping: 30 }}
                 />
               )}

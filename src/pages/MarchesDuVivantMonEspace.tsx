@@ -154,7 +154,7 @@ const MarchesDuVivantMonEspace = () => {
         <title>Mon espace | Les Marches du Vivant</title>
       </Helmet>
 
-      <div className="min-h-screen bg-gradient-to-br from-emerald-950 via-emerald-900 to-teal-900">
+      <div className="min-h-screen bg-background">
         <MonEspaceHeader
           prenom={profile.prenom}
           nom={profile.nom}
