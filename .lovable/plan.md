@@ -1,20 +1,28 @@
 
 
-# Mettre "Immersion" comme mode par defaut dans l'onglet Voir
+# Fix desktop/tablet layout without touching mobile
 
-## Probleme
+## Problem
 
-Le mode par defaut est `'fiche'` (ligne 68 de `MarcheDetailModal.tsx`). De plus, le `localStorage` persiste le dernier choix, ce qui signifie que naviguer entre les marches (Suivant/Precedent) garde le mode stocke — mais si l'utilisateur n'a jamais change, il demarre en Fiche.
+On desktop and tablet, the sticky tab bar is positioned at `top-[88px]` but the actual header height is only ~52px. This 36px mismatch causes:
+- Content to scroll behind the tab bar and become unreadable
+- The top of each tab's content to be partially hidden under the overlapping sticky elements
 
-## Solution
+## Root cause
 
-**Fichier : `src/components/community/MarcheDetailModal.tsx`**
+| Element | Current | Should be |
+|---------|---------|-----------|
+| Header | `sticky top-0`, actual height ~52px | No change needed |
+| Tab bar | `sticky top-[88px]` | `sticky top-[52px]` (match real header height) |
+| Main content padding | No specific top offset for desktop | Needs none — sticky elements don't consume extra space |
 
-1. **Changer le fallback par defaut** (ligne 68) : remplacer `'fiche'` par `'immersion'`
-2. **Forcer le reset au changement de marche** : ajouter un `useEffect` qui remet `viewMode` a `'immersion'` quand l'ID de la marche change (props du modal), pour que chaque nouvelle marche s'ouvre en mode Immersion
+The `top-[88px]` was likely set for a taller header that has since been condensed to a single compact line.
 
-Cela garantit que :
-- A l'ouverture initiale → Immersion
-- Suivant/Precedent → Immersion
-- L'utilisateur peut basculer en Fiche manuellement, mais le prochain changement de marche revient en Immersion
+## Fix — single file edit
+
+**File: `src/components/community/MonEspaceTabBar.tsx`** (line 69)
+
+Change `top-[88px]` to `top-[52px]` to match the actual header height (py-2 = 16px + content ~36px).
+
+This only affects the desktop/tablet `return` branch — mobile uses the fixed bottom nav and is untouched.
 
