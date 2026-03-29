@@ -43,7 +43,7 @@ const MonEspaceHeader: React.FC<MonEspaceHeaderProps> = ({
             <motion.div
               initial={{ scale: 0.8, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
-              className="w-9 h-9 rounded-full bg-gradient-to-br from-emerald-500/40 to-teal-600/40 border border-emerald-400/30 flex items-center justify-center text-emerald-100 font-bold text-xs flex-shrink-0"
+              className="w-9 h-9 rounded-full bg-gradient-to-br from-primary/40 to-accent/40 border border-primary/30 flex items-center justify-center text-primary-foreground font-bold text-xs flex-shrink-0"
             >
               {initials}
             </motion.div>
