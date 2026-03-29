@@ -1,4 +1,4 @@
-import heic2any from 'heic2any';
+
 import imageCompression from 'browser-image-compression';
 import exifr from 'exifr';
 
@@ -49,11 +49,16 @@ export const convertHeicToJpeg = async (file: File): Promise<File> => {
   try {
     console.log('🔄 Conversion HEIC vers JPEG...', file.name);
     
-    const convertedBlob = await heic2any({
+    const { default: heic2any } = await import('heic2any');
+    const convertPromise = heic2any({
       blob: file,
       toType: 'image/jpeg',
       quality: 0.9
     });
+    const timeoutPromise = new Promise<never>((_, reject) =>
+      setTimeout(() => reject(new Error('Conversion HEIC timeout (30s)')), 30000)
+    );
+    const convertedBlob = await Promise.race([convertPromise, timeoutPromise]);
 
     const blob = Array.isArray(convertedBlob) ? convertedBlob[0] : convertedBlob;
     const convertedFile = new File([blob], file.name.replace(/\.(heic|heif)$/i, '.jpg'), {
