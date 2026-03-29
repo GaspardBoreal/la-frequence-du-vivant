@@ -1,4 +1,4 @@
-import heic2any from 'heic2any';
+
 import imageCompression from 'browser-image-compression';
 import exifr from 'exifr';
 
