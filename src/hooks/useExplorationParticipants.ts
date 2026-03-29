@@ -162,6 +162,7 @@ export function useExplorationParticipants(explorationId?: string, marcheEventId
               couleur: '#10b981',
               stats: { ...s, speciesCount: 0 },
               totalContributions: total,
+              speciesObserved: [],
             });
           });
         }
