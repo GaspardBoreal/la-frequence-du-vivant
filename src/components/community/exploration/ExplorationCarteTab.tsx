@@ -297,9 +297,11 @@ const ExplorationCarteTab: React.FC<ExplorationCarteTabProps> = ({
         zoomControl={false}
       >
         <TileLayer
-          attribution='&copy; <a href="https://carto.com/">CARTO</a>'
-          url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+          attribution='&copy; <a href="https://www.openstreetmap.fr/">OpenStreetMap France</a>'
+          url="https://{s}.tile.openstreetmap.fr/osmfr/{z}/{x}/{y}.png"
+          className="carte-tiles-dark"
         />
+        <ZoomControls />
         <FitBounds positions={positions} />
 
         {/* Route polyline */}
