@@ -540,6 +540,15 @@ const MarcheurCard: React.FC<{ marcheur: MarcheurWithStats; index: number; isExp
               />
             )}
 
+            {/* Impact block */}
+            <MarcheurImpactBlock
+              marcheur={marcheur}
+              explorationId={explorationId}
+              explorationMarcheIds={explorationMarcheIds}
+              totalMarchesCount={totalMarchesCount}
+              isExpanded={isExpanded}
+            />
+
             {/* Section B: species observations */}
             <SpeciesDrawer marcheur={marcheur} />
 
