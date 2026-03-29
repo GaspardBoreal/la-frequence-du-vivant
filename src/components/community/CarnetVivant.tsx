@@ -54,11 +54,11 @@ const getSeasonYear = (date: Date): string => {
   return `${season} ${year}`;
 };
 
-const CountBadge: React.FC<{ icon: typeof Camera; count: number; label: string; color: string }> = ({ icon: Icon, count, label, color }) => (
-  <div className={`flex flex-col items-center gap-0.5 px-2.5 py-1.5 rounded-lg bg-white/5 ${count === 0 ? 'opacity-30' : ''}`}>
-    <Icon className={`w-3.5 h-3.5 ${color}`} />
-    <span className="text-white text-xs font-semibold">{count}</span>
-    <span className="text-emerald-200/40 text-[9px]">{label}</span>
+const CountBadge: React.FC<{ icon: typeof Camera; count: number; label: string; color: string; lightColor: string }> = ({ icon: Icon, count, label, color, lightColor }) => (
+  <div className={`flex flex-col items-center gap-0.5 px-2.5 py-1.5 rounded-lg bg-gray-100 dark:bg-white/5 ${count === 0 ? 'opacity-30' : ''}`}>
+    <Icon className={`w-3.5 h-3.5 ${lightColor} dark:${color}`} />
+    <span className="text-foreground text-xs font-semibold">{count}</span>
+    <span className="text-muted-foreground text-[9px]">{label}</span>
   </div>
 );
 
