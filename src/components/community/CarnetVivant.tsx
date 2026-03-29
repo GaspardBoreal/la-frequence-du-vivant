@@ -99,7 +99,7 @@ const MarcheCard: React.FC<{
                 {event.lieu || event.title}
               </span>
             </div>
-            <span className="text-emerald-300/60 text-[11px] flex-shrink-0">
+            <span className="text-emerald-700 dark:text-emerald-300/60 text-[11px] flex-shrink-0">
               {format(date, 'dd MMM', { locale: fr })}
             </span>
           </div>
