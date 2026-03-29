@@ -137,7 +137,7 @@ const ExplorationMarcheurPage: React.FC = () => {
       if (!links?.length) return [];
       const { data: marches } = await supabase
         .from('marches')
-        .select('id, nom_marche, ville')
+        .select('id, nom_marche, ville, latitude, longitude')
         .in('id', links.map(l => l.marche_id));
       if (!marches?.length) return [];
       const ordreMap: Record<string, number> = {};
