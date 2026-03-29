@@ -440,10 +440,11 @@ const MarcheEventDetail: React.FC = () => {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Nom</TableHead>
-                    <TableHead>Rôle</TableHead>
-                    <TableHead>Validé le</TableHead>
-                    <TableHead>Méthode</TableHead>
+                     <TableHead>Nom</TableHead>
+                     <TableHead>Rôle</TableHead>
+                     <TableHead>Validé le</TableHead>
+                     <TableHead>Méthode</TableHead>
+                     <TableHead className="w-10"></TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
