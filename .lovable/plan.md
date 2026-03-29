@@ -1,40 +1,34 @@
 
 
-# Supprimer un participant — bouton rapide dans le tableau
+# Fix: Suppression de participant bloquee par RLS
 
-## Changement
+## Diagnostic
 
-Ajouter un bouton **corbeille** (icone `Trash2`) sur chaque ligne du tableau des participants dans `MarcheEventDetail.tsx`. Au clic, une confirmation via `ConfirmDeleteDialog` (deja existant dans le projet), puis suppression de la ligne dans `marche_participations` par `id`.
+La table `marche_participations` n'a **aucune policy RLS pour DELETE**. Quand le code appelle `.delete().eq('id', ...)`, Supabase retourne 0 rows affected sans erreur -- la suppression echoue silencieusement.
 
-## Implementation
+Policies actuelles : SELECT, INSERT, UPDATE uniquement. Pas de DELETE.
 
-### 1. Mutation `deleteParticipant`
+## Correctif
 
-```typescript
-const deleteParticipant = useMutation({
-  mutationFn: async (participationId: string) => {
-    const { error } = await supabase
-      .from('marche_participations')
-      .delete()
-      .eq('id', participationId);
-    if (error) throw error;
-  }
-});
+### 1. Migration SQL -- Ajouter une DELETE policy
+
+```sql
+CREATE POLICY "Admins can delete marche_participations"
+ON public.marche_participations FOR DELETE
+TO authenticated
+USING (public.check_is_admin_user(auth.uid()));
 ```
 
-### 2. Colonne "Actions" dans le tableau
+Seuls les admins pourront supprimer des participations (c'est une action admin depuis `/admin/marche-events`).
 
-Ajouter un `TableHead` vide + un `TableCell` avec bouton `Trash2` rouge discret sur chaque ligne. Au clic, ouvrir le `ConfirmDeleteDialog` avec le nom du participant.
+### 2. Code -- Verifier le resultat de la suppression
 
-### 3. State pour le dialog
+Dans `handleDeleteParticipant`, ajouter une verification que la suppression a reellement eu lieu via `.select()` count ou en verifiant `data`/`count` retourne par Supabase. Optionnel mais recommande pour detecter les echecs silencieux a l'avenir.
 
-```typescript
-const [deletingParticipation, setDeletingParticipation] = useState<{id: string, name: string} | null>(null);
-```
-
-## Fichier impacte
+## Fichiers impactes
 
 | Fichier | Action |
 |---|---|
-| `src/pages/MarcheEventDetail.tsx` | Ajouter colonne Actions, mutation delete, dialog confirmation |
+| Migration SQL | Ajouter policy DELETE pour admins |
+| `src/pages/MarcheEventDetail.tsx` | (optionnel) Ajouter `{ count: 'exact' }` au delete pour verifier |
 
