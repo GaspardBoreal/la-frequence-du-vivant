@@ -66,7 +66,7 @@ const ContributionItem: React.FC<ContributionItemProps> = ({
       >
         <div className="aspect-[3/4] relative bg-black/20">
           {type === 'photo' && displayUrl && (
-            <img src={displayUrl} alt={titre || ''} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" loading="lazy" />
+            <img src={displayUrl} alt={titre || ''} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" loading="lazy" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; (e.target as HTMLImageElement).parentElement!.innerHTML = '<div class="w-full h-full flex items-center justify-center bg-black/30"><span class="text-white/60 text-xs">HEIC</span></div>'; }} />
           )}
           {type === 'video' && displayUrl && (
             <div className="w-full h-full flex items-center justify-center bg-black/30">
