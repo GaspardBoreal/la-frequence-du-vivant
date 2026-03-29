@@ -34,7 +34,7 @@ const MonEspaceTabBar: React.FC<MonEspaceTabBarProps> = ({ role, activeTab, onTa
 
   if (isMobile) {
     return (
-      <nav className="fixed bottom-0 left-0 right-0 z-50 bg-emerald-950/95 backdrop-blur-xl border-t border-white/10 pb-[env(safe-area-inset-bottom)]">
+      <nav className="fixed bottom-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-xl border-t border-border/30 pb-[env(safe-area-inset-bottom)]">
         <div className="flex items-center justify-around px-1 py-1.5">
           {tabs.map((key) => {
             const { label, icon: Icon } = TAB_META[key];
