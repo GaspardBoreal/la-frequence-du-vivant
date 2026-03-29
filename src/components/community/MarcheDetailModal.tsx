@@ -65,7 +65,7 @@ const VoirTab: React.FC<{ marcheId: string; userId: string; marcheEventId: strin
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
   const [viewMode, setViewMode] = useState<'immersion' | 'fiche'>(() => {
     const stored = localStorage.getItem('voir-tab-view');
-    return stored === 'immersion' || stored === 'fiche' ? stored : 'fiche';
+    return stored === 'immersion' || stored === 'fiche' ? stored : 'immersion';
   });
 
   // Admin photos from the marche
