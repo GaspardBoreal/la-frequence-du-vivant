@@ -1,76 +1,40 @@
 
 
-# Carte de l'Exploration — Vue immersive du parcours
+# Fix Carte tab — empty state despite valid GPS data
 
-## Vue d'ensemble
+## Diagnostic
 
-Remplacer le placeholder "Bientot disponible" de l'onglet Carte par une carte Leaflet interactive montrant le parcours complet de l'exploration avec progression temporelle, et des popups riches affichant les contributions collectees a chaque etape (photos, sons, textes, especes).
+The `marches` table contains valid GPS coordinates for all 9 steps of "La transhumance de Mouton Village" (verified via DB query — lat/lng values like 46.64042/0.15991 etc.). Yet the Carte tab likely shows "Aucune coordonnee GPS" instead of the map.
 
-## Architecture
+**Root cause identified**: The filtering at line 214-217 in `ExplorationCarteTab.tsx` checks `m.latitude != null && m.longitude != null`. However, the Supabase query result passes through `(m as any).latitude ?? null` at line 348-349 of `ExplorationMarcheurPage.tsx`. If there's any issue with Supabase's type inference stripping `latitude`/`longitude` from the select result (because the TypeScript generated types might not include them in the narrow select), the spread `...m` might not carry them, and `(m as any).latitude` could return `undefined` which `?? null` converts to `null`.
 
-### Nouveau composant : `ExplorationCarteTab.tsx`
+**The real fix**: Remove the defensive `(m as any)` casting and ensure the query return type includes latitude/longitude explicitly. Also add console logging to debug.
 
-```text
-ExplorationCarteTab
-├── Props: explorationId, marcheEventId, marches[]
-├── Donnees:
-│   ├── Coordonnees GPS (deja dans marches.latitude/longitude)
-│   ├── useExplorationBiodiversitySummary → especes par marche
-│   ├── useMarcheurStats par marche → compteurs photos/sons/textes
-│   └── marcheur_medias → 1 photo hero par marche (apercu)
-├── Carte Leaflet:
-│   ├── Polyline reliant les marches dans l'ordre (trace du parcours)
-│   ├── Markers numerotes (1, 2, 3...) avec icones custom emerald
-│   ├── Fleches directionnelles sur la polyline (sens de marche)
-│   ├── Animation d'apparition progressive des points (framer-motion)
-│   └── Popups riches par marche :
-│       ├── Nom + date
-│       ├── Mini-photo hero (1ere photo publique)
-│       ├── Badges compteurs : 📷 🎙 📖 🦎
-│       └── Bouton "Explorer cette etape"
-└── Legende en overlay :
-    ├── Nombre d'etapes + distance totale estimee
-    ├── Resume biodiversite globale
-    └── Toggle couches (parcours / biodiversite / photos)
+## Plan
+
+### File: `src/components/community/ExplorationMarcheurPage.tsx`
+
+1. In the marches query (line 138-141), ensure the select explicitly returns latitude and longitude — already done, but verify the TypeScript inference is correct by adding type annotation to the query result.
+
+2. In the carte tab props (lines 346-351), simplify the mapping — remove the `(m as any)` defensive casting since the select already includes these fields. Cast the entire query result to the proper type.
+
+3. Add a type assertion on the Supabase query to ensure `latitude` and `longitude` are in the returned shape:
+```typescript
+const { data: marches } = await supabase
+  .from('marches')
+  .select('id, nom_marche, ville, latitude, longitude')
+  .in('id', links.map(l => l.marche_id))
+  .returns<{ id: string; nom_marche: string | null; ville: string; latitude: number | null; longitude: number | null }[]>();
 ```
 
-### Design de la carte
+### File: `src/components/community/exploration/ExplorationCarteTab.tsx`
 
-**Markers custom** : Cercles numerotes avec gradient emerald, taille proportionnelle au nombre de contributions. Le marker actif pulse doucement.
+4. Add a `console.log` in development to trace incoming marches data, making future debugging easier. Also make the empty state message more informative (show how many marches were received vs how many had coordinates).
 
-**Polyline du parcours** : Ligne en pointilles emerald-400 reliant les marches dans l'ordre chronologique, avec des chevrons SVG decoratifs indiquant le sens de progression.
+## Files impacted
 
-**Popups** : Glassmorphism coherent avec le reste de l'app (`bg-black/60 backdrop-blur-xl`), photo arrondie, badges de contributions en inline.
-
-**Animation d'entree** : Les markers apparaissent un par un dans l'ordre du parcours (150ms d'intervalle) pour creer un effet narratif de progression.
-
-**Legende flottante** (coin inferieur gauche, mobile-friendly) :
-- Resume compact : "8 etapes · ~47 km · 156 especes"
-- Bouton toggle pour les couches de donnees
-
-### Donnees utilisees
-
-- **Coordonnees** : `marches.latitude`, `marches.longitude` (deja fetche dans la query `explorationMarches` de `ExplorationMarcheurPage` — il suffit d'ajouter `latitude, longitude` au `select`)
-- **Biodiversite** : `useExplorationBiodiversitySummary` (deja existant, inclut `speciesByMarche` avec lat/lng)
-- **Stats contributions** : Query agregee sur `marcheur_medias`, `marcheur_audio`, `marcheur_textes` groupee par `marche_id`
-- **Photo hero** : 1 photo par marche depuis `marcheur_medias` (is_public=true, type_media='photo', limit 1)
-
-### Distance estimee
-
-Calcul Haversine entre points consecutifs pour afficher la distance totale du parcours dans la legende.
-
-## Fichiers impactes
-
-| Fichier | Action |
+| File | Action |
 |---|---|
-| `src/components/community/exploration/ExplorationCarteTab.tsx` | **Nouveau** — composant carte complet |
-| `src/components/community/ExplorationMarcheurPage.tsx` | **Modifier** — remplacer `ComingSoonPlaceholder` par `ExplorationCarteTab`, ajouter `latitude, longitude` a la query des marches |
-
-## Resultat
-
-- Carte plein ecran avec le trace du parcours et ses etapes numerotees
-- Progression temporelle visible (sens de marche, animation)
-- Chaque marker revele les tresors collectes a cette etape
-- Resume biodiversite global en overlay
-- Mobile-first, touch-friendly, coherent avec le design emerald
+| `src/components/community/ExplorationMarcheurPage.tsx` | Add `.returns<>()` type assertion on marches query + simplify carte props |
+| `src/components/community/exploration/ExplorationCarteTab.tsx` | Add debug logging + improve empty state info |
 
