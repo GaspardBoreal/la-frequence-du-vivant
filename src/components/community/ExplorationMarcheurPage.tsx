@@ -9,6 +9,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { createSlug } from '@/utils/slugGenerator';
 import { useMarcheurStats } from '@/hooks/useMarcheurContributions';
 import MediaSkeletonGrid from './contributions/MediaSkeletonGrid';
+import MarcheursTab from './exploration/MarcheursTab';
 
 // Import tab components from MarcheDetailModal
 import { VoirTab, EcouterTab, LireTab, VivantTab, StepSelector } from './MarcheDetailModal';
