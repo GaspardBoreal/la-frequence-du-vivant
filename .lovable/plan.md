@@ -1,81 +1,63 @@
 
 
-# Contributions Science Participative par Marcheur — Fiche immersive expandable
+# Marcheurs — Affordance visuelle + drawer enrichi
 
-## Vision
+## Problemes identifies
 
-Transformer chaque carte marcheur en une **fiche deployable** qui revele ses decouvertes biodiversite issues des APIs (GBIF, iNaturalist, eBird) via `marcheur_observations`. Au tap, la carte s'ouvre pour montrer un **mini-portfolio naturaliste** : galerie d'especes observees avec photos, source API, et un CTA inspirant pour rejoindre les plateformes citoyennes.
+1. **Aucun indice visuel** que les cartes sont cliquables. L'utilisateur ne devine pas qu'il peut decouvrir les contributions en tapant la fiche.
+2. **Drawer vide pour les community members** : il ne montre que les especes (toujours vide pour les marcheurs communautaires), pas leurs contributions reelles (photos, sons, textes).
 
-## Architecture
+## Solution
 
-### Donnees disponibles
+### 1. Hint visuel "Voir les contributions"
 
-La table `marcheur_observations` contient deja : `marcheur_id`, `species_scientific_name`, `photo_url`, `source`, `marche_id`, `observation_date`. Le hook `useExplorationParticipants` recupere deja le `speciesCount` pour le crew — il faut enrichir cette query pour remonter aussi la **liste des especes** (nom, photo, source) par marcheur.
-
-### Modification du hook `useExplorationParticipants`
-
-Ajouter un champ `speciesObserved` au type `MarcheurWithStats` :
-
-```typescript
-speciesObserved: Array<{
-  scientificName: string;
-  photoUrl?: string;
-  source?: string;
-  observationDate?: string;
-}>;
-```
-
-La query `marcheur_observations` existante (ligne 39-42) recupere deja `marcheur_id, species_scientific_name`. Il suffit d'ajouter `photo_url, source, observation_date` au select et de grouper les resultats par marcheur.
-
-### Nouveau composant : `MarcheurSpeciesDrawer` (inline dans MarcheursTab)
-
-Quand on tap sur une carte marcheur, un drawer `AnimatePresence` s'ouvre sous la carte avec :
+Ajouter sous chaque carte marcheur qui a des contributions un **micro-bandeau cliquable** anime :
 
 ```text
-┌─────────────────────────────────────────┐
-│  🌿 3 especes identifiees par Sylvain   │
-├─────────────────────────────────────────┤
-│  ┌──────┐  Parus major                  │
-│  │ 📷   │  Mesange charbonniere         │
-│  │      │  via iNaturalist · 12 mars    │
-│  └──────┘                               │
-│  ┌──────┐  Quercus robur               │
-│  │ 🌱   │  Chene pedoncule             │
-│  │      │  via GBIF · 14 mars           │
-│  └──────┘                               │
-├─────────────────────────────────────────┤
-│  🔬 Devenez contributeur citoyen !      │
-│  Creez un compte iNaturalist ou eBird   │
-│  pour que vos observations comptent     │
-│  dans la science mondiale.              │
-│                                         │
-│  [iNaturalist ↗]  [eBird ↗]            │
-└─────────────────────────────────────────┘
+┌─────────────────────────────────────────────┐
+│  👤 Gaspard Boreal          📷54  🎙2  📖1  │
+│      Marcheur En Devenir                  ▾ │
+│  ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─  │
+│  🌿 Voir ses contributions · 57 partages    │  ← NEW : bandeau emerald subtil
+└─────────────────────────────────────────────┘
 ```
 
-### Design details
+- Texte emerald `text-[10px]` avec icone `Leaf` + pulse animation douce
+- Disparait quand la carte est depliee
+- Si aucune contribution, pas de bandeau (la carte reste statique, pas de chevron)
 
-- **Carte marcheur** : ajouter un chevron `ChevronDown` qui tourne a 180deg quand ouvert, et un micro-badge "N especes" cliquable
-- **Drawer** : `bg-card/80 backdrop-blur border-t border-emerald-500/20`, animation `height: auto` via framer-motion `layout`
-- **Species mini-card** : photo ronde 40px (ou icone fallback par kingdom), nom FR via `useSpeciesTranslation`, badge source colore (vert iNaturalist, bleu eBird, orange GBIF), date
-- **CTA engagement** : gradient emerald/amber subtle, liens directs vers `inaturalist.org/signup` et `ebird.org/register`, texte poetique ("Chaque observation nourrit la connaissance du vivant")
-- **Empty state** (marcheur sans observations) : message doux "Aucune espece identifiee pour l'instant — explorez l'onglet Vivant pour decouvrir la biodiversite locale"
+### 2. Drawer enrichi avec contributions reelles
 
-### Traduction des noms FR
+Quand le drawer s'ouvre, afficher **deux sections** :
 
-Reutiliser le hook `useSpeciesTranslation` existant pour afficher les noms communs francais sous le nom scientifique.
+**Section A — Contributions partagees** (photos, sons, textes)
+- Galerie horizontale scrollable des 6 dernieres photos publiques (thumbnails rondes 48px)
+- Compteurs inline : "54 photos · 2 sons · 1 texte partagés"
+- Si aucune contribution : ne pas afficher cette section
+
+**Section B — Especes identifiees** (existant, inchange)
+- Garde le `SpeciesDrawer` actuel pour les marcheurs crew qui ont des observations
+- Pour les marcheurs community sans especes, afficher un message encourageant different : "Identifiez les especes rencontrees lors de vos marches via l'onglet Vivant"
+
+### 3. Donnees : fetcher les dernieres photos dans le drawer
+
+Le drawer a besoin des URLs des dernieres photos publiques du marcheur. Deux options :
+- **Option retenue** : query on-demand quand le drawer s'ouvre, via un petit hook `useQuery` avec `enabled: isExpanded`. Requete legere : `marcheur_medias` filtre par `user_id`, `is_public=true`, `type_media='photo'`, `order('created_at', desc)`, `limit(6)` — retourne juste `url_fichier, external_url, titre`.
+
+### 4. Extraction du user_id depuis l'id marcheur
+
+L'id marcheur est formate `community-{userId}` ou `crew-{crewId}`. Pour les community members, extraire le `userId` pour la query photos. Pour les crew members, pas de query photos (ils n'ont pas de `user_id` dans `marcheur_medias`).
 
 ## Fichiers impactes
 
 | Fichier | Action |
 |---|---|
-| `src/hooks/useExplorationParticipants.ts` | Enrichir la query `marcheur_observations` avec `photo_url, source, observation_date` + ajouter `speciesObserved[]` au type |
-| `src/components/community/exploration/MarcheursTab.tsx` | Ajouter etat `expandedId`, drawer AnimatePresence par marcheur, composant `MarcheurSpeciesDrawer` inline, CTA plateformes |
+| `src/components/community/exploration/MarcheursTab.tsx` | Ajouter bandeau hint, galerie photos dans drawer, query on-demand photos |
 
 ## Ce qui ne change PAS
 
-- Le layout des cartes marcheurs (avatar, nom, badges stats)
+- Le hook `useExplorationParticipants` — stats deja correctes
+- Le `SpeciesDrawer` — conserve tel quel, deplace apres la galerie photos
 - Le bloc engagement "Invitez un marcheur" en bas
-- Le hook `useExplorationBiodiversitySummary` — non impacte
 - Les autres onglets
 
