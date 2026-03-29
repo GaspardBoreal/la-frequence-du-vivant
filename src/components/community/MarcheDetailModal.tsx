@@ -641,6 +641,22 @@ const VivantTab: React.FC<{ marcheId: string; userId: string; marcheSlug?: strin
             <Leaf className="w-3.5 h-3.5 text-emerald-400" />
             <h3 className="text-emerald-300 text-xs font-semibold tracking-wide uppercase">Le Territoire</h3>
             <div className="flex-1 h-px bg-emerald-500/15" />
+            {topSpecies.length > 0 && (
+              <div className="flex gap-0.5">
+                <button
+                  onClick={() => handleViewMode('immersion')}
+                  className={`p-1.5 rounded-md transition-colors ${viewMode === 'immersion' ? 'bg-emerald-500/20 text-emerald-300' : 'text-emerald-500/40 hover:text-emerald-400'}`}
+                >
+                  <Grid3X3 className="w-3.5 h-3.5" />
+                </button>
+                <button
+                  onClick={() => handleViewMode('fiche')}
+                  className={`p-1.5 rounded-md transition-colors ${viewMode === 'fiche' ? 'bg-emerald-500/20 text-emerald-300' : 'text-emerald-500/40 hover:text-emerald-400'}`}
+                >
+                  <LayoutList className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            )}
           </div>
           <div className="grid grid-cols-3 gap-2">
             {[
@@ -656,13 +672,35 @@ const VivantTab: React.FC<{ marcheId: string; userId: string; marcheSlug?: strin
           </div>
 
           {topSpecies.length > 0 && (
-            <div className="flex flex-wrap gap-1.5">
-              {topSpecies.map((sp: any, i: number) => (
-                <span key={i} className="px-2 py-0.5 bg-emerald-500/10 border border-emerald-500/15 rounded-full text-emerald-200/70 text-[10px]">
-                  {sp.commonName || sp.scientificName}
-                </span>
-              ))}
-            </div>
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={viewMode}
+                initial={{ opacity: 0, scale: 0.98 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.98 }}
+                transition={{ duration: 0.2 }}
+                className={`grid ${viewMode === 'immersion' ? 'grid-cols-3 gap-1.5' : 'grid-cols-2 gap-2'}`}
+              >
+                {topSpecies.map((sp: any, i: number) => (
+                  <SpeciesCardWithPhoto
+                    key={sp.scientificName || i}
+                    species={{
+                      name: sp.scientificName || sp.commonName || 'Inconnu',
+                      scientificName: sp.scientificName || '',
+                      commonNameFr: sp.commonName || sp.commonNameFr || null,
+                      count: sp.count || 0,
+                      kingdom: sp.kingdom || 'Unknown',
+                      photos: sp.photos || [],
+                    }}
+                    onClick={() => {}}
+                    getKingdomColor={getKingdomColor}
+                    getKingdomEmoji={getKingdomEmoji}
+                    index={i}
+                    viewMode={viewMode}
+                  />
+                ))}
+              </motion.div>
+            </AnimatePresence>
           )}
 
           {explorerLink && (
