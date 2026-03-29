@@ -61,42 +61,48 @@
   }
 
   .dark {
+    /* === MODE SOMBRE — Forêt émeraude immersive === */
     --background: 140 25% 8%;
     --foreground: 45 20% 95%;
+
     --card: 140 30% 12%;
     --card-foreground: 45 20% 95%;
+
     --popover: 140 30% 12%;
     --popover-foreground: 45 20% 95%;
-    --primary: 140 35% 15%;
-    --primary-foreground: 45 20% 95%;
+
+    --primary: 142 70% 45%;
+    --primary-foreground: 0 0% 100%;
+
     --secondary: 140 28% 18%;
     --secondary-foreground: 45 20% 95%;
+
     --muted: 140 25% 20%;
     --muted-foreground: 45 15% 75%;
-    --accent: 45 85% 85%;          /* Beige doré plus lumineux pour meilleur contraste */
+
+    --accent: 45 85% 85%;
     --accent-foreground: 140 25% 8%;
 
     /* Couleurs spéciales pour les indicateurs */
-    --success: 120 100% 85%;       /* Vert clair très lumineux pour les indicateurs de succès */
+    --success: 120 100% 85%;
     --success-foreground: 140 25% 8%;
     
-    --warning: 45 100% 80%;        /* Jaune/orange clair lumineux */
+    --warning: 45 100% 80%;
     --warning-foreground: 140 25% 8%;
 
-    --info: 200 100% 85%;          /* Bleu clair lumineux */  
+    --info: 200 100% 85%;
     --info-foreground: 140 25% 8%;
 
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 210 40% 98%;
+
     --border: 140 30% 18%;
     --input: 140 30% 15%;
     --ring: 45 85% 75%;
 
-    /* Keep paper/ink consistent in dark mode for white cards */
     --paper: 0 0% 100%;
     --ink: 0 0% 0%;
     
-    /* Technology type colors - same in dark mode for consistent badges */
     --tech-biomimicry: 140 70% 45%;
     --tech-biomimicry-bg: 140 70% 95%;
     --tech-lowtech: 25 85% 50%;
