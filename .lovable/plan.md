@@ -1,49 +1,57 @@
 
 
-# Fix: Permettre aux marcheurs de voir les co-participants
+# Fix: Les marcheurs voient "Marcheur" au lieu des prénoms/noms
 
 ## Diagnostic
 
-La policy SELECT sur `marche_participations` ne permet a chaque utilisateur de voir **que sa propre participation**. Laurence ne voit donc pas les autres marcheurs inscrits a la meme marche.
+Dans `useExplorationParticipants.ts` (ligne 97-100), le code requête `community_profiles` pour tous les `user_id` des participants. Mais la **policy RLS SELECT** sur `community_profiles` est :
+
+```
+user_id = auth.uid() OR check_is_admin_user(auth.uid())
+```
+
+Laurence ne peut voir **que son propre profil**. Pour tous les autres participants, la requête retourne `null`, et le code utilise le fallback `'Marcheur'` (ligne 157).
 
 ## Correctif
 
-### Migration SQL — Remplacer la policy SELECT
+### Migration SQL — Ajouter une policy SELECT pour les co-participants
 
-Supprimer l'ancienne policy et la remplacer par une policy qui autorise :
-1. Les **admins** a tout voir (inchange)
-2. Chaque **participant** a voir tous les autres participants **du meme evenement** auquel il participe
+Même pattern que pour `marche_participations` : utiliser une fonction `SECURITY DEFINER` pour éviter la récursion RLS.
 
 ```sql
-DROP POLICY "Users can read own participations" ON public.marche_participations;
+-- Function to check if two users share a marche_event
+CREATE OR REPLACE FUNCTION public.shares_marche_event(_viewer_id uuid, _profile_user_id uuid)
+RETURNS boolean
+LANGUAGE sql STABLE SECURITY DEFINER
+SET search_path = public
+AS $$
+  SELECT EXISTS (
+    SELECT 1
+    FROM public.marche_participations a
+    JOIN public.marche_participations b ON a.marche_event_id = b.marche_event_id
+    WHERE a.user_id = _viewer_id
+      AND b.user_id = _profile_user_id
+  );
+$$;
 
-CREATE POLICY "Users can read co-participants"
-ON public.marche_participations FOR SELECT
+-- New SELECT policy: co-participants can see each other's profile
+CREATE POLICY "Co-participants can read profiles"
+ON public.community_profiles FOR SELECT
 TO authenticated
 USING (
-  public.check_is_admin_user(auth.uid())
-  OR
-  marche_event_id IN (
-    SELECT mp.marche_event_id 
-    FROM public.marche_participations mp 
-    WHERE mp.user_id = auth.uid()
-  )
+  public.shares_marche_event(auth.uid(), user_id)
 );
 ```
 
-**Logique** : si tu participes a un evenement, tu peux voir tous les participants de cet evenement. Tu ne peux pas voir les participants d'evenements auxquels tu n'es pas inscrit.
+Cette policy est **additive** (PERMISSIVE) : elle s'ajoute à la policy existante "Users can read own profile". Un utilisateur verra son profil + les profils de tous ses co-participants.
 
-### Securite
+### Pas de changement de code
 
-- Pas de fuite de donnees : on ne voit que les co-participants, pas tous les inscrits de toutes les marches
-- La sous-requete utilise `user_id = auth.uid()` comme filtre, donc pas d'escalade possible
-- Les policies INSERT/UPDATE/DELETE restent inchangees
+Le hook `useExplorationParticipants` fonctionne déjà correctement — il query les bons profils. Le problème est 100% RLS.
 
-## Fichier impacte
+## Fichier impacté
 
 | Fichier | Action |
 |---|---|
-| Migration SQL | Remplacer la policy SELECT sur `marche_participations` |
-
-Aucun changement de code cote frontend — le probleme est 100% RLS.
+| Migration SQL | Ajouter function `shares_marche_event` + policy SELECT sur `community_profiles` |
 
