@@ -416,7 +416,7 @@ export const EcouterTab: React.FC<{ marcheId: string; userId: string; marcheEven
 };
 
 // ─── Lire Tab ───
-const LireTab: React.FC<{ userId: string; marcheEventId: string; activeMarcheId?: string }> = ({ userId, marcheEventId, activeMarcheId }) => {
+export const LireTab: React.FC<{ userId: string; marcheEventId: string; activeMarcheId?: string }> = ({ userId, marcheEventId, activeMarcheId }) => {
   const [sort, setSort] = useState<'desc' | 'asc'>('asc');
   const [showNew, setShowNew] = useState(false);
   const [newTitre, setNewTitre] = useState('');
