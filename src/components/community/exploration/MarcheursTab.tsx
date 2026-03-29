@@ -132,8 +132,8 @@ const SpeciesDrawer: React.FC<{ marcheur: MarcheurWithStats }> = ({ marcheur }) 
 };
 
 const MarcheurCard: React.FC<{ marcheur: MarcheurWithStats; index: number; isExpanded: boolean; onToggle: () => void }> = ({ marcheur, index, isExpanded, onToggle }) => {
-  const initials = `${marcheur.prenom[0] || ''}${marcheur.nom[0] || ''}`.toUpperCase();
-  const hasSpecies = marcheur.speciesObserved.length > 0;
+  const initials = `${marcheur.prenom?.[0] || ''}${marcheur.nom?.[0] || ''}`.toUpperCase();
+  const hasSpecies = (marcheur.speciesObserved || []).length > 0;
 
   return (
     <motion.div
