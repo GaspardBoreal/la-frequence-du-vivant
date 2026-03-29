@@ -147,8 +147,8 @@ const MarcheCard: React.FC<{
 };
 
 const CarnetVivant: React.FC<CarnetVivantProps> = ({ userId, participations }) => {
+  const navigate = useNavigate();
   const [expandedSeasons, setExpandedSeasons] = useState<Set<string>>(new Set());
-  const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
 
   const eventIds = useMemo(
     () => participations.map(p => p.marche_event_id),
