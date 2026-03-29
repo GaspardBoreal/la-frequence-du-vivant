@@ -135,7 +135,7 @@ const MarcheCard: React.FC<{
           )}
 
           {!hasData && (
-            <p className="text-emerald-200/30 text-[10px] italic pl-5">
+            <p className="text-muted-foreground/60 text-[10px] italic pl-5">
               Données en attente de collecte
             </p>
           )}
