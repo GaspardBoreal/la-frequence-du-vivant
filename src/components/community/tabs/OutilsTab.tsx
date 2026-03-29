@@ -85,7 +85,7 @@ const OutilsTab: React.FC<OutilsTabProps> = ({ role, userId }) => {
             >
               {locked && (
                 <div className="absolute top-2 right-2">
-                  <Lock className="w-3.5 h-3.5 text-white/30" />
+                  <Lock className="w-3.5 h-3.5 text-gray-400 dark:text-white/30" />
                 </div>
               )}
               <div className={`w-11 h-11 rounded-xl flex items-center justify-center ${
