@@ -79,8 +79,8 @@ const OutilsTab: React.FC<OutilsTabProps> = ({ role, userId }) => {
               onClick={() => !locked && setActiveTool(tool.id)}
               className={`relative flex flex-col items-center gap-2 p-5 rounded-2xl border text-center transition-all ${
                 locked
-                  ? 'bg-white/[0.04] border-white/5 opacity-40 cursor-not-allowed'
-                  : 'bg-white/[0.08] border-white/10 hover:bg-white/[0.12] hover:border-emerald-400/20 cursor-pointer'
+                  ? 'bg-gray-50 border-gray-200 dark:bg-white/[0.04] dark:border-white/5 opacity-40 cursor-not-allowed'
+                  : 'bg-card border-border hover:bg-emerald-50 hover:border-emerald-300 dark:bg-white/[0.08] dark:border-white/10 dark:hover:bg-white/[0.12] dark:hover:border-emerald-400/20 cursor-pointer'
               }`}
             >
               {locked && (
