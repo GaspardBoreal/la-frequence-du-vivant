@@ -29,6 +29,8 @@ const MarcheEventDetail: React.FC = () => {
 
   const [showAddParticipant, setShowAddParticipant] = useState(false);
   const [participantSearch, setParticipantSearch] = useState('');
+  const [deletingParticipation, setDeletingParticipation] = useState<{id: string, name: string} | null>(null);
+  const [deleteLoading, setDeleteLoading] = useState(false);
 
   // Fetch event data (edit mode)
   const { data: event, isLoading } = useQuery({
