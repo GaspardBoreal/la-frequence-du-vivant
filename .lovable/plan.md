@@ -1,60 +1,103 @@
 
 
-# Navigation rapide entre marches — Sélecteur complémentaire
+# Onglet Marcheurs — Afficher les participants avec stats et engagement
 
-## Constat
+## Diagnostic
 
-Le `StepSelector` actuel offre une navigation séquentielle (◀ ▶) et des dots cliquables. C'est élégant pour 3-4 marches, mais pénible pour sauter de la 1 à la 7 ou de la 8 à la 3 sur une exploration de 10+ étapes.
+L'onglet Marcheurs affiche un placeholder "Bientot disponible". Deux sources de donnees existent :
 
-## Solution : Tiroir déroulant "Jump to"
+1. **`exploration_marcheurs`** — crew manuelle (lies a `marcheur_observations` pour la biodiversite)
+2. **`marche_participations`** + **`community_profiles`** — marcheurs communautaires inscrits (lies a `marcheur_medias`, `marcheur_audio`, `marcheur_textes` via `marche_event_id`)
 
-Ajouter un **mini-drawer** qui s'ouvre en tapant sur le label central "Étape 3/10" du StepSelector existant. Ce tiroir affiche la liste complète des marches dans un format compact et scrollable, permettant un saut direct.
+Les contributions des marcheurs communautaires sont dans 3 tables : `marcheur_medias` (photos/videos, champ `is_public`, `type_media`), `marcheur_audio` (sons), `marcheur_textes` (textes, champ `is_public`).
 
-```text
-Avant (tap sur "Étape 3/10") :
-┌──────────────────────────────┐
-│  ◀   Étape 3/10  ▼   ▶      │  ← le ▼ indique que c'est tapable
-│     🌿 Vouillé              │
-│     ● ● ◉ ● ● ● ● ●        │
-└──────────────────────────────┘
+## Architecture
 
-Après tap — drawer s'ouvre dessous :
-┌──────────────────────────────┐
-│  ◀   Étape 3/10  ▲   ▶      │
-│     🌿 Vouillé              │
-├──────────────────────────────┤
-│  1  Départ Transhumance      │
-│  2  Parc de la Gorande       │
-│  3  Vouillé            ✓     │  ← active, highlight emerald
-│  4  La Villedieu             │
-│  5  Saint-Maixent            │
-│  6  Niort                    │
-│  7  Marais Poitevin          │
-│  8  La Rochelle              │
-└──────────────────────────────┘
+### 1. Nouveau hook `useExplorationParticipants`
+
+Fusionne les deux sources pour une exploration donnee :
+
+- Query `marche_participations` via le `marche_event_id` lie a l'exploration
+- Query `community_profiles` pour les noms/avatars (pattern `.in()` existant)
+- Query agregee sur `marcheur_medias` (count par user_id, filtre `is_public = true`, group by `type_media`), `marcheur_audio`, `marcheur_textes` pour les stats publiques
+- Merge avec `exploration_marcheurs` + `marcheur_observations` (deja dans `useExplorationMarcheurs`)
+
+Interface retournee :
+```
+MarcheurWithStats {
+  id, prenom, nom, avatarUrl,
+  source: 'community' | 'crew',
+  role: string,
+  stats: { photos, videos, sons, textes, speciesCount }
+}
 ```
 
-## Comportement UX
+### 2. Nouveau composant `MarcheursTab.tsx`
 
-- **Tap sur le label central** → toggle le drawer (ouvert/fermé)
-- **Tap sur une marche dans la liste** → saut immédiat + fermeture du drawer
-- **Indicateur visuel** : petite icône chevron-down à côté de "Étape X/Y" signalant l'interactivité
-- **ScrollArea** limitée à `max-h-[200px]` pour ne pas envahir l'écran mobile
-- **Animation** : slide-down fluide avec `framer-motion` (height auto)
-- Les dots existants restent en dessous — rien n'est supprimé
+Remplace le `ComingSoonPlaceholder` dans `ExplorationMarcheurPage.tsx`.
 
-## Design
+**Structure UI (mobile-first)** :
 
-- Fond glassmorphism cohérent avec le StepSelector (`bg-white/5 backdrop-blur`)
-- Chaque ligne : numéro + nom de la marche, highlight emerald pour l'active
-- Hover/tap feedback subtil
-- Transition `AnimatePresence` pour l'ouverture/fermeture
+```text
+┌─────────────────────────────────┐
+│  🌿 8 marcheurs · 47 contrib.  │  Resume compact
+├─────────────────────────────────┤
+│                                 │
+│  ┌─────────────────────────┐    │
+│  │ 👤 Marie Dupont         │    │  Carte marcheur
+│  │ Marcheuse               │    │
+│  │ 📷 12  🎙 3  📖 2  🦎 8 │    │  Stats inline
+│  │                         │    │
+│  │ [Voir ses contributions] │    │  CTA vers onglet Marches filtre
+│  └─────────────────────────┘    │
+│                                 │
+│  ┌─────────────────────────┐    │
+│  │ 👤 Paul Martin          │    │
+│  │ ...                     │    │
+│  └─────────────────────────┘    │
+│                                 │
+│ ─── Inviter un marcheur ─────  │
+│                                 │
+│  ┌─────────────────────────┐    │
+│  │  🌱 Partagez cette      │    │  Bloc engagement
+│  │  exploration avec un    │    │
+│  │  ami marcheur !         │    │
+│  │                         │    │
+│  │  [📋 Copier le lien]    │    │
+│  │  [📱 Partager]          │    │
+│  └─────────────────────────┘    │
+│                                 │
+└─────────────────────────────────┘
+```
 
-## Fichier impacté
+**Details de chaque carte marcheur** :
+- Avatar (ou initiales) avec bordure couleur du role
+- Prenom Nom + role
+- 4 compteurs inline : 📷 photos publiques, 🎙 sons, 📖 textes, 🦎 especes observees
+- Tri par nombre total de contributions (les plus actifs en haut)
+
+**Bloc engagement en bas** :
+- Bouton "Copier le lien" (Web Share API avec fallback clipboard)
+- Message inspirant contextuel : "Chaque marcheur enrichit le recit collectif du vivant"
+- Design emerald/amber gradient subtil
+
+### 3. Modification de `ExplorationMarcheurPage.tsx`
+
+- Importer et rendre `MarcheursTab` au lieu du placeholder
+- Passer `effectiveExplorationId` et `marcheEventId`
+
+## Fichiers impactes
 
 | Fichier | Action |
 |---|---|
-| `src/components/community/MarcheDetailModal.tsx` | Modifier `StepSelector` — ajouter état `isOpen`, drawer AnimatePresence, liste cliquable |
+| `src/hooks/useExplorationParticipants.ts` | **Nouveau** — hook fusionnant les 2 sources + stats |
+| `src/components/community/exploration/MarcheursTab.tsx` | **Nouveau** — composant d'affichage |
+| `src/components/community/ExplorationMarcheurPage.tsx` | **Modifier** — brancher MarcheursTab |
 
-Aucun nouveau fichier. Le composant reste exporté et fonctionne dans les deux contextes (modal + page exploration).
+## UX inspirante pour l'engagement
+
+- **Classement bienveillant** : pas de "1er, 2e" mais les plus actifs en haut naturellement
+- **Micro-animation** : compteurs qui s'incrementent au chargement (framer-motion)
+- **Partage natif** : utilise `navigator.share()` sur mobile avec un message poetique pre-rempli ("Rejoins-moi sur les Marches du Vivant...")
+- **Empty state elegant** : si aucun participant, message "Soyez le premier a documenter cette exploration" avec CTA vers l'onglet Marches
 
