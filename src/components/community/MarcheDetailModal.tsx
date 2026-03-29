@@ -595,7 +595,7 @@ export const LireTab: React.FC<{ userId: string; marcheEventId: string; activeMa
 };
 
 // ─── Vivant (3 couches) ───
-const VivantTab: React.FC<{ marcheId: string; userId: string; marcheSlug?: string }> = ({ marcheId, userId, marcheSlug }) => {
+export const VivantTab: React.FC<{ marcheId: string; userId: string; marcheSlug?: string }> = ({ marcheId, userId, marcheSlug }) => {
   const [viewMode, setViewMode] = useState<'immersion' | 'fiche'>(() => {
     return (localStorage.getItem('vivant-tab-view') as 'immersion' | 'fiche') || 'immersion';
   });
