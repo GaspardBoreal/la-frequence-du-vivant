@@ -196,6 +196,27 @@ const MarcheEventDetail: React.FC = () => {
     },
   });
 
+  const handleDeleteParticipant = async () => {
+    if (!deletingParticipation) return;
+    setDeleteLoading(true);
+    try {
+      const { error } = await supabase
+        .from('marche_participations')
+        .delete()
+        .eq('id', deletingParticipation.id);
+      if (error) throw error;
+      queryClient.invalidateQueries({ queryKey: ['marche-participations', id] });
+      queryClient.invalidateQueries({ queryKey: ['participant-profiles'] });
+      queryClient.invalidateQueries({ queryKey: ['marche-participation-counts'] });
+      toast.success('Participant retiré');
+      setDeletingParticipation(null);
+    } catch {
+      toast.error('Erreur lors de la suppression');
+    } finally {
+      setDeleteLoading(false);
+    }
+  };
+
   const printQR = (qrCode: string, title: string) => {
     const win = window.open('', '_blank');
     if (!win) return;
