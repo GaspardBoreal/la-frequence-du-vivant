@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
+import { ConfirmDeleteDialog } from '@/components/ui/confirm-delete-dialog';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -28,6 +29,8 @@ const MarcheEventDetail: React.FC = () => {
 
   const [showAddParticipant, setShowAddParticipant] = useState(false);
   const [participantSearch, setParticipantSearch] = useState('');
+  const [deletingParticipation, setDeletingParticipation] = useState<{id: string, name: string} | null>(null);
+  const [deleteLoading, setDeleteLoading] = useState(false);
 
   // Fetch event data (edit mode)
   const { data: event, isLoading } = useQuery({
@@ -192,6 +195,27 @@ const MarcheEventDetail: React.FC = () => {
       if (error) throw error;
     },
   });
+
+  const handleDeleteParticipant = async () => {
+    if (!deletingParticipation) return;
+    setDeleteLoading(true);
+    try {
+      const { error } = await supabase
+        .from('marche_participations')
+        .delete()
+        .eq('id', deletingParticipation.id);
+      if (error) throw error;
+      queryClient.invalidateQueries({ queryKey: ['marche-participations', id] });
+      queryClient.invalidateQueries({ queryKey: ['participant-profiles'] });
+      queryClient.invalidateQueries({ queryKey: ['marche-participation-counts'] });
+      toast.success('Participant retiré');
+      setDeletingParticipation(null);
+    } catch {
+      toast.error('Erreur lors de la suppression');
+    } finally {
+      setDeleteLoading(false);
+    }
+  };
 
   const printQR = (qrCode: string, title: string) => {
     const win = window.open('', '_blank');
@@ -437,10 +461,11 @@ const MarcheEventDetail: React.FC = () => {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Nom</TableHead>
-                    <TableHead>Rôle</TableHead>
-                    <TableHead>Validé le</TableHead>
-                    <TableHead>Méthode</TableHead>
+                     <TableHead>Nom</TableHead>
+                     <TableHead>Rôle</TableHead>
+                     <TableHead>Validé le</TableHead>
+                     <TableHead>Méthode</TableHead>
+                     <TableHead className="w-10"></TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -452,15 +477,23 @@ const MarcheEventDetail: React.FC = () => {
                         <TableCell className="capitalize">{profile?.role?.replace(/_/g, ' ') || '—'}</TableCell>
                         <TableCell>{p.validated_at ? format(new Date(p.validated_at), 'Pp', { locale: fr }) : '—'}</TableCell>
                         <TableCell>
-                          {p.validation_method === 'admin_retroactif' ? (
-                            <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-500">
-                              rétroactif
-                            </span>
-                          ) : (
-                            p.validation_method || '—'
-                          )}
-                        </TableCell>
-                      </TableRow>
+                           {p.validation_method === 'admin_retroactif' ? (
+                             <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-500">
+                               rétroactif
+                             </span>
+                           ) : (
+                             p.validation_method || '—'
+                           )}
+                         </TableCell>
+                         <TableCell>
+                           <button
+                             onClick={() => setDeletingParticipation({ id: p.id, name: `${profile?.prenom || ''} ${profile?.nom || ''}`.trim() || 'ce participant' })}
+                             className="p-1.5 rounded-md text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
+                           >
+                             <Trash2 className="h-3.5 w-3.5" />
+                           </button>
+                         </TableCell>
+                       </TableRow>
                     );
                   })}
                 </TableBody>
@@ -470,6 +503,15 @@ const MarcheEventDetail: React.FC = () => {
             )}
           </Card>
         )}
+
+        <ConfirmDeleteDialog
+          open={!!deletingParticipation}
+          onOpenChange={(open) => { if (!open) setDeletingParticipation(null); }}
+          title="Retirer ce participant"
+          description={`Voulez-vous vraiment retirer ${deletingParticipation?.name || ''} de cet événement ?`}
+          onConfirm={handleDeleteParticipant}
+          loading={deleteLoading}
+        />
       </div>
     </div>
   );
