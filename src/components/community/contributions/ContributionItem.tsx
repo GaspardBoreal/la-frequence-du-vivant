@@ -16,6 +16,7 @@ export interface ContributionItemProps {
   isPublic: boolean;
   isOwner: boolean;
   createdAt: string;
+  viewMode?: 'immersion' | 'fiche';
   onUpdate?: (id: string, updates: Record<string, any>) => void;
   onDelete?: (id: string) => void;
   onClick?: () => void;
