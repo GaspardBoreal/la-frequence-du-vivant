@@ -125,12 +125,12 @@ const ExplorationMarcheurPage: React.FC = () => {
 
   // Fetch exploration marches (steps)
   const { data: explorationMarches } = useQuery({
-    queryKey: ['exploration-marcheur-steps', explorationId],
+    queryKey: ['exploration-marcheur-steps', effectiveExplorationId],
     queryFn: async () => {
       const { data: links } = await supabase
         .from('exploration_marches')
         .select('marche_id, ordre')
-        .eq('exploration_id', explorationId!)
+        .eq('exploration_id', effectiveExplorationId!)
         .order('ordre');
       if (!links?.length) return [];
       const { data: marches } = await supabase
@@ -142,7 +142,7 @@ const ExplorationMarcheurPage: React.FC = () => {
       links.forEach(l => { ordreMap[l.marche_id] = l.ordre ?? 0; });
       return marches.sort((a, b) => (ordreMap[a.id] ?? 0) - (ordreMap[b.id] ?? 0));
     },
-    enabled: !!explorationId,
+    enabled: !!effectiveExplorationId,
   });
 
   const hasMultipleSteps = (explorationMarches?.length ?? 0) > 1;
