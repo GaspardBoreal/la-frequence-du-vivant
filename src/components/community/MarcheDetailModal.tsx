@@ -14,6 +14,7 @@ import { createSlug } from '@/utils/slugGenerator';
 import FileUploadZone from './contributions/FileUploadZone';
 import ContributionItem from './contributions/ContributionItem';
 import SortToggle from './contributions/SortToggle';
+import MediaSkeletonGrid from './contributions/MediaSkeletonGrid';
 import {
   useMarcheurMedias, useUploadMedias, useAddExternalVideo,
   useMarcheurAudio, useUploadAudio,
@@ -74,7 +75,7 @@ const VoirTab: React.FC<{ marcheId: string; userId: string; marcheEventId: strin
   }, [marcheEventId]);
 
   // Admin photos from the marche
-  const { data: adminPhotos } = useQuery({
+  const { data: adminPhotos, isLoading: isLoadingAdmin } = useQuery({
     queryKey: ['marche-detail-photos', marcheId],
     queryFn: async () => {
       const { data } = await supabase
@@ -89,7 +90,7 @@ const VoirTab: React.FC<{ marcheId: string; userId: string; marcheEventId: strin
   });
 
   // User contributions
-  const { data: userMedias } = useMarcheurMedias(marcheEventId, userId, sort, activeMarcheId);
+  const { data: userMedias, isLoading: isLoadingUser } = useMarcheurMedias(marcheEventId, userId, sort, activeMarcheId);
   const uploadMedias = useUploadMedias(userId);
   const addExtVideo = useAddExternalVideo(userId);
   const updateContrib = useUpdateContribution();
@@ -165,6 +166,13 @@ const VoirTab: React.FC<{ marcheId: string; userId: string; marcheEventId: strin
         </div>
         <SortToggle sort={sort} onToggle={() => setSort(s => s === 'desc' ? 'asc' : 'desc')} />
       </div>
+
+      {/* Skeleton loading state */}
+      {(isLoadingAdmin || isLoadingUser) && !adminPhotos && !userMedias && (
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.2 }}>
+          <MediaSkeletonGrid count={6} mode={viewMode} />
+        </motion.div>
+      )}
 
       {showUpload && (
         <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="space-y-2">
@@ -938,10 +946,10 @@ const MarcheDetailModal: React.FC<MarcheDetailModalProps> = ({
           <AnimatePresence mode="wait">
             <motion.div
               key={`${activeTab}-${activeMarcheId || marcheEventId}`}
-              initial={{ opacity: 0, y: 4 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -4 }}
-              transition={{ duration: 0.15 }}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.2 }}
             >
               {activeTab === 'voir' && <VoirTab marcheId={activeMarcheId || ''} userId={userId} marcheEventId={marcheEventId} activeMarcheId={activeMarcheId} />}
               {activeTab === 'ecouter' && <EcouterTab marcheId={activeMarcheId || ''} userId={userId} marcheEventId={marcheEventId} activeMarcheId={activeMarcheId} />}
