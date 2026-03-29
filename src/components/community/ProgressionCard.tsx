@@ -86,7 +86,7 @@ const ProgressionCard: React.FC<ProgressionCardProps> = ({
               {ROLE_CONFIG[config.nextRole].label}
             </span>
           </div>
-          <div className="h-2 bg-white/25 rounded-full overflow-hidden">
+          <div className="h-2 bg-emerald-100 dark:bg-white/25 rounded-full overflow-hidden">
             <motion.div
               className="h-full rounded-full bg-gradient-to-r from-emerald-400 to-teal-500"
               initial={{ width: 0 }}
