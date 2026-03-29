@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { AnimatePresence } from 'framer-motion';
-import { Filter, Search, X, Bird, TreePine, Flower2, Bug, MapPin } from 'lucide-react';
+import { Filter, Search, X, Bird, TreePine, Flower2, Bug, MapPin, Grid3X3, LayoutList } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
