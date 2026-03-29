@@ -58,15 +58,25 @@ type SortOrder = 'desc' | 'asc';
 async function uploadFile(userId: string, file: File, folder: string): Promise<string> {
   let processedFile = file;
 
-  // Convert HEIF/HEIC to JPEG for browser compatibility
+  // Convert HEIF/HEIC to JPEG for browser compatibility (dynamic import to avoid blocking on Android)
   if (file.name.match(/\.(heif|heic)$/i) || file.type === 'image/heif' || file.type === 'image/heic') {
-    const blob = await heic2any({ blob: file, toType: 'image/jpeg', quality: 0.85 });
-    const jpegBlob = Array.isArray(blob) ? blob[0] : blob;
-    processedFile = new File(
-      [jpegBlob],
-      file.name.replace(/\.(heif|heic)$/i, '.jpeg'),
-      { type: 'image/jpeg' }
-    );
+    try {
+      const { default: heic2any } = await import('heic2any');
+      const convertPromise = heic2any({ blob: file, toType: 'image/jpeg', quality: 0.85 });
+      const timeoutPromise = new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error('Conversion HEIC timeout (30s)')), 30000)
+      );
+      const blob = await Promise.race([convertPromise, timeoutPromise]);
+      const jpegBlob = Array.isArray(blob) ? blob[0] : blob;
+      processedFile = new File(
+        [jpegBlob],
+        file.name.replace(/\.(heif|heic)$/i, '.jpeg'),
+        { type: 'image/jpeg' }
+      );
+    } catch (err) {
+      console.error('❌ Conversion HEIC échouée:', err);
+      throw new Error('Format HEIC non supporté. Veuillez convertir l\'image en JPEG avant de l\'uploader.');
+    }
   }
 
   const ext = processedFile.name.split('.').pop() || 'bin';
