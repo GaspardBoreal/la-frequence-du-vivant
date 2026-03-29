@@ -14,6 +14,7 @@ import { createSlug } from '@/utils/slugGenerator';
 import FileUploadZone from './contributions/FileUploadZone';
 import ContributionItem from './contributions/ContributionItem';
 import SortToggle from './contributions/SortToggle';
+import MediaSkeletonGrid from './contributions/MediaSkeletonGrid';
 import {
   useMarcheurMedias, useUploadMedias, useAddExternalVideo,
   useMarcheurAudio, useUploadAudio,
