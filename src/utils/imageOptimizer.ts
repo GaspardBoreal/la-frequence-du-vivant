@@ -50,10 +50,12 @@ export class ImageOptimizer {
       }
 
       // Convertir HEIC/HEIF en JPEG
-      if (file.name.toLowerCase().endsWith('.heic') || file.name.toLowerCase().endsWith('.heif')) {
+      if (file.name.toLowerCase().endsWith('.heic') || file.name.toLowerCase().endsWith('.heif') ||
+          file.type?.includes('heic') || file.type?.includes('heif')) {
         console.log('🔄 [ImageOptimizer] Conversion HEIC vers JPEG...');
-        processedFile = await convertHeicToJpeg(file);
-        wasConverted = true;
+        const converted = await convertHeicToJpeg(file);
+        wasConverted = converted !== file;
+        processedFile = converted;
       }
 
       // Étape 2: Compression si nécessaire
