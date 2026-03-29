@@ -1,302 +1,56 @@
-import React, { useState, useMemo, useCallback, useEffect } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Leaf, ExternalLink, TreePine, Flower, Bird, Loader2, AlertCircle, Camera, Calendar, Globe, MapPin, Info, CheckCircle, Clock, User, Building, Eye, Users, Filter, Database, ZoomIn, Target, Search, X } from 'lucide-react';
-import { Input } from '../ui/input';
+import { Loader2, AlertCircle, Globe, MapPin, ZoomIn, Eye, Target } from 'lucide-react';
 import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
-import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '../ui/dropdown-menu';
-import { RadioGroup, RadioGroupItem } from '../ui/radio-group';
+import { Card, CardContent } from '../ui/card';
 import { Label } from '../ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '../ui/dialog';
 import { Slider } from '../ui/slider';
 import { MarcheTechnoSensible } from '../../utils/googleSheetsApi';
 import { RegionalTheme } from '../../utils/regionalThemes';
 import { useBiodiversityData } from '../../hooks/useBiodiversityData';
-import { BiodiversitySpecies } from '../../types/biodiversity';
 import { BiodiversityMetricGrid } from '../biodiversity/BiodiversityMetricGrid';
 import { BiodiversityMap } from '../biodiversity/BiodiversityMap';
-// import ContributorDetailModal from '../ContributorDetailModal'; // Removed as not used in this clean version
-import { EnhancedSpeciesCard } from '../audio/EnhancedSpeciesCard';
-import SpeciesDetailModal from '../biodiversity/SpeciesDetailModal';
+import SpeciesExplorer from '../biodiversity/SpeciesExplorer';
 import { LanguageToggle } from '@/components/ui/language-toggle';
-import { useSpeciesTranslationBatch } from '@/hooks/useSpeciesTranslation';
 
 interface BioDivSubSectionProps {
   marche: MarcheTechnoSensible;
   theme: RegionalTheme;
 }
 
-// Fonction utilitaire pour identifier les oiseaux
-const isBirdSpecies = (species: BiodiversitySpecies): boolean => {
-  const isFromEbird = species.source === 'ebird';
-  const isAvesFamily = species.family === 'Aves' || species.family?.toLowerCase().includes('aves');
-  const isBirdFamily = species.family?.toLowerCase().includes('bird') || species.family?.toLowerCase().includes('idae');
-  const isBirdInName = species.commonName?.toLowerCase().includes('oiseau') || species.commonName?.toLowerCase().includes('bird') || species.scientificName?.toLowerCase().includes('aves');
-  return isFromEbird || isAvesFamily || isBirdFamily || isBirdInName;
+// Utility to identify birds
+const isBirdSpecies = (species: any): boolean => {
+  return species.source === 'ebird' ||
+    species.family === 'Aves' ||
+    species.family?.toLowerCase().includes('aves') ||
+    species.family?.toLowerCase().includes('idae');
 };
 
 const BioDivSubSection: React.FC<BioDivSubSectionProps> = ({ marche, theme }) => {
   const [dateFilter, setDateFilter] = useState<'recent' | 'medium'>('recent');
-  const [selectedContributor, setSelectedContributor] = useState<string>('all');
-  const [selectedCategory, setSelectedCategory] = useState<'all' | 'faune' | 'plants' | 'fungi' | 'others'>('all');
-  const [selectedSource, setSelectedSource] = useState<'all' | 'gbif' | 'inaturalist' | 'ebird'>('all');
-  const [selectedConfidence, setSelectedConfidence] = useState<'all' | 'high' | 'medium' | 'low'>('all');
-  const [selectedTimeRange, setSelectedTimeRange] = useState<'all' | 'recent' | 'month' | 'year'>('all');
-  const [hasAudioFilter, setHasAudioFilter] = useState<'all' | 'with-audio' | 'without-audio'>('all');
   const [searchRadius, setSearchRadius] = useState<number>(0.5);
   const [debouncedRadius, setDebouncedRadius] = useState<number>(0.5);
-  const [selectedSpecies, setSelectedSpecies] = useState<BiodiversitySpecies | null>(null);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [sortBy, setSortBy] = useState<'name' | 'observations' | 'date'>('name');
-  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
   const [selectedMetricFilter, setSelectedMetricFilter] = useState<string | null>(null);
-  const [showExpandDialog, setShowExpandDialog] = useState<boolean>(false);
   const [hasExpanded, setHasExpanded] = useState<boolean>(false);
-  
-  // Debounce du rayon de recherche pour éviter trop d'appels API
+  const [showExpandDialog, setShowExpandDialog] = useState<boolean>(false);
+
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setDebouncedRadius(searchRadius);
-    }, 800);
-    
+    const timer = setTimeout(() => setDebouncedRadius(searchRadius), 800);
     return () => clearTimeout(timer);
   }, [searchRadius]);
-  
+
   const { data: biodiversityData, isLoading, error } = useBiodiversityData({
     latitude: marche.latitude,
     longitude: marche.longitude,
     radius: debouncedRadius,
     dateFilter,
-    mode: 'interactive' // Force le mode interactif pour récupérer les photos
+    mode: 'interactive',
   });
 
-  // Extraction et agrégation des contributeurs groupés par source API
-  const contributorsBySource = useMemo(() => {
-    if (!biodiversityData?.species) return { eBird: [], iNaturalist: [], gbif: [] };
-
-    const sourceGroups = { eBird: new Map<string, number>(), iNaturalist: new Map<string, number>(), gbif: new Map<string, number>() };
-
-    biodiversityData.species.forEach(species => {
-      species.attributions?.forEach(attribution => {
-        const contributorName = attribution.observerName || 'Anonyme';
-        const sourceKey = species.source === 'ebird' ? 'eBird' : 
-                         species.source === 'inaturalist' ? 'iNaturalist' : 'gbif';
-        
-        const currentMap = sourceGroups[sourceKey];
-        currentMap.set(contributorName, (currentMap.get(contributorName) || 0) + 1);
-      });
-    });
-
-    // Convertir et trier chaque groupe
-    return {
-      eBird: Array.from(sourceGroups.eBird.entries())
-        .map(([name, count]) => ({ name, count, source: 'ebird' as const }))
-        .sort((a, b) => b.count - a.count),
-      iNaturalist: Array.from(sourceGroups.iNaturalist.entries())
-        .map(([name, count]) => ({ name, count, source: 'inaturalist' as const }))
-        .sort((a, b) => b.count - a.count),
-      gbif: Array.from(sourceGroups.gbif.entries())
-        .map(([name, count]) => ({ name, count, source: 'gbif' as const }))
-        .sort((a, b) => b.count - a.count)
-    };
-  }, [biodiversityData?.species]);
-
-  // Compteur total de contributeurs pour le badge
-  const totalContributors = useMemo(() => {
-    return contributorsBySource.eBird.length + contributorsBySource.iNaturalist.length + contributorsBySource.gbif.length;
-  }, [contributorsBySource]);
-
-  // Calcul des catégories d'espèces
-  const categoryStats = useMemo(() => {
-    if (!biodiversityData?.species) return { all: 0, faune: 0, plants: 0, fungi: 0, others: 0 };
-    
-    const stats = {
-      all: biodiversityData.species.length,
-      faune: biodiversityData.species.filter(s => s.kingdom === 'Animalia').length,
-      plants: biodiversityData.species.filter(s => s.kingdom === 'Plantae').length,
-      fungi: biodiversityData.species.filter(s => s.kingdom === 'Fungi').length,
-      others: 0
-    };
-    
-    stats.others = stats.all - stats.faune - stats.plants - stats.fungi;
-    
-    return stats;
-  }, [biodiversityData?.species]);
-
-  // Prepare species for batch translation
-  const speciesForTranslation = useMemo(() => {
-    if (!biodiversityData?.species) return [];
-    return biodiversityData.species.map(species => ({
-      scientificName: species.scientificName,
-      commonName: species.commonName
-    }));
-  }, [biodiversityData?.species]);
-
-  // Batch translation hook
-  const { data: translations } = useSpeciesTranslationBatch(speciesForTranslation);
-  
-  // Debug batch translations
-  console.log('🔧 BioDivSubSection batch translations:', {
-    total: translations?.length || 0,
-    fallbacks: translations?.filter(t => t.source === 'fallback').length || 0,
-    locals: translations?.filter(t => t.source === 'local').length || 0,
-    samples: translations?.slice(0, 3)
-  });
-  
-  // Create translation map for efficient lookup
-  const translationMap = useMemo(() => {
-    if (!translations) return new Map();
-    return new Map(translations.map(t => [t.scientificName, t]));
-  }, [translations]);
-
-  // Filtrage des espèces par catégorie et contributeur
-  const filteredSpecies = useMemo(() => {
-    if (!biodiversityData?.species) return [];
-
-    let filtered = biodiversityData.species;
-
-    // Filtrage par métriques sélectionnées depuis les indicateurs
-    if (selectedMetricFilter) {
-      filtered = filtered.filter(species => {
-        switch (selectedMetricFilter) {
-          case 'birds':
-            return isBirdSpecies(species);
-          case 'plants':
-            return species.kingdom === 'Plantae';
-          case 'fungi':
-            return species.kingdom === 'Fungi';
-          case 'others':
-            return species.kingdom !== 'Plantae' && species.kingdom !== 'Fungi' && !isBirdSpecies(species);
-          case 'withAudio':
-            return species.xenoCantoRecordings && species.xenoCantoRecordings.length > 0;
-          case 'withPhotos':
-            return species.photoData && species.photoData.source !== 'placeholder';
-          case 'total':
-          default:
-            return true;
-        }
-      });
-    }
-
-    // Filtrage par catégorie (garde la logique existante si pas de filtre métrique)
-    if (!selectedMetricFilter && selectedCategory !== 'all') {
-      filtered = filtered.filter(species => {
-        switch (selectedCategory) {
-          case 'plants':
-            return species.kingdom === 'Plantae';
-          case 'faune':
-            return species.kingdom === 'Animalia';
-          case 'fungi':
-            return species.kingdom === 'Fungi';
-          case 'others':
-            return species.kingdom !== 'Plantae' && species.kingdom !== 'Fungi' && !isBirdSpecies(species);
-          default:
-            return true;
-        }
-      });
-    }
-
-    // Filtrage par contributeur
-    if (selectedContributor !== 'all') {
-      filtered = filtered.filter(species => {
-        return species.attributions?.some(attribution => 
-          (attribution.observerName || 'Anonyme') === selectedContributor
-        );
-      });
-    }
-
-    // Filtrage par source
-    if (selectedSource !== 'all') {
-      filtered = filtered.filter(species => species.source === selectedSource);
-    }
-
-    // Filtrage par niveau de confiance
-    if (selectedConfidence !== 'all') {
-      filtered = filtered.filter(species => species.confidence === selectedConfidence);
-    }
-
-    // Filtrage par période d'observation
-    if (selectedTimeRange !== 'all') {
-      const now = new Date();
-      const cutoff = new Date();
-      
-      switch (selectedTimeRange) {
-        case 'recent':
-          cutoff.setDate(now.getDate() - 30);
-          break;
-        case 'month':
-          cutoff.setMonth(now.getMonth() - 1);
-          break;
-        case 'year':
-          cutoff.setFullYear(now.getFullYear() - 1);
-          break;
-      }
-      
-      filtered = filtered.filter(species => new Date(species.lastSeen) >= cutoff);
-    }
-
-    // Filtrage par disponibilité audio
-    if (hasAudioFilter !== 'all') {
-      console.log('🎵 DEBUG - Filtrage audio:', {
-        hasAudioFilter,
-        totalSpecies: filtered.length,
-        speciesWithXeno: filtered.filter(s => s.xenoCantoRecordings && s.xenoCantoRecordings.length > 0).length,
-        exampleSpeciesWithAudio: filtered.filter(s => s.xenoCantoRecordings && s.xenoCantoRecordings.length > 0).slice(0, 3).map(s => ({
-          name: s.commonName,
-          audioCount: s.xenoCantoRecordings?.length || 0
-        }))
-      });
-      
-      filtered = filtered.filter(species => {
-        const hasAudio = species.xenoCantoRecordings && species.xenoCantoRecordings.length > 0;
-        return hasAudioFilter === 'with-audio' ? hasAudio : !hasAudio;
-      });
-    }
-
-    // Filtrage par terme de recherche
-    if (searchTerm) {
-      filtered = filtered.filter(species =>
-        species.commonName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        species.scientificName.toLowerCase().includes(searchTerm.toLowerCase())
-      );
-    }
-
-    // Tri
-    filtered = filtered.sort((a, b) => {
-      let aValue, bValue;
-      
-      switch (sortBy) {
-        case 'name':
-          aValue = a.commonName.toLowerCase();
-          bValue = b.commonName.toLowerCase();
-          break;
-        case 'observations':
-          aValue = a.observations;
-          bValue = b.observations;
-          break;
-        case 'date':
-          aValue = new Date(a.lastSeen).getTime();
-          bValue = new Date(b.lastSeen).getTime();
-          break;
-        default:
-          return 0;
-      }
-      
-      if (aValue < bValue) return sortOrder === 'asc' ? -1 : 1;
-      if (aValue > bValue) return sortOrder === 'asc' ? 1 : -1;
-      return 0;
-    });
-
-    return filtered;
-  }, [biodiversityData?.species, selectedMetricFilter, selectedCategory, selectedSource, selectedConfidence, selectedTimeRange, hasAudioFilter, selectedContributor, searchTerm, sortBy, sortOrder]);
-
-  // Métriques basées sur les données brutes (pas le filtre recherche) pour cohérence avec les onglets
+  // Summary stats for metric grid
   const summaryStats = useMemo(() => {
     if (!biodiversityData?.species) return null;
-    
     const species = biodiversityData.species;
     const total = species.length;
     const birds = species.filter(isBirdSpecies).length;
@@ -305,7 +59,6 @@ const BioDivSubSection: React.FC<BioDivSubSectionProps> = ({ marche, theme }) =>
     const others = total - birds - plants - fungi;
     const withAudio = species.filter(s => s.xenoCantoRecordings && s.xenoCantoRecordings.length > 0).length;
     const withPhotos = species.filter(s => s.photoData && s.photoData.source !== 'placeholder').length;
-    
     return { total, birds, plants, fungi, others, withAudio, withPhotos };
   }, [biodiversityData?.species]);
 
@@ -333,89 +86,43 @@ const BioDivSubSection: React.FC<BioDivSubSectionProps> = ({ marche, theme }) =>
     );
   }
 
-  // Gestion de l'expansion du rayon de recherche
-  const shouldShowExpandDialog = !biodiversityData?.species || 
+  // Expand radius dialog
+  const shouldShowExpandDialog = !biodiversityData?.species ||
     (biodiversityData.species.length === 0 && debouncedRadius === 0.5 && !showExpandDialog && !hasExpanded);
 
-  const handleExpandRadius = () => {
-    setSearchRadius(5);
-    setDebouncedRadius(5);
-    setHasExpanded(true);
-  };
-
-  const handleDeclineExpansion = () => {
-    setShowExpandDialog(true);
-  };
-
-  // Affichage du dialogue d'expansion si aucune donnée à 500m
   if (shouldShowExpandDialog) {
     return (
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-      >
+      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
         <Card className="relative overflow-hidden border-2 border-primary/20 bg-gradient-to-br from-background via-primary/5 to-secondary/10">
           <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-secondary/5" />
           <CardContent className="relative p-8 text-center">
-            <motion.div
-              initial={{ scale: 0.8 }}
-              animate={{ scale: 1 }}
-              transition={{ duration: 0.3, delay: 0.2 }}
-              className="mb-6"
-            >
+            <motion.div initial={{ scale: 0.8 }} animate={{ scale: 1 }} transition={{ duration: 0.3, delay: 0.2 }} className="mb-6">
               <div className="mx-auto w-16 h-16 rounded-full bg-gradient-to-br from-orange-400 to-orange-600 flex items-center justify-center shadow-lg">
                 <ZoomIn className="h-8 w-8 text-white" />
               </div>
             </motion.div>
-            
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ duration: 0.4, delay: 0.3 }}
-              className="space-y-4"
-            >
-              <h3 className="text-xl font-semibold text-foreground">
-                Aucune donnée de biodiversité
-              </h3>
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.4, delay: 0.3 }} className="space-y-4">
+              <h3 className="text-xl font-semibold text-foreground">Aucune donnée de biodiversité</h3>
               <p className="text-muted-foreground leading-relaxed">
-                Aucune observation n'a été enregistrée dans un rayon de 
-                <span className="inline-flex items-center mx-1 px-2 py-1 bg-orange-100 text-orange-800 text-xs font-semibold rounded-full border border-orange-200">
-                  500 mètres
-                </span> 
+                Aucune observation dans un rayon de
+                <span className="inline-flex items-center mx-1 px-2 py-1 bg-orange-100 text-orange-800 text-xs font-semibold rounded-full border border-orange-200">500 mètres</span>
                 autour de {marche.ville}.
               </p>
               <div className="bg-gradient-to-r from-muted/30 via-muted/50 to-muted/30 rounded-xl p-4 border border-border/50">
                 <p className="text-sm text-muted-foreground">
-                  Souhaitez-vous élargir la recherche à 
-                  <span className="inline-flex items-center mx-1 px-3 py-1 bg-gradient-to-r from-primary to-primary/80 text-primary-foreground text-sm font-bold rounded-full shadow-sm">
-                    5 kilomètres
-                  </span> 
-                  pour découvrir plus d'espèces ?
+                  Élargir à
+                  <span className="inline-flex items-center mx-1 px-3 py-1 bg-gradient-to-r from-primary to-primary/80 text-primary-foreground text-sm font-bold rounded-full shadow-sm">5 kilomètres</span>
+                  ?
                 </p>
               </div>
             </motion.div>
-            
-            <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.4, delay: 0.5 }}
-              className="flex gap-4 justify-center mt-8"
-            >
-              <Button 
-                onClick={handleExpandRadius} 
-                className="bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 text-primary-foreground shadow-lg hover:shadow-xl transition-all duration-300 px-8 py-3 font-medium"
-              >
-                <ZoomIn className="h-4 w-4 mr-2" />
-                Oui, élargir
+            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: 0.5 }} className="flex gap-4 justify-center mt-8">
+              <Button onClick={() => { setSearchRadius(5); setDebouncedRadius(5); setHasExpanded(true); }}
+                className="bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 text-primary-foreground shadow-lg px-8 py-3 font-medium">
+                <ZoomIn className="h-4 w-4 mr-2" />Oui, élargir
               </Button>
-              <Button 
-                onClick={handleDeclineExpansion} 
-                variant="outline"
-                className="border-2 border-muted-foreground/20 hover:border-muted-foreground/40 hover:bg-muted/50 transition-all duration-300 px-8 py-3"
-              >
-                <Eye className="h-4 w-4 mr-2" />
-                Non, continuer
+              <Button onClick={() => setShowExpandDialog(true)} variant="outline" className="border-2 px-8 py-3">
+                <Eye className="h-4 w-4 mr-2" />Non, continuer
               </Button>
             </motion.div>
           </CardContent>
@@ -424,7 +131,6 @@ const BioDivSubSection: React.FC<BioDivSubSectionProps> = ({ marche, theme }) =>
     );
   }
 
-  // Affichage normal si pas de données et utilisateur a refusé l'expansion
   if ((!biodiversityData?.species || biodiversityData.species.length === 0) && showExpandDialog) {
     return (
       <Card>
@@ -432,7 +138,7 @@ const BioDivSubSection: React.FC<BioDivSubSectionProps> = ({ marche, theme }) =>
           <Globe className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
           <h3 className="text-lg font-semibold mb-2">Aucune donnée trouvée</h3>
           <p className="text-muted-foreground">
-            Aucune observation de biodiversité trouvée dans un rayon de {debouncedRadius < 1 ? `${Math.round(debouncedRadius * 1000)}m` : `${debouncedRadius}km`} autour de {marche.ville}.
+            Aucune observation dans un rayon de {debouncedRadius < 1 ? `${Math.round(debouncedRadius * 1000)}m` : `${debouncedRadius}km`} autour de {marche.ville}.
           </p>
         </CardContent>
       </Card>
@@ -441,39 +147,30 @@ const BioDivSubSection: React.FC<BioDivSubSectionProps> = ({ marche, theme }) =>
 
   const handleMetricFilterChange = (filter: string | null) => {
     setSelectedMetricFilter(filter);
-    // Reset les autres filtres quand on utilise les métriques
-    if (filter) {
-      setSelectedCategory('all');
-    }
   };
 
   return (
     <div className="space-y-6">
-      {/* En-tête avec métriques cliquables */}
+      {/* Metrics */}
       {summaryStats && (
-        <BiodiversityMetricGrid 
+        <BiodiversityMetricGrid
           summary={{
             totalSpecies: summaryStats.total,
             birds: summaryStats.birds,
             plants: summaryStats.plants,
             fungi: summaryStats.fungi,
             others: summaryStats.others,
-            recentObservations: 0, // Pas utilisé dans ce contexte
+            recentObservations: 0,
             withAudio: summaryStats.withAudio,
-            withPhotos: summaryStats.withPhotos
+            withPhotos: summaryStats.withPhotos,
           }}
           selectedFilter={selectedMetricFilter}
           onFilterChange={handleMetricFilterChange}
         />
       )}
 
-      {/* Badge rayon de recherche mobile - Utilise le système de design */}
-      <motion.div
-        initial={{ opacity: 0, y: -10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4 }}
-        className="md:hidden sticky top-4 z-50"
-      >
+      {/* Mobile radius badge */}
+      <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }} className="md:hidden sticky top-4 z-50">
         <div className="flex justify-center">
           <div className="inline-flex items-center px-6 py-4 bg-orange-500 text-white rounded-full shadow-2xl border-2 border-white/30 backdrop-blur-sm">
             <Target className="h-5 w-5 mr-2" />
@@ -485,333 +182,47 @@ const BioDivSubSection: React.FC<BioDivSubSectionProps> = ({ marche, theme }) =>
         </div>
       </motion.div>
 
-      {/* Contrôles de recherche et rayon */}
+      {/* Radius slider */}
       <Card className="p-6">
-        <div className="space-y-6">
-          {/* Header avec contrôles principaux */}
+        <div className="space-y-4">
           <div className="flex items-center justify-between flex-wrap gap-4">
             <div className="flex items-center gap-4">
               <Label className="text-sm font-medium">Rayon de recherche:</Label>
-              <div className="flex items-center gap-2">
-                <Badge variant="outline" className="bg-primary/10 text-primary font-medium">
-                  {searchRadius < 1 ? `${Math.round(searchRadius * 1000)}m` : `${searchRadius}km`}
-                </Badge>
-                {hasExpanded && (
-                  <Badge variant="secondary" className="text-xs">
-                    Élargi
-                  </Badge>
-                )}
-              </div>
+              <Badge variant="outline" className="bg-primary/10 text-primary font-medium">
+                {searchRadius < 1 ? `${Math.round(searchRadius * 1000)}m` : `${searchRadius}km`}
+              </Badge>
+              {hasExpanded && <Badge variant="secondary" className="text-xs">Élargi</Badge>}
             </div>
             <LanguageToggle size="sm" />
           </div>
-          
-          {/* Rayon de recherche */}
-          <div className="space-y-4">
-            
-            <div className="space-y-2">
-              <Slider
-                value={[searchRadius]}
-                onValueChange={(value) => setSearchRadius(value[0])}
-                max={5}
-                min={0.5}
-                step={0.5}
-                className="w-full"
-              />
-              <div className="flex justify-between text-xs text-muted-foreground">
-                <span>0.5km</span>
-                <span>2.75km</span>
-                <span>5km</span>
-              </div>
-            </div>
-            
-            <p className="text-sm text-muted-foreground">
-              {filteredSpecies.length} espèces trouvées dans un rayon de {searchRadius < 1 ? `${Math.round(searchRadius * 1000)}m` : `${searchRadius}km`}
-            </p>
-          </div>
-
-          {/* Champ de recherche espèce */}
-          <div className="space-y-2">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
-              <Input
-                type="text"
-                placeholder="Rechercher une espèce (nom commun ou scientifique)..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10 pr-10 bg-background/50 border-border/50 focus:border-primary/50"
-              />
-              {searchTerm && (
-                <button
-                  onClick={() => setSearchTerm('')}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded-full hover:bg-muted transition-colors"
-                  aria-label="Effacer la recherche"
-                >
-                  <X className="h-4 w-4 text-muted-foreground" />
-                </button>
-              )}
-            </div>
-            {searchTerm && (
-              <div className="flex flex-wrap items-center gap-2">
-                <Badge variant="secondary" className="bg-primary/10 text-primary border-primary/20">
-                  "{searchTerm}" : {filteredSpecies.length} résultat{filteredSpecies.length > 1 ? 's' : ''}
-                </Badge>
-                {filteredSpecies.length === 0 && biodiversityData?.species?.length > 0 && (
-                  <span className="text-sm text-muted-foreground">
-                    sur {biodiversityData.species.length} espèces disponibles
-                  </span>
-                )}
-              </div>
-            )}
-          </div>
-
-          {/* Filtres élargis avec contributeurs */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4" style={{gridTemplateColumns: 'lg:1fr 1fr 0.8fr 1.4fr'}}>
-            <div>
-              <Select value={selectedCategory} onValueChange={(value: any) => setSelectedCategory(value)}>
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Catégories" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Toutes ({categoryStats.all})</SelectItem>
-                  <SelectItem value="faune">Faune ({categoryStats.faune})</SelectItem>
-                  <SelectItem value="plants">Plantes ({categoryStats.plants})</SelectItem>
-                  <SelectItem value="fungi">Champignons ({categoryStats.fungi})</SelectItem>
-                  <SelectItem value="others">Autres ({categoryStats.others})</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div>
-              <Select value={selectedSource} onValueChange={(value: any) => setSelectedSource(value)}>
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Sources" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Toutes</SelectItem>
-                  <SelectItem value="gbif">GBIF</SelectItem>
-                  <SelectItem value="inaturalist">iNaturalist</SelectItem>
-                  <SelectItem value="ebird">eBird</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div>
-              <Select value={hasAudioFilter} onValueChange={(value: any) => setHasAudioFilter(value)}>
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Audio" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Avec et sans audio</SelectItem>
-                  <SelectItem value="with-audio">Avec audio</SelectItem>
-                  <SelectItem value="without-audio">Sans audio</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div>
-              <Select value={selectedContributor} onValueChange={(value: any) => setSelectedContributor(value)}>
-                <SelectTrigger className="w-full">
-                  <div className="flex items-center gap-2 min-w-0">
-                    <User className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-                    <div className="truncate flex-1">
-                      <SelectValue placeholder="Contributeurs" />
-                    </div>
-                    {totalContributors > 0 && (
-                      <Badge variant="secondary" className="text-xs flex-shrink-0">
-                        {totalContributors}
-                      </Badge>
-                    )}
-                  </div>
-                </SelectTrigger>
-                <SelectContent className="max-h-80">
-                  <SelectItem value="all" className="font-medium">
-                    Tous les contributeurs ({totalContributors})
-                  </SelectItem>
-                  
-                  {contributorsBySource.eBird.length > 0 && (
-                    <>
-                      <div className="px-2 py-1.5 text-xs font-semibold text-blue-600 bg-blue-50 dark:bg-blue-950 dark:text-blue-400 border-b">
-                        eBird ({contributorsBySource.eBird.length})
-                      </div>
-                      {contributorsBySource.eBird.map(contributor => (
-                        <SelectItem key={`ebird-${contributor.name}`} value={contributor.name} className="pl-6">
-                          <div className="flex items-center justify-between w-full">
-                            <span className="truncate">{contributor.name}</span>
-                            <Badge variant="outline" className="ml-2 text-blue-600 border-blue-200">
-                              {contributor.count}
-                            </Badge>
-                          </div>
-                        </SelectItem>
-                      ))}
-                    </>
-                  )}
-
-                  {contributorsBySource.iNaturalist.length > 0 && (
-                    <>
-                      <div className="px-2 py-1.5 text-xs font-semibold text-green-600 bg-green-50 dark:bg-green-950 dark:text-green-400 border-b">
-                        iNaturalist ({contributorsBySource.iNaturalist.length})
-                      </div>
-                      {contributorsBySource.iNaturalist.map(contributor => (
-                        <SelectItem key={`inaturalist-${contributor.name}`} value={contributor.name} className="pl-6">
-                          <div className="flex items-center justify-between w-full">
-                            <span className="truncate">{contributor.name}</span>
-                            <Badge variant="outline" className="ml-2 text-green-600 border-green-200">
-                              {contributor.count}
-                            </Badge>
-                          </div>
-                        </SelectItem>
-                      ))}
-                    </>
-                  )}
-
-                  {contributorsBySource.gbif.length > 0 && (
-                    <>
-                      <div className="px-2 py-1.5 text-xs font-semibold text-orange-600 bg-orange-50 dark:bg-orange-950 dark:text-orange-400 border-b">
-                        GBIF ({contributorsBySource.gbif.length})
-                      </div>
-                      {contributorsBySource.gbif.map(contributor => (
-                        <SelectItem key={`gbif-${contributor.name}`} value={contributor.name} className="pl-6">
-                          <div className="flex items-center justify-between w-full">
-                            <span className="truncate">{contributor.name}</span>
-                            <Badge variant="outline" className="ml-2 text-orange-600 border-orange-200">
-                              {contributor.count}
-                            </Badge>
-                          </div>
-                        </SelectItem>
-                      ))}
-                    </>
-                  )}
-                </SelectContent>
-              </Select>
-            </div>
+          <Slider
+            value={[searchRadius]}
+            onValueChange={v => setSearchRadius(v[0])}
+            max={5} min={0.5} step={0.5}
+            className="w-full"
+          />
+          <div className="flex justify-between text-xs text-muted-foreground">
+            <span>0.5km</span><span>2.75km</span><span>5km</span>
           </div>
         </div>
       </Card>
 
-      {/* Onglets avec Vue Carte ajoutée */}
-      <Tabs value={selectedCategory} onValueChange={(value: any) => setSelectedCategory(value)} className="w-full">
-        <TabsList className="grid w-full grid-cols-6">
-          <TabsTrigger value="all" className="flex items-center gap-2">
-            <Database className="h-4 w-4" />
-            Toutes ({categoryStats.all})
-          </TabsTrigger>
-          <TabsTrigger value="map" className="flex items-center gap-2">
-            <MapPin className="h-4 w-4" />
-            Carte
-          </TabsTrigger>
-           <TabsTrigger value="faune" className="flex items-center gap-2">
-             <Bird className="h-4 w-4" />
-             Faune ({categoryStats.faune})
-           </TabsTrigger>
-          <TabsTrigger value="plants" className="flex items-center gap-2">
-            <TreePine className="h-4 w-4" />
-            Flore ({categoryStats.plants})
-          </TabsTrigger>
-          <TabsTrigger value="fungi" className="flex items-center gap-2">
-            <Flower className="h-4 w-4" />
-            Champignons ({categoryStats.fungi})
-          </TabsTrigger>
-          <TabsTrigger value="others" className="flex items-center gap-2">
-            <Leaf className="h-4 w-4" />
-            Autres ({categoryStats.others})
-          </TabsTrigger>
-        </TabsList>
-
-        {/* Vue Carte */}
-        <TabsContent value="map" className="space-y-4">
-          <div className="h-[600px]">
-            <BiodiversityMap 
-              data={biodiversityData}
-              centerLat={marche.latitude}
-              centerLon={marche.longitude}
-            />
-          </div>
-        </TabsContent>
-
-        <TabsContent value="all" className="space-y-4">
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-             {filteredSpecies.map((species, index) => (
-               <EnhancedSpeciesCard 
-                 key={`${species.id}-${index}`} 
-                 species={species} 
-                 onSpeciesClick={setSelectedSpecies}
-                 translation={translationMap.get(species.scientificName)}
-               />
-             ))}
-          </div>
-        </TabsContent>
-
-        <TabsContent value="faune" className="space-y-4">
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {filteredSpecies
-              .filter(species => species.kingdom === 'Animalia')
-               .map((species, index) => (
-                 <EnhancedSpeciesCard 
-                   key={`${species.id}-${index}`} 
-                   species={species} 
-                   onSpeciesClick={setSelectedSpecies}
-                   translation={translationMap.get(species.scientificName)}
-                 />
-               ))}
-          </div>
-        </TabsContent>
-
-        <TabsContent value="plants" className="space-y-4">
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {filteredSpecies
-              .filter(species => species.kingdom === 'Plantae')
-               .map((species, index) => (
-                 <EnhancedSpeciesCard 
-                   key={`${species.id}-${index}`} 
-                   species={species} 
-                   onSpeciesClick={setSelectedSpecies}
-                   translation={translationMap.get(species.scientificName)}
-                 />
-               ))}
-          </div>
-        </TabsContent>
-
-        <TabsContent value="fungi" className="space-y-4">
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {filteredSpecies
-              .filter(species => species.kingdom === 'Fungi')
-               .map((species, index) => (
-                 <EnhancedSpeciesCard 
-                   key={`${species.id}-${index}`} 
-                   species={species} 
-                   onSpeciesClick={setSelectedSpecies}
-                   translation={translationMap.get(species.scientificName)}
-                 />
-               ))}
-          </div>
-        </TabsContent>
-
-        <TabsContent value="others" className="space-y-4">
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {filteredSpecies
-              .filter(species => 
-                species.kingdom !== 'Plantae' && 
-                species.kingdom !== 'Fungi' && 
-                species.kingdom !== 'Animalia'
-              )
-               .map((species, index) => (
-                 <EnhancedSpeciesCard 
-                   key={`${species.id}-${index}`} 
-                   species={species} 
-                   onSpeciesClick={setSelectedSpecies}
-                   translation={translationMap.get(species.scientificName)}
-                 />
-               ))}
-          </div>
-        </TabsContent>
-      </Tabs>
-
-      <SpeciesDetailModal
-        species={selectedSpecies}
-        isOpen={!!selectedSpecies}
-        onClose={() => setSelectedSpecies(null)}
-      />
+      {/* Unified SpeciesExplorer */}
+      {biodiversityData?.species && (
+        <SpeciesExplorer
+          species={biodiversityData.species}
+          showMap
+          mapContent={
+            <div className="h-[600px]">
+              <BiodiversityMap
+                data={biodiversityData}
+                centerLat={marche.latitude}
+                centerLon={marche.longitude}
+              />
+            </div>
+          }
+        />
+      )}
     </div>
   );
 };

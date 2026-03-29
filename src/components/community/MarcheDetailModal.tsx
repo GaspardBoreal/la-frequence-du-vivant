@@ -5,12 +5,11 @@ import { supabase } from '@/integrations/supabase/client';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { Eye, Headphones, BookOpen, Leaf, MapPin, Music, ChevronLeft, ChevronRight, Camera, FileText, Globe, Users, User, ExternalLink, Video, Plus, Grid3X3, LayoutList } from 'lucide-react';
-import SpeciesCardWithPhoto from '@/components/biodiversity/SpeciesCardWithPhoto';
 import MediaLightbox, { type LightboxItem } from './contributions/MediaLightbox';
 import { motion, AnimatePresence } from 'framer-motion';
-import { processSpeciesData } from '@/utils/speciesDataUtils';
 import { useBiodiversityData } from '@/hooks/useBiodiversityData';
 import { createSlug } from '@/utils/slugGenerator';
+import SpeciesExplorer from '@/components/biodiversity/SpeciesExplorer';
 import FileUploadZone from './contributions/FileUploadZone';
 import ContributionItem from './contributions/ContributionItem';
 import SortToggle from './contributions/SortToggle';
@@ -596,30 +595,6 @@ export const LireTab: React.FC<{ userId: string; marcheEventId: string; activeMa
 
 // ─── Vivant (3 couches) ───
 export const VivantTab: React.FC<{ marcheId: string; userId: string; marcheSlug?: string }> = ({ marcheId, userId, marcheSlug }) => {
-  const [viewMode, setViewMode] = useState<'immersion' | 'fiche'>(() => {
-    return (localStorage.getItem('vivant-tab-view') as 'immersion' | 'fiche') || 'immersion';
-  });
-  const handleViewMode = (mode: 'immersion' | 'fiche') => {
-    setViewMode(mode);
-    localStorage.setItem('vivant-tab-view', mode);
-  };
-
-  const getKingdomColor = (kingdom: string) => {
-    switch (kingdom) {
-      case 'Plantae': return 'from-lime-600 to-emerald-700';
-      case 'Animalia': return 'from-sky-600 to-blue-700';
-      case 'Fungi': return 'from-amber-600 to-orange-700';
-      default: return 'from-emerald-600 to-teal-700';
-    }
-  };
-  const getKingdomEmoji = (kingdom: string) => {
-    switch (kingdom) {
-      case 'Plantae': return '🌿';
-      case 'Animalia': return '🦅';
-      case 'Fungi': return '🍄';
-      default: return '🌍';
-    }
-  };
   // Fetch lat/lng for this marche
   const { data: coords } = useQuery({
     queryKey: ['marche-coords', marcheId],
@@ -642,38 +617,6 @@ export const VivantTab: React.FC<{ marcheId: string; userId: string; marcheSlug?
     dateFilter: 'recent',
   });
 
-  const territoryData = biodiversityData ? {
-    total_species: biodiversityData.summary?.totalSpecies ?? 0,
-    birds_count: biodiversityData.summary?.birds ?? 0,
-    plants_count: biodiversityData.summary?.plants ?? 0,
-  } : null;
-
-  const processedSpecies = biodiversityData?.species ? processSpeciesData(biodiversityData.species) : null;
-  const topSpecies = processedSpecies
-    ? [...processedSpecies.flore, ...Object.values(processedSpecies.faune).flat()].slice(0, 9)
-    : [];
-
-  // Community data
-  const { data: communityPhotos } = useQuery({
-    queryKey: ['marche-detail-community-photos', marcheId],
-    queryFn: async () => {
-      const { data } = await supabase.from('marche_photos').select('id, url_supabase, titre').eq('marche_id', marcheId).order('ordre').limit(6);
-      return data || [];
-    },
-    enabled: !!marcheId,
-  });
-
-  const { data: myKigos } = useQuery({
-    queryKey: ['marche-detail-my-kigos-vivant', marcheId, userId],
-    queryFn: async () => {
-      const { data } = await supabase.from('kigo_entries').select('id, kigo, haiku, saison').eq('user_id', userId).limit(3);
-      return data || [];
-    },
-    enabled: !!userId,
-  });
-
-  const hasCommunityData = (communityPhotos?.length ?? 0) > 0;
-  const hasMyData = (myKigos?.length ?? 0) > 0;
   const explorerLink = marcheSlug ? `/bioacoustique/${marcheSlug}` : null;
 
   if (isLoading) {
@@ -684,141 +627,22 @@ export const VivantTab: React.FC<{ marcheId: string; userId: string; marcheSlug?
     );
   }
 
+  if (!biodiversityData?.species || biodiversityData.species.length === 0) {
+    return <EmptyState message="Aucune donnée biodiversité disponible" />;
+  }
+
   return (
     <div className="space-y-4">
-      {/* Couche 1: Territoire */}
-      {territoryData && (
-        <div className="space-y-2">
-          <div className="flex items-center gap-2">
-            <Leaf className="w-3.5 h-3.5 text-emerald-400" />
-            <h3 className="text-emerald-300 text-xs font-semibold tracking-wide uppercase">Le Territoire</h3>
-            <div className="flex-1 h-px bg-emerald-500/15" />
-            {topSpecies.length > 0 && (
-              <div className="flex gap-0.5">
-                <button
-                  onClick={() => handleViewMode('immersion')}
-                  className={`p-1.5 rounded-md transition-colors ${viewMode === 'immersion' ? 'bg-emerald-500/20 text-emerald-300' : 'text-emerald-500/40 hover:text-emerald-400'}`}
-                >
-                  <Grid3X3 className="w-3.5 h-3.5" />
-                </button>
-                <button
-                  onClick={() => handleViewMode('fiche')}
-                  className={`p-1.5 rounded-md transition-colors ${viewMode === 'fiche' ? 'bg-emerald-500/20 text-emerald-300' : 'text-emerald-500/40 hover:text-emerald-400'}`}
-                >
-                  <LayoutList className="w-3.5 h-3.5" />
-                </button>
-              </div>
-            )}
-          </div>
-          <div className="grid grid-cols-3 gap-2">
-            {[
-              { label: 'Espèces', value: territoryData.total_species || 0, color: 'text-emerald-300' },
-              { label: 'Oiseaux', value: territoryData.birds_count || 0, color: 'text-sky-300' },
-              { label: 'Plantes', value: territoryData.plants_count || 0, color: 'text-lime-300' },
-            ].map(stat => (
-              <div key={stat.label} className="bg-white/5 rounded-lg p-2 text-center">
-                <p className={`text-lg font-bold ${stat.color}`}>{stat.value}</p>
-                <p className="text-emerald-200/40 text-[9px]">{stat.label}</p>
-              </div>
-            ))}
-          </div>
-
-          {topSpecies.length > 0 && (
-            <AnimatePresence mode="wait">
-              <motion.div
-                key={viewMode}
-                initial={{ opacity: 0, scale: 0.98 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.98 }}
-                transition={{ duration: 0.2 }}
-                className={`grid ${viewMode === 'immersion' ? 'grid-cols-3 gap-1.5' : 'grid-cols-2 gap-2'}`}
-              >
-                {topSpecies.map((sp: any, i: number) => (
-                  <SpeciesCardWithPhoto
-                    key={sp.scientificName || i}
-                    species={{
-                      name: sp.scientificName || sp.commonName || 'Inconnu',
-                      scientificName: sp.scientificName || '',
-                      commonNameFr: sp.commonName || sp.commonNameFr || null,
-                      count: sp.count || 0,
-                      kingdom: sp.kingdom || 'Unknown',
-                      photos: sp.photos || [],
-                    }}
-                    onClick={() => {}}
-                    getKingdomColor={getKingdomColor}
-                    getKingdomEmoji={getKingdomEmoji}
-                    index={i}
-                    viewMode={viewMode}
-                  />
-                ))}
-              </motion.div>
-            </AnimatePresence>
-          )}
-
-          {explorerLink && (
-            <a href={explorerLink} target="_blank" rel="noopener noreferrer"
-              className="flex items-center gap-1.5 text-emerald-400/70 text-[11px] hover:text-emerald-300 transition-colors">
-              <ExternalLink className="w-3 h-3" />Explorer sur le territoire
-            </a>
-          )}
-        </div>
+      {explorerLink && (
+        <a href={explorerLink} target="_blank" rel="noopener noreferrer"
+          className="flex items-center gap-1.5 text-emerald-400/70 text-[11px] hover:text-emerald-300 transition-colors">
+          <ExternalLink className="w-3 h-3" />Explorer sur le territoire
+        </a>
       )}
-
-      {/* Couche 2: Communauté */}
-      {hasCommunityData && (
-        <div className="space-y-2">
-          <div className="flex items-center gap-2">
-            <Users className="w-3.5 h-3.5 text-blue-400" />
-            <h3 className="text-blue-300 text-xs font-semibold tracking-wide uppercase">Les Marcheurs</h3>
-            <div className="flex-1 h-px bg-blue-500/15" />
-          </div>
-          {communityPhotos && communityPhotos.length > 0 && (
-            <div className="flex gap-1.5">
-              {communityPhotos.slice(0, 3).map(p => (
-                <div key={p.id} className="w-16 h-16 rounded-lg overflow-hidden bg-white/5 border border-white/10">
-                  <img src={p.url_supabase} alt={p.titre || ''} className="w-full h-full object-cover" loading="lazy" />
-                </div>
-              ))}
-              {communityPhotos.length > 3 && (
-                <div className="w-16 h-16 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center">
-                  <span className="text-emerald-300/60 text-xs font-medium">+{communityPhotos.length - 3}</span>
-                </div>
-              )}
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* Couche 3: Mon Regard */}
-      {hasMyData && (
-        <div className="space-y-2">
-          <div className="flex items-center gap-2">
-            <User className="w-3.5 h-3.5 text-amber-400" />
-            <h3 className="text-amber-300 text-xs font-semibold tracking-wide uppercase">Mon Regard</h3>
-            <div className="flex-1 h-px bg-amber-500/15" />
-          </div>
-          {myKigos && myKigos.length > 0 && (
-            <div className="space-y-1.5">
-              {myKigos.slice(0, 3).map(k => (
-                <div key={k.id} className="bg-gradient-to-r from-amber-500/10 to-emerald-500/5 rounded-lg border border-amber-400/25 p-2.5">
-                  <div className="flex items-center gap-2">
-                    <span className="text-amber-300 text-sm">🌿</span>
-                    <span className="text-white text-xs font-medium">{k.kigo}</span>
-                    <span className="text-emerald-300/40 text-[9px] ml-auto">{k.saison}</span>
-                  </div>
-                  {k.haiku && (
-                    <p className="text-emerald-100/60 text-[10px] italic mt-1 pl-5 border-l border-amber-400/15">{k.haiku}</p>
-                  )}
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
-
-      {!territoryData && !hasCommunityData && !hasMyData && (
-        <EmptyState message="Aucune donnée biodiversité disponible" />
-      )}
+      <SpeciesExplorer
+        species={biodiversityData.species}
+        compact
+      />
     </div>
   );
 };
