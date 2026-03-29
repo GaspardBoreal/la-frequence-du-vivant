@@ -56,12 +56,25 @@ type SortOrder = 'desc' | 'asc';
 
 // ─── Upload helper ───
 async function uploadFile(userId: string, file: File, folder: string): Promise<string> {
-  const ext = file.name.split('.').pop() || 'bin';
+  let processedFile = file;
+
+  // Convert HEIF/HEIC to JPEG for browser compatibility
+  if (file.name.match(/\.(heif|heic)$/i) || file.type === 'image/heif' || file.type === 'image/heic') {
+    const blob = await heic2any({ blob: file, toType: 'image/jpeg', quality: 0.85 });
+    const jpegBlob = Array.isArray(blob) ? blob[0] : blob;
+    processedFile = new File(
+      [jpegBlob],
+      file.name.replace(/\.(heif|heic)$/i, '.jpeg'),
+      { type: 'image/jpeg' }
+    );
+  }
+
+  const ext = processedFile.name.split('.').pop() || 'bin';
   const path = `${userId}/${folder}/${Date.now()}_${Math.random().toString(36).slice(2, 8)}.${ext}`;
   
   const { error } = await supabase.storage
     .from('marcheur-uploads')
-    .upload(path, file, { cacheControl: '3600', upsert: false });
+    .upload(path, processedFile, { cacheControl: '3600', upsert: false });
   
   if (error) throw error;
   
