@@ -87,8 +87,8 @@ const MarcheCard: React.FC<{
 
       <div className={`rounded-xl border transition-all hover:scale-[1.01] hover:shadow-lg hover:shadow-emerald-500/5 ${
         participation.validated_at 
-          ? 'bg-gradient-to-br from-emerald-500/10 to-amber-500/5 border-emerald-500/20' 
-          : 'bg-white/5 border-white/10'
+          ? 'bg-emerald-50 border-emerald-200 dark:bg-gradient-to-br dark:from-emerald-500/10 dark:to-amber-500/5 dark:border-emerald-500/20' 
+          : 'bg-card border-border dark:bg-white/5 dark:border-white/10'
       }`}>
         <div className="p-3 space-y-2">
           {/* Header: lieu + date */}
