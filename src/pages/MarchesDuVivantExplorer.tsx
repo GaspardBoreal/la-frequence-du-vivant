@@ -10,6 +10,7 @@ import {
   Headphones, PenTool, ArrowDown, Sun, Flower2, Snowflake, X, BookOpen, UserCircle } from
 'lucide-react';
 import Footer from '@/components/Footer';
+import ThemeToggle from '@/components/community/ThemeToggle';
 import { toast } from 'sonner';
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
@@ -220,6 +221,7 @@ const MarchesDuVivantExplorer = () => {
               <span className="font-medium">Les Marches du Vivant</span>
             </Link>
             <div className="flex items-center gap-1">
+              <ThemeToggle />
               <Link to="/marches-du-vivant/connexion" className="p-2.5 rounded-xl hover:bg-emerald-50 transition-colors text-emerald-600 hover:text-emerald-800" title="Connexion / Mon espace">
                 <UserCircle className="w-4 h-4" />
               </Link>

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Settings, ArrowLeft } from 'lucide-react';
+import ThemeToggle from './ThemeToggle';
 import { Link } from 'react-router-dom';
 import RoleBadge from './RoleBadge';
 import { CommunityRoleKey } from '@/hooks/useCommunityProfile';
@@ -33,16 +34,16 @@ const MonEspaceHeader: React.FC<MonEspaceHeaderProps> = ({
 
   return (
     <>
-      <div className={`sticky top-0 z-40 bg-emerald-950/80 backdrop-blur-xl border-b border-white/10 ${ROLE_GLOW[role]}`}>
+      <div className={`sticky top-0 z-40 bg-background/80 backdrop-blur-xl border-b border-border/30 ${ROLE_GLOW[role]}`}>
         <div className="max-w-2xl mx-auto px-4 py-2">
           <div className="flex items-center gap-2">
-            <Link to="/marches-du-vivant" className="text-emerald-200/50 hover:text-emerald-100 transition-colors flex-shrink-0">
+            <Link to="/marches-du-vivant" className="text-muted-foreground hover:text-foreground transition-colors flex-shrink-0">
               <ArrowLeft className="w-4 h-4" />
             </Link>
             <motion.div
               initial={{ scale: 0.8, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
-              className="w-9 h-9 rounded-full bg-gradient-to-br from-emerald-500/40 to-teal-600/40 border border-emerald-400/30 flex items-center justify-center text-emerald-100 font-bold text-xs flex-shrink-0"
+              className="w-9 h-9 rounded-full bg-gradient-to-br from-primary/40 to-accent/40 border border-primary/30 flex items-center justify-center text-primary-foreground font-bold text-xs flex-shrink-0"
             >
               {initials}
             </motion.div>
@@ -53,12 +54,13 @@ const MonEspaceHeader: React.FC<MonEspaceHeaderProps> = ({
               key={totalFrequences}
               initial={{ scale: 1.2 }}
               animate={{ scale: 1 }}
-              className="flex items-center gap-1 bg-white/10 border border-white/20 rounded-full px-2 py-1 flex-shrink-0"
+              className="flex items-center gap-1 bg-secondary border border-border rounded-full px-2 py-1 flex-shrink-0"
             >
-              <span className="text-amber-400 text-[10px]">★</span>
-              <span className="text-white text-xs font-bold">{totalFrequences}</span>
+              <span className="text-amber-500 dark:text-amber-400 text-[10px]">★</span>
+              <span className="text-foreground text-xs font-bold">{totalFrequences}</span>
             </motion.div>
-            <button onClick={() => setSettingsOpen(true)} className="text-emerald-200/50 hover:text-emerald-100 transition-colors p-1 flex-shrink-0">
+            <ThemeToggle />
+            <button onClick={() => setSettingsOpen(true)} className="text-muted-foreground hover:text-foreground transition-colors p-1 flex-shrink-0">
               <Settings className="w-4 h-4" />
             </button>
           </div>
