@@ -60,11 +60,11 @@ const OutilsTab: React.FC<OutilsTabProps> = ({ role, userId }) => {
   return (
     <div className="space-y-5">
       <div>
-        <h2 className="text-lg font-semibold text-white flex items-center gap-2">
-          <Compass className="w-5 h-5 text-emerald-400" />
+        <h2 className="text-lg font-semibold text-foreground flex items-center gap-2">
+          <Compass className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
           Mes outils
         </h2>
-        <p className="text-sm text-white/50 mt-1">Instruments pédagogiques et pratiques du marcheur</p>
+        <p className="text-sm text-muted-foreground mt-1">Instruments pédagogiques et pratiques du marcheur</p>
       </div>
 
       <div className="grid grid-cols-2 gap-3">
