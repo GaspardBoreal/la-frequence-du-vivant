@@ -213,7 +213,7 @@ const VoirTab: React.FC<{ marcheId: string; userId: string; marcheEventId: strin
             <User className="w-3 h-3 text-amber-400" />
             <span className="text-amber-300/60 text-[10px] uppercase tracking-wider">Mes contributions ({myMedias.length})</span>
           </div>
-          <div className="grid grid-cols-2 gap-2">
+          <div className={`grid ${viewMode === 'immersion' ? 'grid-cols-3 gap-1' : 'grid-cols-2 gap-2'}`}>
             {myMedias.map((m, i) => (
               <ContributionItem
                 key={m.id}
@@ -226,6 +226,7 @@ const VoirTab: React.FC<{ marcheId: string; userId: string; marcheEventId: strin
                 isPublic={m.is_public}
                 isOwner={true}
                 createdAt={m.created_at}
+                viewMode={viewMode}
                 onUpdate={(id, updates) => updateContrib.mutate({ table: 'marcheur_medias', id, updates })}
                 onDelete={(id) => deleteContrib.mutate({ table: 'marcheur_medias', id, storageUrl: m.url_fichier || undefined })}
                 onClick={() => setLightboxIndex(adminCount + i)}
