@@ -1,57 +1,43 @@
 
 
-# Fix: Les marcheurs voient "Marcheur" au lieu des prénoms/noms
+# Fix: Photos des co-marcheurs invisibles — 2 problemes
 
 ## Diagnostic
 
-Dans `useExplorationParticipants.ts` (ligne 97-100), le code requête `community_profiles` pour tous les `user_id` des participants. Mais la **policy RLS SELECT** sur `community_profiles` est :
+### Probleme 1 — Les badges des onglets ne comptent que les contributions du user connecte
+`useMarcheurStats` (ligne 366) filtre `.eq('user_id', userId)`. Si l'admin ou un autre marcheur consulte la page, le badge "Voir" affiche **0** meme si Laurence a uploade 12 photos. L'utilisateur pense qu'il n'y a rien a voir.
 
-```
-user_id = auth.uid() OR check_is_admin_user(auth.uid())
-```
-
-Laurence ne peut voir **que son propre profil**. Pour tous les autres participants, la requête retourne `null`, et le code utilise le fallback `'Marcheur'` (ligne 157).
+### Probleme 2 — Le compteur de stats badge masque les contributions des autres
+Les 12 photos de Laurence (toutes `is_public: true`) sont bien en base, sur les marches 1, 2 et 3 de l'exploration. La requete `useMarcheurMedias` ne filtre PAS par `user_id` dans le SQL, donc les photos publiques des autres marcheurs sont bien chargees et affichees dans la section "Des marcheurs". **Mais** le badge affichant 0, le marcheur ne clique pas sur l'onglet.
 
 ## Correctif
 
-### Migration SQL — Ajouter une policy SELECT pour les co-participants
+### Fichier : `src/hooks/useMarcheurContributions.ts`
 
-Même pattern que pour `marche_participations` : utiliser une fonction `SECURITY DEFINER` pour éviter la récursion RLS.
+Modifier `useMarcheurStats` pour compter **toutes** les contributions publiques, pas seulement celles du user connecte. Deux compteurs : `mine` (propre au user) et `total` (toutes les publiques + les miennes privees).
 
-```sql
--- Function to check if two users share a marche_event
-CREATE OR REPLACE FUNCTION public.shares_marche_event(_viewer_id uuid, _profile_user_id uuid)
-RETURNS boolean
-LANGUAGE sql STABLE SECURITY DEFINER
-SET search_path = public
-AS $$
-  SELECT EXISTS (
-    SELECT 1
-    FROM public.marche_participations a
-    JOIN public.marche_participations b ON a.marche_event_id = b.marche_event_id
-    WHERE a.user_id = _viewer_id
-      AND b.user_id = _profile_user_id
-  );
-$$;
-
--- New SELECT policy: co-participants can see each other's profile
-CREATE POLICY "Co-participants can read profiles"
-ON public.community_profiles FOR SELECT
-TO authenticated
-USING (
-  public.shares_marche_event(auth.uid(), user_id)
-);
+```typescript
+// Remplacer les 3 requetes par 6 (ou fusionner) :
+// - Count propre au user (pour la section "Mes contributions")
+// - Count total public (pour le badge de l'onglet)
 ```
 
-Cette policy est **additive** (PERMISSIVE) : elle s'ajoute à la policy existante "Users can read own profile". Un utilisateur verra son profil + les profils de tous ses co-participants.
+Le badge de l'onglet "Voir" affichera le total (admin + mes photos + photos publiques des autres), pas uniquement les miennes.
 
-### Pas de changement de code
+### Fichier : `src/components/community/ExplorationMarcheurPage.tsx`
 
-Le hook `useExplorationParticipants` fonctionne déjà correctement — il query les bons profils. Le problème est 100% RLS.
+Mettre a jour `tabCounts` pour utiliser le nouveau compteur `total` au lieu du compteur `mine`.
 
-## Fichier impacté
+## Ce qui ne change PAS
+
+- Le `VoirTab` affiche deja correctement les 3 sections (admin / mes contributions / des marcheurs)
+- Le RLS sur `marcheur_medias` est correct (`is_public = true` accessible aux `authenticated`)
+- Aucune migration SQL necessaire
+
+## Fichiers impactes
 
 | Fichier | Action |
 |---|---|
-| Migration SQL | Ajouter function `shares_marche_event` + policy SELECT sur `community_profiles` |
+| `src/hooks/useMarcheurContributions.ts` | Ajouter compteur total (public + propre) dans `useMarcheurStats` |
+| `src/components/community/ExplorationMarcheurPage.tsx` | Utiliser le compteur total pour les badges |
 
