@@ -200,11 +200,12 @@ const MarcheEventDetail: React.FC = () => {
     if (!deletingParticipation) return;
     setDeleteLoading(true);
     try {
-      const { error } = await supabase
+      const { error, count } = await supabase
         .from('marche_participations')
-        .delete()
+        .delete({ count: 'exact' })
         .eq('id', deletingParticipation.id);
       if (error) throw error;
+      if (count === 0) throw new Error('Suppression refusée — vérifiez vos droits admin');
       queryClient.invalidateQueries({ queryKey: ['marche-participations', id] });
       queryClient.invalidateQueries({ queryKey: ['participant-profiles'] });
       queryClient.invalidateQueries({ queryKey: ['marche-participation-counts'] });
