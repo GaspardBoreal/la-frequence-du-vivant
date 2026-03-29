@@ -1,103 +1,76 @@
 
 
-# Onglet Marcheurs — Afficher les participants avec stats et engagement
+# Carte de l'Exploration — Vue immersive du parcours
 
-## Diagnostic
+## Vue d'ensemble
 
-L'onglet Marcheurs affiche un placeholder "Bientot disponible". Deux sources de donnees existent :
-
-1. **`exploration_marcheurs`** — crew manuelle (lies a `marcheur_observations` pour la biodiversite)
-2. **`marche_participations`** + **`community_profiles`** — marcheurs communautaires inscrits (lies a `marcheur_medias`, `marcheur_audio`, `marcheur_textes` via `marche_event_id`)
-
-Les contributions des marcheurs communautaires sont dans 3 tables : `marcheur_medias` (photos/videos, champ `is_public`, `type_media`), `marcheur_audio` (sons), `marcheur_textes` (textes, champ `is_public`).
+Remplacer le placeholder "Bientot disponible" de l'onglet Carte par une carte Leaflet interactive montrant le parcours complet de l'exploration avec progression temporelle, et des popups riches affichant les contributions collectees a chaque etape (photos, sons, textes, especes).
 
 ## Architecture
 
-### 1. Nouveau hook `useExplorationParticipants`
-
-Fusionne les deux sources pour une exploration donnee :
-
-- Query `marche_participations` via le `marche_event_id` lie a l'exploration
-- Query `community_profiles` pour les noms/avatars (pattern `.in()` existant)
-- Query agregee sur `marcheur_medias` (count par user_id, filtre `is_public = true`, group by `type_media`), `marcheur_audio`, `marcheur_textes` pour les stats publiques
-- Merge avec `exploration_marcheurs` + `marcheur_observations` (deja dans `useExplorationMarcheurs`)
-
-Interface retournee :
-```
-MarcheurWithStats {
-  id, prenom, nom, avatarUrl,
-  source: 'community' | 'crew',
-  role: string,
-  stats: { photos, videos, sons, textes, speciesCount }
-}
-```
-
-### 2. Nouveau composant `MarcheursTab.tsx`
-
-Remplace le `ComingSoonPlaceholder` dans `ExplorationMarcheurPage.tsx`.
-
-**Structure UI (mobile-first)** :
+### Nouveau composant : `ExplorationCarteTab.tsx`
 
 ```text
-┌─────────────────────────────────┐
-│  🌿 8 marcheurs · 47 contrib.  │  Resume compact
-├─────────────────────────────────┤
-│                                 │
-│  ┌─────────────────────────┐    │
-│  │ 👤 Marie Dupont         │    │  Carte marcheur
-│  │ Marcheuse               │    │
-│  │ 📷 12  🎙 3  📖 2  🦎 8 │    │  Stats inline
-│  │                         │    │
-│  │ [Voir ses contributions] │    │  CTA vers onglet Marches filtre
-│  └─────────────────────────┘    │
-│                                 │
-│  ┌─────────────────────────┐    │
-│  │ 👤 Paul Martin          │    │
-│  │ ...                     │    │
-│  └─────────────────────────┘    │
-│                                 │
-│ ─── Inviter un marcheur ─────  │
-│                                 │
-│  ┌─────────────────────────┐    │
-│  │  🌱 Partagez cette      │    │  Bloc engagement
-│  │  exploration avec un    │    │
-│  │  ami marcheur !         │    │
-│  │                         │    │
-│  │  [📋 Copier le lien]    │    │
-│  │  [📱 Partager]          │    │
-│  └─────────────────────────┘    │
-│                                 │
-└─────────────────────────────────┘
+ExplorationCarteTab
+├── Props: explorationId, marcheEventId, marches[]
+├── Donnees:
+│   ├── Coordonnees GPS (deja dans marches.latitude/longitude)
+│   ├── useExplorationBiodiversitySummary → especes par marche
+│   ├── useMarcheurStats par marche → compteurs photos/sons/textes
+│   └── marcheur_medias → 1 photo hero par marche (apercu)
+├── Carte Leaflet:
+│   ├── Polyline reliant les marches dans l'ordre (trace du parcours)
+│   ├── Markers numerotes (1, 2, 3...) avec icones custom emerald
+│   ├── Fleches directionnelles sur la polyline (sens de marche)
+│   ├── Animation d'apparition progressive des points (framer-motion)
+│   └── Popups riches par marche :
+│       ├── Nom + date
+│       ├── Mini-photo hero (1ere photo publique)
+│       ├── Badges compteurs : 📷 🎙 📖 🦎
+│       └── Bouton "Explorer cette etape"
+└── Legende en overlay :
+    ├── Nombre d'etapes + distance totale estimee
+    ├── Resume biodiversite globale
+    └── Toggle couches (parcours / biodiversite / photos)
 ```
 
-**Details de chaque carte marcheur** :
-- Avatar (ou initiales) avec bordure couleur du role
-- Prenom Nom + role
-- 4 compteurs inline : 📷 photos publiques, 🎙 sons, 📖 textes, 🦎 especes observees
-- Tri par nombre total de contributions (les plus actifs en haut)
+### Design de la carte
 
-**Bloc engagement en bas** :
-- Bouton "Copier le lien" (Web Share API avec fallback clipboard)
-- Message inspirant contextuel : "Chaque marcheur enrichit le recit collectif du vivant"
-- Design emerald/amber gradient subtil
+**Markers custom** : Cercles numerotes avec gradient emerald, taille proportionnelle au nombre de contributions. Le marker actif pulse doucement.
 
-### 3. Modification de `ExplorationMarcheurPage.tsx`
+**Polyline du parcours** : Ligne en pointilles emerald-400 reliant les marches dans l'ordre chronologique, avec des chevrons SVG decoratifs indiquant le sens de progression.
 
-- Importer et rendre `MarcheursTab` au lieu du placeholder
-- Passer `effectiveExplorationId` et `marcheEventId`
+**Popups** : Glassmorphism coherent avec le reste de l'app (`bg-black/60 backdrop-blur-xl`), photo arrondie, badges de contributions en inline.
+
+**Animation d'entree** : Les markers apparaissent un par un dans l'ordre du parcours (150ms d'intervalle) pour creer un effet narratif de progression.
+
+**Legende flottante** (coin inferieur gauche, mobile-friendly) :
+- Resume compact : "8 etapes · ~47 km · 156 especes"
+- Bouton toggle pour les couches de donnees
+
+### Donnees utilisees
+
+- **Coordonnees** : `marches.latitude`, `marches.longitude` (deja fetche dans la query `explorationMarches` de `ExplorationMarcheurPage` — il suffit d'ajouter `latitude, longitude` au `select`)
+- **Biodiversite** : `useExplorationBiodiversitySummary` (deja existant, inclut `speciesByMarche` avec lat/lng)
+- **Stats contributions** : Query agregee sur `marcheur_medias`, `marcheur_audio`, `marcheur_textes` groupee par `marche_id`
+- **Photo hero** : 1 photo par marche depuis `marcheur_medias` (is_public=true, type_media='photo', limit 1)
+
+### Distance estimee
+
+Calcul Haversine entre points consecutifs pour afficher la distance totale du parcours dans la legende.
 
 ## Fichiers impactes
 
 | Fichier | Action |
 |---|---|
-| `src/hooks/useExplorationParticipants.ts` | **Nouveau** — hook fusionnant les 2 sources + stats |
-| `src/components/community/exploration/MarcheursTab.tsx` | **Nouveau** — composant d'affichage |
-| `src/components/community/ExplorationMarcheurPage.tsx` | **Modifier** — brancher MarcheursTab |
+| `src/components/community/exploration/ExplorationCarteTab.tsx` | **Nouveau** — composant carte complet |
+| `src/components/community/ExplorationMarcheurPage.tsx` | **Modifier** — remplacer `ComingSoonPlaceholder` par `ExplorationCarteTab`, ajouter `latitude, longitude` a la query des marches |
 
-## UX inspirante pour l'engagement
+## Resultat
 
-- **Classement bienveillant** : pas de "1er, 2e" mais les plus actifs en haut naturellement
-- **Micro-animation** : compteurs qui s'incrementent au chargement (framer-motion)
-- **Partage natif** : utilise `navigator.share()` sur mobile avec un message poetique pre-rempli ("Rejoins-moi sur les Marches du Vivant...")
-- **Empty state elegant** : si aucun participant, message "Soyez le premier a documenter cette exploration" avec CTA vers l'onglet Marches
+- Carte plein ecran avec le trace du parcours et ses etapes numerotees
+- Progression temporelle visible (sens de marche, animation)
+- Chaque marker revele les tresors collectes a cette etape
+- Resume biodiversite global en overlay
+- Mobile-first, touch-friendly, coherent avec le design emerald
 
