@@ -101,7 +101,7 @@ const MarchesDuVivantMonEspace = () => {
           <Button
             onClick={handleCreateProfile}
             disabled={creatingProfile}
-            className="bg-emerald-600 hover:bg-emerald-500 text-white px-8 py-3 rounded-full"
+            className="bg-primary hover:bg-primary/90 text-primary-foreground px-8 py-3 rounded-full"
           >
             {creatingProfile ? 'Création en cours...' : 'Créer mon profil'}
           </Button>
