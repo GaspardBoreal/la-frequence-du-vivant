@@ -249,7 +249,7 @@ const ExplorationMarcheurPage: React.FC = () => {
       {/* Content */}
       <div className="max-w-4xl mx-auto px-4 py-4">
         <AnimatePresence mode="wait">
-          {activeGlobalTab === 'marches' && userId && (
+          {activeGlobalTab === 'marches' && (
             <motion.div
               key="marches"
               initial={{ opacity: 0 }}
