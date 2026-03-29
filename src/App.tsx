@@ -78,6 +78,7 @@ import OrganisateursAdmin from './pages/OrganisateursAdmin';
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
+      <ThemeProvider>
       <LanguageProvider>
         <AudioProvider>
           <BrowserRouter>
