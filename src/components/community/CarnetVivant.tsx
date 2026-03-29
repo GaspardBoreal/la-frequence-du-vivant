@@ -231,13 +231,13 @@ const CarnetVivant: React.FC<CarnetVivantProps> = ({ userId, participations }) =
                   onClick={() => toggleSeason(seasonKey)}
                   className="w-full flex items-center gap-2 py-1.5 px-1 group"
                 >
-                  <div className="h-px flex-1 bg-gradient-to-r from-transparent via-emerald-500/20 to-transparent" />
-                  <span className="text-emerald-300/70 text-[11px] font-medium flex items-center gap-1.5 flex-shrink-0">
+                   <div className="h-px flex-1 bg-gradient-to-r from-transparent via-emerald-300 dark:via-emerald-500/20 to-transparent" />
+                  <span className="text-emerald-700 dark:text-emerald-300/70 text-[11px] font-medium flex items-center gap-1.5 flex-shrink-0">
                     {emoji} {seasonKey}
-                    <span className="text-emerald-300/40">({items.length})</span>
+                    <span className="text-emerald-500 dark:text-emerald-300/40">({items.length})</span>
                     {open ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
                   </span>
-                  <div className="h-px flex-1 bg-gradient-to-r from-transparent via-emerald-500/20 to-transparent" />
+                  <div className="h-px flex-1 bg-gradient-to-r from-transparent via-emerald-300 dark:via-emerald-500/20 to-transparent" />
                 </button>
 
                 {/* Timeline */}
