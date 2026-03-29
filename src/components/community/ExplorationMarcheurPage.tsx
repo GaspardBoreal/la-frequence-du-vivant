@@ -9,6 +9,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { createSlug } from '@/utils/slugGenerator';
 import { useMarcheurStats } from '@/hooks/useMarcheurContributions';
 import MediaSkeletonGrid from './contributions/MediaSkeletonGrid';
+import MarcheursTab from './exploration/MarcheursTab';
 
 // Import tab components from MarcheDetailModal
 import { VoirTab, EcouterTab, LireTab, VivantTab, StepSelector } from './MarcheDetailModal';
@@ -328,12 +329,13 @@ const ExplorationMarcheurPage: React.FC = () => {
           )}
 
           {activeGlobalTab === 'marcheurs' && (
-            <ComingSoonPlaceholder
-              key="marcheurs"
-              icon={Users}
-              title="Les Marcheurs"
-              description="Découvrez les marcheurs de cette exploration, leurs contributions et leurs observations partagées."
-            />
+            <motion.div key="marcheurs" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+              <MarcheursTab
+                explorationId={effectiveExplorationId || undefined}
+                marcheEventId={marcheEventId || undefined}
+                explorationName={exploration?.name}
+              />
+            </motion.div>
           )}
 
           {activeGlobalTab === 'carte' && (
