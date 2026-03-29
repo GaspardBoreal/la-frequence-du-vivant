@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useExplorationBiodiversitySummary } from '@/hooks/useExplorationBiodiversitySummary';
-import { Camera, Mic, BookOpen, Leaf, Navigation, MapPin } from 'lucide-react';
+import { Camera, Mic, BookOpen, Leaf, Navigation, MapPin, Plus, Minus } from 'lucide-react';
 import 'leaflet/dist/leaflet.css';
 
 interface MarcheStep {
