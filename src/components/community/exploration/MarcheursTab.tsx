@@ -55,7 +55,7 @@ const SpeciesDrawer: React.FC<{ marcheur: MarcheurWithStats }> = ({ marcheur }) 
       <div className="space-y-2">
         {species.map((obs, i) => {
           const translation = translationMap.get(obs.scientificName);
-          const frenchName = translation?.frenchName || translation?.commonName;
+          const frenchName = translation?.commonName;
           return (
             <motion.div
               key={obs.scientificName}
