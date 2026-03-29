@@ -345,9 +345,11 @@ const ExplorationMarcheurPage: React.FC = () => {
               <ExplorationCarteTab
                 explorationId={effectiveExplorationId || undefined}
                 marches={(explorationMarches || []).map((m, i) => ({
-                  ...m,
-                  latitude: (m as any).latitude ?? null,
-                  longitude: (m as any).longitude ?? null,
+                  id: m.id,
+                  nom_marche: m.nom_marche,
+                  ville: m.ville,
+                  latitude: m.latitude,
+                  longitude: m.longitude,
                   ordre: i,
                 }))}
                 onSelectStep={(index) => {

@@ -211,6 +211,7 @@ const ExplorationCarteTab: React.FC<ExplorationCarteTabProps> = ({
   });
 
   // Filter marches with valid coordinates
+  console.log('[CarteTab] marches reçues:', marches.map(m => ({ id: m.id, lat: m.latitude, lng: m.longitude })));
   const geoMarches = useMemo(
     () => marches.filter(m => m.latitude != null && m.longitude != null),
     [marches]
