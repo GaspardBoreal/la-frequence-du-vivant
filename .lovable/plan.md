@@ -1,96 +1,89 @@
 
 
-# Page Exploration Marcheur — Vue immersive dédiée
+# Unifier l'affichage des especes : un seul composant pour les deux vues
 
-## Vision
+## Diagnostic
 
-Remplacer le popup (MarcheDetailModal) par une **page plein écran avec URL dédiée** pour chaque exploration. Cette page devient le hub central du marcheur pour vivre, analyser et partager son exploration — avec une architecture extensible pour les futures fonctionnalités collaboratives.
+Deux vues affichent des especes issues de la meme source (`useBiodiversityData`) mais avec des composants et logiques completement differents :
 
-## Architecture des routes
+| | VivantTab (Exploration) | BioDivSubSection (Bioacoustique) |
+|---|---|---|
+| **Composant card** | `SpeciesCardWithPhoto` | `EnhancedSpeciesCard` |
+| **Donnees** | `BiodiversitySpecies[]` → `processSpeciesData()` → objet simplifie `TopSpecies` | `BiodiversitySpecies[]` directement |
+| **Filtres** | Aucun | Recherche, categorie, source, audio, contributeur |
+| **Noms affiches** | Seulement au hover (immersion) ou tronque (fiche) — souvent vide car `commonNameFr` n'est pas dans `BiodiversitySpecies` | Toujours visible avec traduction FR |
+| **Onglets** | Aucun | Toutes / Carte / Faune / Flore / Champignons / Autres |
+
+**Cause du bug COPIE 1** : `processSpeciesData` transforme les especes en un format simplifie qui perd `commonName`. Le champ `commonNameFr` est souvent `null` car il n'existe pas dans les donnees brutes GBIF/iNaturalist. Resultat : les cartes affichent des rectangles verts vides sans nom.
+
+## Solution : extraire un composant `SpeciesExplorer` reutilisable
+
+Creer un composant unique `SpeciesExplorer` qui encapsule :
+1. La logique de filtrage (actuellement dans BioDivSubSection lignes 140-294)
+2. Les onglets par categorie (Toutes / Faune / Flore / Champignons / Autres)
+3. Le toggle Immersion / Fiche
+4. L'affichage via `EnhancedSpeciesCard` (le composant le plus complet)
+
+Ce composant accepte un tableau de `BiodiversitySpecies[]` et s'adapte au contexte via des props.
+
+## Architecture
 
 ```text
-/marches-du-vivant/mon-espace/exploration/:explorationId
+SpeciesExplorer (nouveau)
+├── Props: species[], compact?, showFilters?, showMap?, onSpeciesClick?
+├── Filtres: recherche, categorie, source, audio, contributeur
+├── Onglets: Toutes | Faune | Flore | Champignons | Autres
+├── Toggle: Immersion / Fiche
+└── Rendu: EnhancedSpeciesCard (unifie)
+
+Utilise par :
+├── VivantTab (Exploration page) → compact mode, sans carte
+└── BioDivSubSection (Bioacoustique) → full mode, avec carte + rayon
 ```
 
-Depuis le Carnet, un clic sur un événement redirige via `navigate()` au lieu d'ouvrir un Dialog. Le bouton retour ramène à `/marches-du-vivant/mon-espace` (onglet Carnet).
-
-## Structure de la page
-
-```text
-┌─────────────────────────────────────────────────────┐
-│  ← Retour   Nom Exploration   📍 Territoire        │  Header sticky
-├─────────────────────────────────────────────────────┤
-│                                                     │
-│  ┌─────────┐ ┌─────────┐ ┌─────────┐ ┌──────────┐  │
-│  │ Marches │ │Marcheurs│ │  Carte  │ │ Messages │  │  Onglets globaux
-│  └─────────┘ └─────────┘ └─────────┘ └──────────┘  │
-│                                                     │
-│  ══════════════════════════════════════════════════  │
-│                                                     │
-│  Section : Marches (vue par défaut)                 │
-│  ┌─────────────────────────────────────────────┐    │
-│  │  Step Selector horizontal (marche par marche)│    │
-│  ├─────────────────────────────────────────────┤    │
-│  │  Voir │ Écouter │ Lire │ Vivant             │    │  Sous-onglets sensoriels
-│  ├─────────────────────────────────────────────┤    │
-│  │                                             │    │
-│  │  Contenu plein largeur (plus de max-w-md!)  │    │
-│  │  Photos en grille 4 cols desktop            │    │
-│  │                                             │    │
-│  └─────────────────────────────────────────────┘    │
-└─────────────────────────────────────────────────────┘
-```
-
-## Phase 1 — Ce qu'on construit maintenant
-
-### 1. Nouvelle page `ExplorationMarcheurPage.tsx`
-
-Page plein écran avec :
-- **Header** : bouton retour, nom exploration, lieu, dates
-- **Navigation par onglets globaux** : Marches (défaut), Marcheurs, Carte, Messages
-- **Onglet Marches** : reprend exactement le contenu actuel de `MarcheDetailModal` (StepSelector + tabs Voir/Ecouter/Lire/Vivant) mais en plein écran — plus de contrainte `max-w-md max-h-[85vh]`
-- **Onglets Marcheurs / Carte / Messages** : placeholder "Bientot disponible" avec un design inspirant (icone, texte atmospherique)
-
-### 2. Modification de `CarnetVivant.tsx`
-
-- Au clic sur un événement : `navigate(/marches-du-vivant/mon-espace/exploration/${explorationId})` au lieu d'ouvrir le modal
-- Supprimer l'état `selectedEventId` et le rendu du `MarcheDetailModal`
-- Passer l'`exploration_id` en query param ou le résoudre depuis le `marche_event_id`
-
-### 3. Route dans `App.tsx`
-
-Ajouter :
-```
-/marches-du-vivant/mon-espace/exploration/:explorationId
-```
-
-### 4. Adaptation du contenu existant
-
-Les composants VoirTab, EcouterTab, LireTab, VivantTab restent dans `MarcheDetailModal.tsx` mais sont extraits en exports nommés pour être réutilisés dans la nouvelle page. La grille photo passe de 3 colonnes à 4 sur desktop (responsive).
-
-## Phase 2 — Fonctionnalités à venir (placeholders élégants)
-
-| Onglet | Fonctionnalité | Données |
-|--------|---------------|---------|
-| **Marcheurs** | Liste des participants avec stats (photos, sons, textes, espèces) | `marche_participations` + `community_profiles` + stats agrégées |
-| **Carte** | Map des marches avec progression temporelle | GPS des `marches` + timeline |
-| **Messages** | Notes et commentaires partagés entre marcheurs | Nouvelle table à créer |
-| **Story Bio** | Narration automatique des données biodiversité | `biodiversity_snapshots` agrégés |
-
-## Fichiers impactés
+## Fichiers impactes
 
 | Fichier | Action |
-|---------|--------|
-| `src/pages/MarchesDuVivantExplorationMarcheur.tsx` | Nouveau — page principale |
-| `src/components/community/ExplorationMarcheurPage.tsx` | Nouveau — composant de la page |
-| `src/components/community/CarnetVivant.tsx` | Modifier — navigation au lieu de modal |
-| `src/components/community/MarcheDetailModal.tsx` | Exporter les tabs en composants réutilisables |
-| `src/App.tsx` | Ajouter la route |
+|---|---|
+| `src/components/biodiversity/SpeciesExplorer.tsx` | **Nouveau** — composant unifie extrait de BioDivSubSection |
+| `src/components/community/MarcheDetailModal.tsx` | **Modifier** VivantTab : remplacer la grille manuelle par `<SpeciesExplorer>` avec les `BiodiversitySpecies[]` brutes (plus de `processSpeciesData`) |
+| `src/components/open-data/BioDivSubSection.tsx` | **Modifier** : remplacer toute la section filtres+onglets+grille par `<SpeciesExplorer>` |
 
-## Résultat UX
+## Detail du composant SpeciesExplorer
 
-- Plus de "sursaut" : la page se charge avec ses propres skeletons plein écran
-- Espace visuel genereux : photos en grille large, pas de popup étroit
-- URL partageable et bookmarkable
-- Architecture prête pour les 4 fonctionnalités collaboratives annoncées
+**Props** :
+- `species: BiodiversitySpecies[]` — donnees brutes
+- `compact?: boolean` — mode compact pour VivantTab (filtres reduits, pas de slider rayon)
+- `showMap?: boolean` — afficher l'onglet Carte
+- `mapProps?: { lat, lng, data }` — props pour la carte
+- `onSpeciesClick?: (species) => void`
+- `className?: string`
+
+**Logique interne** (extraite telle quelle de BioDivSubSection) :
+- Etats : `searchTerm`, `selectedCategory`, `selectedSource`, `hasAudioFilter`, `selectedContributor`, `viewMode`
+- `filteredSpecies` memo avec tous les filtres chaines
+- `categoryStats` et `contributorsBySource` memos
+- Toggle Immersion/Fiche persistent via localStorage
+
+**Mode compact** (VivantTab) :
+- Filtres affiches sur une seule ligne (dropdowns plus petits)
+- Pas de slider rayon
+- Grille 3 cols mobile / 4 cols desktop
+- Stats territoire conservees au-dessus
+
+**Mode full** (BioDivSubSection) :
+- Tous les filtres affiches
+- Slider rayon gere par le parent (pas dans SpeciesExplorer)
+- Grille 2-3 cols
+
+## Impact sur le bug des noms
+
+En utilisant directement `BiodiversitySpecies[]` (qui contient `commonName` rempli par les APIs) au lieu de passer par `processSpeciesData` qui perd cette info, les noms s'afficheront correctement dans les deux vues. `EnhancedSpeciesCard` gere deja la traduction FR via `useSpeciesTranslation`.
+
+## Ce qui ne change PAS
+
+- `useBiodiversityData` hook — inchange
+- `EnhancedSpeciesCard` — inchange, utilise tel quel
+- La carte, les metriques, le detail modal espece — inchanges
+- Le slider rayon reste dans BioDivSubSection (contexte specifique)
 
