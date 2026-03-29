@@ -574,6 +574,21 @@ const MarcheursTab: React.FC<MarcheursTabProps> = ({ explorationId, marcheEventI
   const { data: marcheurs, isLoading } = useExplorationParticipants(explorationId, marcheEventId);
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
+  // Fetch exploration marche IDs for impact analysis
+  const { data: explorationMarchesData } = useQuery({
+    queryKey: ['exploration-marche-ids', explorationId],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('exploration_marches')
+        .select('marche_id')
+        .eq('exploration_id', explorationId!);
+      return data?.map(d => d.marche_id) || [];
+    },
+    enabled: !!explorationId,
+    staleTime: 10 * 60_000,
+  });
+
+  const explorationMarcheIds = explorationMarchesData || [];
   const totalContributions = marcheurs?.reduce((sum, m) => sum + m.totalContributions, 0) || 0;
 
   const handleShare = async () => {
