@@ -764,9 +764,9 @@ const MarcheDetailModal: React.FC<MarcheDetailModalProps> = ({
   const { data: stats } = useMarcheurStats(marcheEventId, userId, activeMarcheId);
 
   const tabCounts: Record<TabKey, number> = {
-    voir: stats?.medias || 0,
-    ecouter: stats?.audio || 0,
-    lire: stats?.textes || 0,
+    voir: stats?.totalMedias || 0,
+    ecouter: stats?.totalAudio || 0,
+    lire: stats?.totalTextes || 0,
     vivant: 0,
   };
 
