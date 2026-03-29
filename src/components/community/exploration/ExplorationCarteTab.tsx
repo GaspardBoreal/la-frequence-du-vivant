@@ -430,6 +430,9 @@ const ExplorationCarteTab: React.FC<ExplorationCarteTabProps> = ({
 
       {/* Custom popup style overrides */}
       <style>{`
+        .carte-tiles-dark {
+          filter: brightness(0.6) saturate(0.3);
+        }
         .exploration-carte-popup .leaflet-popup-content-wrapper {
           background: transparent !important;
           box-shadow: none !important;
@@ -449,6 +452,9 @@ const ExplorationCarteTab: React.FC<ExplorationCarteTabProps> = ({
         .arrow-decorator {
           background: none !important;
           border: none !important;
+        }
+        .leaflet-control-zoom {
+          display: none !important;
         }
       `}</style>
     </motion.div>
