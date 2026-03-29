@@ -46,7 +46,7 @@ const OutilsTab: React.FC<OutilsTabProps> = ({ role, userId }) => {
       <div className="space-y-4">
         <button
           onClick={() => setActiveTool(null)}
-          className="text-sm text-emerald-300/70 hover:text-emerald-300 transition-colors flex items-center gap-1"
+          className="text-sm text-emerald-700 dark:text-emerald-300/70 hover:text-emerald-800 dark:hover:text-emerald-300 transition-colors flex items-center gap-1"
         >
           ← Retour aux outils
         </button>
