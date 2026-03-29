@@ -79,7 +79,7 @@ const ContributionItem: React.FC<ContributionItemProps> = ({
             <span className="text-white text-[10px] font-medium truncate block">{titre || 'Sans titre'}</span>
           </div>
           {/* Visibility indicator */}
-          <div className="absolute top-1.5 right-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
+          <div className="absolute top-1.5 right-1.5 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
             {isPublic ? <Globe className="w-2.5 h-2.5 text-blue-300/80" /> : <Lock className="w-2.5 h-2.5 text-white/40" />}
           </div>
         </div>
