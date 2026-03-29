@@ -37,7 +37,7 @@ const MonEspaceHeader: React.FC<MonEspaceHeaderProps> = ({
       <div className={`sticky top-0 z-40 bg-background/80 backdrop-blur-xl border-b border-border/30 ${ROLE_GLOW[role]}`}>
         <div className="max-w-2xl mx-auto px-4 py-2">
           <div className="flex items-center gap-2">
-            <Link to="/marches-du-vivant" className="text-emerald-200/50 hover:text-emerald-100 transition-colors flex-shrink-0">
+            <Link to="/marches-du-vivant" className="text-muted-foreground hover:text-foreground transition-colors flex-shrink-0">
               <ArrowLeft className="w-4 h-4" />
             </Link>
             <motion.div
