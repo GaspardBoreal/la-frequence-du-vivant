@@ -62,7 +62,7 @@ const ProgressionCard: React.FC<ProgressionCardProps> = ({
           <p className="text-sm text-muted-foreground mb-2">Votre rôle actuel</p>
           <RoleBadge role={role} size="lg" darkMode />
         </div>
-        <div className={`text-4xl font-bold ${dark.text} mt-6`}>
+        <div className={`text-4xl font-bold text-primary dark:${dark.text} mt-6`}>
           {marchesCount}
         </div>
       </div>
