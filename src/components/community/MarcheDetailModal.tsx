@@ -824,7 +824,7 @@ export const VivantTab: React.FC<{ marcheId: string; userId: string; marcheSlug?
 };
 
 // ─── Step Selector ───
-const StepSelector: React.FC<{
+export const StepSelector: React.FC<{
   marches: { id: string; nom_marche: string | null; ville: string }[];
   activeIndex: number;
   onSelect: (index: number) => void;
