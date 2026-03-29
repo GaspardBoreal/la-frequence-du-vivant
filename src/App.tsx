@@ -6,6 +6,7 @@ import { Toaster } from 'sonner';
 import { queryClient } from './lib/queryClient';
 import { AudioProvider } from './contexts/AudioContext';
 import { LanguageProvider } from './contexts/LanguageContext';
+import { ThemeProvider } from './contexts/ThemeContext';
 import AdminAuth from './components/AdminAuth';
 import AdminLogin from './pages/AdminLogin';
 import AdminResetPassword from './pages/AdminResetPassword';
