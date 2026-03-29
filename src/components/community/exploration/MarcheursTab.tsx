@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Camera, Mic, BookOpen, Leaf, Copy, Share2, Users, Sprout, ChevronDown, ExternalLink, Eye, Image, FileText } from 'lucide-react';
+import { Camera, Mic, BookOpen, Leaf, Copy, Share2, Users, Sprout, ChevronDown, ExternalLink, Eye, Image, FileText, TrendingUp, MapPin, Bird, Flower2, TreePine } from 'lucide-react';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { useExplorationParticipants, MarcheurWithStats, SpeciesObservation } from '@/hooks/useExplorationParticipants';
@@ -221,7 +221,233 @@ const CitizenScienceCTA: React.FC = () => (
   </motion.div>
 );
 
-const MarcheurCard: React.FC<{ marcheur: MarcheurWithStats; index: number; isExpanded: boolean; onToggle: () => void; marcheEventId?: string }> = ({ marcheur, index, isExpanded, onToggle, marcheEventId }) => {
+// --- Animated circular gauge SVG ---
+const CircularGauge: React.FC<{ score: number; size?: number }> = ({ score, size = 56 }) => {
+  const radius = (size - 8) / 2;
+  const circumference = 2 * Math.PI * radius;
+  const progress = Math.min(score, 100) / 100;
+  const strokeDashoffset = circumference * (1 - progress);
+  const color = score >= 70 ? 'hsl(160, 84%, 39%)' : score >= 40 ? 'hsl(45, 93%, 47%)' : 'hsl(0, 0%, 60%)';
+
+  return (
+    <div className="relative" style={{ width: size, height: size }}>
+      <svg width={size} height={size} className="-rotate-90">
+        <circle cx={size / 2} cy={size / 2} r={radius} fill="none" stroke="currentColor" strokeWidth={3} className="text-muted/30" />
+        <motion.circle
+          cx={size / 2} cy={size / 2} r={radius} fill="none"
+          stroke={color} strokeWidth={3} strokeLinecap="round"
+          strokeDasharray={circumference}
+          initial={{ strokeDashoffset: circumference }}
+          animate={{ strokeDashoffset }}
+          transition={{ duration: 1.2, ease: 'easeOut', delay: 0.3 }}
+        />
+      </svg>
+      <div className="absolute inset-0 flex items-center justify-center">
+        <motion.span
+          className="text-xs font-bold text-foreground"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.6 }}
+        >
+          {score}
+        </motion.span>
+      </div>
+    </div>
+  );
+};
+
+// --- Impact block with 3 dynamic metrics ---
+const MarcheurImpactBlock: React.FC<{
+  marcheur: MarcheurWithStats;
+  explorationId?: string;
+  explorationMarcheIds: string[];
+  totalMarchesCount: number;
+  isExpanded: boolean;
+}> = ({ marcheur, explorationId, explorationMarcheIds, totalMarchesCount, isExpanded }) => {
+  // Query biodiversity snapshots for pioneer analysis
+  const { data: snapshotsData } = useQuery({
+    queryKey: ['marcheur-impact-snapshots', explorationId],
+    queryFn: async () => {
+      if (!explorationMarcheIds.length) return [];
+      const { data } = await supabase
+        .from('biodiversity_snapshots')
+        .select('marche_id, snapshot_date, total_species, birds_count, plants_count, fungi_count')
+        .in('marche_id', explorationMarcheIds);
+      return data || [];
+    },
+    enabled: isExpanded && !!explorationId && explorationMarcheIds.length > 0,
+    staleTime: 5 * 60_000,
+  });
+
+  const snapshots = snapshotsData || [];
+
+  // 1. Pioneer territories: marches where this marcheur contributed but no prior biodiversity data
+  const pioneerCount = useMemo(() => {
+    if (!snapshots.length && explorationMarcheIds.length > 0) {
+      // No snapshots at all = all territories are pioneer
+      return Math.min(marcheur.totalContributions > 0 ? explorationMarcheIds.length : 0, explorationMarcheIds.length);
+    }
+    const snapshotMarcheIds = new Set(snapshots.map(s => s.marche_id));
+    const marchesWithoutPriorData = explorationMarcheIds.filter(id => !snapshotMarcheIds.has(id));
+    return marcheur.totalContributions > 0 ? marchesWithoutPriorData.length : 0;
+  }, [snapshots, explorationMarcheIds, marcheur.totalContributions]);
+
+  // 2. Taxonomic coverage from species observed
+  const taxonomicGroups = useMemo(() => {
+    const species = marcheur.speciesObserved || [];
+    const groups: Record<string, { icon: React.ElementType; label: string; color: string; count: number }> = {};
+    
+    // Also use snapshot data to enrich
+    const snapshotBirds = snapshots.reduce((s, snap) => s + (snap.birds_count || 0), 0);
+    const snapshotPlants = snapshots.reduce((s, snap) => s + (snap.plants_count || 0), 0);
+    const snapshotFungi = snapshots.reduce((s, snap) => s + (snap.fungi_count || 0), 0);
+
+    if (species.length > 0 || snapshotBirds > 0) {
+      groups['oiseaux'] = { icon: Bird, label: 'Oiseaux', color: 'text-sky-500', count: Math.max(species.filter(s => s.scientificName.toLowerCase().includes('aves') || s.scientificName.toLowerCase().includes('bird')).length, snapshotBirds > 0 ? 1 : 0) };
+    }
+    if (species.length > 0 || snapshotPlants > 0) {
+      groups['plantes'] = { icon: Flower2, label: 'Plantes', color: 'text-green-500', count: Math.max(species.filter(s => s.scientificName.toLowerCase().includes('plant')).length, snapshotPlants > 0 ? 1 : 0) };
+    }
+    if (species.length > 0 || snapshotFungi > 0) {
+      groups['champignons'] = { icon: TreePine, label: 'Champignons', color: 'text-amber-600', count: Math.max(species.filter(s => s.scientificName.toLowerCase().includes('fung')).length, snapshotFungi > 0 ? 1 : 0) };
+    }
+
+    // Fallback: if we have species but no matches, count all as "Vivant"
+    if (species.length > 0 && Object.values(groups).every(g => g.count === 0)) {
+      groups['vivant'] = { icon: Leaf, label: 'Vivant', color: 'text-emerald-500', count: species.length };
+    }
+
+    // Use snapshot totals as better fallback
+    if (Object.keys(groups).length === 0 && snapshots.length > 0) {
+      if (snapshotBirds > 0) groups['oiseaux'] = { icon: Bird, label: 'Oiseaux', color: 'text-sky-500', count: snapshotBirds };
+      if (snapshotPlants > 0) groups['plantes'] = { icon: Flower2, label: 'Plantes', color: 'text-green-500', count: snapshotPlants };
+      if (snapshotFungi > 0) groups['champignons'] = { icon: TreePine, label: 'Champignons', color: 'text-amber-600', count: snapshotFungi };
+    }
+
+    return Object.values(groups).filter(g => g.count > 0);
+  }, [marcheur.speciesObserved, snapshots]);
+
+  // 3. Contribution score (0-100)
+  const { score, label: scoreLabel } = useMemo(() => {
+    const coverageScore = totalMarchesCount > 0 
+      ? Math.min((marcheur.totalContributions > 0 ? explorationMarcheIds.length : 0) / totalMarchesCount, 1) * 40
+      : 0;
+    
+    const speciesScore = Math.min((marcheur.stats.speciesCount || 0) / 20, 1) * 30;
+    
+    const mediaTypes = [marcheur.stats.photos > 0, marcheur.stats.sons > 0, marcheur.stats.textes > 0].filter(Boolean).length;
+    const diversityScore = (mediaTypes / 3) * 30;
+    
+    const total = Math.round(coverageScore + speciesScore + diversityScore);
+    
+    let label = 'Explorateur curieux';
+    if (total >= 80) label = 'Contributeur remarquable';
+    else if (total >= 60) label = 'Explorateur engagé';
+    else if (total >= 40) label = 'Marcheur attentif';
+    
+    return { score: total, label };
+  }, [marcheur, explorationMarcheIds, totalMarchesCount]);
+
+  const hasAnyData = pioneerCount > 0 || taxonomicGroups.length > 0 || score > 0;
+  if (!hasAnyData) return null;
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: 0.15, duration: 0.3 }}
+      className="mx-3 my-3 p-3.5 rounded-xl bg-gradient-to-br from-emerald-500/5 to-cyan-500/5 border border-emerald-500/10"
+    >
+      <div className="flex items-center gap-1.5 mb-3">
+        <TrendingUp className="w-3.5 h-3.5 text-emerald-500" />
+        <p className="text-[11px] font-semibold text-foreground">Votre impact</p>
+      </div>
+
+      <div className="space-y-3">
+        {/* 1. Pioneer territories */}
+        {pioneerCount > 0 && (
+          <motion.div
+            initial={{ opacity: 0, x: -6 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.2 }}
+            className="flex items-start gap-2.5"
+          >
+            <div className="w-7 h-7 rounded-lg bg-amber-500/10 flex items-center justify-center flex-shrink-0 mt-0.5">
+              <MapPin className="w-3.5 h-3.5 text-amber-500" />
+            </div>
+            <div>
+              <p className="text-xs font-semibold text-foreground">
+                <motion.span
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 0.4 }}
+                >
+                  {pioneerCount}
+                </motion.span>
+                {' '}territoire{pioneerCount > 1 ? 's' : ''} pionnier{pioneerCount > 1 ? 's' : ''}
+              </p>
+              <p className="text-[10px] text-muted-foreground leading-relaxed">
+                Aucune donnée biodiversité n'existait avant votre passage
+              </p>
+            </div>
+          </motion.div>
+        )}
+
+        {/* 2. Taxonomic coverage */}
+        {taxonomicGroups.length > 0 && (
+          <motion.div
+            initial={{ opacity: 0, x: -6 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.3 }}
+            className="flex items-start gap-2.5"
+          >
+            <div className="w-7 h-7 rounded-lg bg-emerald-500/10 flex items-center justify-center flex-shrink-0 mt-0.5">
+              <Leaf className="w-3.5 h-3.5 text-emerald-500" />
+            </div>
+            <div>
+              <p className="text-xs font-semibold text-foreground mb-1.5">
+                {taxonomicGroups.length} famille{taxonomicGroups.length > 1 ? 's' : ''} du vivant
+              </p>
+              <div className="flex flex-wrap gap-1.5">
+                {taxonomicGroups.map((group, i) => (
+                  <motion.span
+                    key={group.label}
+                    initial={{ opacity: 0, scale: 0.8 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ delay: 0.4 + i * 0.08 }}
+                    className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-muted/60 dark:bg-white/5 text-[10px] font-medium"
+                  >
+                    <group.icon className={`w-3 h-3 ${group.color}`} />
+                    <span className="text-foreground">{group.label}</span>
+                    <span className="text-muted-foreground">{group.count}</span>
+                  </motion.span>
+                ))}
+              </div>
+            </div>
+          </motion.div>
+        )}
+
+        {/* 3. Contribution score gauge */}
+        {score > 0 && (
+          <motion.div
+            initial={{ opacity: 0, x: -6 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.4 }}
+            className="flex items-center gap-3 pt-1"
+          >
+            <CircularGauge score={score} />
+            <div>
+              <p className="text-xs font-semibold text-foreground">Indice de contribution</p>
+              <p className="text-[10px] text-muted-foreground">{scoreLabel}</p>
+            </div>
+          </motion.div>
+        )}
+      </div>
+    </motion.div>
+  );
+};
+
+const MarcheurCard: React.FC<{ marcheur: MarcheurWithStats; index: number; isExpanded: boolean; onToggle: () => void; marcheEventId?: string; explorationId?: string; explorationMarcheIds: string[]; totalMarchesCount: number }> = ({ marcheur, index, isExpanded, onToggle, marcheEventId, explorationId, explorationMarcheIds, totalMarchesCount }) => {
   const initials = `${marcheur.prenom?.[0] || ''}${marcheur.nom?.[0] || ''}`.toUpperCase();
   const hasSpecies = (marcheur.speciesObserved || []).length > 0;
   const totalContribs = marcheur.totalContributions || 0;
@@ -314,6 +540,15 @@ const MarcheurCard: React.FC<{ marcheur: MarcheurWithStats; index: number; isExp
               />
             )}
 
+            {/* Impact block */}
+            <MarcheurImpactBlock
+              marcheur={marcheur}
+              explorationId={explorationId}
+              explorationMarcheIds={explorationMarcheIds}
+              totalMarchesCount={totalMarchesCount}
+              isExpanded={isExpanded}
+            />
+
             {/* Section B: species observations */}
             <SpeciesDrawer marcheur={marcheur} />
 
@@ -339,6 +574,21 @@ const MarcheursTab: React.FC<MarcheursTabProps> = ({ explorationId, marcheEventI
   const { data: marcheurs, isLoading } = useExplorationParticipants(explorationId, marcheEventId);
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
+  // Fetch exploration marche IDs for impact analysis
+  const { data: explorationMarchesData } = useQuery({
+    queryKey: ['exploration-marche-ids', explorationId],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('exploration_marches')
+        .select('marche_id')
+        .eq('exploration_id', explorationId!);
+      return data?.map(d => d.marche_id) || [];
+    },
+    enabled: !!explorationId,
+    staleTime: 10 * 60_000,
+  });
+
+  const explorationMarcheIds = explorationMarchesData || [];
   const totalContributions = marcheurs?.reduce((sum, m) => sum + m.totalContributions, 0) || 0;
 
   const handleShare = async () => {
@@ -426,6 +676,9 @@ const MarcheursTab: React.FC<MarcheursTabProps> = ({ explorationId, marcheEventI
             isExpanded={expandedId === m.id}
             onToggle={() => setExpandedId(prev => prev === m.id ? null : m.id)}
             marcheEventId={marcheEventId}
+            explorationId={explorationId}
+            explorationMarcheIds={explorationMarcheIds}
+            totalMarchesCount={explorationMarcheIds.length}
           />
         ))}
       </div>
