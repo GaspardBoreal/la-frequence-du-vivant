@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useExplorationBiodiversitySummary } from '@/hooks/useExplorationBiodiversitySummary';
-import { Camera, Mic, BookOpen, Leaf, Navigation, MapPin } from 'lucide-react';
+import { Camera, Mic, BookOpen, Leaf, Navigation, MapPin, Plus, Minus } from 'lucide-react';
 import 'leaflet/dist/leaflet.css';
 
 interface MarcheStep {
@@ -119,6 +119,29 @@ function FitBounds({ positions }: { positions: [number, number][] }) {
     }
   }, [positions, map]);
   return null;
+}
+
+// Custom zoom controls
+function ZoomControls() {
+  const map = useMap();
+  return (
+    <div className="absolute bottom-20 right-4 z-[1000] flex flex-col gap-1.5">
+      <button
+        onClick={() => map.zoomIn()}
+        className="w-10 h-10 rounded-xl bg-white/10 backdrop-blur-md border border-white/20 text-white flex items-center justify-center hover:bg-emerald-500/20 hover:border-emerald-500/30 transition-all duration-200 active:scale-95"
+        aria-label="Zoomer"
+      >
+        <Plus className="w-4 h-4" />
+      </button>
+      <button
+        onClick={() => map.zoomOut()}
+        className="w-10 h-10 rounded-xl bg-white/10 backdrop-blur-md border border-white/20 text-white flex items-center justify-center hover:bg-emerald-500/20 hover:border-emerald-500/30 transition-all duration-200 active:scale-95"
+        aria-label="Dézoomer"
+      >
+        <Minus className="w-4 h-4" />
+      </button>
+    </div>
+  );
 }
 
 const ExplorationCarteTab: React.FC<ExplorationCarteTabProps> = ({
@@ -274,9 +297,11 @@ const ExplorationCarteTab: React.FC<ExplorationCarteTabProps> = ({
         zoomControl={false}
       >
         <TileLayer
-          attribution='&copy; <a href="https://carto.com/">CARTO</a>'
-          url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+          attribution='&copy; <a href="https://www.openstreetmap.fr/">OpenStreetMap France</a>'
+          url="https://{s}.tile.openstreetmap.fr/osmfr/{z}/{x}/{y}.png"
+          className="carte-tiles-dark"
         />
+        <ZoomControls />
         <FitBounds positions={positions} />
 
         {/* Route polyline */}
@@ -405,6 +430,9 @@ const ExplorationCarteTab: React.FC<ExplorationCarteTabProps> = ({
 
       {/* Custom popup style overrides */}
       <style>{`
+        .carte-tiles-dark {
+          filter: brightness(0.6) saturate(0.3);
+        }
         .exploration-carte-popup .leaflet-popup-content-wrapper {
           background: transparent !important;
           box-shadow: none !important;
@@ -424,6 +452,9 @@ const ExplorationCarteTab: React.FC<ExplorationCarteTabProps> = ({
         .arrow-decorator {
           background: none !important;
           border: none !important;
+        }
+        .leaflet-control-zoom {
+          display: none !important;
         }
       `}</style>
     </motion.div>
