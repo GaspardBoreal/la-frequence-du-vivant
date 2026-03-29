@@ -211,9 +211,9 @@ const CarnetVivant: React.FC<CarnetVivantProps> = ({ userId, participations }) =
       </div>
 
       {participations.length === 0 ? (
-        <div className="bg-white/5 rounded-xl border border-white/10 p-5 text-center">
-          <p className="text-emerald-200/50 text-xs">Vos marches vécues apparaîtront ici</p>
-          <p className="text-emerald-200/30 text-[10px] mt-1">
+        <div className="bg-card border-border dark:bg-white/5 rounded-xl border dark:border-white/10 p-5 text-center">
+          <p className="text-muted-foreground text-xs">Vos marches vécues apparaîtront ici</p>
+          <p className="text-muted-foreground/60 text-[10px] mt-1">
             Chaque aventure laissera une trace dans votre carnet
           </p>
         </div>
