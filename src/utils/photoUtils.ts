@@ -47,8 +47,10 @@ export const isSupportedPhotoFormat = (file: File): boolean => {
 
 // Convertir HEIC/HEIF en JPEG
 export const convertHeicToJpeg = async (file: File): Promise<File> => {
-  if (!file.type.includes('heic') && !file.type.includes('heif') && 
-      !file.name.toLowerCase().endsWith('.heic') && !file.name.toLowerCase().endsWith('.heif')) {
+  const ext = file.name.toLowerCase();
+  const mime = (file.type || '').toLowerCase();
+  if (!mime.includes('heic') && !mime.includes('heif') && 
+      !ext.endsWith('.heic') && !ext.endsWith('.heif')) {
     return file;
   }
 

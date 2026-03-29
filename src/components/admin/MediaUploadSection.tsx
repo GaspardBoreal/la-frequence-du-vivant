@@ -150,10 +150,12 @@ const MediaUploadSection: React.FC<MediaUploadSectionProps> = ({
 
     try {
       if (mediaType === 'photos') {
-        // Filtrer les fichiers supportés
+        // Accepter tous les fichiers image (ne plus bloquer sur le format)
         const supportedFiles = Array.from(files).filter(file => {
-          if (!isSupportedPhotoFormat(file)) {
-            toast.error(`Format non supporté: ${file.name}`);
+          const isImage = file.type?.startsWith('image/') || 
+            /\.(jpe?g|png|gif|webp|heic|heif|tiff?|bmp)$/i.test(file.name);
+          if (!isImage) {
+            toast.error(`Fichier ignoré (pas une image): ${file.name}`);
             return false;
           }
           return true;
