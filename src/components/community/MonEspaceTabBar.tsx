@@ -66,7 +66,7 @@ const MonEspaceTabBar: React.FC<MonEspaceTabBarProps> = ({ role, activeTab, onTa
 
   // Desktop: horizontal tabs below header
   return (
-    <nav className="sticky top-[88px] z-30 bg-emerald-950/60 backdrop-blur-md border-b border-white/5">
+    <nav className="sticky top-[88px] z-30 bg-background/60 backdrop-blur-md border-b border-border/20">
       <div className="max-w-2xl mx-auto px-4 flex items-center gap-1 overflow-x-auto scrollbar-hide">
         {tabs.map((key) => {
           const { label, icon: Icon } = TAB_META[key];
