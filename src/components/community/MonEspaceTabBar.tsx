@@ -76,7 +76,7 @@ const MonEspaceTabBar: React.FC<MonEspaceTabBarProps> = ({ role, activeTab, onTa
               key={key}
               onClick={() => onTabChange(key)}
               className={`relative flex items-center gap-1.5 px-3 py-2.5 text-sm font-medium transition-colors whitespace-nowrap ${
-                  isActive ? 'text-emerald-300' : 'text-white/50 hover:text-white/70'
+                  isActive ? 'text-primary' : 'text-muted-foreground hover:text-foreground'
                 }`}
             >
               <Icon className="w-4 h-4" />
