@@ -313,17 +313,25 @@ const ExplorationMarcheurPage: React.FC = () => {
                   exit={{ opacity: 0 }}
                   transition={{ duration: 0.2 }}
                 >
-                  {activeSensoryTab === 'voir' && (
-                    <VoirTab marcheId={activeMarcheId || ''} userId={userId} marcheEventId={marcheEventId} activeMarcheId={activeMarcheId} />
-                  )}
-                  {activeSensoryTab === 'ecouter' && (
-                    <EcouterTab marcheId={activeMarcheId || ''} userId={userId} marcheEventId={marcheEventId} activeMarcheId={activeMarcheId} />
-                  )}
-                  {activeSensoryTab === 'lire' && (
-                    <LireTab userId={userId} marcheEventId={marcheEventId} activeMarcheId={activeMarcheId} />
-                  )}
-                  {activeSensoryTab === 'vivant' && (
-                    <VivantTab marcheId={activeMarcheId || ''} userId={userId} marcheSlug={activeMarcheSlug} />
+                  {!userId ? (
+                    <div className="text-center py-8 text-white/40 text-sm">
+                      Connectez-vous pour voir et gérer vos contributions.
+                    </div>
+                  ) : (
+                    <>
+                      {activeSensoryTab === 'voir' && (
+                        <VoirTab marcheId={activeMarcheId || ''} userId={userId} marcheEventId={marcheEventId} activeMarcheId={activeMarcheId} />
+                      )}
+                      {activeSensoryTab === 'ecouter' && (
+                        <EcouterTab marcheId={activeMarcheId || ''} userId={userId} marcheEventId={marcheEventId} activeMarcheId={activeMarcheId} />
+                      )}
+                      {activeSensoryTab === 'lire' && (
+                        <LireTab userId={userId} marcheEventId={marcheEventId} activeMarcheId={activeMarcheId} />
+                      )}
+                      {activeSensoryTab === 'vivant' && (
+                        <VivantTab marcheId={activeMarcheId || ''} userId={userId} marcheSlug={activeMarcheSlug} />
+                      )}
+                    </>
                   )}
                 </motion.div>
               </AnimatePresence>
