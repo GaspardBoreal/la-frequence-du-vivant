@@ -1,59 +1,20 @@
 
-## Analyse rapide (cause du problème)
 
-Dans l’état actuel, les modes **Immersion/Fiche** existent uniquement dans `VivantTab` (`MarcheDetailModal.tsx`, autour des lignes 546+).  
-La vue **Voir** n’a **ni state `viewMode`**, ni toggle, ni rendu conditionnel : elle affiche seulement `Ajouter` + `Ancien`.
+# Mettre "Immersion" comme mode par defaut dans l'onglet Voir
 
-Résultat: en étant sur l’onglet **Voir** (capture COPIE 1), c’est normal de ne rien voir.
+## Probleme
 
-## Solution design (élégante et lisible)
+Le mode par defaut est `'fiche'` (ligne 68 de `MarcheDetailModal.tsx`). De plus, le `localStorage` persiste le dernier choix, ce qui signifie que naviguer entre les marches (Suivant/Precedent) garde le mode stocke — mais si l'utilisateur n'a jamais change, il demarre en Fiche.
 
-Ajouter un sélecteur de mode **directement dans la barre d’actions de Voir**, visible et explicite (pas seulement des icônes).
+## Solution
 
-```text
-[ + Ajouter ]                [ Immersion | Fiche ] [ Ancien ]
-```
+**Fichier : `src/components/community/MarcheDetailModal.tsx`**
 
-- **Immersion**: priorité photo (vignettes plus grandes, infos masquées par défaut, overlay discret au survol/tap)
-- **Fiche**: rendu actuel (titre + date + statut), pour gérer/éditer facilement ses contributions
+1. **Changer le fallback par defaut** (ligne 68) : remplacer `'fiche'` par `'immersion'`
+2. **Forcer le reset au changement de marche** : ajouter un `useEffect` qui remet `viewMode` a `'immersion'` quand l'ID de la marche change (props du modal), pour que chaque nouvelle marche s'ouvre en mode Immersion
 
-Le mode est mémorisé (`localStorage`) pour que l’expérience reste cohérente.
+Cela garantit que :
+- A l'ouverture initiale → Immersion
+- Suivant/Precedent → Immersion
+- L'utilisateur peut basculer en Fiche manuellement, mais le prochain changement de marche revient en Immersion
 
-## Plan d’implémentation
-
-### 1) `src/components/community/MarcheDetailModal.tsx` (VoirTab)
-- Ajouter `const [viewMode, setViewMode] = useState<'immersion' | 'fiche'>(...)` avec clé `voir-tab-view`.
-- Remplacer la zone d’actions du haut par:
-  - bouton `Ajouter`
-  - **segmented control** `Immersion / Fiche` (icône + label)
-  - `SortToggle` à droite
-- Appliquer `viewMode` aux sections photos de Voir:
-  - photos d’exploration (admin)
-  - mes contributions visuelles
-  - contributions des marcheurs visuelles
-
-### 2) `src/components/community/contributions/ContributionItem.tsx`
-- Ajouter prop optionnelle `viewMode?: 'immersion' | 'fiche'` (défaut `fiche`).
-- Pour `type === 'photo'` ou `type === 'video'`:
-  - **Immersion**: média plus grand (`aspect-[3/4]`), méta minimisée, overlay doux
-  - **Fiche**: rendu actuel conservé
-- Garder intact le comportement d’édition/suppression/visibilité (surtout en mode fiche).
-
-### 3) Ajustements visuels (sans toucher le mode sombre global)
-- Contraste du toggle renforcé (fond légèrement plus clair + état actif net).
-- Grilles adaptées:
-  - Immersion: plus dense et inspirante (2–3 colonnes selon largeur)
-  - Fiche: grille actuelle, confortable pour lecture/actions
-- Transitions Framer Motion légères au changement de mode.
-
-## Détails techniques (ciblés)
-- Aucun impact backend/Supabase.
-- Aucun changement des onglets Écouter/Lire.
-- Le mode sombre existant reste intact; on ne modifie que la hiérarchie visuelle de **Voir**.
-- Fallback robuste: si `localStorage` absent/invalide → `fiche`.
-
-## Résultat attendu
-
-Dans l’onglet **Voir**, l’utilisateur voit immédiatement les 2 modes, peut basculer à tout moment, et obtient:
-- un mode **Immersion** plus émotionnel et photographique,
-- un mode **Fiche** plus pratique pour gérer ses contributions.
