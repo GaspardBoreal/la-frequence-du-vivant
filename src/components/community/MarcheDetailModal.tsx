@@ -544,6 +544,30 @@ const LireTab: React.FC<{ userId: string; marcheEventId: string; activeMarcheId?
 
 // ─── Vivant (3 couches) ───
 const VivantTab: React.FC<{ marcheId: string; userId: string; marcheSlug?: string }> = ({ marcheId, userId, marcheSlug }) => {
+  const [viewMode, setViewMode] = useState<'immersion' | 'fiche'>(() => {
+    return (localStorage.getItem('vivant-tab-view') as 'immersion' | 'fiche') || 'immersion';
+  });
+  const handleViewMode = (mode: 'immersion' | 'fiche') => {
+    setViewMode(mode);
+    localStorage.setItem('vivant-tab-view', mode);
+  };
+
+  const getKingdomColor = (kingdom: string) => {
+    switch (kingdom) {
+      case 'Plantae': return 'from-lime-600 to-emerald-700';
+      case 'Animalia': return 'from-sky-600 to-blue-700';
+      case 'Fungi': return 'from-amber-600 to-orange-700';
+      default: return 'from-emerald-600 to-teal-700';
+    }
+  };
+  const getKingdomEmoji = (kingdom: string) => {
+    switch (kingdom) {
+      case 'Plantae': return '🌿';
+      case 'Animalia': return '🦅';
+      case 'Fungi': return '🍄';
+      default: return '🌍';
+    }
+  };
   // Fetch lat/lng for this marche
   const { data: coords } = useQuery({
     queryKey: ['marche-coords', marcheId],
