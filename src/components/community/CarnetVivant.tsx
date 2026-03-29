@@ -83,7 +83,7 @@ const MarcheCard: React.FC<{
       className="w-full text-left relative"
     >
       {/* Timeline connector dot */}
-      <div className="absolute -left-[21px] top-3 w-2.5 h-2.5 rounded-full bg-emerald-500/60 border-2 border-emerald-900 z-10" />
+      <div className="absolute -left-[21px] top-3 w-2.5 h-2.5 rounded-full bg-emerald-500 dark:bg-emerald-500/60 border-2 border-white dark:border-emerald-900 z-10" />
 
       <div className={`rounded-xl border transition-all hover:scale-[1.01] hover:shadow-lg hover:shadow-emerald-500/5 ${
         participation.validated_at 
