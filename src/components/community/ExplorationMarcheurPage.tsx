@@ -109,8 +109,9 @@ const ExplorationMarcheurPage: React.FC = () => {
         .select('id, nom_marche, ville')
         .in('id', links.map(l => l.marche_id));
       if (!marches?.length) return [];
-      const ordreMap = new Map<string, number>(links.map(l => [l.marche_id, l.ordre ?? 0]));
-      return marches.sort((a, b) => (ordreMap.get(a.id) ?? 0) - (ordreMap.get(b.id) ?? 0));
+      const ordreMap: Record<string, number> = {};
+      links.forEach(l => { ordreMap[l.marche_id] = l.ordre ?? 0; });
+      return marches.sort((a, b) => (ordreMap[a.id] ?? 0) - (ordreMap[b.id] ?? 0));
     },
     enabled: !!explorationId,
   });
