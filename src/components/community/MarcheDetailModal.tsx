@@ -284,7 +284,7 @@ export const VoirTab: React.FC<{ marcheId: string; userId: string; marcheEventId
 };
 
 // ─── Écouter Tab ───
-const EcouterTab: React.FC<{ marcheId: string; userId: string; marcheEventId: string; activeMarcheId?: string }> = ({ marcheId, userId, marcheEventId, activeMarcheId }) => {
+export const EcouterTab: React.FC<{ marcheId: string; userId: string; marcheEventId: string; activeMarcheId?: string }> = ({ marcheId, userId, marcheEventId, activeMarcheId }) => {
   const [sort, setSort] = useState<'desc' | 'asc'>('asc');
   const [showUpload, setShowUpload] = useState(false);
 
