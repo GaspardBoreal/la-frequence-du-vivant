@@ -235,10 +235,36 @@ const EmblematicSpeciesGallery: React.FC<EmblematicSpeciesGalleryProps> = ({
               />
             )}
 
-            {/* Results count */}
-            <div className="flex items-center gap-2 text-sm text-slate-400">
-              <Filter className="h-4 w-4" />
-              <span>{displayedSpecies.length} / {filteredSpecies.length} espèces affichées</span>
+            {/* Results count + view toggle */}
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2 text-sm text-slate-400">
+                <Filter className="h-4 w-4" />
+                <span>{displayedSpecies.length} / {filteredSpecies.length} espèces affichées</span>
+              </div>
+              <div className="flex items-center gap-1 bg-slate-900/50 rounded-lg p-1">
+                <button
+                  onClick={() => handleViewModeChange('immersion')}
+                  className={`p-1.5 rounded-md transition-all ${
+                    viewMode === 'immersion' 
+                      ? 'bg-emerald-600 text-white shadow-sm' 
+                      : 'text-slate-400 hover:text-white'
+                  }`}
+                  title="Mode Immersion"
+                >
+                  <Grid3X3 className="h-4 w-4" />
+                </button>
+                <button
+                  onClick={() => handleViewModeChange('fiche')}
+                  className={`p-1.5 rounded-md transition-all ${
+                    viewMode === 'fiche' 
+                      ? 'bg-emerald-600 text-white shadow-sm' 
+                      : 'text-slate-400 hover:text-white'
+                  }`}
+                  title="Mode Fiche"
+                >
+                  <LayoutList className="h-4 w-4" />
+                </button>
+              </div>
             </div>
           </div>
         </motion.div>
