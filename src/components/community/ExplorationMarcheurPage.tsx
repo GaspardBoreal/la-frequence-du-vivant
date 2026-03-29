@@ -48,11 +48,16 @@ const ComingSoonPlaceholder: React.FC<{ icon: typeof Users; title: string; descr
 );
 
 const ExplorationMarcheurPage: React.FC = () => {
-  const { explorationId } = useParams<{ explorationId: string }>();
+  const { explorationId: rawParam } = useParams<{ explorationId: string }>();
   const navigate = useNavigate();
   const [activeGlobalTab, setActiveGlobalTab] = useState<GlobalTab>('marches');
   const [activeSensoryTab, setActiveSensoryTab] = useState<SensoryTab>('voir');
   const [activeStepIndex, setActiveStepIndex] = useState(0);
+
+  // Detect if param is an event-based fallback (event-{uuid}) or a real exploration ID
+  const isEventFallback = rawParam?.startsWith('event-');
+  const directMarcheEventId = isEventFallback ? rawParam.replace('event-', '') : null;
+  const explorationId = isEventFallback ? null : rawParam;
 
   // Get current user
   const { data: session } = useQuery({
@@ -64,34 +69,58 @@ const ExplorationMarcheurPage: React.FC = () => {
   });
   const userId = session?.user?.id;
 
+  // Resolve exploration_id from marche_event if needed
+  const { data: resolvedExplorationId } = useQuery({
+    queryKey: ['resolve-exploration', directMarcheEventId],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('marche_events')
+        .select('exploration_id')
+        .eq('id', directMarcheEventId!)
+        .single();
+      return data?.exploration_id || null;
+    },
+    enabled: !!directMarcheEventId,
+  });
+
+  const effectiveExplorationId = explorationId || resolvedExplorationId;
+
   // Fetch exploration details
   const { data: exploration, isLoading: isLoadingExploration } = useQuery({
-    queryKey: ['exploration-marcheur', explorationId],
+    queryKey: ['exploration-marcheur', effectiveExplorationId],
     queryFn: async () => {
       const { data } = await supabase
         .from('explorations')
         .select('id, name, description, slug')
-        .eq('id', explorationId!)
+        .eq('id', effectiveExplorationId!)
         .single();
       return data;
     },
-    enabled: !!explorationId,
+    enabled: !!effectiveExplorationId,
   });
 
-  // Fetch marche_events for this exploration
+  // Fetch marche_events for this exploration (or use direct event)
   const { data: marcheEvent } = useQuery({
-    queryKey: ['exploration-marche-event', explorationId],
+    queryKey: ['exploration-marche-event', effectiveExplorationId, directMarcheEventId],
     queryFn: async () => {
+      if (directMarcheEventId) {
+        const { data } = await supabase
+          .from('marche_events')
+          .select('id, title, date_marche, lieu')
+          .eq('id', directMarcheEventId)
+          .single();
+        return data;
+      }
       const { data } = await supabase
         .from('marche_events')
         .select('id, title, date_marche, lieu')
-        .eq('exploration_id', explorationId!)
+        .eq('exploration_id', effectiveExplorationId!)
         .order('date_marche', { ascending: false })
         .limit(1)
         .single();
       return data;
     },
-    enabled: !!explorationId,
+    enabled: !!effectiveExplorationId || !!directMarcheEventId,
   });
 
   // Fetch exploration marches (steps)
