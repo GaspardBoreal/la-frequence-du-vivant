@@ -63,6 +63,10 @@ const VoirTab: React.FC<{ marcheId: string; userId: string; marcheEventId: strin
   const [sort, setSort] = useState<'desc' | 'asc'>('asc');
   const [showUpload, setShowUpload] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
+  const [viewMode, setViewMode] = useState<'immersion' | 'fiche'>(() => {
+    const stored = localStorage.getItem('voir-tab-view');
+    return stored === 'immersion' || stored === 'fiche' ? stored : 'fiche';
+  });
 
   // Admin photos from the marche
   const { data: adminPhotos } = useQuery({
