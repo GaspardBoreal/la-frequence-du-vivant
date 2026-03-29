@@ -243,7 +243,7 @@ const VoirTab: React.FC<{ marcheId: string; userId: string; marcheEventId: strin
             <Users className="w-3 h-3 text-blue-400" />
             <span className="text-blue-300/60 text-[10px] uppercase tracking-wider">Des marcheurs ({othersMedias.length})</span>
           </div>
-          <div className="grid grid-cols-2 gap-2">
+          <div className={`grid ${viewMode === 'immersion' ? 'grid-cols-3 gap-1' : 'grid-cols-2 gap-2'}`}>
             {othersMedias.map((m, i) => (
               <ContributionItem
                 key={m.id}
@@ -255,6 +255,7 @@ const VoirTab: React.FC<{ marcheId: string; userId: string; marcheEventId: strin
                 isPublic={m.is_public}
                 isOwner={false}
                 createdAt={m.created_at}
+                viewMode={viewMode}
                 onClick={() => setLightboxIndex(adminCount + myCount + i)}
               />
             ))}
