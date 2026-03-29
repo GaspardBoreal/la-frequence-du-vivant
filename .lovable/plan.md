@@ -1,89 +1,60 @@
 
 
-# Unifier l'affichage des especes : un seul composant pour les deux vues
+# Navigation rapide entre marches — Sélecteur complémentaire
 
-## Diagnostic
+## Constat
 
-Deux vues affichent des especes issues de la meme source (`useBiodiversityData`) mais avec des composants et logiques completement differents :
+Le `StepSelector` actuel offre une navigation séquentielle (◀ ▶) et des dots cliquables. C'est élégant pour 3-4 marches, mais pénible pour sauter de la 1 à la 7 ou de la 8 à la 3 sur une exploration de 10+ étapes.
 
-| | VivantTab (Exploration) | BioDivSubSection (Bioacoustique) |
-|---|---|---|
-| **Composant card** | `SpeciesCardWithPhoto` | `EnhancedSpeciesCard` |
-| **Donnees** | `BiodiversitySpecies[]` → `processSpeciesData()` → objet simplifie `TopSpecies` | `BiodiversitySpecies[]` directement |
-| **Filtres** | Aucun | Recherche, categorie, source, audio, contributeur |
-| **Noms affiches** | Seulement au hover (immersion) ou tronque (fiche) — souvent vide car `commonNameFr` n'est pas dans `BiodiversitySpecies` | Toujours visible avec traduction FR |
-| **Onglets** | Aucun | Toutes / Carte / Faune / Flore / Champignons / Autres |
+## Solution : Tiroir déroulant "Jump to"
 
-**Cause du bug COPIE 1** : `processSpeciesData` transforme les especes en un format simplifie qui perd `commonName`. Le champ `commonNameFr` est souvent `null` car il n'existe pas dans les donnees brutes GBIF/iNaturalist. Resultat : les cartes affichent des rectangles verts vides sans nom.
-
-## Solution : extraire un composant `SpeciesExplorer` reutilisable
-
-Creer un composant unique `SpeciesExplorer` qui encapsule :
-1. La logique de filtrage (actuellement dans BioDivSubSection lignes 140-294)
-2. Les onglets par categorie (Toutes / Faune / Flore / Champignons / Autres)
-3. Le toggle Immersion / Fiche
-4. L'affichage via `EnhancedSpeciesCard` (le composant le plus complet)
-
-Ce composant accepte un tableau de `BiodiversitySpecies[]` et s'adapte au contexte via des props.
-
-## Architecture
+Ajouter un **mini-drawer** qui s'ouvre en tapant sur le label central "Étape 3/10" du StepSelector existant. Ce tiroir affiche la liste complète des marches dans un format compact et scrollable, permettant un saut direct.
 
 ```text
-SpeciesExplorer (nouveau)
-├── Props: species[], compact?, showFilters?, showMap?, onSpeciesClick?
-├── Filtres: recherche, categorie, source, audio, contributeur
-├── Onglets: Toutes | Faune | Flore | Champignons | Autres
-├── Toggle: Immersion / Fiche
-└── Rendu: EnhancedSpeciesCard (unifie)
+Avant (tap sur "Étape 3/10") :
+┌──────────────────────────────┐
+│  ◀   Étape 3/10  ▼   ▶      │  ← le ▼ indique que c'est tapable
+│     🌿 Vouillé              │
+│     ● ● ◉ ● ● ● ● ●        │
+└──────────────────────────────┘
 
-Utilise par :
-├── VivantTab (Exploration page) → compact mode, sans carte
-└── BioDivSubSection (Bioacoustique) → full mode, avec carte + rayon
+Après tap — drawer s'ouvre dessous :
+┌──────────────────────────────┐
+│  ◀   Étape 3/10  ▲   ▶      │
+│     🌿 Vouillé              │
+├──────────────────────────────┤
+│  1  Départ Transhumance      │
+│  2  Parc de la Gorande       │
+│  3  Vouillé            ✓     │  ← active, highlight emerald
+│  4  La Villedieu             │
+│  5  Saint-Maixent            │
+│  6  Niort                    │
+│  7  Marais Poitevin          │
+│  8  La Rochelle              │
+└──────────────────────────────┘
 ```
 
-## Fichiers impactes
+## Comportement UX
+
+- **Tap sur le label central** → toggle le drawer (ouvert/fermé)
+- **Tap sur une marche dans la liste** → saut immédiat + fermeture du drawer
+- **Indicateur visuel** : petite icône chevron-down à côté de "Étape X/Y" signalant l'interactivité
+- **ScrollArea** limitée à `max-h-[200px]` pour ne pas envahir l'écran mobile
+- **Animation** : slide-down fluide avec `framer-motion` (height auto)
+- Les dots existants restent en dessous — rien n'est supprimé
+
+## Design
+
+- Fond glassmorphism cohérent avec le StepSelector (`bg-white/5 backdrop-blur`)
+- Chaque ligne : numéro + nom de la marche, highlight emerald pour l'active
+- Hover/tap feedback subtil
+- Transition `AnimatePresence` pour l'ouverture/fermeture
+
+## Fichier impacté
 
 | Fichier | Action |
 |---|---|
-| `src/components/biodiversity/SpeciesExplorer.tsx` | **Nouveau** — composant unifie extrait de BioDivSubSection |
-| `src/components/community/MarcheDetailModal.tsx` | **Modifier** VivantTab : remplacer la grille manuelle par `<SpeciesExplorer>` avec les `BiodiversitySpecies[]` brutes (plus de `processSpeciesData`) |
-| `src/components/open-data/BioDivSubSection.tsx` | **Modifier** : remplacer toute la section filtres+onglets+grille par `<SpeciesExplorer>` |
+| `src/components/community/MarcheDetailModal.tsx` | Modifier `StepSelector` — ajouter état `isOpen`, drawer AnimatePresence, liste cliquable |
 
-## Detail du composant SpeciesExplorer
-
-**Props** :
-- `species: BiodiversitySpecies[]` — donnees brutes
-- `compact?: boolean` — mode compact pour VivantTab (filtres reduits, pas de slider rayon)
-- `showMap?: boolean` — afficher l'onglet Carte
-- `mapProps?: { lat, lng, data }` — props pour la carte
-- `onSpeciesClick?: (species) => void`
-- `className?: string`
-
-**Logique interne** (extraite telle quelle de BioDivSubSection) :
-- Etats : `searchTerm`, `selectedCategory`, `selectedSource`, `hasAudioFilter`, `selectedContributor`, `viewMode`
-- `filteredSpecies` memo avec tous les filtres chaines
-- `categoryStats` et `contributorsBySource` memos
-- Toggle Immersion/Fiche persistent via localStorage
-
-**Mode compact** (VivantTab) :
-- Filtres affiches sur une seule ligne (dropdowns plus petits)
-- Pas de slider rayon
-- Grille 3 cols mobile / 4 cols desktop
-- Stats territoire conservees au-dessus
-
-**Mode full** (BioDivSubSection) :
-- Tous les filtres affiches
-- Slider rayon gere par le parent (pas dans SpeciesExplorer)
-- Grille 2-3 cols
-
-## Impact sur le bug des noms
-
-En utilisant directement `BiodiversitySpecies[]` (qui contient `commonName` rempli par les APIs) au lieu de passer par `processSpeciesData` qui perd cette info, les noms s'afficheront correctement dans les deux vues. `EnhancedSpeciesCard` gere deja la traduction FR via `useSpeciesTranslation`.
-
-## Ce qui ne change PAS
-
-- `useBiodiversityData` hook — inchange
-- `EnhancedSpeciesCard` — inchange, utilise tel quel
-- La carte, les metriques, le detail modal espece — inchanges
-- Le slider rayon reste dans BioDivSubSection (contexte specifique)
+Aucun nouveau fichier. Le composant reste exporté et fonctionne dans les deux contextes (modal + page exploration).
 
