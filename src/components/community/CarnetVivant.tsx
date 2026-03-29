@@ -54,11 +54,11 @@ const getSeasonYear = (date: Date): string => {
   return `${season} ${year}`;
 };
 
-const CountBadge: React.FC<{ icon: typeof Camera; count: number; label: string; color: string }> = ({ icon: Icon, count, label, color }) => (
-  <div className={`flex flex-col items-center gap-0.5 px-2.5 py-1.5 rounded-lg bg-white/5 ${count === 0 ? 'opacity-30' : ''}`}>
-    <Icon className={`w-3.5 h-3.5 ${color}`} />
-    <span className="text-white text-xs font-semibold">{count}</span>
-    <span className="text-emerald-200/40 text-[9px]">{label}</span>
+const CountBadge: React.FC<{ icon: typeof Camera; count: number; label: string; color: string; lightColor: string }> = ({ icon: Icon, count, label, color, lightColor }) => (
+  <div className={`flex flex-col items-center gap-0.5 px-2.5 py-1.5 rounded-lg bg-gray-100 dark:bg-white/5 ${count === 0 ? 'opacity-30' : ''}`}>
+    <Icon className={`w-3.5 h-3.5 ${lightColor} dark:${color}`} />
+    <span className="text-foreground text-xs font-semibold">{count}</span>
+    <span className="text-muted-foreground text-[9px]">{label}</span>
   </div>
 );
 
@@ -83,37 +83,37 @@ const MarcheCard: React.FC<{
       className="w-full text-left relative"
     >
       {/* Timeline connector dot */}
-      <div className="absolute -left-[21px] top-3 w-2.5 h-2.5 rounded-full bg-emerald-500/60 border-2 border-emerald-900 z-10" />
+      <div className="absolute -left-[21px] top-3 w-2.5 h-2.5 rounded-full bg-emerald-500 dark:bg-emerald-500/60 border-2 border-white dark:border-emerald-900 z-10" />
 
       <div className={`rounded-xl border transition-all hover:scale-[1.01] hover:shadow-lg hover:shadow-emerald-500/5 ${
         participation.validated_at 
-          ? 'bg-gradient-to-br from-emerald-500/10 to-amber-500/5 border-emerald-500/20' 
-          : 'bg-white/5 border-white/10'
+          ? 'bg-emerald-50 border-emerald-200 dark:bg-gradient-to-br dark:from-emerald-500/10 dark:to-amber-500/5 dark:border-emerald-500/20' 
+          : 'bg-card border-border dark:bg-white/5 dark:border-white/10'
       }`}>
         <div className="p-3 space-y-2">
           {/* Header: lieu + date */}
           <div className="flex items-start justify-between gap-2">
             <div className="flex items-center gap-1.5 min-w-0">
-              <MapPin className="w-3.5 h-3.5 text-emerald-400 flex-shrink-0" />
-              <span className="text-white text-sm font-medium truncate">
+              <MapPin className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 flex-shrink-0" />
+              <span className="text-foreground text-sm font-medium truncate">
                 {event.lieu || event.title}
               </span>
             </div>
-            <span className="text-emerald-300/60 text-[11px] flex-shrink-0">
+            <span className="text-emerald-700 dark:text-emerald-300/60 text-[11px] flex-shrink-0">
               {format(date, 'dd MMM', { locale: fr })}
             </span>
           </div>
 
           {event.lieu && event.lieu !== event.title && (
-            <p className="text-emerald-200/50 text-[11px] truncate pl-5">{event.title}</p>
+            <p className="text-muted-foreground text-[11px] truncate pl-5">{event.title}</p>
           )}
 
           {/* Data badges */}
           {summary && (
             <div className="flex gap-1.5">
-              <CountBadge icon={Camera} count={summary.photos_count} label="Photos" color="text-sky-400" />
-              <CountBadge icon={Music} count={summary.audio_count} label="Sons" color="text-violet-400" />
-              <CountBadge icon={PenLine} count={summary.textes_count} label="Textes" color="text-amber-400" />
+              <CountBadge icon={Camera} count={summary.photos_count} label="Photos" color="text-sky-400" lightColor="text-sky-600" />
+              <CountBadge icon={Music} count={summary.audio_count} label="Sons" color="text-violet-400" lightColor="text-violet-600" />
+              <CountBadge icon={PenLine} count={summary.textes_count} label="Textes" color="text-amber-400" lightColor="text-amber-600" />
             </div>
           )}
 
@@ -121,13 +121,13 @@ const MarcheCard: React.FC<{
           {(summary?.species_count || summary?.kigo_text) && (
             <div className="flex items-center gap-2 text-[11px]">
               {summary.species_count > 0 && (
-                <span className="flex items-center gap-1 text-emerald-300/70">
+                <span className="flex items-center gap-1 text-emerald-700 dark:text-emerald-300/70">
                   <Leaf className="w-3 h-3" />
                   {summary.species_count} espèces
                 </span>
               )}
               {summary.kigo_text && (
-                <span className="text-amber-300/60 italic">
+                <span className="text-amber-600 dark:text-amber-300/60 italic">
                   « {summary.kigo_text} »
                 </span>
               )}
@@ -135,7 +135,7 @@ const MarcheCard: React.FC<{
           )}
 
           {!hasData && (
-            <p className="text-emerald-200/30 text-[10px] italic pl-5">
+            <p className="text-muted-foreground/60 text-[10px] italic pl-5">
               Données en attente de collecte
             </p>
           )}
@@ -203,17 +203,17 @@ const CarnetVivant: React.FC<CarnetVivantProps> = ({ userId, participations }) =
     <div className="space-y-1">
       {/* Header */}
       <div className="flex items-center gap-2 mb-3">
-        <Book className="w-4 h-4 text-amber-300" />
-        <h2 className="text-sm font-semibold text-white">
+        <Book className="w-4 h-4 text-amber-600 dark:text-amber-300" />
+        <h2 className="text-sm font-semibold text-foreground">
           Mon carnet vivant
         </h2>
-        <span className="text-emerald-300/50 text-xs">({participations.length})</span>
+        <span className="text-muted-foreground text-xs">({participations.length})</span>
       </div>
 
       {participations.length === 0 ? (
-        <div className="bg-white/5 rounded-xl border border-white/10 p-5 text-center">
-          <p className="text-emerald-200/50 text-xs">Vos marches vécues apparaîtront ici</p>
-          <p className="text-emerald-200/30 text-[10px] mt-1">
+        <div className="bg-card border-border dark:bg-white/5 rounded-xl border dark:border-white/10 p-5 text-center">
+          <p className="text-muted-foreground text-xs">Vos marches vécues apparaîtront ici</p>
+          <p className="text-muted-foreground/60 text-[10px] mt-1">
             Chaque aventure laissera une trace dans votre carnet
           </p>
         </div>
@@ -231,18 +231,18 @@ const CarnetVivant: React.FC<CarnetVivantProps> = ({ userId, participations }) =
                   onClick={() => toggleSeason(seasonKey)}
                   className="w-full flex items-center gap-2 py-1.5 px-1 group"
                 >
-                  <div className="h-px flex-1 bg-gradient-to-r from-transparent via-emerald-500/20 to-transparent" />
-                  <span className="text-emerald-300/70 text-[11px] font-medium flex items-center gap-1.5 flex-shrink-0">
+                   <div className="h-px flex-1 bg-gradient-to-r from-transparent via-emerald-300 dark:via-emerald-500/20 to-transparent" />
+                  <span className="text-emerald-700 dark:text-emerald-300/70 text-[11px] font-medium flex items-center gap-1.5 flex-shrink-0">
                     {emoji} {seasonKey}
-                    <span className="text-emerald-300/40">({items.length})</span>
+                    <span className="text-emerald-500 dark:text-emerald-300/40">({items.length})</span>
                     {open ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
                   </span>
-                  <div className="h-px flex-1 bg-gradient-to-r from-transparent via-emerald-500/20 to-transparent" />
+                  <div className="h-px flex-1 bg-gradient-to-r from-transparent via-emerald-300 dark:via-emerald-500/20 to-transparent" />
                 </button>
 
                 {/* Timeline */}
                 {open && (
-                  <div className="relative ml-4 pl-4 border-l border-emerald-500/20 space-y-2 pb-2">
+                  <div className="relative ml-4 pl-4 border-l border-emerald-300 dark:border-emerald-500/20 space-y-2 pb-2">
                     {items.map((p, i) => (
                       <MarcheCard
                         key={p.id}

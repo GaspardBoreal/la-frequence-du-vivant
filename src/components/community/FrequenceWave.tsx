@@ -200,8 +200,8 @@ const FrequenceWave: React.FC<FrequenceWaveProps> = ({ totalFrequences, role }) 
   });
 
   return (
-    <div className="relative rounded-2xl bg-white/[0.12] border border-white/20 backdrop-blur-lg p-3 overflow-hidden">
-      <div className="absolute inset-0 bg-gradient-to-br from-white/[0.05] to-transparent" />
+    <div className="relative rounded-2xl bg-emerald-50 border border-emerald-200 dark:bg-white/[0.12] dark:border-white/20 backdrop-blur-lg p-3 overflow-hidden">
+      <div className="absolute inset-0 bg-gradient-to-br from-emerald-100/50 to-transparent dark:from-white/[0.05] dark:to-transparent" />
 
       {/* Onde en fond absolu */}
       <div className="absolute bottom-0 left-0 right-0 flex items-end justify-center gap-[2px] h-12 px-3 opacity-20">
@@ -226,7 +226,7 @@ const FrequenceWave: React.FC<FrequenceWaveProps> = ({ totalFrequences, role }) 
 
       {/* Titre */}
       <div className="relative mb-1.5">
-        <span className="text-[10px] text-white/60 font-medium tracking-wide uppercase">Ma Fréquence du jour</span>
+        <span className="text-[10px] text-emerald-700 dark:text-white/60 font-medium tracking-wide uppercase">Ma Fréquence du jour</span>
       </div>
 
       {/* Citation pleine largeur */}
@@ -239,18 +239,18 @@ const FrequenceWave: React.FC<FrequenceWaveProps> = ({ totalFrequences, role }) 
           transition={{ duration: 0.5, ease: 'easeOut' }}
           className="relative text-left"
         >
-          <p className="italic text-white/90 text-xs leading-relaxed">
+          <p className="italic text-foreground text-xs leading-relaxed">
             « {citation.texte} »
           </p>
           <div className="flex justify-end mt-1.5">
-            <span className="text-white/50 text-[10px] inline-flex items-center gap-1">
+            <span className="text-muted-foreground text-[10px] inline-flex items-center gap-1">
               — {citation.auteur}
               {citation.url && (
                 <a
                   href={citation.url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-white/30 hover:text-white/60 transition-colors"
+                  className="text-muted-foreground/50 hover:text-foreground/60 transition-colors"
                   onClick={(e) => e.stopPropagation()}
                   aria-label="Vérifier la source"
                 >

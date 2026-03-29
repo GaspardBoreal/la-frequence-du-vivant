@@ -55,19 +55,19 @@ const ProgressionCard: React.FC<ProgressionCardProps> = ({
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      className={`rounded-2xl border-2 ${dark.border} bg-white/[0.14] backdrop-blur-lg pt-3 px-6 pb-6 space-y-4`}
+      className={`rounded-2xl border-2 border-emerald-200 dark:${dark.border} bg-card dark:bg-white/[0.14] backdrop-blur-lg pt-3 px-6 pb-6 space-y-4`}
     >
       <div className="flex items-start justify-between">
         <div>
-          <p className="text-sm text-white/80 mb-2">Votre rôle actuel</p>
+          <p className="text-sm text-muted-foreground mb-2">Votre rôle actuel</p>
           <RoleBadge role={role} size="lg" darkMode />
         </div>
-        <div className={`text-4xl font-bold ${dark.text} mt-6`}>
+        <div className={`text-4xl font-bold text-primary dark:${dark.text} mt-6`}>
           {marchesCount}
         </div>
       </div>
 
-      <p className="text-sm text-white/60 italic">
+      <p className="text-sm text-muted-foreground italic">
         {role === 'marcheur_en_devenir' && pendingCount === 1
           ? 'Bravo, votre première marche vous attend ! Chaque pas compte — explorez d\'autres sentiers pour enrichir votre parcours.'
           : role === 'marcheur_en_devenir' && pendingCount > 1
@@ -79,14 +79,14 @@ const ProgressionCard: React.FC<ProgressionCardProps> = ({
 
       {config.nextRole && (
         <div className="space-y-2">
-          <div className="flex items-center justify-between text-xs text-white/70">
+          <div className="flex items-center justify-between text-xs text-muted-foreground">
             <span>{progressLabel}</span>
             <span className="flex items-center gap-1">
               <ArrowRight className="w-3 h-3" />
               {ROLE_CONFIG[config.nextRole].label}
             </span>
           </div>
-          <div className="h-2 bg-white/25 rounded-full overflow-hidden">
+          <div className="h-2 bg-emerald-100 dark:bg-white/25 rounded-full overflow-hidden">
             <motion.div
               className="h-full rounded-full bg-gradient-to-r from-emerald-400 to-teal-500"
               initial={{ width: 0 }}
@@ -106,16 +106,16 @@ const ProgressionCard: React.FC<ProgressionCardProps> = ({
           const isActive = i <= currentIndex;
           return (
             <React.Fragment key={r}>
-              <div className={`flex flex-col items-center gap-1 ${isActive ? rDark.text : 'text-emerald-200/30'}`}>
-                <div className={`w-8 h-8 rounded-full flex items-center justify-center ${isActive ? rDark.bg : 'bg-white/5'} border ${isActive ? rDark.border : 'border-white/10'}`}>
+              <div className={`flex flex-col items-center gap-1 ${isActive ? `text-emerald-700 dark:${rDark.text}` : 'text-gray-300 dark:text-emerald-200/30'}`}>
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center ${isActive ? `bg-emerald-100 dark:${rDark.bg}` : 'bg-gray-50 dark:bg-white/5'} border ${isActive ? `border-emerald-300 dark:${rDark.border}` : 'border-gray-200 dark:border-white/10'}`}>
                   <Icon className="w-4 h-4" />
                 </div>
-                <span className={`text-[10px] text-center leading-tight whitespace-nowrap text-white/70 ${r === role ? 'font-bold' : 'font-medium'}`}>
+                <span className={`text-[10px] text-center leading-tight whitespace-nowrap text-muted-foreground ${r === role ? 'font-bold' : 'font-medium'}`}>
                   {rConfig.label}
                 </span>
               </div>
               {i < ALL_ROLES.length - 1 && (
-                <ChevronRight className={`w-3 h-3 flex-shrink-0 ${i < currentIndex ? 'text-emerald-400' : 'text-emerald-200/20'}`} />
+                <ChevronRight className={`w-3 h-3 flex-shrink-0 ${i < currentIndex ? 'text-emerald-500 dark:text-emerald-400' : 'text-gray-300 dark:text-emerald-200/20'}`} />
               )}
             </React.Fragment>
           );

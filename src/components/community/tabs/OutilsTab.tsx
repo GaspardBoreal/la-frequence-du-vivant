@@ -46,7 +46,7 @@ const OutilsTab: React.FC<OutilsTabProps> = ({ role, userId }) => {
       <div className="space-y-4">
         <button
           onClick={() => setActiveTool(null)}
-          className="text-sm text-emerald-300/70 hover:text-emerald-300 transition-colors flex items-center gap-1"
+          className="text-sm text-emerald-700 dark:text-emerald-300/70 hover:text-emerald-800 dark:hover:text-emerald-300 transition-colors flex items-center gap-1"
         >
           ← Retour aux outils
         </button>
@@ -60,11 +60,11 @@ const OutilsTab: React.FC<OutilsTabProps> = ({ role, userId }) => {
   return (
     <div className="space-y-5">
       <div>
-        <h2 className="text-lg font-semibold text-white flex items-center gap-2">
-          <Compass className="w-5 h-5 text-emerald-400" />
+        <h2 className="text-lg font-semibold text-foreground flex items-center gap-2">
+          <Compass className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
           Mes outils
         </h2>
-        <p className="text-sm text-white/50 mt-1">Instruments pédagogiques et pratiques du marcheur</p>
+        <p className="text-sm text-muted-foreground mt-1">Instruments pédagogiques et pratiques du marcheur</p>
       </div>
 
       <div className="grid grid-cols-2 gap-3">
@@ -79,23 +79,23 @@ const OutilsTab: React.FC<OutilsTabProps> = ({ role, userId }) => {
               onClick={() => !locked && setActiveTool(tool.id)}
               className={`relative flex flex-col items-center gap-2 p-5 rounded-2xl border text-center transition-all ${
                 locked
-                  ? 'bg-white/[0.04] border-white/5 opacity-40 cursor-not-allowed'
-                  : 'bg-white/[0.08] border-white/10 hover:bg-white/[0.12] hover:border-emerald-400/20 cursor-pointer'
+                  ? 'bg-gray-50 border-gray-200 dark:bg-white/[0.04] dark:border-white/5 opacity-40 cursor-not-allowed'
+                  : 'bg-card border-border hover:bg-emerald-50 hover:border-emerald-300 dark:bg-white/[0.08] dark:border-white/10 dark:hover:bg-white/[0.12] dark:hover:border-emerald-400/20 cursor-pointer'
               }`}
             >
               {locked && (
                 <div className="absolute top-2 right-2">
-                  <Lock className="w-3.5 h-3.5 text-white/30" />
+                  <Lock className="w-3.5 h-3.5 text-gray-400 dark:text-white/30" />
                 </div>
               )}
               <div className={`w-11 h-11 rounded-xl flex items-center justify-center ${
-                locked ? 'bg-white/5' : 'bg-emerald-400/10'
+                locked ? 'bg-gray-100 dark:bg-white/5' : 'bg-emerald-100 dark:bg-emerald-400/10'
               }`}>
-                <Icon className={`w-5 h-5 ${locked ? 'text-white/30' : 'text-emerald-400'}`} />
+                <Icon className={`w-5 h-5 ${locked ? 'text-gray-400 dark:text-white/30' : 'text-emerald-600 dark:text-emerald-400'}`} />
               </div>
               <div>
-                <p className={`text-sm font-medium ${locked ? 'text-white/30' : 'text-white'}`}>{tool.label}</p>
-                <p className={`text-[11px] mt-0.5 ${locked ? 'text-white/20' : 'text-white/50'}`}>
+                <p className={`text-sm font-medium ${locked ? 'text-gray-400 dark:text-white/30' : 'text-foreground'}`}>{tool.label}</p>
+                <p className={`text-[11px] mt-0.5 ${locked ? 'text-gray-300 dark:text-white/20' : 'text-muted-foreground'}`}>
                   {tool.comingSoon ? 'Bientôt disponible' : tool.description}
                 </p>
               </div>
