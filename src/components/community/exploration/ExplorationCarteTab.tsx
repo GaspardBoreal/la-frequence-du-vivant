@@ -198,8 +198,8 @@ const ExplorationCarteTab: React.FC<ExplorationCarteTabProps> = ({
       // First photo per marche as hero
       const heroSet = new Set<string>();
       (heroPhotosRes.data || []).forEach(r => {
-        if (!heroSet.has(r.marche_id) && stats[r.marche_id]) {
-          stats[r.marche_id].heroPhotoUrl = r.file_url;
+        if (r.marche_id && !heroSet.has(r.marche_id) && stats[r.marche_id]) {
+          stats[r.marche_id].heroPhotoUrl = r.url_fichier || undefined;
           heroSet.add(r.marche_id);
         }
       });
