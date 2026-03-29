@@ -160,7 +160,7 @@ const ExplorationMarcheurPage: React.FC = () => {
   const tabCounts: Record<SensoryTab, number> = {
     voir: stats?.totalMedias || 0,
     ecouter: stats?.totalAudio || 0,
-    lire: stats?.textes || 0,
+    lire: stats?.totalTextes || 0,
     vivant: 0,
   };
 
