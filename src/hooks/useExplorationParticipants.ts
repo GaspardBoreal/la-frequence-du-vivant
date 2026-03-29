@@ -1,6 +1,12 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 
+export interface SpeciesObservation {
+  scientificName: string;
+  photoUrl?: string;
+  observationDate?: string;
+}
+
 export interface MarcheurWithStats {
   id: string;
   prenom: string;
@@ -17,6 +23,7 @@ export interface MarcheurWithStats {
     speciesCount: number;
   };
   totalContributions: number;
+  speciesObserved: SpeciesObservation[];
 }
 
 export function useExplorationParticipants(explorationId?: string, marcheEventId?: string) {
@@ -38,19 +45,28 @@ export function useExplorationParticipants(explorationId?: string, marcheEventId
           const crewIds = crew.map(c => c.id);
           const { data: observations } = await supabase
             .from('marcheur_observations')
-            .select('marcheur_id, species_scientific_name')
+            .select('marcheur_id, species_scientific_name, photo_url, observation_date')
             .in('marcheur_id', crewIds);
 
-          const speciesByMarcheur = new Map<string, Set<string>>();
+          const obsByMarcheur = new Map<string, SpeciesObservation[]>();
+          const speciesSetByMarcheur = new Map<string, Set<string>>();
           (observations || []).forEach(obs => {
-            if (!speciesByMarcheur.has(obs.marcheur_id)) {
-              speciesByMarcheur.set(obs.marcheur_id, new Set());
+            if (!speciesSetByMarcheur.has(obs.marcheur_id)) {
+              speciesSetByMarcheur.set(obs.marcheur_id, new Set());
+              obsByMarcheur.set(obs.marcheur_id, []);
             }
-            speciesByMarcheur.get(obs.marcheur_id)!.add(obs.species_scientific_name);
+            if (!speciesSetByMarcheur.get(obs.marcheur_id)!.has(obs.species_scientific_name)) {
+              speciesSetByMarcheur.get(obs.marcheur_id)!.add(obs.species_scientific_name);
+              obsByMarcheur.get(obs.marcheur_id)!.push({
+                scientificName: obs.species_scientific_name,
+                photoUrl: obs.photo_url || undefined,
+                observationDate: obs.observation_date || undefined,
+              });
+            }
           });
 
           crew.forEach(m => {
-            const speciesCount = speciesByMarcheur.get(m.id)?.size || 0;
+            const speciesCount = speciesSetByMarcheur.get(m.id)?.size || 0;
             results.push({
               id: `crew-${m.id}`,
               prenom: m.prenom,
@@ -61,6 +77,7 @@ export function useExplorationParticipants(explorationId?: string, marcheEventId
               couleur: m.couleur || '#10b981',
               stats: { photos: 0, videos: 0, sons: 0, textes: 0, speciesCount },
               totalContributions: speciesCount,
+              speciesObserved: obsByMarcheur.get(m.id) || [],
             });
           });
         }
@@ -145,6 +162,7 @@ export function useExplorationParticipants(explorationId?: string, marcheEventId
               couleur: '#10b981',
               stats: { ...s, speciesCount: 0 },
               totalContributions: total,
+              speciesObserved: [],
             });
           });
         }
