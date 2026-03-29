@@ -30,7 +30,7 @@ const StatBadge: React.FC<{ icon: React.ElementType; count: number; label: strin
 };
 
 const SpeciesDrawer: React.FC<{ marcheur: MarcheurWithStats }> = ({ marcheur }) => {
-  const species = marcheur.speciesObserved;
+  const species = marcheur.speciesObserved || [];
   const speciesForTranslation = species.map(s => ({ scientificName: s.scientificName }));
   const { data: translations } = useSpeciesTranslationBatch(speciesForTranslation);
   const translationMap = new Map(translations?.map(t => [t.scientificName, t]) || []);
