@@ -1,28 +1,70 @@
 
 
-# Fix desktop/tablet layout without touching mobile
+# Supprimer le "sursaut" à l'ouverture du modal Marche
 
-## Problem
+## Diagnostic
 
-On desktop and tablet, the sticky tab bar is positioned at `top-[88px]` but the actual header height is only ~52px. This 36px mismatch causes:
-- Content to scroll behind the tab bar and become unreadable
-- The top of each tab's content to be partially hidden under the overlapping sticky elements
+Quand on clique sur un événement dans le Carnet, le modal s'ouvre avec un contenu vide (les queries `adminPhotos`, `userMedias`, `stats` sont asynchrones). Quelques centaines de millisecondes plus tard, les données arrivent et le contenu apparaît d'un coup — provoquant un saut de layout visible et désagréable.
 
-## Root cause
+Causes techniques :
+1. **Pas de skeleton/placeholder** pendant le chargement des données
+2. **Le contenu du tab passe de 0px à sa hauteur réelle** sans transition
+3. **L'AnimatePresence du tab content** ajoute un micro-mouvement vertical (`y: 4`) qui amplifie l'effet
 
-| Element | Current | Should be |
-|---------|---------|-----------|
-| Header | `sticky top-0`, actual height ~52px | No change needed |
-| Tab bar | `sticky top-[88px]` | `sticky top-[52px]` (match real header height) |
-| Main content padding | No specific top offset for desktop | Needs none — sticky elements don't consume extra space |
+## Solution : ouverture cinématique avec squelettes immersifs
 
-The `top-[88px]` was likely set for a taller header that has since been condensed to a single compact line.
+### Principe UX
 
-## Fix — single file edit
+Au lieu d'un modal qui "saute", on obtient une ouverture fluide en 3 temps :
+1. **Le modal apparaît** avec un fond atmosphérique et un skeleton élégant (shimmer sur des rectangles aux proportions photo)
+2. **Les images chargent** et remplacent les squelettes avec un fondu doux
+3. **Aucun saut de layout** car les squelettes occupent exactement l'espace final
 
-**File: `src/components/community/MonEspaceTabBar.tsx`** (line 69)
+### Fichiers modifiés
 
-Change `top-[88px]` to `top-[52px]` to match the actual header height (py-2 = 16px + content ~36px).
+#### 1. `src/components/community/MarcheDetailModal.tsx`
 
-This only affects the desktop/tablet `return` branch — mobile uses the fixed bottom nav and is untouched.
+**VoirTab** — ajouter un état de chargement avec skeleton grid :
+
+- Exploiter `isLoading` des queries (`useQuery` retourne `isLoading`)
+- Quand `isLoading === true` : afficher une grille de 6 squelettes `aspect-[3/4]` (mode immersion) avec animation shimmer
+- Quand les données arrivent : fondu enchaîné (opacity transition) sans changement de hauteur
+
+```text
+┌─────────────────────────────────┐
+│  ░░░░░░  ░░░░░░  ░░░░░░        │  ← Skeleton shimmer
+│  ░░░░░░  ░░░░░░  ░░░░░░        │    (même aspect-ratio que
+│  ░░░░░░  ░░░░░░  ░░░░░░        │     les vraies photos)
+│  ░░░░░░  ░░░░░░  ░░░░░░        │
+└─────────────────────────────────┘
+         ↓  fondu 300ms  ↓
+┌─────────────────────────────────┐
+│  [photo] [photo] [photo]        │
+│  [photo] [photo] [photo]        │
+└─────────────────────────────────┘
+```
+
+**Modifications concrètes dans VoirTab :**
+- Récupérer `isLoading` des queries `adminPhotos` et `userMedias`
+- Créer un composant inline `PhotoSkeleton` : grille 3 colonnes × 2 rangées de `Skeleton` avec `aspect-[3/4]` et un léger gradient animé emerald
+- Afficher le skeleton quand `isLoading`, sinon le contenu réel
+- Retirer l'animation `y: 4` du `motion.div` parent pour éviter le double mouvement
+
+**Modal principal (ligne ~937-951) :**
+- Changer la transition du contenu de `y: 4` à `opacity` seule pour éliminer le décalage vertical
+- Ajouter `layout` sur le conteneur scroll pour lisser tout changement de hauteur
+
+#### 2. Nouveau composant `src/components/community/contributions/MediaSkeletonGrid.tsx`
+
+Un composant réutilisable et visuellement inspirant :
+- Grille 3 colonnes de squelettes `aspect-[3/4]` avec coins arrondis
+- Animation shimmer avec gradient emerald subtil (pas le gris standard)
+- Nombre de cellules configurable (défaut : 6)
+- Compatible mode clair et sombre
+
+### Résultat attendu
+
+- L'ouverture du modal est **fluide et sans saut** : le skeleton réserve l'espace exact
+- L'arrivée des photos est **progressive et élégante** (fondu)
+- Le sentiment est celui d'une app native premium, pas d'une page web qui charge
 
