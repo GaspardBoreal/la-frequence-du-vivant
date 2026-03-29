@@ -1,46 +1,87 @@
 
 
-# Fix Vivant tab: use same hook as web for consistent data
+# Basculement clair/fonce pour les Marcheurs du Vivant
 
-## Root cause
+## Constat actuel
 
-VivantTab has its own duplicated query logic (snapshot + realtime fallback) that diverges from the web's `useBiodiversityData` hook. When switching marches, the two-query chain can fail silently, and the data format normalization adds fragility.
+- Les variables CSS `:root` et `.dark` sont identiques (theme emeraude fonce)
+- La page `/explorer` simule un mode clair avec des classes inline (`bg-[#FAF8F3]`, texte sombre)
+- Aucun mecanisme global de basculement n'existe -- seul le lecteur de textes a un toggle local
 
-## Solution
+## Charte graphique du mode clair (d'apres COPIE 1)
 
-Replace the two custom queries (snapshot + realtime) in VivantTab with:
-1. A small query to fetch lat/lng from the `marches` table (already exists)
-2. The shared `useBiodiversityData` hook with `radius: 0.5, dateFilter: 'recent'` -- identical to the web
+- Fond : creme/papier `#FAF8F3` (45 30% 96%)
+- Texte principal : encre foncee `#1a1a1a` (0 0% 10%)
+- Accent : emeraude profond `#0D6B58` (165 80% 24%) pour les titres
+- Bordures/separateurs : gris chaud subtil
+- Cartes : blanc pur avec ombres douces
+- Typographie : serif pour les titres (Crimson Text), sans-serif pour le corps
 
-This guarantees the same cache, same parameters, same data format as the bioacoustic pages.
+## Plan
 
-## File: `src/components/community/MarcheDetailModal.tsx`
+### 1. Definir les variables CSS du mode clair dans `src/index.css`
 
-| Change | Detail |
-|---------|--------|
-| Import `useBiodiversityData` | Add import from `@/hooks/useBiodiversityData` |
-| VivantTab: remove snapshot query | Delete the `marche-detail-biodiv-by-marche` useQuery block (lines 545-558) |
-| VivantTab: remove realtime query | Delete the `marche-detail-biodiv-realtime` useQuery block (lines 561-589) |
-| VivantTab: add lat/lng query | Keep a small query fetching `latitude, longitude` from `marches` table by `marcheId` |
-| VivantTab: add useBiodiversityData | Call `useBiodiversityData({ latitude, longitude, radius: 0.5, dateFilter: 'recent' })` |
-| VivantTab: update display references | Change `territoryData.total_species` to `biodiversityData?.summary?.totalSpecies`, `birds_count` to `summary.birds`, `plants_count` to `summary.plants`, `species_data` to `species` |
-| VivantTab: update processSpeciesData call | Pass `biodiversityData?.species` instead of `territoryData?.species_data` |
+Remplacer le `:root` actuel (qui est fonce) par de vraies valeurs claires :
 
-## Data flow after fix
-
-```text
-VivantTab
-  │
-  ├─ Query: fetch lat/lng from marches table (by marcheId)
-  │
-  └─ useBiodiversityData({ lat, lng, radius: 0.5, dateFilter: 'recent' })
-      │
-      ├─ Same queryKey as web pages → shared cache
-      ├─ Same edge function call → identical results
-      └─ Returns { summary: { totalSpecies, birds, plants... }, species: [...] }
+```
+:root (mode clair) :
+  --background: 42 30% 96%     /* creme papier */
+  --foreground: 0 0% 12%       /* encre sombre */
+  --card: 0 0% 100%            /* blanc */
+  --card-foreground: 0 0% 12%
+  --primary: 165 80% 24%       /* emeraude profond */
+  --primary-foreground: 0 0% 100%
+  --secondary: 42 20% 92%      /* beige subtil */
+  --muted: 42 15% 90%
+  --accent: 165 60% 30%
+  --border: 42 15% 85%
+  ...
 ```
 
-## Fallback behavior
+Le bloc `.dark` garde les valeurs emeraude foncees actuelles.
 
-Since `useBiodiversityData` has `retry: 2` and `staleTime: 24h`, if the API temporarily returns 0, the cached value from a previous successful fetch (same coordinates) will be used. Both marches share GPS `(45.41382, 0.0089)` so a single successful fetch covers both.
+### 2. Creer un contexte global `ThemeContext` dans `src/contexts/ThemeContext.tsx`
+
+- State : `'light' | 'dark' | 'system'`, persiste dans `localStorage`
+- Applique/retire la classe `dark` sur `<html>`
+- Expose `theme`, `setTheme`, `resolvedTheme`
+
+### 3. Integrer le provider dans `src/App.tsx`
+
+Wrapper l'app avec `<ThemeProvider>`.
+
+### 4. Creer un bouton de bascule elegant `ThemeToggle`
+
+Un bouton flottant discret et inspire, accessible depuis toute page de l'espace marcheur :
+
+- Icone animee : soleil qui se transforme en lune (transition morphing via framer-motion)
+- Position : dans le header de MonEspace (a cote de l'engrenage settings) et dans le header de la page Explorer
+- Au clic : bascule instantanee avec micro-animation de transition (fade 200ms sur le body)
+
+### 5. Adapter les pages cles
+
+| Page/Composant | Adaptation |
+|----------------|-----------|
+| `MarchesDuVivantExplorer` | Retirer les couleurs hardcodees (`bg-[#FAF8F3]`, `text-[#1a1a1a]`), utiliser `bg-background text-foreground` |
+| `MarchesDuVivantMonEspace` | Remplacer `bg-gradient-to-br from-emerald-950...` par `bg-background` (le dark mode l'appliquera automatiquement) |
+| `MonEspaceHeader` | Adapter les classes pour utiliser les variables CSS |
+| `MonEspaceTabBar` | Idem |
+| Composants de cards/tabs | Remplacer `bg-white/5` par `bg-card`, `text-emerald-xxx` par `text-primary`, etc. |
+
+### 6. Fichiers impactes
+
+| Fichier | Action |
+|---------|--------|
+| `src/index.css` | Redefinir `:root` en clair, garder `.dark` en emeraude |
+| `src/contexts/ThemeContext.tsx` | Nouveau -- contexte global |
+| `src/components/community/ThemeToggle.tsx` | Nouveau -- bouton anime soleil/lune |
+| `src/App.tsx` | Ajouter ThemeProvider |
+| `src/pages/MarchesDuVivantExplorer.tsx` | Remplacer couleurs inline par variables |
+| `src/pages/MarchesDuVivantMonEspace.tsx` | Remplacer gradient fonce par `bg-background` |
+| `src/components/community/MonEspaceHeader.tsx` | Adapter classes dark/light |
+| `src/components/community/MonEspaceTabBar.tsx` | Adapter classes |
+
+## Resultat
+
+Le marcheur dispose d'un toggle soleil/lune dans le header. Par defaut, le mode suit la preference systeme. Le clic bascule instantanement entre le theme papier-creme (inspire, poetique, lumineux) et le theme foret-emeraude (immersif, nocturne). Le choix est memorise.
 
