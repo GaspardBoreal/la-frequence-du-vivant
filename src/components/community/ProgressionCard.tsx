@@ -106,11 +106,11 @@ const ProgressionCard: React.FC<ProgressionCardProps> = ({
           const isActive = i <= currentIndex;
           return (
             <React.Fragment key={r}>
-              <div className={`flex flex-col items-center gap-1 ${isActive ? rDark.text : 'text-emerald-200/30'}`}>
-                <div className={`w-8 h-8 rounded-full flex items-center justify-center ${isActive ? rDark.bg : 'bg-white/5'} border ${isActive ? rDark.border : 'border-white/10'}`}>
+              <div className={`flex flex-col items-center gap-1 ${isActive ? `text-emerald-700 dark:${rDark.text}` : 'text-gray-300 dark:text-emerald-200/30'}`}>
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center ${isActive ? `bg-emerald-100 dark:${rDark.bg}` : 'bg-gray-50 dark:bg-white/5'} border ${isActive ? `border-emerald-300 dark:${rDark.border}` : 'border-gray-200 dark:border-white/10'}`}>
                   <Icon className="w-4 h-4" />
                 </div>
-                <span className={`text-[10px] text-center leading-tight whitespace-nowrap text-white/70 ${r === role ? 'font-bold' : 'font-medium'}`}>
+                <span className={`text-[10px] text-center leading-tight whitespace-nowrap text-muted-foreground ${r === role ? 'font-bold' : 'font-medium'}`}>
                   {rConfig.label}
                 </span>
               </div>
