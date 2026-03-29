@@ -270,7 +270,11 @@ const EmblematicSpeciesGallery: React.FC<EmblematicSpeciesGalleryProps> = ({
         </motion.div>
 
         {/* Species grid - Responsive */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 md:gap-4">
+        <div className={`grid ${
+          viewMode === 'immersion' 
+            ? 'grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2' 
+            : 'grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 md:gap-4'
+        }`}>
           <AnimatePresence mode="popLayout">
             {displayedSpecies.map((species, index) => (
               <SpeciesCardWithPhoto
@@ -280,6 +284,7 @@ const EmblematicSpeciesGallery: React.FC<EmblematicSpeciesGalleryProps> = ({
                 getKingdomColor={getKingdomColor}
                 getKingdomEmoji={getKingdomEmoji}
                 index={index}
+                viewMode={viewMode}
               />
             ))}
           </AnimatePresence>
