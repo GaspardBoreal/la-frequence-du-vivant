@@ -46,6 +46,17 @@ const EmblematicSpeciesGallery: React.FC<EmblematicSpeciesGalleryProps> = ({
   const [displayLimit, setDisplayLimit] = useState(50);
   const [localSelectedMarcheurs, setLocalSelectedMarcheurs] = useState<string[]>([]);
   const [selectedSpecies, setSelectedSpecies] = useState<TopSpecies | null>(null);
+  const [viewMode, setViewMode] = useState<'immersion' | 'fiche'>(() => {
+    if (typeof window !== 'undefined') {
+      return (localStorage.getItem('species-gallery-view') as 'immersion' | 'fiche') || 'immersion';
+    }
+    return 'immersion';
+  });
+
+  const handleViewModeChange = (mode: 'immersion' | 'fiche') => {
+    setViewMode(mode);
+    localStorage.setItem('species-gallery-view', mode);
+  };
 
   // Use external state if provided, otherwise use local state
   const activeMarcheurIds = onMarcheurSelectionChange ? selectedMarcheurIds : localSelectedMarcheurs;
