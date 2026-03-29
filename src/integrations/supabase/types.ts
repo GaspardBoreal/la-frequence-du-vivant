@@ -3644,6 +3644,10 @@ export type Database = {
         }[]
       }
       remove_admin_user: { Args: { target_user_id: string }; Returns: boolean }
+      shares_marche_event: {
+        Args: { _profile_user_id: string; _viewer_id: string }
+        Returns: boolean
+      }
       update_exploration_page:
         | {
             Args: {
