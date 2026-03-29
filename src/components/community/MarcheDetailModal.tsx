@@ -4,7 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
-import { Eye, Headphones, BookOpen, Leaf, MapPin, Music, ChevronLeft, ChevronRight, Camera, FileText, Globe, Users, User, ExternalLink, Video, Plus, Grid3X3, LayoutList } from 'lucide-react';
+import { Eye, Headphones, BookOpen, Leaf, MapPin, Music, ChevronLeft, ChevronRight, ChevronDown, Check, Camera, FileText, Globe, Users, User, ExternalLink, Video, Plus, Grid3X3, LayoutList } from 'lucide-react';
 import MediaLightbox, { type LightboxItem } from './contributions/MediaLightbox';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useBiodiversityData } from '@/hooks/useBiodiversityData';
