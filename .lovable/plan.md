@@ -1,63 +1,73 @@
 
 
-# Marcheurs — Affordance visuelle + drawer enrichi
+# Impact du Marcheur — 3 analyses dynamiques dans le drawer
 
-## Problemes identifies
+## Vision
 
-1. **Aucun indice visuel** que les cartes sont cliquables. L'utilisateur ne devine pas qu'il peut decouvrir les contributions en tapant la fiche.
-2. **Drawer vide pour les community members** : il ne montre que les especes (toujours vide pour les marcheurs communautaires), pas leurs contributions reelles (photos, sons, textes).
+Ajouter un bloc **"Impact"** dans le drawer expandable de chaque marcheur, avec 3 metriques visuelles animees qui demontrent la valeur concrete de ses contributions.
 
-## Solution
+## Les 3 analyses
 
-### 1. Hint visuel "Voir les contributions"
+### 1. Territoires pionniers (pour le marcheur)
+**"X points de marche documentes pour la premiere fois"**
 
-Ajouter sous chaque carte marcheur qui a des contributions un **micro-bandeau cliquable** anime :
+Croiser les `marche_id` ou le marcheur a contribue (via `marcheur_observations` ou `marcheur_medias`) avec les `biodiversity_snapshots` : si un `marche_id` n'avait **aucun snapshot avant la date d'observation du marcheur**, c'est un territoire pionnier. Afficher un compteur anime avec icone `MapPin` et texte "X territoires explores en pionnier — aucune donnee biodiversite n'existait avant votre passage".
 
-```text
-┌─────────────────────────────────────────────┐
-│  👤 Gaspard Boreal          📷54  🎙2  📖1  │
-│      Marcheur En Devenir                  ▾ │
-│  ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─  │
-│  🌿 Voir ses contributions · 57 partages    │  ← NEW : bandeau emerald subtil
-└─────────────────────────────────────────────┘
+### 2. Couverture taxonomique (pour le marcheur)
+**"Diversite de vos observations : X familles du vivant couvertes"**
+
+A partir des `speciesObserved` deja disponibles, categoriser les especes par groupe taxonomique (oiseaux, plantes, champignons, insectes, mammiferes...) via un mapping simple du nom scientifique ou via les donnees `species_data` des snapshots. Afficher des **mini-badges colores** par categorie avec le count, formant un "arc-en-ciel taxonomique" : `🐦 Oiseaux 12 · 🌿 Plantes 8 · 🍄 Champignons 3`. Cela valorise la diversite du regard du marcheur.
+
+### 3. Indice de contribution scientifique (pour les partenaires B2B)
+**"Score d'enrichissement des donnees territoriales"**
+
+Calculer un score composite sur 100 base sur :
+- Nombre de marches couvertes / total marches de l'exploration (couverture geographique)
+- Nombre d'especes distinctes observees (richesse)  
+- Diversite des types de contributions (photo + son + texte = bonus multi-sensoriel)
+
+Afficher comme une **jauge circulaire animee** (SVG arc) avec label "Indice de contribution" et un sous-texte explicatif adapte au score ("Contributeur remarquable", "Explorateur engage", etc.).
+
+## Implementation
+
+### Donnees necessaires
+
+Toutes les donnees sont deja disponibles ou facilement requetables :
+- `marcheur.speciesObserved` — deja dans le hook
+- `marcheur.stats` — photos, sons, textes deja comptes
+- `biodiversity_snapshots` par `marche_id` — une query supplementaire legere
+
+### Nouveau composant : `MarcheurImpactBlock`
+
+Composant inline dans `MarcheursTab.tsx`, place entre `ContributionsGallery` et `CitizenScienceCTA` dans le drawer. Il recoit le `marcheur` et l'`explorationId`, et fait une query on-demand (`enabled: isExpanded`) pour les snapshots.
+
+### Design
+
+- Fond `bg-gradient-to-br from-emerald-500/5 to-cyan-500/5` avec bordure `border-emerald-500/10`
+- Titre "Votre impact" avec icone `TrendingUp`
+- 3 lignes : chacune avec icone, metrique animee (counter framer-motion), texte descriptif
+- Jauge circulaire SVG pour le score (arc anime de 0 a N sur 100)
+- Responsive : stack vertical sur mobile
+
+### Query supplementaire
+
+```typescript
+// Fetch snapshots for this exploration's marches to determine "pioneer" status
+const { data: snapshots } = useQuery({
+  queryKey: ['marcheur-impact', explorationId],
+  queryFn: () => supabase
+    .from('biodiversity_snapshots')
+    .select('marche_id, snapshot_date, total_species, birds_count, plants_count, fungi_count')
+    .in('marche_id', explorationMarcheIds),
+  enabled: isExpanded && !!explorationId
+});
 ```
-
-- Texte emerald `text-[10px]` avec icone `Leaf` + pulse animation douce
-- Disparait quand la carte est depliee
-- Si aucune contribution, pas de bandeau (la carte reste statique, pas de chevron)
-
-### 2. Drawer enrichi avec contributions reelles
-
-Quand le drawer s'ouvre, afficher **deux sections** :
-
-**Section A — Contributions partagees** (photos, sons, textes)
-- Galerie horizontale scrollable des 6 dernieres photos publiques (thumbnails rondes 48px)
-- Compteurs inline : "54 photos · 2 sons · 1 texte partagés"
-- Si aucune contribution : ne pas afficher cette section
-
-**Section B — Especes identifiees** (existant, inchange)
-- Garde le `SpeciesDrawer` actuel pour les marcheurs crew qui ont des observations
-- Pour les marcheurs community sans especes, afficher un message encourageant different : "Identifiez les especes rencontrees lors de vos marches via l'onglet Vivant"
-
-### 3. Donnees : fetcher les dernieres photos dans le drawer
-
-Le drawer a besoin des URLs des dernieres photos publiques du marcheur. Deux options :
-- **Option retenue** : query on-demand quand le drawer s'ouvre, via un petit hook `useQuery` avec `enabled: isExpanded`. Requete legere : `marcheur_medias` filtre par `user_id`, `is_public=true`, `type_media='photo'`, `order('created_at', desc)`, `limit(6)` — retourne juste `url_fichier, external_url, titre`.
-
-### 4. Extraction du user_id depuis l'id marcheur
-
-L'id marcheur est formate `community-{userId}` ou `crew-{crewId}`. Pour les community members, extraire le `userId` pour la query photos. Pour les crew members, pas de query photos (ils n'ont pas de `user_id` dans `marcheur_medias`).
 
 ## Fichiers impactes
 
 | Fichier | Action |
 |---|---|
-| `src/components/community/exploration/MarcheursTab.tsx` | Ajouter bandeau hint, galerie photos dans drawer, query on-demand photos |
+| `src/components/community/exploration/MarcheursTab.tsx` | Ajouter `MarcheurImpactBlock` inline, passer `explorationId` au `MarcheurCard`, query snapshots on-demand |
 
-## Ce qui ne change PAS
-
-- Le hook `useExplorationParticipants` — stats deja correctes
-- Le `SpeciesDrawer` — conserve tel quel, deplace apres la galerie photos
-- Le bloc engagement "Invitez un marcheur" en bas
-- Les autres onglets
+Aucun nouveau fichier, aucune migration.
 
