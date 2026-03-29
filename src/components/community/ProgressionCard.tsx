@@ -67,7 +67,7 @@ const ProgressionCard: React.FC<ProgressionCardProps> = ({
         </div>
       </div>
 
-      <p className="text-sm text-white/60 italic">
+      <p className="text-sm text-muted-foreground italic">
         {role === 'marcheur_en_devenir' && pendingCount === 1
           ? 'Bravo, votre première marche vous attend ! Chaque pas compte — explorez d\'autres sentiers pour enrichir votre parcours.'
           : role === 'marcheur_en_devenir' && pendingCount > 1
