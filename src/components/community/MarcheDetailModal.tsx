@@ -123,8 +123,8 @@ const VoirTab: React.FC<{ marcheId: string; userId: string; marcheEventId: strin
         <MediaLightbox items={lightboxItems} startIndex={lightboxIndex} onClose={() => setLightboxIndex(null)} />
       )}
 
-      {/* Upload zone */}
-      <div className="flex items-center justify-between">
+      {/* Action bar */}
+      <div className="flex items-center gap-2 flex-wrap">
         <button
           onClick={() => setShowUpload(!showUpload)}
           className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-300 text-xs hover:bg-emerald-500/20 transition-colors"
@@ -132,6 +132,32 @@ const VoirTab: React.FC<{ marcheId: string; userId: string; marcheEventId: strin
           <Plus className="w-3.5 h-3.5" />
           Ajouter
         </button>
+        <div className="flex-1" />
+        {/* View mode toggle */}
+        <div className="flex rounded-lg overflow-hidden border border-white/10 dark:border-white/10 border-stone-300/60">
+          <button
+            onClick={() => { setViewMode('immersion'); localStorage.setItem('voir-tab-view', 'immersion'); }}
+            className={`flex items-center gap-1 px-2.5 py-1 text-[10px] font-medium transition-all ${
+              viewMode === 'immersion'
+                ? 'bg-emerald-500/20 text-emerald-300 dark:bg-emerald-500/20 dark:text-emerald-300'
+                : 'text-foreground/50 hover:bg-white/5 dark:text-white/40 dark:hover:bg-white/5'
+            }`}
+          >
+            <Grid3X3 className="w-3 h-3" />
+            Immersion
+          </button>
+          <button
+            onClick={() => { setViewMode('fiche'); localStorage.setItem('voir-tab-view', 'fiche'); }}
+            className={`flex items-center gap-1 px-2.5 py-1 text-[10px] font-medium transition-all ${
+              viewMode === 'fiche'
+                ? 'bg-emerald-500/20 text-emerald-300 dark:bg-emerald-500/20 dark:text-emerald-300'
+                : 'text-foreground/50 hover:bg-white/5 dark:text-white/40 dark:hover:bg-white/5'
+            }`}
+          >
+            <LayoutList className="w-3 h-3" />
+            Fiche
+          </button>
+        </div>
         <SortToggle sort={sort} onToggle={() => setSort(s => s === 'desc' ? 'asc' : 'desc')} />
       </div>
 
