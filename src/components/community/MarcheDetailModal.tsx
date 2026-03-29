@@ -185,14 +185,21 @@ const VoirTab: React.FC<{ marcheId: string; userId: string; marcheEventId: strin
             <Globe className="w-3 h-3 text-emerald-400/50" />
             <span className="text-emerald-200/40 text-[10px] uppercase tracking-wider">De l'exploration</span>
           </div>
-          <div className="grid grid-cols-3 gap-1.5">
+          <div className={`grid ${viewMode === 'immersion' ? 'grid-cols-3 gap-1' : 'grid-cols-3 gap-1.5'}`}>
             {adminPhotos.map((photo, i) => (
               <div
                 key={photo.id}
-                className="aspect-square rounded-lg overflow-hidden bg-white/5 cursor-pointer active:scale-95 transition-transform"
+                className={`${viewMode === 'immersion' ? 'aspect-[3/4]' : 'aspect-square'} rounded-lg overflow-hidden bg-white/5 cursor-pointer active:scale-95 transition-transform group relative`}
                 onClick={() => setLightboxIndex(i)}
               >
-                <img src={photo.url_supabase} alt={photo.titre || ''} className="w-full h-full object-cover" loading="lazy" />
+                <img src={photo.url_supabase} alt={photo.titre || ''} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" loading="lazy" />
+                {viewMode === 'immersion' && (
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                    {photo.titre && (
+                      <span className="absolute bottom-2 left-2 right-2 text-white text-[10px] font-medium truncate">{photo.titre}</span>
+                    )}
+                  </div>
+                )}
               </div>
             ))}
           </div>
