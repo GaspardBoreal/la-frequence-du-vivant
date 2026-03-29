@@ -260,10 +260,13 @@ const CircularGauge: React.FC<{ score: number; size?: number }> = ({ score, size
 const MarcheurImpactBlock: React.FC<{
   marcheur: MarcheurWithStats;
   explorationId?: string;
-  explorationMarcheIds: string[];
-  totalMarchesCount: number;
+  explorationMarcheIds?: string[];
+  totalMarchesCount?: number;
   isExpanded: boolean;
-}> = ({ marcheur, explorationId, explorationMarcheIds, totalMarchesCount, isExpanded }) => {
+}> = ({ marcheur, explorationId, explorationMarcheIds: rawMarcheIds, totalMarchesCount: rawCount, isExpanded }) => {
+  const explorationMarcheIds = rawMarcheIds || [];
+  const totalMarchesCount = rawCount || 0;
+
   // Query biodiversity snapshots for pioneer analysis
   const { data: snapshotsData } = useQuery({
     queryKey: ['marcheur-impact-snapshots', explorationId],
