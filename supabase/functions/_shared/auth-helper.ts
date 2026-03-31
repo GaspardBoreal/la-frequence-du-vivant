@@ -41,12 +41,14 @@ export async function validateAuth(req: Request): Promise<{
   const { data: { user: authUser }, error: authError } = await supabase.auth.getUser();
   
   if (authError || !authUser) {
+    console.error('[auth-helper] getUser failed:', authError?.message || 'no user', 
+      '| error_code:', (authError as any)?.code || 'none');
     return {
       user: null,
       isAdmin: false,
       supabase: null,
       errorResponse: new Response(
-        JSON.stringify({ error: 'Unauthorized - Invalid token' }),
+        JSON.stringify({ error: 'Unauthorized - Invalid or expired session', detail: authError?.message }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     };

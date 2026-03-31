@@ -110,9 +110,11 @@ const AdminFrequences: React.FC = () => {
     setIsGenerating(true);
     setSuggestions([]);
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        toast.error('Vous devez être connecté');
+      // Validate session server-side before calling edge function
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      if (userError || !user) {
+        toast.error('Votre session a expiré. Veuillez vous reconnecter.');
+        setIsGenerating(false);
         return;
       }
 
@@ -122,7 +124,16 @@ const AdminFrequences: React.FC = () => {
         body: { existingCitations },
       });
 
-      if (error) throw error;
+      if (error) {
+        // Try to parse the error for better messaging
+        const msg = error.message || '';
+        if (msg.includes('401') || msg.includes('Unauthorized') || msg.includes('non-2xx')) {
+          toast.error('Session expirée ou accès refusé. Reconnectez-vous.');
+        } else {
+          toast.error(msg || 'Erreur lors de la génération');
+        }
+        return;
+      }
       if (data?.citations?.length) {
         setSuggestions(data.citations);
         toast.success(`${data.citations.length} suggestions générées`);

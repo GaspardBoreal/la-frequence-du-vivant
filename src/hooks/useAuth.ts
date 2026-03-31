@@ -19,39 +19,50 @@ export const useAuth = () => {
   });
 
   useEffect(() => {
+    // Validate session server-side to avoid stale/ghost sessions
+    const validateAndSetUser = async (session: Session | null) => {
+      if (!session?.user) {
+        setAuthState({ user: null, session: null, isLoading: false, isAdmin: false });
+        return;
+      }
+
+      // Verify the token is still valid on the server
+      const { data: { user: validatedUser }, error } = await supabase.auth.getUser();
+      
+      if (error || !validatedUser) {
+        console.warn('Session expired or invalid, signing out:', error?.message);
+        setAuthState({ user: null, session: null, isLoading: false, isAdmin: false });
+        // Clean up stale local storage
+        await supabase.auth.signOut();
+        return;
+      }
+
+      setAuthState(prev => ({
+        ...prev,
+        session,
+        user: validatedUser,
+        isLoading: false
+      }));
+
+      // Check admin status with validated user
+      checkAdminStatus(validatedUser.id);
+    };
+
     // Set up auth state listener first
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        setAuthState(prev => ({
-          ...prev,
-          session,
-          user: session?.user ?? null,
-          isLoading: false
-        }));
-
-        // Check admin status if user is authenticated
-        if (session?.user) {
-          setTimeout(() => {
-            checkAdminStatus(session.user.id);
-          }, 0);
-        } else {
-          setAuthState(prev => ({ ...prev, isAdmin: false }));
+      (event, session) => {
+        if (event === 'SIGNED_OUT') {
+          setAuthState({ user: null, session: null, isLoading: false, isAdmin: false });
+          return;
         }
+        // Fire and forget to avoid blocking the callback
+        setTimeout(() => validateAndSetUser(session), 0);
       }
     );
 
     // Then check for existing session
     supabase.auth.getSession().then(({ data: { session } }) => {
-      setAuthState(prev => ({
-        ...prev,
-        session,
-        user: session?.user ?? null,
-        isLoading: false
-      }));
-
-      if (session?.user) {
-        checkAdminStatus(session.user.id);
-      }
+      validateAndSetUser(session);
     });
 
     return () => subscription.unsubscribe();
