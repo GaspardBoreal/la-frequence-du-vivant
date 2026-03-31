@@ -1,80 +1,84 @@
 
 
-# Migration des citations + Hub Outils Admin
+# Generateur IA de citations — outil admin
 
-## 1. Table Supabase `frequence_citations`
+## Principe
 
-Creer une table pour stocker les citations dynamiquement :
+Ajouter un bouton "Suggerer par IA" dans la page `/admin/outils/frequences` qui appelle une edge function dediee. L'IA genere des citations avec auteur, oeuvre et URL de verification. L'admin peut accepter/rejeter chaque suggestion avant insertion en base.
 
-```sql
-CREATE TABLE public.frequence_citations (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  texte TEXT NOT NULL,
-  auteur TEXT NOT NULL,
-  oeuvre TEXT NOT NULL,
-  url TEXT DEFAULT '',
-  active BOOLEAN DEFAULT true,
-  created_at TIMESTAMPTZ DEFAULT now(),
-  updated_at TIMESTAMPTZ DEFAULT now()
-);
+## 1. Edge Function `suggest-citations`
 
-ALTER TABLE public.frequence_citations ENABLE ROW LEVEL SECURITY;
+Nouveau fichier `supabase/functions/suggest-citations/index.ts`, inspire du pattern `suggest-keywords` existant.
 
--- Lecture publique (les citations sont affichees a tous les utilisateurs connectes)
-CREATE POLICY "Anyone can read active citations"
-  ON public.frequence_citations FOR SELECT
-  USING (active = true);
+**Prompt systeme** (le coeur de la qualite) :
 
--- Seuls les admins peuvent inserer/modifier/supprimer
-CREATE POLICY "Admins can manage citations"
-  ON public.frequence_citations FOR ALL
-  TO authenticated
-  USING (public.check_is_admin_user(auth.uid()))
-  WITH CHECK (public.check_is_admin_user(auth.uid()));
+```
+Tu es un specialiste de la litterature ecologique, de la biopoetique, 
+de la bioacoustique et de la geopoetique. Tu connais en profondeur 
+les auteurs engages dans la defense de la biodiversite et des 
+ecosystemes fluviaux.
+
+Ton role : proposer des citations authentiques et verifiables 
+d'auteurs reconnus, pertinentes pour des marcheurs explorant 
+les ecosystemes fluviaux (Dordogne, Garonne).
+
+Domaines prioritaires :
+- Bioacoustique (Bernie Krause, R. Murray Schafer, David Rothenberg)
+- Ecologie profonde (Aldo Leopold, Rachel Carson, Arne Naess)
+- Geopoetique (Kenneth White, Jean-Christophe Bailly)
+- Marche et paysage (David Le Breton, Rebecca Solnit, Sylvain Tesson)
+- Philosophie du vivant (Baptiste Morizot, Vinciane Despret, Bruno Latour)
+- Poesie et nature (Gary Snyder, Bashō, Mary Oliver, Rainer Maria Rilke)
+- Sciences du vivant (E.O. Wilson, Jane Goodall, Francis Hallé)
+
+Regles :
+- Citations REELLES et verifiables (pas d'inventions)
+- Fournir l'oeuvre exacte (titre, annee)
+- Fournir un lien WorldCat, Gallica, Wikisource ou site officiel
+- Ne pas repeter les citations deja existantes
+- Varier les auteurs et les epoques
 ```
 
-Ensuite, inserer les 24 citations existantes depuis `FrequenceWave.tsx` via INSERT.
+**Input** : liste des auteurs+textes deja en base (pour eviter les doublons).
 
-## 2. Modifier `FrequenceWave.tsx`
+**Output structure** via tool calling (pas de JSON libre) :
 
-- Supprimer le tableau `CITATIONS` en dur
-- Charger les citations depuis Supabase (`frequence_citations`)
-- Garder la logique de selection par jour (`seed % count`)
-- Fallback sur une citation par defaut si le fetch echoue
+```json
+{
+  "name": "suggest_citations",
+  "parameters": {
+    "citations": [{
+      "texte": "string",
+      "auteur": "string", 
+      "oeuvre": "string",
+      "url": "string"
+    }]
+  }
+}
+```
 
-## 3. Carte "Outils" dans `AdminAccess.tsx`
+Genere 5 a 10 citations par appel. Gestion 429/402.
 
-Ajouter une nouvelle carte dans la grille admin avec icone `Wrench` pointant vers `/admin/outils`.
+## 2. UI dans AdminFrequences
 
-## 4. Page `/admin/outils` (AdminOutilsHub)
+Ajouter a cote du bouton "Ajouter" un bouton **"Suggerer par IA"** (icone Sparkles).
 
-Page hub listant les outils admin disponibles sous forme de cartes :
-- **Ma Frequence du jour** → `/admin/outils/frequences`
-- **Zones** → `/admin/outils/zones` (placeholder)
-- **Quiz** → `/admin/outils/quizz` (placeholder)
+Au clic :
+1. Appel de la fonction `suggest-citations` avec les citations existantes en contexte
+2. Affichage d'un panneau de suggestions sous la barre d'outils
+3. Chaque suggestion affiche : auteur, oeuvre, texte, lien (cliquable pour verifier)
+4. Deux actions par suggestion : **Accepter** (insere en base) / **Rejeter** (retire de la liste)
+5. Bouton "Tout accepter" pour inserer le lot complet
+6. Indicateur de chargement pendant la generation
 
-## 5. Page `/admin/outils/frequences` (AdminFrequences)
+## 3. Securite
 
-Liste des citations avec :
-- **En-tete** : compteur total de citations + champ de recherche "mot contenant" filtrant sur tous les champs (texte, auteur, oeuvre, url)
-- **Tableau** : colonnes auteur, oeuvre, url (lien cliquable), texte
-- **Actions** : modifier / supprimer chaque citation, bouton ajouter
-- Structure prevue pour accueillir d'autres fonctionnalites a terme (layout avec sidebar ou tabs)
-
-## 6. Routes dans `App.tsx`
-
-Ajouter 2 routes protegees par `AdminAuth` :
-- `/admin/outils` → `AdminOutilsHub`
-- `/admin/outils/frequences` → `AdminFrequences`
+La fonction verifie le JWT et le statut admin via `validateAuth()` (pattern existant dans `_shared/auth-helper.ts`).
 
 ## Fichiers impactes
 
 | Fichier | Action |
 |---|---|
-| Migration SQL | Table `frequence_citations` + seed 24 citations |
-| `src/components/community/FrequenceWave.tsx` | Fetch Supabase au lieu du tableau en dur |
-| `src/pages/AdminAccess.tsx` | Nouvelle carte "Outils" |
-| `src/pages/AdminOutilsHub.tsx` | Nouveau — hub outils admin |
-| `src/pages/AdminFrequences.tsx` | Nouveau — CRUD citations avec filtre + compteur |
-| `src/App.tsx` | 2 nouvelles routes admin |
+| `supabase/functions/suggest-citations/index.ts` | Nouveau — edge function IA avec tool calling |
+| `src/pages/AdminFrequences.tsx` | Bouton "Suggerer par IA" + panneau de review des suggestions |
 
