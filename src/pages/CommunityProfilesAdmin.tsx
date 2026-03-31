@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { ArrowLeft, Search, GraduationCap, Award, Footprints, Eye, Heart, Shield } from 'lucide-react';
+import { ArrowLeft, Search, GraduationCap, Award, Footprints, Eye, Heart, Shield, Link2, MousePointerClick, UserPlus2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 const roleConfig: Record<string, { label: string; icon: React.ElementType; color: string }> = {
@@ -30,6 +30,27 @@ const CommunityProfilesAdmin: React.FC = () => {
         .order('created_at', { ascending: false });
       if (error) throw error;
       return data;
+    },
+  });
+
+  const { data: affiliateStats } = useQuery({
+    queryKey: ['community-affiliate-admin-stats'],
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc('get_community_affiliate_admin_stats');
+      if (error) throw error;
+      return (data || []) as Array<{
+        link_id: string;
+        marcheur_prenom: string | null;
+        marcheur_nom: string | null;
+        exploration_name: string | null;
+        marche_event_title: string | null;
+        channel: string;
+        button_click_count: number;
+        generated_count: number;
+        landing_view_count: number;
+        account_created_count: number;
+        conversion_rate: number;
+      }>;
     },
   });
 
@@ -107,73 +128,138 @@ const CommunityProfilesAdmin: React.FC = () => {
         {isLoading ? (
           <p className="text-muted-foreground">Chargement...</p>
         ) : (
-          <Card>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Marcheur</TableHead>
-                  <TableHead>Rôle</TableHead>
-                  <TableHead>Marches</TableHead>
-                  <TableHead>Ville</TableHead>
-                  <TableHead>Formation</TableHead>
-                  <TableHead>Certification</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filtered?.map(profile => {
-                  const config = roleConfig[profile.role] || roleConfig.marcheur_en_devenir;
-                  const Icon = config.icon;
-                  return (
-                    <TableRow key={profile.id}>
-                      <TableCell>
-                        <div>
-                          <span className="font-medium">{profile.prenom} {profile.nom}</span>
-                          {profile.kigo_accueil && (
-                            <p className="text-xs text-muted-foreground italic">"{profile.kigo_accueil}"</p>
-                          )}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <span className={`flex items-center gap-1.5 text-sm ${config.color}`}>
-                          <Icon className="h-3.5 w-3.5" />
-                          {config.label}
-                        </span>
-                      </TableCell>
-                      <TableCell className="font-mono">{profile.marches_count}</TableCell>
-                      <TableCell>{profile.ville || '—'}</TableCell>
-                      <TableCell>
-                        <Button
-                          variant={profile.formation_validee ? 'default' : 'outline'}
-                          size="sm"
-                          onClick={() => toggleFormation.mutate({ id: profile.id, current: profile.formation_validee })}
-                        >
-                          <GraduationCap className="h-3.5 w-3.5 mr-1" />
-                          {profile.formation_validee ? 'Validée' : 'Valider'}
-                        </Button>
-                      </TableCell>
-                      <TableCell>
-                        <Button
-                          variant={profile.certification_validee ? 'default' : 'outline'}
-                          size="sm"
-                          onClick={() => toggleCertification.mutate({ id: profile.id, current: profile.certification_validee })}
-                        >
-                          <Award className="h-3.5 w-3.5 mr-1" />
-                          {profile.certification_validee ? 'Validée' : 'Valider'}
-                        </Button>
+          <div className="space-y-6">
+            <Card>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Marcheur</TableHead>
+                    <TableHead>Rôle</TableHead>
+                    <TableHead>Marches</TableHead>
+                    <TableHead>Ville</TableHead>
+                    <TableHead>Formation</TableHead>
+                    <TableHead>Certification</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filtered?.map(profile => {
+                    const config = roleConfig[profile.role] || roleConfig.marcheur_en_devenir;
+                    const Icon = config.icon;
+                    return (
+                      <TableRow key={profile.id}>
+                        <TableCell>
+                          <div>
+                            <span className="font-medium">{profile.prenom} {profile.nom}</span>
+                            {profile.kigo_accueil && (
+                              <p className="text-xs text-muted-foreground italic">"{profile.kigo_accueil}"</p>
+                            )}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <span className={`flex items-center gap-1.5 text-sm ${config.color}`}>
+                            <Icon className="h-3.5 w-3.5" />
+                            {config.label}
+                          </span>
+                        </TableCell>
+                        <TableCell className="font-mono">{profile.marches_count}</TableCell>
+                        <TableCell>{profile.ville || '—'}</TableCell>
+                        <TableCell>
+                          <Button
+                            variant={profile.formation_validee ? 'default' : 'outline'}
+                            size="sm"
+                            onClick={() => toggleFormation.mutate({ id: profile.id, current: profile.formation_validee })}
+                          >
+                            <GraduationCap className="h-3.5 w-3.5 mr-1" />
+                            {profile.formation_validee ? 'Validée' : 'Valider'}
+                          </Button>
+                        </TableCell>
+                        <TableCell>
+                          <Button
+                            variant={profile.certification_validee ? 'default' : 'outline'}
+                            size="sm"
+                            onClick={() => toggleCertification.mutate({ id: profile.id, current: profile.certification_validee })}
+                          >
+                            <Award className="h-3.5 w-3.5 mr-1" />
+                            {profile.certification_validee ? 'Validée' : 'Valider'}
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                  {filtered?.length === 0 && (
+                    <TableRow>
+                      <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
+                        Aucun profil trouvé.
                       </TableCell>
                     </TableRow>
-                  );
-                })}
-                {filtered?.length === 0 && (
+                  )}
+                </TableBody>
+              </Table>
+            </Card>
+
+            <Card className="p-4">
+              <div className="mb-4 flex items-center gap-2">
+                <Link2 className="h-4 w-4 text-primary" />
+                <h2 className="text-lg font-semibold text-foreground">Affiliation marcheurs</h2>
+              </div>
+
+              <div className="grid gap-3 md:grid-cols-3 mb-4">
+                <Card className="p-3">
+                  <div className="flex items-center gap-2 text-muted-foreground text-sm"><MousePointerClick className="h-4 w-4" />Clics boutons</div>
+                  <p className="mt-2 text-2xl font-semibold text-foreground">{affiliateStats?.reduce((sum, item) => sum + (item.button_click_count || 0), 0) || 0}</p>
+                </Card>
+                <Card className="p-3">
+                  <div className="flex items-center gap-2 text-muted-foreground text-sm"><Link2 className="h-4 w-4" />Liens générés</div>
+                  <p className="mt-2 text-2xl font-semibold text-foreground">{affiliateStats?.reduce((sum, item) => sum + (item.generated_count || 0), 0) || 0}</p>
+                </Card>
+                <Card className="p-3">
+                  <div className="flex items-center gap-2 text-muted-foreground text-sm"><UserPlus2 className="h-4 w-4" />Comptes créés</div>
+                  <p className="mt-2 text-2xl font-semibold text-foreground">{affiliateStats?.reduce((sum, item) => sum + (item.account_created_count || 0), 0) || 0}</p>
+                </Card>
+              </div>
+
+              <Table>
+                <TableHeader>
                   <TableRow>
-                    <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
-                      Aucun profil trouvé.
-                    </TableCell>
+                    <TableHead>Marcheur</TableHead>
+                    <TableHead>Exploration</TableHead>
+                    <TableHead>Canal</TableHead>
+                    <TableHead>Clics</TableHead>
+                    <TableHead>Liens</TableHead>
+                    <TableHead>Vues</TableHead>
+                    <TableHead>Comptes</TableHead>
+                    <TableHead>Conversion</TableHead>
                   </TableRow>
-                )}
-              </TableBody>
-            </Table>
-          </Card>
+                </TableHeader>
+                <TableBody>
+                  {affiliateStats?.map((item) => (
+                    <TableRow key={item.link_id}>
+                      <TableCell className="font-medium">{item.marcheur_prenom || '—'} {item.marcheur_nom || ''}</TableCell>
+                      <TableCell>
+                        <div>
+                          <p>{item.exploration_name || '—'}</p>
+                          {item.marche_event_title && <p className="text-xs text-muted-foreground">{item.marche_event_title}</p>}
+                        </div>
+                      </TableCell>
+                      <TableCell className="uppercase text-xs tracking-wide text-muted-foreground">{item.channel}</TableCell>
+                      <TableCell>{item.button_click_count}</TableCell>
+                      <TableCell>{item.generated_count}</TableCell>
+                      <TableCell>{item.landing_view_count}</TableCell>
+                      <TableCell>{item.account_created_count}</TableCell>
+                      <TableCell>{item.conversion_rate}%</TableCell>
+                    </TableRow>
+                  ))}
+                  {!affiliateStats?.length && (
+                    <TableRow>
+                      <TableCell colSpan={8} className="py-8 text-center text-muted-foreground">
+                        Aucun lien affilié généré pour le moment.
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </Card>
+          </div>
         )}
       </div>
     </div>
