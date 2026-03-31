@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Helmet } from 'react-helmet-async';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowLeft, Leaf, Mail, Lock, User, MapPin, Phone, Calendar, Sparkles, Eye, EyeOff, TreePine, Ear, Flower2 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
@@ -12,6 +12,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { toast } from 'sonner';
 import { useCommunityAuth } from '@/hooks/useCommunityAuth';
 import Footer from '@/components/Footer';
+import { clearStoredAffiliateToken, getStoredAffiliateToken, storeAffiliateToken } from '@/utils/communityAffiliate';
 
 const KIGO_OPTIONS = [
   { value: 'parle_aux_arbres', label: '🌳 Je parle déjà aux arbres' },
@@ -37,6 +38,7 @@ const INTIMITE_OPTIONS = [
 const MarchesDuVivantConnexion = () => {
   const navigate = useNavigate();
   const { signUp, signIn, resetPassword, checkEmailExists } = useCommunityAuth();
+  const [searchParams] = useSearchParams();
   const [mode, setMode] = useState<'login' | 'register' | 'forgot'>('login');
   const [showPassword, setShowPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -54,6 +56,20 @@ const MarchesDuVivantConnexion = () => {
   const [superpouvoir, setSuperpouvoir] = useState('');
   const [intimite, setIntimite] = useState('');
   const [engagement, setEngagement] = useState(false);
+
+  useEffect(() => {
+    const affiliateToken = searchParams.get('affiliate');
+    if (!affiliateToken) return;
+
+    storeAffiliateToken(affiliateToken);
+    setMode('register');
+    supabase.rpc('record_community_affiliate_event', {
+      _share_token: affiliateToken,
+      _event_type: 'signup_started',
+      _metadata: { source: 'connexion_page' },
+      _referred_user_id: null,
+    }).then(() => {});
+  }, [searchParams]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -85,6 +101,19 @@ const MarchesDuVivantConnexion = () => {
         superpouvoir_sensoriel: superpouvoir || undefined,
         niveau_intimite_vivant: intimite || undefined,
       });
+
+      const affiliateToken = getStoredAffiliateToken();
+      if (affiliateToken) {
+        const { data: authData } = await supabase.auth.getUser();
+        await supabase.rpc('record_community_affiliate_event', {
+          _share_token: affiliateToken,
+          _event_type: 'account_created',
+          _metadata: { source: 'community_signup' },
+          _referred_user_id: authData.user?.id ?? null,
+        });
+        clearStoredAffiliateToken();
+      }
+
       toast.success('Inscription réussie ! Vérifiez vos emails pour confirmer votre compte 📬');
       setMode('login');
     } catch (error: any) {
