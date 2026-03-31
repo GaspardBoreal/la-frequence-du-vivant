@@ -1,50 +1,80 @@
 
-Objectif: éliminer l’erreur “Format HEIC non supporté” pour les photos Android Ultra HDR (4284x5712) sans bloquer l’upload.
 
-Constat technique (après analyse du code):
-1) Il reste une voie bloquante: `src/utils/photoUtils.ts` (`convertHeicToJpeg`) jette encore une erreur fatale si la conversion échoue.
-2) Cette voie est utilisée dans les parcours mobile/admin (`PhotoCaptureFloat`, `MediaUploadSection`) via `processPhoto`.
-3) Les HEIC Ultra HDR font souvent échouer `heic2any` (cas connu Android/Chrome, libheif), surtout sur gros fichiers.
-4) Dans la contribution marcheur, le fallback existe déjà dans `useMarcheurContributions.ts`, mais pas dans toute la chaîne.
+# Migration des citations + Hub Outils Admin
 
-Do I know what the issue is? Oui: la conversion HEIC est encore “hard-fail” dans une partie du code, et les HEIC Ultra HDR dépassent souvent ce que `heic2any` gère de façon fiable sur Android.
+## 1. Table Supabase `frequence_citations`
 
-Plan de correctif (court terme + robuste):
-1) Unifier la stratégie HEIC en “never-block upload”
-   - Dans `photoUtils.ts`, remplacer le `throw` de `convertHeicToJpeg` par un fallback (retourner le fichier original + flag d’échec de conversion).
-   - `processPhoto` doit continuer même si conversion KO.
+Creer une table pour stocker les citations dynamiquement :
 
-2) Ajouter une conversion “best effort” spécifique Android Ultra HDR
-   - Ordre de tentative:
-     a) conversion légère (native decode/canvas si dispo),
-     b) `heic2any` avec timeout court,
-     c) fallback immédiat fichier original (sans erreur bloquante).
-   - Plus aucun chemin ne doit lancer “Impossible de convertir le fichier HEIC” pour l’utilisateur final.
+```sql
+CREATE TABLE public.frequence_citations (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  texte TEXT NOT NULL,
+  auteur TEXT NOT NULL,
+  oeuvre TEXT NOT NULL,
+  url TEXT DEFAULT '',
+  active BOOLEAN DEFAULT true,
+  created_at TIMESTAMPTZ DEFAULT now(),
+  updated_at TIMESTAMPTZ DEFAULT now()
+);
 
-3) Rendre la détection HEIC plus robuste
-   - Détection par extension ET MIME “contient heic/heif” (pas uniquement égalité stricte).
-   - Couvrir les MIME atypiques Android (ex: `image/heic-sequence`, type vide + extension).
+ALTER TABLE public.frequence_citations ENABLE ROW LEVEL SECURITY;
 
-4) Adapter le feedback UX
-   - Si conversion réussie: upload normal JPEG.
-   - Si conversion échoue: toast non bloquant du type
-     “Photo HEIC Ultra HDR conservée telle quelle. Affichage limité selon navigateur.”
-   - Ne plus afficher de message d’erreur fatal “format non supporté” tant que l’upload brut peut passer.
+-- Lecture publique (les citations sont affichees a tous les utilisateurs connectes)
+CREATE POLICY "Anyone can read active citations"
+  ON public.frequence_citations FOR SELECT
+  USING (active = true);
 
-5) Fiabiliser l’affichage post-upload
-   - Sur rendu image: gérer `onError` pour `.heic/.heif` avec fallback visuel (badge HEIC + bouton ouvrir/télécharger).
-   - Évite l’impression de “photo perdue” si navigateur non compatible.
+-- Seuls les admins peuvent inserer/modifier/supprimer
+CREATE POLICY "Admins can manage citations"
+  ON public.frequence_citations FOR ALL
+  TO authenticated
+  USING (public.check_is_admin_user(auth.uid()))
+  WITH CHECK (public.check_is_admin_user(auth.uid()));
+```
 
-Fichiers à modifier:
-- `src/utils/photoUtils.ts` (suppression hard-fail, fallback unifié)
-- `src/hooks/useMarcheurContributions.ts` (détection HEIC renforcée + messages UX)
-- `src/components/admin/mobile/PhotoCaptureFloat.tsx` (gestion message non bloquant)
-- `src/components/community/MarcheDetailModal.tsx` (filtrage photo plus tolérant)
-- `src/components/community/contributions/ContributionItem.tsx` (fallback d’affichage HEIC)
+Ensuite, inserer les 24 citations existantes depuis `FrequenceWave.tsx` via INSERT.
 
-Validation attendue (Android Laurence):
-1) Upload d’une photo HEIC Ultra HDR: plus d’erreur bloquante.
-2) Fin de “Upload en cours…” infini.
-3) Insertion DB créée systématiquement.
-4) Sur Chrome Android: image affichée si convertible, sinon fallback HEIC visible + action ouvrir/télécharger.
-5) Sur Safari iOS: affichage natif HEIC validé.
+## 2. Modifier `FrequenceWave.tsx`
+
+- Supprimer le tableau `CITATIONS` en dur
+- Charger les citations depuis Supabase (`frequence_citations`)
+- Garder la logique de selection par jour (`seed % count`)
+- Fallback sur une citation par defaut si le fetch echoue
+
+## 3. Carte "Outils" dans `AdminAccess.tsx`
+
+Ajouter une nouvelle carte dans la grille admin avec icone `Wrench` pointant vers `/admin/outils`.
+
+## 4. Page `/admin/outils` (AdminOutilsHub)
+
+Page hub listant les outils admin disponibles sous forme de cartes :
+- **Ma Frequence du jour** → `/admin/outils/frequences`
+- **Zones** → `/admin/outils/zones` (placeholder)
+- **Quiz** → `/admin/outils/quizz` (placeholder)
+
+## 5. Page `/admin/outils/frequences` (AdminFrequences)
+
+Liste des citations avec :
+- **En-tete** : compteur total de citations + champ de recherche "mot contenant" filtrant sur tous les champs (texte, auteur, oeuvre, url)
+- **Tableau** : colonnes auteur, oeuvre, url (lien cliquable), texte
+- **Actions** : modifier / supprimer chaque citation, bouton ajouter
+- Structure prevue pour accueillir d'autres fonctionnalites a terme (layout avec sidebar ou tabs)
+
+## 6. Routes dans `App.tsx`
+
+Ajouter 2 routes protegees par `AdminAuth` :
+- `/admin/outils` → `AdminOutilsHub`
+- `/admin/outils/frequences` → `AdminFrequences`
+
+## Fichiers impactes
+
+| Fichier | Action |
+|---|---|
+| Migration SQL | Table `frequence_citations` + seed 24 citations |
+| `src/components/community/FrequenceWave.tsx` | Fetch Supabase au lieu du tableau en dur |
+| `src/pages/AdminAccess.tsx` | Nouvelle carte "Outils" |
+| `src/pages/AdminOutilsHub.tsx` | Nouveau — hub outils admin |
+| `src/pages/AdminFrequences.tsx` | Nouveau — CRUD citations avec filtre + compteur |
+| `src/App.tsx` | 2 nouvelles routes admin |
+
