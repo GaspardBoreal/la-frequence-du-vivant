@@ -23,6 +23,14 @@ type ShareKitState = {
   generatedCount: number;
 };
 
+const getErrorMessage = (error: unknown, fallback: string) => {
+  if (error && typeof error === 'object' && 'message' in error && typeof error.message === 'string') {
+    return error.message;
+  }
+
+  return fallback;
+};
+
 const StatBadge: React.FC<{ icon: React.ElementType; count: number; label: string; delay: number }> = ({ icon: Icon, count, label, delay }) => {
   if (count === 0) return null;
   return (
@@ -609,33 +617,47 @@ const MarcheursTab: React.FC<MarcheursTabProps> = ({ explorationId, marcheEventI
       return null;
     }
 
-    const { data: authData } = await supabase.auth.getUser();
+    const { data: authData, error: authError } = await supabase.auth.getUser();
+    if (authError) {
+      console.error('[affiliate] auth.getUser failed', authError);
+      toast.error(`Authentification indisponible : ${getErrorMessage(authError, 'erreur inconnue')}`);
+      return null;
+    }
+
     if (!authData.user) {
       toast.error('Connectez-vous pour inviter un marcheur');
       return null;
     }
 
-    const { data, error } = await supabase.rpc('generate_community_affiliate_link', {
-      _exploration_id: explorationId,
-      _channel: channel,
-      _marche_event_id: marcheEventId ?? null,
-    });
+    try {
+      const { data, error } = await supabase.rpc('generate_community_affiliate_link', {
+        _exploration_id: explorationId,
+        _channel: channel,
+        _marche_event_id: marcheEventId ?? null,
+      });
 
-    if (error) {
-      toast.error('Impossible de générer le lien d’invitation');
+      if (error) {
+        console.error('[affiliate] generate_community_affiliate_link failed', error);
+        toast.error(`Impossible de générer le lien d’invitation : ${getErrorMessage(error, 'erreur inconnue')}`);
+        return null;
+      }
+
+      const row = Array.isArray(data) ? data[0] : null;
+      if (!row?.share_token) {
+        console.error('[affiliate] generate_community_affiliate_link returned no token', data);
+        toast.error('Lien d’invitation indisponible : aucune donnée renvoyée');
+        return null;
+      }
+
+      return {
+        url: getAffiliateInviteUrl(row.share_token),
+        generatedCount: row.generated_count ?? 1,
+      };
+    } catch (error) {
+      console.error('[affiliate] unexpected link generation error', error);
+      toast.error(`Impossible de générer le lien d’invitation : ${getErrorMessage(error, 'erreur inconnue')}`);
       return null;
     }
-
-    const row = Array.isArray(data) ? data[0] : null;
-    if (!row?.share_token) {
-      toast.error('Lien d’invitation indisponible');
-      return null;
-    }
-
-    return {
-      url: getAffiliateInviteUrl(row.share_token),
-      generatedCount: row.generated_count ?? 1,
-    };
   };
 
   const handleShare = async () => {
@@ -662,13 +684,22 @@ const MarcheursTab: React.FC<MarcheursTabProps> = ({ explorationId, marcheEventI
         });
         toast.success('Kit partage prêt et lien transmis');
         return;
-      } catch {
-        // fallback below
+      } catch (error) {
+        if (error instanceof DOMException && error.name === 'AbortError') {
+          return;
+        }
+
+        console.error('[affiliate] navigator.share failed, fallback to clipboard', error);
       }
     }
 
-    await navigator.clipboard.writeText(text);
-    toast.success('Message de partage copié');
+    try {
+      await navigator.clipboard.writeText(text);
+      toast.success('Message de partage copié');
+    } catch (error) {
+      console.error('[affiliate] share fallback clipboard failed', error);
+      toast.error(`Lien généré, mais copie impossible : ${getErrorMessage(error, 'autorisez l’accès au presse-papier')}`);
+    }
   };
 
   const handleCopyLink = async () => {
@@ -680,8 +711,13 @@ const MarcheursTab: React.FC<MarcheursTabProps> = ({ explorationId, marcheEventI
       inviteUrl: link.url,
     });
 
-    await navigator.clipboard.writeText(message);
-    toast.success('Invitation complète copiée dans le presse-papier');
+    try {
+      await navigator.clipboard.writeText(message);
+      toast.success('Invitation complète copiée dans le presse-papier');
+    } catch (error) {
+      console.error('[affiliate] copy clipboard failed', error);
+      toast.error(`Lien généré, mais copie impossible : ${getErrorMessage(error, 'autorisez l’accès au presse-papier')}`);
+    }
   };
 
   if (isLoading) {
