@@ -160,6 +160,110 @@ export type Database = {
         }
         Relationships: []
       }
+      community_affiliate_events: {
+        Row: {
+          affiliate_link_id: string
+          created_at: string
+          event_type: string
+          id: string
+          metadata: Json
+          referred_user_id: string | null
+        }
+        Insert: {
+          affiliate_link_id: string
+          created_at?: string
+          event_type: string
+          id?: string
+          metadata?: Json
+          referred_user_id?: string | null
+        }
+        Update: {
+          affiliate_link_id?: string
+          created_at?: string
+          event_type?: string
+          id?: string
+          metadata?: Json
+          referred_user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "community_affiliate_events_affiliate_link_id_fkey"
+            columns: ["affiliate_link_id"]
+            isOneToOne: false
+            referencedRelation: "community_affiliate_links"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      community_affiliate_links: {
+        Row: {
+          account_created_count: number
+          button_click_count: number
+          channel: string
+          created_at: string
+          exploration_id: string
+          generated_count: number
+          id: string
+          landing_view_count: number
+          last_generated_at: string | null
+          last_viewed_at: string | null
+          marche_event_id: string | null
+          marcheur_user_id: string
+          share_token: string
+          signup_started_count: number
+          updated_at: string
+        }
+        Insert: {
+          account_created_count?: number
+          button_click_count?: number
+          channel: string
+          created_at?: string
+          exploration_id: string
+          generated_count?: number
+          id?: string
+          landing_view_count?: number
+          last_generated_at?: string | null
+          last_viewed_at?: string | null
+          marche_event_id?: string | null
+          marcheur_user_id: string
+          share_token: string
+          signup_started_count?: number
+          updated_at?: string
+        }
+        Update: {
+          account_created_count?: number
+          button_click_count?: number
+          channel?: string
+          created_at?: string
+          exploration_id?: string
+          generated_count?: number
+          id?: string
+          landing_view_count?: number
+          last_generated_at?: string | null
+          last_viewed_at?: string | null
+          marche_event_id?: string | null
+          marcheur_user_id?: string
+          share_token?: string
+          signup_started_count?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "community_affiliate_links_exploration_id_fkey"
+            columns: ["exploration_id"]
+            isOneToOne: false
+            referencedRelation: "explorations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "community_affiliate_links_marche_event_id_fkey"
+            columns: ["marche_event_id"]
+            isOneToOne: false
+            referencedRelation: "marche_events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       community_profiles: {
         Row: {
           avatar_url: string | null
@@ -3514,6 +3618,18 @@ export type Database = {
         Returns: boolean
       }
       delete_exploration_page: { Args: { page_id: string }; Returns: undefined }
+      generate_community_affiliate_link: {
+        Args: {
+          _channel: string
+          _exploration_id: string
+          _marche_event_id?: string
+        }
+        Returns: {
+          generated_count: number
+          link_id: string
+          share_token: string
+        }[]
+      }
       get_admin_count: { Args: never; Returns: number }
       get_admin_count_secure: { Args: never; Returns: number }
       get_admin_list_safe: {
@@ -3544,6 +3660,33 @@ export type Database = {
           updated_at: string
           user_id: string
         }[]
+      }
+      get_community_affiliate_admin_stats: {
+        Args: never
+        Returns: {
+          account_created_count: number
+          button_click_count: number
+          channel: string
+          conversion_rate: number
+          created_at: string
+          exploration_id: string
+          exploration_name: string
+          generated_count: number
+          landing_view_count: number
+          last_generated_at: string
+          link_id: string
+          marche_event_id: string
+          marche_event_title: string
+          marcheur_nom: string
+          marcheur_prenom: string
+          marcheur_user_id: string
+          share_token: string
+          signup_started_count: number
+        }[]
+      }
+      get_community_affiliate_landing: {
+        Args: { _share_token: string }
+        Returns: Json
       }
       get_current_admin_email: { Args: never; Returns: string }
       get_current_admin_email_secure: { Args: never; Returns: string }
@@ -3681,6 +3824,15 @@ export type Database = {
           migration_log: string
           rec_opus_id: string
         }[]
+      }
+      record_community_affiliate_event: {
+        Args: {
+          _event_type: string
+          _metadata?: Json
+          _referred_user_id?: string
+          _share_token: string
+        }
+        Returns: string
       }
       remove_admin_user: { Args: { target_user_id: string }; Returns: boolean }
       shares_marche_event: {
