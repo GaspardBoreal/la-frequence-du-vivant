@@ -94,6 +94,7 @@ const MarchesDuVivantConnexion = () => {
     }
     setIsSubmitting(true);
     try {
+      const affiliateToken = getStoredAffiliateToken() || undefined;
       await signUp({
         email, password, prenom, nom, ville, telephone,
         date_naissance: dateNaissance || undefined,
@@ -101,17 +102,10 @@ const MarchesDuVivantConnexion = () => {
         kigo_accueil: kigo || undefined,
         superpouvoir_sensoriel: superpouvoir || undefined,
         niveau_intimite_vivant: intimite || undefined,
+        affiliateToken,
       });
 
-      const affiliateToken = getStoredAffiliateToken();
       if (affiliateToken) {
-        const { data: authData } = await supabase.auth.getUser();
-        await supabase.rpc('record_community_affiliate_event', {
-          _share_token: affiliateToken,
-          _event_type: 'account_created',
-          _metadata: { source: 'community_signup' },
-          _referred_user_id: authData.user?.id ?? null,
-        });
         clearStoredAffiliateToken();
       }
 
