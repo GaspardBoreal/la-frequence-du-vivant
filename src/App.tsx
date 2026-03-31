@@ -77,6 +77,7 @@ import OrganisateursAdmin from './pages/OrganisateursAdmin';
 import MarchesDuVivantExplorationMarcheur from './pages/MarchesDuVivantExplorationMarcheur';
 import AdminOutilsHub from './pages/AdminOutilsHub';
 import AdminFrequences from './pages/AdminFrequences';
+import CommunityAffiliateLanding from './pages/CommunityAffiliateLanding';
 
 function App() {
   return (
@@ -106,6 +107,7 @@ function App() {
             <Route path="/marches-du-vivant/carnets-de-terrain" element={<CarnetsDeTerrainGalerie />} />
             <Route path="/marches-du-vivant/carnets-de-terrain/:slug" element={<CarnetDeTerrain />} />
             <Route path="/marches-du-vivant/connexion" element={<MarchesDuVivantConnexion />} />
+            <Route path="/marches-du-vivant/rejoindre/:token" element={<CommunityAffiliateLanding />} />
             <Route path="/marches-du-vivant/mon-espace" element={<MarchesDuVivantMonEspace />} />
             <Route path="/marches-du-vivant/mon-espace/exploration/:explorationId" element={<MarchesDuVivantExplorationMarcheur />} />
             <Route path="/marches-du-vivant/valider-presence/:qrCode" element={<MarchesDuVivantValiderPresence />} />

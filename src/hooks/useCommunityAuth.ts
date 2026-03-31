@@ -35,6 +35,7 @@ interface SignUpData {
   kigo_accueil?: string;
   superpouvoir_sensoriel?: string;
   niveau_intimite_vivant?: string;
+  affiliateToken?: string;
 }
 
 export function useCommunityAuth() {
@@ -110,6 +111,15 @@ export function useCommunityAuth() {
         });
 
       if (profileError) throw profileError;
+
+      if (data.affiliateToken) {
+        await supabase.rpc('record_community_affiliate_event', {
+          _share_token: data.affiliateToken,
+          _event_type: 'account_created',
+          _metadata: { source: 'useCommunityAuth.signUp' },
+          _referred_user_id: authData.user.id,
+        });
+      }
     }
 
     return authData;

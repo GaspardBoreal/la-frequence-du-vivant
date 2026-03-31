@@ -1,6 +1,6 @@
-import React, { useState, useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Camera, Mic, BookOpen, Leaf, Copy, Share2, Users, Sprout, ChevronDown, ExternalLink, Eye, Image, FileText, TrendingUp, MapPin, Bird, Flower2, TreePine } from 'lucide-react';
+import { Camera, Mic, BookOpen, Leaf, Copy, Share2, Users, Sprout, ChevronDown, ExternalLink, Eye, Image, FileText, TrendingUp, MapPin, Bird, Flower2, TreePine, Wand2, Send, Link as LinkIcon } from 'lucide-react';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { useExplorationParticipants, MarcheurWithStats, SpeciesObservation } from '@/hooks/useExplorationParticipants';
@@ -8,12 +8,20 @@ import { useSpeciesTranslationBatch } from '@/hooks/useSpeciesTranslation';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { buildAffiliateCopyMessage, buildAffiliateShareMessage, getAffiliateInviteUrl } from '@/utils/communityAffiliate';
 
 interface MarcheursTabProps {
   explorationId?: string;
   marcheEventId?: string;
   explorationName?: string;
 }
+
+type ShareKitState = {
+  url: string;
+  message: string;
+  generatedCount: number;
+};
 
 const StatBadge: React.FC<{ icon: React.ElementType; count: number; label: string; delay: number }> = ({ icon: Icon, count, label, delay }) => {
   if (count === 0) return null;
@@ -576,6 +584,7 @@ const MarcheurCard: React.FC<{ marcheur: MarcheurWithStats; index: number; isExp
 const MarcheursTab: React.FC<MarcheursTabProps> = ({ explorationId, marcheEventId, explorationName }) => {
   const { data: marcheurs, isLoading } = useExplorationParticipants(explorationId, marcheEventId);
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [shareKit, setShareKit] = useState<ShareKitState | null>(null);
 
   // Fetch exploration marche IDs for impact analysis
   const { data: explorationMarchesData } = useQuery({
@@ -594,20 +603,85 @@ const MarcheursTab: React.FC<MarcheursTabProps> = ({ explorationId, marcheEventI
   const explorationMarcheIds = explorationMarchesData || [];
   const totalContributions = marcheurs?.reduce((sum, m) => sum + m.totalContributions, 0) || 0;
 
-  const handleShare = async () => {
-    const url = window.location.href;
-    const text = `Rejoins-moi sur les Marches du Vivant${explorationName ? ` — ${explorationName}` : ''} 🌿`;
-    if (navigator.share) {
-      try { await navigator.share({ title: 'Marches du Vivant', text, url }); } catch {}
-    } else {
-      await navigator.clipboard.writeText(url);
-      toast.success('Lien copié !');
+  const createAffiliateLink = async (channel: 'copy' | 'share') => {
+    if (!explorationId) {
+      toast.error('Exploration introuvable pour générer le lien');
+      return null;
     }
+
+    const { data: authData } = await supabase.auth.getUser();
+    if (!authData.user) {
+      toast.error('Connectez-vous pour inviter un marcheur');
+      return null;
+    }
+
+    const { data, error } = await supabase.rpc('generate_community_affiliate_link', {
+      _exploration_id: explorationId,
+      _channel: channel,
+      _marche_event_id: marcheEventId ?? null,
+    });
+
+    if (error) {
+      toast.error('Impossible de générer le lien d’invitation');
+      return null;
+    }
+
+    const row = Array.isArray(data) ? data[0] : null;
+    if (!row?.share_token) {
+      toast.error('Lien d’invitation indisponible');
+      return null;
+    }
+
+    return {
+      url: getAffiliateInviteUrl(row.share_token),
+      generatedCount: row.generated_count ?? 1,
+    };
+  };
+
+  const handleShare = async () => {
+    const link = await createAffiliateLink('share');
+    if (!link) return;
+
+    const text = buildAffiliateShareMessage({
+      explorationName,
+      inviteUrl: link.url,
+    });
+
+    setShareKit({
+      url: link.url,
+      message: text,
+      generatedCount: link.generatedCount,
+    });
+
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: 'Marches du Vivant',
+          text,
+          url: link.url,
+        });
+        toast.success('Kit partage prêt et lien transmis');
+        return;
+      } catch {
+        // fallback below
+      }
+    }
+
+    await navigator.clipboard.writeText(text);
+    toast.success('Message de partage copié');
   };
 
   const handleCopyLink = async () => {
-    await navigator.clipboard.writeText(window.location.href);
-    toast.success('Lien copié dans le presse-papier');
+    const link = await createAffiliateLink('copy');
+    if (!link) return;
+
+    const message = buildAffiliateCopyMessage({
+      explorationName,
+      inviteUrl: link.url,
+    });
+
+    await navigator.clipboard.writeText(message);
+    toast.success('Invitation complète copiée dans le presse-papier');
   };
 
   if (isLoading) {
@@ -707,7 +781,7 @@ const MarcheursTab: React.FC<MarcheursTabProps> = ({ explorationId, marcheEventI
                 <Copy className="w-3 h-3" />
                 Copier le lien
               </Button>
-              <Button size="sm" onClick={handleShare} className="gap-1.5 text-xs h-8 bg-emerald-600 hover:bg-emerald-700 text-white">
+              <Button size="sm" onClick={handleShare} className="gap-1.5 text-xs h-8">
                 <Share2 className="w-3 h-3" />
                 Partager
               </Button>
@@ -715,6 +789,89 @@ const MarcheursTab: React.FC<MarcheursTabProps> = ({ explorationId, marcheEventI
           </div>
         </div>
       </motion.div>
+
+      <Dialog open={!!shareKit} onOpenChange={(open) => !open && setShareKit(null)}>
+        <DialogContent className="max-w-2xl border-border/60 bg-card/95 backdrop-blur-xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-card-foreground">
+              <Wand2 className="h-5 w-5 text-primary" />
+              Kit partage prêt
+            </DialogTitle>
+            <DialogDescription>
+              Une page publique dédiée, une URL trackée et un suivi d’impact pour vos invitations.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="grid gap-4 md:grid-cols-[1.15fr_0.85fr]">
+            <div className="space-y-4 rounded-2xl border border-border/60 bg-background/70 p-4">
+              <div className="space-y-1">
+                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">Livrable 1</p>
+                <p className="text-sm font-medium text-foreground">Message prêt à partager</p>
+              </div>
+              <div className="max-h-64 overflow-y-auto rounded-xl border border-border/50 bg-card p-3 text-sm leading-relaxed text-foreground">
+                {shareKit?.message}
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={async () => {
+                    if (!shareKit) return;
+                    await navigator.clipboard.writeText(shareKit.message);
+                    toast.success('Message copié');
+                  }}
+                >
+                  <Send className="mr-2 h-4 w-4" />
+                  Copier le message
+                </Button>
+                <Button size="sm" asChild>
+                  <a href={shareKit?.url} target="_blank" rel="noreferrer">
+                    <ExternalLink className="mr-2 h-4 w-4" />
+                    Ouvrir la landing
+                  </a>
+                </Button>
+              </div>
+            </div>
+
+            <div className="space-y-4 rounded-2xl border border-border/60 bg-background/70 p-4">
+              <div className="space-y-1">
+                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">Livrables 2 & 3</p>
+                <p className="text-sm font-medium text-foreground">URL affiliée + suivi</p>
+              </div>
+
+              <div className="rounded-xl border border-border/50 bg-card p-3">
+                <p className="mb-2 text-xs text-muted-foreground">URL de partage</p>
+                <p className="break-all text-sm text-foreground">{shareKit?.url}</p>
+              </div>
+
+              <div className="grid gap-2 sm:grid-cols-2">
+                <div className="rounded-xl border border-border/50 bg-card p-3">
+                  <p className="text-[11px] uppercase tracking-[0.14em] text-muted-foreground">Liens générés</p>
+                  <p className="mt-1 text-2xl font-semibold text-foreground">{shareKit?.generatedCount ?? 0}</p>
+                </div>
+                <div className="rounded-xl border border-border/50 bg-card p-3">
+                  <p className="text-[11px] uppercase tracking-[0.14em] text-muted-foreground">Mesure activée</p>
+                  <p className="mt-1 text-sm font-medium text-foreground">clics, vues et comptes créés</p>
+                </div>
+              </div>
+
+              <Button
+                variant="outline"
+                size="sm"
+                className="w-full"
+                onClick={async () => {
+                  if (!shareKit) return;
+                  await navigator.clipboard.writeText(shareKit.url);
+                  toast.success('URL trackée copiée');
+                }}
+              >
+                <LinkIcon className="mr-2 h-4 w-4" />
+                Copier uniquement l’URL
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </motion.div>
   );
 };
