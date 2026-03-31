@@ -1388,6 +1388,39 @@ export type Database = {
         }
         Relationships: []
       }
+      frequence_citations: {
+        Row: {
+          active: boolean | null
+          auteur: string
+          created_at: string | null
+          id: string
+          oeuvre: string
+          texte: string
+          updated_at: string | null
+          url: string | null
+        }
+        Insert: {
+          active?: boolean | null
+          auteur: string
+          created_at?: string | null
+          id?: string
+          oeuvre: string
+          texte: string
+          updated_at?: string | null
+          url?: string | null
+        }
+        Update: {
+          active?: boolean | null
+          auteur?: string
+          created_at?: string | null
+          id?: string
+          oeuvre?: string
+          texte?: string
+          updated_at?: string | null
+          url?: string | null
+        }
+        Relationships: []
+      }
       frequences_log: {
         Row: {
           action: string
