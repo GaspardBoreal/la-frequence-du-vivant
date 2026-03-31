@@ -55,13 +55,18 @@ const getSeasonYear = (date: Date): string => {
   return `${season} ${year}`;
 };
 
-const CountBadge: React.FC<{ icon: typeof Camera; count: number; label: string; color: string; lightColor: string }> = ({ icon: Icon, count, label, color, lightColor }) => (
-  <div className={`flex flex-col items-center gap-0.5 px-2.5 py-1.5 rounded-lg bg-gray-100 dark:bg-white/5 ${count === 0 ? 'opacity-30' : ''}`}>
-    <Icon className={`w-3.5 h-3.5 ${lightColor} dark:${color}`} />
-    <span className="text-foreground text-xs font-semibold">{count}</span>
-    <span className="text-muted-foreground text-[9px]">{label}</span>
-  </div>
-);
+const detectPillars = (title: string, desc: string | null) => {
+  const text = `${title} ${desc || ''}`.toLowerCase();
+  const pillars: { icon: typeof Leaf; label: string; color: string }[] = [];
+  if (/biodiversit|espèce|faune|flore|vivant|arbre|sol|terre|transhumance|berger|mouton|oiseaux|insecte/.test(text))
+    pillars.push({ icon: Leaf, label: 'Biodiversité', color: 'text-emerald-600 dark:text-emerald-400' });
+  if (/bioacoustique|son|écoute|acoustique|chant|audio|sonore|fréquence|silence/.test(text))
+    pillars.push({ icon: Headphones, label: 'Bioacoustique', color: 'text-sky-600 dark:text-sky-400' });
+  if (/géopoétique|poé|récit|narrat|territoire|paysage|marche|sentier|chemin|gardien/.test(text))
+    pillars.push({ icon: PenLine, label: 'Géopoétique', color: 'text-amber-600 dark:text-amber-400' });
+  if (pillars.length === 0) pillars.push({ icon: Leaf, label: 'Biodiversité', color: 'text-emerald-600 dark:text-emerald-400' });
+  return pillars;
+};
 
 const MarcheCard: React.FC<{
   participation: Participation;
@@ -73,6 +78,7 @@ const MarcheCard: React.FC<{
   if (!event) return null;
 
   const date = new Date(event.date_marche);
+  const pillars = detectPillars(event.title, event.explorations?.name || null);
   const hasData = summary && (summary.kigo_count > 0 || summary.photos_count > 0 || summary.audio_count > 0 || summary.species_count > 0);
 
   return (
@@ -86,57 +92,77 @@ const MarcheCard: React.FC<{
       {/* Timeline connector dot */}
       <div className="absolute -left-[21px] top-3 w-2.5 h-2.5 rounded-full bg-emerald-500 dark:bg-emerald-500/60 border-2 border-white dark:border-emerald-900 z-10" />
 
-      <div className={`rounded-xl border transition-all hover:scale-[1.01] hover:shadow-lg hover:shadow-emerald-500/5 ${
+      <div className={`rounded-xl overflow-hidden transition-all hover:scale-[1.01] hover:shadow-lg hover:shadow-emerald-500/5 ${
         participation.validated_at 
-          ? 'bg-emerald-50 border-emerald-200 dark:bg-gradient-to-br dark:from-emerald-500/10 dark:to-amber-500/5 dark:border-emerald-500/20' 
-          : 'bg-card border-border dark:bg-white/5 dark:border-white/10'
+          ? 'bg-emerald-50 border border-emerald-200 shadow-sm dark:bg-emerald-500/10 dark:border-amber-400/30 dark:shadow-[0_0_20px_-6px_rgba(251,191,36,0.12)]' 
+          : 'bg-card border border-border dark:bg-white/5 dark:border-white/10'
       }`}>
-        <div className="p-3 space-y-2">
-          {/* Header: lieu + date */}
-          <div className="flex items-start justify-between gap-2">
-            <div className="flex items-center gap-1.5 min-w-0">
-              <MapPin className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 flex-shrink-0" />
-              <span className="text-foreground text-sm font-medium truncate">
-                {event.lieu || event.title}
-              </span>
-            </div>
-            <span className="text-emerald-700 dark:text-emerald-300/60 text-[11px] flex-shrink-0">
-              {format(date, 'dd MMM', { locale: fr })}
+        <div className="p-3.5 space-y-2">
+          {/* Title */}
+          <p className="text-foreground text-sm font-semibold leading-snug">{event.title}</p>
+
+          {/* Exploration subtitle */}
+          {event.explorations?.name && (
+            <p className="text-sky-600 dark:text-sky-300/60 text-[10px]">• {event.explorations.name}</p>
+          )}
+
+          {/* Date + lieu */}
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
+            <span className="text-emerald-700 dark:text-emerald-300/70 text-[11px]">
+              {format(date, 'dd MMM yyyy', { locale: fr })}
             </span>
+            {event.lieu && (
+              <span className="text-muted-foreground text-[11px] flex items-center gap-0.5">
+                <MapPin className="w-3 h-3" />{event.lieu}
+              </span>
+            )}
           </div>
 
-          {event.lieu && event.lieu !== event.title && (
-            <p className="text-muted-foreground text-[11px] truncate pl-5">{event.title}</p>
-          )}
+          {/* Pillar badges */}
+          <div className="flex flex-wrap gap-1.5">
+            {pillars.map((p, j) => (
+              <span key={j} className={`inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full bg-emerald-50 dark:bg-white/5 ${p.color}`}>
+                <p.icon className="w-3 h-3" />
+                {p.label}
+              </span>
+            ))}
+          </div>
 
-          {/* Data badges */}
-          {summary && (
-            <div className="flex gap-1.5">
-              <CountBadge icon={Camera} count={summary.photos_count} label="Photos" color="text-sky-400" lightColor="text-sky-600" />
-              <CountBadge icon={Music} count={summary.audio_count} label="Sons" color="text-violet-400" lightColor="text-violet-600" />
-              <CountBadge icon={PenLine} count={summary.textes_count} label="Textes" color="text-amber-400" lightColor="text-amber-600" />
-            </div>
-          )}
-
-          {/* Biodiversity + Kigo line */}
-          {(summary?.species_count || summary?.kigo_text) && (
-            <div className="flex items-center gap-2 text-[11px]">
+          {/* Collected data counters */}
+          {summary && hasData && (
+            <div className="flex flex-wrap items-center gap-2.5 text-[11px]">
+              {summary.photos_count > 0 && (
+                <span className="flex items-center gap-1 text-sky-600 dark:text-sky-400">
+                  <Camera className="w-3 h-3" />{summary.photos_count}
+                </span>
+              )}
+              {summary.audio_count > 0 && (
+                <span className="flex items-center gap-1 text-violet-600 dark:text-violet-400">
+                  <Music className="w-3 h-3" />{summary.audio_count}
+                </span>
+              )}
+              {summary.textes_count > 0 && (
+                <span className="flex items-center gap-1 text-amber-600 dark:text-amber-400">
+                  <PenLine className="w-3 h-3" />{summary.textes_count}
+                </span>
+              )}
               {summary.species_count > 0 && (
                 <span className="flex items-center gap-1 text-emerald-700 dark:text-emerald-300/70">
-                  <Leaf className="w-3 h-3" />
-                  {summary.species_count} espèces
-                </span>
-              )}
-              {summary.kigo_text && (
-                <span className="text-amber-600 dark:text-amber-300/60 italic">
-                  « {summary.kigo_text} »
+                  <Leaf className="w-3 h-3" />{summary.species_count} espèces
                 </span>
               )}
             </div>
+          )}
+
+          {/* Kigo */}
+          {summary?.kigo_text && (
+            <p className="text-amber-600 dark:text-amber-300/60 text-[11px] italic">
+              « {summary.kigo_text} »
+            </p>
           )}
 
           {!hasData && (
-            <p className="text-muted-foreground/60 text-[10px] italic pl-5">
+            <p className="text-muted-foreground/60 text-[10px] italic">
               Données en attente de collecte
             </p>
           )}
