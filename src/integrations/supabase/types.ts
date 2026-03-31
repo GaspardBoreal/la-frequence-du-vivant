@@ -1395,9 +1395,11 @@ export type Database = {
           created_at: string | null
           id: string
           oeuvre: string
+          shown_count: number
           texte: string
           updated_at: string | null
           url: string | null
+          viewed_count: number
         }
         Insert: {
           active?: boolean | null
@@ -1405,9 +1407,11 @@ export type Database = {
           created_at?: string | null
           id?: string
           oeuvre: string
+          shown_count?: number
           texte: string
           updated_at?: string | null
           url?: string | null
+          viewed_count?: number
         }
         Update: {
           active?: boolean | null
@@ -1415,9 +1419,11 @@ export type Database = {
           created_at?: string | null
           id?: string
           oeuvre?: string
+          shown_count?: number
           texte?: string
           updated_at?: string | null
           url?: string | null
+          viewed_count?: number
         }
         Relationships: []
       }

@@ -1,12 +1,14 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { ArrowLeft, Search, Plus, Pencil, Trash2, ExternalLink, Save, X, Sparkles, Check, XCircle, CheckCheck, Loader2 } from 'lucide-react';
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
+import { ArrowLeft, Search, Plus, Pencil, Trash2, ExternalLink, Save, X, Sparkles, Check, XCircle, CheckCheck, Loader2, ArrowUpDown, Eye, Radio } from 'lucide-react';
 import { toast } from 'sonner';
 import { useDebounce } from '@/hooks/useDebounce';
 
@@ -17,6 +19,8 @@ type Citation = {
   oeuvre: string;
   url: string;
   active: boolean;
+  shown_count: number;
+  viewed_count: number;
 };
 
 type SuggestedCitation = {
@@ -25,6 +29,9 @@ type SuggestedCitation = {
   oeuvre: string;
   url: string;
 };
+
+type ShownFilter = 'all' | 'shown' | 'not_shown';
+type SortBy = 'viewed_desc' | 'viewed_asc';
 
 const EMPTY_CITATION = { texte: '', auteur: '', oeuvre: '', url: '' };
 
@@ -36,6 +43,10 @@ const AdminFrequences: React.FC = () => {
   const [editForm, setEditForm] = useState(EMPTY_CITATION);
   const [isAdding, setIsAdding] = useState(false);
   const [newForm, setNewForm] = useState(EMPTY_CITATION);
+
+  // Filters & sort
+  const [shownFilter, setShownFilter] = useState<ShownFilter>('all');
+  const [sortBy, setSortBy] = useState<SortBy>('viewed_desc');
 
   // AI suggestions state
   const [suggestions, setSuggestions] = useState<SuggestedCitation[]>([]);
@@ -53,16 +64,30 @@ const AdminFrequences: React.FC = () => {
     },
   });
 
-  const filtered = citations.filter((c) => {
-    if (!debouncedSearch) return true;
-    const q = debouncedSearch.toLowerCase();
-    return (
-      c.texte.toLowerCase().includes(q) ||
-      c.auteur.toLowerCase().includes(q) ||
-      c.oeuvre.toLowerCase().includes(q) ||
-      (c.url || '').toLowerCase().includes(q)
+  const filtered = useMemo(() => {
+    let result = citations.filter((c) => {
+      if (debouncedSearch) {
+        const q = debouncedSearch.toLowerCase();
+        if (
+          !c.texte.toLowerCase().includes(q) &&
+          !c.auteur.toLowerCase().includes(q) &&
+          !c.oeuvre.toLowerCase().includes(q) &&
+          !(c.url || '').toLowerCase().includes(q)
+        ) return false;
+      }
+      if (shownFilter === 'shown' && c.shown_count === 0) return false;
+      if (shownFilter === 'not_shown' && c.shown_count > 0) return false;
+      return true;
+    });
+
+    result.sort((a, b) =>
+      sortBy === 'viewed_desc'
+        ? b.viewed_count - a.viewed_count
+        : a.viewed_count - b.viewed_count
     );
-  });
+
+    return result;
+  }, [citations, debouncedSearch, shownFilter, sortBy]);
 
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
@@ -110,7 +135,6 @@ const AdminFrequences: React.FC = () => {
     setIsGenerating(true);
     setSuggestions([]);
     try {
-      // Validate session server-side before calling edge function
       const { data: { user }, error: userError } = await supabase.auth.getUser();
       if (userError || !user) {
         toast.error('Votre session a expiré. Veuillez vous reconnecter.');
@@ -125,7 +149,6 @@ const AdminFrequences: React.FC = () => {
       });
 
       if (error) {
-        // Try to parse the error for better messaging
         const msg = error.message || '';
         if (msg.includes('401') || msg.includes('Unauthorized') || msg.includes('non-2xx')) {
           toast.error('Session expirée ou accès refusé. Reconnectez-vous.');
@@ -152,16 +175,13 @@ const AdminFrequences: React.FC = () => {
     const s = suggestions[index];
     try {
       const { error } = await supabase.from('frequence_citations').insert({
-        texte: s.texte,
-        auteur: s.auteur,
-        oeuvre: s.oeuvre,
-        url: s.url,
+        texte: s.texte, auteur: s.auteur, oeuvre: s.oeuvre, url: s.url,
       });
       if (error) throw error;
       setSuggestions(prev => prev.filter((_, i) => i !== index));
       queryClient.invalidateQueries({ queryKey: ['frequence-citations'] });
       toast.success(`Citation de ${s.auteur} ajoutée`);
-    } catch (err: any) {
+    } catch {
       toast.error('Erreur lors de l\'insertion');
     }
   };
@@ -173,10 +193,7 @@ const AdminFrequences: React.FC = () => {
   const acceptAll = async () => {
     try {
       const rows = suggestions.map(s => ({
-        texte: s.texte,
-        auteur: s.auteur,
-        oeuvre: s.oeuvre,
-        url: s.url,
+        texte: s.texte, auteur: s.auteur, oeuvre: s.oeuvre, url: s.url,
       }));
       const { error } = await supabase.from('frequence_citations').insert(rows);
       if (error) throw error;
@@ -184,7 +201,7 @@ const AdminFrequences: React.FC = () => {
       setSuggestions([]);
       queryClient.invalidateQueries({ queryKey: ['frequence-citations'] });
       toast.success(`${count} citations ajoutées`);
-    } catch (err: any) {
+    } catch {
       toast.error('Erreur lors de l\'insertion groupée');
     }
   };
@@ -208,40 +225,74 @@ const AdminFrequences: React.FC = () => {
 
         {/* Header: count + search + add + AI */}
         <Card className="p-4 mb-4">
-          <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between">
-            <div className="flex items-center gap-4">
-              <span className="text-sm font-medium text-muted-foreground">
-                {filtered.length} citation{filtered.length !== 1 ? 's' : ''}
-                {debouncedSearch && ` / ${citations.length} total`}
-              </span>
-            </div>
-            <div className="flex gap-2 w-full sm:w-auto">
-              <div className="relative flex-1 sm:w-64">
-                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Mot contenant..."
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  className="pl-9"
-                />
+          <div className="flex flex-col gap-3">
+            <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between">
+              <div className="flex items-center gap-4">
+                <span className="text-sm font-medium text-muted-foreground">
+                  {filtered.length} citation{filtered.length !== 1 ? 's' : ''}
+                  {(debouncedSearch || shownFilter !== 'all') && ` / ${citations.length} total`}
+                </span>
               </div>
-              <Button size="sm" onClick={() => setIsAdding(true)} disabled={isAdding}>
-                <Plus className="h-4 w-4 mr-1" />
-                Ajouter
-              </Button>
-              <Button
-                size="sm"
-                variant="secondary"
-                onClick={handleSuggest}
-                disabled={isGenerating}
-              >
-                {isGenerating ? (
-                  <Loader2 className="h-4 w-4 mr-1 animate-spin" />
-                ) : (
-                  <Sparkles className="h-4 w-4 mr-1" />
-                )}
-                Suggérer par IA
-              </Button>
+              <div className="flex gap-2 w-full sm:w-auto">
+                <div className="relative flex-1 sm:w-64">
+                  <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Mot contenant..."
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    className="pl-9"
+                  />
+                </div>
+                <Button size="sm" onClick={() => setIsAdding(true)} disabled={isAdding}>
+                  <Plus className="h-4 w-4 mr-1" />
+                  Ajouter
+                </Button>
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  onClick={handleSuggest}
+                  disabled={isGenerating}
+                >
+                  {isGenerating ? (
+                    <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                  ) : (
+                    <Sparkles className="h-4 w-4 mr-1" />
+                  )}
+                  Suggérer par IA
+                </Button>
+              </div>
+            </div>
+
+            {/* Filter bar */}
+            <div className="flex flex-wrap items-center gap-4 pt-2 border-t border-border/50">
+              <div className="flex items-center gap-2">
+                <Radio className="h-3.5 w-3.5 text-muted-foreground" />
+                <span className="text-xs font-medium text-muted-foreground">Déjà montré :</span>
+                <ToggleGroup
+                  type="single"
+                  value={shownFilter}
+                  onValueChange={(v) => v && setShownFilter(v as ShownFilter)}
+                  size="sm"
+                >
+                  <ToggleGroupItem value="all" className="text-xs h-7 px-2.5">Tous</ToggleGroupItem>
+                  <ToggleGroupItem value="shown" className="text-xs h-7 px-2.5">Oui</ToggleGroupItem>
+                  <ToggleGroupItem value="not_shown" className="text-xs h-7 px-2.5">Non</ToggleGroupItem>
+                </ToggleGroup>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <Eye className="h-3.5 w-3.5 text-muted-foreground" />
+                <span className="text-xs font-medium text-muted-foreground">Vues :</span>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-7 text-xs gap-1"
+                  onClick={() => setSortBy(prev => prev === 'viewed_desc' ? 'viewed_asc' : 'viewed_desc')}
+                >
+                  <ArrowUpDown className="h-3 w-3" />
+                  {sortBy === 'viewed_desc' ? 'Décroissant' : 'Croissant'}
+                </Button>
+              </div>
             </div>
           </div>
         </Card>
@@ -327,8 +378,20 @@ const AdminFrequences: React.FC = () => {
                 <TableRow>
                   <TableHead className="w-[140px]">Auteur</TableHead>
                   <TableHead className="w-[180px]">Œuvre</TableHead>
-                  <TableHead className="w-[60px]">Lien</TableHead>
+                  <TableHead className="w-[50px]">Lien</TableHead>
                   <TableHead>Texte</TableHead>
+                  <TableHead className="w-[65px] text-center">
+                    <div className="flex items-center justify-center gap-1">
+                      <Radio className="h-3 w-3" />
+                      <span>Montré</span>
+                    </div>
+                  </TableHead>
+                  <TableHead className="w-[55px] text-center">
+                    <div className="flex items-center justify-center gap-1">
+                      <Eye className="h-3 w-3" />
+                      <span>Vues</span>
+                    </div>
+                  </TableHead>
                   <TableHead className="w-[90px] text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
@@ -349,6 +412,8 @@ const AdminFrequences: React.FC = () => {
                         <TableCell>
                           <Input value={editForm.texte} onChange={(e) => setEditForm({ ...editForm, texte: e.target.value })} className="h-8 text-xs" />
                         </TableCell>
+                        <TableCell />
+                        <TableCell />
                         <TableCell className="text-right">
                           <div className="flex gap-1 justify-end">
                             <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => updateMutation.mutate({ id: c.id, ...editForm })}>
@@ -372,6 +437,22 @@ const AdminFrequences: React.FC = () => {
                           )}
                         </TableCell>
                         <TableCell className="text-xs max-w-[300px] truncate">{c.texte}</TableCell>
+                        <TableCell className="text-center">
+                          <div className="flex justify-center">
+                            <span className={`inline-flex items-center justify-center w-5 h-5 rounded-full text-[10px] font-bold ${
+                              c.shown_count > 0
+                                ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
+                                : 'bg-muted text-muted-foreground'
+                            }`}>
+                              {c.shown_count}
+                            </span>
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-center">
+                          <Badge variant="secondary" className="text-[10px] px-1.5 py-0 min-w-[28px] justify-center">
+                            {c.viewed_count}
+                          </Badge>
+                        </TableCell>
                         <TableCell className="text-right">
                           <div className="flex gap-1 justify-end">
                             <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => startEdit(c)}>
@@ -388,7 +469,7 @@ const AdminFrequences: React.FC = () => {
                 ))}
                 {filtered.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={5} className="text-center text-muted-foreground py-8">
+                    <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
                       Aucune citation trouvée
                     </TableCell>
                   </TableRow>
