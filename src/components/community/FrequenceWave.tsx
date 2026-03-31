@@ -66,7 +66,8 @@ const FrequenceWave: React.FC<FrequenceWaveProps> = ({ totalFrequences, role }) 
       const { data, error } = await supabase
         .from('frequence_citations')
         .select('id, texte, auteur, oeuvre, url, shown_count, viewed_count')
-        .eq('active', true);
+        .eq('active', true)
+        .order('id');
       if (error) throw error;
       return data as Citation[];
     },
