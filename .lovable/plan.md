@@ -1,68 +1,38 @@
 
 
-# Corrections des profils communautaires
+# Refonte UX des vignettes du Carnet Vivant (vue liste)
 
-## Probleme identifie
+## Constat
 
-Les participations de Gaspard Boreal et Laurence Karki existent dans `marche_participations` mais n'ont jamais ete validees (`validated_at = NULL`). Le trigger `update_community_role_on_participation` ne met a jour `marches_count` et le role que lorsque `validated_at` passe de NULL a une valeur. C'est pourquoi les compteurs sont a 0.
+Les cartes du Carnet Vivant (`MarcheCard` dans `CarnetVivant.tsx`) utilisent un design minimaliste timeline avec petits badges compteurs empilés, tandis que les cartes de l'onglet Marches (`EventCard` dans `MarchesTab.tsx`) ont un design plus riche et lisible : titre proéminent, description, badges pilliers colorés, date et lieu bien structurés.
 
-Note supplementaire : le nom de Laurence Karki semble inverse dans la base (prenom=Karki, nom=Laurence).
+## Modifications - fichier unique : `src/components/community/CarnetVivant.tsx`
 
-## Donnees actuelles
+### Refonte du composant `MarcheCard`
 
-| Marcheur | Participations | Validees | marches_count affiché | Role |
-|---|---|---|---|---|
-| Gaspard Boreal | 2 (Transhumance, Reveil de la Terre) | 0 | 0 | marcheur_en_devenir |
-| Laurence Karki | 1 (Transhumance) | 0 | 0 | marcheur_en_devenir |
-| Zephyrine Elhage | 2 (Reveil de la Terre, NOUAILLE) | 1 | 1 | marcheur |
+Reprendre la structure visuelle de `EventCard` :
 
-## Corrections a appliquer
+1. **Titre en premier** : le titre de l'événement (`event.title`) en `text-sm font-semibold`, pas le lieu
+2. **Exploration en sous-titre** : nom de l'exploration si présent, en texte discret
+3. **Ligne date + lieu** : date formatée en `dd MMM yyyy` + lieu avec icone MapPin, comme dans EventCard
+4. **Badges pilliers thématiques** : réutiliser la logique `detectPillars` (Biodiversité, Bioacoustique, Géopoétique) avec les mêmes pastilles colorées arrondies
+5. **Données collectées** : garder les compteurs photos/sons/textes/espèces mais les afficher en ligne compacte avec icones (pas en colonnes empilées)
+6. **Carte arrondie** : `rounded-xl`, padding `p-3.5 space-y-2`, mêmes couleurs de fond emerald pour les participations validées
 
-### 1. Valider les participations manquantes
+### Suppression du composant `CountBadge`
 
-Utiliser l'outil d'insertion pour mettre a jour `validated_at` et `validation_method` sur toutes les participations non validees :
+Remplacé par des badges inline plus élégants alignés sur le style Marches.
 
-```sql
-UPDATE marche_participations 
-SET validated_at = now(), validation_method = 'admin_retroactif'
-WHERE validated_at IS NULL;
-```
+### Ce qui ne change PAS
 
-Cela declenchera le trigger `update_community_role_on_participation` qui recalculera automatiquement `marches_count` et le role pour chaque marcheur.
+- La structure timeline (dots, border-l, seasons accordion) reste identique
+- Le header "Mon carnet vivant" reste identique
+- Le regroupement par saison reste identique
+- Aucun autre fichier modifié
 
-### 2. Mettre a jour le profil de Gaspard Boreal en Sentinelle
+## Fichier impacté
 
-Apres validation des participations, le trigger lui attribuera le role `marcheur` (2 participations). Mais Gaspard etant le createur de la demarche, il doit etre `sentinelle`. Il faut donc :
-
-```sql
-UPDATE community_profiles 
-SET role = 'sentinelle', formation_validee = true, certification_validee = true
-WHERE prenom = 'Gaspard' AND nom = 'Boreal';
-```
-
-### 3. Corriger le nom inverse de Laurence Karki (a confirmer)
-
-Si `prenom` devrait etre "Laurence" et `nom` devrait etre "Karki" :
-
-```sql
-UPDATE community_profiles 
-SET prenom = 'Laurence', nom = 'Karki'
-WHERE user_id = '0c9a3fbe-20d0-4989-bde9-24678768e85f';
-```
-
-### 4. Valider aussi la participation de Zephyrine au Reveil de la Terre
-
-Sa participation a cet evenement est aussi non validee.
-
-## Resultat attendu
-
-| Marcheur | marches_count | Role |
-|---|---|---|
-| Gaspard Boreal | 2 | sentinelle (force) |
-| Laurence Karki | 1 | marcheur |
-| Zephyrine Elhage | 2 | marcheur |
-
-## Fichiers impactes
-
-Aucun fichier code a modifier — uniquement des mises a jour de donnees en base via l'outil d'insertion SQL.
+| Fichier | Action |
+|---|---|
+| `src/components/community/CarnetVivant.tsx` | Refonte du composant `MarcheCard` pour matcher le style `EventCard` |
 
