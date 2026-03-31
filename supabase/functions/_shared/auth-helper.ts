@@ -37,11 +37,10 @@ export async function validateAuth(req: Request): Promise<{
     { global: { headers: { Authorization: authHeader } } }
   );
 
-  // Validate the JWT token and get claims
-  const token = authHeader.replace('Bearer ', '');
-  const { data: claimsData, error: claimsError } = await supabase.auth.getClaims(token);
+  // Validate the JWT token and get user
+  const { data: { user: authUser }, error: authError } = await supabase.auth.getUser();
   
-  if (claimsError || !claimsData?.claims) {
+  if (authError || !authUser) {
     return {
       user: null,
       isAdmin: false,
@@ -53,13 +52,13 @@ export async function validateAuth(req: Request): Promise<{
     };
   }
 
-  const userId = claimsData.claims.sub;
+  const userId = authUser.id;
 
   // Check if user is admin using the RPC function
   const { data: isAdmin } = await supabase.rpc('check_is_admin_user', { check_user_id: userId });
 
   return {
-    user: { id: userId, email: claimsData.claims.email },
+    user: { id: userId, email: authUser.email },
     isAdmin: !!isAdmin,
     supabase,
     errorResponse: null
