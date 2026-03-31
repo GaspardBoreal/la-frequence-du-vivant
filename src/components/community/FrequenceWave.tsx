@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ExternalLink } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
@@ -14,17 +14,23 @@ const ROLE_GRADIENT: Record<CommunityRoleKey, [string, string]> = {
 };
 
 type Citation = {
+  id: string;
   texte: string;
   auteur: string;
   oeuvre: string;
   url: string;
+  shown_count: number;
+  viewed_count: number;
 };
 
 const FALLBACK_CITATION: Citation = {
+  id: '',
   texte: "Dans chaque promenade avec la nature, on reçoit bien plus que ce qu'on cherche.",
   auteur: "John Muir",
   oeuvre: "Unpublished Journals (1938)",
   url: "https://vault.sierraclub.org/john_muir_exhibit/writings/",
+  shown_count: 0,
+  viewed_count: 0,
 };
 
 function getDayOfYear(): number {
@@ -32,6 +38,11 @@ function getDayOfYear(): number {
   const start = new Date(now.getFullYear(), 0, 0);
   const diff = now.getTime() - start.getTime();
   return Math.floor(diff / (1000 * 60 * 60 * 24));
+}
+
+function getTodayKey(): string {
+  const now = new Date();
+  return `${now.getFullYear()}-${now.getMonth() + 1}-${now.getDate()}`;
 }
 
 function getCitationDuJour(citations: Citation[]): Citation {
@@ -47,21 +58,53 @@ interface FrequenceWaveProps {
 
 const FrequenceWave: React.FC<FrequenceWaveProps> = ({ totalFrequences, role }) => {
   const [c1, c2] = ROLE_GRADIENT[role];
+  const incrementedRef = useRef(false);
 
   const { data: citations = [] } = useQuery({
     queryKey: ['frequence-citations-public'],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('frequence_citations')
-        .select('texte, auteur, oeuvre, url')
+        .select('id, texte, auteur, oeuvre, url, shown_count, viewed_count')
         .eq('active', true);
       if (error) throw error;
       return data as Citation[];
     },
-    staleTime: 1000 * 60 * 60, // 1h
+    staleTime: 1000 * 60 * 60,
   });
 
   const citation = getCitationDuJour(citations);
+
+  // Increment counters once per session/day
+  useEffect(() => {
+    if (!citation.id || incrementedRef.current) return;
+    incrementedRef.current = true;
+
+    const todayKey = getTodayKey();
+    const sessionKey = `freq_viewed_${citation.id}`;
+    const shownKey = `freq_shown_${citation.id}_${todayKey}`;
+
+    // viewed_count: +1 per session (sessionStorage)
+    if (!sessionStorage.getItem(sessionKey)) {
+      sessionStorage.setItem(sessionKey, '1');
+      supabase
+        .from('frequence_citations')
+        .update({ viewed_count: citation.viewed_count + 1 })
+        .eq('id', citation.id)
+        .then(() => {});
+    }
+
+    // shown_count: +1 per calendar day (localStorage)
+    if (!localStorage.getItem(shownKey)) {
+      localStorage.setItem(shownKey, '1');
+      supabase
+        .from('frequence_citations')
+        .update({ shown_count: citation.shown_count + 1 })
+        .eq('id', citation.id)
+        .then(() => {});
+    }
+  }, [citation.id, citation.viewed_count, citation.shown_count]);
+
   const bars = 16;
   const heights = Array.from({ length: bars }, (_, i) => {
     const x = i / (bars - 1);
