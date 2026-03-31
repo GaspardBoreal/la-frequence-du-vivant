@@ -248,6 +248,16 @@ function App() {
                 <OrganisateursAdmin />
               </AdminAuth>
             } />
+            <Route path="/admin/outils" element={
+              <AdminAuth>
+                <AdminOutilsHub />
+              </AdminAuth>
+            } />
+            <Route path="/admin/outils/frequences" element={
+              <AdminAuth>
+                <AdminFrequences />
+              </AdminAuth>
+            } />
             <Route path="/admin" element={
               <AdminAuth>
                 <AdminAccess />
