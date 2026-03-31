@@ -1,169 +1,81 @@
 
-Objectif : corriger le fait que “Copier le lien” et “Partager” produisent aujourd’hui le même lien brut, puis transformer ces deux actions en un vrai dispositif d’invitation communautaire + partage public inspirant + tracking d’affiliation.
+Objectif : corriger définitivement les 2 boutons “Copier le lien” et “Partager”, qui échouent encore avec le toast “Impossible de générer le lien d’invitation”.
 
-Constat confirmé dans le code
-- Dans `src/components/community/exploration/MarcheursTab.tsx`, `handleShare()` et `handleCopyLink()` utilisent tous deux `window.location.href`.
-- Résultat : les deux boutons renvoient exactement la même URL de l’espace connecté.
-- Il n’existe aujourd’hui aucun système de referral/affiliation dédié, ni landing publique spécifique, ni tracking des liens générés/consultés par marcheur.
-- La page exploration actuelle `/marches-du-vivant/mon-espace/exploration/:explorationId` est une page d’espace connecté, pas une vraie page publique de conversion.
+1. Cause racine identifiée
+- Le frontend masque l’erreur réelle : dans `MarcheursTab.tsx`, toute erreur RPC retourne seulement le toast générique.
+- La base montre que le système n’est pas totalement absent : `community_affiliate_links` contient déjà des lignes, donc l’architecture existe.
+- En revanche, un bug SQL est confirmé dans `record_community_affiliate_event` :
+  - `ON CONFLICT ON CONSTRAINT idx_community_affiliate_events_unique_account_created`
+  - `idx_...` est un index, pas une contrainte.
+  - Cette fonction est donc cassée pour le tracking d’événements.
+- Pour la génération de lien, la fonction `generate_community_affiliate_link` est fragile :
+  - logique en 2 temps `SELECT -> INSERT/UPDATE`
+  - pas de stratégie atomique
+  - si un cas de concurrence / duplication / état partiel survient, le RPC peut planter et le frontend ne donne aucun détail.
 
-Décisions déjà clarifiées
-- “Partager” doit produire un Kit partage.
-- La conversion affiliée à mesurer = “Compte créé”.
-- Le lien partagé doit ouvrir une page publique dédiée.
-- Il faut distinguer :
-  1. clics sur boutons
-  2. liens trackés générés
+2. Correction à appliquer
+A. Base Supabase
+- Corriger `record_community_affiliate_event` pour utiliser un vrai `ON CONFLICT` valide, ou une logique conditionnelle explicite pour `account_created`.
+- Réécrire `generate_community_affiliate_link` de façon robuste :
+  - validation claire des paramètres
+  - génération/récupération du lien en mode atomique
+  - mise à jour fiable des compteurs
+  - insertion des événements `button_click` et `link_generated` sans risque de collision
+- Conserver les mêmes tables et la même intention fonctionnelle, sans changer l’UX métier.
 
-Plan d’implémentation
+B. Frontend
+- Dans `src/components/community/exploration/MarcheursTab.tsx` :
+  - afficher l’erreur réelle `error.message` pendant le correctif, au lieu du toast générique seul
+  - séparer clairement :
+    1. échec de génération du lien
+    2. échec du presse-papier
+    3. échec du partage natif
+- Garder les deux comportements distincts :
+  - `Copier le lien` = message long + URL trackée
+  - `Partager` = kit partage + partage natif/fallback
 
-1. Corriger immédiatement la logique des 2 boutons
-- `Copier le lien` ne copiera plus l’URL actuelle.
-- `Partager` n’enverra plus l’URL actuelle.
-- Les deux actions généreront un lien tracké dédié, mais avec des usages différents :
-  - `Copier le lien` : copie un texte prêt à coller + lien affilié.
-  - `Partager` : ouvre le partage natif avec un texte plus court + lien affilié, et donne accès au kit partage.
+3. Détail du correctif frontend
+- `createAffiliateLink()` :
+  - garder la vérification d’auth
+  - appeler le RPC
+  - si erreur RPC : afficher le détail exact et logguer côté console
+  - si `data` vide : gérer explicitement ce cas
+- `handleCopyLink()` :
+  - entourer `navigator.clipboard.writeText(...)` d’un `try/catch`
+  - toast spécifique si le presse-papier échoue
+- `handleShare()` :
+  - ne pas confondre un refus natif de partage avec une erreur de génération
+  - fallback propre vers copie du message si `navigator.share` n’aboutit pas
 
-2. Ajouter une couche de tracking d’affiliation en base
-Créer 2 tables dédiées :
-- `community_affiliate_links`
-  - marcheur_user_id
-  - exploration_id
-  - marche_event_id éventuel
-  - share_token unique
-  - channel (`copy`, `share`)
-  - generated_count
-  - last_generated_at
-- `community_affiliate_events`
-  - affiliate_link_id
-  - event_type (`button_click`, `link_generated`, `landing_view`, `signup_started`, `account_created`)
-  - visitor/session metadata sobre
-  - created_at
+4. Détail du correctif SQL
+- Remplacer le `ON CONFLICT ON CONSTRAINT idx_community_affiliate_events_unique_account_created` par une version valide.
+- Sécuriser `generate_community_affiliate_link` pour qu’il ne dépende plus d’un `SELECT` préalable fragile.
+- Vérifier que la fonction retourne toujours une ligne avec :
+  - `link_id`
+  - `share_token`
+  - `generated_count`
 
-Pourquoi 2 tables :
-- 1 table “lien” pour agréger les stats par marcheur
-- 1 table “événements” pour l’analytique fine et l’évolution future
-
-3. Définir les règles de comptage
-- “Combien de liens envoyés” :
-  - compteur A = clics sur boutons
-  - compteur B = liens trackés générés
-- “Combien de consultations” :
-  - nombre de `landing_view`
-- “Combien d’affiliés créés” :
-  - nombre de `account_created`
-- Attribution :
-  - un compte créé est attribué au lien si la personne arrive avec le token puis s’inscrit dans un délai défini
-  - stockage du token en local/session côté navigateur jusqu’à l’inscription
-
-4. Créer la page publique dédiée de partage
-Ajouter une nouvelle route publique, par exemple :
-- `/marches-du-vivant/rejoindre/:token`
-Cette page sera pensée comme une landing “wahou” et inspirante, distincte de l’espace connecté.
-
-Contenu de la landing
-- Hero immersif avec nom de l’exploration / de la marche
-- Fréquence du jour à l’ouverture
-- Mise en avant des 3 volets :
-  - Biodiversité : données collectées / espèces / APIs déjà exploitées par le projet
-  - Bioacoustique : sons publics disponibles
-  - Géopoétique : textes publics disponibles
-- Galerie de médias téléchargeables
-- Preuves vivantes : marcheurs, contributions, territoire
-- CTA principal : rejoindre la communauté
-- CTA secondaire : découvrir l’exploration
-- Mention légère du marcheur invitant
-
-5. Préparer le “Kit partage” pour le bouton Partager
-Le bouton “Partager” produira 3 livrables cohérents :
-- LIV 1 : page publique dédiée ultra-design
-- LIV 2 : URL trackée
-- LIV 3 : tracking par marcheur (liens générés + vues + comptes créés)
-
-UX prévue :
-- clic sur “Partager”
-- génération/récupération du lien affilié
-- ouverture du partage natif si disponible
-- sinon copie d’un message court
-- affichage d’un petit panneau/modal “Kit prêt” avec :
-  - URL
-  - bouton copier
-  - aperçu du message
-  - accès à la landing
-
-6. Transformer “Copier le lien” en vrai message d’invitation
-Le bouton “Copier le lien” copiera un texte long prêt à envoyer, avec humour doux et tonalité inspirante.
-Structure du message :
-- accroche personnelle
-- clin d’œil humoristique
-- invitation à rejoindre la communauté
-- synthèse de la raison d’être / comment / quoi
-- lien affilié tracké
-
-Exemple d’intention rédactionnelle
-- ton chaleureux, poétique, accessible
-- humour léger du type : “promis, aucune obligation de parler aux arbres dès le premier jour”
-- CTA clair vers la communauté des Marcheurs du Vivant
-
-7. Relier l’inscription communautaire au referral
-Dans `useCommunityAuth` / page de connexion-inscription :
-- détecter un token d’affiliation présent en URL ou stocké localement
-- au moment du sign up réussi :
-  - enregistrer un événement `account_created`
-  - rattacher la conversion au marcheur émetteur
-- éventuellement enregistrer `signup_started` dès l’arrivée sur le formulaire
-
-8. Ajouter un tableau de bord de suivi par marcheur
-Enrichir l’admin communautaire ou l’outil le plus pertinent avec :
-- marcheur
-- exploration concernée
-- clics boutons
-- liens générés
-- vues de landing
-- comptes créés
-- taux de conversion
-- tri décroissant par conversions
-Et, si souhaité plus tard, une vue “dans Mon Espace” pour que chaque marcheur voie son impact d’ambassadeur.
-
-9. Données et sécurité
-- RLS stricte :
-  - un marcheur authentifié peut créer/générer ses propres liens
-  - seuls admins voient l’analytique globale
-  - la landing publique peut lire uniquement les données publiques nécessaires
-- ne rien casser dans les URLs publiques existantes
-- ne pas réutiliser l’URL de `mon-espace` comme lien externe
-- préserver la compatibilité des routes publiques existantes
-
-10. Fichiers probablement impactés
-Frontend
-- `src/components/community/exploration/MarcheursTab.tsx`
-- `src/pages/MarchesDuVivantConnexion.tsx`
-- `src/hooks/useCommunityAuth.ts`
-- `src/App.tsx`
-- nouveau composant/page de landing publique de referral
-- éventuel hook utilitaire de génération / tracking de liens
-
-Base Supabase
-- migration pour tables de referral/analytics
-- politiques RLS adaptées
-- possiblement une fonction SQL simple d’agrégation si utile pour le dashboard
-
-Détail UX/UI attendu
-- Style premium, inspirant, immersif, plus éditorial qu’un simple écran fonctionnel
-- Hero avec dégradés organiques, métriques vivantes, cartes piliers, médias mis en scène
-- Mobile-first : les CTA principaux doivent être visibles sans confusion
-- “Copier le lien” et “Partager” doivent avoir des feedbacks très différents pour éviter toute ambiguïté
-- Le système doit donner le sentiment d’inviter à une communauté vivante, pas de pousser un lien technique
-
-Point important à valider implicitement dans l’implémentation
-- Pour le volet biodiversité de la landing, je proposerai de partir des données déjà accessibles publiquement dans l’exploration et, si disponible, des snapshots/observations déjà stockés, sans dépendre d’un appel externe temps réel au moment du chargement.
-
-Résultat attendu
-- “Copier le lien” : un vrai texte d’invitation + lien affilié tracké
-- “Partager” : un kit partage distinct + lien tracké + landing publique “wahou”
-- suivi par marcheur :
+5. Résultat attendu après correction
+- “Copier le lien” fonctionne à chaque clic
+- “Partager” fonctionne à chaque clic
+- plus aucun toast “Impossible...” tant que l’utilisateur est connecté et que l’exploration existe
+- le tracking continue de compter :
   - clics bouton
   - liens générés
-  - consultations
+  - vues landing
   - comptes créés
-- aucune confusion entre espace connecté et partage public
+
+6. Fichiers impactés
+- `src/components/community/exploration/MarcheursTab.tsx`
+- `supabase/migrations/...` nouvelle migration de correction des fonctions :
+  - `generate_community_affiliate_link`
+  - `record_community_affiliate_event`
+
+7. Note importante
+Le bug n’est pas dans l’URL générée elle-même. Le problème est bien dans la couche RPC/SQL + dans le fait que le frontend masque l’erreur exacte, ce qui a rendu le diagnostic plus lent.
+
+8. Ordre d’implémentation
+1. Corriger la migration SQL des fonctions
+2. Mettre à jour `MarcheursTab.tsx` pour remonter les vraies erreurs et distinguer RPC / clipboard / share
+3. Re-tester les 2 boutons depuis la vue Marcheurs sur l’exploration actuelle
+4. Vérifier ensuite la landing publique et le tracking d’inscription
