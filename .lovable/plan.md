@@ -1,81 +1,52 @@
 
-Objectif : corriger définitivement les 2 boutons “Copier le lien” et “Partager”, qui échouent encore avec le toast “Impossible de générer le lien d’invitation”.
+Objectif : corriger l’erreur actuelle `Impossible de générer le lien d’invitation : column reference "generated_count" is ambiguous` qui bloque encore les boutons “Copier le lien” et “Partager”.
 
-1. Cause racine identifiée
-- Le frontend masque l’erreur réelle : dans `MarcheursTab.tsx`, toute erreur RPC retourne seulement le toast générique.
-- La base montre que le système n’est pas totalement absent : `community_affiliate_links` contient déjà des lignes, donc l’architecture existe.
-- En revanche, un bug SQL est confirmé dans `record_community_affiliate_event` :
-  - `ON CONFLICT ON CONSTRAINT idx_community_affiliate_events_unique_account_created`
-  - `idx_...` est un index, pas une contrainte.
-  - Cette fonction est donc cassée pour le tracking d’événements.
-- Pour la génération de lien, la fonction `generate_community_affiliate_link` est fragile :
-  - logique en 2 temps `SELECT -> INSERT/UPDATE`
-  - pas de stratégie atomique
-  - si un cas de concurrence / duplication / état partiel survient, le RPC peut planter et le frontend ne donne aucun détail.
+1. Diagnostic confirmé
+- Le frontend n’est plus la cause principale : `MarcheursTab.tsx` remonte maintenant l’erreur SQL réelle.
+- Les deux boutons cassent car ils appellent tous deux le même RPC `generate_community_affiliate_link`.
+- Dans la dernière version SQL, la fonction est déclarée avec `RETURNS TABLE(link_id, share_token, generated_count)`.
+- En PL/pgSQL, `generated_count` devient alors aussi une variable de sortie dans la fonction.
+- La ligne `SET generated_count = generated_count + 1` devient ambiguë entre :
+  - la colonne `community_affiliate_links.generated_count`
+  - la variable de sortie `generated_count`
+- C’est donc un bug SQL résiduel dans la fonction, pas un bug d’URL ni de bouton.
 
 2. Correction à appliquer
-A. Base Supabase
-- Corriger `record_community_affiliate_event` pour utiliser un vrai `ON CONFLICT` valide, ou une logique conditionnelle explicite pour `account_created`.
-- Réécrire `generate_community_affiliate_link` de façon robuste :
-  - validation claire des paramètres
-  - génération/récupération du lien en mode atomique
-  - mise à jour fiable des compteurs
-  - insertion des événements `button_click` et `link_generated` sans risque de collision
-- Conserver les mêmes tables et la même intention fonctionnelle, sans changer l’UX métier.
+- Ajouter une nouvelle migration Supabase qui redéfinit uniquement `public.generate_community_affiliate_link`.
+- Conserver la logique robuste récente :
+  - validation auth / params
+  - verrou advisory
+  - récupération / création atomique du lien
+  - incrément des compteurs
+  - insertion des événements
+- Corriger explicitement toutes les références ambiguës en qualifiant les colonnes avec un alias de table, par exemple :
+  - `SET generated_count = l.generated_count + 1`
+  - `SET button_click_count = l.button_click_count + 1`
+- Rendre aussi le `RETURN QUERY` explicite et lisible :
+  - `SELECT existing_link.id AS link_id, existing_link.share_token AS share_token, existing_link.generated_count AS generated_count`
 
-B. Frontend
-- Dans `src/components/community/exploration/MarcheursTab.tsx` :
-  - afficher l’erreur réelle `error.message` pendant le correctif, au lieu du toast générique seul
-  - séparer clairement :
-    1. échec de génération du lien
-    2. échec du presse-papier
-    3. échec du partage natif
-- Garder les deux comportements distincts :
-  - `Copier le lien` = message long + URL trackée
-  - `Partager` = kit partage + partage natif/fallback
+3. Ce que je ne changerais pas
+- Pas besoin de modifier `MarcheursTab.tsx` pour ce bug précis : il aide déjà au diagnostic en affichant l’erreur exacte.
+- Pas besoin de toucher `record_community_affiliate_event` pour cette erreur précise, sauf si un nouveau symptôme apparaît après ce fix.
+- Ne pas réécrire les anciennes migrations historiques : ajouter une migration corrective propre au-dessus.
 
-3. Détail du correctif frontend
-- `createAffiliateLink()` :
-  - garder la vérification d’auth
-  - appeler le RPC
-  - si erreur RPC : afficher le détail exact et logguer côté console
-  - si `data` vide : gérer explicitement ce cas
-- `handleCopyLink()` :
-  - entourer `navigator.clipboard.writeText(...)` d’un `try/catch`
-  - toast spécifique si le presse-papier échoue
-- `handleShare()` :
-  - ne pas confondre un refus natif de partage avec une erreur de génération
-  - fallback propre vers copie du message si `navigator.share` n’aboutit pas
+4. Fichier impacté
+- `supabase/migrations/...` nouvelle migration corrective pour `generate_community_affiliate_link`
 
-4. Détail du correctif SQL
-- Remplacer le `ON CONFLICT ON CONSTRAINT idx_community_affiliate_events_unique_account_created` par une version valide.
-- Sécuriser `generate_community_affiliate_link` pour qu’il ne dépende plus d’un `SELECT` préalable fragile.
-- Vérifier que la fonction retourne toujours une ligne avec :
-  - `link_id`
-  - `share_token`
-  - `generated_count`
+5. Vérifications après correctif
+- Cliquer “Copier le lien” depuis la vue Marcheurs :
+  - plus d’erreur SQL
+  - texte copié correctement
+  - compteur `generated_count` incrémenté
+- Cliquer “Partager” :
+  - plus d’erreur SQL
+  - ouverture du partage natif ou fallback clipboard
+  - compteur `generated_count` incrémenté
+- Vérifier en base que :
+  - la ligne `community_affiliate_links` est créée ou réutilisée
+  - `button_click_count` et `generated_count` évoluent correctement
+  - les événements `button_click` et `link_generated` continuent d’être insérés
 
-5. Résultat attendu après correction
-- “Copier le lien” fonctionne à chaque clic
-- “Partager” fonctionne à chaque clic
-- plus aucun toast “Impossible...” tant que l’utilisateur est connecté et que l’exploration existe
-- le tracking continue de compter :
-  - clics bouton
-  - liens générés
-  - vues landing
-  - comptes créés
-
-6. Fichiers impactés
-- `src/components/community/exploration/MarcheursTab.tsx`
-- `supabase/migrations/...` nouvelle migration de correction des fonctions :
-  - `generate_community_affiliate_link`
-  - `record_community_affiliate_event`
-
-7. Note importante
-Le bug n’est pas dans l’URL générée elle-même. Le problème est bien dans la couche RPC/SQL + dans le fait que le frontend masque l’erreur exacte, ce qui a rendu le diagnostic plus lent.
-
-8. Ordre d’implémentation
-1. Corriger la migration SQL des fonctions
-2. Mettre à jour `MarcheursTab.tsx` pour remonter les vraies erreurs et distinguer RPC / clipboard / share
-3. Re-tester les 2 boutons depuis la vue Marcheurs sur l’exploration actuelle
-4. Vérifier ensuite la landing publique et le tracking d’inscription
+6. Détail technique
+- Cause exacte : collision de nom entre une variable de sortie PL/pgSQL (`generated_count`) et une colonne SQL du même nom.
+- Solution fiable : toujours qualifier les colonnes de compteur dans les `UPDATE` / `SELECT` internes de la fonction lorsqu’un `RETURNS TABLE(...)` expose un nom identique.
