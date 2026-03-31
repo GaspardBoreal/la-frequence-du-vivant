@@ -75,6 +75,8 @@ import MarcheEventDetail from './pages/MarcheEventDetail';
 import CommunityProfilesAdmin from './pages/CommunityProfilesAdmin';
 import OrganisateursAdmin from './pages/OrganisateursAdmin';
 import MarchesDuVivantExplorationMarcheur from './pages/MarchesDuVivantExplorationMarcheur';
+import AdminOutilsHub from './pages/AdminOutilsHub';
+import AdminFrequences from './pages/AdminFrequences';
 
 function App() {
   return (
