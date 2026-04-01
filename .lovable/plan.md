@@ -1,59 +1,50 @@
 
 Objectif
-- Réorganiser les 5 blocs de “Ce qui nous différencie” pour créer une progression plus persuasive vers la prise de contact, en aidant les visiteurs à comprendre rapidement qu’il existe une marche adaptée à leur profil et à leur intention.
+- Enrichir la section “Comment ça marche ?” sur `/marches-du-vivant/explorer` en ajoutant une nouvelle étape 01 “Choisir”, puis décaler les 3 étapes existantes à 02, 03 et 04 sans modifier leurs textes actuels.
 
-Analyse de l’ordre actuel
-- Ordre actuel :
-  1. Data RSE Opposable
-  2. Bioacoustique Immersive
-  3. Science Participative
-  4. Exploration Gamifiée
-  5. 3 types de marches
-- Problème principal :
-  - Le bloc “3 types de marches”, qui aide justement à se projeter dans une offre concrète, arrive en dernier.
-  - Les premiers blocs sont très orientés méthode/preuve, mais pas assez orientés “à qui s’adresse l’expérience ?”.
-  - Pour convaincre quelqu’un de nous contacter, il faut d’abord créer l’identification, ensuite montrer l’expérience, puis rassurer par la valeur et la preuve.
+Constat
+- La section est pilotée par un tableau `etapes` dans `src/pages/MarchesDuVivantExplorer.tsx`.
+- Chaque carte d’étape est générée via `etapes.map(...)`, donc la modification est simple, propre et cohérente avec l’existant.
+- Le sous-titre actuel dit “Trois étapes...”, il devra être mis à jour pour rester aligné avec 4 étapes.
 
-Ordre recommandé
-1. 3 types de marches
-2. Bioacoustique Immersive
-3. Science Participative
-4. Exploration Gamifiée
-5. Data RSE Opposable
+Ce que je vais modifier
+1. Mettre à jour le tableau `etapes`
+- Ajouter en tête une nouvelle entrée :
+  - `num: '01'`
+  - `titre: 'Choisir'`
+  - un texte inspirant expliquant que le marcheur choisit la forme de marche qui lui ressemble : éco poétique, éco tourisme ou agroécologique
+- Conserver les 3 étapes existantes à l’identique sur le fond, en les renumérotant :
+  - `Marchez` devient `02`
+  - `Explorez les zones blanches` devient `03`
+  - `Progressez` devient `04`
 
-Pourquoi cet ordre est plus pertinent
-- 1. “3 types de marches”
-  - C’est le meilleur point d’entrée commercial.
-  - Le lecteur comprend immédiatement qu’il existe plusieurs formats selon les publics et les sensibilités.
-  - Cela favorise la projection : “il y a probablement une marche pour moi / pour mon équipe”.
-- 2. “Bioacoustique Immersive”
-  - On enchaîne avec la promesse d’expérience vécue, sensorielle et différenciante.
-  - Cela donne envie avant de parler de mécanique ou de preuve.
-- 3. “Science Participative”
-  - Une fois l’intérêt émotionnel créé, on montre que l’expérience a aussi du sens collectif et une utilité réelle.
-- 4. “Exploration Gamifiée”
-  - Ce bloc renforce l’engagement et la participation, surtout pour les publics curieux, familles, grand public ou formats challenge.
-- 5. “Data RSE Opposable”
-  - À garder en dernier comme preuve forte et rationnelle.
-  - C’est très convaincant, mais plus spécifique et plus “acheteur B2B”.
-  - Placé en clôture, il agit comme un argument de crédibilité premium plutôt que comme une entrée froide.
+2. Ajuster le texte d’introduction de section
+- Remplacer “Trois étapes pour devenir acteur de la connaissance du vivant.” par une version équivalente avec “Quatre étapes...”
 
-Ce que je modifierais
-- Réordonner simplement le tableau des 5 objets dans `src/pages/MarchesDuVivant.tsx`.
-- Ne pas changer la structure visuelle des cartes.
-- Conserver le même style, les mêmes icônes et le même responsive.
-- Optionnel mais recommandé : affiner légèrement le titre/texte du bloc “3 types de marches” pour le rendre encore plus orienté choix et projection, sans casser l’homogénéité de la section.
+3. Respecter totalement la présentation existante
+- Aucun changement de structure visuelle
+- Même composant de carte
+- Même rythme, mêmes icônes sauf ajout d’une icône cohérente pour “Choisir”
+- Responsive conservé automatiquement puisque la section repose déjà sur une pile verticale de blocs
 
-Résultat attendu
-- La lecture devient plus naturelle :
-  - choix possible
-  - expérience concrète
-  - impact collectif
-  - engagement ludique
-  - preuve / crédibilité
-- La section soutient mieux l’intention de contact, car elle commence par aider le visiteur à se reconnaître dans une marche possible au lieu de commencer par un argument technique.
+Proposition éditoriale pour la nouvelle étape 01
+- Titre : `Choisir`
+- Texte visé : inspirant, simple et orienté projection
+- Intention :
+  - montrer qu’il existe plusieurs portes d’entrée
+  - aider le visiteur à se reconnaître dans un type de marche
+  - préparer naturellement la suite du parcours
+
+Formulation recommandée
+- “Choisissez la marche qui vous appelle : éco poétique pour ressentir et écrire, éco tourisme pour découvrir les territoires, agroécologique pour observer finement le vivant et ses équilibres.”
 
 Détail technique
-- Fichier à modifier : `src/pages/MarchesDuVivant.tsx`
-- Changement principal : réorganisation de l’ordre des objets dans l’array mappé dans la section “Ce qui nous différencie”.
-- Aucun changement d’architecture ou de composant nécessaire.
+- Fichier à modifier : `src/pages/MarchesDuVivantExplorer.tsx`
+- Zones concernées :
+  - déclaration de `const etapes = [...]`
+  - sous-titre de la section “Comment ça marche ?”
+
+Résultat attendu
+- La section passe de 3 à 4 étapes sans casser le design.
+- La première étape valorise clairement les 3 types de marches.
+- Le récit devient plus logique : d’abord choisir son type de marche, puis marcher, explorer, progresser.
