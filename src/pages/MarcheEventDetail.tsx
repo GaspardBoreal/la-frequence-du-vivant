@@ -9,7 +9,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ArrowLeft, CheckCircle2, Save, Trash2, Plus, Printer, Users, MapPin, Tag } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { ArrowLeft, CheckCircle2, Save, Trash2, Plus, Printer, Users, MapPin, Tag, TreePine } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 import { QRCodeSVG } from 'qrcode.react';
@@ -17,6 +18,7 @@ import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { MARCHE_EVENT_TYPES, getMarcheEventTypeMeta, type MarcheEventType } from '@/lib/marcheEventTypes';
+import EventBiodiversityTab from '@/components/community/EventBiodiversityTab';
 
 const MarcheEventDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -263,6 +265,17 @@ const MarcheEventDetail: React.FC = () => {
             {isNew ? 'Nouvel événement' : event?.title || 'Événement'}
           </h1>
         </div>
+
+        {!isNew ? (
+          <Tabs defaultValue="informations" className="w-full">
+            <TabsList className="w-full justify-start">
+              <TabsTrigger value="informations">Informations</TabsTrigger>
+              <TabsTrigger value="empreinte" className="flex items-center gap-1.5">
+                <TreePine className="h-3.5 w-3.5" />
+                Empreinte Vivante
+              </TabsTrigger>
+            </TabsList>
+            <TabsContent value="informations" className="space-y-6 mt-4">
 
         {/* Form */}
         <Card className="p-6">
@@ -562,6 +575,24 @@ const MarcheEventDetail: React.FC = () => {
               <p className="text-sm text-muted-foreground">Aucun participant validé pour le moment.</p>
             )}
           </Card>
+        )}
+
+            </TabsContent>
+            <TabsContent value="empreinte" className="mt-4">
+              <EventBiodiversityTab
+                explorationId={event?.exploration_id || undefined}
+                marcheEventId={id || undefined}
+              />
+            </TabsContent>
+          </Tabs>
+        ) : (
+          <>
+            {/* Form for new event - rendered without tabs */}
+            <Card className="p-6">
+              <h2 className="text-lg font-semibold text-foreground mb-4">Informations</h2>
+              <p className="text-sm text-muted-foreground">Créez d'abord l'événement pour accéder à toutes les fonctionnalités.</p>
+            </Card>
+          </>
         )}
 
         <ConfirmDeleteDialog

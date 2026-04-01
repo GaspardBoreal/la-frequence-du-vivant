@@ -4,23 +4,25 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
-import { ArrowLeft, MapPin, Footprints, Users, Map, MessageCircle, ChevronLeft, ChevronRight, Eye, Headphones, BookOpen, Leaf } from 'lucide-react';
+import { ArrowLeft, MapPin, Footprints, Users, Map, MessageCircle, ChevronLeft, ChevronRight, Eye, Headphones, BookOpen, Leaf, TreePine } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { createSlug } from '@/utils/slugGenerator';
 import { useMarcheurStats } from '@/hooks/useMarcheurContributions';
 import MediaSkeletonGrid from './contributions/MediaSkeletonGrid';
 import MarcheursTab from './exploration/MarcheursTab';
 import ExplorationCarteTab from './exploration/ExplorationCarteTab';
+import EventBiodiversityTab from './EventBiodiversityTab';
 
 // Import tab components from MarcheDetailModal
 import { VoirTab, EcouterTab, LireTab, VivantTab, StepSelector } from './MarcheDetailModal';
 
-type GlobalTab = 'marches' | 'marcheurs' | 'carte' | 'messages';
+type GlobalTab = 'marches' | 'marcheurs' | 'carte' | 'messages' | 'biodiversite';
 type SensoryTab = 'voir' | 'ecouter' | 'lire' | 'vivant';
 
 const globalTabs: { key: GlobalTab; label: string; icon: typeof Footprints }[] = [
   { key: 'carte', label: 'Carte', icon: Map },
   { key: 'marches', label: 'Marches', icon: Footprints },
+  { key: 'biodiversite', label: 'Empreinte', icon: TreePine },
   { key: 'marcheurs', label: 'Marcheurs', icon: Users },
   { key: 'messages', label: 'Messages', icon: MessageCircle },
 ];
@@ -364,6 +366,15 @@ const ExplorationMarcheurPage: React.FC = () => {
                   setActiveStepIndex(index);
                   setActiveGlobalTab('marches');
                 }}
+              />
+            </motion.div>
+          )}
+
+          {activeGlobalTab === 'biodiversite' && (
+            <motion.div key="biodiversite" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+              <EventBiodiversityTab
+                explorationId={effectiveExplorationId || undefined}
+                marcheEventId={marcheEventId || undefined}
               />
             </motion.div>
           )}
