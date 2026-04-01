@@ -140,6 +140,17 @@ const EventBiodiversityTab: React.FC<EventBiodiversityTabProps> = ({ exploration
     return Array.from(speciesMap.values()).sort((a, b) => b.observations - a.observations);
   }, [snapshots]);
 
+  const categoryCounts = useMemo((): Record<CategoryFilter, number> => {
+    const counts: Record<CategoryFilter, number> = { all: allSpecies.length, birds: 0, plants: 0, fungi: 0, others: 0 };
+    allSpecies.forEach(sp => {
+      if (sp.kingdom === 'Animalia') counts.birds++;
+      else if (sp.kingdom === 'Plantae') counts.plants++;
+      else if (sp.kingdom === 'Fungi') counts.fungi++;
+      else counts.others++;
+    });
+    return counts;
+  }, [allSpecies]);
+
   const filteredSpecies = useMemo(() => {
     if (categoryFilter === 'all') return allSpecies;
     const kingdomMap: Record<string, string> = { birds: 'Animalia', plants: 'Plantae', fungi: 'Fungi', others: 'Other' };
