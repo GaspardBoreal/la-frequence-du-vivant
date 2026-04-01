@@ -11,6 +11,7 @@ import { useMarcheurStats } from '@/hooks/useMarcheurContributions';
 import MediaSkeletonGrid from './contributions/MediaSkeletonGrid';
 import MarcheursTab from './exploration/MarcheursTab';
 import ExplorationCarteTab from './exploration/ExplorationCarteTab';
+import EventBiodiversityTab from './EventBiodiversityTab';
 
 // Import tab components from MarcheDetailModal
 import { VoirTab, EcouterTab, LireTab, VivantTab, StepSelector } from './MarcheDetailModal';
