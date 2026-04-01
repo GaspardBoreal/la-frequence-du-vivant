@@ -16,12 +16,13 @@ import EventBiodiversityTab from './EventBiodiversityTab';
 // Import tab components from MarcheDetailModal
 import { VoirTab, EcouterTab, LireTab, VivantTab, StepSelector } from './MarcheDetailModal';
 
-type GlobalTab = 'marches' | 'marcheurs' | 'carte' | 'messages';
+type GlobalTab = 'marches' | 'marcheurs' | 'carte' | 'messages' | 'biodiversite';
 type SensoryTab = 'voir' | 'ecouter' | 'lire' | 'vivant';
 
 const globalTabs: { key: GlobalTab; label: string; icon: typeof Footprints }[] = [
   { key: 'carte', label: 'Carte', icon: Map },
   { key: 'marches', label: 'Marches', icon: Footprints },
+  { key: 'biodiversite', label: 'Empreinte', icon: TreePine },
   { key: 'marcheurs', label: 'Marcheurs', icon: Users },
   { key: 'messages', label: 'Messages', icon: MessageCircle },
 ];
