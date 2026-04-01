@@ -129,9 +129,10 @@ const MarchesDuVivantExplorer = () => {
 
 
   const etapes = [
-  { num: '01', icon: <Footprints className="w-5 h-5" />, titre: 'Marchez', texte: "Choisissez un sentier, une forêt, une rivière, un parc, ouvrez l'application, marchez. Chaque kilomètre vous rapporte des Fréquences." },
-  { num: '02', icon: <Map className="w-5 h-5" />, titre: 'Explorez les zones blanches', texte: "Les zones pauvres en données rapportent jusqu'à 4× plus de Fréquences. Devenez éclaireur du vivant." },
-  { num: '03', icon: <TrendingUp className="w-5 h-5" />, titre: 'Progressez', texte: "Maintenez votre série hebdomadaire, montez dans le classement, débloquez de nouveaux rôles." }];
+  { num: '01', icon: <BookOpen className="w-5 h-5" />, titre: 'Choisir', texte: "Choisissez la marche qui vous appelle : éco poétique pour ressentir et écrire, éco tourisme pour découvrir les territoires, agroécologique pour observer finement le vivant et ses équilibres." },
+  { num: '02', icon: <Footprints className="w-5 h-5" />, titre: 'Marchez', texte: "Choisissez un sentier, une forêt, une rivière, un parc, ouvrez l'application, marchez. Chaque kilomètre vous rapporte des Fréquences." },
+  { num: '03', icon: <Map className="w-5 h-5" />, titre: 'Explorez les zones blanches', texte: "Les zones pauvres en données rapportent jusqu'à 4× plus de Fréquences. Devenez éclaireur du vivant." },
+  { num: '04', icon: <TrendingUp className="w-5 h-5" />, titre: 'Progressez', texte: "Maintenez votre série hebdomadaire, montez dans le classement, débloquez de nouveaux rôles." }];
 
 
   const roles = [
@@ -333,7 +334,7 @@ const MarchesDuVivantExplorer = () => {
                 Comment ça marche&nbsp;?
               </h2>
               <p className="text-stone-500 max-w-md mx-auto text-sm leading-relaxed">
-                Trois étapes pour devenir acteur de la connaissance du vivant.
+                Quatre étapes pour devenir acteur de la connaissance du vivant.
               </p>
             </motion.div>
             
