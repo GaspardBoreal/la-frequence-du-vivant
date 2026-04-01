@@ -1,11 +1,13 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import type { ExplorationType } from '@/lib/exploration-types';
 
 export interface Exploration {
   id: string;
   slug: string;
   name: string;
   description?: string;
+  exploration_type?: ExplorationType | null;
   cover_image_url?: string;
   language: string;
   meta_title?: string;
@@ -121,7 +123,7 @@ export const useExplorations = () => {
         .order('created_at', { ascending: false });
       
       if (error) throw error;
-      return data as Exploration[];
+      return data as unknown as Exploration[];
     },
     staleTime: 5 * 60 * 1000,
   });
@@ -138,7 +140,7 @@ export const useAdminExplorations = () => {
         .order('created_at', { ascending: false });
       
       if (error) throw error;
-      return data as Exploration[];
+      return data as unknown as Exploration[];
     },
     staleTime: 5 * 60 * 1000,
   });
@@ -156,7 +158,7 @@ export const useExplorationById = (id: string) => {
         .single();
       
       if (error) throw error;
-      return data as Exploration;
+      return data as unknown as Exploration;
     },
     staleTime: 5 * 60 * 1000,
     enabled: !!id,
@@ -176,7 +178,7 @@ export const useExploration = (slug: string) => {
         .single();
       
       if (error) throw error;
-      return data as Exploration;
+      return data as unknown as Exploration;
     },
     staleTime: 5 * 60 * 1000,
     enabled: !!slug,

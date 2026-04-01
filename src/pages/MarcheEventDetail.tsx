@@ -15,6 +15,7 @@ import { toast } from 'sonner';
 import { QRCodeSVG } from 'qrcode.react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
+import { getExplorationTypeMeta, type ExplorationType } from '@/lib/exploration-types';
 
 const MarcheEventDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -38,7 +39,7 @@ const MarcheEventDetail: React.FC = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('marche_events')
-        .select('*, explorations(name)')
+        .select('*, explorations(name, exploration_type)')
         .eq('id', id!)
         .single();
       if (error) throw error;
@@ -67,11 +68,19 @@ const MarcheEventDetail: React.FC = () => {
   const { data: explorations } = useQuery({
     queryKey: ['explorations-list'],
     queryFn: async () => {
-      const { data, error } = await supabase.from('explorations').select('id, name').order('name');
+      const { data, error } = await supabase.from('explorations').select('id, name, exploration_type').order('name');
       if (error) throw error;
       return data;
     },
   });
+
+  const selectedExploration = useMemo(() => {
+    return explorations?.find((exploration: any) => exploration.id === form.exploration_id);
+  }, [explorations, form.exploration_id]);
+
+  const selectedExplorationTypeMeta = getExplorationTypeMeta(
+    (selectedExploration as any)?.exploration_type as ExplorationType | null | undefined
+  );
 
   // Marches of selected exploration
   const { data: explorationMarches } = useQuery({
@@ -280,6 +289,33 @@ const MarcheEventDetail: React.FC = () => {
                 </SelectContent>
               </Select>
             </div>
+
+            {selectedExploration && (
+              <div className="md:col-span-2">
+                <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
+                  <div className="flex flex-col gap-4 border-b border-border bg-muted/40 p-4 md:flex-row md:items-center md:justify-between">
+                    <div className="space-y-2">
+                      <p className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">
+                        Contexte d'exploration
+                      </p>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <h3 className="text-base font-semibold text-foreground">{selectedExploration.name}</h3>
+                        <Badge variant="outline" className={selectedExplorationTypeMeta.badgeClassName}>
+                          {selectedExplorationTypeMeta.label}
+                        </Badge>
+                      </div>
+                      <p className="text-sm text-muted-foreground max-w-2xl">
+                        {selectedExplorationTypeMeta.protocolHint}
+                      </p>
+                    </div>
+
+                    <Link to={`/admin/explorations/${selectedExploration.id}/edit`}>
+                      <Button variant="outline" size="sm">Modifier la fiche exploration</Button>
+                    </Link>
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* Marches de l'exploration */}
             {form.exploration_id && explorationMarches && explorationMarches.length > 0 && (
