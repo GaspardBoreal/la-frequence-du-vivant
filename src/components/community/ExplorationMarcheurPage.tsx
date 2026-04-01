@@ -370,6 +370,15 @@ const ExplorationMarcheurPage: React.FC = () => {
             </motion.div>
           )}
 
+          {activeGlobalTab === 'biodiversite' && (
+            <motion.div key="biodiversite" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+              <EventBiodiversityTab
+                explorationId={effectiveExplorationId || undefined}
+                marcheEventId={marcheEventId || undefined}
+              />
+            </motion.div>
+          )}
+
           {activeGlobalTab === 'messages' && (
             <ComingSoonPlaceholder
               key="messages"
