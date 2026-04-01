@@ -1371,6 +1371,9 @@ export type Database = {
           cover_image_url: string | null
           created_at: string
           description: string | null
+          exploration_type:
+            | Database["public"]["Enums"]["exploration_type"]
+            | null
           id: string
           language: string
           meta_description: string | null
@@ -1385,6 +1388,9 @@ export type Database = {
           cover_image_url?: string | null
           created_at?: string
           description?: string | null
+          exploration_type?:
+            | Database["public"]["Enums"]["exploration_type"]
+            | null
           id?: string
           language?: string
           meta_description?: string | null
@@ -1399,6 +1405,9 @@ export type Database = {
           cover_image_url?: string | null
           created_at?: string
           description?: string | null
+          exploration_type?:
+            | Database["public"]["Enums"]["exploration_type"]
+            | null
           id?: string
           language?: string
           meta_description?: string | null
@@ -3874,6 +3883,7 @@ export type Database = {
         | "sentinelle"
       crm_role: "admin" | "member" | "walker"
       etude_type: "principale" | "complementaire" | "annexe"
+      exploration_type: "agroecologique" | "eco_poetique" | "eco_tourisme"
       media_type: "photo" | "audio" | "video" | "document"
     }
     CompositeTypes: {
@@ -4011,6 +4021,7 @@ export const Constants = {
       ],
       crm_role: ["admin", "member", "walker"],
       etude_type: ["principale", "complementaire", "annexe"],
+      exploration_type: ["agroecologique", "eco_poetique", "eco_tourisme"],
       media_type: ["photo", "audio", "video", "document"],
     },
   },
