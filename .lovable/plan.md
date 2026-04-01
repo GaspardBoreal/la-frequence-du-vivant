@@ -1,93 +1,44 @@
 
-Objectif retenu après clarification : le type sera porté directement par `marche_events` (un événement = un seul type), puis exposé sur les 2 écrans admin concernés uniquement :
-- `/admin/marche-events/:id`
-- `/admin/marche-events`
+Objectif
+- Ajouter un 5e pavé dans la section “Ce qui nous différencie” de `/marches-du-vivant` pour mettre en avant les 3 types de Marches du Vivant, en reprenant rigoureusement la même grammaire visuelle que les 4 pavés existants.
 
-Constat
-- `MarcheEventsAdmin.tsx` a déjà une barre de recherche + tri et des cartes d’événements sobres, responsive de base.
-- `MarcheEventDetail.tsx` gère déjà la création/édition complète d’un événement avec une section “Informations”.
-- Aujourd’hui, `marche_events` ne contient aucun champ de type.
-- Le formulaire d’exploration global (`ExplorationForm`) existe, mais d’après ta réponse il ne doit pas devenir la source métier du type.
-
-Plan d’implémentation
-
-1. Ajouter le type sur la table `marche_events`
-- Créer une migration Supabase pour ajouter une colonne `event_type` sur `public.marche_events`.
-- Restreindre les valeurs à 3 types métier :
-  - `agroecologique`
-  - `eco_poetique`
-  - `eco_tourisme`
-- Prévoir une valeur par défaut sûre pour ne pas casser les événements existants, puis rendre l’usage cohérent côté UI.
-- Vérifier que les requêtes existantes lisent bien ce nouveau champ.
-
-2. Définir une couche de configuration centralisée des types
-- Créer une petite config côté front pour éviter les strings dispersées :
-  - label lisible
-  - description courte
-  - picto Lucide
-  - couleurs / classes badge / accent visuel
-- Exemple d’intention UX :
-  - Agroécologique = plus technique, vivant-terrain
-  - Éco poétique = plus littéraire, sensible
-  - Éco tourisme = plus patrimoine, découverte
-
-3. Enrichir la fiche événement `/admin/marche-events/:id`
-- Ajouter un bloc “Type de marche” dans la carte “Informations”.
-- Utiliser un sélecteur design, clair et responsive, avec 3 options visuellement riches.
-- Quand un type est choisi, afficher immédiatement :
-  - son picto
-  - son nom
-  - sa description métier
-  - un badge visuel marqué
-- En mobile :
-  - options empilées
-  - description sous le sélecteur
-- En desktop :
-  - intégration harmonieuse dans la grille existante
-- Sauvegarder `event_type` en création et en édition.
-- Afficher le type sélectionné aussi dans l’en-tête ou dans un badge de contexte si pertinent, sans alourdir la page.
-
-4. Enrichir la liste `/admin/marche-events`
-- Ajouter un filtre de type en plus de la recherche et du tri :
-  - Tous les types
-  - Marche agroécologique
-  - Marche éco poétique
-  - Marche éco tourisme
-- Faire fonctionner le filtre en combinaison avec la recherche debouncée et le tri existant.
-- Ajouter sur chaque carte événement un badge type avec picto pour lecture instantanée.
-- Garder une hiérarchie visuelle propre :
-  - statut temporel
-  - date
+Ce que je vais modifier
+1. Enrichir la liste des différenciateurs dans `src/pages/MarchesDuVivant.tsx`
+- Ajouter un nouvel item au tableau actuellement mappé dans la section.
+- Conserver exactement la même structure de carte :
+  - icône dans pastille ronde
   - titre
-  - type
-  - lieu / exploration / participants
+  - description courte
+  - mêmes espacements, bordures, fond et animation
 
-5. Soigner le design sans toucher au reste
-- Conserver l’architecture actuelle des deux écrans.
-- Ne modifier ni les autres routes admin, ni les écrans publics.
-- Appliquer seulement un enrichissement UI local :
-  - badges plus premium
-  - meilleure lisibilité
-  - bon comportement mobile/tablette
-  - descriptions utiles sans surcharge
+2. Formuler le nouveau contenu de façon claire et compacte
+- Titre orienté offre / pédagogie, par exemple autour de :
+  - “3 types de marches”
+  - ou “Formats pour tous les publics”
+- Description courte expliquant que les Marches du Vivant se déclinent en :
+  - éco poétique
+  - éco tourisme
+  - agroécologique
+- Le texte insistera sur l’objectif de sensibilisation et d’implication de publics variés dans leur rapport au vivant, sans casser la densité éditoriale des 4 autres pavés.
+
+3. Garder un rendu design et responsive
+- Ajuster la grille pour accueillir 5 cartes proprement sur desktop.
+- Préserver un empilement naturel sur mobile et tablette.
+- Si nécessaire, élargir légèrement le conteneur de la section pour éviter des cartes trop serrées.
+
+Approche design
+- Même niveau visuel que les 4 autres pavés : pas de composant spécial, pas de mise en forme différente.
+- Icône cohérente avec l’univers “marches / vivant / diversité des formats”.
+- Couleur harmonisée avec la palette existante pour ne pas casser l’équilibre de la section.
 
 Détail technique
-- Base :
-  - nouvelle colonne `event_type` sur `public.marche_events`
-- Front :
-  - `src/pages/MarcheEventDetail.tsx`
-  - `src/pages/MarcheEventsAdmin.tsx`
-  - éventuellement un petit utilitaire/config partagé pour les métadonnées des types
-- Requêtes :
-  - inclure `event_type` dans les `select`, `insert`, `update`
-- Filtrage :
-  - ajouter `selectedType` dans l’état de la liste et l’intégrer au `useMemo`
+- Fichier principal : `src/pages/MarchesDuVivant.tsx`
+- Probables ajustements :
+  - import d’une icône Lucide supplémentaire si besoin
+  - ajout d’un 5e objet dans l’array de cartes
+  - ajustement de `grid-cols` / largeur max du conteneur pour une présentation propre à 5 items
 
 Résultat attendu
-- Chaque événement de marche possède exactement un type métier.
-- La fiche événement permet de sélectionner ce type de façon élégante, descriptive et visuelle.
-- La liste admin permet de filtrer par type ou d’afficher tous les types.
-- Les cartes deviennent plus lisibles et expressives, sans modifier d’autres zones de l’application.
-
-Point d’alignement important
-- Malgré la formulation initiale “fiche exploration”, la source métier retenue est bien la fiche événement `/admin/marche-events/:id`, pour éviter tout couplage erroné avec `explorations`.
+- La section conserve exactement le même style visuel.
+- Un 5e pavé apparaît naturellement à côté des 4 existants.
+- Il explique clairement qu’il existe trois types de Marches du Vivant : éco poétique, éco tourisme et agroécologique, pour sensibiliser et impliquer tous les publics.
