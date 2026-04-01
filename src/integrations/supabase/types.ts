@@ -2034,6 +2034,7 @@ export type Database = {
           created_by: string | null
           date_marche: string
           description: string | null
+          event_type: string
           exploration_id: string | null
           id: string
           latitude: number | null
@@ -2049,6 +2050,7 @@ export type Database = {
           created_by?: string | null
           date_marche: string
           description?: string | null
+          event_type?: string
           exploration_id?: string | null
           id?: string
           latitude?: number | null
@@ -2064,6 +2066,7 @@ export type Database = {
           created_by?: string | null
           date_marche?: string
           description?: string | null
+          event_type?: string
           exploration_id?: string | null
           id?: string
           latitude?: number | null

@@ -9,12 +9,14 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ArrowLeft, Save, Trash2, Plus, Printer, Users, MapPin, Tag } from 'lucide-react';
+import { ArrowLeft, CheckCircle2, Save, Trash2, Plus, Printer, Users, MapPin, Tag } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 import { QRCodeSVG } from 'qrcode.react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
+import { cn } from '@/lib/utils';
+import { MARCHE_EVENT_TYPES, getMarcheEventTypeMeta, type MarcheEventType } from '@/lib/marcheEventTypes';
 
 const MarcheEventDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -24,7 +26,7 @@ const MarcheEventDetail: React.FC = () => {
 
   const [form, setForm] = useState({
     title: '', description: '', date_marche: '', lieu: '',
-    latitude: '', longitude: '', max_participants: '20', exploration_id: '',
+    latitude: '', longitude: '', max_participants: '20', exploration_id: '', event_type: 'agroecologique' as MarcheEventType,
   });
 
   const [showAddParticipant, setShowAddParticipant] = useState(false);
@@ -59,9 +61,12 @@ const MarcheEventDetail: React.FC = () => {
         longitude: event.longitude?.toString() || '',
         max_participants: event.max_participants?.toString() || '20',
         exploration_id: event.exploration_id || '',
+        event_type: (event.event_type as MarcheEventType) || 'agroecologique',
       });
     }
   }, [event]);
+
+  const selectedTypeMeta = getMarcheEventTypeMeta(form.event_type);
 
   // Explorations list
   const { data: explorations } = useQuery({
@@ -156,6 +161,7 @@ const MarcheEventDetail: React.FC = () => {
         max_participants: parseInt(form.max_participants) || 20,
         created_by: user?.id || null,
         exploration_id: form.exploration_id || null,
+        event_type: form.event_type,
       });
       if (error) throw error;
     },
@@ -172,6 +178,7 @@ const MarcheEventDetail: React.FC = () => {
         longitude: form.longitude ? parseFloat(form.longitude) : null,
         max_participants: parseInt(form.max_participants) || 20,
         exploration_id: form.exploration_id || null,
+        event_type: form.event_type,
       }).eq('id', id!);
       if (error) throw error;
     },
@@ -263,6 +270,58 @@ const MarcheEventDetail: React.FC = () => {
           <div className="grid gap-4 md:grid-cols-2">
             <div><Label>Titre *</Label><Input value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} /></div>
             <div><Label>Date *</Label><Input type="datetime-local" value={form.date_marche} onChange={e => setForm(f => ({ ...f, date_marche: e.target.value }))} /></div>
+            <div className="md:col-span-2">
+              <Label>Type de marche *</Label>
+              <div className="mt-2 grid gap-3 sm:grid-cols-3">
+                {MARCHE_EVENT_TYPES.map((type) => {
+                  const meta = getMarcheEventTypeMeta(type)!;
+                  const Icon = meta.icon;
+                  const isSelected = form.event_type === type;
+
+                  return (
+                    <button
+                      key={type}
+                      type="button"
+                      onClick={() => setForm((f) => ({ ...f, event_type: type }))}
+                      className={cn(
+                        'group rounded-2xl border p-4 text-left transition-all duration-200 hover:-translate-y-0.5 hover:shadow-sm',
+                        isSelected
+                          ? cn(meta.cardClassName, 'ring-2 ring-primary/20 shadow-sm')
+                          : 'border-border bg-card hover:border-primary/20'
+                      )}
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <div className={cn('flex h-11 w-11 items-center justify-center rounded-2xl', meta.iconWrapClassName)}>
+                          <Icon className="h-5 w-5" />
+                        </div>
+                        {isSelected && <CheckCircle2 className="mt-0.5 h-4 w-4 text-primary" />}
+                      </div>
+                      <div className="mt-4 space-y-2">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <p className="text-sm font-semibold text-foreground">{meta.shortLabel}</p>
+                          {isSelected && <Badge variant="outline" className={cn('rounded-full text-[10px]', meta.badgeClassName)}>Sélectionné</Badge>}
+                        </div>
+                        <p className="text-xs leading-relaxed text-muted-foreground">{meta.description}</p>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+              {selectedTypeMeta && (
+                <div className={cn('mt-3 flex items-start gap-3 rounded-2xl border p-4', selectedTypeMeta.cardClassName)}>
+                  <div className={cn('flex h-10 w-10 shrink-0 items-center justify-center rounded-xl', selectedTypeMeta.iconWrapClassName)}>
+                    <selectedTypeMeta.icon className="h-5 w-5" />
+                  </div>
+                  <div className="min-w-0">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <p className="text-sm font-semibold text-foreground">{selectedTypeMeta.label}</p>
+                      <Badge variant="outline" className={cn('rounded-full text-[10px]', selectedTypeMeta.badgeClassName)}>Protocole actif</Badge>
+                    </div>
+                    <p className="mt-1 text-sm text-muted-foreground">{selectedTypeMeta.description}</p>
+                  </div>
+                </div>
+              )}
+            </div>
             <div><Label>Lieu</Label><Input value={form.lieu} onChange={e => setForm(f => ({ ...f, lieu: e.target.value }))} /></div>
             <div><Label>Max participants</Label><Input type="number" value={form.max_participants} onChange={e => setForm(f => ({ ...f, max_participants: e.target.value }))} /></div>
             <div><Label>Latitude</Label><Input value={form.latitude} onChange={e => setForm(f => ({ ...f, latitude: e.target.value }))} /></div>
