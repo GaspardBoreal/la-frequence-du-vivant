@@ -52,7 +52,7 @@ const ComingSoonPlaceholder: React.FC<{ icon: typeof Users; title: string; descr
 const ExplorationMarcheurPage: React.FC = () => {
   const { explorationId: rawParam } = useParams<{ explorationId: string }>();
   const navigate = useNavigate();
-  const [activeGlobalTab, setActiveGlobalTab] = useState<GlobalTab>('marches');
+  const [activeGlobalTab, setActiveGlobalTab] = useState<GlobalTab>('carte');
   const [activeSensoryTab, setActiveSensoryTab] = useState<SensoryTab>('voir');
   const [activeStepIndex, setActiveStepIndex] = useState(0);
 
