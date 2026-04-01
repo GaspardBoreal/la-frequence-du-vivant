@@ -4,7 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
-import { ArrowLeft, MapPin, Footprints, Users, Map, MessageCircle, ChevronLeft, ChevronRight, Eye, Headphones, BookOpen, Leaf } from 'lucide-react';
+import { ArrowLeft, MapPin, Footprints, Users, Map, MessageCircle, ChevronLeft, ChevronRight, Eye, Headphones, BookOpen, Leaf, TreePine } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { createSlug } from '@/utils/slugGenerator';
 import { useMarcheurStats } from '@/hooks/useMarcheurContributions';
