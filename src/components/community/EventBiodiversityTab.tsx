@@ -266,7 +266,7 @@ const EventBiodiversityTab: React.FC<EventBiodiversityTabProps> = ({ exploration
                     }`}
                   >
                     <Icon className="w-3.5 h-3.5" />
-                    {cfg.label}
+                    {cfg.label}{categoryCounts[cat] > 0 ? ` (${categoryCounts[cat]})` : ''}
                   </button>
                 );
               })}
