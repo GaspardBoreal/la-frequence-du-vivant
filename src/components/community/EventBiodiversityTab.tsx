@@ -91,14 +91,26 @@ const EventBiodiversityTab: React.FC<EventBiodiversityTabProps> = ({ exploration
   // Aggregate stats
   const stats = useMemo(() => {
     if (!snapshots?.length) return { total: 0, birds: 0, plants: 0, fungi: 0, others: 0, marchesCount: 0 };
-    return {
-      total: snapshots.reduce((s, snap) => s + (snap.total_species || 0), 0),
-      birds: snapshots.reduce((s, snap) => s + (snap.birds_count || 0), 0),
-      plants: snapshots.reduce((s, snap) => s + (snap.plants_count || 0), 0),
-      fungi: snapshots.reduce((s, snap) => s + (snap.fungi_count || 0), 0),
-      others: snapshots.reduce((s, snap) => s + (snap.others_count || 0), 0),
-      marchesCount: snapshots.length,
-    };
+    // Compute from species_data (source of truth) instead of summary columns
+    const speciesMap = new Map<string, string>();
+    snapshots.forEach(snap => {
+      const sd = snap.species_data as any[] | null;
+      if (!sd || !Array.isArray(sd)) return;
+      sd.forEach((sp: any) => {
+        const key = sp.scientificName || sp.commonName || sp.id;
+        if (key && !speciesMap.has(key)) {
+          speciesMap.set(key, sp.kingdom || 'Other');
+        }
+      });
+    });
+    let birds = 0, plants = 0, fungi = 0, others = 0;
+    speciesMap.forEach(kingdom => {
+      if (kingdom === 'Animalia') birds++;
+      else if (kingdom === 'Plantae') plants++;
+      else if (kingdom === 'Fungi') fungi++;
+      else others++;
+    });
+    return { total: speciesMap.size, birds, plants, fungi, others, marchesCount: snapshots.length };
   }, [snapshots]);
 
   // Extract species from species_data
