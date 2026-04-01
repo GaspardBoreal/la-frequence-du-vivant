@@ -2,7 +2,7 @@ import React from 'react';
 import { Helmet } from 'react-helmet-async';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Building2, Users, Heart, Trophy, ArrowRight, Waves, Leaf, Mic2, Sparkles } from 'lucide-react';
+import { Building2, Users, Heart, Trophy, ArrowRight, Waves, Leaf, Mic2, Sparkles, Trees } from 'lucide-react';
 import Footer from '@/components/Footer';
 import TrustBar from '@/components/marches-vivant/TrustBar';
 import ScienceCounters from '@/components/marches-vivant/ScienceCounters';
@@ -98,7 +98,7 @@ const MarchesDuVivant = () => {
 
         {/* Split Screen - Choix de parcours */}
         <section className="py-16 px-6">
-          <div className="max-w-5xl mx-auto">
+          <div className="max-w-6xl mx-auto">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               {/* Card Entreprises */}
               <Link to="/marches-du-vivant/entreprises" onClick={() => window.scrollTo(0, 0)}>
@@ -243,7 +243,7 @@ const MarchesDuVivant = () => {
               </p>
             </motion.div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-6">
               {[
                 {
                   icon: <Sparkles className="w-6 h-6 text-blue-400" />,
@@ -268,6 +268,12 @@ const MarchesDuVivant = () => {
                   title: 'Exploration Gamifiée',
                   description: 'Gagnez des points, explorez les zones blanches, montez dans le classement.',
                   color: 'cyan',
+                },
+                {
+                  icon: <Trees className="w-6 h-6 text-secondary-foreground" />,
+                  title: '3 types de marches',
+                  description: 'Éco poétique, éco tourisme et agroécologique : trois formats pour sensibiliser et impliquer tous les publics dans leur rapport au vivant.',
+                  color: 'secondary',
                 },
               ].map((item, index) => (
                 <motion.div
