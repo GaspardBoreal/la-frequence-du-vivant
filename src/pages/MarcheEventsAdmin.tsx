@@ -21,26 +21,6 @@ const MarcheEventsAdmin: React.FC = () => {
   const [selectedType, setSelectedType] = useState<'all' | 'none' | MarcheEventType>('all');
   const debouncedSearch = useDebounce(searchTerm, 300);
 
-  const typeCounts = useMemo(() => {
-    const counts: Record<'all' | 'none' | MarcheEventType, number> = {
-      all: events?.length ?? 0,
-      none: 0,
-      agroecologique: 0,
-      eco_poetique: 0,
-      eco_tourisme: 0,
-    };
-
-    events?.forEach((event) => {
-      if (event.event_type && event.event_type in counts) {
-        counts[event.event_type as MarcheEventType] += 1;
-      } else {
-        counts.none += 1;
-      }
-    });
-
-    return counts;
-  }, [events]);
-
   const { data: events, isLoading } = useQuery({
     queryKey: ['marche-events'],
     queryFn: async () => {
@@ -67,6 +47,26 @@ const MarcheEventsAdmin: React.FC = () => {
       return counts;
     },
   });
+
+  const typeCounts = useMemo(() => {
+    const counts: Record<'all' | 'none' | MarcheEventType, number> = {
+      all: events?.length ?? 0,
+      none: 0,
+      agroecologique: 0,
+      eco_poetique: 0,
+      eco_tourisme: 0,
+    };
+
+    events?.forEach((event) => {
+      if (event.event_type && event.event_type in counts) {
+        counts[event.event_type as MarcheEventType] += 1;
+      } else {
+        counts.none += 1;
+      }
+    });
+
+    return counts;
+  }, [events]);
 
   const filteredAndSortedEvents = useMemo(() => {
     if (!events) return [];
