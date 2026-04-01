@@ -266,6 +266,17 @@ const MarcheEventDetail: React.FC = () => {
           </h1>
         </div>
 
+        {!isNew ? (
+          <Tabs defaultValue="informations" className="w-full">
+            <TabsList className="w-full justify-start">
+              <TabsTrigger value="informations">Informations</TabsTrigger>
+              <TabsTrigger value="empreinte" className="flex items-center gap-1.5">
+                <TreePine className="h-3.5 w-3.5" />
+                Empreinte Vivante
+              </TabsTrigger>
+            </TabsList>
+            <TabsContent value="informations" className="space-y-6 mt-4">
+
         {/* Form */}
         <Card className="p-6">
           <h2 className="text-lg font-semibold text-foreground mb-4">Informations</h2>
