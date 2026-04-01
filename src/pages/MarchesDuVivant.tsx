@@ -246,10 +246,10 @@ const MarchesDuVivant = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-6">
               {[
                 {
-                  icon: <Sparkles className="w-6 h-6 text-blue-400" />,
-                  title: 'Data RSE Opposable',
-                  description: 'Protocoles connectés au GBIF pour produire des données CSRD certifiées.',
-                  color: 'blue',
+                  icon: <Trees className="w-6 h-6 text-secondary-foreground" />,
+                  title: '3 types de marches',
+                  description: 'Éco poétique, éco tourisme et agroécologique : trois formats pour sensibiliser et impliquer tous les publics dans leur rapport au vivant.',
+                  color: 'secondary',
                 },
                 {
                   icon: <Mic2 className="w-6 h-6 text-emerald-400" />,
@@ -270,10 +270,10 @@ const MarchesDuVivant = () => {
                   color: 'cyan',
                 },
                 {
-                  icon: <Trees className="w-6 h-6 text-secondary-foreground" />,
-                  title: '3 types de marches',
-                  description: 'Éco poétique, éco tourisme et agroécologique : trois formats pour sensibiliser et impliquer tous les publics dans leur rapport au vivant.',
-                  color: 'secondary',
+                  icon: <Sparkles className="w-6 h-6 text-blue-400" />,
+                  title: 'Data RSE Opposable',
+                  description: 'Protocoles connectés au GBIF pour produire des données CSRD certifiées.',
+                  color: 'blue',
                 },
               ].map((item, index) => (
                 <motion.div
