@@ -19,9 +19,9 @@ type GlobalTab = 'marches' | 'marcheurs' | 'carte' | 'messages';
 type SensoryTab = 'voir' | 'ecouter' | 'lire' | 'vivant';
 
 const globalTabs: { key: GlobalTab; label: string; icon: typeof Footprints }[] = [
+  { key: 'carte', label: 'Carte', icon: Map },
   { key: 'marches', label: 'Marches', icon: Footprints },
   { key: 'marcheurs', label: 'Marcheurs', icon: Users },
-  { key: 'carte', label: 'Carte', icon: Map },
   { key: 'messages', label: 'Messages', icon: MessageCircle },
 ];
 
