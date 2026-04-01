@@ -10,11 +10,15 @@ import { ArrowLeft, Plus, CalendarDays, MapPin, Compass, Users, Search, ArrowUpD
 import { format, isPast } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { useDebounce } from '@/hooks/useDebounce';
+import { Badge } from '@/components/ui/badge';
+import { cn } from '@/lib/utils';
+import { MARCHE_EVENT_TYPES, getMarcheEventTypeMeta, type MarcheEventType } from '@/lib/marcheEventTypes';
 
 const MarcheEventsAdmin: React.FC = () => {
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState('');
   const [sortOrder, setSortOrder] = useState<'desc' | 'asc'>('desc');
+  const [selectedType, setSelectedType] = useState<'all' | MarcheEventType>('all');
   const debouncedSearch = useDebounce(searchTerm, 300);
 
   const { data: events, isLoading } = useQuery({
@@ -52,14 +56,20 @@ const MarcheEventsAdmin: React.FC = () => {
       const term = debouncedSearch.toLowerCase();
       filtered = filtered.filter(e => {
         const exploName = (e as any).explorations?.name || '';
+        const typeMeta = getMarcheEventTypeMeta(e.event_type);
         return (
           e.title?.toLowerCase().includes(term) ||
           e.description?.toLowerCase().includes(term) ||
           e.lieu?.toLowerCase().includes(term) ||
           e.qr_code?.toLowerCase().includes(term) ||
-          exploName.toLowerCase().includes(term)
+          exploName.toLowerCase().includes(term) ||
+          typeMeta?.label.toLowerCase().includes(term)
         );
       });
+    }
+
+    if (selectedType !== 'all') {
+      filtered = filtered.filter(e => e.event_type === selectedType);
     }
 
     return [...filtered].sort((a, b) => {
@@ -67,7 +77,7 @@ const MarcheEventsAdmin: React.FC = () => {
       const db = new Date(b.date_marche).getTime();
       return sortOrder === 'desc' ? db - da : da - db;
     });
-  }, [events, debouncedSearch, sortOrder]);
+  }, [events, debouncedSearch, sortOrder, selectedType]);
 
   return (
     <div className="min-h-screen bg-background p-4">
@@ -85,7 +95,7 @@ const MarcheEventsAdmin: React.FC = () => {
 
         {/* Search & Sort Bar */}
         <Card className="p-4 mb-6">
-          <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center">
+          <div className="flex flex-col lg:flex-row gap-3 items-start lg:items-center">
             <div className="relative flex-1 w-full">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
@@ -95,17 +105,31 @@ const MarcheEventsAdmin: React.FC = () => {
                 className="pl-10"
               />
             </div>
-            <div className="flex items-center gap-2">
-              <ArrowUpDown className="h-4 w-4 text-muted-foreground shrink-0" />
-              <Select value={sortOrder} onValueChange={(v: 'desc' | 'asc') => setSortOrder(v)}>
-                <SelectTrigger className="w-[200px]">
-                  <SelectValue />
+            <div className="grid w-full gap-3 sm:grid-cols-2 lg:w-auto">
+              <Select value={selectedType} onValueChange={(v: 'all' | MarcheEventType) => setSelectedType(v)}>
+                <SelectTrigger className="w-full sm:min-w-[220px]">
+                  <SelectValue placeholder="Tous les types" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="desc">Date décroissante</SelectItem>
-                  <SelectItem value="asc">Date croissante</SelectItem>
+                  <SelectItem value="all">Tous les types</SelectItem>
+                  {MARCHE_EVENT_TYPES.map((type) => {
+                    const meta = getMarcheEventTypeMeta(type)!;
+                    return <SelectItem key={type} value={type}>{meta.label}</SelectItem>;
+                  })}
                 </SelectContent>
               </Select>
+              <div className="flex items-center gap-2">
+                <ArrowUpDown className="h-4 w-4 text-muted-foreground shrink-0" />
+                <Select value={sortOrder} onValueChange={(v: 'desc' | 'asc') => setSortOrder(v)}>
+                  <SelectTrigger className="w-full sm:min-w-[200px]">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="desc">Date décroissante</SelectItem>
+                    <SelectItem value="asc">Date croissante</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
           </div>
           {events && (
@@ -123,6 +147,7 @@ const MarcheEventsAdmin: React.FC = () => {
             {filteredAndSortedEvents.map(event => {
               const past = isPast(new Date(event.date_marche));
               const count = participationCounts?.[event.id] || 0;
+              const typeMeta = getMarcheEventTypeMeta(event.event_type);
 
               return (
                 <Card
@@ -152,6 +177,12 @@ const MarcheEventsAdmin: React.FC = () => {
 
                       {/* Badges */}
                       <div className="flex flex-wrap gap-2 text-xs">
+                        {typeMeta && (
+                          <Badge variant="outline" className={cn('gap-1 rounded-full px-2 py-0.5 text-xs', typeMeta.badgeClassName)}>
+                            <typeMeta.icon className="h-3 w-3" />
+                            {typeMeta.shortLabel}
+                          </Badge>
+                        )}
                         {event.lieu && (
                           <span className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-muted text-muted-foreground">
                             <MapPin className="h-3 w-3" />{event.lieu}
