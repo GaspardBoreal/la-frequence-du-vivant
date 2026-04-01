@@ -18,7 +18,7 @@ const MarcheEventsAdmin: React.FC = () => {
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState('');
   const [sortOrder, setSortOrder] = useState<'desc' | 'asc'>('desc');
-  const [selectedType, setSelectedType] = useState<'all' | MarcheEventType>('all');
+  const [selectedType, setSelectedType] = useState<'all' | 'none' | MarcheEventType>('all');
   const debouncedSearch = useDebounce(searchTerm, 300);
 
   const { data: events, isLoading } = useQuery({
@@ -48,6 +48,26 @@ const MarcheEventsAdmin: React.FC = () => {
     },
   });
 
+  const typeCounts = useMemo(() => {
+    const counts: Record<'all' | 'none' | MarcheEventType, number> = {
+      all: events?.length ?? 0,
+      none: 0,
+      agroecologique: 0,
+      eco_poetique: 0,
+      eco_tourisme: 0,
+    };
+
+    events?.forEach((event) => {
+      if (event.event_type && event.event_type in counts) {
+        counts[event.event_type as MarcheEventType] += 1;
+      } else {
+        counts.none += 1;
+      }
+    });
+
+    return counts;
+  }, [events]);
+
   const filteredAndSortedEvents = useMemo(() => {
     if (!events) return [];
     let filtered = events;
@@ -68,7 +88,9 @@ const MarcheEventsAdmin: React.FC = () => {
       });
     }
 
-    if (selectedType !== 'all') {
+    if (selectedType === 'none') {
+      filtered = filtered.filter(e => !e.event_type);
+    } else if (selectedType !== 'all') {
       filtered = filtered.filter(e => e.event_type === selectedType);
     }
 
@@ -106,15 +128,16 @@ const MarcheEventsAdmin: React.FC = () => {
               />
             </div>
             <div className="grid w-full gap-3 sm:grid-cols-2 lg:w-auto">
-              <Select value={selectedType} onValueChange={(v: 'all' | MarcheEventType) => setSelectedType(v)}>
+              <Select value={selectedType} onValueChange={(v: 'all' | 'none' | MarcheEventType) => setSelectedType(v)}>
                 <SelectTrigger className="w-full sm:min-w-[220px]">
                   <SelectValue placeholder="Tous les types" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">Tous les types</SelectItem>
+                  <SelectItem value="all">Tous les types ({typeCounts.all})</SelectItem>
+                  <SelectItem value="none">Aucun ({typeCounts.none})</SelectItem>
                   {MARCHE_EVENT_TYPES.map((type) => {
                     const meta = getMarcheEventTypeMeta(type)!;
-                    return <SelectItem key={type} value={type}>{meta.label}</SelectItem>;
+                    return <SelectItem key={type} value={type}>{meta.label} ({typeCounts[type]})</SelectItem>;
                   })}
                 </SelectContent>
               </Select>
