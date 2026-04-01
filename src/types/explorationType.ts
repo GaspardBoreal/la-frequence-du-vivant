@@ -1,1 +1,0 @@
-export type { ExplorationType } from '@/lib/exploration-types';

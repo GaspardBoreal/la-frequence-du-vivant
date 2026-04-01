@@ -14,13 +14,11 @@ import { supabase } from '@/integrations/supabase/client';
 import { createSlug } from '@/utils/slugGenerator';
 import { useQueryClient } from '@tanstack/react-query';
 import { useExplorationById } from '@/hooks/useExplorations';
-import { EXPLORATION_TYPE_OPTIONS, getExplorationTypeMeta, type ExplorationType } from '@/lib/exploration-types';
 
 interface ExplorationFormData {
   name: string;
   slug: string;
   description: string;
-  exploration_type: ExplorationType | '';
   cover_image_url: string;
   language: string;
   meta_title: string;
@@ -52,7 +50,6 @@ const ExplorationForm: React.FC<ExplorationFormProps> = ({
     name: '',
     slug: '',
     description: '',
-    exploration_type: '',
     cover_image_url: '',
     language: 'fr',
     meta_title: '',
@@ -68,7 +65,6 @@ const ExplorationForm: React.FC<ExplorationFormProps> = ({
         name: existingExploration.name,
         slug: existingExploration.slug,
         description: existingExploration.description || '',
-        exploration_type: existingExploration.exploration_type || '',
         cover_image_url: existingExploration.cover_image_url || '',
         language: existingExploration.language,
         meta_title: existingExploration.meta_title || '',
@@ -81,7 +77,6 @@ const ExplorationForm: React.FC<ExplorationFormProps> = ({
         name: initialData.name || '',
         slug: initialData.slug || '',
         description: initialData.description || '',
-        exploration_type: initialData.exploration_type || '',
         cover_image_url: initialData.cover_image_url || '',
         language: initialData.language || 'fr',
         meta_title: initialData.meta_title || '',
@@ -138,11 +133,6 @@ const ExplorationForm: React.FC<ExplorationFormProps> = ({
       return;
     }
 
-    if (!formData.exploration_type) {
-      toast.error('Le type de l\'exploration est requis');
-      return;
-    }
-
     setIsLoading(true);
 
     try {
@@ -150,7 +140,6 @@ const ExplorationForm: React.FC<ExplorationFormProps> = ({
         name: formData.name.trim(),
         slug: formData.slug.trim(),
         description: formData.description.trim() || null,
-        exploration_type: formData.exploration_type,
         cover_image_url: formData.cover_image_url.trim() || null,
         language: formData.language,
         meta_title: formData.meta_title.trim() || null,
@@ -163,7 +152,7 @@ const ExplorationForm: React.FC<ExplorationFormProps> = ({
         // Mise à jour
         const { error } = await supabase
           .from('explorations')
-          .update(explorationData as any)
+          .update(explorationData)
           .eq('id', explorationId);
 
         if (error) throw error;
@@ -172,7 +161,7 @@ const ExplorationForm: React.FC<ExplorationFormProps> = ({
         // Création
         const { error } = await supabase
           .from('explorations')
-          .insert(explorationData as any);
+          .insert(explorationData);
 
         if (error) throw error;
         toast.success('Exploration créée avec succès');
@@ -279,40 +268,6 @@ const ExplorationForm: React.FC<ExplorationFormProps> = ({
                   placeholder="Description de l'exploration..."
                   className="bg-white/20 border-white/30 text-white placeholder:text-white/70 focus:bg-white/25 focus:border-white/50"
                 />
-              </div>
-            </div>
-
-            <div>
-              <Label className="text-white font-medium">Type d'exploration *</Label>
-              <p className="text-sm text-white/80 mt-1 font-medium">
-                Une exploration ne peut suivre qu'un seul protocole de marche.
-              </p>
-              <div className="mt-3 grid gap-3 md:grid-cols-3">
-                {EXPLORATION_TYPE_OPTIONS.map((option) => {
-                  const meta = getExplorationTypeMeta(option.value);
-                  const isActive = formData.exploration_type === option.value;
-
-                  return (
-                    <button
-                      key={option.value}
-                      type="button"
-                      onClick={() => handleInputChange('exploration_type', option.value)}
-                      className={`rounded-2xl border p-4 text-left transition-all duration-300 ${
-                        isActive
-                          ? `${meta.surfaceClassName} shadow-lg ring-2 ring-white/20`
-                          : 'border-white/20 bg-white/10 hover:bg-white/15'
-                      }`}
-                    >
-                      <div className="flex items-center justify-between gap-3">
-                        <span className="text-sm font-semibold text-white">{option.label}</span>
-                        <Badge variant="outline" className={meta.badgeClassName}>
-                          {meta.shortLabel}
-                        </Badge>
-                      </div>
-                      <p className="mt-3 text-sm text-white/80 leading-relaxed">{meta.description}</p>
-                    </button>
-                  );
-                })}
               </div>
             </div>
 

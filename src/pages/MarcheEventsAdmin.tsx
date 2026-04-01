@@ -4,21 +4,17 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { ArrowLeft, Plus, CalendarDays, MapPin, Compass, Users, Search, ArrowUpDown } from 'lucide-react';
 import { format, isPast } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { useDebounce } from '@/hooks/useDebounce';
-import { EXPLORATION_TYPE_OPTIONS, getExplorationTypeMeta, type ExplorationType } from '@/lib/exploration-types';
 
 const MarcheEventsAdmin: React.FC = () => {
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState('');
   const [sortOrder, setSortOrder] = useState<'desc' | 'asc'>('desc');
-  const [selectedType, setSelectedType] = useState<'all' | ExplorationType>('all');
   const debouncedSearch = useDebounce(searchTerm, 300);
 
   const { data: events, isLoading } = useQuery({
@@ -26,7 +22,7 @@ const MarcheEventsAdmin: React.FC = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('marche_events')
-        .select('*, explorations(name, exploration_type)')
+        .select('*, explorations(name)')
         .order('date_marche', { ascending: false });
       if (error) throw error;
       return data;
@@ -66,16 +62,12 @@ const MarcheEventsAdmin: React.FC = () => {
       });
     }
 
-    if (selectedType !== 'all') {
-      filtered = filtered.filter(e => (e as any).explorations?.exploration_type === selectedType);
-    }
-
     return [...filtered].sort((a, b) => {
       const da = new Date(a.date_marche).getTime();
       const db = new Date(b.date_marche).getTime();
       return sortOrder === 'desc' ? db - da : da - db;
     });
-  }, [events, debouncedSearch, selectedType, sortOrder]);
+  }, [events, debouncedSearch, sortOrder]);
 
   return (
     <div className="min-h-screen bg-background p-4">
@@ -93,7 +85,7 @@ const MarcheEventsAdmin: React.FC = () => {
 
         {/* Search & Sort Bar */}
         <Card className="p-4 mb-6">
-          <div className="flex flex-col gap-4">
+          <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center">
             <div className="relative flex-1 w-full">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
@@ -103,51 +95,17 @@ const MarcheEventsAdmin: React.FC = () => {
                 className="pl-10"
               />
             </div>
-
-            <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-              <div className="space-y-2">
-                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">
-                  Type d'exploration
-                </p>
-
-                <div className="hidden md:block">
-                  <ToggleGroup type="single" value={selectedType} onValueChange={(value) => value && setSelectedType(value as 'all' | ExplorationType)} className="flex flex-wrap justify-start gap-2">
-                    <ToggleGroupItem value="all" variant="outline" className="rounded-full px-4">Tous</ToggleGroupItem>
-                    {EXPLORATION_TYPE_OPTIONS.map((option) => (
-                      <ToggleGroupItem key={option.value} value={option.value} variant="outline" className="rounded-full px-4">
-                        {getExplorationTypeMeta(option.value).shortLabel}
-                      </ToggleGroupItem>
-                    ))}
-                  </ToggleGroup>
-                </div>
-
-                <div className="md:hidden">
-                  <Select value={selectedType} onValueChange={(value: 'all' | ExplorationType) => setSelectedType(value)}>
-                    <SelectTrigger className="w-full sm:w-[240px]">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">Tous les types</SelectItem>
-                      {EXPLORATION_TYPE_OPTIONS.map((option) => (
-                        <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-2">
-                <ArrowUpDown className="h-4 w-4 text-muted-foreground shrink-0" />
-                <Select value={sortOrder} onValueChange={(v: 'desc' | 'asc') => setSortOrder(v)}>
-                  <SelectTrigger className="w-full sm:w-[200px]">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="desc">Date décroissante</SelectItem>
-                    <SelectItem value="asc">Date croissante</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+            <div className="flex items-center gap-2">
+              <ArrowUpDown className="h-4 w-4 text-muted-foreground shrink-0" />
+              <Select value={sortOrder} onValueChange={(v: 'desc' | 'asc') => setSortOrder(v)}>
+                <SelectTrigger className="w-[200px]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="desc">Date décroissante</SelectItem>
+                  <SelectItem value="asc">Date croissante</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
           </div>
           {events && (
@@ -165,8 +123,6 @@ const MarcheEventsAdmin: React.FC = () => {
             {filteredAndSortedEvents.map(event => {
               const past = isPast(new Date(event.date_marche));
               const count = participationCounts?.[event.id] || 0;
-              const exploration = (event as any).explorations;
-              const typeMeta = getExplorationTypeMeta(exploration?.exploration_type as ExplorationType | null | undefined);
 
               return (
                 <Card
@@ -201,14 +157,11 @@ const MarcheEventsAdmin: React.FC = () => {
                             <MapPin className="h-3 w-3" />{event.lieu}
                           </span>
                         )}
-                        {exploration?.name && (
+                        {(event as any).explorations?.name && (
                           <span className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-primary/10 text-primary">
-                            <Compass className="h-3 w-3" />{exploration.name}
+                            <Compass className="h-3 w-3" />{(event as any).explorations.name}
                           </span>
                         )}
-                        <Badge variant="outline" className={typeMeta.badgeClassName}>
-                          {typeMeta.shortLabel}
-                        </Badge>
                         <span className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-accent text-accent-foreground">
                           <Users className="h-3 w-3" />{count}/{event.max_participants || '∞'}
                         </span>
