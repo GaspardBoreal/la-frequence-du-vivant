@@ -100,9 +100,9 @@ export const EnhancedSpeciesCard: React.FC<EnhancedSpeciesCardProps> = ({
             />
           ) : (
             <>
-              {species.photoData && !imageError ? (
+              {effectivePhoto && !imageError ? (
                 <img
-                  src={species.photoData.url}
+                  src={effectivePhoto.url}
                   alt={translation?.commonName || species.commonName}
                   className="w-full h-full object-cover"
                   onError={() => setImageError(true)}
@@ -114,11 +114,11 @@ export const EnhancedSpeciesCard: React.FC<EnhancedSpeciesCardProps> = ({
               )}
               
               {/* Photo attribution overlay */}
-              {species.photoData && !imageError && hasPhoto && (
+              {effectivePhoto && !imageError && hasPhoto && (
                 <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors duration-200 flex items-end opacity-0 group-hover:opacity-100">
                   <div className="text-xs text-white p-1 bg-black/50 w-full">
-                    {species.photoData.source === 'inaturalist' ? 'iNat' : 
-                     species.photoData.source === 'flickr' ? 'Flickr' : 'Photo'}
+                    {effectivePhoto.source === 'inaturalist' ? 'iNat' : 
+                     effectivePhoto.source === 'flickr' ? 'Flickr' : 'Photo'}
                   </div>
                 </div>
               )}
