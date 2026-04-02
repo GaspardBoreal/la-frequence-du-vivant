@@ -51,15 +51,8 @@ export const EnhancedSpeciesCard: React.FC<EnhancedSpeciesCardProps> = ({
     ? fetchedTranslation 
     : (propTranslation || fetchedTranslation);
 
-  console.log('🔧 Translation result:', {
-    final: translation,
-    fetched: fetchedTranslation,
-    isTranslating,
-    shouldCallEdgeFunction
-  });
-
   const hasAudio = species.xenoCantoRecordings && species.xenoCantoRecordings.length > 0;
-  const hasPhoto = species.photoData && species.photoData.source !== 'placeholder';
+  const hasPhoto = !!effectivePhoto && !imageError;
   const isCurrentlyPlaying = isPlaying && currentRecording?.id === species.xenoCantoRecordings?.[0]?.id;
 
   const handleAudioClick = (e: React.MouseEvent) => {
