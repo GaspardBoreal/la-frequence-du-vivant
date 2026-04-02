@@ -90,29 +90,36 @@ const SpeciesMiniMap: React.FC<SpeciesMiniMapProps> = ({ marches, isLoading, all
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
         />
         
-        {validMarches.map((marche) => (
-          <CircleMarker
-            key={marche.marcheId}
-            center={[marche.latitude!, marche.longitude!]}
-            radius={Math.min(8, 4 + marche.observationCount)}
-            pathOptions={{
-              color: '#10b981',
-              fillColor: '#10b981',
-              fillOpacity: 0.6,
-              weight: 2,
-            }}
-          >
-            <Tooltip 
-              direction="top" 
-              offset={[0, -10]}
-              className="!bg-slate-800 !border-white/20 !text-white !text-xs !px-2 !py-1 !rounded-md"
+        {validMarches.map((marche) => {
+          const isObserved = observedMarcheIds.has(marche.marcheId);
+          return (
+            <CircleMarker
+              key={marche.marcheId}
+              center={[marche.latitude!, marche.longitude!]}
+              radius={isObserved ? Math.min(8, 4 + marche.observationCount) : 4}
+              pathOptions={{
+                color: isObserved ? '#10b981' : '#94a3b8',
+                fillColor: isObserved ? '#10b981' : '#94a3b8',
+                fillOpacity: isObserved ? 0.8 : 0.25,
+                weight: isObserved ? 3 : 1,
+              }}
             >
-              <span className="font-medium">#{marche.order}</span> {marche.marcheName}
-              <br />
-              <span className="text-white/60">{marche.observationCount} obs.</span>
-            </Tooltip>
-          </CircleMarker>
-        ))}
+              <Tooltip 
+                direction="top" 
+                offset={[0, -10]}
+                className="!bg-slate-800 !border-white/20 !text-white !text-xs !px-2 !py-1 !rounded-md"
+              >
+                <span className="font-medium">#{marche.order}</span> {marche.marcheName}
+                <br />
+                {isObserved ? (
+                  <span className="text-emerald-400">{marche.observationCount} obs.</span>
+                ) : (
+                  <span className="text-white/40">Non observée ici</span>
+                )}
+              </Tooltip>
+            </CircleMarker>
+          );
+        })}
       </MapContainer>
     </motion.div>
   );
