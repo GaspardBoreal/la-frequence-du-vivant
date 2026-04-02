@@ -6,7 +6,7 @@ const poeticPhases = [
   'Écoute du territoire…',
   'Recueil des présences…',
   'Inventaire des espèces…',
-  'Tissage de l'empreinte…',
+  "Tissage de l'empreinte…",
 ];
 
 interface BiodiversityRevealAnimationProps {
