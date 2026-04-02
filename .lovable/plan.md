@@ -1,52 +1,42 @@
 
 
-## Corriger l'incohérence des compteurs : 211 vs 17+8+5
+## Corriger le compteur d'espèces dans le Carnet Vivant (17 → 21)
 
 ### Cause racine
 
-Le problème est un **rayon de recherche incorrect** dans l'edge function `collect-event-biodiversity`.
+`useMarcheCollectedData.ts` (ligne 66-73) calcule `species_count` par **proximité GPS** : il cherche le snapshot le plus proche des coordonnées du `marche_event`. Il trouve le snapshot de "Deviat une maison pour vivre" (17 espèces) car c'est le point le plus proche.
 
-| Vue | Rayon utilisé | Résultat |
-|-----|---------------|----------|
-| Vivant (par marche) | `radius: 0.5` (0.5 km) | 17, 8, 5 espèces ✅ |
-| collect-event-biodiversity | `radius: 500` (500 km !) | 211 espèces ❌ |
+Mais le `marche_event` "DEVIAT première découverte" est lié à l'exploration `607a0ae3...` qui contient **3 marches** avec 17+8+5 = 30 espèces brutes, soit **21 espèces uniques** après dédoublonnage par `scientificName`.
 
-L'edge function `biodiversity-data` interprète le radius en **kilomètres** (passé directement aux API iNaturalist/eBird/GBIF). La valeur `500` signifie donc un rayon de **500 km**, qui capture toute la biodiversité de la moitié sud de la France. C'est pourquoi les 3 snapshots contiennent exactement les mêmes 211 espèces.
-
-Le tab "Vivant" dans `MarcheDetailModal.tsx` utilise `radius: 0.5` (500 mètres), ce qui donne les bons résultats locaux.
+L'Empreinte et la Carte utilisent `useExplorationBiodiversitySummary` qui déduplique correctement → 21.
 
 ### Correction
 
-**Fichier** : `supabase/functions/collect-event-biodiversity/index.ts` (ligne 137)
+**Fichier** : `src/hooks/useMarcheCollectedData.ts`
 
-```ts
-// AVANT
-radius: 500,
+Quand un `marche_event` a un `exploration_id`, le species_count doit être calculé au niveau exploration (dédupliqué), pas par proximité GPS.
 
-// APRÈS  
-radius: 0.5,
+Logique modifiée :
+1. Grouper les events par `exploration_id`
+2. Pour chaque exploration : récupérer tous les `marche_id` via `exploration_marches`, puis tous les `biodiversity_snapshots`, puis dédupliquer les espèces par `scientificName` dans `species_data`
+3. Affecter le même `species_count` (exploration-level) à tous les events de cette exploration
+
+Le matching par proximité GPS (lignes 64-75) reste en fallback pour les events sans `exploration_id`.
+
+### Détail technique
+
+```text
+AVANT (par proximité GPS) :
+  marche_event(lat,lng) → snapshot le plus proche → total_species = 17
+
+APRÈS (par exploration) :
+  marche_event.exploration_id → exploration_marches → biodiversity_snapshots
+    → species_data dédupliqué par scientificName → count = 21
 ```
 
-Et ajuster le champ stocké pour cohérence (ligne 169) :
+### Impact
 
-```ts
-// AVANT
-radius_meters: 500,
-
-// APRÈS
-radius_meters: 500, // 0.5 km = 500m, cohérent
-```
-
-Le `radius_meters: 500` reste correct (0.5 km = 500 m).
-
-### Nettoyage des données existantes
-
-Les 3 snapshots actuels (tous avec 211 espèces, créés le 2026-04-02) sont incorrects. Après déploiement du fix, l'utilisateur devra re-déclencher la collecte via le bouton "Révéler l'empreinte". Le rate limiting de 24h sera déjà passé ou pourra être contourné puisque les snapshots auront > 24h.
-
-**Alternative** : supprimer les snapshots erronés via une migration SQL pour permettre une recollecte immédiate.
-
-### Résultat attendu
-
-- Empreinte/Carte : affichera le nombre correct d'espèces uniques (≤ 17+8+5 = 30 max, probablement ~25 après dédoublonnage)
-- Cohérence parfaite avec les vues Vivant par marche
+- Carnet Vivant : affichera 21 espèces (cohérent avec Empreinte et Carte)
+- Aucun autre fichier modifié
+- Le fallback proximité reste pour les events sans exploration
 
