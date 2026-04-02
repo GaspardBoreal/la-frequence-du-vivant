@@ -340,11 +340,27 @@ const SpeciesExplorer: React.FC<SpeciesExplorerProps> = ({
         <TabsContent value="others">{renderSpeciesGrid(filteredSpecies.filter(s => s.kingdom !== 'Plantae' && s.kingdom !== 'Fungi' && s.kingdom !== 'Animalia'))}</TabsContent>
       </Tabs>
 
-      <SpeciesDetailModal
-        species={selectedSpecies}
-        isOpen={!!selectedSpecies}
-        onClose={() => setSelectedSpecies(null)}
-      />
+      {explorationId ? (
+        <SpeciesGalleryDetailModal
+          species={selectedSpecies ? {
+            name: selectedSpecies.commonName,
+            scientificName: selectedSpecies.scientificName,
+            count: selectedSpecies.observations,
+            kingdom: selectedSpecies.kingdom,
+            photos: selectedSpecies.photoData ? [selectedSpecies.photoData.url] : undefined,
+          } : null}
+          explorationId={explorationId}
+          allEventMarches={allEventMarches}
+          isOpen={!!selectedSpecies}
+          onClose={() => setSelectedSpecies(null)}
+        />
+      ) : (
+        <SpeciesDetailModal
+          species={selectedSpecies}
+          isOpen={!!selectedSpecies}
+          onClose={() => setSelectedSpecies(null)}
+        />
+      )}
     </div>
   );
 };

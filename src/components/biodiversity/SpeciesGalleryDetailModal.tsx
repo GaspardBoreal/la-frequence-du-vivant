@@ -262,7 +262,7 @@ const SpeciesGalleryDetailModal: React.FC<SpeciesGalleryDetailModalProps> = ({
                   </TabsContent>
                   
                   <TabsContent value="map" className="mt-3">
-                    <SpeciesMiniMap marches={speciesMarches} isLoading={marchesLoading} />
+                    <SpeciesMiniMap marches={speciesMarches} isLoading={marchesLoading} allEventMarches={allEventMarches} />
                   </TabsContent>
                 </Tabs>
               </div>
