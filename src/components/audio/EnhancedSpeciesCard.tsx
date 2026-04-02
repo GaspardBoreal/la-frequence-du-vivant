@@ -7,6 +7,7 @@ import { BiodiversitySpecies } from '@/types/biodiversity';
 import { useGlobalAudioPlayer } from '@/contexts/AudioContext';
 import { MiniSpectrogramPreview } from './MiniSpectrogramPreview';
 import { useSpeciesTranslation, SpeciesTranslation } from '@/hooks/useSpeciesTranslation';
+import { useSpeciesPhoto } from '@/hooks/useSpeciesPhoto';
 
 interface EnhancedSpeciesCardProps {
   species: BiodiversitySpecies;
