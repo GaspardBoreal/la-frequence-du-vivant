@@ -9,7 +9,9 @@ import { Card } from '../ui/card';
 import { BiodiversitySpecies } from '@/types/biodiversity';
 import { EnhancedSpeciesCard } from '../audio/EnhancedSpeciesCard';
 import SpeciesDetailModal from './SpeciesDetailModal';
+import SpeciesGalleryDetailModal from './SpeciesGalleryDetailModal';
 import { useSpeciesTranslationBatch } from '@/hooks/useSpeciesTranslation';
+import type { SpeciesMarcheData } from '@/hooks/useSpeciesMarches';
 
 // Utility to identify birds
 const isBirdSpecies = (species: BiodiversitySpecies): boolean => {
