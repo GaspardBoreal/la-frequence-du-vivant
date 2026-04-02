@@ -52,7 +52,6 @@ const AnimatedStat: React.FC<{ value: number; label: string; icon: typeof Bird; 
 
 const EventBiodiversityTab: React.FC<EventBiodiversityTabProps> = ({ explorationId, marcheEventId }) => {
   const [activeSubTab, setActiveSubTab] = useState<SubTab>('synthese');
-  const [categoryFilter, setCategoryFilter] = useState<CategoryFilter>('all');
 
   // Get marche IDs linked to this exploration
   const { data: marcheIds } = useQuery({
