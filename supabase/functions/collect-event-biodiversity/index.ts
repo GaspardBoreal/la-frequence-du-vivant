@@ -134,7 +134,7 @@ Deno.serve(async (req) => {
               body: {
                 latitude: parseFloat(String(marche.latitude)),
                 longitude: parseFloat(String(marche.longitude)),
-                radius: 500,
+                radius: 0.5,
                 mode: 'batch',
               }
             });
