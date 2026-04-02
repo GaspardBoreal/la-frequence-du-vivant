@@ -106,7 +106,7 @@ export const useSpeciesMarches = (
                 marcheName: info.name,
                 ville: info.ville,
                 order: info.order,
-                observationCount: matchingSpecies.length,
+                observationCount: matchingSpecies.reduce((sum: number, sp: any) => sum + (sp.observations || 1), 0),
                 latitude: info.lat,
                 longitude: info.lng,
                 observationDate: snapshot.snapshot_date,
