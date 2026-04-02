@@ -11,9 +11,18 @@ interface SpeciesMiniMapProps {
 }
 
 const SpeciesMiniMap: React.FC<SpeciesMiniMapProps> = ({ marches, isLoading, allEventMarches }) => {
+  const observedMarcheIds = useMemo(() => new Set(marches.map(m => m.marcheId)), [marches]);
+
+  // Combine all event marches (non-observed) with observed marches
+  const allPoints = useMemo(() => {
+    if (!allEventMarches?.length) return marches.filter(m => m.latitude && m.longitude);
+    return allEventMarches.filter(m => m.latitude && m.longitude);
+  }, [marches, allEventMarches]);
+
   // Filter marches with valid coordinates
   const validMarches = useMemo(() => {
-    return marches.filter(m => m.latitude && m.longitude);
+    return allPoints;
+  }, [allPoints]);
   }, [marches]);
 
   // Calculate center and bounds
