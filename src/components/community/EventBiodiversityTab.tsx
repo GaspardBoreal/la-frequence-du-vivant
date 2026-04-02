@@ -83,6 +83,29 @@ const EventBiodiversityTab: React.FC<EventBiodiversityTabProps> = ({ exploration
     },
     enabled: !!marcheIds?.length,
   });
+  // Fetch all event marches with coordinates for the mini-map
+  const { data: allEventMarchesData } = useQuery({
+    queryKey: ['event-all-marches', explorationId],
+    queryFn: async (): Promise<SpeciesMarcheData[]> => {
+      if (!explorationId) return [];
+      const { data } = await supabase
+        .from('exploration_marches')
+        .select(`ordre, marche_id, marches (id, nom_marche, ville, latitude, longitude)`)
+        .eq('exploration_id', explorationId)
+        .in('publication_status', ['published', 'published_public']);
+      if (!data) return [];
+      return data.map((em: any) => ({
+        marcheId: em.marche_id,
+        marcheName: em.marches?.nom_marche || em.marches?.ville || '',
+        ville: em.marches?.ville || '',
+        order: em.ordre ?? 0,
+        observationCount: 0,
+        latitude: em.marches?.latitude,
+        longitude: em.marches?.longitude,
+      })).sort((a: SpeciesMarcheData, b: SpeciesMarcheData) => a.order - b.order);
+    },
+    enabled: !!explorationId,
+  });
 
   // Aggregate stats
   const stats = useMemo(() => {
