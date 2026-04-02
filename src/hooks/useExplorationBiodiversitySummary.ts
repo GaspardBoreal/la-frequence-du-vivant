@@ -256,8 +256,8 @@ export const useExplorationBiodiversitySummary = (explorationId?: string) => {
         }
       });
 
-      // Calculate total unique species (sum of per-marche counts, not unique species count)
-      const totalSpecies = speciesByMarche.reduce((sum, m) => sum + m.speciesCount, 0);
+      // Calculate total unique species (deduplicated across all marches)
+      const totalSpecies = uniqueSpeciesMap.size;
 
       // Fetch French translations for all species to enable multilingual search
       // Use case-insensitive matching since scientific names may have different casing
