@@ -33,6 +33,12 @@ const FitBounds: React.FC<{ points: { latitude?: number; longitude?: number }[] 
 const SpeciesMiniMap: React.FC<SpeciesMiniMapProps> = ({ marches, isLoading, allEventMarches }) => {
   const observedMarcheIds = useMemo(() => new Set(marches.map(m => m.marcheId)), [marches]);
 
+  const observedMarcheMap = useMemo(() => {
+    const map = new Map<string, number>();
+    marches.forEach(m => map.set(m.marcheId, m.observationCount));
+    return map;
+  }, [marches]);
+
   const allPoints = useMemo(() => {
     if (!allEventMarches?.length) return marches.filter(m => m.latitude && m.longitude);
     return allEventMarches.filter(m => m.latitude && m.longitude);
@@ -87,6 +93,12 @@ const SpeciesMiniMap: React.FC<SpeciesMiniMapProps> = ({ marches, isLoading, all
           background: rgba(30, 41, 59, 1) !important;
           color: white !important;
         }
+        .species-minimap .leaflet-tooltip-pane {
+          overflow: visible !important;
+        }
+        .species-minimap .leaflet-tooltip {
+          white-space: nowrap;
+        }
       `}</style>
       <MapContainer
         center={[mapCenter.lat, mapCenter.lng]}
@@ -106,11 +118,12 @@ const SpeciesMiniMap: React.FC<SpeciesMiniMapProps> = ({ marches, isLoading, all
         
         {validMarches.map((marche) => {
           const isObserved = observedMarcheIds.has(marche.marcheId);
+          const obsCount = observedMarcheMap.get(marche.marcheId) || 0;
           return (
             <CircleMarker
               key={marche.marcheId}
               center={[marche.latitude!, marche.longitude!]}
-              radius={isObserved ? Math.min(8, 4 + marche.observationCount) : 4}
+              radius={isObserved ? Math.min(8, 4 + obsCount) : 4}
               pathOptions={{
                 color: isObserved ? '#10b981' : '#94a3b8',
                 fillColor: isObserved ? '#10b981' : '#94a3b8',
@@ -119,14 +132,14 @@ const SpeciesMiniMap: React.FC<SpeciesMiniMapProps> = ({ marches, isLoading, all
               }}
             >
               <Tooltip 
-                direction="top" 
+                direction="auto" 
                 offset={[0, -10]}
                 className="!bg-slate-800 !border-white/20 !text-white !text-xs !px-2 !py-1 !rounded-md"
               >
                 <span className="font-medium">#{marche.order}</span> {marche.marcheName}
                 <br />
                 {isObserved ? (
-                  <span className="text-emerald-400">{marche.observationCount} obs.</span>
+                  <span className="text-emerald-400">{obsCount} obs.</span>
                 ) : (
                   <span className="text-white/40">Non observée ici</span>
                 )}
