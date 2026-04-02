@@ -15,7 +15,9 @@ interface EventBiodiversityTabProps {
   marcheEventId?: string;
 }
 
-const categoryConfig: Record<CategoryFilter, { label: string; icon: typeof Bird; color: string; bgColor: string }> = {
+type SynthCategory = 'all' | 'birds' | 'plants' | 'fungi' | 'others';
+
+const categoryConfig: Record<SynthCategory, { label: string; icon: typeof Bird; color: string; bgColor: string }> = {
   all: { label: 'Tous', icon: Layers, color: 'text-emerald-600 dark:text-emerald-400', bgColor: 'bg-emerald-500/10' },
   birds: { label: 'Faune', icon: Bird, color: 'text-sky-600 dark:text-sky-400', bgColor: 'bg-sky-500/10' },
   plants: { label: 'Flore', icon: TreePine, color: 'text-green-600 dark:text-green-400', bgColor: 'bg-green-500/10' },
