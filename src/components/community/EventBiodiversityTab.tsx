@@ -2,8 +2,10 @@ import React, { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Bird, TreePine, Leaf, Bug, Layers, Sparkles, Filter, TrendingDown } from 'lucide-react';
+import { Bird, TreePine, Leaf, Bug, Layers, Sparkles } from 'lucide-react';
 import { useAnimatedCounter } from '@/hooks/useAnimatedCounter';
+import { BiodiversitySpecies } from '@/types/biodiversity';
+import SpeciesExplorer from '@/components/biodiversity/SpeciesExplorer';
 
 type SubTab = 'synthese' | 'taxons' | 'analyse';
 type CategoryFilter = 'all' | 'birds' | 'plants' | 'fungi' | 'others';
