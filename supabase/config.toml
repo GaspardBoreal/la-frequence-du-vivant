@@ -26,6 +26,9 @@ verify_jwt = false
 [functions.collect-biodiversity-step]
 verify_jwt = false
 
+[functions.collect-event-biodiversity]
+verify_jwt = false
+
 [functions.test-function]
 verify_jwt = false
 
