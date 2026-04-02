@@ -7,6 +7,7 @@ import { BiodiversitySpecies } from '@/types/biodiversity';
 import { useGlobalAudioPlayer } from '@/contexts/AudioContext';
 import { MiniSpectrogramPreview } from './MiniSpectrogramPreview';
 import { useSpeciesTranslation, SpeciesTranslation } from '@/hooks/useSpeciesTranslation';
+import { useSpeciesPhoto } from '@/hooks/useSpeciesPhoto';
 
 interface EnhancedSpeciesCardProps {
   species: BiodiversitySpecies;
@@ -22,17 +23,19 @@ export const EnhancedSpeciesCard: React.FC<EnhancedSpeciesCardProps> = ({
   const [showSpectrogram, setShowSpectrogram] = useState(false);
   const [imageError, setImageError] = useState(false);
   const { playRecording, pause, currentRecording, isPlaying } = useGlobalAudioPlayer();
+
+  // Auto-fetch photo from iNaturalist when photoData is missing
+  const shouldFetchPhoto = !species.photoData || species.photoData.source === 'placeholder';
+  const { data: fetchedPhotoData } = useSpeciesPhoto(
+    shouldFetchPhoto ? species.scientificName : undefined
+  );
   
-  // Debug logs
-  console.log('🔧 EnhancedSpeciesCard debug:', {
-    scientificName: species.scientificName,
-    commonName: species.commonName,
-    photoData: species.photoData,
-    hasPhoto: species.photoData && species.photoData.source !== 'placeholder',
-    propTranslation: propTranslation,
-    propSource: propTranslation?.source,
-    propConfidence: propTranslation?.confidence
-  });
+  // Build effective photo: use provided photoData, or fall back to fetched
+  const effectivePhoto = species.photoData && species.photoData.source !== 'placeholder'
+    ? species.photoData
+    : fetchedPhotoData 
+      ? { url: fetchedPhotoData.photos[0], source: 'inaturalist' as const, attribution: '' }
+      : null;
 
   // Call edge function if we don't have a good French translation
   const shouldCallEdgeFunction = !propTranslation || 
@@ -48,15 +51,8 @@ export const EnhancedSpeciesCard: React.FC<EnhancedSpeciesCardProps> = ({
     ? fetchedTranslation 
     : (propTranslation || fetchedTranslation);
 
-  console.log('🔧 Translation result:', {
-    final: translation,
-    fetched: fetchedTranslation,
-    isTranslating,
-    shouldCallEdgeFunction
-  });
-
   const hasAudio = species.xenoCantoRecordings && species.xenoCantoRecordings.length > 0;
-  const hasPhoto = species.photoData && species.photoData.source !== 'placeholder';
+  const hasPhoto = !!effectivePhoto && !imageError;
   const isCurrentlyPlaying = isPlaying && currentRecording?.id === species.xenoCantoRecordings?.[0]?.id;
 
   const handleAudioClick = (e: React.MouseEvent) => {
@@ -104,9 +100,9 @@ export const EnhancedSpeciesCard: React.FC<EnhancedSpeciesCardProps> = ({
             />
           ) : (
             <>
-              {species.photoData && !imageError ? (
+              {effectivePhoto && !imageError ? (
                 <img
-                  src={species.photoData.url}
+                  src={effectivePhoto.url}
                   alt={translation?.commonName || species.commonName}
                   className="w-full h-full object-cover"
                   onError={() => setImageError(true)}
@@ -118,11 +114,11 @@ export const EnhancedSpeciesCard: React.FC<EnhancedSpeciesCardProps> = ({
               )}
               
               {/* Photo attribution overlay */}
-              {species.photoData && !imageError && hasPhoto && (
+              {effectivePhoto && !imageError && hasPhoto && (
                 <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors duration-200 flex items-end opacity-0 group-hover:opacity-100">
                   <div className="text-xs text-white p-1 bg-black/50 w-full">
-                    {species.photoData.source === 'inaturalist' ? 'iNat' : 
-                     species.photoData.source === 'flickr' ? 'Flickr' : 'Photo'}
+                    {effectivePhoto.source === 'inaturalist' ? 'iNat' : 
+                     effectivePhoto.source === 'flickr' ? 'Flickr' : 'Photo'}
                   </div>
                 </div>
               )}

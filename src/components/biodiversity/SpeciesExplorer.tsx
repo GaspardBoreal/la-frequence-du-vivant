@@ -140,7 +140,7 @@ const SpeciesExplorer: React.FC<SpeciesExplorerProps> = ({
       );
     }
 
-    return filtered.sort((a, b) => a.commonName.localeCompare(b.commonName));
+    return filtered.sort((a, b) => b.observations - a.observations);
   }, [species, selectedCategory, selectedContributor, selectedSource, hasAudioFilter, searchTerm]);
 
   const gridCols = compact
