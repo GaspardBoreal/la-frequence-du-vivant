@@ -128,11 +128,11 @@ export const useMarcheCollectedData = (userId: string, marcheEventIds: string[])
         // For events with exploration_id, fetch media counts via exploration_marches → marches
         const mediaExplorationIds = [...new Set(events.filter(e => e.exploration_id).map(e => e.exploration_id!))];
         
-        if (explorationIds.length > 0) {
+        if (mediaExplorationIds.length > 0) {
           const { data: explorationMarches } = await supabase
             .from('exploration_marches')
             .select('exploration_id, marche_id')
-            .in('exploration_id', explorationIds);
+            .in('exploration_id', mediaExplorationIds);
 
           if (explorationMarches && explorationMarches.length > 0) {
             const marcheIds = [...new Set(explorationMarches.map(em => em.marche_id))];
