@@ -113,10 +113,10 @@ const EventBiodiversityTab: React.FC<EventBiodiversityTabProps> = ({ exploration
     return { total: speciesMap.size, birds, plants, fungi, others, marchesCount: snapshots.length };
   }, [snapshots]);
 
-  // Extract species from species_data
-  const allSpecies = useMemo((): SpeciesEntry[] => {
+  // Transform species_data into BiodiversitySpecies[] for SpeciesExplorer
+  const allSpeciesAsBiodiversity = useMemo((): BiodiversitySpecies[] => {
     if (!snapshots?.length) return [];
-    const speciesMap = new Map<string, SpeciesEntry>();
+    const speciesMap = new Map<string, BiodiversitySpecies>();
     snapshots.forEach(snap => {
       const speciesData = snap.species_data as any[] | null;
       if (!speciesData || !Array.isArray(speciesData)) return;
@@ -127,44 +127,26 @@ const EventBiodiversityTab: React.FC<EventBiodiversityTabProps> = ({ exploration
         if (existing) {
           existing.observations += sp.observations || 1;
         } else {
+          const kingdom = sp.kingdom === 'Animalia' ? 'Animalia'
+            : sp.kingdom === 'Plantae' ? 'Plantae'
+            : sp.kingdom === 'Fungi' ? 'Fungi'
+            : 'Other';
           speciesMap.set(key, {
+            id: key,
             scientificName: sp.scientificName || '',
             commonName: sp.commonName || sp.scientificName || '',
-            kingdom: sp.kingdom || 'Other',
+            kingdom: kingdom as BiodiversitySpecies['kingdom'],
+            family: sp.family?.toString() || '',
             observations: sp.observations || 1,
-            family: sp.family,
+            lastSeen: snap.snapshot_date || '',
+            source: (sp.source as BiodiversitySpecies['source']) || 'inaturalist',
+            attributions: [],
           });
         }
       });
     });
     return Array.from(speciesMap.values()).sort((a, b) => b.observations - a.observations);
   }, [snapshots]);
-
-  const categoryCounts = useMemo((): Record<CategoryFilter, number> => {
-    const counts: Record<CategoryFilter, number> = { all: allSpecies.length, birds: 0, plants: 0, fungi: 0, others: 0 };
-    allSpecies.forEach(sp => {
-      if (sp.kingdom === 'Animalia') counts.birds++;
-      else if (sp.kingdom === 'Plantae') counts.plants++;
-      else if (sp.kingdom === 'Fungi') counts.fungi++;
-      else counts.others++;
-    });
-    return counts;
-  }, [allSpecies]);
-
-  const filteredSpecies = useMemo(() => {
-    if (categoryFilter === 'all') return allSpecies;
-    const kingdomMap: Record<string, string> = { birds: 'Animalia', plants: 'Plantae', fungi: 'Fungi', others: 'Other' };
-    return allSpecies.filter(s => s.kingdom === kingdomMap[categoryFilter]);
-  }, [allSpecies, categoryFilter]);
-
-  const getCategoryIcon = (kingdom: string) => {
-    switch (kingdom) {
-      case 'Animalia': return <Bird className="w-3.5 h-3.5 text-sky-500" />;
-      case 'Plantae': return <TreePine className="w-3.5 h-3.5 text-green-500" />;
-      case 'Fungi': return <Leaf className="w-3.5 h-3.5 text-amber-500" />;
-      default: return <Bug className="w-3.5 h-3.5 text-purple-500" />;
-    }
-  };
 
   // Empty state
   if (!isLoading && (!snapshots?.length)) {
