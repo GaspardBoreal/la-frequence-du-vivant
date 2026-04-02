@@ -9,13 +9,6 @@ import SpeciesExplorer from '@/components/biodiversity/SpeciesExplorer';
 
 type SubTab = 'synthese' | 'taxons' | 'analyse';
 
-interface SpeciesEntry {
-  scientificName: string;
-  commonName: string;
-  kingdom: string;
-  observations: number;
-  family?: string;
-}
 
 interface EventBiodiversityTabProps {
   explorationId?: string;
