@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -6,6 +6,8 @@ import { Bird, TreePine, Leaf, Bug, Layers, Sparkles } from 'lucide-react';
 import { useAnimatedCounter } from '@/hooks/useAnimatedCounter';
 import { BiodiversitySpecies } from '@/types/biodiversity';
 import SpeciesExplorer from '@/components/biodiversity/SpeciesExplorer';
+import BiodiversityRevealAnimation from '@/components/community/BiodiversityRevealAnimation';
+import { useTriggerBiodiversityCollection } from '@/hooks/useTriggerBiodiversityCollection';
 import type { SpeciesMarcheData } from '@/hooks/useSpeciesMarches';
 
 type SubTab = 'synthese' | 'taxons' | 'analyse';
