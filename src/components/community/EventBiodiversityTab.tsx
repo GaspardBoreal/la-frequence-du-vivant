@@ -2,26 +2,22 @@ import React, { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Bird, TreePine, Leaf, Bug, Layers, Sparkles, Filter, TrendingDown } from 'lucide-react';
+import { Bird, TreePine, Leaf, Bug, Layers, Sparkles } from 'lucide-react';
 import { useAnimatedCounter } from '@/hooks/useAnimatedCounter';
+import { BiodiversitySpecies } from '@/types/biodiversity';
+import SpeciesExplorer from '@/components/biodiversity/SpeciesExplorer';
 
 type SubTab = 'synthese' | 'taxons' | 'analyse';
-type CategoryFilter = 'all' | 'birds' | 'plants' | 'fungi' | 'others';
 
-interface SpeciesEntry {
-  scientificName: string;
-  commonName: string;
-  kingdom: string;
-  observations: number;
-  family?: string;
-}
 
 interface EventBiodiversityTabProps {
   explorationId?: string;
   marcheEventId?: string;
 }
 
-const categoryConfig: Record<CategoryFilter, { label: string; icon: typeof Bird; color: string; bgColor: string }> = {
+type SynthCategory = 'all' | 'birds' | 'plants' | 'fungi' | 'others';
+
+const categoryConfig: Record<SynthCategory, { label: string; icon: typeof Bird; color: string; bgColor: string }> = {
   all: { label: 'Tous', icon: Layers, color: 'text-emerald-600 dark:text-emerald-400', bgColor: 'bg-emerald-500/10' },
   birds: { label: 'Faune', icon: Bird, color: 'text-sky-600 dark:text-sky-400', bgColor: 'bg-sky-500/10' },
   plants: { label: 'Flore', icon: TreePine, color: 'text-green-600 dark:text-green-400', bgColor: 'bg-green-500/10' },
@@ -51,7 +47,6 @@ const AnimatedStat: React.FC<{ value: number; label: string; icon: typeof Bird; 
 
 const EventBiodiversityTab: React.FC<EventBiodiversityTabProps> = ({ explorationId, marcheEventId }) => {
   const [activeSubTab, setActiveSubTab] = useState<SubTab>('synthese');
-  const [categoryFilter, setCategoryFilter] = useState<CategoryFilter>('all');
 
   // Get marche IDs linked to this exploration
   const { data: marcheIds } = useQuery({
@@ -113,10 +108,10 @@ const EventBiodiversityTab: React.FC<EventBiodiversityTabProps> = ({ exploration
     return { total: speciesMap.size, birds, plants, fungi, others, marchesCount: snapshots.length };
   }, [snapshots]);
 
-  // Extract species from species_data
-  const allSpecies = useMemo((): SpeciesEntry[] => {
+  // Transform species_data into BiodiversitySpecies[] for SpeciesExplorer
+  const allSpeciesAsBiodiversity = useMemo((): BiodiversitySpecies[] => {
     if (!snapshots?.length) return [];
-    const speciesMap = new Map<string, SpeciesEntry>();
+    const speciesMap = new Map<string, BiodiversitySpecies>();
     snapshots.forEach(snap => {
       const speciesData = snap.species_data as any[] | null;
       if (!speciesData || !Array.isArray(speciesData)) return;
@@ -127,44 +122,26 @@ const EventBiodiversityTab: React.FC<EventBiodiversityTabProps> = ({ exploration
         if (existing) {
           existing.observations += sp.observations || 1;
         } else {
+          const kingdom = sp.kingdom === 'Animalia' ? 'Animalia'
+            : sp.kingdom === 'Plantae' ? 'Plantae'
+            : sp.kingdom === 'Fungi' ? 'Fungi'
+            : 'Other';
           speciesMap.set(key, {
+            id: key,
             scientificName: sp.scientificName || '',
             commonName: sp.commonName || sp.scientificName || '',
-            kingdom: sp.kingdom || 'Other',
+            kingdom: kingdom as BiodiversitySpecies['kingdom'],
+            family: sp.family?.toString() || '',
             observations: sp.observations || 1,
-            family: sp.family,
+            lastSeen: snap.snapshot_date || '',
+            source: (sp.source as BiodiversitySpecies['source']) || 'inaturalist',
+            attributions: [],
           });
         }
       });
     });
     return Array.from(speciesMap.values()).sort((a, b) => b.observations - a.observations);
   }, [snapshots]);
-
-  const categoryCounts = useMemo((): Record<CategoryFilter, number> => {
-    const counts: Record<CategoryFilter, number> = { all: allSpecies.length, birds: 0, plants: 0, fungi: 0, others: 0 };
-    allSpecies.forEach(sp => {
-      if (sp.kingdom === 'Animalia') counts.birds++;
-      else if (sp.kingdom === 'Plantae') counts.plants++;
-      else if (sp.kingdom === 'Fungi') counts.fungi++;
-      else counts.others++;
-    });
-    return counts;
-  }, [allSpecies]);
-
-  const filteredSpecies = useMemo(() => {
-    if (categoryFilter === 'all') return allSpecies;
-    const kingdomMap: Record<string, string> = { birds: 'Animalia', plants: 'Plantae', fungi: 'Fungi', others: 'Other' };
-    return allSpecies.filter(s => s.kingdom === kingdomMap[categoryFilter]);
-  }, [allSpecies, categoryFilter]);
-
-  const getCategoryIcon = (kingdom: string) => {
-    switch (kingdom) {
-      case 'Animalia': return <Bird className="w-3.5 h-3.5 text-sky-500" />;
-      case 'Plantae': return <TreePine className="w-3.5 h-3.5 text-green-500" />;
-      case 'Fungi': return <Leaf className="w-3.5 h-3.5 text-amber-500" />;
-      default: return <Bug className="w-3.5 h-3.5 text-purple-500" />;
-    }
-  };
 
   // Empty state
   if (!isLoading && (!snapshots?.length)) {
@@ -246,65 +223,13 @@ const EventBiodiversityTab: React.FC<EventBiodiversityTabProps> = ({ exploration
           </motion.div>
         )}
 
-        {/* TAXONS */}
+        {/* TAXONS — via SpeciesExplorer unifié */}
         {activeSubTab === 'taxons' && (
           <motion.div key="taxons" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-            {/* Category filter */}
-            <div className="flex gap-1.5 mb-4 flex-wrap">
-              {(Object.keys(categoryConfig) as CategoryFilter[]).map(cat => {
-                const cfg = categoryConfig[cat];
-                const Icon = cfg.icon;
-                const isActive = categoryFilter === cat;
-                return (
-                  <button
-                    key={cat}
-                    onClick={() => setCategoryFilter(cat)}
-                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
-                      isActive
-                        ? `${cfg.bgColor} ${cfg.color} ring-1 ring-current/20`
-                        : 'text-muted-foreground hover:text-foreground bg-muted/30'
-                    }`}
-                  >
-                    <Icon className="w-3.5 h-3.5" />
-                    {cfg.label}{categoryCounts[cat] > 0 ? ` (${categoryCounts[cat]})` : ''}
-                  </button>
-                );
-              })}
-            </div>
-
-            {filteredSpecies.length > 0 ? (
-              <div className="space-y-1.5 max-h-[60vh] overflow-y-auto">
-                {filteredSpecies.map((sp, i) => (
-                  <motion.div
-                    key={sp.scientificName || i}
-                    initial={{ opacity: 0, x: -8 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: Math.min(i * 0.02, 0.5) }}
-                    className="flex items-center gap-3 px-3 py-2.5 rounded-xl border border-border bg-card hover:bg-accent/30 transition-colors"
-                  >
-                    <div className="w-7 h-7 rounded-lg bg-muted flex items-center justify-center flex-shrink-0">
-                      {getCategoryIcon(sp.kingdom)}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-foreground truncate">{sp.commonName}</p>
-                      {sp.scientificName !== sp.commonName && (
-                        <p className="text-[10px] text-muted-foreground italic truncate">{sp.scientificName}</p>
-                      )}
-                    </div>
-                    <span className="text-xs font-semibold text-muted-foreground tabular-nums">{sp.observations}</span>
-                  </motion.div>
-                ))}
-              </div>
-            ) : (
-              <div className="text-center py-8">
-                <TrendingDown className="w-8 h-8 text-muted-foreground/40 mx-auto mb-2" />
-                <p className="text-sm text-muted-foreground">
-                  {allSpecies.length === 0
-                    ? 'Aucune donnée espèce détaillée disponible'
-                    : 'Aucune espèce dans cette catégorie'}
-                </p>
-              </div>
-            )}
+            <SpeciesExplorer
+              species={allSpeciesAsBiodiversity}
+              compact
+            />
           </motion.div>
         )}
 
