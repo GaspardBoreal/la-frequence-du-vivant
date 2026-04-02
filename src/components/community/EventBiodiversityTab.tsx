@@ -8,7 +8,6 @@ import { BiodiversitySpecies } from '@/types/biodiversity';
 import SpeciesExplorer from '@/components/biodiversity/SpeciesExplorer';
 
 type SubTab = 'synthese' | 'taxons' | 'analyse';
-type CategoryFilter = 'all' | 'birds' | 'plants' | 'fungi' | 'others';
 
 interface SpeciesEntry {
   scientificName: string;
