@@ -23,7 +23,6 @@ const SpeciesMiniMap: React.FC<SpeciesMiniMapProps> = ({ marches, isLoading, all
   const validMarches = useMemo(() => {
     return allPoints;
   }, [allPoints]);
-  }, [marches]);
 
   // Calculate center and bounds
   const mapCenter = useMemo(() => {
