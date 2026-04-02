@@ -95,9 +95,11 @@ const SpeciesMiniMap: React.FC<SpeciesMiniMapProps> = ({ marches, isLoading, all
         }
         .species-minimap .leaflet-tooltip-pane {
           overflow: visible !important;
+          z-index: 1000 !important;
         }
         .species-minimap .leaflet-tooltip {
           white-space: nowrap;
+          z-index: 1000 !important;
         }
       `}</style>
       <MapContainer
