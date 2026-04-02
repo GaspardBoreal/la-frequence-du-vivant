@@ -206,22 +206,56 @@ const EventBiodiversityTab: React.FC<EventBiodiversityTabProps> = ({ exploration
   // Empty state
   if (!isLoading && (!snapshots?.length)) {
     return (
-      <motion.div
-        initial={{ opacity: 0, y: 12 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="flex flex-col items-center justify-center py-16 text-center px-4"
-      >
-        <div className="w-20 h-20 rounded-3xl bg-gradient-to-br from-emerald-500/10 to-amber-500/5 border border-emerald-500/15 flex items-center justify-center mb-5">
-          <Leaf className="w-9 h-9 text-emerald-400/60" />
-        </div>
-        <h3 className="text-foreground text-base font-semibold mb-2">Empreinte en attente</h3>
-        <p className="text-muted-foreground text-sm max-w-sm leading-relaxed">
-          La biodiversité de cet événement n'a pas encore été collectée. Les données apparaîtront ici dès qu'une analyse des territoires traversés sera lancée.
-        </p>
-        <div className="mt-5 px-4 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20">
-          <span className="text-emerald-600 dark:text-emerald-400 text-xs font-medium">Collecte à venir</span>
-        </div>
-      </motion.div>
+      <>
+        <BiodiversityRevealAnimation
+          isActive={revealActive}
+          onComplete={handleRevealComplete}
+          result={collectionMutation.data ? {
+            marchesProcessed: collectionMutation.data.marchesProcessed,
+            totalSpecies: collectionMutation.data.totalSpecies,
+            alreadyCollected: collectionMutation.data.alreadyCollected,
+          } : null}
+        />
+        <motion.div
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="flex flex-col items-center justify-center py-16 text-center px-4"
+        >
+          <div className="w-20 h-20 rounded-3xl bg-gradient-to-br from-emerald-500/10 to-amber-500/5 border border-emerald-500/15 flex items-center justify-center mb-5">
+            <Leaf className="w-9 h-9 text-emerald-400/60" />
+          </div>
+          <h3 className="text-foreground text-base font-semibold mb-2">Empreinte en attente</h3>
+          <p className="text-muted-foreground text-sm max-w-sm leading-relaxed">
+            La biodiversité de cet événement n'a pas encore été collectée. Les données apparaîtront ici dès qu'une analyse des territoires traversés sera lancée.
+          </p>
+          {canReveal && (
+            <button
+              onClick={handleReveal}
+              disabled={revealActive || collectionMutation.isPending}
+              className="mt-6 group relative overflow-hidden rounded-2xl border border-emerald-500/30 bg-gradient-to-r from-emerald-500/10 to-amber-500/5 px-6 py-3 transition-all hover:border-emerald-500/50 hover:shadow-lg hover:shadow-emerald-500/10 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-xl bg-emerald-500/15 flex items-center justify-center">
+                  <Leaf className="w-4 h-4 text-emerald-500 group-hover:animate-pulse" />
+                </div>
+                <div className="text-left">
+                  <span className="block text-foreground text-sm font-semibold">
+                    Révéler l'empreinte vivante
+                  </span>
+                  <span className="block text-muted-foreground text-[11px]">
+                    Collecter la biodiversité de toutes les étapes
+                  </span>
+                </div>
+              </div>
+            </button>
+          )}
+          {!canReveal && (
+            <div className="mt-5 px-4 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20">
+              <span className="text-emerald-600 dark:text-emerald-400 text-xs font-medium">Collecte à venir</span>
+            </div>
+          )}
+        </motion.div>
+      </>
     );
   }
 
