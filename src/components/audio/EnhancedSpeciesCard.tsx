@@ -185,7 +185,7 @@ export const EnhancedSpeciesCard: React.FC<EnhancedSpeciesCardProps> = ({
             {species.scientificName}
           </p>
           
-          <div className="flex items-center gap-1 mt-1">
+          <div className="flex items-center gap-1 mt-1 flex-wrap overflow-hidden max-h-[3.5rem]">
             <Badge variant="outline" className="text-xs">
               {species.source}
             </Badge>
