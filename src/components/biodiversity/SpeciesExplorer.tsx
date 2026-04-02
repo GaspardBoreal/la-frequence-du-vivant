@@ -38,6 +38,8 @@ const SpeciesExplorer: React.FC<SpeciesExplorerProps> = ({
   showMap = false,
   mapContent,
   className = '',
+  explorationId,
+  allEventMarches,
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
