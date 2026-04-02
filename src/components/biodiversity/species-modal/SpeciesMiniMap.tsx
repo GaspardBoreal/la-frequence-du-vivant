@@ -1,5 +1,6 @@
 import React, { useMemo } from 'react';
-import { MapContainer, TileLayer, CircleMarker, Tooltip } from 'react-leaflet';
+import { MapContainer, TileLayer, CircleMarker, Tooltip, useMap } from 'react-leaflet';
+import L from 'leaflet';
 import { motion } from 'framer-motion';
 import type { SpeciesMarcheData } from '@/hooks/useSpeciesMarches';
 import 'leaflet/dist/leaflet.css';
@@ -10,52 +11,45 @@ interface SpeciesMiniMapProps {
   allEventMarches?: SpeciesMarcheData[];
 }
 
+const FitBounds: React.FC<{ points: { latitude?: number; longitude?: number }[] }> = ({ points }) => {
+  const map = useMap();
+  
+  React.useEffect(() => {
+    const valid = points.filter(p => p.latitude && p.longitude);
+    if (valid.length === 0) return;
+    
+    if (valid.length === 1) {
+      map.setView([valid[0].latitude!, valid[0].longitude!], 10);
+      return;
+    }
+    
+    const bounds = L.latLngBounds(valid.map(p => [p.latitude!, p.longitude!] as [number, number]));
+    map.fitBounds(bounds, { padding: [30, 30], maxZoom: 12 });
+  }, [points, map]);
+  
+  return null;
+};
+
 const SpeciesMiniMap: React.FC<SpeciesMiniMapProps> = ({ marches, isLoading, allEventMarches }) => {
   const observedMarcheIds = useMemo(() => new Set(marches.map(m => m.marcheId)), [marches]);
 
-  // Combine all event marches (non-observed) with observed marches
   const allPoints = useMemo(() => {
     if (!allEventMarches?.length) return marches.filter(m => m.latitude && m.longitude);
     return allEventMarches.filter(m => m.latitude && m.longitude);
   }, [marches, allEventMarches]);
 
-  // Filter marches with valid coordinates
-  const validMarches = useMemo(() => {
-    return allPoints;
-  }, [allPoints]);
+  const validMarches = useMemo(() => allPoints, [allPoints]);
 
-  // Calculate center and bounds
   const mapCenter = useMemo(() => {
-    if (validMarches.length === 0) {
-      return { lat: 46.5, lng: 2.5 }; // France center
-    }
-
+    if (validMarches.length === 0) return { lat: 46.5, lng: 2.5 };
     const avgLat = validMarches.reduce((sum, m) => sum + (m.latitude || 0), 0) / validMarches.length;
     const avgLng = validMarches.reduce((sum, m) => sum + (m.longitude || 0), 0) / validMarches.length;
-
     return { lat: avgLat, lng: avgLng };
-  }, [validMarches]);
-
-  // Calculate zoom based on spread
-  const zoom = useMemo(() => {
-    if (validMarches.length <= 1) return 8;
-    
-    const lats = validMarches.map(m => m.latitude || 0);
-    const lngs = validMarches.map(m => m.longitude || 0);
-    
-    const latSpread = Math.max(...lats) - Math.min(...lats);
-    const lngSpread = Math.max(...lngs) - Math.min(...lngs);
-    const maxSpread = Math.max(latSpread, lngSpread);
-    
-    if (maxSpread > 5) return 5;
-    if (maxSpread > 2) return 6;
-    if (maxSpread > 1) return 7;
-    return 8;
   }, [validMarches]);
 
   if (isLoading) {
     return (
-      <div className="h-40 bg-white/5 rounded-lg animate-pulse flex items-center justify-center">
+      <div className="h-56 bg-white/5 rounded-lg animate-pulse flex items-center justify-center">
         <span className="text-white/30 text-sm">Chargement de la carte...</span>
       </div>
     );
@@ -63,7 +57,7 @@ const SpeciesMiniMap: React.FC<SpeciesMiniMapProps> = ({ marches, isLoading, all
 
   if (validMarches.length === 0) {
     return (
-      <div className="h-40 bg-white/5 rounded-lg flex items-center justify-center">
+      <div className="h-56 bg-white/5 rounded-lg flex items-center justify-center">
         <span className="text-white/30 text-sm">Aucune coordonnée disponible</span>
       </div>
     );
@@ -73,14 +67,33 @@ const SpeciesMiniMap: React.FC<SpeciesMiniMapProps> = ({ marches, isLoading, all
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      className="h-40 rounded-lg overflow-hidden border border-white/10"
+      className="h-56 rounded-lg overflow-hidden border border-white/10 species-minimap"
     >
+      <style>{`
+        .species-minimap .leaflet-control-zoom {
+          border: none !important;
+          box-shadow: 0 2px 8px rgba(0,0,0,0.4) !important;
+        }
+        .species-minimap .leaflet-control-zoom a {
+          background: rgba(30, 41, 59, 0.9) !important;
+          color: rgba(255,255,255,0.8) !important;
+          border: 1px solid rgba(255,255,255,0.1) !important;
+          width: 28px !important;
+          height: 28px !important;
+          line-height: 28px !important;
+          font-size: 14px !important;
+        }
+        .species-minimap .leaflet-control-zoom a:hover {
+          background: rgba(30, 41, 59, 1) !important;
+          color: white !important;
+        }
+      `}</style>
       <MapContainer
         center={[mapCenter.lat, mapCenter.lng]}
-        zoom={zoom}
+        zoom={7}
         scrollWheelZoom={false}
-        zoomControl={false}
-        dragging={false}
+        zoomControl={true}
+        dragging={true}
         className="h-full w-full"
         style={{ background: '#1e293b' }}
       >
@@ -88,6 +101,8 @@ const SpeciesMiniMap: React.FC<SpeciesMiniMapProps> = ({ marches, isLoading, all
           url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
         />
+        
+        <FitBounds points={validMarches} />
         
         {validMarches.map((marche) => {
           const isObserved = observedMarcheIds.has(marche.marcheId);
