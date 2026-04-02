@@ -1,37 +1,71 @@
 
 
-## Ajouter les compteurs d'espèces aux filtres Taxons observés
+## Aligner l'affichage des espèces entre Vivant et Empreinte
 
-### Objectif
-Afficher le nombre d'espèces à côté de chaque filtre dans l'onglet "Taxons observés" (ex: `Faune (14)`), et masquer le nombre si celui-ci vaut 0. Cela garantit aussi la cohérence visuelle avec l'onglet Synthèse.
+### Problème identifié
 
-### Modification
+- **Vivant** (par marche) appelle l'edge function `biodiversity-data` en temps réel → retourne des `BiodiversitySpecies[]` riches : photos iNaturalist, noms français (traduction), source, date, attributions. Affichées via `SpeciesExplorer` + `EnhancedSpeciesCard`.
+- **Empreinte** (événement) lit le JSON `species_data` stocké dans `biodiversity_snapshots` → données minimales : `commonName` en anglais, `scientificName`, `kingdom`, `observations`. Pas de photo, pas de traduction. Affichées via une liste custom simpliste.
 
-**Fichier** : `src/components/community/EventBiodiversityTab.tsx`
+### Solution
 
-**Zone** : Les boutons de filtre catégorie (lignes 242-262)
+Remplacer la section "Taxons observés" de `EventBiodiversityTab` par le composant `SpeciesExplorer` existant, en transformant les données `species_data` agrégées en objets `BiodiversitySpecies[]`. Les traductions et photos seront gérées automatiquement par `SpeciesExplorer` (via `useSpeciesTranslationBatch` et `EnhancedSpeciesCard`).
 
-- Calculer un objet `categoryCounts` via `useMemo` qui mappe chaque `CategoryFilter` vers son nombre d'espèces (réutilisant `allSpecies` et la même logique kingdom que `stats`)
-- Dans chaque bouton filtre, afficher `{cfg.label} ({count})` si `count > 0`, sinon uniquement `{cfg.label}`
-- Les counts utilisent exactement la même source (`allSpecies`) que le reste, donc cohérence garantie avec Synthèse
+Ajouter un panneau dépliable (accordéon) sur chaque carte d'espèce dans Empreinte, montrant les marches où l'espèce a été observée.
 
-### Détail technique
+### Étapes
+
+**1. Transformer species_data en BiodiversitySpecies[] dans EventBiodiversityTab**
+
+Dans le `useMemo` qui calcule `allSpecies`, mapper chaque entrée vers le type `BiodiversitySpecies` complet :
+- `id` : généré depuis `scientificName`
+- `commonName`, `scientificName`, `kingdom` : depuis les données existantes
+- `family` : depuis le champ `family` (numérique dans les données, à convertir en string)
+- `observations` : agrégé
+- `source` : `'inaturalist'` par défaut (source principale des snapshots)
+- `lastSeen` : dérivé de la date du snapshot
+- `attributions` : tableau vide (pas disponible dans les snapshots)
+- `photoData` : non inclus (sera chargé par `EnhancedSpeciesCard` via `useSpeciesPhoto`)
+
+Aussi, enrichir chaque espèce avec la liste des `marche_id` où elle apparaît, pour le panneau dépliable.
+
+**2. Remplacer la liste custom par SpeciesExplorer**
+
+Dans la section `taxons` de `EventBiodiversityTab`, remplacer la boucle `filteredSpecies.map(...)` par :
 ```tsx
-const categoryCounts = useMemo(() => {
-  const kingdomMap: Record<CategoryFilter, string | null> = {
-    all: null, birds: 'Animalia', plants: 'Plantae', fungi: 'Fungi', others: 'Other'
-  };
-  const counts: Record<CategoryFilter, number> = { all: allSpecies.length, birds: 0, plants: 0, fungi: 0, others: 0 };
-  allSpecies.forEach(sp => {
-    if (sp.kingdom === 'Animalia') counts.birds++;
-    else if (sp.kingdom === 'Plantae') counts.plants++;
-    else if (sp.kingdom === 'Fungi') counts.fungi++;
-    else counts.others++;
-  });
-  return counts;
-}, [allSpecies]);
-
-// Dans le bouton :
-{cfg.label}{categoryCounts[cat] > 0 ? ` (${categoryCounts[cat]})` : ''}
+<SpeciesExplorer species={allSpeciesAsBiodiversity} compact />
 ```
+
+Cela apporte automatiquement :
+- Photos via `EnhancedSpeciesCard`
+- Noms français via `useSpeciesTranslationBatch`
+- Filtres par catégorie, source, recherche
+- Même design que Vivant
+
+**3. Panneau dépliable "Marches d'observation"**
+
+Créer un composant `SpeciesEmpreinteCard` qui wrap `EnhancedSpeciesCard` et ajoute :
+- Un bouton chevron pour ouvrir/fermer un panneau
+- Le panneau montre la liste des marches où l'espèce a été observée (nom de marche, photo du snapshot si dispo, lien vers la marche)
+- Requête : on dispose déjà des `snapshots` avec `marche_id` — on croise avec `exploration_marches` → `marches` pour les noms
+
+Alternative plus simple et cohérente : utiliser le `SpeciesDetailModal` existant (qui a déjà un onglet "Marches" via `useSpeciesMarches`) — il suffit de passer l'`explorationId` au `SpeciesExplorer`. Le modal existant `SpeciesGalleryDetailModal` fait déjà tout : photo, traduction, marches d'observation, audio, mini-carte.
+
+**Approche retenue** : Réutiliser `SpeciesExplorer` + le modal existant `SpeciesDetailModal`/`SpeciesGalleryDetailModal`. Pas besoin de réinventer l'accordéon — le clic sur une espèce ouvre le modal riche existant avec toutes les infos.
+
+### Fichiers modifiés
+
+- **`src/components/community/EventBiodiversityTab.tsx`** :
+  - Import `SpeciesExplorer` et `BiodiversitySpecies`
+  - Transformer `allSpecies` en `BiodiversitySpecies[]`
+  - Remplacer la section "taxons" par `<SpeciesExplorer species={...} compact />`
+  - Supprimer le code custom de liste des taxons (filtres catégorie, boucle map)
+  - Conserver la section Synthèse et Analyse IA intactes
+
+### Résultat attendu
+
+- Empreinte affiche les espèces avec le même design riche que Vivant : photos, noms français, badges source
+- Clic sur une espèce ouvre le modal détail avec marches d'observation, audio, carte
+- Cohérence totale entre les deux vues
+- Les compteurs de synthèse restent inchangés et cohérents
 
