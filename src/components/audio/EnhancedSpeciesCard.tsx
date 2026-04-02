@@ -23,17 +23,19 @@ export const EnhancedSpeciesCard: React.FC<EnhancedSpeciesCardProps> = ({
   const [showSpectrogram, setShowSpectrogram] = useState(false);
   const [imageError, setImageError] = useState(false);
   const { playRecording, pause, currentRecording, isPlaying } = useGlobalAudioPlayer();
+
+  // Auto-fetch photo from iNaturalist when photoData is missing
+  const shouldFetchPhoto = !species.photoData || species.photoData.source === 'placeholder';
+  const { data: fetchedPhotoData } = useSpeciesPhoto(
+    shouldFetchPhoto ? species.scientificName : undefined
+  );
   
-  // Debug logs
-  console.log('🔧 EnhancedSpeciesCard debug:', {
-    scientificName: species.scientificName,
-    commonName: species.commonName,
-    photoData: species.photoData,
-    hasPhoto: species.photoData && species.photoData.source !== 'placeholder',
-    propTranslation: propTranslation,
-    propSource: propTranslation?.source,
-    propConfidence: propTranslation?.confidence
-  });
+  // Build effective photo: use provided photoData, or fall back to fetched
+  const effectivePhoto = species.photoData && species.photoData.source !== 'placeholder'
+    ? species.photoData
+    : fetchedPhotoData 
+      ? { url: fetchedPhotoData.photos[0], source: 'inaturalist' as const, attribution: '' }
+      : null;
 
   // Call edge function if we don't have a good French translation
   const shouldCallEdgeFunction = !propTranslation || 
