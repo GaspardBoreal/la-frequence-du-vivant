@@ -17,6 +17,7 @@ import { useSpeciesXenoCanto } from '@/hooks/useSpeciesXenoCanto';
 import SpeciesMarchesTab from './species-modal/SpeciesMarchesTab';
 import SpeciesAudioPlayer from './species-modal/SpeciesAudioPlayer';
 import SpeciesMiniMap from './species-modal/SpeciesMiniMap';
+import type { SpeciesMarcheData } from '@/hooks/useSpeciesMarches';
 
 interface SpeciesGalleryDetailModalProps {
   species: {
@@ -27,6 +28,7 @@ interface SpeciesGalleryDetailModalProps {
     photos?: string[];
   } | null;
   explorationId?: string;
+  allEventMarches?: SpeciesMarcheData[];
   isOpen: boolean;
   onClose: () => void;
 }
@@ -54,6 +56,7 @@ const getKingdomInfo = (kingdom: string) => {
 const SpeciesGalleryDetailModal: React.FC<SpeciesGalleryDetailModalProps> = ({
   species,
   explorationId,
+  allEventMarches,
   isOpen,
   onClose,
 }) => {
@@ -259,7 +262,7 @@ const SpeciesGalleryDetailModal: React.FC<SpeciesGalleryDetailModalProps> = ({
                   </TabsContent>
                   
                   <TabsContent value="map" className="mt-3">
-                    <SpeciesMiniMap marches={speciesMarches} isLoading={marchesLoading} />
+                    <SpeciesMiniMap marches={speciesMarches} isLoading={marchesLoading} allEventMarches={allEventMarches} />
                   </TabsContent>
                 </Tabs>
               </div>

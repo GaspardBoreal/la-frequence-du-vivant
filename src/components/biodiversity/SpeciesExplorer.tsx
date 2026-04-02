@@ -9,7 +9,9 @@ import { Card } from '../ui/card';
 import { BiodiversitySpecies } from '@/types/biodiversity';
 import { EnhancedSpeciesCard } from '../audio/EnhancedSpeciesCard';
 import SpeciesDetailModal from './SpeciesDetailModal';
+import SpeciesGalleryDetailModal from './SpeciesGalleryDetailModal';
 import { useSpeciesTranslationBatch } from '@/hooks/useSpeciesTranslation';
+import type { SpeciesMarcheData } from '@/hooks/useSpeciesMarches';
 
 // Utility to identify birds
 const isBirdSpecies = (species: BiodiversitySpecies): boolean => {
@@ -26,6 +28,8 @@ interface SpeciesExplorerProps {
   showMap?: boolean;
   mapContent?: React.ReactNode;
   className?: string;
+  explorationId?: string;
+  allEventMarches?: SpeciesMarcheData[];
 }
 
 const SpeciesExplorer: React.FC<SpeciesExplorerProps> = ({
@@ -34,6 +38,8 @@ const SpeciesExplorer: React.FC<SpeciesExplorerProps> = ({
   showMap = false,
   mapContent,
   className = '',
+  explorationId,
+  allEventMarches,
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
@@ -334,11 +340,27 @@ const SpeciesExplorer: React.FC<SpeciesExplorerProps> = ({
         <TabsContent value="others">{renderSpeciesGrid(filteredSpecies.filter(s => s.kingdom !== 'Plantae' && s.kingdom !== 'Fungi' && s.kingdom !== 'Animalia'))}</TabsContent>
       </Tabs>
 
-      <SpeciesDetailModal
-        species={selectedSpecies}
-        isOpen={!!selectedSpecies}
-        onClose={() => setSelectedSpecies(null)}
-      />
+      {explorationId ? (
+        <SpeciesGalleryDetailModal
+          species={selectedSpecies ? {
+            name: selectedSpecies.commonName,
+            scientificName: selectedSpecies.scientificName,
+            count: selectedSpecies.observations,
+            kingdom: selectedSpecies.kingdom,
+            photos: selectedSpecies.photoData ? [selectedSpecies.photoData.url] : undefined,
+          } : null}
+          explorationId={explorationId}
+          allEventMarches={allEventMarches}
+          isOpen={!!selectedSpecies}
+          onClose={() => setSelectedSpecies(null)}
+        />
+      ) : (
+        <SpeciesDetailModal
+          species={selectedSpecies}
+          isOpen={!!selectedSpecies}
+          onClose={() => setSelectedSpecies(null)}
+        />
+      )}
     </div>
   );
 };
