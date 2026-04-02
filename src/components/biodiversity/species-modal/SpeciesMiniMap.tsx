@@ -7,9 +7,10 @@ import 'leaflet/dist/leaflet.css';
 interface SpeciesMiniMapProps {
   marches: SpeciesMarcheData[];
   isLoading?: boolean;
+  allEventMarches?: SpeciesMarcheData[];
 }
 
-const SpeciesMiniMap: React.FC<SpeciesMiniMapProps> = ({ marches, isLoading }) => {
+const SpeciesMiniMap: React.FC<SpeciesMiniMapProps> = ({ marches, isLoading, allEventMarches }) => {
   // Filter marches with valid coordinates
   const validMarches = useMemo(() => {
     return marches.filter(m => m.latitude && m.longitude);
