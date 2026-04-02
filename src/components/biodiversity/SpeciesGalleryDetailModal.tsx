@@ -56,6 +56,7 @@ const getKingdomInfo = (kingdom: string) => {
 const SpeciesGalleryDetailModal: React.FC<SpeciesGalleryDetailModalProps> = ({
   species,
   explorationId,
+  allEventMarches,
   isOpen,
   onClose,
 }) => {
