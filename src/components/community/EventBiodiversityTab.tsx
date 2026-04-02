@@ -6,6 +6,7 @@ import { Bird, TreePine, Leaf, Bug, Layers, Sparkles } from 'lucide-react';
 import { useAnimatedCounter } from '@/hooks/useAnimatedCounter';
 import { BiodiversitySpecies } from '@/types/biodiversity';
 import SpeciesExplorer from '@/components/biodiversity/SpeciesExplorer';
+import type { SpeciesMarcheData } from '@/hooks/useSpeciesMarches';
 
 type SubTab = 'synthese' | 'taxons' | 'analyse';
 
