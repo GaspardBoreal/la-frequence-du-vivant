@@ -50,6 +50,40 @@ const AnimatedStat: React.FC<{ value: number; label: string; icon: typeof Bird; 
 
 const EventBiodiversityTab: React.FC<EventBiodiversityTabProps> = ({ explorationId, marcheEventId }) => {
   const [activeSubTab, setActiveSubTab] = useState<SubTab>('synthese');
+  const [revealActive, setRevealActive] = useState(false);
+
+  const collectionMutation = useTriggerBiodiversityCollection();
+
+  // Check current user's community role
+  const { data: userProfile } = useQuery({
+    queryKey: ['current-user-community-role'],
+    queryFn: async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return null;
+      const { data } = await supabase
+        .from('community_profiles')
+        .select('role')
+        .eq('user_id', user.id)
+        .single();
+      return data;
+    },
+  });
+
+  const canReveal = userProfile?.role === 'ambassadeur' || userProfile?.role === 'sentinelle';
+
+  const handleReveal = useCallback(async () => {
+    if (!explorationId || revealActive) return;
+    setRevealActive(true);
+    try {
+      await collectionMutation.mutateAsync(explorationId);
+    } catch (err) {
+      console.error('Collection failed:', err);
+    }
+  }, [explorationId, revealActive, collectionMutation]);
+
+  const handleRevealComplete = useCallback(() => {
+    setRevealActive(false);
+  }, []);
 
   // Get marche IDs linked to this exploration
   const { data: marcheIds } = useQuery({
