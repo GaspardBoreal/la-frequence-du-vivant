@@ -28,6 +28,8 @@ interface SpeciesExplorerProps {
   showMap?: boolean;
   mapContent?: React.ReactNode;
   className?: string;
+  explorationId?: string;
+  allEventMarches?: SpeciesMarcheData[];
 }
 
 const SpeciesExplorer: React.FC<SpeciesExplorerProps> = ({
