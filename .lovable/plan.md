@@ -1,40 +1,47 @@
 
 
-## Corriger la cohérence des comptages + améliorer la carte
+## Corriger les compteurs sur la carte + visibilité des infobulles
 
-### Problème 1 — Comptage incohérent
+### Problème 1 — Compteur toujours à 0
 
-- **Modal header** (ligne 234) affiche `species.count = 5` (correct, somme des `sp.observations` depuis les snapshots)
-- **SpeciesMarchesTab** affiche `totalObservations = 2` (incorrect) car `useSpeciesMarches` utilise `matchingSpecies.length` (= 1 par marche) au lieu de sommer `sp.observations`
+Dans `SpeciesMiniMap.tsx`, quand `allEventMarches` est fourni, le composant itère sur ces points qui ont tous `observationCount: 0` (ligne 102 de `EventBiodiversityTab.tsx`). Le check `isObserved` fonctionne (il utilise les IDs de `marches`), mais le compteur affiché vient de `allEventMarches` au lieu de `marches`.
 
-**Correction** dans `src/hooks/useSpeciesMarches.ts` ligne 109 :
+**Correction** dans `SpeciesMiniMap.tsx` :
+- Créer un `Map<marcheId, observationCount>` à partir du prop `marches` (les marches observées avec les bons compteurs)
+- Lors du rendu, si `isObserved`, récupérer le count depuis ce Map au lieu de `marche.observationCount`
+
 ```tsx
-// AVANT
-observationCount: matchingSpecies.length,
+const observedMarcheMap = useMemo(() => {
+  const map = new Map<string, number>();
+  marches.forEach(m => map.set(m.marcheId, m.observationCount));
+  return map;
+}, [marches]);
 
-// APRÈS
-observationCount: matchingSpecies.reduce((sum, sp: any) => sum + (sp.observations || 1), 0),
+// Dans le rendu :
+const obsCount = observedMarcheMap.get(marche.marcheId) || 0;
+// Utiliser obsCount pour le radius ET le tooltip
 ```
 
-Cela alignera "5 observations sur 2 marches" dans le header ET dans la liste.
+### Problème 2 — Infobulles coupées par les bords
 
-### Problème 2 — Carte mal centrée, pas de zoom
+Les tooltips Leaflet avec `direction="top"` sont coupées quand un point est proche du bord de la carte (visible sur les copies). Le container a `overflow: hidden` et la tooltip déborde.
 
-**Fichier** : `src/components/biodiversity/species-modal/SpeciesMiniMap.tsx`
+**Correction** dans `SpeciesMiniMap.tsx` :
+- Remplacer `Tooltip` par `Popup` de react-leaflet, qui bénéficie nativement du `autoPan` (la carte se décale pour montrer le popup)
+- Ou bien : garder `Tooltip` mais ajouter `direction="auto"` (Leaflet choisit automatiquement la direction) et ajouter du CSS pour que le tooltip ne soit pas clippé : `.species-minimap .leaflet-tooltip-pane { overflow: visible !important; }`
 
-1. **Augmenter la hauteur** de la carte : `h-40` → `h-56` pour mieux voir les points
-2. **Utiliser `useBounds`** : créer un composant interne `FitBounds` qui utilise `useMap()` de react-leaflet pour appeler `map.fitBounds(bounds, { padding })` automatiquement — même logique que l'onglet Carte principal
-3. **Activer le zoom** : ajouter `zoomControl={true}` et positionner les boutons +/- avec un style sombre cohérent via CSS
-4. **Activer le drag** : `dragging={true}` pour permettre l'exploration
+Approche retenue : `Tooltip` avec `direction="auto"` + CSS anti-clip. Plus léger qu'un Popup, pas de changement d'interaction.
 
-### Fichiers modifiés
+### Fichier modifié
 
-1. **`src/hooks/useSpeciesMarches.ts`** — corriger `observationCount` pour sommer `sp.observations`
-2. **`src/components/biodiversity/species-modal/SpeciesMiniMap.tsx`** — fitBounds dynamique, zoom controls, hauteur augmentée
+**`src/components/biodiversity/species-modal/SpeciesMiniMap.tsx`** uniquement :
+1. Créer `observedMarcheMap` pour résoudre les compteurs corrects
+2. Utiliser `obsCount` du map pour le radius et le tooltip
+3. Passer `direction="auto"` sur les Tooltips
+4. Ajouter CSS `.leaflet-tooltip-pane { overflow: visible }` et `.leaflet-tooltip { white-space: nowrap }`
 
 ### Résultat attendu
-
-- Header modal : "5 observations sur 2 marches"
-- Liste marches : "5 observations" total (1 + 4)
-- Carte : tous les points visibles avec padding, boutons +/- élégants
+- Marche #10 avec 1 obs → tooltip affiche "1 obs."
+- Marche #4 avec 4 obs → tooltip affiche "4 obs."
+- Infobulles toujours visibles, jamais coupées par les bords
 
