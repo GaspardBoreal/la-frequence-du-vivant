@@ -17,6 +17,7 @@ import { useSpeciesXenoCanto } from '@/hooks/useSpeciesXenoCanto';
 import SpeciesMarchesTab from './species-modal/SpeciesMarchesTab';
 import SpeciesAudioPlayer from './species-modal/SpeciesAudioPlayer';
 import SpeciesMiniMap from './species-modal/SpeciesMiniMap';
+import type { SpeciesMarcheData } from '@/hooks/useSpeciesMarches';
 
 interface SpeciesGalleryDetailModalProps {
   species: {
@@ -27,6 +28,7 @@ interface SpeciesGalleryDetailModalProps {
     photos?: string[];
   } | null;
   explorationId?: string;
+  allEventMarches?: SpeciesMarcheData[];
   isOpen: boolean;
   onClose: () => void;
 }
