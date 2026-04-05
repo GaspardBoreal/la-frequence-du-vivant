@@ -1,42 +1,78 @@
 
 
-## Corriger le compteur d'espèces dans le Carnet Vivant (17 → 21)
+## Corriger l'affichage des marcheurs (0 au lieu de 2+)
 
 ### Cause racine
 
-`useMarcheCollectedData.ts` (ligne 66-73) calcule `species_count` par **proximité GPS** : il cherche le snapshot le plus proche des coordonnées du `marche_event`. Il trouve le snapshot de "Deviat une maison pour vivre" (17 espèces) car c'est le point le plus proche.
+Le hook `useExplorationParticipants` interroge `marche_participations` puis `community_profiles` côté client. Les deux tables ont des politiques RLS restrictives :
 
-Mais le `marche_event` "DEVIAT première découverte" est lié à l'exploration `607a0ae3...` qui contient **3 marches** avec 17+8+5 = 30 espèces brutes, soit **21 espèces uniques** après dédoublonnage par `scientificName`.
+- `marche_participations` : SELECT uniquement pour les co-participants du même événement + admins
+- `community_profiles` : SELECT uniquement pour son propre profil + co-participants + admins
 
-L'Empreinte et la Carte utilisent `useExplorationBiodiversitySummary` qui déduplique correctement → 21.
+Résultat : tout utilisateur qui n'est pas lui-même participant de cet événement voit **0 marcheurs**, même s'il est connecté.
 
-### Correction
+### Solution
 
-**Fichier** : `src/hooks/useMarcheCollectedData.ts`
-
-Quand un `marche_event` a un `exploration_id`, le species_count doit être calculé au niveau exploration (dédupliqué), pas par proximité GPS.
-
-Logique modifiée :
-1. Grouper les events par `exploration_id`
-2. Pour chaque exploration : récupérer tous les `marche_id` via `exploration_marches`, puis tous les `biodiversity_snapshots`, puis dédupliquer les espèces par `scientificName` dans `species_data`
-3. Affecter le même `species_count` (exploration-level) à tous les events de cette exploration
-
-Le matching par proximité GPS (lignes 64-75) reste en fallback pour les events sans `exploration_id`.
+Créer une **fonction RPC `SECURITY DEFINER`** qui retourne les participants d'une exploration en contournant les RLS de manière contrôlée. Le hook appellera `.rpc()` au lieu de faire des requêtes directes.
 
 ### Détail technique
 
-```text
-AVANT (par proximité GPS) :
-  marche_event(lat,lng) → snapshot le plus proche → total_species = 17
+**1. Migration SQL** — Créer la fonction `get_exploration_participants(p_exploration_id uuid)`
 
-APRÈS (par exploration) :
-  marche_event.exploration_id → exploration_marches → biodiversity_snapshots
-    → species_data dédupliqué par scientificName → count = 21
+```sql
+CREATE OR REPLACE FUNCTION public.get_exploration_participants(p_exploration_id uuid)
+RETURNS TABLE (
+  user_id uuid,
+  prenom text,
+  nom text,
+  avatar_url text,
+  role text
+)
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = public
+AS $$
+  SELECT DISTINCT
+    cp.user_id,
+    cp.prenom,
+    cp.nom,
+    cp.avatar_url,
+    cp.role::text
+  FROM marche_participations mp
+  JOIN marche_events me ON me.id = mp.marche_event_id
+  JOIN community_profiles cp ON cp.user_id = mp.user_id
+  WHERE me.exploration_id = p_exploration_id;
+$$;
 ```
+
+**2. Modifier `useExplorationParticipants.ts`** — Source 2 (community participants)
+
+Remplacer les requêtes directes sur `marche_participations` + `community_profiles` par un appel RPC :
+
+```ts
+const { data: communityUsers } = await supabase
+  .rpc('get_exploration_participants', { p_exploration_id: explorationId });
+```
+
+Puis pour les stats média/audio/textes, récupérer tous les `marche_event_id` de l'exploration via `marche_events` (table publique en SELECT), et interroger les tables `marcheur_medias`, `marcheur_audio`, `marcheur_textes` avec ces IDs.
+
+**3. Aussi récupérer les marche_event_ids pour les stats**
+
+```ts
+const { data: events } = await supabase
+  .from('marche_events')
+  .select('id')
+  .eq('exploration_id', explorationId);
+const eventIds = (events || []).map(e => e.id);
+```
+
+Puis utiliser `.in('marche_event_id', eventIds)` pour les requêtes médias (au lieu d'un seul `marcheEventId`).
 
 ### Impact
 
-- Carnet Vivant : affichera 21 espèces (cohérent avec Empreinte et Carte)
-- Aucun autre fichier modifié
-- Le fallback proximité reste pour les events sans exploration
+- `MarcheursTab` affichera les 2+ participants correctement
+- Fonctionne pour les utilisateurs connectés non-participants et même potentiellement les visiteurs
+- Les tables `marcheur_medias`, `marcheur_audio`, `marcheur_textes` ont des politiques SELECT publiques (filtré par `is_public = true`) — pas de blocage RLS
+- Aucune modification de composant UI nécessaire, uniquement le hook et la migration
 
