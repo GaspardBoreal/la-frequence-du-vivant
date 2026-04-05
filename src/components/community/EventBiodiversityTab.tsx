@@ -56,15 +56,30 @@ const EventBiodiversityTab: React.FC<EventBiodiversityTabProps> = ({ exploration
 
   const collectionMutation = useTriggerBiodiversityCollection();
 
-  // Fetch crew + community participants for fallback contributor count
+  // Fetch crew + community participants for contributor filter
   const { data: participants } = useExplorationParticipants(explorationId, marcheEventId);
   const { data: marcheurs } = useExplorationMarcheurs(explorationId);
 
-  const fallbackParticipantCount = useMemo(() => {
-    const names = new Set<string>();
-    (participants || []).forEach(p => names.add(`${p.prenom} ${p.nom}`.trim().toLowerCase()));
-    (marcheurs || []).forEach(m => names.add(`${m.prenom} ${m.nom}`.trim().toLowerCase()));
-    return names.size;
+  const eventParticipants = useMemo(() => {
+    const list: Array<{ name: string; source: 'community' | 'crew' }> = [];
+    const seen = new Set<string>();
+    (participants || []).forEach(p => {
+      const name = `${p.prenom} ${p.nom}`.trim();
+      const key = name.toLowerCase();
+      if (key && !seen.has(key)) {
+        seen.add(key);
+        list.push({ name, source: p.source });
+      }
+    });
+    (marcheurs || []).forEach(m => {
+      const name = `${m.prenom} ${m.nom}`.trim();
+      const key = name.toLowerCase();
+      if (key && !seen.has(key)) {
+        seen.add(key);
+        list.push({ name, source: 'crew' });
+      }
+    });
+    return list;
   }, [participants, marcheurs]);
 
   // Check current user's community role
