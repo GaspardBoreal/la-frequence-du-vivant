@@ -365,6 +365,8 @@ const EventBiodiversityTab: React.FC<EventBiodiversityTabProps> = ({ exploration
         {/* SYNTHÈSE */}
         {activeSubTab === 'synthese' && (
           <motion.div key="synthese" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+            {/* Contextual insight banners */}
+            <InsightCardBanner cards={insightCards} maxCards={2} />
             <p className="text-xs text-muted-foreground mb-3">
               {stats.marchesCount} étape{stats.marchesCount > 1 ? 's' : ''} analysée{stats.marchesCount > 1 ? 's' : ''}
             </p>
