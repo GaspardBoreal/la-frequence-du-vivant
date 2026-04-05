@@ -41,7 +41,6 @@ export function useExplorationParticipants(explorationId?: string, marcheEventId
           .order('ordre');
 
         if (crew?.length) {
-          // Get observation counts per marcheur
           const crewIds = crew.map(c => c.id);
           const { data: observations } = await supabase
             .from('marcheur_observations')
@@ -83,82 +82,77 @@ export function useExplorationParticipants(explorationId?: string, marcheEventId
         }
       }
 
-      // === Source 2: community participants ===
-      if (marcheEventId) {
-        const { data: participations } = await supabase
-          .from('marche_participations')
-          .select('user_id')
-          .eq('marche_event_id', marcheEventId);
+      // === Source 2: community participants (via RPC to bypass RLS) ===
+      if (explorationId) {
+        // Use RPC function to get participants across all events of this exploration
+        const { data: communityUsers } = await supabase
+          .rpc('get_exploration_participants', { p_exploration_id: explorationId });
 
-        if (participations?.length) {
-          const userIds = [...new Set(participations.map(p => p.user_id))];
+        if (communityUsers?.length) {
+          const userIds = communityUsers.map((u: any) => u.user_id);
 
-          // Get profiles
-          const { data: profiles } = await supabase
-            .from('community_profiles')
-            .select('user_id, prenom, nom, avatar_url, role')
-            .in('user_id', userIds);
+          // Get all marche_event_ids for this exploration
+          const { data: events } = await supabase
+            .from('marche_events')
+            .select('id')
+            .eq('exploration_id', explorationId);
+          const eventIds = (events || []).map(e => e.id);
 
-          const profileMap = new Map(
-            (profiles || []).map(p => [p.user_id, p])
-          );
-
-          // Get media stats (photos + videos)
-          const { data: medias } = await supabase
+          // Get media stats across all events
+          const { data: medias } = eventIds.length ? await supabase
             .from('marcheur_medias')
             .select('user_id, type_media')
-            .eq('marche_event_id', marcheEventId)
+            .in('marche_event_id', eventIds)
             .eq('is_public', true)
-            .in('user_id', userIds);
+            .in('user_id', userIds) : { data: [] };
 
-          // Get audio stats
-          const { data: audios } = await supabase
+          // Get audio stats across all events
+          const { data: audios } = eventIds.length ? await supabase
             .from('marcheur_audio')
             .select('user_id')
-            .eq('marche_event_id', marcheEventId)
+            .in('marche_event_id', eventIds)
             .eq('is_public', true)
-            .in('user_id', userIds);
+            .in('user_id', userIds) : { data: [] };
 
-          // Get textes stats
-          const { data: textes } = await supabase
+          // Get textes stats across all events
+          const { data: textes } = eventIds.length ? await supabase
             .from('marcheur_textes')
             .select('user_id')
-            .eq('marche_event_id', marcheEventId)
+            .in('marche_event_id', eventIds)
             .eq('is_public', true)
-            .in('user_id', userIds);
+            .in('user_id', userIds) : { data: [] };
 
           // Aggregate per user
           const statsMap = new Map<string, { photos: number; videos: number; sons: number; textes: number }>();
-          userIds.forEach(uid => statsMap.set(uid, { photos: 0, videos: 0, sons: 0, textes: 0 }));
+          userIds.forEach((uid: string) => statsMap.set(uid, { photos: 0, videos: 0, sons: 0, textes: 0 }));
 
-          (medias || []).forEach(m => {
+          (medias || []).forEach((m: any) => {
             const s = statsMap.get(m.user_id);
             if (!s) return;
             if (m.type_media === 'photo') s.photos++;
             else if (m.type_media === 'video') s.videos++;
           });
 
-          (audios || []).forEach(a => {
+          (audios || []).forEach((a: any) => {
             const s = statsMap.get(a.user_id);
             if (s) s.sons++;
           });
 
-          (textes || []).forEach(t => {
+          (textes || []).forEach((t: any) => {
             const s = statsMap.get(t.user_id);
             if (s) s.textes++;
           });
 
-          userIds.forEach(uid => {
-            const profile = profileMap.get(uid);
-            const s = statsMap.get(uid) || { photos: 0, videos: 0, sons: 0, textes: 0 };
+          communityUsers.forEach((cu: any) => {
+            const s = statsMap.get(cu.user_id) || { photos: 0, videos: 0, sons: 0, textes: 0 };
             const total = s.photos + s.videos + s.sons + s.textes;
             results.push({
-              id: `community-${uid}`,
-              prenom: profile?.prenom || 'Marcheur',
-              nom: profile?.nom || '',
-              avatarUrl: profile?.avatar_url || undefined,
+              id: `community-${cu.user_id}`,
+              prenom: cu.prenom || 'Marcheur',
+              nom: cu.nom || '',
+              avatarUrl: cu.avatar_url || undefined,
               source: 'community',
-              role: profile?.role || 'marcheur_en_devenir',
+              role: cu.role || 'marcheur_en_devenir',
               couleur: '#10b981',
               stats: { ...s, speciesCount: 0 },
               totalContributions: total,

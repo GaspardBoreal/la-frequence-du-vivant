@@ -3750,6 +3750,16 @@ export type Database = {
           updated_at: string
         }[]
       }
+      get_exploration_participants: {
+        Args: { p_exploration_id: string }
+        Returns: {
+          avatar_url: string
+          nom: string
+          prenom: string
+          role: string
+          user_id: string
+        }[]
+      }
       get_my_admin_email_only: { Args: never; Returns: string }
       get_structured_vocabulary_data: {
         Args: { marche_id_param: string }
