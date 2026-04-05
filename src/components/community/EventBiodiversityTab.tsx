@@ -172,15 +172,35 @@ const EventBiodiversityTab: React.FC<EventBiodiversityTabProps> = ({ exploration
   const allSpeciesAsBiodiversity = useMemo((): BiodiversitySpecies[] => {
     if (!snapshots?.length) return [];
     const speciesMap = new Map<string, BiodiversitySpecies>();
+
+    // Helper to deduplicate attributions by observerName+source
+    const dedupeAttributions = (attrs: any[]): any[] => {
+      const seen = new Set<string>();
+      return attrs.filter(a => {
+        const name = (a.observerName || '').trim();
+        if (!name) return false;
+        const key = `${name}|${a.source || ''}`;
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      });
+    };
+
     snapshots.forEach(snap => {
       const speciesData = snap.species_data as any[] | null;
       if (!speciesData || !Array.isArray(speciesData)) return;
       speciesData.forEach((sp: any) => {
         const key = sp.scientificName || sp.commonName || sp.id;
         if (!key) return;
+        const spAttributions = Array.isArray(sp.attributions) ? sp.attributions : [];
         const existing = speciesMap.get(key);
         if (existing) {
           existing.observations += sp.observations || 1;
+          // Merge and deduplicate attributions
+          existing.attributions = dedupeAttributions([
+            ...(existing.attributions || []),
+            ...spAttributions,
+          ]);
         } else {
           const kingdom = sp.kingdom === 'Animalia' ? 'Animalia'
             : sp.kingdom === 'Plantae' ? 'Plantae'
@@ -195,7 +215,7 @@ const EventBiodiversityTab: React.FC<EventBiodiversityTabProps> = ({ exploration
             observations: sp.observations || 1,
             lastSeen: snap.snapshot_date || '',
             source: (sp.source as BiodiversitySpecies['source']) || 'inaturalist',
-            attributions: [],
+            attributions: dedupeAttributions(spAttributions),
           });
         }
       });

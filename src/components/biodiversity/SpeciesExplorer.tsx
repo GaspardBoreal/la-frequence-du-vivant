@@ -78,7 +78,8 @@ const SpeciesExplorer: React.FC<SpeciesExplorerProps> = ({
     };
     species.forEach(sp => {
       sp.attributions?.forEach(attr => {
-        const name = attr.observerName || 'Anonyme';
+        const name = (attr.observerName || '').trim();
+        if (!name) return; // Skip empty names
         const key = sp.source === 'ebird' ? 'eBird' : sp.source === 'inaturalist' ? 'iNaturalist' : 'gbif';
         sourceGroups[key].set(name, (sourceGroups[key].get(name) || 0) + 1);
       });
@@ -92,7 +93,13 @@ const SpeciesExplorer: React.FC<SpeciesExplorerProps> = ({
     };
   }, [species]);
 
-  const totalContributors = contributorsBySource.eBird.length + contributorsBySource.iNaturalist.length + contributorsBySource.gbif.length;
+  // Deduplicate contributors across sources by normalized name
+  const totalContributors = useMemo(() => {
+    const uniqueNames = new Set<string>();
+    [...contributorsBySource.eBird, ...contributorsBySource.iNaturalist, ...contributorsBySource.gbif]
+      .forEach(c => uniqueNames.add(c.name.toLowerCase().trim()));
+    return uniqueNames.size;
+  }, [contributorsBySource]);
 
   // Batch translations
   const speciesForTranslation = useMemo(() =>
