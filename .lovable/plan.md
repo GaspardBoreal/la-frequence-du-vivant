@@ -1,91 +1,102 @@
 
-Objectif : supprimer définitivement le faux `Tous (0)` et rendre le bloc contributeurs fiable pour tous les événements, y compris ceux dont les snapshots biodiversité historiques n’embarquent pas les `attributions`.
 
-Constat vérifié sur “La transhumance…”
-- L’exploration `48450295-ac38-4a80-bc24-6e828779a07f` a bien des participants : `2` entrées dans `marche_participations`.
-- Les `biodiversity_snapshots` de cette exploration contiennent bien des espèces, mais `0 attribution` exploitable.
-- Les `marcheur_observations` sont aussi à `0` pour cette exploration.
-- Donc le filtre actuel de `SpeciesExplorer` n’a aucune donnée source à afficher, même si l’événement a bien des contributeurs humains.
+## Rendre les contributeurs visibles et filtrables dans toutes les vues biodiversité
 
-Cause racine
-- `SpeciesExplorer` compte uniquement `species[].attributions[].observerName`.
-- Cela fonctionne pour les événements dont les snapshots sont enrichis.
-- Cela échoue pour les événements historiques ou partiellement collectés : participants présents, mais aucune attribution dans `species_data`.
-- Le composant affiche alors `Tous (0)`, ce qui est faux du point de vue événementiel et trompeur côté UX.
+### Problème
 
-Correction robuste proposée
+Les contributeurs biodiversité proviennent de deux sources distinctes :
+1. **Attributions taxonomiques** — noms d'observateurs stockés dans `species_data[].attributions` des snapshots (GBIF, iNaturalist, eBird)
+2. **Participants communautaires** — marcheurs inscrits aux événements via `marche_participations` + crew via `exploration_marcheurs`
 
-1. Séparer deux notions aujourd’hui mélangées
-- `Contributeurs biodiversité` = personnes réellement reliées à des taxons observés, donc filtrables.
-- `Participants de l’événement` = personnes présentes / contributrices au parcours, même si aucune attribution taxonomique n’est disponible.
-- Le bug vient du fait qu’on affiche un filtre taxonomique avec une sémantique “participants événement”.
+Actuellement, `SpeciesExplorer` ne connaît que la source 1. Les anciens snapshots (ex: "La transhumance") n'ont aucune attribution, donc le filtre affiche "Tous (0)" ou un badge statique "Participants (N)" non filtrable.
 
-2. Créer une résolution unifiée des contributeurs pour les vues biodiversité
-- Introduire un resolver/hook partagé qui construit :
-  - `filterableContributors` depuis `species.attributions`
-  - `fallbackEventContributors` depuis :
-    - `get_exploration_participants(...)` pour les participants communauté
-    - `exploration_marcheurs` pour l’équipe / crew
-- Déduplication par nom normalisé / identifiant stable.
+L'utilisateur veut voir **tous les contributeurs** dans un dropdown filtrable et fonctionnel, pour **tous les événements**, y compris ceux sans attributions taxonomiques.
 
-3. Faire évoluer `SpeciesExplorer` pour gérer 3 états
-- Cas A : au moins 1 contributeur biodiversité
-  - garder le dropdown actif et le vrai filtrage par espèce.
-- Cas B : 0 contributeur biodiversité mais N participants événement
-  - ne plus afficher `Tous (0)`
-  - afficher à la place un état élégant du type :
-    - `Participants (N)` ou
-    - dropdown désactivé + aide “Aucune attribution taxonomique disponible pour filtrer les espèces sur cet événement”.
-- Cas C : aucune donnée
-  - masquer complètement ce contrôle.
+### Solution
 
-4. Enrichir `EventBiodiversityTab` avec un fallback événementiel
-- Continuer à agréger les espèces depuis `biodiversity_snapshots`.
-- En parallèle, charger les contributeurs exploration (participants + crew).
-- Passer ce contexte à `SpeciesExplorer` pour qu’il sache quoi afficher même si les snapshots n’ont pas d’attributions.
-- Ne jamais attribuer artificiellement toutes les espèces à tous les participants : ce serait faux scientifiquement.
+Fusionner les deux sources dans un dropdown contributeur unifié à 3 sections :
 
-5. Appliquer la logique à toutes les vues utilisant ce moteur
-- `src/components/community/EventBiodiversityTab.tsx`
-- `src/components/biodiversity/SpeciesExplorer.tsx`
-- Vérification de compatibilité sur :
-  - `src/components/community/MarcheDetailModal.tsx`
-  - `src/components/open-data/BioDivSubSection.tsx`
-- Objectif : aucune vue ne doit plus montrer un `0` trompeur quand il existe au moins des participants événement.
-
-Option recommandée pour une cohérence complète des événements historiques
-- Ajouter ensuite un backfill ciblé des anciens `biodiversity_snapshots` sans `attributions`.
-- Cela réactivera le vrai filtrage par contributeur biodiversité sur les événements déjà collectés.
-- Mais ce backfill est un second chantier : l’app fix doit déjà corriger l’affichage sans mentir.
-
-Fichiers à modifier
-- `src/components/biodiversity/SpeciesExplorer.tsx`
-- `src/components/community/EventBiodiversityTab.tsx`
-- Éventuellement un nouveau hook/utilitaire partagé, par ex. :
-  - `src/hooks/useSpeciesContributors.ts`
-  - ou `src/utils/contributorResolver.ts`
-
-Résultat attendu
-- Plus jamais de `Tous (0)` faux sur un événement avec des participants.
-- Quand le filtrage taxonomique est réellement possible, il reste précis.
-- Quand seules les présences événementielles sont connues, l’UI reste juste, lisible et élégante.
-- Le comportement devient générique et robuste, quel que soit l’événement et l’ancienneté des snapshots.
-
-Détail technique
 ```text
-AVANT
-SpeciesExplorer
-  -> lit uniquement species.attributions
-  -> si vide => Tous (0)
-
-APRÈS
-EventBiodiversityTab
-  -> espèces depuis snapshots
-  -> contributeurs fallback depuis participants + crew
-  -> passe les 2 au SpeciesExplorer
-
-SpeciesExplorer
-  -> si attributions => filtre actif
-  -> sinon si participants => état informatif "Participants (N)"
-  -> sinon => contrôle masqué
+┌────────────────────────────────┐
+│ Tous (N)                       │
+├────────────────────────────────┤
+│ 🚶 Marcheurs (M)               │  ← participants + crew
+│   Chantal Brillet               │
+│   Gaspard Boréal                │
+├────────────────────────────────┤
+│ 🐦 eBird (X)                   │  ← attributions taxonomiques
+│   John Smith                    │
+│ 🌿 iNaturalist (Y)             │
+│   Jane Doe                      │
+│ 📊 GBIF (Z)                    │
+│   Museum XYZ                    │
+└────────────────────────────────┘
 ```
+
+- Quand on filtre sur un marcheur communautaire : toutes les espèces restent visibles (car on ne peut pas attribuer une espèce spécifique à un participant)
+- Quand on filtre sur un observateur taxonomique : filtrage classique par `attributions.observerName`
+- Le compteur total = marcheurs uniques + observateurs uniques (dédupliqués)
+
+### Modifications
+
+**1. `SpeciesExplorer.tsx`** — Ajouter une prop `eventParticipants`
+
+```ts
+interface SpeciesExplorerProps {
+  // ...existing
+  eventParticipants?: Array<{ name: string; source: 'community' | 'crew' }>;
+}
+```
+
+- Fusionner `eventParticipants` avec les contributeurs taxonomiques dans le calcul `totalContributors`
+- Ajouter une section "Marcheurs" dans le dropdown
+- Quand un participant communautaire est sélectionné, ne pas filtrer les espèces (afficher toutes) mais indiquer visuellement le participant sélectionné
+- Supprimer la prop `fallbackParticipantCount` (remplacée par `eventParticipants`)
+
+**2. `EventBiodiversityTab.tsx`** — Construire la liste `eventParticipants`
+
+- Déjà disponible via `useExplorationParticipants` + `useExplorationMarcheurs` (hooks existants)
+- Transformer en `Array<{ name: string; source: 'community' | 'crew' }>` dédupliqué
+- Passer à `SpeciesExplorer` via la nouvelle prop
+
+**3. `MarcheDetailModal.tsx`** — Passer aussi les participants
+
+- Ce composant utilise `useBiodiversityData` (edge function live) qui retourne des espèces **avec** attributions
+- Ajouter le même passage de participants pour cohérence
+- Nécessite de connaître l'`explorationId` de la marche affichée (déjà disponible dans le contexte)
+
+**4. `BioDivSubSection.tsx`** — Vérification
+
+- Utilise `biodiversityData.species` de l'edge function live qui inclut déjà les attributions
+- Pas de contexte événementiel → pas de participants communautaires à ajouter
+- Aucune modification nécessaire
+
+### Détail technique
+
+```text
+AVANT:
+  SpeciesExplorer.contributorsBySource ← species.attributions UNIQUEMENT
+  fallbackParticipantCount → badge statique non filtrable
+
+APRÈS:
+  SpeciesExplorer.contributorsBySource ← species.attributions
+  SpeciesExplorer.eventParticipants ← marcheurs + crew (nouvelle prop)
+  → dropdown unifié avec sections Marcheurs + eBird + iNaturalist + GBIF
+  → totalContributors = union des deux
+```
+
+### Comportement du filtre par participant communautaire
+
+Quand un marcheur est sélectionné et qu'il n'y a pas d'attributions taxonomiques associées, toutes les espèces restent visibles avec un bandeau contextuel : « Espèces observées lors de la participation de [Nom] ». C'est scientifiquement honnête (on ne sait pas quel marcheur a vu quelle espèce) tout en mettant en valeur la dynamique participative.
+
+### Fichiers modifiés
+- `src/components/biodiversity/SpeciesExplorer.tsx`
+- `src/components/community/EventBiodiversityTab.tsx`
+- `src/components/community/MarcheDetailModal.tsx`
+
+### Résultat attendu
+- Tous les événements affichent un dropdown contributeurs rempli
+- Les marcheurs communautaires et l'équipe sont toujours visibles
+- Le filtrage taxonomique reste précis quand les attributions existent
+- La dynamique participative est mise en valeur sur chaque événement
+
