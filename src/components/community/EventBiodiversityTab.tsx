@@ -373,7 +373,7 @@ const EventBiodiversityTab: React.FC<EventBiodiversityTabProps> = ({ exploration
               compact
               explorationId={explorationId}
               allEventMarches={allEventMarchesData}
-              fallbackParticipantCount={fallbackParticipantCount}
+              eventParticipants={eventParticipants}
             />
           </motion.div>
         )}
