@@ -1735,6 +1735,57 @@ export type Database = {
           },
         ]
       }
+      insight_cards: {
+        Row: {
+          active: boolean
+          angles: Database["public"]["Enums"]["insight_angle"][]
+          category: Database["public"]["Enums"]["insight_category"]
+          content: string
+          created_at: string
+          display_mode: string
+          event_types: Database["public"]["Enums"]["insight_event_type"][]
+          icon_name: string | null
+          id: string
+          min_level: Database["public"]["Enums"]["community_role"]
+          ordre: number
+          title: string
+          updated_at: string
+          view: string
+        }
+        Insert: {
+          active?: boolean
+          angles?: Database["public"]["Enums"]["insight_angle"][]
+          category: Database["public"]["Enums"]["insight_category"]
+          content: string
+          created_at?: string
+          display_mode?: string
+          event_types?: Database["public"]["Enums"]["insight_event_type"][]
+          icon_name?: string | null
+          id?: string
+          min_level?: Database["public"]["Enums"]["community_role"]
+          ordre?: number
+          title: string
+          updated_at?: string
+          view?: string
+        }
+        Update: {
+          active?: boolean
+          angles?: Database["public"]["Enums"]["insight_angle"][]
+          category?: Database["public"]["Enums"]["insight_category"]
+          content?: string
+          created_at?: string
+          display_mode?: string
+          event_types?: Database["public"]["Enums"]["insight_event_type"][]
+          icon_name?: string | null
+          id?: string
+          min_level?: Database["public"]["Enums"]["community_role"]
+          ordre?: number
+          title?: string
+          updated_at?: string
+          view?: string
+        }
+        Relationships: []
+      }
       kigo_entries: {
         Row: {
           created_at: string
@@ -3897,6 +3948,14 @@ export type Database = {
       crm_role: "admin" | "member" | "walker"
       etude_type: "principale" | "complementaire" | "annexe"
       exploration_type: "agroecologique" | "eco_poetique" | "eco_tourisme"
+      insight_angle: "biodiversite" | "bioacoustique" | "geopoetique"
+      insight_category:
+        | "formation"
+        | "inspiration"
+        | "experimentation"
+        | "partage"
+        | "valorisation"
+      insight_event_type: "agroecologique" | "eco_poetique" | "eco_tourisme"
       media_type: "photo" | "audio" | "video" | "document"
     }
     CompositeTypes: {
@@ -4035,6 +4094,15 @@ export const Constants = {
       crm_role: ["admin", "member", "walker"],
       etude_type: ["principale", "complementaire", "annexe"],
       exploration_type: ["agroecologique", "eco_poetique", "eco_tourisme"],
+      insight_angle: ["biodiversite", "bioacoustique", "geopoetique"],
+      insight_category: [
+        "formation",
+        "inspiration",
+        "experimentation",
+        "partage",
+        "valorisation",
+      ],
+      insight_event_type: ["agroecologique", "eco_poetique", "eco_tourisme"],
       media_type: ["photo", "audio", "video", "document"],
     },
   },
