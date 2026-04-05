@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search, X, User, Bird, TreePine, Flower, Leaf, Database, MapPin, Grid3X3, LayoutList } from 'lucide-react';
+import { Search, X, User, Bird, TreePine, Flower, Leaf, Database, MapPin, Grid3X3, LayoutList, Users } from 'lucide-react';
 import { Input } from '../ui/input';
 import { Badge } from '../ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
@@ -22,6 +22,11 @@ const isBirdSpecies = (species: BiodiversitySpecies): boolean => {
     false;
 };
 
+export interface EventParticipant {
+  name: string;
+  source: 'community' | 'crew';
+}
+
 interface SpeciesExplorerProps {
   species: BiodiversitySpecies[];
   compact?: boolean;
@@ -30,8 +35,8 @@ interface SpeciesExplorerProps {
   className?: string;
   explorationId?: string;
   allEventMarches?: SpeciesMarcheData[];
-  /** When species have no attributions, show this count as fallback participant info */
-  fallbackParticipantCount?: number;
+  /** Community/crew participants to merge into the contributor filter */
+  eventParticipants?: EventParticipant[];
 }
 
 const SpeciesExplorer: React.FC<SpeciesExplorerProps> = ({
@@ -42,7 +47,7 @@ const SpeciesExplorer: React.FC<SpeciesExplorerProps> = ({
   className = '',
   explorationId,
   allEventMarches,
-  fallbackParticipantCount = 0,
+  eventParticipants = [],
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
@@ -72,7 +77,7 @@ const SpeciesExplorer: React.FC<SpeciesExplorerProps> = ({
     return stats;
   }, [species]);
 
-  // Contributors grouped by source
+  // Contributors grouped by source (taxonomic)
   const contributorsBySource = useMemo(() => {
     const sourceGroups = {
       eBird: new Map<string, number>(),
@@ -82,7 +87,7 @@ const SpeciesExplorer: React.FC<SpeciesExplorerProps> = ({
     species.forEach(sp => {
       sp.attributions?.forEach(attr => {
         const name = (attr.observerName || '').trim();
-        if (!name) return; // Skip empty names
+        if (!name) return;
         const key = sp.source === 'ebird' ? 'eBird' : sp.source === 'inaturalist' ? 'iNaturalist' : 'gbif';
         sourceGroups[key].set(name, (sourceGroups[key].get(name) || 0) + 1);
       });
@@ -96,13 +101,33 @@ const SpeciesExplorer: React.FC<SpeciesExplorerProps> = ({
     };
   }, [species]);
 
-  // Deduplicate contributors across sources by normalized name
+  // Deduplicated marcheurs from eventParticipants
+  const uniqueMarcheurs = useMemo(() => {
+    const seen = new Set<string>();
+    return eventParticipants.filter(p => {
+      const key = p.name.toLowerCase().trim();
+      if (!key || seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+  }, [eventParticipants]);
+
+  // Total unique contributors across all sources
   const totalContributors = useMemo(() => {
     const uniqueNames = new Set<string>();
+    // Marcheurs
+    uniqueMarcheurs.forEach(m => uniqueNames.add(m.name.toLowerCase().trim()));
+    // Taxonomic observers
     [...contributorsBySource.eBird, ...contributorsBySource.iNaturalist, ...contributorsBySource.gbif]
       .forEach(c => uniqueNames.add(c.name.toLowerCase().trim()));
     return uniqueNames.size;
-  }, [contributorsBySource]);
+  }, [contributorsBySource, uniqueMarcheurs]);
+
+  // Is the selected contributor a marcheur (community/crew)?
+  const isSelectedMarcheur = useMemo(() => {
+    if (selectedContributor === 'all') return false;
+    return uniqueMarcheurs.some(m => m.name === selectedContributor);
+  }, [selectedContributor, uniqueMarcheurs]);
 
   // Batch translations
   const speciesForTranslation = useMemo(() =>
@@ -131,7 +156,9 @@ const SpeciesExplorer: React.FC<SpeciesExplorerProps> = ({
       });
     }
 
-    if (selectedContributor !== 'all') {
+    // If a marcheur is selected, show all species (can't attribute specific species)
+    // If a taxonomic observer is selected, filter by attributions
+    if (selectedContributor !== 'all' && !isSelectedMarcheur) {
       filtered = filtered.filter(s =>
         s.attributions?.some(a => (a.observerName || 'Anonyme') === selectedContributor)
       );
@@ -157,7 +184,7 @@ const SpeciesExplorer: React.FC<SpeciesExplorerProps> = ({
     }
 
     return filtered.sort((a, b) => b.observations - a.observations);
-  }, [species, selectedCategory, selectedContributor, selectedSource, hasAudioFilter, searchTerm]);
+  }, [species, selectedCategory, selectedContributor, isSelectedMarcheur, selectedSource, hasAudioFilter, searchTerm]);
 
   const gridCols = compact
     ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4'
@@ -212,6 +239,14 @@ const SpeciesExplorer: React.FC<SpeciesExplorerProps> = ({
             </Badge>
           )}
 
+          {/* Marcheur context banner */}
+          {isSelectedMarcheur && (
+            <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-primary/5 border border-primary/15 text-sm text-muted-foreground">
+              <Users className="h-4 w-4 text-primary flex-shrink-0" />
+              <span>Espèces observées lors de la participation de <strong className="text-foreground">{selectedContributor}</strong></span>
+            </div>
+          )}
+
           {/* Filter dropdowns */}
           <div className={`grid gap-3 ${compact ? 'grid-cols-2 sm:grid-cols-4' : 'grid-cols-1 md:grid-cols-2 lg:grid-cols-4'}`}>
             <Select value={selectedCategory} onValueChange={v => setSelectedCategory(v)}>
@@ -244,7 +279,7 @@ const SpeciesExplorer: React.FC<SpeciesExplorerProps> = ({
               </SelectContent>
             </Select>
 
-            {/* Contributor filter: 3 states */}
+            {/* Unified contributor filter */}
             {totalContributors > 0 ? (
               <Select value={selectedContributor} onValueChange={(v: any) => setSelectedContributor(v)}>
                 <SelectTrigger>
@@ -256,6 +291,26 @@ const SpeciesExplorer: React.FC<SpeciesExplorerProps> = ({
                 </SelectTrigger>
                 <SelectContent className="max-h-80">
                   <SelectItem value="all" className="font-medium">Tous ({totalContributors})</SelectItem>
+
+                  {/* Marcheurs section */}
+                  {uniqueMarcheurs.length > 0 && (
+                    <>
+                      <div className="px-2 py-1.5 text-xs font-semibold text-emerald-600 bg-emerald-50 dark:bg-emerald-950 dark:text-emerald-400 border-b flex items-center gap-1.5">
+                        <Users className="h-3 w-3" />
+                        Marcheurs ({uniqueMarcheurs.length})
+                      </div>
+                      {uniqueMarcheurs.map(m => (
+                        <SelectItem key={`marcheur-${m.name}`} value={m.name} className="pl-6">
+                          <span className="truncate">{m.name}</span>
+                          <Badge variant="outline" className="ml-2 text-emerald-600 border-emerald-200 text-[10px]">
+                            {m.source === 'crew' ? 'équipe' : 'participant'}
+                          </Badge>
+                        </SelectItem>
+                      ))}
+                    </>
+                  )}
+
+                  {/* eBird section */}
                   {contributorsBySource.eBird.length > 0 && (
                     <>
                       <div className="px-2 py-1.5 text-xs font-semibold text-blue-600 bg-blue-50 dark:bg-blue-950 dark:text-blue-400 border-b">
@@ -269,6 +324,8 @@ const SpeciesExplorer: React.FC<SpeciesExplorerProps> = ({
                       ))}
                     </>
                   )}
+
+                  {/* iNaturalist section */}
                   {contributorsBySource.iNaturalist.length > 0 && (
                     <>
                       <div className="px-2 py-1.5 text-xs font-semibold text-green-600 bg-green-50 dark:bg-green-950 dark:text-green-400 border-b">
@@ -282,6 +339,8 @@ const SpeciesExplorer: React.FC<SpeciesExplorerProps> = ({
                       ))}
                     </>
                   )}
+
+                  {/* GBIF section */}
                   {contributorsBySource.gbif.length > 0 && (
                     <>
                       <div className="px-2 py-1.5 text-xs font-semibold text-orange-600 bg-orange-50 dark:bg-orange-950 dark:text-orange-400 border-b">
@@ -297,11 +356,6 @@ const SpeciesExplorer: React.FC<SpeciesExplorerProps> = ({
                   )}
                 </SelectContent>
               </Select>
-            ) : fallbackParticipantCount > 0 ? (
-              <div className="flex items-center gap-2 h-10 px-3 rounded-md border border-border bg-muted/30 text-sm text-muted-foreground">
-                <User className="h-4 w-4 flex-shrink-0" />
-                <span className="truncate">Participants ({fallbackParticipantCount})</span>
-              </div>
             ) : null}
           </div>
 
