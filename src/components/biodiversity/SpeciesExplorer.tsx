@@ -156,9 +156,8 @@ const SpeciesExplorer: React.FC<SpeciesExplorerProps> = ({
       });
     }
 
-    // If a marcheur is selected, show all species (can't attribute specific species)
-    // If a taxonomic observer is selected, filter by attributions
-    if (selectedContributor !== 'all' && !isSelectedMarcheur) {
+    // Filter by contributor (same logic for marcheurs and taxonomic observers)
+    if (selectedContributor !== 'all') {
       filtered = filtered.filter(s =>
         s.attributions?.some(a => (a.observerName || 'Anonyme') === selectedContributor)
       );
@@ -243,7 +242,12 @@ const SpeciesExplorer: React.FC<SpeciesExplorerProps> = ({
           {isSelectedMarcheur && (
             <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-primary/5 border border-primary/15 text-sm text-muted-foreground">
               <Users className="h-4 w-4 text-primary flex-shrink-0" />
-              <span>Espèces observées lors de la participation de <strong className="text-foreground">{selectedContributor}</strong></span>
+              <span>
+                {filteredSpecies.length > 0
+                  ? <>Espèces identifiées par <strong className="text-foreground">{selectedContributor}</strong></>
+                  : <>Aucune identification taxonomique rattachée à <strong className="text-foreground">{selectedContributor}</strong></>
+                }
+              </span>
             </div>
           )}
 
