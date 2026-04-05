@@ -30,6 +30,8 @@ interface SpeciesExplorerProps {
   className?: string;
   explorationId?: string;
   allEventMarches?: SpeciesMarcheData[];
+  /** When species have no attributions, show this count as fallback participant info */
+  fallbackParticipantCount?: number;
 }
 
 const SpeciesExplorer: React.FC<SpeciesExplorerProps> = ({
@@ -40,6 +42,7 @@ const SpeciesExplorer: React.FC<SpeciesExplorerProps> = ({
   className = '',
   explorationId,
   allEventMarches,
+  fallbackParticipantCount = 0,
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
@@ -241,59 +244,65 @@ const SpeciesExplorer: React.FC<SpeciesExplorerProps> = ({
               </SelectContent>
             </Select>
 
-            <Select value={selectedContributor} onValueChange={(v: any) => setSelectedContributor(v)}>
-              <SelectTrigger>
-                <div className="flex items-center gap-2 min-w-0">
-                  <User className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-                  <div className="truncate flex-1"><SelectValue placeholder="Contributeurs" /></div>
-                  {totalContributors > 0 && (
+            {/* Contributor filter: 3 states */}
+            {totalContributors > 0 ? (
+              <Select value={selectedContributor} onValueChange={(v: any) => setSelectedContributor(v)}>
+                <SelectTrigger>
+                  <div className="flex items-center gap-2 min-w-0">
+                    <User className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                    <div className="truncate flex-1"><SelectValue placeholder="Contributeurs" /></div>
                     <Badge variant="secondary" className="text-xs flex-shrink-0">{totalContributors}</Badge>
+                  </div>
+                </SelectTrigger>
+                <SelectContent className="max-h-80">
+                  <SelectItem value="all" className="font-medium">Tous ({totalContributors})</SelectItem>
+                  {contributorsBySource.eBird.length > 0 && (
+                    <>
+                      <div className="px-2 py-1.5 text-xs font-semibold text-blue-600 bg-blue-50 dark:bg-blue-950 dark:text-blue-400 border-b">
+                        eBird ({contributorsBySource.eBird.length})
+                      </div>
+                      {contributorsBySource.eBird.map(c => (
+                        <SelectItem key={`ebird-${c.name}`} value={c.name} className="pl-6">
+                          <span className="truncate">{c.name}</span>
+                          <Badge variant="outline" className="ml-2 text-blue-600 border-blue-200">{c.count}</Badge>
+                        </SelectItem>
+                      ))}
+                    </>
                   )}
-                </div>
-              </SelectTrigger>
-              <SelectContent className="max-h-80">
-                <SelectItem value="all" className="font-medium">Tous ({totalContributors})</SelectItem>
-                {contributorsBySource.eBird.length > 0 && (
-                  <>
-                    <div className="px-2 py-1.5 text-xs font-semibold text-blue-600 bg-blue-50 dark:bg-blue-950 dark:text-blue-400 border-b">
-                      eBird ({contributorsBySource.eBird.length})
-                    </div>
-                    {contributorsBySource.eBird.map(c => (
-                      <SelectItem key={`ebird-${c.name}`} value={c.name} className="pl-6">
-                        <span className="truncate">{c.name}</span>
-                        <Badge variant="outline" className="ml-2 text-blue-600 border-blue-200">{c.count}</Badge>
-                      </SelectItem>
-                    ))}
-                  </>
-                )}
-                {contributorsBySource.iNaturalist.length > 0 && (
-                  <>
-                    <div className="px-2 py-1.5 text-xs font-semibold text-green-600 bg-green-50 dark:bg-green-950 dark:text-green-400 border-b">
-                      iNaturalist ({contributorsBySource.iNaturalist.length})
-                    </div>
-                    {contributorsBySource.iNaturalist.map(c => (
-                      <SelectItem key={`inat-${c.name}`} value={c.name} className="pl-6">
-                        <span className="truncate">{c.name}</span>
-                        <Badge variant="outline" className="ml-2 text-green-600 border-green-200">{c.count}</Badge>
-                      </SelectItem>
-                    ))}
-                  </>
-                )}
-                {contributorsBySource.gbif.length > 0 && (
-                  <>
-                    <div className="px-2 py-1.5 text-xs font-semibold text-orange-600 bg-orange-50 dark:bg-orange-950 dark:text-orange-400 border-b">
-                      GBIF ({contributorsBySource.gbif.length})
-                    </div>
-                    {contributorsBySource.gbif.map(c => (
-                      <SelectItem key={`gbif-${c.name}`} value={c.name} className="pl-6">
-                        <span className="truncate">{c.name}</span>
-                        <Badge variant="outline" className="ml-2 text-orange-600 border-orange-200">{c.count}</Badge>
-                      </SelectItem>
-                    ))}
-                  </>
-                )}
-              </SelectContent>
-            </Select>
+                  {contributorsBySource.iNaturalist.length > 0 && (
+                    <>
+                      <div className="px-2 py-1.5 text-xs font-semibold text-green-600 bg-green-50 dark:bg-green-950 dark:text-green-400 border-b">
+                        iNaturalist ({contributorsBySource.iNaturalist.length})
+                      </div>
+                      {contributorsBySource.iNaturalist.map(c => (
+                        <SelectItem key={`inat-${c.name}`} value={c.name} className="pl-6">
+                          <span className="truncate">{c.name}</span>
+                          <Badge variant="outline" className="ml-2 text-green-600 border-green-200">{c.count}</Badge>
+                        </SelectItem>
+                      ))}
+                    </>
+                  )}
+                  {contributorsBySource.gbif.length > 0 && (
+                    <>
+                      <div className="px-2 py-1.5 text-xs font-semibold text-orange-600 bg-orange-50 dark:bg-orange-950 dark:text-orange-400 border-b">
+                        GBIF ({contributorsBySource.gbif.length})
+                      </div>
+                      {contributorsBySource.gbif.map(c => (
+                        <SelectItem key={`gbif-${c.name}`} value={c.name} className="pl-6">
+                          <span className="truncate">{c.name}</span>
+                          <Badge variant="outline" className="ml-2 text-orange-600 border-orange-200">{c.count}</Badge>
+                        </SelectItem>
+                      ))}
+                    </>
+                  )}
+                </SelectContent>
+              </Select>
+            ) : fallbackParticipantCount > 0 ? (
+              <div className="flex items-center gap-2 h-10 px-3 rounded-md border border-border bg-muted/30 text-sm text-muted-foreground">
+                <User className="h-4 w-4 flex-shrink-0" />
+                <span className="truncate">Participants ({fallbackParticipantCount})</span>
+              </div>
+            ) : null}
           </div>
 
           {/* Results count */}

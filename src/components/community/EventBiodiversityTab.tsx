@@ -8,6 +8,8 @@ import { BiodiversitySpecies } from '@/types/biodiversity';
 import SpeciesExplorer from '@/components/biodiversity/SpeciesExplorer';
 import BiodiversityRevealAnimation from '@/components/community/BiodiversityRevealAnimation';
 import { useTriggerBiodiversityCollection } from '@/hooks/useTriggerBiodiversityCollection';
+import { useExplorationParticipants } from '@/hooks/useExplorationParticipants';
+import { useExplorationMarcheurs } from '@/hooks/useExplorationMarcheurs';
 import type { SpeciesMarcheData } from '@/hooks/useSpeciesMarches';
 
 type SubTab = 'synthese' | 'taxons' | 'analyse';
@@ -53,6 +55,17 @@ const EventBiodiversityTab: React.FC<EventBiodiversityTabProps> = ({ exploration
   const [revealActive, setRevealActive] = useState(false);
 
   const collectionMutation = useTriggerBiodiversityCollection();
+
+  // Fetch crew + community participants for fallback contributor count
+  const { data: participants } = useExplorationParticipants(explorationId, marcheEventId);
+  const { data: marcheurs } = useExplorationMarcheurs(explorationId);
+
+  const fallbackParticipantCount = useMemo(() => {
+    const names = new Set<string>();
+    (participants || []).forEach(p => names.add(`${p.prenom} ${p.nom}`.trim().toLowerCase()));
+    (marcheurs || []).forEach(m => names.add(`${m.prenom} ${m.nom}`.trim().toLowerCase()));
+    return names.size;
+  }, [participants, marcheurs]);
 
   // Check current user's community role
   const { data: userProfile } = useQuery({
@@ -345,6 +358,7 @@ const EventBiodiversityTab: React.FC<EventBiodiversityTabProps> = ({ exploration
               compact
               explorationId={explorationId}
               allEventMarches={allEventMarchesData}
+              fallbackParticipantCount={fallbackParticipantCount}
             />
           </motion.div>
         )}
