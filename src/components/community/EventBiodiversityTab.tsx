@@ -8,6 +8,8 @@ import { BiodiversitySpecies } from '@/types/biodiversity';
 import SpeciesExplorer from '@/components/biodiversity/SpeciesExplorer';
 import BiodiversityRevealAnimation from '@/components/community/BiodiversityRevealAnimation';
 import { useTriggerBiodiversityCollection } from '@/hooks/useTriggerBiodiversityCollection';
+import { useExplorationParticipants } from '@/hooks/useExplorationParticipants';
+import { useExplorationMarcheurs } from '@/hooks/useExplorationMarcheurs';
 import type { SpeciesMarcheData } from '@/hooks/useSpeciesMarches';
 
 type SubTab = 'synthese' | 'taxons' | 'analyse';
