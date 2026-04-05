@@ -30,6 +30,8 @@ interface SpeciesExplorerProps {
   className?: string;
   explorationId?: string;
   allEventMarches?: SpeciesMarcheData[];
+  /** When species have no attributions, show this count as fallback participant info */
+  fallbackParticipantCount?: number;
 }
 
 const SpeciesExplorer: React.FC<SpeciesExplorerProps> = ({
@@ -40,6 +42,7 @@ const SpeciesExplorer: React.FC<SpeciesExplorerProps> = ({
   className = '',
   explorationId,
   allEventMarches,
+  fallbackParticipantCount = 0,
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
