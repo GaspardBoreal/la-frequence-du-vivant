@@ -56,6 +56,17 @@ const EventBiodiversityTab: React.FC<EventBiodiversityTabProps> = ({ exploration
 
   const collectionMutation = useTriggerBiodiversityCollection();
 
+  // Fetch crew + community participants for fallback contributor count
+  const { data: participants } = useExplorationParticipants(explorationId, marcheEventId);
+  const { data: marcheurs } = useExplorationMarcheurs(explorationId);
+
+  const fallbackParticipantCount = useMemo(() => {
+    const names = new Set<string>();
+    (participants || []).forEach(p => names.add(`${p.prenom} ${p.nom}`.trim().toLowerCase()));
+    (marcheurs || []).forEach(m => names.add(`${m.prenom} ${m.nom}`.trim().toLowerCase()));
+    return names.size;
+  }, [participants, marcheurs]);
+
   // Check current user's community role
   const { data: userProfile } = useQuery({
     queryKey: ['current-user-community-role'],
