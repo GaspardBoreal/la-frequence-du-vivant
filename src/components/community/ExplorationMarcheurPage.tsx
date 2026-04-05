@@ -75,6 +75,21 @@ const ExplorationMarcheurPage: React.FC = () => {
   });
   const userId = session?.user?.id;
 
+  // Get community profile for level
+  const { data: communityProfile } = useQuery({
+    queryKey: ['community-profile-level', userId],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('community_profiles')
+        .select('role')
+        .eq('user_id', userId!)
+        .single();
+      return data;
+    },
+    enabled: !!userId,
+  });
+  const userLevel = (communityProfile?.role as any) || 'marcheur';
+
   // Resolve exploration_id from marche_event if needed
   const { data: resolvedExplorationId } = useQuery({
     queryKey: ['resolve-exploration', directMarcheEventId],
@@ -377,6 +392,16 @@ const ExplorationMarcheurPage: React.FC = () => {
               <EventBiodiversityTab
                 explorationId={effectiveExplorationId || undefined}
                 marcheEventId={marcheEventId || undefined}
+              />
+            </motion.div>
+          )}
+
+          {activeGlobalTab === 'apprendre' && (
+            <motion.div key="apprendre" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+              <ApprendreTab
+                userLevel={userLevel}
+                eventType={null}
+                explorationId={effectiveExplorationId || undefined}
               />
             </motion.div>
           )}
