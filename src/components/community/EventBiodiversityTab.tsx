@@ -6,6 +6,9 @@ import { Bird, TreePine, Leaf, Bug, Layers, Sparkles } from 'lucide-react';
 import { useAnimatedCounter } from '@/hooks/useAnimatedCounter';
 import { BiodiversitySpecies } from '@/types/biodiversity';
 import SpeciesExplorer from '@/components/biodiversity/SpeciesExplorer';
+import InsightCardBanner from '@/components/community/insights/InsightCardBanner';
+import { useInsightCards } from '@/hooks/useInsightCards';
+import type { CommunityRoleKey } from '@/hooks/useCommunityProfile';
 import BiodiversityRevealAnimation from '@/components/community/BiodiversityRevealAnimation';
 import { useTriggerBiodiversityCollection } from '@/hooks/useTriggerBiodiversityCollection';
 import { useExplorationParticipants } from '@/hooks/useExplorationParticipants';
@@ -98,6 +101,16 @@ const EventBiodiversityTab: React.FC<EventBiodiversityTabProps> = ({ exploration
   });
 
   const canReveal = userProfile?.role === 'ambassadeur' || userProfile?.role === 'sentinelle';
+  const userLevel = (userProfile?.role as CommunityRoleKey) || 'marcheur';
+
+  // Insight cards for contextual banners
+  const { cards: insightCards } = useInsightCards({
+    userLevel,
+    eventType: null,
+    angle: 'biodiversite',
+    view: 'empreinte',
+    displayMode: 'card',
+  });
 
   const handleReveal = useCallback(async () => {
     if (!explorationId || revealActive) return;
