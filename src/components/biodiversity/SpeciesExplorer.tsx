@@ -183,7 +183,7 @@ const SpeciesExplorer: React.FC<SpeciesExplorerProps> = ({
     }
 
     return filtered.sort((a, b) => b.observations - a.observations);
-  }, [species, selectedCategory, selectedContributor, isSelectedMarcheur, selectedSource, hasAudioFilter, searchTerm]);
+  }, [species, selectedCategory, selectedContributor, selectedSource, hasAudioFilter, searchTerm]);
 
   const gridCols = compact
     ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4'
