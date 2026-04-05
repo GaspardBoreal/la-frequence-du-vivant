@@ -1,78 +1,83 @@
 
+Objectif: corriger le vrai bug visible sur `/marches-du-vivant/mon-espace/exploration/607a0ae3-f843-42e8-a29b-1ec422957e9f`, de façon robuste dans toutes les vues qui utilisent ce moteur de filtres.
 
-## Corriger l'affichage des marcheurs (0 au lieu de 2+)
+Constat rigoureux
+- Le problème affiché à l’écran n’est pas l’onglet `Marcheurs`.
+- Le `Tous (0)` visible est le filtre contributeurs de `SpeciesExplorer`, rendu dans `Empreinte > Taxons observés`.
+- La fonction SQL `get_exploration_participants` et le hook `useExplorationParticipants` concernent l’onglet `Marcheurs`, pas ce sélecteur.
+- Dans la base, les snapshots de cette exploration contiennent bien des attributions:
+  - contributeurs distincts détectés: `2`
+  - noms trouvés: `Chantal Brillet`, `Gaspard Boréal`
+- Donc le bug est côté transformation frontend, pas côté données source.
 
-### Cause racine
+Cause racine
+- `SpeciesExplorer.tsx` calcule `totalContributors` uniquement depuis `species[].attributions`.
+- Dans `src/components/community/EventBiodiversityTab.tsx`, la liste `allSpeciesAsBiodiversity` est reconstruite depuis `snapshot.species_data`.
+- Mais chaque espèce est créée avec `attributions: []`.
+- Résultat:
+  - `SpeciesExplorer` reçoit bien 21 espèces
+  - mais 0 attribution sur chacune
+  - donc le filtre affiche `Tous (0)` et aucune option contributrice
+- Ce bug est structurel: toute vue qui reconstruit des `BiodiversitySpecies` sans recopier `attributions` cassera ce filtre.
 
-Le hook `useExplorationParticipants` interroge `marche_participations` puis `community_profiles` côté client. Les deux tables ont des politiques RLS restrictives :
+Correction proposée
+1. Corriger `EventBiodiversityTab.tsx`
+- Lors de l’agrégation de `species_data`, recopier et fusionner les `attributions` de chaque espèce.
+- Dédupliquer proprement les attributions par combinaison stable, par exemple:
+  - `observerName`
+  - `source`
+  - `originalUrl`
+  - `date`
+- Conserver aussi les autres champs utiles déjà fournis (`observerInstitution`, `locationName`, `exactLatitude`, etc.).
 
-- `marche_participations` : SELECT uniquement pour les co-participants du même événement + admins
-- `community_profiles` : SELECT uniquement pour son propre profil + co-participants + admins
+2. Rendre l’agrégation robuste
+- Quand une même espèce apparaît sur plusieurs marches, agréger:
+  - `observations`
+  - `photos`
+  - `attributions`
+- Ne pas écraser les anciennes attributions lors d’un merge.
+- Garder la clé espèce cohérente avec le reste du projet:
+  - priorité `scientificName`
+  - fallback `commonName` / `id` seulement si nécessaire
 
-Résultat : tout utilisateur qui n'est pas lui-même participant de cet événement voit **0 marcheurs**, même s'il est connecté.
+3. Durcir `SpeciesExplorer.tsx`
+- Ignorer les attributions vides ou invalides.
+- Calculer les contributeurs uniques sur base normalisée:
+  - trim
+  - fallback `Anonyme` seulement si aucun nom
+- Éviter les doublons inter-sources si même nom répété plusieurs fois pour une espèce.
+- Ainsi, même si une vue fournit des attributions partielles, le compteur reste fiable.
 
-### Solution
+4. Vérifier toutes les vues qui utilisent `SpeciesExplorer`
+- `src/components/community/EventBiodiversityTab.tsx`
+- `src/components/community/MarcheDetailModal.tsx`
+- `src/components/open-data/BioDivSubSection.tsx`
+- Les deux dernières consomment déjà `biodiversityData.species` issu de l’edge function, donc elles devraient rester correctes.
+- Le correctif principal est donc sur la vue Empreinte, plus un durcissement générique dans `SpeciesExplorer`.
 
-Créer une **fonction RPC `SECURITY DEFINER`** qui retourne les participants d'une exploration en contournant les RLS de manière contrôlée. Le hook appellera `.rpc()` au lieu de faire des requêtes directes.
+Résultat attendu
+- Sur cette exploration, le filtre contributeurs affichera au minimum `Tous (2)`.
+- Les options incluront les contributeurs réellement présents dans les snapshots.
+- Le comportement restera cohérent entre:
+  - Empreinte > Taxons observés
+  - détail d’une marche
+  - vues open-data utilisant `SpeciesExplorer`
 
-### Détail technique
-
-**1. Migration SQL** — Créer la fonction `get_exploration_participants(p_exploration_id uuid)`
-
-```sql
-CREATE OR REPLACE FUNCTION public.get_exploration_participants(p_exploration_id uuid)
-RETURNS TABLE (
-  user_id uuid,
-  prenom text,
-  nom text,
-  avatar_url text,
-  role text
-)
-LANGUAGE sql
-STABLE
-SECURITY DEFINER
-SET search_path = public
-AS $$
-  SELECT DISTINCT
-    cp.user_id,
-    cp.prenom,
-    cp.nom,
-    cp.avatar_url,
-    cp.role::text
-  FROM marche_participations mp
-  JOIN marche_events me ON me.id = mp.marche_event_id
-  JOIN community_profiles cp ON cp.user_id = mp.user_id
-  WHERE me.exploration_id = p_exploration_id;
-$$;
+Détail technique
+```text
+biodiversity_snapshots.species_data
+  -> EventBiodiversityTab(allSpeciesAsBiodiversity)
+      AVANT: attributions = []
+      APRÈS: fusion + déduplication des attributions
+  -> SpeciesExplorer
+      totalContributors = unique(species.attributions.observerName)
 ```
 
-**2. Modifier `useExplorationParticipants.ts`** — Source 2 (community participants)
+Fichiers à modifier
+- `src/components/community/EventBiodiversityTab.tsx`
+- `src/components/biodiversity/SpeciesExplorer.tsx`
 
-Remplacer les requêtes directes sur `marche_participations` + `community_profiles` par un appel RPC :
-
-```ts
-const { data: communityUsers } = await supabase
-  .rpc('get_exploration_participants', { p_exploration_id: explorationId });
-```
-
-Puis pour les stats média/audio/textes, récupérer tous les `marche_event_id` de l'exploration via `marche_events` (table publique en SELECT), et interroger les tables `marcheur_medias`, `marcheur_audio`, `marcheur_textes` avec ces IDs.
-
-**3. Aussi récupérer les marche_event_ids pour les stats**
-
-```ts
-const { data: events } = await supabase
-  .from('marche_events')
-  .select('id')
-  .eq('exploration_id', explorationId);
-const eventIds = (events || []).map(e => e.id);
-```
-
-Puis utiliser `.in('marche_event_id', eventIds)` pour les requêtes médias (au lieu d'un seul `marcheEventId`).
-
-### Impact
-
-- `MarcheursTab` affichera les 2+ participants correctement
-- Fonctionne pour les utilisateurs connectés non-participants et même potentiellement les visiteurs
-- Les tables `marcheur_medias`, `marcheur_audio`, `marcheur_textes` ont des politiques SELECT publiques (filtré par `is_public = true`) — pas de blocage RLS
-- Aucune modification de composant UI nécessaire, uniquement le hook et la migration
-
+Points de vigilance
+- Ne pas réutiliser le fix RPC participants pour ce bug: ce serait corriger la mauvaise couche.
+- Ne pas compter plusieurs fois le même contributeur juste parce qu’il a plusieurs observations sur une même espèce.
+- Ne pas casser les vues où `SpeciesExplorer` reçoit déjà des attributions valides.
