@@ -79,3 +79,6 @@ verify_jwt = false
 
 [functions.quiz-companion-chat]
 verify_jwt = false
+
+[functions.generate-contextual-insights]
+verify_jwt = false
