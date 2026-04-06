@@ -21,6 +21,7 @@ import WordExportPreview from '@/components/admin/WordExportPreview';
 import EpubExportPanel from '@/components/admin/EpubExportPanel';
 import PdfExportPanel from '@/components/admin/PdfExportPanel';
 import EditorExportPanel from '@/components/admin/EditorExportPanel';
+import EventExportPanel from '@/components/admin/EventExportPanel';
 import { Input } from '@/components/ui/input';
 interface Exploration {
   id: string;
