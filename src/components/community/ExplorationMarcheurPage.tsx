@@ -210,7 +210,7 @@ const ExplorationMarcheurPage: React.FC = () => {
         <div className="max-w-4xl mx-auto px-4 py-3">
           <div className="flex items-center gap-3">
             <button
-              onClick={() => navigate('/marches-du-vivant/mon-espace')}
+              onClick={() => navigate('/marches-du-vivant/mon-espace?tab=carnet')}
               className="w-8 h-8 rounded-full bg-muted flex items-center justify-center hover:bg-muted/80 transition-colors"
             >
               <ArrowLeft className="w-4 h-4 text-foreground" />
