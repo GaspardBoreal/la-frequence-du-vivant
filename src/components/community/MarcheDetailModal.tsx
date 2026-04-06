@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useActivityTracker } from '@/hooks/useActivityTracker';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -183,8 +184,14 @@ export const VoirTab: React.FC<{ marcheId: string; userId: string; marcheEventId
             onFilesSelected={(files, isPublic) => {
               const photos = files.filter(f => f.type.startsWith('image/'));
               const videos = files.filter(f => f.type.startsWith('video/'));
-              if (photos.length) uploadMedias.mutate({ files: photos, marcheEventId, isPublic, typeMedia: 'photo', marcheId: activeMarcheId });
-              if (videos.length) uploadMedias.mutate({ files: videos, marcheEventId, isPublic, typeMedia: 'video', marcheId: activeMarcheId });
+              if (photos.length) {
+                uploadMedias.mutate({ files: photos, marcheEventId, isPublic, typeMedia: 'photo', marcheId: activeMarcheId });
+                trackActivity('media_upload', 'photo', { marcheEventId, metadata: { count: photos.length } });
+              }
+              if (videos.length) {
+                uploadMedias.mutate({ files: videos, marcheEventId, isPublic, typeMedia: 'video', marcheId: activeMarcheId });
+                trackActivity('media_upload', 'video', { marcheEventId, metadata: { count: videos.length } });
+              }
             }}
           />
         </motion.div>
@@ -778,6 +785,21 @@ const MarcheDetailModal: React.FC<MarcheDetailModalProps> = ({
 }) => {
   const [activeTab, setActiveTab] = useState<TabKey>('voir');
   const [activeStepIndex, setActiveStepIndex] = useState(0);
+  const { trackActivity } = useActivityTracker();
+
+  // Track marche view on open
+  useEffect(() => {
+    if (open && marcheEventId) {
+      trackActivity('marche_view', `marche:${marcheEventId}`, { marcheEventId });
+    }
+  }, [open, marcheEventId]);
+
+  // Track tab switches inside marche modal
+  useEffect(() => {
+    if (open) {
+      trackActivity('tab_switch', `tab:marche:${activeTab}`, { marcheEventId });
+    }
+  }, [activeTab, open]);
 
   const { data: explorationMarches } = useQuery({
     queryKey: ['marche-detail-steps', marcheEventId],

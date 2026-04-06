@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
+import { useActivityTracker } from '@/hooks/useActivityTracker';
 import { Radar, Brain, Volume2, Flower2, Compass, CloudSun, Lock } from 'lucide-react';
 import { CommunityRoleKey } from '@/hooks/useCommunityProfile';
 import ZonesTab from './ZonesTab';
@@ -40,6 +41,13 @@ interface OutilsTabProps {
 const OutilsTab: React.FC<OutilsTabProps> = ({ role, userId }) => {
   const [activeTool, setActiveTool] = useState<string | null>(null);
   const userRank = ROLE_RANK[role];
+  const { trackActivity } = useActivityTracker();
+
+  useEffect(() => {
+    if (activeTool) {
+      trackActivity('tool_use', `outil:${activeTool}`);
+    }
+  }, [activeTool]);
 
   if (activeTool) {
     return (
