@@ -428,6 +428,7 @@ export const EcouterTab: React.FC<{ marcheId: string; userId: string; marcheEven
 
 // ─── Lire Tab ───
 export const LireTab: React.FC<{ userId: string; marcheEventId: string; activeMarcheId?: string }> = ({ userId, marcheEventId, activeMarcheId }) => {
+  const { trackActivity } = useActivityTracker();
   const [sort, setSort] = useState<'desc' | 'asc'>('asc');
   const [showNew, setShowNew] = useState(false);
   const [newTitre, setNewTitre] = useState('');
