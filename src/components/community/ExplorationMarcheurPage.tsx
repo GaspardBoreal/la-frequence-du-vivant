@@ -235,8 +235,8 @@ const ExplorationMarcheurPage: React.FC = () => {
         </div>
 
         {/* Global Tabs */}
-        <div className="max-w-4xl mx-auto px-4">
-          <div className="flex border-b border-border -mb-px">
+        <div className="max-w-4xl mx-auto">
+          <div className="flex overflow-x-auto scrollbar-hide border-b border-border -mb-px px-3">
             {globalTabs.map(tab => {
               const Icon = tab.icon;
               const isActive = activeGlobalTab === tab.key;
@@ -244,7 +244,7 @@ const ExplorationMarcheurPage: React.FC = () => {
                 <button
                   key={tab.key}
                   onClick={() => setActiveGlobalTab(tab.key)}
-                  className={`flex items-center gap-1.5 px-4 py-2.5 text-xs font-medium transition-colors relative ${
+                  className={`flex items-center gap-1 px-2.5 py-2.5 text-xs font-medium transition-colors relative whitespace-nowrap shrink-0 ${
                     isActive
                       ? 'text-emerald-600 dark:text-emerald-400'
                       : 'text-muted-foreground hover:text-foreground'
@@ -255,7 +255,7 @@ const ExplorationMarcheurPage: React.FC = () => {
                   {isActive && (
                     <motion.div
                       layoutId="global-tab-indicator"
-                      className="absolute bottom-0 left-2 right-2 h-0.5 bg-emerald-500 dark:bg-emerald-400 rounded-full"
+                      className="absolute bottom-0 left-1 right-1 h-0.5 bg-emerald-500 dark:bg-emerald-400 rounded-full"
                     />
                   )}
                 </button>
