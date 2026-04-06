@@ -68,7 +68,7 @@ const MarchesDuVivantMonEspace = () => {
   // Track session start
   useEffect(() => {
     if (user && profile) {
-      trackActivity('session_start', 'mon-espace', {
+      trackActivity(user.id, 'session_start', 'mon-espace', {
         metadata: { role: profile.role },
       });
     }
@@ -77,7 +77,7 @@ const MarchesDuVivantMonEspace = () => {
   // Track tab switches
   useEffect(() => {
     if (user && profile) {
-      trackActivity('tab_switch', `tab:mon-espace:${activeTab}`);
+      trackActivity(user.id, 'tab_switch', `tab:mon-espace:${activeTab}`);
     }
   }, [activeTab, user?.id]);
 

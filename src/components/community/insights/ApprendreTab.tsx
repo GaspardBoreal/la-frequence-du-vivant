@@ -37,8 +37,8 @@ const ApprendreTab: React.FC<ApprendreTabProps> = ({ userLevel, eventType, explo
 
   const handleAngleChange = useCallback((angle: InsightAngle) => {
     setActiveAngle(angle);
-    trackActivity('tab_switch', `tab:apprendre:${angle}`, { explorationId });
-  }, [trackActivity, explorationId]);
+    trackActivity(userId, 'tab_switch', `tab:apprendre:${angle}`, { explorationId });
+  }, [trackActivity, explorationId, userId]);
 
   const { cards, byCategory, isLoading } = useInsightCards({
     userLevel,
