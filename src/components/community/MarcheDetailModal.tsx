@@ -467,6 +467,7 @@ export const LireTab: React.FC<{ userId: string; marcheEventId: string; activeMa
       isPublic: newIsPublic,
       marcheId: activeMarcheId,
     });
+    trackActivity('media_upload', 'text', { marcheEventId, metadata: { type: newType } });
     setNewTitre('');
     setNewContenu('');
     setShowNew(false);
