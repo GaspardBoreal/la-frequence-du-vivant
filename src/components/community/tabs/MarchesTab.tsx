@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
-import { motion } from 'framer-motion';
-import { Sparkles, MapPin, CheckCircle2, QrCode, ChevronRight, Compass, Footprints, Users, Calendar } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Sparkles, MapPin, CheckCircle2, QrCode, ChevronRight, Compass, Footprints, Users, Calendar, ChevronDown } from 'lucide-react';
+import PastEventExpandedView from './PastEventExpandedView';
 import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
 import { format, differenceInCalendarDays, formatDistanceToNow } from 'date-fns';
