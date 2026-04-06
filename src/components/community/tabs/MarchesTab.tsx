@@ -1,23 +1,37 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { motion } from 'framer-motion';
-import { Sparkles, MapPin, CheckCircle2, Clock, QrCode, ChevronRight, Compass } from 'lucide-react';
+import { Sparkles, MapPin, CheckCircle2, QrCode, ChevronRight, Compass, Footprints, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
-import { format, differenceInCalendarDays } from 'date-fns';
+import { format, differenceInCalendarDays, formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useQueryClient } from '@tanstack/react-query';
 import { stripHtml } from '@/utils/textUtils';
 import { getMarcheEventTypeMeta } from '@/lib/marcheEventTypes';
+import { MapContainer, TileLayer, CircleMarker, Popup } from 'react-leaflet';
+import 'leaflet/dist/leaflet.css';
 
 interface MarcheEvent {
   id: string;
   title: string;
-  description: string | null;
+  description?: string | null;
   date_marche: string;
   lieu: string | null;
   event_type?: string | null;
+  exploration_id?: string | null;
+  explorations?: { name: string } | null;
+}
+
+interface PastEvent {
+  id: string;
+  title: string;
+  date_marche: string;
+  lieu: string | null;
+  event_type?: string | null;
+  latitude?: number | null;
+  longitude?: number | null;
   exploration_id?: string | null;
   explorations?: { name: string } | null;
 }
@@ -41,6 +55,8 @@ interface MarchesTabProps {
   upcomingEvents: MarcheEvent[];
   participations: Participation[];
   registeredEventIds: Set<string>;
+  pastEvents?: PastEvent[];
+  pastParticipantCounts?: Record<string, number>;
 }
 
 const getCountdown = (dateStr: string) => {
@@ -52,6 +68,11 @@ const getCountdown = (dateStr: string) => {
   return `${Math.ceil(days / 30)} mois`;
 };
 
+const EVENT_TYPE_COLORS: Record<string, string> = {
+  agroecologique: '#10b981',
+  eco_poetique: '#8b5cf6',
+  eco_tourisme: '#f59e0b',
+};
 
 const EventCard: React.FC<{
   event: MarcheEvent;
@@ -135,7 +156,109 @@ const EventCard: React.FC<{
   );
 };
 
-const MarchesTab: React.FC<MarchesTabProps> = ({ userId, upcomingEvents, participations, registeredEventIds }) => {
+const PastEventCard: React.FC<{ event: PastEvent; participantCount: number; index: number }> = ({ event, participantCount, index }) => {
+  const typeMeta = getMarcheEventTypeMeta(event.event_type);
+  const timeAgo = formatDistanceToNow(new Date(event.date_marche), { locale: fr, addSuffix: true });
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: index * 0.05 }}
+      className="relative rounded-lg overflow-hidden bg-stone-50 dark:bg-stone-800/20 border border-stone-200 dark:border-stone-600/30 p-3 space-y-1.5"
+    >
+      {typeMeta && (
+        <span className={`inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full border ${typeMeta.badgeClassName}`}>
+          <typeMeta.icon className="w-3 h-3" />
+          {typeMeta.label}
+        </span>
+      )}
+
+      <p className="text-foreground text-xs font-semibold leading-snug line-clamp-2 pr-6">{event.title}</p>
+
+      <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
+        <span className="text-stone-500 dark:text-stone-400 text-[11px]">
+          {format(new Date(event.date_marche), 'dd MMM yyyy', { locale: fr })}
+        </span>
+        {event.lieu && (
+          <span className="text-stone-400 dark:text-stone-500 text-[11px] flex items-center gap-0.5">
+            <MapPin className="w-3 h-3" />{event.lieu}
+          </span>
+        )}
+      </div>
+
+      {participantCount > 0 && (
+        <div className="flex items-center gap-1 text-stone-400 dark:text-stone-500 text-[10px]">
+          <Users className="w-3 h-3" />
+          <span>{participantCount} marcheur{participantCount > 1 ? 's' : ''} {timeAgo}</span>
+        </div>
+      )}
+
+      <Footprints className="absolute bottom-2 right-2 w-5 h-5 text-stone-200 dark:text-stone-700/40" />
+    </motion.div>
+  );
+};
+
+const PastEventsMap: React.FC<{ events: PastEvent[] }> = ({ events }) => {
+  const geoEvents = useMemo(
+    () => events.filter(e => e.latitude != null && e.longitude != null),
+    [events]
+  );
+
+  if (geoEvents.length === 0) return null;
+
+  const center: [number, number] = [
+    geoEvents.reduce((s, e) => s + (e.latitude || 0), 0) / geoEvents.length,
+    geoEvents.reduce((s, e) => s + (e.longitude || 0), 0) / geoEvents.length,
+  ];
+
+  return (
+    <div className="rounded-lg overflow-hidden border border-stone-200 dark:border-stone-600/30 h-48 md:h-64">
+      <MapContainer
+        center={center}
+        zoom={7}
+        scrollWheelZoom={false}
+        className="h-full w-full [&_.leaflet-tile-pane]:brightness-[0.85] [&_.leaflet-tile-pane]:contrast-[1.1] [&_.leaflet-tile-pane]:saturate-[0.3]"
+        attributionControl={false}
+      >
+        <TileLayer url="https://{s}.tile.openstreetmap.fr/osmfr/{z}/{x}/{y}.png" />
+        {geoEvents.map(event => {
+          const color = EVENT_TYPE_COLORS[event.event_type || ''] || '#78716c';
+          const typeMeta = getMarcheEventTypeMeta(event.event_type);
+          return (
+            <CircleMarker
+              key={event.id}
+              center={[event.latitude!, event.longitude!]}
+              radius={8}
+              pathOptions={{ color, fillColor: color, fillOpacity: 0.7, weight: 2 }}
+            >
+              <Popup>
+                <div className="text-xs space-y-0.5 min-w-[140px]">
+                  <p className="font-semibold text-foreground">{event.title}</p>
+                  <p className="text-muted-foreground">
+                    {format(new Date(event.date_marche), 'dd MMM yyyy', { locale: fr })}
+                  </p>
+                  {event.lieu && <p className="text-muted-foreground">{event.lieu}</p>}
+                  {typeMeta && (
+                    <span className={`inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded-full border ${typeMeta.badgeClassName}`}>
+                      <typeMeta.icon className="w-2.5 h-2.5" />
+                      {typeMeta.shortLabel}
+                    </span>
+                  )}
+                </div>
+              </Popup>
+            </CircleMarker>
+          );
+        })}
+      </MapContainer>
+    </div>
+  );
+};
+
+const MarchesTab: React.FC<MarchesTabProps> = ({
+  userId, upcomingEvents, participations, registeredEventIds,
+  pastEvents = [], pastParticipantCounts = {},
+}) => {
   const [registeringId, setRegisteringId] = useState<string | null>(null);
   const queryClient = useQueryClient();
 
@@ -239,6 +362,34 @@ const MarchesTab: React.FC<MarchesTabProps> = ({ userId, upcomingEvents, partici
         )}
       </div>
 
+      {/* Section 3 — Empreintes passées */}
+      {pastEvents.length > 0 && (
+        <div className="space-y-3">
+          <div>
+            <h2 className="text-base font-semibold text-foreground mb-0.5 flex items-center gap-2">
+              <Footprints className="w-4 h-4 text-stone-500 dark:text-stone-400" />
+              Empreintes passées
+            </h2>
+            <p className="text-muted-foreground text-[11px]">
+              Les sentiers déjà parcourus par la communauté
+            </p>
+          </div>
+
+          <PastEventsMap events={pastEvents} />
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+            {pastEvents.map((event, i) => (
+              <PastEventCard
+                key={event.id}
+                event={event}
+                participantCount={pastParticipantCounts[event.id] || 0}
+                index={i}
+              />
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* QR compact */}
       <Link to="/marches-du-vivant/explorer">
         <div className="bg-card dark:bg-white/5 backdrop-blur-sm rounded-lg border border-border dark:border-white/10 px-3.5 py-2.5 flex items-center gap-3 hover:bg-accent/50 dark:hover:bg-white/10 transition-colors">
@@ -249,7 +400,6 @@ const MarchesTab: React.FC<MarchesTabProps> = ({ userId, upcomingEvents, partici
           <ChevronRight className="w-4 h-4 text-emerald-600/50 dark:text-emerald-300/50 flex-shrink-0" />
         </div>
       </Link>
-
     </div>
   );
 };

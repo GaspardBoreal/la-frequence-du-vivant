@@ -46,6 +46,38 @@ const MarchesDuVivantMonEspace = () => {
     enabled: !!user,
   });
 
+  const { data: pastEvents = [] } = useQuery({
+    queryKey: ['past-marche-events-mon-espace'],
+    queryFn: async () => {
+      const today = new Date().toISOString().split('T')[0];
+      const { data } = await supabase
+        .from('marche_events')
+        .select('id, title, date_marche, lieu, event_type, latitude, longitude, exploration_id, explorations(name)')
+        .lt('date_marche', today)
+        .order('date_marche', { ascending: false })
+        .limit(20);
+      return data || [];
+    },
+    enabled: !!user,
+  });
+
+  const { data: pastParticipantCounts = {} } = useQuery({
+    queryKey: ['past-event-participant-counts', pastEvents.map(e => e.id)],
+    queryFn: async () => {
+      if (pastEvents.length === 0) return {};
+      const { data } = await supabase
+        .from('marche_participations')
+        .select('marche_event_id')
+        .in('marche_event_id', pastEvents.map(e => e.id));
+      const counts: Record<string, number> = {};
+      (data || []).forEach(p => {
+        counts[p.marche_event_id] = (counts[p.marche_event_id] || 0) + 1;
+      });
+      return counts;
+    },
+    enabled: pastEvents.length > 0,
+  });
+
   const { data: totalFrequences = 0 } = useQuery({
     queryKey: ['total-frequences', user?.id],
     queryFn: async () => {
@@ -155,6 +187,8 @@ const MarchesDuVivantMonEspace = () => {
             upcomingEvents={upcomingEvents}
             participations={participations}
             registeredEventIds={registeredEventIds}
+            pastEvents={pastEvents}
+            pastParticipantCounts={pastParticipantCounts}
           />
         );
       case 'carnet':
