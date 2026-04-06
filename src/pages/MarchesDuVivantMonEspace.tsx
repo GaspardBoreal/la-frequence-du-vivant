@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Leaf, UserPlus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useCommunityAuth } from '@/hooks/useCommunityAuth';
+import { useActivityTracker } from '@/hooks/useActivityTracker';
 import { useCommunityParticipations, CommunityRoleKey } from '@/hooks/useCommunityProfile';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -28,6 +29,7 @@ const MarchesDuVivantMonEspace = () => {
   const initialTab = (searchParams.get('tab') as TabKey) || 'accueil';
   const [activeTab, setActiveTab] = useState<TabKey>(initialTab);
   const isMobile = useIsMobile();
+  const { trackActivity } = useActivityTracker();
 
   const { data: upcomingEvents = [] } = useQuery({
     queryKey: ['upcoming-marche-events-mon-espace'],
@@ -62,6 +64,22 @@ const MarchesDuVivantMonEspace = () => {
       navigate('/marches-du-vivant/connexion');
     }
   }, [loading, user, navigate]);
+
+  // Track session start
+  useEffect(() => {
+    if (user && profile) {
+      trackActivity('session_start', 'mon-espace', {
+        metadata: { role: profile.role },
+      });
+    }
+  }, [user?.id, profile?.id]);
+
+  // Track tab switches
+  useEffect(() => {
+    if (user && profile) {
+      trackActivity('tab_switch', `tab:mon-espace:${activeTab}`);
+    }
+  }, [activeTab, user?.id]);
 
   if (loading || !user) {
     return (

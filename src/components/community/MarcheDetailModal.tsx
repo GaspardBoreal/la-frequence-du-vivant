@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useActivityTracker } from '@/hooks/useActivityTracker';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -60,6 +61,7 @@ const EmptyState: React.FC<{ message: string; sub?: string }> = ({ message, sub 
 
 // ─── Voir Tab (photos + vidéos + user contributions) ───
 export const VoirTab: React.FC<{ marcheId: string; userId: string; marcheEventId: string; activeMarcheId?: string }> = ({ marcheId, userId, marcheEventId, activeMarcheId }) => {
+  const { trackActivity } = useActivityTracker();
   const [sort, setSort] = useState<'desc' | 'asc'>('asc');
   const [showUpload, setShowUpload] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
@@ -183,8 +185,14 @@ export const VoirTab: React.FC<{ marcheId: string; userId: string; marcheEventId
             onFilesSelected={(files, isPublic) => {
               const photos = files.filter(f => f.type.startsWith('image/'));
               const videos = files.filter(f => f.type.startsWith('video/'));
-              if (photos.length) uploadMedias.mutate({ files: photos, marcheEventId, isPublic, typeMedia: 'photo', marcheId: activeMarcheId });
-              if (videos.length) uploadMedias.mutate({ files: videos, marcheEventId, isPublic, typeMedia: 'video', marcheId: activeMarcheId });
+              if (photos.length) {
+                uploadMedias.mutate({ files: photos, marcheEventId, isPublic, typeMedia: 'photo', marcheId: activeMarcheId });
+                trackActivity('media_upload', 'photo', { marcheEventId, metadata: { count: photos.length } });
+              }
+              if (videos.length) {
+                uploadMedias.mutate({ files: videos, marcheEventId, isPublic, typeMedia: 'video', marcheId: activeMarcheId });
+                trackActivity('media_upload', 'video', { marcheEventId, metadata: { count: videos.length } });
+              }
             }}
           />
         </motion.div>
@@ -284,6 +292,7 @@ export const VoirTab: React.FC<{ marcheId: string; userId: string; marcheEventId
 
 // ─── Écouter Tab ───
 export const EcouterTab: React.FC<{ marcheId: string; userId: string; marcheEventId: string; activeMarcheId?: string }> = ({ marcheId, userId, marcheEventId, activeMarcheId }) => {
+  const { trackActivity } = useActivityTracker();
   const [sort, setSort] = useState<'desc' | 'asc'>('asc');
   const [showUpload, setShowUpload] = useState(false);
 
@@ -329,7 +338,10 @@ export const EcouterTab: React.FC<{ marcheId: string; userId: string; marcheEven
             label="Enregistrements sonores"
             icon={<Music className="w-6 h-6 text-violet-400/60" />}
             isUploading={uploadAudio.isPending}
-            onFilesSelected={(files, isPublic) => uploadAudio.mutate({ files, marcheEventId, isPublic, marcheId: activeMarcheId })}
+            onFilesSelected={(files, isPublic) => {
+              uploadAudio.mutate({ files, marcheEventId, isPublic, marcheId: activeMarcheId });
+              trackActivity('media_upload', 'audio', { marcheEventId, metadata: { count: files.length } });
+            }}
           />
         </motion.div>
       )}
@@ -416,6 +428,7 @@ export const EcouterTab: React.FC<{ marcheId: string; userId: string; marcheEven
 
 // ─── Lire Tab ───
 export const LireTab: React.FC<{ userId: string; marcheEventId: string; activeMarcheId?: string }> = ({ userId, marcheEventId, activeMarcheId }) => {
+  const { trackActivity } = useActivityTracker();
   const [sort, setSort] = useState<'desc' | 'asc'>('asc');
   const [showNew, setShowNew] = useState(false);
   const [newTitre, setNewTitre] = useState('');
@@ -454,6 +467,7 @@ export const LireTab: React.FC<{ userId: string; marcheEventId: string; activeMa
       isPublic: newIsPublic,
       marcheId: activeMarcheId,
     });
+    trackActivity('media_upload', 'text', { marcheEventId, metadata: { type: newType } });
     setNewTitre('');
     setNewContenu('');
     setShowNew(false);
@@ -778,6 +792,21 @@ const MarcheDetailModal: React.FC<MarcheDetailModalProps> = ({
 }) => {
   const [activeTab, setActiveTab] = useState<TabKey>('voir');
   const [activeStepIndex, setActiveStepIndex] = useState(0);
+  const { trackActivity } = useActivityTracker();
+
+  // Track marche view on open
+  useEffect(() => {
+    if (open && marcheEventId) {
+      trackActivity('marche_view', `marche:${marcheEventId}`, { marcheEventId });
+    }
+  }, [open, marcheEventId]);
+
+  // Track tab switches inside marche modal
+  useEffect(() => {
+    if (open) {
+      trackActivity('tab_switch', `tab:marche:${activeTab}`, { marcheEventId });
+    }
+  }, [activeTab, open]);
 
   const { data: explorationMarches } = useQuery({
     queryKey: ['marche-detail-steps', marcheEventId],

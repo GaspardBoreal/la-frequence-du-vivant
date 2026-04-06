@@ -10,18 +10,17 @@ interface TrackOptions {
 const DEBOUNCE_MS = 2000;
 
 export function useActivityTracker() {
-  const lastRef = useRef<string>('');
-  const timerRef = useRef<ReturnType<typeof setTimeout>>();
+  const pendingRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
 
   const trackActivity = useCallback(
     (eventType: string, eventTarget: string, options?: TrackOptions) => {
       const key = `${eventType}:${eventTarget}`;
-      if (key === lastRef.current) return;
 
-      if (timerRef.current) clearTimeout(timerRef.current);
+      // If this exact same event is already pending, skip
+      if (pendingRef.current.has(key)) return;
 
-      timerRef.current = setTimeout(async () => {
-        lastRef.current = key;
+      const timer = setTimeout(async () => {
+        pendingRef.current.delete(key);
         try {
           const { data: { session } } = await supabase.auth.getSession();
           if (!session?.user?.id) return;
@@ -43,6 +42,8 @@ export function useActivityTracker() {
           // fire-and-forget
         }
       }, DEBOUNCE_MS);
+
+      pendingRef.current.set(key, timer);
     },
     []
   );
