@@ -1,42 +1,53 @@
 
 
-## Corrections de la carte "Empreintes passées"
+## Enrichir les popups de la carte "Empreintes passées"
 
-### Problème 1 : Marche manquante sur la carte
+### Problème
 
-La requête SQL confirme que **"La transhumance de Mouton Village"** a `latitude = NULL` et `longitude = NULL` en base. Le composant `PastEventsMap` filtre les événements sans coordonnées (`filter(e => e.latitude != null && e.longitude != null)`), ce qui est correct. Il faut donc **ajouter les coordonnées GPS** de cet événement en base.
+Les popups Leaflet actuels sont basiques : texte brut sur fond blanc, pas de style cohérent avec l'identité visuelle, pas d'inspiration ni d'élégance.
 
-- Vouillé (Vienne) : ~46.5436, 0.1673 (point de départ du trajet)
+### Design proposé
 
-Action : **migration SQL** pour mettre à jour latitude/longitude de l'événement `a9782d7f-04df-4a38-a9b5-a772239ba06a`.
+Popup personnalisée avec l'esthétique "Forêt Émeraude" du projet :
 
-### Problème 2 : Couleurs des marqueurs incohérentes avec les badges
+```text
+┌────────────────────────────────────┐
+│ ▌ bande colorée gauche (type)     │
+│                                    │
+│  🌱 MARCHE AGROÉCOLOGIQUE          │  ← badge type, couleur du type
+│                                    │
+│  La transhumance de Mouton Village │  ← titre, font-crimson, bold
+│                                    │
+│  📅 29 mars 2026                   │  ← date formatée
+│  📍 NOUAILLE-MAUPERTUIS            │  ← lieu
+│                                    │
+│  👥 2 marcheurs ont exploré        │  ← social proof, italic
+│       ce sentier                   │
+└────────────────────────────────────┘
+```
 
-Les couleurs des `CircleMarker` utilisent `EVENT_TYPE_COLORS` (emerald, violet, amber) mais visuellement sur la carte sombre, elles ne sont pas immédiatement reconnaissables. Il faut ajouter une **légende** sous la carte pour associer chaque couleur à son type.
+### Caractéristiques visuelles
+
+- **Fond** : dégradé léger crème → blanc (`bg-gradient-to-br from-stone-50 to-white`)
+- **Bande latérale gauche** : 3px de la couleur du type d'événement (emerald/violet/amber)
+- **Badge type** : identique au Carnet Vivant avec icône et label, arrondi, compact
+- **Titre** : `font-crimson text-sm font-bold text-stone-800` — élégant et lisible
+- **Date + lieu** : icônes inline `Calendar` et `MapPin`, `text-xs text-stone-500`
+- **Social proof** : compteur participants en italique, ton chaleureux ("X marcheurs ont exploré ce sentier")
+- **Override CSS Leaflet** : supprimer le style par défaut des popups (ombre, bordure, flèche) via classes CSS personnalisées pour un rendu épuré
+- **Min-width** : `200px`, max-width `260px` — responsive naturellement
 
 ### Modifications
 
-**1. Migration SQL** — Mettre à jour les coordonnées de la Transhumance :
-```sql
-UPDATE marche_events 
-SET latitude = 46.5436, longitude = 0.1673
-WHERE id = 'a9782d7f-04df-4a38-a9b5-a772239ba06a';
-```
+**`src/components/community/tabs/MarchesTab.tsx`** :
+1. Passer `pastParticipantCounts` en prop au composant `PastEventsMap`
+2. Remplacer le contenu `<Popup>` par le nouveau design riche
+3. Ajouter une classe CSS custom sur le popup Leaflet pour neutraliser les styles par défaut (`.leaflet-popup-content-wrapper` override)
+4. Ajouter les icônes `Calendar`, `MapPin`, `Users` dans les imports
 
-**2. `src/components/community/tabs/MarchesTab.tsx`** — Ajouter une légende sous la carte :
-- 3 pastilles colorées avec le label du type (Agroécologique / Éco poétique / Éco tourisme)
-- Utiliser `getMarcheEventTypeMeta` pour les icônes et labels
-- Utiliser `EVENT_TYPE_COLORS` pour les pastilles
-- Style compact : `flex gap-3 text-[10px] text-muted-foreground mt-2`
-
-```text
-[●] Agroécologique  [●] Éco poétique  [●] Éco tourisme
-```
-
-### Fichiers impactés
+### Fichier impacté
 
 | Action | Fichier |
 |--------|---------|
-| Créer | Migration SQL — UPDATE coordonnées Transhumance |
-| Modifier | `src/components/community/tabs/MarchesTab.tsx` — légende sous la carte |
+| Modifier | `src/components/community/tabs/MarchesTab.tsx` |
 
