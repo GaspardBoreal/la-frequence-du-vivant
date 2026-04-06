@@ -172,10 +172,20 @@ const EventExportPanel: React.FC = () => {
           if ((includeBiodiversity || includeRawBiodiversity) && event.exploration_id) {
             const { data: exploMarches } = await supabase
               .from('exploration_marches')
-              .select('marche_id')
+              .select('marche_id, marche:marches(id, nom_marche, ville, latitude, longitude)')
               .eq('exploration_id', event.exploration_id);
 
             const marcheIds = (exploMarches || []).map(em => em.marche_id);
+            // Build marche info lookup
+            const marcheInfoMap = new Map<string, { nom: string; lat: number | null; lng: number | null }>();
+            (exploMarches || []).forEach((em: any) => {
+              marcheInfoMap.set(em.marche_id, {
+                nom: em.marche?.nom_marche || em.marche?.ville || '',
+                lat: em.marche?.latitude || null,
+                lng: em.marche?.longitude || null,
+              });
+            });
+
             if (marcheIds.length > 0) {
               const { data: snapshots } = await supabase
                 .from('biodiversity_snapshots')
@@ -191,9 +201,13 @@ const EventExportPanel: React.FC = () => {
 
               // Build unique species map (same logic as useExplorationBiodiversitySummary)
               const uniqueSpecies = new Map<string, { name: string; scientificName: string; count: number; kingdom: string }>();
+              // Build raw species list with marche info for raw export
+              const rawSpeciesList: Array<{ name: string; scientificName: string; count: number; kingdom: string; marcheName: string; latitude: number | null; longitude: number | null }> = [];
+
               for (const snapshot of latestByMarche.values()) {
                 const speciesData = snapshot.species_data as any[];
                 if (!Array.isArray(speciesData)) continue;
+                const mInfo = marcheInfoMap.get(snapshot.marche_id);
 
                 const localCounts = new Map<string, { count: number; species: any }>();
                 speciesData.forEach((sp: any) => {
@@ -214,6 +228,17 @@ const EventExportPanel: React.FC = () => {
                     scientificName: species.scientificName || name,
                     count,
                     kingdom: species.kingdom || 'Unknown',
+                  });
+
+                  // Raw entry per marche
+                  rawSpeciesList.push({
+                    name,
+                    scientificName: species.scientificName || name,
+                    count,
+                    kingdom: species.kingdom || 'Unknown',
+                    marcheName: mInfo?.nom || '',
+                    latitude: mInfo?.lat || null,
+                    longitude: mInfo?.lng || null,
                   });
                 });
               }
@@ -237,6 +262,7 @@ const EventExportPanel: React.FC = () => {
                 speciesByKingdom: { birds, plants, fungi, others },
                 topSpecies,
                 allSpecies: allSpeciesSorted,
+                rawSpeciesPerMarche: rawSpeciesList.sort((a, b) => b.count - a.count),
               };
             }
           }

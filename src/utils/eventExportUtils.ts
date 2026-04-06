@@ -56,6 +56,7 @@ export interface EventExportData {
     speciesByKingdom: { birds: number; plants: number; fungi: number; others: number };
     topSpecies: Array<{ name: string; scientificName: string; count: number; kingdom: string }>;
     allSpecies?: Array<{ name: string; scientificName: string; count: number; kingdom: string }>;
+    rawSpeciesPerMarche?: Array<{ name: string; scientificName: string; count: number; kingdom: string; marcheName: string; latitude: number | null; longitude: number | null }>;
   } | null;
 }
 
@@ -388,15 +389,17 @@ export function exportEventsToCSV(
   // Raw biodiversity CSV
   if (options.includeRawBiodiversity) {
     lines.push('=== DONNÉES BRUTES BIODIVERSITÉ ===');
-    lines.push('Événement,Type,Espèce,Nom scientifique,Royaume,Observations');
+    lines.push('Événement,Type,Marche,Longitude,Latitude,Espèce,Nom scientifique,Royaume,Observations');
     events.forEach(e => {
-      if (e.biodiversity) {
-        const species = e.biodiversity.allSpecies || e.biodiversity.topSpecies;
-        species.forEach(sp => {
+      if (e.biodiversity?.rawSpeciesPerMarche) {
+        e.biodiversity.rawSpeciesPerMarche.forEach(sp => {
           lines.push(
             [
               escapeCSV(e.title),
               escapeCSV(getTypeLabel(e.event_type)),
+              escapeCSV(sp.marcheName),
+              sp.longitude?.toString() || '',
+              sp.latitude?.toString() || '',
               escapeCSV(sp.name),
               escapeCSV(sp.scientificName),
               escapeCSV(sp.kingdom),
