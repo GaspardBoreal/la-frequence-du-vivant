@@ -105,7 +105,7 @@ const AdminAccess: React.FC = () => {
               Gérer les équipages des explorations. Ajouter des marcheurs 
               et associer leurs observations aux espèces.
             </p>
-            <Link to="/admin/marcheurs">
+            <Link to="/admin/community">
               <Button variant="outline" className="w-full">
                 <Users className="h-4 w-4 mr-2" />
                 Accéder aux Marcheurs
@@ -128,12 +128,6 @@ const AdminAccess: React.FC = () => {
                 <Button variant="outline" className="w-full">
                   <Map className="h-4 w-4 mr-2" />
                   Événements
-                </Button>
-              </Link>
-              <Link to="/admin/community">
-                <Button variant="outline" className="w-full">
-                  <Users className="h-4 w-4 mr-2" />
-                  Communauté
                 </Button>
               </Link>
             </div>

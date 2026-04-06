@@ -51,7 +51,7 @@ import AutomationsAdmin from './pages/AutomationsAdmin';
 import ExplorationLayout from './layouts/ExplorationLayout';
 import ExplorationBiodiversite from './pages/ExplorationBiodiversite';
 import TraverseesLecteurs from './pages/TraverseesLecteurs';
-import MarcheursAdmin from './pages/MarcheursAdmin';
+
 import ExplorationsSensibles from './pages/ExplorationsSensibles';
 import MaterielPedagogique from './pages/MaterielPedagogique';
 import Dordonia from './pages/Dordonia';
@@ -202,11 +202,6 @@ function App() {
             <Route path="/admin/automations" element={
               <AdminAuth>
                 <AutomationsAdmin />
-              </AdminAuth>
-            } />
-            <Route path="/admin/marcheurs" element={
-              <AdminAuth>
-                <MarcheursAdmin />
               </AdminAuth>
             } />
             <Route path="/admin/opus/:slug" element={
