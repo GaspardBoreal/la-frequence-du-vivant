@@ -1,7 +1,8 @@
 import React, { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Book, MapPin, Camera, Music, PenLine, Leaf, ChevronDown, ChevronUp, Headphones } from 'lucide-react';
+import { Book, MapPin, Camera, Music, PenLine, Leaf, ChevronDown, ChevronUp } from 'lucide-react';
+import { getMarcheEventTypeMeta } from '@/lib/marcheEventTypes';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { useMarcheCollectedData, MarcheCollectedSummary } from '@/hooks/useMarcheCollectedData';
@@ -17,6 +18,7 @@ interface Participation {
     date_marche: string;
     lieu: string | null;
     exploration_id?: string | null;
+    event_type?: string | null;
     explorations?: { name: string } | null;
   } | null;
 }
@@ -55,18 +57,6 @@ const getSeasonYear = (date: Date): string => {
   return `${season} ${year}`;
 };
 
-const detectPillars = (title: string, desc: string | null) => {
-  const text = `${title} ${desc || ''}`.toLowerCase();
-  const pillars: { icon: typeof Leaf; label: string; color: string }[] = [];
-  if (/biodiversit|espèce|faune|flore|vivant|arbre|sol|terre|transhumance|berger|mouton|oiseaux|insecte/.test(text))
-    pillars.push({ icon: Leaf, label: 'Biodiversité', color: 'text-emerald-600 dark:text-emerald-400' });
-  if (/bioacoustique|son|écoute|acoustique|chant|audio|sonore|fréquence|silence/.test(text))
-    pillars.push({ icon: Headphones, label: 'Bioacoustique', color: 'text-sky-600 dark:text-sky-400' });
-  if (/géopoétique|poé|récit|narrat|territoire|paysage|marche|sentier|chemin|gardien/.test(text))
-    pillars.push({ icon: PenLine, label: 'Géopoétique', color: 'text-amber-600 dark:text-amber-400' });
-  if (pillars.length === 0) pillars.push({ icon: Leaf, label: 'Biodiversité', color: 'text-emerald-600 dark:text-emerald-400' });
-  return pillars;
-};
 
 const MarcheCard: React.FC<{
   participation: Participation;
@@ -78,7 +68,7 @@ const MarcheCard: React.FC<{
   if (!event) return null;
 
   const date = new Date(event.date_marche);
-  const pillars = detectPillars(event.title, event.explorations?.name || null);
+  const typeMeta = getMarcheEventTypeMeta(event.event_type);
   const hasData = summary && (summary.kigo_count > 0 || summary.photos_count > 0 || summary.audio_count > 0 || summary.species_count > 0);
 
   return (
@@ -118,15 +108,15 @@ const MarcheCard: React.FC<{
             )}
           </div>
 
-          {/* Pillar badges */}
-          <div className="flex flex-wrap gap-1.5">
-            {pillars.map((p, j) => (
-              <span key={j} className={`inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full bg-emerald-50 dark:bg-white/5 ${p.color}`}>
-                <p.icon className="w-3 h-3" />
-                {p.label}
+          {/* Event type badge */}
+          {typeMeta && (
+            <div className="flex flex-wrap gap-1.5">
+              <span className={`inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full border ${typeMeta.badgeClassName}`}>
+                <typeMeta.icon className="w-3 h-3" />
+                {typeMeta.label}
               </span>
-            ))}
-          </div>
+            </div>
+          )}
 
           {/* Collected data counters */}
           {summary && hasData && (

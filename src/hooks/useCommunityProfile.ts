@@ -22,7 +22,7 @@ export function useCommunityParticipations(userId: string | undefined) {
       if (!userId) return [];
       const { data, error } = await supabase
         .from('marche_participations')
-        .select('id, marche_event_id, validated_at, validation_method, created_at, marche_events(title, date_marche, lieu, exploration_id, explorations(name))')
+        .select('id, marche_event_id, validated_at, validation_method, created_at, marche_events(title, date_marche, lieu, exploration_id, event_type, explorations(name))')
         .eq('user_id', userId)
         .order('created_at', { ascending: false });
 
