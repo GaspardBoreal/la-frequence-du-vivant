@@ -18,6 +18,7 @@ interface Participation {
     date_marche: string;
     lieu: string | null;
     exploration_id?: string | null;
+    event_type?: string | null;
     explorations?: { name: string } | null;
   } | null;
 }
@@ -56,18 +57,6 @@ const getSeasonYear = (date: Date): string => {
   return `${season} ${year}`;
 };
 
-const detectPillars = (title: string, desc: string | null) => {
-  const text = `${title} ${desc || ''}`.toLowerCase();
-  const pillars: { icon: typeof Leaf; label: string; color: string }[] = [];
-  if (/biodiversit|espèce|faune|flore|vivant|arbre|sol|terre|transhumance|berger|mouton|oiseaux|insecte/.test(text))
-    pillars.push({ icon: Leaf, label: 'Biodiversité', color: 'text-emerald-600 dark:text-emerald-400' });
-  if (/bioacoustique|son|écoute|acoustique|chant|audio|sonore|fréquence|silence/.test(text))
-    pillars.push({ icon: Headphones, label: 'Bioacoustique', color: 'text-sky-600 dark:text-sky-400' });
-  if (/géopoétique|poé|récit|narrat|territoire|paysage|marche|sentier|chemin|gardien/.test(text))
-    pillars.push({ icon: PenLine, label: 'Géopoétique', color: 'text-amber-600 dark:text-amber-400' });
-  if (pillars.length === 0) pillars.push({ icon: Leaf, label: 'Biodiversité', color: 'text-emerald-600 dark:text-emerald-400' });
-  return pillars;
-};
 
 const MarcheCard: React.FC<{
   participation: Participation;
