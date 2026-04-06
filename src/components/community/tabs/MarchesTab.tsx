@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { motion } from 'framer-motion';
-import { Sparkles, MapPin, CheckCircle2, QrCode, ChevronRight, Compass, Footprints, Users } from 'lucide-react';
+import { Sparkles, MapPin, CheckCircle2, QrCode, ChevronRight, Compass, Footprints, Users, Calendar } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
 import { format, differenceInCalendarDays, formatDistanceToNow } from 'date-fns';
@@ -199,7 +199,7 @@ const PastEventCard: React.FC<{ event: PastEvent; participantCount: number; inde
   );
 };
 
-const PastEventsMap: React.FC<{ events: PastEvent[] }> = ({ events }) => {
+const PastEventsMap: React.FC<{ events: PastEvent[]; participantCounts: Record<string, number> }> = ({ events, participantCounts }) => {
   const geoEvents = useMemo(
     () => events.filter(e => e.latitude != null && e.longitude != null),
     [events]
@@ -218,13 +218,14 @@ const PastEventsMap: React.FC<{ events: PastEvent[] }> = ({ events }) => {
         center={center}
         zoom={7}
         scrollWheelZoom={false}
-        className="h-full w-full [&_.leaflet-tile-pane]:brightness-[0.85] [&_.leaflet-tile-pane]:contrast-[1.1] [&_.leaflet-tile-pane]:saturate-[0.3]"
+        className="h-full w-full [&_.leaflet-tile-pane]:brightness-[0.85] [&_.leaflet-tile-pane]:contrast-[1.1] [&_.leaflet-tile-pane]:saturate-[0.3] past-events-map"
         attributionControl={false}
       >
         <TileLayer url="https://{s}.tile.openstreetmap.fr/osmfr/{z}/{x}/{y}.png" />
         {geoEvents.map(event => {
           const color = EVENT_TYPE_COLORS[event.event_type || ''] || '#78716c';
           const typeMeta = getMarcheEventTypeMeta(event.event_type);
+          const count = participantCounts[event.id] || 0;
           return (
             <CircleMarker
               key={event.id}
@@ -232,25 +233,63 @@ const PastEventsMap: React.FC<{ events: PastEvent[] }> = ({ events }) => {
               radius={8}
               pathOptions={{ color, fillColor: color, fillOpacity: 0.7, weight: 2 }}
             >
-              <Popup>
-                <div className="text-xs space-y-0.5 min-w-[140px]">
-                  <p className="font-semibold text-foreground">{event.title}</p>
-                  <p className="text-muted-foreground">
-                    {format(new Date(event.date_marche), 'dd MMM yyyy', { locale: fr })}
-                  </p>
-                  {event.lieu && <p className="text-muted-foreground">{event.lieu}</p>}
-                  {typeMeta && (
-                    <span className={`inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded-full border ${typeMeta.badgeClassName}`}>
-                      <typeMeta.icon className="w-2.5 h-2.5" />
-                      {typeMeta.shortLabel}
-                    </span>
-                  )}
+              <Popup className="past-event-popup">
+                <div
+                  className="flex min-w-[200px] max-w-[260px] rounded-lg overflow-hidden"
+                  style={{
+                    background: 'linear-gradient(to bottom right, #fafaf9, #ffffff)',
+                    borderLeft: `3px solid ${color}`,
+                  }}
+                >
+                  <div className="p-3 space-y-2 w-full">
+                    {typeMeta && (
+                      <span className={`inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full border ${typeMeta.badgeClassName}`}>
+                        <typeMeta.icon className="w-3 h-3" />
+                        {typeMeta.label}
+                      </span>
+                    )}
+                    <p className="font-crimson text-sm font-bold text-stone-800 leading-snug">{event.title}</p>
+                    <div className="space-y-1">
+                      <span className="flex items-center gap-1.5 text-xs text-stone-500">
+                        <Calendar className="w-3 h-3 flex-shrink-0" />
+                        {format(new Date(event.date_marche), 'dd MMMM yyyy', { locale: fr })}
+                      </span>
+                      {event.lieu && (
+                        <span className="flex items-center gap-1.5 text-xs text-stone-500">
+                          <MapPin className="w-3 h-3 flex-shrink-0" />
+                          {event.lieu}
+                        </span>
+                      )}
+                    </div>
+                    {count > 0 && (
+                      <p className="flex items-center gap-1.5 text-[11px] text-stone-400 italic pt-0.5">
+                        <Users className="w-3 h-3 flex-shrink-0" />
+                        {count} marcheur{count > 1 ? 's' : ''} {count > 1 ? 'ont exploré' : 'a exploré'} ce sentier
+                      </p>
+                    )}
+                  </div>
                 </div>
               </Popup>
             </CircleMarker>
           );
         })}
       </MapContainer>
+      <style>{`
+        .past-events-map .leaflet-popup-content-wrapper {
+          background: transparent;
+          box-shadow: 0 4px 20px -4px rgba(0,0,0,0.15);
+          border-radius: 0.5rem;
+          padding: 0;
+          border: none;
+        }
+        .past-events-map .leaflet-popup-content {
+          margin: 0;
+        }
+        .past-events-map .leaflet-popup-tip {
+          background: #fafaf9;
+          box-shadow: none;
+        }
+      `}</style>
     </div>
   );
 };
@@ -375,7 +414,7 @@ const MarchesTab: React.FC<MarchesTabProps> = ({
             </p>
           </div>
 
-          <PastEventsMap events={pastEvents} />
+          <PastEventsMap events={pastEvents} participantCounts={pastParticipantCounts} />
 
           {/* Légende de la carte */}
           <div className="flex flex-wrap gap-3 text-[10px] text-muted-foreground mt-1">
