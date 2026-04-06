@@ -111,7 +111,7 @@ const ExplorationMarcheurPage: React.FC = () => {
   // Track page view on mount
   useEffect(() => {
     if (effectiveExplorationId) {
-      trackActivity('page_view', `exploration:${effectiveExplorationId}`, { explorationId: effectiveExplorationId });
+      trackActivity(userId!, 'page_view', `exploration:${effectiveExplorationId}`, { explorationId: effectiveExplorationId });
     }
   }, [effectiveExplorationId, trackActivity]);
 
