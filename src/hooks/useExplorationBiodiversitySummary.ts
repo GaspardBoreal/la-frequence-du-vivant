@@ -296,6 +296,19 @@ export const useExplorationBiodiversitySummary = (explorationId?: string) => {
           order: m.order,
         }));
 
+      // Recalculate kingdom counts from uniqueSpeciesMap (same logic as EventBiodiversityTab)
+      let birds = 0;
+      let plants = 0;
+      let fungi = 0;
+      let others = 0;
+      for (const [, data] of uniqueSpeciesMap) {
+        const k = data.kingdom;
+        if (k === 'Animalia') birds++;
+        else if (k === 'Plantae') plants++;
+        else if (k === 'Fungi') fungi++;
+        else others++;
+      }
+
       return {
         totalSpecies,
         totalMarches: marcheIds.length,
