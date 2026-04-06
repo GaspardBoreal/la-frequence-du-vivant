@@ -1,77 +1,29 @@
 
 
-## Ajouter un onglet "Événements" dans Exportations & Rapports
+## Corriger l'export CSV "Données brutes biodiversité"
 
-### Constat
+### Cause racine (2 bugs)
 
-La page `/admin/exportations` (ExportationsAdmin.tsx) possède déjà un système d'onglets (Tabs) pour exporter des textes littéraires (Word, CSV, ePub, PDF, Éditeur). Mais aucun onglet ne couvre les **événements** (`marche_events`) ni leurs **marches associées** avec données de biodiversité et participants.
+1. **Données jamais chargées** — `EventExportPanel.tsx` ligne 172 : la condition est `if (includeBiodiversity && ...)`. Quand seul `includeRawBiodiversity` est coché (et `includeBiodiversity` décoché), aucune donnée biodiversité n'est récupérée → `biodiversity` reste `null`.
 
-### Proposition
+2. **Aucune section CSV pour les données brutes** — `eventExportUtils.ts` : la fonction `exportEventsToCSV` ne gère jamais `options.includeRawBiodiversity`. Il n'y a aucun bloc qui écrit les données brutes → le fichier est vide.
 
-Ajouter un onglet **"Événements"** dans le `TabsList` existant, contenant :
+3. **topSpecies limité à 15** — Même quand les données sont chargées, `topSpecies` est tronqué à 15 espèces (`.slice(0, 15)`). Pour un export "données brutes", il faut TOUTES les espèces.
 
-```text
-┌─────────────────────────────────────────────────────────────────┐
-│  [Textes] [Vocabulaire] [Stats] [ePub] [PDF] [★ Événements]   │
-├─────────────────────────────────────────────────────────────────┤
-│                                                                 │
-│  Sélection des événements                                       │
-│  ┌────────────────────────────────────────────────────────────┐ │
-│  │ [Filtre type ▼]  Agro / Éco poétique / Éco tourisme       │ │
-│  │                                                            │ │
-│  │ ☑ Transhumance Mouton Village    🌱 29 mar · 3 marcheurs  │ │
-│  │ ☑ DEVIAT première découverte     🌱 05 jan · 2 marcheurs  │ │
-│  │ ☐ Réveil de la Terre             📖 11 avr · 0 marcheurs  │ │
-│  └────────────────────────────────────────────────────────────┘ │
-│                                                                 │
-│  Contenu du rapport                                             │
-│  ☑ Fiche événement (titre, date, lieu, type, organisateur)      │
-│  ☑ Liste des participants (nom, statut, date inscription)       │
-│  ☑ Marches associées (étapes, coordonnées, textes)              │
-│  ☑ Synthèse biodiversité (espèces par royaume, top espèces)    │
-│  ☐ Données brutes biodiversité (species_data complet)           │
-│                                                                 │
-│  Format d'export                                                │
-│  ○ Word (.docx)  ○ CSV  ○ PDF                                  │
-│                                                                 │
-│  [Aperçu]  [Exporter]                                           │
-└─────────────────────────────────────────────────────────────────┘
-```
+### Corrections
 
-### Données jointes
+**Fichier `src/components/admin/EventExportPanel.tsx`** :
+- Ligne 172 : changer la condition en `if ((includeBiodiversity || includeRawBiodiversity) && event.exploration_id)`
+- Stocker TOUTES les espèces (sans `.slice(0, 15)`) dans un nouveau champ `allSpecies` sur `biodiversity`, en plus de `topSpecies` qui reste tronqué pour la synthèse
 
-Pour chaque événement sélectionné, la requête récupère :
-- `marche_events` : titre, date, lieu, event_type, latitude/longitude, exploration_id
-- `marche_participations` → `community_profiles` : participants (prénom, nom, statut validated_at)
-- `exploration_marches` → `marches` : étapes géolocalisées, textes littéraires
-- `biodiversity_snapshots` via les marches : espèces, compteurs par royaume (calculés depuis `species_data` JSON, comme corrigé dans `useExplorationBiodiversitySummary`)
+**Fichier `src/utils/eventExportUtils.ts`** :
+- Ajouter `allSpecies` au type `EventExportData.biodiversity`
+- Ajouter un bloc CSV dédié pour `includeRawBiodiversity` qui exporte la liste complète des espèces avec colonnes : Événement, Type, Espèce, Nom scientifique, Royaume, Observations
 
-### Charte graphique respectée
-
-- Badges colorés par type d'événement (emerald/violet/amber) via `getMarcheEventTypeMeta`
-- En-têtes de section dans le Word/PDF avec la couleur du type
-- Icônes Sprout / BookOpenText / Trees selon le type
-
-### Formats d'export
-
-**Word (.docx)** — Rapport structuré par événement :
-- Page de garde avec titre, type (badge), date, lieu
-- Section participants (tableau)
-- Section parcours (liste des étapes avec coordonnées)
-- Section biodiversité (compteurs + top espèces)
-
-**CSV** — Données tabulaires aplaties :
-- Un fichier "événements" (1 ligne par événement)
-- Un fichier "participants" (1 ligne par inscription)
-- Un fichier "biodiversité" (1 ligne par espèce par marche)
-
-**PDF** — Rapport visuel similaire au Word avec mise en page soignée
-
-### Architecture technique
+### Fichiers impactés
 
 | Action | Fichier |
 |--------|---------|
-| Créer | `src/components/admin/EventExportPanel.tsx` — composant de l'onglet (sélection, options, aperçu) |
-| Créer | `src/utils/eventExportUtils.ts` — logique d'export Word/CSV/PDF pour événements |
-| Modifier | `src/pages/ExportationsAdmin.tsx` — ajouter l'onglet "Événements" dans le TabsList |
+| Modifier | `src/components/admin/EventExportPanel.tsx` — condition de chargement + champ `allSpecies` |
+| Modifier | `src/utils/eventExportUtils.ts` — type `allSpecies` + section CSV données brutes |
 
