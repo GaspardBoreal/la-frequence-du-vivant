@@ -37,7 +37,7 @@ const MarchesDuVivantMonEspace = () => {
       const today = new Date().toISOString().split('T')[0];
       const { data } = await supabase
         .from('marche_events')
-        .select('id, title, description, date_marche, lieu, exploration_id, explorations(name)')
+        .select('id, title, description, date_marche, lieu, event_type, exploration_id, explorations(name)')
         .gte('date_marche', today)
         .order('date_marche', { ascending: true })
         .limit(6);

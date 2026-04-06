@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Sparkles, MapPin, CheckCircle2, Clock, QrCode, Leaf, Music, PenLine, ChevronRight, Compass } from 'lucide-react';
+import { Sparkles, MapPin, CheckCircle2, Clock, QrCode, ChevronRight, Compass } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
 import { format, differenceInCalendarDays } from 'date-fns';
@@ -9,6 +9,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useQueryClient } from '@tanstack/react-query';
 import { stripHtml } from '@/utils/textUtils';
+import { getMarcheEventTypeMeta } from '@/lib/marcheEventTypes';
 
 interface MarcheEvent {
   id: string;
@@ -16,6 +17,7 @@ interface MarcheEvent {
   description: string | null;
   date_marche: string;
   lieu: string | null;
+  event_type?: string | null;
   exploration_id?: string | null;
   explorations?: { name: string } | null;
 }
@@ -50,20 +52,6 @@ const getCountdown = (dateStr: string) => {
   return `${Math.ceil(days / 30)} mois`;
 };
 
-const detectPillars = (title: string, desc: string | null) => {
-  const text = `${title} ${desc || ''}`.toLowerCase();
-  const pillars: { icon: typeof Leaf; label: string; color: string }[] = [];
-
-  if (/biodiversit|espèce|faune|flore|vivant|arbre|sol|terre|transhumance|berger|mouton|oiseaux|insecte/.test(text))
-    pillars.push({ icon: Leaf, label: 'Biodiversité', color: 'text-emerald-600 dark:text-emerald-400' });
-  if (/bioacoustique|son|écoute|acoustique|chant|audio|sonore|fréquence|silence/.test(text))
-    pillars.push({ icon: Music, label: 'Bioacoustique', color: 'text-sky-600 dark:text-sky-400' });
-  if (/géopoétique|poé|récit|narrat|territoire|paysage|marche|sentier|chemin|gardien/.test(text))
-    pillars.push({ icon: PenLine, label: 'Géopoétique', color: 'text-amber-600 dark:text-amber-400' });
-
-  if (pillars.length === 0) pillars.push({ icon: Leaf, label: 'Biodiversité', color: 'text-emerald-600 dark:text-emerald-400' });
-  return pillars;
-};
 
 const EventCard: React.FC<{
   event: MarcheEvent;
@@ -72,7 +60,7 @@ const EventCard: React.FC<{
   registeringId: string | null;
   onRegister: (id: string) => void;
 }> = ({ event, isRegistered, index, registeringId, onRegister }) => {
-  const pillars = detectPillars(event.title, event.description);
+  const typeMeta = getMarcheEventTypeMeta(event.event_type);
   const descText = event.description ? stripHtml(event.description) : null;
 
   return (
@@ -116,14 +104,14 @@ const EventCard: React.FC<{
           )}
         </div>
 
-        <div className="flex flex-wrap gap-1.5">
-          {pillars.map((p, j) => (
-            <span key={j} className={`inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full bg-emerald-50 dark:bg-white/5 ${p.color}`}>
-              <p.icon className="w-3 h-3" />
-              {p.label}
+        {typeMeta && (
+          <div className="flex flex-wrap gap-1.5">
+            <span className={`inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full border ${typeMeta.badgeClassName}`}>
+              <typeMeta.icon className="w-3 h-3" />
+              {typeMeta.label}
             </span>
-          ))}
-        </div>
+          </div>
+        )}
 
         {isRegistered ? (
           <div className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400 text-xs bg-emerald-100 dark:bg-emerald-500/10 rounded-full px-2.5 py-1 w-fit">
