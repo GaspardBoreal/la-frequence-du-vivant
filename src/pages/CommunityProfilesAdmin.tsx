@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { ArrowLeft, Search, GraduationCap, Award, Footprints, Eye, Heart, Shield, Link2, MousePointerClick, UserPlus2 } from 'lucide-react';
 import { toast } from 'sonner';
+import ActivityDashboard from '@/components/admin/ActivityDashboard';
 
 const roleConfig: Record<string, { label: string; icon: React.ElementType; color: string }> = {
   marcheur_en_devenir: { label: 'En devenir', icon: Footprints, color: 'text-muted-foreground' },
@@ -259,6 +260,8 @@ const CommunityProfilesAdmin: React.FC = () => {
                 </TableBody>
               </Table>
             </Card>
+
+            <ActivityDashboard />
           </div>
         )}
       </div>

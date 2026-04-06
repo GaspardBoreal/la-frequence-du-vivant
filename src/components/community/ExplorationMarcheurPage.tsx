@@ -8,6 +8,7 @@ import { ArrowLeft, MapPin, Footprints, Users, Map, MessageCircle, ChevronLeft, 
 import { motion, AnimatePresence } from 'framer-motion';
 import { createSlug } from '@/utils/slugGenerator';
 import { useMarcheurStats } from '@/hooks/useMarcheurContributions';
+import { useActivityTracker } from '@/hooks/useActivityTracker';
 import MediaSkeletonGrid from './contributions/MediaSkeletonGrid';
 import MarcheursTab from './exploration/MarcheursTab';
 import ExplorationCarteTab from './exploration/ExplorationCarteTab';
@@ -59,6 +60,7 @@ const ExplorationMarcheurPage: React.FC = () => {
   const [activeGlobalTab, setActiveGlobalTab] = useState<GlobalTab>('carte');
   const [activeSensoryTab, setActiveSensoryTab] = useState<SensoryTab>('voir');
   const [activeStepIndex, setActiveStepIndex] = useState(0);
+  const { trackActivity } = useActivityTracker();
 
   // Detect if param is an event-based fallback (event-{uuid}) or a real exploration ID
   const isEventFallback = rawParam?.startsWith('event-');
@@ -105,6 +107,13 @@ const ExplorationMarcheurPage: React.FC = () => {
   });
 
   const effectiveExplorationId = explorationId || resolvedExplorationId;
+
+  // Track page view on mount
+  useEffect(() => {
+    if (effectiveExplorationId) {
+      trackActivity('page_view', `exploration:${effectiveExplorationId}`, { explorationId: effectiveExplorationId });
+    }
+  }, [effectiveExplorationId, trackActivity]);
 
   // Fetch exploration details
   const { data: exploration, isLoading: isLoadingExploration } = useQuery({
@@ -243,7 +252,10 @@ const ExplorationMarcheurPage: React.FC = () => {
               return (
                 <button
                   key={tab.key}
-                  onClick={() => setActiveGlobalTab(tab.key)}
+                  onClick={() => {
+                    setActiveGlobalTab(tab.key);
+                    trackActivity('tab_switch', `tab:${tab.key}`, { explorationId: explorationId || undefined });
+                  }}
                   className={`flex items-center gap-1 px-2.5 py-2.5 text-xs font-medium transition-colors relative whitespace-nowrap shrink-0 ${
                     isActive
                       ? 'text-emerald-600 dark:text-emerald-400'
@@ -296,7 +308,10 @@ const ExplorationMarcheurPage: React.FC = () => {
                   return (
                     <button
                       key={tab.key}
-                      onClick={() => setActiveSensoryTab(tab.key)}
+                      onClick={() => {
+                        setActiveSensoryTab(tab.key);
+                        trackActivity('tab_switch', `tab:marches:${tab.key}`, { explorationId: effectiveExplorationId || undefined });
+                      }}
                       className={`flex-1 flex flex-col items-center gap-1 py-2.5 text-[10px] transition-colors relative ${
                         isActive
                           ? 'text-emerald-600 dark:text-emerald-300'
