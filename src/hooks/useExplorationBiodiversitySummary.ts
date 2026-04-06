@@ -98,10 +98,6 @@ export const useExplorationBiodiversitySummary = (explorationId?: string) => {
       });
 
       // Calculate aggregated metrics using unique species across all marches
-      let birds = 0;
-      let plants = 0;
-      let fungi = 0;
-      let others = 0;
       const uniqueSpeciesMap = new Map<string, { count: number; scientificName: string; kingdom: string; photos: string[] }>();
 
       const speciesByMarche = explorationMarches?.map(em => {
@@ -110,10 +106,6 @@ export const useExplorationBiodiversitySummary = (explorationId?: string) => {
         const speciesCount = snapshot?.total_species || 0;
         
         if (snapshot) {
-          birds += snapshot.birds_count || 0;
-          plants += snapshot.plants_count || 0;
-          fungi += snapshot.fungi_count || 0;
-          others += snapshot.others_count || 0;
 
           // Process species data for top species - count ACTUAL occurrences per species
           const speciesData = snapshot.species_data as any[];
