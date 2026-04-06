@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowLeft, FileDown, FileText, Table, Download, Filter, Loader2, ChevronDown, ChevronRight, MapPin, BookOpen, AlertTriangle, AlertCircle, ExternalLink, BarChart3, Sparkles, Plus, X, ScrollText } from 'lucide-react';
+import { ArrowLeft, FileDown, FileText, Table, Download, Filter, Loader2, ChevronDown, ChevronRight, MapPin, BookOpen, AlertTriangle, AlertCircle, ExternalLink, BarChart3, Sparkles, Plus, X, ScrollText, Calendar } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -1673,6 +1673,13 @@ const ExportationsAdmin: React.FC = () => {
             </Button>
           </CardContent>
         </Card>
+
+          </TabsContent>
+
+          <TabsContent value="evenements">
+            <EventExportPanel />
+          </TabsContent>
+        </Tabs>
 
         <div className="mt-12 text-center text-sm text-muted-foreground">
           <p>Centre d'Exportation - Gaspard Boréal © 2025 - 2026</p>
