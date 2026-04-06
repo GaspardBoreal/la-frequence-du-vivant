@@ -1,33 +1,40 @@
 
 
-## Remplacer les badges sémantiques par le vrai type de marche
+## Aligner les badges de type de marche dans l'onglet Marches sur le Carnet
 
 ### Problème
 
-Les badges actuels ("Biodiversité", "Bioacoustique", "Géopoétique") sont détectés par analyse textuelle du titre (`detectPillars`). Or le champ `event_type` existe déjà dans `marche_events` avec les valeurs `agroecologique`, `eco_poetique`, `eco_tourisme` — et le registre de métadonnées `marcheEventTypeMeta` fournit déjà labels, icônes et couleurs.
+L'onglet **Marches** utilise encore `detectPillars` (analyse textuelle → "Biodiversité", "Bioacoustique", "Géopoétique") au lieu du champ `event_type` avec les vrais badges colorés du Carnet Vivant.
 
-### Solution
+### Modifications
 
-1. **`src/hooks/useCommunityProfile.ts`** — Ajouter `event_type` dans le select de la requête participations :
-   ```
-   marche_events(title, date_marche, lieu, exploration_id, event_type, explorations(name))
-   ```
+**1. `src/pages/MarchesDuVivantMonEspace.tsx`** — Ajouter `event_type` au select de la requête `upcoming-marche-events-mon-espace` :
+```
+.select('id, title, description, date_marche, lieu, event_type, exploration_id, explorations(name)')
+```
 
-2. **`src/components/community/CarnetVivant.tsx`** :
-   - Mettre à jour l'interface `Participation` pour inclure `event_type?: string` dans `marche_events`
-   - Supprimer la fonction `detectPillars`
-   - Remplacer le bloc des badges par un unique badge basé sur `getMarcheEventTypeMeta(event.event_type)` :
-     - **Agroécologique** : icône Sprout, couleurs emerald (primary)
-     - **Éco poétique** : icône BookOpenText, couleurs secondary (violet/rose)
-     - **Éco tourisme** : icône Trees, couleurs accent (ambre/bois)
-   - Si aucun type, ne pas afficher de badge (au lieu du fallback "Biodiversité")
-
-3. **Responsive** — Les badges sont déjà en `flex-wrap` avec `text-[10px]` et `px-2 py-0.5`, parfaitement adaptés mobile/tablette/desktop. Le passage d'un à trois badges possibles vers un unique badge simplifie encore l'affichage sur petits écrans.
+**2. `src/components/community/tabs/MarchesTab.tsx`** :
+- Ajouter `event_type` à l'interface `MarcheEvent`
+- Supprimer la fonction `detectPillars` et ses imports (`Leaf`, `Music`, `PenLine`)
+- Importer `getMarcheEventTypeMeta` depuis `@/lib/marcheEventTypes`
+- Dans `EventCard`, remplacer le bloc badges `detectPillars` par le même rendu que le Carnet :
+```tsx
+const typeMeta = getMarcheEventTypeMeta(event.event_type);
+// ...
+{typeMeta && (
+  <div className="flex flex-wrap gap-1.5">
+    <span className={`inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full border ${typeMeta.badgeClassName}`}>
+      <typeMeta.icon className="w-3 h-3" />
+      {typeMeta.label}
+    </span>
+  </div>
+)}
+```
 
 ### Fichiers impactés
 
 | Action | Fichier |
 |--------|---------|
-| Modifier | `src/hooks/useCommunityProfile.ts` (ajouter `event_type` au select) |
-| Modifier | `src/components/community/CarnetVivant.tsx` (supprimer `detectPillars`, utiliser `getMarcheEventTypeMeta`) |
+| Modifier | `src/pages/MarchesDuVivantMonEspace.tsx` (ajouter `event_type` au select) |
+| Modifier | `src/components/community/tabs/MarchesTab.tsx` (supprimer `detectPillars`, utiliser `getMarcheEventTypeMeta`) |
 
