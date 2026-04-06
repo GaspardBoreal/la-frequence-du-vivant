@@ -377,6 +377,23 @@ const MarchesTab: React.FC<MarchesTabProps> = ({
 
           <PastEventsMap events={pastEvents} />
 
+          {/* Légende de la carte */}
+          <div className="flex flex-wrap gap-3 text-[10px] text-muted-foreground mt-1">
+            {(['agroecologique', 'eco_poetique', 'eco_tourisme'] as const).map(type => {
+              const meta = getMarcheEventTypeMeta(type);
+              if (!meta) return null;
+              return (
+                <span key={type} className="inline-flex items-center gap-1">
+                  <span
+                    className="w-2.5 h-2.5 rounded-full inline-block"
+                    style={{ backgroundColor: EVENT_TYPE_COLORS[type] }}
+                  />
+                  {meta.shortLabel}
+                </span>
+              );
+            })}
+          </div>
+
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
             {pastEvents.map((event, i) => (
               <PastEventCard
