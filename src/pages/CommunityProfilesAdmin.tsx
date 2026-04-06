@@ -6,7 +6,8 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { ArrowLeft, Search, GraduationCap, Award, Footprints, Eye, Heart, Shield, Link2, MousePointerClick, UserPlus2 } from 'lucide-react';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import { ArrowLeft, Search, GraduationCap, Award, Footprints, Eye, Heart, Shield, Link2, MousePointerClick, UserPlus2, Users } from 'lucide-react';
 import { toast } from 'sonner';
 import ActivityDashboard from '@/components/admin/ActivityDashboard';
 
@@ -98,106 +99,129 @@ const CommunityProfilesAdmin: React.FC = () => {
           <h1 className="text-2xl font-bold text-foreground">Communauté des Marcheurs</h1>
         </div>
 
-        {/* Stats */}
-        {profiles && (
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-6">
-            {Object.entries(roleConfig).map(([key, config]) => {
-              const count = profiles.filter(p => p.role === key).length;
-              const Icon = config.icon;
-              return (
-                <Card key={key} className="p-3 text-center">
-                  <Icon className={`h-5 w-5 mx-auto mb-1 ${config.color}`} />
-                  <p className="text-2xl font-bold text-foreground">{count}</p>
-                  <p className="text-xs text-muted-foreground">{config.label}</p>
+        <Tabs defaultValue="communaute" className="w-full">
+          <TabsList className="w-full justify-start overflow-x-auto mb-6">
+            <TabsTrigger value="communaute">Communauté</TabsTrigger>
+            <TabsTrigger value="activites">Activités</TabsTrigger>
+            <TabsTrigger value="affiliation">Affiliation marcheurs</TabsTrigger>
+            <TabsTrigger value="marcheurs">Marcheurs</TabsTrigger>
+          </TabsList>
+
+          {/* ===== COMMUNAUTÉ ===== */}
+          <TabsContent value="communaute">
+            {/* Stats with Total */}
+            {profiles && (
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3 mb-6">
+                <Card className="p-3 text-center">
+                  <Users className="h-5 w-5 mx-auto mb-1 text-primary" />
+                  <p className="text-2xl font-bold text-foreground">{profiles.length}</p>
+                  <p className="text-xs text-muted-foreground">Total</p>
                 </Card>
-              );
-            })}
-          </div>
-        )}
+                {Object.entries(roleConfig).map(([key, config]) => {
+                  const count = profiles.filter(p => p.role === key).length;
+                  const Icon = config.icon;
+                  return (
+                    <Card key={key} className="p-3 text-center">
+                      <Icon className={`h-5 w-5 mx-auto mb-1 ${config.color}`} />
+                      <p className="text-2xl font-bold text-foreground">{count}</p>
+                      <p className="text-xs text-muted-foreground">{config.label}</p>
+                    </Card>
+                  );
+                })}
+              </div>
+            )}
 
-        {/* Search */}
-        <div className="relative mb-4">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Rechercher par nom, prénom, ville..."
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-            className="pl-10"
-          />
-        </div>
+            {/* Search */}
+            <div className="relative mb-4">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Rechercher par nom, prénom, ville..."
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+                className="pl-10"
+              />
+            </div>
 
-        {isLoading ? (
-          <p className="text-muted-foreground">Chargement...</p>
-        ) : (
-          <div className="space-y-6">
-            <Card>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Marcheur</TableHead>
-                    <TableHead>Rôle</TableHead>
-                    <TableHead>Marches</TableHead>
-                    <TableHead>Ville</TableHead>
-                    <TableHead>Formation</TableHead>
-                    <TableHead>Certification</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filtered?.map(profile => {
-                    const config = roleConfig[profile.role] || roleConfig.marcheur_en_devenir;
-                    const Icon = config.icon;
-                    return (
-                      <TableRow key={profile.id}>
-                        <TableCell>
-                          <div>
-                            <span className="font-medium">{profile.prenom} {profile.nom}</span>
-                            {profile.kigo_accueil && (
-                              <p className="text-xs text-muted-foreground italic">"{profile.kigo_accueil}"</p>
-                            )}
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <span className={`flex items-center gap-1.5 text-sm ${config.color}`}>
-                            <Icon className="h-3.5 w-3.5" />
-                            {config.label}
-                          </span>
-                        </TableCell>
-                        <TableCell className="font-mono">{profile.marches_count}</TableCell>
-                        <TableCell>{profile.ville || '—'}</TableCell>
-                        <TableCell>
-                          <Button
-                            variant={profile.formation_validee ? 'default' : 'outline'}
-                            size="sm"
-                            onClick={() => toggleFormation.mutate({ id: profile.id, current: profile.formation_validee })}
-                          >
-                            <GraduationCap className="h-3.5 w-3.5 mr-1" />
-                            {profile.formation_validee ? 'Validée' : 'Valider'}
-                          </Button>
-                        </TableCell>
-                        <TableCell>
-                          <Button
-                            variant={profile.certification_validee ? 'default' : 'outline'}
-                            size="sm"
-                            onClick={() => toggleCertification.mutate({ id: profile.id, current: profile.certification_validee })}
-                          >
-                            <Award className="h-3.5 w-3.5 mr-1" />
-                            {profile.certification_validee ? 'Validée' : 'Valider'}
-                          </Button>
+            {isLoading ? (
+              <p className="text-muted-foreground">Chargement...</p>
+            ) : (
+              <Card>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Marcheur</TableHead>
+                      <TableHead>Rôle</TableHead>
+                      <TableHead>Marches</TableHead>
+                      <TableHead>Ville</TableHead>
+                      <TableHead>Formation</TableHead>
+                      <TableHead>Certification</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {filtered?.map(profile => {
+                      const config = roleConfig[profile.role] || roleConfig.marcheur_en_devenir;
+                      const Icon = config.icon;
+                      return (
+                        <TableRow key={profile.id}>
+                          <TableCell>
+                            <div>
+                              <span className="font-medium">{profile.prenom} {profile.nom}</span>
+                              {profile.kigo_accueil && (
+                                <p className="text-xs text-muted-foreground italic">"{profile.kigo_accueil}"</p>
+                              )}
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <span className={`flex items-center gap-1.5 text-sm ${config.color}`}>
+                              <Icon className="h-3.5 w-3.5" />
+                              {config.label}
+                            </span>
+                          </TableCell>
+                          <TableCell className="font-mono">{profile.marches_count}</TableCell>
+                          <TableCell>{profile.ville || '—'}</TableCell>
+                          <TableCell>
+                            <Button
+                              variant={profile.formation_validee ? 'default' : 'outline'}
+                              size="sm"
+                              onClick={() => toggleFormation.mutate({ id: profile.id, current: profile.formation_validee })}
+                            >
+                              <GraduationCap className="h-3.5 w-3.5 mr-1" />
+                              {profile.formation_validee ? 'Validée' : 'Valider'}
+                            </Button>
+                          </TableCell>
+                          <TableCell>
+                            <Button
+                              variant={profile.certification_validee ? 'default' : 'outline'}
+                              size="sm"
+                              onClick={() => toggleCertification.mutate({ id: profile.id, current: profile.certification_validee })}
+                            >
+                              <Award className="h-3.5 w-3.5 mr-1" />
+                              {profile.certification_validee ? 'Validée' : 'Valider'}
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                    {filtered?.length === 0 && (
+                      <TableRow>
+                        <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
+                          Aucun profil trouvé.
                         </TableCell>
                       </TableRow>
-                    );
-                  })}
-                  {filtered?.length === 0 && (
-                    <TableRow>
-                      <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
-                        Aucun profil trouvé.
-                      </TableCell>
-                    </TableRow>
-                  )}
-                </TableBody>
-              </Table>
-            </Card>
+                    )}
+                  </TableBody>
+                </Table>
+              </Card>
+            )}
+          </TabsContent>
 
+          {/* ===== ACTIVITÉS ===== */}
+          <TabsContent value="activites">
+            <ActivityDashboard />
+          </TabsContent>
+
+          {/* ===== AFFILIATION ===== */}
+          <TabsContent value="affiliation">
             <Card className="p-4">
               <div className="mb-4 flex items-center gap-2">
                 <Link2 className="h-4 w-4 text-primary" />
@@ -260,10 +284,17 @@ const CommunityProfilesAdmin: React.FC = () => {
                 </TableBody>
               </Table>
             </Card>
+          </TabsContent>
 
-            <ActivityDashboard />
-          </div>
-        )}
+          {/* ===== MARCHEURS ===== */}
+          <TabsContent value="marcheurs">
+            <Card className="p-8 text-center">
+              <Users className="h-10 w-10 mx-auto mb-3 text-muted-foreground" />
+              <h3 className="text-lg font-semibold text-foreground mb-1">Gestion avancée des marcheurs</h3>
+              <p className="text-sm text-muted-foreground">Fonctionnalités à venir : parcours individuels, badges, historique détaillé.</p>
+            </Card>
+          </TabsContent>
+        </Tabs>
       </div>
     </div>
   );
