@@ -313,7 +313,9 @@ const ActivityDashboard: React.FC = () => {
                   width={30}
                 />
                 <Tooltip
-                  contentStyle={{ fontSize: 12, borderRadius: 8, border: '1px solid hsl(var(--border))' }}
+                  contentStyle={{ fontSize: 12, borderRadius: 8, border: '1px solid hsl(var(--border))', backgroundColor: 'white', color: '#374151' }}
+                  labelStyle={{ color: '#6b7280' }}
+                  itemStyle={{ color: '#111827' }}
                   labelFormatter={label => `Période : ${label}`}
                   formatter={(value: number) => [`${value} connexion${value > 1 ? 's' : ''}`, 'Connexions']}
                 />
