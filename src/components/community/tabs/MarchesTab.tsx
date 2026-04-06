@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
-import { motion } from 'framer-motion';
-import { Sparkles, MapPin, CheckCircle2, QrCode, ChevronRight, Compass, Footprints, Users, Calendar } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Sparkles, MapPin, CheckCircle2, QrCode, ChevronRight, Compass, Footprints, Users, Calendar, ChevronDown } from 'lucide-react';
+import PastEventExpandedView from './PastEventExpandedView';
 import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
 import { format, differenceInCalendarDays, formatDistanceToNow } from 'date-fns';
@@ -157,8 +158,10 @@ const EventCard: React.FC<{
 };
 
 const PastEventCard: React.FC<{ event: PastEvent; participantCount: number; index: number }> = ({ event, participantCount, index }) => {
+  const [expanded, setExpanded] = useState(false);
   const typeMeta = getMarcheEventTypeMeta(event.event_type);
   const timeAgo = formatDistanceToNow(new Date(event.date_marche), { locale: fr, addSuffix: true });
+  const hasExploration = !!event.exploration_id;
 
   return (
     <motion.div
@@ -194,7 +197,37 @@ const PastEventCard: React.FC<{ event: PastEvent; participantCount: number; inde
         </div>
       )}
 
-      <Footprints className="absolute bottom-2 right-2 w-5 h-5 text-stone-200 dark:text-stone-700/40" />
+      {hasExploration && (
+        <button
+          onClick={() => setExpanded(!expanded)}
+          className="flex items-center gap-1 text-[10px] font-medium transition-colors hover:opacity-80 pt-0.5"
+          style={{ color: EVENT_TYPE_COLORS[event.event_type || ''] || '#78716c' }}
+        >
+          <ChevronDown className={`w-3 h-3 transition-transform ${expanded ? 'rotate-180' : ''}`} />
+          {expanded ? 'Replier' : 'Voir le parcours'}
+        </button>
+      )}
+
+      <AnimatePresence>
+        {expanded && event.exploration_id && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.3 }}
+            className="overflow-hidden"
+          >
+            <div className="pt-2 border-t border-stone-200/60 dark:border-stone-600/20 mt-1">
+              <PastEventExpandedView
+                explorationId={event.exploration_id}
+                eventType={event.event_type}
+              />
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {!expanded && <Footprints className="absolute bottom-2 right-2 w-5 h-5 text-stone-200 dark:text-stone-700/40" />}
     </motion.div>
   );
 };
