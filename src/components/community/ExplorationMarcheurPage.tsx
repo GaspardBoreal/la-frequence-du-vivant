@@ -8,6 +8,7 @@ import { ArrowLeft, MapPin, Footprints, Users, Map, MessageCircle, ChevronLeft, 
 import { motion, AnimatePresence } from 'framer-motion';
 import { createSlug } from '@/utils/slugGenerator';
 import { useMarcheurStats } from '@/hooks/useMarcheurContributions';
+import { useActivityTracker } from '@/hooks/useActivityTracker';
 import MediaSkeletonGrid from './contributions/MediaSkeletonGrid';
 import MarcheursTab from './exploration/MarcheursTab';
 import ExplorationCarteTab from './exploration/ExplorationCarteTab';
