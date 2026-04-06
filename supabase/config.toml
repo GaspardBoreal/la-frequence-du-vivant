@@ -82,3 +82,6 @@ verify_jwt = false
 
 [functions.generate-contextual-insights]
 verify_jwt = false
+
+[functions.sync-biodiversity-snapshot]
+verify_jwt = false
