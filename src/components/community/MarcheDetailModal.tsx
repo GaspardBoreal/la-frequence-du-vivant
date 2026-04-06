@@ -595,6 +595,9 @@ export const LireTab: React.FC<{ userId: string; marcheEventId: string; activeMa
 
 // ─── Vivant (3 couches) ───
 export const VivantTab: React.FC<{ marcheId: string; userId: string; marcheSlug?: string }> = ({ marcheId, userId, marcheSlug }) => {
+  const queryClient = useQueryClient();
+  const hasSyncedRef = useRef<string | null>(null);
+
   // Fetch lat/lng for this marche
   const { data: coords } = useQuery({
     queryKey: ['marche-coords', marcheId],
@@ -616,6 +619,42 @@ export const VivantTab: React.FC<{ marcheId: string; userId: string; marcheSlug?
     radius: 0.5,
     dateFilter: 'recent',
   });
+
+  // Silent sync to biodiversity_snapshots after live data arrives
+  useEffect(() => {
+    if (!biodiversityData?.species || !biodiversityData.summary || !coords || !marcheId) return;
+    // Only sync once per marcheId per mount
+    if (hasSyncedRef.current === marcheId) return;
+    hasSyncedRef.current = marcheId;
+
+    const syncSnapshot = async () => {
+      try {
+        console.log(`🔄 Syncing biodiversity snapshot for marche ${marcheId}...`);
+        const { error } = await supabase.functions.invoke('sync-biodiversity-snapshot', {
+          body: {
+            marcheId,
+            latitude: coords.latitude,
+            longitude: coords.longitude,
+            speciesData: biodiversityData.species,
+            summary: biodiversityData.summary,
+            methodology: biodiversityData.methodology,
+          },
+        });
+        if (!error) {
+          console.log(`✅ Snapshot synced for marche ${marcheId}`);
+          // Invalidate all snapshot-dependent queries
+          queryClient.invalidateQueries({ queryKey: ['event-biodiversity-snapshots'] });
+          queryClient.invalidateQueries({ queryKey: ['biodiversity-snapshots'] });
+        } else {
+          console.warn('⚠️ Snapshot sync failed:', error);
+        }
+      } catch (err) {
+        console.warn('⚠️ Snapshot sync error (non-blocking):', err);
+      }
+    };
+
+    syncSnapshot();
+  }, [biodiversityData, coords, marcheId, queryClient]);
 
   const explorerLink = marcheSlug ? `/bioacoustique/${marcheSlug}` : null;
 
