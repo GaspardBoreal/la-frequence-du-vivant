@@ -2510,6 +2510,39 @@ export type Database = {
           },
         ]
       }
+      marcheur_activity_logs: {
+        Row: {
+          created_at: string | null
+          event_target: string
+          event_type: string
+          exploration_id: string | null
+          id: string
+          marche_event_id: string | null
+          metadata: Json | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          event_target: string
+          event_type: string
+          exploration_id?: string | null
+          id?: string
+          marche_event_id?: string | null
+          metadata?: Json | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          event_target?: string
+          event_type?: string
+          exploration_id?: string | null
+          id?: string
+          marche_event_id?: string | null
+          metadata?: Json | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       marcheur_audio: {
         Row: {
           created_at: string
@@ -3693,6 +3726,32 @@ export type Database = {
           share_token: string
         }[]
       }
+      get_activity_global_stats: {
+        Args: never
+        Returns: {
+          active_sessions_7d: number
+          media_uploads_7d: number
+          most_active_nom: string
+          most_active_prenom: string
+          most_active_user_id: string
+          most_popular_tab: string
+          total_events_7d: number
+        }[]
+      }
+      get_activity_timeline: {
+        Args: { p_limit?: number; p_user_filter?: string }
+        Returns: {
+          created_at: string
+          event_target: string
+          event_type: string
+          exploration_id: string
+          id: string
+          metadata: Json
+          nom: string
+          prenom: string
+          user_id: string
+        }[]
+      }
       get_admin_count: { Args: never; Returns: number }
       get_admin_count_secure: { Args: never; Returns: number }
       get_admin_list_safe: {
@@ -3808,6 +3867,22 @@ export type Database = {
           nom: string
           prenom: string
           role: string
+          user_id: string
+        }[]
+      }
+      get_marcheur_activity_dashboard: {
+        Args: never
+        Returns: {
+          explorations_viewed: number
+          favorite_tabs: string[]
+          last_seen: string
+          nom: string
+          photos_count: number
+          prenom: string
+          role: string
+          sessions_7d: number
+          sounds_count: number
+          texts_count: number
           user_id: string
         }[]
       }
