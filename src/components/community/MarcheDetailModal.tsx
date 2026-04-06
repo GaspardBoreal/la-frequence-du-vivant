@@ -292,6 +292,7 @@ export const VoirTab: React.FC<{ marcheId: string; userId: string; marcheEventId
 
 // ─── Écouter Tab ───
 export const EcouterTab: React.FC<{ marcheId: string; userId: string; marcheEventId: string; activeMarcheId?: string }> = ({ marcheId, userId, marcheEventId, activeMarcheId }) => {
+  const { trackActivity } = useActivityTracker();
   const [sort, setSort] = useState<'desc' | 'asc'>('asc');
   const [showUpload, setShowUpload] = useState(false);
 
@@ -337,7 +338,10 @@ export const EcouterTab: React.FC<{ marcheId: string; userId: string; marcheEven
             label="Enregistrements sonores"
             icon={<Music className="w-6 h-6 text-violet-400/60" />}
             isUploading={uploadAudio.isPending}
-            onFilesSelected={(files, isPublic) => uploadAudio.mutate({ files, marcheEventId, isPublic, marcheId: activeMarcheId })}
+            onFilesSelected={(files, isPublic) => {
+              uploadAudio.mutate({ files, marcheEventId, isPublic, marcheId: activeMarcheId });
+              trackActivity('media_upload', 'audio', { marcheEventId, metadata: { count: files.length } });
+            }}
           />
         </motion.div>
       )}
