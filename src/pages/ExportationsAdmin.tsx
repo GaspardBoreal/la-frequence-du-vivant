@@ -787,6 +787,19 @@ const ExportationsAdmin: React.FC = () => {
           </p>
         </div>
 
+        <Tabs defaultValue="textes" className="w-full">
+          <TabsList className="mb-6 w-full justify-start">
+            <TabsTrigger value="textes" className="gap-1.5">
+              <FileText className="h-4 w-4" />
+              Textes
+            </TabsTrigger>
+            <TabsTrigger value="evenements" className="gap-1.5">
+              <Calendar className="h-4 w-4" />
+              Événements
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="textes">
         {/* Stats Cards */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
           <Card className="text-center">
