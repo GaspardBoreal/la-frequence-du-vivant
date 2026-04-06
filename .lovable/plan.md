@@ -1,61 +1,40 @@
 
 
-## Diagnostic : pourquoi Gaspard Boréal n'a aucun log
+## Réorganisation de `/admin/community` en onglets
 
-### Cause racine identifiée
+### Structure
 
-Le hook `useActivityTracker` appelle `supabase.auth.getSession()` **à l'intérieur du setTimeout** (2 secondes après le montage). Or la documentation Supabase et le pattern connu indiquent que `getSession()` peut retourner `null` si la session n'a pas encore été restaurée depuis le localStorage — surtout juste après un `signIn()` suivi d'un `navigate()`.
+La page `CommunityProfilesAdmin` sera restructurée avec 4 onglets via `Tabs` de Radix :
 
-Concrètement :
-1. Gaspard se connecte sur `/marches-du-vivant/connexion`
-2. `signIn()` → `navigate('/marches-du-vivant/mon-espace')`
-3. Le composant `MarchesDuVivantMonEspace` se monte, `useCommunityAuth` commence à restaurer la session
-4. Le `useEffect` pour `session_start` se déclenche quand `user` et `profile` sont prêts
-5. `trackActivity()` est appelé → setTimeout de 2s → **à ce moment, `getSession()` est appelé à nouveau** indépendamment
-6. Si le token JWT n'est pas encore pleinement écrit dans le storage (race condition), `session` est `null` → **le log est silencieusement ignoré** (ligne 26: `if (!session?.user?.id) return;`)
+**Communauté** (onglet par défaut) — Le contenu actuel : indicateurs par rôle (avec ajout d'un card "Total"), barre de recherche, tableau des profils avec formation/certification.
 
-Pour Zéphyrine (iPhone, connexion plus lente), le timing a fonctionné. Pour Gaspard (desktop, navigation rapide), non.
+**Activités** — Le composant `ActivityDashboard` actuel, enrichi d'un toggle Liste/Graphique :
+- Vue Liste (icone `List`) : tableau + timeline existants
+- Vue Graphique (icone `BarChart3`) : graphe temporel recharts (`AreaChart`) avec x=temps, y=connexions. Sélecteur de période : Aujourd'hui / Hier / 7 derniers jours / Mois dernier / Trimestre dernier / Semestre dernier / Année dernière. Granularité adaptée (heures pour aujourd'hui/hier, jours pour 7j/mois, semaines pour trimestre+).
 
-### Solution : ne plus appeler `getSession()` dans le tracker
+**Affiliation marcheurs** — Le bloc affiliation actuel (cards KPI + tableau).
 
-Au lieu de re-interroger la session dans le callback du timer, **passer le `userId` directement** depuis le composant appelant, qui possède déjà l'utilisateur authentifié.
+**Marcheurs** — Réservé pour les futures fonctionnalités (placeholder).
 
-### Modifications
+### Indicateurs rôle enrichis
 
-**1. `src/hooks/useActivityTracker.ts`**
+Ajouter un card "Total" avec icône `Users` avant les 5 rôles existants. Grille passée à `grid-cols-3 md:grid-cols-6`.
 
-Modifier `trackActivity` pour accepter un `userId` en premier argument au lieu de le récupérer via `getSession()` :
+### Vue Graphique — Données
 
-```typescript
-trackActivity(userId: string, eventType: string, eventTarget: string, options?)
-```
+Nouvelle RPC SQL `get_activity_connections_chart(p_period text)` qui retourne `{ period_label, connection_count }[]` en agrégeant les `session_start` de `marcheur_activity_logs` selon la période choisie. Format du label adapté : `HH:00` pour aujourd'hui/hier, `dd/MM` pour 7j/mois, `Sem. XX` pour trimestre+.
 
-Supprimer l'appel à `supabase.auth.getSession()`. Le `userId` vient du composant parent qui a déjà vérifié l'auth.
+### Responsive
 
-**2. Tous les appelants** (5 fichiers)
-
-Adapter les appels pour passer `user.id` :
-
-| Fichier | Modification |
-|---------|-------------|
-| `MarchesDuVivantMonEspace.tsx` | `trackActivity(user.id, 'session_start', ...)` |
-| `MarcheDetailModal.tsx` | `trackActivity(userId, 'marche_view', ...)` |
-| `ExplorationMarcheurPage.tsx` | `trackActivity(userId, 'page_view', ...)` |
-| `ApprendreTab.tsx` | `trackActivity(userId, 'tab_switch', ...)` |
-| `OutilsTab.tsx` | `trackActivity(userId, 'tool_use', ...)` |
+- Onglets : `TabsList` en scroll horizontal sur mobile avec `overflow-x-auto`
+- Graphique : hauteur responsive (`h-64 md:h-80`)
+- Cards indicateurs : `grid-cols-2 sm:grid-cols-3 md:grid-cols-6`
 
 ### Fichiers impactés
 
 | Action | Fichier |
 |--------|---------|
-| Modifier | `src/hooks/useActivityTracker.ts` (supprimer getSession, ajouter param userId) |
-| Modifier | `src/pages/MarchesDuVivantMonEspace.tsx` (passer user.id) |
-| Modifier | `src/components/community/MarcheDetailModal.tsx` (passer userId) |
-| Modifier | `src/components/community/ExplorationMarcheurPage.tsx` (passer userId) |
-| Modifier | `src/components/community/insights/ApprendreTab.tsx` (passer userId) |
-| Modifier | `src/components/community/tabs/OutilsTab.tsx` (passer userId) |
-
-### Résultat
-
-Plus de dépendance à `getSession()` dans le tracker. Le `userId` est garanti disponible car les composants ne rendent le contenu tracké que si l'utilisateur est authentifié. Toute race condition de session est éliminée.
+| Modifier | `src/pages/CommunityProfilesAdmin.tsx` — restructurer en Tabs, déplacer affiliation dans son onglet |
+| Modifier | `src/components/admin/ActivityDashboard.tsx` — ajouter toggle Liste/Graphique + composant chart |
+| Créer | Migration SQL — RPC `get_activity_connections_chart` |
 
