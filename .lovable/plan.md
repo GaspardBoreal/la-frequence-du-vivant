@@ -1,72 +1,42 @@
 
 
-## Section "Empreintes passées" avec carte interactive
+## Corrections de la carte "Empreintes passées"
 
-### Vue d'ensemble
+### Problème 1 : Marche manquante sur la carte
 
-Ajouter une 3e section **"Empreintes passées"** dans l'onglet Marches, composée de :
-1. Une **mini-carte Leaflet** montrant tous les événements passés géolocalisés
-2. Des **vignettes compactes** en lecture seule sous la carte
+La requête SQL confirme que **"La transhumance de Mouton Village"** a `latitude = NULL` et `longitude = NULL` en base. Le composant `PastEventsMap` filtre les événements sans coordonnées (`filter(e => e.latitude != null && e.longitude != null)`), ce qui est correct. Il faut donc **ajouter les coordonnées GPS** de cet événement en base.
 
-### Données disponibles
+- Vouillé (Vienne) : ~46.5436, 0.1673 (point de départ du trajet)
 
-La table `marche_events` possède déjà les colonnes `latitude` et `longitude`. Sur 5 événements existants, 2 ont des coordonnées (DEVIAT et NOUAILLE-MAUPERTUIS), 3 n'en ont pas. La carte affichera uniquement les événements géolocalisés ; les vignettes listeront tous les événements passés.
+Action : **migration SQL** pour mettre à jour latitude/longitude de l'événement `a9782d7f-04df-4a38-a9b5-a772239ba06a`.
+
+### Problème 2 : Couleurs des marqueurs incohérentes avec les badges
+
+Les couleurs des `CircleMarker` utilisent `EVENT_TYPE_COLORS` (emerald, violet, amber) mais visuellement sur la carte sombre, elles ne sont pas immédiatement reconnaissables. Il faut ajouter une **légende** sous la carte pour associer chaque couleur à son type.
 
 ### Modifications
 
-**1. `src/pages/MarchesDuVivantMonEspace.tsx`**
-- Nouvelle requête `past-marche-events` : tous les événements où `date_marche < now()`, avec `latitude`, `longitude`, `event_type`, triés par date DESC, limit 20
-- Sous-requête pour compter les participants par événement passé (count sur `marche_participations`)
-- Passer `pastEvents` en prop à `MarchesTab`
-
-**2. `src/components/community/tabs/MarchesTab.tsx`**
-- Nouvelle prop `pastEvents` dans `MarchesTabProps`
-- Nouveau composant `PastEventsMap` : mini-carte Leaflet (`h-48 md:h-64`) avec marqueurs colorés par type (même palette que les badges), popups compacts (titre + date + lieu)
-- Nouveau composant `PastEventCard` : vignette compacte fond sépia (`bg-stone-50 dark:bg-stone-800/20`), badge type identique au Carnet, titre tronqué, date + lieu, compteur participants, icône Footprints en filigrane
-- Section header : icône `Footprints` + "Empreintes passées" + sous-titre "Les sentiers déjà parcourus par la communauté"
-- Placement : après "Sentiers à explorer", avant le lien QR code
-
-### Design de la carte
-
-```text
-┌─────────────────────────────────────┐
-│          🗺️ Carte Leaflet           │
-│  [●] DEVIAT   [●] NOUAILLE         │
-│       (marqueurs colorés par type)  │
-│  Popup: titre + date + type badge   │
-└─────────────────────────────────────┘
+**1. Migration SQL** — Mettre à jour les coordonnées de la Transhumance :
+```sql
+UPDATE marche_events 
+SET latitude = 46.5436, longitude = 0.1673
+WHERE id = 'a9782d7f-04df-4a38-a9b5-a772239ba06a';
 ```
 
-- Fond carte sombre (même tile layer que `ExplorationCarteTab` : filtre CSS pour cohérence visuelle)
-- Marqueurs : `CircleMarker` colorés selon `event_type` (emerald = agro, violet = éco-poétique, amber = éco-tourisme)
-- Auto-fit bounds sur les marqueurs
-- Hauteur : `h-48` mobile, `h-64` desktop
-
-### Design des vignettes
+**2. `src/components/community/tabs/MarchesTab.tsx`** — Ajouter une légende sous la carte :
+- 3 pastilles colorées avec le label du type (Agroécologique / Éco poétique / Éco tourisme)
+- Utiliser `getMarcheEventTypeMeta` pour les icônes et labels
+- Utiliser `EVENT_TYPE_COLORS` pour les pastilles
+- Style compact : `flex gap-3 text-[10px] text-muted-foreground mt-2`
 
 ```text
-┌──────────────────────────────────┐
-│ [Sprout] Marche agroécologique   │
-│ La transhumance de Mouton...     │
-│ 29 mars 2026 · 📍 Vouillé       │
-│ 👥 2 marcheurs              🐾   │
-└──────────────────────────────────┘
+[●] Agroécologique  [●] Éco poétique  [●] Éco tourisme
 ```
-
-- Fond : `bg-stone-50 dark:bg-stone-800/20 border-stone-200`
-- Grille : `grid-cols-1 sm:grid-cols-2` pour mobile/tablette/desktop
-- Pas de bouton d'action (lecture seule)
-
-### Responsive
-
-- **Mobile** : carte `h-48`, vignettes empilées
-- **Tablette** : carte `h-56`, vignettes `grid-cols-2`
-- **Desktop** : carte `h-64`, vignettes `grid-cols-2`
 
 ### Fichiers impactés
 
 | Action | Fichier |
 |--------|---------|
-| Modifier | `src/pages/MarchesDuVivantMonEspace.tsx` — requête événements passés + count participants |
-| Modifier | `src/components/community/tabs/MarchesTab.tsx` — section "Empreintes passées" avec carte + vignettes |
+| Créer | Migration SQL — UPDATE coordonnées Transhumance |
+| Modifier | `src/components/community/tabs/MarchesTab.tsx` — légende sous la carte |
 
