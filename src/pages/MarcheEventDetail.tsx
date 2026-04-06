@@ -6,6 +6,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
+import { RichTextEditor } from '@/components/ui/rich-text-editor';
 import { Label } from '@/components/ui/label';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -339,7 +340,15 @@ const MarcheEventDetail: React.FC = () => {
             <div><Label>Max participants</Label><Input type="number" value={form.max_participants} onChange={e => setForm(f => ({ ...f, max_participants: e.target.value }))} /></div>
             <div><Label>Latitude</Label><Input value={form.latitude} onChange={e => setForm(f => ({ ...f, latitude: e.target.value }))} /></div>
             <div><Label>Longitude</Label><Input value={form.longitude} onChange={e => setForm(f => ({ ...f, longitude: e.target.value }))} /></div>
-            <div className="md:col-span-2"><Label>Description</Label><Input value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} /></div>
+            <div className="md:col-span-2">
+              <Label>Description</Label>
+              <RichTextEditor
+                value={form.description}
+                onChange={val => setForm(f => ({ ...f, description: val }))}
+                placeholder="Décrivez l'événement..."
+                className="mt-1"
+              />
+            </div>
             <div>
               <Label>Exploration associée</Label>
               <Select value={form.exploration_id || 'none'} onValueChange={v => setForm(f => ({ ...f, exploration_id: v === 'none' ? '' : v }))}>
