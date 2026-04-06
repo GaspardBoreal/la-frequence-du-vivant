@@ -3726,6 +3726,13 @@ export type Database = {
           share_token: string
         }[]
       }
+      get_activity_connections_chart: {
+        Args: { p_period?: string }
+        Returns: {
+          connection_count: number
+          period_label: string
+        }[]
+      }
       get_activity_global_stats: {
         Args: never
         Returns: {
