@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Helmet } from 'react-helmet-async';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Leaf, UserPlus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -21,10 +21,12 @@ import PlaceholderTab from '@/components/community/tabs/PlaceholderTab';
 
 const MarchesDuVivantMonEspace = () => {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { user, profile, loading, signOut, createProfile } = useCommunityAuth();
   const { data: participations = [] } = useCommunityParticipations(user?.id);
   const [creatingProfile, setCreatingProfile] = useState(false);
-  const [activeTab, setActiveTab] = useState<TabKey>('accueil');
+  const initialTab = (searchParams.get('tab') as TabKey) || 'accueil';
+  const [activeTab, setActiveTab] = useState<TabKey>(initialTab);
   const isMobile = useIsMobile();
 
   const { data: upcomingEvents = [] } = useQuery({
