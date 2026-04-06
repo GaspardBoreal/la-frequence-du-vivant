@@ -169,7 +169,7 @@ const EventExportPanel: React.FC = () => {
 
           // Biodiversity via exploration → marches → snapshots
           let biodiversity: EventExportData['biodiversity'] = null;
-          if (includeBiodiversity && event.exploration_id) {
+          if ((includeBiodiversity || includeRawBiodiversity) && event.exploration_id) {
             const { data: exploMarches } = await supabase
               .from('exploration_marches')
               .select('marche_id')
@@ -227,14 +227,16 @@ const EventExportPanel: React.FC = () => {
                 else others++;
               }
 
-              const topSpecies = Array.from(uniqueSpecies.values())
-                .sort((a, b) => b.count - a.count)
-                .slice(0, 15);
+              const allSpeciesSorted = Array.from(uniqueSpecies.values())
+                .sort((a, b) => b.count - a.count);
+
+              const topSpecies = allSpeciesSorted.slice(0, 15);
 
               biodiversity = {
                 totalSpecies: uniqueSpecies.size,
                 speciesByKingdom: { birds, plants, fungi, others },
                 topSpecies,
+                allSpecies: allSpeciesSorted,
               };
             }
           }
