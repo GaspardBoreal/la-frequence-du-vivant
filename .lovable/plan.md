@@ -1,40 +1,39 @@
 
 
-## Réorganisation de `/admin/community` en onglets
+## Correction du graphique "Aujourd'hui" — créneaux manquants et timezone
 
-### Structure
+### Problème
 
-La page `CommunityProfilesAdmin` sera restructurée avec 4 onglets via `Tabs` de Radix :
+La fonction SQL `get_activity_connections_chart` pour le mode "today" :
+- Génère les créneaux avec `generate_series(v_start, v_end - interval '1 hour', ...)` — le `-1 hour` exclut le créneau en cours
+- Utilise `now()` en UTC sans conversion en heure locale (Paris = UTC+2) — les labels horaires sont décalés
 
-**Communauté** (onglet par défaut) — Le contenu actuel : indicateurs par rôle (avec ajout d'un card "Total"), barre de recherche, tableau des profils avec formation/certification.
+Gaspard s'est connecté à 12:48 UTC (14:48 Paris). Le graphique s'arrête à 11:00 UTC car `now()` ~ 12:48 minus 1h = 11:48, arrondi au créneau 11:00.
 
-**Activités** — Le composant `ActivityDashboard` actuel, enrichi d'un toggle Liste/Graphique :
-- Vue Liste (icone `List`) : tableau + timeline existants
-- Vue Graphique (icone `BarChart3`) : graphe temporel recharts (`AreaChart`) avec x=temps, y=connexions. Sélecteur de période : Aujourd'hui / Hier / 7 derniers jours / Mois dernier / Trimestre dernier / Semestre dernier / Année dernière. Granularité adaptée (heures pour aujourd'hui/hier, jours pour 7j/mois, semaines pour trimestre+).
+### Solution
 
-**Affiliation marcheurs** — Le bloc affiliation actuel (cards KPI + tableau).
+Modifier la RPC `get_activity_connections_chart` :
 
-**Marcheurs** — Réservé pour les futures fonctionnalités (placeholder).
+1. Convertir en timezone `Europe/Paris` pour `date_trunc` et `to_char` — les labels afficheront l'heure locale
+2. Remplacer `v_end - interval '1 hour'` par `v_end` pour inclure le créneau horaire en cours
+3. Appliquer la même logique timezone aux modes jour/semaine pour cohérence des labels
 
-### Indicateurs rôle enrichis
-
-Ajouter un card "Total" avec icône `Users` avant les 5 rôles existants. Grille passée à `grid-cols-3 md:grid-cols-6`.
-
-### Vue Graphique — Données
-
-Nouvelle RPC SQL `get_activity_connections_chart(p_period text)` qui retourne `{ period_label, connection_count }[]` en agrégeant les `session_start` de `marcheur_activity_logs` selon la période choisie. Format du label adapté : `HH:00` pour aujourd'hui/hier, `dd/MM` pour 7j/mois, `Sem. XX` pour trimestre+.
-
-### Responsive
-
-- Onglets : `TabsList` en scroll horizontal sur mobile avec `overflow-x-auto`
-- Graphique : hauteur responsive (`h-64 md:h-80`)
-- Cards indicateurs : `grid-cols-2 sm:grid-cols-3 md:grid-cols-6`
-
-### Fichiers impactés
+### Fichier impacté
 
 | Action | Fichier |
 |--------|---------|
-| Modifier | `src/pages/CommunityProfilesAdmin.tsx` — restructurer en Tabs, déplacer affiliation dans son onglet |
-| Modifier | `src/components/admin/ActivityDashboard.tsx` — ajouter toggle Liste/Graphique + composant chart |
-| Créer | Migration SQL — RPC `get_activity_connections_chart` |
+| Créer | Migration SQL — `ALTER FUNCTION` avec timezone `Europe/Paris` et correction generate_series |
+
+### Détail technique
+
+```sql
+-- today/yesterday : timezone-aware
+v_start := date_trunc('day', now() AT TIME ZONE 'Europe/Paris') AT TIME ZONE 'Europe/Paris';
+-- generate_series jusqu'à v_end (plus de -1 hour)
+generate_series(v_start, v_end, interval '1 hour')
+-- labels en heure locale
+to_char(gs AT TIME ZONE 'Europe/Paris', 'HH24:00')
+-- buckets en heure locale
+date_trunc('hour', created_at AT TIME ZONE 'Europe/Paris')
+```
 
