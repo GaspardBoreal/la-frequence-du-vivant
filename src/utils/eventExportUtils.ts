@@ -55,6 +55,7 @@ export interface EventExportData {
     totalSpecies: number;
     speciesByKingdom: { birds: number; plants: number; fungi: number; others: number };
     topSpecies: Array<{ name: string; scientificName: string; count: number; kingdom: string }>;
+    allSpecies?: Array<{ name: string; scientificName: string; count: number; kingdom: string }>;
   } | null;
 }
 
@@ -382,6 +383,30 @@ export function exportEventsToCSV(
         });
       }
     });
+  }
+
+  // Raw biodiversity CSV
+  if (options.includeRawBiodiversity) {
+    lines.push('=== DONNÉES BRUTES BIODIVERSITÉ ===');
+    lines.push('Événement,Type,Espèce,Nom scientifique,Royaume,Observations');
+    events.forEach(e => {
+      if (e.biodiversity) {
+        const species = e.biodiversity.allSpecies || e.biodiversity.topSpecies;
+        species.forEach(sp => {
+          lines.push(
+            [
+              escapeCSV(e.title),
+              escapeCSV(getTypeLabel(e.event_type)),
+              escapeCSV(sp.name),
+              escapeCSV(sp.scientificName),
+              escapeCSV(sp.kingdom),
+              sp.count.toString(),
+            ].join(','),
+          );
+        });
+      }
+    });
+    lines.push('');
   }
 
   const blob = new Blob(['\uFEFF' + lines.join('\n')], { type: 'text/csv;charset=utf-8;' });
