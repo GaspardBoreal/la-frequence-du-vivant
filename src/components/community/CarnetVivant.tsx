@@ -68,7 +68,7 @@ const MarcheCard: React.FC<{
   if (!event) return null;
 
   const date = new Date(event.date_marche);
-  const pillars = detectPillars(event.title, event.explorations?.name || null);
+  const typeMeta = getMarcheEventTypeMeta(event.event_type);
   const hasData = summary && (summary.kigo_count > 0 || summary.photos_count > 0 || summary.audio_count > 0 || summary.species_count > 0);
 
   return (
@@ -108,15 +108,15 @@ const MarcheCard: React.FC<{
             )}
           </div>
 
-          {/* Pillar badges */}
-          <div className="flex flex-wrap gap-1.5">
-            {pillars.map((p, j) => (
-              <span key={j} className={`inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full bg-emerald-50 dark:bg-white/5 ${p.color}`}>
-                <p.icon className="w-3 h-3" />
-                {p.label}
+          {/* Event type badge */}
+          {typeMeta && (
+            <div className="flex flex-wrap gap-1.5">
+              <span className={`inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full border ${typeMeta.badgeClassName}`}>
+                <typeMeta.icon className="w-3 h-3" />
+                {typeMeta.label}
               </span>
-            ))}
-          </div>
+            </div>
+          )}
 
           {/* Collected data counters */}
           {summary && hasData && (
