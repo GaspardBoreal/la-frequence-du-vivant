@@ -1,30 +1,77 @@
 
 
-## Corriger les compteurs de biodiversité des "Empreintes passées"
+## Ajouter un onglet "Événements" dans Exportations & Rapports
 
-### Cause racine
+### Constat
 
-Deux méthodes différentes calculent les compteurs par royaume :
+La page `/admin/exportations` (ExportationsAdmin.tsx) possède déjà un système d'onglets (Tabs) pour exporter des textes littéraires (Word, CSV, ePub, PDF, Éditeur). Mais aucun onglet ne couvre les **événements** (`marche_events`) ni leurs **marches associées** avec données de biodiversité et participants.
 
-- **Empreinte (correct)** — `EventBiodiversityTab.tsx` parcourt le JSON `species_data` et compte par `kingdom === 'Animalia' | 'Plantae' | 'Fungi'` (dédoublonné par `scientificName`)
-- **Empreintes passées (incorrect)** — `useExplorationBiodiversitySummary.ts` utilise les colonnes `snapshot.birds_count`, `snapshot.plants_count`, `snapshot.fungi_count`, `snapshot.others_count` qui sont obsolètes/incohérentes
+### Proposition
 
-Résultat : DEVIAT affiche 0 Faune / 27 Flore au lieu de 3 Faune / 18 Flore.
+Ajouter un onglet **"Événements"** dans le `TabsList` existant, contenant :
 
-### Correction
+```text
+┌─────────────────────────────────────────────────────────────────┐
+│  [Textes] [Vocabulaire] [Stats] [ePub] [PDF] [★ Événements]   │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                 │
+│  Sélection des événements                                       │
+│  ┌────────────────────────────────────────────────────────────┐ │
+│  │ [Filtre type ▼]  Agro / Éco poétique / Éco tourisme       │ │
+│  │                                                            │ │
+│  │ ☑ Transhumance Mouton Village    🌱 29 mar · 3 marcheurs  │ │
+│  │ ☑ DEVIAT première découverte     🌱 05 jan · 2 marcheurs  │ │
+│  │ ☐ Réveil de la Terre             📖 11 avr · 0 marcheurs  │ │
+│  └────────────────────────────────────────────────────────────┘ │
+│                                                                 │
+│  Contenu du rapport                                             │
+│  ☑ Fiche événement (titre, date, lieu, type, organisateur)      │
+│  ☑ Liste des participants (nom, statut, date inscription)       │
+│  ☑ Marches associées (étapes, coordonnées, textes)              │
+│  ☑ Synthèse biodiversité (espèces par royaume, top espèces)    │
+│  ☐ Données brutes biodiversité (species_data complet)           │
+│                                                                 │
+│  Format d'export                                                │
+│  ○ Word (.docx)  ○ CSV  ○ PDF                                  │
+│                                                                 │
+│  [Aperçu]  [Exporter]                                           │
+└─────────────────────────────────────────────────────────────────┘
+```
 
-**`src/hooks/useExplorationBiodiversitySummary.ts`** (lignes 100-116) — Remplacer le calcul basé sur les colonnes `birds_count`/`plants_count`/etc. par un calcul identique à `EventBiodiversityTab` : parcourir `species_data`, extraire les `scientificName` uniques, et compter par `kingdom`.
+### Données jointes
 
-Concrètement :
-1. Supprimer `birds += snapshot.birds_count || 0` (et plants, fungi, others)
-2. Après la boucle de construction de `uniqueSpeciesMap`, recalculer les compteurs à partir du `kingdom` stocké dans cette map
-3. Le compteur "Faune" = entries avec `kingdom === 'Animalia'`, "Flore" = `Plantae`, "Champi." = `Fungi`, "Autres" = le reste
+Pour chaque événement sélectionné, la requête récupère :
+- `marche_events` : titre, date, lieu, event_type, latitude/longitude, exploration_id
+- `marche_participations` → `community_profiles` : participants (prénom, nom, statut validated_at)
+- `exploration_marches` → `marches` : étapes géolocalisées, textes littéraires
+- `biodiversity_snapshots` via les marches : espèces, compteurs par royaume (calculés depuis `species_data` JSON, comme corrigé dans `useExplorationBiodiversitySummary`)
 
-Cela garantit que les "Empreintes passées" et l'onglet "Empreinte" utilisent exactement la même logique de calcul.
+### Charte graphique respectée
 
-### Fichier impacté
+- Badges colorés par type d'événement (emerald/violet/amber) via `getMarcheEventTypeMeta`
+- En-têtes de section dans le Word/PDF avec la couleur du type
+- Icônes Sprout / BookOpenText / Trees selon le type
+
+### Formats d'export
+
+**Word (.docx)** — Rapport structuré par événement :
+- Page de garde avec titre, type (badge), date, lieu
+- Section participants (tableau)
+- Section parcours (liste des étapes avec coordonnées)
+- Section biodiversité (compteurs + top espèces)
+
+**CSV** — Données tabulaires aplaties :
+- Un fichier "événements" (1 ligne par événement)
+- Un fichier "participants" (1 ligne par inscription)
+- Un fichier "biodiversité" (1 ligne par espèce par marche)
+
+**PDF** — Rapport visuel similaire au Word avec mise en page soignée
+
+### Architecture technique
 
 | Action | Fichier |
 |--------|---------|
-| Modifier | `src/hooks/useExplorationBiodiversitySummary.ts` — recalculer `speciesByKingdom` depuis `uniqueSpeciesMap` au lieu des colonnes `*_count` |
+| Créer | `src/components/admin/EventExportPanel.tsx` — composant de l'onglet (sélection, options, aperçu) |
+| Créer | `src/utils/eventExportUtils.ts` — logique d'export Word/CSV/PDF pour événements |
+| Modifier | `src/pages/ExportationsAdmin.tsx` — ajouter l'onglet "Événements" dans le TabsList |
 
