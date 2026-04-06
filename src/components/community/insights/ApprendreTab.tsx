@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
+import { useActivityTracker } from '@/hooks/useActivityTracker';
 import { motion, AnimatePresence } from 'framer-motion';
 import { GraduationCap, Sparkles, FlaskConical, Share2, TrendingUp, TreePine, Headphones, BookOpen, Lightbulb, ChevronDown } from 'lucide-react';
 import * as LucideIcons from 'lucide-react';
@@ -32,6 +33,12 @@ interface ApprendreTabProps {
 const ApprendreTab: React.FC<ApprendreTabProps> = ({ userLevel, eventType, explorationId, totalSpecies }) => {
   const [activeAngle, setActiveAngle] = useState<InsightAngle>('biodiversite');
   const [expandedCards, setExpandedCards] = useState<Set<string>>(new Set());
+  const { trackActivity } = useActivityTracker();
+
+  const handleAngleChange = useCallback((angle: InsightAngle) => {
+    setActiveAngle(angle);
+    trackActivity('tab_switch', `tab:apprendre:${angle}`, { explorationId });
+  }, [trackActivity, explorationId]);
 
   const { cards, byCategory, isLoading } = useInsightCards({
     userLevel,
@@ -77,7 +84,7 @@ const ApprendreTab: React.FC<ApprendreTabProps> = ({ userLevel, eventType, explo
           return (
             <button
               key={angle}
-              onClick={() => setActiveAngle(angle)}
+              onClick={() => handleAngleChange(angle)}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
                 isActive
                   ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30'
