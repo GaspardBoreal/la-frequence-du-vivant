@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowLeft, FileDown, FileText, Table, Download, Filter, Loader2, ChevronDown, ChevronRight, MapPin, BookOpen, AlertTriangle, AlertCircle, ExternalLink, BarChart3, Sparkles, Plus, X, ScrollText } from 'lucide-react';
+import { ArrowLeft, FileDown, FileText, Table, Download, Filter, Loader2, ChevronDown, ChevronRight, MapPin, BookOpen, AlertTriangle, AlertCircle, ExternalLink, BarChart3, Sparkles, Plus, X, ScrollText, Calendar } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -21,6 +21,7 @@ import WordExportPreview from '@/components/admin/WordExportPreview';
 import EpubExportPanel from '@/components/admin/EpubExportPanel';
 import PdfExportPanel from '@/components/admin/PdfExportPanel';
 import EditorExportPanel from '@/components/admin/EditorExportPanel';
+import EventExportPanel from '@/components/admin/EventExportPanel';
 import { Input } from '@/components/ui/input';
 interface Exploration {
   id: string;
@@ -786,6 +787,19 @@ const ExportationsAdmin: React.FC = () => {
           </p>
         </div>
 
+        <Tabs defaultValue="textes" className="w-full">
+          <TabsList className="mb-6 w-full justify-start">
+            <TabsTrigger value="textes" className="gap-1.5">
+              <FileText className="h-4 w-4" />
+              Textes
+            </TabsTrigger>
+            <TabsTrigger value="evenements" className="gap-1.5">
+              <Calendar className="h-4 w-4" />
+              Événements
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="textes">
         {/* Stats Cards */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
           <Card className="text-center">
@@ -1659,6 +1673,13 @@ const ExportationsAdmin: React.FC = () => {
             </Button>
           </CardContent>
         </Card>
+
+          </TabsContent>
+
+          <TabsContent value="evenements">
+            <EventExportPanel />
+          </TabsContent>
+        </Tabs>
 
         <div className="mt-12 text-center text-sm text-muted-foreground">
           <p>Centre d'Exportation - Gaspard Boréal © 2025 - 2026</p>
