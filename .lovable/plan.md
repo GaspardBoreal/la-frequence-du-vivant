@@ -1,44 +1,30 @@
 
 
-## Intégrer la vue "Inscriptions par marcheur" dans l'onglet Marcheurs de /admin/community
+## Corriger les compteurs de biodiversité des "Empreintes passées"
 
-### Emplacement recommandé
+### Cause racine
 
-L'onglet **"Marcheurs"** de `/admin/community` (CommunityProfilesAdmin.tsx) est actuellement un placeholder vide avec le texte "Fonctionnalités à venir". C'est le lieu naturel pour cette fonctionnalité car :
+Deux méthodes différentes calculent les compteurs par royaume :
 
-- Il est déjà dans le contexte "Communauté des Marcheurs"
-- L'onglet "Communauté" liste déjà les profils (nom, rôle, ville)
-- L'onglet "Marcheurs" est prévu pour les "parcours individuels, historique détaillé" — exactement ce besoin
-- Les données `marche_participations` + `marche_events` sont facilement joinables
+- **Empreinte (correct)** — `EventBiodiversityTab.tsx` parcourt le JSON `species_data` et compte par `kingdom === 'Animalia' | 'Plantae' | 'Fungi'` (dédoublonné par `scientificName`)
+- **Empreintes passées (incorrect)** — `useExplorationBiodiversitySummary.ts` utilise les colonnes `snapshot.birds_count`, `snapshot.plants_count`, `snapshot.fungi_count`, `snapshot.others_count` qui sont obsolètes/incohérentes
 
-### Design proposé
+Résultat : DEVIAT affiche 0 Faune / 27 Flore au lieu de 3 Faune / 18 Flore.
 
-Remplacer le placeholder par un tableau interactif :
+### Correction
 
-```text
-┌─────────────────────────────────────────────────────────────┐
-│ 🔍 [Recherche marcheur...]     [Filtre événement ▼]        │
-├──────────┬──────────────┬─────────────┬────────┬───────────┤
-│ Marcheur │ Événement    │ Type        │ Date   │ Statut    │
-├──────────┼──────────────┼─────────────┼────────┼───────────┤
-│ Alice D. │ Transhumance │ 🌱 Agro     │ 29 mar │ ✅ Présent│
-│ Alice D. │ DEVIAT 1     │ 🌱 Agro     │ 05 jan │ ✅ Présent│
-│ Bob M.   │ Transhumance │ 🌱 Agro     │ 29 mar │ ✅ Présent│
-│ Claire P.│ Réveil Terre │ 🌿 Éco poé  │ 11 avr │ 📋 Inscrit│
-└──────────┴──────────────┴─────────────┴────────┴───────────┘
-```
+**`src/hooks/useExplorationBiodiversitySummary.ts`** (lignes 100-116) — Remplacer le calcul basé sur les colonnes `birds_count`/`plants_count`/etc. par un calcul identique à `EventBiodiversityTab` : parcourir `species_data`, extraire les `scientificName` uniques, et compter par `kingdom`.
 
-**Fonctionnalités** :
-- Requête jointe `marche_participations` → `marche_events` (titre, date, event_type, lieu) → `community_profiles` (prénom, nom)
-- Badges colorés par type (emerald/violet/amber) via `getMarcheEventTypeMeta`
-- Recherche par nom de marcheur
-- Filtre par événement (dropdown)
-- Compteurs en haut : total inscriptions, marcheurs uniques, événements couverts
-- Statut de participation (`registered` / `present`)
+Concrètement :
+1. Supprimer `birds += snapshot.birds_count || 0` (et plants, fungi, others)
+2. Après la boucle de construction de `uniqueSpeciesMap`, recalculer les compteurs à partir du `kingdom` stocké dans cette map
+3. Le compteur "Faune" = entries avec `kingdom === 'Animalia'`, "Flore" = `Plantae`, "Champi." = `Fungi`, "Autres" = le reste
+
+Cela garantit que les "Empreintes passées" et l'onglet "Empreinte" utilisent exactement la même logique de calcul.
 
 ### Fichier impacté
 
 | Action | Fichier |
 |--------|---------|
-| Modifier | `src/pages/CommunityProfilesAdmin.tsx` — remplacer le placeholder de l'onglet "Marcheurs" |
+| Modifier | `src/hooks/useExplorationBiodiversitySummary.ts` — recalculer `speciesByKingdom` depuis `uniqueSpeciesMap` au lieu des colonnes `*_count` |
 
