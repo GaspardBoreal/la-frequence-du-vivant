@@ -13,7 +13,9 @@ export function useActivityTracker() {
   const pendingRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
 
   const trackActivity = useCallback(
-    (eventType: string, eventTarget: string, options?: TrackOptions) => {
+    (userId: string, eventType: string, eventTarget: string, options?: TrackOptions) => {
+      if (!userId) return;
+
       const key = `${eventType}:${eventTarget}`;
 
       // If this exact same event is already pending, skip
@@ -22,11 +24,8 @@ export function useActivityTracker() {
       const timer = setTimeout(async () => {
         pendingRef.current.delete(key);
         try {
-          const { data: { session } } = await supabase.auth.getSession();
-          if (!session?.user?.id) return;
-
           await supabase.from('marcheur_activity_logs').insert({
-            user_id: session.user.id,
+            user_id: userId,
             event_type: eventType,
             event_target: eventTarget,
             exploration_id: options?.explorationId || null,

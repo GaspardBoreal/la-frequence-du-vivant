@@ -45,7 +45,7 @@ const OutilsTab: React.FC<OutilsTabProps> = ({ role, userId }) => {
 
   useEffect(() => {
     if (activeTool) {
-      trackActivity('tool_use', `outil:${activeTool}`);
+      trackActivity(userId, 'tool_use', `outil:${activeTool}`);
     }
   }, [activeTool]);
 

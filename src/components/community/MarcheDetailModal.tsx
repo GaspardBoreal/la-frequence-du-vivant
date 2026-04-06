@@ -187,11 +187,11 @@ export const VoirTab: React.FC<{ marcheId: string; userId: string; marcheEventId
               const videos = files.filter(f => f.type.startsWith('video/'));
               if (photos.length) {
                 uploadMedias.mutate({ files: photos, marcheEventId, isPublic, typeMedia: 'photo', marcheId: activeMarcheId });
-                trackActivity('media_upload', 'photo', { marcheEventId, metadata: { count: photos.length } });
+                trackActivity(userId, 'media_upload', 'photo', { marcheEventId, metadata: { count: photos.length } });
               }
               if (videos.length) {
                 uploadMedias.mutate({ files: videos, marcheEventId, isPublic, typeMedia: 'video', marcheId: activeMarcheId });
-                trackActivity('media_upload', 'video', { marcheEventId, metadata: { count: videos.length } });
+                trackActivity(userId, 'media_upload', 'video', { marcheEventId, metadata: { count: videos.length } });
               }
             }}
           />
@@ -340,7 +340,7 @@ export const EcouterTab: React.FC<{ marcheId: string; userId: string; marcheEven
             isUploading={uploadAudio.isPending}
             onFilesSelected={(files, isPublic) => {
               uploadAudio.mutate({ files, marcheEventId, isPublic, marcheId: activeMarcheId });
-              trackActivity('media_upload', 'audio', { marcheEventId, metadata: { count: files.length } });
+              trackActivity(userId, 'media_upload', 'audio', { marcheEventId, metadata: { count: files.length } });
             }}
           />
         </motion.div>
@@ -467,7 +467,7 @@ export const LireTab: React.FC<{ userId: string; marcheEventId: string; activeMa
       isPublic: newIsPublic,
       marcheId: activeMarcheId,
     });
-    trackActivity('media_upload', 'text', { marcheEventId, metadata: { type: newType } });
+    trackActivity(userId, 'media_upload', 'text', { marcheEventId, metadata: { type: newType } });
     setNewTitre('');
     setNewContenu('');
     setShowNew(false);
@@ -797,14 +797,14 @@ const MarcheDetailModal: React.FC<MarcheDetailModalProps> = ({
   // Track marche view on open
   useEffect(() => {
     if (open && marcheEventId) {
-      trackActivity('marche_view', `marche:${marcheEventId}`, { marcheEventId });
+      trackActivity(userId, 'marche_view', `marche:${marcheEventId}`, { marcheEventId });
     }
   }, [open, marcheEventId]);
 
   // Track tab switches inside marche modal
   useEffect(() => {
     if (open) {
-      trackActivity('tab_switch', `tab:marche:${activeTab}`, { marcheEventId });
+      trackActivity(userId, 'tab_switch', `tab:marche:${activeTab}`, { marcheEventId });
     }
   }, [activeTab, open]);
 

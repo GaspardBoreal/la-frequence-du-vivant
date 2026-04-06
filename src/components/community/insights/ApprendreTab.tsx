@@ -28,17 +28,18 @@ interface ApprendreTabProps {
   eventType: InsightEventType | null;
   explorationId?: string;
   totalSpecies?: number;
+  userId?: string;
 }
 
-const ApprendreTab: React.FC<ApprendreTabProps> = ({ userLevel, eventType, explorationId, totalSpecies }) => {
+const ApprendreTab: React.FC<ApprendreTabProps> = ({ userLevel, eventType, explorationId, totalSpecies, userId }) => {
   const [activeAngle, setActiveAngle] = useState<InsightAngle>('biodiversite');
   const [expandedCards, setExpandedCards] = useState<Set<string>>(new Set());
   const { trackActivity } = useActivityTracker();
 
   const handleAngleChange = useCallback((angle: InsightAngle) => {
     setActiveAngle(angle);
-    trackActivity('tab_switch', `tab:apprendre:${angle}`, { explorationId });
-  }, [trackActivity, explorationId]);
+    if (userId) trackActivity(userId, 'tab_switch', `tab:apprendre:${angle}`, { explorationId });
+  }, [trackActivity, explorationId, userId]);
 
   const { cards, byCategory, isLoading } = useInsightCards({
     userLevel,

@@ -111,7 +111,7 @@ const ExplorationMarcheurPage: React.FC = () => {
   // Track page view on mount
   useEffect(() => {
     if (effectiveExplorationId) {
-      trackActivity('page_view', `exploration:${effectiveExplorationId}`, { explorationId: effectiveExplorationId });
+      trackActivity(userId!, 'page_view', `exploration:${effectiveExplorationId}`, { explorationId: effectiveExplorationId });
     }
   }, [effectiveExplorationId, trackActivity]);
 
@@ -254,7 +254,7 @@ const ExplorationMarcheurPage: React.FC = () => {
                   key={tab.key}
                   onClick={() => {
                     setActiveGlobalTab(tab.key);
-                    trackActivity('tab_switch', `tab:${tab.key}`, { explorationId: explorationId || undefined });
+                    if (userId) trackActivity(userId, 'tab_switch', `tab:${tab.key}`, { explorationId: explorationId || undefined });
                   }}
                   className={`flex items-center gap-1 px-2.5 py-2.5 text-xs font-medium transition-colors relative whitespace-nowrap shrink-0 ${
                     isActive
@@ -310,7 +310,7 @@ const ExplorationMarcheurPage: React.FC = () => {
                       key={tab.key}
                       onClick={() => {
                         setActiveSensoryTab(tab.key);
-                        trackActivity('tab_switch', `tab:marches:${tab.key}`, { explorationId: effectiveExplorationId || undefined });
+                        if (userId) trackActivity(userId, 'tab_switch', `tab:marches:${tab.key}`, { explorationId: effectiveExplorationId || undefined });
                       }}
                       className={`flex-1 flex flex-col items-center gap-1 py-2.5 text-[10px] transition-colors relative ${
                         isActive
@@ -417,6 +417,7 @@ const ExplorationMarcheurPage: React.FC = () => {
                 userLevel={userLevel}
                 eventType={null}
                 explorationId={effectiveExplorationId || undefined}
+                userId={userId}
               />
             </motion.div>
           )}
