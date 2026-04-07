@@ -95,20 +95,18 @@ export function useCommunityAuth() {
     if (authError) throw authError;
 
     if (authData.user) {
-      const { error: profileError } = await supabase
-        .from('community_profiles')
-        .insert({
-          user_id: authData.user.id,
-          prenom: data.prenom,
-          nom: data.nom,
-          ville: data.ville || null,
-          telephone: data.telephone || null,
-          date_naissance: data.date_naissance || null,
-          motivation: data.motivation || null,
-          kigo_accueil: data.kigo_accueil || null,
-          superpouvoir_sensoriel: data.superpouvoir_sensoriel || null,
-          niveau_intimite_vivant: data.niveau_intimite_vivant || null,
-        });
+      const { error: profileError } = await supabase.rpc('create_community_profile', {
+        _user_id: authData.user.id,
+        _prenom: data.prenom,
+        _nom: data.nom,
+        _ville: data.ville || null,
+        _telephone: data.telephone || null,
+        _date_naissance: data.date_naissance || null,
+        _motivation: data.motivation || null,
+        _kigo_accueil: data.kigo_accueil || null,
+        _superpouvoir_sensoriel: data.superpouvoir_sensoriel || null,
+        _niveau_intimite_vivant: data.niveau_intimite_vivant || null,
+      });
 
       if (profileError) throw profileError;
 
