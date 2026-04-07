@@ -1,84 +1,37 @@
 
 
-## Corriger l'erreur RLS à l'inscription
+## Résoudre les timeouts d'inscription (cas Victor)
 
-### Cause racine
+### Problème
 
-Le `signUp` Supabase avec confirmation email ne crée PAS de session immédiate. L'utilisateur reçoit un statut `user_confirmation_requested` → `auth.uid()` est `NULL` → la politique RLS `user_id = auth.uid()` rejette l'INSERT dans `community_profiles`.
+L'envoi de l'email de confirmation lors du signup prend >10s, déclenchant un timeout 504 côté Supabase Auth. L'utilisateur voit une erreur, réessaie, et chaque tentative crée puis détruit un compte fantôme.
 
-### Solution
+### Solution en 2 volets
 
-Créer le profil via une **fonction SQL `SECURITY DEFINER`** qui contourne le RLS, appelée par `supabase.rpc()` juste après le `signUp`. Cette fonction vérifie que le `user_id` passé existe bien dans `auth.users` avant d'insérer.
+#### 1. Configurer Resend comme SMTP custom (action manuelle dans le dashboard Supabase)
 
-### Étapes
+Vous utilisez déjà Resend pour les emails CRM. Il faut le configurer comme fournisseur SMTP dans Supabase Auth pour accélérer l'envoi des emails de confirmation :
 
-**1. Migration SQL** — Créer la fonction `create_community_profile` :
+- **Dashboard Supabase** → Authentication → SMTP Settings
+- Host: `smtp.resend.com`, Port: `465`, User: `resend`, Password: votre clé API Resend
+- Sender: une adresse vérifiée dans Resend (ex: `no-reply@la-frequence-du-vivant.com`)
 
-```sql
-CREATE OR REPLACE FUNCTION public.create_community_profile(
-  _user_id UUID,
-  _prenom TEXT,
-  _nom TEXT,
-  _ville TEXT DEFAULT NULL,
-  _telephone TEXT DEFAULT NULL,
-  _date_naissance TEXT DEFAULT NULL,
-  _motivation TEXT DEFAULT NULL,
-  _kigo_accueil TEXT DEFAULT NULL,
-  _superpouvoir_sensoriel TEXT DEFAULT NULL,
-  _niveau_intimite_vivant TEXT DEFAULT NULL
-)
-RETURNS void
-LANGUAGE plpgsql
-SECURITY DEFINER
-SET search_path = public
-AS $$
-BEGIN
-  -- Verify user exists in auth.users
-  IF NOT EXISTS (SELECT 1 FROM auth.users WHERE id = _user_id) THEN
-    RAISE EXCEPTION 'User not found';
-  END IF;
-  
-  INSERT INTO public.community_profiles (
-    user_id, prenom, nom, ville, telephone,
-    date_naissance, motivation, kigo_accueil,
-    superpouvoir_sensoriel, niveau_intimite_vivant
-  ) VALUES (
-    _user_id, _prenom, _nom, _ville, _telephone,
-    _date_naissance, _motivation, _kigo_accueil,
-    _superpouvoir_sensoriel, _niveau_intimite_vivant
-  );
-END;
-$$;
-```
+Cela devrait réduire le temps d'envoi de >10s à <2s.
 
-**2. Modifier `useCommunityAuth.ts`** — Remplacer l'insert direct par l'appel RPC :
+#### 2. Améliorer la résilience côté code (useCommunityAuth.ts)
 
-```typescript
-// Remplacer le bloc supabase.from('community_profiles').insert({...})
-const { error: profileError } = await supabase.rpc('create_community_profile', {
-  _user_id: authData.user.id,
-  _prenom: data.prenom,
-  _nom: data.nom,
-  _ville: data.ville || null,
-  _telephone: data.telephone || null,
-  _date_naissance: data.date_naissance || null,
-  _motivation: data.motivation || null,
-  _kigo_accueil: data.kigo_accueil || null,
-  _superpouvoir_sensoriel: data.superpouvoir_sensoriel || null,
-  _niveau_intimite_vivant: data.niveau_intimite_vivant || null,
-});
-```
+- Ajouter un `try/catch` avec retry automatique (1 retry après 2s) sur le `signUp`
+- Afficher un message "Inscription en cours, veuillez patienter..." pendant le processus
+- Si timeout, vérifier si l'utilisateur a quand même été créé avant de réessayer (via `checkEmailExists`)
+- Empêcher les clics multiples (disable du bouton pendant le chargement)
 
-### Sécurité
-
-- La fonction `SECURITY DEFINER` s'exécute avec les privilèges du propriétaire (bypass RLS)
-- La vérification `EXISTS auth.users` empêche l'injection d'un `user_id` arbitraire
-- Le `search_path = public` prévient les attaques par manipulation de schéma
-
-### Fichiers impactés
+### Fichier impacté
 
 | Action | Fichier |
 |--------|---------|
-| Migration | Fonction SQL `create_community_profile` |
-| Modifier | `src/hooks/useCommunityAuth.ts` — remplacer `.insert()` par `.rpc()` |
+| Modifier | `src/hooks/useCommunityAuth.ts` — ajouter retry + garde anti-doublon |
+
+### Action manuelle requise
+
+Configurer Resend comme SMTP custom dans le dashboard Supabase : [Authentication → SMTP Settings](https://supabase.com/dashboard/project/xzbunrtgbfbhinkzkzhf/auth/providers)
 
