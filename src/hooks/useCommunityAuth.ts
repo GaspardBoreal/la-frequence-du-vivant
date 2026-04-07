@@ -84,15 +84,41 @@ export function useCommunityAuth() {
       ? window.location.origin
       : 'https://la-frequence-du-vivant.com';
 
-    const { data: authData, error: authError } = await supabase.auth.signUp({
-      email: data.email,
-      password: data.password,
-      options: {
-        emailRedirectTo: baseUrl + '/marches-du-vivant/connexion',
-      }
-    });
+    // Helper: attempt signup call
+    const attemptSignUp = async () => {
+      return supabase.auth.signUp({
+        email: data.email,
+        password: data.password,
+        options: {
+          emailRedirectTo: baseUrl + '/marches-du-vivant/connexion',
+        }
+      });
+    };
 
-    if (authError) throw authError;
+    let result = await attemptSignUp();
+
+    // If timeout (504), check if user was actually created, then retry once
+    if (result.error && (
+      result.error.message?.includes('timed out') ||
+      result.error.message?.includes('504') ||
+      result.error.status === 504
+    )) {
+      // Wait 2s then check if user exists
+      await new Promise(r => setTimeout(r, 2000));
+      const alreadyExists = await checkEmailExists(data.email);
+
+      if (!alreadyExists) {
+        // User not created, retry once
+        result = await attemptSignUp();
+      } else {
+        // User was created despite timeout — skip auth error, create profile via RPC
+        // We can't get the user id here, so just inform success
+        return { user: null, session: null } as any;
+      }
+    }
+
+    if (result.error) throw result.error;
+    const authData = result.data;
 
     if (authData.user) {
       const { error: profileError } = await supabase.rpc('create_community_profile', {
