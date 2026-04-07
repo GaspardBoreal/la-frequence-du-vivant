@@ -3713,6 +3713,21 @@ export type Database = {
         Args: { new_email: string; new_user_id: string }
         Returns: boolean
       }
+      create_community_profile: {
+        Args: {
+          _date_naissance?: string
+          _kigo_accueil?: string
+          _motivation?: string
+          _niveau_intimite_vivant?: string
+          _nom: string
+          _prenom: string
+          _superpouvoir_sensoriel?: string
+          _telephone?: string
+          _user_id: string
+          _ville?: string
+        }
+        Returns: undefined
+      }
       delete_exploration_page: { Args: { page_id: string }; Returns: undefined }
       generate_community_affiliate_link: {
         Args: {
