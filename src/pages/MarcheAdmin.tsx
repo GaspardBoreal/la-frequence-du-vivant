@@ -205,15 +205,15 @@ const MarcheAdmin = () => {
             </TabsContent>
 
             <TabsContent value="texts" className="space-y-4">
-              <TextesLitterairesGalleryAdmin marches={filteredMarches} />
+              <TextesLitterairesGalleryAdmin marches={marches} />
             </TabsContent>
 
             <TabsContent value="gallery" className="space-y-4">
-              <PhotoGalleryAdmin marches={filteredMarches} />
+              <PhotoGalleryAdmin marches={marches} />
             </TabsContent>
 
             <TabsContent value="audio" className="space-y-4">
-              <AudioGalleryAdmin marches={filteredMarches} />
+              <AudioGalleryAdmin marches={marches} />
             </TabsContent>
 
             <TabsContent value="map" className="space-y-4">
