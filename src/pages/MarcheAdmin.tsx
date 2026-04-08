@@ -16,6 +16,7 @@ import AudioGalleryAdmin from '../components/admin/AudioGalleryAdmin';
 import MarcheTextesAdmin from '../components/admin/MarcheTextesAdmin';
 import TextesLitterairesGalleryAdmin from '../components/admin/TextesLitterairesGalleryAdmin';
 import ExportPanel from '../components/admin/ExportPanel';
+import MarcheMapView from '../components/admin/MarcheMapView';
 import MarcheAdminMobile from '../components/admin/mobile/MarcheAdminMobile';
 import { toast } from 'sonner';
 import { MarcheTechnoSensible } from '../utils/googleSheetsApi';
@@ -146,7 +147,7 @@ const MarcheAdmin = () => {
         {/* Content */}
         <div className="gaspard-card rounded-xl p-6">
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="grid w-full grid-cols-7">
+            <TabsList className="grid w-full grid-cols-8">
               <TabsTrigger value="list">Liste des Marches</TabsTrigger>
               <TabsTrigger value="create">
                 {viewMode === 'edit' ? 'Modifier une Marche' : 'Créer une Marche'}
@@ -159,6 +160,9 @@ const MarcheAdmin = () => {
               </TabsTrigger>
               <TabsTrigger value="audio">
                 Galerie Audio
+              </TabsTrigger>
+              <TabsTrigger value="map">
+                Carte
               </TabsTrigger>
               <TabsTrigger value="data" className="relative">
                 Collecte de Données
@@ -210,6 +214,10 @@ const MarcheAdmin = () => {
 
             <TabsContent value="audio" className="space-y-4">
               <AudioGalleryAdmin marches={filteredMarches} />
+            </TabsContent>
+
+            <TabsContent value="map" className="space-y-4">
+              <MarcheMapView marches={filteredMarches} />
             </TabsContent>
 
             <TabsContent value="data" className="space-y-4">
