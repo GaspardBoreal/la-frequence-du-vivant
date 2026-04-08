@@ -1,81 +1,48 @@
 
 
-## Transformer le bandeau profil en éditeur complet et élégant
+## Ajouter un onglet "Carte" à l'admin des marches
 
-### Problème
+### Résumé
 
-Le panneau "Mon profil" est en lecture seule et n'affiche que 3 champs (nom, email, ville). Les champs suivants sont absents et non modifiables :
-- Téléphone
-- Date de naissance
-- Motivation
-- Kigo d'accueil (relation au vivant)
-- Superpouvoir sensoriel
-- Niveau d'intimité avec la nature
+Ajouter un 8ème onglet "Carte" dans la barre d'onglets de `/admin/marches` qui affiche une carte Leaflet interactive des marches correspondant aux filtres actifs.
 
-### Solution
+### Modifications
 
-Refondre `MonEspaceSettings` en un panneau profil interactif avec un mode consultation et un mode édition, dans un design glassmorphism cohérent avec l'univers existant.
+**1. Nouveau composant : `src/components/admin/MarcheMapView.tsx`**
 
-### UX/UI Design
+Carte Leaflet interactive recevant `marches: MarcheTechnoSensible[]` en props :
+- Filtrer les marches ayant des coordonnées valides (lat/lng ≠ 0)
+- Auto-zoom via `fitBounds()` sur l'ensemble des points affichés
+- Boutons zoom +/- natifs de Leaflet (zoomControl activé)
+- Marqueurs personnalisés (icône verte thématique, cohérente avec le design dark existant)
+- Popup sur chaque marqueur contenant :
+  - Nom de la marche (ou ville si pas de nom)
+  - Ville
+  - 3 liens : Google Maps, Google Earth, OpenStreetMap (icônes + liens `target="_blank"`)
+- Message informatif si aucune marche n'a de coordonnées GPS
 
-**Mode consultation (par défaut)** : tous les champs affichés en lecture seule dans des cartes glassmorphism, regroupés par sections thématiques :
-1. **Identité** — Avatar + initiales, prénom, nom, email (non modifiable), ville, téléphone, date de naissance
-2. **Votre relation au vivant** — Kigo d'accueil, superpouvoir sensoriel, niveau d'intimité, motivation
+**2. Fichier modifié : `src/pages/MarcheAdmin.tsx`**
 
-Un bouton "Modifier mon profil" bascule en mode édition.
+- Import du nouveau composant `MarcheMapView`
+- `TabsList` passe de `grid-cols-7` à `grid-cols-8`
+- Ajout d'un `TabsTrigger value="map"` avec libellé "Carte"
+- Ajout d'un `TabsContent value="map"` passant `filteredMarches` au composant
 
-**Mode édition** : les champs deviennent des inputs stylisés (fond `white/10`, bordure `white/20`, texte blanc). Les champs sensoriels (kigo, superpouvoir, intimité) utilisent des sélecteurs visuels avec les mêmes emojis que l'inscription. Boutons "Enregistrer" et "Annuler" en bas.
+### Détails techniques
 
-**Scrollable** : le `SheetContent` passe en `overflow-y-auto` pour supporter tous les champs sur mobile.
-
-### Modifications techniques
-
-**Fichier `src/components/community/MonEspaceSettings.tsx`**
-- Ajouter un state `editing` (booléen) et un state `formData` (copie locale du profil)
-- Ajouter les champs manquants : téléphone, date de naissance, motivation, kigo, superpouvoir, intimité
-- Regrouper les champs en 2 sections avec des séparateurs visuels
-- En mode édition : inputs avec `onChange` → `setFormData`
-- Au clic "Enregistrer" : appel `supabase.from('community_profiles').update(...)` puis `refreshProfile()`
-- Icônes par champ : Phone, Calendar, Heart, Sparkles, Mountain, MessageSquare
-
-**Fichier `src/components/community/MonEspaceHeader.tsx`**
-- Passer le `profile` complet et `refreshProfile` comme props au lieu de champs individuels
-
-**Fichier `src/pages/MarchesDuVivantMonEspace.tsx`**
-- Passer `profile` et `refreshProfile` au header
-
-### Props mises à jour
-
-```text
-MonEspaceSettingsProps {
-  open, onOpenChange
-  profile: CommunityProfile   // objet complet
-  email: string
-  role: CommunityRoleKey
-  onSignOut: () => void
-  onProfileUpdated: () => void // appelle refreshProfile
-}
-```
-
-### Champs éditables et leurs contrôles
-
-| Champ | Type de contrôle |
-|-------|-----------------|
-| Prénom | Input texte |
-| Nom | Input texte |
-| Ville | Input texte |
-| Téléphone | Input tel |
-| Date de naissance | Input date |
-| Motivation | Textarea |
-| Kigo d'accueil | Select (🦋 Curieux·se / 🌿 Habitué·e / 🌳 Profond·e) |
-| Superpouvoir sensoriel | Select (👁️ Vue / 👂 Ouïe / 👃 Odorat / ✋ Toucher / 👅 Goût) |
-| Niveau d'intimité | Select (🥾 Randonneur / 🏕️ Bivouaqueur / 🌲 Forestier) |
+- Réutilise `leaflet` + `react-leaflet` déjà installés (cf. `InteractiveStationMap.tsx`)
+- `fitBounds` avec `padding: [50, 50]` et `maxZoom: 15` pour un cadrage intelligent
+- Liens popup :
+  - Google Maps : `https://www.google.com/maps?q={lat},{lng}`
+  - Google Earth : `https://earth.google.com/web/@{lat},{lng},500a,1000d,35y,0h,0t,0r`
+  - OpenStreetMap : `https://www.openstreetmap.org/?mlat={lat}&mlon={lng}#map=15/{lat}/{lng}`
+- Hauteur de la carte : `h-[600px]` pour une visualisation confortable
+- Design cohérent : fond du popup sobre, texte lisible, liens avec icônes `ExternalLink`
 
 ### Fichiers impactés
 
 | Action | Fichier |
 |--------|---------|
-| Refonte | `src/components/community/MonEspaceSettings.tsx` |
-| Modifier | `src/components/community/MonEspaceHeader.tsx` |
-| Modifier | `src/pages/MarchesDuVivantMonEspace.tsx` |
+| Créer | `src/components/admin/MarcheMapView.tsx` |
+| Modifier | `src/pages/MarcheAdmin.tsx` |
 
