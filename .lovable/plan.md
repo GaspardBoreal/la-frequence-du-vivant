@@ -1,52 +1,27 @@
 
 
-## Corriger le cast `date_naissance` dans `create_community_profile`
+## Ajouter la pagination à la liste des marches
 
-La fonction SQL `create_community_profile` déclare `_date_naissance` comme `TEXT` mais la colonne `date_naissance` est de type `DATE`. Il faut ajouter un cast `::date` dans l'INSERT.
+### Résumé
 
-### Migration SQL
+Ajouter une pagination au composant `MarcheList` avec un sélecteur de nombre d'éléments par page (10, 20, 50), 10 par défaut.
 
-```sql
-CREATE OR REPLACE FUNCTION public.create_community_profile(
-  _user_id UUID,
-  _prenom TEXT,
-  _nom TEXT,
-  _ville TEXT DEFAULT NULL,
-  _telephone TEXT DEFAULT NULL,
-  _date_naissance TEXT DEFAULT NULL,
-  _motivation TEXT DEFAULT NULL,
-  _kigo_accueil TEXT DEFAULT NULL,
-  _superpouvoir_sensoriel TEXT DEFAULT NULL,
-  _niveau_intimite_vivant TEXT DEFAULT NULL
-)
-RETURNS void
-LANGUAGE plpgsql
-SECURITY DEFINER
-SET search_path = public
-AS $$
-BEGIN
-  IF NOT EXISTS (SELECT 1 FROM auth.users WHERE id = _user_id) THEN
-    RAISE EXCEPTION 'User not found';
-  END IF;
+### Modifications
 
-  INSERT INTO public.community_profiles (
-    user_id, prenom, nom, ville, telephone,
-    date_naissance, motivation, kigo_accueil,
-    superpouvoir_sensoriel, niveau_intimite_vivant
-  ) VALUES (
-    _user_id, _prenom, _nom, _ville, _telephone,
-    _date_naissance::date, _motivation, _kigo_accueil,
-    _superpouvoir_sensoriel, _niveau_intimite_vivant
-  );
-END;
-$$;
-```
+**Fichier : `src/components/admin/MarcheList.tsx`**
 
-Seul changement : `_date_naissance` → `_date_naissance::date` dans le VALUES.
+1. Ajouter deux états : `currentPage` (défaut 1) et `itemsPerPage` (défaut 10)
+2. Calculer `paginatedMarches` via slice sur le tableau `marches`
+3. Réinitialiser `currentPage` à 1 quand `marches` ou `itemsPerPage` changent
+4. Remplacer `marches.map(...)` par `paginatedMarches.map(...)`
+5. Ajouter en bas de la liste :
+   - Un sélecteur `<Select>` avec les options 10 / 20 / 50 par page
+   - Les composants `Pagination` existants (Previous / numéros de page / Next) depuis `src/components/ui/pagination.tsx`
+   - Un indicateur "Affichage X-Y sur Z marches"
 
-### Fichier impacté
+### Détails techniques
 
-| Action | Fichier |
-|--------|---------|
-| Migration | `CREATE OR REPLACE FUNCTION create_community_profile` — ajout du cast `::date` |
+- Utilise les composants UI existants : `Pagination`, `PaginationContent`, `PaginationItem`, `PaginationLink`, `PaginationPrevious`, `PaginationNext`, `PaginationEllipsis` et `Select`
+- Le compteur dans le header (`Marches existantes (N)`) reste sur le total non paginé
+- La pagination affiche max 5 numéros de page avec ellipsis si nécessaire
 
