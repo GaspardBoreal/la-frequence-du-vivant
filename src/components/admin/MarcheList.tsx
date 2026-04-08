@@ -199,7 +199,7 @@ const MarcheList: React.FC<MarcheListProps> = ({
       </div>
 
       <div className="space-y-3">
-        {marches.map((marche) => (
+        {paginatedMarches.map((marche) => (
           <div key={marche.id} className="gaspard-card rounded-lg p-4 hover:shadow-md transition-shadow">
             <div className="flex items-start justify-between">
               <div className="flex-1">
