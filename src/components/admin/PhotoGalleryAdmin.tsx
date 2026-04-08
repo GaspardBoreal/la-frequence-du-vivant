@@ -32,7 +32,10 @@ interface PhotoGalleryAdminProps {
 
 interface PhotoWithMarche extends ExistingPhoto {
   marche: MarcheTechnoSensible;
+  source: 'admin' | 'contribution';
 }
+
+type SourceFilter = 'all' | 'admin' | 'contribution';
 
 type SortField = 'date' | 'name' | 'marche' | 'size';
 type SortDirection = 'asc' | 'desc';
@@ -45,12 +48,13 @@ const PhotoGalleryAdmin: React.FC<PhotoGalleryAdminProps> = ({ marches }) => {
   const [searchText, setSearchText] = useState('');
   const [selectedMarche, setSelectedMarche] = useState<string>('all');
   const [selectedExploration, setSelectedExploration] = useState<string>('all');
+  const [selectedSource, setSelectedSource] = useState<SourceFilter>('all');
   const [hasTitle, setHasTitle] = useState<boolean | null>(null);
   const [hasDescription, setHasDescription] = useState<boolean | null>(null);
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [tagsWithCounts, setTagsWithCounts] = useState<Array<{ tag: string; count: number; categorie?: string }>>([]);
   const [showFilters, setShowFilters] = useState(false);
-  const [tagRefreshKey, setTagRefreshKey] = useState(0); // Pour forcer le rechargement des tags
+  const [tagRefreshKey, setTagRefreshKey] = useState(0);
   const [tagSortBy, setTagSortBy] = useState<'name' | 'count'>('name');
   const [showOnlyWithoutTags, setShowOnlyWithoutTags] = useState(false);
   // Debouncing pour optimiser les performances
@@ -92,18 +96,52 @@ const PhotoGalleryAdmin: React.FC<PhotoGalleryAdminProps> = ({ marches }) => {
       setLoading(true);
       try {
         const allPhotos: PhotoWithMarche[] = [];
+        const marcheIds = marches.map(m => m.id);
         
+        // 1. Charger les photos admin (marche_photos)
         for (const marche of marches) {
           try {
             const marchePhotos = await fetchExistingPhotos(marche.id);
             const photosWithMarche = marchePhotos.map(photo => ({
               ...photo,
-              marche
+              marche,
+              source: 'admin' as const
             }));
             allPhotos.push(...photosWithMarche);
           } catch (error) {
             console.warn(`Erreur chargement photos pour marche ${marche.ville}:`, error);
           }
+        }
+        
+        // 2. Charger les contributions marcheurs (marcheur_medias, type_media = 'photo')
+        try {
+          const { data: contribPhotos, error } = await supabase
+            .from('marcheur_medias')
+            .select('*')
+            .eq('type_media', 'photo')
+            .in('marche_id', marcheIds);
+          
+          if (!error && contribPhotos) {
+            const contribWithMarche = contribPhotos.map(cp => {
+              const marche = marches.find(m => m.id === cp.marche_id);
+              return {
+                id: cp.id,
+                nom_fichier: cp.titre || cp.url_fichier?.split('/').pop() || 'photo',
+                url_supabase: cp.url_fichier,
+                titre: cp.titre,
+                description: cp.description,
+                ordre: cp.ordre,
+                metadata: null,
+                created_at: cp.created_at,
+                tags: [],
+                marche: marche!,
+                source: 'contribution' as const
+              } as PhotoWithMarche;
+            }).filter(p => p.marche);
+            allPhotos.push(...contribWithMarche);
+          }
+        } catch (error) {
+          console.warn('Erreur chargement contributions photos:', error);
         }
         
         setPhotos(allPhotos);
@@ -150,6 +188,11 @@ const PhotoGalleryAdmin: React.FC<PhotoGalleryAdminProps> = ({ marches }) => {
     // Filtre par marche
     if (selectedMarche !== 'all') {
       filtered = filtered.filter(photo => photo.marche.id === selectedMarche);
+    }
+
+    // Filtre par source
+    if (selectedSource !== 'all') {
+      filtered = filtered.filter(photo => photo.source === selectedSource);
     }
 
     // Filtre par exploration
@@ -233,7 +276,7 @@ const PhotoGalleryAdmin: React.FC<PhotoGalleryAdminProps> = ({ marches }) => {
     });
 
     return filtered;
-  }, [photos, selectedMarche, selectedExploration, explorationMarcheIds, hasTitle, hasDescription, selectedTags, showOnlyWithoutTags, debouncedSearchText, sortField, sortDirection]);
+  }, [photos, selectedMarche, selectedSource, selectedExploration, explorationMarcheIds, hasTitle, hasDescription, selectedTags, showOnlyWithoutTags, debouncedSearchText, sortField, sortDirection]);
 
   const handleSort = useCallback((field: SortField) => {
     if (sortField === field) {
@@ -281,13 +324,14 @@ const PhotoGalleryAdmin: React.FC<PhotoGalleryAdminProps> = ({ marches }) => {
     setSearchText('');
     setSelectedMarche('all');
     setSelectedExploration('all');
+    setSelectedSource('all');
     setHasTitle(null);
     setHasDescription(null);
     setSelectedTags([]);
     setShowOnlyWithoutTags(false);
   }, []);
 
-  const hasActiveFilters = debouncedSearchText || selectedMarche !== 'all' || selectedExploration !== 'all' || hasTitle !== null || hasDescription !== null || selectedTags.length > 0 || showOnlyWithoutTags;
+  const hasActiveFilters = debouncedSearchText || selectedMarche !== 'all' || selectedExploration !== 'all' || selectedSource !== 'all' || hasTitle !== null || hasDescription !== null || selectedTags.length > 0 || showOnlyWithoutTags;
 
   const getSortIcon = (field: SortField) => {
     if (sortField !== field) return null;
@@ -525,14 +569,28 @@ const PhotoGalleryAdmin: React.FC<PhotoGalleryAdminProps> = ({ marches }) => {
             </div>
           </div>
 
-          {/* Section 3: Filtres sur les Marches */}
+          {/* Section 3: Filtres sur les Marches et Source */}
           <div className="border rounded-lg p-4 space-y-4">
             <h4 className="font-medium text-accent flex items-center">
               <MapPin className="h-4 w-4 mr-2" />
-              Filtres sur les Marches et/ Explorations
+              Filtres sur les Marches, Explorations et Source
             </h4>
             
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {/* Sélecteur de source */}
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Source</label>
+                <Select value={selectedSource} onValueChange={(v) => setSelectedSource(v as SourceFilter)}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Toutes les sources" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Toutes les sources</SelectItem>
+                    <SelectItem value="admin">🟢 Admin uniquement</SelectItem>
+                    <SelectItem value="contribution">🟠 Contributions uniquement</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
               {/* Sélecteur de marche */}
               <div className="space-y-2">
                 <label className="text-sm font-medium">Marche sélectionnée</label>

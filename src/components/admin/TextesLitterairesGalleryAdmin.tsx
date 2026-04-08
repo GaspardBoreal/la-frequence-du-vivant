@@ -45,7 +45,10 @@ interface TextesLitterairesGalleryAdminProps {
 
 interface TexteWithMarche extends MarcheTexte {
   marche: MarcheTechnoSensible;
+  source: 'admin' | 'contribution';
 }
+
+type SourceFilter = 'all' | 'admin' | 'contribution';
 
 type SortField = 'date' | 'titre' | 'marche' | 'type' | 'ordre';
 type SortDirection = 'asc' | 'desc';
@@ -83,6 +86,16 @@ const TexteCard: React.FC<{
             <div className="flex items-center gap-2">
               <Badge variant="secondary">{texte.type_texte}</Badge>
               <Badge variant="outline">{family}</Badge>
+              {texte.source === 'contribution' && (
+                <Badge className="text-xs bg-orange-500/15 text-orange-700 border-orange-300">
+                  Contribution
+                </Badge>
+              )}
+              {texte.source === 'admin' && (
+                <Badge className="text-xs bg-emerald-500/15 text-emerald-700 border-emerald-300">
+                  Admin
+                </Badge>
+              )}
             </div>
             <h3 className="font-semibold text-sm line-clamp-1">{texte.titre}</h3>
           </div>
@@ -360,6 +373,7 @@ const TextesLitterairesGalleryAdmin: React.FC<TextesLitterairesGalleryAdminProps
   const [selectedMarche, setSelectedMarche] = useState<string>('all');
   const [selectedType, setSelectedType] = useState<string>('all');
   const [selectedFamily, setSelectedFamily] = useState<string>('all');
+  const [selectedSource, setSelectedSource] = useState<SourceFilter>('all');
   const [hasMetadata, setHasMetadata] = useState<boolean | null>(null);
   const [showFilters, setShowFilters] = useState(false);
   const [previewTexte, setPreviewTexte] = useState<TexteWithMarche | null>(null);
@@ -386,7 +400,7 @@ const TextesLitterairesGalleryAdmin: React.FC<TextesLitterairesGalleryAdminProps
 
         const marcheIds = marches.map(m => m.id);
         
-        // Une seule requête pour tous les textes
+        // 1. Charger les textes admin (marche_textes)
         const { data, error } = await supabase
           .from('marche_textes')
           .select('*')
@@ -395,18 +409,48 @@ const TextesLitterairesGalleryAdmin: React.FC<TextesLitterairesGalleryAdminProps
           
         if (error) throw error;
         
-        // Mapper les textes avec les marches
-        const textesWithMarche: TexteWithMarche[] = data.map(texte => {
+        const textesAdmin: TexteWithMarche[] = (data || []).map(texte => {
           const marche = marches.find(m => m.id === texte.marche_id);
           return {
             ...texte,
             type_texte: texte.type_texte as TextType,
             metadata: texte.metadata as Record<string, any> | null,
-            marche: marche!
+            marche: marche!,
+            source: 'admin' as const
           };
-        }).filter(texte => texte.marche); // Filtrer les textes sans marche
+        }).filter(texte => texte.marche);
         
-        setTextes(textesWithMarche);
+        // 2. Charger les contributions marcheurs (marcheur_textes)
+        let contribTextes: TexteWithMarche[] = [];
+        try {
+          const { data: contribData, error: contribError } = await supabase
+            .from('marcheur_textes')
+            .select('*')
+            .in('marche_id', marcheIds);
+          
+          if (!contribError && contribData) {
+            contribTextes = contribData.map(ct => {
+              const marche = marches.find(m => m.id === ct.marche_id);
+              return {
+                id: ct.id,
+                marche_id: ct.marche_id,
+                titre: ct.titre || 'Sans titre',
+                contenu: ct.contenu || '',
+                type_texte: (ct.type_texte || 'fragment') as TextType,
+                ordre: ct.ordre || 1,
+                metadata: null,
+                created_at: ct.created_at,
+                updated_at: ct.updated_at,
+                marche: marche!,
+                source: 'contribution' as const
+              } as TexteWithMarche;
+            }).filter(t => t.marche);
+          }
+        } catch (error) {
+          console.warn('Erreur chargement contributions textes:', error);
+        }
+        
+        setTextes([...textesAdmin, ...contribTextes]);
       } catch (error) {
         console.error('Erreur chargement textes:', error);
         toast.error('Erreur lors du chargement des textes');
@@ -468,6 +512,11 @@ const TextesLitterairesGalleryAdmin: React.FC<TextesLitterairesGalleryAdminProps
     // Filtre par marche
     if (selectedMarche !== 'all') {
       filtered = filtered.filter(texte => texte.marche.id === selectedMarche);
+    }
+
+    // Filtre par source
+    if (selectedSource !== 'all') {
+      filtered = filtered.filter(texte => texte.source === selectedSource);
     }
 
     // Filtre par type
@@ -535,7 +584,7 @@ const TextesLitterairesGalleryAdmin: React.FC<TextesLitterairesGalleryAdminProps
     });
 
     return filtered;
-  }, [textes, selectedMarche, selectedType, selectedFamily, hasMetadata, debouncedSearchText, sortField, sortDirection]);
+  }, [textes, selectedMarche, selectedSource, selectedType, selectedFamily, hasMetadata, debouncedSearchText, sortField, sortDirection]);
 
   const handleSort = useCallback((field: SortField) => {
     if (sortField === field) {
@@ -584,11 +633,12 @@ const TextesLitterairesGalleryAdmin: React.FC<TextesLitterairesGalleryAdminProps
     setSelectedMarche('all');
     setSelectedType('all');
     setSelectedFamily('all');
+    setSelectedSource('all');
     setHasMetadata(null);
   }, []);
 
   const hasActiveFilters = debouncedSearchText || selectedMarche !== 'all' || 
-    selectedType !== 'all' || selectedFamily !== 'all' || hasMetadata !== null;
+    selectedType !== 'all' || selectedFamily !== 'all' || selectedSource !== 'all' || hasMetadata !== null;
 
   const getSortIcon = (field: SortField) => {
     if (sortField !== field) return null;
@@ -729,30 +779,46 @@ const TextesLitterairesGalleryAdmin: React.FC<TextesLitterairesGalleryAdminProps
             </div>
           </div>
 
-          {/* Section 2: Filtres sur les Marches */}
+          {/* Section 2: Filtres sur les Marches et Source */}
           <div className="border rounded-lg p-4 space-y-4">
             <h4 className="font-medium text-secondary flex items-center">
               <MapPin className="h-4 w-4 mr-2" />
-              Filtres sur les Marches
+              Filtres sur les Marches et Source
             </h4>
             
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Marche sélectionnée</label>
-              <Select value={selectedMarche} onValueChange={setSelectedMarche}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Toutes les marches" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">
-                    Toutes les marches ({textes.length} textes)
-                  </SelectItem>
-                  {getMarchesWithTextCount.map(({ marche, textCount }) => (
-                    <SelectItem key={marche.id} value={marche.id}>
-                      {marche.ville} - {marche.nomMarche || 'Sans nom'} ({textCount} texte{textCount > 1 ? 's' : ''})
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Sélecteur de source */}
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Source</label>
+                <Select value={selectedSource} onValueChange={(v) => setSelectedSource(v as SourceFilter)}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Toutes les sources" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Toutes les sources</SelectItem>
+                    <SelectItem value="admin">🟢 Admin uniquement</SelectItem>
+                    <SelectItem value="contribution">🟠 Contributions uniquement</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Marche sélectionnée</label>
+                <Select value={selectedMarche} onValueChange={setSelectedMarche}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Toutes les marches" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">
+                      Toutes les marches ({textes.length} textes)
                     </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                    {getMarchesWithTextCount.map(({ marche, textCount }) => (
+                      <SelectItem key={marche.id} value={marche.id}>
+                        {marche.ville} - {marche.nomMarche || 'Sans nom'} ({textCount} texte{textCount > 1 ? 's' : ''})
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
           </div>
 

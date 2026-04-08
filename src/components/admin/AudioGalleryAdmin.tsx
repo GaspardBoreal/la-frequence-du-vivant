@@ -36,7 +36,10 @@ interface AudioGalleryAdminProps {
 
 interface AudioWithMarche extends ExistingAudio {
   marche: MarcheTechnoSensible;
+  source: 'admin' | 'contribution';
 }
+
+type SourceFilter = 'all' | 'admin' | 'contribution';
 
 type SortField = 'date' | 'name' | 'marche' | 'duration' | 'size';
 type SortDirection = 'asc' | 'desc';
@@ -51,6 +54,7 @@ const AudioGalleryAdmin: React.FC<AudioGalleryAdminProps> = ({ marches }) => {
   const [selectedExploration, setSelectedExploration] = useState<string>('all');
   const [selectedAudioType, setSelectedAudioType] = useState<string>('all');
   const [selectedLiteraryType, setSelectedLiteraryType] = useState<string>('all');
+  const [selectedSource, setSelectedSource] = useState<SourceFilter>('all');
   const [showFilters, setShowFilters] = useState(false);
   const [currentPlayingId, setCurrentPlayingId] = useState<string | null>(null);
   const debouncedSearchText = useDebounce(searchText, 300);
@@ -113,18 +117,52 @@ const AudioGalleryAdmin: React.FC<AudioGalleryAdminProps> = ({ marches }) => {
       setLoading(true);
       try {
         const allAudios: AudioWithMarche[] = [];
+        const marcheIds = marches.map(m => m.id);
         
+        // 1. Charger les audios admin
         for (const marche of marches) {
           try {
             const marcheAudios = await fetchExistingAudio(marche.id);
             const audiosWithMarche = marcheAudios.map(audio => ({
               ...audio,
-              marche
+              marche,
+              source: 'admin' as const
             }));
             allAudios.push(...audiosWithMarche);
           } catch (error) {
             console.error(`Erreur chargement audio pour marche ${marche.id}:`, error);
           }
+        }
+        
+        // 2. Charger les contributions marcheurs (marcheur_audio)
+        try {
+          const { data: contribAudios, error } = await supabase
+            .from('marcheur_audio')
+            .select('*')
+            .in('marche_id', marcheIds);
+          
+          if (!error && contribAudios) {
+            const contribWithMarche = contribAudios.map(ca => {
+              const marche = marches.find(m => m.id === ca.marche_id);
+              return {
+                id: ca.id,
+                nom_fichier: ca.titre || ca.url_fichier?.split('/').pop() || 'audio',
+                url_supabase: ca.url_fichier,
+                titre: ca.titre,
+                description: ca.description,
+                duree_secondes: ca.duree_secondes,
+                taille_octets: ca.taille_octets ? Number(ca.taille_octets) : undefined,
+                ordre: ca.ordre,
+                metadata: null,
+                created_at: ca.created_at,
+                marche: marche!,
+                source: 'contribution' as const
+              } as AudioWithMarche;
+            }).filter(a => a.marche);
+            allAudios.push(...contribWithMarche);
+          }
+        } catch (error) {
+          console.warn('Erreur chargement contributions audio:', error);
         }
         
         setAudios(allAudios);
@@ -160,6 +198,11 @@ const AudioGalleryAdmin: React.FC<AudioGalleryAdminProps> = ({ marches }) => {
     // Filtre par marche
     if (selectedMarche !== 'all') {
       filtered = filtered.filter(audio => audio.marche.id === selectedMarche);
+    }
+
+    // Filtre par source
+    if (selectedSource !== 'all') {
+      filtered = filtered.filter(audio => audio.source === selectedSource);
     }
 
     // Filtre par exploration
@@ -233,7 +276,7 @@ const AudioGalleryAdmin: React.FC<AudioGalleryAdminProps> = ({ marches }) => {
     });
 
     return filtered;
-  }, [audios, debouncedSearchText, selectedMarche, selectedExploration, explorationMarcheIds, selectedAudioType, selectedLiteraryType, sortField, sortDirection]);
+  }, [audios, debouncedSearchText, selectedMarche, selectedSource, selectedExploration, explorationMarcheIds, selectedAudioType, selectedLiteraryType, sortField, sortDirection]);
 
   const handleSort = (field: SortField) => {
     if (sortField === field) {
@@ -392,7 +435,7 @@ const AudioGalleryAdmin: React.FC<AudioGalleryAdminProps> = ({ marches }) => {
 
       {showFilters && (
         <Card className="p-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-7 gap-4">
             <div>
               <label className="text-sm font-medium text-foreground mb-2 block">Recherche</label>
               <div className="relative">
@@ -477,6 +520,20 @@ const AudioGalleryAdmin: React.FC<AudioGalleryAdminProps> = ({ marches }) => {
             </div>
 
             <div>
+              <label className="text-sm font-medium text-foreground mb-2 block">Source</label>
+              <Select value={selectedSource} onValueChange={(v) => setSelectedSource(v as SourceFilter)}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Toutes" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Toutes</SelectItem>
+                  <SelectItem value="admin">🟢 Admin</SelectItem>
+                  <SelectItem value="contribution">🟠 Contributions</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div>
               <label className="text-sm font-medium text-foreground mb-2 block">Tri</label>
               <div className="flex gap-2">
                 <Select value={sortField} onValueChange={(value) => setSortField(value as SortField)}>
@@ -517,6 +574,16 @@ const AudioGalleryAdmin: React.FC<AudioGalleryAdminProps> = ({ marches }) => {
                     <Badge variant="secondary" className="text-xs">
                       {audio.marche.ville}
                     </Badge>
+                    {audio.source === 'contribution' && (
+                      <Badge className="text-xs bg-orange-500/15 text-orange-700 border-orange-300">
+                        Contribution
+                      </Badge>
+                    )}
+                    {audio.source === 'admin' && (
+                      <Badge className="text-xs bg-emerald-500/15 text-emerald-700 border-emerald-300">
+                        Admin
+                      </Badge>
+                    )}
                     {(audio as any).type_audio && (
                       <Badge variant="outline" className="text-xs">
                         {getAudioTypeLabel((audio as any).type_audio)?.icon} {getAudioTypeLabel((audio as any).type_audio)?.label}

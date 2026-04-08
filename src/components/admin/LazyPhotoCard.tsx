@@ -14,6 +14,7 @@ import { toast } from 'sonner';
 
 interface PhotoWithMarche extends ExistingPhoto {
   marche: MarcheTechnoSensible;
+  source?: 'admin' | 'contribution';
 }
 
 interface LazyPhotoCardProps {
@@ -204,11 +205,23 @@ const LazyPhotoCard: React.FC<LazyPhotoCardProps> = memo(({ photo, onUpdate, onD
         </div>
         
         <div className="p-3 space-y-2">
-          {/* Marche */}
+          {/* Marche + Source */}
           <div className="flex items-center justify-between">
-            <Badge variant="secondary" className="text-xs">
-              {photo.marche.ville}
-            </Badge>
+            <div className="flex items-center gap-1">
+              <Badge variant="secondary" className="text-xs">
+                {photo.marche.ville}
+              </Badge>
+              {photo.source === 'contribution' && (
+                <Badge className="text-xs bg-orange-500/15 text-orange-700 border-orange-300 hover:bg-orange-500/20">
+                  Contribution
+                </Badge>
+              )}
+              {photo.source === 'admin' && (
+                <Badge className="text-xs bg-emerald-500/15 text-emerald-700 border-emerald-300 hover:bg-emerald-500/20">
+                  Admin
+                </Badge>
+              )}
+            </div>
             <span className="text-xs text-muted-foreground">
               {formatFileSize(photo.metadata?.size || 0)}
             </span>
