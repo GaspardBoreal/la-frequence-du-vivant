@@ -32,7 +32,10 @@ interface PhotoGalleryAdminProps {
 
 interface PhotoWithMarche extends ExistingPhoto {
   marche: MarcheTechnoSensible;
+  source: 'admin' | 'contribution';
 }
+
+type SourceFilter = 'all' | 'admin' | 'contribution';
 
 type SortField = 'date' | 'name' | 'marche' | 'size';
 type SortDirection = 'asc' | 'desc';
