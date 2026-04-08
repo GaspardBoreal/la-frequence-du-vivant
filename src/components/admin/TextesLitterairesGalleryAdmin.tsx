@@ -779,14 +779,28 @@ const TextesLitterairesGalleryAdmin: React.FC<TextesLitterairesGalleryAdminProps
             </div>
           </div>
 
-          {/* Section 2: Filtres sur les Marches */}
+          {/* Section 2: Filtres sur les Marches et Source */}
           <div className="border rounded-lg p-4 space-y-4">
             <h4 className="font-medium text-secondary flex items-center">
               <MapPin className="h-4 w-4 mr-2" />
-              Filtres sur les Marches
+              Filtres sur les Marches et Source
             </h4>
             
-            <div className="space-y-2">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Sélecteur de source */}
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Source</label>
+                <Select value={selectedSource} onValueChange={(v) => setSelectedSource(v as SourceFilter)}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Toutes les sources" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Toutes les sources</SelectItem>
+                    <SelectItem value="admin">🟢 Admin uniquement</SelectItem>
+                    <SelectItem value="contribution">🟠 Contributions uniquement</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
               <label className="text-sm font-medium">Marche sélectionnée</label>
               <Select value={selectedMarche} onValueChange={setSelectedMarche}>
                 <SelectTrigger>
