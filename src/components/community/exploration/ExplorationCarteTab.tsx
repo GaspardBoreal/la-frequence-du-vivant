@@ -159,7 +159,7 @@ function createNumberedIcon(num: number, isActive: boolean, contribCount: number
 }
 
 // Arrow decorator for polyline direction
-function ArrowDecorators({ positions }: { positions: [number, number][] }) {
+function ArrowDecorators({ positions, color = '#10b981' }: { positions: [number, number][]; color?: string }) {
   const map = useMap();
   
   useEffect(() => {
@@ -178,7 +178,7 @@ function ArrowDecorators({ positions }: { positions: [number, number][] }) {
         className: 'arrow-decorator',
         html: `<div style="
           transform: rotate(${90 - angle}deg);
-          color: #10b981;
+          color: ${color};
           font-size: 16px;
           opacity: 0.7;
           text-shadow: 0 1px 3px rgba(0,0,0,0.3);
@@ -195,7 +195,7 @@ function ArrowDecorators({ positions }: { positions: [number, number][] }) {
     return () => {
       arrows.forEach(a => map.removeLayer(a));
     };
-  }, [positions, map]);
+  }, [positions, map, color]);
   
   return null;
 }
