@@ -574,7 +574,7 @@ const TextesLitterairesGalleryAdmin: React.FC<TextesLitterairesGalleryAdminProps
     });
 
     return filtered;
-  }, [textes, selectedMarche, selectedType, selectedFamily, hasMetadata, debouncedSearchText, sortField, sortDirection]);
+  }, [textes, selectedMarche, selectedSource, selectedType, selectedFamily, hasMetadata, debouncedSearchText, sortField, sortDirection]);
 
   const handleSort = useCallback((field: SortField) => {
     if (sortField === field) {
