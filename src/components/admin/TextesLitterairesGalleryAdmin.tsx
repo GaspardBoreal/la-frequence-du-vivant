@@ -363,6 +363,7 @@ const TextesLitterairesGalleryAdmin: React.FC<TextesLitterairesGalleryAdminProps
   const [selectedMarche, setSelectedMarche] = useState<string>('all');
   const [selectedType, setSelectedType] = useState<string>('all');
   const [selectedFamily, setSelectedFamily] = useState<string>('all');
+  const [selectedSource, setSelectedSource] = useState<SourceFilter>('all');
   const [hasMetadata, setHasMetadata] = useState<boolean | null>(null);
   const [showFilters, setShowFilters] = useState(false);
   const [previewTexte, setPreviewTexte] = useState<TexteWithMarche | null>(null);
@@ -389,7 +390,7 @@ const TextesLitterairesGalleryAdmin: React.FC<TextesLitterairesGalleryAdminProps
 
         const marcheIds = marches.map(m => m.id);
         
-        // Une seule requête pour tous les textes
+        // 1. Charger les textes admin (marche_textes)
         const { data, error } = await supabase
           .from('marche_textes')
           .select('*')
@@ -398,18 +399,48 @@ const TextesLitterairesGalleryAdmin: React.FC<TextesLitterairesGalleryAdminProps
           
         if (error) throw error;
         
-        // Mapper les textes avec les marches
-        const textesWithMarche: TexteWithMarche[] = data.map(texte => {
+        const textesAdmin: TexteWithMarche[] = (data || []).map(texte => {
           const marche = marches.find(m => m.id === texte.marche_id);
           return {
             ...texte,
             type_texte: texte.type_texte as TextType,
             metadata: texte.metadata as Record<string, any> | null,
-            marche: marche!
+            marche: marche!,
+            source: 'admin' as const
           };
-        }).filter(texte => texte.marche); // Filtrer les textes sans marche
+        }).filter(texte => texte.marche);
         
-        setTextes(textesWithMarche);
+        // 2. Charger les contributions marcheurs (marcheur_textes)
+        let contribTextes: TexteWithMarche[] = [];
+        try {
+          const { data: contribData, error: contribError } = await supabase
+            .from('marcheur_textes')
+            .select('*')
+            .in('marche_id', marcheIds);
+          
+          if (!contribError && contribData) {
+            contribTextes = contribData.map(ct => {
+              const marche = marches.find(m => m.id === ct.marche_id);
+              return {
+                id: ct.id,
+                marche_id: ct.marche_id,
+                titre: ct.titre || 'Sans titre',
+                contenu: ct.contenu || '',
+                type_texte: (ct.type_texte || 'fragment') as TextType,
+                ordre: ct.ordre || 1,
+                metadata: null,
+                created_at: ct.created_at,
+                updated_at: ct.updated_at,
+                marche: marche!,
+                source: 'contribution' as const
+              } as TexteWithMarche;
+            }).filter(t => t.marche);
+          }
+        } catch (error) {
+          console.warn('Erreur chargement contributions textes:', error);
+        }
+        
+        setTextes([...textesAdmin, ...contribTextes]);
       } catch (error) {
         console.error('Erreur chargement textes:', error);
         toast.error('Erreur lors du chargement des textes');
