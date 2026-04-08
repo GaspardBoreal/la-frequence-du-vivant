@@ -276,7 +276,7 @@ const AudioGalleryAdmin: React.FC<AudioGalleryAdminProps> = ({ marches }) => {
     });
 
     return filtered;
-  }, [audios, debouncedSearchText, selectedMarche, selectedExploration, explorationMarcheIds, selectedAudioType, selectedLiteraryType, sortField, sortDirection]);
+  }, [audios, debouncedSearchText, selectedMarche, selectedSource, selectedExploration, explorationMarcheIds, selectedAudioType, selectedLiteraryType, sortField, sortDirection]);
 
   const handleSort = (field: SortField) => {
     if (sortField === field) {
