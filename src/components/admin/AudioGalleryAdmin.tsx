@@ -36,7 +36,10 @@ interface AudioGalleryAdminProps {
 
 interface AudioWithMarche extends ExistingAudio {
   marche: MarcheTechnoSensible;
+  source: 'admin' | 'contribution';
 }
+
+type SourceFilter = 'all' | 'admin' | 'contribution';
 
 type SortField = 'date' | 'name' | 'marche' | 'duration' | 'size';
 type SortDirection = 'asc' | 'desc';
@@ -51,6 +54,7 @@ const AudioGalleryAdmin: React.FC<AudioGalleryAdminProps> = ({ marches }) => {
   const [selectedExploration, setSelectedExploration] = useState<string>('all');
   const [selectedAudioType, setSelectedAudioType] = useState<string>('all');
   const [selectedLiteraryType, setSelectedLiteraryType] = useState<string>('all');
+  const [selectedSource, setSelectedSource] = useState<SourceFilter>('all');
   const [showFilters, setShowFilters] = useState(false);
   const [currentPlayingId, setCurrentPlayingId] = useState<string | null>(null);
   const debouncedSearchText = useDebounce(searchText, 300);
@@ -113,18 +117,52 @@ const AudioGalleryAdmin: React.FC<AudioGalleryAdminProps> = ({ marches }) => {
       setLoading(true);
       try {
         const allAudios: AudioWithMarche[] = [];
+        const marcheIds = marches.map(m => m.id);
         
+        // 1. Charger les audios admin
         for (const marche of marches) {
           try {
             const marcheAudios = await fetchExistingAudio(marche.id);
             const audiosWithMarche = marcheAudios.map(audio => ({
               ...audio,
-              marche
+              marche,
+              source: 'admin' as const
             }));
             allAudios.push(...audiosWithMarche);
           } catch (error) {
             console.error(`Erreur chargement audio pour marche ${marche.id}:`, error);
           }
+        }
+        
+        // 2. Charger les contributions marcheurs (marcheur_audio)
+        try {
+          const { data: contribAudios, error } = await supabase
+            .from('marcheur_audio')
+            .select('*')
+            .in('marche_id', marcheIds);
+          
+          if (!error && contribAudios) {
+            const contribWithMarche = contribAudios.map(ca => {
+              const marche = marches.find(m => m.id === ca.marche_id);
+              return {
+                id: ca.id,
+                nom_fichier: ca.titre || ca.url_fichier?.split('/').pop() || 'audio',
+                url_supabase: ca.url_fichier,
+                titre: ca.titre,
+                description: ca.description,
+                duree_secondes: ca.duree_secondes,
+                taille_octets: ca.taille_octets ? Number(ca.taille_octets) : undefined,
+                ordre: ca.ordre,
+                metadata: null,
+                created_at: ca.created_at,
+                marche: marche!,
+                source: 'contribution' as const
+              } as AudioWithMarche;
+            }).filter(a => a.marche);
+            allAudios.push(...contribWithMarche);
+          }
+        } catch (error) {
+          console.warn('Erreur chargement contributions audio:', error);
         }
         
         setAudios(allAudios);
