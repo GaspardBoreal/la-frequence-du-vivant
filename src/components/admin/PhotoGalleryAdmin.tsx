@@ -569,14 +569,28 @@ const PhotoGalleryAdmin: React.FC<PhotoGalleryAdminProps> = ({ marches }) => {
             </div>
           </div>
 
-          {/* Section 3: Filtres sur les Marches */}
+          {/* Section 3: Filtres sur les Marches et Source */}
           <div className="border rounded-lg p-4 space-y-4">
             <h4 className="font-medium text-accent flex items-center">
               <MapPin className="h-4 w-4 mr-2" />
-              Filtres sur les Marches et/ Explorations
+              Filtres sur les Marches, Explorations et Source
             </h4>
             
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {/* Sélecteur de source */}
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Source</label>
+                <Select value={selectedSource} onValueChange={(v) => setSelectedSource(v as SourceFilter)}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Toutes les sources" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Toutes les sources</SelectItem>
+                    <SelectItem value="admin">🟢 Admin uniquement</SelectItem>
+                    <SelectItem value="contribution">🟠 Contributions uniquement</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
               {/* Sélecteur de marche */}
               <div className="space-y-2">
                 <label className="text-sm font-medium">Marche sélectionnée</label>
