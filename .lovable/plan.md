@@ -1,37 +1,52 @@
 
 
-## Résoudre les timeouts d'inscription (cas Victor)
+## Corriger le cast `date_naissance` dans `create_community_profile`
 
-### Problème
+La fonction SQL `create_community_profile` déclare `_date_naissance` comme `TEXT` mais la colonne `date_naissance` est de type `DATE`. Il faut ajouter un cast `::date` dans l'INSERT.
 
-L'envoi de l'email de confirmation lors du signup prend >10s, déclenchant un timeout 504 côté Supabase Auth. L'utilisateur voit une erreur, réessaie, et chaque tentative crée puis détruit un compte fantôme.
+### Migration SQL
 
-### Solution en 2 volets
+```sql
+CREATE OR REPLACE FUNCTION public.create_community_profile(
+  _user_id UUID,
+  _prenom TEXT,
+  _nom TEXT,
+  _ville TEXT DEFAULT NULL,
+  _telephone TEXT DEFAULT NULL,
+  _date_naissance TEXT DEFAULT NULL,
+  _motivation TEXT DEFAULT NULL,
+  _kigo_accueil TEXT DEFAULT NULL,
+  _superpouvoir_sensoriel TEXT DEFAULT NULL,
+  _niveau_intimite_vivant TEXT DEFAULT NULL
+)
+RETURNS void
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM auth.users WHERE id = _user_id) THEN
+    RAISE EXCEPTION 'User not found';
+  END IF;
 
-#### 1. Configurer Resend comme SMTP custom (action manuelle dans le dashboard Supabase)
+  INSERT INTO public.community_profiles (
+    user_id, prenom, nom, ville, telephone,
+    date_naissance, motivation, kigo_accueil,
+    superpouvoir_sensoriel, niveau_intimite_vivant
+  ) VALUES (
+    _user_id, _prenom, _nom, _ville, _telephone,
+    _date_naissance::date, _motivation, _kigo_accueil,
+    _superpouvoir_sensoriel, _niveau_intimite_vivant
+  );
+END;
+$$;
+```
 
-Vous utilisez déjà Resend pour les emails CRM. Il faut le configurer comme fournisseur SMTP dans Supabase Auth pour accélérer l'envoi des emails de confirmation :
-
-- **Dashboard Supabase** → Authentication → SMTP Settings
-- Host: `smtp.resend.com`, Port: `465`, User: `resend`, Password: votre clé API Resend
-- Sender: une adresse vérifiée dans Resend (ex: `no-reply@la-frequence-du-vivant.com`)
-
-Cela devrait réduire le temps d'envoi de >10s à <2s.
-
-#### 2. Améliorer la résilience côté code (useCommunityAuth.ts)
-
-- Ajouter un `try/catch` avec retry automatique (1 retry après 2s) sur le `signUp`
-- Afficher un message "Inscription en cours, veuillez patienter..." pendant le processus
-- Si timeout, vérifier si l'utilisateur a quand même été créé avant de réessayer (via `checkEmailExists`)
-- Empêcher les clics multiples (disable du bouton pendant le chargement)
+Seul changement : `_date_naissance` → `_date_naissance::date` dans le VALUES.
 
 ### Fichier impacté
 
 | Action | Fichier |
 |--------|---------|
-| Modifier | `src/hooks/useCommunityAuth.ts` — ajouter retry + garde anti-doublon |
-
-### Action manuelle requise
-
-Configurer Resend comme SMTP custom dans le dashboard Supabase : [Authentication → SMTP Settings](https://supabase.com/dashboard/project/xzbunrtgbfbhinkzkzhf/auth/providers)
+| Migration | `CREATE OR REPLACE FUNCTION create_community_profile` — ajout du cast `::date` |
 
