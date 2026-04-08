@@ -435,7 +435,7 @@ const AudioGalleryAdmin: React.FC<AudioGalleryAdminProps> = ({ marches }) => {
 
       {showFilters && (
         <Card className="p-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-7 gap-4">
             <div>
               <label className="text-sm font-medium text-foreground mb-2 block">Recherche</label>
               <div className="relative">
@@ -515,6 +515,20 @@ const AudioGalleryAdmin: React.FC<AudioGalleryAdminProps> = ({ marches }) => {
                       {type.icon} {type.label}
                     </SelectItem>
                   ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div>
+              <label className="text-sm font-medium text-foreground mb-2 block">Source</label>
+              <Select value={selectedSource} onValueChange={(v) => setSelectedSource(v as SourceFilter)}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Toutes" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Toutes</SelectItem>
+                  <SelectItem value="admin">🟢 Admin</SelectItem>
+                  <SelectItem value="contribution">🟠 Contributions</SelectItem>
                 </SelectContent>
               </Select>
             </div>
