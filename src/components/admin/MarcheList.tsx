@@ -394,6 +394,61 @@ const MarcheList: React.FC<MarcheListProps> = ({
           </div>
         ))}
       </div>
+
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4">
+          <div className="flex items-center gap-3">
+            <span className="text-sm text-muted-foreground">
+              Affichage {startIndex + 1}-{Math.min(startIndex + itemsPerPage, marches.length)} sur {marches.length} marches
+            </span>
+            <Select value={String(itemsPerPage)} onValueChange={(v) => setItemsPerPage(Number(v))}>
+              <SelectTrigger className="w-[130px] h-9">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="10">10 par page</SelectItem>
+                <SelectItem value="20">20 par page</SelectItem>
+                <SelectItem value="50">50 par page</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <Pagination>
+            <PaginationContent>
+              <PaginationItem>
+                <PaginationPrevious
+                  onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                  className={currentPage === 1 ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                />
+              </PaginationItem>
+              {getPageNumbers().map((page, i) =>
+                page === 'ellipsis' ? (
+                  <PaginationItem key={`e-${i}`}>
+                    <PaginationEllipsis />
+                  </PaginationItem>
+                ) : (
+                  <PaginationItem key={page}>
+                    <PaginationLink
+                      isActive={currentPage === page}
+                      onClick={() => setCurrentPage(page as number)}
+                      className="cursor-pointer"
+                    >
+                      {page}
+                    </PaginationLink>
+                  </PaginationItem>
+                )
+              )}
+              <PaginationItem>
+                <PaginationNext
+                  onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                  className={currentPage === totalPages ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                />
+              </PaginationItem>
+            </PaginationContent>
+          </Pagination>
+        </div>
+      )}
     </div>
   );
 };
