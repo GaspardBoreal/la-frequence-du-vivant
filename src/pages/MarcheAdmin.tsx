@@ -216,6 +216,10 @@ const MarcheAdmin = () => {
               <AudioGalleryAdmin marches={filteredMarches} />
             </TabsContent>
 
+            <TabsContent value="map" className="space-y-4">
+              <MarcheMapView marches={filteredMarches} />
+            </TabsContent>
+
             <TabsContent value="data" className="space-y-4">
               <DataCollectionPanel marches={filteredMarches} />
             </TabsContent>
