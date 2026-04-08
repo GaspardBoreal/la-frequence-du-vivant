@@ -45,7 +45,10 @@ interface TextesLitterairesGalleryAdminProps {
 
 interface TexteWithMarche extends MarcheTexte {
   marche: MarcheTechnoSensible;
+  source: 'admin' | 'contribution';
 }
+
+type SourceFilter = 'all' | 'admin' | 'contribution';
 
 type SortField = 'date' | 'titre' | 'marche' | 'type' | 'ordre';
 type SortDirection = 'asc' | 'desc';
