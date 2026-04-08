@@ -86,6 +86,16 @@ const TexteCard: React.FC<{
             <div className="flex items-center gap-2">
               <Badge variant="secondary">{texte.type_texte}</Badge>
               <Badge variant="outline">{family}</Badge>
+              {texte.source === 'contribution' && (
+                <Badge className="text-xs bg-orange-500/15 text-orange-700 border-orange-300">
+                  Contribution
+                </Badge>
+              )}
+              {texte.source === 'admin' && (
+                <Badge className="text-xs bg-emerald-500/15 text-emerald-700 border-emerald-300">
+                  Admin
+                </Badge>
+              )}
             </div>
             <h3 className="font-semibold text-sm line-clamp-1">{texte.titre}</h3>
           </div>
