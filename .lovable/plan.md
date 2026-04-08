@@ -1,28 +1,60 @@
 
-## Aligner les galeries sur les filtres actifs
 
-### Problème
+## Intégrer les contributions marcheurs dans les galeries admin
 
-Les onglets "Textes Littéraires", "Galerie Photos" et "Galerie Audio" reçoivent `marches` (la liste complète non filtrée), alors que l'onglet "Carte" reçoit correctement `filteredMarches`. Les galeries ne reflètent donc pas les filtres appliqués.
+### Diagnostic
+
+Les galeries admin (Photos, Audio, Textes) ne consultent que les tables admin :
+- `marche_photos` → 241 photos admin
+- `marche_audio` → audios admin  
+- `marche_textes` → textes admin
+
+Les contributions des marcheurs sont stockées dans des tables séparées :
+- `marcheur_medias` → **98 photos** utilisateurs (dont les 6 de DEVIAT Point 00)
+- `marcheur_audio` → audios utilisateurs
+- `marcheur_textes` → textes utilisateurs
+
+La page exploration affiche les deux sources, mais l'admin ne montre que les données admin. C'est pourquoi "DEVIAT Point 00" montre 6 photos côté marcheur mais 0 côté admin.
 
 ### Solution
 
-Passer `filteredMarches` au lieu de `marches` aux 3 composants galerie, exactement comme c'est fait pour la carte.
+Enrichir chaque galerie admin pour qu'elle charge aussi les contributions marcheurs et les fusionne avec les données admin, avec un badge visuel distinguant la source (Admin / Contribution).
 
-### Modification
+### Modifications
 
-**Fichier : `src/pages/MarcheAdmin.tsx`** — lignes 208, 212, 216
+**1. `src/components/admin/PhotoGalleryAdmin.tsx`**
 
-```tsx
-// Avant
-<TextesLitterairesGalleryAdmin marches={marches} />
-<PhotoGalleryAdmin marches={marches} />
-<AudioGalleryAdmin marches={marches} />
+Dans le `useEffect` de chargement (ligne ~90), après le chargement des `marche_photos`, ajouter une requête sur `marcheur_medias` filtrée par `type_media = 'photo'` et les `marche_id` des marches filtrées. Fusionner les résultats dans le même tableau `photos` avec un champ `source: 'admin' | 'contribution'` pour distinguer visuellement.
 
-// Après
-<TextesLitterairesGalleryAdmin marches={filteredMarches} />
-<PhotoGalleryAdmin marches={filteredMarches} />
-<AudioGalleryAdmin marches={filteredMarches} />
+Ajouter un badge "Contribution" (orange) vs "Admin" (vert) sur chaque carte photo.
+
+**2. `src/components/admin/AudioGalleryAdmin.tsx`**
+
+Même logique : charger `marcheur_audio` en plus de `marche_audio` pour les marches filtrées. Fusionner avec badge source.
+
+**3. `src/components/admin/TextesLitterairesGalleryAdmin.tsx`**
+
+Même logique : charger `marcheur_textes` en plus de `marche_textes` pour les marches filtrées. Fusionner avec badge source.
+
+### Détails techniques
+
+Requête supplémentaire pour les photos (exemple) :
+```sql
+SELECT id, url_fichier, titre, marche_id, created_at, user_id, is_public
+FROM marcheur_medias
+WHERE type_media = 'photo'
+AND marche_id IN (liste des IDs filtrés)
 ```
 
-3 lignes modifiées, aucun nouveau fichier.
+Les objets contribution sont mappés vers le même format `PhotoWithMarche` avec un champ `source` additionnel. L'affichage est identique sauf le badge de source.
+
+Un filtre optionnel "Source" (Toutes / Admin / Contributions) permet de filtrer par provenance.
+
+### Fichiers impactés
+
+| Action | Fichier |
+|--------|---------|
+| Modifier | `src/components/admin/PhotoGalleryAdmin.tsx` |
+| Modifier | `src/components/admin/AudioGalleryAdmin.tsx` |
+| Modifier | `src/components/admin/TextesLitterairesGalleryAdmin.tsx` |
+
