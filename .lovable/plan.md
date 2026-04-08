@@ -1,60 +1,48 @@
 
 
-## Intégrer les contributions marcheurs dans les galeries admin
+## Ajouter un sélecteur de vue cartographique (Géopoétique / Satellite / Relief)
 
-### Diagnostic
+### Concept
 
-Les galeries admin (Photos, Audio, Textes) ne consultent que les tables admin :
-- `marche_photos` → 241 photos admin
-- `marche_audio` → audios admin  
-- `marche_textes` → textes admin
+Un bouton de bascule flottant élégant dans le coin supérieur droit de la carte, permettant de switcher entre 3 vues sans recharger la carte ni perdre les marqueurs/tracés :
 
-Les contributions des marcheurs sont stockées dans des tables séparées :
-- `marcheur_medias` → **98 photos** utilisateurs (dont les 6 de DEVIAT Point 00)
-- `marcheur_audio` → audios utilisateurs
-- `marcheur_textes` → textes utilisateurs
+1. **Géopoétique** (défaut) — la vue sombre actuelle OSM France, parfaite pour la narration
+2. **Satellite** — imagerie satellite haute résolution via Esri World Imagery (gratuit, sans clé API), idéale pour les cours d'eau et le relief
+3. **Relief** — carte topographique OpenTopoMap montrant les courbes de niveau et l'hydrographie
 
-La page exploration affiche les deux sources, mais l'admin ne montre que les données admin. C'est pourquoi "DEVIAT Point 00" montre 6 photos côté marcheur mais 0 côté admin.
+Le toggle est un petit groupe de boutons glassmorphism (backdrop-blur, bordure semi-transparente) avec des icônes distinctes et une animation de transition douce. La vue active est surlignée en émeraude. Le filtre `brightness/saturate` est retiré dynamiquement sur les vues satellite et relief pour les afficher en couleurs naturelles.
 
-### Solution
+### Modification
 
-Enrichir chaque galerie admin pour qu'elle charge aussi les contributions marcheurs et les fusionne avec les données admin, avec un badge visuel distinguant la source (Admin / Contribution).
+**Fichier unique : `src/components/community/exploration/ExplorationCarteTab.tsx`**
 
-### Modifications
+1. Ajouter un état `mapStyle: 'geopoetic' | 'satellite' | 'terrain'` (défaut `'geopoetic'`)
+2. Créer un composant interne `MapStyleToggle` — 3 boutons flottants (position absolute top-right z-1000) avec icônes `Palette` / `Globe` / `Mountain`
+3. Créer un composant `DynamicTileLayer` qui utilise `useMap()` pour swapper le TileLayer selon le style sélectionné :
+   - Géopoétique : `https://{s}.tile.openstreetmap.fr/osmfr/{z}/{x}/{y}.png` + filtre sombre
+   - Satellite : `https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}` (+ labels overlay optionnel)
+   - Relief : `https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png`
+4. Adapter le CSS dynamiquement : `.carte-tiles-dark` filter appliqué uniquement en mode géopoétique
+5. Adapter les couleurs du polyline et de la légende selon le mode (le tracé émeraude passe en blanc/jaune sur satellite pour rester visible)
 
-**1. `src/components/admin/PhotoGalleryAdmin.tsx`**
+### Design du toggle
 
-Dans le `useEffect` de chargement (ligne ~90), après le chargement des `marche_photos`, ajouter une requête sur `marcheur_medias` filtrée par `type_media = 'photo'` et les `marche_id` des marches filtrées. Fusionner les résultats dans le même tableau `photos` avec un champ `source: 'admin' | 'contribution'` pour distinguer visuellement.
-
-Ajouter un badge "Contribution" (orange) vs "Admin" (vert) sur chaque carte photo.
-
-**2. `src/components/admin/AudioGalleryAdmin.tsx`**
-
-Même logique : charger `marcheur_audio` en plus de `marche_audio` pour les marches filtrées. Fusionner avec badge source.
-
-**3. `src/components/admin/TextesLitterairesGalleryAdmin.tsx`**
-
-Même logique : charger `marcheur_textes` en plus de `marche_textes` pour les marches filtrées. Fusionner avec badge source.
-
-### Détails techniques
-
-Requête supplémentaire pour les photos (exemple) :
-```sql
-SELECT id, url_fichier, titre, marche_id, created_at, user_id, is_public
-FROM marcheur_medias
-WHERE type_media = 'photo'
-AND marche_id IN (liste des IDs filtrés)
+```text
+┌──────────────────────┐
+│  🎨  🛰️  ⛰️         │  ← coins arrondis, glass effect
+│  Géo  Sat  Relief    │    bouton actif = fond émeraude
+└──────────────────────┘
 ```
 
-Les objets contribution sont mappés vers le même format `PhotoWithMarche` avec un champ `source` additionnel. L'affichage est identique sauf le badge de source.
+Compact sur mobile (icônes seules), labels visibles au hover sur desktop.
 
-Un filtre optionnel "Source" (Toutes / Admin / Contributions) permet de filtrer par provenance.
+### Aucune nouvelle dépendance
 
-### Fichiers impactés
+Tout reste dans Leaflet — on change uniquement l'URL du TileLayer. Les marqueurs, polylines, popups, zoom et légende sont conservés identiques.
+
+### Fichier impacté
 
 | Action | Fichier |
 |--------|---------|
-| Modifier | `src/components/admin/PhotoGalleryAdmin.tsx` |
-| Modifier | `src/components/admin/AudioGalleryAdmin.tsx` |
-| Modifier | `src/components/admin/TextesLitterairesGalleryAdmin.tsx` |
+| Modifier | `src/components/community/exploration/ExplorationCarteTab.tsx` |
 
