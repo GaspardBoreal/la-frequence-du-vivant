@@ -623,11 +623,12 @@ const TextesLitterairesGalleryAdmin: React.FC<TextesLitterairesGalleryAdminProps
     setSelectedMarche('all');
     setSelectedType('all');
     setSelectedFamily('all');
+    setSelectedSource('all');
     setHasMetadata(null);
   }, []);
 
   const hasActiveFilters = debouncedSearchText || selectedMarche !== 'all' || 
-    selectedType !== 'all' || selectedFamily !== 'all' || hasMetadata !== null;
+    selectedType !== 'all' || selectedFamily !== 'all' || selectedSource !== 'all' || hasMetadata !== null;
 
   const getSortIcon = (field: SortField) => {
     if (sortField !== field) return null;
