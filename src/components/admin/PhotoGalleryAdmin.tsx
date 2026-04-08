@@ -96,18 +96,52 @@ const PhotoGalleryAdmin: React.FC<PhotoGalleryAdminProps> = ({ marches }) => {
       setLoading(true);
       try {
         const allPhotos: PhotoWithMarche[] = [];
+        const marcheIds = marches.map(m => m.id);
         
+        // 1. Charger les photos admin (marche_photos)
         for (const marche of marches) {
           try {
             const marchePhotos = await fetchExistingPhotos(marche.id);
             const photosWithMarche = marchePhotos.map(photo => ({
               ...photo,
-              marche
+              marche,
+              source: 'admin' as const
             }));
             allPhotos.push(...photosWithMarche);
           } catch (error) {
             console.warn(`Erreur chargement photos pour marche ${marche.ville}:`, error);
           }
+        }
+        
+        // 2. Charger les contributions marcheurs (marcheur_medias, type_media = 'photo')
+        try {
+          const { data: contribPhotos, error } = await supabase
+            .from('marcheur_medias')
+            .select('*')
+            .eq('type_media', 'photo')
+            .in('marche_id', marcheIds);
+          
+          if (!error && contribPhotos) {
+            const contribWithMarche = contribPhotos.map(cp => {
+              const marche = marches.find(m => m.id === cp.marche_id);
+              return {
+                id: cp.id,
+                nom_fichier: cp.titre || cp.url_fichier?.split('/').pop() || 'photo',
+                url_supabase: cp.url_fichier,
+                titre: cp.titre,
+                description: cp.description,
+                ordre: cp.ordre,
+                metadata: null,
+                created_at: cp.created_at,
+                tags: [],
+                marche: marche!,
+                source: 'contribution' as const
+              } as PhotoWithMarche;
+            }).filter(p => p.marche);
+            allPhotos.push(...contribWithMarche);
+          }
+        } catch (error) {
+          console.warn('Erreur chargement contributions photos:', error);
         }
         
         setPhotos(allPhotos);
