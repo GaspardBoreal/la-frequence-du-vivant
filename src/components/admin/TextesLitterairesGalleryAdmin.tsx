@@ -504,6 +504,11 @@ const TextesLitterairesGalleryAdmin: React.FC<TextesLitterairesGalleryAdminProps
       filtered = filtered.filter(texte => texte.marche.id === selectedMarche);
     }
 
+    // Filtre par source
+    if (selectedSource !== 'all') {
+      filtered = filtered.filter(texte => texte.source === selectedSource);
+    }
+
     // Filtre par type
     if (selectedType !== 'all') {
       filtered = filtered.filter(texte => texte.type_texte === selectedType);
