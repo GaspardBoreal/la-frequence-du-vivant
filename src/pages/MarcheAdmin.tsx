@@ -16,6 +16,7 @@ import AudioGalleryAdmin from '../components/admin/AudioGalleryAdmin';
 import MarcheTextesAdmin from '../components/admin/MarcheTextesAdmin';
 import TextesLitterairesGalleryAdmin from '../components/admin/TextesLitterairesGalleryAdmin';
 import ExportPanel from '../components/admin/ExportPanel';
+import MarcheMapView from '../components/admin/MarcheMapView';
 import MarcheAdminMobile from '../components/admin/mobile/MarcheAdminMobile';
 import { toast } from 'sonner';
 import { MarcheTechnoSensible } from '../utils/googleSheetsApi';
