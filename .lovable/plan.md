@@ -1,42 +1,28 @@
 
+## Aligner les galeries sur les filtres actifs
 
-## Corriger l'affichage vide des galeries Photos, Audio et Textes littéraires
+### Problème
 
-### Diagnostic
-
-Les 3 galeries (Photos, Audio, Textes) reçoivent `filteredMarches` comme source de données. Ce `filteredMarches` est contrôlé par les filtres globaux de l'onglet "Liste". Actuellement, les filtres réduisent la liste à seulement 2 marches (`7ec14756...` et `67890ed0...`) qui n'ont aucune photo, aucun audio et aucun texte en base.
-
-**Données en base** : 241 photos, 51 audios, 52 textes répartis sur 27+ marches — les données existent, mais les galeries ne les voient pas car elles sont limitées aux marches filtrées.
-
-**Problème de design** : les galeries ont déjà leurs propres filtres internes (par marche, par exploration, par tags, etc.). Appliquer en amont le filtre global de la liste crée une double restriction incohérente.
+Les onglets "Textes Littéraires", "Galerie Photos" et "Galerie Audio" reçoivent `marches` (la liste complète non filtrée), alors que l'onglet "Carte" reçoit correctement `filteredMarches`. Les galeries ne reflètent donc pas les filtres appliqués.
 
 ### Solution
 
-Passer `marches` (toutes les marches, non filtrées) aux 3 galeries au lieu de `filteredMarches`.
+Passer `filteredMarches` au lieu de `marches` aux 3 composants galerie, exactement comme c'est fait pour la carte.
 
 ### Modification
 
-**Fichier : `src/pages/MarcheAdmin.tsx`**
+**Fichier : `src/pages/MarcheAdmin.tsx`** — lignes 208, 212, 216
 
-Remplacer :
 ```tsx
+// Avant
+<TextesLitterairesGalleryAdmin marches={marches} />
+<PhotoGalleryAdmin marches={marches} />
+<AudioGalleryAdmin marches={marches} />
+
+// Après
 <TextesLitterairesGalleryAdmin marches={filteredMarches} />
 <PhotoGalleryAdmin marches={filteredMarches} />
 <AudioGalleryAdmin marches={filteredMarches} />
 ```
 
-Par :
-```tsx
-<TextesLitterairesGalleryAdmin marches={marches} />
-<PhotoGalleryAdmin marches={marches} />
-<AudioGalleryAdmin marches={marches} />
-```
-
-Les galeries utilisent déjà leurs propres sélecteurs "Marche" et "Exploration" en interne, donc aucune perte de fonctionnalité de filtrage.
-
-### Fichier impacté
-
-| Action | Fichier |
-|--------|---------|
-| Modifier (3 lignes) | `src/pages/MarcheAdmin.tsx` |
-
+3 lignes modifiées, aucun nouveau fichier.
