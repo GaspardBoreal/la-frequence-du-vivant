@@ -190,6 +190,11 @@ const PhotoGalleryAdmin: React.FC<PhotoGalleryAdminProps> = ({ marches }) => {
       filtered = filtered.filter(photo => photo.marche.id === selectedMarche);
     }
 
+    // Filtre par source
+    if (selectedSource !== 'all') {
+      filtered = filtered.filter(photo => photo.source === selectedSource);
+    }
+
     // Filtre par exploration
     if (selectedExploration !== 'all') {
       // Filtrer les photos des marches associées à l'exploration sélectionnée
@@ -271,7 +276,7 @@ const PhotoGalleryAdmin: React.FC<PhotoGalleryAdminProps> = ({ marches }) => {
     });
 
     return filtered;
-  }, [photos, selectedMarche, selectedExploration, explorationMarcheIds, hasTitle, hasDescription, selectedTags, showOnlyWithoutTags, debouncedSearchText, sortField, sortDirection]);
+  }, [photos, selectedMarche, selectedSource, selectedExploration, explorationMarcheIds, hasTitle, hasDescription, selectedTags, showOnlyWithoutTags, debouncedSearchText, sortField, sortDirection]);
 
   const handleSort = useCallback((field: SortField) => {
     if (sortField === field) {
@@ -319,13 +324,14 @@ const PhotoGalleryAdmin: React.FC<PhotoGalleryAdminProps> = ({ marches }) => {
     setSearchText('');
     setSelectedMarche('all');
     setSelectedExploration('all');
+    setSelectedSource('all');
     setHasTitle(null);
     setHasDescription(null);
     setSelectedTags([]);
     setShowOnlyWithoutTags(false);
   }, []);
 
-  const hasActiveFilters = debouncedSearchText || selectedMarche !== 'all' || selectedExploration !== 'all' || hasTitle !== null || hasDescription !== null || selectedTags.length > 0 || showOnlyWithoutTags;
+  const hasActiveFilters = debouncedSearchText || selectedMarche !== 'all' || selectedExploration !== 'all' || selectedSource !== 'all' || hasTitle !== null || hasDescription !== null || selectedTags.length > 0 || showOnlyWithoutTags;
 
   const getSortIcon = (field: SortField) => {
     if (sortField !== field) return null;
