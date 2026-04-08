@@ -242,6 +242,7 @@ const ExplorationCarteTab: React.FC<ExplorationCarteTabProps> = ({
 }) => {
   const [activeMarker, setActiveMarker] = useState<number | null>(null);
   const [visibleMarkers, setVisibleMarkers] = useState<number>(0);
+  const [mapStyle, setMapStyle] = useState<MapStyle>('geopoetic');
 
   // Progressive marker appearance
   useEffect(() => {
@@ -387,11 +388,7 @@ const ExplorationCarteTab: React.FC<ExplorationCarteTabProps> = ({
         style={{ background: '#1a1a2e' }}
         zoomControl={false}
       >
-        <TileLayer
-          attribution='&copy; <a href="https://www.openstreetmap.fr/">OpenStreetMap France</a>'
-          url="https://{s}.tile.openstreetmap.fr/osmfr/{z}/{x}/{y}.png"
-          className="carte-tiles-dark"
-        />
+        <DynamicTileLayer mapStyle={mapStyle} />
         <ZoomControls />
         <FitBounds positions={positions} />
 
@@ -401,14 +398,14 @@ const ExplorationCarteTab: React.FC<ExplorationCarteTabProps> = ({
             <Polyline
               positions={positions}
               pathOptions={{
-                color: '#10b981',
+                color: POLYLINE_COLORS[mapStyle],
                 weight: 3,
-                opacity: 0.6,
+                opacity: mapStyle === 'satellite' ? 0.9 : 0.6,
                 dashArray: '8, 12',
                 lineCap: 'round',
               }}
             />
-            <ArrowDecorators positions={positions} />
+            <ArrowDecorators positions={positions} color={ARROW_COLORS[mapStyle]} />
           </>
         )}
 
@@ -496,7 +493,8 @@ const ExplorationCarteTab: React.FC<ExplorationCarteTabProps> = ({
         })}
       </MapContainer>
 
-      {/* Floating legend */}
+      {/* Map style toggle */}
+      <MapStyleToggle mapStyle={mapStyle} onChange={setMapStyle} />
       <div className="absolute bottom-4 left-4 right-4 z-[1000]">
         <div className="bg-black/70 backdrop-blur-xl rounded-xl border border-white/10 px-4 py-3">
           <div className="flex items-center justify-between text-white text-xs">
