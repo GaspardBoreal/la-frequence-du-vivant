@@ -200,6 +200,11 @@ const AudioGalleryAdmin: React.FC<AudioGalleryAdminProps> = ({ marches }) => {
       filtered = filtered.filter(audio => audio.marche.id === selectedMarche);
     }
 
+    // Filtre par source
+    if (selectedSource !== 'all') {
+      filtered = filtered.filter(audio => audio.source === selectedSource);
+    }
+
     // Filtre par exploration
     if (selectedExploration !== 'all' && explorationMarcheIds.length > 0) {
       filtered = filtered.filter(audio => explorationMarcheIds.includes(audio.marche.id));
