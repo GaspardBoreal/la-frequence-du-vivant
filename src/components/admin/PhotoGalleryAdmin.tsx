@@ -48,12 +48,13 @@ const PhotoGalleryAdmin: React.FC<PhotoGalleryAdminProps> = ({ marches }) => {
   const [searchText, setSearchText] = useState('');
   const [selectedMarche, setSelectedMarche] = useState<string>('all');
   const [selectedExploration, setSelectedExploration] = useState<string>('all');
+  const [selectedSource, setSelectedSource] = useState<SourceFilter>('all');
   const [hasTitle, setHasTitle] = useState<boolean | null>(null);
   const [hasDescription, setHasDescription] = useState<boolean | null>(null);
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [tagsWithCounts, setTagsWithCounts] = useState<Array<{ tag: string; count: number; categorie?: string }>>([]);
   const [showFilters, setShowFilters] = useState(false);
-  const [tagRefreshKey, setTagRefreshKey] = useState(0); // Pour forcer le rechargement des tags
+  const [tagRefreshKey, setTagRefreshKey] = useState(0);
   const [tagSortBy, setTagSortBy] = useState<'name' | 'count'>('name');
   const [showOnlyWithoutTags, setShowOnlyWithoutTags] = useState(false);
   // Debouncing pour optimiser les performances
