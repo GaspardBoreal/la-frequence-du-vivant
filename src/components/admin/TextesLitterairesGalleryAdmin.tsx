@@ -801,22 +801,24 @@ const TextesLitterairesGalleryAdmin: React.FC<TextesLitterairesGalleryAdminProps
                   </SelectContent>
                 </Select>
               </div>
-              <label className="text-sm font-medium">Marche sélectionnée</label>
-              <Select value={selectedMarche} onValueChange={setSelectedMarche}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Toutes les marches" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">
-                    Toutes les marches ({textes.length} textes)
-                  </SelectItem>
-                  {getMarchesWithTextCount.map(({ marche, textCount }) => (
-                    <SelectItem key={marche.id} value={marche.id}>
-                      {marche.ville} - {marche.nomMarche || 'Sans nom'} ({textCount} texte{textCount > 1 ? 's' : ''})
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Marche sélectionnée</label>
+                <Select value={selectedMarche} onValueChange={setSelectedMarche}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Toutes les marches" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">
+                      Toutes les marches ({textes.length} textes)
                     </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                    {getMarchesWithTextCount.map(({ marche, textCount }) => (
+                      <SelectItem key={marche.id} value={marche.id}>
+                        {marche.ville} - {marche.nomMarche || 'Sans nom'} ({textCount} texte{textCount > 1 ? 's' : ''})
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
           </div>
 
