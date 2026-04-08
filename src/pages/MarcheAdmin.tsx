@@ -147,7 +147,7 @@ const MarcheAdmin = () => {
         {/* Content */}
         <div className="gaspard-card rounded-xl p-6">
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="grid w-full grid-cols-7">
+            <TabsList className="grid w-full grid-cols-8">
               <TabsTrigger value="list">Liste des Marches</TabsTrigger>
               <TabsTrigger value="create">
                 {viewMode === 'edit' ? 'Modifier une Marche' : 'Créer une Marche'}
@@ -160,6 +160,9 @@ const MarcheAdmin = () => {
               </TabsTrigger>
               <TabsTrigger value="audio">
                 Galerie Audio
+              </TabsTrigger>
+              <TabsTrigger value="map">
+                Carte
               </TabsTrigger>
               <TabsTrigger value="data" className="relative">
                 Collecte de Données
