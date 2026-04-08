@@ -5,8 +5,99 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useExplorationBiodiversitySummary } from '@/hooks/useExplorationBiodiversitySummary';
-import { Camera, Mic, BookOpen, Leaf, Navigation, MapPin, Plus, Minus } from 'lucide-react';
+import { Camera, Mic, BookOpen, Leaf, Navigation, MapPin, Plus, Minus, Palette, Globe, Mountain } from 'lucide-react';
 import 'leaflet/dist/leaflet.css';
+
+type MapStyle = 'geopoetic' | 'satellite' | 'terrain';
+
+const TILE_CONFIGS: Record<MapStyle, { url: string; attribution: string; maxZoom?: number }> = {
+  geopoetic: {
+    url: 'https://{s}.tile.openstreetmap.fr/osmfr/{z}/{x}/{y}.png',
+    attribution: '&copy; <a href="https://www.openstreetmap.fr/">OpenStreetMap France</a>',
+  },
+  satellite: {
+    url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+    attribution: '&copy; Esri, Maxar, Earthstar Geographics',
+    maxZoom: 18,
+  },
+  terrain: {
+    url: 'https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png',
+    attribution: '&copy; <a href="https://opentopomap.org">OpenTopoMap</a>',
+    maxZoom: 17,
+  },
+};
+
+const POLYLINE_COLORS: Record<MapStyle, string> = {
+  geopoetic: '#10b981',
+  satellite: '#fbbf24',
+  terrain: '#10b981',
+};
+
+const ARROW_COLORS: Record<MapStyle, string> = {
+  geopoetic: '#10b981',
+  satellite: '#fbbf24',
+  terrain: '#10b981',
+};
+
+// Dynamic tile layer that swaps without remounting the map
+function DynamicTileLayer({ mapStyle }: { mapStyle: MapStyle }) {
+  const map = useMap();
+  const [currentLayer, setCurrentLayer] = useState<L.TileLayer | null>(null);
+
+  useEffect(() => {
+    if (currentLayer) {
+      map.removeLayer(currentLayer);
+    }
+    const config = TILE_CONFIGS[mapStyle];
+    const layer = L.tileLayer(config.url, {
+      attribution: config.attribution,
+      maxZoom: config.maxZoom || 19,
+      className: mapStyle === 'geopoetic' ? 'carte-tiles-dark' : '',
+    });
+    layer.addTo(map);
+    setCurrentLayer(layer);
+
+    return () => {
+      map.removeLayer(layer);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mapStyle, map]);
+
+  return null;
+}
+
+// Map style toggle component
+function MapStyleToggle({ mapStyle, onChange }: { mapStyle: MapStyle; onChange: (s: MapStyle) => void }) {
+  const styles: { key: MapStyle; icon: React.ReactNode; label: string }[] = [
+    { key: 'geopoetic', icon: <Palette className="w-4 h-4" />, label: 'Géo' },
+    { key: 'satellite', icon: <Globe className="w-4 h-4" />, label: 'Sat' },
+    { key: 'terrain', icon: <Mountain className="w-4 h-4" />, label: 'Relief' },
+  ];
+
+  return (
+    <div className="absolute top-4 right-4 z-[1000]">
+      <div className="flex bg-black/50 backdrop-blur-xl rounded-xl border border-white/15 p-1 gap-0.5 shadow-lg shadow-black/20">
+        {styles.map(({ key, icon, label }) => (
+          <button
+            key={key}
+            onClick={() => onChange(key)}
+            className={`
+              flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium transition-all duration-200
+              ${mapStyle === key
+                ? 'bg-emerald-500/30 text-emerald-300 border border-emerald-500/40 shadow-sm shadow-emerald-500/10'
+                : 'text-white/60 hover:text-white/90 hover:bg-white/10 border border-transparent'
+              }
+            `}
+            aria-label={label}
+          >
+            {icon}
+            <span className="hidden sm:inline">{label}</span>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
 
 interface MarcheStep {
   id: string;
