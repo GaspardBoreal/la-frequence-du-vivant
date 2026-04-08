@@ -574,10 +574,16 @@ const AudioGalleryAdmin: React.FC<AudioGalleryAdminProps> = ({ marches }) => {
                     <Badge variant="secondary" className="text-xs">
                       {audio.marche.ville}
                     </Badge>
-                    {(audio as any).type_audio && (
-                      <Badge variant="outline" className="text-xs">
-                        {getAudioTypeLabel((audio as any).type_audio)?.icon} {getAudioTypeLabel((audio as any).type_audio)?.label}
+                    {audio.source === 'contribution' && (
+                      <Badge className="text-xs bg-orange-500/15 text-orange-700 border-orange-300">
+                        Contribution
                       </Badge>
+                    )}
+                    {audio.source === 'admin' && (
+                      <Badge className="text-xs bg-emerald-500/15 text-emerald-700 border-emerald-300">
+                        Admin
+                      </Badge>
+                    )}
                     )}
                     {/* Badge type littéraire enrichi */}
                     {(() => {
