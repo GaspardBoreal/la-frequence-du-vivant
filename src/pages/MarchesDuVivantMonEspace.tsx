@@ -23,7 +23,7 @@ import PlaceholderTab from '@/components/community/tabs/PlaceholderTab';
 const MarchesDuVivantMonEspace = () => {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
-  const { user, profile, loading, signOut, createProfile } = useCommunityAuth();
+  const { user, profile, loading, signOut, createProfile, refreshProfile } = useCommunityAuth();
   const { data: participations = [] } = useCommunityParticipations(user?.id);
   const [creatingProfile, setCreatingProfile] = useState(false);
   const initialTab = (searchParams.get('tab') as TabKey) || 'accueil';
@@ -210,14 +210,12 @@ const MarchesDuVivantMonEspace = () => {
 
       <div className="min-h-screen bg-background">
         <MonEspaceHeader
-          prenom={profile.prenom}
-          nom={profile.nom}
+          profile={profile}
           email={user.email || ''}
-          ville={profile.ville}
           role={role}
           totalFrequences={totalFrequences}
-          kigoAccueil={profile.kigo_accueil}
           onSignOut={signOut}
+          onProfileUpdated={() => refreshProfile()}
         />
 
         <MonEspaceTabBar role={role} activeTab={activeTab} onTabChange={setActiveTab} />

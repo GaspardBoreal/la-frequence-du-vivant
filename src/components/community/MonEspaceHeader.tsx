@@ -7,15 +7,34 @@ import RoleBadge from './RoleBadge';
 import { CommunityRoleKey } from '@/hooks/useCommunityProfile';
 import MonEspaceSettings from './MonEspaceSettings';
 
-interface MonEspaceHeaderProps {
+interface CommunityProfile {
+  id: string;
+  user_id: string;
   prenom: string;
   nom: string;
-  email: string;
   ville: string | null;
+  telephone: string | null;
+  date_naissance: string | null;
+  motivation: string | null;
+  avatar_url: string | null;
+  role: string;
+  marches_count: number;
+  formation_validee: boolean;
+  certification_validee: boolean;
+  kigo_accueil: string | null;
+  superpouvoir_sensoriel: string | null;
+  niveau_intimite_vivant: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+interface MonEspaceHeaderProps {
+  profile: CommunityProfile;
+  email: string;
   role: CommunityRoleKey;
   totalFrequences: number;
-  kigoAccueil: string | null;
   onSignOut: () => void;
+  onProfileUpdated: () => void;
 }
 
 const ROLE_GLOW: Record<CommunityRoleKey, string> = {
@@ -27,10 +46,10 @@ const ROLE_GLOW: Record<CommunityRoleKey, string> = {
 };
 
 const MonEspaceHeader: React.FC<MonEspaceHeaderProps> = ({
-  prenom, nom, email, ville, role, totalFrequences, kigoAccueil, onSignOut,
+  profile, email, role, totalFrequences, onSignOut, onProfileUpdated,
 }) => {
   const [settingsOpen, setSettingsOpen] = useState(false);
-  const initials = `${prenom[0] || ''}${nom[0] || ''}`.toUpperCase();
+  const initials = `${profile.prenom[0] || ''}${profile.nom[0] || ''}`.toUpperCase();
 
   return (
     <>
@@ -70,12 +89,11 @@ const MonEspaceHeader: React.FC<MonEspaceHeaderProps> = ({
       <MonEspaceSettings
         open={settingsOpen}
         onOpenChange={setSettingsOpen}
-        prenom={prenom}
-        nom={nom}
+        profile={profile}
         email={email}
-        ville={ville}
         role={role}
         onSignOut={onSignOut}
+        onProfileUpdated={onProfileUpdated}
       />
     </>
   );
