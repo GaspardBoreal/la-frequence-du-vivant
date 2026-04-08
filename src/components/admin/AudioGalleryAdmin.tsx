@@ -584,6 +584,10 @@ const AudioGalleryAdmin: React.FC<AudioGalleryAdminProps> = ({ marches }) => {
                         Admin
                       </Badge>
                     )}
+                    {(audio as any).type_audio && (
+                      <Badge variant="outline" className="text-xs">
+                        {getAudioTypeLabel((audio as any).type_audio)?.icon} {getAudioTypeLabel((audio as any).type_audio)?.label}
+                      </Badge>
                     )}
                     {/* Badge type littéraire enrichi */}
                     {(() => {
