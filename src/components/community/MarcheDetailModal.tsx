@@ -608,7 +608,7 @@ export const LireTab: React.FC<{ userId: string; marcheEventId: string; activeMa
   );
 };
 
-// RadiusSelector is now imported from shared component
+
 
 // ─── Vivant (3 couches) ───
 export const VivantTab: React.FC<{ marcheId: string; userId: string; marcheSlug?: string }> = ({ marcheId, userId, marcheSlug }) => {
