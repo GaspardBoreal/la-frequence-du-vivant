@@ -18,6 +18,8 @@ interface ConfirmDeleteDialogProps {
   description: string
   onConfirm: () => Promise<void> | void
   loading?: boolean
+  confirmLabel?: string
+  loadingLabel?: string
 }
 
 export function ConfirmDeleteDialog({
@@ -26,7 +28,9 @@ export function ConfirmDeleteDialog({
   title,
   description,
   onConfirm,
-  loading = false
+  loading = false,
+  confirmLabel = "Supprimer",
+  loadingLabel = "Suppression..."
 }: ConfirmDeleteDialogProps) {
   const handleConfirm = async () => {
     if (loading) return
@@ -56,10 +60,10 @@ export function ConfirmDeleteDialog({
             {loading ? (
               <>
                 <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                Suppression...
+                {loadingLabel}
               </>
             ) : (
-              "Supprimer"
+              confirmLabel
             )}
           </AlertDialogAction>
         </AlertDialogFooter>
