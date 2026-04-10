@@ -399,6 +399,9 @@ const ExplorationCarteTab: React.FC<ExplorationCarteTabProps> = ({
   const [activeMarker, setActiveMarker] = useState<number | null>(null);
   const [visibleMarkers, setVisibleMarkers] = useState<number>(0);
   const [mapStyle, setMapStyle] = useState<MapStyle>('geopoetic');
+  const [userLocation, setUserLocation] = useState<[number, number] | null>(null);
+  const [geoLoading, setGeoLoading] = useState(false);
+  const [showDistances, setShowDistances] = useState(false);
 
   // Progressive marker appearance
   useEffect(() => {
