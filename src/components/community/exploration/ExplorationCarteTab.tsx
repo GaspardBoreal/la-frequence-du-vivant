@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { MapContainer, TileLayer, Polyline, Marker, Popup, useMap, Circle } from 'react-leaflet';
 import L from 'leaflet';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -235,8 +235,8 @@ function ZoomControls() {
   );
 }
 
-// GPS blue dot marker
-function UserLocationMarker({ position, nearestPosition }: { position: [number, number]; nearestPosition?: [number, number] }) {
+// GPS blue dot marker — accepts accuracy for dynamic radius
+function UserLocationMarker({ position, accuracy, nearestPosition }: { position: [number, number]; accuracy?: number; nearestPosition?: [number, number] }) {
   const map = useMap();
 
   useEffect(() => {
@@ -255,11 +255,13 @@ function UserLocationMarker({ position, nearestPosition }: { position: [number, 
     iconAnchor: [10, 10],
   });
 
+  const radius = accuracy && accuracy > 10 ? accuracy : 100;
+
   return (
     <>
       <Circle
         center={position}
-        radius={100}
+        radius={radius}
         pathOptions={{ color: '#38bdf8', fillColor: '#38bdf8', fillOpacity: 0.08, weight: 1, opacity: 0.3 }}
       />
       <Marker position={position} icon={gpsDotIcon} />
@@ -273,32 +275,93 @@ function UserLocationMarker({ position, nearestPosition }: { position: [number, 
   );
 }
 
-// Geolocate button
+// Geolocate button with tracking ring
 function GeolocateButton({
   active,
   loading,
+  isTracking,
   onClick,
-}: { active: boolean; loading: boolean; onClick: () => void }) {
+  onLongPress,
+}: { active: boolean; loading: boolean; isTracking: boolean; onClick: () => void; onLongPress: () => void }) {
+  const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const didLongPress = useRef(false);
+
+  const handlePointerDown = () => {
+    didLongPress.current = false;
+    longPressTimer.current = setTimeout(() => {
+      didLongPress.current = true;
+      onLongPress();
+    }, 600);
+  };
+
+  const handlePointerUp = () => {
+    if (longPressTimer.current) clearTimeout(longPressTimer.current);
+    if (!didLongPress.current) onClick();
+  };
+
+  const handlePointerLeave = () => {
+    if (longPressTimer.current) clearTimeout(longPressTimer.current);
+  };
+
   return (
     <div className="absolute bottom-20 right-[4.5rem] z-[1000]">
       <button
-        onClick={onClick}
+        onPointerDown={handlePointerDown}
+        onPointerUp={handlePointerUp}
+        onPointerLeave={handlePointerLeave}
         className={`
-          w-10 h-10 rounded-xl backdrop-blur-md border flex items-center justify-center transition-all duration-200 active:scale-95
-          ${active
-            ? 'bg-sky-500/20 border-sky-400/40 text-sky-300 shadow-sm shadow-sky-500/20'
-            : 'bg-white/10 border-white/20 text-white hover:bg-sky-500/15 hover:border-sky-400/30'
+          relative w-10 h-10 rounded-xl backdrop-blur-md border flex items-center justify-center transition-all duration-200 active:scale-95
+          ${isTracking
+            ? 'bg-sky-500/30 border-sky-400/50 text-sky-200 shadow-md shadow-sky-500/30'
+            : active
+              ? 'bg-sky-500/20 border-sky-400/40 text-sky-300 shadow-sm shadow-sky-500/20'
+              : 'bg-white/10 border-white/20 text-white hover:bg-sky-500/15 hover:border-sky-400/30'
           }
         `}
-        aria-label="Me localiser"
+        aria-label={isTracking ? 'Arrêter le suivi' : 'Me localiser'}
       >
+        {/* Tracking ring animation */}
+        {isTracking && (
+          <span className="absolute inset-[-4px] rounded-2xl border-2 border-sky-400/60 animate-ping pointer-events-none" />
+        )}
         {loading ? (
           <div className="w-4 h-4 border-2 border-sky-300/30 border-t-sky-300 rounded-full animate-spin" />
         ) : (
-          <Crosshair className={`w-4 h-4 ${active ? 'animate-pulse' : ''}`} />
+          <Crosshair className={`w-4 h-4 ${isTracking ? 'animate-pulse' : ''}`} />
         )}
       </button>
     </div>
+  );
+}
+
+// Compact proximity banner for tracking mode
+function ProximityBanner({
+  nearestName,
+  distanceKm,
+  onTap,
+}: { nearestName: string; distanceKm: number; onTap: () => void }) {
+  const formatDist = (km: number) => km < 1 ? `${Math.round(km * 1000)} m` : `${km.toFixed(1)} km`;
+
+  return (
+    <motion.button
+      initial={{ y: 30, opacity: 0 }}
+      animate={{ y: 0, opacity: 1 }}
+      exit={{ y: 30, opacity: 0 }}
+      transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+      onClick={onTap}
+      className="absolute bottom-4 left-4 right-4 z-[1001]"
+    >
+      <div className="bg-black/70 backdrop-blur-xl rounded-xl border border-sky-400/20 px-4 py-3 flex items-center gap-3">
+        <div className="w-2 h-2 rounded-full bg-sky-400 animate-pulse flex-shrink-0" />
+        <Navigation className="w-3.5 h-3.5 text-sky-300 flex-shrink-0" />
+        <span className="text-white text-xs font-medium truncate flex-1 text-left">
+          → {nearestName}
+        </span>
+        <span className="text-sky-300 text-sm font-mono font-semibold tabular-nums flex-shrink-0 transition-all duration-300">
+          {formatDist(distanceKm)}
+        </span>
+      </div>
+    </motion.button>
   );
 }
 
@@ -391,6 +454,8 @@ function DistancePanel({
   );
 }
 
+const TRACKING_TIMEOUT_MS = 10 * 60 * 1000; // 10 min auto-stop
+
 const ExplorationCarteTab: React.FC<ExplorationCarteTabProps> = ({
   explorationId,
   marches,
@@ -400,8 +465,13 @@ const ExplorationCarteTab: React.FC<ExplorationCarteTabProps> = ({
   const [visibleMarkers, setVisibleMarkers] = useState<number>(0);
   const [mapStyle, setMapStyle] = useState<MapStyle>('geopoetic');
   const [userLocation, setUserLocation] = useState<[number, number] | null>(null);
+  const [userAccuracy, setUserAccuracy] = useState<number | undefined>(undefined);
   const [geoLoading, setGeoLoading] = useState(false);
   const [showDistances, setShowDistances] = useState(false);
+  const [isTracking, setIsTracking] = useState(false);
+  const watchIdRef = useRef<number | null>(null);
+  const trackingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lastVibratedRef = useRef<number>(0);
 
   // Progressive marker appearance
   useEffect(() => {
@@ -510,10 +580,62 @@ const ExplorationCarteTab: React.FC<ExplorationCarteTabProps> = ({
     return map;
   }, [bioSummary]);
 
-  // Geolocation handler
+  // Stop tracking helper
+  const stopTracking = useCallback(() => {
+    if (watchIdRef.current !== null) {
+      navigator.geolocation.clearWatch(watchIdRef.current);
+      watchIdRef.current = null;
+    }
+    if (trackingTimeoutRef.current) {
+      clearTimeout(trackingTimeoutRef.current);
+      trackingTimeoutRef.current = null;
+    }
+    setIsTracking(false);
+  }, []);
+
+  // Start tracking helper
+  const startTracking = useCallback(() => {
+    if (!navigator.geolocation) return;
+    stopTracking();
+
+    const id = navigator.geolocation.watchPosition(
+      (pos) => {
+        setUserLocation([pos.coords.latitude, pos.coords.longitude]);
+        setUserAccuracy(pos.coords.accuracy);
+      },
+      () => {
+        stopTracking();
+      },
+      { enableHighAccuracy: true, maximumAge: 2000 }
+    );
+    watchIdRef.current = id;
+    setIsTracking(true);
+
+    // Auto-stop after 10 min
+    trackingTimeoutRef.current = setTimeout(() => {
+      stopTracking();
+    }, TRACKING_TIMEOUT_MS);
+  }, [stopTracking]);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (watchIdRef.current !== null) {
+        navigator.geolocation.clearWatch(watchIdRef.current);
+      }
+      if (trackingTimeoutRef.current) {
+        clearTimeout(trackingTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  // Geolocation handler — simple tap
   const handleGeolocate = useCallback(() => {
+    if (isTracking) {
+      stopTracking();
+      return;
+    }
     if (userLocation) {
-      // Toggle distance panel if already located
       setShowDistances(prev => !prev);
       return;
     }
@@ -522,13 +644,24 @@ const ExplorationCarteTab: React.FC<ExplorationCarteTabProps> = ({
     navigator.geolocation.getCurrentPosition(
       (pos) => {
         setUserLocation([pos.coords.latitude, pos.coords.longitude]);
+        setUserAccuracy(pos.coords.accuracy);
         setShowDistances(true);
         setGeoLoading(false);
       },
       () => setGeoLoading(false),
       { enableHighAccuracy: true, timeout: 10000 }
     );
-  }, [userLocation]);
+  }, [userLocation, isTracking, stopTracking]);
+
+  // Long press → start tracking
+  const handleLongPress = useCallback(() => {
+    if (isTracking) {
+      stopTracking();
+    } else {
+      startTracking();
+      setShowDistances(false); // use compact banner instead
+    }
+  }, [isTracking, startTracking, stopTracking]);
 
   // Compute distances from user to each step
   const stepsWithDistance = useMemo(() => {
@@ -540,6 +673,20 @@ const ExplorationCarteTab: React.FC<ExplorationCarteTabProps> = ({
   }, [userLocation, geoMarches]);
 
   const nearestStep = stepsWithDistance.find(s => s.isNearest);
+
+  // Haptic feedback when < 100m in tracking mode
+  useEffect(() => {
+    if (!isTracking || !nearestStep) return;
+    if (nearestStep.distance < 0.1) {
+      const now = Date.now();
+      if (now - lastVibratedRef.current > 10000) {
+        if ('vibrate' in navigator) {
+          navigator.vibrate(50);
+        }
+        lastVibratedRef.current = now;
+      }
+    }
+  }, [isTracking, nearestStep]);
 
   if (geoMarches.length === 0) {
     return (
@@ -685,6 +832,7 @@ const ExplorationCarteTab: React.FC<ExplorationCarteTabProps> = ({
         {userLocation && (
           <UserLocationMarker
             position={userLocation}
+            accuracy={userAccuracy}
             nearestPosition={nearestStep ? [nearestStep.lat, nearestStep.lng] : undefined}
           />
         )}
@@ -694,11 +842,24 @@ const ExplorationCarteTab: React.FC<ExplorationCarteTabProps> = ({
       <MapStyleToggle mapStyle={mapStyle} onChange={setMapStyle} />
 
       {/* Geolocate button */}
-      <GeolocateButton active={!!userLocation} loading={geoLoading} onClick={handleGeolocate} />
+      <GeolocateButton
+        active={!!userLocation}
+        loading={geoLoading}
+        isTracking={isTracking}
+        onClick={handleGeolocate}
+        onLongPress={handleLongPress}
+      />
 
-      {/* Distance panel or stats bar */}
+      {/* Bottom panel: tracking banner, distance panel, or stats bar */}
       <AnimatePresence mode="wait">
-        {showDistances && stepsWithDistance.length > 0 ? (
+        {isTracking && nearestStep ? (
+          <ProximityBanner
+            key="proximity"
+            nearestName={nearestStep.name}
+            distanceKm={nearestStep.distance}
+            onTap={() => setShowDistances(true)}
+          />
+        ) : showDistances && stepsWithDistance.length > 0 ? (
           <DistancePanel
             key="distances"
             steps={stepsWithDistance}
