@@ -337,6 +337,8 @@ const CarnetVivant: React.FC<CarnetVivantProps> = ({ userId, participations }) =
         description="Vous pourrez vous réinscrire plus tard depuis l'onglet Marches."
         onConfirm={handleUnregister}
         loading={unregisterLoading}
+        confirmLabel="Se désinscrire"
+        loadingLabel="Désinscription..."
       />
     </div>
   );
