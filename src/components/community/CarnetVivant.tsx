@@ -75,7 +75,7 @@ const MarcheCard: React.FC<{
   const typeMeta = getMarcheEventTypeMeta(event.event_type);
   const hasData = summary && (summary.kigo_count > 0 || summary.photos_count > 0 || summary.audio_count > 0 || summary.species_count > 0);
   const isFuture = new Date(event.date_marche) > new Date();
-  const canUnregister = !participation.validated_at && isFuture;
+  const canUnregister = isFuture && participation.validation_method !== 'qr_code';
 
   return (
     <motion.button
