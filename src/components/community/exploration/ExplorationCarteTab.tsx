@@ -681,31 +681,60 @@ const ExplorationCarteTab: React.FC<ExplorationCarteTabProps> = ({
             </Marker>
           );
         })}
+        {/* User GPS marker */}
+        {userLocation && (
+          <UserLocationMarker
+            position={userLocation}
+            nearestPosition={nearestStep ? [nearestStep.lat, nearestStep.lng] : undefined}
+          />
+        )}
       </MapContainer>
 
       {/* Map style toggle */}
       <MapStyleToggle mapStyle={mapStyle} onChange={setMapStyle} />
-      <div className="absolute bottom-4 left-4 right-4 z-[1000]">
-        <div className="bg-black/70 backdrop-blur-xl rounded-xl border border-white/10 px-4 py-3">
-          <div className="flex items-center justify-between text-white text-xs">
-            <div className="flex items-center gap-1.5">
-              <Navigation className="w-3.5 h-3.5 text-emerald-400" />
-              <span className="font-semibold">{geoMarches.length} étapes</span>
-            </div>
-            {totalDistance > 0 && (
-              <span className="text-white/60">
-                ~{totalDistance < 1 ? `${Math.round(totalDistance * 1000)} m` : `${Math.round(totalDistance)} km`}
-              </span>
-            )}
-            {bioSummary && bioSummary.totalSpecies > 0 && (
-              <div className="flex items-center gap-1">
-                <Leaf className="w-3 h-3 text-emerald-400" />
-                <span className="text-emerald-300 font-medium">{bioSummary.totalSpecies} espèces</span>
+
+      {/* Geolocate button */}
+      <GeolocateButton active={!!userLocation} loading={geoLoading} onClick={handleGeolocate} />
+
+      {/* Distance panel or stats bar */}
+      <AnimatePresence mode="wait">
+        {showDistances && stepsWithDistance.length > 0 ? (
+          <DistancePanel
+            key="distances"
+            steps={stepsWithDistance}
+            onClose={() => setShowDistances(false)}
+            onSelectStep={onSelectStep}
+          />
+        ) : (
+          <motion.div
+            key="stats"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="absolute bottom-4 left-4 right-4 z-[1000]"
+          >
+            <div className="bg-black/70 backdrop-blur-xl rounded-xl border border-white/10 px-4 py-3">
+              <div className="flex items-center justify-between text-white text-xs">
+                <div className="flex items-center gap-1.5">
+                  <Navigation className="w-3.5 h-3.5 text-emerald-400" />
+                  <span className="font-semibold">{geoMarches.length} étapes</span>
+                </div>
+                {totalDistance > 0 && (
+                  <span className="text-white/60">
+                    ~{totalDistance < 1 ? `${Math.round(totalDistance * 1000)} m` : `${Math.round(totalDistance)} km`}
+                  </span>
+                )}
+                {bioSummary && bioSummary.totalSpecies > 0 && (
+                  <div className="flex items-center gap-1">
+                    <Leaf className="w-3 h-3 text-emerald-400" />
+                    <span className="text-emerald-300 font-medium">{bioSummary.totalSpecies} espèces</span>
+                  </div>
+                )}
               </div>
-            )}
-          </div>
-        </div>
-      </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Custom popup style overrides */}
       <style>{`
