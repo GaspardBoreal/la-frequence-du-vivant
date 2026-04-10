@@ -1,34 +1,58 @@
 
 
-## Filtrer les observations aberrantes sur la carte de biodiversité
+## Corriger le filtre contributeur sur l'onglet Carte
 
-### Problème
+### Probleme
 
-Dans `BiodiversityMap.tsx`, le clustering (lignes 170-213) place un marqueur pour **chaque** attribution ayant des coordonnées exactes, sans vérifier si ces coordonnées sont cohérentes avec le rayon de recherche. Résultat : un "Devil's Coach Horse Beetle" observé près de Lyon apparaît sur la carte d'un point situé à DEVIAT (Charente), à ~400 km de distance.
+`BioDivSubSection` passe un `mapContent` statique a `SpeciesExplorer` avec le dataset complet (`biodiversityData`). Le filtre contributeur vit dans le state interne de `SpeciesExplorer` mais n'est jamais transmis a la carte.
 
-### Cause racine
+### Solution
 
-L'edge function `biodiversity-data` retourne des espèces dont certaines attributions ont des coordonnées GPS éloignées du centre de recherche (données GBIF/iNaturalist). La carte les affiche aveuglément.
+Remplacer le pattern `mapContent` (ReactNode statique) par un **render prop** qui recoit les especes filtrees depuis `SpeciesExplorer`.
 
-### Correction
+### Modifications
 
-Dans le `useMemo` de `observationClusters` (ligne 171), ajouter un filtre de distance : ne garder que les attributions dont les coordonnées sont à moins de `data.location.radius * 2` km du centre (ou un maximum raisonnable de 10 km). Utiliser une formule haversine simplifiée ou un bounding box.
+**1. `SpeciesExplorer.tsx`** -- Changer le type de `mapContent`
 
-```text
-Pour chaque attribution :
-  - calculer la distance au centre (centerLat, centerLon)
-  - si distance > max(radius * 2, 10) km → ignorer
+```ts
+// Avant
+mapContent?: React.ReactNode;
+
+// Apres
+mapContent?: React.ReactNode | ((filteredSpecies: BiodiversitySpecies[]) => React.ReactNode);
 ```
 
-### Fichier impacté
+Dans le rendu du TabsContent "map", appeler le render prop avec `filteredSpecies` :
 
-| Action | Fichier | Détail |
-|--------|---------|--------|
-| Modifier | `src/components/biodiversity/BiodiversityMap.tsx` | Ajouter filtre de distance dans `observationClusters` useMemo (ligne ~186) |
+```tsx
+{showMap && mapContent && (
+  <TabsContent value="map" className="space-y-4">
+    {typeof mapContent === 'function' ? mapContent(filteredSpecies) : mapContent}
+  </TabsContent>
+)}
+```
 
-### Détail technique
+**2. `BioDivSubSection.tsx`** -- Passer un render prop
 
-1. Ajouter une fonction `haversineKm(lat1, lon1, lat2, lon2)` en haut du fichier (ou importer si déjà existante)
-2. Dans la boucle `species.attributions?.forEach`, avant de créer/ajouter au cluster, vérifier : `haversineKm(attribution.exactLatitude, attribution.exactLongitude, centerLat, centerLon) <= maxRadius`
-3. `maxRadius` = `Math.max((data?.location?.radius || 5) * 2, 10)` km — suffisamment large pour ne pas couper les observations légitimes en bordure, mais élimine les aberrations à 400 km
+```tsx
+<SpeciesExplorer
+  species={biodiversityData.species}
+  showMap
+  mapContent={(filteredSpecies) => (
+    <div className="h-[600px]">
+      <BiodiversityMap
+        data={{ ...biodiversityData, species: filteredSpecies }}
+        centerLat={marche.latitude}
+        centerLon={marche.longitude}
+      />
+    </div>
+  )}
+/>
+```
+
+**3. `ExplorationBiodiversite.tsx`** -- Meme adaptation si BiodiversityMap y est aussi passe via mapContent (verification necessaire, meme pattern a appliquer).
+
+### Resultat
+
+Quand un marcheur selectionne "Gaspard Boreal" dans le filtre contributeur, la carte n'affiche que les observations rattachees a ce contributeur. Le filtre par categorie, source, et audio continue de fonctionner comme avant.
 
