@@ -1,12 +1,15 @@
 import React, { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
-import { Book, MapPin, Camera, Music, PenLine, Leaf, ChevronDown, ChevronUp } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Book, MapPin, Camera, Music, PenLine, Leaf, ChevronDown, ChevronUp, UserMinus } from 'lucide-react';
 import { getMarcheEventTypeMeta } from '@/lib/marcheEventTypes';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { useMarcheCollectedData, MarcheCollectedSummary } from '@/hooks/useMarcheCollectedData';
-
+import { supabase } from '@/integrations/supabase/client';
+import { queryClient } from '@/lib/queryClient';
+import { toast } from 'sonner';
+import { ConfirmDeleteDialog } from '@/components/ui/confirm-delete-dialog';
 interface Participation {
   id: string;
   marche_event_id: string;
@@ -63,18 +66,23 @@ const MarcheCard: React.FC<{
   summary: MarcheCollectedSummary | undefined;
   index: number;
   onOpen: () => void;
-}> = ({ participation, summary, index, onOpen }) => {
+  onUnregister?: (participationId: string) => void;
+}> = ({ participation, summary, index, onOpen, onUnregister }) => {
   const event = participation.marche_events;
   if (!event) return null;
 
   const date = new Date(event.date_marche);
   const typeMeta = getMarcheEventTypeMeta(event.event_type);
   const hasData = summary && (summary.kigo_count > 0 || summary.photos_count > 0 || summary.audio_count > 0 || summary.species_count > 0);
+  const isFuture = new Date(event.date_marche) > new Date();
+  const canUnregister = !participation.validated_at && isFuture;
 
   return (
     <motion.button
+      layout
       initial={{ opacity: 0, x: -8 }}
       animate={{ opacity: 1, x: 0 }}
+      exit={{ opacity: 0, x: -20, height: 0, marginBottom: 0 }}
       transition={{ delay: index * 0.06 }}
       onClick={onOpen}
       className="w-full text-left relative"
@@ -151,10 +159,24 @@ const MarcheCard: React.FC<{
             </p>
           )}
 
-          {!hasData && (
+          {!hasData && !canUnregister && (
             <p className="text-muted-foreground/60 text-[10px] italic">
               Données en attente de collecte
             </p>
+          )}
+
+          {/* Unregister button */}
+          {canUnregister && onUnregister && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onUnregister(participation.id);
+              }}
+              className="flex items-center gap-1 text-[10px] text-destructive/70 hover:text-destructive transition-colors mt-1"
+            >
+              <UserMinus className="w-3 h-3" />
+              Se désinscrire
+            </button>
           )}
         </div>
       </div>
@@ -165,6 +187,8 @@ const MarcheCard: React.FC<{
 const CarnetVivant: React.FC<CarnetVivantProps> = ({ userId, participations }) => {
   const navigate = useNavigate();
   const [expandedSeasons, setExpandedSeasons] = useState<Set<string>>(new Set());
+  const [unregisterTarget, setUnregisterTarget] = useState<string | null>(null);
+  const [unregisterLoading, setUnregisterLoading] = useState(false);
 
   const eventIds = useMemo(
     () => participations.map(p => p.marche_event_id),
@@ -202,9 +226,8 @@ const CarnetVivant: React.FC<CarnetVivantProps> = ({ userId, participations }) =
   const toggleSeason = (key: string) => {
     setExpandedSeasons(prev => {
       const next = new Set(prev);
-      // Initialize: if nothing was explicitly toggled, add all except current
       if (prev.size === 0) {
-        if (key === seasonKeys[0]) return next; // already open, close it
+        if (key === seasonKeys[0]) return next;
         next.add(key);
         return next;
       }
@@ -220,6 +243,26 @@ const CarnetVivant: React.FC<CarnetVivantProps> = ({ userId, participations }) =
       navigate(`/marches-du-vivant/mon-espace/exploration/${explorationId}`);
     } else {
       navigate(`/marches-du-vivant/mon-espace/exploration/event-${participation.marche_event_id}`);
+    }
+  };
+
+  const handleUnregister = async () => {
+    if (!unregisterTarget) return;
+    setUnregisterLoading(true);
+    try {
+      const { error } = await supabase
+        .from('marche_participations')
+        .delete()
+        .eq('id', unregisterTarget);
+      if (error) throw error;
+      queryClient.invalidateQueries({ queryKey: ['community-participations'] });
+      toast.success('Désinscription confirmée. Vous pouvez vous réinscrire à tout moment.');
+    } catch (err) {
+      console.error(err);
+      toast.error('Erreur lors de la désinscription');
+    } finally {
+      setUnregisterLoading(false);
+      setUnregisterTarget(null);
     }
   };
 
@@ -267,6 +310,7 @@ const CarnetVivant: React.FC<CarnetVivantProps> = ({ userId, participations }) =
                 {/* Timeline */}
                 {open && (
                   <div className="relative ml-4 pl-4 border-l border-emerald-300 dark:border-emerald-500/20 space-y-2 pb-2">
+                  <AnimatePresence mode="popLayout">
                     {items.map((p, i) => (
                       <MarcheCard
                         key={p.id}
@@ -274,8 +318,10 @@ const CarnetVivant: React.FC<CarnetVivantProps> = ({ userId, participations }) =
                         summary={collectedData?.[p.marche_event_id]}
                         index={i}
                         onOpen={() => handleOpenExploration(p)}
+                        onUnregister={(id) => setUnregisterTarget(id)}
                       />
                     ))}
+                  </AnimatePresence>
                   </div>
                 )}
               </div>
@@ -283,6 +329,17 @@ const CarnetVivant: React.FC<CarnetVivantProps> = ({ userId, participations }) =
           })}
         </div>
       )}
+
+      <ConfirmDeleteDialog
+        open={!!unregisterTarget}
+        onOpenChange={(open) => { if (!open) setUnregisterTarget(null); }}
+        title="Quitter cette marche ?"
+        description="Vous pourrez vous réinscrire plus tard depuis l'onglet Marches."
+        onConfirm={handleUnregister}
+        loading={unregisterLoading}
+        confirmLabel="Se désinscrire"
+        loadingLabel="Désinscription..."
+      />
     </div>
   );
 };
