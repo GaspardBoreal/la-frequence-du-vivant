@@ -194,6 +194,8 @@ export const BiodiversityMap: React.FC<BiodiversityMapProps> = ({
       
       species.attributions?.forEach(attribution => {
         if (attribution.exactLatitude && attribution.exactLongitude) {
+          // Filtrer les observations aberrantes (trop loin du centre de recherche)
+          if (haversineKm(attribution.exactLatitude, attribution.exactLongitude, centerLat, centerLon) > maxRadius) return;
           // Créer un ID unique basé sur les coordonnées arrondies (pour grouper les observations proches)
           const roundedLat = Math.round(attribution.exactLatitude * 1000) / 1000;
           const roundedLng = Math.round(attribution.exactLongitude * 1000) / 1000;
