@@ -1,55 +1,57 @@
 
 
-## Ajouter la géolocalisation utilisateur sur la carte d'exploration
+## Désinscription depuis le Carnet Vivant
 
 ### Concept
 
-Un bouton flottant "Me localiser" (icône crosshair/navigation pulsante) dans le coin inférieur droit, au-dessus des contrôles de zoom. Au clic :
+Un marcheur peut se désinscrire d'une marche **à venir** (non encore validée) directement depuis son Carnet, sans naviguer vers l'onglet Marches.
 
-1. Le navigateur demande la position GPS
-2. Un marqueur bleu pulsant apparaît sur la carte (style "blue dot" façon Google Maps)
-3. Un cercle de précision semi-transparent entoure le point
-4. Un **panneau distance** glisse depuis le bas, montrant :
-   - Le point le plus proche avec sa distance
-   - La liste des étapes triées par distance avec mini-barres visuelles
+**Interaction mobile-first** : un swipe gauche ou un appui long sur la carte de la marche révèle un bouton de désinscription rouge discret. Un dialog de confirmation empêche les erreurs.
 
 ```text
 ┌─────────────────────────────────────────┐
-│  📍 Vous êtes ici                       │
-│  Point le plus proche : Étape 3 — 120m  │
-│─────────────────────────────────────────│
-│  ① Étape 1  ████████░░  1.2 km         │
-│  ② Étape 2  ██████░░░░  0.8 km         │
-│  ③ Étape 3  █░░░░░░░░░  0.12 km  ← ★  │
-│  ...                                    │
+│  DEVIAT Le Réveil de la Terre           │
+│  11 avr. 2026  📍 DEVIAT - Charente     │
+│  🌿 Marche éco poétique                │
+│                            [Se désinscrire] ← rouge discret, visible seulement si marche future + non validée
 └─────────────────────────────────────────┘
+
+         ↓ clic
+
+┌─────────────── Confirmation ──────────────┐
+│  Quitter cette marche ?                   │
+│  Vous pourrez vous réinscrire plus tard   │
+│  depuis l'onglet Marches.                 │
+│                                           │
+│  [Annuler]          [Se désinscrire]      │
+└───────────────────────────────────────────┘
 ```
 
-- Lignes pointillées du marqueur GPS vers le point le plus proche (en bleu)
-- Le panneau est refermable, le marqueur reste visible
-- Bouton re-centrage sur la position GPS au re-clic
+### Règles métier
+
+- **Visible uniquement** si la marche est dans le futur (`date_marche > today`) **ET** `validated_at === null` (pas encore pointé/validé)
+- Supprime la ligne dans `marche_participations` via `supabase.from('marche_participations').delete().eq('id', participation.id)`
+- Invalide les queries `community-participations` pour rafraîchir le Carnet et l'onglet Marches simultanément
+- Toast de confirmation : "Désinscription confirmée. Vous pouvez vous réinscrire à tout moment."
 
 ### Design
 
-- Bouton : glassmorphism assorti aux contrôles zoom existants, icône `Crosshair` de lucide, animation pulse bleue quand actif
-- Marqueur GPS : `DivIcon` bleu pulsant (cercle plein + halo animé)
-- Panneau distances : slide-up depuis le bas, même style glass que la barre de stats existante, scrollable si > 5 étapes
-- Couleur : bleu ciel (`sky-400/500`) pour tout ce qui est GPS, émeraude pour les étapes
+- Bouton discret (ghost, texte rouge/rose, petite icône `UserMinus` ou `X`) affiché sous les badges/données de la carte
+- Pas de swipe (complexité inutile) : simple bouton textuel, cohérent avec le design existant
+- Dialog de confirmation via le composant `AlertDialog` de shadcn/ui déjà disponible
+- Animation de disparition (`framer-motion exit`) quand la carte est retirée
 
-### Modification
-
-**Fichier unique : `src/components/community/exploration/ExplorationCarteTab.tsx`**
-
-1. Ajouter un état `userLocation: [number, number] | null` et `showDistances: boolean`
-2. Créer `GeolocateButton` — bouton flottant au-dessus du zoom, demande `navigator.geolocation.getCurrentPosition`, place le marqueur et ouvre le panneau
-3. Créer `UserLocationMarker` — composant Leaflet interne avec `useMap()`, affiche un `DivIcon` bleu pulsant + cercle de précision + polyline pointillée vers le point le plus proche
-4. Créer `DistancePanel` — panneau slide-up animé (framer-motion) listant toutes les étapes triées par distance, avec barres proportionnelles et badge "le plus proche"
-5. Utiliser `haversineKm` (déjà existant) pour tous les calculs de distance
-6. Le panneau remplace temporairement la barre de stats du bas quand il est ouvert
-
-### Fichier impacté
+### Modifications
 
 | Action | Fichier |
 |--------|---------|
-| Modifier | `src/components/community/exploration/ExplorationCarteTab.tsx` |
+| Modifier | `src/components/community/CarnetVivant.tsx` |
+
+**Détail :**
+
+1. Ajouter une prop `onUnregister?: (participationId: string) => void` au composant `MarcheCard`
+2. Dans `MarcheCard` : afficher un bouton "Se désinscrire" si `!participation.validated_at` et `date_marche > new Date()`
+3. Dans `CarnetVivant` : implémenter `handleUnregister` qui appelle `supabase.from('marche_participations').delete().eq('id', id)`, invalide le cache, et affiche un toast
+4. Envelopper le bouton dans un `AlertDialog` de confirmation
+5. Ajouter `AnimatePresence` + `layout` sur les cartes pour une transition fluide à la suppression
 
