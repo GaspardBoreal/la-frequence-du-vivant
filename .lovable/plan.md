@@ -1,58 +1,70 @@
 
 
-## Corriger le filtre contributeur sur l'onglet Carte
+## Suivi GPS en temps réel — Mode "Approche"
 
-### Probleme
+### Constat actuel
 
-`BioDivSubSection` passe un `mapContent` statique a `SpeciesExplorer` avec le dataset complet (`biodiversityData`). Le filtre contributeur vit dans le state interne de `SpeciesExplorer` mais n'est jamais transmis a la carte.
+La géolocalisation utilise `getCurrentPosition` (appel unique). L'utilisateur doit re-cliquer manuellement pour rafraîchir sa position — impossible de suivre son déplacement en continu vers un point.
 
-### Solution
+### Proposition UX
 
-Remplacer le pattern `mapContent` (ReactNode statique) par un **render prop** qui recoit les especes filtrees depuis `SpeciesExplorer`.
+**Un mode "Suivi" activable par appui long (ou double-tap) sur le bouton Crosshair existant.**
 
-### Modifications
-
-**1. `SpeciesExplorer.tsx`** -- Changer le type de `mapContent`
-
-```ts
-// Avant
-mapContent?: React.ReactNode;
-
-// Apres
-mapContent?: React.ReactNode | ((filteredSpecies: BiodiversitySpecies[]) => React.ReactNode);
+```text
+┌─────────────────────────────────────────┐
+│  Tap simple  → comportement actuel      │
+│               (position unique + panel)  │
+│                                          │
+│  Appui long  → active le suivi continu  │
+│  (ou 2nd tap   le bouton pulse en bleu, │
+│   quand déjà   watchPosition démarre)   │
+│   localisé)                              │
+│                                          │
+│  Tap en mode → désactive le suivi,      │
+│  suivi actif   revient au mode statique │
+└─────────────────────────────────────────┘
 ```
 
-Dans le rendu du TabsContent "map", appeler le render prop avec `filteredSpecies` :
+**Indicateurs visuels en mode suivi :**
 
-```tsx
-{showMap && mapContent && (
-  <TabsContent value="map" className="space-y-4">
-    {typeof mapContent === 'function' ? mapContent(filteredSpecies) : mapContent}
-  </TabsContent>
-)}
+1. **Bouton Crosshair** : anneau pulsant bleu continu (distingué du pulse léger actuel)
+2. **Barre de proximité compacte** : remplace le DistancePanel lourd par un bandeau minimaliste en bas montrant uniquement le point le plus proche + distance, mis à jour en temps réel
+3. **Cercle de précision** : le rayon du `Circle` autour du point bleu reflète `coords.accuracy` en temps réel
+4. **Feedback haptique** (si supporté) : vibration légère quand on passe sous 100m du point cible
+
+```text
+┌──────────────────────────────────┐
+│         Carte Leaflet            │
+│                                  │
+│     ● ← point bleu animé        │
+│     ╎                            │
+│     ╎  ligne pointillée          │
+│     ╎                            │
+│     📍 Point 03                  │
+│                                  │
+│                          [◎]     │  ← bouton avec anneau pulsant
+│  ┌────────────────────────────┐  │
+│  │ → Point 03 Peupliers  127m│  │  ← bandeau compact temps réel
+│  └────────────────────────────┘  │
+└──────────────────────────────────┘
 ```
 
-**2. `BioDivSubSection.tsx`** -- Passer un render prop
+### Modifications techniques
 
-```tsx
-<SpeciesExplorer
-  species={biodiversityData.species}
-  showMap
-  mapContent={(filteredSpecies) => (
-    <div className="h-[600px]">
-      <BiodiversityMap
-        data={{ ...biodiversityData, species: filteredSpecies }}
-        centerLat={marche.latitude}
-        centerLon={marche.longitude}
-      />
-    </div>
-  )}
-/>
-```
+| Fichier | Action |
+|---------|--------|
+| `ExplorationCarteTab.tsx` | Remplacer `getCurrentPosition` par `watchPosition` en mode suivi, stocker le `watchId` dans un ref, cleanup au unmount |
+| `ExplorationCarteTab.tsx` | Ajouter état `isTracking` (boolean) pour distinguer position unique vs suivi continu |
+| `ExplorationCarteTab.tsx` | Modifier `GeolocateButton` : anneau animé quand `isTracking`, logique tap/long-press |
+| `ExplorationCarteTab.tsx` | Ajouter composant `ProximityBanner` compact (1 ligne, point le plus proche + distance live) affiché en mode suivi à la place du DistancePanel complet |
+| `ExplorationCarteTab.tsx` | Mettre à jour `UserLocationMarker` pour utiliser `coords.accuracy` dans le rayon du Circle |
+| `ExplorationCarteTab.tsx` | Ajouter `navigator.vibrate(50)` quand distance < 100m (avec guard `'vibrate' in navigator`) |
 
-**3. `ExplorationBiodiversite.tsx`** -- Meme adaptation si BiodiversityMap y est aussi passe via mapContent (verification necessaire, meme pattern a appliquer).
+### Détails d'implémentation
 
-### Resultat
-
-Quand un marcheur selectionne "Gaspard Boreal" dans le filtre contributeur, la carte n'affiche que les observations rattachees a ce contributeur. Le filtre par categorie, source, et audio continue de fonctionner comme avant.
+- **watchPosition** avec `{ enableHighAccuracy: true, maximumAge: 2000 }` — mise à jour ~1-2s
+- **Cleanup** : `navigator.geolocation.clearWatch(watchId)` dans le return du useEffect et au unmount
+- **ProximityBanner** : bandeau glassmorphism noir/blur, une seule ligne : icône directionnelle + nom du point + distance en temps réel avec transition CSS sur le nombre
+- **Transition douce** : le DistancePanel complet reste accessible via tap sur le bandeau compact
+- **Économie batterie** : le suivi se coupe automatiquement après 10 min d'inactivité (pas d'interaction carte)
 
