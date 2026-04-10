@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
+import { toast } from 'sonner';
 import { MapContainer, TileLayer, Polyline, Marker, Popup, useMap, Circle } from 'react-leaflet';
 import L from 'leaflet';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -619,10 +620,18 @@ const ExplorationCarteTab: React.FC<ExplorationCarteTabProps> = ({
         setUserLocation([pos.coords.latitude, pos.coords.longitude]);
         setUserAccuracy(pos.coords.accuracy);
       },
-      () => {
+      (err) => {
+        // Ne pas couper le suivi sur timeout — retenter automatiquement
+        if (err.code === err.TIMEOUT) {
+          console.warn('GPS timeout, en attente du prochain fix...');
+          return;
+        }
+        // Erreur fatale (permission refusée, indisponible)
+        console.error('Geolocation error:', err.message);
+        toast.error("Signal GPS perdu — suivi désactivé");
         stopTracking();
       },
-      { enableHighAccuracy: true, maximumAge: 2000 }
+      { enableHighAccuracy: true, maximumAge: 5000, timeout: 15000 }
     );
     watchIdRef.current = id;
     setIsTracking(true);
