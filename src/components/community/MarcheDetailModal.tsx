@@ -607,10 +607,75 @@ export const LireTab: React.FC<{ userId: string; marcheEventId: string; activeMa
   );
 };
 
+// ─── Radius Selector ───
+const RADIUS_OPTIONS = [
+  { value: 0.05, label: '50m' },
+  { value: 0.15, label: '150m' },
+  { value: 0.25, label: '250m' },
+  { value: 0.5, label: '500m' },
+  { value: 1, label: '1km' },
+  { value: 2.5, label: '2.5km' },
+  { value: 5, label: '5km' },
+];
+
+const RadiusSelector: React.FC<{ value: number; onChange: (r: number) => void; loading?: boolean }> = ({ value, onChange, loading }) => {
+  const area = (Math.PI * value * value).toFixed(value < 0.5 ? 3 : 2);
+
+  const getColor = (r: number) => {
+    if (r < 0.5) return { bg: 'bg-sky-500/20', border: 'border-sky-400/40', text: 'text-sky-300', ring: 'ring-sky-400/30' };
+    if (r === 0.5) return { bg: 'bg-emerald-500/20', border: 'border-emerald-400/40', text: 'text-emerald-300', ring: 'ring-emerald-400/30' };
+    return { bg: 'bg-amber-500/20', border: 'border-amber-400/40', text: 'text-amber-300', ring: 'ring-amber-400/30' };
+  };
+
+  return (
+    <div className="space-y-2">
+      <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
+        <MapPin className="w-3 h-3 text-emerald-400/70" />
+        <span>Rayon d'observation</span>
+        {loading && <div className="w-3 h-3 border border-emerald-400/30 border-t-emerald-400 rounded-full animate-spin ml-1" />}
+      </div>
+      <div className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-hide -mx-1 px-1">
+        {RADIUS_OPTIONS.map(opt => {
+          const active = opt.value === value;
+          const colors = getColor(opt.value);
+          return (
+            <button
+              key={opt.value}
+              onClick={() => onChange(opt.value)}
+              className={`
+                relative flex-shrink-0 px-3 py-1.5 rounded-full text-[11px] font-medium
+                border transition-all duration-200
+                ${active
+                  ? `${colors.bg} ${colors.border} ${colors.text} ring-1 ${colors.ring} shadow-sm`
+                  : 'bg-background/40 border-border/30 text-muted-foreground hover:bg-muted/40 hover:border-border/50'
+                }
+              `}
+            >
+              {opt.label}
+              {opt.value === 0.5 && !active && (
+                <span className="absolute -top-1 -right-1 w-1.5 h-1.5 bg-emerald-400 rounded-full" />
+              )}
+            </button>
+          );
+        })}
+      </div>
+      <p className="text-[10px] text-muted-foreground/60">
+        Zone couverte : {area} km²
+      </p>
+    </div>
+  );
+};
+
 // ─── Vivant (3 couches) ───
 export const VivantTab: React.FC<{ marcheId: string; userId: string; marcheSlug?: string }> = ({ marcheId, userId, marcheSlug }) => {
   const queryClient = useQueryClient();
   const hasSyncedRef = useRef<string | null>(null);
+  const [radius, setRadius] = useState(0.5);
+
+  // Reset sync when radius changes
+  useEffect(() => {
+    hasSyncedRef.current = null;
+  }, [radius]);
 
   // Fetch lat/lng for this marche
   const { data: coords } = useQuery({
@@ -630,14 +695,13 @@ export const VivantTab: React.FC<{ marcheId: string; userId: string; marcheSlug?
   const { data: biodiversityData, isLoading } = useBiodiversityData({
     latitude: coords?.latitude ?? 0,
     longitude: coords?.longitude ?? 0,
-    radius: 0.5,
+    radius,
     dateFilter: 'recent',
   });
 
   // Silent sync to biodiversity_snapshots after live data arrives
   useEffect(() => {
     if (!biodiversityData?.species || !biodiversityData.summary || !coords || !marcheId) return;
-    // Only sync once per marcheId per mount
     if (hasSyncedRef.current === marcheId) return;
     hasSyncedRef.current = marcheId;
 
@@ -656,7 +720,6 @@ export const VivantTab: React.FC<{ marcheId: string; userId: string; marcheSlug?
         });
         if (!error) {
           console.log(`✅ Snapshot synced for marche ${marcheId}`);
-          // Invalidate all snapshot-dependent queries
           queryClient.invalidateQueries({ queryKey: ['event-biodiversity-snapshots'] });
           queryClient.invalidateQueries({ queryKey: ['biodiversity-snapshots'] });
         } else {
@@ -672,16 +735,12 @@ export const VivantTab: React.FC<{ marcheId: string; userId: string; marcheSlug?
 
   const explorerLink = marcheSlug ? `/bioacoustique/${marcheSlug}` : null;
 
-  if (isLoading) {
+  if (isLoading && !biodiversityData) {
     return (
       <div className="flex items-center justify-center py-8">
         <div className="w-5 h-5 border-2 border-emerald-400/30 border-t-emerald-400 rounded-full animate-spin" />
       </div>
     );
-  }
-
-  if (!biodiversityData?.species || biodiversityData.species.length === 0) {
-    return <EmptyState message="Aucune donnée biodiversité disponible" />;
   }
 
   return (
@@ -692,10 +751,15 @@ export const VivantTab: React.FC<{ marcheId: string; userId: string; marcheSlug?
           <ExternalLink className="w-3 h-3" />Explorer sur le territoire
         </a>
       )}
-      <SpeciesExplorer
-        species={biodiversityData.species}
-        compact
-      />
+      <RadiusSelector value={radius} onChange={setRadius} loading={isLoading} />
+      {(!biodiversityData?.species || biodiversityData.species.length === 0) ? (
+        <EmptyState message="Aucune donnée biodiversité disponible pour ce rayon" />
+      ) : (
+        <SpeciesExplorer
+          species={biodiversityData.species}
+          compact
+        />
+      )}
     </div>
   );
 };
