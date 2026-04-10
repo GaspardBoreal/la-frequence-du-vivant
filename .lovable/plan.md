@@ -1,36 +1,34 @@
 
 
-## Corriger la visibilité du bouton "Se désinscrire"
+## Filtrer les observations aberrantes sur la carte de biodiversité
 
 ### Problème
 
-La condition actuelle dans `MarcheCard` (ligne 78) est :
-```ts
-const canUnregister = !participation.validated_at && isFuture;
-```
+Dans `BiodiversityMap.tsx`, le clustering (lignes 170-213) place un marqueur pour **chaque** attribution ayant des coordonnées exactes, sans vérifier si ces coordonnées sont cohérentes avec le rayon de recherche. Résultat : un "Devil's Coach Horse Beetle" observé près de Lyon apparaît sur la carte d'un point situé à DEVIAT (Charente), à ~400 km de distance.
 
-La participation DEVIAT a été validée par un admin (`validation_method: 'admin_retroactif'`), donc `validated_at` n'est pas null, et le bouton est masqué -- alors que la marche est demain.
+### Cause racine
+
+L'edge function `biodiversity-data` retourne des espèces dont certaines attributions ont des coordonnées GPS éloignées du centre de recherche (données GBIF/iNaturalist). La carte les affiche aveuglément.
 
 ### Correction
 
-Changer la logique pour permettre la désinscription de toute marche **future**, indépendamment de `validated_at` :
+Dans le `useMemo` de `observationClusters` (ligne 171), ajouter un filtre de distance : ne garder que les attributions dont les coordonnées sont à moins de `data.location.radius * 2` km du centre (ou un maximum raisonnable de 10 km). Utiliser une formule haversine simplifiée ou un bounding box.
 
-```ts
-const canUnregister = isFuture;
+```text
+Pour chaque attribution :
+  - calculer la distance au centre (centerLat, centerLon)
+  - si distance > max(radius * 2, 10) km → ignorer
 ```
 
-Si on veut être plus prudent (empêcher la désinscription le jour J après pointage QR), on peut utiliser :
-```ts
-const canUnregister = isFuture && participation.validation_method !== 'qr_code';
-```
+### Fichier impacté
 
-Cela permet la désinscription même si un admin a pré-validé, mais pas si le marcheur a scanné le QR code sur place.
+| Action | Fichier | Détail |
+|--------|---------|--------|
+| Modifier | `src/components/biodiversity/BiodiversityMap.tsx` | Ajouter filtre de distance dans `observationClusters` useMemo (ligne ~186) |
 
-### Fichier impacte
+### Détail technique
 
-| Action | Fichier | Ligne |
-|--------|---------|-------|
-| Modifier | `src/components/community/CarnetVivant.tsx` | 78 |
-
-Une seule ligne a changer.
+1. Ajouter une fonction `haversineKm(lat1, lon1, lat2, lon2)` en haut du fichier (ou importer si déjà existante)
+2. Dans la boucle `species.attributions?.forEach`, avant de créer/ajouter au cluster, vérifier : `haversineKm(attribution.exactLatitude, attribution.exactLongitude, centerLat, centerLon) <= maxRadius`
+3. `maxRadius` = `Math.max((data?.location?.radius || 5) * 2, 10)` km — suffisamment large pour ne pas couper les observations légitimes en bordure, mais élimine les aberrations à 400 km
 
