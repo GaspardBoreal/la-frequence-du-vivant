@@ -370,6 +370,13 @@ const EventBiodiversityTab: React.FC<EventBiodiversityTabProps> = ({ exploration
             <p className="text-xs text-muted-foreground mb-3">
               {stats.marchesCount} étape{stats.marchesCount > 1 ? 's' : ''} analysée{stats.marchesCount > 1 ? 's' : ''}
             </p>
+            <div className="mb-4">
+              <RadiusSelector
+                value={snapshots?.[0]?.radius_meters ? snapshots[0].radius_meters / 1000 : 0.5}
+                onChange={() => {}}
+                readOnly
+              />
+            </div>
             <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
               <AnimatedStat value={stats.total} label="Espèces totales" icon={Layers} color={categoryConfig.all.color} bgColor={categoryConfig.all.bgColor} delay={0} />
               <AnimatedStat value={stats.birds} label="Faune" icon={Bird} color={categoryConfig.birds.color} bgColor={categoryConfig.birds.bgColor} delay={100} />
