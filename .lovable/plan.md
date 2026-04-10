@@ -1,48 +1,42 @@
 
 
-## Ajouter un sélecteur de vue cartographique (Géopoétique / Satellite / Relief)
+## Ajouter un sélecteur de rayon de biodiversité dans l'onglet Vivant
 
 ### Concept
 
-Un bouton de bascule flottant élégant dans le coin supérieur droit de la carte, permettant de switcher entre 3 vues sans recharger la carte ni perdre les marqueurs/tracés :
-
-1. **Géopoétique** (défaut) — la vue sombre actuelle OSM France, parfaite pour la narration
-2. **Satellite** — imagerie satellite haute résolution via Esri World Imagery (gratuit, sans clé API), idéale pour les cours d'eau et le relief
-3. **Relief** — carte topographique OpenTopoMap montrant les courbes de niveau et l'hydrographie
-
-Le toggle est un petit groupe de boutons glassmorphism (backdrop-blur, bordure semi-transparente) avec des icônes distinctes et une animation de transition douce. La vue active est surlignée en émeraude. Le filtre `brightness/saturate` est retiré dynamiquement sur les vues satellite et relief pour les afficher en couleurs naturelles.
-
-### Modification
-
-**Fichier unique : `src/components/community/exploration/ExplorationCarteTab.tsx`**
-
-1. Ajouter un état `mapStyle: 'geopoetic' | 'satellite' | 'terrain'` (défaut `'geopoetic'`)
-2. Créer un composant interne `MapStyleToggle` — 3 boutons flottants (position absolute top-right z-1000) avec icônes `Palette` / `Globe` / `Mountain`
-3. Créer un composant `DynamicTileLayer` qui utilise `useMap()` pour swapper le TileLayer selon le style sélectionné :
-   - Géopoétique : `https://{s}.tile.openstreetmap.fr/osmfr/{z}/{x}/{y}.png` + filtre sombre
-   - Satellite : `https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}` (+ labels overlay optionnel)
-   - Relief : `https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png`
-4. Adapter le CSS dynamiquement : `.carte-tiles-dark` filter appliqué uniquement en mode géopoétique
-5. Adapter les couleurs du polyline et de la légende selon le mode (le tracé émeraude passe en blanc/jaune sur satellite pour rester visible)
-
-### Design du toggle
+Un sélecteur compact et élégant affiché juste au-dessus du `SpeciesExplorer`, montrant le rayon actif et permettant de le changer. Design : une rangée de chips/pills horizontales scrollables (mobile-first), avec le rayon actif surligné en émeraude. Un petit indicateur visuel montre la zone couverte.
 
 ```text
-┌──────────────────────┐
-│  🎨  🛰️  ⛰️         │  ← coins arrondis, glass effect
-│  Géo  Sat  Relief    │    bouton actif = fond émeraude
-└──────────────────────┘
+┌─────────────────────────────────────────────┐
+│ 📍 Rayon d'observation                      │
+│ [50m] [150m] [250m] [500m●] [1km] [2.5km] [5km] │
+│ Zone couverte : 0.79 km²                    │
+└─────────────────────────────────────────────┘
 ```
 
-Compact sur mobile (icônes seules), labels visibles au hover sur desktop.
+- Les valeurs inférieures à 500m sont affichées en bleu clair (précision), 500m en émeraude (défaut), supérieures en ambre (élargi)
+- Le changement de rayon relance `useBiodiversityData` avec le nouveau `radius` et re-sync le snapshot
+- Animation de transition douce lors du changement
+- Sur mobile : pills horizontales avec scroll, compact
 
-### Aucune nouvelle dépendance
+### Modifications
 
-Tout reste dans Leaflet — on change uniquement l'URL du TileLayer. Les marqueurs, polylines, popups, zoom et légende sont conservés identiques.
+**1. `src/components/community/MarcheDetailModal.tsx` — composant `VivantTab`**
+
+- Ajouter un état `radius` (défaut `0.5` = 500m) dans `VivantTab`
+- Passer `radius` à `useBiodiversityData` au lieu du `0.5` codé en dur
+- Réinitialiser `hasSyncedRef` quand le radius change pour re-syncer le snapshot
+- Créer un composant interne `RadiusSelector` :
+  - Rangée de boutons pills avec les valeurs `[0.05, 0.15, 0.25, 0.5, 1, 2.5, 5]`
+  - Labels : `50m, 150m, 250m, 500m, 1km, 2.5km, 5km`
+  - Badge "défaut" sur 500m
+  - Affichage de la surface couverte (π×r²) sous les pills
+  - Code couleur : bleu < 500m, émeraude = 500m, ambre > 500m
+- Placer le `RadiusSelector` entre le lien "Explorer sur le territoire" et le `SpeciesExplorer`
 
 ### Fichier impacté
 
 | Action | Fichier |
 |--------|---------|
-| Modifier | `src/components/community/exploration/ExplorationCarteTab.tsx` |
+| Modifier | `src/components/community/MarcheDetailModal.tsx` |
 
