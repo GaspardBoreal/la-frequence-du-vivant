@@ -185,6 +185,8 @@ const MarcheCard: React.FC<{
 const CarnetVivant: React.FC<CarnetVivantProps> = ({ userId, participations }) => {
   const navigate = useNavigate();
   const [expandedSeasons, setExpandedSeasons] = useState<Set<string>>(new Set());
+  const [unregisterTarget, setUnregisterTarget] = useState<string | null>(null);
+  const [unregisterLoading, setUnregisterLoading] = useState(false);
 
   const eventIds = useMemo(
     () => participations.map(p => p.marche_event_id),
@@ -222,9 +224,8 @@ const CarnetVivant: React.FC<CarnetVivantProps> = ({ userId, participations }) =
   const toggleSeason = (key: string) => {
     setExpandedSeasons(prev => {
       const next = new Set(prev);
-      // Initialize: if nothing was explicitly toggled, add all except current
       if (prev.size === 0) {
-        if (key === seasonKeys[0]) return next; // already open, close it
+        if (key === seasonKeys[0]) return next;
         next.add(key);
         return next;
       }
@@ -240,6 +241,26 @@ const CarnetVivant: React.FC<CarnetVivantProps> = ({ userId, participations }) =
       navigate(`/marches-du-vivant/mon-espace/exploration/${explorationId}`);
     } else {
       navigate(`/marches-du-vivant/mon-espace/exploration/event-${participation.marche_event_id}`);
+    }
+  };
+
+  const handleUnregister = async () => {
+    if (!unregisterTarget) return;
+    setUnregisterLoading(true);
+    try {
+      const { error } = await supabase
+        .from('marche_participations')
+        .delete()
+        .eq('id', unregisterTarget);
+      if (error) throw error;
+      queryClient.invalidateQueries({ queryKey: ['community-participations'] });
+      toast.success('Désinscription confirmée. Vous pouvez vous réinscrire à tout moment.');
+    } catch (err) {
+      console.error(err);
+      toast.error('Erreur lors de la désinscription');
+    } finally {
+      setUnregisterLoading(false);
+      setUnregisterTarget(null);
     }
   };
 
