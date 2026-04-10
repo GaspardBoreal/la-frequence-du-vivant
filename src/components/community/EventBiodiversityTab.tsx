@@ -6,6 +6,7 @@ import { Bird, TreePine, Leaf, Bug, Layers, Sparkles } from 'lucide-react';
 import { useAnimatedCounter } from '@/hooks/useAnimatedCounter';
 import { BiodiversitySpecies } from '@/types/biodiversity';
 import SpeciesExplorer from '@/components/biodiversity/SpeciesExplorer';
+import RadiusSelector from '@/components/biodiversity/RadiusSelector';
 import InsightCardBanner from '@/components/community/insights/InsightCardBanner';
 import { useInsightCards } from '@/hooks/useInsightCards';
 import type { CommunityRoleKey } from '@/hooks/useCommunityProfile';

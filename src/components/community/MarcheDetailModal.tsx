@@ -11,6 +11,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useBiodiversityData } from '@/hooks/useBiodiversityData';
 import { createSlug } from '@/utils/slugGenerator';
 import SpeciesExplorer from '@/components/biodiversity/SpeciesExplorer';
+import RadiusSelector from '@/components/biodiversity/RadiusSelector';
 import FileUploadZone from './contributions/FileUploadZone';
 import ContributionItem from './contributions/ContributionItem';
 import SortToggle from './contributions/SortToggle';
