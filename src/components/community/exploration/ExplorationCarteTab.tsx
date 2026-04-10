@@ -510,7 +510,37 @@ const ExplorationCarteTab: React.FC<ExplorationCarteTabProps> = ({
     return map;
   }, [bioSummary]);
 
-  if (geoMarches.length === 0) {
+  // Geolocation handler
+  const handleGeolocate = useCallback(() => {
+    if (userLocation) {
+      // Toggle distance panel if already located
+      setShowDistances(prev => !prev);
+      return;
+    }
+    if (!navigator.geolocation) return;
+    setGeoLoading(true);
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setUserLocation([pos.coords.latitude, pos.coords.longitude]);
+        setShowDistances(true);
+        setGeoLoading(false);
+      },
+      () => setGeoLoading(false),
+      { enableHighAccuracy: true, timeout: 10000 }
+    );
+  }, [userLocation]);
+
+  // Compute distances from user to each step
+  const stepsWithDistance = useMemo(() => {
+    if (!userLocation) return [];
+    return geoMarches.map((m, i) => {
+      const dist = haversineKm(userLocation[0], userLocation[1], m.latitude!, m.longitude!);
+      return { index: i, name: m.nom_marche || m.ville, distance: dist, lat: m.latitude!, lng: m.longitude!, isNearest: false };
+    }).sort((a, b) => a.distance - b.distance).map((s, i) => ({ ...s, isNearest: i === 0 }));
+  }, [userLocation, geoMarches]);
+
+  const nearestStep = stepsWithDistance.find(s => s.isNearest);
+
     return (
       <motion.div
         initial={{ opacity: 0, y: 12 }}
