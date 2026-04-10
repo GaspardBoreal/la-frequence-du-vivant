@@ -31,7 +31,7 @@ interface SpeciesExplorerProps {
   species: BiodiversitySpecies[];
   compact?: boolean;
   showMap?: boolean;
-  mapContent?: React.ReactNode;
+  mapContent?: React.ReactNode | ((filteredSpecies: BiodiversitySpecies[]) => React.ReactNode);
   className?: string;
   explorationId?: string;
   allEventMarches?: SpeciesMarcheData[];
@@ -403,7 +403,7 @@ const SpeciesExplorer: React.FC<SpeciesExplorerProps> = ({
 
         {showMap && mapContent && (
           <TabsContent value="map" className="space-y-4">
-            {mapContent}
+            {typeof mapContent === 'function' ? mapContent(filteredSpecies) : mapContent}
           </TabsContent>
         )}
 
