@@ -212,15 +212,15 @@ const BioDivSubSection: React.FC<BioDivSubSectionProps> = ({ marche, theme }) =>
         <SpeciesExplorer
           species={biodiversityData.species}
           showMap
-          mapContent={
+          mapContent={(filteredSpecies) => (
             <div className="h-[600px]">
               <BiodiversityMap
-                data={biodiversityData}
+                data={{ ...biodiversityData, species: filteredSpecies }}
                 centerLat={marche.latitude}
                 centerLon={marche.longitude}
               />
             </div>
-          }
+          )}
         />
       )}
     </div>
