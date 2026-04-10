@@ -1,12 +1,15 @@
 import React, { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
-import { Book, MapPin, Camera, Music, PenLine, Leaf, ChevronDown, ChevronUp } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Book, MapPin, Camera, Music, PenLine, Leaf, ChevronDown, ChevronUp, UserMinus } from 'lucide-react';
 import { getMarcheEventTypeMeta } from '@/lib/marcheEventTypes';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { useMarcheCollectedData, MarcheCollectedSummary } from '@/hooks/useMarcheCollectedData';
-
+import { supabase } from '@/integrations/supabase/client';
+import { queryClient } from '@/lib/queryClient';
+import { toast } from 'sonner';
+import { ConfirmDeleteDialog } from '@/components/ui/confirm-delete-dialog';
 interface Participation {
   id: string;
   marche_event_id: string;
