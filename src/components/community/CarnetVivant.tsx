@@ -66,13 +66,16 @@ const MarcheCard: React.FC<{
   summary: MarcheCollectedSummary | undefined;
   index: number;
   onOpen: () => void;
-}> = ({ participation, summary, index, onOpen }) => {
+  onUnregister?: (participationId: string) => void;
+}> = ({ participation, summary, index, onOpen, onUnregister }) => {
   const event = participation.marche_events;
   if (!event) return null;
 
   const date = new Date(event.date_marche);
   const typeMeta = getMarcheEventTypeMeta(event.event_type);
   const hasData = summary && (summary.kigo_count > 0 || summary.photos_count > 0 || summary.audio_count > 0 || summary.species_count > 0);
+  const isFuture = new Date(event.date_marche) > new Date();
+  const canUnregister = !participation.validated_at && isFuture;
 
   return (
     <motion.button
@@ -154,10 +157,24 @@ const MarcheCard: React.FC<{
             </p>
           )}
 
-          {!hasData && (
+          {!hasData && !canUnregister && (
             <p className="text-muted-foreground/60 text-[10px] italic">
               Données en attente de collecte
             </p>
+          )}
+
+          {/* Unregister button */}
+          {canUnregister && onUnregister && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onUnregister(participation.id);
+              }}
+              className="flex items-center gap-1 text-[10px] text-destructive/70 hover:text-destructive transition-colors mt-1"
+            >
+              <UserMinus className="w-3 h-3" />
+              Se désinscrire
+            </button>
           )}
         </div>
       </div>
