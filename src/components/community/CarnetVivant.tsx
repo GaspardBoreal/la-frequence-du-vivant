@@ -308,6 +308,7 @@ const CarnetVivant: React.FC<CarnetVivantProps> = ({ userId, participations }) =
                 {/* Timeline */}
                 {open && (
                   <div className="relative ml-4 pl-4 border-l border-emerald-300 dark:border-emerald-500/20 space-y-2 pb-2">
+                  <AnimatePresence mode="popLayout">
                     {items.map((p, i) => (
                       <MarcheCard
                         key={p.id}
@@ -315,8 +316,10 @@ const CarnetVivant: React.FC<CarnetVivantProps> = ({ userId, participations }) =
                         summary={collectedData?.[p.marche_event_id]}
                         index={i}
                         onOpen={() => handleOpenExploration(p)}
+                        onUnregister={(id) => setUnregisterTarget(id)}
                       />
                     ))}
+                  </AnimatePresence>
                   </div>
                 )}
               </div>
