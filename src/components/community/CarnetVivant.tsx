@@ -172,7 +172,7 @@ const MarcheCard: React.FC<{
                 e.stopPropagation();
                 onUnregister(participation.id);
               }}
-              className="flex items-center gap-1 text-[10px] text-destructive/70 hover:text-destructive transition-colors mt-1"
+              className="flex items-center gap-1 text-[10px] transition-colors mt-1 text-white"
             >
               <UserMinus className="w-3 h-3" />
               Se désinscrire
