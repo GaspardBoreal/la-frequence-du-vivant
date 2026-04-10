@@ -738,6 +738,10 @@ const ExplorationCarteTab: React.FC<ExplorationCarteTabProps> = ({
 
       {/* Custom popup style overrides */}
       <style>{`
+        @keyframes gps-pulse {
+          0% { transform: scale(1); opacity: 0.4; }
+          100% { transform: scale(3); opacity: 0; }
+        }
         .carte-tiles-dark {
           filter: brightness(0.6) saturate(0.3);
         }
