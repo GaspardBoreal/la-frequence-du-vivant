@@ -167,10 +167,20 @@ export const BiodiversityMap: React.FC<BiodiversityMapProps> = ({
   const [radiusFilter, setRadiusFilter] = useState<number>(data?.location?.radius || 5);
   const [selectedSpeciesForModal, setSelectedSpeciesForModal] = useState<BiodiversitySpecies | null>(null);
   
+  // Haversine distance in km
+  const haversineKm = (lat1: number, lon1: number, lat2: number, lon2: number): number => {
+    const toRad = (x: number) => (x * Math.PI) / 180;
+    const dLat = toRad(lat2 - lat1);
+    const dLon = toRad(lon2 - lon1);
+    const a = Math.sin(dLat / 2) ** 2 + Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2;
+    return 6371 * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  };
+
   // Création des clusters d'observations
   const observationClusters = useMemo(() => {
     if (!data?.species) return [];
     
+    const maxRadius = Math.max((data?.location?.radius || 5) * 2, 10);
     const clusters = new Map<string, ObservationCluster>();
     
     data.species.forEach(species => {
