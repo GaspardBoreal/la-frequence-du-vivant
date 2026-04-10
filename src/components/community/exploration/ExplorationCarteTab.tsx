@@ -285,6 +285,8 @@ function GeolocateButton({
 }: { active: boolean; loading: boolean; isTracking: boolean; onClick: () => void; onLongPress: () => void }) {
   const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const didLongPress = useRef(false);
+  const lastTapTime = useRef<number>(0);
+  const doubleTapTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const handlePointerDown = () => {
     didLongPress.current = false;
@@ -296,7 +298,21 @@ function GeolocateButton({
 
   const handlePointerUp = () => {
     if (longPressTimer.current) clearTimeout(longPressTimer.current);
-    if (!didLongPress.current) onClick();
+    if (didLongPress.current) return;
+
+    const now = Date.now();
+    if (now - lastTapTime.current < 400) {
+      // Double tap detected
+      if (doubleTapTimer.current) clearTimeout(doubleTapTimer.current);
+      lastTapTime.current = 0;
+      onLongPress();
+    } else {
+      lastTapTime.current = now;
+      doubleTapTimer.current = setTimeout(() => {
+        onClick();
+        lastTapTime.current = 0;
+      }, 400);
+    }
   };
 
   const handlePointerLeave = () => {
