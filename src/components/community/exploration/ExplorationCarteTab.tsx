@@ -541,6 +541,7 @@ const ExplorationCarteTab: React.FC<ExplorationCarteTabProps> = ({
 
   const nearestStep = stepsWithDistance.find(s => s.isNearest);
 
+  if (geoMarches.length === 0) {
     return (
       <motion.div
         initial={{ opacity: 0, y: 12 }}
