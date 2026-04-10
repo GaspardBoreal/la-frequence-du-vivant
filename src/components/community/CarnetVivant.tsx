@@ -79,8 +79,10 @@ const MarcheCard: React.FC<{
 
   return (
     <motion.button
+      layout
       initial={{ opacity: 0, x: -8 }}
       animate={{ opacity: 1, x: 0 }}
+      exit={{ opacity: 0, x: -20, height: 0, marginBottom: 0 }}
       transition={{ delay: index * 0.06 }}
       onClick={onOpen}
       className="w-full text-left relative"
@@ -327,6 +329,15 @@ const CarnetVivant: React.FC<CarnetVivantProps> = ({ userId, participations }) =
           })}
         </div>
       )}
+
+      <ConfirmDeleteDialog
+        open={!!unregisterTarget}
+        onOpenChange={(open) => { if (!open) setUnregisterTarget(null); }}
+        title="Quitter cette marche ?"
+        description="Vous pourrez vous réinscrire plus tard depuis l'onglet Marches."
+        onConfirm={handleUnregister}
+        loading={unregisterLoading}
+      />
     </div>
   );
 };
