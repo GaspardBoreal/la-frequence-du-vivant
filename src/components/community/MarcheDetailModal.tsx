@@ -258,9 +258,10 @@ export const VoirTab: React.FC<{ marcheId: string; userId: string; marcheEventId
                     setShowGpsDialog(true);
                   }}
                   disabled={isChecking}
-                  className="p-1.5 rounded-lg bg-white/5 text-white/40 hover:bg-white/10 hover:text-white/60 transition-colors"
+                  className="p-1.5 rounded-lg bg-white/5 text-white/50 hover:bg-white/10 hover:text-white/70 transition-colors flex items-center gap-1"
                 >
                   <Crosshair className={`w-3.5 h-3.5 ${isChecking ? 'animate-spin' : ''}`} />
+                  <span className="text-[9px] font-medium">GPS</span>
                 </button>
               </TooltipTrigger>
               <TooltipContent side="bottom"><p className="text-xs">Vérifier GPS</p></TooltipContent>
