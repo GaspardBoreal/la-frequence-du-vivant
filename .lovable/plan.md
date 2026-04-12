@@ -1,74 +1,76 @@
 
 
-## Nouveau statut "Partagé au monde" — Partage web public des contributions
+## Correctif sécurité + UI 3 états + Pages publiques
 
-### Contexte actuel
-- `is_public` (boolean) sur `marcheur_textes` et `marcheur_medias` = visibilité entre marcheurs
-- Pas de champ pour le partage web public
-- `community_profiles` n'a pas de slug/pseudo (seulement prenom, nom, user_id)
+### 1. Migration DB — Sécuriser l'accès anonyme
 
-### Architecture
+**Problème** : La policy `"Public can view profiles by slug"` expose le téléphone, email et données personnelles de `community_profiles` à tout visiteur anonyme.
 
-**1. Migration base de données**
+**Solution** : Supprimer les 3 policies anonymes directes et créer 2 fonctions RPC `SECURITY DEFINER` qui ne retournent que les champs publics :
 
-Ajouter sur `marcheur_textes` et `marcheur_medias` :
-- `shared_to_web` (boolean, default false) — statut "Partagé au monde"
-- Politique RLS : permettre SELECT anonyme quand `shared_to_web = true`
+- `get_public_shared_contribution(p_id uuid, p_type text)` — retourne le contenu (texte ou média) + prenom/slug/avatar du marcheur + nom/lieu de la marche, uniquement si `shared_to_web = true`
+- `get_public_marcheur_carnet(p_slug text)` — retourne le profil public (prenom, slug, avatar, role, marches_count) + tous les contenus `shared_to_web = true` groupés par exploration
 
-Ajouter sur `community_profiles` :
-- `slug` (text, unique, nullable) — identifiant public du marcheur pour l'URL carnet
+Ajouter aussi un trigger pour garantir la cohérence : si `shared_to_web = true` alors `is_public` doit être `true`.
 
-Fonction DB pour générer un slug automatique depuis prenom+nom si null.
+### 2. ContributionItem.tsx — Sélecteur 3 états
 
-**2. UI — Trois niveaux de partage dans ContributionItem**
+Remplacer le toggle Globe/Lock par un menu déroulant à 3 niveaux :
+- 🔒 **Privé** (`is_public=false, shared_to_web=false`) — badge gris
+- 👥 **Communauté** (`is_public=true, shared_to_web=false`) — badge bleu
+- 🌍 **Partagé au monde** (`is_public=true, shared_to_web=true`) — badge violet
 
-Remplacer le toggle simple Globe/Lock par un sélecteur à 3 états :
-- 🔒 **Privé** — visible uniquement par le marcheur
-- 👥 **Communauté** — visible par les autres marcheurs (`is_public = true`)
-- 🌍 **Partagé au monde** — accessible publiquement via URL (`shared_to_web = true`, implique `is_public = true`)
+Quand `shared_to_web=true`, afficher un bouton 🔗 qui copie l'URL `/partage/{id}?type={texte|photo|...}` avec toast.
 
-Un petit menu dropdown ou un cycle de clics (Privé → Communauté → Monde → Privé).
+Adapter aussi le mode immersion pour afficher l'indicateur 3 états.
 
-Indicateur visuel : badge avec icône et couleur distincte pour chaque état.
+### 3. useMarcheurContributions.ts — Adapter les mutations
 
-**3. Route publique individuelle : `/partage/:id`**
+Dans `useUpdateContribution`, gérer la logique :
+- Passer à "monde" → `{ is_public: true, shared_to_web: true }`
+- Passer à "communauté" → `{ is_public: true, shared_to_web: false }`  
+- Passer à "privé" → `{ is_public: false, shared_to_web: false }`
 
-Nouvelle page `src/pages/PartagePublic.tsx` :
-- Fetch le contenu (`marcheur_textes` ou `marcheur_medias`) par ID où `shared_to_web = true`
-- Joint le profil marcheur (prenom, avatar) et les infos marche (nom, lieu)
-- Design mobile-first, plein écran :
-  - Textes : fond sombre avec bande latérale violette, typographie Crimson Text, contenu centré
-  - Photos : photo plein écran avec overlay glassmorphism pour titre/auteur/lieu
-- Bouton "Partager" natif (`navigator.share` ou copie presse-papier)
-- Meta tags OpenGraph via `<Helmet>` pour un rendu social riche
-- CTA discret vers "Les Marches du Vivant" en bas
+### 4. PartagePublic.tsx — Page publique individuelle
 
-**4. Route carnet : `/marcheur/:slug/carnet`**
+Nouvelle page `/partage/:id` avec query param `?type=texte|photo|video|audio` :
+- Appel RPC `get_public_shared_contribution`
+- Design mobile-first, fond sombre, bande latérale violette
+- Typographie Crimson Text pour les textes, photo plein écran pour médias
+- Header : avatar + prénom + lieu de la marche
+- Bouton partage natif (`navigator.share`) + copie presse-papier
+- Meta tags OpenGraph via `react-helmet-async`
+- CTA discret "Les Marches du Vivant" en bas
 
-Nouvelle page `src/pages/CarnetMarcheur.tsx` :
-- Fetch tous les contenus `shared_to_web = true` du marcheur (textes + photos)
-- En-tête : avatar, prénom, ville, nombre de contributions, citation/kigo d'accueil
-- Grille masonry de cartes : chaque carte est cliquable → ouvre `/partage/:id`
-- Regroupement par exploration/événement
-- Design : fond crème clair / sombre selon préférence, typographie poétique, animations d'apparition au scroll
+### 5. CarnetMarcheur.tsx — Journal public du marcheur
 
-**5. Bouton "Copier le lien" dans ContributionItem**
+Nouvelle page `/marcheur/:slug/carnet` :
+- Appel RPC `get_public_marcheur_carnet`
+- En-tête : avatar, prénom, rôle, nombre de marches
+- Grille masonry de cartes (textes + photos) cliquables → `/partage/:id`
+- Groupement par exploration
+- Animations d'apparition au scroll
+- Design poétique, fond crème/sombre
 
-Quand `shared_to_web = true`, afficher un petit bouton lien (🔗) qui copie l'URL publique dans le presse-papier avec toast de confirmation.
+### 6. App.tsx — Routes
 
-### Fichiers
+Ajouter :
+```
+<Route path="/partage/:id" element={<PartagePublic />} />
+<Route path="/marcheur/:slug/carnet" element={<CarnetMarcheur />} />
+```
+
+### Fichiers impactés
 
 | Fichier | Action |
 |---------|--------|
-| Migration SQL | Ajouter `shared_to_web`, `slug`, RLS anonyme |
+| Migration SQL | Supprimer 3 policies anonymes, créer 2 RPC, trigger cohérence |
 | `src/components/community/contributions/ContributionItem.tsx` | Sélecteur 3 états + bouton copier lien |
-| `src/pages/PartagePublic.tsx` | **Nouveau** — page publique individuelle |
-| `src/pages/CarnetMarcheur.tsx` | **Nouveau** — carnet public du marcheur |
-| `src/App.tsx` | Ajouter routes `/partage/:id` et `/marcheur/:slug/carnet` |
-| `src/hooks/useMarcheurContributions.ts` | Adapter les mutations pour `shared_to_web` |
+| `src/hooks/useMarcheurContributions.ts` | Adapter mutations visibility |
+| `src/pages/PartagePublic.tsx` | Nouveau |
+| `src/pages/CarnetMarcheur.tsx` | Nouveau |
+| `src/App.tsx` | 2 routes publiques |
 
-### Sécurité
-- RLS : SELECT anonyme uniquement sur les lignes où `shared_to_web = true`
-- INSERT/UPDATE/DELETE : inchangé (propriétaire uniquement)
-- Le marcheur contrôle entièrement ce qui est exposé
+### Dépendance
+- `react-helmet-async` pour les meta tags OG (à installer si absent)
 
