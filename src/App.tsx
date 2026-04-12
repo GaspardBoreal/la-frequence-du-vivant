@@ -78,6 +78,8 @@ import MarchesDuVivantExplorationMarcheur from './pages/MarchesDuVivantExplorati
 import AdminOutilsHub from './pages/AdminOutilsHub';
 import AdminFrequences from './pages/AdminFrequences';
 import CommunityAffiliateLanding from './pages/CommunityAffiliateLanding';
+import PartagePublic from './pages/PartagePublic';
+import CarnetMarcheur from './pages/CarnetMarcheur';
 
 function App() {
   return (
@@ -281,6 +283,8 @@ function App() {
             <Route path="/meteo-historique" element={<WeatherCalendar />} />
             <Route path="/atlas-climatique" element={<AtlasClimatique />} />
             <Route path="/presentation" element={<ProjectPresentation />} />
+            <Route path="/partage/:id" element={<PartagePublic />} />
+            <Route path="/marcheur/:slug/carnet" element={<CarnetMarcheur />} />
             
             <Route path="*" element={<NotFound />} />
           </Routes>

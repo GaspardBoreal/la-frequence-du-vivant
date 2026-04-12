@@ -135,6 +135,7 @@ const DraggableContributionGrid: React.FC<DraggableContributionGridProps> = ({
                 contenu={item.contenu}
                 typeTexte={item.typeTexte}
                 isPublic={item.isPublic}
+                sharedToWeb={item.sharedToWeb}
                 isOwner={true}
                 createdAt={item.createdAt}
                 viewMode={viewMode}

@@ -3925,6 +3925,11 @@ export type Database = {
         }[]
       }
       get_my_admin_email_only: { Args: never; Returns: string }
+      get_public_marcheur_carnet: { Args: { p_slug: string }; Returns: Json }
+      get_public_shared_contribution: {
+        Args: { p_id: string; p_type: string }
+        Returns: Json
+      }
       get_structured_vocabulary_data: {
         Args: { marche_id_param: string }
         Returns: {

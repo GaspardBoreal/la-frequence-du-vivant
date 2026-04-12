@@ -386,6 +386,7 @@ export const VoirTab: React.FC<{ marcheId: string; userId: string; marcheEventId
               url: m.url_fichier,
               externalUrl: m.external_url,
               isPublic: m.is_public,
+              sharedToWeb: (m as any).shared_to_web,
               createdAt: m.created_at,
             }))}
             viewMode={viewMode}
@@ -539,6 +540,7 @@ export const EcouterTab: React.FC<{ marcheId: string; userId: string; marcheEven
                 description={a.description}
                 url={a.url_fichier}
                 isPublic={a.is_public}
+                sharedToWeb={(a as any).shared_to_web}
                 isOwner={true}
                 createdAt={a.created_at}
                 onUpdate={(id, updates) => updateContrib.mutate({ table: 'marcheur_audio', id, updates })}
@@ -720,6 +722,7 @@ export const LireTab: React.FC<{ userId: string; marcheEventId: string; activeMa
                 contenu={t.contenu}
                 typeTexte={t.type_texte}
                 isPublic={t.is_public}
+                sharedToWeb={(t as any).shared_to_web}
                 isOwner={true}
                 createdAt={t.created_at}
                 onUpdate={(id, updates) => updateContrib.mutate({ table: 'marcheur_textes', id, updates })}
