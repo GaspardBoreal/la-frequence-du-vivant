@@ -1,100 +1,56 @@
 
-## Diagnostic
 
-Oui, il y a très probablement un problème de requête, mais ce n’est pas seulement “la photo de Victor” : le code mélange actuellement deux périmètres de données différents dans l’onglet **Marcheurs**.
+## Correction — "Auteur inconnu" dans Textes écrits
 
-### Ce que j’ai trouvé dans le code
+### Diagnostic
 
-- Dans `useExplorationParticipants.ts`, les compteurs de photos/vidéos des marcheurs sont calculés sur **tous les `marche_events` de l’exploration** :
-  - récupération de tous les events de l’exploration
-  - puis requête `marcheur_medias` avec `.in('marche_event_id', eventIds)`
-- En revanche, dans `MarcheursTab.tsx`, le sous-onglet **Observations** d’un marcheur recharge ses médias avec un filtre beaucoup plus étroit :
-  - `.eq('user_id', userId)`
-  - `.eq('is_public', true)`
-  - puis, si `marcheEventId` est fourni, `.eq('marche_event_id', marcheEventId)`
+Le problème est un blocage RLS. La requête d'auteurs dans `TextesEcritsSubTab.tsx` (ligne 76) fait :
 
-### Conséquence visible à l’écran
-
-Cela crée une incohérence :
-
-- le badge d’un marcheur peut afficher des photos publiques parce qu’elles existent **quelque part dans l’exploration**
-- mais la grille ouverte sous sa carte peut être vide ou incomplète parce qu’elle ne regarde que **le `marcheEventId` courant**
-
-C’est exactement le type de symptôme montré par ta capture : on a l’impression qu’“il manque des contributions”, alors que l’interface affiche un total calculé sur un périmètre plus large que la liste réelle.
-
-## Cause probable du bug
-
-Le bug n’est pas forcément dans Supabase ni dans la donnée elle-même. Il est surtout dans la logique front :
-
-```text
-Badge marcheur = exploration entière
-Grille observations = un seul event
-=> décalage visuel / impression de requête cassée
+```ts
+supabase.from('community_profiles').select('...').in('user_id', userIds)
 ```
 
-Et comme la page actuelle est une exploration multi-étapes, ce décalage devient très visible.
+Or la politique RLS sur `community_profiles` ne permet de lire que :
+- son propre profil
+- les profils de co-participants (via `shares_marche_event`)
+- les profils si on est admin
 
-## Plan de correction
+Si l'utilisateur connecté n'a pas de participation commune avec un auteur de texte, son profil est invisible → "Auteur inconnu". Les données sont correctes en base (3 textes, tous avec un `user_id` valide).
 
-1. **Aligner les périmètres de données**
-   - faire en sorte que la grille “Observations” d’un marcheur utilise le même périmètre que ses stats :
-     - soit toute l’exploration
-     - soit uniquement l’event courant
-   - le plus cohérent ici semble être : **toute l’exploration**, puisque la page est centrée sur l’exploration et que les badges fonctionnent déjà ainsi
+### Solution
 
-2. **Refactorer `ObservationsSubTab`**
-   - lui passer les `eventIds` de l’exploration, ou un indicateur explicite de périmètre
-   - remplacer le filtre `eq('marche_event_id', marcheEventId)` par un filtre cohérent avec l’exploration (ex: `in('marche_event_id', eventIds)`)
+Créer une **fonction RPC SECURITY DEFINER** qui retourne les textes publics d'un événement avec les informations auteur embarquées, contournant les restrictions RLS sur `community_profiles`.
 
-3. **Rendre le comportement explicite dans l’UI**
-   - si on reste sur le périmètre exploration : libeller implicitement/visuellement que ce sont les observations publiques du marcheur dans l’exploration
-   - éviter toute ambiguïté entre “sur cette marche”, “sur cet event”, “dans cette exploration”
+### Etapes
 
-4. **Vérifier aussi les autres sous-onglets / compteurs**
-   - contrôler que les résumés et badges de `MarcheursTab` utilisent tous le même niveau de filtre
-   - éviter d’autres incohérences similaires entre cartes, compteurs et contenus détaillés
+1. **Migration SQL** — Créer la fonction `get_event_public_textes(p_event_id uuid)` qui retourne les textes joints aux profils auteurs en une seule requête SECURITY DEFINER
 
-5. **Tester le cas Victor / Gaspard**
-   - vérifier qu’un marcheur avec contributions publiques apparaît avec :
-     - le bon compteur
-     - la bonne grille de photos
-     - le même nombre perçu entre carte fermée et contenu ouvert
+2. **Modifier `TextesEcritsSubTab.tsx`** — Remplacer les deux requêtes séparées (textes + auteurs) par un seul appel RPC qui retourne les textes avec l'info auteur intégrée dans chaque ligne
 
-## Fichiers concernés
+### Detail technique
 
-- `src/hooks/useExplorationParticipants.ts`
-- `src/components/community/exploration/MarcheursTab.tsx`
-- possiblement `src/components/community/ExplorationMarcheurPage.tsx` si on doit transmettre proprement le contexte exploration/event au composant
-
-## Détail technique
-
-### Incohérence actuelle
-
-```text
-useExplorationParticipants
-  -> stats sur tous les events de l’exploration
-
-ObservationsSubTab
-  -> photos sur le seul marcheEventId courant
+```sql
+CREATE OR REPLACE FUNCTION public.get_event_public_textes(p_event_id uuid)
+RETURNS json LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public AS $$
+  SELECT coalesce(json_agg(row_to_json(r)), '[]')
+  FROM (
+    SELECT t.id, t.user_id, t.marche_id, t.marche_event_id,
+           t.type_texte, t.titre, t.contenu, t.is_public, t.ordre, t.created_at,
+           cp.prenom AS author_prenom, cp.nom AS author_nom, cp.avatar_url AS author_avatar
+    FROM marcheur_textes t
+    LEFT JOIN community_profiles cp ON cp.user_id = t.user_id
+    WHERE t.marche_event_id = p_event_id AND t.is_public = true
+    ORDER BY t.created_at
+  ) r;
+$$;
 ```
 
-### Correction recommandée
+Dans le composant, un seul `useQuery` appelant `supabase.rpc('get_event_public_textes', { p_event_id: marcheEventId })`, puis construction de `authorMap` directement depuis les champs `author_prenom/nom/avatar` de chaque ligne.
 
-```text
-MarcheursTab
-  -> calcule / récupère les eventIds de l’exploration
-  -> les transmet à ObservationsSubTab
+### Fichiers concernés
 
-ObservationsSubTab
-  -> requête marcheur_medias avec:
-     user_id = marcheur
-     is_public = true
-     marche_event_id IN (events de l’exploration)
-```
-
-### Bénéfice
-
-- plus de cohérence perçue
-- plus de “fausse disparition” de photos
-- les contributions de Victor / Gaspard seront affichées au même niveau logique que celui utilisé pour les stats
+| Fichier | Action |
+|---------|--------|
+| Nouvelle migration SQL | Fonction RPC `get_event_public_textes` |
+| `TextesEcritsSubTab.tsx` | Remplacer 2 requêtes par 1 appel RPC, supprimer la query auteurs séparée |
 
