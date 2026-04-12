@@ -167,6 +167,7 @@ const GpsMapView: React.FC<GpsMapViewProps> = ({ results, marcheCoords }) => {
         zoomControl={false}
       >
         <DynamicTileLayer style={mapStyle} />
+        <ZoomControls />
         <FitBounds points={allPoints} />
 
         {/* Walk reference marker */}
