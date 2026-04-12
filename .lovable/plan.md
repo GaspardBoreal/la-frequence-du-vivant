@@ -1,49 +1,20 @@
 
 
-## Afficher le badge "Contributions" à côté du badge "Observations" dans l'en-tête marcheur
+## Supprimer les cartes "SE FORMER" de Empreinte → Synthèse
 
-### Problème
+### Ce qui sera fait
 
-Le badge photo (📷 23) s'affiche correctement car il vient de `marcheur.stats.photos`. Le badge contributions (🌿) ne s'affiche pas car `marcheur.stats.speciesCount` vaut 0 pour les marcheurs communautaires — les données réelles sont dans `biodiversity_snapshots.species_data`.
+Retirer la ligne `<InsightCardBanner cards={insightCards} maxCards={2} />` du sous-onglet Synthèse dans `EventBiodiversityTab.tsx` (ligne 370). Cela supprime les deux bannières "SE FORMER" (bio-indicateur et GBIF) visibles sur la copie écran.
 
-### Solution
+### Ce qui ne sera PAS touché
 
-Charger le compteur de contributions depuis les `biodiversity_snapshots` pour chaque marcheur (même logique de normalisation des noms que le `ContributionsSubTab`) et l'afficher comme badge élégant dans l'en-tête de la carte.
-
-### Modifications dans `MarcheursTab.tsx`
-
-**1. Hook dédié pour le compteur de contributions par marcheur**
-
-Créer un petit hook `useWalkerContributionsCount(prenom, nom, explorationMarcheIds)` qui :
-- Requête `biodiversity_snapshots` pour les `marche_id` de l'exploration
-- Parse `species_data[].attributions[]` avec la normalisation NFD (accents)
-- Retourne le nombre d'observations individuelles attribuées au marcheur
-
-**2. Badge dans l'en-tête du `MarcheurCard`**
-
-Remplacer le badge `speciesCount` actuel (qui ne fonctionne pas) par le vrai compteur issu du hook :
-
-```text
-┌─────────────────────────────────────────────────────────┐
-│ (GB) Gaspard Boreal              📷 23  🌿 42    ˅     │
-│      Sentinelle                                        │
-└─────────────────────────────────────────────────────────┘
-```
-
-- Badge 📷 : inchangé (photos/vidéos publiques)
-- Badge 🌿 : nouveau compteur réel depuis snapshots, icône `Leaf`, couleur `amber-500`
-- Les deux badges partagent le même style pill (`rounded-full bg-muted/60`)
-- Mobile-first : badges compacts, `gap-1.5`, taille `text-[11px]`
-
-**3. Optimisation**
-
-- La requête snapshots est déjà faite dans `ContributionsSubTab` — on la remontera au niveau du `MarcheurCard` pour éviter la duplication, en passant le résultat aux deux composants
-- `staleTime: 60s` pour éviter les refetch inutiles
-- Le hook ne se déclenche que si `explorationMarcheIds.length > 0`
+- L'onglet **Apprendre** (`ApprendreTab.tsx`) reste intact -- il a sa propre logique `useInsightCards` indépendante
+- Les sous-onglets **Taxons observés** et **Analyse IA** restent inchangés
+- Le hook `useInsightCards` et le composant `InsightCardBanner` restent disponibles pour les autres usages
 
 ### Fichier modifié
 
-| Fichier | Action |
-|---------|--------|
-| `src/components/community/exploration/MarcheursTab.tsx` | Ajouter hook compteur contributions + badge dans header card |
+| Fichier | Modification |
+|---------|-------------|
+| `src/components/community/EventBiodiversityTab.tsx` | Supprimer l'appel `<InsightCardBanner>` dans le bloc Synthèse (ligne 370). Nettoyer l'import et le hook `useInsightCards` s'ils ne sont plus utilisés ailleurs dans ce fichier. |
 
