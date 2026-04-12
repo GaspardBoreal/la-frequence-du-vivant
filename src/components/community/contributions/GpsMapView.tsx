@@ -79,7 +79,7 @@ function ZoomControls() {
             style={{
               width: '32px',
               height: '32px',
-              background: 'rgba(255,255,255,0.12)',
+              background: 'rgba(30,30,30,0.85)',
               backdropFilter: 'blur(8px)',
               border: 'none',
               color: 'rgba(255,255,255,0.85)',
@@ -91,8 +91,8 @@ function ZoomControls() {
               justifyContent: 'center',
               transition: 'background 0.15s',
             }}
-            onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.25)')}
-            onMouseLeave={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.12)')}
+            onMouseEnter={e => (e.currentTarget.style.background = 'rgba(30,30,30,0.95)')}
+            onMouseLeave={e => (e.currentTarget.style.background = 'rgba(30,30,30,0.85)')}
           >
             {b.label}
           </button>
