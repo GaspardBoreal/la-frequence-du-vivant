@@ -7,6 +7,7 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useExplorationBiodiversitySummary } from '@/hooks/useExplorationBiodiversitySummary';
 import { Camera, Mic, BookOpen, Leaf, Navigation, MapPin, Plus, Minus, Palette, Globe, Mountain, Crosshair, X, Star } from 'lucide-react';
+import { PhotoGpsButton, PhotoGpsMarker, usePhotoGpsDrop } from './PhotoGpsDropTool';
 import 'leaflet/dist/leaflet.css';
 
 type MapStyle = 'geopoetic' | 'satellite' | 'terrain';
@@ -119,6 +120,7 @@ interface MarcheContribStats {
 interface ExplorationCarteTabProps {
   explorationId?: string;
   marches: MarcheStep[];
+  marcheEventId?: string;
   onSelectStep?: (index: number) => void;
 }
 
@@ -476,6 +478,7 @@ const TRACKING_TIMEOUT_MS = 10 * 60 * 1000; // 10 min auto-stop
 const ExplorationCarteTab: React.FC<ExplorationCarteTabProps> = ({
   explorationId,
   marches,
+  marcheEventId,
   onSelectStep,
 }) => {
   const [activeMarker, setActiveMarker] = useState<number | null>(null);
