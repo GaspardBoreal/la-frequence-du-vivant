@@ -1,57 +1,74 @@
 
 
-## Nouvel onglet "Textes écrits" dans l'Empreinte — Marches éco poétiques
+## Nouveau statut "Partagé au monde" — Partage web public des contributions
 
-### Contexte
-- L'exploration `70fcd8d1...` est de type `eco_poetique` (via `marche_events.event_type`)
-- La table `marcheur_textes` contient des textes (haiku, senryu...) avec `user_id`, `marche_id`, `marche_event_id`
-- Les profils marcheurs sont dans `community_profiles` (prenom, nom, avatar_url)
-- Les marches (points) sont dans `marches` (nom_marche, ville) liées via `exploration_marches.ordre`
-- Données existantes : 2 textes de "Gaspard Boreal" sur 2 points différents
+### Contexte actuel
+- `is_public` (boolean) sur `marcheur_textes` et `marcheur_medias` = visibilité entre marcheurs
+- Pas de champ pour le partage web public
+- `community_profiles` n'a pas de slug/pseudo (seulement prenom, nom, user_id)
 
 ### Architecture
 
-**1. Détection du type eco_poetique**
-- Ajouter `event_type` au select de la query `marcheEvent` dans `ExplorationMarcheurPage.tsx`
-- Passer `eventType` en prop à `EventBiodiversityTab`
+**1. Migration base de données**
 
-**2. Onglet conditionnel "Textes écrits"**
-- Dans `EventBiodiversityTab.tsx`, ajouter le sub-tab `textes` entre `taxons` et `analyse` uniquement quand `eventType === 'eco_poetique'`
-- Type `SubTab` étendu : `'synthese' | 'taxons' | 'textes' | 'analyse'`
+Ajouter sur `marcheur_textes` et `marcheur_medias` :
+- `shared_to_web` (boolean, default false) — statut "Partagé au monde"
+- Politique RLS : permettre SELECT anonyme quand `shared_to_web = true`
 
-**3. Nouveau composant `TextesEcritsSubTab.tsx`**
-- Hook dédié qui charge les textes publics + profils + marches en une requête
-- Deux sous-vues via toggle pills : **"Marcheurs"** et **"Points de marche"**
+Ajouter sur `community_profiles` :
+- `slug` (text, unique, nullable) — identifiant public du marcheur pour l'URL carnet
 
-**Vue Marcheurs :**
-- Textes regroupés par auteur (ordre alphabétique prenom+nom)
-- Chaque groupe est un accordion (ouvert/fermé) avec avatar, nom, nombre de textes
-- Chaque texte : carte glassmorphism avec titre en Crimson Text, extrait du contenu (3 lignes), type (badge haiku/senryu), nom du point de marche
-- Clic → ouvre un Dialog/popup plein écran du texte avec bouton "Partager" (copie l'URL avec `?texte=ID` dans le presse-papier)
+Fonction DB pour générer un slug automatique depuis prenom+nom si null.
 
-**Vue Points de marche :**
-- Textes regroupés par marche (ordre de progression via `exploration_marches.ordre`), puis par auteur alphabétique dans chaque groupe
-- Chaque groupe : accordion avec nom du point, nombre de textes
-- Même carte de texte que la vue Marcheurs mais avec mention de l'auteur (avatar + nom)
-- Même popup partageable
+**2. UI — Trois niveaux de partage dans ContributionItem**
 
-**4. Popup partageable**
-- Dialog modal avec le texte complet, titre, auteur, point de marche, type
-- Design poétique : fond sombre, typographie Crimson Text, bordure latérale violette (couleur eco_poetique `#8b5cf6`)
-- Bouton "Copier le lien" qui génère une URL avec query param `?texte={id}`
-- Au chargement de la page, si `?texte=ID` est présent, auto-ouvrir le bon onglet + popup
+Remplacer le toggle simple Globe/Lock par un sélecteur à 3 états :
+- 🔒 **Privé** — visible uniquement par le marcheur
+- 👥 **Communauté** — visible par les autres marcheurs (`is_public = true`)
+- 🌍 **Partagé au monde** — accessible publiquement via URL (`shared_to_web = true`, implique `is_public = true`)
+
+Un petit menu dropdown ou un cycle de clics (Privé → Communauté → Monde → Privé).
+
+Indicateur visuel : badge avec icône et couleur distincte pour chaque état.
+
+**3. Route publique individuelle : `/partage/:id`**
+
+Nouvelle page `src/pages/PartagePublic.tsx` :
+- Fetch le contenu (`marcheur_textes` ou `marcheur_medias`) par ID où `shared_to_web = true`
+- Joint le profil marcheur (prenom, avatar) et les infos marche (nom, lieu)
+- Design mobile-first, plein écran :
+  - Textes : fond sombre avec bande latérale violette, typographie Crimson Text, contenu centré
+  - Photos : photo plein écran avec overlay glassmorphism pour titre/auteur/lieu
+- Bouton "Partager" natif (`navigator.share` ou copie presse-papier)
+- Meta tags OpenGraph via `<Helmet>` pour un rendu social riche
+- CTA discret vers "Les Marches du Vivant" en bas
+
+**4. Route carnet : `/marcheur/:slug/carnet`**
+
+Nouvelle page `src/pages/CarnetMarcheur.tsx` :
+- Fetch tous les contenus `shared_to_web = true` du marcheur (textes + photos)
+- En-tête : avatar, prénom, ville, nombre de contributions, citation/kigo d'accueil
+- Grille masonry de cartes : chaque carte est cliquable → ouvre `/partage/:id`
+- Regroupement par exploration/événement
+- Design : fond crème clair / sombre selon préférence, typographie poétique, animations d'apparition au scroll
+
+**5. Bouton "Copier le lien" dans ContributionItem**
+
+Quand `shared_to_web = true`, afficher un petit bouton lien (🔗) qui copie l'URL publique dans le presse-papier avec toast de confirmation.
 
 ### Fichiers
 
 | Fichier | Action |
 |---------|--------|
-| `src/components/community/exploration/TextesEcritsSubTab.tsx` | **Nouveau** — composant principal avec les 2 vues + popup |
-| `src/components/community/EventBiodiversityTab.tsx` | Ajouter prop `eventType`, sub-tab conditionnel `textes` |
-| `src/components/community/ExplorationMarcheurPage.tsx` | Ajouter `event_type` au select de la query marcheEvent, passer en prop |
+| Migration SQL | Ajouter `shared_to_web`, `slug`, RLS anonyme |
+| `src/components/community/contributions/ContributionItem.tsx` | Sélecteur 3 états + bouton copier lien |
+| `src/pages/PartagePublic.tsx` | **Nouveau** — page publique individuelle |
+| `src/pages/CarnetMarcheur.tsx` | **Nouveau** — carnet public du marcheur |
+| `src/App.tsx` | Ajouter routes `/partage/:id` et `/marcheur/:slug/carnet` |
+| `src/hooks/useMarcheurContributions.ts` | Adapter les mutations pour `shared_to_web` |
 
-### Design
-- Cartes de texte : `bg-card/60 backdrop-blur border border-border/50`, titre en serif (font-crimson ou font-serif), extrait en italique
-- Badge type texte : pilule violette translucide
-- Accordion headers : `bg-muted/30` avec chevron animé
-- Popup : plein écran mobile, centré desktop, bande latérale `#8b5cf6`, bouton partage avec toast de confirmation
+### Sécurité
+- RLS : SELECT anonyme uniquement sur les lignes où `shared_to_web = true`
+- INSERT/UPDATE/DELETE : inchangé (propriétaire uniquement)
+- Le marcheur contrôle entièrement ce qui est exposé
 
