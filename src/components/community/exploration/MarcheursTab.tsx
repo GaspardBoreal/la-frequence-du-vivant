@@ -36,11 +36,11 @@ const getErrorMessage = (error: unknown, fallback: string) => {
 };
 
 // --- Observations sub-tab: photos sorted by date ---
-const ObservationsSubTab: React.FC<{ userId: string; marcheEventId?: string; stats: MarcheurWithStats['stats']; prenom: string }> = ({ userId, marcheEventId, stats, prenom }) => {
+const ObservationsSubTab: React.FC<{ userId: string; explorationEventIds?: string[]; stats: MarcheurWithStats['stats']; prenom: string }> = ({ userId, explorationEventIds, stats, prenom }) => {
   const [sort, setSort] = useState<'desc' | 'asc'>('asc');
 
   const { data: photos, isLoading } = useQuery({
-    queryKey: ['marcheur-observations-photos', userId, marcheEventId],
+    queryKey: ['marcheur-observations-photos', userId, explorationEventIds],
     queryFn: async () => {
       let query = supabase
         .from('marcheur_medias')
@@ -50,7 +50,7 @@ const ObservationsSubTab: React.FC<{ userId: string; marcheEventId?: string; sta
         .in('type_media', ['photo', 'video'])
         .order('created_at', { ascending: false })
         .limit(50);
-      if (marcheEventId) query = query.eq('marche_event_id', marcheEventId);
+      if (explorationEventIds?.length) query = query.in('marche_event_id', explorationEventIds);
       const { data } = await query;
       return data || [];
     },
@@ -719,7 +719,7 @@ const MarcheurCard: React.FC<{
               {activeSubTab === 'observations' && (
                 <motion.div key="obs" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
                   {isCommunity && userId ? (
-                    <ObservationsSubTab userId={userId} marcheEventId={marcheEventId} stats={marcheur.stats} prenom={marcheur.prenom} />
+                    <ObservationsSubTab userId={userId} explorationEventIds={explorationEventIds} stats={marcheur.stats} prenom={marcheur.prenom} />
                   ) : (
                     <div className="px-3 py-4 text-center">
                       <p className="text-xs text-muted-foreground italic">Observations de l'équipe</p>
