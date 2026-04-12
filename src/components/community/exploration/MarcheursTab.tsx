@@ -4,13 +4,15 @@ import { Camera, Mic, BookOpen, Leaf, Copy, Share2, Users, Sprout, ChevronDown, 
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { useExplorationParticipants, MarcheurWithStats, SpeciesObservation } from '@/hooks/useExplorationParticipants';
-import ContributionsFeed from '@/components/community/exploration/ContributionsFeed';
 import { useSpeciesTranslationBatch } from '@/hooks/useSpeciesTranslation';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { buildAffiliateCopyMessage, buildAffiliateShareMessage, getAffiliateInviteUrl } from '@/utils/communityAffiliate';
+import SortToggle from '@/components/community/contributions/SortToggle';
+import { format } from 'date-fns';
+import { fr } from 'date-fns/locale';
 
 interface MarcheursTabProps {
   explorationId?: string;
@@ -24,43 +26,30 @@ type ShareKitState = {
   generatedCount: number;
 };
 
+type MarcheurSubTab = 'observations' | 'contributions' | 'impact';
+
 const getErrorMessage = (error: unknown, fallback: string) => {
   if (error && typeof error === 'object' && 'message' in error && typeof error.message === 'string') {
     return error.message;
   }
-
   return fallback;
 };
 
-const StatBadge: React.FC<{ icon: React.ElementType; count: number; label: string; delay: number }> = ({ icon: Icon, count, label, delay }) => {
-  if (count === 0) return null;
-  return (
-    <motion.div
-      initial={{ opacity: 0, scale: 0.8 }}
-      animate={{ opacity: 1, scale: 1 }}
-      transition={{ delay, duration: 0.3 }}
-      className="flex items-center gap-1 px-2 py-1 rounded-full bg-muted/60 dark:bg-white/5 text-[11px] text-muted-foreground"
-      title={label}
-    >
-      <Icon className="w-3 h-3" />
-      <span className="font-semibold text-foreground">{count}</span>
-    </motion.div>
-  );
-};
+// --- Observations sub-tab: photos sorted by date ---
+const ObservationsSubTab: React.FC<{ userId: string; marcheEventId?: string; stats: MarcheurWithStats['stats']; prenom: string }> = ({ userId, marcheEventId, stats, prenom }) => {
+  const [sort, setSort] = useState<'desc' | 'asc'>('asc');
 
-// --- Photo gallery in drawer for community members ---
-const ContributionsGallery: React.FC<{ userId: string; marcheEventId?: string; stats: MarcheurWithStats['stats']; prenom: string }> = ({ userId, marcheEventId, stats, prenom }) => {
-  const { data: recentPhotos, isLoading } = useQuery({
-    queryKey: ['marcheur-gallery', userId, marcheEventId],
+  const { data: photos, isLoading } = useQuery({
+    queryKey: ['marcheur-observations-photos', userId, marcheEventId],
     queryFn: async () => {
       let query = supabase
         .from('marcheur_medias')
-        .select('id, url_fichier, external_url, titre, type_media')
+        .select('id, url_fichier, external_url, titre, type_media, created_at')
         .eq('user_id', userId)
         .eq('is_public', true)
         .in('type_media', ['photo', 'video'])
         .order('created_at', { ascending: false })
-        .limit(6);
+        .limit(50);
       if (marcheEventId) query = query.eq('marche_event_id', marcheEventId);
       const { data } = await query;
       return data || [];
@@ -68,120 +57,157 @@ const ContributionsGallery: React.FC<{ userId: string; marcheEventId?: string; s
     staleTime: 60_000,
   });
 
-  const totalContribs = stats.photos + stats.videos + stats.sons + stats.textes;
-  if (totalContribs === 0) return null;
+  const sorted = useMemo(() => {
+    if (!photos) return [];
+    const items = [...photos];
+    items.sort((a, b) => {
+      const diff = new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+      return sort === 'desc' ? diff : -diff;
+    });
+    return items;
+  }, [photos, sort]);
 
-  const photos = recentPhotos || [];
+  const totalMedia = stats.photos + stats.videos;
 
   return (
-    <div className="px-3 pt-3 pb-1 space-y-3">
-      {/* Contribution summary */}
-      <div className="flex items-center gap-2 flex-wrap">
-        <p className="text-xs font-medium text-foreground">
-          Contributions de {prenom}
+    <div className="px-3 pt-3 pb-3 space-y-3">
+      <div className="flex items-center justify-between">
+        <p className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
+          <Camera className="w-3.5 h-3.5 text-emerald-500" />
+          <span className="text-foreground">{totalMedia}</span> photo{totalMedia > 1 ? 's' : ''}
         </p>
-        <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
-          {(stats.photos + stats.videos) > 0 && (
-            <span className="flex items-center gap-0.5">
-              <Camera className="w-3 h-3" /> {stats.photos + stats.videos}
-            </span>
-          )}
-          {stats.sons > 0 && (
-            <span className="flex items-center gap-0.5">
-              <Mic className="w-3 h-3" /> {stats.sons}
-            </span>
-          )}
-          {stats.textes > 0 && (
-            <span className="flex items-center gap-0.5">
-              <BookOpen className="w-3 h-3" /> {stats.textes}
-            </span>
-          )}
-        </div>
+        <SortToggle sort={sort} onToggle={() => setSort(s => s === 'desc' ? 'asc' : 'desc')} />
       </div>
 
-      {/* Photo gallery */}
-      {photos.length > 0 && (
-        <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
-          {photos.map((photo, i) => {
+      {isLoading && (
+        <div className="grid grid-cols-3 gap-2">
+          {[...Array(6)].map((_, i) => (
+            <div key={i} className="aspect-square rounded-xl bg-muted animate-pulse" />
+          ))}
+        </div>
+      )}
+
+      {sorted.length > 0 && (
+        <div className="grid grid-cols-3 gap-2">
+          {sorted.map((photo, i) => {
             const url = photo.url_fichier || photo.external_url;
             if (!url) return null;
+            const dateStr = photo.created_at
+              ? format(new Date(photo.created_at), 'dd MMM · HH:mm', { locale: fr })
+              : '';
             return (
               <motion.div
                 key={photo.id}
-                initial={{ opacity: 0, scale: 0.8 }}
+                initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
-                transition={{ delay: i * 0.05 }}
-                className="flex-shrink-0"
+                transition={{ delay: i * 0.03 }}
+                className="relative group"
               >
                 <img
                   src={url}
                   alt={photo.titre || `Photo ${i + 1}`}
-                  className="w-12 h-12 rounded-xl object-cover ring-1 ring-border/50 hover:ring-emerald-500/40 transition-all"
+                  className="aspect-square w-full rounded-xl object-cover ring-1 ring-border/50 group-hover:ring-emerald-500/40 transition-all"
+                  loading="lazy"
+                  onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
                 />
+                <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/60 to-transparent rounded-b-xl px-1.5 py-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <p className="text-[9px] text-white/90 truncate">{photo.titre || dateStr}</p>
+                </div>
               </motion.div>
             );
           })}
-          {(stats.photos + stats.videos) > photos.length && (
-            <div className="w-12 h-12 rounded-xl bg-muted/60 flex items-center justify-center flex-shrink-0">
-              <span className="text-[10px] font-semibold text-muted-foreground">
-                +{(stats.photos + stats.videos) - photos.length}
-              </span>
-            </div>
-          )}
         </div>
       )}
 
-      {isLoading && (
-        <div className="flex gap-2">
-          {[...Array(3)].map((_, i) => (
-            <div key={i} className="w-12 h-12 rounded-xl bg-muted animate-pulse flex-shrink-0" />
-          ))}
-        </div>
+      {!isLoading && sorted.length === 0 && (
+        <p className="text-xs text-muted-foreground italic text-center py-4">
+          Aucune observation visuelle partagée
+        </p>
       )}
     </div>
   );
 };
 
-const SpeciesDrawer: React.FC<{ marcheur: MarcheurWithStats }> = ({ marcheur }) => {
+// --- Contributions sub-tab: species with taxon info ---
+const ContributionsSubTab: React.FC<{ marcheur: MarcheurWithStats }> = ({ marcheur }) => {
   const species = marcheur.speciesObserved || [];
   const speciesForTranslation = species.map(s => ({ scientificName: s.scientificName }));
   const { data: translations } = useSpeciesTranslationBatch(speciesForTranslation);
   const translationMap = new Map(translations?.map(t => [t.scientificName, t]) || []);
 
-  if (species.length === 0) return null;
+  // Kingdom icon mapping
+  const getKingdomInfo = (scientificName: string, translation: any) => {
+    const kingdom = translation?.kingdom || '';
+    if (kingdom === 'Animalia' || scientificName.toLowerCase().includes('aves') || scientificName.toLowerCase().includes('bird')) {
+      return { icon: Bird, color: 'text-sky-500', bgColor: 'bg-sky-500/10', label: 'Faune' };
+    }
+    if (kingdom === 'Plantae' || scientificName.toLowerCase().includes('plant')) {
+      return { icon: Flower2, color: 'text-green-500', bgColor: 'bg-green-500/10', label: 'Flore' };
+    }
+    if (kingdom === 'Fungi' || scientificName.toLowerCase().includes('fung')) {
+      return { icon: TreePine, color: 'text-amber-600', bgColor: 'bg-amber-500/10', label: 'Champignon' };
+    }
+    return { icon: Leaf, color: 'text-emerald-500', bgColor: 'bg-emerald-500/10', label: 'Vivant' };
+  };
+
+  if (species.length === 0) {
+    return (
+      <div className="px-3 py-6 text-center">
+        <Leaf className="w-6 h-6 text-muted-foreground/40 mx-auto mb-2" />
+        <p className="text-xs text-muted-foreground italic">
+          Aucune espèce identifiée pour le moment
+        </p>
+        <p className="text-[10px] text-muted-foreground/60 mt-1">
+          Identifiez les espèces via l'onglet Vivant 🌿
+        </p>
+      </div>
+    );
+  }
 
   return (
-    <div className="px-3 pb-3 space-y-3">
-      <p className="text-xs font-medium text-emerald-600 dark:text-emerald-400 flex items-center gap-1.5 pt-1">
-        <Leaf className="w-3.5 h-3.5" />
-        {species.length} espèce{species.length > 1 ? 's' : ''} identifiée{species.length > 1 ? 's' : ''} par {marcheur.prenom}
+    <div className="px-3 pt-3 pb-3 space-y-3">
+      <p className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
+        <Leaf className="w-3.5 h-3.5 text-emerald-500" />
+        <span className="text-foreground">{species.length}</span> espèce{species.length > 1 ? 's' : ''} identifiée{species.length > 1 ? 's' : ''}
       </p>
 
       <div className="space-y-2">
         {species.map((obs, i) => {
           const translation = translationMap.get(obs.scientificName);
           const frenchName = translation?.commonName;
+          const kingdomInfo = getKingdomInfo(obs.scientificName, translation);
+          const KingdomIcon = kingdomInfo.icon;
+
           return (
             <motion.div
               key={obs.scientificName}
               initial={{ opacity: 0, x: -8 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: i * 0.05, duration: 0.25 }}
-              className="flex items-center gap-3 p-2 rounded-lg bg-muted/40 dark:bg-white/[0.03] border border-border/50"
+              className="flex items-center gap-3 p-2.5 rounded-xl bg-muted/40 dark:bg-white/[0.03] border border-border/50 hover:border-emerald-500/20 transition-colors"
             >
+              {/* Photo or kingdom icon */}
               {obs.photoUrl ? (
                 <img
                   src={obs.photoUrl}
                   alt={obs.scientificName}
-                  className="w-10 h-10 rounded-full object-cover ring-1 ring-emerald-500/20 flex-shrink-0"
+                  className="w-11 h-11 rounded-xl object-cover ring-1 ring-emerald-500/20 flex-shrink-0"
                 />
               ) : (
-                <div className="w-10 h-10 rounded-full bg-emerald-500/10 flex items-center justify-center flex-shrink-0">
-                  <Leaf className="w-4 h-4 text-emerald-500/60" />
+                <div className={`w-11 h-11 rounded-xl ${kingdomInfo.bgColor} flex items-center justify-center flex-shrink-0`}>
+                  <KingdomIcon className={`w-5 h-5 ${kingdomInfo.color}/60`} />
                 </div>
               )}
+
+              {/* Taxon info */}
               <div className="flex-1 min-w-0">
-                <p className="text-xs font-semibold text-foreground truncate italic">
+                <div className="flex items-center gap-1.5">
+                  <KingdomIcon className={`w-3 h-3 flex-shrink-0 ${kingdomInfo.color}`} />
+                  <span className={`text-[9px] font-medium ${kingdomInfo.color} uppercase tracking-wider`}>
+                    {kingdomInfo.label}
+                  </span>
+                </div>
+                <p className="text-xs font-semibold text-foreground truncate italic mt-0.5">
                   {obs.scientificName}
                 </p>
                 {frenchName && (
@@ -189,12 +215,16 @@ const SpeciesDrawer: React.FC<{ marcheur: MarcheurWithStats }> = ({ marcheur }) 
                     {frenchName}
                   </p>
                 )}
-                {obs.observationDate && (
+              </div>
+
+              {/* Date */}
+              {obs.observationDate && (
+                <div className="text-right flex-shrink-0">
                   <p className="text-[10px] text-muted-foreground/60">
                     {new Date(obs.observationDate).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })}
                   </p>
-                )}
-              </div>
+                </div>
+              )}
             </motion.div>
           );
         })}
@@ -284,7 +314,6 @@ const MarcheurImpactBlock: React.FC<{
   const explorationMarcheIds = rawMarcheIds || [];
   const totalMarchesCount = rawCount || 0;
 
-  // Query biodiversity snapshots for pioneer analysis
   const { data: snapshotsData } = useQuery({
     queryKey: ['marcheur-impact-snapshots', explorationId],
     queryFn: async () => {
@@ -301,10 +330,8 @@ const MarcheurImpactBlock: React.FC<{
 
   const snapshots = snapshotsData || [];
 
-  // 1. Pioneer territories: marches where this marcheur contributed but no prior biodiversity data
   const pioneerCount = useMemo(() => {
     if (!snapshots.length && explorationMarcheIds.length > 0) {
-      // No snapshots at all = all territories are pioneer
       return Math.min(marcheur.totalContributions > 0 ? explorationMarcheIds.length : 0, explorationMarcheIds.length);
     }
     const snapshotMarcheIds = new Set(snapshots.map(s => s.marche_id));
@@ -312,12 +339,9 @@ const MarcheurImpactBlock: React.FC<{
     return marcheur.totalContributions > 0 ? marchesWithoutPriorData.length : 0;
   }, [snapshots, explorationMarcheIds, marcheur.totalContributions]);
 
-  // 2. Taxonomic coverage from species observed
   const taxonomicGroups = useMemo(() => {
     const species = marcheur.speciesObserved || [];
     const groups: Record<string, { icon: React.ElementType; label: string; color: string; count: number }> = {};
-    
-    // Also use snapshot data to enrich
     const snapshotBirds = snapshots.reduce((s, snap) => s + (snap.birds_count || 0), 0);
     const snapshotPlants = snapshots.reduce((s, snap) => s + (snap.plants_count || 0), 0);
     const snapshotFungi = snapshots.reduce((s, snap) => s + (snap.fungi_count || 0), 0);
@@ -331,45 +355,43 @@ const MarcheurImpactBlock: React.FC<{
     if (species.length > 0 || snapshotFungi > 0) {
       groups['champignons'] = { icon: TreePine, label: 'Champignons', color: 'text-amber-600', count: Math.max(species.filter(s => s.scientificName.toLowerCase().includes('fung')).length, snapshotFungi > 0 ? 1 : 0) };
     }
-
-    // Fallback: if we have species but no matches, count all as "Vivant"
     if (species.length > 0 && Object.values(groups).every(g => g.count === 0)) {
       groups['vivant'] = { icon: Leaf, label: 'Vivant', color: 'text-emerald-500', count: species.length };
     }
-
-    // Use snapshot totals as better fallback
     if (Object.keys(groups).length === 0 && snapshots.length > 0) {
       if (snapshotBirds > 0) groups['oiseaux'] = { icon: Bird, label: 'Oiseaux', color: 'text-sky-500', count: snapshotBirds };
       if (snapshotPlants > 0) groups['plantes'] = { icon: Flower2, label: 'Plantes', color: 'text-green-500', count: snapshotPlants };
       if (snapshotFungi > 0) groups['champignons'] = { icon: TreePine, label: 'Champignons', color: 'text-amber-600', count: snapshotFungi };
     }
-
     return Object.values(groups).filter(g => g.count > 0);
   }, [marcheur.speciesObserved, snapshots]);
 
-  // 3. Contribution score (0-100)
   const { score, label: scoreLabel } = useMemo(() => {
-    const coverageScore = totalMarchesCount > 0 
+    const coverageScore = totalMarchesCount > 0
       ? Math.min((marcheur.totalContributions > 0 ? explorationMarcheIds.length : 0) / totalMarchesCount, 1) * 40
       : 0;
-    
     const speciesScore = Math.min((marcheur.stats.speciesCount || 0) / 20, 1) * 30;
-    
     const mediaTypes = [marcheur.stats.photos > 0, marcheur.stats.sons > 0, marcheur.stats.textes > 0].filter(Boolean).length;
     const diversityScore = (mediaTypes / 3) * 30;
-    
     const total = Math.round(coverageScore + speciesScore + diversityScore);
-    
     let label = 'Explorateur curieux';
     if (total >= 80) label = 'Contributeur remarquable';
     else if (total >= 60) label = 'Explorateur engagé';
     else if (total >= 40) label = 'Marcheur attentif';
-    
     return { score: total, label };
   }, [marcheur, explorationMarcheIds, totalMarchesCount]);
 
   const hasAnyData = pioneerCount > 0 || taxonomicGroups.length > 0 || score > 0;
-  if (!hasAnyData) return null;
+  if (!hasAnyData) {
+    return (
+      <div className="px-3 py-6 text-center">
+        <TrendingUp className="w-6 h-6 text-muted-foreground/40 mx-auto mb-2" />
+        <p className="text-xs text-muted-foreground italic">
+          Impact en cours de calcul
+        </p>
+      </div>
+    );
+  }
 
   return (
     <motion.div
@@ -378,33 +400,15 @@ const MarcheurImpactBlock: React.FC<{
       transition={{ delay: 0.15, duration: 0.3 }}
       className="mx-3 my-3 p-3.5 rounded-xl bg-gradient-to-br from-emerald-500/5 to-cyan-500/5 border border-emerald-500/10"
     >
-      <div className="flex items-center gap-1.5 mb-3">
-        <TrendingUp className="w-3.5 h-3.5 text-emerald-500" />
-        <p className="text-[11px] font-semibold text-foreground">Votre impact</p>
-      </div>
-
       <div className="space-y-3">
-        {/* 1. Pioneer territories */}
         {pioneerCount > 0 && (
-          <motion.div
-            initial={{ opacity: 0, x: -6 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: 0.2 }}
-            className="flex items-start gap-2.5"
-          >
+          <motion.div initial={{ opacity: 0, x: -6 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.2 }} className="flex items-start gap-2.5">
             <div className="w-7 h-7 rounded-lg bg-amber-500/10 flex items-center justify-center flex-shrink-0 mt-0.5">
               <MapPin className="w-3.5 h-3.5 text-amber-500" />
             </div>
             <div>
               <p className="text-xs font-semibold text-foreground">
-                <motion.span
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ delay: 0.4 }}
-                >
-                  {pioneerCount}
-                </motion.span>
-                {' '}territoire{pioneerCount > 1 ? 's' : ''} pionnier{pioneerCount > 1 ? 's' : ''}
+                {pioneerCount} territoire{pioneerCount > 1 ? 's' : ''} pionnier{pioneerCount > 1 ? 's' : ''}
               </p>
               <p className="text-[10px] text-muted-foreground leading-relaxed">
                 Aucune donnée biodiversité n'existait avant votre passage
@@ -413,14 +417,8 @@ const MarcheurImpactBlock: React.FC<{
           </motion.div>
         )}
 
-        {/* 2. Taxonomic coverage */}
         {taxonomicGroups.length > 0 && (
-          <motion.div
-            initial={{ opacity: 0, x: -6 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: 0.3 }}
-            className="flex items-start gap-2.5"
-          >
+          <motion.div initial={{ opacity: 0, x: -6 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.3 }} className="flex items-start gap-2.5">
             <div className="w-7 h-7 rounded-lg bg-emerald-500/10 flex items-center justify-center flex-shrink-0 mt-0.5">
               <Leaf className="w-3.5 h-3.5 text-emerald-500" />
             </div>
@@ -447,14 +445,8 @@ const MarcheurImpactBlock: React.FC<{
           </motion.div>
         )}
 
-        {/* 3. Contribution score gauge */}
         {score > 0 && (
-          <motion.div
-            initial={{ opacity: 0, x: -6 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: 0.4 }}
-            className="flex items-center gap-3 pt-1"
-          >
+          <motion.div initial={{ opacity: 0, x: -6 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.4 }} className="flex items-center gap-3 pt-1">
             <CircularGauge score={score} />
             <div>
               <p className="text-xs font-semibold text-foreground">Indice de contribution</p>
@@ -467,13 +459,32 @@ const MarcheurImpactBlock: React.FC<{
   );
 };
 
-const MarcheurCard: React.FC<{ marcheur: MarcheurWithStats; index: number; isExpanded: boolean; onToggle: () => void; marcheEventId?: string; explorationId?: string; explorationMarcheIds: string[]; totalMarchesCount: number }> = ({ marcheur, index, isExpanded, onToggle, marcheEventId, explorationId, explorationMarcheIds, totalMarchesCount }) => {
+// --- Sub-tab navigation pills ---
+const subTabConfig: { key: MarcheurSubTab; label: string; icon: React.ElementType }[] = [
+  { key: 'observations', label: 'Observations', icon: Camera },
+  { key: 'contributions', label: 'Contributions', icon: Leaf },
+  { key: 'impact', label: 'Votre impact', icon: TrendingUp },
+];
+
+const MarcheurCard: React.FC<{
+  marcheur: MarcheurWithStats;
+  index: number;
+  isExpanded: boolean;
+  onToggle: () => void;
+  marcheEventId?: string;
+  explorationId?: string;
+  explorationMarcheIds: string[];
+  totalMarchesCount: number;
+}> = ({ marcheur, index, isExpanded, onToggle, marcheEventId, explorationId, explorationMarcheIds, totalMarchesCount }) => {
+  const [activeSubTab, setActiveSubTab] = useState<MarcheurSubTab>('observations');
   const initials = `${marcheur.prenom?.[0] || ''}${marcheur.nom?.[0] || ''}`.toUpperCase();
   const hasSpecies = (marcheur.speciesObserved || []).length > 0;
   const totalContribs = marcheur.totalContributions || 0;
   const hasContent = totalContribs > 0 || hasSpecies;
   const isCommunity = marcheur.source === 'community';
   const userId = isCommunity ? marcheur.id.replace('community-', '') : null;
+  const photoCount = marcheur.stats.photos + marcheur.stats.videos;
+  const speciesCount = marcheur.stats.speciesCount;
 
   return (
     <motion.div
@@ -482,6 +493,7 @@ const MarcheurCard: React.FC<{ marcheur: MarcheurWithStats; index: number; isExp
       transition={{ delay: index * 0.06, duration: 0.35 }}
       className="rounded-xl bg-card border border-border hover:border-emerald-500/30 transition-colors overflow-hidden"
     >
+      {/* Header row */}
       <button
         onClick={hasContent ? onToggle : undefined}
         className={`flex items-center gap-3 p-3 w-full text-left group ${hasContent ? 'cursor-pointer' : 'cursor-default'}`}
@@ -490,10 +502,7 @@ const MarcheurCard: React.FC<{ marcheur: MarcheurWithStats; index: number; isExp
           {marcheur.avatarUrl ? (
             <AvatarImage src={marcheur.avatarUrl} alt={`${marcheur.prenom} ${marcheur.nom}`} />
           ) : null}
-          <AvatarFallback
-            className="text-xs font-bold text-white"
-            style={{ backgroundColor: marcheur.couleur }}
-          >
+          <AvatarFallback className="text-xs font-bold text-white" style={{ backgroundColor: marcheur.couleur }}>
             {initials}
           </AvatarFallback>
         </Avatar>
@@ -507,11 +516,20 @@ const MarcheurCard: React.FC<{ marcheur: MarcheurWithStats; index: number; isExp
           </p>
         </div>
 
-        <div className="flex items-center gap-1 flex-shrink-0">
-          <StatBadge icon={Camera} count={marcheur.stats.photos + marcheur.stats.videos} label="Photos & vidéos" delay={0.1 + index * 0.06} />
-          <StatBadge icon={Mic} count={marcheur.stats.sons} label="Sons" delay={0.15 + index * 0.06} />
-          <StatBadge icon={BookOpen} count={marcheur.stats.textes} label="Textes" delay={0.2 + index * 0.06} />
-          <StatBadge icon={Leaf} count={marcheur.stats.speciesCount} label="Espèces" delay={0.25 + index * 0.06} />
+        {/* Elegant stats badges on the right */}
+        <div className="flex items-center gap-2 flex-shrink-0">
+          {photoCount > 0 && (
+            <div className="flex items-center gap-1 px-2 py-1 rounded-full bg-muted/60 dark:bg-white/5" title={`${photoCount} photo${photoCount > 1 ? 's' : ''}`}>
+              <Camera className="w-3 h-3 text-emerald-500" />
+              <span className="text-[11px] font-semibold text-foreground">{photoCount}</span>
+            </div>
+          )}
+          {speciesCount > 0 && (
+            <div className="flex items-center gap-1 px-2 py-1 rounded-full bg-muted/60 dark:bg-white/5" title={`${speciesCount} espèce${speciesCount > 1 ? 's' : ''}`}>
+              <Leaf className="w-3 h-3 text-amber-500" />
+              <span className="text-[11px] font-semibold text-foreground">{speciesCount}</span>
+            </div>
+          )}
         </div>
 
         {hasContent && (
@@ -525,22 +543,7 @@ const MarcheurCard: React.FC<{ marcheur: MarcheurWithStats; index: number; isExp
         )}
       </button>
 
-      {/* Hint banner — only visible when collapsed and has contributions */}
-      {!isExpanded && hasContent && (
-        <motion.button
-          onClick={onToggle}
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.3 + index * 0.06 }}
-          className="w-full px-3 pb-2.5 pt-0 flex items-center gap-1.5 text-[10px] text-emerald-600 dark:text-emerald-400 hover:text-emerald-500 transition-colors"
-        >
-          <Eye className="w-3 h-3 animate-pulse" />
-          <span className="font-medium">
-            Voir ses contributions · {totalContribs} partage{totalContribs > 1 ? 's' : ''}
-          </span>
-        </motion.button>
-      )}
-
+      {/* Expanded content with sub-tabs */}
       <AnimatePresence initial={false}>
         {isExpanded && (
           <motion.div
@@ -550,39 +553,60 @@ const MarcheurCard: React.FC<{ marcheur: MarcheurWithStats; index: number; isExp
             transition={{ duration: 0.25, ease: 'easeInOut' }}
             className="overflow-hidden border-t border-emerald-500/10"
           >
-            {/* Section A: contributions gallery (community members) */}
-            {isCommunity && userId && (
-              <ContributionsGallery
-                userId={userId}
-                marcheEventId={marcheEventId}
-                stats={marcheur.stats}
-                prenom={marcheur.prenom}
-              />
-            )}
+            {/* Sub-tab pills */}
+            <div className="flex gap-1 p-2 px-3">
+              {subTabConfig.map(tab => {
+                const Icon = tab.icon;
+                const isActive = activeSubTab === tab.key;
+                return (
+                  <button
+                    key={tab.key}
+                    onClick={() => setActiveSubTab(tab.key)}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-medium transition-all ${
+                      isActive
+                        ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20'
+                        : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
+                    }`}
+                  >
+                    <Icon className="w-3 h-3" />
+                    {tab.label}
+                  </button>
+                );
+              })}
+            </div>
 
-            {/* Impact block */}
-            <MarcheurImpactBlock
-              marcheur={marcheur}
-              explorationId={explorationId}
-              explorationMarcheIds={explorationMarcheIds}
-              totalMarchesCount={totalMarchesCount}
-              isExpanded={isExpanded}
-            />
+            <AnimatePresence mode="wait">
+              {activeSubTab === 'observations' && (
+                <motion.div key="obs" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+                  {isCommunity && userId ? (
+                    <ObservationsSubTab userId={userId} marcheEventId={marcheEventId} stats={marcheur.stats} prenom={marcheur.prenom} />
+                  ) : (
+                    <div className="px-3 py-4 text-center">
+                      <p className="text-xs text-muted-foreground italic">Observations de l'équipe</p>
+                    </div>
+                  )}
+                </motion.div>
+              )}
 
-            {/* Section B: species observations */}
-            <SpeciesDrawer marcheur={marcheur} />
+              {activeSubTab === 'contributions' && (
+                <motion.div key="contribs" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+                  <ContributionsSubTab marcheur={marcheur} />
+                </motion.div>
+              )}
 
-            {/* CTA if has any content */}
-            {hasContent && <CitizenScienceCTA />}
-
-            {/* Empty encouragement for community with no species */}
-            {isCommunity && !hasSpecies && totalContribs > 0 && (
-              <div className="px-4 py-3 text-center">
-                <p className="text-[10px] text-muted-foreground italic">
-                  Identifiez les espèces rencontrées lors de vos marches via l'onglet Vivant 🌿
-                </p>
-              </div>
-            )}
+              {activeSubTab === 'impact' && (
+                <motion.div key="impact" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+                  <MarcheurImpactBlock
+                    marcheur={marcheur}
+                    explorationId={explorationId}
+                    explorationMarcheIds={explorationMarcheIds}
+                    totalMarchesCount={totalMarchesCount}
+                    isExpanded={isExpanded}
+                  />
+                  <CitizenScienceCTA />
+                </motion.div>
+              )}
+            </AnimatePresence>
           </motion.div>
         )}
       </AnimatePresence>
@@ -595,7 +619,6 @@ const MarcheursTab: React.FC<MarcheursTabProps> = ({ explorationId, marcheEventI
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [shareKit, setShareKit] = useState<ShareKitState | null>(null);
 
-  // Fetch exploration marche IDs for impact analysis
   const { data: explorationMarchesData } = useQuery({
     queryKey: ['exploration-marche-ids', explorationId],
     queryFn: async () => {
@@ -617,46 +640,33 @@ const MarcheursTab: React.FC<MarcheursTabProps> = ({ explorationId, marcheEventI
       toast.error('Exploration introuvable pour générer le lien');
       return null;
     }
-
     const { data: authData, error: authError } = await supabase.auth.getUser();
     if (authError) {
-      console.error('[affiliate] auth.getUser failed', authError);
       toast.error(`Authentification indisponible : ${getErrorMessage(authError, 'erreur inconnue')}`);
       return null;
     }
-
     if (!authData.user) {
       toast.error('Connectez-vous pour inviter un marcheur');
       return null;
     }
-
     try {
       const { data, error } = await supabase.rpc('generate_community_affiliate_link', {
         _exploration_id: explorationId,
         _channel: channel,
         _marche_event_id: marcheEventId ?? null,
       });
-
       if (error) {
-        console.error('[affiliate] generate_community_affiliate_link failed', error);
-        toast.error(`Impossible de générer le lien d’invitation : ${getErrorMessage(error, 'erreur inconnue')}`);
+        toast.error(`Impossible de générer le lien d'invitation : ${getErrorMessage(error, 'erreur inconnue')}`);
         return null;
       }
-
       const row = Array.isArray(data) ? data[0] : null;
       if (!row?.share_token) {
-        console.error('[affiliate] generate_community_affiliate_link returned no token', data);
-        toast.error('Lien d’invitation indisponible : aucune donnée renvoyée');
+        toast.error('Lien d'invitation indisponible : aucune donnée renvoyée');
         return null;
       }
-
-      return {
-        url: getAffiliateInviteUrl(row.share_token),
-        generatedCount: row.generated_count ?? 1,
-      };
+      return { url: getAffiliateInviteUrl(row.share_token), generatedCount: row.generated_count ?? 1 };
     } catch (error) {
-      console.error('[affiliate] unexpected link generation error', error);
-      toast.error(`Impossible de générer le lien d’invitation : ${getErrorMessage(error, 'erreur inconnue')}`);
+      toast.error(`Impossible de générer le lien d'invitation : ${getErrorMessage(error, 'erreur inconnue')}`);
       return null;
     }
   };
@@ -664,60 +674,34 @@ const MarcheursTab: React.FC<MarcheursTabProps> = ({ explorationId, marcheEventI
   const handleShare = async () => {
     const link = await createAffiliateLink('share');
     if (!link) return;
-
-    const text = buildAffiliateShareMessage({
-      explorationName,
-      inviteUrl: link.url,
-    });
-
-    setShareKit({
-      url: link.url,
-      message: text,
-      generatedCount: link.generatedCount,
-    });
-
+    const text = buildAffiliateShareMessage({ explorationName, inviteUrl: link.url });
+    setShareKit({ url: link.url, message: text, generatedCount: link.generatedCount });
     if (navigator.share) {
       try {
-        await navigator.share({
-          title: 'Marches du Vivant',
-          text,
-          url: link.url,
-        });
+        await navigator.share({ title: 'Marches du Vivant', text, url: link.url });
         toast.success('Kit partage prêt et lien transmis');
         return;
       } catch (error) {
-        if (error instanceof DOMException && error.name === 'AbortError') {
-          return;
-        }
-
-        console.error('[affiliate] navigator.share failed, fallback to clipboard', error);
+        if (error instanceof DOMException && error.name === 'AbortError') return;
       }
     }
-
     try {
       await navigator.clipboard.writeText(text);
       toast.success('Message de partage copié');
     } catch (error) {
-      console.error('[affiliate] share fallback clipboard failed', error);
-      toast.error(`Lien généré, mais copie impossible : ${getErrorMessage(error, 'autorisez l’accès au presse-papier')}`);
+      toast.error(`Lien généré, mais copie impossible : ${getErrorMessage(error, 'autorisez l'accès au presse-papier')}`);
     }
   };
 
   const handleCopyLink = async () => {
     const link = await createAffiliateLink('copy');
     if (!link) return;
-
-    const message = buildAffiliateCopyMessage({
-      explorationName,
-      inviteUrl: link.url,
-    });
-
+    const message = buildAffiliateCopyMessage({ explorationName, inviteUrl: link.url });
     try {
       await navigator.clipboard.writeText(message);
       toast.success('Invitation complète copiée dans le presse-papier');
     } catch (error) {
-      console.error('[affiliate] copy clipboard failed', error);
-      toast.error(`Lien généré, mais copie impossible : ${getErrorMessage(error, 'autorisez l’accès au presse-papier')}`);
+      toast.error(`Lien généré, mais copie impossible : ${getErrorMessage(error, 'autorisez l'accès au presse-papier')}`);
     }
   };
 
@@ -780,10 +764,7 @@ const MarcheursTab: React.FC<MarcheursTabProps> = ({ explorationId, marcheEventI
         )}
       </div>
 
-      {/* Contributions feed */}
-      <ContributionsFeed explorationId={explorationId} />
-
-      {/* Cards */}
+      {/* Cards — all closed by default */}
       <div className="space-y-2">
         {marcheurs.map((m, i) => (
           <MarcheurCard
@@ -838,7 +819,7 @@ const MarcheursTab: React.FC<MarcheursTabProps> = ({ explorationId, marcheEventI
               Kit partage prêt
             </DialogTitle>
             <DialogDescription>
-              Une page publique dédiée, une URL trackée et un suivi d’impact pour vos invitations.
+              Une page publique dédiée, une URL trackée et un suivi d'impact pour vos invitations.
             </DialogDescription>
           </DialogHeader>
 
@@ -878,12 +859,10 @@ const MarcheursTab: React.FC<MarcheursTabProps> = ({ explorationId, marcheEventI
                 <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">Livrables 2 & 3</p>
                 <p className="text-sm font-medium text-foreground">URL affiliée + suivi</p>
               </div>
-
               <div className="rounded-xl border border-border/50 bg-card p-3">
                 <p className="mb-2 text-xs text-muted-foreground">URL de partage</p>
                 <p className="break-all text-sm text-foreground">{shareKit?.url}</p>
               </div>
-
               <div className="grid gap-2 sm:grid-cols-2">
                 <div className="rounded-xl border border-border/50 bg-card p-3">
                   <p className="text-[11px] uppercase tracking-[0.14em] text-muted-foreground">Liens générés</p>
@@ -894,7 +873,6 @@ const MarcheursTab: React.FC<MarcheursTabProps> = ({ explorationId, marcheEventI
                   <p className="mt-1 text-sm font-medium text-foreground">clics, vues et comptes créés</p>
                 </div>
               </div>
-
               <Button
                 variant="outline"
                 size="sm"
@@ -906,7 +884,7 @@ const MarcheursTab: React.FC<MarcheursTabProps> = ({ explorationId, marcheEventI
                 }}
               >
                 <LinkIcon className="mr-2 h-4 w-4" />
-                Copier uniquement l’URL
+                Copier uniquement l'URL
               </Button>
             </div>
           </div>
