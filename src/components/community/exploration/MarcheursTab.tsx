@@ -609,11 +609,11 @@ const MarcheurCard: React.FC<{
   index: number;
   isExpanded: boolean;
   onToggle: () => void;
-  marcheEventId?: string;
+  explorationEventIds: string[];
   explorationId?: string;
   explorationMarcheIds: string[];
   totalMarchesCount: number;
-}> = ({ marcheur, index, isExpanded, onToggle, marcheEventId, explorationId, explorationMarcheIds, totalMarchesCount }) => {
+}> = ({ marcheur, index, isExpanded, onToggle, explorationEventIds, explorationId, explorationMarcheIds, totalMarchesCount }) => {
   const [activeSubTab, setActiveSubTab] = useState<MarcheurSubTab>('observations');
   const initials = `${marcheur.prenom?.[0] || ''}${marcheur.nom?.[0] || ''}`.toUpperCase();
   const totalContribs = marcheur.totalContributions || 0;
@@ -772,7 +772,22 @@ const MarcheursTab: React.FC<MarcheursTabProps> = ({ explorationId, marcheEventI
     staleTime: 10 * 60_000,
   });
 
+  // Fetch all marche_event IDs for this exploration (for media queries)
+  const { data: explorationEventIdsData } = useQuery({
+    queryKey: ['exploration-event-ids', explorationId],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('marche_events')
+        .select('id')
+        .eq('exploration_id', explorationId!);
+      return data?.map(e => e.id) || [];
+    },
+    enabled: !!explorationId,
+    staleTime: 10 * 60_000,
+  });
+
   const explorationMarcheIds = explorationMarchesData || [];
+  const explorationEventIds = explorationEventIdsData || [];
   const totalContributions = marcheurs?.reduce((sum, m) => sum + m.totalContributions, 0) || 0;
 
   const createAffiliateLink = async (channel: 'copy' | 'share') => {
@@ -913,7 +928,7 @@ const MarcheursTab: React.FC<MarcheursTabProps> = ({ explorationId, marcheEventI
             index={i}
             isExpanded={expandedId === m.id}
             onToggle={() => setExpandedId(prev => prev === m.id ? null : m.id)}
-            marcheEventId={marcheEventId}
+            explorationEventIds={explorationEventIds}
             explorationId={explorationId}
             explorationMarcheIds={explorationMarcheIds}
             totalMarchesCount={explorationMarcheIds.length}
