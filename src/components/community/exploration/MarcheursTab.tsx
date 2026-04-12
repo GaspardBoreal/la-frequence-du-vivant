@@ -661,7 +661,7 @@ const MarcheursTab: React.FC<MarcheursTabProps> = ({ explorationId, marcheEventI
       }
       const row = Array.isArray(data) ? data[0] : null;
       if (!row?.share_token) {
-        toast.error('Lien d'invitation indisponible : aucune donnée renvoyée');
+        toast.error("Lien d'invitation indisponible : aucune donnée renvoyée");
         return null;
       }
       return { url: getAffiliateInviteUrl(row.share_token), generatedCount: row.generated_count ?? 1 };
@@ -689,7 +689,7 @@ const MarcheursTab: React.FC<MarcheursTabProps> = ({ explorationId, marcheEventI
       await navigator.clipboard.writeText(text);
       toast.success('Message de partage copié');
     } catch (error) {
-      toast.error(`Lien généré, mais copie impossible : ${getErrorMessage(error, 'autorisez l'accès au presse-papier')}`);
+      toast.error(`Lien généré, mais copie impossible : ${getErrorMessage(error, "autorisez l'accès au presse-papier")}`);
     }
   };
 
@@ -701,7 +701,7 @@ const MarcheursTab: React.FC<MarcheursTabProps> = ({ explorationId, marcheEventI
       await navigator.clipboard.writeText(message);
       toast.success('Invitation complète copiée dans le presse-papier');
     } catch (error) {
-      toast.error(`Lien généré, mais copie impossible : ${getErrorMessage(error, 'autorisez l'accès au presse-papier')}`);
+      toast.error(`Lien généré, mais copie impossible : ${getErrorMessage(error, "autorisez l'accès au presse-papier")}`);
     }
   };
 
