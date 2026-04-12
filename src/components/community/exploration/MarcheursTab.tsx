@@ -759,7 +759,7 @@ const MarcheursTab: React.FC<MarcheursTabProps> = ({ explorationId, marcheEventI
         </div>
         {totalContributions > 0 && (
           <span className="text-muted-foreground text-xs">
-            · {totalContributions} contribution{totalContributions > 1 ? 's' : ''} publique{totalContributions > 1 ? 's' : ''}
+            · {totalContributions} observation{totalContributions > 1 ? 's' : ''} publique{totalContributions > 1 ? 's' : ''}
           </span>
         )}
       </div>
