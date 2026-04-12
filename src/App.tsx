@@ -78,6 +78,8 @@ import MarchesDuVivantExplorationMarcheur from './pages/MarchesDuVivantExplorati
 import AdminOutilsHub from './pages/AdminOutilsHub';
 import AdminFrequences from './pages/AdminFrequences';
 import CommunityAffiliateLanding from './pages/CommunityAffiliateLanding';
+import PartagePublic from './pages/PartagePublic';
+import CarnetMarcheur from './pages/CarnetMarcheur';
 
 function App() {
   return (
