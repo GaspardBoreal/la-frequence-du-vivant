@@ -493,6 +493,9 @@ const ExplorationCarteTab: React.FC<ExplorationCarteTabProps> = ({
   const trackingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastVibratedRef = useRef<number>(0);
 
+  // Photo GPS drop tool
+  const { photoPoint, triggerFileInput, clear: clearPhotoPoint, FileInput } = usePhotoGpsDrop();
+
   // Progressive marker appearance
   useEffect(() => {
     if (marches.length === 0) return;
