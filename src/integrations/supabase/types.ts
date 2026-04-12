@@ -3869,6 +3869,7 @@ export type Database = {
           role: string
         }[]
       }
+      get_event_public_textes: { Args: { p_event_id: string }; Returns: Json }
       get_exploration_marches_by_status: {
         Args: {
           exploration_id_param: string
