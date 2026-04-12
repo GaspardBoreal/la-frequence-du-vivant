@@ -37,6 +37,16 @@ const typeColors = {
   texte: 'text-amber-400',
 };
 
+const TEXTE_TYPES = [
+  { value: 'texte-libre', label: 'Texte libre' },
+  { value: 'haiku', label: 'Haïku' },
+  { value: 'haibun', label: 'Haïbun' },
+  { value: 'senryu', label: 'Senryū' },
+  { value: 'poeme', label: 'Poème' },
+  { value: 'fable', label: 'Fable' },
+  { value: 'manifeste', label: 'Manifeste' },
+];
+
 const ContributionItem: React.FC<ContributionItemProps> = ({
   id, type, titre, description, url, externalUrl, contenu, typeTexte,
   isPublic, isOwner, createdAt, viewMode = 'fiche', gpsDistance, onUpdate, onDelete, onClick,
@@ -44,6 +54,7 @@ const ContributionItem: React.FC<ContributionItemProps> = ({
   const [editing, setEditing] = useState(false);
   const [editTitre, setEditTitre] = useState(titre || '');
   const [editDesc, setEditDesc] = useState(description || contenu || '');
+  const [editTypeTexte, setEditTypeTexte] = useState(typeTexte || 'texte-libre');
 
   const Icon = typeIcons[type];
   const displayUrl = url || externalUrl;
@@ -51,7 +62,7 @@ const ContributionItem: React.FC<ContributionItemProps> = ({
   const handleSave = () => {
     if (!onUpdate) return;
     if (type === 'texte') {
-      onUpdate(id, { titre: editTitre, contenu: editDesc });
+      onUpdate(id, { titre: editTitre, contenu: editDesc, type_texte: editTypeTexte });
     } else {
       onUpdate(id, { titre: editTitre, description: editDesc });
     }
@@ -121,10 +132,21 @@ const ContributionItem: React.FC<ContributionItemProps> = ({
       <div className="p-3 space-y-1.5">
         {editing ? (
           <div className="space-y-2">
+            {type === 'texte' && (
+              <select
+                value={editTypeTexte}
+                onChange={e => setEditTypeTexte(e.target.value)}
+                className="w-full bg-white/10 border border-white/20 rounded px-2 py-1 text-white text-xs"
+              >
+                {TEXTE_TYPES.map(t => (
+                  <option key={t.value} value={t.value} className="bg-gray-900">{t.label}</option>
+                ))}
+              </select>
+            )}
             <input
               value={editTitre}
               onChange={e => setEditTitre(e.target.value)}
-              className="w-full bg-white/10 border border-white/20 rounded px-2 py-1 text-white text-xs"
+              className="w-full bg-white/10 border border-white/20 rounded px-2 py-1 text-white text-xs font-bold"
               placeholder="Titre"
             />
             {type === 'texte' && (
