@@ -386,6 +386,7 @@ export const VoirTab: React.FC<{ marcheId: string; userId: string; marcheEventId
               url: m.url_fichier,
               externalUrl: m.external_url,
               isPublic: m.is_public,
+              sharedToWeb: (m as any).shared_to_web,
               createdAt: m.created_at,
             }))}
             viewMode={viewMode}
