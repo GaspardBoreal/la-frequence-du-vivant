@@ -1,56 +1,29 @@
 
 
-## Correction — "Auteur inconnu" dans Textes écrits
+## Rendre le nom de la marche cliquable dans la modale de texte
 
-### Diagnostic
+### Contexte
 
-Le problème est un blocage RLS. La requête d'auteurs dans `TextesEcritsSubTab.tsx` (ligne 76) fait :
+Dans la modale de lecture d'un texte (onglet Empreinte > Textes ecrits), le nom de la marche (ex: "DEVIAT Point 06 Feverolles") est affiche en texte simple. L'utilisateur souhaite pouvoir cliquer dessus pour naviguer vers cette marche dans l'onglet "Marches" de l'exploration.
 
-```ts
-supabase.from('community_profiles').select('...').in('user_id', userIds)
-```
+### Plan
 
-Or la politique RLS sur `community_profiles` ne permet de lire que :
-- son propre profil
-- les profils de co-participants (via `shares_marche_event`)
-- les profils si on est admin
+**Fichier : `src/components/community/exploration/TextesEcritsSubTab.tsx`**
 
-Si l'utilisateur connecté n'a pas de participation commune avec un auteur de texte, son profil est invisible → "Auteur inconnu". Les données sont correctes en base (3 textes, tous avec un `user_id` valide).
+1. Ajouter une prop `onNavigateToMarche` au composant `TextesEcritsSubTab`, qui recevra un `marcheId` et permettra au parent de basculer vers l'onglet "Marches" avec le bon step selectionne.
 
-### Solution
+2. Dans la modale (lignes 273-278), transformer le `<span>` du nom de marche en un `<button>` cliquable avec un style de lien (underline, curseur pointer, couleur interactive). Au clic :
+   - Appeler `onNavigateToMarche(selectedTexte.marche_id)`
+   - Fermer la modale
 
-Créer une **fonction RPC SECURITY DEFINER** qui retourne les textes publics d'un événement avec les informations auteur embarquées, contournant les restrictions RLS sur `community_profiles`.
+**Fichier : `src/components/community/ExplorationMarcheurPage.tsx`**
 
-### Etapes
+3. La ou `TextesEcritsSubTab` est instancie (dans l'onglet Empreinte/biodiversite), passer une callback `onNavigateToMarche` qui :
+   - Trouve l'index du step correspondant au `marcheId` dans `explorationMarches`
+   - Met a jour `activeStepIndex` via `setActiveStepIndex`
+   - Bascule sur l'onglet global "marches" via `setActiveGlobalTab('marches')`
 
-1. **Migration SQL** — Créer la fonction `get_event_public_textes(p_event_id uuid)` qui retourne les textes joints aux profils auteurs en une seule requête SECURITY DEFINER
+### Resultat
 
-2. **Modifier `TextesEcritsSubTab.tsx`** — Remplacer les deux requêtes séparées (textes + auteurs) par un seul appel RPC qui retourne les textes avec l'info auteur intégrée dans chaque ligne
-
-### Detail technique
-
-```sql
-CREATE OR REPLACE FUNCTION public.get_event_public_textes(p_event_id uuid)
-RETURNS json LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public AS $$
-  SELECT coalesce(json_agg(row_to_json(r)), '[]')
-  FROM (
-    SELECT t.id, t.user_id, t.marche_id, t.marche_event_id,
-           t.type_texte, t.titre, t.contenu, t.is_public, t.ordre, t.created_at,
-           cp.prenom AS author_prenom, cp.nom AS author_nom, cp.avatar_url AS author_avatar
-    FROM marcheur_textes t
-    LEFT JOIN community_profiles cp ON cp.user_id = t.user_id
-    WHERE t.marche_event_id = p_event_id AND t.is_public = true
-    ORDER BY t.created_at
-  ) r;
-$$;
-```
-
-Dans le composant, un seul `useQuery` appelant `supabase.rpc('get_event_public_textes', { p_event_id: marcheEventId })`, puis construction de `authorMap` directement depuis les champs `author_prenom/nom/avatar` de chaque ligne.
-
-### Fichiers concernés
-
-| Fichier | Action |
-|---------|--------|
-| Nouvelle migration SQL | Fonction RPC `get_event_public_textes` |
-| `TextesEcritsSubTab.tsx` | Remplacer 2 requêtes par 1 appel RPC, supprimer la query auteurs séparée |
+Cliquer sur le nom de la marche dans la modale fermera la modale et amenera l'utilisateur directement sur le bon point de marche dans l'onglet Marches.
 
