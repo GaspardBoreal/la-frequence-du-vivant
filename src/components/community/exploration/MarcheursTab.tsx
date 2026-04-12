@@ -626,6 +626,36 @@ const MarcheurCard: React.FC<{
   const realContribCount = contributionsCount || 0;
   const hasContent = totalContribs > 0 || realContribCount > 0;
 
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 16 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: index * 0.06, duration: 0.35 }}
+      className="rounded-xl bg-card border border-border hover:border-emerald-500/30 transition-colors overflow-hidden"
+    >
+      {/* Header row */}
+      <button
+        onClick={hasContent ? onToggle : undefined}
+        className={`flex items-center gap-3 p-3 w-full text-left group ${hasContent ? 'cursor-pointer' : 'cursor-default'}`}
+      >
+        <Avatar className="w-10 h-10 ring-2 ring-offset-1 ring-offset-background" style={{ '--tw-ring-color': marcheur.couleur } as React.CSSProperties}>
+          {marcheur.avatarUrl ? (
+            <AvatarImage src={marcheur.avatarUrl} alt={`${marcheur.prenom} ${marcheur.nom}`} />
+          ) : null}
+          <AvatarFallback className="text-xs font-bold text-white" style={{ backgroundColor: marcheur.couleur }}>
+            {initials}
+          </AvatarFallback>
+        </Avatar>
+
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-semibold text-foreground truncate">
+            {marcheur.prenom} {marcheur.nom}
+          </p>
+          <p className="text-[10px] text-muted-foreground capitalize">
+            {marcheur.source === 'crew' ? marcheur.role.replace('_', ' ') : marcheur.role.replace(/_/g, ' ')}
+          </p>
+        </div>
+
         {/* Elegant stats badges on the right */}
         <div className="flex items-center gap-1.5 flex-shrink-0">
           {photoCount > 0 && (
