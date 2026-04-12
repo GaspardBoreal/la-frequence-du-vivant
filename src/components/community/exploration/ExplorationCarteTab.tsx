@@ -867,10 +867,28 @@ const ExplorationCarteTab: React.FC<ExplorationCarteTabProps> = ({
             nearestPosition={nearestStep ? [nearestStep.lat, nearestStep.lng] : undefined}
           />
         )}
+        {/* Photo GPS marker */}
+        {photoPoint && (
+          <PhotoGpsMarker
+            point={photoPoint}
+            marches={marches.map(m => ({ id: m.id, nom_marche: m.nom_marche, ville: m.ville }))}
+            marcheEventId={marcheEventId || ''}
+            onClose={clearPhotoPoint}
+            onUploaded={clearPhotoPoint}
+          />
+        )}
       </MapContainer>
 
       {/* Map style toggle */}
       <MapStyleToggle mapStyle={mapStyle} onChange={setMapStyle} />
+
+      {/* Photo GPS button */}
+      {marcheEventId && (
+        <div className="absolute bottom-20 right-[7.5rem] z-[1000]">
+          <PhotoGpsButton onClick={triggerFileInput} />
+        </div>
+      )}
+      {FileInput}
 
       {/* Geolocate button */}
       <GeolocateButton
