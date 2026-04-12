@@ -1,20 +1,27 @@
 
 
-## Supprimer les cartes "SE FORMER" de Empreinte → Synthèse
+## Analyse exhaustive des métadonnées EXIF de la photo SophieD_01.jpeg
+
+### Contexte
+
+L'outil de parsing de documents ne permet pas d'extraire les métadonnées EXIF/IPTC/XMP d'une image JPEG. Pour une analyse exhaustive, il faut utiliser des outils spécialisés.
 
 ### Ce qui sera fait
 
-Retirer la ligne `<InsightCardBanner cards={insightCards} maxCards={2} />` du sous-onglet Synthèse dans `EventBiodiversityTab.tsx` (ligne 370). Cela supprime les deux bannières "SE FORMER" (bio-indicateur et GBIF) visibles sur la copie écran.
+1. Copier la photo vers `/tmp/SophieD_01.jpeg`
+2. Extraire **toutes** les métadonnées avec Python (`Pillow` + `exifread`) et/ou `nix run nixpkgs#exiftool`
+3. Produire un rapport structuré couvrant :
+   - **EXIF** : appareil photo, modèle, objectif, ouverture, vitesse, ISO, date/heure de prise de vue, orientation, flash, balance des blancs, mode de mesure, programme d'exposition
+   - **GPS** : latitude, longitude, altitude, précision (si présent)
+   - **IPTC** : titre, description, auteur, copyright, mots-clés
+   - **XMP** : logiciel de retouche, historique de modifications, profil colorimétrique
+   - **Technique** : dimensions en pixels, résolution DPI, espace colorimétrique, profondeur de bits, taille du fichier, format de compression, sous-échantillonnage chromatique
+   - **Thumbnail** : présence et dimensions du thumbnail embarqué
+   - **Maker Notes** : données propriétaires du constructeur (si disponibles)
 
-### Ce qui ne sera PAS touché
+4. Présenter le résultat complet de manière structurée directement dans le chat
 
-- L'onglet **Apprendre** (`ApprendreTab.tsx`) reste intact -- il a sa propre logique `useInsightCards` indépendante
-- Les sous-onglets **Taxons observés** et **Analyse IA** restent inchangés
-- Le hook `useInsightCards` et le composant `InsightCardBanner` restent disponibles pour les autres usages
+### Aucune modification du code du projet
 
-### Fichier modifié
-
-| Fichier | Modification |
-|---------|-------------|
-| `src/components/community/EventBiodiversityTab.tsx` | Supprimer l'appel `<InsightCardBanner>` dans le bloc Synthèse (ligne 370). Nettoyer l'import et le hook `useInsightCards` s'ils ne sont plus utilisés ailleurs dans ce fichier. |
+Cette tâche est purement analytique -- aucun fichier du projet ne sera modifié.
 
