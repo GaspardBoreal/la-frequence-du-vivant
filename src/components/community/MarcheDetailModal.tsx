@@ -24,8 +24,9 @@ import {
   useMarcheurAudio, useUploadAudio,
   useMarcheurTextes, useCreateTexte,
   useUpdateContribution, useDeleteContribution,
-  useMarcheurStats,
+  useMarcheurStats, useReorderContributions,
 } from '@/hooks/useMarcheurContributions';
+import DraggableContributionGrid from './contributions/DraggableContributionGrid';
 
 interface MarcheDetailModalProps {
   open: boolean;
@@ -103,6 +104,7 @@ export const VoirTab: React.FC<{ marcheId: string; userId: string; marcheEventId
   const addExtVideo = useAddExternalVideo(userId);
   const updateContrib = useUpdateContribution();
   const deleteContrib = useDeleteContribution();
+  const reorderContribs = useReorderContributions();
 
   const myMedias = userMedias?.filter(m => m.user_id === userId) || [];
   const othersMedias = userMedias?.filter(m => m.user_id !== userId && m.is_public) || [];
@@ -375,27 +377,27 @@ export const VoirTab: React.FC<{ marcheId: string; userId: string; marcheEventId
             <User className="w-3 h-3 text-amber-400" />
             <span className="text-amber-300/60 text-[10px] uppercase tracking-wider">Mes contributions ({myMedias.length})</span>
           </div>
-          <div className={`grid ${viewMode === 'immersion' ? 'grid-cols-3 gap-1' : 'grid-cols-2 gap-2'}`}>
-            {myMedias.map((m, i) => (
-              <ContributionItem
-                key={m.id}
-                id={m.id}
-                type={m.type_media}
-                titre={m.titre}
-                description={m.description}
-                url={m.url_fichier}
-                externalUrl={m.external_url}
-                isPublic={m.is_public}
-                isOwner={true}
-                createdAt={m.created_at}
-                viewMode={viewMode}
-                gpsDistance={viewMode === 'fiche' ? getGpsDistance(m.id) : null}
-                onUpdate={(id, updates) => updateContrib.mutate({ table: 'marcheur_medias', id, updates })}
-                onDelete={(id) => deleteContrib.mutate({ table: 'marcheur_medias', id, storageUrl: m.url_fichier || undefined })}
-                onClick={() => setLightboxIndex(adminCount + i)}
-              />
-            ))}
-          </div>
+          <DraggableContributionGrid
+            items={myMedias.map(m => ({
+              id: m.id,
+              type: m.type_media,
+              titre: m.titre,
+              description: m.description,
+              url: m.url_fichier,
+              externalUrl: m.external_url,
+              isPublic: m.is_public,
+              createdAt: m.created_at,
+            }))}
+            viewMode={viewMode}
+            onReorder={(updates) => reorderContribs.mutate(updates)}
+            onUpdate={(id, updates) => updateContrib.mutate({ table: 'marcheur_medias', id, updates })}
+            onDelete={(id) => {
+              const m = myMedias.find(x => x.id === id);
+              deleteContrib.mutate({ table: 'marcheur_medias', id, storageUrl: m?.url_fichier || undefined });
+            }}
+            onClick={(i) => setLightboxIndex(adminCount + i)}
+            getGpsDistance={viewMode === 'fiche' ? getGpsDistance : undefined}
+          />
         </div>
       )}
 
