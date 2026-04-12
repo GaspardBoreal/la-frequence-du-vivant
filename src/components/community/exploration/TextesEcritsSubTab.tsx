@@ -62,7 +62,7 @@ const TextesEcritsSubTab: React.FC<TextesEcritsSubTabProps> = ({ explorationId, 
         p_event_id: marcheEventId,
       });
       if (error) throw error;
-      return (data || []) as TexteRow[];
+      return (data || []) as unknown as TexteRow[];
     },
     enabled: !!marcheEventId,
   });
