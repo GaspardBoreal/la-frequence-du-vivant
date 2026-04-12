@@ -4,6 +4,7 @@ import { Camera, Mic, BookOpen, Leaf, Copy, Share2, Users, Sprout, ChevronDown, 
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { useExplorationParticipants, MarcheurWithStats, SpeciesObservation } from '@/hooks/useExplorationParticipants';
+import ContributionsFeed from '@/components/community/exploration/ContributionsFeed';
 import { useSpeciesTranslationBatch } from '@/hooks/useSpeciesTranslation';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -778,6 +779,9 @@ const MarcheursTab: React.FC<MarcheursTabProps> = ({ explorationId, marcheEventI
           </span>
         )}
       </div>
+
+      {/* Contributions feed */}
+      <ContributionsFeed explorationId={explorationId} />
 
       {/* Cards */}
       <div className="space-y-2">
