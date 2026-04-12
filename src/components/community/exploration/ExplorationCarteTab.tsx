@@ -979,6 +979,10 @@ const ExplorationCarteTab: React.FC<ExplorationCarteTabProps> = ({
           background: none !important;
           border: none !important;
         }
+        .photo-gps-marker {
+          background: none !important;
+          border: none !important;
+        }
         .leaflet-control-zoom {
           display: none !important;
         }
