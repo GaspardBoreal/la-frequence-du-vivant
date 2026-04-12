@@ -52,7 +52,7 @@ const SortableItem: React.FC<{
   };
 
   return (
-    <div ref={setNodeRef} style={style} className={isDragging ? 'z-50 ring-1 ring-emerald-400/40 rounded-xl' : ''}>
+    <div ref={setNodeRef} style={style} className={`group ${isDragging ? 'z-50 ring-1 ring-emerald-400/40 rounded-xl' : ''}`}>
       {/* Grip handle */}
       <div
         {...attributes}
@@ -67,7 +67,7 @@ const SortableItem: React.FC<{
       >
         <GripVertical className="w-3 h-3 text-white/70" />
       </div>
-      <div className="group">
+      <div>
         {children}
       </div>
     </div>
