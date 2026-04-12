@@ -1,69 +1,98 @@
 
 
-## Analyse et plan d'amélioration : extraction GPS au moment de l'upload
+## Carte GPS des photos — Vue cartographique interactive
 
-### Constat
+### Concept
 
-Le code d'upload des photos marcheurs (`useUploadMedias` dans `useMarcheurContributions.ts`) **ne fait aucune extraction EXIF/GPS**. Il stocke uniquement `url_fichier`, `titre`, `taille_octets`. La table `marcheur_medias` **n'a pas de colonne metadata**.
+Remplacer le Dialog actuel de vérification GPS par un **Dialog enrichi à deux onglets** : "Liste" (vue actuelle) et "Carte" (nouvelle vue Leaflet). La carte affiche tous les points GPS des photos et le point de la marche avec des popups riches contenant la photo, la distance et les liens Google Maps / OSM.
 
-Le check GPS actuel (`usePhotoGpsCheck`) tente d'extraire les coordonnées **a posteriori** via `exifr.gps(url)` sur l'URL Supabase Storage. Ce fonctionnement est fragile car :
-- Les range requests CORS peuvent échouer selon la config du bucket
-- Supabase Storage peut compresser/transformer les images et supprimer l'EXIF
-- Chaque consultation re-télécharge partiellement toutes les photos
+### Architecture UX/UI (Mobile First)
 
-### Solution proposée
+```text
+┌──────────────────────────────────────┐
+│  📍 Cohérence GPS        [Liste|Carte]│
+│  Point marche: 45.87, 3.21           │
+├──────────────────────────────────────┤
+│                                      │
+│     ┌──────────────────────────┐     │
+│     │                          │     │
+│     │   🔴 Marche (rouge/or)   │     │
+│     │                          │     │
+│     │  🟢 Photo1 (45m)        │     │
+│     │      🟠 Photo2 (626m)   │     │
+│     │                          │     │
+│     └──────────────────────────┘     │
+│                                      │
+│  [Géopoétique] [Satellite] [Relief]  │
+└──────────────────────────────────────┘
 
-Extraire le GPS **au moment de l'upload**, depuis le `File` blob local (100% fiable, pas de CORS), et stocker le résultat en base.
-
-### Modifications
-
-**1. Migration SQL : ajouter colonne `metadata` JSONB sur `marcheur_medias`**
-
-```sql
-ALTER TABLE public.marcheur_medias 
-ADD COLUMN metadata jsonb DEFAULT NULL;
+Popup au clic sur un marqueur photo :
+┌─────────────────────────┐
+│ ┌─────────┐  IMG_001    │
+│ │  thumb  │  ✅ 45m     │
+│ └─────────┘             │
+│ 📍 Google Maps  🗺 OSM  │
+└─────────────────────────┘
 ```
 
-Structure stockée : `{ "gps": { "latitude": 43.61, "longitude": 3.87 }, "date_taken": "2025-08-10T14:30:00" }`
+### Détails techniques
 
-**2. Modifier `useUploadMedias` dans `useMarcheurContributions.ts`**
+**1. Nouveau composant `GpsMapView.tsx`**
 
-Avant l'upload de chaque fichier, extraire le GPS via `exifr.gps(file)` (fonctionne sur un `File`/`Blob` local — rapide, pas de réseau). Stocker le résultat dans la colonne `metadata` lors de l'INSERT.
+Carte Leaflet compacte (~300px de hauteur mobile) avec :
+- **3 styles de tuiles** : réutilise `TILE_CONFIGS` existant de `ExplorationCarteTab.tsx` (Géopoétique, Satellite, Relief) avec toggle glassmorphism
+- **Marqueur marche** : icône étoile dorée/rouge distinctive, toujours visible, avec popup "Point de référence + lien Google Maps + OSM"
+- **Marqueurs photos** : chaque photo a une couleur unique tirée d'une palette harmonieuse (turquoise, violet, orange, rose, bleu…). Le marqueur utilise un `CircleMarker` avec bordure colorée.
+  - Couleur vert si distance < 200m
+  - Couleur orange si distance 200m-1km  
+  - Couleur rouge si distance > 1km
+  - Couleur gris si pas de GPS
+- **Lignes pointillées** : polylines entre chaque photo et le point marche (même code couleur distance)
+- **Auto-fit bounds** : la carte s'ajuste pour montrer tous les points
+- **Popups riches** : miniature de la photo (60x60px), nom, distance, liens Google Maps et OpenStreetMap
+
+**2. Palette de couleurs par photo**
 
 ```typescript
-// Avant l'upload
-const gps = await exifr.gps(file).catch(() => null);
-const dateTaken = await exifr.parse(file, ['DateTimeOriginal']).catch(() => null);
-
-// Dans l'INSERT
-metadata: {
-  ...(gps ? { gps: { latitude: gps.latitude, longitude: gps.longitude } } : {}),
-  ...(dateTaken?.DateTimeOriginal ? { date_taken: dateTaken.DateTimeOriginal } : {}),
-}
+const PHOTO_COLORS = [
+  '#06b6d4', // cyan
+  '#a855f7', // violet
+  '#f97316', // orange
+  '#ec4899', // rose
+  '#3b82f6', // bleu
+  '#84cc16', // lime
+  '#f43f5e', // rouge
+  '#14b8a6', // teal
+];
+// Chaque photo reçoit une couleur unique cyclique
 ```
 
-**3. Modifier `usePhotoGpsCheck` pour utiliser les données stockées en priorité**
+Mais le **remplissage du cercle** utilise le code couleur distance (vert/orange/rouge), tandis que la **bordure** utilise la couleur unique pour identifier la photo.
 
-- Si `metadata.gps` existe en base → l'utiliser directement (pas de fetch EXIF)
-- Sinon → fallback sur `exifr.gps(url)` comme actuellement
-- Cela rend le check quasi instantané pour les nouvelles photos
+**3. Modification du Dialog GPS existant**
 
-**4. Auto-rafraîchissement après upload**
+Dans `MarcheDetailModal.tsx`, le Dialog GPS devient à deux onglets :
+- Onglet "Liste" = vue actuelle inchangée
+- Onglet "Carte" = le nouveau `GpsMapView`
+- Toggle simple en haut du dialog, style cohérent avec le toggle Immersion/Fiche
 
-Dans le `onSuccess` de `useUploadMedias`, invalider aussi la query key du GPS check pour que les distances sous les photos se mettent à jour automatiquement sans clic supplémentaire sur le bouton 🎯.
+**4. Liens navigation**
 
-### Fichiers modifiés
+Chaque popup inclut :
+- `https://maps.google.com/?q=lat,lng` (Google Maps)
+- `https://www.openstreetmap.org/?mlat=lat&mlon=lng&zoom=16` (OSM)
+
+### Fichiers
 
 | Fichier | Action |
 |---------|--------|
-| Migration SQL | Ajouter colonne `metadata jsonb` sur `marcheur_medias` |
-| `src/hooks/useMarcheurContributions.ts` | Extraire EXIF GPS/date du `File` blob avant insert |
-| `src/hooks/usePhotoGpsCheck.ts` | Priorité aux données stockées, fallback exifr si absent |
-| `src/components/community/MarcheDetailModal.tsx` | Re-trigger GPS check automatiquement après upload (invalidation query) |
+| `src/components/community/contributions/GpsMapView.tsx` | **Nouveau** — composant carte Leaflet avec marqueurs, popups, toggle style |
+| `src/components/community/MarcheDetailModal.tsx` | Ajouter onglet Carte dans le Dialog GPS, passer les `gpsResults` et `marcheCoords` au composant carte |
 
-### Performance
+### Points de vigilance
 
-- `exifr.gps(file)` sur un blob local : ~5-20ms par photo (lecture partielle en mémoire)
-- Aucun impact sur le temps d'upload perçu
-- Le check GPS en mode Fiche devient instantané pour les photos avec metadata stockée
+- Le Dialog reste compact mobile-first (max-h-[80vh])
+- La carte Leaflet est en `height: 350px` sur mobile, responsive
+- Les images dans les popups Leaflet utilisent des `<img>` HTML (pas React) car les popups Leaflet sont du HTML brut — `bindPopup()` avec template string
+- `fitBounds` avec padding pour ne pas coller les marqueurs aux bords
 
