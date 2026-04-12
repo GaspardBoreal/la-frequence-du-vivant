@@ -164,16 +164,16 @@ const ContributionItem: React.FC<ContributionItemProps> = ({
           </div>
         ) : (
           <>
+            {typeTexte && (
+              <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-amber-500/15 text-amber-300 capitalize w-fit">
+                {typeTexte}
+              </span>
+            )}
             <div className="flex items-center gap-2">
               <Icon className={cn("w-3.5 h-3.5 flex-shrink-0", typeColors[type])} />
-              <span className="text-white text-xs font-medium truncate flex-1">
+              <span className="text-white text-xs font-bold truncate flex-1">
                 {titre || 'Sans titre'}
               </span>
-              {typeTexte && (
-                <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-amber-500/15 text-amber-300 capitalize">
-                  {typeTexte}
-                </span>
-              )}
             </div>
 
             {type === 'texte' && contenu && (
